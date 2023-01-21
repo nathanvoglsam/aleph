@@ -154,7 +154,14 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
-        self.inner.create_buffer(desc)
+        let inner = self.inner.create_buffer(desc)?;
+        let layout = AnyArc::new_cyclic(move |v| ValidationBuffer {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+            debug_mapped_tracker: Default::default(),
+        });
+        Ok(AnyArc::map::<dyn IBuffer, _>(layout, |v| v))
     }
 
     // ========================================================================================== //
@@ -164,7 +171,13 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
-        self.inner.create_texture(desc)
+        let inner = self.inner.create_texture(desc)?;
+        let layout = AnyArc::new_cyclic(move |v| ValidationTexture {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+        });
+        Ok(AnyArc::map::<dyn ITexture, _>(layout, |v| v))
     }
 
     // ========================================================================================== //
@@ -174,14 +187,26 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
-        self.inner.create_sampler(desc)
+        let inner = self.inner.create_sampler(desc)?;
+        let layout = AnyArc::new_cyclic(move |v| ValidationSampler {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+        });
+        Ok(AnyArc::map::<dyn ISampler, _>(layout, |v| v))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
-        self.inner.create_command_pool()
+        let inner = self.inner.create_command_pool()?;
+        let layout = AnyArc::new_cyclic(move |v| ValidationCommandPool {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+        });
+        Ok(AnyArc::map::<dyn ICommandPool, _>(layout, |v| v))
     }
 
     // ========================================================================================== //
