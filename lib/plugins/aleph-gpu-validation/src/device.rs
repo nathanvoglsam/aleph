@@ -31,23 +31,27 @@ use crate::adapter::ValidationAdapter;
 use crate::command_pool::ValidationCommandPool;
 use crate::context::ValidationContext;
 use crate::descriptor_pool::ValidationDescriptorPool;
-use crate::descriptor_set_layout::ValidationDescriptorSetLayout;
+use crate::descriptor_set_layout::{DescriptorBindingInfo, ValidationDescriptorSetLayout};
 use crate::internal::descriptor_set::DescriptorSet;
-use interfaces::any::{AnyArc, AnyWeak};
 use crate::sampler::ValidationSampler;
 use crate::{
     ValidationBuffer, ValidationComputePipeline, ValidationGraphicsPipeline,
     ValidationPipelineLayout, ValidationShader, ValidationTexture,
 };
+use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
+use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::ops::Deref;
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct ValidationDevice {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _context: AnyArc<ValidationContext>,
     pub(crate) _adapter: AnyArc<ValidationAdapter>,
     pub(crate) inner: AnyArc<dyn IDevice>,
+    pub(crate) pool_counter: AtomicU64,
 }
 
 crate::validation_declare_interfaces!(ValidationDevice, [IDevice]);
@@ -144,7 +148,26 @@ impl IDevice for ValidationDevice {
         layout: &dyn IDescriptorSetLayout,
         num_sets: u32,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        self.inner.create_descriptor_pool(layout, num_sets)
+        let inner_layout = layout
+            .query_interface::<ValidationDescriptorSetLayout>()
+            .expect("Unknown IDescriptorSetLayout implementation")
+            ._this
+            .upgrade()
+            .unwrap();
+
+        let inner = self
+            .inner
+            .create_descriptor_pool(inner_layout.inner.as_ref(), num_sets)?;
+        let pool = Box::new(ValidationDescriptorPool {
+            _device: self._this.upgrade().unwrap(),
+            _layout: inner_layout,
+            inner,
+            pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
+            set_objects: Vec::with_capacity(num_sets as usize),
+            free_list: Vec::with_capacity(128),
+        });
+
+        Ok(pool)
     }
 
     // ========================================================================================== //
