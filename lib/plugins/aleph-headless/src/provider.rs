@@ -37,7 +37,8 @@ pub struct ProviderImpl {
 
 impl IFrameTimerProvider for ProviderImpl {
     fn get_frame_timer(&self) -> Option<AnyArc<dyn IFrameTimer>> {
-        self.frame_timer.query_interface()
+        let timer = self.frame_timer.clone();
+        Some(AnyArc::map::<dyn IFrameTimer, _>(timer, |v| v))
     }
 }
 
