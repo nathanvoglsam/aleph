@@ -241,10 +241,17 @@ impl IDevice for ValidationDevice {
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
         // Unwrap the objects in 'set_layouts' into a new list so the layer below gets the correct
         // object implementations
-        let set_layouts: Vec<&dyn IDescriptorSetLayout> = desc.set_layouts.iter().copied().map(|v| {
-            let v = v.query_interface::<ValidationDescriptorSetLayout>().expect("Unknown IDescriptorSetLayout implementation");
-            v.inner.as_ref()
-        }).collect();
+        let set_layouts: Vec<&dyn IDescriptorSetLayout> = desc
+            .set_layouts
+            .iter()
+            .copied()
+            .map(|v| {
+                let v = v
+                    .query_interface::<ValidationDescriptorSetLayout>()
+                    .expect("Unknown IDescriptorSetLayout implementation");
+                v.inner.as_ref()
+            })
+            .collect();
         let new_desc = PipelineLayoutDesc {
             set_layouts: &set_layouts,
             push_constant_blocks: &desc.push_constant_blocks,
