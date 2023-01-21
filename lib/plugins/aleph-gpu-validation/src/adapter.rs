@@ -58,6 +58,14 @@ impl IAdapter for ValidationAdapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        self.inner.request_device()
+        let inner = self.inner.request_device()?;
+        let device = AnyArc::new_cyclic(move |v| ValidationDevice {
+            _this: v.clone(),
+            _adapter: self._this.upgrade().unwrap(),
+            _context: self._context._this.upgrade().unwrap(),
+            inner,
+            pool_counter: Default::default(),
+        });
+        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
 }
