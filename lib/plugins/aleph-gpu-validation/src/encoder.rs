@@ -40,13 +40,23 @@ use interfaces::gpu::{
 use std::ops::Deref;
 
 pub struct ValidationEncoder<'a> {
-    pub(crate) _parent: &'a mut CommandList,
-    pub(crate) inner: Box<dyn IGeneralEncoder>,
+    pub(crate) bound_graphics_pipeline: Option<AnyArc<ValidationGraphicsPipeline>>,
+    pub(crate) inner: Box<dyn IGeneralEncoder + 'a>,
 }
 
 impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
-        self.inner.bind_graphics_pipeline(pipeline)
+        if let Some(concrete) = pipeline.query_interface::<ValidationGraphicsPipeline>() {
+            // We need the currently bound pipeline while recording commands to access things like
+            // the pipeline layout for handling binding descriptors.
+            let pipeline = concrete._this.upgrade().unwrap();
+
+            self.inner.bind_graphics_pipeline(pipeline.as_ref());
+
+            self.bound_graphics_pipeline = Some(pipeline);
+        } else {
+            panic!("Unknown IGraphicsPipeline implementation");
+        }
     }
 
     unsafe fn bind_vertex_buffers(
