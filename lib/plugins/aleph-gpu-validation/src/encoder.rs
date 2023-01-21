@@ -27,16 +27,17 @@
 // SOFTWARE.
 //
 
-use interfaces::any::QueryInterface;
 use crate::texture::ValidationTexture;
 use crate::ValidationGraphicsPipeline;
+use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
     DescriptorSetHandle, Format, GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder,
     IGraphicsPipeline, IPipelineLayout, ITexture, ITransferEncoder, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, PipelineBindPoint, Rect, TextureAspect, TextureBarrier,
-    TextureDesc, TextureSubResourceSet, Viewport,
+    InputAssemblyBufferBinding, PipelineBindPoint, PushConstantBlock, Rect, TextureAspect,
+    TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
+use std::ops::Deref;
 
 pub struct ValidationEncoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
@@ -166,7 +167,8 @@ impl<'a> ITransferEncoder for ValidationEncoder<'a> {
         dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
-        self.inner.copy_buffer_to_texture(src, dst, dst_layout, regions);
+        self.inner
+            .copy_buffer_to_texture(src, dst, dst_layout, regions);
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
@@ -206,16 +208,15 @@ impl<'a> ValidationEncoder<'a> {
     }
 
     fn validate_buffer_to_texture_copy_buffer_layout(
+        dst_format: Format,
         region: &BufferToTextureCopyRegion,
-        footprint: &mut D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
     ) {
+        let bytes_per_element = dst_format.bytes_per_element();
+        let row_pitch = region.src.extent.width * bytes_per_element;
         debug_assert!(region.src.extent.width > 0, "extent.width must be > 0");
         debug_assert!(region.src.extent.height > 0, "extent.height must be > 0");
         debug_assert!(region.src.extent.depth > 0, "extent.depth must be > 0");
-        debug_assert!(
-            footprint.Footprint.RowPitch % 256 == 0,
-            "RowPitch must be a multiple of 256"
-        );
+        debug_assert!(row_pitch % 256 == 0, "row_pitch must be a multiple of 256");
     }
 
     fn validate_buffer_to_texture_copy_dest_region(
@@ -245,7 +246,7 @@ impl<'a> ValidationEncoder<'a> {
         );
     }
 
-    fn validate_push_constant_data_buffer(data: &[u8], block: &PushConstantBlockInfo) {
+    fn validate_push_constant_data_buffer(data: &[u8], block: &PushConstantBlock) {
         debug_assert!(
             data.len() % 4 == 0,
             "Push Constant data must have len divisible by 4"
