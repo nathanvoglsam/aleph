@@ -29,12 +29,13 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, IPipelineLayout};
+use interfaces::gpu::{INamedObject, IPipelineLayout, PushConstantBlock};
 
 pub struct ValidationPipelineLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IPipelineLayout>,
+    pub(crate) push_constant_blocks: Vec<PushConstantBlock>,
 }
 
 crate::validation_declare_interfaces!(ValidationPipelineLayout, [IPipelineLayout]);
