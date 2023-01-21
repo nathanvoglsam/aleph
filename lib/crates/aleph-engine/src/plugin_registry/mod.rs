@@ -37,6 +37,7 @@ pub use builder::PluginRegistryBuilder;
 
 use crate::interfaces::any::{AnyArc, IAny};
 use crate::interfaces::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
+use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use std::any::TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -45,7 +46,7 @@ pub struct PluginRegistry {
     /// This stores plugins that can only be invoked directly from the main thread
     plugins: Vec<Box<dyn IPlugin>>,
 
-    quit_handle: AnyArc<dyn IQuitHandle>,
+    quit_handle: AnyArc<QuitHandleImpl>,
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
@@ -69,8 +70,10 @@ impl PluginRegistry {
     /// Internal function that drives the initialization of all the plugins
     pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<BTreeSet<TypeId>>) {
         let mut plugins = std::mem::take(&mut self.plugins);
+
+        let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
         let mut accessor = RegistryAccessor {
-            quit_handle: self.quit_handle.clone(),
+            quit_handle,
             interfaces: std::mem::take(&mut self.interfaces),
         };
 
@@ -143,8 +146,10 @@ impl PluginRegistry {
     /// of its internal loop, until any one of the plugins requests the loop to terminate.
     pub fn run(&mut self) {
         let mut plugins = std::mem::take(&mut self.plugins);
+
+        let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
         let accessor = RegistryAccessor {
-            quit_handle: self.quit_handle.clone(),
+            quit_handle,
             interfaces: std::mem::take(&mut self.interfaces),
         };
 
@@ -162,8 +167,10 @@ impl PluginRegistry {
 impl Drop for PluginRegistry {
     fn drop(&mut self) {
         let mut plugins = std::mem::take(&mut self.plugins);
+
+        let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
         let accessor = RegistryAccessor {
-            quit_handle: self.quit_handle.clone(),
+            quit_handle,
             interfaces: std::mem::take(&mut self.interfaces),
         };
 

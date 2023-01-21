@@ -85,7 +85,7 @@ impl PluginRegistryBuilder {
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {
             plugins: self.plugins,
-            quit_handle: QuitHandleImpl::new().query_interface().unwrap(),
+            quit_handle: QuitHandleImpl::new(),
             interfaces: BTreeMap::new(),
             init_order,
             update_order,
