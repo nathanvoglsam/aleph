@@ -151,8 +151,10 @@ impl IDevice for Device {
         // Unwrap the pipeline layout trait object into the concrete implementation
         let pipeline_layout = desc
             .pipeline_layout
-            .upgrade()
             .query_interface::<PipelineLayout>()
+            .expect("Unknown IPipelineLayout implementation")
+            .this
+            .upgrade()
             .unwrap();
 
         let builder = GraphicsPipelineStateStreamBuilder::new();
@@ -229,9 +231,11 @@ impl IDevice for Device {
         // Unwrap the pipeline layout trait object into the concrete implementation
         let pipeline_layout = desc
             .pipeline_layout
-            .upgrade()
             .query_interface::<PipelineLayout>()
-            .expect("Unknown IPipelineLayout implementation");
+            .expect("Unknown IPipelineLayout implementation")
+            .this
+            .upgrade()
+            .unwrap();
 
         let module = desc
             .shader_module
@@ -352,9 +356,11 @@ impl IDevice for Device {
         num_sets: u32,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
         let layout = layout
-            .upgrade()
             .query_interface::<DescriptorSetLayout>()
-            .expect("Unknown IDescriptorSetLayout implementation");
+            .expect("Unknown IDescriptorSetLayout implementation")
+            .this
+            .upgrade()
+            .unwrap();
 
         let resource_arena = DescriptorArena::new(
             self.descriptor_heaps.gpu_view_heap(),
