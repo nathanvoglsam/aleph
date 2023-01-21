@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use interfaces::any::{AnyArc, AnyWeak};
 use crate::adapter::ValidationAdapter;
 use crate::surface::ValidationSurface;
+use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface, SurfaceCreateError,
 };
@@ -56,17 +56,49 @@ impl IContext for ValidationContext {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
-        self.inner.request_adapter(options)
+        // Unwrap the ISurface reference to the inner object
+        let mut options = options.clone();
+        options.surface = options.surface.map(|v| {
+            v.query_interface::<ValidationSurface>()
+                .expect("Unknown ISurface implementation")
+                .inner
+                .as_ref()
+        });
+
+        let inner = self.inner.request_adapter(&options)?;
+        let adapter = AnyArc::new_cyclic(move |v| ValidationAdapter {
+            _this: v.clone(),
+            _context: self._this.upgrade().unwrap(),
+            inner,
+        });
+        Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))
     }
 
     fn create_surface(
         &self,
         window: &dyn HasRawWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        self.inner.create_surface(window)
+        let inner = self.inner.create_surface(window)?;
+        let surface = AnyArc::new_cyclic(move |v| ValidationSurface {
+            _this: v.clone(),
+            _context: self._this.upgrade().unwrap(),
+            inner,
+            has_swap_chain: Default::default(),
+        });
+        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
     }
 
     fn get_backend_api(&self) -> BackendAPI {
         self.inner.get_backend_api()
+    }
+}
+
+impl ValidationContext {
+    pub fn wrap_context(inner: AnyArc<dyn IContext>) -> AnyArc<dyn IContext> {
+        let adapter = AnyArc::new_cyclic(move |v| ValidationContext {
+            _this: v.clone(),
+            inner,
+        });
+        AnyArc::map::<dyn IContext, _>(adapter, |v| v)
     }
 }
