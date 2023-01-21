@@ -50,37 +50,55 @@ pub struct ProviderImpl {
 
 impl IFrameTimerProvider for ProviderImpl {
     fn get_frame_timer(&self) -> Option<AnyArc<dyn IFrameTimer>> {
-        self.frame_timer.as_ref().and_then(|v| v.query_interface())
+        self.frame_timer.as_ref().map(|v| {
+            let v = v.clone();
+            AnyArc::map::<dyn IFrameTimer, _>(v, |v| v)
+        })
     }
 }
 
 impl IWindowProvider for ProviderImpl {
     fn get_window(&self) -> Option<AnyArc<dyn IWindow>> {
-        self.window.as_ref().and_then(|v| v.query_interface())
+        self.window.as_ref().map(|v| {
+            let v = v.clone();
+            AnyArc::map::<dyn IWindow, _>(v, |v| v)
+        })
     }
 }
 
 impl IClipboardProvider for ProviderImpl {
     fn get_clipboard(&self) -> Option<AnyArc<dyn IClipboard>> {
-        self.clipboard.as_ref().and_then(|v| v.query_interface())
+        self.clipboard.as_ref().map(|v| {
+            let v = v.clone();
+            AnyArc::map::<dyn IClipboard, _>(v, |v| v)
+        })
     }
 }
 
 impl IKeyboardProvider for ProviderImpl {
     fn get_keyboard(&self) -> Option<AnyArc<dyn IKeyboard>> {
-        self.keyboard.as_ref().and_then(|v| v.query_interface())
+        self.keyboard.as_ref().map(|v| {
+            let v = v.clone();
+            AnyArc::map::<dyn IKeyboard, _>(v, |v| v)
+        })
     }
 }
 
 impl IMouseProvider for ProviderImpl {
     fn get_mouse(&self) -> Option<AnyArc<dyn IMouse>> {
-        self.mouse.as_ref().and_then(|v| v.query_interface())
+        self.mouse.as_ref().map(|v| {
+            let v = v.clone();
+            AnyArc::map::<dyn IMouse, _>(v, |v| v)
+        })
     }
 }
 
 impl IEventsProvider for ProviderImpl {
     fn get_events(&self) -> Option<AnyArc<dyn IEvents>> {
-        self.events.as_ref().and_then(|v| v.query_interface())
+        self.events.as_ref().map(|v| {
+            let v = v.clone();
+            AnyArc::map::<dyn IEvents, _>(v, |v| v)
+        })
     }
 }
 
