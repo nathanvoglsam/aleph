@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use interfaces::any::{AnyArc, AnyWeak};
+use crate::{ValidationCommandList, ValidationSwapChain};
+use interfaces::any::{box_downcast, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     Color, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError, QueueProperties,
     QueueSubmitError, QueueType,
@@ -62,18 +63,34 @@ impl IQueue for ValidationQueue {
         &self,
         command_list: Box<dyn ICommandList>,
     ) -> Result<(), QueueSubmitError> {
-        self.inner.submit_list(command_list)
+        let list = box_downcast::<_, ValidationCommandList>(command_list)
+            .ok()
+            .expect("Unknown ICommandList implementation")
+            .inner;
+
+        self.inner.submit_list(list)
     }
 
     unsafe fn submit_lists(
         &self,
         command_lists: &mut dyn Iterator<Item = Box<dyn ICommandList>>,
     ) -> Result<(), QueueSubmitError> {
-        self.inner.submit_lists(command_lists)
+        let mut command_lists = command_lists.map(|v| {
+            box_downcast::<_, ValidationCommandList>(v)
+                .ok()
+                .expect("Unknown ICommandList implementation")
+                .inner
+        });
+
+        self.inner.submit_lists(&mut command_lists)
     }
 
     unsafe fn present(&self, swap_chain: &dyn ISwapChain) -> Result<(), QueuePresentError> {
-        self.inner.present(swap_chain)
+        let swap_chain = swap_chain
+            .query_interface::<ValidationSwapChain>()
+            .expect("Unknown ISwapChain implementation");
+
+        self.inner.present(swap_chain.inner.as_ref())
     }
 
     unsafe fn set_marker(&mut self, _color: Color, _message: &str) {
