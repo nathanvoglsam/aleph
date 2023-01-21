@@ -147,7 +147,25 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        self.inner.create_pipeline_layout(desc)
+        // Unwrap the objects in 'set_layouts' into a new list so the layer below gets the correct
+        // object implementations
+        let set_layouts: Vec<&dyn IDescriptorSetLayout> = desc.set_layouts.iter().copied().map(|v| {
+            let v = v.query_interface::<ValidationDescriptorSetLayout>().expect("Unknown IDescriptorSetLayout implementation");
+            v.inner.as_ref()
+        }).collect();
+        let new_desc = PipelineLayoutDesc {
+            set_layouts: &set_layouts,
+            push_constant_blocks: &desc.push_constant_blocks,
+        };
+
+        let inner = self.inner.create_pipeline_layout(&new_desc)?;
+        let layout = AnyArc::new_cyclic(move |v| ValidationPipelineLayout {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+            push_constant_blocks: vec![],
+        });
+        Ok(AnyArc::map::<dyn IPipelineLayout, _>(layout, |v| v))
     }
 
     // ========================================================================================== //
