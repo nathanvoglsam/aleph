@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{AnyArc, IAny, QueryInterfaceBox};
+use crate::{AnyArc, IAny};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
