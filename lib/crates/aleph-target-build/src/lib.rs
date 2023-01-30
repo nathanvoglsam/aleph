@@ -130,10 +130,11 @@ pub mod build {
     pub fn target_build_type() -> BuildType {
         match env::var("ALEPH_BUILD_TYPE")
             .unwrap_or("Development".to_string())
+            .to_lowercase()
             .as_str()
         {
-            "Development" => BuildType::Development,
-            "Retail" => BuildType::Retail,
+            "development" => BuildType::Development,
+            "retail" => BuildType::Retail,
             _ => BuildType::Development,
         }
     }
