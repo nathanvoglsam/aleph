@@ -44,10 +44,8 @@ edition = "2021"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows = { path = "../aleph-windows", version = "0.1" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-libc = "0.2"
+libc = { workspace = true }

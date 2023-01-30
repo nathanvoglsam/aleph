@@ -45,8 +45,8 @@ edition = "2021"
 aleph-label = { path = "../../crates/aleph-label", version = "1" }
 aleph-log = { path = "../../crates/aleph-log", version = "1" }
 aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
-crossbeam = "0.8"
-env_logger = "0.9"
+crossbeam = { workspace = true }
+env_logger = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

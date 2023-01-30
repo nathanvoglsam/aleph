@@ -45,13 +45,13 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
+once_cell = { workspace = true }
 raw-cpuid = "10"
-once_cell = "1"
 num_cpus = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows = { path = "../aleph-windows", version = "0.1" }
-utf16_lit = "2"
+utf16_lit = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-libc = "0.2"
+libc = { workspace = true }

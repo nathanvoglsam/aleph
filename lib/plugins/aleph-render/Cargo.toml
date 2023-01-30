@@ -48,7 +48,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-egui = { path = "../aleph-egui", version = "0.1" }
 aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
 aleph-log = { path = "../../crates/aleph-log", version = "1" }
-cstr = "0.2"
-once_cell = "1"
+cstr = { workspace = true }
+once_cell = { workspace = true }
 ultraviolet = { version = "0.9", features = ["f64"] }
 bytemuck = "1"

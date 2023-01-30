@@ -49,24 +49,12 @@ console = ["aleph-console/console"]
 remote-console = ["aleph-console/remote"]
 
 [dependencies]
-raw-window-handle = "0.4"
+aleph-any = { path = "../aleph-any", version = "0.1" }
+aleph-console = { path = "../aleph-console", version = "0.1" }
+aleph-ecs = { path = "../aleph-ecs", version = "0.1" }
+aleph-label = { path = "../aleph-label", version = "1" }
+raw-window-handle = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+bitflags = { workspace = true }
 ultraviolet = { version = "0.9", features = ["f64"] }
-thiserror = "1"
-anyhow = "1"
-bitflags = "1"
-
-[dependencies.aleph-any]
-path = "../aleph-any"
-version = "0.1"
-
-[dependencies.aleph-console]
-path = "../aleph-console"
-version = "0.1"
-
-[dependencies.aleph-ecs]
-path = "../aleph-ecs"
-version = "0.1"
-
-[dependencies.aleph-label]
-path = "../aleph-label"
-version = "1"

@@ -76,3 +76,17 @@ members = [
     "bin/aleph-test",
     "bin/aleph-rcon",
 ]
+
+[workspace.dependencies]
+once_cell = "1"
+crossbeam = "0.8"
+parking_lot = "0.12"
+bitflags = "1"
+thiserror = "1"
+anyhow = "1"
+raw-window-handle = "0.4"
+env_logger = "0.9"
+utf16_lit = "2"
+libc = "0.2"
+cstr = "0.2"
+erupt = "0.22"

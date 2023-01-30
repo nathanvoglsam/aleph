@@ -43,5 +43,3 @@ edition = "2021"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
-[dependencies]

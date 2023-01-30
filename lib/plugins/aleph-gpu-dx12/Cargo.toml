@@ -48,14 +48,13 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
 aleph-gpu-validation = { path = "../aleph-gpu-validation", version = "0.1" }
 aleph-log = { path = "../../crates/aleph-log", version = "1" }
-cstr = "0.2"
-crossbeam = "0.8"
-parking_lot = "0.12"
-utf16_lit = "2"
-# once_cell = "1"
+cstr = { workspace = true }
+crossbeam = { workspace = true }
+parking_lot = { workspace = true }
+utf16_lit = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-libc = "0.2"
 aleph-windows = { path = "../../crates/aleph-windows", version = "0.1" }
 aleph-dx12-alloc = { path = "../../crates/aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../../crates/aleph-pix", version = "0.1" }
+libc = { workspace = true }

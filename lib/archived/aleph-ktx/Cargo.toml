@@ -45,7 +45,7 @@ edition = "2021"
 aleph-vk-format = { path = "../aleph-vk-format", version = "1" }
 byteorder = "1"
 num-integer = "0.1"
-bitflags = "1"
+bitflags = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

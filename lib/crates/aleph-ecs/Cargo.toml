@@ -45,8 +45,8 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-virtual-buffer = {path = "../aleph-virtual-buffer", version = "0.1"}
-aleph-label = {path = "../aleph-label", version = "1"}
-crossbeam = "0.8"
+aleph-virtual-buffer = { path = "../aleph-virtual-buffer", version = "0.1" }
+aleph-label = { path = "../aleph-label", version = "1" }
+crossbeam = { workspace = true }
 rayon = "1.5"
 
