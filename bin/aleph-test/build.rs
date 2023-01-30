@@ -28,6 +28,9 @@
 //
 
 fn main() {
-    aleph_dx12_agility_sdk::link_agility_symbol_def();
-    aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
+    #[cfg(target_os = "windows")]
+    {
+        aleph_dx12_agility_sdk::link_agility_symbol_def();
+        aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
+    }
 }
