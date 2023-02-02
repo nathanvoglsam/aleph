@@ -35,7 +35,6 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{BufferDesc, IBuffer, IGetPlatformInterface, INamedObject, ResourceMapError};
 use std::any::TypeId;
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, Ordering};
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -45,7 +44,6 @@ pub struct Buffer {
     pub(crate) resource: ID3D12Resource,
     pub(crate) base_address: GPUDescriptorHandle,
     pub(crate) desc: BufferDesc,
-    pub(crate) debug_mapped_tracker: AtomicBool,
 }
 
 declare_interfaces!(Buffer, [IBuffer]);
@@ -68,12 +66,6 @@ impl IBuffer for Buffer {
     }
 
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
-        // Debug check for tracking that the resource is unmapped when trying to map it
-        debug_assert!(self
-            .debug_mapped_tracker
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-            .is_ok());
-
         // TODO: should we expose 'read_range'?
         unsafe {
             let mut ptr = std::ptr::null_mut();
@@ -89,12 +81,6 @@ impl IBuffer for Buffer {
         unsafe {
             self.resource.Unmap(0, std::ptr::null());
         }
-
-        // Debug check for tracking that the resource is mapped when trying to unmap it
-        debug_assert!(self
-            .debug_mapped_tracker
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
-            .is_ok());
     }
 
     fn flush_range(&self, _offset: u64, _len: u64) {
