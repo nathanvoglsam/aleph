@@ -40,7 +40,9 @@ pub struct ValidationContext {
     pub(crate) inner: AnyArc<dyn IContext>,
 }
 
-crate::validation_declare_interfaces!(ValidationContext, [IContext]);
+interfaces::any::declare_interfaces!(ValidationContext, [IContext]);
+
+crate::impl_platform_interface_passthrough!(ValidationContext);
 
 impl IContext for ValidationContext {
     fn upgrade(&self) -> AnyArc<dyn IContext> {

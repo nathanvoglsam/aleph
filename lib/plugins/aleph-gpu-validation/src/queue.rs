@@ -40,7 +40,9 @@ pub struct ValidationQueue {
     pub(crate) queue_type: QueueType,
 }
 
-crate::validation_declare_interfaces!(ValidationQueue, [IQueue]);
+interfaces::any::declare_interfaces!(ValidationQueue, [IQueue]);
+
+crate::impl_platform_interface_passthrough!(ValidationQueue);
 
 impl IQueue for ValidationQueue {
     fn upgrade(&self) -> AnyArc<dyn IQueue> {

@@ -42,7 +42,9 @@ pub struct ValidationSurface {
     pub(crate) has_swap_chain: AtomicBool,
 }
 
-crate::validation_declare_interfaces!(ValidationSurface, [ISurface]);
+interfaces::any::declare_interfaces!(ValidationSurface, [ISurface]);
+
+crate::impl_platform_interface_passthrough!(ValidationSurface);
 
 impl ISurface for ValidationSurface {
     fn upgrade(&self) -> AnyArc<dyn ISurface> {

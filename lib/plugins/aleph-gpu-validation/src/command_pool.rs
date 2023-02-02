@@ -30,7 +30,9 @@
 use crate::device::ValidationDevice;
 use crate::ValidationCommandList;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{CommandListCreateError, ICommandList, ICommandPool, INamedObject};
+use interfaces::gpu::{
+    CommandListCreateError, ICommandList, ICommandPool, INamedObject, QueueType,
+};
 
 pub struct ValidationCommandPool {
     pub(crate) _this: AnyWeak<Self>,
@@ -38,7 +40,9 @@ pub struct ValidationCommandPool {
     pub(crate) inner: AnyArc<dyn ICommandPool>,
 }
 
-crate::validation_declare_interfaces!(ValidationCommandPool, [ICommandPool]);
+interfaces::any::declare_interfaces!(ValidationCommandPool, [ICommandPool]);
+
+crate::impl_platform_interface_passthrough!(ValidationCommandPool);
 
 impl ICommandPool for ValidationCommandPool {
     fn upgrade(&self) -> AnyArc<dyn ICommandPool> {

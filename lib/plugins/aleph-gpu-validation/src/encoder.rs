@@ -33,15 +33,23 @@ use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
     DescriptorSetHandle, Format, GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder,
-    IGraphicsPipeline, IPipelineLayout, ITexture, ITransferEncoder, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, PipelineBindPoint, PushConstantBlock, Rect, TextureAspect,
+    IGetPlatformInterface, IGraphicsPipeline, IPipelineLayout, ITexture, ITransferEncoder,
+    ImageLayout, IndexType, InputAssemblyBufferBinding, PipelineBindPoint, PushConstantBlock, Rect,
+    RenderingColorAttachmentInfo, RenderingDepthStencilAttachmentInfo, TextureAspect,
     TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
+use std::any::TypeId;
 use std::ops::Deref;
 
 pub struct ValidationEncoder<'a> {
     pub(crate) bound_graphics_pipeline: Option<AnyArc<ValidationGraphicsPipeline>>,
     pub(crate) inner: Box<dyn IGeneralEncoder + 'a>,
+}
+
+impl<'a> IGetPlatformInterface for ValidationEncoder<'a> {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, out: *mut ()) -> Option<()> {
+        self.inner.__query_platform_interface(_target, out)
+    }
 }
 
 impl<'a> IGeneralEncoder for ValidationEncoder<'a> {

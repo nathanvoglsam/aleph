@@ -38,7 +38,9 @@ pub struct ValidationPipelineLayout {
     pub(crate) push_constant_blocks: Vec<PushConstantBlock>,
 }
 
-crate::validation_declare_interfaces!(ValidationPipelineLayout, [IPipelineLayout]);
+interfaces::any::declare_interfaces!(ValidationPipelineLayout, [IPipelineLayout]);
+
+crate::impl_platform_interface_passthrough!(ValidationPipelineLayout);
 
 impl IPipelineLayout for ValidationPipelineLayout {
     fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {

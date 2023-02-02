@@ -38,7 +38,9 @@ pub struct ValidationShader {
     pub(crate) shader_type: ShaderType,
 }
 
-crate::validation_declare_interfaces!(ValidationShader, [IShader]);
+interfaces::any::declare_interfaces!(ValidationShader, [IShader]);
+
+crate::impl_platform_interface_passthrough!(ValidationShader);
 
 impl IShader for ValidationShader {
     fn upgrade(&self) -> AnyArc<dyn IShader> {

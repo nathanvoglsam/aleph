@@ -42,7 +42,9 @@ pub struct ValidationSwapChain {
     pub(crate) queue_support: QueueType,
 }
 
-crate::validation_declare_interfaces!(ValidationSwapChain, [ISwapChain]);
+interfaces::any::declare_interfaces!(ValidationSwapChain, [ISwapChain]);
+
+crate::impl_platform_interface_passthrough!(ValidationSwapChain);
 
 impl ISwapChain for ValidationSwapChain {
     fn upgrade(&self) -> AnyArc<dyn ISwapChain> {

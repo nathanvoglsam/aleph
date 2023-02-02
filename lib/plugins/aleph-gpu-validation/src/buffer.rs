@@ -40,7 +40,9 @@ pub struct ValidationBuffer {
     pub(crate) debug_mapped_tracker: AtomicBool,
 }
 
-crate::validation_declare_interfaces!(ValidationBuffer, [IBuffer]);
+interfaces::any::declare_interfaces!(ValidationBuffer, [IBuffer]);
+
+crate::impl_platform_interface_passthrough!(ValidationBuffer);
 
 impl IBuffer for ValidationBuffer {
     fn upgrade(&self) -> AnyArc<dyn IBuffer> {

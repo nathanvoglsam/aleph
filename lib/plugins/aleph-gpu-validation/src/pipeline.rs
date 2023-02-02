@@ -39,7 +39,9 @@ pub struct ValidationGraphicsPipeline {
     pub(crate) inner: AnyArc<dyn IGraphicsPipeline>,
 }
 
-crate::validation_declare_interfaces!(ValidationGraphicsPipeline, [IGraphicsPipeline]);
+interfaces::any::declare_interfaces!(ValidationGraphicsPipeline, [IGraphicsPipeline]);
+
+crate::impl_platform_interface_passthrough!(ValidationGraphicsPipeline);
 
 impl IGraphicsPipeline for ValidationGraphicsPipeline {
     fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
@@ -68,7 +70,9 @@ pub struct ValidationComputePipeline {
     pub(crate) inner: AnyArc<dyn IComputePipeline>,
 }
 
-crate::validation_declare_interfaces!(ValidationComputePipeline, [IComputePipeline]);
+interfaces::any::declare_interfaces!(ValidationComputePipeline, [IComputePipeline]);
+
+crate::impl_platform_interface_passthrough!(ValidationComputePipeline);
 
 impl IComputePipeline for ValidationComputePipeline {
     fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {

@@ -37,7 +37,9 @@ pub struct ValidationTexture {
     pub(crate) inner: AnyArc<dyn ITexture>,
 }
 
-crate::validation_declare_interfaces!(ValidationTexture, [ITexture]);
+interfaces::any::declare_interfaces!(ValidationTexture, [ITexture]);
+
+crate::impl_platform_interface_passthrough!(ValidationTexture);
 
 impl ITexture for ValidationTexture {
     fn upgrade(&self) -> AnyArc<dyn ITexture> {

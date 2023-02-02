@@ -29,7 +29,7 @@
 
 use crate::command_pool::ValidationCommandPool;
 use crate::encoder::ValidationEncoder;
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::AnyArc;
 use interfaces::gpu::{
     CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, INamedObject,
     ITransferEncoder, QueueType,
@@ -41,7 +41,9 @@ pub struct ValidationCommandList {
     pub(crate) list_type: QueueType,
 }
 
-declare_interfaces!(ValidationCommandList, [ICommandList]);
+interfaces::any::declare_interfaces!(ValidationCommandList, [ICommandList]);
+
+crate::impl_platform_interface_passthrough!(ValidationCommandList);
 
 unsafe impl Send for ValidationCommandList {}
 

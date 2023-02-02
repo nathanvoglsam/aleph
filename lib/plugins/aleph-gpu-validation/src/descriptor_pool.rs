@@ -43,7 +43,9 @@ pub struct ValidationDescriptorPool {
     pub(crate) free_list: Vec<DescriptorSetHandle>,
 }
 
-crate::validation_declare_interfaces!(ValidationDescriptorPool, [IDescriptorPool]);
+interfaces::any::declare_interfaces!(ValidationDescriptorPool, [IDescriptorPool]);
+
+crate::impl_platform_interface_passthrough!(ValidationDescriptorPool);
 
 impl ValidationDescriptorPool {
     /// Checks if there is space to allocate a new set in the descriptor pool.

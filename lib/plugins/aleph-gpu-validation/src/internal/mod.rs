@@ -28,3 +28,18 @@
 //
 
 pub mod descriptor_set;
+
+#[macro_export]
+macro_rules! impl_platform_interface_passthrough {
+    ($typ: ident) => {
+        impl $crate::interfaces::gpu::IGetPlatformInterface for $typ {
+            unsafe fn __query_platform_interface(
+                &self,
+                target: ::core::any::TypeId,
+                out: *mut (),
+            ) -> ::core::option::Option<()> {
+                self.inner.__query_platform_interface(target, out)
+            }
+        }
+    };
+}

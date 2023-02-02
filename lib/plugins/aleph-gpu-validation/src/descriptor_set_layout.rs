@@ -40,7 +40,9 @@ pub struct ValidationDescriptorSetLayout {
     pub(crate) binding_info: HashMap<u32, DescriptorBindingInfo>,
 }
 
-crate::validation_declare_interfaces!(ValidationDescriptorSetLayout, [IDescriptorSetLayout]);
+interfaces::any::declare_interfaces!(ValidationDescriptorSetLayout, [IDescriptorSetLayout]);
+
+crate::impl_platform_interface_passthrough!(ValidationDescriptorSetLayout);
 
 impl ValidationDescriptorSetLayout {
     /// Internal function

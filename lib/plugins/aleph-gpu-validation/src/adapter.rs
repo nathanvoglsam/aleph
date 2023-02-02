@@ -28,10 +28,10 @@
 //
 
 use crate::context::ValidationContext;
+use crate::queue::ValidationQueue;
 use crate::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, QueueType, RequestDeviceError};
-use crate::queue::ValidationQueue;
 
 pub struct ValidationAdapter {
     pub(crate) _this: AnyWeak<Self>,
@@ -39,7 +39,9 @@ pub struct ValidationAdapter {
     pub(crate) inner: AnyArc<dyn IAdapter>,
 }
 
-crate::validation_declare_interfaces!(ValidationAdapter, [IAdapter]);
+interfaces::any::declare_interfaces!(ValidationAdapter, [IAdapter]);
+
+crate::impl_platform_interface_passthrough!(ValidationAdapter);
 
 impl IAdapter for ValidationAdapter {
     fn upgrade(&self) -> AnyArc<dyn IAdapter> {
@@ -59,7 +61,10 @@ impl IAdapter for ValidationAdapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        fn query_queue(inner: &dyn IDevice, queue_type: QueueType) -> Option<AnyArc<ValidationQueue>> {
+        fn query_queue(
+            inner: &dyn IDevice,
+            queue_type: QueueType,
+        ) -> Option<AnyArc<ValidationQueue>> {
             inner.get_queue(queue_type).map(|q| {
                 AnyArc::new_cyclic(move |v| ValidationQueue {
                     _this: v.clone(),

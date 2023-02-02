@@ -37,7 +37,9 @@ pub struct ValidationSampler {
     pub(crate) inner: AnyArc<dyn ISampler>,
 }
 
-crate::validation_declare_interfaces!(ValidationSampler, [ISampler]);
+interfaces::any::declare_interfaces!(ValidationSampler, [ISampler]);
+
+crate::impl_platform_interface_passthrough!(ValidationSampler);
 
 impl ISampler for ValidationSampler {
     fn upgrade(&self) -> AnyArc<dyn ISampler> {

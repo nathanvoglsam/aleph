@@ -58,7 +58,9 @@ pub struct ValidationDevice {
     pub(crate) transfer_queue: Option<AnyArc<ValidationQueue>>,
 }
 
-crate::validation_declare_interfaces!(ValidationDevice, [IDevice]);
+interfaces::any::declare_interfaces!(ValidationDevice, [IDevice]);
+
+crate::impl_platform_interface_passthrough!(ValidationDevice);
 
 impl IDevice for ValidationDevice {
     // ========================================================================================== //
