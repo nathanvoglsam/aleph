@@ -98,11 +98,7 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
         // This command can't work without a bound pipeline, we need the pipeline layout so we can
         // validate the binding data
-        let pipeline = self
-            .bound_graphics_pipeline
-            .as_ref()
-            .unwrap()
-            .deref();
+        let pipeline = self.bound_graphics_pipeline.as_ref().unwrap().deref();
 
         // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
         // the constant block index
