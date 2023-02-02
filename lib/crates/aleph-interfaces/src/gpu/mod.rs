@@ -34,8 +34,9 @@ pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 use any::{AnyArc, IAny};
 use bitflags::bitflags;
 use raw_window_handle::HasRawWindowHandle;
-use std::any::Any;
+use std::any::TypeId;
 use std::fmt::{Debug, Display, Formatter};
+use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 use thiserror::Error;
@@ -84,11 +85,92 @@ macro_rules! any_arc_trait_utils_decl {
 //
 //
 // _________________________________________________________________________________________________
+// Misc
+
+///
+/// A trait exposed by API objects that allows querying platform specific objects and interfaces
+/// for accessing details specific to underlying implementations.
+///
+/// This allows for intentionally 'leaking' backend objects.
+///
+pub trait IGetPlatformInterface {
+    /// The dynamic interface for looking up an interface/object by type-id. Writes the resulting
+    /// object into a prepared place im memory though the provided 'out' pointer. 'out' must provide
+    /// valid storage for an object of the requested type.
+    ///
+    /// It is not recommended to use this interface directly. Instead use this via the
+    /// [GetPlatformInterface::query_platform_interface] wrapper.
+    ///
+    /// # Safety
+    ///
+    /// The caller has a responsibility to ensure that 'out' points to a valid region of memory that
+    /// is of sufficient size, alignment and ownership to initialize a new object of the requested
+    /// type into. There is not type safety in this interface, all responsibility lies on the caller
+    /// to ensure this.
+    ///
+    /// The implementation is required to, if the target can be provided, clone or construct a new
+    /// object of the expected type at the address given by 'out' and return Some to signify
+    /// success. If the object of the requested type *can not be* provided then 'out' must remain
+    /// untouched and None must be returned.
+    ///
+    /// These requirements are important as they allow implementing the interface without any heap
+    /// allocations while keeping the [IGetPlatformInterface] trait-object safe. We can't use
+    /// generics in object-safe traits so we must do this instead.
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()>;
+}
+
+///
+/// A wrapper over [IGetPlatformInterface] that provides a type safe interface for using
+/// `__query_platform_interface`.
+///
+pub trait GetPlatformInterface {
+    /// A type-safe wrapper over [IGetPlatformInterface::__query_platform_interface] that
+    /// automatically handles sending the correct type-id to the dynamic interface and casting back
+    /// to the requested type.
+    fn query_platform_interface<T: Sized + 'static>(&self) -> Option<T>;
+}
+
+impl<T: IGetPlatformInterface + ?Sized> GetPlatformInterface for T {
+    #[inline]
+    fn query_platform_interface<R: Sized + 'static>(&self) -> Option<R> {
+        let mut stack_slot: MaybeUninit<R> = MaybeUninit::uninit();
+
+        // Safety: It is our responsibility to ensure 'out' points to a valid memory region for an
+        //         object of type R. We do that via 'stack_slot.
+        //
+        //         The caller is expected to initialize 'stack_slot' if it has returned 'Some' so
+        //         it is safe for us to assume_init in that case.
+        unsafe {
+            if self
+                .__query_platform_interface(TypeId::of::<R>(), stack_slot.as_mut_ptr() as *mut ())
+                .is_some()
+            {
+                Some(MaybeUninit::assume_init(stack_slot))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+/// A common trait definition shared by any API object that can be given a name for debug purposes.
+///
+/// Vulkan and D3D12 have debug functionality that allow the user to attach a string name to API
+/// objects for debug purposes. This exposes that functionality.
+pub trait INamedObject {
+    /// Attach a name to the API object for debug purposes. This will show up associated with the
+    /// underlying backend API objects in graphics debuggers
+    fn set_name(&self, name: &str);
+}
+
+//
+//
+// _________________________________________________________________________________________________
 // ContextProvider
 
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
 /// some other use can request a handle to the [IContextProvider] instance and create the context.
-pub trait IContextProvider: IAny + 'static {
+pub trait IContextProvider: IAny {
     /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
     /// will always return Err.
     fn make_context(
@@ -104,7 +186,7 @@ pub trait IContextProvider: IAny + 'static {
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
 /// retrieving.
-pub trait IContext: IAny + Send + Sync + 'static {
+pub trait IContext: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IContext);
 
     /// Create an adapter that suitably meets the requested requirements and preferences specified
@@ -133,7 +215,7 @@ pub trait IContext: IAny + Send + Sync + 'static {
 /// surface. As such [ISurface] is not created by an [IDevice], rather it is created by the
 /// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
 /// [ISurface].
-pub trait ISurface: IAny + Send + Sync + 'static {
+pub trait ISurface: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ISurface);
 
     fn create_swap_chain(
@@ -149,7 +231,7 @@ pub trait ISurface: IAny + Send + Sync + 'static {
 // Adapter
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IAdapter: IAny + Send + Sync + 'static {
+pub trait IAdapter: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IAdapter);
 
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
@@ -164,7 +246,7 @@ pub trait IAdapter: IAny + Send + Sync + 'static {
 // _________________________________________________________________________________________________
 // Device
 
-pub trait IDevice: IAny + INamedObject + Send + Sync + 'static {
+pub trait IDevice: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IDevice);
 
     /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
@@ -265,7 +347,7 @@ pub trait IDevice: IAny + INamedObject + Send + Sync + 'static {
 // _________________________________________________________________________________________________
 // Queue
 
-pub trait IQueue: IAny + Send + Sync + INamedObject + 'static {
+pub trait IQueue: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IQueue);
 
     /// Returns the set of per-queue properties associated with this queue.
@@ -351,7 +433,7 @@ pub trait IQueue: IAny + Send + Sync + INamedObject + 'static {
 // _________________________________________________________________________________________________
 // SwapChain
 
-pub trait ISwapChain: IAny + INamedObject + 'static {
+pub trait ISwapChain: IAny + IGetPlatformInterface + INamedObject {
     any_arc_trait_utils_decl!(ISwapChain);
 
     /// Returns whether support operations are supported on the given queue.
@@ -383,7 +465,7 @@ pub trait ISwapChain: IAny + INamedObject + 'static {
 // _________________________________________________________________________________________________
 // Resources
 
-pub trait IBuffer: IAny + INamedObject + Send + Sync + 'static {
+pub trait IBuffer: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IBuffer);
 
     /// Returns a [BufferDesc] that describes this [IBuffer]
@@ -422,14 +504,14 @@ pub trait IBuffer: IAny + INamedObject + Send + Sync + 'static {
     fn invalidate_range(&self, offset: u64, len: u64);
 }
 
-pub trait ITexture: IAny + INamedObject + Send + Sync + 'static {
+pub trait ITexture: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(ITexture);
 
     /// Returns a [TextureDesc] that describes this [ITexture]
     fn desc(&self) -> &TextureDesc;
 }
 
-pub trait ISampler: IAny + INamedObject + Send + Sync + 'static {
+pub trait ISampler: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(ISampler);
 
     /// Returns a [SamplerDesc] that describes this [ISampler]
@@ -441,7 +523,7 @@ pub trait ISampler: IAny + INamedObject + Send + Sync + 'static {
 // _________________________________________________________________________________________________
 // Command Encoders
 
-pub trait IGeneralEncoder: IComputeEncoder + Send {
+pub trait IGeneralEncoder: IComputeEncoder {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline);
 
     unsafe fn bind_vertex_buffers(
@@ -484,7 +566,7 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
     );
 }
 
-pub trait IComputeEncoder: ITransferEncoder + Send {
+pub trait IComputeEncoder: ITransferEncoder {
     unsafe fn bind_descriptor_sets(
         &mut self,
         pipeline_layout: &dyn IPipelineLayout,
@@ -496,7 +578,7 @@ pub trait IComputeEncoder: ITransferEncoder + Send {
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
-pub trait ITransferEncoder: Send {
+pub trait ITransferEncoder: IGetPlatformInterface + Send {
     unsafe fn resource_barrier(
         &mut self,
         memory_barriers: &[GlobalBarrier],
@@ -566,7 +648,7 @@ pub trait ITransferEncoder: Send {
 // _________________________________________________________________________________________________
 // Command Lists
 
-pub trait ICommandList: INamedObject + Send + IAny + Any + 'static {
+pub trait ICommandList: IAny + IGetPlatformInterface + INamedObject + Send {
     fn begin_general<'a>(
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError>;
@@ -585,7 +667,7 @@ pub trait ICommandList: INamedObject + Send + IAny + Any + 'static {
 // _________________________________________________________________________________________________
 // CommandPool
 
-pub trait ICommandPool: IAny + INamedObject + Send + Sync + 'static {
+pub trait ICommandPool: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(ICommandPool);
 
     fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError>;
@@ -625,7 +707,7 @@ impl Into<NonNull<()>> for DescriptorSetHandle {
 
 unsafe impl Send for DescriptorSetHandle {}
 
-pub trait IDescriptorPool: INamedObject + Send + IAny + Any + 'static {
+pub trait IDescriptorPool: IAny + IGetPlatformInterface + INamedObject + Send {
     /// Allocates a new individual descriptor set from the pool.
     ///
     /// May fail if the pool's backing memory has been exhausted.
@@ -685,7 +767,7 @@ pub trait IDescriptorPool: INamedObject + Send + IAny + Any + 'static {
     unsafe fn reset(&mut self);
 }
 
-pub trait IDescriptorSetLayout: IAny + INamedObject + Send + Sync + 'static {
+pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IDescriptorSetLayout);
 }
 
@@ -694,15 +776,15 @@ pub trait IDescriptorSetLayout: IAny + INamedObject + Send + Sync + 'static {
 // _________________________________________________________________________________________________
 // Pipeline Objects
 
-pub trait IPipelineLayout: IAny + INamedObject + Send + Sync + 'static {
+pub trait IPipelineLayout: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IPipelineLayout);
 }
 
-pub trait IGraphicsPipeline: IAny + INamedObject + Send + Sync + 'static {
+pub trait IGraphicsPipeline: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IGraphicsPipeline);
 }
 
-pub trait IComputePipeline: IAny + INamedObject + Send + Sync + 'static {
+pub trait IComputePipeline: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IComputePipeline);
 }
 
@@ -711,26 +793,11 @@ pub trait IComputePipeline: IAny + INamedObject + Send + Sync + 'static {
 // _________________________________________________________________________________________________
 // Shader
 
-pub trait IShader: IAny + INamedObject + Send + Sync + 'static {
+pub trait IShader: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     any_arc_trait_utils_decl!(IShader);
 
     fn shader_type(&self) -> ShaderType;
     fn entry_point(&self) -> &str;
-}
-
-//
-//
-// _________________________________________________________________________________________________
-// NamedObject
-
-/// A common trait definition shared by any API object that can be given a name for debug purposes.
-///
-/// Vulkan and D3D12 have debug functionality that allow the user to attach a string name to API
-/// objects for debug purposes. This exposes that functionality.
-pub trait INamedObject {
-    /// Attach a name to the API object for debug purposes. This will show up associated with the
-    /// underlying backend API objects in graphics debuggers
-    fn set_name(&self, name: &str);
 }
 
 //
