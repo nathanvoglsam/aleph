@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
+use crate::internal::try_clone_value_into_slot;
 use crate::swap_chain::SwapChain;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
+use interfaces::gpu::{IGetPlatformInterface, INamedObject, ITexture, TextureDesc};
+use std::any::TypeId;
 use std::ffi::CString;
 
 pub struct SwapTexture {
@@ -41,7 +43,7 @@ pub struct SwapTexture {
     pub desc: TextureDesc,
 }
 
-declare_interfaces!(SwapTexture, [ITexture, IImageResourceExt]);
+declare_interfaces!(SwapTexture, [ITexture]);
 
 impl ITexture for SwapTexture {
     fn upgrade(&self) -> AnyArc<dyn ITexture> {
@@ -73,13 +75,9 @@ impl Drop for SwapTexture {
     }
 }
 
-pub trait IImageResourceExt: ITexture {
-    fn get_raw_handle(&self) -> vk::Image;
-}
-
-impl IImageResourceExt for SwapTexture {
-    fn get_raw_handle(&self) -> vk::Image {
-        self.image
+impl IGetPlatformInterface for SwapTexture {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::Image>(&self.image, out, target)
     }
 }
 

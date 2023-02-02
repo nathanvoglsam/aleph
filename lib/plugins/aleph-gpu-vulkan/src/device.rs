@@ -42,11 +42,12 @@ use interfaces::gpu::{
     DescriptorPoolCreateError, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc,
     DescriptorWriteDesc, FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc,
     IBuffer, ICommandPool, IComputePipeline, IDescriptorPool, IDescriptorSetLayout, IDevice,
-    IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue, ISampler, IShader, ITexture,
-    PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode, PrimitiveTopology, QueueType,
-    SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, StencilOp,
-    StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
+    IGetPlatformInterface, IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue, ISampler,
+    IShader, ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode,
+    PrimitiveTopology, QueueType, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
+    ShaderOptions, StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
 };
+use std::any::TypeId;
 use std::ffi::CString;
 
 pub struct Device {
@@ -57,7 +58,7 @@ pub struct Device {
     pub(crate) queues: Queues,
 }
 
-declare_interfaces!(Device, [IDevice, IDeviceExt]);
+declare_interfaces!(Device, [IDevice]);
 
 impl IDevice for Device {
     fn upgrade(&self) -> AnyArc<dyn IDevice> {
@@ -416,28 +417,11 @@ impl Drop for Device {
     }
 }
 
-pub trait IDeviceExt: IDevice {
-    fn get_raw_handle(&self) -> &erupt::DeviceLoader;
-    fn get_raw_general_queue(&self) -> Option<vk::Queue>;
-    fn get_raw_compute_queue(&self) -> Option<vk::Queue>;
-    fn get_raw_transfer_queue(&self) -> Option<vk::Queue>;
-}
-
-impl IDeviceExt for Device {
-    fn get_raw_handle(&self) -> &erupt::DeviceLoader {
-        &self.device_loader
-    }
-
-    fn get_raw_general_queue(&self) -> Option<vk::Queue> {
-        self.queues.general.as_ref().map(|v| v.queue)
-    }
-
-    fn get_raw_compute_queue(&self) -> Option<vk::Queue> {
-        self.queues.compute.as_ref().map(|v| v.queue)
-    }
-
-    fn get_raw_transfer_queue(&self) -> Option<vk::Queue> {
-        self.queues.transfer.as_ref().map(|v| v.queue)
+impl IGetPlatformInterface for Device {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        // TODO: Expose the device loader through an arc or something
+        // TODO: Expose the queues, somewhere (likely on a queue object)
+        None
     }
 }
 

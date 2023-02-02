@@ -37,9 +37,10 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AcquireImageError, Format, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
-    SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
+    AcquireImageError, Format, IDevice, IGetPlatformInterface, INamedObject, ISwapChain, ITexture,
+    QueueType, SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
 };
+use std::any::TypeId;
 use std::sync::Mutex;
 
 // TODO: Track out of date status with a flag and trigger a transparent rebuild.
@@ -64,7 +65,7 @@ pub struct SwapChain {
     pub(crate) queue_support: QueuePresentSupportFlags,
 }
 
-declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);
+declare_interfaces!(SwapChain, [ISwapChain]);
 
 pub struct SwapChainState {
     pub swap_chain: vk::SwapchainKHR,
@@ -395,9 +396,13 @@ impl Drop for SwapChain {
     }
 }
 
-pub trait ISwapChainExt: ISwapChain {}
-
-impl ISwapChainExt for SwapChain {}
+impl IGetPlatformInterface for SwapChain {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        // TODO: We can probably expose a few objects from a swapchain, but they're behind a mutex
+        //       so we'll wait before implementing this
+        None
+    }
+}
 
 impl INamedObject for SwapChain {
     fn set_name(&self, _name: &str) {

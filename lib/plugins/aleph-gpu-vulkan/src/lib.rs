@@ -46,17 +46,11 @@ mod swap_chain;
 mod swap_texture;
 mod texture;
 
-pub use adapter::IAdapterExt;
-pub use context::IContextExt;
-pub use device::IDeviceExt;
 pub use plugin::PluginGpuVulkan;
-pub use shader::IShaderExt;
-pub use surface::ISurfaceExt;
-pub use swap_chain::ISwapChainExt;
 
 mod plugin {
     use crate::context_provider::ContextProvider;
-    use interfaces::any::{declare_interfaces, AnyArc};
+    use interfaces::any::{declare_interfaces, AnyArc, IAny};
     use interfaces::gpu::IContextProvider;
     use interfaces::plugin::{
         IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
@@ -87,11 +81,11 @@ mod plugin {
         }
 
         fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-            let context_provider = ContextProvider::new();
+            let context_provider = AnyArc::new(ContextProvider::new());
 
             let response = vec![(
                 TypeId::of::<dyn IContextProvider>(),
-                AnyArc::into_any(AnyArc::new(context_provider)),
+                AnyArc::map::<dyn IAny, _>(context_provider, |v| v),
             )];
             Box::new(response)
         }

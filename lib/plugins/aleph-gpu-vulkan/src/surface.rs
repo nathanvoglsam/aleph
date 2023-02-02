@@ -30,14 +30,16 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
+use crate::internal::try_clone_value_into_slot;
 use crate::swap_chain::{SwapChain, SwapChainState};
 use erupt::vk;
-use erupt::vk::SurfaceKHR;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    Format, IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError,
+    Format, IDevice, IGetPlatformInterface, ISurface, ISwapChain, SwapChainConfiguration,
+    SwapChainCreateError,
 };
+use std::any::TypeId;
 use std::sync::Mutex;
 
 pub struct Surface {
@@ -46,7 +48,7 @@ pub struct Surface {
     pub(crate) surface: vk::SurfaceKHR,
 }
 
-declare_interfaces!(Surface, [ISurface, ISurfaceExt]);
+declare_interfaces!(Surface, [ISurface]);
 
 impl Surface {
     /// Internal function for querying present support for a given surface
@@ -163,6 +165,12 @@ impl ISurface for Surface {
     }
 }
 
+impl IGetPlatformInterface for Surface {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::SurfaceKHR>(&self.surface, out, target)
+    }
+}
+
 impl Drop for Surface {
     fn drop(&mut self) {
         unsafe {
@@ -176,13 +184,3 @@ impl Drop for Surface {
 // SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
 //         consume it. The consumer constrains thread sharing so this is safe.
 unsafe impl Send for Surface {}
-
-pub trait ISurfaceExt: ISurface {
-    fn get_raw_handle(&self) -> vk::SurfaceKHR;
-}
-
-impl ISurfaceExt for Surface {
-    fn get_raw_handle(&self) -> SurfaceKHR {
-        self.surface
-    }
-}

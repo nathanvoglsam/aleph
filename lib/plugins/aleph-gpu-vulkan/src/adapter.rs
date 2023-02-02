@@ -30,11 +30,14 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::queues::{QueueInfo, Queues};
+use crate::internal::try_clone_value_into_slot;
 use erupt::vk;
-use erupt::vk1_0::PhysicalDevice;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{AdapterDescription, AdapterVendor, IAdapter, IDevice, RequestDeviceError};
+use interfaces::gpu::{
+    AdapterDescription, AdapterVendor, IAdapter, IDevice, IGetPlatformInterface, RequestDeviceError,
+};
+use std::any::TypeId;
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
@@ -44,7 +47,7 @@ pub struct Adapter {
     pub(crate) physical_device: vk::PhysicalDevice,
 }
 
-declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
+declare_interfaces!(Adapter, [IAdapter]);
 
 impl Adapter {
     #[inline]
@@ -192,13 +195,9 @@ impl IAdapter for Adapter {
     }
 }
 
-pub trait IAdapterExt: IAdapter {
-    fn get_raw_handle(&self) -> vk::PhysicalDevice;
-}
-
-impl IAdapterExt for Adapter {
-    fn get_raw_handle(&self) -> PhysicalDevice {
-        self.physical_device
+impl IGetPlatformInterface for Adapter {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::PhysicalDevice>(&self.physical_device, out, target)
     }
 }
 

@@ -35,9 +35,10 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, AdapterVendor, BackendAPI, IAdapter, IContext,
-    ISurface, SurfaceCreateError,
+    IGetPlatformInterface, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
+use std::any::TypeId;
 use std::ffi::CStr;
 
 pub struct Context {
@@ -46,7 +47,7 @@ pub struct Context {
     pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
 
-declare_interfaces!(Context, [IContext, IContextExt]);
+declare_interfaces!(Context, [IContext]);
 
 impl Context {
     fn select_device(
@@ -408,12 +409,9 @@ impl Drop for Context {
     }
 }
 
-pub trait IContextExt: IContext {
-    fn get_raw_handle(&self) -> &erupt::InstanceLoader;
-}
-
-impl IContextExt for Context {
-    fn get_raw_handle(&self) -> &erupt::InstanceLoader {
-        &self.instance_loader
+impl IGetPlatformInterface for Context {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        // TODO: expose the instance loader via an arc or something
+        None
     }
 }

@@ -28,9 +28,11 @@
 //
 
 use crate::device::Device;
+use crate::internal::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
+use interfaces::gpu::{IGetPlatformInterface, INamedObject, ITexture, TextureDesc};
+use std::any::TypeId;
 use std::ffi::CString;
 
 pub struct Texture {
@@ -41,7 +43,7 @@ pub struct Texture {
     pub desc: TextureDesc,
 }
 
-declare_interfaces!(Texture, [ITexture, IImageResourceExt]);
+declare_interfaces!(Texture, [ITexture]);
 
 impl ITexture for Texture {
     fn upgrade(&self) -> AnyArc<dyn ITexture> {
@@ -69,13 +71,9 @@ impl Drop for Texture {
     }
 }
 
-pub trait IImageResourceExt: ITexture {
-    fn get_raw_handle(&self) -> vk::Image;
-}
-
-impl IImageResourceExt for Texture {
-    fn get_raw_handle(&self) -> vk::Image {
-        self.image
+impl IGetPlatformInterface for Texture {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::Image>(&self.image, out, target)
     }
 }
 

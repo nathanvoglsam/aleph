@@ -57,9 +57,11 @@
 //
 
 use crate::device::Device;
+use crate::internal::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, IShader, ShaderType};
+use interfaces::gpu::{IGetPlatformInterface, INamedObject, IShader, ShaderType};
+use std::any::TypeId;
 use std::ffi::CString;
 
 pub struct Shader {
@@ -70,7 +72,7 @@ pub struct Shader {
     pub(crate) entry_point: CString,
 }
 
-declare_interfaces!(Shader, [IShader, IShaderExt]);
+declare_interfaces!(Shader, [IShader]);
 
 impl Drop for Shader {
     fn drop(&mut self) {
@@ -108,13 +110,9 @@ impl IShader for Shader {
     }
 }
 
-pub trait IShaderExt: IShader {
-    fn get_raw_module(&self) -> vk::ShaderModule;
-}
-
-impl IShaderExt for Shader {
-    fn get_raw_module(&self) -> vk::ShaderModule {
-        self.module
+impl IGetPlatformInterface for Shader {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::ShaderModule>(&self.module, out, target)
     }
 }
 
