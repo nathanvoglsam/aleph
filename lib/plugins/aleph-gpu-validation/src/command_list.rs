@@ -55,29 +55,35 @@ impl ICommandList for ValidationCommandList {
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
+            list_type: QueueType::General,
         });
+        let encoder: Box<dyn IGeneralEncoder + 'a> = encoder;
         Ok(encoder)
     }
 
     fn begin_compute<'a>(
         &'a mut self,
     ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
-        let inner = self.inner.begin_general()?;
+        let inner = self.inner.begin_compute()?;
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
+            list_type: QueueType::Compute,
         });
+        let encoder: Box<dyn IComputeEncoder + 'a> = encoder;
         Ok(encoder)
     }
 
     fn begin_transfer<'a>(
         &'a mut self,
     ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
-        let inner = self.inner.begin_general()?;
+        let inner = self.inner.begin_transfer()?;
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
+            list_type: QueueType::Transfer,
         });
+        let encoder: Box<dyn ITransferEncoder + 'a> = encoder;
         Ok(encoder)
     }
 }

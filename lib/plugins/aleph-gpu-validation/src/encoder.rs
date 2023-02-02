@@ -31,30 +31,26 @@ use crate::internal::get_as_unwrapped;
 use crate::texture::ValidationTexture;
 use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout};
 use interfaces::any::{AnyArc, QueryInterface};
-use interfaces::gpu::{
-    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
-    DescriptorSetHandle, Format, GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder,
-    IGetPlatformInterface, IGraphicsPipeline, IPipelineLayout, ITexture, ITransferEncoder,
-    ImageLayout, IndexType, InputAssemblyBufferBinding, PipelineBindPoint, PushConstantBlock, Rect,
-    RenderingColorAttachmentInfo, RenderingDepthStencilAttachmentInfo, TextureAspect,
-    TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
-};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use std::ops::Deref;
 
-pub struct ValidationEncoder<'a> {
+pub struct ValidationEncoder<T: ?Sized> {
     pub(crate) bound_graphics_pipeline: Option<AnyArc<ValidationGraphicsPipeline>>,
-    pub(crate) inner: Box<dyn IGeneralEncoder + 'a>,
+    pub(crate) inner: Box<T>,
+    pub(crate) list_type: QueueType,
 }
 
-impl<'a> IGetPlatformInterface for ValidationEncoder<'a> {
+impl<'a, T: IGetPlatformInterface + ?Sized + 'a> IGetPlatformInterface for ValidationEncoder<T> {
     unsafe fn __query_platform_interface(&self, _target: TypeId, out: *mut ()) -> Option<()> {
         self.inner.__query_platform_interface(_target, out)
     }
 }
 
-impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
+impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder<T> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         let pipeline = pipeline
             .query_interface::<ValidationGraphicsPipeline>()
             .expect("Unknown IGraphicsPipeline implementation");
@@ -71,6 +67,8 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         let bindings: Vec<_> = bindings
             .iter()
             .map(get_as_unwrapped::input_assembly_buffer_binding)
@@ -83,19 +81,27 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         let binding = get_as_unwrapped::input_assembly_buffer_binding(binding);
         self.inner.bind_index_buffer(index_type, &binding)
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         self.inner.set_viewports(viewports)
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         self.inner.set_scissor_rects(rects)
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         // This command can't work without a bound pipeline, we need the pipeline layout so we can
         // validate the binding data
         let pipeline = self.bound_graphics_pipeline.as_ref().unwrap().deref();
@@ -109,9 +115,11 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         Self::validate_rendering_attachments(info);
 
-        let color_attachments: Vec<RenderingColorAttachmentInfo> = info
+        let color_attachments: Vec<_> = info
             .color_attachments
             .iter()
             .map(get_as_unwrapped::rendering_color_attachment_info)
@@ -131,6 +139,8 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
     }
 
     unsafe fn end_rendering(&mut self) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         self.inner.end_rendering();
     }
 
@@ -141,6 +151,8 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
         first_vertex: u32,
         first_instance: u32,
     ) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         self.inner
             .draw(vertex_count, instance_count, first_vertex, first_instance)
     }
@@ -153,6 +165,8 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
+        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+
         self.inner.draw_indexed(
             index_count,
             instance_count,
@@ -163,7 +177,7 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
     }
 }
 
-impl<'a> IComputeEncoder for ValidationEncoder<'a> {
+impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder<T> {
     unsafe fn bind_descriptor_sets(
         &mut self,
         pipeline_layout: &dyn IPipelineLayout,
@@ -171,6 +185,8 @@ impl<'a> IComputeEncoder for ValidationEncoder<'a> {
         first_set: u32,
         sets: &[DescriptorSetHandle],
     ) {
+        assert!(matches!(self.list_type, QueueType::General | QueueType::Compute), "Called a compute command on a non-compute command list");
+
         let pipeline_layout = pipeline_layout
             .query_interface::<ValidationPipelineLayout>()
             .expect("Unknown IPipelineLayout Interface")
@@ -187,12 +203,14 @@ impl<'a> IComputeEncoder for ValidationEncoder<'a> {
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+        assert!(matches!(self.list_type, QueueType::General | QueueType::Compute), "Called a compute command on a non-compute command list");
+
         self.inner
             .dispatch(group_count_x, group_count_y, group_count_z)
     }
 }
 
-impl<'a> ITransferEncoder for ValidationEncoder<'a> {
+impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncoder<T> {
     unsafe fn resource_barrier(
         &mut self,
         global_barriers: &[GlobalBarrier],
@@ -256,7 +274,7 @@ impl<'a> ITransferEncoder for ValidationEncoder<'a> {
     }
 }
 
-impl<'a> ValidationEncoder<'a> {
+impl<T: ?Sized> ValidationEncoder<T> {
     fn validate_aspect_against_texture_format(format: Format, aspect: &TextureAspect) {
         if aspect.contains(TextureAspect::COLOR) {
             debug_assert!(
