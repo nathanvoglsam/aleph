@@ -69,8 +69,7 @@ impl IContextProvider for ContextProvider {
                 let dxgi_factory =
                     create_dxgi_factory(options.validation).map_err(|e| anyhow!(e))?;
 
-                let is_uwp = cfg!(target_vendor = "uwp");
-                let gpu_assisted = !is_uwp;
+                let gpu_assisted = !cfg!(target_vendor = "uwp");
                 let debug = unsafe { setup_debug_layer(options.validation, gpu_assisted) };
                 let dxgi_debug = unsafe { setup_dxgi_debug_interface(options.debug) };
 
@@ -80,7 +79,15 @@ impl IContextProvider for ContextProvider {
                     dxgi_debug: dxgi_debug.map(Mutex::new),
                     factory: Some(Mutex::new(dxgi_factory)),
                 });
-                Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
+                let context = AnyArc::map::<dyn IContext, _>(context, |v| v);
+
+                if options.validation {
+                    Ok(aleph_gpu_validation::ValidationContext::wrap_context(
+                        context,
+                    ))
+                } else {
+                    Ok(context)
+                }
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }
