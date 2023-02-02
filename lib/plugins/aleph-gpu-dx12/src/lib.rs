@@ -57,8 +57,8 @@ mod surface;
 mod swap_chain;
 mod texture;
 
-pub use shader::ShaderData;
 pub use plugin::PluginGpuDX12;
+pub use shader::ShaderData;
 
 mod plugin {
     use crate::context_provider::ContextProvider;

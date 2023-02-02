@@ -77,34 +77,34 @@ impl<'a> IGetPlatformInterface for Encoder<'a> {
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
-        if let Some(concrete) = pipeline.query_interface::<GraphicsPipeline>() {
-            // Binds the pipeline
-            self.list.SetPipelineState(&concrete.pipeline);
+        let concrete = pipeline
+            .query_interface::<GraphicsPipeline>()
+            .expect("Unknown IGraphicsPipeline implementation");
 
-            // A pipeline is inseparable from its' root signature so we need to bind it here too
-            self.list
-                .SetGraphicsRootSignature(&concrete.pipeline_layout.root_signature);
+        // Binds the pipeline
+        self.list.SetPipelineState(&concrete.pipeline);
 
-            // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
-            // defers the full specification to this call below. Vulkan can't implement D3D12's
-            // behavior so we have to be like vulkan here so we also set the primitive topology
-            self.list
-                .IASetPrimitiveTopology(concrete.primitive_topology);
+        // A pipeline is inseparable from its' root signature so we need to bind it here too
+        self.list
+            .SetGraphicsRootSignature(&concrete.pipeline_layout.root_signature);
 
-            // Update the state for input binding strides. These get read when binding vertex
-            // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
-            // d3d12 takes them in 'IASetVertexBuffers'.
-            //
-            // TODO: Consider whether we just expose the parameter in the call and pipeline
-            //       creation.
-            self.input_binding_strides = concrete.input_binding_strides;
+        // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
+        // defers the full specification to this call below. Vulkan can't implement D3D12's
+        // behavior so we have to be like vulkan here so we also set the primitive topology
+        self.list
+            .IASetPrimitiveTopology(concrete.primitive_topology);
 
-            // We need the currently bound pipeline while recording commands to access things like
-            // the pipeline layout for handling binding descriptors.
-            self.bound_graphics_pipeline = Some(concrete.this.upgrade().unwrap());
-        } else {
-            panic!("Unknown IGraphicsPipeline implementation");
-        }
+        // Update the state for input binding strides. These get read when binding vertex
+        // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
+        // d3d12 takes them in 'IASetVertexBuffers'.
+        //
+        // TODO: Consider whether we just expose the parameter in the call and pipeline
+        //       creation.
+        self.input_binding_strides = concrete.input_binding_strides;
+
+        // We need the currently bound pipeline while recording commands to access things like
+        // the pipeline layout for handling binding descriptors.
+        self.bound_graphics_pipeline = Some(concrete.this.upgrade().unwrap());
     }
 
     unsafe fn bind_vertex_buffers(
