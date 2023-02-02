@@ -32,7 +32,7 @@ use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;
 use aleph_label::Label;
 use aleph_log::LevelFilter;
-use interfaces::any::AnyArc;
+use interfaces::any::{AnyArc, IAny};
 use interfaces::console::{DebugConsole, IDebugConsoleProvider};
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
@@ -146,15 +146,15 @@ impl IPlugin for PluginCore {
         let response = vec![
             (
                 TypeId::of::<dyn IWorldProvider>(),
-                AnyArc::into_any(self.world_provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.world_provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IScheduleProvider>(),
-                AnyArc::into_any(self.schedule_provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.schedule_provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IDebugConsoleProvider>(),
-                AnyArc::into_any(self.console_provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.console_provider.clone(), |v| v),
             ),
         ];
         Box::new(response)

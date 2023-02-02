@@ -61,40 +61,6 @@ impl<T: IAny + Sized> AnyArc<T> {
             unsafe { data_fn(core::mem::transmute(v)) }
         }))
     }
-
-    ///
-    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn IAny>` without going through
-    /// `query_interface`
-    ///
-    #[inline]
-    pub fn into_any(v: Self) -> AnyArc<dyn IAny> {
-        let inner: Arc<dyn IAny> = v.0;
-        AnyArc::from_arc(inner)
-    }
-}
-
-impl<T: IAny + Send + Sized> AnyArc<T> {
-    ///
-    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn ISendSyncAny>` without going
-    /// through `query_interface`
-    ///
-    #[inline]
-    pub fn into_send_any(v: Self) -> AnyArc<dyn IAny + Send> {
-        let inner: Arc<dyn IAny + Send> = v.0;
-        AnyArc::from_arc(inner)
-    }
-}
-
-impl<T: IAny + Send + Sync + Sized> AnyArc<T> {
-    ///
-    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn ISendSyncAny>` without going
-    /// through `query_interface`
-    ///
-    #[inline]
-    pub fn into_send_sync_any(v: Self) -> AnyArc<dyn IAny + Send + Sync> {
-        let inner: Arc<dyn IAny + Send + Sync> = v.0;
-        AnyArc::from_arc(inner)
-    }
 }
 
 impl<T: IAny + ?Sized> AnyArc<T> {

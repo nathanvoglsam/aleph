@@ -30,7 +30,7 @@
 use crate::traits::{EguiContextProvider, EguiRenderData};
 use crate::{IEguiContextProvider, IEguiRenderData, RenderData};
 use egui::ClippedPrimitive;
-use interfaces::any::AnyArc;
+use interfaces::any::{AnyArc, IAny};
 use interfaces::platform::{
     IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider, IMouseProvider,
     IWindowProvider,
@@ -168,11 +168,11 @@ impl IPlugin for PluginEgui {
         let response = vec![
             (
                 TypeId::of::<dyn IEguiContextProvider>(),
-                AnyArc::into_any(context_provider),
+                AnyArc::map::<dyn IAny, _>(context_provider, |v| v),
             ),
             (
                 TypeId::of::<dyn IEguiRenderData>(),
-                AnyArc::into_any(render_data),
+                AnyArc::map::<dyn IAny, _>(render_data, |v| v),
             ),
         ];
         Box::new(response)

@@ -34,7 +34,7 @@ use crate::keyboard::{KeyboardImpl, KeyboardState};
 use crate::mouse::MouseImpl;
 use crate::provider::ProviderImpl;
 use crate::window::{WindowImpl, WindowState};
-use interfaces::any::AnyArc;
+use interfaces::any::{AnyArc, IAny};
 use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
@@ -227,27 +227,27 @@ impl IPlugin for PluginPlatformSDL2 {
         let response = vec![
             (
                 TypeId::of::<dyn IFrameTimerProvider>(),
-                AnyArc::into_any(self.provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IWindowProvider>(),
-                AnyArc::into_any(self.provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IClipboardProvider>(),
-                AnyArc::into_any(self.provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IKeyboardProvider>(),
-                AnyArc::into_any(self.provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IMouseProvider>(),
-                AnyArc::into_any(self.provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IEventsProvider>(),
-                AnyArc::into_any(self.provider.clone()),
+                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
         ];
         Box::new(response)

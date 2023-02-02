@@ -29,7 +29,7 @@
 
 use crate::frame_timer::FrameTimerImpl;
 use crate::provider::ProviderImpl;
-use interfaces::any::AnyArc;
+use interfaces::any::{AnyArc, IAny};
 use interfaces::platform::IFrameTimerProvider;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
@@ -91,7 +91,7 @@ impl IPlugin for PluginPlatformHeadless {
         // Provide our declared implementations to the plugin registry
         let response = vec![(
             TypeId::of::<dyn IFrameTimerProvider>(),
-            AnyArc::into_any(provider),
+            AnyArc::map::<dyn IAny, _>(provider, |v| v),
         )];
         Box::new(response)
     }
