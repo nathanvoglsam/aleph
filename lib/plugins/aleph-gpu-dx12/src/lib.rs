@@ -62,7 +62,7 @@ pub use plugin::PluginGpuDX12;
 
 mod plugin {
     use crate::context_provider::ContextProvider;
-    use interfaces::any::{declare_interfaces, AnyArc};
+    use interfaces::any::{declare_interfaces, AnyArc, IAny};
     use interfaces::gpu::IContextProvider;
     use interfaces::plugin::{
         IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
@@ -93,11 +93,11 @@ mod plugin {
         }
 
         fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-            let context_provider = ContextProvider::new();
+            let context_provider = AnyArc::new(ContextProvider::new());
 
             let response = vec![(
                 TypeId::of::<dyn IContextProvider>(),
-                AnyArc::into_any(AnyArc::new(context_provider)),
+                AnyArc::map::<dyn IAny, _>(context_provider, |v| v),
             )];
             Box::new(response)
         }
