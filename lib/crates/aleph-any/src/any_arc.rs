@@ -188,7 +188,6 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     ///
     /// Returns [`None`] if the underlying object does not implement the requested interface.
     ///
-    #[deprecated]
     pub fn query_interface<Into: IAny + ?Sized>(&self) -> Option<AnyArc<Into>> {
         unsafe {
             // Lookup whether the underlying object implements the requested interface
