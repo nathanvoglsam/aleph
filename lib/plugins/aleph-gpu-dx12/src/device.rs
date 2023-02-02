@@ -49,10 +49,10 @@ use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
-use crate::internal::plane_layer_for_aspect_flag;
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
+use crate::internal::{plane_layer_for_aspect_flag, try_clone_value_into_slot};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -64,6 +64,7 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::RwLock;
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::ops::Deref;
@@ -87,7 +88,7 @@ pub struct Device {
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
 }
 
-declare_interfaces!(Device, [IDevice, IDeviceExt]);
+declare_interfaces!(Device, [IDevice]);
 
 impl IDevice for Device {
     // ========================================================================================== //
@@ -1963,6 +1964,12 @@ impl IDeviceExt for Device {
 
 unsafe impl Send for Device {}
 unsafe impl Sync for Device {}
+
+impl IGetPlatformInterface for Device {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<ID3D12Device10>(&self.device, out, target)
+    }
+}
 
 impl INamedObject for Device {
     fn set_name(&self, name: &str) {

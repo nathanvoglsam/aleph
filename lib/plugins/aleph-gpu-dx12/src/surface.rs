@@ -36,11 +36,12 @@ use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    IDevice, ISurface, ISwapChain, PresentationMode, QueueType, SwapChainConfiguration,
-    SwapChainCreateError,
+    IDevice, IGetPlatformInterface, ISurface, ISwapChain, PresentationMode, QueueType,
+    SwapChainConfiguration, SwapChainCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use parking_lot::Mutex;
+use std::any::TypeId;
 use std::sync::atomic::{AtomicBool, Ordering};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -210,6 +211,12 @@ impl ISurface for Surface {
                 }
             }
         }
+    }
+}
+
+impl IGetPlatformInterface for Surface {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
     }
 }
 

@@ -31,13 +31,14 @@ use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::set_name::set_name;
-use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
+use crate::internal::{calc_subresource_index, plane_layer_for_aspect, try_clone_value_into_slot};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
-    Format, INamedObject, ITexture, TextureCopyAspect, TextureDesc, TextureDimension,
-    TextureSubResourceSet,
+    Format, IGetPlatformInterface, INamedObject, ITexture, TextureCopyAspect, TextureDesc,
+    TextureDimension, TextureSubResourceSet,
 };
 use parking_lot::RwLock;
+use std::any::TypeId;
 use std::collections::HashMap;
 use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -57,7 +58,7 @@ pub struct Texture {
     pub(crate) uav_cache: RwLock<CacheViewCPU>,
 }
 
-declare_interfaces!(Texture, [ITexture, ITextureExt]);
+declare_interfaces!(Texture, [ITexture]);
 
 impl Texture {
     pub const fn plane_slice_for(&self, aspect: TextureCopyAspect) -> Option<u32> {
@@ -341,19 +342,15 @@ impl ITexture for Texture {
     }
 }
 
-pub trait ITextureExt: ITexture {
-    fn get_raw_handle(&self) -> ID3D12Resource;
-
-    fn get_raw_format(&self) -> DXGI_FORMAT;
-}
-
-impl ITextureExt for Texture {
-    fn get_raw_handle(&self) -> ID3D12Resource {
-        self.resource.clone()
-    }
-
-    fn get_raw_format(&self) -> DXGI_FORMAT {
-        self.dxgi_format
+impl IGetPlatformInterface for Texture {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        if try_clone_value_into_slot::<ID3D12Resource>(&self.resource, out, target).is_some() {
+            return Some(());
+        }
+        if try_clone_value_into_slot::<DXGI_FORMAT>(&self.dxgi_format, out, target).is_some() {
+            return Some(());
+        }
+        None
     }
 }
 

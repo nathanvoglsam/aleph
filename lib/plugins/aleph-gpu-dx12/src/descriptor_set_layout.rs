@@ -36,7 +36,8 @@
 
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{DescriptorType, IDescriptorSetLayout, INamedObject};
+use interfaces::gpu::{DescriptorType, IDescriptorSetLayout, IGetPlatformInterface, INamedObject};
+use std::any::TypeId;
 use std::collections::HashMap;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -108,6 +109,12 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+}
+
+impl IGetPlatformInterface for DescriptorSetLayout {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
     }
 }
 

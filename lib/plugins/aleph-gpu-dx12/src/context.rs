@@ -33,14 +33,17 @@ use crate::internal::create_device::create_device;
 use crate::internal::debug_interface::DebugInterface;
 use crate::internal::feature_support::FeatureSupport;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
+use crate::internal::try_clone_value_into_slot;
 use crate::surface::Surface;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, AdapterTypePreference, AdapterVendor, BackendAPI,
-    IAdapter, IContext, ISurface, SurfaceCreateError,
+    IAdapter, IContext, IGetPlatformInterface, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
 use parking_lot::Mutex;
+use std::any::TypeId;
+use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 use windows::core::Interface;
 use windows::Win32::Foundation::BOOL;
@@ -59,7 +62,7 @@ pub struct Context {
 unsafe impl Send for Context {}
 unsafe impl Sync for Context {}
 
-declare_interfaces!(Context, [IContext, IContextExt]);
+declare_interfaces!(Context, [IContext]);
 
 impl Context {
     /// Checks if a surface is compatible with an adapter by performing a full device initialization
@@ -359,18 +362,20 @@ impl Drop for Context {
     }
 }
 
-pub trait IContextExt: IContext {
-    fn get_raw_handle(&self) -> IDXGIFactory2;
+impl IGetPlatformInterface for Context {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        let factory = self.factory.as_ref().unwrap().lock();
+        if try_clone_value_into_slot::<IDXGIFactory2>(factory.deref(), out, target).is_some() {
+            return Some(());
+        };
 
-    fn get_dxgi_debug(&self) -> Option<IDXGIDebug>;
-}
+        if let Some(debug) = self.dxgi_debug.as_ref() {
+            let lock = debug.lock();
+            if try_clone_value_into_slot::<IDXGIDebug>(lock.deref(), out, target).is_some() {
+                return Some(());
+            };
+        }
 
-impl IContextExt for Context {
-    fn get_raw_handle(&self) -> IDXGIFactory2 {
-        self.factory.as_ref().unwrap().lock().clone()
-    }
-
-    fn get_dxgi_debug(&self) -> Option<IDXGIDebug> {
-        self.dxgi_debug.as_ref().map(|v| v.lock().clone())
+        None
     }
 }

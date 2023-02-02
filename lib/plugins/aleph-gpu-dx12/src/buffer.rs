@@ -29,9 +29,11 @@
 
 use crate::device::Device;
 use crate::internal::set_name::set_name;
+use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{BufferDesc, IBuffer, INamedObject, ResourceMapError};
+use interfaces::gpu::{BufferDesc, IBuffer, IGetPlatformInterface, INamedObject, ResourceMapError};
+use std::any::TypeId;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 use windows::utils::GPUDescriptorHandle;
@@ -46,7 +48,7 @@ pub struct Buffer {
     pub(crate) debug_mapped_tracker: AtomicBool,
 }
 
-declare_interfaces!(Buffer, [IBuffer, IBufferExt]);
+declare_interfaces!(Buffer, [IBuffer]);
 
 impl IBuffer for Buffer {
     fn upgrade(&self) -> AnyArc<dyn IBuffer> {
@@ -104,13 +106,9 @@ impl IBuffer for Buffer {
     }
 }
 
-pub trait IBufferExt: IBuffer {
-    fn get_raw_handle(&self) -> ID3D12Resource;
-}
-
-impl IBufferExt for Buffer {
-    fn get_raw_handle(&self) -> ID3D12Resource {
-        self.resource.clone()
+impl IGetPlatformInterface for Buffer {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.resource, out, target)
     }
 }
 

@@ -42,11 +42,12 @@ use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
     DescriptorSetHandle, Format, GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder,
-    IGraphicsPipeline, IPipelineLayout, ITexture, ITransferEncoder, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, PipelineBindPoint, Rect, TextureAspect, TextureBarrier,
-    TextureDesc, TextureSubResourceSet, Viewport,
+    IGetPlatformInterface, IGraphicsPipeline, IPipelineLayout, ITexture, ITransferEncoder,
+    ImageLayout, IndexType, InputAssemblyBufferBinding, PipelineBindPoint, Rect, TextureAspect,
+    TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
+use std::any::TypeId;
 use std::ops::Deref;
 use std::ptr::NonNull;
 use windows::Win32::Foundation::RECT;
@@ -64,6 +65,13 @@ impl<'a> Drop for Encoder<'a> {
     fn drop(&mut self) {
         // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
         unsafe { self.list.Close().unwrap() }
+    }
+}
+
+impl<'a> IGetPlatformInterface for Encoder<'a> {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        // TODO: can probably hand out the command list from here
+        None
     }
 }
 

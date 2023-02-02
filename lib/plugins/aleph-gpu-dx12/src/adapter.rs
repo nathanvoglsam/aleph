@@ -36,13 +36,16 @@ use crate::internal::descriptor_heaps::DescriptorHeaps;
 use crate::internal::register_message_callback::{
     category_name, device_register_message_callback, message_id_name,
 };
+use crate::internal::try_clone_value_into_slot;
 use crate::queue::Queue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AdapterDescription, AdapterVendor, IAdapter, IDevice, QueueType, RequestDeviceError,
+    AdapterDescription, AdapterVendor, IAdapter, IDevice, IGetPlatformInterface, QueueType,
+    RequestDeviceError,
 };
 use parking_lot::Mutex;
+use std::any::TypeId;
 use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -63,7 +66,7 @@ pub struct Adapter {
 unsafe impl Send for Adapter {}
 unsafe impl Sync for Adapter {}
 
-declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
+declare_interfaces!(Adapter, [IAdapter]);
 
 impl Adapter {
     fn create_queue(device: &ID3D12Device, queue_type: QueueType) -> Option<AnyArc<Queue>> {
@@ -159,12 +162,8 @@ impl IAdapter for Adapter {
     }
 }
 
-pub trait IAdapterExt: IAdapter {
-    fn get_raw_handle(&self) -> IDXGIAdapter1;
-}
-
-impl IAdapterExt for Adapter {
-    fn get_raw_handle(&self) -> IDXGIAdapter1 {
-        self.adapter.lock().clone()
+impl IGetPlatformInterface for Adapter {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(self.adapter.lock().deref(), out, target)
     }
 }

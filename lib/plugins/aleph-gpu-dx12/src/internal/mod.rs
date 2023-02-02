@@ -28,6 +28,7 @@
 //
 
 use interfaces::gpu::{Format, TextureAspect, TextureCopyAspect};
+use std::any::TypeId;
 
 pub mod adapter_description_decoder;
 pub mod conv;
@@ -103,5 +104,20 @@ pub const fn plane_layer_for_aspect_flag(format: Format, aspect: TextureAspect) 
                 None
             }
         }
+    }
+}
+
+pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
+    src: &T,
+    out: *mut (),
+    expecting: TypeId,
+) -> Option<()> {
+    if expecting == TypeId::of::<T>() {
+        let out = out as *mut T;
+        out.write(src.clone());
+
+        Some(())
+    } else {
+        None
     }
 }

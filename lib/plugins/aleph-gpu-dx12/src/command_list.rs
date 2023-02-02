@@ -31,12 +31,14 @@ use crate::command_pool::CommandPool;
 use crate::encoder::Encoder;
 use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::set_name::set_name;
-use interfaces::any::{declare_interfaces, AnyArc, IAny};
+use crate::internal::try_clone_value_into_slot;
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, INamedObject,
-    ITransferEncoder, QueueType,
+    CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, IGetPlatformInterface,
+    INamedObject, ITransferEncoder, QueueType,
 };
+use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct CommandList {
@@ -46,7 +48,7 @@ pub struct CommandList {
     pub(crate) list: ID3D12GraphicsCommandList7,
 }
 
-declare_interfaces!(CommandList, [ICommandList, ICommandListExt]);
+declare_interfaces!(CommandList, [ICommandList]);
 
 unsafe impl Send for CommandList {}
 
@@ -104,19 +106,15 @@ impl ReturnToPool for CommandList {
     }
 }
 
-pub trait ICommandListExt: IAny {
-    fn get_raw_allocator(&self) -> ID3D12CommandAllocator;
-
-    fn get_raw_list(&self) -> ID3D12GraphicsCommandList7;
-}
-
-impl ICommandListExt for CommandList {
-    fn get_raw_allocator(&self) -> ID3D12CommandAllocator {
-        self.allocator.clone()
-    }
-
-    fn get_raw_list(&self) -> ID3D12GraphicsCommandList7 {
-        self.list.clone()
+impl IGetPlatformInterface for CommandList {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        if try_clone_value_into_slot(&self.list, out, target).is_some() {
+            return Some(());
+        };
+        if try_clone_value_into_slot(&self.allocator, out, target).is_some() {
+            return Some(());
+        };
+        None
     }
 }
 

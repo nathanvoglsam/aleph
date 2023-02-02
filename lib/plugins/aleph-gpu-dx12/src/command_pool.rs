@@ -34,8 +34,10 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    CommandListCreateError, ICommandList, ICommandPool, INamedObject, QueueType,
+    CommandListCreateError, ICommandList, ICommandPool, IGetPlatformInterface, INamedObject,
+    QueueType,
 };
+use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct CommandPool {
@@ -108,6 +110,12 @@ impl ICommandPool for CommandPool {
             list,
         };
         Ok(Box::new(command_list))
+    }
+}
+
+impl IGetPlatformInterface for CommandPool {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
     }
 }
 

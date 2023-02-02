@@ -57,18 +57,8 @@ mod surface;
 mod swap_chain;
 mod texture;
 
-pub use adapter::IAdapterExt;
-pub use buffer::IBufferExt;
-pub use command_list::ICommandListExt;
-pub use context::IContextExt;
-pub use device::IDeviceExt;
-pub use pipeline::IComputePipelineExt;
-pub use pipeline::IGraphicsPipelineExt;
-pub use pipeline_layout::IPipelineLayoutExt;
+pub use shader::ShaderData;
 pub use plugin::PluginGpuDX12;
-pub use shader::IShaderExt;
-pub use swap_chain::ISwapChainExt;
-pub use texture::ITextureExt;
 
 mod plugin {
     use crate::context_provider::ContextProvider;

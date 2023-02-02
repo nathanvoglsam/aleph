@@ -33,6 +33,7 @@ use crate::internal::descriptor_arena::DescriptorArena;
 use crate::internal::descriptor_set::DescriptorSet;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::gpu::*;
+use std::any::TypeId;
 use std::ptr::NonNull;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
@@ -280,6 +281,12 @@ impl Drop for DescriptorPool {
                 arena.release_allocation_to_heap(self._device.descriptor_heaps.gpu_sampler_heap());
             }
         }
+    }
+}
+
+impl IGetPlatformInterface for DescriptorPool {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
     }
 }
 

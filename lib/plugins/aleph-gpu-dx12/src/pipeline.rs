@@ -29,9 +29,11 @@
 
 use crate::device::Device;
 use crate::internal::set_name::set_name;
+use crate::internal::try_clone_value_into_slot;
 use crate::pipeline_layout::PipelineLayout;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
+use interfaces::gpu::{IComputePipeline, IGetPlatformInterface, IGraphicsPipeline, INamedObject};
+use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -51,7 +53,7 @@ pub struct GraphicsPipeline {
     pub(crate) input_binding_strides: [u32; 16],
 }
 
-declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline, IGraphicsPipelineExt]);
+declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
 
 impl IGraphicsPipeline for GraphicsPipeline {
     fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
@@ -67,13 +69,9 @@ impl IGraphicsPipeline for GraphicsPipeline {
     }
 }
 
-pub trait IGraphicsPipelineExt: IGraphicsPipeline {
-    fn get_raw_handle(&self) -> ID3D12PipelineState;
-}
-
-impl IGraphicsPipelineExt for GraphicsPipeline {
-    fn get_raw_handle(&self) -> ID3D12PipelineState {
-        self.pipeline.clone()
+impl IGetPlatformInterface for GraphicsPipeline {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.pipeline, out, target)
     }
 }
 
@@ -89,7 +87,7 @@ pub struct ComputePipeline {
     pub(crate) pipeline: ID3D12PipelineState,
 }
 
-declare_interfaces!(ComputePipeline, [IComputePipeline, IComputePipelineExt]);
+declare_interfaces!(ComputePipeline, [IComputePipeline]);
 
 impl IComputePipeline for ComputePipeline {
     fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
@@ -105,13 +103,9 @@ impl IComputePipeline for ComputePipeline {
     }
 }
 
-pub trait IComputePipelineExt: IComputePipeline {
-    fn get_raw_handle(&self) -> ID3D12PipelineState;
-}
-
-impl IComputePipelineExt for ComputePipeline {
-    fn get_raw_handle(&self) -> ID3D12PipelineState {
-        self.pipeline.clone()
+impl IGetPlatformInterface for ComputePipeline {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.pipeline, out, target)
     }
 }
 

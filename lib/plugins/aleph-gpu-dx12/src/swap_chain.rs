@@ -28,16 +28,18 @@
 //
 
 use crate::device::Device;
+use crate::internal::try_clone_value_into_slot;
 use crate::surface::Surface;
 use crate::texture::Texture;
 use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AcquireImageError, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
-    SwapChainConfiguration, TextureDesc, TextureDimension,
+    AcquireImageError, IDevice, IGetPlatformInterface, INamedObject, ISwapChain, ITexture,
+    QueueType, SwapChainConfiguration, TextureDesc, TextureDimension,
 };
 use parking_lot::{Mutex, RwLock};
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::atomic::Ordering;
@@ -56,7 +58,7 @@ pub struct SwapChain {
     pub(crate) queued_resize: AtomicCell<Option<Box<(u32, u32)>>>,
 }
 
-declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);
+declare_interfaces!(SwapChain, [ISwapChain]);
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
@@ -279,6 +281,12 @@ impl Drop for SwapChain {
     fn drop(&mut self) {
         // Release the surface as the swap chain no longer owns it
         debug_assert!(self.surface.has_swap_chain.swap(false, Ordering::SeqCst));
+    }
+}
+
+impl IGetPlatformInterface for SwapChain {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<IDXGISwapChain4>(&self.swap_chain, out, target)
     }
 }
 

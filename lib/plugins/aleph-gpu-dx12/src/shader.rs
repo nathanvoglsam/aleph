@@ -29,7 +29,8 @@
 
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, IShader, ShaderType};
+use interfaces::gpu::{IGetPlatformInterface, INamedObject, IShader, ShaderType};
+use std::any::TypeId;
 
 pub struct Shader {
     pub(crate) this: AnyWeak<Self>,
@@ -39,7 +40,7 @@ pub struct Shader {
     pub(crate) entry_point: String,
 }
 
-declare_interfaces!(Shader, [IShader, IShaderExt]);
+declare_interfaces!(Shader, [IShader]);
 
 impl IShader for Shader {
     fn upgrade(&self) -> AnyArc<dyn IShader> {
@@ -70,6 +71,23 @@ pub trait IShaderExt: IShader {
 impl IShaderExt for Shader {
     fn get_raw_buffer(&self) -> &[u8] {
         &self.data
+    }
+}
+
+/// A new-type wrapper over a `Vec<u8>` to provide a new type-id for use with the
+/// [IGetPlatformInterface] interface.
+pub struct ShaderData(pub Vec<u8>);
+
+impl IGetPlatformInterface for Shader {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        if target == TypeId::of::<ShaderData>() {
+            let out = out as *mut ShaderData;
+            out.write(ShaderData(self.data.clone()));
+
+            Some(())
+        } else {
+            None
+        }
     }
 }
 

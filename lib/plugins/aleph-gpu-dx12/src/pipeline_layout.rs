@@ -29,8 +29,10 @@
 
 use crate::device::Device;
 use crate::internal::set_name::set_name;
+use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, IPipelineLayout};
+use interfaces::gpu::{IGetPlatformInterface, INamedObject, IPipelineLayout};
+use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct PipelineLayout {
@@ -40,7 +42,7 @@ pub struct PipelineLayout {
     pub(crate) push_constant_blocks: Vec<PushConstantBlockInfo>,
 }
 
-declare_interfaces!(PipelineLayout, [IPipelineLayout, IPipelineLayoutExt]);
+declare_interfaces!(PipelineLayout, [IPipelineLayout]);
 
 impl IPipelineLayout for PipelineLayout {
     fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {
@@ -56,13 +58,9 @@ impl IPipelineLayout for PipelineLayout {
     }
 }
 
-pub trait IPipelineLayoutExt: IPipelineLayout {
-    fn get_raw_handle(&self) -> ID3D12RootSignature;
-}
-
-impl IPipelineLayoutExt for PipelineLayout {
-    fn get_raw_handle(&self) -> ID3D12RootSignature {
-        self.root_signature.clone()
+impl IGetPlatformInterface for PipelineLayout {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<ID3D12RootSignature>(&self.root_signature, out, target)
     }
 }
 

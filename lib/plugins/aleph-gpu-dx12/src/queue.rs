@@ -30,16 +30,18 @@
 use crate::command_list::CommandList;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::set_name::set_name;
+use crate::internal::try_clone_value_into_slot;
 use crate::swap_chain::SwapChain;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{box_downcast, declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    Color, Extent3D, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError,
-    QueueProperties, QueueSubmitError, QueueType,
+    Color, Extent3D, ICommandList, IGetPlatformInterface, INamedObject, IQueue, ISwapChain,
+    QueuePresentError, QueueProperties, QueueSubmitError, QueueType,
 };
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
+use std::any::TypeId;
 use std::sync::atomic::{AtomicU64, Ordering};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -270,6 +272,12 @@ impl IQueue for Queue {
 
     unsafe fn end_event(&mut self) {
         end_event_on_queue(&self.handle);
+    }
+}
+
+impl IGetPlatformInterface for Queue {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<ID3D12CommandQueue>(&self.handle, out, target)
     }
 }
 

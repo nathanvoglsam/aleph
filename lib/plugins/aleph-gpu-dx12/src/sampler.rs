@@ -29,7 +29,8 @@
 
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ISampler, SamplerDesc};
+use interfaces::gpu::{IGetPlatformInterface, INamedObject, ISampler, SamplerDesc};
+use std::any::TypeId;
 use windows::utils::CPUDescriptorHandle;
 
 pub struct Sampler {
@@ -65,6 +66,12 @@ impl Drop for Sampler {
             .descriptor_heaps
             .cpu_sampler_heap()
             .free(self.sampler_handle);
+    }
+}
+
+impl IGetPlatformInterface for Sampler {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
     }
 }
 
