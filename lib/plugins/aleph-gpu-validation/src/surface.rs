@@ -28,7 +28,7 @@
 //
 
 use crate::context::ValidationContext;
-use crate::ValidationDevice;
+use crate::{ValidationDevice, ValidationSwapChain};
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError,
@@ -66,22 +66,32 @@ impl ISurface for ValidationSurface {
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
         let device = device
             .query_interface::<ValidationDevice>()
-            .expect("Unknown IDevice implementation")
-            .inner
-            .as_ref();
+            .expect("Unknown IDevice implementation");
+        let inner_device = device.inner.as_ref();
 
         // Check if the surface is currently taken with an existing swap chain
         if self.has_swap_chain.swap(true, Ordering::Relaxed) {
             return Err(SwapChainCreateError::SurfaceAlreadyOwned);
         }
 
-        match self.inner.create_swap_chain(device, config) {
+        let inner = match self.inner.create_swap_chain(inner_device, config) {
             v @ Ok(_) => v,
             v @ Err(_) => {
                 // Release the surface if we failed to actually create the swap chain
                 assert!(self.has_swap_chain.swap(false, Ordering::Relaxed));
                 v
             }
-        }
+        };
+        let inner = inner?;
+
+        let swap_chain = AnyArc::new_cyclic(move |v| ValidationSwapChain {
+            _this: v.clone(),
+            _device: device._this.upgrade().unwrap(),
+            _surface: self._this.upgrade().unwrap(),
+            inner,
+            queue_support: Default::default(),
+            current_image: Default::default(),
+        });
+        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
     }
 }

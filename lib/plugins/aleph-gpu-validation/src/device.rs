@@ -33,6 +33,7 @@ use crate::context::ValidationContext;
 use crate::descriptor_pool::ValidationDescriptorPool;
 use crate::descriptor_set_layout::{DescriptorBindingInfo, ValidationDescriptorSetLayout};
 use crate::internal::descriptor_set::DescriptorSet;
+use crate::internal::get_as_unwrapped;
 use crate::queue::ValidationQueue;
 use crate::sampler::ValidationSampler;
 use crate::{
@@ -44,7 +45,6 @@ use interfaces::gpu::*;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::ops::Deref;
-use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct ValidationDevice {
@@ -201,7 +201,74 @@ impl IDevice for ValidationDevice {
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
         Self::validate_descriptor_set_layout(desc);
-        self.inner.create_descriptor_set_layout(desc)
+
+        // Extract binding metadata we need for validation
+        let mut binding_info = HashMap::new();
+        for binding in desc.items {
+            binding_info.insert(
+                binding.binding_num,
+                DescriptorBindingInfo {
+                    r#type: binding.binding_type,
+                    descriptor_count: binding.binding_count,
+                    is_static_sampler: binding.static_samplers.is_some(),
+                    allow_writes: binding.allow_writes,
+                },
+            );
+        }
+
+        // Unwrap the inner &dyn ISampler references to get references to the wrapped implementation
+        // expected by self.inner
+        let mut static_samplers = Vec::with_capacity(desc.items.len());
+        for v in desc.items.iter() {
+            let samplers = if let Some(v) = v.static_samplers {
+                let mut samplers = Vec::new();
+
+                for v in v {
+                    let inner_sampler = v
+                        .query_interface::<ValidationSampler>()
+                        .expect("Unknown ISampler Implementation")
+                        .inner
+                        .deref();
+                    samplers.push(inner_sampler);
+                }
+
+                Some(samplers)
+            } else {
+                None
+            };
+
+            static_samplers.push(samplers);
+        }
+
+        // Construct a new list of bindings matching the outer description, but with the inner
+        // references unwrapped
+        let mut items = Vec::with_capacity(desc.items.len());
+        for (i, v) in desc.items.iter().enumerate() {
+            let static_samplers = static_samplers[i].as_ref().map(|v| v.as_slice());
+            let item = DescriptorSetLayoutBinding {
+                binding_num: v.binding_num,
+                binding_type: v.binding_type,
+                binding_count: v.binding_count,
+                allow_writes: v.allow_writes,
+                static_samplers,
+            };
+            items.push(item);
+        }
+
+        // Finally, make our unwrapped description to give to the inner implementation
+        let new_desc = DescriptorSetLayoutDesc {
+            visibility: desc.visibility,
+            items: items.as_slice(),
+        };
+
+        let inner = self.inner.create_descriptor_set_layout(&new_desc)?;
+        let layout = AnyArc::new_cyclic(move |v| ValidationDescriptorSetLayout {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+            binding_info,
+        });
+        Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(layout, |v| v))
     }
 
     // ========================================================================================== //
@@ -243,28 +310,22 @@ impl IDevice for ValidationDevice {
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
         // Unwrap the objects in 'set_layouts' into a new list so the layer below gets the correct
         // object implementations
-        let set_layouts: Vec<&dyn IDescriptorSetLayout> = desc
-            .set_layouts
-            .iter()
-            .copied()
-            .map(|v| {
-                let v = v
-                    .query_interface::<ValidationDescriptorSetLayout>()
-                    .expect("Unknown IDescriptorSetLayout implementation");
-                v.inner.as_ref()
-            })
-            .collect();
-        let new_desc = PipelineLayoutDesc {
-            set_layouts: &set_layouts,
-            push_constant_blocks: &desc.push_constant_blocks,
-        };
+        let inner =
+            get_as_unwrapped::pipeline_layout_desc(desc, |v| self.inner.create_pipeline_layout(v))?;
 
-        let inner = self.inner.create_pipeline_layout(&new_desc)?;
+        let mut push_constant_blocks = Vec::new();
+        for block in desc.push_constant_blocks {
+            if (block.size % 4) != 0 {
+                return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
+            }
+            push_constant_blocks.push(block.clone());
+        }
+
         let layout = AnyArc::new_cyclic(move |v| ValidationPipelineLayout {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
-            push_constant_blocks: vec![],
+            push_constant_blocks,
         });
         Ok(AnyArc::map::<dyn IPipelineLayout, _>(layout, |v| v))
     }
@@ -291,12 +352,12 @@ impl IDevice for ValidationDevice {
         desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
         let inner = self.inner.create_texture(desc)?;
-        let layout = AnyArc::new_cyclic(move |v| ValidationTexture {
+        let texture = AnyArc::new_cyclic(move |v| ValidationTexture {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
         });
-        Ok(AnyArc::map::<dyn ITexture, _>(layout, |v| v))
+        Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }
 
     // ========================================================================================== //
@@ -307,12 +368,12 @@ impl IDevice for ValidationDevice {
         desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
         let inner = self.inner.create_sampler(desc)?;
-        let layout = AnyArc::new_cyclic(move |v| ValidationSampler {
+        let sampler = AnyArc::new_cyclic(move |v| ValidationSampler {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
         });
-        Ok(AnyArc::map::<dyn ISampler, _>(layout, |v| v))
+        Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
     }
 
     // ========================================================================================== //
@@ -320,12 +381,12 @@ impl IDevice for ValidationDevice {
 
     fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
         let inner = self.inner.create_command_pool()?;
-        let layout = AnyArc::new_cyclic(move |v| ValidationCommandPool {
+        let command_pool = AnyArc::new_cyclic(move |v| ValidationCommandPool {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
         });
-        Ok(AnyArc::map::<dyn ICommandPool, _>(layout, |v| v))
+        Ok(AnyArc::map::<dyn ICommandPool, _>(command_pool, |v| v))
     }
 
     // ========================================================================================== //
@@ -356,23 +417,9 @@ impl IDevice for ValidationDevice {
             .iter()
             .for_each(|v| Self::validate_descriptor_write(v));
 
-        let writes: Vec<DescriptorWriteDesc> = writes
-            .iter()
-            .map(|v| {
-                let mut v = v.clone();
-
-                // Unwrap and validate to get the inner DescriptorSetHandle
-                DescriptorSet::validate(&v.set, None);
-                let inner: NonNull<()> = v.set.clone().into();
-                let inner: NonNull<DescriptorSet> = inner.cast();
-                let inner = inner.as_ref();
-                v.set = inner.inner.clone();
-
-                v
-            })
-            .collect();
-
-        self.inner.update_descriptor_sets(&writes)
+        get_as_unwrapped::descriptor_set_updates(writes, |writes| {
+            self.inner.update_descriptor_sets(writes)
+        })
     }
 
     // ========================================================================================== //

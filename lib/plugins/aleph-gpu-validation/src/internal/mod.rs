@@ -28,6 +28,7 @@
 //
 
 pub mod descriptor_set;
+pub mod get_as_unwrapped;
 
 #[macro_export]
 macro_rules! impl_platform_interface_passthrough {

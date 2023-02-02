@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::internal::get_as_unwrapped;
 use crate::texture::ValidationTexture;
-use crate::ValidationGraphicsPipeline;
+use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout};
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
@@ -54,17 +55,15 @@ impl<'a> IGetPlatformInterface for ValidationEncoder<'a> {
 
 impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
-        if let Some(concrete) = pipeline.query_interface::<ValidationGraphicsPipeline>() {
-            // We need the currently bound pipeline while recording commands to access things like
-            // the pipeline layout for handling binding descriptors.
-            let pipeline = concrete._this.upgrade().unwrap();
+        let pipeline = pipeline
+            .query_interface::<ValidationGraphicsPipeline>()
+            .expect("Unknown IGraphicsPipeline implementation");
 
-            self.inner.bind_graphics_pipeline(pipeline.as_ref());
+        self.inner.bind_graphics_pipeline(pipeline.inner.deref());
 
-            self.bound_graphics_pipeline = Some(pipeline);
-        } else {
-            panic!("Unknown IGraphicsPipeline implementation");
-        }
+        // We need to know if/what pipeline is bound for validation purposes
+        let pipeline = pipeline._this.upgrade().unwrap();
+        self.bound_graphics_pipeline = Some(pipeline);
     }
 
     unsafe fn bind_vertex_buffers(
@@ -72,7 +71,11 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        self.inner.bind_vertex_buffers(first_binding, bindings)
+        let bindings: Vec<_> = bindings
+            .iter()
+            .map(get_as_unwrapped::input_assembly_buffer_binding)
+            .collect();
+        self.inner.bind_vertex_buffers(first_binding, &bindings)
     }
 
     unsafe fn bind_index_buffer(
@@ -80,7 +83,8 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        self.inner.bind_index_buffer(index_type, binding)
+        let binding = get_as_unwrapped::input_assembly_buffer_binding(binding);
+        self.inner.bind_index_buffer(index_type, &binding)
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
@@ -97,8 +101,8 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
         let pipeline = self
             .bound_graphics_pipeline
             .as_ref()
-            .map(|v| v.deref())
-            .unwrap();
+            .unwrap()
+            .deref();
 
         // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
         // the constant block index
@@ -110,7 +114,24 @@ impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
         Self::validate_rendering_attachments(info);
-        self.inner.begin_rendering(info)
+
+        let color_attachments: Vec<RenderingColorAttachmentInfo> = info
+            .color_attachments
+            .iter()
+            .map(get_as_unwrapped::rendering_color_attachment_info)
+            .collect();
+
+        let depth_stencil_attachment = info
+            .depth_stencil_attachment
+            .map(get_as_unwrapped::rendering_depth_stencil_attachment_info);
+
+        let info = BeginRenderingInfo {
+            layer_count: info.layer_count,
+            color_attachments: &color_attachments,
+            depth_stencil_attachment: depth_stencil_attachment.as_ref(),
+        };
+
+        self.inner.begin_rendering(&info)
     }
 
     unsafe fn end_rendering(&mut self) {
@@ -154,8 +175,19 @@ impl<'a> IComputeEncoder for ValidationEncoder<'a> {
         first_set: u32,
         sets: &[DescriptorSetHandle],
     ) {
+        let pipeline_layout = pipeline_layout
+            .query_interface::<ValidationPipelineLayout>()
+            .expect("Unknown IPipelineLayout Interface")
+            .inner
+            .deref();
+
+        let sets: Vec<_> = sets
+            .iter()
+            .map(|v| get_as_unwrapped::descriptor_set_handle(v, None))
+            .collect();
+
         self.inner
-            .bind_descriptor_sets(pipeline_layout, bind_point, first_set, sets)
+            .bind_descriptor_sets(pipeline_layout, bind_point, first_set, &sets)
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
@@ -177,8 +209,18 @@ impl<'a> ITransferEncoder for ValidationEncoder<'a> {
                 &v.subresource_range,
             );
         });
+
+        let buffer_barriers: Vec<_> = buffer_barriers
+            .iter()
+            .map(get_as_unwrapped::buffer_barrier)
+            .collect();
+        let texture_barriers: Vec<_> = texture_barriers
+            .iter()
+            .map(get_as_unwrapped::texture_barrier)
+            .collect();
+
         self.inner
-            .resource_barrier(global_barriers, buffer_barriers, texture_barriers)
+            .resource_barrier(global_barriers, &buffer_barriers, &texture_barriers)
     }
 
     unsafe fn copy_buffer_regions(
@@ -187,6 +229,8 @@ impl<'a> ITransferEncoder for ValidationEncoder<'a> {
         dst: &dyn IBuffer,
         regions: &[BufferCopyRegion],
     ) {
+        let src = get_as_unwrapped::buffer(src);
+        let dst = get_as_unwrapped::buffer(dst);
         self.inner.copy_buffer_regions(src, dst, regions)
     }
 
@@ -197,6 +241,8 @@ impl<'a> ITransferEncoder for ValidationEncoder<'a> {
         dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
+        let src = get_as_unwrapped::buffer(src);
+        let dst = get_as_unwrapped::texture(dst);
         self.inner
             .copy_buffer_to_texture(src, dst, dst_layout, regions);
     }

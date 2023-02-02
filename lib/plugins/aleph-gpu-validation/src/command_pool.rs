@@ -58,7 +58,13 @@ impl ICommandPool for ValidationCommandPool {
     }
 
     fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        self.inner.create_command_list()
+        let inner = self.inner.create_command_list()?;
+        let list = Box::new(ValidationCommandList {
+            _pool: self._this.upgrade().unwrap(),
+            inner,
+            list_type: QueueType::General,
+        });
+        Ok(list)
     }
 }
 

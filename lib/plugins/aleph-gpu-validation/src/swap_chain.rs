@@ -29,10 +29,13 @@
 
 use crate::device::ValidationDevice;
 use crate::surface::ValidationSurface;
+use crate::ValidationTexture;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{
     AcquireImageError, INamedObject, ISwapChain, ITexture, QueueType, SwapChainConfiguration,
 };
+use parking_lot::Mutex;
+use std::ops::DerefMut;
 
 pub struct ValidationSwapChain {
     pub(crate) _this: AnyWeak<Self>,
@@ -40,6 +43,7 @@ pub struct ValidationSwapChain {
     pub(crate) _surface: AnyArc<ValidationSurface>,
     pub(crate) inner: AnyArc<dyn ISwapChain>,
     pub(crate) queue_support: QueueType,
+    pub(crate) current_image: Mutex<Option<AnyArc<ValidationTexture>>>,
 }
 
 interfaces::any::declare_interfaces!(ValidationSwapChain, [ISwapChain]);
@@ -72,11 +76,25 @@ impl ISwapChain for ValidationSwapChain {
     }
 
     unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-        self.inner.acquire_image()
+        // Acquire and wrap the inner image
+        let inner = self.inner.acquire_image()?;
+        let image = AnyArc::new_cyclic(move |v| ValidationTexture {
+            _this: v.clone(),
+            _device: self._device.clone(),
+            inner,
+        });
+
+        // Cache the newly fetched image so we can hand the object out from 'get_current_image'
+        let mut lock = self.current_image.lock();
+        let current = lock.deref_mut();
+        *current = Some(image.clone());
+
+        Ok(AnyArc::map::<dyn ITexture, _>(image, |v| v))
     }
 
     fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {
-        self.inner.get_current_image()
+        let image = self.current_image.lock().clone();
+        image.map(|v| AnyArc::map::<dyn ITexture, _>(v, |v| v))
     }
 }
 
