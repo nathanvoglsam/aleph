@@ -52,6 +52,7 @@ mod plugin {
     use crate::context_provider::ContextProvider;
     use interfaces::any::{declare_interfaces, AnyArc, IAny};
     use interfaces::gpu::IContextProvider;
+    use interfaces::make_plugin_description_for_crate;
     use interfaces::plugin::{
         IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
     };
@@ -67,13 +68,7 @@ mod plugin {
 
     impl IPlugin for PluginGpuVulkan {
         fn get_description(&self) -> PluginDescription {
-            PluginDescription {
-                name: "PluginGpuVulkan".to_string(),
-                description: "The aleph-engine Vulkan RHI backend".to_string(),
-                major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-                minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-                patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
-            }
+            make_plugin_description_for_crate!()
         }
 
         fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {

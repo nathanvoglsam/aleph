@@ -34,6 +34,7 @@ extern crate egui_demo_lib;
 
 use aleph::egui::IEguiContextProvider;
 use aleph::interfaces::console::IDebugConsoleProvider;
+use aleph::interfaces::make_plugin_description_for_crate;
 use aleph::interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
@@ -50,13 +51,7 @@ impl PluginGameLogic {
 
 impl IPlugin for PluginGameLogic {
     fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginGameLogic".to_string(),
-            description: "The game logic implementation for test-game".to_string(),
-            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
-        }
+        make_plugin_description_for_crate!()
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {

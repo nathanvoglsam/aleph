@@ -31,6 +31,7 @@ use crate::traits::{EguiContextProvider, EguiRenderData};
 use crate::{IEguiContextProvider, IEguiRenderData, RenderData};
 use egui::ClippedPrimitive;
 use interfaces::any::{AnyArc, IAny};
+use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::{
     IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider, IMouseProvider,
     IWindowProvider,
@@ -52,13 +53,7 @@ impl PluginEgui {
 
 impl IPlugin for PluginEgui {
     fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginEgui".to_string(),
-            description: "Plugin that integrates egui".to_string(),
-            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
-        }
+        make_plugin_description_for_crate!()
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {

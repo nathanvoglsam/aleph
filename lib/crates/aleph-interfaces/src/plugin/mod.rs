@@ -255,3 +255,34 @@ impl dyn IPluginRegistrar {
         self.__must_update_after(TypeId::of::<T>())
     }
 }
+
+///
+/// This utility macro will generate an initializer for a [PluginDescription] that will capture and
+/// initialize all the fields from the invoking crate's cargo metadata.
+///
+/// Specifically this will generate the following:
+/// ```{ignore}
+/// PluginDescription {
+///      name: env!("CARGO_PKG_NAME").to_string(),
+///      description: env!("CARGO_PKG_DESCRIPTION").to_string(),
+///      major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+///      minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+///      patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+///  }
+/// ```
+///
+/// This has to be a macro as the 'env!' macros need to be resolved in the calling crate instead of
+/// this crate as otherwise the cargo env vars will contain the wrong values (for this crate).
+///
+#[macro_export]
+macro_rules! make_plugin_description_for_crate {
+    () => {
+        $crate::plugin::PluginDescription {
+            name: env!("CARGO_PKG_NAME").to_string(),
+            description: env!("CARGO_PKG_DESCRIPTION").to_string(),
+            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+        }
+    };
+}

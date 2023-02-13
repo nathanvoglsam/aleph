@@ -34,6 +34,7 @@ use aleph_label::Label;
 use aleph_log::LevelFilter;
 use interfaces::any::{AnyArc, IAny};
 use interfaces::console::{DebugConsole, IDebugConsoleProvider};
+use interfaces::make_plugin_description_for_crate;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
@@ -123,13 +124,7 @@ impl Default for PluginCore {
 
 impl IPlugin for PluginCore {
     fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginCore".to_string(),
-            description: "Foundational plugin that provides core level interfaces".to_string(),
-            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
-        }
+        make_plugin_description_for_crate!()
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {

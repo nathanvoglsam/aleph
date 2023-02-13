@@ -33,6 +33,7 @@ use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, Format, IAdapter, IContextProvider, IDevice, ISwapChain,
     PresentationMode, QueueType, SwapChainConfiguration,
 };
+use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
@@ -58,13 +59,7 @@ impl PluginRender {
 
 impl IPlugin for PluginRender {
     fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginRenderDX12".to_string(),
-            description: "A render plugin implemented with dx12".to_string(),
-            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
-        }
+        make_plugin_description_for_crate!()
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {

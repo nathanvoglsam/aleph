@@ -30,6 +30,7 @@
 use crate::frame_timer::FrameTimerImpl;
 use crate::provider::ProviderImpl;
 use interfaces::any::{AnyArc, IAny};
+use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::IFrameTimerProvider;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
@@ -47,13 +48,7 @@ impl PluginPlatformHeadless {
 
 impl IPlugin for PluginPlatformHeadless {
     fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginPlatformHeadless".to_string(),
-            description: "A platform abstraction layer for running headless".to_string(),
-            major_version: 0,
-            minor_version: 1,
-            patch_version: 0,
-        }
+        make_plugin_description_for_crate!()
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {

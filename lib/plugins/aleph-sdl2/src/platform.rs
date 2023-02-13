@@ -35,6 +35,7 @@ use crate::mouse::MouseImpl;
 use crate::provider::ProviderImpl;
 use crate::window::{WindowImpl, WindowState};
 use interfaces::any::{AnyArc, IAny};
+use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
@@ -110,13 +111,7 @@ impl Drop for PluginPlatformSDL2 {
 
 impl IPlugin for PluginPlatformSDL2 {
     fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginPlatformSDL2".to_string(),
-            description: "A platform abstraction layer implemented with SDL2".to_string(),
-            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
-        }
+        make_plugin_description_for_crate!()
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
