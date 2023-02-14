@@ -210,9 +210,6 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
         let mut color_attachments = Vec::with_capacity(info.color_attachments.len());
 
-        #[cfg(debug_assertions)]
-        Self::validate_rendering_attachments(info);
-
         for attachment in info.color_attachments {
             let image = attachment
                 .image

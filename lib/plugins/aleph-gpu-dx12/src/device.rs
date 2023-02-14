@@ -1191,9 +1191,6 @@ impl Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_set(&self, set_write: &DescriptorWriteDesc) {
-        #[cfg(debug_assertions)]
-        Self::validate_descriptor_write(set_write);
-
         let set = DescriptorSet::ref_from_handle(&set_write.set);
         let set_layout = set._layout.deref();
         let binding_layout = set_layout

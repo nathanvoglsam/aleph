@@ -127,6 +127,7 @@ impl SwapChain {
         // bugs anyway.
         self.device.wait_idle();
 
+        // TODO: Should this be done in the validation layer?
         #[cfg(debug_assertions)]
         {
             // Assert that we have the only reference to the swap chain textures. D3D12 requires
