@@ -1196,7 +1196,10 @@ impl Device {
 
         let set = DescriptorSet::ref_from_handle(&set_write.set);
         let set_layout = set._layout.deref();
-        let binding_layout = set_layout.get_binding_info(set_write.binding).unwrap().layout;
+        let binding_layout = set_layout
+            .get_binding_info(set_write.binding)
+            .unwrap()
+            .layout;
 
         match set_write.writes {
             DescriptorWrites::Sampler(writes) => {
