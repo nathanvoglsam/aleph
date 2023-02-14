@@ -291,6 +291,15 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
+        regions.iter().for_each(|v| {
+            let desc = dst.desc();
+            let dst = dst
+                .query_interface::<ValidationTexture>()
+                .expect("Unknown ITexture Implementation");
+            Self::validate_buffer_to_texture_copy_buffer_layout(desc.format, v);
+            Self::validate_buffer_to_texture_copy_dest_region(dst, desc.format, v)
+        });
+
         let src = get_as_unwrapped::buffer(src);
         let dst = get_as_unwrapped::texture(dst);
         self.inner
@@ -348,8 +357,8 @@ impl<T: ?Sized> ValidationEncoder<T> {
     fn validate_buffer_to_texture_copy_dest_region(
         dst: &ValidationTexture,
         format: Format,
-        region: &&BufferToTextureCopyRegion,
-        index: Option<u32>,
+        region: &BufferToTextureCopyRegion,
+        // index: Option<u32>,
     ) {
         let dst_maximum = region.dst.origin.maximum_with_extent(&region.dst.extent);
         debug_assert!(
@@ -365,11 +374,11 @@ impl<T: ?Sized> ValidationEncoder<T> {
             "Destination region must not exceed destination depth"
         );
         debug_assert!(
-            index.is_some(),
+            format.is_aspect_compatible(region.dst.aspect.as_flag()),
             "Invalid format ({:#?}) and image aspect ({:#?}) combination",
             format,
             region.dst.aspect
-        );
+        )
     }
 
     fn validate_push_constant_data_buffer(data: &[u8], block: &PushConstantBlock) {
