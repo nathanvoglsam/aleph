@@ -58,40 +58,6 @@ declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);
 impl DescriptorSetLayout {
     /// Internal function
     ///
-    /// Queries whether the given descriptor binding is filled by a static sampler.
-    ///
-    /// This would be used by validation to check if users try to write into static sampler
-    /// descriptors.
-    pub fn is_binding_static_sampler(&self, binding: u32) -> Option<bool> {
-        self.get_binding_info(binding).map(|v| v.is_static_sampler)
-    }
-
-    /// Internal function
-    ///
-    /// Queries the type of descriptor contained in the given binding.
-    ///
-    /// This would would be used for deducing the descriptor increment size when writing
-    /// descriptors. It may also be used for validation, to check if the user is writing the correct
-    /// type of descriptors.
-    pub fn get_binding_type(&self, binding: u32) -> Option<DescriptorType> {
-        self.get_binding_info(binding).map(|v| v.r#type)
-    }
-
-    /// Internal function
-    ///
-    /// Queries the layout for the given descriptor set binding, in this descriptor set layout.
-    ///
-    /// This would typically be combined with a [crate::descriptor_pool::DescriptorSet] to compute
-    /// the GPU and CPU addresses for writing descriptors. It may also be used by validation to
-    /// check if the user is writing within the binding's bounds (i.e. not writing outside of a
-    /// descriptor array's bounds).
-    ///
-    pub fn get_binding_layout(&self, binding: u32) -> Option<DescriptorBindingLayout> {
-        self.get_binding_info(binding).map(|v| v.layout.clone())
-    }
-
-    /// Internal function
-    ///
     /// Queries the binding metadata for the given binding index.
     pub fn get_binding_info(&self, binding: u32) -> Option<DescriptorBindingInfo> {
         self.binding_info.get(&binding).cloned()

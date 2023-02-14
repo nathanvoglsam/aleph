@@ -147,52 +147,6 @@ impl DescriptorPool {
         DescriptorSetHandle::from_raw(handle)
     }
 
-    fn validate_set_handle(&self, set: &DescriptorSetHandle) {
-        // Validate that a DescriptorSetHandle contains a correctly aligned pointer. This may help
-        // catch when someone is passing in bad handles
-        let align = core::mem::align_of::<DescriptorSet>();
-        let set = set.clone();
-        let set = unsafe { core::mem::transmute::<_, NonNull<DescriptorSet>>(set) };
-
-        // This should also never happen in practice, but can help flag when people are doing
-        // naughty bit casts and passing bad pointers in.
-        if !align.is_power_of_two() {
-            panic!("is_aligned_to: align is not a power-of-two");
-        }
-        debug_assert!(
-            (set.as_ptr() as usize) & align - 1 == 0,
-            "DescriptorSetHandle contains badly-aligned pointer"
-        );
-
-        // If the pool is empty it's impossible for any handles to be from this particular pool.
-        // This should never happen as we never allow empty descriptor pools.
-        debug_assert!(
-            self.set_objects.is_empty(),
-            "The DescriptorSet pool is empty, no handle can be valid"
-        );
-
-        let sets_base = self.set_objects.as_ptr();
-        let sets_end = self
-            .set_objects
-            .as_ptr()
-            .wrapping_add(self.set_objects.len());
-
-        // This should never happen, but we check for completeness sake.
-        debug_assert!(
-            sets_base < sets_end,
-            "The DescriptorSet pool has overflowed the address space"
-        );
-
-        // Checks if the given descriptor set was allocated by this pool by checking if the pointer
-        // comes from inside the set_objects array bounds.
-        let set_ptr = set.as_ptr() as *const DescriptorSet;
-        let set_oob = set_ptr < sets_base || set_ptr > sets_end;
-        debug_assert!(
-            !set_oob,
-            "The DescriptorSetHandle points outside of the pool, this handle is from another pool"
-        );
-    }
-
     fn get_optional_handles_for_arena(
         arena: Option<&DescriptorArena>,
         set_index: u32,
@@ -247,9 +201,6 @@ impl IDescriptorPool for DescriptorPool {
 
     unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
         for set in sets {
-            #[cfg(debug_assertions)]
-            self.validate_set_handle(set);
-
             self.free_list.push(set.clone());
         }
     }
