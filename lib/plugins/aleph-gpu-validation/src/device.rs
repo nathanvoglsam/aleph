@@ -447,7 +447,7 @@ impl ValidationDevice {
                     | DescriptorType::Sampler
                     | DescriptorType::InputAttachment
             ) {
-                debug_assert!(
+                assert!(
                     !binding.allow_writes,
                     "DescriptorType ConstantBuffer or Sampler can't allow writes"
                 )
@@ -475,7 +475,7 @@ impl ValidationDevice {
                 let starts_inside_outer = inner_start >= outer_start && inner_start <= outer_end;
                 let ends_inside_outer = inner_end >= outer_start && inner_end <= outer_end;
 
-                debug_assert!(
+                assert!(
                     !starts_inside_outer || !ends_inside_outer,
                     "It is invalid for two descriptor binding ranges to intersect"
                 );
@@ -508,7 +508,7 @@ impl ValidationDevice {
 
         // Check if the caller is trying to write into a static sampler binding, which is
         // categorically invalid.
-        debug_assert_eq!(
+        assert_eq!(
             info.is_static_sampler, false,
             "Writing a descriptor into a static sampler binding is invalid."
         );
@@ -518,7 +518,7 @@ impl ValidationDevice {
         // set layout.
         let expected_binding_type = info.r#type;
         let actual_binding_type = write.descriptor_type;
-        debug_assert_eq!(
+        assert_eq!(
             expected_binding_type, actual_binding_type,
             "It is invalid to write the incorrect descriptor type into a binding."
         );
@@ -526,7 +526,7 @@ impl ValidationDevice {
         // Check if the user is trying to write more than 1 descriptor into a non-array binding.
         let is_array_binding = info.descriptor_count.is_some();
         let num_writes = write.writes.len();
-        debug_assert!(
+        assert!(
             !is_array_binding && num_writes <= 1,
             "It is invalid to write more than 1 descriptor into a non-array binding."
         );
@@ -536,58 +536,58 @@ impl ValidationDevice {
         let write_end = write_start + write.writes.len();
         let binding_start = 0;
         let binding_end = info.descriptor_count.map(NonZeroU32::get).unwrap_or(1) as usize;
-        debug_assert!(
+        assert!(
             write_start >= binding_start && write_start < binding_end,
             "It is invalid to write outside of an array binding's bounds."
         );
-        debug_assert!(
+        assert!(
             write_end > binding_start && write_end <= binding_end,
             "It is invalid to write outside of an array binding's bounds."
         );
 
         // Check that the declared descriptor type matches the DescriptorWrites variant provided.
         match write.descriptor_type {
-            DescriptorType::Sampler => debug_assert!(
+            DescriptorType::Sampler => assert!(
                 matches!(write.writes, DescriptorWrites::Sampler(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::SampledImage => debug_assert!(
+            DescriptorType::SampledImage => assert!(
                 matches!(write.writes, DescriptorWrites::Image(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::StorageImage => debug_assert!(
+            DescriptorType::StorageImage => assert!(
                 matches!(write.writes, DescriptorWrites::Image(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::UniformTexelBuffer => debug_assert!(
+            DescriptorType::UniformTexelBuffer => assert!(
                 matches!(write.writes, DescriptorWrites::TexelBuffer(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::StorageTexelBuffer => debug_assert!(
+            DescriptorType::StorageTexelBuffer => assert!(
                 matches!(write.writes, DescriptorWrites::TexelBuffer(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::UniformBuffer => debug_assert!(
+            DescriptorType::UniformBuffer => assert!(
                 matches!(write.writes, DescriptorWrites::Buffer(_)),
                 "Invalid DescriptorWrites type' for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::StorageBuffer => debug_assert!(
+            DescriptorType::StorageBuffer => assert!(
                 matches!(write.writes, DescriptorWrites::Buffer(_)),
                 "Invalid DescriptorWrites type' for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::StructuredBuffer => debug_assert!(
+            DescriptorType::StructuredBuffer => assert!(
                 matches!(write.writes, DescriptorWrites::StructuredBuffer(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::InputAttachment => debug_assert!(
+            DescriptorType::InputAttachment => assert!(
                 matches!(write.writes, DescriptorWrites::InputAttachment(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type

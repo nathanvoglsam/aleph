@@ -141,14 +141,14 @@ impl ValidationDescriptorPool {
         if !align.is_power_of_two() {
             panic!("is_aligned_to: align is not a power-of-two");
         }
-        debug_assert!(
+        assert!(
             (set.as_ptr() as usize) & align - 1 == 0,
             "DescriptorSetHandle contains badly-aligned pointer"
         );
 
         // If the pool is empty it's impossible for any handles to be from this particular pool.
         // This should never happen as we never allow empty descriptor pools.
-        debug_assert!(
+        assert!(
             self.set_objects.is_empty(),
             "The DescriptorSet pool is empty, no handle can be valid"
         );
@@ -160,7 +160,7 @@ impl ValidationDescriptorPool {
             .wrapping_add(self.set_objects.len());
 
         // This should never happen, but we check for completeness sake.
-        debug_assert!(
+        assert!(
             sets_base < sets_end,
             "The DescriptorSet pool has overflowed the address space"
         );
@@ -169,7 +169,7 @@ impl ValidationDescriptorPool {
         // comes from inside the set_objects array bounds.
         let set_ptr = set.as_ptr() as *const DescriptorSet;
         let set_oob = set_ptr < sets_base || set_ptr > sets_end;
-        debug_assert!(
+        assert!(
             !set_oob,
             "The DescriptorSetHandle points outside of the pool, this handle is from another pool"
         );
@@ -196,7 +196,7 @@ impl IDescriptorPool for ValidationDescriptorPool {
         // Safety: set_index is guaranteed to be < set_objects.len() because it is created from
         // set_objects.len() immediately prior to pushing a new element in set_objects.
         let handle = unsafe {
-            debug_assert!(
+            assert!(
                 set_index < self.set_objects.len(),
                 "'set_index' is out of bounds"
             );

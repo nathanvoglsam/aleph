@@ -322,19 +322,19 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
 impl<T: ?Sized> ValidationEncoder<T> {
     fn validate_aspect_against_texture_format(format: Format, aspect: &TextureAspect) {
         if aspect.contains(TextureAspect::COLOR) {
-            debug_assert!(
+            assert!(
                 !format.is_depth_stencil(),
                 "Texture of format {} has no 'Color' aspect",
                 format
             );
         } else if aspect.contains(TextureAspect::DEPTH_STENCIL) {
-            debug_assert!(
+            assert!(
                 format.is_depth() && format.is_stencil(),
                 "Texture of format {} lacks both 'Depth' and 'Stencil' aspect",
                 format
             );
         } else if aspect.intersects(TextureAspect::DEPTH_STENCIL) {
-            debug_assert!(
+            assert!(
                 format.is_depth_stencil(),
                 "Texture of format {} has no 'Depth' or 'Stencil' aspect",
                 format
@@ -348,10 +348,10 @@ impl<T: ?Sized> ValidationEncoder<T> {
     ) {
         let bytes_per_element = dst_format.bytes_per_element();
         let row_pitch = region.src.extent.width * bytes_per_element;
-        debug_assert!(region.src.extent.width > 0, "extent.width must be > 0");
-        debug_assert!(region.src.extent.height > 0, "extent.height must be > 0");
-        debug_assert!(region.src.extent.depth > 0, "extent.depth must be > 0");
-        debug_assert!(row_pitch % 256 == 0, "row_pitch must be a multiple of 256");
+        assert!(region.src.extent.width > 0, "extent.width must be > 0");
+        assert!(region.src.extent.height > 0, "extent.height must be > 0");
+        assert!(region.src.extent.depth > 0, "extent.depth must be > 0");
+        assert!(row_pitch % 256 == 0, "row_pitch must be a multiple of 256");
     }
 
     fn validate_buffer_to_texture_copy_dest_region(
@@ -361,19 +361,19 @@ impl<T: ?Sized> ValidationEncoder<T> {
         // index: Option<u32>,
     ) {
         let dst_maximum = region.dst.origin.maximum_with_extent(&region.dst.extent);
-        debug_assert!(
+        assert!(
             dst_maximum.x <= dst.desc().width,
             "Destination region must not exceed destination width"
         );
-        debug_assert!(
+        assert!(
             dst_maximum.y <= dst.desc().height,
             "Destination region must not exceed destination height"
         );
-        debug_assert!(
+        assert!(
             dst_maximum.z <= dst.desc().depth,
             "Destination region must not exceed destination depth"
         );
-        debug_assert!(
+        assert!(
             format.is_aspect_compatible(region.dst.aspect.as_flag()),
             "Invalid format ({:#?}) and image aspect ({:#?}) combination",
             format,
@@ -382,12 +382,12 @@ impl<T: ?Sized> ValidationEncoder<T> {
     }
 
     fn validate_push_constant_data_buffer(data: &[u8], block: &PushConstantBlock) {
-        debug_assert!(
+        assert!(
             data.len() % 4 == 0,
             "Push Constant data must have len divisible by 4"
         );
 
-        debug_assert!(
+        assert!(
             data.len() <= block.size as usize,
             "Push Constant data larger than the specified block"
         );
@@ -398,7 +398,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
         set: &TextureSubResourceSet,
     ) {
         Self::validate_aspect_against_texture_format(desc.format, &set.aspect);
-        debug_assert!(!set.aspect.is_empty(), "Specified an empty aspect mask");
+        assert!(!set.aspect.is_empty(), "Specified an empty aspect mask");
         Self::validate_sub_resource_mips_and_slices_against_texture(desc, set);
     }
 
@@ -406,34 +406,34 @@ impl<T: ?Sized> ValidationEncoder<T> {
         desc: &TextureDesc,
         set: &TextureSubResourceSet,
     ) {
-        debug_assert!(
+        assert!(
             desc.array_size >= set.num_array_slices,
             "Specified access to more array slices than a texture has"
         );
-        debug_assert!(
+        assert!(
             desc.mip_levels >= set.num_mip_levels,
             "Specified access to more mip levels than a texture has"
         );
-        debug_assert!(
+        assert!(
             desc.array_size > set.base_array_slice,
             "Specified access to texture array outside of array bounds"
         );
-        debug_assert!(
+        assert!(
             desc.mip_levels > set.base_mip_level,
             "Specified access to mip levels outside of mip level bounds"
         );
-        debug_assert!(
+        assert!(
             desc.array_size >= set.base_array_slice + set.num_array_slices,
             "Specified access to texture array outside of array bounds"
         );
-        debug_assert!(
+        assert!(
             desc.mip_levels >= set.base_mip_level + set.num_mip_levels,
             "Specified access to mip levels outside of mip level bounds"
         );
     }
 
     fn validate_rendering_attachments(info: &BeginRenderingInfo) {
-        debug_assert!(
+        assert!(
             !info.color_attachments.is_empty() || info.depth_stencil_attachment.is_some(),
             "Trying to begin rendering rendering without specifying any attachments"
         );
@@ -443,11 +443,11 @@ impl<T: ?Sized> ValidationEncoder<T> {
                 .image
                 .query_interface::<ValidationTexture>()
                 .expect("Unknown ITexture implementation");
-            debug_assert!(
+            assert!(
                 image.desc().is_render_target,
                 "Used texture as render target when created with 'is_render_target = false'"
             );
-            debug_assert!(
+            assert!(
                 !image.desc().format.is_depth_stencil(),
                 "Used depth/stencil texture as a color attachment",
             );
@@ -475,8 +475,8 @@ impl<T: ?Sized> ValidationEncoder<T> {
         // Reduce the sizes to a single item, asserting that they are all equal
         let attachment_size =
             attachment_sizes.reduce(|(a_width, a_height), (b_width, b_height)| {
-                debug_assert_eq!(a_width, b_width, "All attachment widths must be equal");
-                debug_assert_eq!(a_height, b_height, "All attachment heights must be equal");
+                assert_eq!(a_width, b_width, "All attachment widths must be equal");
+                assert_eq!(a_height, b_height, "All attachment heights must be equal");
                 (a_width, a_height)
             });
 
@@ -486,12 +486,12 @@ impl<T: ?Sized> ValidationEncoder<T> {
                 .query_interface::<ValidationTexture>()
                 .expect("Unknown ITexture implementation");
 
-            debug_assert!(
+            assert!(
                 image.desc().is_render_target,
                 "Used texture as depth/stencil target when created with 'is_render_target = false'"
             );
 
-            debug_assert!(
+            assert!(
                 image.desc().format.is_depth_stencil(),
                 "Used non depth/stencil texture as a depth/stencil attachment",
             );
@@ -510,8 +510,8 @@ impl<T: ?Sized> ValidationEncoder<T> {
             // Check that the depth stencil dimensions match the color dimensions
             if let Some((width, height)) = attachment_size {
                 let (d_width, d_height) = (image.desc().width, image.desc().height);
-                debug_assert_eq!(width, d_width, "All attachment widths must be equal");
-                debug_assert_eq!(height, d_height, "All attachment heights must be equal");
+                assert_eq!(width, d_width, "All attachment widths must be equal");
+                assert_eq!(height, d_height, "All attachment heights must be equal");
             }
         }
     }
