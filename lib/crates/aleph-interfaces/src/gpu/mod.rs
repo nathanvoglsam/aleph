@@ -1761,22 +1761,22 @@ impl Default for Format {
 
 impl Format {
     /// Returns whether the format is a depth texture format
-    pub fn is_depth(&self) -> bool {
+    pub const fn is_depth(&self) -> bool {
         matches!(self, Self::Depth32Float)
     }
 
     /// Returns whether the format is a stencil texture format
-    pub fn is_stencil(&self) -> bool {
+    pub const fn is_stencil(&self) -> bool {
         matches!(self, Self::Depth24Stencil8)
     }
 
     /// Returns whether the format is a depth/stencil texture format
-    pub fn is_depth_stencil(&self) -> bool {
+    pub const fn is_depth_stencil(&self) -> bool {
         matches!(self, Self::Depth32Float | Self::Depth24Stencil8)
     }
 
     /// Returns whether the format is a float format
-    pub fn is_float(&self) -> bool {
+    pub const fn is_float(&self) -> bool {
         matches!(
             self,
             Self::R16Float
@@ -1791,7 +1791,7 @@ impl Format {
     }
 
     /// Returns whether the format is a signed-int format
-    pub fn is_sint(&self) -> bool {
+    pub const fn is_sint(&self) -> bool {
         matches!(
             self,
             Self::R8Sint
@@ -1807,7 +1807,7 @@ impl Format {
     }
 
     /// Returns whether the format is an unsigned-int format
-    pub fn is_uint(&self) -> bool {
+    pub const fn is_uint(&self) -> bool {
         matches!(
             self,
             Self::R8Uint
@@ -1823,7 +1823,7 @@ impl Format {
     }
 
     /// Returns whether the format is a signed-normalized-int format
-    pub fn is_snorm(&self) -> bool {
+    pub const fn is_snorm(&self) -> bool {
         matches!(
             self,
             Self::R8Snorm
@@ -1836,7 +1836,7 @@ impl Format {
     }
 
     /// Returns whether the format is an unsigned-normalized-int format
-    pub fn is_unorm(&self) -> bool {
+    pub const fn is_unorm(&self) -> bool {
         matches!(
             self,
             Self::R8Unorm
@@ -1857,7 +1857,7 @@ impl Format {
     /// For standard formats this will return the number of bytes per texel, for block formats this
     /// will return the number of bytes per block (block formats smallest 'element' is a single
     /// block).
-    pub fn bytes_per_element(&self) -> u32 {
+    pub const fn bytes_per_element(&self) -> u32 {
         match self {
             Format::R8Unorm => 1,
             Format::R8Snorm => 1,
@@ -1902,6 +1902,62 @@ impl Format {
             Format::Rgba32Float => 16,
             Format::Depth32Float => 4,
             Format::Depth24Stencil8 => 4,
+        }
+    }
+
+    pub const fn has_aspect(&self, aspect: TextureCopyAspect) -> bool {
+        self.aspect_mask().contains(aspect.as_flag())
+    }
+
+    pub const fn is_aspect_compatible(&self, aspect: TextureAspect) -> bool {
+        self.aspect_mask().contains(aspect)
+    }
+
+    pub const fn aspect_mask(&self) -> TextureAspect {
+        match self {
+            Format::R8Unorm
+            | Format::R8Snorm
+            | Format::R8Uint
+            | Format::R8Sint
+            | Format::R16Uint
+            | Format::R16Sint
+            | Format::R16Unorm
+            | Format::R16Snorm
+            | Format::R16Float
+            | Format::Rg8Unorm
+            | Format::Rg8Snorm
+            | Format::Rg8Uint
+            | Format::Rg8Sint
+            | Format::R32Uint
+            | Format::R32Sint
+            | Format::R32Float
+            | Format::Rg16Uint
+            | Format::Rg16Sint
+            | Format::Rg16Unorm
+            | Format::Rg16Snorm
+            | Format::Rg16Float
+            | Format::Rgba8Unorm
+            | Format::Rgba8UnormSrgb
+            | Format::Rgba8Snorm
+            | Format::Rgba8Uint
+            | Format::Rgba8Sint
+            | Format::Bgra8Unorm
+            | Format::Bgra8UnormSrgb
+            | Format::Rgb10a2Unorm
+            | Format::Rg11b10Float
+            | Format::Rg32Uint
+            | Format::Rg32Sint
+            | Format::Rg32Float
+            | Format::Rgba16Uint
+            | Format::Rgba16Sint
+            | Format::Rgba16Unorm
+            | Format::Rgba16Snorm
+            | Format::Rgba16Float
+            | Format::Rgba32Uint
+            | Format::Rgba32Sint
+            | Format::Rgba32Float => TextureAspect::COLOR,
+            Format::Depth32Float => TextureAspect::DEPTH,
+            Format::Depth24Stencil8 => TextureAspect::DEPTH_STENCIL,
         }
     }
 }
@@ -2019,23 +2075,6 @@ pub enum TextureDimension {
 impl Default for TextureDimension {
     fn default() -> Self {
         Self::Texture1D
-    }
-}
-
-bitflags! {
-    #[derive(Default)]
-    pub struct TextureAspect: u32 {
-        /// Bit that specifies the 'color' aspect of a texture
-        const COLOR = 0b00000001;
-
-        /// Bit that specifies the 'depth' aspect of a texture
-        const DEPTH = 0b00000010;
-
-        /// Bit that specifies the 'stencil' aspect of a texture
-        const STENCIL = 0b00000100;
-
-        /// A combination of the [TextureAspect::DEPTH] and [TextureAspect::STENCIL] flags
-        const DEPTH_STENCIL = Self::DEPTH.bits | Self::STENCIL.bits;
     }
 }
 
@@ -3406,9 +3445,44 @@ pub struct TextureCopyInfo {
 /// An enumeration of all possible 'image aspects' for a texture copy
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum TextureCopyAspect {
+    // TODO: Pick a better name
     Color,
     Depth,
     Stencil,
+}
+
+impl TextureCopyAspect {
+    /// Returns the [TextureAspect] flag for the aspect the variant `self` represents.
+    pub const fn as_flag(self) -> TextureAspect {
+        match self {
+            TextureCopyAspect::Color => TextureAspect::COLOR,
+            TextureCopyAspect::Depth => TextureAspect::DEPTH,
+            TextureCopyAspect::Stencil => TextureAspect::STENCIL,
+        }
+    }
+}
+
+impl Into<TextureAspect> for TextureCopyAspect {
+    fn into(self) -> TextureAspect {
+        self.as_flag()
+    }
+}
+
+bitflags! {
+    #[derive(Default)]
+    pub struct TextureAspect: u32 {
+        /// Bit that specifies the 'color' aspect of a texture
+        const COLOR = 0b00000001;
+
+        /// Bit that specifies the 'depth' aspect of a texture
+        const DEPTH = 0b00000010;
+
+        /// Bit that specifies the 'stencil' aspect of a texture
+        const STENCIL = 0b00000100;
+
+        /// A combination of the [TextureAspect::DEPTH] and [TextureAspect::STENCIL] flags
+        const DEPTH_STENCIL = Self::DEPTH.bits | Self::STENCIL.bits;
+    }
 }
 
 /// A description of a buffer to texture copy operation
