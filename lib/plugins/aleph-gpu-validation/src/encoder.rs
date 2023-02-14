@@ -49,7 +49,10 @@ impl<'a, T: IGetPlatformInterface + ?Sized + 'a> IGetPlatformInterface for Valid
 
 impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder<T> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         let pipeline = pipeline
             .query_interface::<ValidationGraphicsPipeline>()
@@ -67,7 +70,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         let bindings: Vec<_> = bindings
             .iter()
@@ -81,26 +87,38 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         let binding = get_as_unwrapped::input_assembly_buffer_binding(binding);
         self.inner.bind_index_buffer(index_type, &binding)
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         self.inner.set_viewports(viewports)
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         self.inner.set_scissor_rects(rects)
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         // This command can't work without a bound pipeline, we need the pipeline layout so we can
         // validate the binding data
@@ -115,7 +133,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         Self::validate_rendering_attachments(info);
 
@@ -139,7 +160,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
     }
 
     unsafe fn end_rendering(&mut self) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         self.inner.end_rendering();
     }
@@ -151,7 +175,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         first_vertex: u32,
         first_instance: u32,
     ) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         self.inner
             .draw(vertex_count, instance_count, first_vertex, first_instance)
@@ -165,7 +192,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        assert!(matches!(self.list_type, QueueType::General), "Called a general command on a non-general capable command list");
+        assert!(
+            matches!(self.list_type, QueueType::General),
+            "Called a general command on a non-general capable command list"
+        );
 
         self.inner.draw_indexed(
             index_count,
@@ -185,7 +215,10 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         first_set: u32,
         sets: &[DescriptorSetHandle],
     ) {
-        assert!(matches!(self.list_type, QueueType::General | QueueType::Compute), "Called a compute command on a non-compute command list");
+        assert!(
+            matches!(self.list_type, QueueType::General | QueueType::Compute),
+            "Called a compute command on a non-compute command list"
+        );
 
         let pipeline_layout = pipeline_layout
             .query_interface::<ValidationPipelineLayout>()
@@ -203,7 +236,10 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        assert!(matches!(self.list_type, QueueType::General | QueueType::Compute), "Called a compute command on a non-compute command list");
+        assert!(
+            matches!(self.list_type, QueueType::General | QueueType::Compute),
+            "Called a compute command on a non-compute command list"
+        );
 
         self.inner
             .dispatch(group_count_x, group_count_y, group_count_z)
