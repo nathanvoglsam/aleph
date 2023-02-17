@@ -308,6 +308,8 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
+        // TODO: implement validation for create_pipeline_layout
+
         // Unwrap the objects in 'set_layouts' into a new list so the layer below gets the correct
         // object implementations
         let inner =
