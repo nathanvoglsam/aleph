@@ -90,9 +90,6 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         // Update the state for input binding strides. These get read when binding vertex
         // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
         // d3d12 takes them in 'IASetVertexBuffers'.
-        //
-        // TODO: Consider whether we just expose the parameter in the call and pipeline
-        //       creation.
         self.input_binding_strides = concrete.input_binding_strides;
 
         // We need the currently bound pipeline while recording commands to access things like

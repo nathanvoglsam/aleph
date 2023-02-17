@@ -389,8 +389,6 @@ impl IDevice for Device {
         &self,
         desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        // TODO: implement validation for create_pipeline_layout
-
         // Bundle up all the table layouts after we patch them for use in this layout as we need to
         // extend the lifetime for the call to create the root signature
         let mut resource_tables = Vec::with_capacity(desc.set_layouts.len());

@@ -37,8 +37,6 @@ use std::any::TypeId;
 use std::ptr::NonNull;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
-// TODO: generational index + extra indirection for validating use-after-free for descriptor sets
-
 pub struct DescriptorPool {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) _layout: AnyArc<DescriptorSetLayout>,
