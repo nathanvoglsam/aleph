@@ -82,12 +82,12 @@ impl IBuffer for ValidationBuffer {
     }
 
     fn flush_range(&self, offset: u64, len: u64) {
-        // TODO: validate offset and len are in bounds
+        self.validate_range(offset, len);
         self.inner.flush_range(offset, len);
     }
 
     fn invalidate_range(&self, offset: u64, len: u64) {
-        // TODO: validate offset and len are in bounds
+        self.validate_range(offset, len);
         self.inner.invalidate_range(offset, len);
     }
 }
@@ -95,5 +95,13 @@ impl IBuffer for ValidationBuffer {
 impl INamedObject for ValidationBuffer {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
+    }
+}
+
+impl ValidationBuffer {
+    pub fn validate_range(&self, offset: u64, len: u64) {
+        let size = self.desc().size;
+        assert!(offset < size, "Invalidation range (offset: {}, len: {}) outside buffer size ({})", offset, len, size);
+        assert!(offset + len < size, "Invalidation range (offset: {}, len: {}) outside buffer size ({})", offset, len, size);
     }
 }
