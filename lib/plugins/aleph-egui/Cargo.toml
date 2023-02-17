@@ -37,8 +37,6 @@ license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-egui/"
 readme = "README.md"
-## TODO: keywords = ["macro", "utility"]
-## TODO: categories = ["development-tools::build-utils"]
 edition = "2021"
 
 [dependencies]
