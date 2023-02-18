@@ -29,7 +29,7 @@
 
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, INamedObject, IShader, ShaderType};
+use interfaces::gpu::{IGetPlatformInterface, IShader, ShaderType};
 use std::any::TypeId;
 
 pub struct Shader {
@@ -88,11 +88,5 @@ impl IGetPlatformInterface for Shader {
         } else {
             None
         }
-    }
-}
-
-impl INamedObject for Shader {
-    fn set_name(&self, _name: &str) {
-        // Nothing to do on d3d12, d3d12 doesn't have an object to represent shader blobs
     }
 }

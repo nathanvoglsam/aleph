@@ -28,10 +28,9 @@
 //
 
 use crate::device::Device;
-use crate::internal::set_name::set_name;
 use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, INamedObject, IPipelineLayout};
+use interfaces::gpu::{IGetPlatformInterface, IPipelineLayout};
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -61,12 +60,6 @@ impl IPipelineLayout for PipelineLayout {
 impl IGetPlatformInterface for PipelineLayout {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         try_clone_value_into_slot::<ID3D12RootSignature>(&self.root_signature, out, target)
-    }
-}
-
-impl INamedObject for PipelineLayout {
-    fn set_name(&self, name: &str) {
-        set_name(&self.root_signature, name).unwrap();
     }
 }
 

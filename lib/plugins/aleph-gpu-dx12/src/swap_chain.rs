@@ -35,8 +35,8 @@ use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AcquireImageError, IDevice, IGetPlatformInterface, INamedObject, ISwapChain, ITexture,
-    QueueType, SwapChainConfiguration, TextureDesc, TextureDimension,
+    AcquireImageError, IDevice, IGetPlatformInterface, ISwapChain, ITexture, QueueType,
+    SwapChainConfiguration, TextureDesc, TextureDimension,
 };
 use parking_lot::{Mutex, RwLock};
 use std::any::TypeId;
@@ -91,6 +91,7 @@ impl SwapChain {
                 allow_unordered_access: false,
                 allow_cube_face: false,
                 is_render_target: true,
+                name: None,
             };
             let dxgi_format = state.dxgi_format;
             let texture = AnyArc::new_cyclic(move |v| Texture {
@@ -98,6 +99,7 @@ impl SwapChain {
                 device: self.device.clone(),
                 resource,
                 desc,
+                name: None,
                 dxgi_format,
                 rtv_cache: RwLock::new(HashMap::new()),
                 dsv_cache: RwLock::new(HashMap::new()),
@@ -310,12 +312,5 @@ impl ISwapChainExt for SwapChain {
 
     fn get_raw_view_format(&self) -> DXGI_FORMAT {
         self.inner.lock().dxgi_view_format
-    }
-}
-
-impl INamedObject for SwapChain {
-    fn set_name(&self, _name: &str) {
-        // Nothing to do on d3d12 as swap chains can't be named. SwapChain comes from dxgi which
-        // doesn't implement D3D12Object.
     }
 }

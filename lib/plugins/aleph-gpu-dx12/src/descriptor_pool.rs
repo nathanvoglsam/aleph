@@ -238,9 +238,3 @@ impl IGetPlatformInterface for DescriptorPool {
         None
     }
 }
-
-impl INamedObject for DescriptorPool {
-    fn set_name(&self, _name: &str) {
-        // Nothing to do, no API object for this exists in d3d12
-    }
-}

@@ -34,8 +34,7 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    CommandListCreateError, ICommandList, ICommandPool, IGetPlatformInterface, INamedObject,
-    QueueType,
+    CommandListCreateError, ICommandList, ICommandPool, IGetPlatformInterface, QueueType,
 };
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -116,11 +115,5 @@ impl ICommandPool for CommandPool {
 impl IGetPlatformInterface for CommandPool {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         None
-    }
-}
-
-impl INamedObject for CommandPool {
-    fn set_name(&self, _name: &str) {
-        // No matching object to name
     }
 }

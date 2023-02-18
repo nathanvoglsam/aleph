@@ -30,12 +30,11 @@
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
-use crate::internal::set_name::set_name;
 use crate::internal::{calc_subresource_index, plane_layer_for_aspect, try_clone_value_into_slot};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
-    Format, IGetPlatformInterface, INamedObject, ITexture, TextureCopyAspect, TextureDesc,
-    TextureDimension, TextureSubResourceSet,
+    Format, IGetPlatformInterface, ITexture, TextureCopyAspect, TextureDesc, TextureDimension,
+    TextureSubResourceSet,
 };
 use parking_lot::RwLock;
 use std::any::TypeId;
@@ -50,7 +49,8 @@ pub struct Texture {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
     pub(crate) resource: ID3D12Resource,
-    pub(crate) desc: TextureDesc,
+    pub(crate) desc: TextureDesc<'static>,
+    pub(crate) name: Option<String>,
     pub(crate) dxgi_format: DXGI_FORMAT,
     pub(crate) rtv_cache: RwLock<CacheViewCPU>,
     pub(crate) dsv_cache: RwLock<CacheViewCPU>,
@@ -337,8 +337,10 @@ impl ITexture for Texture {
         self.this.weak_count()
     }
 
-    fn desc(&self) -> &TextureDesc {
-        &self.desc
+    fn desc(&self) -> TextureDesc {
+        let mut desc = self.desc.clone();
+        desc.name = self.name.as_ref().map(String::as_str);
+        desc
     }
 }
 
@@ -351,12 +353,6 @@ impl IGetPlatformInterface for Texture {
             return Some(());
         }
         None
-    }
-}
-
-impl INamedObject for Texture {
-    fn set_name(&self, name: &str) {
-        set_name(&self.resource, name).unwrap()
     }
 }
 

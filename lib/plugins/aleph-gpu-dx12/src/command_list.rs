@@ -36,7 +36,7 @@ use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, IGetPlatformInterface,
-    INamedObject, ITransferEncoder, QueueType,
+    ITransferEncoder, QueueType,
 };
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -118,7 +118,7 @@ impl IGetPlatformInterface for CommandList {
     }
 }
 
-impl INamedObject for CommandList {
+impl CommandList {
     fn set_name(&self, name: &str) {
         set_name(&self.allocator, name).unwrap();
         set_name(&self.list, name).unwrap();

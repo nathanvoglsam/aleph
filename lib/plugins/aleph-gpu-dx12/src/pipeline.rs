@@ -28,11 +28,10 @@
 //
 
 use crate::device::Device;
-use crate::internal::set_name::set_name;
 use crate::internal::try_clone_value_into_slot;
 use crate::pipeline_layout::PipelineLayout;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IComputePipeline, IGetPlatformInterface, IGraphicsPipeline, INamedObject};
+use interfaces::gpu::{IComputePipeline, IGetPlatformInterface, IGraphicsPipeline};
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -75,12 +74,6 @@ impl IGetPlatformInterface for GraphicsPipeline {
     }
 }
 
-impl INamedObject for GraphicsPipeline {
-    fn set_name(&self, name: &str) {
-        set_name(&self.pipeline, name).unwrap();
-    }
-}
-
 pub struct ComputePipeline {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
@@ -106,11 +99,5 @@ impl IComputePipeline for ComputePipeline {
 impl IGetPlatformInterface for ComputePipeline {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         try_clone_value_into_slot(&self.pipeline, out, target)
-    }
-}
-
-impl INamedObject for ComputePipeline {
-    fn set_name(&self, name: &str) {
-        set_name(&self.pipeline, name).unwrap();
     }
 }

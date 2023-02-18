@@ -180,7 +180,8 @@ impl IDevice for Device {
         let blend_state = Self::translate_blend_state_desc(desc.blend_state);
         let builder = builder.blend_state(blend_state);
 
-        let builder = builder.sample_mask(u32::MAX); // TODO: Why?
+        // TODO: we should be able to expose this in the API
+        let builder = builder.sample_mask(u32::MAX);
 
         // Render target format translation is straight forward, just convert the formats and add
         let rtv_formats: Vec<DXGI_FORMAT> = desc
@@ -209,6 +210,10 @@ impl IDevice for Device {
                 .CreatePipelineState(&state_stream_ref)
                 .map_err(|v| anyhow!(v))?
         };
+
+        if let Some(name) = desc.name {
+            set_name(&pipeline, name).unwrap();
+        }
 
         let pipeline = AnyArc::new_cyclic(move |v| GraphicsPipeline {
             this: v.clone(),
@@ -261,6 +266,10 @@ impl IDevice for Device {
                 .CreateComputePipelineState(&pipeline_desc)
                 .map_err(|v| anyhow!(v))?
         };
+
+        if let Some(name) = desc.name {
+            set_name(&pipeline, name).unwrap();
+        }
 
         let pipeline = AnyArc::new_cyclic(move |v| ComputePipeline {
             this: v.clone(),
@@ -482,6 +491,10 @@ impl IDevice for Device {
                 .map_err(|v| anyhow!(v))?
         };
 
+        if let Some(name) = desc.name {
+            set_name(&root_signature, name).unwrap();
+        }
+
         let pipeline_layout = AnyArc::new_cyclic(move |v| PipelineLayout {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
@@ -552,12 +565,20 @@ impl IDevice for Device {
         let base_address =
             unsafe { GPUDescriptorHandle::try_from(resource.GetGPUVirtualAddress()).unwrap() };
 
+        if let Some(name) = desc.name {
+            set_name(&resource, name).unwrap();
+        }
+
+        let name = desc.name.map(str::to_string);
+        let desc = desc.clone().strip_name();
+
         let buffer = AnyArc::new_cyclic(move |v| Buffer {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             resource,
             base_address,
-            desc: desc.clone(),
+            desc,
+            name,
         });
         Ok(AnyArc::map::<dyn IBuffer, _>(buffer, |v| v))
     }
@@ -601,11 +622,19 @@ impl IDevice for Device {
                 .map_err(|v| anyhow!(v))?
         };
 
+        if let Some(name) = desc.name {
+            set_name(&resource, name).unwrap();
+        }
+
+        let name = desc.name.map(str::to_string);
+        let desc = desc.clone().strip_name();
+
         let texture = AnyArc::new_cyclic(move |v| Texture {
             this: v.clone(),
             device: self.this.upgrade().unwrap(),
             resource,
-            desc: desc.clone(),
+            desc,
+            name,
             dxgi_format: resource_desc.Format,
             rtv_cache: RwLock::new(HashMap::new()),
             dsv_cache: RwLock::new(HashMap::new()),
@@ -651,10 +680,14 @@ impl IDevice for Device {
             self.device.CreateSampler(&desc, sampler_handle.into());
         }
 
+        let name = desc.name.map(str::to_string);
+        let desc = desc.clone().strip_name();
+
         let sampler = AnyArc::new_cyclic(move |v| Sampler {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
-            desc: desc.clone(),
+            desc,
+            name,
             sampler_handle,
         });
         Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
@@ -729,8 +762,11 @@ impl Device {
                 ShaderType::Domain => builder.domain_shader(&shader.data),
                 ShaderType::Geometry => builder.geometry_shader(&shader.data),
                 ShaderType::Fragment => builder.pixel_shader(&shader.data),
-                ShaderType::Compute | ShaderType::Amplification | ShaderType::Mesh => {
-                    todo!()
+                ShaderType::Compute => {
+                    panic!("Can't bind a compute shader to a graphics pipeline")
+                }
+                ShaderType::Amplification | ShaderType::Mesh => {
+                    todo!("Missing implementation for amplification and mesh shaders")
                 }
             }
         }
@@ -1795,11 +1831,5 @@ unsafe impl Sync for Device {}
 impl IGetPlatformInterface for Device {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         try_clone_value_into_slot::<ID3D12Device10>(&self.device, out, target)
-    }
-}
-
-impl INamedObject for Device {
-    fn set_name(&self, name: &str) {
-        set_name(&self.device, name).unwrap();
     }
 }

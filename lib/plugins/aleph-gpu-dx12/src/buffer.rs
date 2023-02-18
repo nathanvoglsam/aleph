@@ -28,11 +28,10 @@
 //
 
 use crate::device::Device;
-use crate::internal::set_name::set_name;
 use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{BufferDesc, IBuffer, IGetPlatformInterface, INamedObject, ResourceMapError};
+use interfaces::gpu::{BufferDesc, IBuffer, IGetPlatformInterface, ResourceMapError};
 use std::any::TypeId;
 use std::ptr::NonNull;
 use windows::utils::GPUDescriptorHandle;
@@ -43,7 +42,8 @@ pub struct Buffer {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) resource: ID3D12Resource,
     pub(crate) base_address: GPUDescriptorHandle,
-    pub(crate) desc: BufferDesc,
+    pub(crate) desc: BufferDesc<'static>,
+    pub(crate) name: Option<String>,
 }
 
 declare_interfaces!(Buffer, [IBuffer]);
@@ -61,8 +61,10 @@ impl IBuffer for Buffer {
         self.this.weak_count()
     }
 
-    fn desc(&self) -> &BufferDesc {
-        &self.desc
+    fn desc(&self) -> BufferDesc {
+        let mut desc = self.desc.clone();
+        desc.name = self.name.as_ref().map(String::as_str);
+        desc
     }
 
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
@@ -95,11 +97,5 @@ impl IBuffer for Buffer {
 impl IGetPlatformInterface for Buffer {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         try_clone_value_into_slot(&self.resource, out, target)
-    }
-}
-
-impl INamedObject for Buffer {
-    fn set_name(&self, name: &str) {
-        set_name(&self.resource, name).unwrap();
     }
 }

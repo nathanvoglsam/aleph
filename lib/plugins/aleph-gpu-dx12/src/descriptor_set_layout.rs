@@ -36,7 +36,7 @@
 
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{DescriptorType, IDescriptorSetLayout, IGetPlatformInterface, INamedObject};
+use interfaces::gpu::{DescriptorType, IDescriptorSetLayout, IGetPlatformInterface};
 use std::any::TypeId;
 use std::collections::HashMap;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -81,12 +81,6 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
 impl IGetPlatformInterface for DescriptorSetLayout {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         None
-    }
-}
-
-impl INamedObject for DescriptorSetLayout {
-    fn set_name(&self, _name: &str) {
-        // Nothing to do, no API object for this exists in d3d12
     }
 }
 

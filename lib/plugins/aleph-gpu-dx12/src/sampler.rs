@@ -29,14 +29,15 @@
 
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, INamedObject, ISampler, SamplerDesc};
+use interfaces::gpu::{IGetPlatformInterface, ISampler, SamplerDesc};
 use std::any::TypeId;
 use windows::utils::CPUDescriptorHandle;
 
 pub struct Sampler {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) desc: SamplerDesc,
+    pub(crate) desc: SamplerDesc<'static>,
+    pub(crate) name: Option<String>,
     pub(crate) sampler_handle: CPUDescriptorHandle,
 }
 
@@ -55,8 +56,10 @@ impl ISampler for Sampler {
         self.this.weak_count()
     }
 
-    fn desc(&self) -> &SamplerDesc {
-        &self.desc
+    fn desc(&self) -> SamplerDesc {
+        let mut desc = self.desc.clone();
+        desc.name = self.name.as_ref().map(String::as_str);
+        desc
     }
 }
 
@@ -72,11 +75,5 @@ impl Drop for Sampler {
 impl IGetPlatformInterface for Sampler {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         None
-    }
-}
-
-impl INamedObject for Sampler {
-    fn set_name(&self, _name: &str) {
-        // No D3D12 object to name
     }
 }
