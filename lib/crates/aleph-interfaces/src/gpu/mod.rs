@@ -153,16 +153,6 @@ impl<T: IGetPlatformInterface + ?Sized> GetPlatformInterface for T {
     }
 }
 
-/// A common trait definition shared by any API object that can be given a name for debug purposes.
-///
-/// Vulkan and D3D12 have debug functionality that allow the user to attach a string name to API
-/// objects for debug purposes. This exposes that functionality.
-pub trait INamedObject {
-    /// Attach a name to the API object for debug purposes. This will show up associated with the
-    /// underlying backend API objects in graphics debuggers
-    fn set_name(&self, name: &str);
-}
-
 //
 //
 // _________________________________________________________________________________________________
@@ -246,7 +236,7 @@ pub trait IAdapter: IAny + IGetPlatformInterface + Send + Sync {
 // _________________________________________________________________________________________________
 // Device
 
-pub trait IDevice: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IDevice);
 
     /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
@@ -284,6 +274,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
         &self,
         layout: &dyn IDescriptorSetLayout,
         num_sets: u32,
+        // TODO: desc struct so we can add a name
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError>;
 
     fn create_pipeline_layout(
@@ -303,6 +294,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
         desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError>;
 
+    // TODO: add a desc for the debug name
     fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError>;
 
     fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>>;
@@ -347,7 +339,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
 // _________________________________________________________________________________________________
 // Queue
 
-pub trait IQueue: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IQueue);
 
     /// Returns the set of per-queue properties associated with this queue.
@@ -433,7 +425,7 @@ pub trait IQueue: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
 // _________________________________________________________________________________________________
 // SwapChain
 
-pub trait ISwapChain: IAny + IGetPlatformInterface + INamedObject {
+pub trait ISwapChain: IAny + IGetPlatformInterface {
     any_arc_trait_utils_decl!(ISwapChain);
 
     /// Returns whether support operations are supported on the given queue.
@@ -465,11 +457,11 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + INamedObject {
 // _________________________________________________________________________________________________
 // Resources
 
-pub trait IBuffer: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IBuffer: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IBuffer);
 
     /// Returns a [BufferDesc] that describes this [IBuffer]
-    fn desc(&self) -> &BufferDesc;
+    fn desc(&self) -> BufferDesc;
 
     /// Returns a host virtual address pointer to a region of a mappable buffer.
     ///
@@ -504,18 +496,18 @@ pub trait IBuffer: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
     fn invalidate_range(&self, offset: u64, len: u64);
 }
 
-pub trait ITexture: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ITexture);
 
     /// Returns a [TextureDesc] that describes this [ITexture]
-    fn desc(&self) -> &TextureDesc;
+    fn desc(&self) -> TextureDesc;
 }
 
-pub trait ISampler: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ISampler);
 
     /// Returns a [SamplerDesc] that describes this [ISampler]
-    fn desc(&self) -> &SamplerDesc;
+    fn desc(&self) -> SamplerDesc;
 }
 
 //
@@ -648,7 +640,7 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
 // _________________________________________________________________________________________________
 // Command Lists
 
-pub trait ICommandList: IAny + IGetPlatformInterface + INamedObject + Send {
+pub trait ICommandList: IAny + IGetPlatformInterface + Send {
     fn begin_general<'a>(
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError>;
@@ -667,7 +659,7 @@ pub trait ICommandList: IAny + IGetPlatformInterface + INamedObject + Send {
 // _________________________________________________________________________________________________
 // CommandPool
 
-pub trait ICommandPool: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait ICommandPool: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ICommandPool);
 
     fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError>;
@@ -707,7 +699,7 @@ impl Into<NonNull<()>> for DescriptorSetHandle {
 
 unsafe impl Send for DescriptorSetHandle {}
 
-pub trait IDescriptorPool: IAny + IGetPlatformInterface + INamedObject + Send {
+pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
     /// Allocates a new individual descriptor set from the pool.
     ///
     /// May fail if the pool's backing memory has been exhausted.
@@ -767,7 +759,7 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + INamedObject + Send {
     unsafe fn reset(&mut self);
 }
 
-pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IDescriptorSetLayout);
 }
 
@@ -776,15 +768,15 @@ pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + INamedObject + Se
 // _________________________________________________________________________________________________
 // Pipeline Objects
 
-pub trait IPipelineLayout: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IPipelineLayout: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IPipelineLayout);
 }
 
-pub trait IGraphicsPipeline: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IGraphicsPipeline: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IGraphicsPipeline);
 }
 
-pub trait IComputePipeline: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IComputePipeline: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IComputePipeline);
 }
 
@@ -793,7 +785,7 @@ pub trait IComputePipeline: IAny + IGetPlatformInterface + INamedObject + Send +
 // _________________________________________________________________________________________________
 // Shader
 
-pub trait IShader: IAny + IGetPlatformInterface + INamedObject + Send + Sync {
+pub trait IShader: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IShader);
 
     fn shader_type(&self) -> ShaderType;
@@ -2019,7 +2011,7 @@ impl Display for Format {
 
 /// Description object used for creating a new buffer.
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
-pub struct BufferDesc {
+pub struct BufferDesc<'a> {
     /// The size of the buffer in bytes
     pub size: u64,
 
@@ -2052,6 +2044,29 @@ pub struct BufferDesc {
 
     /// Enables the buffer to store a constructed and ready to use rt acceleration structure
     pub is_accel_struct_storage: bool,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
+}
+
+impl<'a> BufferDesc<'a> {
+    /// A utility function that strips the debug name from the description so we can get a static
+    /// lifetime on the desc
+    pub fn strip_name(self) -> BufferDesc<'static> {
+        BufferDesc::<'static> {
+            size: self.size,
+            cpu_access: self.cpu_access,
+            allow_unordered_access: self.allow_unordered_access,
+            allow_texel_buffer: self.allow_texel_buffer,
+            is_vertex_buffer: self.is_vertex_buffer,
+            is_index_buffer: self.is_index_buffer,
+            is_constant_buffer: self.is_constant_buffer,
+            is_indirect_draw_args: self.is_indirect_draw_args,
+            is_accel_struct_build_input: self.is_accel_struct_build_input,
+            is_accel_struct_storage: self.is_accel_struct_storage,
+            name: None,
+        }
+    }
 }
 
 //
@@ -2116,7 +2131,7 @@ impl Display for OptimalClearValue {
 
 /// Description object used for creating a new texture.
 #[derive(Clone, PartialEq, Debug, Default)]
-pub struct TextureDesc {
+pub struct TextureDesc<'a> {
     /// The width of the texture
     pub width: u32,
 
@@ -2164,6 +2179,32 @@ pub struct TextureDesc {
 
     /// Enables the texture to be used as a render target
     pub is_render_target: bool,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
+}
+
+impl<'a> TextureDesc<'a> {
+    /// A utility function that strips the debug name from the description so we can get a static
+    /// lifetime on the desc
+    pub fn strip_name(self) -> TextureDesc<'static> {
+        TextureDesc::<'static> {
+            width: self.width,
+            height: self.height,
+            depth: self.depth,
+            format: self.format,
+            dimension: self.dimension,
+            clear_value: self.clear_value,
+            array_size: self.array_size,
+            mip_levels: self.mip_levels,
+            sample_count: self.sample_count,
+            sample_quality: self.sample_quality,
+            allow_unordered_access: self.allow_unordered_access,
+            allow_cube_face: self.allow_cube_face,
+            is_render_target: self.is_render_target,
+            name: None,
+        }
+    }
 }
 
 //
@@ -2224,7 +2265,7 @@ impl Default for SamplerBorderColor {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SamplerDesc {
+pub struct SamplerDesc<'a> {
     pub min_filter: SamplerFilter,
     pub mag_filter: SamplerFilter,
     pub mip_filter: SamplerMipFilter,
@@ -2238,9 +2279,12 @@ pub struct SamplerDesc {
     pub max_anisotropy: u32,
     pub compare_op: Option<CompareOp>,
     pub border_color: SamplerBorderColor,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
 }
 
-impl Default for SamplerDesc {
+impl<'a> Default for SamplerDesc<'a> {
     fn default() -> Self {
         Self {
             min_filter: SamplerFilter::Linear,
@@ -2256,6 +2300,30 @@ impl Default for SamplerDesc {
             max_anisotropy: 0,
             compare_op: Default::default(),
             border_color: Default::default(),
+            name: None,
+        }
+    }
+}
+
+impl<'a> SamplerDesc<'a> {
+    /// A utility function that strips the debug name from the description so we can get a static
+    /// lifetime on the desc
+    pub fn strip_name(self) -> SamplerDesc<'static> {
+        SamplerDesc::<'static> {
+            min_filter: self.min_filter,
+            mag_filter: self.mag_filter,
+            mip_filter: self.mip_filter,
+            address_mode_u: self.address_mode_u,
+            address_mode_v: self.address_mode_v,
+            address_mode_w: self.address_mode_w,
+            lod_bias: self.lod_bias,
+            min_lod: self.min_lod,
+            max_lod: self.max_lod,
+            enable_anisotropy: self.enable_anisotropy,
+            max_anisotropy: self.max_anisotropy,
+            compare_op: self.compare_op,
+            border_color: self.border_color,
+            name: None,
         }
     }
 }
@@ -2305,6 +2373,9 @@ pub struct ShaderOptions<'a> {
 
     /// The name of the entry point function that will be married to the shader module
     pub entry_point: &'a str,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
 }
 
 //
@@ -2397,6 +2468,9 @@ pub struct DescriptorSetLayoutDesc<'a> {
 
     /// A list of all bindings that are a part of this descriptor set layout
     pub items: &'a [DescriptorSetLayoutBinding<'a>],
+
+    /// The name of the object
+    pub name: Option<&'a str>,
 }
 
 /// A description of a descriptor write. Specifies the target descriptor set, binding index and
@@ -2609,6 +2683,9 @@ pub struct PipelineLayoutDesc<'a> {
 
     /// Specifies the set of push constant ranges that the pipeline layout will hold.
     pub push_constant_blocks: &'a [PushConstantBlock],
+
+    /// The name of the object
+    pub name: Option<&'a str>,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -3079,6 +3156,9 @@ pub struct GraphicsPipelineDesc<'a> {
 
     /// Specifies the format of the depth stencil attachment, if any.
     pub depth_stencil_format: Option<Format>,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
 }
 
 #[derive(Clone)]
@@ -3089,6 +3169,9 @@ pub struct ComputePipelineDesc<'a> {
     /// The description of binding locations used by both the pipeline and descriptor sets used with
     /// the pipeline
     pub pipeline_layout: &'a dyn IPipelineLayout,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
 }
 
 //
