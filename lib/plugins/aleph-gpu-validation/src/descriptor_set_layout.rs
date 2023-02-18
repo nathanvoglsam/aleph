@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{DescriptorType, IDescriptorSetLayout, INamedObject};
+use interfaces::gpu::{DescriptorType, IDescriptorSetLayout};
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 
@@ -64,12 +64,6 @@ impl IDescriptorSetLayout for ValidationDescriptorSetLayout {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
-    }
-}
-
-impl INamedObject for ValidationDescriptorSetLayout {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }
 

@@ -30,8 +30,8 @@
 use crate::{ValidationCommandList, ValidationSwapChain};
 use interfaces::any::{box_downcast, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
-    Color, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError, QueueProperties,
-    QueueSubmitError, QueueType,
+    Color, ICommandList, IQueue, ISwapChain, QueuePresentError, QueueProperties, QueueSubmitError,
+    QueueType,
 };
 
 pub struct ValidationQueue {
@@ -108,11 +108,5 @@ impl IQueue for ValidationQueue {
     unsafe fn end_event(&mut self) {
         unimplemented!();
         // self.inner.end_event();
-    }
-}
-
-impl INamedObject for ValidationQueue {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, IPipelineLayout, PushConstantBlock};
+use interfaces::gpu::{IPipelineLayout, PushConstantBlock};
 
 pub struct ValidationPipelineLayout {
     pub(crate) _this: AnyWeak<Self>,
@@ -53,11 +53,5 @@ impl IPipelineLayout for ValidationPipelineLayout {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
-    }
-}
-
-impl INamedObject for ValidationPipelineLayout {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

@@ -31,8 +31,8 @@ use crate::command_pool::ValidationCommandPool;
 use crate::encoder::ValidationEncoder;
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
-    CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, INamedObject,
-    ITransferEncoder, QueueType,
+    CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, ITransferEncoder,
+    QueueType,
 };
 
 pub struct ValidationCommandList {
@@ -85,11 +85,5 @@ impl ICommandList for ValidationCommandList {
         });
         let encoder: Box<dyn ITransferEncoder + 'a> = encoder;
         Ok(encoder)
-    }
-}
-
-impl INamedObject for ValidationCommandList {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

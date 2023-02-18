@@ -255,7 +255,7 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
     ) {
         texture_barriers.iter().for_each(|v| {
             Self::validate_sub_resource_range_against_texture(
-                v.texture.desc(),
+                &v.texture.desc(),
                 &v.subresource_range,
             );
         });
@@ -452,7 +452,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
                 "Used depth/stencil texture as a color attachment",
             );
             Self::validate_sub_resource_mips_and_slices_against_texture(
-                image.desc(),
+                &image.desc(),
                 &TextureSubResourceSet {
                     aspect: Default::default(),
                     base_mip_level: v.mip_level,
@@ -497,7 +497,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
             );
 
             Self::validate_sub_resource_mips_and_slices_against_texture(
-                image.desc(),
+                &image.desc(),
                 &TextureSubResourceSet {
                     aspect: Default::default(),
                     base_mip_level: v.mip_level,

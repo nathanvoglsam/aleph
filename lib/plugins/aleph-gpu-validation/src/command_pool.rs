@@ -30,9 +30,7 @@
 use crate::device::ValidationDevice;
 use crate::ValidationCommandList;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{
-    CommandListCreateError, ICommandList, ICommandPool, INamedObject, QueueType,
-};
+use interfaces::gpu::{CommandListCreateError, ICommandList, ICommandPool, QueueType};
 
 pub struct ValidationCommandPool {
     pub(crate) _this: AnyWeak<Self>,
@@ -65,11 +63,5 @@ impl ICommandPool for ValidationCommandPool {
             list_type: QueueType::General,
         });
         Ok(list)
-    }
-}
-
-impl INamedObject for ValidationCommandPool {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

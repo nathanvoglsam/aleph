@@ -31,9 +31,7 @@ use crate::device::ValidationDevice;
 use crate::surface::ValidationSurface;
 use crate::ValidationTexture;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{
-    AcquireImageError, INamedObject, ISwapChain, ITexture, QueueType, SwapChainConfiguration,
-};
+use interfaces::gpu::{AcquireImageError, ISwapChain, ITexture, QueueType, SwapChainConfiguration};
 use parking_lot::Mutex;
 use std::ops::DerefMut;
 
@@ -95,11 +93,5 @@ impl ISwapChain for ValidationSwapChain {
     fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {
         let image = self.current_image.lock().clone();
         image.map(|v| AnyArc::map::<dyn ITexture, _>(v, |v| v))
-    }
-}
-
-impl INamedObject for ValidationSwapChain {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

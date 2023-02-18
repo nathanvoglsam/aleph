@@ -132,6 +132,7 @@ impl IDevice for ValidationDevice {
             blend_state: &desc.blend_state,
             render_target_formats: &desc.render_target_formats,
             depth_stencil_format: desc.depth_stencil_format,
+            name: desc.name,
         };
 
         let inner = self.inner.create_graphics_pipeline(&new_desc)?;
@@ -164,6 +165,7 @@ impl IDevice for ValidationDevice {
         let new_desc = ComputePipelineDesc {
             shader_module: shader_module.inner.as_ref(),
             pipeline_layout: pipeline_layout.inner.as_ref(),
+            name: desc.name,
         };
 
         let inner = self.inner.create_compute_pipeline(&new_desc)?;
@@ -259,6 +261,7 @@ impl IDevice for ValidationDevice {
         let new_desc = DescriptorSetLayoutDesc {
             visibility: desc.visibility,
             items: items.as_slice(),
+            name: desc.name,
         };
 
         let inner = self.inner.create_descriptor_set_layout(&new_desc)?;
@@ -595,11 +598,5 @@ impl ValidationDevice {
                 write.descriptor_type
             ),
         }
-    }
-}
-
-impl INamedObject for ValidationDevice {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

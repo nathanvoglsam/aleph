@@ -30,7 +30,7 @@
 use crate::device::ValidationDevice;
 use crate::pipeline_layout::ValidationPipelineLayout;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
+use interfaces::gpu::{IComputePipeline, IGraphicsPipeline};
 
 pub struct ValidationGraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,
@@ -57,12 +57,6 @@ impl IGraphicsPipeline for ValidationGraphicsPipeline {
     }
 }
 
-impl INamedObject for ValidationGraphicsPipeline {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
-    }
-}
-
 pub struct ValidationComputePipeline {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
@@ -85,11 +79,5 @@ impl IComputePipeline for ValidationComputePipeline {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
-    }
-}
-
-impl INamedObject for ValidationComputePipeline {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

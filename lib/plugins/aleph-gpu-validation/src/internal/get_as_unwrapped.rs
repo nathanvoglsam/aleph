@@ -99,6 +99,7 @@ pub fn pipeline_layout_desc<Return>(
     let new_desc = PipelineLayoutDesc {
         set_layouts: &set_layouts,
         push_constant_blocks: &desc.push_constant_blocks,
+        name: desc.name,
     };
 
     let v = f(&new_desc);

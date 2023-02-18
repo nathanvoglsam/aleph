@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, IShader, ShaderType};
+use interfaces::gpu::{IShader, ShaderType};
 
 pub struct ValidationShader {
     pub(crate) _this: AnyWeak<Self>,
@@ -61,11 +61,5 @@ impl IShader for ValidationShader {
 
     fn entry_point(&self) -> &str {
         self.inner.entry_point()
-    }
-}
-
-impl INamedObject for ValidationShader {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

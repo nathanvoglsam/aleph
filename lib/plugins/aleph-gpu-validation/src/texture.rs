@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
+use interfaces::gpu::{ITexture, TextureDesc};
 
 pub struct ValidationTexture {
     pub(crate) _this: AnyWeak<Self>,
@@ -54,13 +54,7 @@ impl ITexture for ValidationTexture {
         self._this.weak_count()
     }
 
-    fn desc(&self) -> &TextureDesc {
+    fn desc(&self) -> TextureDesc {
         self.inner.desc()
-    }
-}
-
-impl INamedObject for ValidationTexture {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

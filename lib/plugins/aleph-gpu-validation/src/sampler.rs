@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ISampler, SamplerDesc};
+use interfaces::gpu::{ISampler, SamplerDesc};
 
 pub struct ValidationSampler {
     pub(crate) _this: AnyWeak<Self>,
@@ -54,13 +54,7 @@ impl ISampler for ValidationSampler {
         self._this.weak_count()
     }
 
-    fn desc(&self) -> &SamplerDesc {
+    fn desc(&self) -> SamplerDesc {
         self.inner.desc()
-    }
-}
-
-impl INamedObject for ValidationSampler {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
     }
 }

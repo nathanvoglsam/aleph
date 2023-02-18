@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{BufferDesc, IBuffer, INamedObject, ResourceMapError};
+use interfaces::gpu::{BufferDesc, IBuffer, ResourceMapError};
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -57,7 +57,7 @@ impl IBuffer for ValidationBuffer {
         self._this.weak_count()
     }
 
-    fn desc(&self) -> &BufferDesc {
+    fn desc(&self) -> BufferDesc {
         self.inner.desc()
     }
 
@@ -92,16 +92,22 @@ impl IBuffer for ValidationBuffer {
     }
 }
 
-impl INamedObject for ValidationBuffer {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
-    }
-}
-
 impl ValidationBuffer {
     pub fn validate_range(&self, offset: u64, len: u64) {
         let size = self.desc().size;
-        assert!(offset < size, "Invalidation range (offset: {}, len: {}) outside buffer size ({})", offset, len, size);
-        assert!(offset + len < size, "Invalidation range (offset: {}, len: {}) outside buffer size ({})", offset, len, size);
+        assert!(
+            offset < size,
+            "Invalidation range (offset: {}, len: {}) outside buffer size ({})",
+            offset,
+            len,
+            size
+        );
+        assert!(
+            offset + len < size,
+            "Invalidation range (offset: {}, len: {}) outside buffer size ({})",
+            offset,
+            len,
+            size
+        );
     }
 }

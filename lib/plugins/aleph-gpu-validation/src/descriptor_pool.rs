@@ -241,9 +241,3 @@ impl IDescriptorPool for ValidationDescriptorPool {
         self.inner.reset()
     }
 }
-
-impl INamedObject for ValidationDescriptorPool {
-    fn set_name(&self, name: &str) {
-        self.inner.set_name(name)
-    }
-}
