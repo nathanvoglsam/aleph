@@ -31,7 +31,7 @@ use crate::internal::try_clone_value_into_slot;
 use crate::swap_chain::SwapChain;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, ITexture, TextureDesc};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use std::ffi::CString;
 
