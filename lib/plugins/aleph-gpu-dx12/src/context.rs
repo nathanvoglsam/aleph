@@ -36,10 +36,7 @@ use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::internal::try_clone_value_into_slot;
 use crate::surface::Surface;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
-use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, AdapterTypePreference, AdapterVendor, BackendAPI,
-    IAdapter, IContext, IGetPlatformInterface, ISurface, SurfaceCreateError,
-};
+use interfaces::gpu::*;
 use interfaces::platform::HasRawWindowHandle;
 use parking_lot::Mutex;
 use std::any::TypeId;

@@ -34,10 +34,7 @@ use crate::texture::Texture;
 use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    AcquireImageError, IDevice, IGetPlatformInterface, ISwapChain, ITexture, QueueType,
-    SwapChainConfiguration, TextureDesc, TextureDimension,
-};
+use interfaces::gpu::*;
 use parking_lot::{Mutex, RwLock};
 use std::any::TypeId;
 use std::collections::HashMap;

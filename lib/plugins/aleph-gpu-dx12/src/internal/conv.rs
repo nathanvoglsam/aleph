@@ -27,14 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::gpu::{
-    AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BlendFactor, BlendOp,
-    ColorClearValue, CompareOp, CullMode, DepthStencilClearValue, DescriptorShaderVisibility,
-    Format, FrontFaceOrder, ImageLayout, OptimalClearValue, PolygonMode, PrimitiveTopology,
-    QueueType, RenderingColorAttachmentInfo, RenderingDepthStencilAttachmentInfo,
-    SamplerAddressMode, SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp,
-    TextureAspect, TextureCreateError, TextureDesc, TextureDimension,
-};
+use interfaces::gpu::*;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;

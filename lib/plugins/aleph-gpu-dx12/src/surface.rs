@@ -35,10 +35,7 @@ use crate::swap_chain::{SwapChain, SwapChainState};
 use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    IDevice, IGetPlatformInterface, ISurface, ISwapChain, PresentationMode, QueueType,
-    SwapChainConfiguration, SwapChainCreateError,
-};
+use interfaces::gpu::*;
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use parking_lot::Mutex;
 use std::any::TypeId;

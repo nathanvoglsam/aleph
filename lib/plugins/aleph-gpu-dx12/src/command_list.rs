@@ -34,10 +34,7 @@ use crate::internal::set_name::set_name;
 use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, IGetPlatformInterface,
-    ITransferEncoder, QueueType,
-};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
 

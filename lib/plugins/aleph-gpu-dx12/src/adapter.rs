@@ -40,10 +40,7 @@ use crate::internal::try_clone_value_into_slot;
 use crate::queue::Queue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    AdapterDescription, AdapterVendor, IAdapter, IDevice, IGetPlatformInterface, QueueType,
-    RequestDeviceError,
-};
+use interfaces::gpu::*;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::ops::Deref;

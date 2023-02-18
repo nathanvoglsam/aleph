@@ -34,10 +34,7 @@ use crate::swap_chain::SwapChain;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{box_downcast, declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    Color, Extent3D, ICommandList, IGetPlatformInterface, IQueue, ISwapChain, QueuePresentError,
-    QueueProperties, QueueSubmitError, QueueType,
-};
+use interfaces::gpu::*;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::any::TypeId;
