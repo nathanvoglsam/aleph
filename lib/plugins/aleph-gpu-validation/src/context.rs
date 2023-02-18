@@ -30,9 +30,7 @@
 use crate::adapter::ValidationAdapter;
 use crate::surface::ValidationSurface;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
-use interfaces::gpu::{
-    AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface, SurfaceCreateError,
-};
+use interfaces::gpu::*;
 use interfaces::platform::HasRawWindowHandle;
 
 pub struct ValidationContext {

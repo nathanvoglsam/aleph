@@ -30,9 +30,7 @@
 use crate::context::ValidationContext;
 use crate::{ValidationDevice, ValidationSwapChain};
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
-use interfaces::gpu::{
-    IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError,
-};
+use interfaces::gpu::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct ValidationSurface {

@@ -29,10 +29,7 @@
 
 use crate::{ValidationCommandList, ValidationSwapChain};
 use interfaces::any::{box_downcast, AnyArc, AnyWeak, QueryInterface};
-use interfaces::gpu::{
-    Color, ICommandList, IQueue, ISwapChain, QueuePresentError, QueueProperties, QueueSubmitError,
-    QueueType,
-};
+use interfaces::gpu::*;
 
 pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
