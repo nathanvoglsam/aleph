@@ -31,7 +31,7 @@ use crate::device::Device;
 use crate::internal::try_clone_value_into_slot;
 use crate::pipeline_layout::PipelineLayout;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IComputePipeline, IGetPlatformInterface, IGraphicsPipeline};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;

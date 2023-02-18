@@ -29,7 +29,7 @@
 
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use interfaces::any::AnyArc;
-use interfaces::gpu::DescriptorSetHandle;
+use interfaces::gpu::*;
 use std::ptr::NonNull;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 

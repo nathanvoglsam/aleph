@@ -31,7 +31,7 @@ use crate::device::Device;
 use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{BufferDesc, IBuffer, IGetPlatformInterface, ResourceMapError};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use std::ptr::NonNull;
 use windows::utils::GPUDescriptorHandle;

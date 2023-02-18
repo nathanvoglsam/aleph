@@ -30,7 +30,7 @@
 use crate::device::Device;
 use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, IPipelineLayout};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
 

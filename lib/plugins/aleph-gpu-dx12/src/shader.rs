@@ -29,7 +29,7 @@
 
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, IShader, ShaderType};
+use interfaces::gpu::*;
 use std::any::TypeId;
 
 pub struct Shader {

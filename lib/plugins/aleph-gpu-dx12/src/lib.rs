@@ -63,7 +63,7 @@ pub use shader::ShaderData;
 mod plugin {
     use crate::context_provider::ContextProvider;
     use interfaces::any::{declare_interfaces, AnyArc, IAny};
-    use interfaces::gpu::IContextProvider;
+    use interfaces::gpu::*;
     use interfaces::make_plugin_description_for_crate;
     use interfaces::plugin::{
         IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::gpu::{Format, TextureAspect, TextureCopyAspect};
+use interfaces::gpu::*;
 use std::any::TypeId;
 
 pub mod adapter_description_decoder;
