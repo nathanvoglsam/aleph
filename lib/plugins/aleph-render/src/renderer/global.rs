@@ -59,13 +59,13 @@ impl GlobalObjects {
         let sampler = Self::create_sampler(device);
         let descriptor_set_layout = Self::create_descriptor_set_layout(device, sampler.deref());
         let pipeline_layout = Self::create_root_signature(device, descriptor_set_layout.deref());
-        pipeline_layout.set_name("egui::RootSignature");
 
         let vertex_shader = device
             .create_shader(&ShaderOptions {
                 shader_type: ShaderType::Vertex,
                 data: crate::shaders::egui_vert_shader(),
                 entry_point: "main",
+                name: Some("egui::VertexShader"),
             })
             .unwrap();
 
@@ -74,6 +74,7 @@ impl GlobalObjects {
                 shader_type: ShaderType::Fragment,
                 data: crate::shaders::egui_frag_shader(),
                 entry_point: "main",
+                name: Some("egui::FragmentShader"),
             })
             .unwrap();
 
@@ -83,7 +84,6 @@ impl GlobalObjects {
             vertex_shader.deref(),
             fragment_shader.deref(),
         );
-        graphics_pipeline.set_name("egui::GraphicsPipelineState");
 
         Self {
             sampler,
@@ -138,6 +138,7 @@ impl GlobalObjects {
                     ..Default::default()
                 },
             ],
+            name: Some("egui::DescriptorSetLayout"),
         };
         device
             .create_descriptor_set_layout(&descriptor_set_layout_desc)
@@ -155,6 +156,7 @@ impl GlobalObjects {
                 visibility: DescriptorShaderVisibility::All,
                 size: 8,
             }],
+            name: Some("egui::RootSignature"),
         };
         device
             .create_pipeline_layout(&pipeline_layout_desc)
@@ -233,6 +235,7 @@ impl GlobalObjects {
             blend_state: &blend_state_new,
             render_target_formats: &[Format::Bgra8UnormSrgb],
             depth_stencil_format: None,
+            name: Some("egui::GraphicsPipelineState"),
         };
 
         device

@@ -29,7 +29,7 @@
 
 #![allow(unused)]
 
-use interfaces::gpu::ShaderBinary;
+use interfaces::gpu::*;
 
 pub fn egui_frag_shader() -> ShaderBinary<'static> {
     let bytes = include_bytes!("../shaders/compiled/egui/egui.frag.dxil");
