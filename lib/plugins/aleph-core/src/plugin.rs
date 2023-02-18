@@ -31,7 +31,6 @@ use crate::console_provider::ConsoleProvider;
 use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;
 use aleph_label::Label;
-use log::LevelFilter;
 use interfaces::any::{AnyArc, IAny};
 use interfaces::console::{DebugConsole, IDebugConsoleProvider};
 use interfaces::make_plugin_description_for_crate;
@@ -40,6 +39,7 @@ use interfaces::plugin::{
 };
 use interfaces::schedule::{CoreStage, IScheduleProvider, Schedule, Stage, SystemSchedule};
 use interfaces::world::IWorldProvider;
+use log::LevelFilter;
 use std::any::TypeId;
 use std::io::BufReader;
 use std::net::TcpStream;
