@@ -29,10 +29,7 @@
 
 use crate::renderer::EguiRenderer;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
-use interfaces::gpu::{
-    AdapterRequestOptions, ContextOptions, Format, IAdapter, IContextProvider, IDevice, ISwapChain,
-    PresentationMode, QueueType, SwapChainConfiguration,
-};
+use interfaces::gpu::*;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
 use interfaces::plugin::*;

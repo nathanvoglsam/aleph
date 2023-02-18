@@ -29,16 +29,7 @@
 
 use egui::ImageData;
 use interfaces::any::AnyArc;
-use interfaces::gpu::{
-    AttachmentBlendState, BlendFactor, BlendOp, BlendStateDesc, ColorComponentFlags, CullMode,
-    DepthStencilStateDesc, DescriptorSetLayoutBinding, DescriptorSetLayoutDesc,
-    DescriptorShaderVisibility, DescriptorType, Format, FrontFaceOrder, GraphicsPipelineDesc,
-    IDescriptorSetLayout, IDevice, IGraphicsPipeline, IPipelineLayout, ISampler, IShader,
-    InputAssemblyStateDesc, PipelineLayoutDesc, PolygonMode, PrimitiveTopology, PushConstantBlock,
-    RasterizerStateDesc, SamplerAddressMode, SamplerDesc, SamplerFilter, SamplerMipFilter,
-    ShaderOptions, ShaderType, VertexInputAttributeDesc, VertexInputBindingDesc, VertexInputRate,
-    VertexInputStateDesc,
-};
+use interfaces::gpu::*;
 use std::ops::Deref;
 
 /// Wraps d3d12 objects that don't ever need to be recreated

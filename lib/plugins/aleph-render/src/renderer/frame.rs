@@ -30,14 +30,7 @@
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
 use interfaces::any::AnyArc;
-use interfaces::gpu::{
-    BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
-    DescriptorSetHandle, DescriptorType, DescriptorWriteDesc, DescriptorWrites, Extent3D, Format,
-    IBuffer, ICommandPool, IDescriptorPool, IDevice, IGeneralEncoder, ITexture, ImageDataLayout,
-    ImageDescriptorWrite, ImageLayout, ImageViewType, TextureAspect, TextureBarrier,
-    TextureCopyAspect, TextureCopyInfo, TextureDesc, TextureDimension, TextureSubResourceSet,
-    UOffset3D,
-};
+use interfaces::gpu::*;
 use std::ops::Deref;
 
 pub struct PerFrameObjects {

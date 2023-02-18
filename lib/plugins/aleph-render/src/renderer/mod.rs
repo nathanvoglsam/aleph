@@ -34,12 +34,7 @@ use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::AnyArc;
-use interfaces::gpu::{
-    AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BeginRenderingInfo,
-    ColorClearValue, ICommandList, IDevice, IGeneralEncoder, ITexture, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, PipelineBindPoint, Rect, RenderingColorAttachmentInfo,
-    TextureAspect, TextureBarrier, TextureSubResourceSet, Viewport,
-};
+use interfaces::gpu::*;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
