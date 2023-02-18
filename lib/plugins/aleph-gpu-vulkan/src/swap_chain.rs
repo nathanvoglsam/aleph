@@ -37,8 +37,8 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AcquireImageError, Format, IDevice, IGetPlatformInterface, INamedObject, ISwapChain, ITexture,
-    QueueType, SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
+    AcquireImageError, Format, IDevice, IGetPlatformInterface, ISwapChain, ITexture, QueueType,
+    SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
 };
 use std::any::TypeId;
 use std::sync::Mutex;
@@ -362,8 +362,10 @@ impl ISwapChain for SwapChain {
                             allow_unordered_access: false,
                             allow_cube_face: false,
                             is_render_target: true,
+                            name: None,
                         },
                         vk_format: inner.vk_format,
+                        name: None,
                     });
                     todo!()
                     // Ok(AnyArc::map::<dyn ITexture, _>(image, |v| v))
@@ -404,7 +406,7 @@ impl IGetPlatformInterface for SwapChain {
     }
 }
 
-impl INamedObject for SwapChain {
+impl SwapChain {
     fn set_name(&self, _name: &str) {
         todo!()
     }

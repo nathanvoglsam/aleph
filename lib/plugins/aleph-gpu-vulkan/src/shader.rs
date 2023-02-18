@@ -60,7 +60,7 @@ use crate::device::Device;
 use crate::internal::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, INamedObject, IShader, ShaderType};
+use interfaces::gpu::{IGetPlatformInterface, IShader, ShaderType};
 use std::any::TypeId;
 use std::ffi::CString;
 
@@ -116,7 +116,7 @@ impl IGetPlatformInterface for Shader {
     }
 }
 
-impl INamedObject for Shader {
+impl Shader {
     fn set_name(&self, name: &str) {
         let loader = &self.device.device_loader;
         if let Some(func) = loader.set_debug_utils_object_name_ext {

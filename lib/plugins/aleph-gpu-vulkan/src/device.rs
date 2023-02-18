@@ -42,10 +42,10 @@ use interfaces::gpu::{
     DescriptorPoolCreateError, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc,
     DescriptorWriteDesc, FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc,
     IBuffer, ICommandPool, IComputePipeline, IDescriptorPool, IDescriptorSetLayout, IDevice,
-    IGetPlatformInterface, IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue, ISampler,
-    IShader, ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode,
-    PrimitiveTopology, QueueType, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
-    ShaderOptions, StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
+    IFence, IGetPlatformInterface, IGraphicsPipeline, IPipelineLayout, IQueue, ISampler, IShader,
+    ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode, PrimitiveTopology,
+    QueueType, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions,
+    StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
 };
 use std::any::TypeId;
 use std::ffi::CString;
@@ -425,7 +425,7 @@ impl IGetPlatformInterface for Device {
     }
 }
 
-impl INamedObject for Device {
+impl Device {
     fn set_name(&self, name: &str) {
         let loader = &self.device_loader;
         if let Some(func) = loader.set_debug_utils_object_name_ext {

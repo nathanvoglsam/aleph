@@ -31,7 +31,7 @@ use crate::internal::try_clone_value_into_slot;
 use crate::swap_chain::SwapChain;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGetPlatformInterface, INamedObject, ITexture, TextureDesc};
+use interfaces::gpu::{IGetPlatformInterface, ITexture, TextureDesc};
 use std::any::TypeId;
 use std::ffi::CString;
 
@@ -40,7 +40,8 @@ pub struct SwapTexture {
     pub swap_chain: AnyArc<SwapChain>,
     pub image: vk::Image,
     pub vk_format: vk::Format,
-    pub desc: TextureDesc,
+    pub desc: TextureDesc<'static>,
+    pub name: Option<String>,
 }
 
 declare_interfaces!(SwapTexture, [ITexture]);
@@ -58,8 +59,10 @@ impl ITexture for SwapTexture {
         self.this.weak_count()
     }
 
-    fn desc(&self) -> &TextureDesc {
-        &self.desc
+    fn desc(&self) -> TextureDesc {
+        let mut desc = self.desc.clone();
+        desc.name = self.name.as_ref().map(String::as_str);
+        desc
     }
 }
 
@@ -81,7 +84,7 @@ impl IGetPlatformInterface for SwapTexture {
     }
 }
 
-impl INamedObject for SwapTexture {
+impl SwapTexture {
     fn set_name(&self, name: &str) {
         let loader = &self.swap_chain.device.device_loader;
         if let Some(func) = loader.set_debug_utils_object_name_ext {
