@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{IPipelineLayout, PushConstantBlock};
+use interfaces::gpu::*;
 
 pub struct ValidationPipelineLayout {
     pub(crate) _this: AnyWeak<Self>,

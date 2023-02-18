@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{BufferDesc, IBuffer, ResourceMapError};
+use interfaces::gpu::*;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 

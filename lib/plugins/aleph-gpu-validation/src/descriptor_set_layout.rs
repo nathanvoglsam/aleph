@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{DescriptorType, IDescriptorSetLayout};
+use interfaces::gpu::*;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 

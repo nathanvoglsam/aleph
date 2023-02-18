@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{ISampler, SamplerDesc};
+use interfaces::gpu::*;
 
 pub struct ValidationSampler {
     pub(crate) _this: AnyWeak<Self>,

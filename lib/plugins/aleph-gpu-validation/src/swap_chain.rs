@@ -31,7 +31,7 @@ use crate::device::ValidationDevice;
 use crate::surface::ValidationSurface;
 use crate::ValidationTexture;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{AcquireImageError, ISwapChain, ITexture, QueueType, SwapChainConfiguration};
+use interfaces::gpu::*;
 use parking_lot::Mutex;
 use std::ops::DerefMut;
 

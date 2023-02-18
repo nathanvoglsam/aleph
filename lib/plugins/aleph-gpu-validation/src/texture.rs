@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{ITexture, TextureDesc};
+use interfaces::gpu::*;
 
 pub struct ValidationTexture {
     pub(crate) _this: AnyWeak<Self>,

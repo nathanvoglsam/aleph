@@ -29,7 +29,7 @@
 
 use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{IShader, ShaderType};
+use interfaces::gpu::*;
 
 pub struct ValidationShader {
     pub(crate) _this: AnyWeak<Self>,

@@ -30,7 +30,7 @@
 use crate::device::ValidationDevice;
 use crate::pipeline_layout::ValidationPipelineLayout;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{IComputePipeline, IGraphicsPipeline};
+use interfaces::gpu::*;
 
 pub struct ValidationGraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,

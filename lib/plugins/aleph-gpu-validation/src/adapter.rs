@@ -31,7 +31,7 @@ use crate::context::ValidationContext;
 use crate::queue::ValidationQueue;
 use crate::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, QueueType, RequestDeviceError};
+use interfaces::gpu::*;
 
 pub struct ValidationAdapter {
     pub(crate) _this: AnyWeak<Self>,
