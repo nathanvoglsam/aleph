@@ -35,10 +35,7 @@ use crate::swap_chain::{SwapChain, SwapChainState};
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    Format, IDevice, IGetPlatformInterface, ISurface, ISwapChain, SwapChainConfiguration,
-    SwapChainCreateError,
-};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use std::sync::Mutex;
 

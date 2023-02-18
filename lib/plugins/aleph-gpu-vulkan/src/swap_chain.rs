@@ -36,10 +36,7 @@ use crate::swap_texture::SwapTexture;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    AcquireImageError, Format, IDevice, IGetPlatformInterface, ISwapChain, ITexture, QueueType,
-    SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
-};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use std::sync::Mutex;
 

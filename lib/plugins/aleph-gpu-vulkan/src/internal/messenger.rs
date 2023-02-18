@@ -31,13 +31,13 @@ use std::ffi::c_void;
 use std::ffi::CStr;
 use std::slice;
 
-use log::{log, Level};
 use erupt::extensions::ext_debug_utils::DebugUtilsMessageTypeFlagsEXT;
 use erupt::extensions::ext_debug_utils::DebugUtilsMessengerCallbackDataEXT;
 use erupt::extensions::ext_debug_utils::{
     DebugUtilsMessageSeverityFlagBitsEXT, DebugUtilsMessageSeverityFlagsEXT,
 };
 use erupt::vk1_0::{Bool32, FALSE};
+use log::{log, Level};
 
 fn message_severity_log_level(severity: DebugUtilsMessageSeverityFlagsEXT) -> Level {
     if severity == DebugUtilsMessageSeverityFlagsEXT::INFO_EXT {

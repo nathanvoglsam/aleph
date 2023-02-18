@@ -36,17 +36,7 @@ use byteorder::{ByteOrder, NativeEndian};
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    BackendAPI, BlendFactor, BlendOp, BufferCreateError, BufferDesc, CommandPoolCreateError,
-    CompareOp, ComputePipelineCreateError, ComputePipelineDesc, CullMode,
-    DescriptorPoolCreateError, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc,
-    DescriptorWriteDesc, FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc,
-    IBuffer, ICommandPool, IComputePipeline, IDescriptorPool, IDescriptorSetLayout, IDevice,
-    IFence, IGetPlatformInterface, IGraphicsPipeline, IPipelineLayout, IQueue, ISampler, IShader,
-    ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode, PrimitiveTopology,
-    QueueType, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions,
-    StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
-};
+use interfaces::gpu::*;
 use std::any::TypeId;
 use std::ffi::CString;
 

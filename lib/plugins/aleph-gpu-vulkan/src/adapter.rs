@@ -34,9 +34,7 @@ use crate::internal::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    AdapterDescription, AdapterVendor, IAdapter, IDevice, IGetPlatformInterface, RequestDeviceError,
-};
+use interfaces::gpu::*;
 use std::any::TypeId;
 
 pub struct Adapter {

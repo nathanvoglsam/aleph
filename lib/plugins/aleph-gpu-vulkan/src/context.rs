@@ -33,10 +33,7 @@ use crate::surface::Surface;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, AdapterVendor, BackendAPI, IAdapter, IContext,
-    IGetPlatformInterface, ISurface, SurfaceCreateError,
-};
+use interfaces::gpu::*;
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use std::any::TypeId;
 use std::ffi::CStr;
