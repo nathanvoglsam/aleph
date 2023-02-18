@@ -31,7 +31,7 @@ use crate::console_provider::ConsoleProvider;
 use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;
 use aleph_label::Label;
-use aleph_log::LevelFilter;
+use log::LevelFilter;
 use interfaces::any::{AnyArc, IAny};
 use interfaces::console::{DebugConsole, IDebugConsoleProvider};
 use interfaces::make_plugin_description_for_crate;

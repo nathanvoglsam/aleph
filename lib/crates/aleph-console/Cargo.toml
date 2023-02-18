@@ -51,7 +51,7 @@ env_logger = { workspace = true }
 rhai = { version = "1", optional = true, features = ["internals"] }
 serde_json = { version = "1" }
 serde = { version = "1", features = ["derive"] }
-aleph-log = { path = "../aleph-log", version = "1" }
+log = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows = { path = "../aleph-windows", version = "0.1" }

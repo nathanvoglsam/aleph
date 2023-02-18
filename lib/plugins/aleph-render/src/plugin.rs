@@ -119,12 +119,12 @@ impl IPlugin for PluginRender {
 
         let queue = device.get_queue(QueueType::General).unwrap();
 
-        aleph_log::info!("");
+        log::info!("");
         Self::log_gpu_info(
             device.deref().query_interface::<dyn IDevice>().unwrap(),
             adapter.deref(),
         );
-        aleph_log::info!("");
+        log::info!("");
 
         let drawable_size = window.drawable_size();
         let config = SwapChainConfiguration {
@@ -218,10 +218,10 @@ impl PluginRender {
         let dsmem = 0 /* info.DedicatedSystemMemory */ / 1_000_000;
         let ssmem = 0 /* info.SharedSystemMemory */ / 1_000_000;
 
-        aleph_log::info!("=== GPU INFO ===");
-        aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
-        aleph_log::info!("GPU Name      : {}", gpu_name);
-        aleph_log::info!("Memory        : {}MB | {}MB | {}MB", dvmem, dsmem, ssmem);
-        aleph_log::info!("Backend:      : {}", device.get_backend_api());
+        log::info!("=== GPU INFO ===");
+        log::info!("GPU Vendor    : {}", gpu_vendor);
+        log::info!("GPU Name      : {}", gpu_name);
+        log::info!("Memory        : {}MB | {}MB | {}MB", dvmem, dsmem, ssmem);
+        log::info!("Backend:      : {}", device.get_backend_api());
     }
 }

@@ -32,7 +32,6 @@
 pub extern crate aleph_vulkan_alloc as vulkan_alloc;
 
 extern crate aleph_interfaces as interfaces;
-extern crate aleph_log as log;
 extern crate cstr;
 
 mod adapter;

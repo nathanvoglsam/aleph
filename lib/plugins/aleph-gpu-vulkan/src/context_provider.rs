@@ -105,7 +105,7 @@ impl ContextProvider {
             .enabled_layer_names(&supported_layers);
 
         // Construct the vulkan instance
-        aleph_log::trace!("Creating Vulkan instance");
+        log::trace!("Creating Vulkan instance");
         let instance_loader = unsafe {
             erupt::InstanceLoader::new(entry_loader, &create_info).map_err(|e| anyhow!(e))?
         };
@@ -133,11 +133,11 @@ impl IContextProvider for ContextProvider {
                     match install_debug_messenger(&instance_loader) {
                         Ok(v) => Some(v),
                         Err(e) => {
-                            aleph_log::warn!(
+                            log::warn!(
                                 "Context validation requested but couldn't create debug messenger"
                             );
-                            aleph_log::warn!("Reason: {:?}", e);
-                            aleph_log::warn!("No validation messages will be logged");
+                            log::warn!("Reason: {:?}", e);
+                            log::warn!("No validation messages will be logged");
                             None
                         }
                     }

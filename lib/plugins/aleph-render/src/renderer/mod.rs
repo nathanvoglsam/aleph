@@ -56,7 +56,7 @@ pub struct EguiRenderer {
 
 impl EguiRenderer {
     pub fn new(device: AnyArc<dyn IDevice>, dimensions: (u32, u32)) -> Self {
-        aleph_log::trace!("Initializing Egui Renderer");
+        log::trace!("Initializing Egui Renderer");
 
         let global = GlobalObjects::new(device.deref(), dimensions);
 

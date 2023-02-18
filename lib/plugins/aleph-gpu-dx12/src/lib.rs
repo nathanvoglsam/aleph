@@ -34,7 +34,6 @@ pub extern crate aleph_pix as pix;
 pub extern crate aleph_windows as windows;
 
 extern crate aleph_interfaces as interfaces;
-extern crate aleph_log as log;
 extern crate cstr;
 
 mod adapter;

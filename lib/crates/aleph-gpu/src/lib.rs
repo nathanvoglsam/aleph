@@ -34,7 +34,6 @@
 //!
 
 extern crate aleph_interfaces as interfaces;
-extern crate aleph_log as log;
 
 pub mod command_buffer;
 pub mod render_graph;

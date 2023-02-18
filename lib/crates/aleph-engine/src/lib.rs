@@ -35,7 +35,6 @@
 extern crate aleph_core;
 pub extern crate aleph_egui as egui;
 pub extern crate aleph_interfaces as interfaces;
-pub extern crate aleph_log as log;
 pub extern crate aleph_target as target;
 
 pub mod plugin_registry;
@@ -112,16 +111,16 @@ impl EngineBuilder {
     pub fn build(self) -> Engine {
         // Print engine info to the log so we know what engine version we're running on
         // First thing we do is initialize the log backend so everything can log from now on
-        aleph_log::info!("");
-        aleph_log::info!("Aleph Engine Starting");
-        aleph_log::info!("");
+        log::info!("");
+        log::info!("Aleph Engine Starting");
+        log::info!("");
         Engine::log_engine_info();
-        aleph_log::info!("");
+        log::info!("");
 
         // Print some system info to the log so we know what we were running on
-        aleph_log::info!("");
+        log::info!("");
         Engine::log_cpu_info();
-        aleph_log::info!("");
+        log::info!("");
 
         Engine {
             registry: self.registry.build(),
@@ -176,14 +175,14 @@ impl Engine {
         let build = aleph_target::build::target_build_type().pretty_name();
         let optimized = aleph_target::build::target_build_config().is_optimized();
         let debug = aleph_target::build::target_build_config().is_debug();
-        aleph_log::info!("=== Engine Info ===");
-        aleph_log::info!("Name       : {}", engine_name);
-        aleph_log::info!("Version    : {}", engine_version);
-        aleph_log::info!("Arch       : {}", arch);
-        aleph_log::info!("OS         : {}", os);
-        aleph_log::info!("Build Type : {}", build);
-        aleph_log::info!("Optimized  : {}", optimized);
-        aleph_log::info!("Debug      : {}", debug);
+        log::info!("=== Engine Info ===");
+        log::info!("Name       : {}", engine_name);
+        log::info!("Version    : {}", engine_version);
+        log::info!("Arch       : {}", arch);
+        log::info!("OS         : {}", os);
+        log::info!("Build Type : {}", build);
+        log::info!("Optimized  : {}", optimized);
+        log::info!("Debug      : {}", debug);
     }
 
     ///
@@ -202,12 +201,12 @@ impl Engine {
             })
             .unwrap_or(("Unknown".to_owned(), "Unknown".to_owned()));
 
-        aleph_log::info!("=== CPU INFO ===");
-        aleph_log::info!("CPU Vendor    : {}", cpu_vendor);
-        aleph_log::info!("CPU Brand     : {}", cpu_brand);
-        aleph_log::info!("Physical CPUs : {}", physical_cpus);
-        aleph_log::info!("Logical CPUs  : {}", logical_cpus);
-        aleph_log::info!(
+        log::info!("=== CPU INFO ===");
+        log::info!("CPU Vendor    : {}", cpu_vendor);
+        log::info!("CPU Brand     : {}", cpu_brand);
+        log::info!("Physical CPUs : {}", physical_cpus);
+        log::info!("Logical CPUs  : {}", logical_cpus);
+        log::info!(
             "System RAM    : {} MiB ({} GiB)",
             system_ram_mib,
             system_ram_gib

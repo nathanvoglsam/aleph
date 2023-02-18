@@ -38,8 +38,6 @@
 //! expressions.
 //!
 
-extern crate aleph_log as log;
-
 use log::{Level, Metadata, Record};
 use std::io::{BufWriter, Write};
 use std::net::TcpStream;

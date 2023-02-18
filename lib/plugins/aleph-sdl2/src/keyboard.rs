@@ -80,7 +80,7 @@ impl KeyboardImpl {
     /// Internal function for initializing the keyboard state
     ///
     pub fn new() -> AnyArc<Self> {
-        aleph_log::trace!("Initializing the Keyboard system");
+        log::trace!("Initializing the Keyboard system");
         let keyboard_state = KeyboardState {
             keys: [false; ScanCode::MAX_VALUES],
             scan_code_translation_table: [None; ScanCode::MAX_VALUES], // TODO: Fill out

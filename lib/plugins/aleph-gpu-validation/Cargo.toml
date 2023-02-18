@@ -46,5 +46,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
-aleph-log = { path = "../../crates/aleph-log", version = "1" }
+log = { workspace = true }
 parking_lot = { workspace = true }

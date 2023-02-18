@@ -40,7 +40,7 @@ pub struct FrameTimerImpl {
 
 impl FrameTimerImpl {
     pub fn new(timer: &sdl2::TimerSubsystem) -> AnyArc<Self> {
-        aleph_log::trace!("Initializing the Frame Timer");
+        log::trace!("Initializing the Frame Timer");
         let out = Self {
             freq: AtomicU64::new(timer.performance_frequency()),
             first: AtomicU64::new(timer.performance_counter()),

@@ -88,9 +88,9 @@ impl MouseImpl {
         for request in self.requests.lock().drain(..) {
             match request {
                 MouseRequest::SetPos(x, y) => {
-                    aleph_log::trace!("Attempting to set new mouse position");
+                    log::trace!("Attempting to set new mouse position");
                     mouse_utils.warp_mouse_in_window(window, x as i32, y as i32);
-                    aleph_log::trace!("Moved mouse to : {}, {}", x, y);
+                    log::trace!("Moved mouse to : {}, {}", x, y);
                 }
                 MouseRequest::SetCursor(cursor) => {
                     let cursor = cursors.get(&cursor).unwrap();

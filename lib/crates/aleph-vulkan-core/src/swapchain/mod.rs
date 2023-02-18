@@ -423,7 +423,7 @@ impl Swapchain {
     /// resources and get the new set of images for the swapchain
     ///
     pub fn rebuild(&mut self, drawable_size: (u32, u32)) -> Result<(), RebuildError> {
-        aleph_log::trace!("Attempting swapchain rebuild");
+        log::trace!("Attempting swapchain rebuild");
         unsafe {
             // We're rebuilding the swapchain, I don't care about performance here this is going to
             // be slow no matter what I do and the most sane way to wait for all GPU work to be done
@@ -432,7 +432,7 @@ impl Swapchain {
                 .device_wait_idle()
                 .expect("Failed to wait for device to become idle");
         }
-        aleph_log::trace!("Successfully waited for device to be idle");
+        log::trace!("Successfully waited for device to be idle");
 
         let support = self.device.swapchain_support();
         let capabilities = &support.capabilities;
@@ -440,18 +440,18 @@ impl Swapchain {
         // If any of these are zero than the window is minimized. We can't create a swap chain for
         // a minimized window as the extents are invalid so we error out and let the user handle it.
         if capabilities.current_extent.width == 0 || capabilities.current_extent.height == 0 {
-            aleph_log::error!("Swapchain current extent 0 when rebuilding swapchain");
+            log::error!("Swapchain current extent 0 when rebuilding swapchain");
             return Err(RebuildError::ExtentsZero);
         }
 
         // If any of these are zero than the window is minimized. We can't create a swap chain for
         // a minimized window as the extents are invalid so we error out and let the user handle it.
         if capabilities.max_image_extent.width == 0 || capabilities.max_image_extent.height == 0 {
-            aleph_log::error!("Swapchain max extent 0 when rebuilding swapchain");
+            log::error!("Swapchain max extent 0 when rebuilding swapchain");
             return Err(RebuildError::ExtentsZero);
         }
 
-        aleph_log::trace!("=== NEW SWAPCHAIN INFO ===");
+        log::trace!("=== NEW SWAPCHAIN INFO ===");
         // We need need to decide on the extents of the swapchain to create. If one is provided to
         // us by the swapchain capabilities retrieved from vulkan then we use that. If not we have
         // to pick our own so we query the window state and use that
@@ -480,7 +480,7 @@ impl Swapchain {
 
             actual
         };
-        aleph_log::trace!("Extents       : ({}, {})", extents.width, extents.height);
+        log::trace!("Extents       : ({}, {})", extents.width, extents.height);
 
         // We need to pick a presentation mode from one of the supported presentation modes.
         let present_mode = {
@@ -511,11 +511,11 @@ impl Swapchain {
 
             best_mode
         };
-        aleph_log::trace!("Present Mode  : {:#?}", present_mode);
+        log::trace!("Present Mode  : {:#?}", present_mode);
 
         let formats = &support.formats;
         let surface_format = select_surface_format(formats);
-        aleph_log::trace!("Format        : {:?}", surface_format);
+        log::trace!("Format        : {:?}", surface_format);
 
         let image_count = {
             if (self.target_image_count) < capabilities.min_image_count {
@@ -524,7 +524,7 @@ impl Swapchain {
                 self.target_image_count
             }
         };
-        aleph_log::trace!("Image Count   : {}", image_count);
+        log::trace!("Image Count   : {}", image_count);
 
         let old_swapchain = self.swapchain;
         let swap_create_info = SwapchainCreateInfoKHRBuilder::new()
@@ -542,7 +542,7 @@ impl Swapchain {
             .clipped(true)
             .old_swapchain(old_swapchain);
 
-        aleph_log::trace!("Creating new swapchain");
+        log::trace!("Creating new swapchain");
         let swapchain = unsafe {
             self.device
                 .create_swapchain_khr(&swap_create_info, None)
@@ -602,12 +602,12 @@ impl Swapchain {
 
         if old_swapchain != SwapchainKHR::null() {
             unsafe {
-                aleph_log::trace!("Destroying old swapchain ImageViews");
+                log::trace!("Destroying old swapchain ImageViews");
                 self.images.iter().for_each(|i| {
                     self.device.destroy_image_view(i.image_view(), None);
                 });
 
-                aleph_log::trace!("Destroying old swapchain");
+                log::trace!("Destroying old swapchain");
                 self.device.destroy_swapchain_khr(old_swapchain, None);
             }
         }
@@ -626,12 +626,12 @@ impl Swapchain {
 impl Drop for Swapchain {
     fn drop(&mut self) {
         unsafe {
-            aleph_log::trace!("Destroying swapchain ImageViews");
+            log::trace!("Destroying swapchain ImageViews");
             self.images.iter().for_each(|i| {
                 self.device.destroy_image_view(i.image_view(), None);
             });
 
-            aleph_log::trace!("Destroying swapchain");
+            log::trace!("Destroying swapchain");
             self.device.destroy_swapchain_khr(self.swapchain, None);
         }
     }

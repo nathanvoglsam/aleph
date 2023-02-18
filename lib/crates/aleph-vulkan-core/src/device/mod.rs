@@ -54,7 +54,7 @@ impl DeviceBuilder {
     }
 
     pub fn build(self, instance: &Instance) -> Device {
-        aleph_log::trace!("Initializing Vulkan device");
+        log::trace!("Initializing Vulkan device");
         let surface = instance.surface();
 
         let features = PhysicalDeviceFeatures::default();
@@ -67,7 +67,7 @@ impl DeviceBuilder {
         )
         .expect("Failed to select a physical device");
 
-        aleph_log::trace!("Checking swapchain support");
+        log::trace!("Checking swapchain support");
         let swapchain_support = Self::get_swapchain_support(instance, physical_device, surface);
         if swapchain_support.formats.is_empty() {
             panic!("No available swapchain formats");
@@ -76,10 +76,10 @@ impl DeviceBuilder {
             panic!("No available present modes");
         }
 
-        aleph_log::trace!("Getting queue families");
+        log::trace!("Getting queue families");
         let queue_families = Self::get_queue_families(instance, physical_device, surface);
 
-        aleph_log::trace!("Getting GPU info");
+        log::trace!("Getting GPU info");
         let device_props = unsafe { instance.get_physical_device_properties(physical_device) };
 
         //let extension_props = unsafe {
@@ -169,28 +169,28 @@ impl DeviceBuilder {
             queue_create_infos.push(transfer_queue);
         }
 
-        aleph_log::trace!("Creating Vulkan device");
+        log::trace!("Creating Vulkan device");
         let device_create_info = DeviceCreateInfoBuilder::new()
             .enabled_features(&enabled_features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
-        aleph_log::trace!("Loading device functions");
+        log::trace!("Loading device functions");
         let device_loader = unsafe {
             DeviceLoader::new(instance, physical_device, &device_create_info)
                 .expect("Failed to create device and device loader")
         };
 
-        aleph_log::trace!("Loading general queue");
+        log::trace!("Loading general queue");
         let general_queue =
             unsafe { device_loader.get_device_queue(general_queue.queue_family_index, 0) };
 
         let compute_queue = compute_queue.map(|queue| {
-            aleph_log::trace!("Loading async compute queue");
+            log::trace!("Loading async compute queue");
             unsafe { device_loader.get_device_queue(queue.queue_family_index, 0) }
         });
 
         let transfer_queue = transfer_queue.map(|queue| {
-            aleph_log::trace!("Loading transfer queue");
+            log::trace!("Loading transfer queue");
             unsafe { device_loader.get_device_queue(queue.queue_family_index, 0) }
         });
 
@@ -554,7 +554,7 @@ impl Drop for Inner {
             self.device_loader
                 .device_wait_idle()
                 .expect("Failed to wait for device to be idle");
-            aleph_log::trace!("Destroying Vulkan device");
+            log::trace!("Destroying Vulkan device");
             self.device_loader.destroy_device(None);
         }
     }

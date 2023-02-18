@@ -28,7 +28,6 @@
 //
 
 extern crate aleph_interfaces as interfaces;
-extern crate aleph_log as log;
 
 mod adapter;
 mod buffer;

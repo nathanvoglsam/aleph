@@ -106,7 +106,7 @@ impl InstanceBuilder {
         };
 
         // Create a surface for the window we're making an instance for
-        aleph_log::trace!("Creating Vulkan surface");
+        log::trace!("Creating Vulkan surface");
         let surface = unsafe {
             crate::surface::create_surface(&instance_loader, window_handle, None)
                 .expect("Failed to create surface")
@@ -177,7 +177,7 @@ impl InstanceBuilder {
             .enabled_layer_names(&layers);
 
         // Construct the vulkan instance
-        aleph_log::trace!("Creating Vulkan instance");
+        log::trace!("Creating Vulkan instance");
         let instance_loader = unsafe {
             erupt::InstanceLoader::new(entry_loader, &create_info)
                 .expect("Failed to initialize Vulkan instance loader")
@@ -224,7 +224,7 @@ impl InstanceBuilder {
     ///
     ///
     fn install_debug_messenger(instance_loader: &erupt::InstanceLoader) -> DebugUtilsMessengerEXT {
-        aleph_log::trace!("Installing VK_EXT_debug_utils messenger");
+        log::trace!("Installing VK_EXT_debug_utils messenger");
         let create_info = DebugUtilsMessengerCreateInfoEXTBuilder::new()
             .message_severity(
                 DebugUtilsMessageSeverityFlagsEXT::ERROR_EXT
@@ -310,14 +310,14 @@ struct Inner {
 impl Drop for Inner {
     fn drop(&mut self) {
         unsafe {
-            aleph_log::trace!("Destroying Vulkan surface");
+            log::trace!("Destroying Vulkan surface");
             self.instance_loader.destroy_surface_khr(self.surface, None);
             if let Some(messenger) = self.messenger {
-                aleph_log::trace!("Destroying debug messenger");
+                log::trace!("Destroying debug messenger");
                 self.instance_loader
                     .destroy_debug_utils_messenger_ext(messenger, None);
             }
-            aleph_log::trace!("Destroying Vulkan instance");
+            log::trace!("Destroying Vulkan instance");
             self.instance_loader.destroy_instance(None);
         }
     }

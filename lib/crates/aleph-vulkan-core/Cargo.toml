@@ -45,7 +45,7 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-log = { path = "../aleph-log", version = "1" }
+log = { workspace = true }
 crossbeam = { workspace = true }
 raw-window-handle = { workspace = true }
 erupt = { workspace = true }

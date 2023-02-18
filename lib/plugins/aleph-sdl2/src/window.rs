@@ -185,8 +185,8 @@ impl WindowImpl {
                 self.resized.store(true, Ordering::Relaxed);
                 window_state.current_width = *width as u32;
                 window_state.current_height = *height as u32;
-                aleph_log::trace!("Window resized by OS");
-                aleph_log::trace!("Window Size: {}x{}", width, height);
+                log::trace!("Window resized by OS");
+                log::trace!("Window Size: {}x{}", width, height);
             }
             sdl2::event::WindowEvent::FocusGained => {
                 window_state.focused = true;
@@ -198,8 +198,8 @@ impl WindowImpl {
                 self.resized.store(true, Ordering::Relaxed);
                 window_state.current_width = *width as u32;
                 window_state.current_height = *height as u32;
-                aleph_log::trace!("Window size changed");
-                aleph_log::trace!("Window Size: {}x{}", width, height);
+                log::trace!("Window size changed");
+                log::trace!("Window Size: {}x{}", width, height);
             }
             sdl2::event::WindowEvent::Moved(_, _)
             | sdl2::event::WindowEvent::Minimized
@@ -251,41 +251,41 @@ impl WindowImpl {
         for request in self.requests.lock().drain(..) {
             match request {
                 WindowRequest::ChangeTitle(title) => {
-                    aleph_log::trace!("Attempting to change window title");
+                    log::trace!("Attempting to change window title");
                     window_state.title = title;
                     window
                         .set_title(&window_state.title)
                         .expect("Failed to set window title");
-                    aleph_log::trace!("Successfuly changed window title");
-                    aleph_log::trace!("Window Title: {}", &window_state.title);
+                    log::trace!("Successfuly changed window title");
+                    log::trace!("Window Title: {}", &window_state.title);
                 }
                 WindowRequest::ChangeSize(width, height) => {
-                    aleph_log::trace!("Attempting to change window size");
+                    log::trace!("Attempting to change window size");
                     window_state.current_width = width;
                     window_state.current_height = height;
                     window
                         .set_size(width, height)
                         .expect("Failed to resize window");
-                    aleph_log::trace!("Successfuly changed window size");
-                    aleph_log::trace!("Window Size: {}x{}", width, height);
+                    log::trace!("Successfuly changed window size");
+                    log::trace!("Window Size: {}x{}", width, height);
                 }
                 WindowRequest::ChangeWidth(width) => {
-                    aleph_log::trace!("Attempting to change window width");
+                    log::trace!("Attempting to change window width");
                     window_state.current_width = width;
                     window
                         .set_size(width, window_state.current_height)
                         .expect("Failed to resize window");
-                    aleph_log::trace!("Successfuly changed window width");
-                    aleph_log::trace!("Window Size: {}x{}", width, window_state.current_height);
+                    log::trace!("Successfuly changed window width");
+                    log::trace!("Window Size: {}x{}", width, window_state.current_height);
                 }
                 WindowRequest::ChangeHeight(height) => {
-                    aleph_log::trace!("Attempting to change window height");
+                    log::trace!("Attempting to change window height");
                     window_state.current_height = height;
                     window
                         .set_size(window_state.current_width, height)
                         .expect("Failed to resize window");
-                    aleph_log::trace!("Successfuly changed window height");
-                    aleph_log::trace!("Window Size: {}x{}", window_state.current_width, height);
+                    log::trace!("Successfuly changed window height");
+                    log::trace!("Window Size: {}x{}", window_state.current_width, height);
                 }
                 WindowRequest::GoFullscreen => Self::handle_go_fullscreen(window, window_state),
                 WindowRequest::GoWindowed => Self::handle_go_windowed(window, window_state),
@@ -301,7 +301,7 @@ impl WindowImpl {
     }
 
     fn handle_go_fullscreen(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
-        aleph_log::trace!("Attempting to go fullscreen");
+        log::trace!("Attempting to go fullscreen");
         window_state.windowed_width = window_state.current_width;
         window_state.windowed_height = window_state.current_height;
 
@@ -317,8 +317,8 @@ impl WindowImpl {
         window_state.current_width = display_mode.w as _;
         window_state.current_height = display_mode.h as _;
         window_state.refresh_rate = display_mode.refresh_rate as _;
-        aleph_log::trace!("Successfully went fullscreen");
-        aleph_log::trace!(
+        log::trace!("Successfully went fullscreen");
+        log::trace!(
             "Window Size: {}x{} at {}hz",
             window_state.current_width,
             window_state.current_height,
@@ -327,7 +327,7 @@ impl WindowImpl {
     }
 
     fn handle_go_windowed(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
-        aleph_log::trace!("Attempting to go windowed mode");
+        log::trace!("Attempting to go windowed mode");
         window_state.current_width = window_state.windowed_width;
         window_state.current_height = window_state.windowed_height;
 
@@ -342,8 +342,8 @@ impl WindowImpl {
         let display_mode = window.display_mode().unwrap();
         window_state.refresh_rate = display_mode.refresh_rate as _;
 
-        aleph_log::trace!("Successfully went windowed");
-        aleph_log::trace!(
+        log::trace!("Successfully went windowed");
+        log::trace!(
             "Window Size: {}x{} at {}hz",
             window_state.current_width,
             window_state.current_height,

@@ -125,16 +125,16 @@ impl IAdapter for Adapter {
                     move |category, severity, id, description| {
                         let category = category_name(&category).unwrap_or("Unknown Category");
                         let level = match severity {
-                            D3D12_MESSAGE_SEVERITY_CORRUPTION => aleph_log::Level::Error,
-                            D3D12_MESSAGE_SEVERITY_ERROR => aleph_log::Level::Error,
-                            D3D12_MESSAGE_SEVERITY_WARNING => aleph_log::Level::Warn,
-                            D3D12_MESSAGE_SEVERITY_INFO => aleph_log::Level::Info,
-                            D3D12_MESSAGE_SEVERITY_MESSAGE => aleph_log::Level::Info,
-                            _ => aleph_log::Level::Info,
+                            D3D12_MESSAGE_SEVERITY_CORRUPTION => log::Level::Error,
+                            D3D12_MESSAGE_SEVERITY_ERROR => log::Level::Error,
+                            D3D12_MESSAGE_SEVERITY_WARNING => log::Level::Warn,
+                            D3D12_MESSAGE_SEVERITY_INFO => log::Level::Info,
+                            D3D12_MESSAGE_SEVERITY_MESSAGE => log::Level::Info,
+                            _ => log::Level::Info,
                         };
                         let id = message_id_name(&id).unwrap_or("Unknown ID");
 
-                        aleph_log::log!(level, "[{:?}] [{:?}] {:?}", category, id, description);
+                        log::log!(level, "[{:?}] [{:?}] {:?}", category, id, description);
                     },
                 )
                 .ok()

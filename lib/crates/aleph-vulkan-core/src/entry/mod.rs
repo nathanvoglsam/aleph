@@ -42,7 +42,7 @@ pub struct Entry {
 
 impl Entry {
     pub fn new() -> Result<Self, EntryLoaderError> {
-        aleph_log::trace!("Initializing Vulkan Entry Loader");
+        log::trace!("Initializing Vulkan Entry Loader");
         let entry_loader = erupt::EntryLoader::new()?;
         let out = Self {
             entry_loader: Arc::new(entry_loader),

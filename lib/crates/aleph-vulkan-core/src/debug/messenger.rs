@@ -31,7 +31,7 @@ use std::ffi::c_void;
 use std::ffi::CStr;
 use std::slice;
 
-use aleph_log::{log, Level};
+use log::{log, Level};
 use erupt::extensions::ext_debug_utils::DebugUtilsMessageTypeFlagsEXT;
 use erupt::extensions::ext_debug_utils::DebugUtilsMessengerCallbackDataEXT;
 use erupt::extensions::ext_debug_utils::{

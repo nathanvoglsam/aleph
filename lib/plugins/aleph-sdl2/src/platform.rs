@@ -134,25 +134,25 @@ impl IPlugin for PluginPlatformSDL2 {
         })
         .expect("Failed to registr ctrl+c handler");
 
-        aleph_log::trace!("Initializing SDL2 Library");
+        log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
 
-        aleph_log::trace!("Initializing SDL2 Timer Subsystem");
+        log::trace!("Initializing SDL2 Timer Subsystem");
         let sdl_timer = sdl
             .timer()
             .expect("Failed to initialize SDL2 timer subsystem");
 
-        aleph_log::trace!("Initializing SDL2 Video Subsystem");
+        log::trace!("Initializing SDL2 Video Subsystem");
         let sdl_video = sdl
             .video()
             .expect("Failed to initialize SDL2 video subsystem");
 
-        aleph_log::trace!("Initializing SDL2 Event Subsystem");
+        log::trace!("Initializing SDL2 Event Subsystem");
         let sdl_event = sdl
             .event()
             .expect("Failed to initialize SDL2 event subsystem");
 
-        aleph_log::trace!("Initializing SDL2 Event Pump");
+        log::trace!("Initializing SDL2 Event Pump");
         let sdl_event_pump = sdl
             .event_pump()
             .expect("Failed to initialize SDL2 event pump");
@@ -296,7 +296,7 @@ impl PluginPlatformSDL2 {
         for event in event_pump.poll_iter() {
             match event {
                 sdl2::event::Event::Quit { .. } => {
-                    aleph_log::info!("Quit Event Received");
+                    log::info!("Quit Event Received");
                     quit_handle.quit();
                 }
                 sdl2::event::Event::Window { win_event, .. } => {
