@@ -144,7 +144,7 @@ impl IPlugin for PluginGameLogic {
                         egui::menu::bar(ui, |ui| {
                             ui.menu_button("File", |ui| {
                                 if ui.button("Exit").clicked() {
-                                    aleph::log::warn!("They're trying to corner us");
+                                    log::warn!("They're trying to corner us");
                                 }
                             });
                         });
@@ -285,12 +285,12 @@ fn listener_thread(
     let listener = TcpListener::bind("0.0.0.0:42057").unwrap();
 
     while let Ok((mut stream, from)) = listener.accept() {
-        aleph::log::info!("New remote connected with address: {:?}", from);
+        log::info!("New remote connected with address: {:?}", from);
 
         // Read the remote's handshake
         let mut shake = [0u8; 17];
         if stream.read_exact(&mut shake).is_err() {
-            aleph::log::warn!("Failed to read handshake request, connection will be dropped");
+            log::warn!("Failed to read handshake request, connection will be dropped");
             continue;
         }
 
@@ -312,7 +312,7 @@ fn listener_thread(
 
             remote_sender.send(command_sender).unwrap();
         } else {
-            aleph::log::warn!("Handshake data is invalid, connection will be dropped");
+            log::warn!("Handshake data is invalid, connection will be dropped");
         }
     }
 }
