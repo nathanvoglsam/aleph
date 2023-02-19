@@ -28,7 +28,6 @@
 //
 
 use crate::adapter::ValidationAdapter;
-use crate::command_pool::ValidationCommandPool;
 use crate::context::ValidationContext;
 use crate::descriptor_pool::ValidationDescriptorPool;
 use crate::descriptor_set_layout::{DescriptorBindingInfo, ValidationDescriptorSetLayout};
@@ -37,7 +36,7 @@ use crate::internal::get_as_unwrapped;
 use crate::queue::ValidationQueue;
 use crate::sampler::ValidationSampler;
 use crate::{
-    ValidationBuffer, ValidationComputePipeline, ValidationGraphicsPipeline,
+    ValidationBuffer, ValidationCommandList, ValidationComputePipeline, ValidationGraphicsPipeline,
     ValidationPipelineLayout, ValidationShader, ValidationTexture,
 };
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
@@ -384,14 +383,17 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
-        let inner = self.inner.create_command_pool()?;
-        let command_pool = AnyArc::new_cyclic(move |v| ValidationCommandPool {
-            _this: v.clone(),
+    fn create_command_list(
+        &self,
+        desc: &CommandListDesc,
+    ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
+        let inner = self.inner.create_command_list(desc)?;
+        let list = Box::new(ValidationCommandList {
             _device: self._this.upgrade().unwrap(),
             inner,
+            list_type: desc.queue_type,
         });
-        Ok(AnyArc::map::<dyn ICommandPool, _>(command_pool, |v| v))
+        Ok(list)
     }
 
     // ========================================================================================== //

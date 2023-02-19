@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::command_pool::ValidationCommandPool;
 use crate::encoder::ValidationEncoder;
+use crate::ValidationDevice;
 use interfaces::any::AnyArc;
 use interfaces::gpu::*;
 
 pub struct ValidationCommandList {
-    pub(crate) _pool: AnyArc<ValidationCommandPool>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: Box<dyn ICommandList>,
     pub(crate) list_type: QueueType,
 }

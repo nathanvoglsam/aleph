@@ -32,7 +32,6 @@ extern crate aleph_interfaces as interfaces;
 mod adapter;
 mod buffer;
 mod command_list;
-mod command_pool;
 mod context;
 mod descriptor_pool;
 mod descriptor_set_layout;
