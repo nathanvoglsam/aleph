@@ -382,7 +382,7 @@ impl IDevice for Device {
         todo!()
     }
 
-    fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
+    fn create_command_list(&self, desc: &CommandListDesc) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
         todo!()
     }
 
