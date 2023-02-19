@@ -85,9 +85,12 @@ impl EguiRenderer {
         render_data: RenderData,
     ) -> Box<dyn ICommandList> {
         // Begin recording commands into the command list
-        let mut list = self.frames[index]
-            .command_allocator
-            .create_command_list()
+        let mut list = self
+            .device
+            .create_command_list(&CommandListDesc {
+                queue_type: QueueType::General,
+                name: None,
+            })
             .unwrap();
 
         {

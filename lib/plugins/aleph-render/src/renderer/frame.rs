@@ -37,8 +37,6 @@ pub struct PerFrameObjects {
     pub vtx_buffer: AnyArc<dyn IBuffer>,
     pub idx_buffer: AnyArc<dyn IBuffer>,
 
-    pub command_allocator: AnyArc<dyn ICommandPool>,
-
     pub font_version: usize,
     pub font_staging_buffer: AnyArc<dyn IBuffer>,
 
@@ -73,8 +71,6 @@ impl PerFrameObjects {
 
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
-        let command_allocator = device.create_command_pool().unwrap();
-
         let mut descriptor_pool = device
             .create_descriptor_pool(global.descriptor_set_layout.deref(), 2)
             .unwrap();
@@ -83,7 +79,6 @@ impl PerFrameObjects {
         Self {
             vtx_buffer,
             idx_buffer,
-            command_allocator,
             font_version: 0,
             font_staging_buffer,
             font_staged: None,
