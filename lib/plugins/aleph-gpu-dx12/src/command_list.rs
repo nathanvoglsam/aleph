@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::command_pool::CommandPool;
+use crate::device::Device;
 use crate::encoder::Encoder;
 use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::set_name::set_name;
@@ -39,10 +39,11 @@ use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct CommandList {
-    pub(crate) pool: AnyArc<CommandPool>,
-    pub(crate) list_type: QueueType,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) allocator: ID3D12CommandAllocator,
     pub(crate) list: ID3D12GraphicsCommandList7,
+    pub(crate) descriptor_heaps: [Option<ID3D12DescriptorHeap>; 2],
+    pub(crate) list_type: QueueType,
 }
 
 declare_interfaces!(CommandList, [ICommandList]);
@@ -61,7 +62,7 @@ impl ICommandList for CommandList {
                     .Reset(&self.allocator, None)
                     .map_err(|v| anyhow!(v))?;
 
-                self.list.SetDescriptorHeaps(&self.pool.descriptor_heaps);
+                self.list.SetDescriptorHeaps(&self.descriptor_heaps);
             }
 
             let encoder = Encoder::<'a> {
@@ -97,9 +98,7 @@ impl ICommandList for CommandList {
 
 impl ReturnToPool for CommandList {
     fn return_to_pool(&mut self) {
-        self.pool
-            .general_free_list
-            .push((self.allocator.clone(), self.list.clone()))
+        // TODO: probably stale, should remove
     }
 }
 
@@ -112,12 +111,5 @@ impl IGetPlatformInterface for CommandList {
             return Some(());
         };
         None
-    }
-}
-
-impl CommandList {
-    fn set_name(&self, name: &str) {
-        set_name(&self.allocator, name).unwrap();
-        set_name(&self.list, name).unwrap();
     }
 }

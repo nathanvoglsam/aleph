@@ -29,7 +29,7 @@
 
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
-use crate::command_pool::CommandPool;
+use crate::command_list::CommandList;
 use crate::context::Context;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::{
@@ -38,9 +38,9 @@ use crate::descriptor_set_layout::{
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, border_color_to_dx12_static,
     compare_op_to_dx12, cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12,
-    primitive_topology_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
-    shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
-    texture_create_desc_to_dx12, texture_format_to_dxgi,
+    primitive_topology_to_dx12, queue_type_to_dx12, sampler_address_mode_to_dx12,
+    sampler_filters_to_dx12, shader_visibility_to_dx12, stencil_op_to_dx12,
+    texture_create_clear_value_to_dx12, texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
 use crate::internal::descriptor_arena::DescriptorArena;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
@@ -696,19 +696,43 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
-        let pool = AnyArc::new_cyclic(move |v| CommandPool {
-            this: v.clone(),
-            device: self.this.upgrade().unwrap(),
-            descriptor_heaps: [
-                Some(self.descriptor_heaps.gpu_view_heap().heap().clone()),
-                Some(self.descriptor_heaps.gpu_sampler_heap().heap().clone()),
-            ],
-            general_free_list: SegQueue::new(),
-            _compute_free_list: SegQueue::new(),
-            _transfer_free_list: SegQueue::new(),
-        });
-        Ok(AnyArc::map::<dyn ICommandPool, _>(pool, |v| v))
+    fn create_command_list(
+        &self,
+        desc: &CommandListDesc,
+    ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
+        // TODO: Can probably get easy gains by maintaining an object pool to reuse from
+        let platform_list_type = queue_type_to_dx12(desc.queue_type);
+
+        let allocator = unsafe {
+            self.device
+                .CreateCommandAllocator(platform_list_type)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        let list = unsafe {
+            self.device
+                .CreateCommandList1(0, platform_list_type, Default::default())
+                .map_err(|v| anyhow!(v))?
+        };
+
+        if let Some(name) = desc.name {
+            set_name(&allocator, name).map_err(|v| anyhow!(v))?;
+            set_name(&list, name).map_err(|v| anyhow!(v))?;
+        }
+
+        let descriptor_heaps = [
+            Some(self.descriptor_heaps.gpu_view_heap().heap().clone()),
+            Some(self.descriptor_heaps.gpu_sampler_heap().heap().clone()),
+        ];
+
+        let command_list = CommandList {
+            _device: self.this.upgrade().unwrap(),
+            list_type: desc.queue_type,
+            descriptor_heaps,
+            allocator,
+            list,
+        };
+        Ok(Box::new(command_list))
     }
 
     // ========================================================================================== //

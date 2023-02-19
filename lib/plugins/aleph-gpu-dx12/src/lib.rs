@@ -39,7 +39,6 @@ extern crate cstr;
 mod adapter;
 mod buffer;
 mod command_list;
-mod command_pool;
 mod context;
 mod context_provider;
 mod descriptor_pool;
