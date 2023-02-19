@@ -294,8 +294,10 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError>;
 
-    // TODO: add a desc for the debug name
-    fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError>;
+    fn create_command_list(
+        &self,
+        desc: &CommandListDesc,
+    ) -> Result<Box<dyn ICommandList>, CommandListCreateError>;
 
     fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>>;
 
@@ -652,17 +654,6 @@ pub trait ICommandList: IAny + IGetPlatformInterface + Send {
     fn begin_transfer<'a>(
         &'a mut self,
     ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError>;
-}
-
-//
-//
-// _________________________________________________________________________________________________
-// CommandPool
-
-pub trait ICommandPool: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(ICommandPool);
-
-    fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError>;
 }
 
 //
@@ -3224,6 +3215,20 @@ impl Display for QueueType {
             QueueType::Transfer => f.write_str("QueueType::Transfer"),
         }
     }
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Command Lists
+
+pub struct CommandListDesc<'a> {
+    /// The type of queue this command list will be compatible with. This affects what kinds of
+    /// commands can be recorded and what kind of queues the list can be submitted to.
+    pub queue_type: QueueType,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
 }
 
 //
