@@ -59,7 +59,6 @@ use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::Texture;
-use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;

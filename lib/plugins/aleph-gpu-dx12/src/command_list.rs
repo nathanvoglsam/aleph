@@ -30,7 +30,6 @@
 use crate::device::Device;
 use crate::encoder::Encoder;
 use crate::internal::in_flight_command_list::ReturnToPool;
-use crate::internal::set_name::set_name;
 use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
