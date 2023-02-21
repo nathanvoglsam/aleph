@@ -465,7 +465,12 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_fences(&self, _fences: &[&dyn IFence], _wait_all: bool) {
+    fn wait_fences(
+        &self,
+        _fences: &[&dyn IFence],
+        _wait_all: bool,
+        _timeout: u32,
+    ) -> FenceWaitResult {
         todo!()
     }
 
