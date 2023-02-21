@@ -489,13 +489,24 @@ impl IDevice for ValidationDevice {
         let result = self.inner.wait_fences(&inner_fences, wait_all, timeout);
 
         if result == FenceWaitResult::Complete {
-            // TODO: this won't handle 'wait_all' = false
+            // If we met the wait condition we can update the fence states as at least one of them
+            // have been signalled
             fences.iter().for_each(|v| {
                 let v = v
                     .query_interface::<ValidationFence>()
                     .expect("Unknown IFence implementation");
 
-                v.state.store(FenceState::Waited);
+                // We can only update the state if we can prove the fence is signalled.
+                //
+                // If 'wait_all' is true we know that all the fences are signalled so we can update
+                // the state without any further checks.
+                //
+                // If 'wait_all' is false then we only know that at least one fence is signalled.
+                // We poll all the fences after the wait to confirm they are in fact signalled and
+                // update the state accordingly.
+                if wait_all || self.poll_fence(v.inner.as_ref()) {
+                    v.state.store(FenceState::Waited);
+                }
             });
         }
 
