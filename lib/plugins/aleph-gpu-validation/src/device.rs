@@ -464,7 +464,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool) {
+    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
         fences.iter().for_each(|v| {
             let v = v
                 .query_interface::<ValidationFence>()
@@ -486,15 +486,18 @@ impl IDevice for ValidationDevice {
                     .as_ref()
             })
             .collect();
-        let result = self.inner.wait_fences(&inner_fences, wait_all);
+        let result = self.inner.wait_fences(&inner_fences, wait_all, timeout);
 
-        fences.iter().for_each(|v| {
-            let v = v
-                .query_interface::<ValidationFence>()
-                .expect("Unknown IFence implementation");
+        if result == FenceWaitResult::Complete {
+            // TODO: this won't handle 'wait_all' = false
+            fences.iter().for_each(|v| {
+                let v = v
+                    .query_interface::<ValidationFence>()
+                    .expect("Unknown IFence implementation");
 
-            v.state.store(FenceState::Waited);
-        });
+                v.state.store(FenceState::Waited);
+            });
+        }
 
         result
     }
