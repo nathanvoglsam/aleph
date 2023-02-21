@@ -31,14 +31,18 @@ use crate::adapter::ValidationAdapter;
 use crate::context::ValidationContext;
 use crate::descriptor_pool::ValidationDescriptorPool;
 use crate::descriptor_set_layout::{DescriptorBindingInfo, ValidationDescriptorSetLayout};
+use crate::fence::FenceState;
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::get_as_unwrapped;
 use crate::queue::ValidationQueue;
 use crate::sampler::ValidationSampler;
+use crate::semaphore::SemaphoreState;
 use crate::{
-    ValidationBuffer, ValidationCommandList, ValidationComputePipeline, ValidationGraphicsPipeline,
-    ValidationPipelineLayout, ValidationShader, ValidationTexture,
+    ValidationBuffer, ValidationCommandList, ValidationComputePipeline, ValidationFence,
+    ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationSemaphore, ValidationShader,
+    ValidationTexture,
 };
+use crossbeam::atomic::AtomicCell;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
 use std::collections::HashMap;
@@ -427,6 +431,132 @@ impl IDevice for ValidationDevice {
         get_as_unwrapped::descriptor_set_updates(writes, |writes| {
             self.inner.update_descriptor_sets(writes)
         })
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+        let inner = self.inner.create_fence()?;
+        let fence = AnyArc::new_cyclic(move |v| ValidationFence {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+            state: AtomicCell::new(FenceState::Reset),
+        });
+        Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
+        let inner = self.inner.create_semaphore()?;
+        let fence = AnyArc::new_cyclic(move |v| ValidationSemaphore {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+            state: AtomicCell::new(SemaphoreState::Reset),
+        });
+        Ok(AnyArc::map::<dyn ISemaphore, _>(fence, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool) {
+        fences.iter().for_each(|v| {
+            let v = v
+                .query_interface::<ValidationFence>()
+                .expect("Unknown IFence implementation");
+            let fence_state = v.state.load();
+            assert_eq!(
+                fence_state,
+                FenceState::Waiting,
+                "It is invalid to wait on a fence after already having waited on it before"
+            );
+        });
+
+        let inner_fences: Vec<_> = fences
+            .iter()
+            .map(|v| {
+                v.query_interface::<ValidationFence>()
+                    .expect("Unknown IFence implementation")
+                    .inner
+                    .as_ref()
+            })
+            .collect();
+        let result = self.inner.wait_fences(&inner_fences, wait_all);
+
+        fences.iter().for_each(|v| {
+            let v = v
+                .query_interface::<ValidationFence>()
+                .expect("Unknown IFence implementation");
+
+            v.state.store(FenceState::Waited);
+        });
+
+        result
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn poll_fence(&self, fence: &dyn IFence) -> bool {
+        let fence = fence
+            .query_interface::<ValidationFence>()
+            .expect("Unknown IFence implementation");
+
+        let fence_state = fence.state.load();
+        assert_ne!(
+            fence_state,
+            FenceState::Reset,
+            "It is invalid to poll a fence in the 'reset' state"
+        );
+
+        let result = self.inner.poll_fence(fence.inner.as_ref());
+
+        if result {
+            fence.state.store(FenceState::Waited);
+        }
+
+        result
+    }
+
+    fn reset_fences(&self, fences: &[&dyn IFence]) {
+        fences.iter().for_each(|v| {
+            let v = v
+                .query_interface::<ValidationFence>()
+                .expect("Unknown IFence implementation");
+            let fence_state = v.state.load();
+            assert_ne!(
+                fence_state,
+                FenceState::Waiting,
+                "It is invalid to reset a fence while it is still in use on a queue."
+            );
+        });
+
+        let inner_fences: Vec<_> = fences
+            .iter()
+            .map(|v| {
+                v.query_interface::<ValidationFence>()
+                    .expect("Unknown IFence implementation")
+                    .inner
+                    .as_ref()
+            })
+            .collect();
+
+        let result = self.inner.reset_fences(&inner_fences);
+
+        fences.iter().for_each(|v| {
+            let v = v
+                .query_interface::<ValidationFence>()
+                .expect("Unknown IFence implementation");
+
+            v.state.store(FenceState::Reset);
+        });
+
+        result;
     }
 
     // ========================================================================================== //
