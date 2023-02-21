@@ -332,8 +332,50 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// restrictive.
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]);
 
+    /// Constructs a new fence in the default (reset) state.
+    fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError>;
+
+    /// Constructs a new semaphore in the default (reset) state.
+    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError>;
+
+    /// This function will block the calling thread until the fences are signalled by an operation
+    /// some GPU queue.
+    ///
+    /// - `wait_all` controls whether the call should block until all the fences in the set are
+    ///   signalled. if `wait_all` is `false` then the [IDevice::wait_fences] call will return when
+    ///   any of the given fences is signaled.
+    ///
+    /// # Info
+    ///
+    /// If the fences are never signalled this function will deadlock
+    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool);
+
+    /// Polls, and returns, whether the fence has been signalled by the device.
+    fn poll_fence(&self, fence: &dyn IFence) -> bool;
+
+    /// Resets all the given fences to the default state, ready to be used again on a queue.
+    fn reset_fences(&self, fences: &[&dyn IFence]);
+
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Semaphore
+
+pub trait ISemaphore: IAny + IGetPlatformInterface + Send + Sync {
+    any_arc_trait_utils_decl!(ISemaphore);
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Fence
+
+pub trait IFence: IAny + IGetPlatformInterface + Send + Sync {
+    any_arc_trait_utils_decl!(IFence);
 }
 
 //
@@ -3674,6 +3716,28 @@ pub enum SwapChainCreateError {
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum RequestDeviceError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Fence
+
+#[derive(Error, Debug)]
+pub enum FenceCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Semaphore
+
+#[derive(Error, Debug)]
+pub enum SemaphoreCreateError {
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
