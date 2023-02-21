@@ -35,6 +35,7 @@ use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::{
     DescriptorBindingInfo, DescriptorBindingLayout, DescriptorSetLayout,
 };
+use crate::fence::Fence;
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, border_color_to_dx12_static,
     compare_op_to_dx12, cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12,
@@ -52,11 +53,12 @@ use crate::internal::graphics_pipeline_state_stream::{
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
-use crate::internal::{plane_layer_for_aspect_flag, try_clone_value_into_slot};
+use crate::internal::{handle_wait_result, plane_layer_for_aspect_flag, try_clone_value_into_slot};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
+use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use crate::texture::Texture;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
@@ -68,10 +70,12 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use windows::core::PCSTR;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
-use windows::Win32::Foundation::BOOL;
+use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::System::Threading::*;
+use windows::Win32::System::WindowsProgramming::*;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
@@ -761,6 +765,140 @@ impl IDevice for Device {
         for set_write in writes {
             self.update_descriptor_set(set_write);
         }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+        let fence: ID3D12Fence = unsafe {
+            self.device
+                .CreateFence(0, D3D12_FENCE_FLAG_NONE)
+                .map_err(|v| anyhow!(v))?
+        };
+        let fence = AnyArc::new_cyclic(move |v| Fence {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            fence,
+        });
+        Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
+        let fence: ID3D12Fence = unsafe {
+            self.device
+                .CreateFence(0, D3D12_FENCE_FLAG_NONE)
+                .map_err(|v| anyhow!(v))?
+        };
+        let semaphore = AnyArc::new_cyclic(move |v| Semaphore {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            fence,
+        });
+        Ok(AnyArc::map::<dyn ISemaphore, _>(semaphore, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool) {
+        match fences.len() {
+            0 => {} // Do nothing on empty list,
+            1 => {
+                // Special case a single fence with 'SetEventOnCompletion'
+                thread_local! {
+                    pub static WAIT_HANDLE: HANDLE = unsafe {
+                        CreateEventW(std::ptr::null(), false, false, None).unwrap()
+                    };
+                }
+                let fence = fences[0];
+                let fence = fence
+                    .query_interface::<Fence>()
+                    .expect("Unknown IFence implementation");
+
+                WAIT_HANDLE.with(|handle| unsafe {
+                    fence.fence.SetEventOnCompletion(1, *handle).unwrap();
+                    handle_wait_result(WaitForSingleObject(*handle, INFINITE));
+                });
+            }
+            _ => {
+                // Handle the 'n' case with 'SetEventOnMultipleFenceCompletion'
+                thread_local! {
+                    pub static MULTIPLE_WAIT_HANDLE: HANDLE = unsafe {
+                        CreateEventW(std::ptr::null(), false, false, None).unwrap()
+                    };
+                }
+
+                // Unwrap the fences into the form accepted by D3D12, and produce a matching array of values
+                // filled with the expected value for a signalled fence as we use them as binary objects.
+                let fences: Vec<_> = fences
+                    .iter()
+                    .map(|v| {
+                        let v = v
+                            .query_interface::<Fence>()
+                            .expect("Unknown IFence implementation")
+                            .fence
+                            .clone();
+                        Some(v)
+                    })
+                    .collect();
+                let values = vec![1u64; fences.len()];
+
+                MULTIPLE_WAIT_HANDLE.with(|handle| unsafe {
+                    let flags = if wait_all {
+                        D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL
+                    } else {
+                        D3D12_MULTIPLE_FENCE_WAIT_FLAG_ANY
+                    };
+
+                    self.device
+                        .SetEventOnMultipleFenceCompletion(
+                            fences.as_ptr(),
+                            values.as_ptr(),
+                            fences.len() as u32,
+                            flags,
+                            *handle,
+                        )
+                        .unwrap();
+                    let result = WaitForSingleObject(*handle, INFINITE);
+                    handle_wait_result(result);
+                });
+            }
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn poll_fence(&self, fence: &dyn IFence) -> bool {
+        let fence = fence
+            .query_interface::<Fence>()
+            .expect("Unknown IFence implementation");
+        unsafe {
+            let v = fence.fence.GetCompletedValue();
+            v > 0
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn reset_fences(&self, fences: &[&dyn IFence]) {
+        fences.iter().for_each(|v| {
+            let v = v
+                .query_interface::<Fence>()
+                .expect("Unknown IFence implementation")
+                .fence
+                .clone();
+
+            unsafe {
+                // Reset the fence back to '0'
+                v.Signal(0).unwrap();
+            }
+        });
     }
 
     // ========================================================================================== //

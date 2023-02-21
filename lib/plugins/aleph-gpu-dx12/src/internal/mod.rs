@@ -121,3 +121,34 @@ pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
         None
     }
 }
+
+///
+/// # Safety
+///
+/// Calls `GetLastError` internally on error
+///
+pub unsafe fn handle_wait_result(result: u32) {
+    use windows::Win32::Foundation::*;
+
+    // Successfully waited on the event
+    if result == WAIT_OBJECT_0.0 {
+        return;
+    }
+
+    // Timeout is an error as we're supposed to block until the event is signalled
+    if result == WAIT_TIMEOUT.0 {
+        panic!("Timed out waiting for an event with infinite wait timer");
+    }
+
+    // Handle the error case
+    if result == WAIT_FAILED.0 {
+        let _ = GetLastError().to_hresult().unwrap();
+        unreachable!("WaitForSingleObject failed");
+    }
+
+    // This shouldn't even be possible to observe as the event is thread-local so can't
+    // event be observed across threads. But handle it anyway as you never know
+    if result == WAIT_ABANDONED.0 {
+        panic!("Event was abandoned by owning thread");
+    }
+}
