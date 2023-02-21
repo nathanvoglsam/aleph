@@ -804,9 +804,12 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool) {
+    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
         match fences.len() {
-            0 => {} // Do nothing on empty list,
+            0 => {
+                // Do nothing on empty list,
+                FenceWaitResult::Complete
+            }
             1 => {
                 // Special case a single fence with 'SetEventOnCompletion'
                 thread_local! {
@@ -821,12 +824,17 @@ impl IDevice for Device {
 
                 WAIT_HANDLE.with(|handle| unsafe {
                     fence.fence.SetEventOnCompletion(1, *handle).unwrap();
-                    handle_wait_result(WaitForSingleObject(*handle, INFINITE));
-                });
+                    if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
+                        FenceWaitResult::Complete
+                    } else {
+                        FenceWaitResult::Timeout
+                    }
+                })
             }
             _ => {
                 // Handle the 'n' case with 'SetEventOnMultipleFenceCompletion'
                 thread_local! {
+
                     pub static MULTIPLE_WAIT_HANDLE: HANDLE = unsafe {
                         CreateEventW(std::ptr::null(), false, false, None).unwrap()
                     };
@@ -863,9 +871,13 @@ impl IDevice for Device {
                             *handle,
                         )
                         .unwrap();
-                    let result = WaitForSingleObject(*handle, INFINITE);
-                    handle_wait_result(result);
-                });
+
+                    if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
+                        FenceWaitResult::Complete
+                    } else {
+                        FenceWaitResult::Timeout
+                    }
+                })
             }
         }
     }

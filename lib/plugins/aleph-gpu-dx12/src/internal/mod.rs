@@ -123,21 +123,26 @@ pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
 }
 
 ///
+/// Handle result from a `WaitForSingleObject` call. Will panic on error.
+///
+/// - Returns `true` if the `WaitForSingleObject` completed
+/// - Returns `false` if the `WaitForSingleObject` timed out
+///
 /// # Safety
 ///
 /// Calls `GetLastError` internally on error
 ///
-pub unsafe fn handle_wait_result(result: u32) {
+pub unsafe fn handle_wait_result(result: u32) -> bool {
     use windows::Win32::Foundation::*;
 
     // Successfully waited on the event
     if result == WAIT_OBJECT_0.0 {
-        return;
+        return true;
     }
 
     // Timeout is an error as we're supposed to block until the event is signalled
     if result == WAIT_TIMEOUT.0 {
-        panic!("Timed out waiting for an event with infinite wait timer");
+        return false;
     }
 
     // Handle the error case
@@ -151,4 +156,6 @@ pub unsafe fn handle_wait_result(result: u32) {
     if result == WAIT_ABANDONED.0 {
         panic!("Event was abandoned by owning thread");
     }
+
+    unreachable!("Unexpected result value");
 }
