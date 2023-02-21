@@ -345,10 +345,15 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     ///   signalled. if `wait_all` is `false` then the [IDevice::wait_fences] call will return when
     ///   any of the given fences is signaled.
     ///
+    /// - `timeout` specifies how long to wait, in milliseconds, before timing out and returning
+    ///   from the function. If the timeout time is reached before the wait condition is met then
+    ///   the function will return [FenceWaitResult::Timeout]. If `timeout` is equal to `u64::MAX`
+    ///   the wait_fences call will block indefinitely and can not timeout.
+    ///
     /// # Info
     ///
     /// If the fences are never signalled this function will deadlock
-    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool);
+    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult;
 
     /// Polls, and returns, whether the fence has been signalled by the device.
     fn poll_fence(&self, fence: &dyn IFence) -> bool;
@@ -3257,6 +3262,20 @@ impl Display for QueueType {
             QueueType::Transfer => f.write_str("QueueType::Transfer"),
         }
     }
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Fence
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum FenceWaitResult {
+    /// The wait condition was met and the call has returned successfully.
+    Complete,
+
+    /// The timeout time was reached before the condition was met.
+    Timeout,
 }
 
 //
