@@ -31,30 +31,28 @@ use crate::KTXDocument;
 use crate::KTXReadError;
 use std::io::Cursor;
 
-static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &'static [u8] =
+static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &[u8] =
     include_bytes!("../test_images/cubemap_yokohama_astc_8x8_srgb.ktx2");
-static ETC1: &'static [u8] = include_bytes!("../test_images/etc1.ktx2");
-static ETC2_RGB: &'static [u8] = include_bytes!("../test_images/etc2-rgb.ktx2");
-static ETC2_RGBA1: &'static [u8] = include_bytes!("../test_images/etc2-rgba1.ktx2");
-static ETC2_RGBA8: &'static [u8] = include_bytes!("../test_images/etc2-rgba8.ktx2");
-static ETC2_S_RGB: &'static [u8] = include_bytes!("../test_images/etc2-sRGB.ktx2");
-static ETC2_S_RGBA1: &'static [u8] = include_bytes!("../test_images/etc2-sRGBa1.ktx2");
-static ETC2_S_RGBA8: &'static [u8] = include_bytes!("../test_images/etc2-sRGBa8.ktx2");
-static HI_MARK: &'static [u8] = include_bytes!("../test_images/hi_mark.ktx2");
-static KTX_APP_U: &'static [u8] = include_bytes!("../test_images/ktx_app-u.ktx2");
-static PATTERN_02_BC2: &'static [u8] = include_bytes!("../test_images/pattern_02_bc2.ktx2");
-static RGB_MIPMAP_REFERENCE_U: &'static [u8] =
-    include_bytes!("../test_images/rgb-mipmap-reference-u.ktx2");
-static TEXTUREARRAY_ASTC_8X8_UNORM: &'static [u8] =
+static ETC1: &[u8] = include_bytes!("../test_images/etc1.ktx2");
+static ETC2_RGB: &[u8] = include_bytes!("../test_images/etc2-rgb.ktx2");
+static ETC2_RGBA1: &[u8] = include_bytes!("../test_images/etc2-rgba1.ktx2");
+static ETC2_RGBA8: &[u8] = include_bytes!("../test_images/etc2-rgba8.ktx2");
+static ETC2_S_RGB: &[u8] = include_bytes!("../test_images/etc2-sRGB.ktx2");
+static ETC2_S_RGBA1: &[u8] = include_bytes!("../test_images/etc2-sRGBa1.ktx2");
+static ETC2_S_RGBA8: &[u8] = include_bytes!("../test_images/etc2-sRGBa8.ktx2");
+static HI_MARK: &[u8] = include_bytes!("../test_images/hi_mark.ktx2");
+static KTX_APP_U: &[u8] = include_bytes!("../test_images/ktx_app-u.ktx2");
+static PATTERN_02_BC2: &[u8] = include_bytes!("../test_images/pattern_02_bc2.ktx2");
+static RGB_MIPMAP_REFERENCE_U: &[u8] = include_bytes!("../test_images/rgb-mipmap-reference-u.ktx2");
+static TEXTUREARRAY_ASTC_8X8_UNORM: &[u8] =
     include_bytes!("../test_images/texturearray_astc_8x8_unorm.ktx2");
-static TEXTUREARRAY_BC3_UNORM: &'static [u8] =
-    include_bytes!("../test_images/texturearray_bc3_unorm.ktx2");
-static TEXTUREARRAY_ETC2_UNORM: &'static [u8] =
+static TEXTUREARRAY_BC3_UNORM: &[u8] = include_bytes!("../test_images/texturearray_bc3_unorm.ktx2");
+static TEXTUREARRAY_ETC2_UNORM: &[u8] =
     include_bytes!("../test_images/texturearray_etc2_unorm.ktx2");
 
 //static INCORRECT_MIP_LAYOUT_AND_PADDING: &'static [u8] =
 //    include_bytes!("../test_images/incorrect_mip_layout_and_padding.ktx2");
-static INVALID_FACE_COUNT_AND_PADDING: &'static [u8] =
+static INVALID_FACE_COUNT_AND_PADDING: &[u8] =
     include_bytes!("../test_images/invalid_face_count_and_padding.ktx2");
 
 #[test]
