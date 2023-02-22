@@ -107,6 +107,10 @@ fn is_type_equal<A: IAny + ?Sized, B: IAny + Sized>(v: &A) -> bool {
     into_id == self_id
 }
 
+///
+/// Performs a checked downcast from an unsized type to the concrete type specified by the `Into`
+/// type parameter.
+///
 #[inline]
 pub fn box_downcast<From: IAny + ?Sized, Into: IAny + Sized>(
     v: Box<From>,
@@ -120,6 +124,16 @@ pub fn box_downcast<From: IAny + ?Sized, Into: IAny + Sized>(
     }
 }
 
+///
+/// An unsafe version of [box_downcast] that doesn't check if the underlying value is actually of
+/// the correct type.
+///
+/// It is undefined behavior to call this on an object that is not of type `Into`.
+///
+/// # Safety
+///
+/// - It is the caller's responsibility to ensure the object `v` is the correct type.
+///
 #[inline]
 pub unsafe fn box_downcast_unchecked<From: IAny + ?Sized, Into: IAny + Sized>(
     v: Box<From>,
