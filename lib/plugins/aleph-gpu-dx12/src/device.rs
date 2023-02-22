@@ -68,6 +68,7 @@ use parking_lot::RwLock;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::atomic::AtomicU64;
 use windows::core::PCSTR;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Foundation::*;
@@ -795,6 +796,7 @@ impl IDevice for Device {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             fence,
+            value: AtomicU64::new(0),
         });
         Ok(AnyArc::map::<dyn ISemaphore, _>(semaphore, |v| v))
     }
