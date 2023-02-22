@@ -48,7 +48,7 @@ raw-cpuid = "10"
 num_cpus = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-aleph-windows = { path = "../aleph-windows", version = "0.1" }
+aleph-windows = { workspace = true }
 utf16_lit = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]

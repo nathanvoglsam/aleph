@@ -54,7 +54,7 @@ parking_lot = { workspace = true }
 utf16_lit = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-aleph-windows = { path = "../../crates/aleph-windows", version = "0.1" }
+aleph-windows = { workspace = true }
 aleph-dx12-alloc = { path = "../../crates/aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../../crates/aleph-pix", version = "0.1" }
 libc = { workspace = true }

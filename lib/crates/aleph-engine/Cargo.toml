@@ -52,7 +52,7 @@ remote-console = ["aleph-interfaces/remote-console"]
 
 [dependencies]
 aleph-interfaces = { path = "../aleph-interfaces", version = "0.1" }
-aleph-target = { path = "../aleph-target", version = "2" }
+aleph-target = { workspace = true }
 aleph-sys-info = { path = "../aleph-sys-info", version = "0.1" }
 aleph-core = { path = "../../plugins/aleph-core", version = "0.1" }
 aleph-egui = { path = "../../plugins/aleph-egui", version = "0.1" }
@@ -68,7 +68,7 @@ num_cpus = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-gpu-dx12 = { path = "../../plugins/aleph-gpu-dx12", version = "0.1" }
-aleph-windows = { path = "../aleph-windows", version = "0.1" }
+aleph-windows = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = { workspace = true }

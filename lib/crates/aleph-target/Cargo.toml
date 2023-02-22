@@ -44,7 +44,7 @@ build = "build.rs"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-target-build = { path = "../aleph-target-build", version = "2" }
+aleph-target-build = { workspace = true }
 
 [build-dependencies]
-aleph-target-build = { path = "../aleph-target-build", version = "2" }
+aleph-target-build = { workspace = true }
