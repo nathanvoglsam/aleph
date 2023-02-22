@@ -70,7 +70,7 @@ impl D3D12MAVirtualBlock {
     #[inline(always)]
     pub fn Allocate(
         &mut self,
-        pDesc: *const D3D12MA_VIRTUAL_ALLOCATION_DESC,
+        pDesc: &D3D12MA_VIRTUAL_ALLOCATION_DESC,
     ) -> windows::core::Result<u64> {
         unsafe {
             let mut out = 0;
@@ -91,6 +91,7 @@ impl D3D12MAVirtualBlock {
     }
 
     #[inline(always)]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn SetAllocationUserData(&mut self, Offset: u64, pUserData: *mut c_void) {
         unsafe {
             D3D12MA_VirtualBlock_SetAllocationUserData(self.0.as_ptr(), Offset, pUserData);

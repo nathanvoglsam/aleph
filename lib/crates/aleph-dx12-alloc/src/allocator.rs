@@ -81,12 +81,12 @@ impl D3D12MAAllocator {
         pAllocDesc: &D3D12MA_ALLOCATION_DESC,
         pResourceDesc: &D3D12_RESOURCE_DESC,
         InitialResourceState: D3D12_RESOURCE_STATES,
-        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        pOptimizedClearValue: Option<&D3D12_CLEAR_VALUE>,
     ) -> windows::core::Result<D3D12MAAllocation> {
         unsafe {
             let mut allocation = std::ptr::null_mut();
 
-            if !pOptimizedClearValue.is_null() {
+            if let Some(pOptimizedClearValue) = pOptimizedClearValue {
                 D3D12MA_Allocator_CreateResource(
                     self.0 .0.as_ptr(),
                     pAllocDesc,
