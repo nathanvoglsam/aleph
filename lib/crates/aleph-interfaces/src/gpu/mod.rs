@@ -494,6 +494,8 @@ pub trait ISwapChain: IAny + IGetPlatformInterface {
 
     /// Acquire an image from the swap chain for use with rendering
     ///
+    /// # Safety
+    ///
     /// TODO: Safety docs (must drop all acquired images and ensure they aren't in use on the GPU
     unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError>;
 
