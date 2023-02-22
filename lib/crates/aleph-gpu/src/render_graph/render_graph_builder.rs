@@ -292,10 +292,10 @@ impl Default for RenderGraphBuilder {
 }
 
 /// Utility for looking up a resource by name across all types
-fn lookup_resource_usage<'a, 'b>(
+fn lookup_resource_usage<'a>(
     imported: &'a mut HashMap<String, ImportedResource>,
     transients: &'a mut HashMap<String, TransientResource>,
-    transient: &'b str,
+    transient: &str,
 ) -> &'a mut ResourceUsage {
     transients
         .get_mut(transient)
