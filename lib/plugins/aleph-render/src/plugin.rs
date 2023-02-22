@@ -206,6 +206,7 @@ impl PluginRender {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
+    #[allow(clippy::erasing_op)]
     fn log_gpu_info(device: &dyn IDevice, adapter: &dyn IAdapter) {
         let info = adapter.description();
 
