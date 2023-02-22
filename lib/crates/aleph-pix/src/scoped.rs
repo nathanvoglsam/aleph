@@ -32,6 +32,11 @@ use crate::Colour;
 use std::ffi::CStr;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
+///
 pub unsafe fn scoped_for_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
     queue: T,
     colour: Colour,
@@ -44,6 +49,11 @@ pub unsafe fn scoped_for_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
     end_event_on_queue(queue);
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
+///
 pub unsafe fn scoped_for_queue_cstr<'a, T: Into<&'a ID3D12CommandQueue>>(
     queue: T,
     colour: Colour,
@@ -56,6 +66,11 @@ pub unsafe fn scoped_for_queue_cstr<'a, T: Into<&'a ID3D12CommandQueue>>(
     end_event_on_queue(queue);
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
+///
 pub unsafe fn scoped_for_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
     list: T,
     colour: Colour,
@@ -68,6 +83,11 @@ pub unsafe fn scoped_for_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
     end_event_on_list(list);
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
+///
 pub unsafe fn scoped_for_list_cstr<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
     list: T,
     colour: Colour,

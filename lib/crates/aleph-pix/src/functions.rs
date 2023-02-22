@@ -34,15 +34,30 @@ use pix_raw::*;
 use std::ffi::{CStr, CString};
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent`
+///
 pub unsafe fn begin_event(colour: Colour, text: &str) {
     let text = CString::new(text).unwrap();
     SHIM_PIXBeginEvent_N(colour.into(), text.as_ptr())
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent`
+///
 pub unsafe fn begin_event_cstr(colour: Colour, text: &CStr) {
     SHIM_PIXBeginEvent_N(colour.into(), text.as_ptr())
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent`
+///
 pub unsafe fn begin_event_on_queue<'a>(
     context: impl Into<&'a ID3D12CommandQueue>,
     colour: Colour,
@@ -56,6 +71,11 @@ pub unsafe fn begin_event_on_queue<'a>(
     )
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent`
+///
 pub unsafe fn begin_event_cstr_on_queue<'a>(
     context: impl Into<&'a ID3D12CommandQueue>,
     colour: Colour,
@@ -68,6 +88,11 @@ pub unsafe fn begin_event_cstr_on_queue<'a>(
     )
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent`
+///
 pub unsafe fn begin_event_on_list<'a>(
     context: impl Into<&'a ID3D12GraphicsCommandList>,
     colour: Colour,
@@ -81,6 +106,11 @@ pub unsafe fn begin_event_on_list<'a>(
     )
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXBeginEvent`
+///
 pub unsafe fn begin_event_cstr_on_list<'a>(
     context: impl Into<&'a ID3D12GraphicsCommandList>,
     colour: Colour,
@@ -93,27 +123,57 @@ pub unsafe fn begin_event_cstr_on_list<'a>(
     )
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXEndEvent`
+///
 pub unsafe fn end_event() {
     SHIM_PIXEndEvent_N();
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXEndEvent`
+///
 pub unsafe fn end_event_on_queue<'a>(context: impl Into<&'a ID3D12CommandQueue>) {
     SHIM_PIXEndEvent_CQ(std::mem::transmute_copy(context.into()));
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXEndEvent`
+///
 pub unsafe fn end_event_on_list<'a>(context: impl Into<&'a ID3D12GraphicsCommandList>) {
     SHIM_PIXEndEvent_CL(std::mem::transmute_copy(context.into()));
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXSetMarker`
+///
 pub unsafe fn set_marker(colour: Colour, text: &str) {
     let text = CString::new(text).unwrap();
     SHIM_PIXSetMarker_N(colour.into(), text.as_ptr());
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXSetMarker`
+///
 pub unsafe fn set_marker_cstr(colour: Colour, text: &CStr) {
     SHIM_PIXSetMarker_N(colour.into(), text.as_ptr());
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXSetMarker`
+///
 pub unsafe fn set_marker_on_queue<'a>(
     context: impl Into<&'a ID3D12CommandQueue>,
     colour: Colour,
@@ -127,6 +187,11 @@ pub unsafe fn set_marker_on_queue<'a>(
     );
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXSetMarker`
+///
 pub unsafe fn set_marker_cstr_on_queue<'a>(
     context: impl Into<&'a ID3D12CommandQueue>,
     colour: Colour,
@@ -139,6 +204,11 @@ pub unsafe fn set_marker_cstr_on_queue<'a>(
     );
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXSetMarker`
+///
 pub unsafe fn set_marker_on_list<'a>(
     context: impl Into<&'a ID3D12GraphicsCommandList>,
     colour: Colour,
@@ -152,6 +222,11 @@ pub unsafe fn set_marker_on_list<'a>(
     );
 }
 
+///
+/// # Safety
+///
+/// FFI Call to `PIXSetMarker`
+///
 pub unsafe fn set_marker_cstr_on_list<'a>(
     context: impl Into<&'a ID3D12GraphicsCommandList>,
     colour: Colour,
