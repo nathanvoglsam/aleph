@@ -296,7 +296,7 @@ pub fn highlight_code(
 
 pub fn print_error(source: &str, error: ParseError<&str>) {
     // Get the error
-    let err_pos = error.position.0 as usize - source.as_ptr() as usize;
+    let err_pos = error.position.0 - source.as_ptr() as usize;
 
     let (pos, highlight) = highlight_code(source, err_pos).unwrap();
 

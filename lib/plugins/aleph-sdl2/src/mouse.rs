@@ -89,7 +89,7 @@ impl MouseImpl {
             match request {
                 MouseRequest::SetPos(x, y) => {
                     log::trace!("Attempting to set new mouse position");
-                    mouse_utils.warp_mouse_in_window(window, x as i32, y as i32);
+                    mouse_utils.warp_mouse_in_window(window, x, y);
                     log::trace!("Moved mouse to : {}, {}", x, y);
                 }
                 MouseRequest::SetCursor(cursor) => {

@@ -662,7 +662,7 @@ impl World {
                 let dest = dest.checked_sub(pivot).unwrap();
 
                 // Get the references to the target indices
-                (&mut l[source as usize], &mut r[dest as usize])
+                (&mut l[source], &mut r[dest])
             } else {
                 // Select the pivot based on the lowest of the two indices and split the array
                 let pivot = dest.checked_add(1).unwrap();
