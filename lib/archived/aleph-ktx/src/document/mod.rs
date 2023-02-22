@@ -444,7 +444,7 @@ impl<R: Read + Seek> KTXDocument<R> {
 
         loop {
             // If we've reached the end of the key value section we stop and return None
-            if reader.seek(SeekFrom::Current(0))? >= end_of_section {
+            if reader.stream_position()? >= end_of_section {
                 break;
             }
 
@@ -495,7 +495,7 @@ impl<R: Read + Seek> KTXDocument<R> {
 
                 // Get the current offset in the file so we can align forward over the padding
                 // bytes
-                let current_pos = reader.seek(SeekFrom::Current(0))?;
+                let current_pos = reader.stream_position()?;
 
                 // Align forward, only if we're not already aligned
                 let distance_from_alignment = current_pos % 4;
