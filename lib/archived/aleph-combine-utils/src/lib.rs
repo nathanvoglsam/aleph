@@ -168,7 +168,7 @@ impl CharExtensions for char {
             'D' => 0xD,
             'E' => 0xE,
             'F' => 0xF,
-            _ => panic!("\'{}\' is not a hex digit", self),
+            _ => panic!("\'{self}\' is not a hex digit"),
         }
     }
 }
@@ -279,7 +279,7 @@ pub fn highlight_code(
         )?;
 
         // Print the marker
-        writeln!(&mut output, "{}^", space)?;
+        writeln!(&mut output, "{space}^")?;
 
         // Write out the highlighted line and column, +1 to use 1 indexing not 0 indexing
         highlighted_line = line_number + 1;
@@ -301,7 +301,7 @@ pub fn print_error(source: &str, error: ParseError<&str>) {
     let (pos, highlight) = highlight_code(source, err_pos).unwrap();
 
     println!("Error: Error on line {}, column {}", pos.line, pos.column);
-    print!("{}", highlight);
+    print!("{highlight}");
 
     for error in error.errors.into_iter() {
         match error {
@@ -310,38 +310,38 @@ pub fn print_error(source: &str, error: ParseError<&str>) {
                     if token.is_control() || token.is_ascii_control() {
                         println!(" - Unexpected token '{}'", token.escape_default())
                     } else {
-                        println!(" - Unexpected token '{}'", token)
+                        println!(" - Unexpected token '{token}'")
                     }
                 }
-                Info::Range(range) => println!(" - Unexpected range '{}'", range),
-                Info::Owned(msg) => println!(" - Unexpected \"{}\"", msg),
-                Info::Static(msg) => println!(" - Unexpected \"{}\"", msg),
+                Info::Range(range) => println!(" - Unexpected range '{range}'"),
+                Info::Owned(msg) => println!(" - Unexpected \"{msg}\""),
+                Info::Static(msg) => println!(" - Unexpected \"{msg}\""),
             },
             Error::Expected(info) => match info {
                 Info::Token(token) => {
                     if token.is_control() || token.is_ascii_control() {
                         println!(" - Expected token '{}'", token.escape_default())
                     } else {
-                        println!(" - Expected token '{}'", token)
+                        println!(" - Expected token '{token}'")
                     }
                 }
-                Info::Range(range) => println!(" - Expected input '{}'", range),
-                Info::Owned(msg) => println!(" - Expected \"{}\"", msg),
-                Info::Static(msg) => println!(" - Expected \"{}\"", msg),
+                Info::Range(range) => println!(" - Expected input '{range}'"),
+                Info::Owned(msg) => println!(" - Expected \"{msg}\""),
+                Info::Static(msg) => println!(" - Expected \"{msg}\""),
             },
             Error::Message(info) => match info {
                 Info::Token(token) => {
                     if token.is_control() || token.is_ascii_control() {
                         println!(" - Message '{}'", token.escape_default())
                     } else {
-                        println!(" - Message '{}'", token)
+                        println!(" - Message '{token}'")
                     }
                 }
-                Info::Range(range) => println!(" - Message '{}'", range),
-                Info::Owned(msg) => println!(" - Message \"{}\"", msg),
-                Info::Static(msg) => println!(" - Message \"{}\"", msg),
+                Info::Range(range) => println!(" - Message '{range}'"),
+                Info::Owned(msg) => println!(" - Message \"{msg}\""),
+                Info::Static(msg) => println!(" - Message \"{msg}\""),
             },
-            Error::Other(info) => println!(" - Unknown error \"{}\"", info),
+            Error::Other(info) => println!(" - Unknown error \"{info}\""),
         }
     }
 }

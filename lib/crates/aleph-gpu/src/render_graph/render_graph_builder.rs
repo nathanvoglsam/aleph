@@ -205,8 +205,7 @@ impl RenderGraphBuilder {
                     reads_transient || self.imports.contains_key(derived_from);
                 assert!(
                     reads_existing_resource,
-                    "Resource \"{}\" is derived from resource \"{}\", but \"{}\" does not exist",
-                    resource, derived_from, derived_from
+                    "Resource \"{resource}\" is derived from resource \"{derived_from}\", but \"{derived_from}\" does not exist"
                 );
             })
     }

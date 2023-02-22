@@ -75,7 +75,7 @@ impl SystemChannel<SystemCell> {
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)
         if self.system_label_map.insert(label.clone(), index).is_some() {
-            panic!("System already exists: {:?}.", label);
+            panic!("System already exists: {label:?}.");
         }
     }
 }
@@ -100,7 +100,7 @@ impl SystemChannel<ExclusiveSystemCell> {
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)
         if self.system_label_map.insert(label.clone(), index).is_some() {
-            panic!("System already exists: {:?}.", label);
+            panic!("System already exists: {label:?}.");
         }
     }
 }

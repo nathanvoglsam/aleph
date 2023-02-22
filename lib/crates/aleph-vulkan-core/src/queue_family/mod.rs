@@ -162,7 +162,7 @@ impl Debug for QueueFamilyType {
             if flags.is_empty() {
                 write!(f, "FamilyType {{ }}")
             } else {
-                write!(f, "FamilyType {{{}\n}}", flags)
+                write!(f, "FamilyType {{{flags}\n}}")
             }
         } else {
             let mut flags = String::new();
@@ -187,7 +187,7 @@ impl Debug for QueueFamilyType {
                 flags.push_str("PRESENT ");
             }
 
-            write!(f, "FamilyType {{ {}}}", flags)
+            write!(f, "FamilyType {{ {flags}}}")
         }
     }
 }

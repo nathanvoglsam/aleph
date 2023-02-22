@@ -123,7 +123,7 @@ impl IPlugin for PluginGameLogic {
                     let message = payload.msg;
 
                     let mut buffer_borrow = state.buffer.borrow_mut();
-                    writeln!(&mut buffer_borrow, "[{} {}] {}", level, module, message).unwrap();
+                    writeln!(&mut buffer_borrow, "[{level} {module}] {message}").unwrap();
                 }
 
                 remote.set(remote_cell);

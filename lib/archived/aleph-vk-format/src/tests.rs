@@ -35,8 +35,7 @@ fn all_formats_enumerated() {
     ALL_FORMATS.iter().for_each(|format| {
         assert!(
             format.is_known(),
-            "All formats in the list must be known: {:#?}",
-            format
+            "All formats in the list must be known: {format:#?}"
         );
     });
 }
@@ -44,7 +43,7 @@ fn all_formats_enumerated() {
 #[test]
 fn all_formats_have_debug_name() {
     ALL_FORMATS.iter().for_each(|format| {
-        let format_str = format!("{:#?}", format);
+        let format_str = format!("{format:#?}");
         assert_ne!(
             format_str, "(unknown)",
             "All formats must have a debug name"

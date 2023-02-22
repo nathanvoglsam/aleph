@@ -215,7 +215,7 @@ impl<'input> Display for Atom<'input> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Atom::String(v) => f.write_fmt(format_args!("\"{}\"", v)),
+            Atom::String(v) => f.write_fmt(format_args!("\"{v}\"")),
             Atom::Word(v) => f.write_str(v),
         }
     }

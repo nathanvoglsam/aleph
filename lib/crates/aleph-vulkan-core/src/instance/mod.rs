@@ -202,18 +202,12 @@ impl InstanceBuilder {
 
         // Check if the major version is supported
         if max_version_major < major_version {
-            panic!(
-                "Current driver or GPU doesn't support Vulkan {}.x",
-                major_version
-            );
+            panic!("Current driver or GPU doesn't support Vulkan {major_version}.x");
         }
 
         // Check if the minor version is supported
         if max_version_minor < minor_version {
-            panic!(
-                "Current driver or GPU doesn't support Vulkan {}.{}",
-                major_version, minor_version
-            );
+            panic!("Current driver or GPU doesn't support Vulkan {major_version}.{minor_version}");
         }
 
         // Return the packed version

@@ -37,8 +37,8 @@ fn all_formats_handled_prohibited() {
         let allowed = !is_format_prohibited(*format);
         let in_allowed_list = ALLOWED_FORMATS.contains(format);
         match (allowed, in_allowed_list) {
-            (true, false) => panic!("Allowed format not in allowed list: {:#?}", format),
-            (false, true) => panic!("Prohibited format in allowed list: {:#?}", format),
+            (true, false) => panic!("Allowed format not in allowed list: {format:#?}"),
+            (false, true) => panic!("Prohibited format in allowed list: {format:#?}"),
             _ => (),
         };
     });
@@ -49,7 +49,7 @@ fn all_formats_sample_count() {
     ALLOWED_FORMATS.iter().for_each(|format| {
         if !is_format_unsupported(*format) {
             let format_covered = format_sample_info_count(*format).is_some();
-            assert!(format_covered, "{:#?}", format);
+            assert!(format_covered, "{format:#?}");
         }
     });
 }
@@ -60,7 +60,7 @@ fn allowed_formats_sample_info() {
     ALLOWED_FORMATS.iter().for_each(|format| {
         if !is_format_unsupported(*format) {
             let format_covered = SampleInfo::for_format(*format, &mut sample_infos).is_some();
-            assert!(format_covered, "{:#?}", format);
+            assert!(format_covered, "{format:#?}");
         }
     });
 }

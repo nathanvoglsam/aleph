@@ -121,7 +121,7 @@ impl Schedule {
         self.stage_order.push(label.clone());
         let prev = self.stages.insert(label.clone(), Box::new(stage));
         if prev.is_some() {
-            panic!("Stage already exists: {:?}.", label);
+            panic!("Stage already exists: {label:?}.");
         }
         self
     }
@@ -152,7 +152,7 @@ impl Schedule {
         // stages.
         let prev = self.stages.insert(label.clone(), Box::new(stage));
         if prev.is_some() {
-            panic!("Stage already exists: {:?}.", label);
+            panic!("Stage already exists: {label:?}.");
         }
         self
     }
@@ -184,7 +184,7 @@ impl Schedule {
         // stages.
         let prev = self.stages.insert(label.clone(), Box::new(stage));
         if prev.is_some() {
-            panic!("Stage already exists: {:?}.", label);
+            panic!("Stage already exists: {label:?}.");
         }
         self
     }
@@ -268,7 +268,7 @@ impl Schedule {
         func: F,
     ) -> &mut Self {
         let stage = self.get_stage_mut(label).unwrap_or_else(move || {
-            panic!("stage '{:?}' does not exist or is the wrong type", label)
+            panic!("stage '{label:?}' does not exist or is the wrong type")
         });
         func(stage);
         self
@@ -317,7 +317,7 @@ impl Schedule {
             .enumerate()
             .find(|(_i, stage_label)| &***stage_label == target)
             .map(|(i, _)| i)
-            .unwrap_or_else(|| panic!("Target stage does not exist: {:?}.", target))
+            .unwrap_or_else(|| panic!("Target stage does not exist: {target:?}."))
     }
 }
 

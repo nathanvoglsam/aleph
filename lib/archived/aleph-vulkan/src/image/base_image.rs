@@ -164,9 +164,9 @@ impl<'a> ImageSingle2DBuilder<'a> {
             .expect("Failed to create BaseImage ImageView");
 
         if let Some(name) = self.debug_name {
-            let image_name = format!("{}::Image", name);
+            let image_name = format!("{name}::Image");
             let image_name = CString::new(image_name).unwrap();
-            let image_view_name = format!("{}::ImageView", name);
+            let image_view_name = format!("{name}::ImageView");
             let image_view_name = CString::new(image_view_name).unwrap();
             image.add_debug_name(device, &image_name);
             image_view.add_debug_name(device, &image_view_name);

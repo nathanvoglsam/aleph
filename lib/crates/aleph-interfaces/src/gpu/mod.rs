@@ -2155,13 +2155,13 @@ impl Display for OptimalClearValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             OptimalClearValue::ColorF32 { r, g, b, a } => {
-                write!(f, "OptimalClearValue::ColorF32({}, {}, {}, {})", r, g, b, a)
+                write!(f, "OptimalClearValue::ColorF32({r}, {g}, {b}, {a})")
             }
             OptimalClearValue::ColorInt(v) => {
                 write!(f, "OptimalClearValue::ColorInt({:X})", *v)
             }
             OptimalClearValue::DepthStencil(depth, stencil) => {
-                write!(f, "OptimalClearValue::DepthStencil({}, {})", depth, stencil)
+                write!(f, "OptimalClearValue::DepthStencil({depth}, {stencil})")
             }
         }
     }
@@ -3317,7 +3317,7 @@ impl Display for ColorClearValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ColorClearValue::Float { r, g, b, a } => {
-                write!(f, "ColorClearValue::Float({}, {}, {}, {})", r, g, b, a)
+                write!(f, "ColorClearValue::Float({r}, {g}, {b}, {a})")
             }
             ColorClearValue::Int(v) => {
                 write!(f, "ColorClearValue::Int({:X})", *v)

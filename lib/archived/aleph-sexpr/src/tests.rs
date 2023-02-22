@@ -400,7 +400,7 @@ fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(text: &'input st
             );
         }
         Err(error) => {
-            panic!("{:#?}\nCorrectly failed to parse a valid input", error);
+            panic!("{error:#?}\nCorrectly failed to parse a valid input");
         }
     }
 }
@@ -410,7 +410,7 @@ fn test_parses_invalid(text: &str, expected: lalrpop_util::ParseError<usize, Tok
     let parser = crate::parser::FileParser::new();
     match parser.parse(lexer) {
         Ok(output) => {
-            println!("{:#?}", output);
+            println!("{output:#?}");
             panic!("Successfully parsed an invalid input");
         }
         Err(error) => {

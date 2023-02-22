@@ -160,10 +160,7 @@ impl AllocatorBuilder {
         unsafe {
             let result = raw::vmaCreateAllocator(&self.create_info, &mut raw_alloc as *mut _);
             if result != raw::VkResult::VK_SUCCESS {
-                panic!(
-                    "Failed on call to vmaCreateAllocator with error: {:?}",
-                    result
-                );
+                panic!("Failed on call to vmaCreateAllocator with error: {result:?}");
             }
         }
 
