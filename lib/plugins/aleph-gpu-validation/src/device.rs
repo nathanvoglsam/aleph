@@ -128,12 +128,12 @@ impl IDevice for ValidationDevice {
         let new_desc = GraphicsPipelineDesc {
             shader_stages: &shader_stages,
             pipeline_layout: pipeline_layout.inner.as_ref(),
-            vertex_layout: &desc.vertex_layout,
-            input_assembly_state: &desc.input_assembly_state,
-            rasterizer_state: &desc.rasterizer_state,
-            depth_stencil_state: &desc.depth_stencil_state,
-            blend_state: &desc.blend_state,
-            render_target_formats: &desc.render_target_formats,
+            vertex_layout: desc.vertex_layout,
+            input_assembly_state: desc.input_assembly_state,
+            rasterizer_state: desc.rasterizer_state,
+            depth_stencil_state: desc.depth_stencil_state,
+            blend_state: desc.blend_state,
+            render_target_formats: desc.render_target_formats,
             depth_stencil_format: desc.depth_stencil_format,
             name: desc.name,
         };
@@ -249,7 +249,7 @@ impl IDevice for ValidationDevice {
         // references unwrapped
         let mut items = Vec::with_capacity(desc.items.len());
         for (i, v) in desc.items.iter().enumerate() {
-            let static_samplers = static_samplers[i].as_ref().map(|v| v.as_slice());
+            let static_samplers = static_samplers[i].as_deref();
             let item = DescriptorSetLayoutBinding {
                 binding_num: v.binding_num,
                 binding_type: v.binding_type,
@@ -560,7 +560,7 @@ impl IDevice for ValidationDevice {
             })
             .collect();
 
-        let result = self.inner.reset_fences(&inner_fences);
+        self.inner.reset_fences(&inner_fences);
 
         fences.iter().for_each(|v| {
             let v = v
@@ -569,8 +569,6 @@ impl IDevice for ValidationDevice {
 
             v.state.store(FenceState::Reset);
         });
-
-        result;
     }
 
     // ========================================================================================== //
@@ -659,8 +657,8 @@ impl ValidationDevice {
 
         // Check if the caller is trying to write into a static sampler binding, which is
         // categorically invalid.
-        assert_eq!(
-            info.is_static_sampler, false,
+        assert!(
+            info.is_static_sampler,
             "Writing a descriptor into a static sampler binding is invalid."
         );
 

@@ -143,8 +143,9 @@ impl ValidationDescriptorPool {
         if !align.is_power_of_two() {
             panic!("is_aligned_to: align is not a power-of-two");
         }
-        assert!(
-            (set.as_ptr() as usize) & align - 1 == 0,
+        assert_eq!(
+            (set.as_ptr() as usize) & (align - 1),
+            0,
             "DescriptorSetHandle contains badly-aligned pointer"
         );
 

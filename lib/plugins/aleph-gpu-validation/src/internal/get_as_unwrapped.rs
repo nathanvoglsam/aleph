@@ -57,7 +57,7 @@ use interfaces::gpu::*;
 use std::ops::Deref;
 use std::ptr::NonNull;
 
-pub fn buffer<'a>(buffer: &'a dyn IBuffer) -> &'a dyn IBuffer {
+pub fn buffer(buffer: &dyn IBuffer) -> &dyn IBuffer {
     buffer
         .query_interface::<ValidationBuffer>()
         .expect("Unknown IBuffer Implementation")
@@ -65,7 +65,7 @@ pub fn buffer<'a>(buffer: &'a dyn IBuffer) -> &'a dyn IBuffer {
         .deref()
 }
 
-pub fn texture<'a>(texture: &'a dyn ITexture) -> &'a dyn ITexture {
+pub fn texture(texture: &dyn ITexture) -> &dyn ITexture {
     texture
         .query_interface::<ValidationTexture>()
         .expect("Unknown ITexture Implementation")
@@ -89,7 +89,7 @@ pub fn pipeline_layout_desc<Return>(
     f: impl FnOnce(&PipelineLayoutDesc) -> Return,
 ) -> Return {
     let mut set_layouts: Vec<&dyn IDescriptorSetLayout> = Vec::new();
-    for v in desc.set_layouts.iter().copied() {
+    for v in desc.set_layouts {
         let v = v
             .query_interface::<ValidationDescriptorSetLayout>()
             .expect("Unknown IDescriptorSetLayout implementation");
@@ -98,12 +98,11 @@ pub fn pipeline_layout_desc<Return>(
 
     let new_desc = PipelineLayoutDesc {
         set_layouts: &set_layouts,
-        push_constant_blocks: &desc.push_constant_blocks,
+        push_constant_blocks: desc.push_constant_blocks,
         name: desc.name,
     };
 
-    let v = f(&new_desc);
-    v
+    f(&new_desc)
 }
 
 pub fn descriptor_set_updates<Return>(
@@ -129,8 +128,7 @@ pub fn descriptor_set_updates<Return>(
         });
     }
 
-    let v = f(&new_writes);
-    v
+    f(&new_writes)
 }
 
 pub fn descriptor_writes<'a>(writes: &'a DescriptorWrites<'a>) -> OwnedDescriptorWrites<'a> {

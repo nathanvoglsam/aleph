@@ -97,17 +97,11 @@ impl ValidationBuffer {
         let size = self.desc().size;
         assert!(
             offset < size,
-            "Invalidation range (offset: {}, len: {}) outside buffer size ({})",
-            offset,
-            len,
-            size
+            "Invalidation range (offset: {offset}, len: {len}) outside buffer size ({size})",
         );
         assert!(
             offset + len < size,
-            "Invalidation range (offset: {}, len: {}) outside buffer size ({})",
-            offset,
-            len,
-            size
+            "Invalidation range (offset: {offset}, len: {len}) outside buffer size ({size})",
         );
     }
 }

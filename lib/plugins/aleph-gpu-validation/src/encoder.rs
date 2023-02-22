@@ -324,20 +324,17 @@ impl<T: ?Sized> ValidationEncoder<T> {
         if aspect.contains(TextureAspect::COLOR) {
             assert!(
                 !format.is_depth_stencil(),
-                "Texture of format {} has no 'Color' aspect",
-                format
+                "Texture of format {format} has no 'Color' aspect",
             );
         } else if aspect.contains(TextureAspect::DEPTH_STENCIL) {
             assert!(
                 format.is_depth() && format.is_stencil(),
-                "Texture of format {} lacks both 'Depth' and 'Stencil' aspect",
-                format
+                "Texture of format {format} lacks both 'Depth' and 'Stencil' aspect",
             );
         } else if aspect.intersects(TextureAspect::DEPTH_STENCIL) {
             assert!(
                 format.is_depth_stencil(),
-                "Texture of format {} has no 'Depth' or 'Stencil' aspect",
-                format
+                "Texture of format {format} has no 'Depth' or 'Stencil' aspect",
             );
         }
     }
