@@ -149,8 +149,8 @@ impl AllocatorBuilder {
 
         let a_val: u32 = AllocatorCreateFlag::KHR_DEDICATED_ALLOCATION_BIT.into();
         if self.create_info.flags & a_val != 0
-            && (functions.vkGetBufferMemoryRequirements2KHR == None
-                || functions.vkGetImageMemoryRequirements2KHR == None)
+            && (functions.vkGetBufferMemoryRequirements2KHR.is_none()
+                || functions.vkGetImageMemoryRequirements2KHR.is_none())
         {
             return Err(AllocatorBuilderError::InvalidExtensionFunctionPointers);
         }
