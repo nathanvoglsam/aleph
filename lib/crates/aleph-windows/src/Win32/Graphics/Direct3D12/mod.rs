@@ -27,6 +27,10 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::useless_transmute)]
+#![allow(clippy::missing_safety_doc)]
+
 use bitflags::bitflags;
 use std::ffi::c_void;
 use std::ops::Deref;
