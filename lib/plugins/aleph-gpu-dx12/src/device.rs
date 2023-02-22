@@ -779,6 +779,7 @@ impl IDevice for Device {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             fence,
+            value: AtomicU64::new(0),
         });
         Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
     }
@@ -840,20 +841,18 @@ impl IDevice for Device {
                     };
                 }
 
-                // Unwrap the fences into the form accepted by D3D12, and produce a matching array of values
-                // filled with the expected value for a signalled fence as we use them as binary objects.
-                let fences: Vec<_> = fences
-                    .iter()
-                    .map(|v| {
-                        let v = v
-                            .query_interface::<Fence>()
-                            .expect("Unknown IFence implementation")
-                            .fence
-                            .clone();
-                        Some(v)
-                    })
-                    .collect();
-                let values = vec![1u64; fences.len()];
+                // Unwrap the fences into the form accepted by D3D12, and produce a matching array
+                // of values filled with the expected value for a signalled fence.
+                let mut inner_fences: Vec<Option<ID3D12Fence>> = Vec::with_capacity(fences.len());
+                let mut wait_values: Vec<u64> = Vec::with_capacity(fences.len());
+                for fence in fences {
+                    let fence = fence
+                        .query_interface::<Fence>()
+                        .expect("Unknown IFence implementation");
+
+                    inner_fences.push(Some(fence.fence.clone()));
+                    wait_values.push(fence.get_wait_value());
+                }
 
                 MULTIPLE_WAIT_HANDLE.with(|handle| unsafe {
                     let flags = if wait_all {
@@ -864,8 +863,8 @@ impl IDevice for Device {
 
                     self.device
                         .SetEventOnMultipleFenceCompletion(
-                            fences.as_ptr(),
-                            values.as_ptr(),
+                            inner_fences.as_ptr(),
+                            wait_values.as_ptr(),
                             fences.len() as u32,
                             flags,
                             *handle,
@@ -891,26 +890,16 @@ impl IDevice for Device {
             .expect("Unknown IFence implementation");
         unsafe {
             let v = fence.fence.GetCompletedValue();
-            v > 0
+            v < fence.get_wait_value()
         }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn reset_fences(&self, fences: &[&dyn IFence]) {
-        fences.iter().for_each(|v| {
-            let v = v
-                .query_interface::<Fence>()
-                .expect("Unknown IFence implementation")
-                .fence
-                .clone();
-
-            unsafe {
-                // Reset the fence back to '0'
-                v.Signal(0).unwrap();
-            }
-        });
+    fn reset_fences(&self, _fences: &[&dyn IFence]) {
+        // Fence reset is a no-op on dx12 as a fence is always ready to use. It uses a monotonic
+        // counter to keep the signals and waits correct.
     }
 
     // ========================================================================================== //
