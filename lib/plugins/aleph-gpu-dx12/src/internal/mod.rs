@@ -147,7 +147,7 @@ pub unsafe fn handle_wait_result(result: u32) -> bool {
 
     // Handle the error case
     if result == WAIT_FAILED.0 {
-        let _ = GetLastError().to_hresult().unwrap();
+        GetLastError().to_hresult().unwrap();
         unreachable!("WaitForSingleObject failed");
     }
 

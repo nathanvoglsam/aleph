@@ -213,7 +213,7 @@ impl SwapChain {
             buffer_count,
             width,
             height,
-            format.into(),
+            format,
             flags,
             p_creation_node_mask,
             pp_present_queue,

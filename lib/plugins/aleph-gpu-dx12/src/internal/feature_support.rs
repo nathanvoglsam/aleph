@@ -33,7 +33,7 @@
 
 use std::mem::MaybeUninit;
 use windows::core::{Error, HRESULT};
-use windows::Win32::Foundation::E_INVALIDARG;
+use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -78,148 +78,149 @@ impl FeatureSupport {
         unsafe {
             let options = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS)
                 .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS {
-                    DoublePrecisionFloatShaderOps: Default::default(),
-                    OutputMergerLogicOp: Default::default(),
+                    DoublePrecisionFloatShaderOps: BOOL(0),
+                    OutputMergerLogicOp: BOOL(0),
                     MinPrecisionSupport: D3D12_SHADER_MIN_PRECISION_SUPPORT_NONE,
                     TiledResourcesTier: D3D12_TILED_RESOURCES_TIER_NOT_SUPPORTED,
                     ResourceBindingTier: Default::default(),
-                    PSSpecifiedStencilRefSupported: Default::default(),
-                    TypedUAVLoadAdditionalFormats: Default::default(),
-                    ROVsSupported: Default::default(),
+                    PSSpecifiedStencilRefSupported: BOOL(0),
+                    TypedUAVLoadAdditionalFormats: BOOL(0),
+                    ROVsSupported: BOOL(0),
                     ConservativeRasterizationTier:
                         D3D12_CONSERVATIVE_RASTERIZATION_TIER_NOT_SUPPORTED,
                     MaxGPUVirtualAddressBitsPerResource: 0,
-                    StandardSwizzle64KBSupported: Default::default(),
+                    StandardSwizzle64KBSupported: BOOL(0),
                     CrossNodeSharingTier: D3D12_CROSS_NODE_SHARING_TIER_NOT_SUPPORTED,
-                    CrossAdapterRowMajorTextureSupported: Default::default(),
+                    CrossAdapterRowMajorTextureSupported: BOOL(0),
                     VPAndRTArrayIndexFromAnyShaderFeedingRasterizerSupportedWithoutGSEmulation:
-                        Default::default(),
+                        BOOL(0),
                     ResourceHeapTier: Default::default(),
                 });
 
             let gpu_va_support =
                 load_options_or_default(&device, D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT)
-                    .unwrap_or_else(|_| D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
+                    .unwrap_or(D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
                         MaxGPUVirtualAddressBitsPerProcess: 0,
                         MaxGPUVirtualAddressBitsPerResource: 0,
                     });
 
             let options_1 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS1)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
-                    WaveOps: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
+                    WaveOps: BOOL(0),
                     WaveLaneCountMin: 0,
                     WaveLaneCountMax: 0,
                     TotalLaneCount: 0,
-                    ExpandedComputeResourceStates: Default::default(),
-                    Int64ShaderOps: Default::default(),
+                    ExpandedComputeResourceStates: BOOL(0),
+                    Int64ShaderOps: BOOL(0),
                 });
 
             let options_2 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS2)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
-                    DepthBoundsTestSupported: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
+                    DepthBoundsTestSupported: BOOL(0),
                     ProgrammableSamplePositionsTier:
                         D3D12_PROGRAMMABLE_SAMPLE_POSITIONS_TIER_NOT_SUPPORTED,
                 });
 
             let shader_cache = load_options_or_default(&device, D3D12_FEATURE_SHADER_CACHE)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_SHADER_CACHE {
+                .unwrap_or(D3D12_FEATURE_DATA_SHADER_CACHE {
                     SupportFlags: D3D12_SHADER_CACHE_SUPPORT_NONE,
                 });
 
             let options_3 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS3)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
-                    CopyQueueTimestampQueriesSupported: Default::default(),
-                    CastingFullyTypedFormatSupported: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
+                    CopyQueueTimestampQueriesSupported: BOOL(0),
+                    CastingFullyTypedFormatSupported: BOOL(0),
                     WriteBufferImmediateSupportFlags: D3D12_COMMAND_LIST_SUPPORT_FLAG_NONE,
                     ViewInstancingTier: D3D12_VIEW_INSTANCING_TIER_NOT_SUPPORTED,
-                    BarycentricsSupported: Default::default(),
+                    BarycentricsSupported: BOOL(0),
                 });
 
             let existing_heaps = load_options_or_default(&device, D3D12_FEATURE_EXISTING_HEAPS)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_EXISTING_HEAPS {
-                    Supported: Default::default(),
-                });
+                .unwrap_or(D3D12_FEATURE_DATA_EXISTING_HEAPS { Supported: BOOL(0) });
 
             let options_4 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS4)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
-                    MSAA64KBAlignedTextureSupported: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
+                    MSAA64KBAlignedTextureSupported: BOOL(0),
                     SharedResourceCompatibilityTier: D3D12_SHARED_RESOURCE_COMPATIBILITY_TIER_0,
-                    Native16BitShaderOpsSupported: Default::default(),
+                    Native16BitShaderOpsSupported: BOOL(0),
                 });
 
-            let cross_node = load_options_or_default(&device, D3D12_FEATURE_CROSS_NODE)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_CROSS_NODE {
+            let cross_node = load_options_or_default(&device, D3D12_FEATURE_CROSS_NODE).unwrap_or(
+                D3D12_FEATURE_DATA_CROSS_NODE {
                     SharingTier: D3D12_CROSS_NODE_SHARING_TIER_NOT_SUPPORTED,
-                    AtomicShaderInstructions: Default::default(),
-                });
+                    AtomicShaderInstructions: BOOL(0),
+                },
+            );
 
             let options_5 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS5)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
-                    SRVOnlyTiledResourceTier3: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
+                    SRVOnlyTiledResourceTier3: BOOL(0),
                     RenderPassesTier: D3D12_RENDER_PASS_TIER_0,
                     RaytracingTier: D3D12_RAYTRACING_TIER_NOT_SUPPORTED,
                 });
 
             let displayable = load_options_or_default(&device, D3D12_FEATURE_DISPLAYABLE)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_DISPLAYABLE {
-                    DisplayableTexture: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_DISPLAYABLE {
+                    DisplayableTexture: BOOL(0),
                     SharedResourceCompatibilityTier: D3D12_SHARED_RESOURCE_COMPATIBILITY_TIER_0,
                 });
 
             let options_6 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS6)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
-                    AdditionalShadingRatesSupported: Default::default(),
-                    PerPrimitiveShadingRateSupportedWithViewportIndexing: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
+                    AdditionalShadingRatesSupported: BOOL(0),
+                    PerPrimitiveShadingRateSupportedWithViewportIndexing: BOOL(0),
                     VariableShadingRateTier: D3D12_VARIABLE_SHADING_RATE_TIER_NOT_SUPPORTED,
                     ShadingRateImageTileSize: 0,
-                    BackgroundProcessingSupported: Default::default(),
+                    BackgroundProcessingSupported: BOOL(0),
                 });
 
             let options_7 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS7)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
                     MeshShaderTier: D3D12_MESH_SHADER_TIER_NOT_SUPPORTED,
                     SamplerFeedbackTier: D3D12_SAMPLER_FEEDBACK_TIER_NOT_SUPPORTED,
                 });
 
             let options_8 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS8)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS8 {
-                    UnalignedBlockTexturesSupported: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS8 {
+                    UnalignedBlockTexturesSupported: BOOL(0),
                 });
 
             let options_9 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS9)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS9 {
-                    MeshShaderPipelineStatsSupported: Default::default(),
-                    MeshShaderSupportsFullRangeRenderTargetArrayIndex: Default::default(),
-                    AtomicInt64OnTypedResourceSupported: Default::default(),
-                    AtomicInt64OnGroupSharedSupported: Default::default(),
-                    DerivativesInMeshAndAmplificationShadersSupported: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS9 {
+                    MeshShaderPipelineStatsSupported: BOOL(0),
+                    MeshShaderSupportsFullRangeRenderTargetArrayIndex: BOOL(0),
+                    AtomicInt64OnTypedResourceSupported: BOOL(0),
+                    AtomicInt64OnGroupSharedSupported: BOOL(0),
+                    DerivativesInMeshAndAmplificationShadersSupported: BOOL(0),
                     WaveMMATier: D3D12_WAVE_MMA_TIER_NOT_SUPPORTED,
                 });
 
             let options_10 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS10)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS10 {
-                    VariableRateShadingSumCombinerSupported: Default::default(),
-                    MeshShaderPerPrimitiveShadingRateSupported: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS10 {
+                    VariableRateShadingSumCombinerSupported: BOOL(0),
+                    MeshShaderPerPrimitiveShadingRateSupported: BOOL(0),
                 });
 
             let options_11 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS11)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS11 {
-                    AtomicInt64OnDescriptorHeapResourceSupported: Default::default(),
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS11 {
+                    AtomicInt64OnDescriptorHeapResourceSupported: BOOL(0),
                 });
 
             let options_12 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS12)
-                .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS12 {
+                .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS12 {
                     MSPrimitivesPipelineStatisticIncludesCulledPrimitives: D3D12_TRI_STATE::UNKNOWN,
-                    EnhancedBarriersSupported: Default::default(),
-                    RelaxedFormatCastingSupported: Default::default(),
+                    EnhancedBarriersSupported: BOOL(0),
+                    RelaxedFormatCastingSupported: BOOL(0),
                 });
 
             let node_count = device.GetNodeCount();
             let mut serialization = Vec::with_capacity(node_count as _);
             let mut architecture_1 = Vec::with_capacity(node_count as _);
             for i in 0..node_count {
-                let mut node_architecture_1 = D3D12_FEATURE_DATA_ARCHITECTURE1::default();
-                node_architecture_1.NodeIndex = i;
+                let mut node_architecture_1 = D3D12_FEATURE_DATA_ARCHITECTURE1 {
+                    NodeIndex: i,
+                    ..Default::default()
+                };
                 let result: Result<(), _> = device.CheckFeatureSupport(
                     D3D12_FEATURE_ARCHITECTURE1,
                     &mut node_architecture_1 as *mut D3D12_FEATURE_DATA_ARCHITECTURE1 as *mut _,
@@ -227,8 +228,10 @@ impl FeatureSupport {
                 );
 
                 if result.is_err() {
-                    let mut node_architecture = D3D12_FEATURE_DATA_ARCHITECTURE::default();
-                    node_architecture.NodeIndex = i;
+                    let mut node_architecture = D3D12_FEATURE_DATA_ARCHITECTURE {
+                        NodeIndex: i,
+                        ..Default::default()
+                    };
                     let result: Result<(), _> = device.CheckFeatureSupport(
                         D3D12_FEATURE_ARCHITECTURE,
                         &mut node_architecture as *mut D3D12_FEATURE_DATA_ARCHITECTURE as *mut _,
@@ -248,8 +251,10 @@ impl FeatureSupport {
                 }
                 architecture_1.push(node_architecture_1);
 
-                let mut node_serialization = D3D12_FEATURE_DATA_SERIALIZATION::default();
-                node_serialization.NodeIndex = i;
+                let mut node_serialization = D3D12_FEATURE_DATA_SERIALIZATION {
+                    NodeIndex: i,
+                    ..Default::default()
+                };
                 let result: Result<(), _> = device.CheckFeatureSupport(
                     D3D12_FEATURE_SERIALIZATION,
                     &mut node_serialization as *mut D3D12_FEATURE_DATA_SERIALIZATION as *mut _,
@@ -336,7 +341,7 @@ impl FeatureSupport {
             }
         }
 
-        return Ok(Default::default());
+        Ok(Default::default())
     }
 
     unsafe fn query_highest_root_signature(
@@ -375,7 +380,7 @@ impl FeatureSupport {
             }
         }
 
-        return Ok(Default::default());
+        Ok(Default::default())
     }
 
     unsafe fn query_highest_feature_level(
@@ -407,7 +412,7 @@ impl FeatureSupport {
             std::mem::size_of_val(&levels) as u32,
         );
 
-        return match result.map_err(HRESULT::from) {
+        match result.map_err(HRESULT::from) {
             Ok(_) => Ok(levels.MaxSupportedFeatureLevel),
             Err(e) => {
                 if e == DXGI_ERROR_UNSUPPORTED {
@@ -416,7 +421,7 @@ impl FeatureSupport {
                     Err(Error::from(e))
                 }
             }
-        };
+        }
     }
 }
 
@@ -648,11 +653,11 @@ impl FeatureSupport {
                     std::mem::size_of_val(&priority) as u32,
                 )
                 .is_ok();
-            return if !success {
+            if !success {
                 false
             } else {
                 priority.PriorityForTypeIsSupported.as_bool()
-            };
+            }
         }
     }
 

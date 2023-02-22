@@ -54,7 +54,7 @@ pub struct DescriptorAllocatorCPU {
 impl DescriptorAllocatorCPU {
     #[allow(unused)]
     pub fn new(device: &ID3D12Device, heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> Self {
-        let device: ID3D12Device = device.clone().into();
+        let device: ID3D12Device = device.clone();
         let heap_info = HeapInfo::new(&device, heap_type);
         Self {
             device,

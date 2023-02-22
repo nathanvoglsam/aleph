@@ -212,7 +212,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         // Build the render target format array
         let mut rt_formats = [DXGI_FORMAT::default(); 8];
         for (i, item) in self.rtv_formats.iter().enumerate() {
-            rt_formats[i] = (*item).into();
+            rt_formats[i] = *item;
         }
 
         // Get the input layout array

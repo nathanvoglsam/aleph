@@ -311,6 +311,7 @@ pub fn image_layout_to_dx12(layout: ImageLayout) -> D3D12_BARRIER_LAYOUT {
 
 macro_rules! translate_flag_onto {
     ($src:ident, $dst:ident, $src_flag:expr, $dst_flag:expr) => {
+        #[allow(clippy::assign_op_pattern)]
         if ($src.contains($src_flag)) {
             $dst = $dst | $dst_flag;
         }
@@ -533,7 +534,7 @@ pub fn texture_create_desc_to_dx12(
         Height: desc.height,
         DepthOrArraySize: depth_or_array_size as u16,
         MipLevels: desc.mip_levels as u16,
-        Format: texture_format_to_dxgi(desc.format).into(),
+        Format: texture_format_to_dxgi(desc.format),
         SampleDesc: DXGI_SAMPLE_DESC {
             Count: desc.sample_count,
             Quality: desc.sample_quality,

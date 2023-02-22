@@ -63,7 +63,7 @@ impl IBuffer for Buffer {
 
     fn desc(&self) -> BufferDesc {
         let mut desc = self.desc.clone();
-        desc.name = self.name.as_ref().map(String::as_str);
+        desc.name = self.name.as_deref();
         desc
     }
 

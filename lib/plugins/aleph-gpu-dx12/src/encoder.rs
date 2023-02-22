@@ -41,7 +41,6 @@ use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::*;
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::any::TypeId;
-use std::ops::Deref;
 use std::ptr::NonNull;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -184,11 +183,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
         // This command can't work without a bound pipeline, we need the pipeline layout so we can
         // know where in the root signature to write the data
-        let pipeline = self
-            .bound_graphics_pipeline
-            .as_ref()
-            .map(|v| v.deref())
-            .unwrap();
+        let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
 
         // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
         // the constant block index

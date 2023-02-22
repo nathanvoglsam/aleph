@@ -94,7 +94,7 @@ impl Texture {
         };
         self.get_or_create_view_for_usage(
             &self.rtv_cache,
-            &self.device.descriptor_heaps.cpu_rtv_heap(),
+            self.device.descriptor_heaps.cpu_rtv_heap(),
             format,
             sub_resources,
             init,
@@ -114,7 +114,7 @@ impl Texture {
         };
         self.get_or_create_view_for_usage(
             &self.dsv_cache,
-            &self.device.descriptor_heaps.cpu_dsv_heap(),
+            self.device.descriptor_heaps.cpu_dsv_heap(),
             format,
             sub_resources,
             init,
@@ -241,7 +241,7 @@ impl Texture {
         };
 
         D3D12_RENDER_TARGET_VIEW_DESC {
-            Format: texture_format_to_dxgi(format).into(),
+            Format: texture_format_to_dxgi(format),
             ViewDimension: view_dimension,
             Anonymous: anonymous,
         }
@@ -313,7 +313,7 @@ impl Texture {
         };
 
         D3D12_DEPTH_STENCIL_VIEW_DESC {
-            Format: texture_format_to_dxgi(format).into(),
+            Format: texture_format_to_dxgi(format),
             ViewDimension: view_dimension,
             Flags: Default::default(),
             Anonymous: anonymous,
@@ -336,7 +336,7 @@ impl ITexture for Texture {
 
     fn desc(&self) -> TextureDesc {
         let mut desc = self.desc.clone();
-        desc.name = self.name.as_ref().map(String::as_str);
+        desc.name = self.name.as_deref();
         desc
     }
 }

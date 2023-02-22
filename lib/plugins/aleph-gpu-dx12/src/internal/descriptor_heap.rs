@@ -120,8 +120,7 @@ impl DescriptorHeap {
 
         // Allocate our bit flag buffer
         let flags = {
-            let mut flags: Vec<u32> = Vec::with_capacity((num_descriptors / 32) as usize);
-            flags.resize(flags.capacity(), 0);
+            let flags: Vec<u32> = vec![0; (num_descriptors / 32) as usize];
             flags.into_boxed_slice()
         };
 
@@ -328,7 +327,7 @@ impl DescriptorHeapState {
             panic!("Out of descriptors");
         }
 
-        return Some(first_result);
+        Some(first_result)
     }
 
     /// Release 'num_descriptors' descriptors, starting from 'id'
@@ -338,7 +337,7 @@ impl DescriptorHeapState {
         }
 
         let start = id.0 as u32;
-        let end = start + (num_descriptors as u32);
+        let end = start + num_descriptors;
         for i in start..end {
             let flag_i = i / 32;
             let mask = !(1u32 << (i % 32));

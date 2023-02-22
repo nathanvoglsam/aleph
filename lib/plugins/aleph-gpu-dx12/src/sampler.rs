@@ -58,7 +58,7 @@ impl ISampler for Sampler {
 
     fn desc(&self) -> SamplerDesc {
         let mut desc = self.desc.clone();
-        desc.name = self.name.as_ref().map(String::as_str);
+        desc.name = self.name.as_deref();
         desc
     }
 }

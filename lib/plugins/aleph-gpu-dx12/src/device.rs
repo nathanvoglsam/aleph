@@ -75,7 +75,6 @@ use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::System::Threading::*;
-use windows::Win32::System::WindowsProgramming::*;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
@@ -420,7 +419,7 @@ impl IDevice for Device {
 
             // Extend our list of static samplers based on the provided list for this binding
             static_samplers.extend(layout.static_samplers.iter().map(|v| {
-                let mut out = v.clone();
+                let mut out = *v;
                 out.RegisterSpace = i as u32;
                 out
             }));
@@ -437,7 +436,7 @@ impl IDevice for Device {
                         pDescriptorRanges: ranges.as_ptr(),
                     },
                 },
-                ShaderVisibility: visibility.clone().into(),
+                ShaderVisibility: *visibility,
             };
             parameters.push(param);
         }
@@ -601,8 +600,7 @@ impl IDevice for Device {
             VisibleNodeMask: 0,
         };
         let resource_desc = texture_create_desc_to_dx12(desc)?;
-        let optimized_clear_value =
-            texture_create_clear_value_to_dx12(desc, resource_desc.Format.try_into().unwrap())?;
+        let optimized_clear_value = texture_create_clear_value_to_dx12(desc, resource_desc.Format)?;
 
         let resource = unsafe {
             let optimized_clear_value = optimized_clear_value.map(D3D12_CLEAR_VALUE::from);
@@ -923,7 +921,7 @@ impl IDevice for Device {
 
 impl Device {
     /// Internal function for translating the list of [IShader] stages into the pipeline description
-    fn translate_shader_stage_list<'a, 'b>(
+    fn translate_shader_stage_list<'a>(
         shader_stages: &'a [&'a dyn IShader],
         mut builder: GraphicsPipelineStateStreamBuilder<'a>,
     ) -> Result<GraphicsPipelineStateStreamBuilder<'a>, GraphicsPipelineCreateError> {
@@ -1037,8 +1035,8 @@ impl Device {
 
     /// Internal function for translating the [InputAssemblyStateDesc] field of a pipeline
     /// description
-    fn translate_input_assembly_state_desc<'a, 'b>(
-        desc: &'a GraphicsPipelineDesc,
+    fn translate_input_assembly_state_desc<'b>(
+        desc: &GraphicsPipelineDesc,
         mut builder: GraphicsPipelineStateStreamBuilder<'b>,
     ) -> (
         GraphicsPipelineStateStreamBuilder<'b>,
@@ -1688,11 +1686,8 @@ impl Device {
                 i,
             );
 
-            match set_write.descriptor_type {
-                DescriptorType::StructuredBuffer => {
-                    self.update_structured_buffer_descriptor(v, buffer, dst);
-                }
-                _ => {}
+            if set_write.descriptor_type == DescriptorType::StructuredBuffer {
+                self.update_structured_buffer_descriptor(v, buffer, dst);
             }
         }
     }
