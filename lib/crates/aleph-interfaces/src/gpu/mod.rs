@@ -729,9 +729,9 @@ impl DescriptorSetHandle {
     }
 }
 
-impl Into<NonNull<()>> for DescriptorSetHandle {
-    fn into(self) -> NonNull<()> {
-        self.0
+impl From<DescriptorSetHandle> for NonNull<()> {
+    fn from(val: DescriptorSetHandle) -> Self {
+        val.0
     }
 }
 
@@ -1026,17 +1026,17 @@ impl From<Color> for u64 {
     }
 }
 
-impl Into<(f32, f32, f32, f32)> for Color {
+impl From<Color> for (f32, f32, f32, f32) {
     #[inline(always)]
-    fn into(self) -> (f32, f32, f32, f32) {
+    fn from(val: Color) -> Self {
         #[inline(always)]
         fn convert_channel(c: u64) -> f32 {
             ((c & 0xFF) as f32) / 255.0
         }
-        let a = convert_channel(self.0 >> 48);
-        let r = convert_channel(self.0 >> 32);
-        let g = convert_channel(self.0 >> 16);
-        let b = convert_channel(self.0);
+        let a = convert_channel(val.0 >> 48);
+        let r = convert_channel(val.0 >> 32);
+        let g = convert_channel(val.0 >> 16);
+        let b = convert_channel(val.0);
         (a, r, g, b)
     }
 }
@@ -3611,9 +3611,9 @@ impl TextureCopyAspect {
     }
 }
 
-impl Into<TextureAspect> for TextureCopyAspect {
-    fn into(self) -> TextureAspect {
-        self.as_flag()
+impl From<TextureCopyAspect> for TextureAspect {
+    fn from(val: TextureCopyAspect) -> Self {
+        val.as_flag()
     }
 }
 
