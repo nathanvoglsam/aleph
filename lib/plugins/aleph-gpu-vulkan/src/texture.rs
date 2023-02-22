@@ -61,7 +61,7 @@ impl ITexture for Texture {
 
     fn desc(&self) -> TextureDesc {
         let mut desc = self.desc.clone();
-        desc.name = self.name.as_ref().map(String::as_str);
+        desc.name = self.name.as_deref();
         desc
     }
 }

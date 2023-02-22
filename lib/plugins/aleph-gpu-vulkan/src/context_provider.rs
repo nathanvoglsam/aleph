@@ -344,18 +344,14 @@ fn assert_version_supported<T>(
 
     // Check if the major version is supported
     if max_version_major < major_version {
-        let e = format!(
-            "Current driver or GPU doesn't support Vulkan {}.x",
-            major_version
-        );
+        let e = format!("Current driver or GPU doesn't support Vulkan {major_version}.x",);
         return Err(ContextCreateError::Platform(anyhow!(e)));
     }
 
     // Check if the minor version is supported
     if max_version_minor < minor_version {
         let e = format!(
-            "Current driver or GPU doesn't support Vulkan {}.{}",
-            major_version, minor_version
+            "Current driver or GPU doesn't support Vulkan {major_version}.{minor_version}",
         );
         return Err(ContextCreateError::Platform(anyhow!(e)));
     }
