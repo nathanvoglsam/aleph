@@ -658,7 +658,7 @@ impl ValidationDevice {
         // Check if the caller is trying to write into a static sampler binding, which is
         // categorically invalid.
         assert!(
-            info.is_static_sampler,
+            !info.is_static_sampler,
             "Writing a descriptor into a static sampler binding is invalid."
         );
 
