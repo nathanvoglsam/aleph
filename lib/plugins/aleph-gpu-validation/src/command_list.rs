@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::encoder::ValidationEncoder;
-use crate::ValidationDevice;
+use crate::{ValidationDevice, ValidationEncoder};
 use interfaces::any::AnyArc;
 use interfaces::gpu::*;
 

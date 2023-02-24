@@ -29,9 +29,8 @@
 
 // TODO: generational index + extra indirection for validating use-after-free for descriptor sets
 
-use crate::descriptor_set_layout::ValidationDescriptorSetLayout;
-use crate::device::ValidationDevice;
 use crate::internal::descriptor_set::DescriptorSet;
+use crate::{ValidationDescriptorSetLayout, ValidationDevice};
 use interfaces::any::AnyArc;
 use interfaces::gpu::*;
 use std::ptr::NonNull;

@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::device::ValidationDevice;
-use crate::surface::ValidationSurface;
-use crate::ValidationTexture;
+use crate::{ValidationDevice, ValidationSurface, ValidationTexture};
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use parking_lot::Mutex;

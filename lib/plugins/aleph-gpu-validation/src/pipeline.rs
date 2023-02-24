@@ -27,10 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::device::ValidationDevice;
-use crate::pipeline_layout::ValidationPipelineLayout;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
+use crate::{ValidationDevice, ValidationPipelineLayout};
 
 pub struct ValidationGraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,

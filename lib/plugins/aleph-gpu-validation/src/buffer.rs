@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::device::ValidationDevice;
+use crate::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::ptr::NonNull;

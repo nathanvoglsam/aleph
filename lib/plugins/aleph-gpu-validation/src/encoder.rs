@@ -28,8 +28,7 @@
 //
 
 use crate::internal::get_as_unwrapped;
-use crate::texture::ValidationTexture;
-use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout};
+use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationTexture};
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::*;
 use std::any::TypeId;

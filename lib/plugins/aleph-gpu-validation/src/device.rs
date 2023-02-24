@@ -27,20 +27,16 @@
 // SOFTWARE.
 //
 
-use crate::adapter::ValidationAdapter;
-use crate::context::ValidationContext;
-use crate::descriptor_pool::ValidationDescriptorPool;
-use crate::descriptor_set_layout::{DescriptorBindingInfo, ValidationDescriptorSetLayout};
+use crate::descriptor_set_layout::DescriptorBindingInfo;
 use crate::fence::FenceState;
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::get_as_unwrapped;
-use crate::queue::ValidationQueue;
-use crate::sampler::ValidationSampler;
 use crate::semaphore::SemaphoreState;
 use crate::{
-    ValidationBuffer, ValidationCommandList, ValidationComputePipeline, ValidationFence,
-    ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationSemaphore, ValidationShader,
-    ValidationTexture,
+    ValidationAdapter, ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
+    ValidationContext, ValidationDescriptorPool, ValidationDescriptorSetLayout, ValidationFence,
+    ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationQueue, ValidationSampler,
+    ValidationSemaphore, ValidationShader, ValidationTexture,
 };
 use crossbeam::atomic::AtomicCell;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};

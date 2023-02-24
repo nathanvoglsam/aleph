@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::descriptor_set_layout::ValidationDescriptorSetLayout;
+use crate::ValidationDescriptorSetLayout;
 use interfaces::any::AnyArc;
 use interfaces::gpu::*;
 use std::ptr::NonNull;

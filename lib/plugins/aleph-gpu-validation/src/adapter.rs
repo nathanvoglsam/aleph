@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::context::ValidationContext;
-use crate::queue::ValidationQueue;
-use crate::ValidationDevice;
+use crate::{ValidationContext, ValidationDevice, ValidationQueue};
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
 

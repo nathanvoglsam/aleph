@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::context::ValidationContext;
-use crate::{ValidationDevice, ValidationSwapChain};
+use crate::{ValidationContext, ValidationDevice, ValidationSwapChain};
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
 use std::sync::atomic::{AtomicBool, Ordering};
