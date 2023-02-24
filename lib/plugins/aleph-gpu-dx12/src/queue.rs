@@ -56,14 +56,6 @@ pub struct Queue {
 declare_interfaces!(Queue, [IQueue]);
 
 impl Queue {
-    fn is_list_supported(queue_type: QueueType, list_type: QueueType) -> bool {
-        return match (queue_type, list_type) {
-            (QueueType::Compute, QueueType::General) => false,
-            (QueueType::Transfer, QueueType::Compute | QueueType::General) => false,
-            _ => true,
-        };
-    }
-
     #[inline]
     pub(crate) fn new(
         device: &ID3D12Device,
@@ -145,7 +137,7 @@ impl IQueue for Queue {
 
         // Check that the queue supports submitting the provided command list type
         let (queue_type, list_type) = (self.queue_type, command_list.list_type);
-        if !Self::is_list_supported(queue_type, list_type) {
+        if queue_type != list_type {
             return Err(QueueSubmitError::InvalidEncoderType(list_type));
         }
 
@@ -185,7 +177,7 @@ impl IQueue for Queue {
         // Check that the queue supports submitting the provided command list type
         for command_list in lists.iter() {
             let (queue_type, list_type) = (self.queue_type, command_list.list_type);
-            if !Self::is_list_supported(queue_type, list_type) {
+            if queue_type != list_type {
                 return Err(QueueSubmitError::InvalidEncoderType(list_type));
             }
         }
