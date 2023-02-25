@@ -278,106 +278,106 @@ impl ISwapChain for SwapChain {
         inner.queued_resize = Some((width, height));
     }
 
-    unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-        let mut inner = self.inner.lock().unwrap();
-
-        if let Some((width, height)) = inner.queued_resize.take() {
-            // TODO: Need to investigate how to correctly synchronize this. It should only
-            //       require handling when the old swap chain is destroyed as oldSwapChain is
-            //       specifically designed to allow already in flight frames to finish
-            self.device.wait_idle();
-            self.device.garbage_collect();
-
-            let width = if width == u32::MAX {
-                inner.extent.width
-            } else {
-                width
-            };
-            let height = if height == u32::MAX {
-                inner.extent.height
-            } else {
-                height
-            };
-            let config = SwapChainConfiguration {
-                format: inner.format,
-                width,
-                height,
-                present_mode: todo!(),
-                preferred_queue: todo!(),
-            };
-            self.build(&mut inner, &config)
-                .map_err(|_| AcquireImageError::SurfaceNotAvailable)?;
-        }
-
-        unsafe {
-            let result = self.device.device_loader.acquire_next_image_khr(
-                inner.swap_chain,
-                u64::MAX,
-                vk::Semaphore::null(),
-                inner.acquire_fence,
-            );
-            match result.raw {
-                vk::Result::SUCCESS | vk::Result::SUBOPTIMAL_KHR => {
-                    let value = result.value.unwrap();
-
-                    let image = inner.images[value as usize];
-
-                    if result.raw == vk::Result::SUBOPTIMAL_KHR {
-                        inner.queued_resize = Some((u32::MAX, u32::MAX));
-                    }
-
-                    // As an initial solution we'll just use a fence to ensure the image is ready
-                    // to use.
-                    // TODO: Profile to see if it's worth the effort being smarter about this. Is
-                    //       blocking the CPU here that big of a deal?
-                    self.device
-                        .device_loader
-                        .wait_for_fences(&[inner.acquire_fence], true, u64::MAX)
-                        .map_err(|e| {
-                            anyhow!("Failed to wait on acquire fence with code '{}'", e)
-                        })?;
-                    self.device
-                        .device_loader
-                        .reset_fences(&[inner.acquire_fence])
-                        .map_err(|e| anyhow!("Failed to reset acquire fence with code '{}'", e))?;
-
-                    let image = AnyArc::new_cyclic(move |v| SwapTexture {
-                        this: v.clone(),
-                        swap_chain: self.this.upgrade().unwrap(),
-                        image,
-                        desc: TextureDesc {
-                            width: inner.extent.width,
-                            height: inner.extent.height,
-                            depth: 1,
-                            format: inner.format,
-                            dimension: TextureDimension::Texture2D,
-                            clear_value: None,
-                            array_size: 1,
-                            mip_levels: 1,
-                            sample_count: 1,
-                            sample_quality: 0,
-                            allow_unordered_access: false,
-                            allow_cube_face: false,
-                            is_render_target: true,
-                            name: None,
-                        },
-                        vk_format: inner.vk_format,
-                        name: None,
-                    });
-                    todo!()
-                    // Ok(AnyArc::map::<dyn ITexture, _>(image, |v| v))
-                }
-                vk::Result::ERROR_OUT_OF_DATE_KHR => {
-                    inner.queued_resize = Some((u32::MAX, u32::MAX));
-                    todo!()
-                }
-                _ => Err(AcquireImageError::Platform(anyhow!(
-                    "Failed to acquire swap chain image with error '{}'",
-                    result
-                ))),
-            }
-        }
-    }
+    // unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
+    //     let mut inner = self.inner.lock().unwrap();
+    //
+    //     if let Some((width, height)) = inner.queued_resize.take() {
+    //         // TODO: Need to investigate how to correctly synchronize this. It should only
+    //         //       require handling when the old swap chain is destroyed as oldSwapChain is
+    //         //       specifically designed to allow already in flight frames to finish
+    //         self.device.wait_idle();
+    //         self.device.garbage_collect();
+    //
+    //         let width = if width == u32::MAX {
+    //             inner.extent.width
+    //         } else {
+    //             width
+    //         };
+    //         let height = if height == u32::MAX {
+    //             inner.extent.height
+    //         } else {
+    //             height
+    //         };
+    //         let config = SwapChainConfiguration {
+    //             format: inner.format,
+    //             width,
+    //             height,
+    //             present_mode: todo!(),
+    //             preferred_queue: todo!(),
+    //         };
+    //         self.build(&mut inner, &config)
+    //             .map_err(|_| AcquireImageError::SurfaceNotAvailable)?;
+    //     }
+    //
+    //     unsafe {
+    //         let result = self.device.device_loader.acquire_next_image_khr(
+    //             inner.swap_chain,
+    //             u64::MAX,
+    //             vk::Semaphore::null(),
+    //             inner.acquire_fence,
+    //         );
+    //         match result.raw {
+    //             vk::Result::SUCCESS | vk::Result::SUBOPTIMAL_KHR => {
+    //                 let value = result.value.unwrap();
+    //
+    //                 let image = inner.images[value as usize];
+    //
+    //                 if result.raw == vk::Result::SUBOPTIMAL_KHR {
+    //                     inner.queued_resize = Some((u32::MAX, u32::MAX));
+    //                 }
+    //
+    //                 // As an initial solution we'll just use a fence to ensure the image is ready
+    //                 // to use.
+    //                 // TODO: Profile to see if it's worth the effort being smarter about this. Is
+    //                 //       blocking the CPU here that big of a deal?
+    //                 self.device
+    //                     .device_loader
+    //                     .wait_for_fences(&[inner.acquire_fence], true, u64::MAX)
+    //                     .map_err(|e| {
+    //                         anyhow!("Failed to wait on acquire fence with code '{}'", e)
+    //                     })?;
+    //                 self.device
+    //                     .device_loader
+    //                     .reset_fences(&[inner.acquire_fence])
+    //                     .map_err(|e| anyhow!("Failed to reset acquire fence with code '{}'", e))?;
+    //
+    //                 let image = AnyArc::new_cyclic(move |v| SwapTexture {
+    //                     this: v.clone(),
+    //                     swap_chain: self.this.upgrade().unwrap(),
+    //                     image,
+    //                     desc: TextureDesc {
+    //                         width: inner.extent.width,
+    //                         height: inner.extent.height,
+    //                         depth: 1,
+    //                         format: inner.format,
+    //                         dimension: TextureDimension::Texture2D,
+    //                         clear_value: None,
+    //                         array_size: 1,
+    //                         mip_levels: 1,
+    //                         sample_count: 1,
+    //                         sample_quality: 0,
+    //                         allow_unordered_access: false,
+    //                         allow_cube_face: false,
+    //                         is_render_target: true,
+    //                         name: None,
+    //                     },
+    //                     vk_format: inner.vk_format,
+    //                     name: None,
+    //                 });
+    //                 todo!()
+    //                 // Ok(AnyArc::map::<dyn ITexture, _>(image, |v| v))
+    //             }
+    //             vk::Result::ERROR_OUT_OF_DATE_KHR => {
+    //                 inner.queued_resize = Some((u32::MAX, u32::MAX));
+    //                 todo!()
+    //             }
+    //             _ => Err(AcquireImageError::Platform(anyhow!(
+    //                 "Failed to acquire swap chain image with error '{}'",
+    //                 result
+    //             ))),
+    //         }
+    //     }
+    // }
 
     fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {
         todo!()
