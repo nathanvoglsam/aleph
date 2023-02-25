@@ -32,7 +32,7 @@ use crate::internal::get_as_unwrapped;
 use crate::semaphore::SemaphoreState;
 use crate::{
     ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
-    ValidationTexture,
+    ValidationSwapChain, ValidationTexture,
 };
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
@@ -146,6 +146,16 @@ impl IQueue for ValidationQueue {
         &self,
         desc: &QueueAcquireDesc,
     ) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
+        let swap_chain = desc
+            .swap_chain
+            .query_interface::<ValidationSwapChain>()
+            .expect("Unknown ISwapChain implementation");
+
+        assert_eq!(
+            self.queue_type, swap_chain.queue_support,
+            "Tried to use a swap chain on an unsupported queue"
+        );
+
         let result = get_as_unwrapped::queue_acquire_desc(desc, |inner_desc| {
             let result = self.inner.acquire(inner_desc);
 
@@ -171,6 +181,16 @@ impl IQueue for ValidationQueue {
     }
 
     unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+        let swap_chain = desc
+            .swap_chain
+            .query_interface::<ValidationSwapChain>()
+            .expect("Unknown ISwapChain implementation");
+
+        assert_eq!(
+            self.queue_type, swap_chain.queue_support,
+            "Tried to use a swap chain on an unsupported queue"
+        );
+
         get_as_unwrapped::queue_present_desc(desc, |inner_desc| {
             let result = self.inner.present(inner_desc);
 
