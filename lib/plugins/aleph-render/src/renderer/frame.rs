@@ -37,6 +37,9 @@ pub struct PerFrameObjects {
     pub vtx_buffer: AnyArc<dyn IBuffer>,
     pub idx_buffer: AnyArc<dyn IBuffer>,
 
+    pub acquire_semaphore: AnyArc<dyn ISemaphore>,
+    pub present_semaphore: AnyArc<dyn ISemaphore>,
+
     pub font_version: usize,
     pub font_staging_buffer: AnyArc<dyn IBuffer>,
 
@@ -79,6 +82,8 @@ impl PerFrameObjects {
         Self {
             vtx_buffer,
             idx_buffer,
+            acquire_semaphore: device.create_semaphore().unwrap(),
+            present_semaphore: device.create_semaphore().unwrap(),
             font_version: 0,
             font_staging_buffer,
             font_staged: None,

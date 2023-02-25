@@ -39,14 +39,14 @@ use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
 pub struct EguiRenderer {
-    frames: Vec<PerFrameObjects>,
-    global: GlobalObjects,
+    pub frames: Vec<PerFrameObjects>,
+    pub global: GlobalObjects,
 
     /// Rendering device
-    device: AnyArc<dyn IDevice>,
+    pub device: AnyArc<dyn IDevice>,
 
     ///
-    pixels_per_point: f32,
+    pub pixels_per_point: f32,
 }
 
 impl EguiRenderer {
