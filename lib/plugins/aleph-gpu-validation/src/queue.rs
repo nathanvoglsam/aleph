@@ -27,12 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::{ValidationCommandList, ValidationSwapChain};
-use interfaces::any::{box_downcast, AnyArc, AnyWeak, QueryInterface};
+use crate::fence::FenceState;
+use crate::internal::get_as_unwrapped;
+use crate::semaphore::SemaphoreState;
+use crate::{
+    ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
+    ValidationTexture,
+};
+use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
 
 pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _device: AnyWeak<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IQueue>,
     pub(crate) queue_type: QueueType,
 }
@@ -58,38 +65,125 @@ impl IQueue for ValidationQueue {
         self.inner.queue_properties()
     }
 
-    unsafe fn submit_list(
-        &self,
-        command_list: Box<dyn ICommandList>,
-    ) -> Result<(), QueueSubmitError> {
-        let list = box_downcast::<_, ValidationCommandList>(command_list)
-            .ok()
-            .expect("Unknown ICommandList implementation")
-            .inner;
+    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
+        for v in desc.command_lists {
+            let v = v
+                .query_interface::<ValidationCommandList>()
+                .expect("Unknown ICommandList implementation");
+            self.validate_command_list_submission(v);
+        }
 
-        self.inner.submit_list(list)
+        for v in desc.wait_semaphores {
+            let v = v
+                .query_interface::<ValidationSemaphore>()
+                .expect("Unknown ISemaphore implementation");
+            let semaphore_state = v.state.load();
+
+            assert_eq!(
+                semaphore_state,
+                SemaphoreState::Waiting,
+                "It is invalid to submit a wait semaphore after using it in a previous submission"
+            );
+        }
+
+        // for v in desc.signal_semaphores {
+        //     let v = v
+        //         .query_interface::<ValidationSemaphore>()
+        //         .expect("Unknown ISemaphore implementation");
+        //     let semaphore_state = v.state.load();
+        //
+        //     assert_eq!(
+        //         semaphore_state,
+        //         SemaphoreState::Reset,
+        //         "It is invalid to submit a signal semaphore before use in a previous submission"
+        //     );
+        // }
+
+        if let Some(v) = desc.fence {
+            let v = v
+                .query_interface::<ValidationFence>()
+                .expect("Unknown IFence implementation");
+            let fence_state = v.state.load();
+
+            assert_eq!(
+                fence_state,
+                FenceState::Reset,
+                "It is invalid to submit a wait fence without resetting it from prior use"
+            );
+        }
+
+        get_as_unwrapped::queue_submit_desc(desc, |inner_desc| {
+            let result = self.inner.submit(inner_desc);
+
+            // for v in desc.wait_semaphores {
+            //     let v = v
+            //         .query_interface::<ValidationSemaphore>()
+            //         .expect("Unknown ISemaphore implementation");
+            //
+            //     v.state.store(SemaphoreState::Waited);
+            // }
+
+            for v in desc.signal_semaphores {
+                let v = v
+                    .query_interface::<ValidationSemaphore>()
+                    .expect("Unknown ISemaphore implementation");
+
+                v.state.store(SemaphoreState::Waiting);
+            }
+
+            if let Some(v) = desc.fence {
+                let v = v
+                    .query_interface::<ValidationFence>()
+                    .expect("Unknown IFence implementation");
+                v.state.store(FenceState::Waiting);
+            }
+
+            result
+        })
     }
 
-    unsafe fn submit_lists(
+    unsafe fn acquire(
         &self,
-        command_lists: &mut dyn Iterator<Item = Box<dyn ICommandList>>,
-    ) -> Result<(), QueueSubmitError> {
-        let mut command_lists = command_lists.map(|v| {
-            box_downcast::<_, ValidationCommandList>(v)
-                .ok()
-                .expect("Unknown ICommandList implementation")
-                .inner
+        desc: &QueueAcquireDesc,
+    ) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
+        let result = get_as_unwrapped::queue_acquire_desc(desc, |inner_desc| {
+            let result = self.inner.acquire(inner_desc);
+
+            for v in desc.signal_semaphores {
+                let v = v
+                    .query_interface::<ValidationSemaphore>()
+                    .expect("Unknown ISemaphore implementation");
+
+                v.state.store(SemaphoreState::Waiting);
+            }
+
+            result
         });
 
-        self.inner.submit_lists(&mut command_lists)
+        result.map(|inner| {
+            let texture = AnyArc::new_cyclic(move |v| ValidationTexture {
+                _this: v.clone(),
+                _device: self._device.upgrade().unwrap(),
+                inner,
+            });
+            AnyArc::map::<dyn ITexture, _>(texture, |v| v)
+        })
     }
 
-    unsafe fn present(&self, swap_chain: &dyn ISwapChain) -> Result<(), QueuePresentError> {
-        let swap_chain = swap_chain
-            .query_interface::<ValidationSwapChain>()
-            .expect("Unknown ISwapChain implementation");
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+        get_as_unwrapped::queue_present_desc(desc, |inner_desc| {
+            let result = self.inner.present(inner_desc);
 
-        self.inner.present(swap_chain.inner.as_ref())
+            // for v in desc.wait_semaphores {
+            //     let v = v
+            //         .query_interface::<ValidationSemaphore>()
+            //         .expect("Unknown ISemaphore implementation");
+            //
+            //     v.state.store(SemaphoreState::Waited);
+            // }
+
+            result
+        })
     }
 
     unsafe fn set_marker(&mut self, _color: Color, _message: &str) {
@@ -105,5 +199,31 @@ impl IQueue for ValidationQueue {
     unsafe fn end_event(&mut self) {
         unimplemented!();
         // self.inner.end_event();
+    }
+}
+
+impl ValidationQueue {
+    pub fn validate_command_list_submission<'b>(
+        &self,
+        list: &'b ValidationCommandList,
+    ) -> &'b ValidationCommandList {
+        match self.queue_type {
+            QueueType::General => {
+                assert!(
+                    matches!(list.list_type, QueueType::General),
+                    "Can only submit 'General' command lists to 'General' queues"
+                )
+            }
+            QueueType::Compute => {
+                assert!(
+                    matches!(list.list_type, QueueType::General | QueueType::Compute),
+                    "Can only submit 'Compute' command lists to 'General' or 'Compute' queues"
+                )
+            }
+            QueueType::Transfer => {
+                // Transfer command lists can be submitted to any queue type
+            }
+        }
+        list
     }
 }

@@ -31,7 +31,6 @@ use crate::{ValidationDevice, ValidationSurface, ValidationTexture};
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use parking_lot::Mutex;
-use std::ops::DerefMut;
 
 pub struct ValidationSwapChain {
     pub(crate) _this: AnyWeak<Self>,
@@ -69,23 +68,6 @@ impl ISwapChain for ValidationSwapChain {
 
     fn queue_resize(&self, width: u32, height: u32) {
         self.inner.queue_resize(width, height)
-    }
-
-    unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-        // Acquire and wrap the inner image
-        let inner = self.inner.acquire_image()?;
-        let image = AnyArc::new_cyclic(move |v| ValidationTexture {
-            _this: v.clone(),
-            _device: self._device.clone(),
-            inner,
-        });
-
-        // Cache the newly fetched image so we can hand the object out from 'get_current_image'
-        let mut lock = self.current_image.lock();
-        let current = lock.deref_mut();
-        *current = Some(image.clone());
-
-        Ok(AnyArc::map::<dyn ITexture, _>(image, |v| v))
     }
 
     fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {

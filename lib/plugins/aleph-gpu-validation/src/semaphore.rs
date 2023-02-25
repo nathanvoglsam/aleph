@@ -65,8 +65,4 @@ pub enum SemaphoreState {
     /// The state a semaphore transitions to when used as a 'signal' semaphore in a queue
     /// submission. Once in this state it is ready to be used as a 'wait' semaphore.
     Waiting,
-
-    /// The state a semaphore transitions to when used as a 'wait' semaphore in a queue submission.
-    /// This state is terminal and the semaphore can not be used again.
-    Waited,
 }

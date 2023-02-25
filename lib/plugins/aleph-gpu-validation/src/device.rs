@@ -41,7 +41,7 @@ use crate::{
 use crossbeam::atomic::AtomicCell;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -104,15 +104,28 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
+        let mut stage_set = HashSet::with_capacity(8);
         let shader_stages: Vec<&dyn IShader> = desc
             .shader_stages
             .iter()
             .copied()
             .map(|v| {
-                v.query_interface::<ValidationShader>()
-                    .expect("Unknown IShader implementation")
-                    .inner
-                    .as_ref()
+                let v = v
+                    .query_interface::<ValidationShader>()
+                    .expect("Unknown IShader implementation");
+
+                let duplicate_stage = !stage_set.insert(v.shader_type as u32);
+                assert!(
+                    !duplicate_stage,
+                    "Provided multiple shader modules of the same type for a graphics pipeline"
+                );
+                assert_ne!(
+                    v.shader_type,
+                    ShaderType::Compute,
+                    "Passed a compute shader module to a graphics pipeline"
+                );
+
+                v.inner.as_ref()
             })
             .collect();
 
@@ -155,6 +168,12 @@ impl IDevice for ValidationDevice {
             .shader_module
             .query_interface::<ValidationShader>()
             .expect("Unknown IShader implementation");
+
+        assert_eq!(
+            shader_module.shader_type,
+            ShaderType::Compute,
+            "Passed a non-compute shader as the module for a compute pipeline"
+        );
 
         let pipeline_layout = desc
             .pipeline_layout

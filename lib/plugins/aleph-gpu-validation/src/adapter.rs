@@ -61,11 +61,13 @@ impl IAdapter for ValidationAdapter {
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         fn query_queue(
             inner: &dyn IDevice,
+            device_weak: AnyWeak<ValidationDevice>,
             queue_type: QueueType,
         ) -> Option<AnyArc<ValidationQueue>> {
             inner.get_queue(queue_type).map(|q| {
                 AnyArc::new_cyclic(move |v| ValidationQueue {
                     _this: v.clone(),
+                    _device: device_weak,
                     inner: q,
                     queue_type,
                 })
@@ -74,19 +76,20 @@ impl IAdapter for ValidationAdapter {
 
         let inner = self.inner.request_device()?;
 
-        let general_queue = query_queue(inner.as_ref(), QueueType::General);
-        let compute_queue = query_queue(inner.as_ref(), QueueType::Compute);
-        let transfer_queue = query_queue(inner.as_ref(), QueueType::Transfer);
-
-        let device = AnyArc::new_cyclic(move |v| ValidationDevice {
-            _this: v.clone(),
-            _adapter: self._this.upgrade().unwrap(),
-            _context: self._context._this.upgrade().unwrap(),
-            inner,
-            pool_counter: Default::default(),
-            general_queue,
-            compute_queue,
-            transfer_queue,
+        let device = AnyArc::new_cyclic(move |v| {
+            let general_queue = query_queue(inner.as_ref(), v.clone(), QueueType::General);
+            let compute_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Compute);
+            let transfer_queue = query_queue(inner.as_ref(), v.clone(), QueueType::Transfer);
+            ValidationDevice {
+                _this: v.clone(),
+                _adapter: self._this.upgrade().unwrap(),
+                _context: self._context._this.upgrade().unwrap(),
+                inner,
+                pool_counter: Default::default(),
+                general_queue,
+                compute_queue,
+                transfer_queue,
+            }
         });
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
