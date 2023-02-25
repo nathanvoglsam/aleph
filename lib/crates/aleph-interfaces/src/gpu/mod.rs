@@ -400,21 +400,17 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// It is the caller's responsibility to ensure that the command lists submitted to the GPU
     /// contain a valid command stream.
     ///
-    unsafe fn submit_list(
-        &self,
-        command_list: Box<dyn ICommandList>,
-    ) -> Result<(), QueueSubmitError>;
+    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError>;
 
+    /// Acquire an image from the swap chain for use with rendering
     ///
     /// # Safety
     ///
-    /// It is the caller's responsibility to ensure that the command lists submitted to the GPU
-    /// contain a valid command stream.
-    ///
-    unsafe fn submit_lists(
+    /// TODO: Safety docs (must drop all acquired images and ensure they aren't in use on the GPU
+    unsafe fn acquire(
         &self,
-        command_lists: &mut dyn Iterator<Item = Box<dyn ICommandList>>,
-    ) -> Result<(), QueueSubmitError>;
+        desc: &QueueAcquireDesc,
+    ) -> Result<AnyArc<dyn ITexture>, AcquireImageError>;
 
     ///
     /// Enqueues a 'present' operation onto the queue for the given [ISwapChain].
@@ -427,7 +423,7 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// in the required resource state for presentation by the time this operation will be executed
     /// on the GPU timeline.
     ///
-    unsafe fn present(&self, swap_chain: &dyn ISwapChain) -> Result<(), QueuePresentError>;
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError>;
 
     ///
     /// Emits an instantaneous 'marker' on this queue, with the given message and message color.
@@ -491,13 +487,6 @@ pub trait ISwapChain: IAny + IGetPlatformInterface {
     /// Force a resize of the swap chain. Will block until the swap chain is no longer in use before
     /// performing the resize operation.
     fn queue_resize(&self, width: u32, height: u32);
-
-    /// Acquire an image from the swap chain for use with rendering
-    ///
-    /// # Safety
-    ///
-    /// TODO: Safety docs (must drop all acquired images and ensure they aren't in use on the GPU
-    unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError>;
 
     /// Returns the current active swap chain image
     fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>>;
@@ -3264,6 +3253,43 @@ impl Display for QueueType {
             QueueType::Transfer => f.write_str("QueueType::Transfer"),
         }
     }
+}
+
+#[derive(Clone)]
+pub struct QueueSubmitDesc<'a> {
+    /// A list of the command lists that are to be submitted in this batch
+    pub command_lists: &'a [&'a dyn ICommandList],
+
+    /// A list of semaphores that will block the execution of the batch until all semaphores in the
+    /// list are signaled.
+    pub wait_semaphores: &'a [&'a dyn ISemaphore],
+
+    /// A list of semaphores that will be signaled once all command lists in the batch have
+    /// completed executing.
+    pub signal_semaphores: &'a [&'a dyn ISemaphore],
+
+    /// A fence that will be signaled once all command lists in the batch have completed executing.
+    pub fence: Option<&'a dyn IFence>,
+}
+
+#[derive(Clone)]
+pub struct QueueAcquireDesc<'a> {
+    /// The [ISwapChain] to queue an acquire operation for.
+    pub swap_chain: &'a dyn ISwapChain,
+
+    /// A list of semaphores that will be signalled once the acquire operation is completed. Only
+    /// once the acquire operation signals is the acquired image safe to use on the GPU timeline.
+    pub signal_semaphores: &'a [&'a dyn ISemaphore],
+}
+
+#[derive(Clone)]
+pub struct QueuePresentDesc<'a> {
+    /// The [ISwapChain] to queue a present operation for.
+    pub swap_chain: &'a dyn ISwapChain,
+
+    /// A list of semaphores that will block the execution of the batch until all semaphores in the
+    /// list are signaled.
+    pub wait_semaphores: &'a [&'a dyn ISemaphore],
 }
 
 //
