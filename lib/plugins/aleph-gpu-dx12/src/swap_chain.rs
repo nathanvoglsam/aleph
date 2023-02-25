@@ -38,7 +38,6 @@ use interfaces::gpu::*;
 use parking_lot::{Mutex, RwLock};
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::atomic::Ordering;
 use windows::core::IUnknown;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -245,24 +244,6 @@ impl ISwapChain for SwapChain {
     fn queue_resize(&self, width: u32, height: u32) {
         let resize = Box::new((width, height));
         self.queued_resize.store(Some(resize));
-    }
-
-    unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-        let mut inner = self.inner.lock();
-
-        if let Some(dimensions) = self.queued_resize.take() {
-            let new_width = dimensions.deref().0;
-            let new_height = dimensions.deref().1;
-            unsafe {
-                self.handle_resize(&mut inner, new_width, new_height)?;
-            }
-        }
-
-        inner.current = unsafe { self.swap_chain.GetCurrentBackBufferIndex() as i32 };
-        let image = inner.textures[inner.current as usize].clone();
-        let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
-
-        Ok(image)
     }
 
     fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {

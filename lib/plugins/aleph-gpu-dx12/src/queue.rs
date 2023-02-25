@@ -28,16 +28,19 @@
 //
 
 use crate::command_list::CommandList;
+use crate::fence::Fence;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::try_clone_value_into_slot;
+use crate::semaphore::Semaphore;
 use crate::swap_chain::SwapChain;
 use crossbeam::queue::SegQueue;
-use interfaces::any::{box_downcast, declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::any::TypeId;
+use std::ops::Deref;
 use std::sync::atomic::{AtomicU64, Ordering};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -129,87 +132,99 @@ impl IQueue for Queue {
         }
     }
 
-    unsafe fn submit_list(
-        &self,
-        command_list: Box<dyn ICommandList>,
-    ) -> Result<(), QueueSubmitError> {
-        let command_list: Box<CommandList> = box_downcast(command_list).ok().unwrap();
-
-        // Check that the queue supports submitting the provided command list type
-        let (queue_type, list_type) = (self.queue_type, command_list.list_type);
-        if queue_type != list_type {
-            return Err(QueueSubmitError::InvalidEncoderType(list_type));
-        }
-
+    unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
         // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
         // either.
-        let index = {
-            let _lock = self.submit_lock.lock();
-            self.handle
-                .ExecuteCommandLists(&[Some(command_list.list.clone().into())]);
+        let _lock = self.submit_lock.lock();
 
-            let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-            self.handle
-                .Signal(&self.fence, index)
+        // 'Wait' on all the wait_semaphores in a loop, as we're emulating vulkan like semaphore
+        // objects that predicate a submission
+        for semaphore in desc.wait_semaphores {
+            let semaphore = semaphore
+                .query_interface::<Semaphore>()
+                .expect("Unknown ISemaphore implementation");
+
+            semaphore
+                .wait_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;
+        }
 
-            index
-        };
+        let handles: Vec<Option<ID3D12CommandList>> = desc
+            .command_lists
+            .iter()
+            .map(|v| {
+                let v = v
+                    .query_interface::<CommandList>()
+                    .expect("Unknown ICommandList implementation");
+                let v = v.list.clone();
+                Some(v.into())
+            })
+            .collect();
 
-        self.in_flight.push(InFlightCommandList {
-            index,
-            list: command_list,
-        });
+        self.handle.ExecuteCommandLists(&handles);
+
+        // 'Signal' all the 'signal_semaphores' in a loop, as we're emulating vulkan like
+        // semaphore objects.
+        for semaphore in desc.signal_semaphores {
+            let semaphore = semaphore
+                .query_interface::<Semaphore>()
+                .expect("Unknown ISemaphore implementation");
+
+            semaphore
+                .signal_on_queue(&self.handle)
+                .map_err(|v| anyhow!(v))?;
+        }
+
+        // Signal the fence, if one is provided, to let CPU know the submitted commands are
+        // now fully retired.
+        if let Some(fence) = desc.fence {
+            let fence = fence
+                .query_interface::<Fence>()
+                .expect("Unknown IFence implementation");
+
+            fence
+                .signal_on_queue(&self.handle)
+                .map_err(|v| anyhow!(v))?;
+        }
+
+        let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+        self.handle
+            .Signal(&self.fence, index)
+            .map_err(|v| anyhow!(v))?;
 
         Ok(())
     }
 
-    unsafe fn submit_lists(
+    unsafe fn acquire(
         &self,
-        command_lists: &mut dyn Iterator<Item = Box<dyn ICommandList>>,
-    ) -> Result<(), QueueSubmitError> {
-        // Perform the actual submit operation
-        let lists: Vec<Box<CommandList>> = command_lists
-            .map(|v| box_downcast(v).ok().unwrap())
-            .collect();
+        desc: &QueueAcquireDesc,
+    ) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
+        let swap_chain = desc
+            .swap_chain
+            .query_interface::<SwapChain>()
+            .expect("Unknown ISwapChain implementation");
 
-        // Check that the queue supports submitting the provided command list type
-        for command_list in lists.iter() {
-            let (queue_type, list_type) = (self.queue_type, command_list.list_type);
-            if queue_type != list_type {
-                return Err(QueueSubmitError::InvalidEncoderType(list_type));
+        let mut inner = swap_chain.inner.lock();
+
+        if let Some(dimensions) = swap_chain.queued_resize.take() {
+            let new_width = dimensions.deref().0;
+            let new_height = dimensions.deref().1;
+            unsafe {
+                swap_chain.handle_resize(&mut inner, new_width, new_height)?;
             }
         }
 
-        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
-        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
-        // either.
-        let index = {
-            let _lock = self.submit_lock.lock();
+        inner.current = unsafe { swap_chain.swap_chain.GetCurrentBackBufferIndex() as i32 };
+        let image = inner.textures[inner.current as usize].clone();
+        let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
 
-            let handles: Vec<Option<ID3D12CommandList>> =
-                lists.iter().map(|v| Some(v.list.clone().into())).collect();
-
-            self.handle.ExecuteCommandLists(&handles);
-
-            let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-            self.handle
-                .Signal(&self.fence, index)
-                .map_err(|v| anyhow!(v))?;
-
-            index
-        };
-
-        for list in lists {
-            self.in_flight.push(InFlightCommandList { index, list });
-        }
-
-        Ok(())
+        Ok(image)
     }
 
-    unsafe fn present(&self, swap_chain: &dyn ISwapChain) -> Result<(), QueuePresentError> {
-        let swap_chain = swap_chain
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+        let swap_chain = desc
+            .swap_chain
             .query_interface::<SwapChain>()
             .expect("Unknown ISwapChain implementation");
 
@@ -225,27 +240,34 @@ impl IQueue for Queue {
         // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
         // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
         // either.
-        let _index = {
-            let _lock = self.submit_lock.lock();
+        let _lock = self.submit_lock.lock();
 
-            let presentation_params = DXGI_PRESENT_PARAMETERS {
-                DirtyRectsCount: 0,
-                pDirtyRects: std::ptr::null_mut(),
-                pScrollRect: std::ptr::null_mut(),
-                pScrollOffset: std::ptr::null_mut(),
-            };
-            swap_chain
-                .swap_chain
-                .Present1(0, 0, &presentation_params)
-                .ok()
-                .map_err(|v| anyhow!(v))?;
-            let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-            self.handle
-                .Signal(&self.fence, index)
-                .map_err(|v| anyhow!(v))?;
+        for semaphore in desc.wait_semaphores {
+            let semaphore = semaphore
+                .query_interface::<Semaphore>()
+                .expect("Unknown ISemaphore implementation");
 
-            index
+            semaphore
+                .wait_on_queue(&self.handle)
+                .map_err(|v| anyhow!(v))?;
+        }
+
+        let presentation_params = DXGI_PRESENT_PARAMETERS {
+            DirtyRectsCount: 0,
+            pDirtyRects: std::ptr::null_mut(),
+            pScrollRect: std::ptr::null_mut(),
+            pScrollOffset: std::ptr::null_mut(),
         };
+        swap_chain
+            .swap_chain
+            .Present1(0, 0, &presentation_params)
+            .ok()
+            .map_err(|v| anyhow!(v))?;
+
+        let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+        self.handle
+            .Signal(&self.fence, index)
+            .map_err(|v| anyhow!(v))?;
 
         Ok(())
     }
