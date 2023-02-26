@@ -59,6 +59,7 @@ aleph-egui = { path = "../../plugins/aleph-egui", version = "0.1" }
 aleph-sdl2 = { path = "../../plugins/aleph-sdl2", version = "0.1", optional = true }
 aleph-headless = { path = "../../plugins/aleph-headless", version = "0.1" }
 aleph-render = { path = "../../plugins/aleph-render", version = "0.1" }
+aleph-gpu-vulkan = { path = "../../plugins/aleph-gpu-vulkan", version = "0.1" }
 
 log = { workspace = true }
 once_cell = { workspace = true }
