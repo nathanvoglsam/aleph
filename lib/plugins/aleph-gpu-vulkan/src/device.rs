@@ -29,8 +29,10 @@
 
 use crate::adapter::Adapter;
 use crate::context::Context;
+use crate::fence::Fence;
 use crate::internal::conv::texture_format_to_vk;
 use crate::internal::queues::Queues;
+use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
 use erupt::vk;
@@ -429,7 +431,7 @@ impl IDevice for Device {
 
     fn create_command_list(
         &self,
-        desc: &CommandListDesc,
+        _desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
         todo!()
     }
@@ -452,40 +454,103 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
-        todo!()
+        let fence = unsafe {
+            let info = vk::FenceCreateInfoBuilder::new();
+            self.device_loader
+                .create_fence(&info, None)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        let fence = AnyArc::new_cyclic(move |v| Fence {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            fence,
+        });
+        Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
-        todo!()
+        let semaphore = unsafe {
+            let info = vk::SemaphoreCreateInfoBuilder::new();
+            self.device_loader
+                .create_semaphore(&info, None)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        let semaphore = AnyArc::new_cyclic(move |v| Semaphore {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            semaphore,
+        });
+        Ok(AnyArc::map::<dyn ISemaphore, _>(semaphore, |v| v))
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_fences(
-        &self,
-        _fences: &[&dyn IFence],
-        _wait_all: bool,
-        _timeout: u32,
-    ) -> FenceWaitResult {
-        todo!()
+    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
+        let timeout = if timeout == u32::MAX {
+            u64::MAX
+        } else {
+            timeout as u64 * 1000000 // Convert to nanoseconds
+        };
+
+        let fences: Vec<_> = fences
+            .iter()
+            .map(|v| {
+                v.query_interface::<Fence>()
+                    .expect("Unknown IFence implementation")
+                    .fence
+            })
+            .collect();
+
+        let result = unsafe {
+            self.device_loader
+                .wait_for_fences(&fences, wait_all, timeout)
+                .raw
+        };
+
+        match result {
+            vk::Result::SUCCESS => FenceWaitResult::Complete,
+            vk::Result::TIMEOUT => FenceWaitResult::Timeout,
+            _ => panic!("Failed calling vkWaitForFences"),
+        }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, _fence: &dyn IFence) -> bool {
-        todo!()
+    fn poll_fence(&self, fence: &dyn IFence) -> bool {
+        let fence = fence
+            .query_interface::<Fence>()
+            .expect("Unknown IFence implementation");
+
+        let result = unsafe { self.device_loader.get_fence_status(fence.fence).raw };
+
+        match result {
+            vk::Result::SUCCESS => true,
+            vk::Result::NOT_READY => false,
+            _ => panic!("Call to vkGetFenceStatus failed"),
+        }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn reset_fences(&self, fences: &[&dyn IFence]) {
-        todo!()
+        let fences: Vec<_> = fences
+            .iter()
+            .map(|v| {
+                v.query_interface::<Fence>()
+                    .expect("Unknown IFence implementation")
+                    .fence
+            })
+            .collect();
+
+        unsafe { self.device_loader.reset_fences(&fences).unwrap() }
     }
 
     // ========================================================================================== //
