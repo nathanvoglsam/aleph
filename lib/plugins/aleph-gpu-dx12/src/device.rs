@@ -822,9 +822,13 @@ impl IDevice for Device {
                 let fence = fence
                     .query_interface::<Fence>()
                     .expect("Unknown IFence implementation");
+                let wait_value = fence.get_wait_value();
 
                 WAIT_HANDLE.with(|handle| unsafe {
-                    fence.fence.SetEventOnCompletion(1, *handle).unwrap();
+                    fence
+                        .fence
+                        .SetEventOnCompletion(wait_value, *handle)
+                        .unwrap();
                     if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
                         FenceWaitResult::Complete
                     } else {
