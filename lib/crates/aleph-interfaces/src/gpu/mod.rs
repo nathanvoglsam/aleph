@@ -347,7 +347,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// - `timeout` specifies how long to wait, in milliseconds, before timing out and returning
     ///   from the function. If the timeout time is reached before the wait condition is met then
-    ///   the function will return [FenceWaitResult::Timeout]. If `timeout` is equal to `u64::MAX`
+    ///   the function will return [FenceWaitResult::Timeout]. If `timeout` is equal to `u32::MAX`
     ///   the wait_fences call will block indefinitely and can not timeout.
     ///
     /// # Info
