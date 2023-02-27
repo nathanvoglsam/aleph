@@ -297,25 +297,25 @@ impl IDevice for ValidationDevice {
 
     fn create_descriptor_pool(
         &self,
-        layout: &dyn IDescriptorSetLayout,
-        num_sets: u32,
+        desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let inner_layout = layout
+        let inner_desc = get_as_unwrapped::descriptor_pool_desc(desc);
+        let inner = self.inner.create_descriptor_pool(&inner_desc)?;
+
+        let inner_layout = desc
+            .layout
             .query_interface::<ValidationDescriptorSetLayout>()
             .expect("Unknown IDescriptorSetLayout implementation")
             ._this
             .upgrade()
             .unwrap();
 
-        let inner = self
-            .inner
-            .create_descriptor_pool(inner_layout.inner.as_ref(), num_sets)?;
         let pool = Box::new(ValidationDescriptorPool {
             _device: self._this.upgrade().unwrap(),
             _layout: inner_layout,
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            set_objects: Vec::with_capacity(num_sets as usize),
+            set_objects: Vec::with_capacity(desc.num_sets as usize),
             free_list: Vec::with_capacity(128),
         });
 

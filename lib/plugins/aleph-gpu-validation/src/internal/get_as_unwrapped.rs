@@ -439,3 +439,15 @@ pub fn texture_barrier<'a>(barrier: &'a TextureBarrier<'a>) -> TextureBarrier<'a
         subresource_range: barrier.subresource_range.clone(),
     }
 }
+
+pub fn descriptor_pool_desc<'a>(desc: &'a DescriptorPoolDesc<'a>) -> DescriptorPoolDesc<'a> {
+    let layout = desc
+        .layout
+        .query_interface::<ValidationDescriptorSetLayout>()
+        .expect("Unknown IDescriptorSetLayout implementation");
+    DescriptorPoolDesc {
+        layout: layout.inner.as_ref(),
+        num_sets: desc.num_sets,
+        name: desc.name,
+    }
+}
