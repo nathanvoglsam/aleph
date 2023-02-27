@@ -383,8 +383,7 @@ impl IDevice for Device {
 
     fn create_descriptor_pool(
         &self,
-        _layout: &dyn IDescriptorSetLayout,
-        _capacity: u32,
+        _desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
         todo!()
     }
