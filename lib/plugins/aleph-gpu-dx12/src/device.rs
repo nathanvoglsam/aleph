@@ -353,23 +353,22 @@ impl IDevice for Device {
 
     fn create_descriptor_pool(
         &self,
-        layout: &dyn IDescriptorSetLayout,
-        num_sets: u32,
+        desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let layout = unwrap::descriptor_set_layout(layout)
+        let layout = unwrap::descriptor_set_layout(desc.layout)
             .this
             .upgrade()
             .unwrap();
 
         let resource_arena = DescriptorArena::new(
             self.descriptor_heaps.gpu_view_heap(),
-            num_sets,
+            desc.num_sets,
             layout.resource_num,
         )?;
 
         let sampler_arena = DescriptorArena::new(
             self.descriptor_heaps.gpu_sampler_heap(),
-            num_sets,
+            desc.num_sets,
             layout.sampler_num,
         )?;
 
@@ -378,7 +377,7 @@ impl IDevice for Device {
             _layout: layout,
             resource_arena,
             sampler_arena,
-            set_objects: Vec::with_capacity(num_sets as usize),
+            set_objects: Vec::with_capacity(desc.num_sets as usize),
             free_list: Vec::with_capacity(128),
         });
 
