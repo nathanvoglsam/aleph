@@ -272,9 +272,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
 
     fn create_descriptor_pool(
         &self,
-        layout: &dyn IDescriptorSetLayout,
-        num_sets: u32,
-        // TODO: desc struct so we can add a name
+        desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError>;
 
     fn create_pipeline_layout(
@@ -2497,6 +2495,20 @@ pub struct DescriptorSetLayoutDesc<'a> {
 
     /// A list of all bindings that are a part of this descriptor set layout
     pub items: &'a [DescriptorSetLayoutBinding<'a>],
+
+    /// The name of the object
+    pub name: Option<&'a str>,
+}
+
+#[derive(Clone)]
+pub struct DescriptorPoolDesc<'a> {
+    /// The descriptor set layout that the descriptor pool will allocate descriptor sets for. A pool
+    /// can only allocate descriptor sets with a single layout.
+    pub layout: &'a dyn IDescriptorSetLayout,
+
+    /// The number of sets the pool should have capacity for. A pool is only guaranteed to have
+    /// enough space for `num_sets` descriptor sets.
+    pub num_sets: u32,
 
     /// The name of the object
     pub name: Option<&'a str>,
