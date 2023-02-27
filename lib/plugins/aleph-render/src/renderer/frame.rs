@@ -74,9 +74,12 @@ impl PerFrameObjects {
 
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
-        let mut descriptor_pool = device
-            .create_descriptor_pool(global.descriptor_set_layout.deref(), 2)
-            .unwrap();
+        let desc = DescriptorPoolDesc {
+            layout: global.descriptor_set_layout.deref(),
+            num_sets: 2,
+            name: Some("egui::DescriptorPool"),
+        };
+        let mut descriptor_pool = device.create_descriptor_pool(&desc).unwrap();
         let descriptor_set = descriptor_pool.allocate_set().unwrap();
 
         Self {
