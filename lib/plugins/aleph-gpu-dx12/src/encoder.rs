@@ -35,6 +35,7 @@ use crate::internal::conv::{
     translate_rendering_depth_stencil_attachment,
 };
 use crate::internal::descriptor_set::DescriptorSet;
+use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::pipeline::GraphicsPipeline;
 use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
@@ -61,17 +62,14 @@ impl<'a> Drop for Encoder<'a> {
 }
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        // TODO: can probably hand out the command list from here
-        None
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<ID3D12GraphicsCommandList7>(&self.list, out, target)
     }
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
-        let concrete = pipeline
-            .query_interface::<GraphicsPipeline>()
-            .expect("Unknown IGraphicsPipeline implementation");
+        let concrete = unwrap::graphics_pipeline(pipeline);
 
         // Binds the pipeline
         self.list.SetPipelineState(&concrete.pipeline);
@@ -105,10 +103,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             .iter()
             .enumerate()
             .map(|(i, v)| {
-                let buffer = v
-                    .buffer
-                    .query_interface::<Buffer>()
-                    .expect("Unkonwn IBuffer implementation");
+                let buffer = unwrap::buffer(v.buffer);
 
                 let buffer_location = buffer.base_address;
                 let buffer_location = buffer_location.add(v.offset);
@@ -130,10 +125,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        let buffer = binding
-            .buffer
-            .query_interface::<Buffer>()
-            .expect("Unknown IBuffer implementation");
+        let buffer = unwrap::buffer(binding.buffer);
 
         let buffer_location = buffer.base_address;
         let buffer_location = buffer_location.add(binding.offset);
@@ -203,10 +195,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let mut color_attachments = Vec::with_capacity(info.color_attachments.len());
 
         for attachment in info.color_attachments {
-            let image = attachment
-                .image
-                .query_interface::<Texture>()
-                .expect("Unknown ITexture implementation");
+            let image = unwrap::texture(attachment.image);
             let descriptor = image
                 .get_or_create_rtv_for_usage(
                     None,
@@ -228,10 +217,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
 
         let depth_stencil = info.depth_stencil_attachment.map(|attachment| {
-            let image = attachment
-                .image
-                .query_interface::<Texture>()
-                .expect("Unknown ITexture implementation");
+            let image = unwrap::texture(attachment.image);
             let descriptor = image
                 .get_or_create_dsv_for_usage(
                     None,
@@ -390,10 +376,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         if !buffer_barriers.is_empty() {
             for barrier in buffer_barriers {
                 // Grab the d3d12 resource handle
-                let resource = barrier
-                    .buffer
-                    .query_interface::<Buffer>()
-                    .expect("Unknown IBuffer implementation");
+                let resource = unwrap::buffer(barrier.buffer);
 
                 translated_buffer_barriers.push(D3D12_BUFFER_BARRIER {
                     SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
@@ -418,10 +401,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         if !texture_barriers.is_empty() {
             for barrier in texture_barriers {
                 // Grab the d3d12 resource handle from our texture impls
-                let texture = barrier
-                    .texture
-                    .query_interface::<Texture>()
-                    .expect("Unknown ITexture implementation");
+                let texture = unwrap::texture(barrier.texture);
 
                 // Vulkan initializes layout metadata automatically when transitioning from
                 // undefined to a compressed layout. D3D12 requires a flag to force it, otherwise
@@ -485,12 +465,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         dst: &dyn IBuffer,
         regions: &[BufferCopyRegion],
     ) {
-        let src = src
-            .query_interface::<Buffer>()
-            .expect("Unknown IBuffer implementation");
-        let dst = dst
-            .query_interface::<Buffer>()
-            .expect("Unknown IBuffer implementation");
+        let src = unwrap::buffer(src);
+        let dst = unwrap::buffer(dst);
 
         for region in regions {
             self.list.CopyBufferRegion(
@@ -510,12 +486,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         _dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
-        let src = src
-            .query_interface::<Buffer>()
-            .expect("Unknown IBuffer implementation");
-        let dst = dst
-            .query_interface::<Texture>()
-            .expect("Unknown ITexture implementation");
+        let src = unwrap::buffer(src);
+        let dst = unwrap::texture(dst);
 
         let bytes_per_element = dst.desc.format.bytes_per_element();
         let mut src_location = D3D12_TEXTURE_COPY_LOCATION {

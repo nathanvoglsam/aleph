@@ -33,7 +33,7 @@ use crate::internal::create_device::create_device;
 use crate::internal::debug_interface::DebugInterface;
 use crate::internal::feature_support::FeatureSupport;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
-use crate::internal::try_clone_value_into_slot;
+use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::surface::Surface;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
@@ -151,7 +151,7 @@ impl Context {
         };
 
         if let Some(surface) = options.surface {
-            let surface = surface.query_interface::<Surface>().unwrap();
+            let surface = unwrap::surface(surface);
             if Self::check_surface_compatibility(factory, (&device).into(), surface).is_none() {
                 log::trace!("Adapter Can't Use Requested Surface");
                 return false;
@@ -293,7 +293,7 @@ impl IContext for Context {
             let device = create_device(&adapter, D3D_FEATURE_LEVEL_11_0).ok()?;
 
             if let Some(surface) = options.surface {
-                let surface = surface.query_interface::<Surface>().unwrap();
+                let surface = unwrap::surface(surface);
                 Self::check_surface_compatibility(&factory, &device.into(), surface)?;
             }
 

@@ -30,7 +30,7 @@
 use crate::command_list::CommandList;
 use crate::fence::Fence;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
-use crate::internal::try_clone_value_into_slot;
+use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::semaphore::Semaphore;
 use crate::swap_chain::SwapChain;
 use crossbeam::queue::SegQueue;
@@ -140,11 +140,7 @@ impl IQueue for Queue {
 
         // 'Wait' on all the wait_semaphores in a loop, as we're emulating vulkan like semaphore
         // objects that predicate a submission
-        for semaphore in desc.wait_semaphores {
-            let semaphore = semaphore
-                .query_interface::<Semaphore>()
-                .expect("Unknown ISemaphore implementation");
-
+        for semaphore in desc.wait_semaphores.iter().map(unwrap::semaphore_d) {
             semaphore
                 .wait_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;
@@ -153,24 +149,15 @@ impl IQueue for Queue {
         let handles: Vec<Option<ID3D12CommandList>> = desc
             .command_lists
             .iter()
-            .map(|v| {
-                let v = v
-                    .query_interface::<CommandList>()
-                    .expect("Unknown ICommandList implementation");
-                let v = v.list.clone();
-                Some(v.into())
-            })
+            .map(unwrap::command_list_d)
+            .map(|v| Some(v.list.clone().into()))
             .collect();
 
         self.handle.ExecuteCommandLists(&handles);
 
         // 'Signal' all the 'signal_semaphores' in a loop, as we're emulating vulkan like
         // semaphore objects.
-        for semaphore in desc.signal_semaphores {
-            let semaphore = semaphore
-                .query_interface::<Semaphore>()
-                .expect("Unknown ISemaphore implementation");
-
+        for semaphore in desc.signal_semaphores.iter().map(unwrap::semaphore_d) {
             semaphore
                 .signal_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;
@@ -178,11 +165,7 @@ impl IQueue for Queue {
 
         // Signal the fence, if one is provided, to let CPU know the submitted commands are
         // now fully retired.
-        if let Some(fence) = desc.fence {
-            let fence = fence
-                .query_interface::<Fence>()
-                .expect("Unknown IFence implementation");
-
+        if let Some(fence) = desc.fence.map(unwrap::fence) {
             fence
                 .signal_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;
@@ -200,10 +183,7 @@ impl IQueue for Queue {
         &self,
         desc: &QueueAcquireDesc,
     ) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-        let swap_chain = desc
-            .swap_chain
-            .query_interface::<SwapChain>()
-            .expect("Unknown ISwapChain implementation");
+        let swap_chain = unwrap::swap_chain(desc.swap_chain);
 
         let mut inner = swap_chain.inner.lock();
 
@@ -223,10 +203,7 @@ impl IQueue for Queue {
     }
 
     unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
-        let swap_chain = desc
-            .swap_chain
-            .query_interface::<SwapChain>()
-            .expect("Unknown ISwapChain implementation");
+        let swap_chain = unwrap::swap_chain(desc.swap_chain);
 
         // Checks if the queue supports present operations. While this could use a debug_assert
         // instead like other validation code, the cost of this check compared to the cost of the
@@ -242,11 +219,7 @@ impl IQueue for Queue {
         // either.
         let _lock = self.submit_lock.lock();
 
-        for semaphore in desc.wait_semaphores {
-            let semaphore = semaphore
-                .query_interface::<Semaphore>()
-                .expect("Unknown ISemaphore implementation");
-
+        for semaphore in desc.wait_semaphores.iter().map(unwrap::semaphore_d) {
             semaphore
                 .wait_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;

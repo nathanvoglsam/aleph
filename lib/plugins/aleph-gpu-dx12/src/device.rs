@@ -53,7 +53,9 @@ use crate::internal::graphics_pipeline_state_stream::{
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
-use crate::internal::{handle_wait_result, plane_layer_for_aspect_flag, try_clone_value_into_slot};
+use crate::internal::{
+    handle_wait_result, plane_layer_for_aspect_flag, try_clone_value_into_slot, unwrap,
+};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -152,10 +154,7 @@ impl IDevice for Device {
         desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
         // Unwrap the pipeline layout trait object into the concrete implementation
-        let pipeline_layout = desc
-            .pipeline_layout
-            .query_interface::<PipelineLayout>()
-            .expect("Unknown IPipelineLayout implementation")
+        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout)
             .this
             .upgrade()
             .unwrap();
@@ -237,18 +236,12 @@ impl IDevice for Device {
         desc: &ComputePipelineDesc,
     ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
         // Unwrap the pipeline layout trait object into the concrete implementation
-        let pipeline_layout = desc
-            .pipeline_layout
-            .query_interface::<PipelineLayout>()
-            .expect("Unknown IPipelineLayout implementation")
+        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout)
             .this
             .upgrade()
             .unwrap();
 
-        let module = desc
-            .shader_module
-            .query_interface::<Shader>()
-            .expect("Unknown IShader implementation");
+        let module = unwrap::shader(desc.shader_module);
 
         let pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
             pRootSignature: Some(pipeline_layout.root_signature.clone()),
@@ -363,9 +356,7 @@ impl IDevice for Device {
         layout: &dyn IDescriptorSetLayout,
         num_sets: u32,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let layout = layout
-            .query_interface::<DescriptorSetLayout>()
-            .expect("Unknown IDescriptorSetLayout implementation")
+        let layout = unwrap::descriptor_set_layout(layout)
             .this
             .upgrade()
             .unwrap();
@@ -406,9 +397,7 @@ impl IDevice for Device {
         let mut resource_tables = Vec::with_capacity(desc.set_layouts.len());
         let mut static_samplers = Vec::new();
         for (i, layout) in desc.set_layouts.iter().enumerate() {
-            let layout = layout
-                .query_interface::<DescriptorSetLayout>()
-                .expect("Unknown IDescriptorSetLayout impl");
+            let layout = unwrap::descriptor_set_layout_d(layout);
 
             // Take a copy of the pre-calculated layout and patch the register space to match the
             // set index that it is being used for
@@ -818,10 +807,7 @@ impl IDevice for Device {
                         CreateEventW(std::ptr::null(), false, false, None).unwrap()
                     };
                 }
-                let fence = fences[0];
-                let fence = fence
-                    .query_interface::<Fence>()
-                    .expect("Unknown IFence implementation");
+                let fence = unwrap::fence(fences[0]);
                 let wait_value = fence.get_wait_value();
 
                 WAIT_HANDLE.with(|handle| unsafe {
@@ -849,11 +835,7 @@ impl IDevice for Device {
                 // of values filled with the expected value for a signalled fence.
                 let mut inner_fences: Vec<Option<ID3D12Fence>> = Vec::with_capacity(fences.len());
                 let mut wait_values: Vec<u64> = Vec::with_capacity(fences.len());
-                for fence in fences {
-                    let fence = fence
-                        .query_interface::<Fence>()
-                        .expect("Unknown IFence implementation");
-
+                for fence in fences.iter().map(unwrap::fence_d) {
                     inner_fences.push(Some(fence.fence.clone()));
                     wait_values.push(fence.get_wait_value());
                 }
@@ -889,9 +871,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn poll_fence(&self, fence: &dyn IFence) -> bool {
-        let fence = fence
-            .query_interface::<Fence>()
-            .expect("Unknown IFence implementation");
+        let fence = unwrap::fence(fence);
         unsafe {
             let v = fence.fence.GetCompletedValue();
             v < fence.get_wait_value()
@@ -921,7 +901,7 @@ impl Device {
         mut builder: GraphicsPipelineStateStreamBuilder<'a>,
     ) -> Result<GraphicsPipelineStateStreamBuilder<'a>, GraphicsPipelineCreateError> {
         for shader in shader_stages {
-            let shader = shader.query_interface::<Shader>().unwrap();
+            let shader = unwrap::shader_d(shader);
             builder = match shader.shader_type {
                 ShaderType::Vertex => builder.vertex_shader(&shader.data),
                 ShaderType::Hull => builder.hull_shader(&shader.data),
@@ -1326,7 +1306,7 @@ impl Device {
             // We switch how we output the binding based on the presence of static samplers
             if let Some(samplers) = item.static_samplers {
                 for sampler in samplers {
-                    let sampler = sampler.query_interface::<Sampler>().unwrap();
+                    let sampler = unwrap::sampler_d(sampler);
                     let filter = sampler_filters_to_dx12(
                         sampler.desc.min_filter,
                         sampler.desc.mag_filter,
@@ -1436,10 +1416,7 @@ impl Device {
                 set.sampler_handle_cpu.unwrap_unchecked()
             };
 
-            let sampler = v
-                .sampler
-                .query_interface::<Sampler>()
-                .expect("Unknown ISampler implementation");
+            let sampler = unwrap::sampler(v.sampler);
 
             let src = sampler.sampler_handle;
 
@@ -1478,10 +1455,7 @@ impl Device {
                 set.resource_handle_cpu.unwrap_unchecked()
             };
 
-            let image = v
-                .image
-                .query_interface::<Texture>()
-                .expect("Unknown ITexture implementation");
+            let image = unwrap::texture(v.image);
 
             let cache = if v.writable {
                 // &image.uav_cache
@@ -1625,10 +1599,7 @@ impl Device {
                 set.resource_handle_cpu.unwrap_unchecked()
             };
 
-            let buffer = v
-                .buffer
-                .query_interface::<Buffer>()
-                .expect("Unknown IBuffer implementation");
+            let buffer = unwrap::buffer(v.buffer);
 
             let dst = Self::calculate_dst_handle(
                 dst,
@@ -1668,10 +1639,7 @@ impl Device {
                 set.resource_handle_cpu.unwrap_unchecked()
             };
 
-            let buffer = v
-                .buffer
-                .query_interface::<Buffer>()
-                .expect("Unknown IBuffer implementation");
+            let buffer = unwrap::buffer(v.buffer);
 
             let dst = Self::calculate_dst_handle(
                 dst,
@@ -1705,10 +1673,7 @@ impl Device {
                 set.resource_handle_cpu.unwrap_unchecked()
             };
 
-            let buffer = v
-                .buffer
-                .query_interface::<Buffer>()
-                .expect("Unknown IBuffer implementation");
+            let buffer = unwrap::buffer(v.buffer);
 
             let dst = Self::calculate_dst_handle(
                 dst,

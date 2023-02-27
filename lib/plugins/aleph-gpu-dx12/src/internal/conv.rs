@@ -89,7 +89,7 @@ pub const fn shader_visibility_to_dx12(
     // the only stage active in a compute dispatch so d3d12 lacks a compute specifier.
     match visibility {
         DescriptorShaderVisibility::All => D3D12_SHADER_VISIBILITY_ALL,
-        DescriptorShaderVisibility::Compute => D3D12_SHADER_VISIBILITY_ALL, // TODO: Verify
+        DescriptorShaderVisibility::Compute => D3D12_SHADER_VISIBILITY_ALL,
         DescriptorShaderVisibility::Vertex => D3D12_SHADER_VISIBILITY_VERTEX,
         DescriptorShaderVisibility::Hull => D3D12_SHADER_VISIBILITY_HULL,
         DescriptorShaderVisibility::Domain => D3D12_SHADER_VISIBILITY_DOMAIN,

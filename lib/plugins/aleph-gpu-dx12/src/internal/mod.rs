@@ -49,6 +49,7 @@ pub mod register_message_callback;
 pub mod root_signature_blob;
 pub mod set_name;
 pub mod swap_chain_creation;
+pub mod unwrap;
 
 pub const fn calc_subresource_index(
     mip_level: u32,

@@ -31,6 +31,7 @@ use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
+use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
 use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
@@ -59,7 +60,7 @@ impl Surface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        let device = device.query_interface::<Device>().unwrap();
+        let device = unwrap::device(device);
 
         // Translate our high level present mode into terms that make sense to d3d12
         let (buffer_count, flags) = match config.present_mode {
