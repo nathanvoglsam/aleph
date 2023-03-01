@@ -40,6 +40,26 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub use windows::Win32::Graphics::Direct3D12::*;
 
+macro_rules! com_object_into_impls {
+    ($from: path, $to: path) => {
+        impl ::core::convert::From<$from> for $to {
+            fn from(value: $from) -> Self {
+                unsafe { core::mem::transmute(value) }
+            }
+        }
+        impl<'a> From<&'a $from> for &'a $to {
+            fn from(value: &'a $from) -> Self {
+                unsafe { core::mem::transmute(value) }
+            }
+        }
+        impl From<&$from> for $to {
+            fn from(value: &$from) -> Self {
+                ::core::convert::From::from(::core::clone::Clone::clone(value))
+            }
+        }
+    };
+}
+
 pub const D3D12_FEATURE_D3D12_OPTIONS12: D3D12_FEATURE = D3D12_FEATURE(41i32);
 
 #[repr(transparent)]
@@ -266,156 +286,16 @@ impl Deref for ID3D12GraphicsCommandList7 {
     }
 }
 
-impl From<ID3D12GraphicsCommandList7> for ID3D12Object {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12Object {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12Object {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12DeviceChild {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12DeviceChild {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12DeviceChild {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12CommandList {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12CommandList {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12CommandList {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList1 {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList1 {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList1 {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList2 {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList2 {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList2 {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList3 {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList3 {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList3 {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList4 {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList4 {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList4 {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList5 {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList5 {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList5 {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList6 {
-    fn from(value: ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList6 {
-    fn from(value: &'a ID3D12GraphicsCommandList7) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList6 {
-    fn from(value: &ID3D12GraphicsCommandList7) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12Object);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12DeviceChild);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12CommandList);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList1);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList2);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList3);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList4);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList5);
+com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList6);
 
 type ID3D12Device9Vtbl = ID3D12Device9_Vtbl;
 
@@ -481,14 +361,14 @@ impl ID3D12Device10 {
         let mut result__ = None;
         (windows::core::Interface::vtable(self).__CreateCommittedResource3_ABI)(
             windows::core::Interface::as_raw(self),
-            core::mem::transmute(pheapproperties),
+            pheapproperties,
             heapflags,
-            core::mem::transmute(pdesc),
+            pdesc,
             initiallayout,
-            core::mem::transmute(poptimizedclearvalue),
+            poptimizedclearvalue,
             pprotectedsession.into().abi(),
             numcastableformats,
-            core::mem::transmute(pcastableformats),
+            pcastableformats,
             &<T as windows::core::Interface>::IID,
             &mut result__ as *mut _ as *mut _,
         )
@@ -515,11 +395,11 @@ impl ID3D12Device10 {
             windows::core::Interface::as_raw(self),
             pheap.into().abi(),
             heapoffset,
-            core::mem::transmute(pdesc),
+            pdesc,
             initiallayout,
-            core::mem::transmute(poptimizedclearvalue),
+            poptimizedclearvalue,
             numcastableformats,
-            core::mem::transmute(pcastableformats),
+            pcastableformats,
             &<T as windows::core::Interface>::IID,
             &mut result__ as *mut _ as *mut _,
         )
@@ -543,12 +423,12 @@ impl ID3D12Device10 {
         let mut result__ = None;
         (windows::core::Interface::vtable(self).__CreateReservedResource2_ABI)(
             windows::core::Interface::as_raw(self),
-            core::mem::transmute(pdesc),
+            pdesc,
             initiallayout,
-            core::mem::transmute(poptimizedclearvalue),
+            poptimizedclearvalue,
             pprotectedsession.into().abi(),
             numcastableformats,
-            core::mem::transmute(pcastableformats),
+            pcastableformats,
             &<T as windows::core::Interface>::IID,
             &mut result__ as *mut _ as *mut _,
         )
@@ -564,168 +444,14 @@ impl Deref for ID3D12Device10 {
     }
 }
 
-impl From<ID3D12Device10> for ID3D12Object {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Object {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Object {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device1 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device1 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device1 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device2 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device2 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device2 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device3 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device3 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device3 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device4 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device4 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device4 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device5 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device5 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device5 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device6 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device6 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device6 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device7 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device7 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device7 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device8 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device8 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device8 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
-impl From<ID3D12Device10> for ID3D12Device9 {
-    fn from(value: ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device9 {
-    fn from(value: &'a ID3D12Device10) -> Self {
-        unsafe { core::mem::transmute(value) }
-    }
-}
-impl From<&ID3D12Device10> for ID3D12Device9 {
-    fn from(value: &ID3D12Device10) -> Self {
-        ::core::convert::From::from(::core::clone::Clone::clone(value))
-    }
-}
+com_object_into_impls!(ID3D12Device10, ID3D12Object);
+com_object_into_impls!(ID3D12Device10, ID3D12Device);
+com_object_into_impls!(ID3D12Device10, ID3D12Device1);
+com_object_into_impls!(ID3D12Device10, ID3D12Device2);
+com_object_into_impls!(ID3D12Device10, ID3D12Device3);
+com_object_into_impls!(ID3D12Device10, ID3D12Device4);
+com_object_into_impls!(ID3D12Device10, ID3D12Device5);
+com_object_into_impls!(ID3D12Device10, ID3D12Device6);
+com_object_into_impls!(ID3D12Device10, ID3D12Device7);
+com_object_into_impls!(ID3D12Device10, ID3D12Device8);
+com_object_into_impls!(ID3D12Device10, ID3D12Device9);
