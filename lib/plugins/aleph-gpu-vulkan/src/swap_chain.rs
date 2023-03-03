@@ -32,7 +32,6 @@ use crate::device::Device;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::surface::Surface;
-use crate::swap_texture::SwapTexture;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
