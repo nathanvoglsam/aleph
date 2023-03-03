@@ -67,6 +67,7 @@ members = [
     "lib/plugins/aleph-core",
     "lib/plugins/aleph-egui",
     "lib/plugins/aleph-gpu-dx12",
+    "lib/plugins/aleph-gpu-utils",
     "lib/plugins/aleph-gpu-vulkan",
     "lib/plugins/aleph-gpu-validation",
     "lib/plugins/aleph-headless",
