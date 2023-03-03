@@ -37,8 +37,6 @@ license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-vk-format/"
 readme = "README.md"
-# TODO: keywords = ["build", "compilation", "utility"]
-# TODO: categories = ["development-tools::build-utils"]
 edition = "2021"
 
 [badges]

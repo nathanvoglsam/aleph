@@ -45,7 +45,7 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+aleph-interfaces = { workspace = true }
 aleph-gpu-validation = { path = "../aleph-gpu-validation", version = "0.1" }
 log = { workspace = true }
 cstr = { workspace = true }

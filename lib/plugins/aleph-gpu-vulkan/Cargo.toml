@@ -45,7 +45,7 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+aleph-interfaces = { workspace = true }
 aleph-vulkan-alloc = { path = "../../crates/aleph-vulkan-alloc", version = "0.1" }
 log = { workspace = true }
 bitflags = { workspace = true }

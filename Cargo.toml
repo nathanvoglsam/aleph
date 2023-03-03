@@ -95,6 +95,7 @@ serde = { version = "1", features = ["derive"]}
 
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
 aleph-compile = { path = "./lib/crates/aleph-compile", version = "1" }
+aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-target = { path = "./lib/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./lib/crates/aleph-target-build", version = "2" }
 aleph-windows = { path = "./lib/crates/aleph-windows", version = "0.1" }

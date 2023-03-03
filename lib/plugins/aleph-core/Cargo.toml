@@ -41,7 +41,7 @@ edition = "2021"
 
 [dependencies]
 aleph-label = { path = "../../crates/aleph-label", version = "1" }
-aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+aleph-interfaces = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }
 env_logger = { workspace = true }

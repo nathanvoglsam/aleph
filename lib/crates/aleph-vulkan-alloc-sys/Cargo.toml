@@ -35,8 +35,6 @@ license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-vma-sys/"
 readme = "README.md"
-keywords = ["engine", "graphics", "vulkan", "game"] # TODO: Keywords
-categories = ["game-engines"]                       # TODO: Categories
 edition = "2021"
 build = "build.rs"
 

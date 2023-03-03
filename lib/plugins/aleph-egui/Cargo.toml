@@ -40,7 +40,7 @@ readme = "README.md"
 edition = "2021"
 
 [dependencies]
-aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+aleph-interfaces = { workspace = true }
 log = { workspace = true }
 egui = "0.18"
 

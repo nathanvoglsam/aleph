@@ -139,6 +139,7 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-ref-ptr/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-dx12-agility-sdk/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-validation/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-utils/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />

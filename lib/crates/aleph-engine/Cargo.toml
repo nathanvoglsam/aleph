@@ -51,7 +51,7 @@ console = ["aleph-interfaces/console"]
 remote-console = ["aleph-interfaces/remote-console"]
 
 [dependencies]
-aleph-interfaces = { path = "../aleph-interfaces", version = "0.1" }
+aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }
 aleph-sys-info = { path = "../aleph-sys-info", version = "0.1" }
 aleph-core = { path = "../../plugins/aleph-core", version = "0.1" }

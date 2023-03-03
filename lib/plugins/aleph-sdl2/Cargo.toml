@@ -43,7 +43,7 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+aleph-interfaces = { workspace = true }
 sdl2 = { version = "0.35.2", features = ["raw-window-handle"] }
 
 ctrlc = "3"
