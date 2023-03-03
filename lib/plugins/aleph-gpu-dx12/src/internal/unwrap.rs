@@ -40,35 +40,8 @@ use crate::shader::Shader;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
 use crate::texture::Texture;
+use aleph_gpu_utils::conversion_function;
 use interfaces::gpu::*;
-
-macro_rules! conversion_function {
-    ($from: path, $to: path, $name: ident, $name_d: ident) => {
-        #[allow(unused)]
-        /// Converts the given dynamic object to a concrete type, panicking if it is not the
-        /// expected concrete type.
-        pub fn $name(v: &dyn $from) -> &$to {
-            use interfaces::any::QueryInterface;
-            v.query_interface::<$to>().expect(concat!(
-                "Unknown ",
-                stringify!($name),
-                " implementation"
-            ))
-        }
-
-        #[allow(unused)]
-        /// Converts the given dynamic object to a concrete type, panicking if it is not the
-        /// expected concrete type. Accepts a double-reference, denoted by the `_d` suffix
-        pub fn $name_d<'a>(v: &'a &'a dyn $from) -> &'a $to {
-            use interfaces::any::QueryInterface;
-            v.query_interface::<$to>().expect(concat!(
-                "Unknown ",
-                stringify!($name),
-                " implementation"
-            ))
-        }
-    };
-}
 
 conversion_function!(IBuffer, Buffer, buffer, buffer_d);
 conversion_function!(ICommandList, CommandList, command_list, command_list_d);

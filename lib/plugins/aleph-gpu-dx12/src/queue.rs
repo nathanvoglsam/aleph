@@ -28,13 +28,10 @@
 //
 
 use crate::command_list::CommandList;
-use crate::fence::Fence;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::{try_clone_value_into_slot, unwrap};
-use crate::semaphore::Semaphore;
-use crate::swap_chain::SwapChain;
 use crossbeam::queue::SegQueue;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::Mutex;

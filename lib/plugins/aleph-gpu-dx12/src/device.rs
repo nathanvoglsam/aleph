@@ -63,7 +63,7 @@ use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use crate::texture::Texture;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::RwLock;

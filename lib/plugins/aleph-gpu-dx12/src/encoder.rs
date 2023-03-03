@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::internal::conv::{
     barrier_access_to_dx12, barrier_sync_to_dx12, image_layout_to_dx12,
@@ -37,8 +36,7 @@ use crate::internal::conv::{
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::pipeline::GraphicsPipeline;
-use crate::texture::Texture;
-use interfaces::any::{AnyArc, QueryInterface};
+use interfaces::any::AnyArc;
 use interfaces::gpu::*;
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::any::TypeId;

@@ -35,7 +35,7 @@ use crate::internal::feature_support::FeatureSupport;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::surface::Surface;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use interfaces::platform::HasRawWindowHandle;
 use parking_lot::Mutex;

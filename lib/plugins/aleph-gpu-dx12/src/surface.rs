@@ -28,13 +28,12 @@
 //
 
 use crate::context::Context;
-use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
 use crossbeam::atomic::AtomicCell;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
