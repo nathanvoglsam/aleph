@@ -46,6 +46,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-interfaces = { workspace = true }
+aleph-gpu-utils = { path = "../aleph-gpu-utils", version = "0.1" }
 log = { workspace = true }
 parking_lot = { workspace = true }
 crossbeam = { workspace = true }
