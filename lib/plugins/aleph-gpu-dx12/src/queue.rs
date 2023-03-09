@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::command_list::CommandList;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::{try_clone_value_into_slot, unwrap};
 use crossbeam::queue::ArrayQueue;
@@ -73,6 +72,40 @@ impl Queue {
                 in_flight: ArrayQueue::new(256),
             })
         }
+    }
+
+    /// Inserts a Signal operation onto the ID3D12Queue that signals self.fence with the ID of the
+    /// most recent submission. This is part of our queue work tracking and is needed to implement
+    /// wait_idle as D3D12 doesn't provide a magic 'wait_idle' function like Vulkan does with
+    /// vkQueueWaitIdle.
+    ///
+    /// This is intended to be used in queue submissions to flag self.fence to be signalled when
+    /// the submission is complete.
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that 'last_submitted_index' is only ever
+    /// monotonically increased. This calls ID3D12Queue::Signal with self.fence. An ID3D12Fence's
+    /// counter must always be signalled monotonically.
+    ///
+    /// This function can't trigger the condition on its own, as it uses a fetch_add to acquire the
+    /// signal value and never decrements the index, but requires the caller to ensure they never
+    /// allow last_submitted_index to be decremented for the program to remain sound.
+    pub(crate) unsafe fn record_submission_index_signal(&self) -> windows::core::Result<u64> {
+        // Get the state of last_submitted_index before and after we increment it
+        let old_index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+        let new_index = old_index + 1;
+
+        // This performs an overflow check, if old_index is u64::MAX then the addition will have
+        // caused an overflow and broken our monotonicity requirement.
+        assert_ne!(old_index, u64::MAX, "last_submitted_index integer overflow");
+
+        // Signal new_index, new_index is the submission ID.
+        self.handle.Signal(&self.fence, new_index)?;
+
+        log::trace!("New Latest Submission Index: {}", new_index);
+
+        Ok(new_index)
     }
 }
 
@@ -226,10 +259,10 @@ impl IQueue for Queue {
                 .map_err(|v| anyhow!(v))?;
         }
 
-        let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-        assert_ne!(index, u64::MAX, "last_submitted_index integer overflow");
-        self.handle
-            .Signal(&self.fence, index)
+        // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
+        // it to be decremented.
+        let index = self
+            .record_submission_index_signal()
             .map_err(|v| anyhow!(v))?;
 
         for handle in handles {
@@ -290,10 +323,10 @@ impl IQueue for Queue {
             panic!("Attempted to present an image without having first acquired one");
         }
 
-        let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-        assert_ne!(index, u64::MAX, "last_submitted_index integer overflow");
-        self.handle
-            .Signal(&self.fence, index)
+        // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
+        // it to be decremented.
+        let _index = self
+            .record_submission_index_signal()
             .map_err(|v| anyhow!(v))?;
 
         Ok(())
