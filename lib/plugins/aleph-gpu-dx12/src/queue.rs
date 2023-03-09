@@ -49,7 +49,7 @@ pub struct Queue {
     pub(crate) fence: ID3D12Fence,
     pub(crate) last_submitted_index: AtomicU64,
     pub(crate) last_completed_index: AtomicU64,
-    pub(crate) in_flight: ArrayQueue<InFlightCommandList<CommandList>>,
+    pub(crate) in_flight: ArrayQueue<InFlightCommandList<()>>,
 }
 
 declare_interfaces!(Queue, [IQueue]);
@@ -74,23 +74,52 @@ impl Queue {
             })
         }
     }
+}
 
-    pub(crate) fn wait_all_lists_completed(&self) {
-        unsafe {
-            while let Some(mut v) = self.in_flight.pop() {
-                self.fence.SetEventOnCompletion(v.index, None).unwrap();
-                self.last_completed_index.store(v.index, Ordering::Relaxed);
-                v.list.return_to_pool();
-            }
+impl IQueue for Queue {
+    fn upgrade(&self) -> AnyArc<dyn IQueue> {
+        AnyArc::map::<dyn IQueue, _>(self.this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn queue_properties(&self) -> QueueProperties {
+        QueueProperties {
+            min_image_transfer_granularity: Extent3D::new(0, 0, 0),
         }
     }
 
-    pub(crate) fn clear_completed_lists(&self) {
+    fn garbage_collect(&self) {
         // Grab the index of the most recently completed command list on this queue and update
         // the queue's value
-        let last_completed = unsafe { self.fence.GetCompletedValue() };
-        self.last_completed_index
-            .store(last_completed, Ordering::Relaxed);
+        //
+        // Like in 'wait_idle' we need an atomic CAS loop to uphold monotonicity guarantees. There
+        // is a window between the GetCompletedValue call and the atomic store for thread
+        // preemption to allow another thread to write in a newer 'GetCompletedValue' with a
+        // higher index before the initial thread gets a chance to write its lower index. Eventually
+        // the initial thread will get execution back and overwrite the higher index with the lower
+        // index it captured before being preempted.
+        //
+        // Atomics are 'fun'.
+        let last_completed = loop {
+            let old_last_completed = self.last_completed_index.load(Ordering::Relaxed);
+            let new_last_completed = unsafe { self.fence.GetCompletedValue() };
+            match self.last_completed_index.compare_exchange(
+                old_last_completed,
+                new_last_completed,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break new_last_completed,
+                Err(_) => continue,
+            }
+        };
 
         // Capture the current length of the queue. We then pop N items off the queue and check
         // to see if it is complete based on comparing the list's index with the last completed
@@ -110,24 +139,51 @@ impl Queue {
             }
         }
     }
-}
 
-impl IQueue for Queue {
-    fn upgrade(&self) -> AnyArc<dyn IQueue> {
-        AnyArc::map::<dyn IQueue, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn queue_properties(&self) -> QueueProperties {
-        QueueProperties {
-            min_image_transfer_granularity: Extent3D::new(0, 0, 0),
+    fn wait_idle(&self) {
+        unsafe {
+            // This function may run in parallel with submissions and wait_idle/garbage_collect
+            // calls from any number of other threads. A naive implementation could allow a data
+            // race to break the monotonicity property of last_completed_index and
+            // last_submitted_index.
+            //
+            // It is possible for a thread to be preempted immediately after the atomic load of
+            // 'last_submitted_index', then another submission occurs and another thread calls and
+            // completes a 'wait_idle' before the original thread gets control back. In this case
+            // the original thread will wait for an older 'last_submitted' value and then update
+            // the 'last_submitted_index' value with an outdated submission index. This would allow
+            // last_submitted_index to decrease, which breaks the monotonicity property.
+            //
+            // This would likely never happen in a real program as you would need to have a thread
+            // get preempted for enough time for both the CPU to submit another command list on
+            // another thread and then perform a full pipeline flush on the queue. It would also
+            // need to preempt exactly between the atomic loads and SetEventOnCompletion. The odds
+            // are astronomically small, but we can avoid the problem.
+            //
+            // By using a compare_exchange we can check if 'last_completed_index' is still the value
+            // we captured before 'SetEventOnCompletion'. If another thread has changed this from
+            // underneath us we just try again until the thread 'wins' the race.
+            //
+            // This could theoretically cause wait_idle to loop indefinitely if the above race
+            // condition occurs repeatedly, but in practice it will never happen once let alone
+            // infinitely. But it is now impossible for 'wait_idle' to cause last_completed_index
+            // to go backwards.
+            loop {
+                let last_completed = self.last_completed_index.load(Ordering::Relaxed);
+                let last_submitted = self.last_submitted_index.load(Ordering::Relaxed);
+                self.fence
+                    .SetEventOnCompletion(last_submitted, None)
+                    .unwrap();
+                match self.last_completed_index.compare_exchange(
+                    last_completed,
+                    last_submitted,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    Err(_) => continue,
+                }
+            }
         }
     }
 
@@ -171,9 +227,22 @@ impl IQueue for Queue {
         }
 
         let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+        assert_ne!(index, u64::MAX, "last_submitted_index integer overflow");
         self.handle
             .Signal(&self.fence, index)
             .map_err(|v| anyhow!(v))?;
+
+        for handle in handles {
+            let _handle = handle.unwrap();
+            // TODO: we want to do some garbage collection for resources
+            self.in_flight
+                .push(InFlightCommandList {
+                    index,
+                    list: Box::new(()),
+                })
+                .ok()
+                .expect("Overflowed in-flight command list tracking buffer");
+        }
 
         Ok(())
     }
@@ -222,6 +291,7 @@ impl IQueue for Queue {
         }
 
         let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+        assert_ne!(index, u64::MAX, "last_submitted_index integer overflow");
         self.handle
             .Signal(&self.fence, index)
             .map_err(|v| anyhow!(v))?;

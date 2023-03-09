@@ -121,13 +121,13 @@ impl IDevice for Device {
 
     fn garbage_collect(&self) {
         if let Some(queue) = &self.general_queue {
-            queue.clear_completed_lists();
+            queue.garbage_collect();
         }
         if let Some(queue) = &self.compute_queue {
-            queue.clear_completed_lists();
+            queue.garbage_collect();
         }
         if let Some(queue) = &self.transfer_queue {
-            queue.clear_completed_lists();
+            queue.garbage_collect();
         }
     }
 
@@ -136,13 +136,13 @@ impl IDevice for Device {
 
     fn wait_idle(&self) {
         if let Some(queue) = &self.general_queue {
-            queue.wait_all_lists_completed();
+            queue.wait_idle();
         }
         if let Some(queue) = &self.compute_queue {
-            queue.wait_all_lists_completed();
+            queue.wait_idle();
         }
         if let Some(queue) = &self.transfer_queue {
-            queue.wait_all_lists_completed();
+            queue.wait_idle();
         }
     }
 

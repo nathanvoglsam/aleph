@@ -49,7 +49,7 @@ pub trait ReturnToPool {
 /// have been implemented yet
 impl ReturnToPool for () {
     fn return_to_pool(&mut self) {
-        unimplemented!()
+        log::trace!("Called ()::return_to_pool! This is a bug!!!!!!!!");
     }
 }
 
