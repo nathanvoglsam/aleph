@@ -117,4 +117,26 @@ impl Semaphore {
 
         queue.Signal(&self.fence, signal_val)
     }
+
+    ///
+    /// Signals the semaphore from the CPU timeline. This is used to emulate operations that should
+    /// signal semaphores, but D3D12 doesn't. Namely swap image acquisition.
+    ///
+    /// # Safety
+    ///
+    /// FFI to ID3D12CommandQueue::Signal
+    ///
+    pub unsafe fn signal_from_cpu(&self) -> windows::core::Result<()> {
+        // Fetch add means we get the value we want to signal + increment to the next value fully
+        // atomically. The subsequent 'wait' operation will use 'value - 1'.
+        let signal_val = self.value.fetch_add(1, Ordering::Relaxed);
+
+        // If we somehow managed to run a single renderer instance for 243 million years (assuming
+        // you signalled the same semaphore 2400 times per second) then this will overflow.
+        //
+        // If you see this panic message, let me know how humanity is going.
+        assert_ne!(signal_val, u64::MAX, "Semaphore internal value overflow!");
+
+        self.fence.Signal(signal_val)
+    }
 }

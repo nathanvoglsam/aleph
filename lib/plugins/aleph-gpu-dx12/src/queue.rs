@@ -37,7 +37,6 @@ use interfaces::gpu::*;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::any::TypeId;
-use std::ops::Deref;
 use std::sync::atomic::{AtomicU64, Ordering};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -176,29 +175,6 @@ impl IQueue for Queue {
         Ok(())
     }
 
-    unsafe fn acquire(
-        &self,
-        desc: &QueueAcquireDesc,
-    ) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-        let swap_chain = unwrap::swap_chain(desc.swap_chain);
-
-        let mut inner = swap_chain.inner.lock();
-
-        if let Some(dimensions) = swap_chain.queued_resize.take() {
-            let new_width = dimensions.deref().0;
-            let new_height = dimensions.deref().1;
-            unsafe {
-                swap_chain.handle_resize(&mut inner, new_width, new_height)?;
-            }
-        }
-
-        inner.current = unsafe { swap_chain.swap_chain.GetCurrentBackBufferIndex() as i32 };
-        let image = inner.textures[inner.current as usize].clone();
-        let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
-
-        Ok(image)
-    }
-
     unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
         let swap_chain = unwrap::swap_chain(desc.swap_chain);
 
@@ -233,6 +209,14 @@ impl IQueue for Queue {
             .Present1(0, 0, &presentation_params)
             .ok()
             .map_err(|v| anyhow!(v))?;
+
+        if swap_chain
+            .acquired
+            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            panic!("Attempted to present an image without having first acquired one");
+        }
 
         let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
         self.handle

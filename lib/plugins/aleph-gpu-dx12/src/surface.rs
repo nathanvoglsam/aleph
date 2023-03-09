@@ -32,7 +32,6 @@ use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
-use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
@@ -62,10 +61,11 @@ impl Surface {
         let device = unwrap::device(device);
 
         // Translate our high level present mode into terms that make sense to d3d12
-        let (buffer_count, flags) = match config.present_mode {
-            PresentationMode::Immediate => (2, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING),
-            PresentationMode::Mailbox => (3, DXGI_SWAP_CHAIN_FLAG::default()),
-            PresentationMode::Fifo => (2, DXGI_SWAP_CHAIN_FLAG::default()),
+        let buffer_count = config.buffer_count;
+        let flags = match config.present_mode {
+            PresentationMode::Immediate => DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING,
+            PresentationMode::Mailbox => DXGI_SWAP_CHAIN_FLAG::default(),
+            PresentationMode::Fifo => DXGI_SWAP_CHAIN_FLAG::default(),
         };
 
         // Translate our format
@@ -99,7 +99,7 @@ impl Surface {
 
         // Select a queue to attach the swap chain to. If the preferred queue is not supported we
         // fallback directly to the general queue.
-        let (queue, queue_type) = match config.preferred_queue {
+        let (queue, queue_type) = match config.present_queue {
             QueueType::General => {
                 // Loading the general queue is handled after this match block as a fallback for
                 // the other two cases. We can just re-use the same code for loading it if we
@@ -161,7 +161,7 @@ impl Surface {
             swap_chain,
             queue_support: queue_type,
             inner: Mutex::new(inner),
-            queued_resize: AtomicCell::new(None),
+            acquired: Default::default(),
         });
 
         {

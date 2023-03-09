@@ -28,17 +28,16 @@
 //
 
 use crate::device::Device;
-use crate::internal::try_clone_value_into_slot;
+use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::surface::Surface;
 use crate::texture::Texture;
-use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::{Mutex, RwLock};
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use windows::core::IUnknown;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -51,7 +50,7 @@ pub struct SwapChain {
     pub(crate) swap_chain: IDXGISwapChain4,
     pub(crate) queue_support: QueueType,
     pub(crate) inner: Mutex<SwapChainState>,
-    pub(crate) queued_resize: AtomicCell<Option<Box<(u32, u32)>>>,
+    pub(crate) acquired: AtomicBool,
 }
 
 declare_interfaces!(SwapChain, [ISwapChain]);
@@ -105,72 +104,6 @@ impl SwapChain {
 
             state.textures.push(texture);
         }
-
-        Ok(())
-    }
-
-    pub unsafe fn handle_resize(
-        &self,
-        inner: &mut SwapChainState,
-        width: u32,
-        height: u32,
-    ) -> Result<(), AcquireImageError> {
-        // D3D12 requires releasing all references to the D3D12_RESOURCE handles associated with a
-        // swap chain *before* calling ResizeBuffers. In order to meet this requirement we will
-        // force a full device queue flush and garbage collection cycle.
-        //
-        // This way we know the only places that can be holding a reference to any of the swap chain
-        // resources is the swap chain itself. That means we now have exclusive ownership of the
-        // images and releasing the handles should leave them all freed. Assuming no implementation
-        // bugs anyway.
-        self.device.wait_idle();
-
-        // TODO: Should this be done in the validation layer?
-        #[cfg(debug_assertions)]
-        {
-            // Assert that we have the only reference to the swap chain textures. D3D12 requires
-            // that ID3D12Resources created from the swap chain are fully released before resizing
-            // the swap chain
-            for texture in inner.textures.iter() {
-                // Both strong and weak count must be one to prove exclusive ownership of 'texture'
-                //
-                // Weak count will be 1 as the texture has an internal Weak reference to itself.
-                debug_assert_eq!(texture.strong_count(), 1);
-                debug_assert_eq!(texture.weak_count(), 1);
-            }
-        }
-
-        let queue = match self.queue_support {
-            QueueType::General => self.device.general_queue.as_ref().unwrap().handle.clone(),
-            QueueType::Compute => self.device.compute_queue.as_ref().unwrap().handle.clone(),
-            QueueType::Transfer => self.device.transfer_queue.as_ref().unwrap().handle.clone(),
-        };
-        // Empty the images array as, assuming the rest of the code is correct, that array will
-        // hold the only remaining references to the swap chain images.
-        //
-        // This also handles creating the list of queues we pass to ResizeBuffers
-        let queues: Vec<ID3D12CommandQueue> = inner
-            .textures
-            .drain(..)
-            .map(|_| {
-                queue.clone() // TODO: We should find a way to avoid this
-            })
-            .collect();
-
-        self.resize_buffers(
-            queues.len() as u32,
-            width,
-            height,
-            DXGI_FORMAT_UNKNOWN,
-            0,
-            &queues,
-        )
-        .unwrap();
-
-        inner.config.width = width;
-        inner.config.height = height;
-        self.recreate_swap_images(inner, queues.len() as u32)
-            .map_err(|v| anyhow!(v))?;
 
         Ok(())
     }
@@ -241,20 +174,103 @@ impl ISwapChain for SwapChain {
         self.inner.lock().config.clone()
     }
 
-    fn queue_resize(&self, width: u32, height: u32) {
-        let resize = Box::new((width, height));
-        self.queued_resize.store(Some(resize));
+    fn rebuild(
+        &self,
+        new_size: Option<Extent2D>,
+    ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
+        let mut inner = self.inner.lock();
+
+        let (width, height) = if let Some(Extent2D { width, height }) = new_size {
+            (width, height)
+        } else {
+            (0, 0)
+        };
+
+        // D3D12 requires releasing all references to the D3D12_RESOURCE handles associated with a
+        // swap chain *before* calling ResizeBuffers. In order to meet this requirement we will
+        // force a full device queue flush and garbage collection cycle.
+        //
+        // This way we know the only places that can be holding a reference to any of the swap chain
+        // resources is the swap chain itself. That means we now have exclusive ownership of the
+        // images and releasing the handles should leave them all freed. Assuming no implementation
+        // bugs anyway.
+        self.device.wait_idle();
+
+        // Assert that we have the only reference to the swap chain textures. D3D12 requires
+        // that ID3D12Resources created from the swap chain are fully released before resizing
+        // the swap chain
+        #[cfg(debug_assertions)]
+        for v in inner.textures.iter_mut() {
+            assert!(
+                v.weak_count() == 1 && v.strong_count() == 1,
+                "It is invalid to resize a swap chain while still holding references to its images"
+            )
+        }
+
+        let queue = match self.queue_support {
+            QueueType::General => self.device.general_queue.as_ref().unwrap().handle.clone(),
+            QueueType::Compute => self.device.compute_queue.as_ref().unwrap().handle.clone(),
+            QueueType::Transfer => self.device.transfer_queue.as_ref().unwrap().handle.clone(),
+        };
+        // Empty the images array as, assuming the rest of the code is correct, that array will
+        // hold the only remaining references to the swap chain images.
+        //
+        // This also handles creating the list of queues we pass to ResizeBuffers
+        let queues: Vec<ID3D12CommandQueue> = inner
+            .textures
+            .drain(..)
+            .map(|_| {
+                queue.clone() // TODO: We should find a way to avoid this
+            })
+            .collect();
+
+        unsafe {
+            self.resize_buffers(
+                queues.len() as u32,
+                width,
+                height,
+                DXGI_FORMAT_UNKNOWN,
+                0,
+                &queues,
+            )
+            .unwrap();
+
+            inner.config.width = width;
+            inner.config.height = height;
+            self.recreate_swap_images(&mut inner, queues.len() as u32)
+                .map_err(|v| anyhow!(v))?;
+        }
+
+        self.acquired.store(false, Ordering::SeqCst);
+
+        Ok(inner.config.clone())
     }
 
-    fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {
-        let inner = self.inner.lock();
+    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]) {
+        let lock = self.inner.lock();
+        let textures = &lock.textures;
 
-        if inner.current < 0 {
-            None
-        } else {
-            let texture = inner.textures[inner.current as usize].clone();
-            Some(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
+        for (out, v) in images.iter_mut().zip(textures.iter()) {
+            *out = Some(v.upgrade());
         }
+    }
+
+    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
+        if self
+            .acquired
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            panic!("Attempted to acquire an image while one is already acquired");
+        }
+
+        let index = self.swap_chain.GetCurrentBackBufferIndex();
+
+        for semaphore in desc.signal_semaphores.iter().map(unwrap::semaphore_d) {
+            semaphore.signal_from_cpu().map_err(|v| anyhow!(v))?;
+        }
+
+        Ok(index)
     }
 }
 
