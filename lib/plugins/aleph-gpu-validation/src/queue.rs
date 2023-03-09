@@ -32,10 +32,11 @@ use crate::internal::get_as_unwrapped;
 use crate::semaphore::SemaphoreState;
 use crate::{
     ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
-    ValidationSwapChain, ValidationTexture,
+    ValidationSwapChain,
 };
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
+use std::sync::atomic::Ordering;
 
 pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
@@ -73,19 +74,22 @@ impl IQueue for ValidationQueue {
             self.validate_command_list_submission(v);
         }
 
-        for v in desc.wait_semaphores {
-            let v = v
-                .query_interface::<ValidationSemaphore>()
-                .expect("Unknown ISemaphore implementation");
-            let semaphore_state = v.state.load();
-
-            assert_eq!(
-                semaphore_state,
-                SemaphoreState::Waiting,
-                "It is invalid to submit a wait semaphore after using it in a previous submission"
-            );
-        }
-
+        // TODO: Validating semaphore usage requires tracking the submissions to fully track a
+        //       semaphore's state. Otherwise we can only know whether a semaphore has been queued
+        //       for signalling.
+        // for v in desc.wait_semaphores {
+        //     let v = v
+        //         .query_interface::<ValidationSemaphore>()
+        //         .expect("Unknown ISemaphore implementation");
+        //     let semaphore_state = v.state.load();
+        //
+        //     assert_eq!(
+        //         semaphore_state,
+        //         SemaphoreState::Waiting,
+        //         "It is invalid to submit a wait semaphore after using it in a previous submission"
+        //     );
+        // }
+        //
         // for v in desc.signal_semaphores {
         //     let v = v
         //         .query_interface::<ValidationSemaphore>()
@@ -142,44 +146,6 @@ impl IQueue for ValidationQueue {
         })
     }
 
-    unsafe fn acquire(
-        &self,
-        desc: &QueueAcquireDesc,
-    ) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-        let swap_chain = desc
-            .swap_chain
-            .query_interface::<ValidationSwapChain>()
-            .expect("Unknown ISwapChain implementation");
-
-        assert_eq!(
-            self.queue_type, swap_chain.queue_support,
-            "Tried to use a swap chain on an unsupported queue"
-        );
-
-        let result = get_as_unwrapped::queue_acquire_desc(desc, |inner_desc| {
-            let result = self.inner.acquire(inner_desc);
-
-            for v in desc.signal_semaphores {
-                let v = v
-                    .query_interface::<ValidationSemaphore>()
-                    .expect("Unknown ISemaphore implementation");
-
-                v.state.store(SemaphoreState::Waiting);
-            }
-
-            result
-        });
-
-        result.map(|inner| {
-            let texture = AnyArc::new_cyclic(move |v| ValidationTexture {
-                _this: v.clone(),
-                _device: self._device.upgrade().unwrap(),
-                inner,
-            });
-            AnyArc::map::<dyn ITexture, _>(texture, |v| v)
-        })
-    }
-
     unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
         let swap_chain = desc
             .swap_chain
@@ -191,16 +157,28 @@ impl IQueue for ValidationQueue {
             "Tried to use a swap chain on an unsupported queue"
         );
 
+        if swap_chain
+            .acquired
+            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            panic!("Attempted to present an image without having first acquired one");
+        }
+
+        for v in desc.wait_semaphores {
+            let v = v
+                .query_interface::<ValidationSemaphore>()
+                .expect("Unknown ISemaphore implementation");
+
+            assert_eq!(
+                v.state.load(),
+                SemaphoreState::Waiting,
+                "Attempted to wait on a semaphore that has not been queued for signalling"
+            );
+        }
+
         get_as_unwrapped::queue_present_desc(desc, |inner_desc| {
             let result = self.inner.present(inner_desc);
-
-            // for v in desc.wait_semaphores {
-            //     let v = v
-            //         .query_interface::<ValidationSemaphore>()
-            //         .expect("Unknown ISemaphore implementation");
-            //
-            //     v.state.store(SemaphoreState::Waited);
-            // }
 
             result
         })

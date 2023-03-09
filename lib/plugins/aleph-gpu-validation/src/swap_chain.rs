@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
+use crate::internal::unwrap;
 use crate::{ValidationDevice, ValidationSurface, ValidationTexture};
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use parking_lot::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct ValidationSwapChain {
     pub(crate) _this: AnyWeak<Self>,
@@ -38,7 +40,8 @@ pub struct ValidationSwapChain {
     pub(crate) _surface: AnyArc<ValidationSurface>,
     pub(crate) inner: AnyArc<dyn ISwapChain>,
     pub(crate) queue_support: QueueType,
-    pub(crate) current_image: Mutex<Option<AnyArc<ValidationTexture>>>,
+    pub(crate) textures: Mutex<Vec<AnyArc<dyn ITexture>>>,
+    pub(crate) acquired: AtomicBool,
 }
 
 interfaces::any::declare_interfaces!(ValidationSwapChain, [ISwapChain]);
@@ -66,12 +69,108 @@ impl ISwapChain for ValidationSwapChain {
         self.inner.get_config()
     }
 
-    fn queue_resize(&self, width: u32, height: u32) {
-        self.inner.queue_resize(width, height)
+    fn rebuild(
+        &self,
+        new_size: Option<Extent2D>,
+    ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
+        // We create an array with space for as many swap chain textures as we'd ever need. This
+        // avoids a heap alloc
+        let mut scratch = Self::make_scratch();
+
+        // Acquire the textures lock and grab the number of swap images. We need to know this number
+        // for refilling the list after we clear it...
+        let mut textures = self.textures.lock();
+        let num_textures = textures.len();
+
+        // Validate that we have exclusive ownership of the textures. This is an API requirement.
+        for x in textures.iter() {
+            assert!(
+                x.weak_count() == 1 && x.strong_count() == 1,
+                "It is invalid to resize a swap chain while still holding references to its images"
+            );
+        }
+
+        // We have to clear the textures array to drop what should be the last remaining reference
+        // to the swap images owned by something outside of the root RHI implementation.
+        textures.clear();
+
+        // We have to block and flush all GPU work before we rebuild to ensure that none of the
+        // images can be in use on the GPU timeline.
+        self._device.wait_idle();
+
+        // Finally, we can actually do the real resize operation
+        let result = self.inner.rebuild(new_size);
+
+        // All swap images are immediately un-acquired after a rebuild
+        self.acquired.store(false, Ordering::SeqCst);
+
+        // We now need to re poll the images from the inner layer so we can hand out images
+        // correctly in subsequent calls to 'get_images'
+        let images = &mut scratch[0..num_textures];
+        self.inner.get_images(images);
+
+        // The returned images are from the inner implementation, wrap them in ValidationTexture.
+        Self::wrap_images(self._device.as_ref(), &mut textures, images);
+
+        result
     }
 
-    fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {
-        let image = self.current_image.lock().clone();
-        image.map(|v| AnyArc::map::<dyn ITexture, _>(v, |v| v))
+    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]) {
+        let textures = self.textures.lock();
+
+        for (out, v) in images.iter_mut().zip(textures.iter()) {
+            *out = Some(v.clone());
+        }
+    }
+
+    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
+        if self
+            .acquired
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            panic!("Attempted to acquire an image while one is already acquired");
+        }
+
+        let signal_semaphores: Vec<_> = desc
+            .signal_semaphores
+            .iter()
+            .map(unwrap::semaphore_d)
+            .map(|v| v.inner.as_ref())
+            .collect();
+
+        let desc = AcquireDesc {
+            signal_semaphores: &signal_semaphores,
+        };
+
+        self.inner.acquire_next_image(&desc)
+    }
+}
+
+impl ValidationSwapChain {
+    pub(crate) fn wrap_images(
+        device: &ValidationDevice,
+        textures: &mut Vec<AnyArc<dyn ITexture>>,
+        images: &mut [Option<AnyArc<dyn ITexture>>],
+    ) {
+        // The returned images are from the inner implementation, wrap them in ValidationTexture.
+        for image in images {
+            let image = image.take().unwrap();
+            let image = AnyArc::new_cyclic(move |v| ValidationTexture {
+                _this: v.clone(),
+                _device: device._this.upgrade().unwrap(),
+                inner: image,
+            });
+            let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
+
+            textures.push(image);
+        }
+    }
+
+    pub(crate) fn make_scratch() -> [Option<AnyArc<dyn ITexture>>; 16] {
+        [
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None,
+        ]
     }
 }

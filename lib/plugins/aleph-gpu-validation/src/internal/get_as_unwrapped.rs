@@ -186,36 +186,6 @@ pub fn queue_submit_desc<Return>(
     f(&new_desc)
 }
 
-pub fn queue_acquire_desc<Return>(
-    desc: &QueueAcquireDesc,
-    f: impl FnOnce(&QueueAcquireDesc) -> Return,
-) -> Return {
-    let swap_chain = desc
-        .swap_chain
-        .query_interface::<ValidationSwapChain>()
-        .expect("Unknown ISwapChain Implementation")
-        .inner
-        .as_ref();
-
-    let signal_semaphores: Vec<_> = desc
-        .signal_semaphores
-        .iter()
-        .map(|v| {
-            v.query_interface::<ValidationSemaphore>()
-                .expect("Unknown ISemaphore implementation")
-                .inner
-                .as_ref()
-        })
-        .collect();
-
-    let new_desc = QueueAcquireDesc {
-        swap_chain,
-        signal_semaphores: &signal_semaphores,
-    };
-
-    f(&new_desc)
-}
-
 pub fn queue_present_desc<Return>(
     desc: &QueuePresentDesc,
     f: impl FnOnce(&QueuePresentDesc) -> Return,
@@ -240,6 +210,7 @@ pub fn queue_present_desc<Return>(
 
     let new_desc = QueuePresentDesc {
         swap_chain,
+        image_index: desc.image_index,
         wait_semaphores: &wait_semaphores,
     };
 

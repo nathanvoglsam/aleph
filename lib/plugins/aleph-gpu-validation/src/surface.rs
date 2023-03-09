@@ -30,6 +30,7 @@
 use crate::{ValidationContext, ValidationDevice, ValidationSwapChain};
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
+use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct ValidationSurface {
@@ -81,13 +82,21 @@ impl ISurface for ValidationSurface {
         };
         let inner = inner?;
 
+        // Prefill the 'textures' array in the swap chain.
+        let mut scratch = ValidationSwapChain::make_scratch();
+        let images = &mut scratch[0..config.buffer_count as usize]; // TODO: get the number of images
+        inner.get_images(images);
+        let mut textures = Vec::with_capacity(config.buffer_count as usize);
+        ValidationSwapChain::wrap_images(device, &mut textures, images);
+
         let swap_chain = AnyArc::new_cyclic(move |v| ValidationSwapChain {
             _this: v.clone(),
             _device: device._this.upgrade().unwrap(),
             _surface: self._this.upgrade().unwrap(),
             inner,
             queue_support: Default::default(),
-            current_image: Default::default(),
+            textures: Mutex::new(textures),
+            acquired: Default::default(),
         });
         Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
     }
