@@ -239,15 +239,23 @@ pub trait IAdapter: IAny + IGetPlatformInterface + Send + Sync {
 pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IDevice);
 
-    /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
-    /// command lists to be freed. It is recommended to call this at least once per frame.
+    /// Triggers a garbage collection cycle across all queues in a single function call. For more
+    /// information, see [IQueue::garbage_collect].
+    ///
+    /// This is simply a utility function that calls the matching function for all available queues.
+    ///
+    /// # Warning
+    ///
+    /// It is *not* recommended to use this in a real app as trivial parallelization is left on the
+    /// table with this interface. Call [IQueue::garbage_collect] for each queue individually on
+    /// separate threads without blocking, the work is completely asynchronous.
     fn garbage_collect(&self);
 
-    /// Block the calling thread until all GPU queues are flushed of work. This is similar to
-    /// vkDeviceWaitIdle.
+    /// A utility that will wait for all GPU queues to be idle. For more information, see
+    /// [IQueue::wait_idle].
     ///
-    /// This will also trigger a GC cycle, freeing the releases from the now completed command
-    /// lists.
+    /// This is just a utility function that functions as if calling [IQueue::wait_idle] for all
+    /// available queues individually.
     fn wait_idle(&self);
 
     fn create_graphics_pipeline(
@@ -391,6 +399,33 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
 
     /// Returns the set of per-queue properties associated with this queue.
     fn queue_properties(&self) -> QueueProperties;
+
+    /// Triggers a garbage collection cycle. This will walk the list of known in-flight command
+    /// lists and release any that are now fully retired on the queue. Any resources that the
+    /// command list is extending the lifetime for will also have their reference count decremented.
+    ///
+    /// This is expected to be called once per-frame. This provides a well-known API that
+    /// encapsulates the CPU work associated with collecting and releasing in-flight resources.
+    ///
+    /// It is possible, and encouraged, to call punt this onto a task thread. Each queue can be
+    /// collected on separate threads, spreading the work across multiple cores. The calls are
+    /// non-blocking and thread-safe. They could trivially be handled as fire-and-forget rayon
+    /// tasks, for example.
+    ///
+    /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
+    /// command lists to be freed. It is recommended to call this at least once per frame.
+    ///
+    /// # Warning
+    ///
+    /// Not calling this function *will* cause problems. RHI implementations may (and *do*) use
+    /// fixed-sized buffers for tracking in-flight work. Failing to call this function means you
+    /// will overflow the internal buffers after a few frames of queue submissions and panic, or
+    /// just leak memory.
+    fn garbage_collect(&self);
+
+    /// Block the calling thread until the queue is flushed of work. This is similar to
+    /// vkQueueWaitIdle.
+    fn wait_idle(&self);
 
     ///
     /// # Safety
