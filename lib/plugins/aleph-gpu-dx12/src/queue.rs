@@ -30,7 +30,7 @@
 use crate::command_list::CommandList;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::{try_clone_value_into_slot, unwrap};
-use crossbeam::queue::SegQueue;
+use crossbeam::queue::ArrayQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
@@ -49,7 +49,7 @@ pub struct Queue {
     pub(crate) fence: ID3D12Fence,
     pub(crate) last_submitted_index: AtomicU64,
     pub(crate) last_completed_index: AtomicU64,
-    pub(crate) in_flight: SegQueue<InFlightCommandList<CommandList>>,
+    pub(crate) in_flight: ArrayQueue<InFlightCommandList<CommandList>>,
 }
 
 declare_interfaces!(Queue, [IQueue]);
@@ -70,7 +70,7 @@ impl Queue {
                 fence: device.CreateFence(0, D3D12_FENCE_FLAG_NONE).unwrap(),
                 last_submitted_index: Default::default(),
                 last_completed_index: Default::default(),
-                in_flight: Default::default(),
+                in_flight: ArrayQueue::new(256),
             })
         }
     }
@@ -101,7 +101,10 @@ impl Queue {
             // Check if the
             let mut v = self.in_flight.pop().unwrap();
             if v.index > last_completed {
-                self.in_flight.push(v);
+                self.in_flight
+                    .push(v)
+                    .ok()
+                    .expect("Overflowed in-flight command list tracking buffer");
             } else {
                 v.list.return_to_pool();
             }
