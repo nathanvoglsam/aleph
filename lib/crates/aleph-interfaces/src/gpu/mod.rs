@@ -486,8 +486,75 @@ pub trait ISwapChain: IAny + IGetPlatformInterface {
     /// performing the resize operation.
     fn queue_resize(&self, width: u32, height: u32);
 
+    /// Performs a swap chain rebuild operation, recreating the swap images while remaining attached
+    /// to the underlying surface. An optional new size hint can be specified to provide resize the
+    /// back-buffers.
+    ///
+    /// This is important and enables several pieces of functionality:
+    /// - Firstly, it allows resizing the swap chain images when the size of the surface has
+    ///   changed.
+    /// - It allows rebuilding the swap images on a fullscreen/windowed transition which is required
+    ///   on some platforms to trigger fullscreen optimizations (D3D12)
+    /// - It allows a rebuild for cases where it is required, such as when the swap chain has become
+    ///   out of date for the associated surface and must be rebuilt before it can be used again.
+    ///
+    /// # Info
+    ///
+    /// This function will trigger a full device sync and flush ([IDevice::wait_idle]) in order to
+    /// drain the GPU of any in-flight work referencing the swap images. It will also assert that
+    /// the user has dropped all references, panicking if the user has failed to meet this
+    /// requirement.
+    ///
+    /// Once a thread has entered [ISwapChain::rebuild] any remaining views in descriptor sets are
+    /// considered dangling and are no longer valid to use. None of the swap images can be in-use on
+    /// a queue when this function is called. No further work can be queued referencing the old swap
+    /// textures the instant any thread enters [ISwapChain::rebuild].
+    ///
+    /// # Full Sync and Flush
+    ///
+    /// It is prudent to explain why a full device flush is used here, as this has major performance
+    /// implications. We make the decision that forcefully stalling and draining the GPU of work
+    /// here is the correct choice for two reasons.
+    ///
+    /// - Implementation safety and simplicity.
+    /// - The performance impact is not important.
+    ///
+    /// Forcing a full flush means implementations don't have to do any special tracking on the GPU
+    /// timeline for GPU resources. They can simply drain the work and expect the caller to not
+    /// queue any more work using the old swap textures *after* calling [ISwapChain::rebuild].
+    ///
+    /// The performance cost for doing this is not important as [ISwapChain::rebuild] will be called
+    /// exceedingly rarely in only a few circumstances in any real app, namely:
+    /// - Fullscreen transitions
+    /// - Window resizing
+    ///
+    /// These operations are already *very* slow and are irrelevant to the performance of a running
+    /// game. The additional cost will not be noticed and the benefit is worth the extra trade.
+    fn rebuild(
+        &self,
+        new_size: Option<Extent2D>,
+    ) -> Result<SwapChainConfiguration, SwapChainRebuildError>;
+
     /// Returns the current active swap chain image
     fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>>;
+
+    /// Acquires handles to the swap chain textures and writes them into the given array.
+    ///
+    /// # Info
+    ///
+    /// If `images.len()` is > than the number of swap chain images the out-of-range array elements
+    /// will be left unchanged.
+    ///
+    /// If `images.len()` is < than the number of swap chain images then only the first
+    /// `images.len()` swap chain images will be returned.
+    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]);
+
+    /// Acquire an image from the swap chain for use with rendering
+    ///
+    /// # Safety
+    ///
+    /// TODO: Safety docs
+    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError>;
 }
 
 //
@@ -928,6 +995,23 @@ impl UOffset3D {
     }
 }
 
+/// A two-component vector of [u32], canonically used for specifying extents.
+#[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
+pub struct Extent2D {
+    /// Extent along the `x` axis
+    pub width: u32,
+
+    /// Extent along the `y` axis
+    pub height: u32,
+}
+
+impl Extent2D {
+    /// Construct a new [Extent2D] from the 3 provided coordinates
+    pub const fn new(width: u32, height: u32) -> Self {
+        Self { width, height }
+    }
+}
+
 /// A three-component vector of [u32], canonically used for specifying extents.
 #[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
 pub struct Extent3D {
@@ -1262,13 +1346,126 @@ impl Display for PresentationMode {
     }
 }
 
+/// Specifies the preferred values for a swap chain during creation (when used in
+/// [ISurface::create_swap_chain]) or the actual current configuration of the swap chain (when
+/// queried with [ISwapChain::get_config]).
+///
+/// In the creation context, some of these values only specify *preferences* rather than
+/// requirements. Specifically:
+/// - `width`
+/// - `height`
+/// - `presentation_mode`
+/// - `buffer_count`
+/// - `present_queue`
+///
+/// All of these have complex feature matrices that only a mother could love. Especially on Vulkan.
+/// We take the opinionated approach that sane fallbacks should be used in place of front-loading it
+/// all on the user.
+///
+/// This means, in the context of [ISurface::create_swap_chain], the fields in the above list are
+/// treated as *hints* rather than *requirements*. The actual configuration is allowed to differ
+/// from the request. This allows the implementation to use fallbacks rather than leaving the user
+/// to decide with heuristics, and avoids pessimizing platforms that don't have this problem
+/// (*cough* D3D12 *cough*).
+///
+/// In the context of [ISwapChain::get_config] then all fields represent the actual state of the
+/// swap chain *at the time it was queried*. This state can (and will) change between calls to
+/// [ISwapChain::rebuild].
+///
+/// Specific cases where the preferences are ignored include:
+/// - Windows Vulkan can only use `width` and `height` exactly equal to the window dimensions so it
+///   can't meet arbitrary width or height requests.
+/// - Not all Vulkan implementations support all present modes so the next closest fallback must be
+///   used.
+/// - Support for a given buffer count varies, including between presentation modes. Only some
+///   combinations are sane (mailbox with anything other than 3 buffers is pointless)
+/// - The queue a swap chain can be presented to from is device dependent. We do at least guarantee
+///   that you can present from general queues.
+///
+/// In summary, Vulkan swap chains are a pain and we can't hide it. Sane fallbacks make it a lot
+/// more elegant though.
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct SwapChainConfiguration {
+    /// The texture format of the swap chain images.
     pub format: Format,
+
+    /// The width of the swap chain, in pixels.
     pub width: u32,
+
+    /// The height of the swap chain, in pixels.
     pub height: u32,
+
+    /// The presentation mode of the swap chain.
     pub present_mode: PresentationMode,
-    pub preferred_queue: QueueType,
+
+    /// The number of back buffers in the swap chain. Valid range 2..=3.
+    pub buffer_count: u32,
+
+    /// The queue that can queue present operations for this swap chain.
+    pub present_queue: QueueType,
+}
+
+#[derive(Clone)]
+pub struct AcquireDesc<'a> {
+    /// A list of semaphores that will be signalled once the acquire operation is completed. Only
+    /// once the acquire operation signals is the acquired image safe to use on the GPU timeline.
+    pub signal_semaphores: &'a [&'a dyn ISemaphore],
+}
+
+#[derive(Debug)]
+pub enum AcquireResult {
+    /// Specifies a successful image acquisition. The associated value contains the index of the
+    /// acquired image.
+    Ok(usize),
+
+    /// Specifies a successful image acquisition, but also flags that the current swap chain
+    /// configuration is out-of-date. The swap chain can still be used, but it is encouraged to
+    /// perform a rebuild operation to return to an optimal state. The associated value contains
+    /// the index of the acquired image.
+    ///
+    /// This may happen, for example, when a window is resized and the swap chain resolution and
+    /// backing window size don't match. The platform compositor can compensate for this but this
+    /// does introduce latency and overhead which is sub-optimal.
+    SubOptimal(usize),
+
+    /// Specifies the image acquisition has failed, providing a reason in the associated value.
+    Err(ImageAcquireError),
+}
+
+impl From<ImageAcquireError> for AcquireResult {
+    fn from(value: ImageAcquireError) -> Self {
+        Self::Err(value)
+    }
+}
+
+impl AcquireResult {
+    /// Coerces the result to an Option, discarding the error and ignoring the 'sub-optimal' case.
+    ///
+    /// # Warning
+    ///
+    /// In general the 'sub-optimal' case should *not* be ignored.
+    #[inline]
+    pub fn ok(self) -> Option<usize> {
+        match self {
+            AcquireResult::Ok(v) => Some(v),
+            AcquireResult::SubOptimal(v) => Some(v),
+            AcquireResult::Err(_) => None,
+        }
+    }
+
+    /// Coerces the result to an Option, ignoring the 'sub-optimal' case and treating it as Ok.
+    ///
+    /// # Warning
+    ///
+    /// In general the 'sub-optimal' case should *not* be ignored.
+    #[inline]
+    pub fn err(self) -> Result<usize, ImageAcquireError> {
+        match self {
+            AcquireResult::Ok(v) => Ok(v),
+            AcquireResult::SubOptimal(v) => Ok(v),
+            AcquireResult::Err(v) => Err(v),
+        }
+    }
 }
 
 //
@@ -3299,6 +3496,9 @@ pub struct QueuePresentDesc<'a> {
     /// The [ISwapChain] to queue a present operation for.
     pub swap_chain: &'a dyn ISwapChain,
 
+    /// The index of the image to queue a present operation for.
+    pub image_index: u32,
+
     /// A list of semaphores that will block the execution of the batch until all semaphores in the
     /// list are signaled.
     pub wait_semaphores: &'a [&'a dyn ISemaphore],
@@ -3759,6 +3959,43 @@ pub enum SwapChainCreateError {
     SurfaceAlreadyOwned,
 
     /// For a detailed explanation see [AcquireImageError::SurfaceNotAvailable]
+    #[error("The surface is currently in a state where it can not be used")]
+    SurfaceNotAvailable,
+
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum SwapChainRebuildError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum ImageAcquireError {
+    #[error("The swap chain is out of date and needs to be rebuilt")]
+    OutOfDate,
+
+    ///
+    /// This error is subtle and requires explanation.
+    ///
+    /// SurfaceNotAvailable will be returned when it is not possible for the backend to create the
+    /// underlying swap chain object for the surface at the present time. This is not a failure, the
+    /// surface can return to a valid state.
+    ///
+    /// This is primarily an issue on Vulkan under Windows. On Windows, when a window is minimized
+    /// the vkGetPhysicalDeviceSurfaceCapabilitiesKHR call will return a current_extent of (0, 0).
+    /// As per the Vulkan spec if current_extent is specified as anything other than
+    /// (U32_MAX, U32_MAX) then you must use exactly current_extent when creating the swap chain.
+    /// (0, 0) is an invalid value to pass so a minimized window can't have a swap chain attached
+    /// to it.
+    ///
+    /// If the window is minimized then it is impossible to create a swap chain, making it
+    /// impossible to hand out images.
+    ///
     #[error("The surface is currently in a state where it can not be used")]
     SurfaceNotAvailable,
 
