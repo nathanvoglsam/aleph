@@ -42,6 +42,7 @@ struct Data {
     render_data: AnyArc<dyn egui::IEguiRenderData>,
     swap_chain: AnyArc<dyn ISwapChain>,
     renderer: EguiRenderer,
+    swap_images: Vec<AnyArc<dyn ITexture>>,
 }
 
 pub struct PluginRender {
@@ -129,9 +130,15 @@ impl IPlugin for PluginRender {
             width: drawable_size.0,
             height: drawable_size.1,
             present_mode: PresentationMode::Mailbox,
-            preferred_queue: QueueType::General,
+            buffer_count: 3,
+            present_queue: QueueType::General,
         };
         let swap_chain = surface.create_swap_chain(device.deref(), &config).unwrap();
+
+        let config = swap_chain.get_config();
+        let mut swap_images: Vec<_> = (0..config.buffer_count).map(|_| None).collect();
+        swap_chain.get_images(&mut swap_images);
+        let swap_images = swap_images.into_iter().map(|v| v.unwrap()).collect();
 
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
@@ -149,6 +156,7 @@ impl IPlugin for PluginRender {
             render_data,
             swap_chain,
             renderer,
+            swap_images,
         };
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::Render,
@@ -159,9 +167,20 @@ impl IPlugin for PluginRender {
                 let data = &mut data;
 
                 if data.window.resized() {
+                    data.swap_images.clear();
                     let dimensions = data.window.size();
-                    data.swap_chain.queue_resize(dimensions.0, dimensions.1);
-                    data.renderer.recreate_swap_resources(dimensions);
+                    let new_config = data
+                        .swap_chain
+                        .rebuild(Some(Extent2D::new(dimensions.0, dimensions.1)))
+                        .unwrap();
+
+                    let mut swap_images: Vec<_> =
+                        (0..new_config.buffer_count).map(|_| None).collect();
+                    data.swap_chain.get_images(&mut swap_images);
+                    data.swap_images = swap_images.into_iter().map(|v| v.unwrap()).collect();
+
+                    data.renderer
+                        .recreate_swap_resources((new_config.width, new_config.height));
                 }
 
                 unsafe {
@@ -171,15 +190,16 @@ impl IPlugin for PluginRender {
                     let present_semaphore =
                         data.renderer.frames[data.index].present_semaphore.clone();
 
-                    let acquired_image = queue
-                        .acquire(&QueueAcquireDesc {
-                            swap_chain: data.swap_chain.as_ref(),
+                    let acquired_index = data
+                        .swap_chain
+                        .acquire_next_image(&AcquireDesc {
                             signal_semaphores: &[acquire_semaphore.as_ref()],
                         })
                         .unwrap();
+                    let acquired_image = data.swap_images[acquired_index as usize].clone();
 
                     let command_list = data.renderer.record_frame(
-                        data.index,
+                        acquired_index as usize,
                         acquired_image.deref(),
                         data.render_data.take(),
                     );
@@ -195,6 +215,7 @@ impl IPlugin for PluginRender {
                     queue
                         .present(&QueuePresentDesc {
                             swap_chain: data.swap_chain.as_ref(),
+                            image_index: acquired_index,
                             wait_semaphores: &[present_semaphore.as_ref()],
                         })
                         .unwrap();
