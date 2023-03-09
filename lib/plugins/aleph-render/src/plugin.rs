@@ -233,6 +233,7 @@ impl IPlugin for PluginRender {
             // tracking system creates cycles in the object graph so if we don't clear them then
             // we'll leak GPU objects.
             device.wait_idle();
+            device.garbage_collect();
         }
     }
 }
