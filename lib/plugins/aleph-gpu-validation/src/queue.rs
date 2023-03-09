@@ -66,6 +66,14 @@ impl IQueue for ValidationQueue {
         self.inner.queue_properties()
     }
 
+    fn garbage_collect(&self) {
+        self.inner.garbage_collect()
+    }
+
+    fn wait_idle(&self) {
+        self.inner.wait_idle()
+    }
+
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         for v in desc.command_lists {
             let v = v
