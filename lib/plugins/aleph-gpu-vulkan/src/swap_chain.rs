@@ -96,6 +96,8 @@ impl SwapChain {
             || capabilities.max_image_extent.width == 0
             || capabilities.max_image_extent.height == 0
         {
+            // TODO: this should not cause creation of ISwapChain to fail, this should be surfaced when trying to
+            //       acquire images instead.
             return Err(SwapChainCreateError::SurfaceNotAvailable);
         }
 
@@ -272,9 +274,19 @@ impl ISwapChain for SwapChain {
         todo!()
     }
 
-    fn queue_resize(&self, width: u32, height: u32) {
-        let mut inner = self.inner.lock().unwrap();
-        inner.queued_resize = Some((width, height));
+    fn rebuild(
+        &self,
+        _new_size: Option<Extent2D>,
+    ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
+        todo!()
+    }
+
+    fn get_images(&self, _images: &mut [Option<AnyArc<dyn ITexture>>]) {
+        todo!()
+    }
+
+    unsafe fn acquire_next_image(&self, _desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
+        todo!()
     }
 
     // unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
@@ -377,10 +389,6 @@ impl ISwapChain for SwapChain {
     //         }
     //     }
     // }
-
-    fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {
-        todo!()
-    }
 }
 
 impl Drop for SwapChain {
