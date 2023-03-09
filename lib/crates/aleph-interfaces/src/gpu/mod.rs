@@ -400,16 +400,6 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     ///
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError>;
 
-    /// Acquire an image from the swap chain for use with rendering
-    ///
-    /// # Safety
-    ///
-    /// TODO: Safety docs (must drop all acquired images and ensure they aren't in use on the GPU
-    unsafe fn acquire(
-        &self,
-        desc: &QueueAcquireDesc,
-    ) -> Result<AnyArc<dyn ITexture>, AcquireImageError>;
-
     ///
     /// Enqueues a 'present' operation onto the queue for the given [ISwapChain].
     ///
@@ -482,10 +472,6 @@ pub trait ISwapChain: IAny + IGetPlatformInterface {
     /// [ISwapChain::acquire_image] call returns.
     fn get_config(&self) -> SwapChainConfiguration;
 
-    /// Force a resize of the swap chain. Will block until the swap chain is no longer in use before
-    /// performing the resize operation.
-    fn queue_resize(&self, width: u32, height: u32);
-
     /// Performs a swap chain rebuild operation, recreating the swap images while remaining attached
     /// to the underlying surface. An optional new size hint can be specified to provide resize the
     /// back-buffers.
@@ -534,9 +520,6 @@ pub trait ISwapChain: IAny + IGetPlatformInterface {
         &self,
         new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError>;
-
-    /// Returns the current active swap chain image
-    fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>>;
 
     /// Acquires handles to the swap chain textures and writes them into the given array.
     ///
@@ -3482,16 +3465,6 @@ pub struct QueueSubmitDesc<'a> {
 }
 
 #[derive(Clone)]
-pub struct QueueAcquireDesc<'a> {
-    /// The [ISwapChain] to queue an acquire operation for.
-    pub swap_chain: &'a dyn ISwapChain,
-
-    /// A list of semaphores that will be signalled once the acquire operation is completed. Only
-    /// once the acquire operation signals is the acquired image safe to use on the GPU timeline.
-    pub signal_semaphores: &'a [&'a dyn ISemaphore],
-}
-
-#[derive(Clone)]
 pub struct QueuePresentDesc<'a> {
     /// The [ISwapChain] to queue a present operation for.
     pub swap_chain: &'a dyn ISwapChain,
@@ -3958,7 +3931,7 @@ pub enum SwapChainCreateError {
     #[error("The surface is already owned by another existing swap chain")]
     SurfaceAlreadyOwned,
 
-    /// For a detailed explanation see [AcquireImageError::SurfaceNotAvailable]
+    /// For a detailed explanation see [ImageAcquireError::SurfaceNotAvailable]
     #[error("The surface is currently in a state where it can not be used")]
     SurfaceNotAvailable,
 
@@ -4210,63 +4183,6 @@ pub enum ComputePipelineCreateError {
 
 #[derive(Error, Debug)]
 pub enum CommandPoolCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
-}
-
-//
-//
-// _________________________________________________________________________________________________
-// SwapChain
-
-#[derive(Error, Debug)]
-pub enum AcquireImageError {
-    ///
-    /// This error occurs when a queued resize operation was attempted to be resolved before
-    /// acquiring and returning an image handle, but the resize operation could not complete.
-    ///
-    /// This does not flag when the actual GAPI calls for resizing or recreating the swap chain
-    /// fails, rather this failure occurs when the wrapper API requirements for resize operations
-    /// are not met and the resize could not be completed.
-    ///
-    /// A resize operation can only occur if there are no swap textures in use on the GPU and there
-    /// are no images acquired by the API consumer. When resizing the GPU queues will be flushed so
-    /// it is easy to ensure the first condition by managing your image acquires.
-    ///
-    /// It is the caller's job to ensure it is possible for the resize operation to complete.
-    ///
-    #[error("A resize operation that was queued failed to complete")]
-    QueuedResizeFailed,
-
-    ///
-    /// This error occurs when the swap image has already been acquired and an API consumer attempts
-    /// to acquire the image again.
-    ///
-    /// It is the caller's job to manage image acquisitions to avoid triggering this.
-    ///
-    #[error("No swap chain images are available to acquire")]
-    ImageNotAvailable,
-
-    ///
-    /// This error is subtle and requires explanation.
-    ///
-    /// SurfaceNotAvailable will be returned when it is not possible for the backend to create the
-    /// underlying swap chain object for the surface at the present time. This is not a failure, the
-    /// surface can return to a valid state.
-    ///
-    /// This is primarily an issue on Vulkan under Windows. On Windows, when a window is minimized
-    /// the vkGetPhysicalDeviceSurfaceCapabilitiesKHR call will return a current_extent of (0, 0).
-    /// As per the Vulkan spec if current_extent is specified as anything other than
-    /// (U32_MAX, U32_MAX) then you must use exactly current_extent when creating the swap chain.
-    /// (0, 0) is an invalid value to pass so a minimized window can't have a swap chain attached
-    /// to it.
-    ///
-    /// If the window is minimized then it is impossible to create a swap chain, making it
-    /// impossible to hand out images.
-    ///
-    #[error("The surface is currently in a state where it can not be used")]
-    SurfaceNotAvailable,
-
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
