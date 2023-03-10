@@ -37,6 +37,7 @@ use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCom
 ///
 /// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
 ///
+#[inline(always)]
 pub unsafe fn scoped_for_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
     queue: T,
     colour: Colour,
@@ -54,6 +55,7 @@ pub unsafe fn scoped_for_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
 ///
 /// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
 ///
+#[inline(always)]
 pub unsafe fn scoped_for_queue_cstr<'a, T: Into<&'a ID3D12CommandQueue>>(
     queue: T,
     colour: Colour,
@@ -71,6 +73,7 @@ pub unsafe fn scoped_for_queue_cstr<'a, T: Into<&'a ID3D12CommandQueue>>(
 ///
 /// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
 ///
+#[inline(always)]
 pub unsafe fn scoped_for_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
     list: T,
     colour: Colour,
@@ -88,6 +91,7 @@ pub unsafe fn scoped_for_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
 ///
 /// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
 ///
+#[inline(always)]
 pub unsafe fn scoped_for_list_cstr<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
     list: T,
     colour: Colour,

@@ -42,12 +42,14 @@ impl Colour {
 }
 
 impl From<u64> for Colour {
+    #[inline(always)]
     fn from(v: u64) -> Self {
         Self(v)
     }
 }
 
 impl From<Colour> for u64 {
+    #[inline(always)]
     fn from(v: Colour) -> Self {
         v.0
     }
