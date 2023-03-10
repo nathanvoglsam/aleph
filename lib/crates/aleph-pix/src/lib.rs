@@ -38,6 +38,8 @@ mod scoped;
 
 pub use crate::colour::Colour;
 
+pub use crate::functions::is_library_available;
+
 pub use crate::functions::begin_event;
 pub use crate::functions::begin_event_on_list;
 pub use crate::functions::begin_event_on_queue;

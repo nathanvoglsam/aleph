@@ -31,6 +31,12 @@ use std::os::raw::c_char;
 use std::os::raw::c_void;
 
 extern "C" {
+    /// This is an internal utility provided to allow the rust code to query whether it's linked to the actual PIX
+    /// library or the dummy noop implementation. Useful for disabling the marker code when it won't do anything.
+    ///
+    /// Returns: 1 if PIX is available, 0 if NOOP implementation
+    pub fn SHIM_IsLibraryAvailable() -> u32;
+
     pub fn SHIM_PIXBeginEvent_N(colour: u64, string: *const c_char);
     pub fn SHIM_PIXSetMarker_N(colour: u64, string: *const c_char);
     pub fn SHIM_PIXBeginEvent_CL(context: *mut c_void, colour: u64, string: *const c_char);

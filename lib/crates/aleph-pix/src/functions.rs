@@ -35,6 +35,22 @@ use std::ffi::{CStr, CString};
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
 ///
+/// Returns whether the PIX library is linked and ready to use.
+///
+/// If this function returns true, then the binary has linked to PIX3 and the functionality should
+/// be available. If this function returns false, the binary is not linked to PIX3 and all functions
+/// simply call no-op stubs that do nothing.
+///
+/// This function should be used to avoid calling the functions this library exposes when PIX3 is
+/// not available.
+///
+#[inline(always)]
+pub fn is_library_available() -> bool {
+    // Safety: Function is pure and has no safety requirements to meet
+    unsafe { SHIM_IsLibraryAvailable() == 1 }
+}
+
+///
 /// # Safety
 ///
 /// FFI Call to `PIXBeginEvent`

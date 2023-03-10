@@ -34,6 +34,15 @@
 #include <stdint.h>
 
 extern "C" {
+    /**
+     * This is an internal utility provided to allow the rust code to query whether it's linked to the actual PIX
+     * library or the dummy noop implementation. Useful for disabling the marker code when it won't do anything.
+     * @return 1 if PIX is available, 0 if NOOP implementation
+     */
+    uint32_t SHIM_IsLibraryAvailable() {
+        return 1;
+    }
+
     void SHIM_PIXBeginEvent_N(uint64_t color, const char* string) {
         PIXBeginEvent((UINT64)color, "%s", (PCSTR)string);
     }
