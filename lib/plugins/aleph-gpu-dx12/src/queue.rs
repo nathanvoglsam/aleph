@@ -30,12 +30,15 @@
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::{try_clone_value_into_slot, unwrap};
 use crossbeam::queue::ArrayQueue;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
+use interfaces::any::{AnyArc, AnyWeak, IAny, TraitObject};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::any::TypeId;
+use std::mem::transmute;
+use std::ptr;
+use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -49,15 +52,51 @@ pub struct Queue {
     pub(crate) last_submitted_index: AtomicU64,
     pub(crate) last_completed_index: AtomicU64,
     pub(crate) in_flight: ArrayQueue<InFlightCommandList<()>>,
+
+    /// Flags whether the user is allowed to query the IQueueDebug interface. Support is only
+    /// enabled when a debug context is created and the PIX library is linked.
+    pub(crate) is_queue_debug_available: bool,
+
+    /// Internal tracker used to mark the depth of the debug marker stack. Used to ensure that the
+    /// user doesn't call 'end_event' without an associated 'begin_event'
+    pub(crate) debug_marker_depth: AtomicU64,
 }
 
-declare_interfaces!(Queue, [IQueue]);
+// Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
+impl IAny for Queue {
+    #[allow(bare_trait_objects)]
+    fn __query_interface(&self, target: TypeId) -> Option<TraitObject> {
+        unsafe {
+            if target == TypeId::of::<dyn IQueue>() {
+                return Some(transmute(self as &dyn IQueue));
+            }
+            if target == TypeId::of::<dyn IQueueDebug>() && self.is_queue_debug_available {
+                return Some(transmute(self as &dyn IQueueDebug));
+            }
+            if target == TypeId::of::<dyn IAny>() {
+                return Some(transmute(self as &dyn IAny));
+            }
+        }
+        unsafe {
+            if target == TypeId::of::<Queue>() {
+                Some(TraitObject {
+                    data: NonNull::new_unchecked(self as *const _ as *mut ()),
+                    vtable: ptr::null_mut(),
+                    phantom: Default::default(),
+                })
+            } else {
+                None
+            }
+        }
+    }
+}
 
 impl Queue {
     #[inline]
     pub(crate) fn new(
         device: &ID3D12Device,
         queue_type: QueueType,
+        debug: bool,
         handle: ID3D12CommandQueue,
     ) -> AnyArc<Self> {
         unsafe {
@@ -70,6 +109,8 @@ impl Queue {
                 last_submitted_index: Default::default(),
                 last_completed_index: Default::default(),
                 in_flight: ArrayQueue::new(256),
+                is_queue_debug_available: debug,
+                debug_marker_depth: Default::default(),
             })
         }
     }
@@ -331,17 +372,43 @@ impl IQueue for Queue {
 
         Ok(())
     }
+}
 
-    unsafe fn set_marker(&mut self, color: Color, message: &str) {
-        set_marker_on_queue(&self.handle, color.0.into(), message);
+impl IQueueDebug for Queue {
+    fn set_marker(&self, color: Color, message: &str) {
+        let _lock = self.submit_lock.lock();
+        unsafe {
+            set_marker_on_queue(&self.handle, color.0.into(), message);
+        }
     }
 
-    unsafe fn begin_event(&mut self, color: Color, message: &str) {
-        begin_event_on_queue(&self.handle, color.0.into(), message);
+    fn begin_event(&self, color: Color, message: &str) {
+        let _lock = self.submit_lock.lock();
+        unsafe {
+            // Use a counter to track the event stack depth. Prevents mismatched
+            // end_event+begin_event pairs.
+            let previous_event_depth = self.debug_marker_depth.fetch_add(1, Ordering::Relaxed);
+            assert_ne!(
+                previous_event_depth,
+                u64::MAX,
+                "Event Stack Depth overflow. How!!??!?"
+            );
+            begin_event_on_queue(&self.handle, color.0.into(), message);
+        }
     }
 
-    unsafe fn end_event(&mut self) {
-        end_event_on_queue(&self.handle);
+    fn end_event(&self) {
+        let _lock = self.submit_lock.lock();
+        unsafe {
+            // Use a counter to track the event stack depth. Prevents mismatched
+            // end_event+begin_event pairs.
+            let previous_event_depth = self.debug_marker_depth.fetch_sub(1, Ordering::Relaxed);
+            assert_ne!(
+                previous_event_depth, 0,
+                "Event Stack Depth underflow. end_event called without a matching begin_event"
+            );
+            end_event_on_queue(&self.handle);
+        }
     }
 }
 

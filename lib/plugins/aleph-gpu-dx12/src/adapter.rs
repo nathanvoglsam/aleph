@@ -66,7 +66,11 @@ unsafe impl Sync for Adapter {}
 declare_interfaces!(Adapter, [IAdapter]);
 
 impl Adapter {
-    fn create_queue(device: &ID3D12Device, queue_type: QueueType) -> Option<AnyArc<Queue>> {
+    fn create_queue(
+        device: &ID3D12Device,
+        queue_type: QueueType,
+        debug: bool,
+    ) -> Option<AnyArc<Queue>> {
         unsafe {
             let desc = D3D12_COMMAND_QUEUE_DESC {
                 Type: queue_type_to_dx12(queue_type),
@@ -77,7 +81,7 @@ impl Adapter {
             device
                 .CreateCommandQueue(&desc)
                 .ok()
-                .map(|v| Queue::new(device, queue_type, v))
+                .map(|v| Queue::new(device, queue_type, debug, v))
         }
     }
 }
@@ -109,10 +113,15 @@ impl IAdapter for Adapter {
         let device =
             create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0).map_err(|e| anyhow!(e))?;
 
+        let debug_queue = self.context.debug.is_some() && pix::is_library_available();
+
         // Load our 3 queues
-        let general_queue = Adapter::create_queue((&device).into(), QueueType::General);
-        let compute_queue = Adapter::create_queue((&device).into(), QueueType::Compute);
-        let transfer_queue = Adapter::create_queue((&device).into(), QueueType::Transfer);
+        let general_queue =
+            Adapter::create_queue((&device).into(), QueueType::General, debug_queue);
+        let compute_queue =
+            Adapter::create_queue((&device).into(), QueueType::Compute, debug_queue);
+        let transfer_queue =
+            Adapter::create_queue((&device).into(), QueueType::Transfer, debug_queue);
 
         let debug_message_cookie = if self.context.debug.is_some() {
             // SAFETY: Should be safe but I don't have a proof
