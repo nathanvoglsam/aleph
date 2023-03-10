@@ -407,7 +407,7 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// This is expected to be called once per-frame. This provides a well-known API that
     /// encapsulates the CPU work associated with collecting and releasing in-flight resources.
     ///
-    /// It is possible, and encouraged, to call punt this onto a task thread. Each queue can be
+    /// It is possible, and encouraged, to call and punt this onto a task thread. Each queue can be
     /// collected on separate threads, spreading the work across multiple cores. The calls are
     /// non-blocking and thread-safe. They could trivially be handled as fire-and-forget rayon
     /// tasks, for example.
@@ -447,19 +447,22 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// on the GPU timeline.
     ///
     unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError>;
+}
 
+/// Optional extension to [IQueue] that provides various debug utilities, like setting debug markers
+/// and events that can be seen inside graphics debuggers.
+///
+/// This interface must be queried from a queue, and may not always be present. The features needed
+/// to implement this interface will only be present on developer machines, so this interface can't
+/// be guaranteed to be available. Especially not on client devices.
+pub trait IQueueDebug: IQueue {
     ///
     /// Emits an instantaneous 'marker' on this queue, with the given message and message color.
     ///
     /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
     /// instance is created and the required backend facilities are present (i.e. Vulkan may not
     /// always expose the `VK_EXT_debug_utils` extension).
-    ///
-    /// # Safety
-    ///
-    /// TODO investigate
-    ///
-    unsafe fn set_marker(&mut self, color: Color, message: &str);
+    fn set_marker(&self, color: Color, message: &str);
 
     ///
     /// Marks the beginning of a new event on this queue, with the given message and message color.
@@ -467,12 +470,7 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
     /// instance is created and the required backend facilities are present (i.e. Vulkan may not
     /// always expose the `VK_EXT_debug_utils` extension).
-    ///
-    /// # Safety
-    ///
-    /// TODO investigate
-    ///
-    unsafe fn begin_event(&mut self, color: Color, message: &str);
+    fn begin_event(&self, color: Color, message: &str);
 
     ///
     /// Marks the end of an event on this queue.
@@ -480,12 +478,7 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
     /// instance is created and the required backend facilities are present (i.e. Vulkan may not
     /// always expose the `VK_EXT_debug_utils` extension).
-    ///
-    /// # Safety
-    ///
-    /// TODO investigate
-    ///
-    unsafe fn end_event(&mut self);
+    fn end_event(&self);
 }
 
 //
