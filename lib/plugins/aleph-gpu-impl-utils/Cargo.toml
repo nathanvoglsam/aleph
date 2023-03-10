@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-gpu-utils"
+name = "aleph-gpu-impl-utils"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "A set of utilities shared between AlephEngine RHI implementations"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-gpu-utils/"
+documentation = "https://docs.rs/aleph-gpu-impl-utils/"
 readme = "README.md"
 keywords = ["engine", "graphics", "game"]
 categories = ["game-engines"]
