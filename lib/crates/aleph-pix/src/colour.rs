@@ -27,9 +27,30 @@
 // SOFTWARE.
 //
 
+/// A wrapper over the PIX colour format.
+///
+/// PIX uses a `u64` in the ABI for colour values, but it only uses the low 32 bits to encode an
+/// ARGB format colour with 8-bits per channel stored as unsigned-normalized bytes.
+///
+/// While an alpha channel is provided (the format *is* ARGB), it must always be set to 255.
+///
+/// The high bytes should always be initialized to 0.
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct Colour(u64);
+
+impl Colour {
+    /// Produces a new [Colour] instance based on the given RGB values. The colour values are UNORM
+    /// values, so 0-255 maps to 0-1.
+    #[inline]
+    pub const fn new(r: u8, g: u8, b: u8) -> Self {
+        let r = (r as u64) << 16;
+        let g = (g as u64) << 8;
+        let b = b as u64;
+        let a = 0xFF000000u64;
+        Self(r | g | b | a)
+    }
+}
 
 impl Colour {
     pub const RED: Self = Self(0xFFFF0000);
