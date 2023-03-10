@@ -34,18 +34,50 @@ use crate::{
     ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
     ValidationSwapChain,
 };
-use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
 use interfaces::gpu::*;
+use std::any::TypeId;
+use std::mem::transmute;
+use std::ptr;
+use std::ptr::NonNull;
 use std::sync::atomic::Ordering;
 
 pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyWeak<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IQueue>,
+    pub(crate) inner_debug: Option<AnyArc<dyn IQueueDebug>>,
     pub(crate) queue_type: QueueType,
 }
 
-interfaces::any::declare_interfaces!(ValidationQueue, [IQueue]);
+// Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
+impl IAny for ValidationQueue {
+    #[allow(bare_trait_objects)]
+    fn __query_interface(&self, target: TypeId) -> Option<TraitObject> {
+        unsafe {
+            if target == TypeId::of::<dyn IQueue>() {
+                return Some(transmute(self as &dyn IQueue));
+            }
+            if target == TypeId::of::<dyn IQueueDebug>() && self.inner_debug.is_some() {
+                return Some(transmute(self as &dyn IQueueDebug));
+            }
+            if target == TypeId::of::<dyn IAny>() {
+                return Some(transmute(self as &dyn IAny));
+            }
+        }
+        unsafe {
+            if target == TypeId::of::<ValidationQueue>() {
+                Some(TraitObject {
+                    data: NonNull::new_unchecked(self as *const _ as *mut ()),
+                    vtable: ptr::null_mut(),
+                    phantom: Default::default(),
+                })
+            } else {
+                None
+            }
+        }
+    }
+}
 
 crate::impl_platform_interface_passthrough!(ValidationQueue);
 
@@ -191,20 +223,22 @@ impl IQueue for ValidationQueue {
             result
         })
     }
+}
 
-    unsafe fn set_marker(&mut self, _color: Color, _message: &str) {
-        unimplemented!();
-        // self.inner.set_marker(color, message);
+impl IQueueDebug for ValidationQueue {
+    fn set_marker(&self, color: Color, message: &str) {
+        let debug = self.inner_debug.as_deref().unwrap();
+        debug.set_marker(color, message)
     }
 
-    unsafe fn begin_event(&mut self, _color: Color, _message: &str) {
-        unimplemented!();
-        // self.inner.begin_event(color, message);
+    fn begin_event(&self, color: Color, message: &str) {
+        let debug = self.inner_debug.as_deref().unwrap();
+        debug.begin_event(color, message)
     }
 
-    unsafe fn end_event(&mut self) {
-        unimplemented!();
-        // self.inner.end_event();
+    fn end_event(&self) {
+        let debug = self.inner_debug.as_deref().unwrap();
+        debug.end_event()
     }
 }
 
