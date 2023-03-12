@@ -29,7 +29,6 @@
 
 use crate::device::Device;
 use crate::encoder::Encoder;
-use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
@@ -92,12 +91,6 @@ impl ICommandList for CommandList {
         Err(CommandListBeginError::InvalidEncoderType(
             QueueType::Transfer,
         ))
-    }
-}
-
-impl ReturnToPool for CommandList {
-    fn return_to_pool(&mut self) {
-        // TODO: probably stale, should remove
     }
 }
 

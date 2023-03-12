@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::{try_clone_value_into_slot, unwrap};
 use crossbeam::queue::ArrayQueue;
 use interfaces::any::{AnyArc, AnyWeak, IAny, TraitObject};
@@ -35,7 +34,7 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::mem::transmute;
 use std::ptr;
 use std::ptr::NonNull;
@@ -47,11 +46,9 @@ pub struct Queue {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) queue_type: QueueType,
     pub(crate) handle: ID3D12CommandQueue,
+
+    /// Lock used to serialize submissions to the command queue.
     pub(crate) submit_lock: Mutex<()>,
-    pub(crate) fence: ID3D12Fence,
-    pub(crate) last_submitted_index: AtomicU64,
-    pub(crate) last_completed_index: AtomicU64,
-    pub(crate) in_flight: ArrayQueue<InFlightCommandList<()>>,
 
     /// Flags whether the user is allowed to query the IQueueDebug interface. Support is only
     /// enabled when a debug context is created and the PIX library is linked.
@@ -60,6 +57,25 @@ pub struct Queue {
     /// Internal tracker used to mark the depth of the debug marker stack. Used to ensure that the
     /// user doesn't call 'end_event' without an associated 'begin_event'
     pub(crate) debug_marker_depth: AtomicU64,
+
+    /// A special fence used specifically for tracking the work that is in-flight on this queue.
+    /// This is signalled and waited using submission indices.
+    pub(crate) fence: ID3D12Fence,
+
+    /// The index of the most recent submission to the queue.
+    ///
+    /// Used to track which submissions are in-flight, used in conjunction with
+    /// [Queue::last_completed_index].
+    pub(crate) last_submitted_index: AtomicU64,
+
+    /// The index of the submission that is most recently confirmed to have completed. Used to track
+    /// which submissions are in-flight, used in conjunction with [Queue::last_submitted_index].
+    pub(crate) last_completed_index: AtomicU64,
+
+    /// A ring-buffer that tracks all currently in flight queue submissions. This is used in
+    /// conjunction with [IQueue::garbage_collect] to track when resources are no longer in use on
+    /// the GPU timeline and are safe to destroy.
+    pub(crate) in_flight: ArrayQueue<QueueSubmission>,
 }
 
 // Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
@@ -105,12 +121,12 @@ impl Queue {
                 queue_type,
                 handle,
                 submit_lock: Mutex::new(()),
+                is_queue_debug_available: debug,
+                debug_marker_depth: Default::default(),
                 fence: device.CreateFence(0, D3D12_FENCE_FLAG_NONE).unwrap(),
                 last_submitted_index: Default::default(),
                 last_completed_index: Default::default(),
                 in_flight: ArrayQueue::new(256),
-                is_queue_debug_available: debug,
-                debug_marker_depth: Default::default(),
             })
         }
     }
@@ -202,14 +218,12 @@ impl IQueue for Queue {
         let num = self.in_flight.len();
         for _ in 0..num {
             // Check if the
-            let mut v = self.in_flight.pop().unwrap();
+            let v = self.in_flight.pop().unwrap();
             if v.index > last_completed {
                 self.in_flight
                     .push(v)
                     .ok()
                     .expect("Overflowed in-flight command list tracking buffer");
-            } else {
-                v.list.return_to_pool();
             }
         }
     }
@@ -310,12 +324,12 @@ impl IQueue for Queue {
             let _handle = handle.unwrap();
             // TODO: we want to do some garbage collection for resources
             self.in_flight
-                .push(InFlightCommandList {
+                .push(QueueSubmission {
                     index,
-                    list: Box::new(()),
+                    items: Vec::new(),
                 })
                 .ok()
-                .expect("Overflowed in-flight command list tracking buffer");
+                .expect("Overflowed in-flight submission tracking buffer");
         }
 
         Ok(())
@@ -416,4 +430,12 @@ impl IGetPlatformInterface for Queue {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         try_clone_value_into_slot::<ID3D12CommandQueue>(&self.handle, out, target)
     }
+}
+
+pub struct QueueSubmission {
+    /// The index of the queue submission. Used for tracking when the work has been retired
+    pub index: u64,
+
+    /// A list of times to be dropped
+    pub items: Vec<Box<dyn Any + Send + Sync>>,
 }

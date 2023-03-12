@@ -44,7 +44,6 @@ pub mod descriptor_set;
 pub mod dxgi_debug_interface;
 pub mod feature_support;
 pub mod graphics_pipeline_state_stream;
-pub mod in_flight_command_list;
 pub mod register_message_callback;
 pub mod root_signature_blob;
 pub mod set_name;
