@@ -3340,7 +3340,7 @@ pub struct StencilOpState {
     pub compare_op: CompareOp,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct DepthStencilStateDesc {
     /// Controls whether depth testing is enabled
     pub depth_test: bool,
@@ -3367,6 +3367,17 @@ pub struct DepthStencilStateDesc {
 
     /// Control the 'back' parameters of the stencil test
     pub stencil_back: StencilOpState,
+
+    /// Enables the depth bounds check. Requires a device capability for support.
+    pub depth_bounds_enable: bool,
+
+    /// Specifies the min range of the depth bounds, if the depth bound test is enabled. Ignored if
+    /// depth bounds is not enabled.
+    pub min_depth_bounds: f32,
+
+    /// Specifies the max range of the depth bounds, if the depth bound test is enabled. Ignored if
+    /// depth bounds is not enabled.
+    pub max_depth_bounds: f32,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
