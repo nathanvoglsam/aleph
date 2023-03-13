@@ -85,6 +85,10 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.list
             .IASetPrimitiveTopology(concrete.primitive_topology);
 
+        if let Some((min ,max)) = concrete.depth_bounds {
+            self.list.OMSetDepthBounds(min, max);
+        }
+
         // Update the state for input binding strides. These get read when binding vertex
         // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
         // d3d12 takes them in 'IASetVertexBuffers'.

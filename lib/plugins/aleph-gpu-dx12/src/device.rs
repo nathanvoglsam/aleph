@@ -176,7 +176,7 @@ impl IDevice for Device {
         let rasterizer_state = Self::translate_rasterizer_state_desc(desc.rasterizer_state);
         let builder = builder.rasterizer_state(rasterizer_state);
 
-        let depth_stencil_state = Self::translate_depth_stencil_desc(desc.depth_stencil_state);
+        let (depth_bounds, depth_stencil_state) = Self::translate_depth_stencil_desc(desc.depth_stencil_state);
         let builder = builder.depth_stencil_state(depth_stencil_state);
 
         let blend_state = Self::translate_blend_state_desc(desc.blend_state);
@@ -224,6 +224,7 @@ impl IDevice for Device {
             pipeline_layout,
             primitive_topology,
             input_binding_strides,
+            depth_bounds,
         });
         Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
     }
@@ -1047,7 +1048,7 @@ impl Device {
             DepthBias: 0,                         // TODO: translate
             DepthBiasClamp: 0.0,                  // TODO: translate
             SlopeScaledDepthBias: 0.0,            // TODO: translate
-            DepthClipEnable: BOOL::from(true),    // Vulkan has no option, so always true
+            DepthClipEnable: BOOL::from(true),    // TODO: translate
             MultisampleEnable: BOOL::from(false), // TODO: translate
             AntialiasedLineEnable: BOOL::from(false),
             ForcedSampleCount: 0,
@@ -1060,7 +1061,7 @@ impl Device {
 
     /// Internal function for translating the [DepthStencilStateDesc] field of a pipeline
     /// description
-    fn translate_depth_stencil_desc(desc: &DepthStencilStateDesc) -> D3D12_DEPTH_STENCIL_DESC {
+    fn translate_depth_stencil_desc(desc: &DepthStencilStateDesc) -> (Option<(f32, f32)>, D3D12_DEPTH_STENCIL_DESC1) {
         /// Internal function for translating our [StencilOpState] into the D3D12 equivalent
         fn translate_depth_stencil_op_desc(desc: &StencilOpState) -> D3D12_DEPTH_STENCILOP_DESC {
             let stencil_fail_op = stencil_op_to_dx12(desc.fail_op);
@@ -1089,7 +1090,14 @@ impl Device {
         let front_face = translate_depth_stencil_op_desc(&desc.stencil_front);
         let back_face = translate_depth_stencil_op_desc(&desc.stencil_back);
 
-        D3D12_DEPTH_STENCIL_DESC {
+        let depth_bounds_test_enable = BOOL::from(desc.depth_bounds_enable);
+        let bounds = if desc.depth_bounds_enable {
+            Some((desc.min_depth_bounds, desc.max_depth_bounds))
+        } else {
+            None
+        };
+
+        let desc = D3D12_DEPTH_STENCIL_DESC1 {
             DepthEnable: depth_enable,
             DepthWriteMask: depth_write_mask,
             DepthFunc: depth_func,
@@ -1098,7 +1106,10 @@ impl Device {
             StencilWriteMask: stencil_write_mask,
             FrontFace: front_face,
             BackFace: back_face,
-        }
+            DepthBoundsTestEnable: depth_bounds_test_enable,
+        };
+
+        (bounds, desc)
     }
 
     // ========================================================================================== //
@@ -1539,8 +1550,8 @@ impl Device {
                             TextureCubeArray: D3D12_TEXCUBE_ARRAY_SRV {
                                 MostDetailedMip: v.sub_resources.base_mip_level,
                                 MipLevels: v.sub_resources.num_mip_levels,
-                                First2DArrayFace: todo!(),
-                                NumCubes: todo!(),
+                                First2DArrayFace: v.sub_resources.base_array_slice,
+                                NumCubes: v.sub_resources.num_array_slices / 6,
                                 ResourceMinLODClamp: 0.0,
                             },
                         },

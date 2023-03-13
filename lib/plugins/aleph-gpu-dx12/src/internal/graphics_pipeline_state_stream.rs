@@ -50,7 +50,7 @@ pub struct GraphicsPipelineStateStreamBuilder<'a> {
     blend_state: D3D12_BLEND_DESC,
     sample_mask: u32,
     rasterizer_state: D3D12_RASTERIZER_DESC,
-    depth_stencil_state: D3D12_DEPTH_STENCIL_DESC,
+    depth_stencil_state: D3D12_DEPTH_STENCIL_DESC1,
     input_layout: Option<&'a [D3D12_INPUT_ELEMENT_DESC]>,
     strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
     primitive_topology_type: D3D12_PRIMITIVE_TOPOLOGY_TYPE,
@@ -75,7 +75,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             blend_state: D3D12_BLEND_DESC::default(),
             sample_mask: 0,
             rasterizer_state: D3D12_RASTERIZER_DESC::default(),
-            depth_stencil_state: D3D12_DEPTH_STENCIL_DESC::default(),
+            depth_stencil_state: D3D12_DEPTH_STENCIL_DESC1::default(),
             input_layout: None,
             strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE::default(),
             primitive_topology_type: D3D12_PRIMITIVE_TOPOLOGY_TYPE::default(),
@@ -151,7 +151,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
     }
 
     #[inline]
-    pub fn depth_stencil_state(mut self, depth_stencil_state: D3D12_DEPTH_STENCIL_DESC) -> Self {
+    pub fn depth_stencil_state(mut self, depth_stencil_state: D3D12_DEPTH_STENCIL_DESC1) -> Self {
         self.depth_stencil_state = depth_stencil_state;
         self
     }
@@ -371,8 +371,8 @@ mod packed {
         { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER.0 },
     >;
     pub(crate) type DepthStencilState = PackedPipelineStateStreamObject<
-        D3D12_DEPTH_STENCIL_DESC,
-        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL.0 },
+        D3D12_DEPTH_STENCIL_DESC1,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL1.0 },
     >;
     pub(crate) type PrimitiveTopologyType = PackedPipelineStateStreamObject<
         D3D12_PRIMITIVE_TOPOLOGY_TYPE,

@@ -50,6 +50,10 @@ pub struct GraphicsPipeline {
     /// vulkan. D3D12 passes these values when the vertex buffers are bound, so we need to hold on
     /// to these so the command encoder can get them and transparently pass them in.
     pub(crate) input_binding_strides: [u32; 16],
+
+    /// These are static to the pipeline in Vulkan, as well as the RHI API. D3D12 takes these
+    /// dynamically. We store them and implicitly set them when the pipeline is bound.
+    pub(crate) depth_bounds: Option<(f32, f32)>,
 }
 
 declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
