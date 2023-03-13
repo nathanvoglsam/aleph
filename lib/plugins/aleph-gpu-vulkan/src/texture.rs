@@ -33,15 +33,14 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::any::TypeId;
-use std::ffi::CString;
 
 pub struct Texture {
     pub(crate) this: AnyWeak<Self>,
-    pub device: AnyArc<Device>,
-    pub image: vk::Image,
-    pub vk_format: vk::Format,
-    pub desc: TextureDesc<'static>,
-    pub name: Option<String>,
+    pub(crate) device: AnyArc<Device>,
+    pub(crate) image: vk::Image,
+    pub(crate) vk_format: vk::Format,
+    pub(crate) desc: TextureDesc<'static>,
+    pub(crate) name: Option<String>,
 }
 
 declare_interfaces!(Texture, [ITexture]);
@@ -77,21 +76,5 @@ impl Drop for Texture {
 impl IGetPlatformInterface for Texture {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         try_clone_value_into_slot::<vk::Image>(&self.image, out, target)
-    }
-}
-
-impl Texture {
-    fn set_name(&self, name: &str) {
-        let loader = &self.device.device_loader;
-        if let Some(func) = loader.set_debug_utils_object_name_ext {
-            let name = CString::new(name).unwrap();
-            let info = vk::DebugUtilsObjectNameInfoEXTBuilder::new()
-                .object_type(vk::ObjectType::IMAGE)
-                .object_handle(self.image.object_handle())
-                .object_name(&name);
-            unsafe {
-                (func)(loader.handle, &info.build_dangling());
-            }
-        }
     }
 }

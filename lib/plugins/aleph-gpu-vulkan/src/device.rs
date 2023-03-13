@@ -32,6 +32,7 @@ use crate::context::Context;
 use crate::fence::Fence;
 use crate::internal::conv::texture_format_to_vk;
 use crate::internal::queues::Queues;
+use crate::internal::set_name::set_name;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
@@ -286,13 +287,16 @@ impl IDevice for Device {
             .blend_constants([0.0, 0.0, 0.0, 0.0]);
         let builder = builder.color_blend_state(&color_blend_state);
 
-        let _todo = unsafe {
+        let pipeline = unsafe {
             self.device_loader.create_graphics_pipelines(
                 vk::PipelineCache::null(),
                 &[builder],
                 None,
             )
         };
+        let pipeline = pipeline[0];
+
+        set_name(&self.device_loader, pipeline, desc.name);
 
         todo!()
     }
@@ -321,10 +325,15 @@ impl IDevice for Device {
                 .build_dangling(),
         );
 
-        let _todo = unsafe {
+        let pipeline = unsafe {
             self.device_loader
                 .create_compute_pipelines(vk::PipelineCache::null(), &[builder], None)
+                .map_err(|v| anyhow!(v))?
         };
+        let pipeline = pipeline[0];
+
+        set_name(&self.device_loader, pipeline, desc.name);
+
         todo!()
     }
 
@@ -351,6 +360,8 @@ impl IDevice for Device {
                     .create_shader_module(&create_info, None)
                     .map_err(|v| anyhow!(v))?
             };
+
+            set_name(&self.device_loader, module, options.name);
 
             let entry_point = CString::new(options.entry_point)
                 .map_err(|_| ShaderCreateError::InvalidEntryPointName)?;
@@ -509,13 +520,12 @@ impl IDevice for Device {
         let result = unsafe {
             self.device_loader
                 .wait_for_fences(&fences, wait_all, timeout)
-                .raw
         };
 
-        match result {
+        match result.raw {
             vk::Result::SUCCESS => FenceWaitResult::Complete,
             vk::Result::TIMEOUT => FenceWaitResult::Timeout,
-            _ => panic!("Failed calling vkWaitForFences"),
+            _ => result.unwrap(),
         }
     }
 
@@ -527,12 +537,12 @@ impl IDevice for Device {
             .query_interface::<Fence>()
             .expect("Unknown IFence implementation");
 
-        let result = unsafe { self.device_loader.get_fence_status(fence.fence).raw };
+        let result = unsafe { self.device_loader.get_fence_status(fence.fence) };
 
-        match result {
+        match result.raw {
             vk::Result::SUCCESS => true,
             vk::Result::NOT_READY => false,
-            _ => panic!("Call to vkGetFenceStatus failed"),
+            _ => result.unwrap(),
         }
     }
 
@@ -573,21 +583,5 @@ impl IGetPlatformInterface for Device {
         // TODO: Expose the device loader through an arc or something
         // TODO: Expose the queues, somewhere (likely on a queue object)
         None
-    }
-}
-
-impl Device {
-    fn set_name(&self, name: &str) {
-        let loader = &self.device_loader;
-        if let Some(func) = loader.set_debug_utils_object_name_ext {
-            let name = CString::new(name).unwrap();
-            let info = vk::DebugUtilsObjectNameInfoEXTBuilder::new()
-                .object_type(vk::ObjectType::DEVICE)
-                .object_handle(self.device_loader.handle.object_handle())
-                .object_name(&name);
-            unsafe {
-                (func)(loader.handle, &info.build_dangling());
-            }
-        }
     }
 }

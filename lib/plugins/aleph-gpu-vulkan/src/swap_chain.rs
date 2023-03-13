@@ -409,9 +409,3 @@ impl IGetPlatformInterface for SwapChain {
         None
     }
 }
-
-impl SwapChain {
-    fn set_name(&self, _name: &str) {
-        todo!()
-    }
-}

@@ -37,6 +37,7 @@ pub mod macros;
 pub mod messenger;
 pub mod queue_present_support;
 pub mod queues;
+pub mod set_name;
 
 pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
     src: &T,

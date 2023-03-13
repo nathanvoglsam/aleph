@@ -115,19 +115,3 @@ impl IGetPlatformInterface for Shader {
         try_clone_value_into_slot::<vk::ShaderModule>(&self.module, out, target)
     }
 }
-
-impl Shader {
-    fn set_name(&self, name: &str) {
-        let loader = &self.device.device_loader;
-        if let Some(func) = loader.set_debug_utils_object_name_ext {
-            let name = CString::new(name).unwrap();
-            let info = vk::DebugUtilsObjectNameInfoEXTBuilder::new()
-                .object_type(vk::ObjectType::SHADER_MODULE)
-                .object_handle(self.module.object_handle())
-                .object_name(&name);
-            unsafe {
-                (func)(loader.handle, &info.build_dangling());
-            }
-        }
-    }
-}
