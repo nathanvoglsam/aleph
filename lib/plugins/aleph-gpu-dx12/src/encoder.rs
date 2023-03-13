@@ -36,6 +36,8 @@ use crate::internal::conv::{
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::pipeline::GraphicsPipeline;
+use bumpalo::collections::Vec as BumpVec;
+use bumpalo::Bump;
 use interfaces::any::AnyArc;
 use interfaces::gpu::*;
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
@@ -50,6 +52,7 @@ pub struct Encoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
+    pub(crate) arena: Bump,
 }
 
 impl<'a> Drop for Encoder<'a> {
@@ -97,24 +100,24 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        let views: Vec<D3D12_VERTEX_BUFFER_VIEW> = bindings
-            .iter()
-            .enumerate()
-            .map(|(i, v)| {
-                let buffer = unwrap::buffer(v.buffer);
+        let mut views: BumpVec<D3D12_VERTEX_BUFFER_VIEW> =
+            BumpVec::with_capacity_in(bindings.len(), &self.arena);
+        for (i, v) in bindings.iter().enumerate() {
+            let buffer = unwrap::buffer(v.buffer);
 
-                let buffer_location = buffer.base_address;
-                let buffer_location = buffer_location.add(v.offset);
+            let buffer_location = buffer.base_address;
+            let buffer_location = buffer_location.add(v.offset);
 
-                let size_in_bytes = buffer.desc.size as u32;
+            let size_in_bytes = buffer.desc.size as u32;
 
-                D3D12_VERTEX_BUFFER_VIEW {
-                    BufferLocation: buffer_location.get_inner().get(),
-                    SizeInBytes: size_in_bytes,
-                    StrideInBytes: self.input_binding_strides[i + first_binding as usize],
-                }
-            })
-            .collect();
+            let view = D3D12_VERTEX_BUFFER_VIEW {
+                BufferLocation: buffer_location.get_inner().get(),
+                SizeInBytes: size_in_bytes,
+                StrideInBytes: self.input_binding_strides[i + first_binding as usize],
+            };
+            views.push(view);
+        }
+
         self.list.IASetVertexBuffers(first_binding, &views);
     }
 
@@ -142,32 +145,34 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
-        let viewports: Vec<D3D12_VIEWPORT> = viewports
-            .iter()
-            .map(|v| D3D12_VIEWPORT {
+        let mut new_viewports: BumpVec<D3D12_VIEWPORT> =
+            BumpVec::with_capacity_in(viewports.len(), &self.arena);
+        for v in viewports {
+            new_viewports.push(D3D12_VIEWPORT {
                 TopLeftX: v.x,
                 TopLeftY: v.x,
                 Width: v.width,
                 Height: v.height,
                 MinDepth: v.min_depth,
                 MaxDepth: v.max_depth,
-            })
-            .collect();
-        self.list.RSSetViewports(&viewports);
+            });
+        }
+
+        self.list.RSSetViewports(&new_viewports);
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
-        // TODO: bump allocator on self for temp allocations like this
-        let rects: Vec<RECT> = rects
-            .iter()
-            .map(|v| RECT {
+        let mut new_rects: BumpVec<RECT> = BumpVec::with_capacity_in(rects.len(), &self.arena);
+        for v in rects {
+            new_rects.push(RECT {
                 left: v.x as i32,
                 top: v.y as i32,
                 right: (v.x + v.w) as i32,
                 bottom: (v.y + v.h) as i32,
-            })
-            .collect();
-        self.list.RSSetScissorRects(&rects);
+            });
+        }
+
+        self.list.RSSetScissorRects(&new_rects);
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
@@ -190,7 +195,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        let mut color_attachments = Vec::with_capacity(info.color_attachments.len());
+        let mut color_attachments =
+            BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
 
         for attachment in info.color_attachments {
             let image = unwrap::texture(attachment.image);
@@ -343,14 +349,14 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         texture_barriers: &[TextureBarrier],
     ) {
         #![allow(non_snake_case)]
-        // TODO: Bump allocator on the command buffer
-        let mut translated_global_barriers: Vec<D3D12_GLOBAL_BARRIER> =
-            Vec::with_capacity(global_barriers.len());
-        let mut translated_buffer_barriers: Vec<D3D12_BUFFER_BARRIER> =
-            Vec::with_capacity(buffer_barriers.len());
-        let mut translated_texture_barriers: Vec<D3D12_TEXTURE_BARRIER> =
-            Vec::with_capacity(texture_barriers.len());
-        let mut barrier_groups: Vec<D3D12_BARRIER_GROUP> = Vec::with_capacity(3);
+
+        let mut translated_global_barriers =
+            BumpVec::with_capacity_in(global_barriers.len(), &self.arena);
+        let mut translated_buffer_barriers =
+            BumpVec::with_capacity_in(buffer_barriers.len(), &self.arena);
+        let mut translated_texture_barriers =
+            BumpVec::with_capacity_in(texture_barriers.len(), &self.arena);
+        let mut barrier_groups = BumpVec::with_capacity_in(3, &self.arena);
 
         if !buffer_barriers.is_empty() {
             for barrier in global_barriers {

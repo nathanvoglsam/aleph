@@ -92,7 +92,8 @@ cstr = "0.2"
 erupt = "0.22"
 log = { version = "0.4", features = ["release_max_level_info"] }
 serde_json = "1"
-serde = { version = "1", features = ["derive"]}
+serde = { version = "1", features = ["derive"] }
+bumpalo = { version = "3", features = ["boxed", "collections"] }
 
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
 aleph-compile = { path = "./lib/crates/aleph-compile", version = "1" }

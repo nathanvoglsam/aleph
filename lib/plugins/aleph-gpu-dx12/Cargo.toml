@@ -53,6 +53,7 @@ cstr = { workspace = true }
 crossbeam = { workspace = true }
 parking_lot = { workspace = true }
 utf16_lit = { workspace = true }
+bumpalo = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows = { workspace = true }

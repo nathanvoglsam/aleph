@@ -30,6 +30,7 @@
 use crate::device::Device;
 use crate::encoder::Encoder;
 use crate::internal::try_clone_value_into_slot;
+use bumpalo::Bump;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
@@ -68,6 +69,7 @@ impl ICommandList for CommandList {
                 _parent: self,
                 bound_graphics_pipeline: None,
                 input_binding_strides: [0; 16],
+                arena: Bump::with_capacity(1024 * 16),
             };
             Ok(Box::new(encoder))
         } else {
