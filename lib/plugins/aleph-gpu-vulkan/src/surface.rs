@@ -135,7 +135,6 @@ impl ISurface for Surface {
         let inner = SwapChainState {
             swap_chain: vk::SwapchainKHR::null(),
             acquire_fence: fence,
-            images_in_flight: 0,
             format: Format::Bgra8Unorm,
             vk_format: Default::default(),
             color_space: Default::default(),
