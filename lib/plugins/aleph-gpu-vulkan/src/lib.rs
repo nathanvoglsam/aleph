@@ -44,7 +44,6 @@ mod semaphore;
 mod shader;
 mod surface;
 mod swap_chain;
-mod swap_texture;
 mod texture;
 
 pub use plugin::PluginGpuVulkan;
