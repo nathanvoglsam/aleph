@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::ffi::{c_char, CStr};
 use std::ops::Deref;
 use utf16_lit::utf16_null;
 use windows::utils::DynamicLoadCell;
@@ -47,10 +48,21 @@ impl RootSignatureBlob {
     pub unsafe fn new(desc: &D3D12_VERSIONED_ROOT_SIGNATURE_DESC) -> windows::core::Result<Self> {
         let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
         let mut blob: Option<ID3DBlob> = None;
-        let mut err: Option<ID3DBlob> = None; // TODO: Find a sane way to expose this
-        create_fn(desc, &mut blob, &mut err)
+        let mut err: Option<ID3DBlob> = None;
+        let result = create_fn(desc, &mut blob, &mut err)
             .and_some(blob)
-            .map(RootSignatureBlob)
+            .map(RootSignatureBlob);
+
+        // Log the error message
+        if let Some(err) = err {
+            let v = CStr::from_ptr(err.GetBufferPointer() as *const c_char)
+                .to_str()
+                .unwrap_or("Message UTF8 error, can't display message");
+
+            log::debug!("Root signature creation failed with message: \"{}\"", v);
+        }
+
+        result
     }
 
     pub fn as_slice(&self) -> &[u8] {
