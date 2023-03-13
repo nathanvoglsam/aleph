@@ -38,6 +38,7 @@ pub struct ValidationEncoder<T: ?Sized> {
     pub(crate) bound_graphics_pipeline: Option<AnyArc<ValidationGraphicsPipeline>>,
     pub(crate) inner: Box<T>,
     pub(crate) list_type: QueueType,
+    pub(crate) render_pass_open: bool,
 }
 
 impl<'a, T: IGetPlatformInterface + ?Sized + 'a> IGetPlatformInterface for ValidationEncoder<T> {
@@ -136,6 +137,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
         );
+        assert!(
+            !self.render_pass_open,
+            "Can't call begin_rendering while a render-pass has already been opened"
+        );
 
         Self::validate_rendering_attachments(info);
 
@@ -155,6 +160,8 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             depth_stencil_attachment: depth_stencil_attachment.as_ref(),
         };
 
+        self.render_pass_open = true;
+
         self.inner.begin_rendering(&info)
     }
 
@@ -163,8 +170,14 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
         );
+        assert!(
+            self.render_pass_open,
+            "Can't call end_rendering while a render-pass has already been opened"
+        );
 
         self.inner.end_rendering();
+
+        self.render_pass_open = false;
     }
 
     unsafe fn draw(
@@ -252,6 +265,11 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
+        assert!(
+            !self.render_pass_open,
+            "It is invalid to issue barriers inside a render-pass"
+        );
+
         texture_barriers.iter().for_each(|v| {
             Self::validate_sub_resource_range_against_texture(
                 &v.texture.desc(),
@@ -378,8 +396,9 @@ impl<T: ?Sized> ValidationEncoder<T> {
     }
 
     fn validate_push_constant_data_buffer(data: &[u8], block: &PushConstantBlock) {
-        assert!(
-            data.len() % 4 == 0,
+        assert_eq!(
+            data.len() % 4,
+            0,
             "Push Constant data must have len divisible by 4"
         );
 

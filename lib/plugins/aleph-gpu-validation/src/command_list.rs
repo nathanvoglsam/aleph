@@ -52,6 +52,7 @@ impl ICommandList for ValidationCommandList {
             inner,
             bound_graphics_pipeline: None,
             list_type: QueueType::General,
+            render_pass_open: false,
         });
         let encoder: Box<dyn IGeneralEncoder + 'a> = encoder;
         Ok(encoder)
@@ -65,6 +66,7 @@ impl ICommandList for ValidationCommandList {
             inner,
             bound_graphics_pipeline: None,
             list_type: QueueType::Compute,
+            render_pass_open: false,
         });
         let encoder: Box<dyn IComputeEncoder + 'a> = encoder;
         Ok(encoder)
@@ -78,6 +80,7 @@ impl ICommandList for ValidationCommandList {
             inner,
             bound_graphics_pipeline: None,
             list_type: QueueType::Transfer,
+            render_pass_open: false,
         });
         let encoder: Box<dyn ITransferEncoder + 'a> = encoder;
         Ok(encoder)
