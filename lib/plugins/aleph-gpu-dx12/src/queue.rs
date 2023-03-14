@@ -283,16 +283,13 @@ impl IQueue for Queue {
 
         // 'Wait' on all the wait_semaphores in a loop, as we're emulating vulkan like semaphore
         // objects that predicate a submission
-        for semaphore in desc.wait_semaphores.iter().map(unwrap::semaphore_d) {
+        for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
             semaphore
                 .wait_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;
         }
 
-        let handles: Vec<Option<ID3D12CommandList>> = desc
-            .command_lists
-            .iter()
-            .map(unwrap::command_list_d)
+        let handles: Vec<Option<ID3D12CommandList>> = unwrap::command_list_iter(desc.command_lists)
             .map(|v| Some(v.list.clone().into()))
             .collect();
 
@@ -300,7 +297,7 @@ impl IQueue for Queue {
 
         // 'Signal' all the 'signal_semaphores' in a loop, as we're emulating vulkan like
         // semaphore objects.
-        for semaphore in desc.signal_semaphores.iter().map(unwrap::semaphore_d) {
+        for semaphore in unwrap::semaphore_iter(desc.signal_semaphores) {
             semaphore
                 .signal_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;
@@ -352,7 +349,7 @@ impl IQueue for Queue {
         // either.
         let _lock = self.submit_lock.lock();
 
-        for semaphore in desc.wait_semaphores.iter().map(unwrap::semaphore_d) {
+        for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
             semaphore
                 .wait_on_queue(&self.handle)
                 .map_err(|v| anyhow!(v))?;

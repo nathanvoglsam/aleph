@@ -43,32 +43,53 @@ use crate::texture::Texture;
 use aleph_gpu_impl_utils::conversion_function;
 use interfaces::gpu::*;
 
-conversion_function!(IBuffer, Buffer, buffer, buffer_d);
-conversion_function!(ICommandList, CommandList, command_list, command_list_d);
+conversion_function!(IBuffer, Buffer, buffer, buffer_d, buffer_iter);
+conversion_function!(
+    ICommandList,
+    CommandList,
+    command_list,
+    command_list_d,
+    command_list_iter
+);
 conversion_function!(
     IDescriptorSetLayout,
     DescriptorSetLayout,
     descriptor_set_layout,
-    descriptor_set_layout_d
+    descriptor_set_layout_d,
+    descriptor_set_layout_iter
 );
-conversion_function!(IDevice, Device, device, device_d);
-conversion_function!(IFence, Fence, fence, fence_d);
+conversion_function!(IDevice, Device, device, device_d, device_iter);
+conversion_function!(IFence, Fence, fence, fence_d, fence_iter);
 conversion_function!(
     IGraphicsPipeline,
     GraphicsPipeline,
     graphics_pipeline,
-    graphics_pipeline_d
+    graphics_pipeline_d,
+    graphics_pipeline_iter
 );
 conversion_function!(
     IPipelineLayout,
     PipelineLayout,
     pipeline_layout,
-    pipeline_layout_d
+    pipeline_layout_d,
+    pipeline_layout_iter
 );
-conversion_function!(ISampler, Sampler, sampler, sampler_d);
-conversion_function!(ISemaphore, Semaphore, semaphore, semaphore_d);
-conversion_function!(IShader, Shader, shader, shader_d);
-conversion_function!(ISurface, Surface, surface, surface_d);
+conversion_function!(ISampler, Sampler, sampler, sampler_d, sampler_iter);
+conversion_function!(
+    ISemaphore,
+    Semaphore,
+    semaphore,
+    semaphore_d,
+    semaphore_iter
+);
+conversion_function!(IShader, Shader, shader, shader_d, shader_iter);
+conversion_function!(ISurface, Surface, surface, surface_d, surface_iter);
 
-conversion_function!(ISwapChain, SwapChain, swap_chain, swap_chain_d);
-conversion_function!(ITexture, Texture, texture, texture_d);
+conversion_function!(
+    ISwapChain,
+    SwapChain,
+    swap_chain,
+    swap_chain_d,
+    swap_chain_iter
+);
+conversion_function!(ITexture, Texture, texture, texture_d, texture_iter);

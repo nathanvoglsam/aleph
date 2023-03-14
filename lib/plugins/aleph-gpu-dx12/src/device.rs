@@ -176,7 +176,8 @@ impl IDevice for Device {
         let rasterizer_state = Self::translate_rasterizer_state_desc(desc.rasterizer_state);
         let builder = builder.rasterizer_state(rasterizer_state);
 
-        let (depth_bounds, depth_stencil_state) = Self::translate_depth_stencil_desc(desc.depth_stencil_state);
+        let (depth_bounds, depth_stencil_state) =
+            Self::translate_depth_stencil_desc(desc.depth_stencil_state);
         let builder = builder.depth_stencil_state(depth_stencil_state);
 
         let blend_state = Self::translate_blend_state_desc(desc.blend_state);
@@ -835,7 +836,7 @@ impl IDevice for Device {
                 // of values filled with the expected value for a signalled fence.
                 let mut inner_fences: Vec<Option<ID3D12Fence>> = Vec::with_capacity(fences.len());
                 let mut wait_values: Vec<u64> = Vec::with_capacity(fences.len());
-                for fence in fences.iter().map(unwrap::fence_d) {
+                for fence in unwrap::fence_iter(fences) {
                     inner_fences.push(Some(fence.fence.clone()));
                     wait_values.push(fence.get_wait_value());
                 }
@@ -1061,7 +1062,9 @@ impl Device {
 
     /// Internal function for translating the [DepthStencilStateDesc] field of a pipeline
     /// description
-    fn translate_depth_stencil_desc(desc: &DepthStencilStateDesc) -> (Option<(f32, f32)>, D3D12_DEPTH_STENCIL_DESC1) {
+    fn translate_depth_stencil_desc(
+        desc: &DepthStencilStateDesc,
+    ) -> (Option<(f32, f32)>, D3D12_DEPTH_STENCIL_DESC1) {
         /// Internal function for translating our [StencilOpState] into the D3D12 equivalent
         fn translate_depth_stencil_op_desc(desc: &StencilOpState) -> D3D12_DEPTH_STENCILOP_DESC {
             let stencil_fail_op = stencil_op_to_dx12(desc.fail_op);

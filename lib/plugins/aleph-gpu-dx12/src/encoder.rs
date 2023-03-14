@@ -85,7 +85,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.list
             .IASetPrimitiveTopology(concrete.primitive_topology);
 
-        if let Some((min ,max)) = concrete.depth_bounds {
+        if let Some((min, max)) = concrete.depth_bounds {
             self.list.OMSetDepthBounds(min, max);
         }
 

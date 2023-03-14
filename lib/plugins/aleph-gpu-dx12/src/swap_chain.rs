@@ -266,7 +266,7 @@ impl ISwapChain for SwapChain {
 
         let index = self.swap_chain.GetCurrentBackBufferIndex();
 
-        for semaphore in desc.signal_semaphores.iter().map(unwrap::semaphore_d) {
+        for semaphore in unwrap::semaphore_iter(desc.signal_semaphores) {
             semaphore.signal_from_cpu().map_err(|v| anyhow!(v))?;
         }
 
