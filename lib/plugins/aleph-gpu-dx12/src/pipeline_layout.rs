@@ -43,6 +43,12 @@ pub struct PipelineLayout {
 
 declare_interfaces!(PipelineLayout, [IPipelineLayout]);
 
+impl IGetPlatformInterface for PipelineLayout {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<ID3D12RootSignature>(&self.root_signature, out, target)
+    }
+}
+
 impl IPipelineLayout for PipelineLayout {
     fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {
         AnyArc::map::<dyn IPipelineLayout, _>(self.this.upgrade().unwrap(), |v| v)
@@ -54,12 +60,6 @@ impl IPipelineLayout for PipelineLayout {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
-    }
-}
-
-impl IGetPlatformInterface for PipelineLayout {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<ID3D12RootSignature>(&self.root_signature, out, target)
     }
 }
 

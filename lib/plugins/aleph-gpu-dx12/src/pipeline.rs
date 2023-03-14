@@ -58,6 +58,12 @@ pub struct GraphicsPipeline {
 
 declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
 
+impl IGetPlatformInterface for GraphicsPipeline {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.pipeline, out, target)
+    }
+}
+
 impl IGraphicsPipeline for GraphicsPipeline {
     fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
         AnyArc::map::<dyn IGraphicsPipeline, _>(self.this.upgrade().unwrap(), |v| v)
@@ -72,12 +78,6 @@ impl IGraphicsPipeline for GraphicsPipeline {
     }
 }
 
-impl IGetPlatformInterface for GraphicsPipeline {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
-    }
-}
-
 pub struct ComputePipeline {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
@@ -85,6 +85,12 @@ pub struct ComputePipeline {
 }
 
 declare_interfaces!(ComputePipeline, [IComputePipeline]);
+
+impl IGetPlatformInterface for ComputePipeline {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.pipeline, out, target)
+    }
+}
 
 impl IComputePipeline for ComputePipeline {
     fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
@@ -97,11 +103,5 @@ impl IComputePipeline for ComputePipeline {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
-    }
-}
-
-impl IGetPlatformInterface for ComputePipeline {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
     }
 }

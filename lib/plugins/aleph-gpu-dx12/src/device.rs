@@ -92,7 +92,16 @@ pub struct Device {
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
 }
 
+unsafe impl Send for Device {}
+unsafe impl Sync for Device {}
+
 declare_interfaces!(Device, [IDevice]);
+
+impl IGetPlatformInterface for Device {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<ID3D12Device10>(&self.device, out, target)
+    }
+}
 
 impl IDevice for Device {
     // ========================================================================================== //
@@ -1938,39 +1947,5 @@ impl Drop for Device {
                 let _sink = device_unregister_message_callback((&self.device).into(), cookie);
             }
         }
-    }
-}
-
-pub trait IDeviceExt: IDevice {
-    fn get_raw_handle(&self) -> ID3D12Device10;
-    fn get_raw_general_queue(&self) -> Option<ID3D12CommandQueue>;
-    fn get_raw_compute_queue(&self) -> Option<ID3D12CommandQueue>;
-    fn get_raw_transfer_queue(&self) -> Option<ID3D12CommandQueue>;
-}
-
-impl IDeviceExt for Device {
-    fn get_raw_handle(&self) -> ID3D12Device10 {
-        self.device.clone()
-    }
-
-    fn get_raw_general_queue(&self) -> Option<ID3D12CommandQueue> {
-        self.general_queue.as_ref().map(|v| v.handle.clone())
-    }
-
-    fn get_raw_compute_queue(&self) -> Option<ID3D12CommandQueue> {
-        self.compute_queue.as_ref().map(|v| v.handle.clone())
-    }
-
-    fn get_raw_transfer_queue(&self) -> Option<ID3D12CommandQueue> {
-        self.transfer_queue.as_ref().map(|v| v.handle.clone())
-    }
-}
-
-unsafe impl Send for Device {}
-unsafe impl Sync for Device {}
-
-impl IGetPlatformInterface for Device {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<ID3D12Device10>(&self.device, out, target)
     }
 }

@@ -47,6 +47,18 @@ pub struct CommandList {
 
 declare_interfaces!(CommandList, [ICommandList]);
 
+impl IGetPlatformInterface for CommandList {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        if try_clone_value_into_slot(&self.list, out, target).is_some() {
+            return Some(());
+        };
+        if try_clone_value_into_slot(&self.allocator, out, target).is_some() {
+            return Some(());
+        };
+        None
+    }
+}
+
 unsafe impl Send for CommandList {}
 
 impl ICommandList for CommandList {
@@ -93,17 +105,5 @@ impl ICommandList for CommandList {
         Err(CommandListBeginError::InvalidEncoderType(
             QueueType::Transfer,
         ))
-    }
-}
-
-impl IGetPlatformInterface for CommandList {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        if try_clone_value_into_slot(&self.list, out, target).is_some() {
-            return Some(());
-        };
-        if try_clone_value_into_slot(&self.allocator, out, target).is_some() {
-            return Some(());
-        };
-        None
     }
 }

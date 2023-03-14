@@ -107,6 +107,12 @@ impl IAny for Queue {
     }
 }
 
+impl IGetPlatformInterface for Queue {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<ID3D12CommandQueue>(&self.handle, out, target)
+    }
+}
+
 impl Queue {
     #[inline]
     pub(crate) fn new(
@@ -420,12 +426,6 @@ impl IQueueDebug for Queue {
             );
             end_event_on_queue(&self.handle);
         }
-    }
-}
-
-impl IGetPlatformInterface for Queue {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<ID3D12CommandQueue>(&self.handle, out, target)
     }
 }
 

@@ -48,6 +48,12 @@ pub struct Buffer {
 
 declare_interfaces!(Buffer, [IBuffer]);
 
+impl IGetPlatformInterface for Buffer {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.resource, out, target)
+    }
+}
+
 impl IBuffer for Buffer {
     fn upgrade(&self) -> AnyArc<dyn IBuffer> {
         AnyArc::map::<dyn IBuffer, _>(self.this.upgrade().unwrap(), |v| v)
@@ -91,11 +97,5 @@ impl IBuffer for Buffer {
 
     fn invalidate_range(&self, _offset: u64, _len: u64) {
         // intentional no-op
-    }
-}
-
-impl IGetPlatformInterface for Buffer {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.resource, out, target)
     }
 }

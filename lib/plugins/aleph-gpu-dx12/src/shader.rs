@@ -42,6 +42,19 @@ pub struct Shader {
 
 declare_interfaces!(Shader, [IShader]);
 
+impl IGetPlatformInterface for Shader {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        if target == TypeId::of::<ShaderData>() {
+            let out = out as *mut ShaderData;
+            out.write(ShaderData(self.data.clone()));
+
+            Some(())
+        } else {
+            None
+        }
+    }
+}
+
 impl IShader for Shader {
     fn upgrade(&self) -> AnyArc<dyn IShader> {
         AnyArc::map::<dyn IShader, _>(self.this.upgrade().unwrap(), |v| v)
@@ -64,29 +77,6 @@ impl IShader for Shader {
     }
 }
 
-pub trait IShaderExt: IShader {
-    fn get_raw_buffer(&self) -> &[u8];
-}
-
-impl IShaderExt for Shader {
-    fn get_raw_buffer(&self) -> &[u8] {
-        &self.data
-    }
-}
-
 /// A new-type wrapper over a `Vec<u8>` to provide a new type-id for use with the
 /// [IGetPlatformInterface] interface.
 pub struct ShaderData(pub Vec<u8>);
-
-impl IGetPlatformInterface for Shader {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        if target == TypeId::of::<ShaderData>() {
-            let out = out as *mut ShaderData;
-            out.write(ShaderData(self.data.clone()));
-
-            Some(())
-        } else {
-            None
-        }
-    }
-}

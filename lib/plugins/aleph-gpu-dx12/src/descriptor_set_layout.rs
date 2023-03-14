@@ -55,6 +55,12 @@ pub struct DescriptorSetLayout {
 
 declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);
 
+impl IGetPlatformInterface for DescriptorSetLayout {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
 impl DescriptorSetLayout {
     /// Internal function
     ///
@@ -75,12 +81,6 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
-    }
-}
-
-impl IGetPlatformInterface for DescriptorSetLayout {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
     }
 }
 

@@ -65,6 +65,12 @@ unsafe impl Sync for Adapter {}
 
 declare_interfaces!(Adapter, [IAdapter]);
 
+impl IGetPlatformInterface for Adapter {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(self.adapter.lock().deref(), out, target)
+    }
+}
+
 impl Adapter {
     fn create_queue(
         device: &ID3D12Device,
@@ -165,11 +171,5 @@ impl IAdapter for Adapter {
             transfer_queue,
         });
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
-    }
-}
-
-impl IGetPlatformInterface for Adapter {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(self.adapter.lock().deref(), out, target)
     }
 }

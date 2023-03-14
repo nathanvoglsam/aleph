@@ -50,7 +50,18 @@ pub struct Surface {
     pub(crate) has_swap_chain: AtomicBool,
 }
 
+// SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
+//         consume it. The consumer constrains thread sharing so this is safe.
+unsafe impl Send for Surface {}
+unsafe impl Sync for Surface {}
+
 declare_interfaces!(Surface, [ISurface]);
+
+impl IGetPlatformInterface for Surface {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
 
 impl Surface {
     unsafe fn inner_create_swap_chain(
@@ -211,19 +222,8 @@ impl ISurface for Surface {
     }
 }
 
-impl IGetPlatformInterface for Surface {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
-    }
-}
-
 unsafe impl HasRawWindowHandle for Surface {
     fn raw_window_handle(&self) -> RawWindowHandle {
         self.handle
     }
 }
-
-// SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
-//         consume it. The consumer constrains thread sharing so this is safe.
-unsafe impl Send for Surface {}
-unsafe impl Sync for Surface {}

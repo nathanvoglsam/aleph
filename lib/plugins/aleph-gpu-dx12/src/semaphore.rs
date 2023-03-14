@@ -56,6 +56,12 @@ pub struct Semaphore {
 
 declare_interfaces!(Semaphore, [ISemaphore]);
 
+impl IGetPlatformInterface for Semaphore {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.fence, out, target)
+    }
+}
+
 impl ISemaphore for Semaphore {
     fn upgrade(&self) -> AnyArc<dyn ISemaphore> {
         AnyArc::map::<dyn ISemaphore, _>(self._this.upgrade().unwrap(), |v| v)
@@ -67,12 +73,6 @@ impl ISemaphore for Semaphore {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
-    }
-}
-
-impl IGetPlatformInterface for Semaphore {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.fence, out, target)
     }
 }
 

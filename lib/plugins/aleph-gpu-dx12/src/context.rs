@@ -56,10 +56,28 @@ pub struct Context {
     pub(crate) factory: Option<Mutex<IDXGIFactory2>>,
 }
 
+declare_interfaces!(Context, [IContext]);
+
+impl IGetPlatformInterface for Context {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        let factory = self.factory.as_ref().unwrap().lock();
+        if try_clone_value_into_slot::<IDXGIFactory2>(factory.deref(), out, target).is_some() {
+            return Some(());
+        };
+
+        if let Some(debug) = self.dxgi_debug.as_ref() {
+            let lock = debug.lock();
+            if try_clone_value_into_slot::<IDXGIDebug>(lock.deref(), out, target).is_some() {
+                return Some(());
+            };
+        }
+
+        None
+    }
+}
+
 unsafe impl Send for Context {}
 unsafe impl Sync for Context {}
-
-declare_interfaces!(Context, [IContext]);
 
 impl Context {
     /// Checks if a surface is compatible with an adapter by performing a full device initialization
@@ -356,23 +374,5 @@ impl Drop for Context {
                     .unwrap();
             }
         }
-    }
-}
-
-impl IGetPlatformInterface for Context {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        let factory = self.factory.as_ref().unwrap().lock();
-        if try_clone_value_into_slot::<IDXGIFactory2>(factory.deref(), out, target).is_some() {
-            return Some(());
-        };
-
-        if let Some(debug) = self.dxgi_debug.as_ref() {
-            let lock = debug.lock();
-            if try_clone_value_into_slot::<IDXGIDebug>(lock.deref(), out, target).is_some() {
-                return Some(());
-            };
-        }
-
-        None
     }
 }

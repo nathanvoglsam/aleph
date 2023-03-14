@@ -55,6 +55,12 @@ pub struct SwapChain {
 
 declare_interfaces!(SwapChain, [ISwapChain]);
 
+impl IGetPlatformInterface for SwapChain {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<IDXGISwapChain4>(&self.swap_chain, out, target)
+    }
+}
+
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
     pub current: i32,
@@ -278,33 +284,5 @@ impl Drop for SwapChain {
     fn drop(&mut self) {
         // Release the surface as the swap chain no longer owns it
         debug_assert!(self.surface.has_swap_chain.swap(false, Ordering::SeqCst));
-    }
-}
-
-impl IGetPlatformInterface for SwapChain {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<IDXGISwapChain4>(&self.swap_chain, out, target)
-    }
-}
-
-pub trait ISwapChainExt: ISwapChain {
-    fn get_raw_handle(&self) -> IDXGISwapChain4;
-
-    fn get_raw_in_memory_format(&self) -> DXGI_FORMAT;
-
-    fn get_raw_view_format(&self) -> DXGI_FORMAT;
-}
-
-impl ISwapChainExt for SwapChain {
-    fn get_raw_handle(&self) -> IDXGISwapChain4 {
-        self.swap_chain.clone()
-    }
-
-    fn get_raw_in_memory_format(&self) -> DXGI_FORMAT {
-        self.inner.lock().dxgi_format
-    }
-
-    fn get_raw_view_format(&self) -> DXGI_FORMAT {
-        self.inner.lock().dxgi_view_format
     }
 }

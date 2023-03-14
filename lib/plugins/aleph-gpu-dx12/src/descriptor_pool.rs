@@ -56,6 +56,12 @@ pub struct DescriptorPool {
 
 declare_interfaces!(DescriptorPool, [IDescriptorPool]);
 
+impl IGetPlatformInterface for DescriptorPool {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
 impl DescriptorPool {
     /// Checks if there is space to allocate a new set in the descriptor pool.
     ///
@@ -230,11 +236,5 @@ impl Drop for DescriptorPool {
                 arena.release_allocation_to_heap(self._device.descriptor_heaps.gpu_sampler_heap());
             }
         }
-    }
-}
-
-impl IGetPlatformInterface for DescriptorPool {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
     }
 }

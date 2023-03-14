@@ -43,6 +43,12 @@ pub struct Sampler {
 
 declare_interfaces!(Sampler, [ISampler]);
 
+impl IGetPlatformInterface for Sampler {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
 impl ISampler for Sampler {
     fn upgrade(&self) -> AnyArc<dyn ISampler> {
         AnyArc::map::<dyn ISampler, _>(self.this.upgrade().unwrap(), |v| v)
@@ -69,11 +75,5 @@ impl Drop for Sampler {
             .descriptor_heaps
             .cpu_sampler_heap()
             .free(self.sampler_handle);
-    }
-}
-
-impl IGetPlatformInterface for Sampler {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
     }
 }
