@@ -36,42 +36,77 @@ use crate::{
 use aleph_gpu_impl_utils::conversion_function;
 use interfaces::gpu::*;
 
-conversion_function!(IBuffer, ValidationBuffer, buffer, buffer_d);
+conversion_function!(IBuffer, ValidationBuffer, buffer, buffer_d, buffer_iter);
 conversion_function!(
     ICommandList,
     ValidationCommandList,
     command_list,
-    command_list_d
+    command_list_d,
+    command_list_iter
 );
 conversion_function!(
     IDescriptorSetLayout,
     ValidationDescriptorSetLayout,
     descriptor_set_layout,
-    descriptor_set_layout_d
+    descriptor_set_layout_d,
+    descriptor_set_layout_iter
 );
-conversion_function!(IDevice, ValidationDevice, device, device_d);
-conversion_function!(IFence, ValidationFence, fence, fence_d);
+conversion_function!(IDevice, ValidationDevice, device, device_d, device_iter);
+conversion_function!(IFence, ValidationFence, fence, fence_d, fence_iter);
 conversion_function!(
     IGraphicsPipeline,
     ValidationGraphicsPipeline,
     graphics_pipeline,
-    graphics_pipeline_d
+    graphics_pipeline_d,
+    graphics_pipeline_iter
 );
 conversion_function!(
     IComputePipeline,
     ValidationComputePipeline,
     compute_pipeline,
-    compute_pipeline_d
+    compute_pipeline_d,
+    compute_pipeline_iter
 );
 conversion_function!(
     IPipelineLayout,
     ValidationPipelineLayout,
     pipeline_layout,
-    pipeline_layout_d
+    pipeline_layout_d,
+    pipeline_layout_iter
 );
-conversion_function!(ISampler, ValidationSampler, sampler, sampler_d);
-conversion_function!(ISemaphore, ValidationSemaphore, semaphore, semaphore_d);
-conversion_function!(IShader, ValidationShader, shader, shader_d);
-conversion_function!(ISurface, ValidationSurface, surface, surface_d);
-conversion_function!(ISwapChain, ValidationSwapChain, swap_chain, swap_chain_d);
-conversion_function!(ITexture, ValidationTexture, texture, texture_d);
+conversion_function!(
+    ISampler,
+    ValidationSampler,
+    sampler,
+    sampler_d,
+    sampler_iter
+);
+conversion_function!(
+    ISemaphore,
+    ValidationSemaphore,
+    semaphore,
+    semaphore_d,
+    semaphore_iter
+);
+conversion_function!(IShader, ValidationShader, shader, shader_d, shader_iter);
+conversion_function!(
+    ISurface,
+    ValidationSurface,
+    surface,
+    surface_d,
+    surface_iter
+);
+conversion_function!(
+    ISwapChain,
+    ValidationSwapChain,
+    swap_chain,
+    swap_chain_d,
+    swap_chain_iter
+);
+conversion_function!(
+    ITexture,
+    ValidationTexture,
+    texture,
+    texture_d,
+    texture_iter
+);
