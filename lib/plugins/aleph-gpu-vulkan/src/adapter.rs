@@ -47,6 +47,12 @@ pub struct Adapter {
 
 declare_interfaces!(Adapter, [IAdapter]);
 
+impl IGetPlatformInterface for Adapter {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::PhysicalDevice>(&self.physical_device, out, target)
+    }
+}
+
 impl Adapter {
     #[inline]
     fn get_queue_families(queue_families: &[vk::QueueFamilyProperties]) -> FoundQueueFamilies {
@@ -190,12 +196,6 @@ impl IAdapter for Adapter {
         });
 
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
-    }
-}
-
-impl IGetPlatformInterface for Adapter {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::PhysicalDevice>(&self.physical_device, out, target)
     }
 }
 

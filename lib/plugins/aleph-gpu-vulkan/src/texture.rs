@@ -45,6 +45,12 @@ pub struct Texture {
 
 declare_interfaces!(Texture, [ITexture]);
 
+impl IGetPlatformInterface for Texture {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::Image>(&self.image, out, target)
+    }
+}
+
 impl ITexture for Texture {
     fn upgrade(&self) -> AnyArc<dyn ITexture> {
         AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
@@ -70,11 +76,5 @@ impl Drop for Texture {
         unsafe {
             self.device.device_loader.destroy_image(self.image, None);
         }
-    }
-}
-
-impl IGetPlatformInterface for Texture {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::Image>(&self.image, out, target)
     }
 }

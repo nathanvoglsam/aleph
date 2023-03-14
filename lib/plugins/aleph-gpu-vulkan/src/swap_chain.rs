@@ -49,6 +49,14 @@ pub struct SwapChain {
 
 declare_interfaces!(SwapChain, [ISwapChain]);
 
+impl IGetPlatformInterface for SwapChain {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        // TODO: We can probably expose a few objects from a swapchain, but they're behind a mutex
+        //       so we'll wait before implementing this
+        None
+    }
+}
+
 impl ISwapChain for SwapChain {
     fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
         AnyArc::map::<dyn ISwapChain, _>(self.this.upgrade().unwrap(), |v| v)
@@ -372,14 +380,6 @@ impl Drop for SwapChain {
                 .device_loader
                 .destroy_swapchain_khr(inner.swap_chain, None);
         }
-    }
-}
-
-impl IGetPlatformInterface for SwapChain {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        // TODO: We can probably expose a few objects from a swapchain, but they're behind a mutex
-        //       so we'll wait before implementing this
-        None
     }
 }
 

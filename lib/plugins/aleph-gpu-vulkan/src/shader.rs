@@ -74,13 +74,9 @@ pub struct Shader {
 
 declare_interfaces!(Shader, [IShader]);
 
-impl Drop for Shader {
-    fn drop(&mut self) {
-        unsafe {
-            self.device
-                .device_loader
-                .destroy_shader_module(self.module, None);
-        }
+impl IGetPlatformInterface for Shader {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::ShaderModule>(&self.module, out, target)
     }
 }
 
@@ -110,8 +106,12 @@ impl IShader for Shader {
     }
 }
 
-impl IGetPlatformInterface for Shader {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::ShaderModule>(&self.module, out, target)
+impl Drop for Shader {
+    fn drop(&mut self) {
+        unsafe {
+            self.device
+                .device_loader
+                .destroy_shader_module(self.module, None);
+        }
     }
 }

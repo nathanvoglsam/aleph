@@ -47,6 +47,12 @@ pub struct Surface {
 
 declare_interfaces!(Surface, [ISurface]);
 
+impl IGetPlatformInterface for Surface {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot::<vk::SurfaceKHR>(&self.surface, out, target)
+    }
+}
+
 impl Surface {
     /// Internal function for querying present support for a given surface
     unsafe fn get_queue_support(
@@ -158,12 +164,6 @@ impl ISurface for Surface {
         }
 
         Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
-    }
-}
-
-impl IGetPlatformInterface for Surface {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::SurfaceKHR>(&self.surface, out, target)
     }
 }
 

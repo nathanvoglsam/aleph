@@ -52,6 +52,8 @@ pub struct ContextProvider {
     no_send_sync: PhantomData<*const ()>,
 }
 
+declare_interfaces!(ContextProvider, [IContextProvider]);
+
 impl ContextProvider {
     pub fn new() -> Self {
         Self {
@@ -156,8 +158,6 @@ impl IContextProvider for ContextProvider {
         }
     }
 }
-
-declare_interfaces!(ContextProvider, [IContextProvider]);
 
 fn get_wanted_extensions(debug: bool) -> Vec<*const c_char> {
     use erupt::extensions::*;

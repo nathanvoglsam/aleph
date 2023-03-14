@@ -42,6 +42,12 @@ pub struct Fence {
 
 declare_interfaces!(Fence, [IFence]);
 
+impl IGetPlatformInterface for Fence {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.fence, out, target)
+    }
+}
+
 impl IFence for Fence {
     fn upgrade(&self) -> AnyArc<dyn IFence> {
         AnyArc::map::<dyn IFence, _>(self._this.upgrade().unwrap(), |v| v)
@@ -53,12 +59,6 @@ impl IFence for Fence {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
-    }
-}
-
-impl IGetPlatformInterface for Fence {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.fence, out, target)
     }
 }
 
