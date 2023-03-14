@@ -28,10 +28,10 @@
 //
 
 use crate::adapter::Adapter;
-use crate::internal::{VK_MAJOR_VERSION, VK_MINOR_VERSION};
+use crate::internal::{unwrap, VK_MAJOR_VERSION, VK_MINOR_VERSION};
 use crate::surface::Surface;
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
@@ -238,11 +238,7 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
-        let surface = options
-            .surface
-            .as_ref()
-            .and_then(|v| v.query_interface::<Surface>())
-            .map(|v| v.surface);
+        let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
         Context::select_device(
             &self.instance_loader,
             VK_MAJOR_VERSION,

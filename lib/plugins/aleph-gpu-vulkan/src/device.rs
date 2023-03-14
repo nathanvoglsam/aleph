@@ -37,11 +37,12 @@ use crate::internal::conv::{
 };
 use crate::internal::queues::Queues;
 use crate::internal::set_name::set_name;
+use crate::internal::unwrap;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
@@ -142,10 +143,7 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
-        let module = desc
-            .shader_module
-            .query_interface::<Shader>()
-            .expect("Unknown IShader implementation");
+        let module = unwrap::shader(desc.shader_module);
 
         let builder = vk::ComputePipelineCreateInfoBuilder::new();
 
@@ -342,14 +340,7 @@ impl IDevice for Device {
             timeout as u64 * 1000000 // Convert to nanoseconds
         };
 
-        let fences: Vec<_> = fences
-            .iter()
-            .map(|v| {
-                v.query_interface::<Fence>()
-                    .expect("Unknown IFence implementation")
-                    .fence
-            })
-            .collect();
+        let fences: Vec<_> = unwrap::fence_iter(fences).map(|v| v.fence).collect();
 
         let result = unsafe {
             self.device_loader
@@ -370,9 +361,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn poll_fence(&self, fence: &dyn IFence) -> bool {
-        let fence = fence
-            .query_interface::<Fence>()
-            .expect("Unknown IFence implementation");
+        let fence = unwrap::fence(fence);
 
         let result = unsafe { self.device_loader.get_fence_status(fence.fence) };
 
@@ -390,14 +379,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn reset_fences(&self, fences: &[&dyn IFence]) {
-        let fences: Vec<_> = fences
-            .iter()
-            .map(|v| {
-                v.query_interface::<Fence>()
-                    .expect("Unknown IFence implementation")
-                    .fence
-            })
-            .collect();
+        let fences: Vec<_> = unwrap::fence_iter(fences).map(|v| v.fence).collect();
 
         unsafe { self.device_loader.reset_fences(&fences).unwrap() }
     }

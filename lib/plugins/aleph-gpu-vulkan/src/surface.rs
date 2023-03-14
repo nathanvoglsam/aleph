@@ -30,10 +30,10 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
-use crate::internal::try_clone_value_into_slot;
+use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::swap_chain::{SwapChain, SwapChainState};
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
@@ -120,7 +120,7 @@ impl ISurface for Surface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        let device = device.query_interface::<Device>().unwrap();
+        let device = unwrap::device(device);
 
         let queue_support = unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
 
