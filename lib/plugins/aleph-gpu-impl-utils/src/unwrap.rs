@@ -29,7 +29,7 @@
 
 #[macro_export]
 macro_rules! conversion_function {
-    ($from: path, $to: path, $name: ident, $name_d: ident) => {
+    ($from: path, $to: path, $name: ident, $name_d: ident, $name_iter: ident) => {
         #[allow(unused)]
         /// Converts the given dynamic object to a concrete type, panicking if it is not the
         /// expected concrete type.
@@ -45,15 +45,16 @@ macro_rules! conversion_function {
 
         #[allow(unused)]
         /// Converts the given dynamic object to a concrete type, panicking if it is not the
-        /// expected concrete type. Accepts a double-reference, denoted by the `_d` suffix
+        /// expected concrete type. Accepts a double-reference, denoted by the `_d` suffix.
         pub fn $name_d<'a>(v: &'a &'a dyn $from) -> &'a $to {
-            use $crate::aleph_interfaces::any::*;
-            use $crate::aleph_interfaces::gpu::*;
-            v.query_interface::<$to>().expect(concat!(
-                "Unknown ",
-                stringify!($from),
-                " implementation"
-            ))
+            $name(*v)
+        }
+
+        #[allow(unused)]
+        /// Converts the given dynamic object to a concrete type, panicking if it is not the
+        /// expected concrete type. Accepts a list of references, denoted by the `_list` suffix.
+        pub fn $name_iter<'a>(v: &'a [&'a dyn $from]) -> impl Iterator<Item = &'a $to> {
+            v.iter().map($name_d)
         }
     };
 }
