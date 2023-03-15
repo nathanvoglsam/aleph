@@ -60,6 +60,38 @@ pub struct DescriptorSet {
 }
 
 impl DescriptorSet {
+    #[track_caller]
+    #[inline(always)]
+    pub unsafe fn assume_r_handle(&self) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
+        let cpu = if cfg!(debug_assertions) {
+            self.resource_handle_cpu.unwrap()
+        } else {
+            self.resource_handle_cpu.unwrap_unchecked()
+        };
+        let gpu = if cfg!(debug_assertions) {
+            self.resource_handle_gpu.unwrap()
+        } else {
+            self.resource_handle_gpu.unwrap_unchecked()
+        };
+        (cpu, gpu)
+    }
+
+    #[track_caller]
+    #[inline(always)]
+    pub unsafe fn assume_s_handle(&self) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
+        let cpu = if cfg!(debug_assertions) {
+            self.sampler_handle_cpu.unwrap()
+        } else {
+            self.sampler_handle_cpu.unwrap_unchecked()
+        };
+        let gpu = if cfg!(debug_assertions) {
+            self.sampler_handle_gpu.unwrap()
+        } else {
+            self.sampler_handle_gpu.unwrap_unchecked()
+        };
+        (cpu, gpu)
+    }
+
     /// Grabs the pointer inside a [DescriptorSetHandle] as a non-null [DescriptorSet] ptr
     pub fn ptr_from_handle(handle: DescriptorSetHandle) -> NonNull<DescriptorSet> {
         let inner: NonNull<()> = handle.into();

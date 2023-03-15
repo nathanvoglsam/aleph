@@ -471,9 +471,6 @@ impl IDevice for Device {
 
         // TODO: dynamic samplers
 
-        // TODO: Investigate a better way for handling 'allow input assembler' flag as currently we
-        //       just unconditionally enable it. Supposedly it can be a minor optimization on some
-        //       hardware.
         let root_signature = unsafe {
             let desc = D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
                 Version: D3D_ROOT_SIGNATURE_VERSION_1_1,
@@ -1431,12 +1428,7 @@ impl Device {
         writes: &[SamplerDescriptorWrite],
     ) {
         for (i, v) in writes.iter().enumerate() {
-            // TODO: validate against this
-            let dst = if cfg!(debug_assertions) {
-                set.sampler_handle_cpu.unwrap()
-            } else {
-                set.sampler_handle_cpu.unwrap_unchecked()
-            };
+            let (dst, _) = set.assume_s_handle();
 
             let sampler = unwrap::sampler(v.sampler);
 
@@ -1470,12 +1462,7 @@ impl Device {
         writes: &[ImageDescriptorWrite],
     ) {
         for (i, v) in writes.iter().enumerate() {
-            // TODO: validate against this
-            let dst = if cfg!(debug_assertions) {
-                set.resource_handle_cpu.unwrap()
-            } else {
-                set.resource_handle_cpu.unwrap_unchecked()
-            };
+            let (dst, _) = set.assume_r_handle();
 
             let image = unwrap::texture(v.image);
 
@@ -1614,12 +1601,7 @@ impl Device {
         writes: &[BufferDescriptorWrite],
     ) {
         for (i, v) in writes.iter().enumerate() {
-            // TODO: validate against this
-            let dst = if cfg!(debug_assertions) {
-                set.resource_handle_cpu.unwrap()
-            } else {
-                set.resource_handle_cpu.unwrap_unchecked()
-            };
+            let (dst, _) = set.assume_r_handle();
 
             let buffer = unwrap::buffer(v.buffer);
 
@@ -1654,12 +1636,7 @@ impl Device {
         writes: &[StructuredBufferDescriptorWrite],
     ) {
         for (i, v) in writes.iter().enumerate() {
-            // TODO: validate against this
-            let dst = if cfg!(debug_assertions) {
-                set.resource_handle_cpu.unwrap()
-            } else {
-                set.resource_handle_cpu.unwrap_unchecked()
-            };
+            let (dst, _) = set.assume_r_handle();
 
             let buffer = unwrap::buffer(v.buffer);
 
@@ -1688,12 +1665,7 @@ impl Device {
         writes: &[TexelBufferDescriptorWrite],
     ) {
         for (i, v) in writes.iter().enumerate() {
-            // TODO: validate against this
-            let dst = if cfg!(debug_assertions) {
-                set.resource_handle_cpu.unwrap()
-            } else {
-                set.resource_handle_cpu.unwrap_unchecked()
-            };
+            let (dst, _) = set.assume_r_handle();
 
             let buffer = unwrap::buffer(v.buffer);
 
