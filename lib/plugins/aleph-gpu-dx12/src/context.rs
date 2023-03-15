@@ -41,7 +41,6 @@ use interfaces::platform::HasRawWindowHandle;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::ops::Deref;
-use std::sync::atomic::AtomicBool;
 use windows::core::Interface;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
@@ -352,7 +351,7 @@ impl IContext for Context {
             this: v.clone(),
             context: self.this.upgrade().unwrap(),
             handle: window.raw_window_handle(),
-            has_swap_chain: AtomicBool::new(false),
+            has_swap_chain: Default::default(),
         });
         Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
     }

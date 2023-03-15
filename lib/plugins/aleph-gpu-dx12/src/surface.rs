@@ -38,7 +38,6 @@ use interfaces::gpu::*;
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use parking_lot::Mutex;
 use std::any::TypeId;
-use std::sync::atomic::{AtomicBool, Ordering};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -47,7 +46,7 @@ pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
     pub(crate) handle: RawWindowHandle,
-    pub(crate) has_swap_chain: AtomicBool,
+    pub(crate) has_swap_chain: Mutex<bool>,
 }
 
 // SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
@@ -205,20 +204,20 @@ impl ISurface for Surface {
         config: &SwapChainConfiguration,
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
         // Check if the surface is currently taken with an existing swap chain
-        if self.has_swap_chain.swap(true, Ordering::SeqCst) {
+        let mut has_swap_chain = self.has_swap_chain.lock();
+        if *has_swap_chain {
             return Err(SwapChainCreateError::SurfaceAlreadyOwned);
         }
 
-        unsafe {
-            match self.inner_create_swap_chain(device, config) {
-                v @ Ok(_) => v,
-                v @ Err(_) => {
-                    // Release the surface if we failed to actually create the swap chain
-                    debug_assert!(self.has_swap_chain.swap(false, Ordering::SeqCst));
-                    v
-                }
-            }
+        let result = unsafe { self.inner_create_swap_chain(device, config) };
+
+        // If we successfully created the swap chain then we update the owned flag to prevent
+        // creating more.
+        if result.is_ok() {
+            *has_swap_chain = true;
         }
+
+        result
     }
 }
 

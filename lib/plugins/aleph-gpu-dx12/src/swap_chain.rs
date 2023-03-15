@@ -282,7 +282,10 @@ impl ISwapChain for SwapChain {
 
 impl Drop for SwapChain {
     fn drop(&mut self) {
+        let mut has_swap_chain = self.surface.has_swap_chain.lock();
+
         // Release the surface as the swap chain no longer owns it
-        debug_assert!(self.surface.has_swap_chain.swap(false, Ordering::SeqCst));
+        assert!(*has_swap_chain);
+        *has_swap_chain = false;
     }
 }
