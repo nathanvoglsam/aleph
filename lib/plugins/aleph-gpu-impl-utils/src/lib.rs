@@ -30,4 +30,5 @@
 #[doc(hidden)]
 pub extern crate aleph_interfaces;
 
+pub mod manually_drop;
 pub mod unwrap;
