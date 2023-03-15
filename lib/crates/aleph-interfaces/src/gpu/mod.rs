@@ -1125,6 +1125,14 @@ impl From<Color> for (f32, f32, f32, f32) {
     }
 }
 
+impl From<Color> for [f32; 4] {
+    fn from(value: Color) -> Self {
+        type V = (f32, f32, f32, f32);
+        let (a, r, g, b) = V::from(value);
+        [r, g, b, a]
+    }
+}
+
 //
 //
 // _________________________________________________________________________________________________
