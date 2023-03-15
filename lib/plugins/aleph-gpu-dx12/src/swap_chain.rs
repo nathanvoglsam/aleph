@@ -31,12 +31,14 @@ use crate::device::Device;
 use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::surface::Surface;
 use crate::texture::Texture;
+use aleph_gpu_impl_utils::manually_drop;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::{Mutex, RwLock};
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::atomic::{AtomicBool, Ordering};
 use windows::core::IUnknown;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -218,19 +220,26 @@ impl ISwapChain for SwapChain {
             QueueType::Compute => self.device.compute_queue.as_ref().unwrap().handle.clone(),
             QueueType::Transfer => self.device.transfer_queue.as_ref().unwrap().handle.clone(),
         };
-        // Empty the images array as, assuming the rest of the code is correct, that array will
-        // hold the only remaining references to the swap chain images.
-        //
-        // This also handles creating the list of queues we pass to ResizeBuffers
-        let queues: Vec<ID3D12CommandQueue> = inner
-            .textures
-            .drain(..)
-            .map(|_| {
-                queue.clone() // TODO: We should find a way to avoid this
-            })
-            .collect();
 
         unsafe {
+            // Empty the images array as, assuming the rest of the code is correct, that array will
+            // hold the only remaining references to the swap chain images.
+            //
+            // This also handles creating the list of queues we pass to ResizeBuffers
+            let queues_list: Vec<ManuallyDrop<ID3D12CommandQueue>> = inner
+                .textures
+                .drain(..)
+                .map(|_| {
+                    // Take a shadow copy queue into ManuallyDrop so we don't increment the
+                    // reference count just to pack it into the array.
+                    //
+                    // This is sound so long as 'queue' always outlives the array and our shadow
+                    // copies.
+                    core::mem::transmute_copy(&queue)
+                })
+                .collect();
+            let queues = manually_drop::view_list_as_inner(&queues_list);
+
             self.resize_buffers(
                 queues.len() as u32,
                 width,
