@@ -29,6 +29,9 @@
 
 #![cfg_attr(target_vendor = "uwp", windows_subsystem = "windows")]
 
+#[cfg(target_os = "windows")]
+aleph_dx12_agility_sdk::export_standard_agility_sdk_symbols!();
+
 extern crate aleph_engine as aleph;
 
 use aleph::egui::IEguiContextProvider;
