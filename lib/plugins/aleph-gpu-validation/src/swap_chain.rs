@@ -147,6 +147,16 @@ impl ISwapChain for ValidationSwapChain {
     }
 }
 
+impl Drop for ValidationSwapChain {
+    fn drop(&mut self) {
+        let mut has_swap_chain = self._surface.has_swap_chain.lock();
+
+        // Release the surface as the swap chain no longer owns it
+        assert!(*has_swap_chain);
+        *has_swap_chain = false;
+    }
+}
+
 impl ValidationSwapChain {
     pub(crate) fn wrap_images(
         device: &ValidationDevice,

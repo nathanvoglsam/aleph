@@ -31,13 +31,12 @@ use crate::{ValidationContext, ValidationDevice, ValidationSwapChain};
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::*;
 use parking_lot::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct ValidationSurface {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _context: AnyArc<ValidationContext>,
     pub(crate) inner: AnyArc<dyn ISurface>,
-    pub(crate) has_swap_chain: AtomicBool,
+    pub(crate) has_swap_chain: Mutex<bool>,
 }
 
 interfaces::any::declare_interfaces!(ValidationSurface, [ISurface]);
@@ -67,26 +66,29 @@ impl ISurface for ValidationSurface {
             .expect("Unknown IDevice implementation");
         let inner_device = device.inner.as_ref();
 
-        // Check if the surface is currently taken with an existing swap chain
-        if self.has_swap_chain.swap(true, Ordering::Relaxed) {
-            return Err(SwapChainCreateError::SurfaceAlreadyOwned);
-        }
-
-        let inner = match self.inner.create_swap_chain(inner_device, config) {
-            v @ Ok(_) => v,
-            v @ Err(_) => {
-                // Release the surface if we failed to actually create the swap chain
-                assert!(self.has_swap_chain.swap(false, Ordering::Relaxed));
-                v
+        let inner = {
+            // Check if a swapchain that owns this surface already exists
+            let mut has_swap_chain = self.has_swap_chain.lock();
+            if *has_swap_chain {
+                return Err(SwapChainCreateError::SurfaceAlreadyOwned);
             }
-        };
-        let inner = inner?;
+
+            let result = self.inner.create_swap_chain(inner_device, config);
+
+            // Update the owned flag if we have successfully created a new swap chain
+            if result.is_ok() {
+                *has_swap_chain = true
+            }
+
+            result
+        }?;
 
         // Prefill the 'textures' array in the swap chain.
+        let inner_config = inner.get_config();
         let mut scratch = ValidationSwapChain::make_scratch();
-        let images = &mut scratch[0..config.buffer_count as usize]; // TODO: get the number of images
+        let images = &mut scratch[0..inner_config.buffer_count as usize];
         inner.get_images(images);
-        let mut textures = Vec::with_capacity(config.buffer_count as usize);
+        let mut textures = Vec::with_capacity(inner_config.buffer_count as usize);
         ValidationSwapChain::wrap_images(device, &mut textures, images);
 
         let swap_chain = AnyArc::new_cyclic(move |v| ValidationSwapChain {
