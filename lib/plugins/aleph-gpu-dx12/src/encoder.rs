@@ -154,7 +154,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         for v in viewports {
             new_viewports.push(D3D12_VIEWPORT {
                 TopLeftX: v.x,
-                TopLeftY: v.x,
+                TopLeftY: v.y,
                 Width: v.width,
                 Height: v.height,
                 MinDepth: v.min_depth,
