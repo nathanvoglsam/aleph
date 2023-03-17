@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_gpu_impl_utils::conv::decode_u32_color_to_float;
 use interfaces::gpu::*;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
@@ -600,15 +601,6 @@ pub fn texture_create_clear_value_to_dx12(
     Ok(clear)
 }
 
-#[allow(clippy::erasing_op, clippy::identity_op)]
-pub fn decode_u32_color_to_float(v: u32) -> [f32; 4] {
-    let a = ((v >> (8 * 0)) & 0xFF) as f32 / 255.0;
-    let b = ((v >> (8 * 1)) & 0xFF) as f32 / 255.0;
-    let g = ((v >> (8 * 2)) & 0xFF) as f32 / 255.0;
-    let r = ((v >> (8 * 3)) & 0xFF) as f32 / 255.0;
-    [r, g, b, a]
-}
-
 pub trait TranslateClearValue {
     fn translate_clear_value(&self, format: Option<impl Into<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE;
 }
@@ -631,25 +623,13 @@ impl TranslateClearValue for ColorClearValue {
 impl TranslateClearValue for DepthStencilClearValue {
     #[inline]
     fn translate_clear_value(&self, format: Option<impl Into<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
-        let depth_stencil = match self {
-            DepthStencilClearValue::DepthStencil(d, s) => D3D12_DEPTH_STENCIL_VALUE {
-                Depth: *d,
-                Stencil: *s,
-            },
-            DepthStencilClearValue::Depth(d) => D3D12_DEPTH_STENCIL_VALUE {
-                Depth: *d,
-                Stencil: 0,
-            },
-            DepthStencilClearValue::Stencil(s) => D3D12_DEPTH_STENCIL_VALUE {
-                Depth: 0.0,
-                Stencil: *s,
-            },
+        let v = D3D12_DEPTH_STENCIL_VALUE {
+            Depth: self.depth,
+            Stencil: self.stencil,
         };
         D3D12_CLEAR_VALUE {
             Format: format.map(|v| v.into()).unwrap_or_default(),
-            Anonymous: D3D12_CLEAR_VALUE_0 {
-                DepthStencil: depth_stencil,
-            },
+            Anonymous: D3D12_CLEAR_VALUE_0 { DepthStencil: v },
         }
     }
 }
