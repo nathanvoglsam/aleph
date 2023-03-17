@@ -3587,32 +3587,10 @@ impl Display for ColorClearValue {
 }
 
 /// An enumeration of all possible input types to a depth/stencil texture clear operation
-#[derive(Clone, Debug, PartialEq)]
-pub enum DepthStencilClearValue {
-    /// A floating point + u8 pair for clearing a depth stencil texture
-    DepthStencil(f32, u8),
-
-    /// A floating point value for clearing only depth
-    Depth(f32),
-
-    /// A u8 value for clearing only stencil
-    Stencil(u8),
-}
-
-impl Display for DepthStencilClearValue {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DepthStencilClearValue::DepthStencil(depth, stencil) => {
-                write!(f, "DepthStencilClearValue::Float({}, {})", *depth, *stencil)
-            }
-            DepthStencilClearValue::Depth(v) => {
-                write!(f, "DepthStencilClearValue::Depth({})", *v)
-            }
-            DepthStencilClearValue::Stencil(v) => {
-                write!(f, "DepthStencilClearValue::Stencil({})", *v)
-            }
-        }
-    }
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct DepthStencilClearValue {
+    pub depth: f32,
+    pub stencil: u8,
 }
 
 /// Enum flags for barrier commands for specifying queue ownership transition behavior.
