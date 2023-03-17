@@ -166,19 +166,16 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             .bound_graphics_pipeline
             .as_ref()
             .expect("Can't set push constants without a pipeline bound")
-            .pipeline_layout
+            ._pipeline_layout
             .as_ref();
 
         let info = &pipeline_layout.push_constant_blocks[block_index];
 
-        let layout = pipeline_layout.pipeline_layout;
-        let stage_flags = info.visibility;
-        let offset = info.offset;
         self._parent._device.device_loader.cmd_push_constants(
             self.buffer,
-            layout,
-            stage_flags,
-            offset,
+            pipeline_layout.pipeline_layout,
+            info.stage_flags,
+            info.offset,
             data.len() as u32,
             data.as_ptr() as *const _,
         )

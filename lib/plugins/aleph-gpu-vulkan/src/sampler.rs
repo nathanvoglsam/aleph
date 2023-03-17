@@ -29,30 +29,30 @@
 
 use crate::device::Device;
 use crate::internal::try_clone_value_into_slot;
-use crate::pipeline_layout::PipelineLayout;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::any::TypeId;
 
-pub struct GraphicsPipeline {
+pub struct Sampler {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
-    pub(crate) pipeline: vk::Pipeline,
+    pub(crate) sampler: vk::Sampler,
+    pub(crate) desc: SamplerDesc<'static>,
+    pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
+declare_interfaces!(Sampler, [ISampler]);
 
-impl IGetPlatformInterface for GraphicsPipeline {
+impl IGetPlatformInterface for Sampler {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
+        try_clone_value_into_slot(&self.sampler, out, target)
     }
 }
 
-impl IGraphicsPipeline for GraphicsPipeline {
-    fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
-        AnyArc::map::<dyn IGraphicsPipeline, _>(self._this.upgrade().unwrap(), |v| v)
+impl ISampler for Sampler {
+    fn upgrade(&self) -> AnyArc<dyn ISampler> {
+        AnyArc::map::<dyn ISampler, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -62,53 +62,20 @@ impl IGraphicsPipeline for GraphicsPipeline {
     fn weak_count(&self) -> usize {
         self._this.weak_count()
     }
+
+    fn desc(&self) -> SamplerDesc {
+        let mut desc = self.desc.clone();
+        desc.name = self.name.as_deref();
+        desc
+    }
 }
 
-impl Drop for GraphicsPipeline {
+impl Drop for Sampler {
     fn drop(&mut self) {
         unsafe {
             self._device
                 .device_loader
-                .destroy_pipeline(self.pipeline, None);
-        }
-    }
-}
-
-pub struct ComputePipeline {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
-    pub(crate) pipeline: vk::Pipeline,
-}
-
-declare_interfaces!(ComputePipeline, [IComputePipeline]);
-
-impl IGetPlatformInterface for ComputePipeline {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
-    }
-}
-
-impl IComputePipeline for ComputePipeline {
-    fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
-        AnyArc::map::<dyn IComputePipeline, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-}
-
-impl Drop for ComputePipeline {
-    fn drop(&mut self) {
-        unsafe {
-            self._device
-                .device_loader
-                .destroy_pipeline(self.pipeline, None);
+                .destroy_sampler(self.sampler, None)
         }
     }
 }

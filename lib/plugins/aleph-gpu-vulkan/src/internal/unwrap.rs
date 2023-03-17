@@ -29,12 +29,12 @@
 
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
-// use crate::descriptor_set_layout::DescriptorSetLayout;
+use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
 use crate::fence::Fence;
 use crate::pipeline::GraphicsPipeline;
 use crate::pipeline_layout::PipelineLayout;
-// use crate::sampler::Sampler;
+use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use crate::surface::Surface;
@@ -51,13 +51,13 @@ conversion_function!(
     command_list_d,
     command_list_iter
 );
-// conversion_function!(
-//     IDescriptorSetLayout,
-//     DescriptorSetLayout,
-//     descriptor_set_layout,
-//     descriptor_set_layout_d,
-//     descriptor_set_layout_iter
-// );
+conversion_function!(
+    IDescriptorSetLayout,
+    DescriptorSetLayout,
+    descriptor_set_layout,
+    descriptor_set_layout_d,
+    descriptor_set_layout_iter
+);
 conversion_function!(IDevice, Device, device, device_d, device_iter);
 conversion_function!(IFence, Fence, fence, fence_d, fence_iter);
 conversion_function!(
@@ -74,7 +74,7 @@ conversion_function!(
     pipeline_layout_d,
     pipeline_layout_iter
 );
-// conversion_function!(ISampler, Sampler, sampler, sampler_d, sampler_iter);
+conversion_function!(ISampler, Sampler, sampler, sampler_d, sampler_iter);
 conversion_function!(
     ISemaphore,
     Semaphore,

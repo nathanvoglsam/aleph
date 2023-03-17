@@ -446,3 +446,33 @@ pub const fn pipeline_bind_point_to_vk(v: PipelineBindPoint) -> vk::PipelineBind
         PipelineBindPoint::Compute => vk::PipelineBindPoint::COMPUTE,
     }
 }
+
+pub const fn descriptor_shader_visibility_to_vk(
+    v: DescriptorShaderVisibility,
+) -> vk::ShaderStageFlags {
+    match v {
+        DescriptorShaderVisibility::All => vk::ShaderStageFlags::ALL,
+        DescriptorShaderVisibility::Compute => vk::ShaderStageFlags::COMPUTE,
+        DescriptorShaderVisibility::Vertex => vk::ShaderStageFlags::VERTEX,
+        DescriptorShaderVisibility::Hull => vk::ShaderStageFlags::TESSELLATION_CONTROL,
+        DescriptorShaderVisibility::Domain => vk::ShaderStageFlags::TESSELLATION_EVALUATION,
+        DescriptorShaderVisibility::Geometry => vk::ShaderStageFlags::GEOMETRY,
+        DescriptorShaderVisibility::Fragment => vk::ShaderStageFlags::FRAGMENT,
+        DescriptorShaderVisibility::Amplification => vk::ShaderStageFlags::TASK_NV,
+        DescriptorShaderVisibility::Mesh => vk::ShaderStageFlags::MESH_NV,
+    }
+}
+
+pub const fn descriptor_type_to_vk(v: DescriptorType) -> vk::DescriptorType {
+    match v {
+        DescriptorType::Sampler => vk::DescriptorType::SAMPLER,
+        DescriptorType::SampledImage => vk::DescriptorType::SAMPLED_IMAGE,
+        DescriptorType::StorageImage => vk::DescriptorType::STORAGE_IMAGE,
+        DescriptorType::UniformTexelBuffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
+        DescriptorType::StorageTexelBuffer => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
+        DescriptorType::UniformBuffer => vk::DescriptorType::UNIFORM_BUFFER,
+        DescriptorType::StorageBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        DescriptorType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
+    }
+}

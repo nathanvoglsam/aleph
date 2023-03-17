@@ -29,14 +29,13 @@
 
 use crate::adapter::Adapter;
 use crate::context::Context;
+use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::Fence;
-use crate::internal::conv::{
-    blend_factor_to_vk, blend_op_to_vk, compare_op_to_vk, cull_mode_to_vk, front_face_order_to_vk,
-    polygon_mode_to_vk, primitive_topology_to_vk, stencil_op_to_vk, texture_format_to_vk,
-    vertex_input_rate_to_vk,
-};
+use crate::internal::conv::*;
 use crate::internal::set_name::set_name;
 use crate::internal::unwrap;
+use crate::pipeline::{ComputePipeline, GraphicsPipeline};
+use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
@@ -125,7 +124,10 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
-        let builder = vk::GraphicsPipelineCreateInfoBuilder::new();
+        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
+
+        let builder =
+            vk::GraphicsPipelineCreateInfoBuilder::new().layout(pipeline_layout.pipeline_layout);
 
         // Translate the vertex input state
         let vertex_binding_descriptions: Vec<_> = Self::translate_vertex_bindings(desc);
@@ -157,7 +159,13 @@ impl IDevice for Device {
 
         set_name(&self.device_loader, pipeline, desc.name);
 
-        todo!()
+        let out = AnyArc::new_cyclic(move |v| GraphicsPipeline {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            pipeline,
+        });
+        Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(out, |v| v))
     }
 
     // ========================================================================================== //
@@ -168,18 +176,17 @@ impl IDevice for Device {
         desc: &ComputePipelineDesc,
     ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
         let module = unwrap::shader(desc.shader_module);
+        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
 
-        let builder = vk::ComputePipelineCreateInfoBuilder::new();
-
-        // TODO: Pipeline layout
-
-        let builder = builder.stage(
-            vk::PipelineShaderStageCreateInfoBuilder::new()
-                .stage(vk::ShaderStageFlagBits::COMPUTE)
-                .module(module.module)
-                .name(&module.entry_point)
-                .build_dangling(),
-        );
+        let builder = vk::ComputePipelineCreateInfoBuilder::new()
+            .layout(pipeline_layout.pipeline_layout)
+            .stage(
+                vk::PipelineShaderStageCreateInfoBuilder::new()
+                    .stage(vk::ShaderStageFlagBits::COMPUTE)
+                    .module(module.module)
+                    .name(&module.entry_point)
+                    .build_dangling(),
+            );
 
         let pipeline = unsafe {
             self.device_loader
@@ -190,7 +197,13 @@ impl IDevice for Device {
 
         set_name(&self.device_loader, pipeline, desc.name);
 
-        todo!()
+        let out = AnyArc::new_cyclic(move |v| ComputePipeline {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            pipeline,
+        });
+        Ok(AnyArc::map::<dyn IComputePipeline, _>(out, |v| v))
     }
 
     // ========================================================================================== //
@@ -240,9 +253,37 @@ impl IDevice for Device {
 
     fn create_descriptor_set_layout(
         &self,
-        _desc: &DescriptorSetLayoutDesc,
+        desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
-        todo!()
+        let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
+
+        let mut bindings = Vec::with_capacity(desc.items.len());
+        for v in desc.items {
+            let binding = vk::DescriptorSetLayoutBindingBuilder::new()
+                .binding(v.binding_num)
+                .descriptor_type(descriptor_type_to_vk(v.binding_type))
+                .descriptor_count(v.binding_count.map(|v| v.get()).unwrap_or(1))
+                .stage_flags(stage_flags);
+            // .immutable_samplers()
+            bindings.push(binding);
+        }
+
+        let create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new().bindings(&bindings);
+
+        let descriptor_set_layout = unsafe {
+            self.device_loader
+                .create_descriptor_set_layout(&create_info, None)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        set_name(&self.device_loader, descriptor_set_layout, desc.name);
+
+        let out = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            descriptor_set_layout,
+        });
+        Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(out, |v| v))
     }
 
     // ========================================================================================== //
@@ -260,9 +301,45 @@ impl IDevice for Device {
 
     fn create_pipeline_layout(
         &self,
-        _desc: &PipelineLayoutDesc,
+        desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        todo!()
+        let mut set_layouts = Vec::with_capacity(desc.set_layouts.len());
+        for v in desc.set_layouts {
+            let v = unwrap::descriptor_set_layout_d(v);
+            set_layouts.push(v.descriptor_set_layout);
+        }
+
+        let mut offset = 0;
+        let mut ranges = Vec::with_capacity(desc.push_constant_blocks.len());
+        for v in desc.push_constant_blocks {
+            let range = vk::PushConstantRangeBuilder::new()
+                .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
+                .offset(offset)
+                .size(v.size as u32);
+            ranges.push(range);
+
+            offset += v.size as u32;
+        }
+
+        let create_info = vk::PipelineLayoutCreateInfoBuilder::new()
+            .set_layouts(&set_layouts)
+            .push_constant_ranges(&ranges);
+
+        let pipeline_layout = unsafe {
+            self.device_loader
+                .create_pipeline_layout(&create_info, None)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        set_name(&self.device_loader, pipeline_layout, desc.name);
+
+        let out = AnyArc::new_cyclic(move |v| PipelineLayout {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            pipeline_layout,
+            push_constant_blocks: ranges,
+        });
+        Ok(AnyArc::map::<dyn IPipelineLayout, _>(out, |v| v))
     }
 
     // ========================================================================================== //
