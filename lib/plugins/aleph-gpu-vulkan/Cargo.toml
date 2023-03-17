@@ -54,5 +54,7 @@ cstr = { workspace = true }
 crossbeam = { workspace = true }
 once_cell = { workspace = true }
 erupt = { workspace = true }
+bumpalo = { workspace = true }
+parking_lot = { workspace = true }
 console = "0.15"
 byteorder = "1"

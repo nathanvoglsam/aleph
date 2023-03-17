@@ -35,11 +35,17 @@ extern crate aleph_interfaces as interfaces;
 extern crate cstr;
 
 mod adapter;
+mod buffer;
+mod command_list;
 mod context;
 mod context_provider;
 mod device;
+mod encoder;
 mod fence;
 mod internal;
+mod pipeline;
+mod pipeline_layout;
+mod queue;
 mod semaphore;
 mod shader;
 mod surface;

@@ -30,6 +30,7 @@
 use erupt::utils::VulkanResult;
 use erupt::{vk, DeviceLoader};
 use std::ffi::CString;
+use std::ops::Deref;
 
 pub fn set_name<T: HandleNameInfo>(loader: &DeviceLoader, handle: T, name: Option<&str>) {
     // Do nothing if needed extension isn't loaded
@@ -42,7 +43,7 @@ pub fn set_name<T: HandleNameInfo>(loader: &DeviceLoader, handle: T, name: Optio
                 .object_handle(handle.handle())
                 .object_name(&name);
             unsafe {
-                let result = (func)(loader.handle, &info.build_dangling());
+                let result = (func)(loader.handle, info.deref());
                 let result = VulkanResult::new(result, ());
                 result.unwrap();
             }

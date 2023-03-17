@@ -36,7 +36,6 @@ pub mod conv;
 pub mod macros;
 pub mod messenger;
 pub mod queue_present_support;
-pub mod queues;
 pub mod set_name;
 pub mod unwrap;
 

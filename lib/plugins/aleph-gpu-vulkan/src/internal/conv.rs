@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_gpu_impl_utils::conv::decode_u32_color_to_float;
 use erupt::vk;
 use interfaces::gpu::*;
 
@@ -178,5 +179,270 @@ pub const fn blend_op_to_vk(op: BlendOp) -> vk::BlendOp {
         BlendOp::ReverseSubtract => vk::BlendOp::REVERSE_SUBTRACT,
         BlendOp::Min => vk::BlendOp::MIN,
         BlendOp::Max => vk::BlendOp::MAX,
+    }
+}
+
+pub fn image_layout_to_vk(layout: ImageLayout) -> vk::ImageLayout {
+    match layout {
+        ImageLayout::Undefined => vk::ImageLayout::UNDEFINED,
+        ImageLayout::Common => vk::ImageLayout::GENERAL,
+        ImageLayout::PresentSrc => vk::ImageLayout::PRESENT_SRC_KHR,
+        ImageLayout::ColorAttachmentOptimal => vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+        ImageLayout::DepthStencilAttachmentOptimal => {
+            vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        }
+        ImageLayout::DepthStencilReadOnlyOptimal => {
+            vk::ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL
+        }
+        ImageLayout::ShaderReadOnlyOptimal => vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+        ImageLayout::CopySrc => vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+        ImageLayout::CopyDst => vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+        ImageLayout::UnorderedAccess => vk::ImageLayout::GENERAL,
+        ImageLayout::ResolveSource => todo!(),
+        ImageLayout::ResolveDest => todo!(),
+    }
+}
+
+macro_rules! translate_flag_onto {
+    ($src:ident, $dst:ident, $src_flag:expr, $dst_flag:expr) => {
+        #[allow(clippy::assign_op_pattern)]
+        if ($src.contains($src_flag)) {
+            $dst = $dst | $dst_flag;
+        }
+    };
+}
+
+pub fn barrier_sync_to_vk(sync: BarrierSync) -> vk::PipelineStageFlags2 {
+    let mut out = vk::PipelineStageFlags2::empty();
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::ALL,
+        vk::PipelineStageFlags2::ALL_COMMANDS
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::DRAW,
+        vk::PipelineStageFlags2::ALL_GRAPHICS
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::INPUT_ASSEMBLER,
+        vk::PipelineStageFlags2::VERTEX_INPUT
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::VERTEX_SHADING,
+        vk::PipelineStageFlags2::PRE_RASTERIZATION_SHADERS
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::PIXEL_SHADING,
+        vk::PipelineStageFlags2::FRAGMENT_SHADER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::DEPTH_STENCIL,
+        (vk::PipelineStageFlags2::EARLY_FRAGMENT_TESTS
+            | vk::PipelineStageFlags2::LATE_FRAGMENT_TESTS)
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RENDER_TARGET,
+        vk::PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COMPUTE_SHADING,
+        vk::PipelineStageFlags2::COMPUTE_SHADER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RAYTRACING,
+        vk::PipelineStageFlags2::RAY_TRACING_SHADER_KHR
+    );
+    translate_flag_onto!(sync, out, BarrierSync::COPY, vk::PipelineStageFlags2::COPY);
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RESOLVE,
+        vk::PipelineStageFlags2::RESOLVE
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::EXECUTE_INDIRECT,
+        vk::PipelineStageFlags2::DRAW_INDIRECT
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::CLEAR_UNORDERED_ACCESS_VIEW,
+        vk::PipelineStageFlags2::CLEAR
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE,
+        vk::PipelineStageFlags2::ACCELERATION_STRUCTURE_BUILD_KHR
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COPY_RAYTRACING_ACCELERATION_STRUCTURE,
+        todo!()
+    ); //vk::PipelineStageFlags2::ACCELERATION_STRUCTURE_COPY_KHR
+
+    out
+}
+
+pub fn barrier_access_to_vk(access: BarrierAccess) -> vk::AccessFlags2 {
+    let mut out = vk::AccessFlags2::empty();
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::VERTEX_BUFFER_READ,
+        vk::AccessFlags2::VERTEX_ATTRIBUTE_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::INDEX_BUFFER_READ,
+        vk::AccessFlags2::INDEX_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::CONSTANT_BUFFER_READ,
+        vk::AccessFlags2::UNIFORM_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::INDIRECT_COMMAND_READ,
+        vk::AccessFlags2::INDIRECT_COMMAND_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_SAMPLED_READ,
+        vk::AccessFlags2::SHADER_SAMPLED_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RENDER_TARGET_READ,
+        vk::AccessFlags2::COLOR_ATTACHMENT_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RENDER_TARGET_WRITE,
+        vk::AccessFlags2::COLOR_ATTACHMENT_WRITE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::DEPTH_STENCIL_READ,
+        vk::AccessFlags2::DEPTH_STENCIL_ATTACHMENT_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::DEPTH_STENCIL_WRITE,
+        vk::AccessFlags2::DEPTH_STENCIL_ATTACHMENT_WRITE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COPY_READ,
+        vk::AccessFlags2::TRANSFER_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COPY_WRITE,
+        vk::AccessFlags2::TRANSFER_WRITE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ,
+        vk::AccessFlags2::ACCELERATION_STRUCTURE_READ_KHR
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
+        vk::AccessFlags2::ACCELERATION_STRUCTURE_WRITE_KHR
+    );
+
+    out
+}
+
+pub const fn load_op_to_vk<T>(load_op: &AttachmentLoadOp<T>) -> vk::AttachmentLoadOp {
+    match load_op {
+        AttachmentLoadOp::Load => vk::AttachmentLoadOp::LOAD,
+        AttachmentLoadOp::Clear(_) => vk::AttachmentLoadOp::CLEAR,
+        AttachmentLoadOp::DontCare => vk::AttachmentLoadOp::DONT_CARE,
+        AttachmentLoadOp::None => vk::AttachmentLoadOp::NONE_EXT,
+    }
+}
+
+pub const fn store_op_to_vk(store_op: &AttachmentStoreOp) -> vk::AttachmentStoreOp {
+    match store_op {
+        AttachmentStoreOp::Store => vk::AttachmentStoreOp::STORE,
+        AttachmentStoreOp::DontCare => vk::AttachmentStoreOp::DONT_CARE,
+        AttachmentStoreOp::None => vk::AttachmentStoreOp::NONE,
+    }
+}
+
+pub const fn texture_copy_aspect_to_vk(aspect: TextureCopyAspect) -> vk::ImageAspectFlags {
+    match aspect {
+        TextureCopyAspect::Color => vk::ImageAspectFlags::COLOR,
+        TextureCopyAspect::Depth => vk::ImageAspectFlags::DEPTH,
+        TextureCopyAspect::Stencil => vk::ImageAspectFlags::STENCIL,
+    }
+}
+
+pub const fn texture_aspect_to_vk(aspect: TextureAspect) -> vk::ImageAspectFlags {
+    // # SAFETY #
+    // It shouldn't be possible to construct a TextureAspect with invalid flags without unsafe code.
+    // TextureAspect is a subset of vk::ImageAspectFlags so any TextureAspect flag is valid and
+    // matches the vk::ImageAspectFlags value it represents. This means this is sound, in isolation
+    // anyway.
+    unsafe { vk::ImageAspectFlags::from_bits_unchecked(aspect.bits()) }
+}
+
+pub fn color_clear_to_vk(v: &ColorClearValue) -> vk::ClearColorValue {
+    match v {
+        ColorClearValue::Float { r, g, b, a } => vk::ClearColorValue {
+            float32: [*r, *g, *b, *a],
+        },
+        ColorClearValue::Int(v) => vk::ClearColorValue {
+            float32: decode_u32_color_to_float(*v),
+        },
+    }
+}
+
+pub const fn depth_stencil_clear_to_vk(v: DepthStencilClearValue) -> vk::ClearDepthStencilValue {
+    vk::ClearDepthStencilValue {
+        depth: v.depth,
+        stencil: v.stencil as u32,
+    }
+}
+
+pub const fn pipeline_bind_point_to_vk(v: PipelineBindPoint) -> vk::PipelineBindPoint {
+    match v {
+        PipelineBindPoint::Graphics => vk::PipelineBindPoint::GRAPHICS,
+        PipelineBindPoint::Compute => vk::PipelineBindPoint::COMPUTE,
     }
 }

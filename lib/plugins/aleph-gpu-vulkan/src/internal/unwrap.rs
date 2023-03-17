@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-// use crate::buffer::Buffer;
-// use crate::command_list::CommandList;
+use crate::buffer::Buffer;
+use crate::command_list::CommandList;
 // use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
 use crate::fence::Fence;
-// use crate::pipeline::GraphicsPipeline;
-// use crate::pipeline_layout::PipelineLayout;
+use crate::pipeline::GraphicsPipeline;
+use crate::pipeline_layout::PipelineLayout;
 // use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
@@ -43,14 +43,14 @@ use crate::texture::Texture;
 use aleph_gpu_impl_utils::conversion_function;
 use interfaces::gpu::*;
 
-// conversion_function!(IBuffer, Buffer, buffer, buffer_d, buffer_iter);
-// conversion_function!(
-//     ICommandList,
-//     CommandList,
-//     command_list,
-//     command_list_d,
-//     command_list_iter
-// );
+conversion_function!(IBuffer, Buffer, buffer, buffer_d, buffer_iter);
+conversion_function!(
+    ICommandList,
+    CommandList,
+    command_list,
+    command_list_d,
+    command_list_iter
+);
 // conversion_function!(
 //     IDescriptorSetLayout,
 //     DescriptorSetLayout,
@@ -60,20 +60,20 @@ use interfaces::gpu::*;
 // );
 conversion_function!(IDevice, Device, device, device_d, device_iter);
 conversion_function!(IFence, Fence, fence, fence_d, fence_iter);
-// conversion_function!(
-//     IGraphicsPipeline,
-//     GraphicsPipeline,
-//     graphics_pipeline,
-//     graphics_pipeline_d,
-//     graphics_pipeline_iter
-// );
-// conversion_function!(
-//     IPipelineLayout,
-//     PipelineLayout,
-//     pipeline_layout,
-//     pipeline_layout_d,
-//     pipeline_layout_iter
-// );
+conversion_function!(
+    IGraphicsPipeline,
+    GraphicsPipeline,
+    graphics_pipeline,
+    graphics_pipeline_d,
+    graphics_pipeline_iter
+);
+conversion_function!(
+    IPipelineLayout,
+    PipelineLayout,
+    pipeline_layout,
+    pipeline_layout_d,
+    pipeline_layout_iter
+);
 // conversion_function!(ISampler, Sampler, sampler, sampler_d, sampler_iter);
 conversion_function!(
     ISemaphore,

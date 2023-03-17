@@ -35,9 +35,9 @@ use crate::internal::conv::{
     polygon_mode_to_vk, primitive_topology_to_vk, stencil_op_to_vk, texture_format_to_vk,
     vertex_input_rate_to_vk,
 };
-use crate::internal::queues::Queues;
 use crate::internal::set_name::set_name;
 use crate::internal::unwrap;
+use crate::queue::Queue;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
@@ -53,7 +53,9 @@ pub struct Device {
     pub(crate) context: AnyArc<Context>,
     pub(crate) adapter: AnyArc<Adapter>,
     pub(crate) device_loader: erupt::DeviceLoader,
-    pub(crate) queues: Queues,
+    pub(crate) general_queue: Option<AnyArc<Queue>>,
+    pub(crate) compute_queue: Option<AnyArc<Queue>>,
+    pub(crate) transfer_queue: Option<AnyArc<Queue>>,
 }
 
 declare_interfaces!(Device, [IDevice]);
@@ -61,7 +63,6 @@ declare_interfaces!(Device, [IDevice]);
 impl IGetPlatformInterface for Device {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         // TODO: Expose the device loader through an arc or something
-        // TODO: Expose the queues, somewhere (likely on a queue object)
         None
     }
 }
@@ -92,14 +93,29 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn garbage_collect(&self) {
-        todo!()
+        if let Some(queue) = &self.general_queue {
+            queue.garbage_collect();
+        }
+        if let Some(queue) = &self.compute_queue {
+            queue.garbage_collect();
+        }
+        if let Some(queue) = &self.transfer_queue {
+            queue.garbage_collect();
+        }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn wait_idle(&self) {
-        todo!()
+        // We need to take all of the queue locks to meet vulkan sync requirements.
+        let _lock_ness_monster = (
+            self.general_queue.as_ref().map(|v| v.submit_lock.lock()),
+            self.compute_queue.as_ref().map(|v| v.submit_lock.lock()),
+            self.transfer_queue.as_ref().map(|v| v.submit_lock.lock()),
+        );
+
+        unsafe { self.device_loader.device_wait_idle().unwrap() }
     }
 
     // ========================================================================================== //
@@ -289,8 +305,21 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_queue(&self, _queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        todo!()
+    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
+        match queue_type {
+            QueueType::General => self
+                .general_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+            QueueType::Compute => self
+                .compute_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+            QueueType::Transfer => self
+                .transfer_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+        }
     }
 
     // ========================================================================================== //

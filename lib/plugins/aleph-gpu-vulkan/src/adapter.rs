@@ -29,8 +29,8 @@
 
 use crate::context::Context;
 use crate::device::Device;
-use crate::internal::queues::{QueueInfo, Queues};
 use crate::internal::try_clone_value_into_slot;
+use crate::queue::{Queue, QueueInfo};
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
@@ -185,14 +185,20 @@ impl IAdapter for Adapter {
             .map_err(|e| anyhow!(e))?
         };
 
-        let queues = unsafe { found_families.build_queues_object(&device_loader) };
+        let device = AnyArc::new_cyclic(move |v| {
+            let mut device = Device {
+                this: v.clone(),
+                adapter: self.this.upgrade().unwrap(),
+                context: self.context.clone(),
+                device_loader,
+                general_queue: None,
+                compute_queue: None,
+                transfer_queue: None,
+            };
 
-        let device = AnyArc::new_cyclic(move |v| Device {
-            this: v.clone(),
-            device_loader,
-            queues,
-            adapter: self.this.upgrade().unwrap(),
-            context: self.context.clone(),
+            unsafe { found_families.build_queue_objects(&mut device) };
+
+            device
         });
 
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
@@ -227,34 +233,24 @@ impl<'a> FoundQueueFamilies<'a> {
         queue_create_infos
     }
 
-    unsafe fn build_queues_object(&self, device: &erupt::DeviceLoader) -> Queues {
-        // Internal storage for our 3 queues and info about them
-        let mut queues = Queues {
-            general: None,
-            compute: None,
-            transfer: None,
-        };
+    unsafe fn build_queue_objects(&self, device: &mut Device) {
+        let device_loader = &device.device_loader;
 
         if let Some(info) = self.general.as_ref() {
-            let queue = device.get_device_queue(info.queue_info.index, 0);
-            let mut queue_info = info.queue_info.clone();
-            queue_info.queue = queue;
-            queues.general = Some(queue_info);
+            let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
+            let queue = Queue::new(handle, device, QueueType::General, info.queue_info.clone());
+            device.general_queue = Some(queue);
         }
         if let Some(info) = self.compute.as_ref() {
-            let queue = device.get_device_queue(info.queue_info.index, 0);
-            let mut queue_info = info.queue_info.clone();
-            queue_info.queue = queue;
-            queues.compute = Some(queue_info);
+            let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
+            let queue = Queue::new(handle, device, QueueType::Compute, info.queue_info.clone());
+            device.compute_queue = Some(queue);
         }
         if let Some(info) = self.transfer.as_ref() {
-            let queue = device.get_device_queue(info.queue_info.index, 0);
-            let mut queue_info = info.queue_info.clone();
-            queue_info.queue = queue;
-            queues.transfer = Some(queue_info);
+            let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
+            let queue = Queue::new(handle, device, QueueType::Transfer, info.queue_info.clone());
+            device.transfer_queue = Some(queue);
         }
-
-        queues
     }
 }
 

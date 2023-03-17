@@ -34,10 +34,9 @@ use crate::internal::{try_clone_value_into_slot, unwrap};
 use crate::swap_chain::{SwapChain, SwapChainState};
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
+use parking_lot::Mutex;
 use std::any::TypeId;
-use std::sync::Mutex;
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
@@ -61,13 +60,13 @@ impl Surface {
     ) -> Result<QueuePresentSupportFlags, vk::Result> {
         let mut flags = QueuePresentSupportFlags::empty();
 
-        if let Some(queue) = device.queues.general.as_ref() {
+        if let Some(queue) = device.general_queue.as_ref() {
             let supported = device
                 .context
                 .instance_loader
                 .get_physical_device_surface_support_khr(
                     device.adapter.physical_device,
-                    queue.index,
+                    queue.info.family_index,
                     surface,
                 )
                 .result()?;
@@ -75,13 +74,13 @@ impl Surface {
                 flags |= QueuePresentSupportFlags::GENERAL;
             }
         }
-        if let Some(queue) = device.queues.compute.as_ref() {
+        if let Some(queue) = device.compute_queue.as_ref() {
             let supported = device
                 .context
                 .instance_loader
                 .get_physical_device_surface_support_khr(
                     device.adapter.physical_device,
-                    queue.index,
+                    queue.info.family_index,
                     surface,
                 )
                 .result()?;
@@ -89,13 +88,13 @@ impl Surface {
                 flags |= QueuePresentSupportFlags::COMPUTE;
             }
         }
-        if let Some(queue) = device.queues.transfer.as_ref() {
+        if let Some(queue) = device.transfer_queue.as_ref() {
             let supported = device
                 .context
                 .instance_loader
                 .get_physical_device_surface_support_khr(
                     device.adapter.physical_device,
-                    queue.index,
+                    queue.info.family_index,
                     surface,
                 )
                 .result()?;
@@ -130,24 +129,15 @@ impl ISurface for Surface {
 
         let queue_support = unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
 
-        let fence = unsafe {
-            let fence_info = vk::FenceCreateInfoBuilder::new();
-            device
-                .device_loader
-                .create_fence(&fence_info, None)
-                .result()
-                .map_err(|e| anyhow!("Failed to create wait image fence with code {}", e))?
-        };
         let inner = SwapChainState {
             swap_chain: vk::SwapchainKHR::null(),
-            acquire_fence: fence,
             format: Format::Bgra8Unorm,
             vk_format: Default::default(),
             color_space: Default::default(),
             present_mode: Default::default(),
             extent: Default::default(),
             images: Vec::new(),
-            queued_resize: None, // TODO: This likely needs to be initialized to something
+            acquired: false,
         };
         let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
             this: v.clone(),
@@ -159,7 +149,7 @@ impl ISurface for Surface {
 
         // TODO: This is unsound and wrong, no checks have been made yet
         unsafe {
-            let mut inner = swap_chain.inner.lock().unwrap();
+            let mut inner = swap_chain.inner.lock();
             swap_chain.build(&mut inner, config)?;
         }
 

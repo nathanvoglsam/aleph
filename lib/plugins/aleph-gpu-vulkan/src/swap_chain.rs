@@ -36,8 +36,8 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
+use parking_lot::Mutex;
 use std::any::TypeId;
-use std::sync::Mutex;
 
 pub struct SwapChain {
     pub(crate) this: AnyWeak<Self>,
@@ -280,7 +280,6 @@ impl SwapChain {
         inner.color_space = color_space;
         inner.present_mode = present_mode;
         inner.images = images.into_vec();
-        inner.queued_resize = None;
 
         Ok(())
     }
@@ -374,7 +373,7 @@ impl SwapChain {
 
 impl Drop for SwapChain {
     fn drop(&mut self) {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.lock();
         unsafe {
             self.device
                 .device_loader
@@ -385,12 +384,11 @@ impl Drop for SwapChain {
 
 pub struct SwapChainState {
     pub swap_chain: vk::SwapchainKHR,
-    pub acquire_fence: vk::Fence,
     pub format: Format,
     pub vk_format: vk::Format,
     pub color_space: vk::ColorSpaceKHR,
     pub present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
     pub images: Vec<vk::Image>,
-    pub queued_resize: Option<(u32, u32)>,
+    pub acquired: bool,
 }
