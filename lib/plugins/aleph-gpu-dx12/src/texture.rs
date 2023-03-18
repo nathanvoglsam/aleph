@@ -30,7 +30,8 @@
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
-use crate::internal::{calc_subresource_index, plane_layer_for_aspect, try_clone_value_into_slot};
+use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
+use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use parking_lot::RwLock;

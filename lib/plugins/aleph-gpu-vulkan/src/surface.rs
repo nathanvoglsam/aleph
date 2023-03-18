@@ -30,8 +30,9 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
-use crate::internal::{try_clone_value_into_slot, unwrap};
+use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
+use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;

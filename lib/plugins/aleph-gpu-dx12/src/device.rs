@@ -53,9 +53,7 @@ use crate::internal::graphics_pipeline_state_stream::{
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
-use crate::internal::{
-    handle_wait_result, plane_layer_for_aspect_flag, try_clone_value_into_slot, unwrap,
-};
+use crate::internal::{handle_wait_result, plane_layer_for_aspect_flag, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -63,6 +61,7 @@ use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use crate::texture::Texture;
+use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;

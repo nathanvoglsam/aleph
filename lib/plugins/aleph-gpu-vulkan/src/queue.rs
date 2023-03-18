@@ -28,7 +28,8 @@
 //
 
 use crate::device::Device;
-use crate::internal::{try_clone_value_into_slot, unwrap};
+use crate::internal::unwrap;
+use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use erupt::{vk, ExtendableFrom};
 use interfaces::any::{AnyArc, AnyWeak, IAny, TraitObject};

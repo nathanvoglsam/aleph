@@ -30,6 +30,23 @@
 #[doc(hidden)]
 pub extern crate aleph_interfaces;
 
+use std::any::TypeId;
+
 pub mod conv;
 pub mod manually_drop;
 pub mod unwrap;
+
+pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
+    src: &T,
+    out: *mut (),
+    expecting: TypeId,
+) -> Option<()> {
+    if expecting == TypeId::of::<T>() {
+        let out = out as *mut T;
+        out.write(src.clone());
+
+        Some(())
+    } else {
+        None
+    }
+}

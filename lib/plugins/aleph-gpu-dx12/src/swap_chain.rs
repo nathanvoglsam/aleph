@@ -28,10 +28,11 @@
 //
 
 use crate::device::Device;
-use crate::internal::{try_clone_value_into_slot, unwrap};
+use crate::internal::unwrap;
 use crate::surface::Surface;
 use crate::texture::Texture;
 use aleph_gpu_impl_utils::manually_drop;
+use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;

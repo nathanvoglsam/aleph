@@ -29,8 +29,9 @@
 
 use crate::command_list::CommandList;
 use crate::internal::conv::*;
-use crate::internal::{try_clone_value_into_slot, unwrap};
+use crate::internal::unwrap;
 use crate::pipeline::GraphicsPipeline;
+use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
 use erupt::vk;

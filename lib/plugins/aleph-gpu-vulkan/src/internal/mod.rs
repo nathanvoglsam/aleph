@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-
 pub const VK_MAJOR_VERSION: u32 = 1;
 pub const VK_MINOR_VERSION: u32 = 3;
 
@@ -38,18 +36,3 @@ pub mod messenger;
 pub mod queue_present_support;
 pub mod set_name;
 pub mod unwrap;
-
-pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
-    src: &T,
-    out: *mut (),
-    expecting: TypeId,
-) -> Option<()> {
-    if expecting == TypeId::of::<T>() {
-        let out = out as *mut T;
-        out.write(src.clone());
-
-        Some(())
-    } else {
-        None
-    }
-}
