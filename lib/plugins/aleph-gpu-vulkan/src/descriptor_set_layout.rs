@@ -38,6 +38,7 @@ pub struct DescriptorSetLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
+    pub(crate) pool_sizes: Vec<vk::DescriptorPoolSizeBuilder<'static>>,
 }
 
 declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);

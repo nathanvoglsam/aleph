@@ -29,6 +29,7 @@
 
 use crate::adapter::Adapter;
 use crate::context::Context;
+use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::Fence;
 use crate::internal::conv::*;
@@ -257,15 +258,34 @@ impl IDevice for Device {
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
         let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
 
+        let mut sizes = [0; 11];
+
         let mut bindings = Vec::with_capacity(desc.items.len());
         for v in desc.items {
+            let descriptor_type = descriptor_type_to_vk(v.binding_type);
+            let descriptor_count = v.binding_count.map(|v| v.get()).unwrap_or(1);
+
+            sizes[descriptor_type.0 as usize] += descriptor_count;
+
             let binding = vk::DescriptorSetLayoutBindingBuilder::new()
                 .binding(v.binding_num)
-                .descriptor_type(descriptor_type_to_vk(v.binding_type))
-                .descriptor_count(v.binding_count.map(|v| v.get()).unwrap_or(1))
+                .descriptor_type(descriptor_type)
+                .descriptor_count(descriptor_count)
                 .stage_flags(stage_flags);
             // .immutable_samplers()
             bindings.push(binding);
+        }
+
+        let mut pool_sizes = Vec::with_capacity(sizes.len());
+        for (i, v) in sizes.iter().copied().enumerate() {
+            // Accumulate any non-zero pool size into the list
+            if v > 0 {
+                pool_sizes.push(
+                    vk::DescriptorPoolSizeBuilder::new()
+                        ._type(vk::DescriptorType(i as i32))
+                        .descriptor_count(v),
+                );
+            }
         }
 
         let create_info = vk::DescriptorSetLayoutCreateInfoBuilder::new().bindings(&bindings);
@@ -282,6 +302,7 @@ impl IDevice for Device {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             descriptor_set_layout,
+            pool_sizes,
         });
         Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(out, |v| v))
     }
@@ -291,9 +312,38 @@ impl IDevice for Device {
 
     fn create_descriptor_pool(
         &self,
-        _desc: &DescriptorPoolDesc,
+        desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        todo!()
+        let layout = unwrap::descriptor_set_layout(desc.layout)
+            ._this
+            .upgrade()
+            .unwrap();
+
+        let mut pool_sizes = layout.pool_sizes.clone();
+        for size in &mut pool_sizes {
+            size.descriptor_count *= desc.num_sets;
+        }
+
+        let create_info = vk::DescriptorPoolCreateInfoBuilder::new()
+            .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET) // TODO: perhaps this could be exposed to the API? D3D12 could do it easy as just a bump allocator
+            .max_sets(desc.num_sets)
+            .pool_sizes(&pool_sizes);
+
+        let descriptor_pool = unsafe {
+            self.device_loader
+                .create_descriptor_pool(&create_info, None)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        set_name(&self.device_loader, descriptor_pool, desc.name);
+
+        let pool = Box::new(DescriptorPool {
+            _device: self.this.upgrade().unwrap(),
+            _layout: layout,
+            descriptor_pool: Default::default(),
+        });
+
+        Ok(pool)
     }
 
     // ========================================================================================== //

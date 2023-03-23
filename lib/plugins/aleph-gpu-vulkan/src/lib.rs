@@ -39,6 +39,7 @@ mod buffer;
 mod command_list;
 mod context;
 mod context_provider;
+mod descriptor_pool;
 mod descriptor_set_layout;
 mod device;
 mod encoder;
