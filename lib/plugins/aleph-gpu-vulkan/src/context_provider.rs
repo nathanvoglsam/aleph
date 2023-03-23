@@ -149,6 +149,7 @@ impl IContextProvider for ContextProvider {
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     this: v.clone(),
+                    entry_loader,
                     instance_loader,
                     messenger,
                 });

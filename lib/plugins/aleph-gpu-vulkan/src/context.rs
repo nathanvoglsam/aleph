@@ -40,6 +40,7 @@ use std::ffi::CStr;
 
 pub struct Context {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) entry_loader: erupt::EntryLoader,
     pub(crate) instance_loader: erupt::InstanceLoader,
     pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
