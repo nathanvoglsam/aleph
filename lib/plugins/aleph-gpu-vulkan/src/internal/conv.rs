@@ -476,3 +476,35 @@ pub const fn descriptor_type_to_vk(v: DescriptorType) -> vk::DescriptorType {
         DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
     }
 }
+
+pub const fn sampler_filter_to_vk(v: SamplerFilter) -> vk::Filter {
+    match v {
+        SamplerFilter::Nearest => vk::Filter::NEAREST,
+        SamplerFilter::Linear => vk::Filter::LINEAR,
+    }
+}
+
+pub const fn sampler_mip_filter_to_vk(v: SamplerMipFilter) -> vk::SamplerMipmapMode {
+    match v {
+        SamplerMipFilter::Nearest => vk::SamplerMipmapMode::NEAREST,
+        SamplerMipFilter::Linear => vk::SamplerMipmapMode::LINEAR,
+    }
+}
+
+pub const fn sampler_address_mode_to_vk(v: SamplerAddressMode) -> vk::SamplerAddressMode {
+    match v {
+        SamplerAddressMode::Wrap => vk::SamplerAddressMode::REPEAT,
+        SamplerAddressMode::Mirror => vk::SamplerAddressMode::MIRRORED_REPEAT,
+        SamplerAddressMode::Clamp => vk::SamplerAddressMode::CLAMP_TO_EDGE,
+        SamplerAddressMode::Border => vk::SamplerAddressMode::CLAMP_TO_BORDER,
+        SamplerAddressMode::MirrorOnce => vk::SamplerAddressMode::MIRROR_CLAMP_TO_EDGE,
+    }
+}
+
+pub const fn sampler_border_color_to_vk(v: SamplerBorderColor) -> vk::BorderColor {
+    match v {
+        SamplerBorderColor::BlackTransparent => vk::BorderColor::FLOAT_TRANSPARENT_BLACK,
+        SamplerBorderColor::BlackOpaque => vk::BorderColor::FLOAT_OPAQUE_BLACK,
+        SamplerBorderColor::WhiteOpaque => vk::BorderColor::FLOAT_OPAQUE_WHITE,
+    }
+}

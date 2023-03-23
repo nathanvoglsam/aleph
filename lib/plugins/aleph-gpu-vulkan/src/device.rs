@@ -38,6 +38,7 @@ use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
+use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
@@ -414,9 +415,46 @@ impl IDevice for Device {
 
     fn create_sampler(
         &self,
-        _desc: &SamplerDesc,
+        desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
-        todo!()
+        let mut create_info = vk::SamplerCreateInfoBuilder::new()
+            .mag_filter(sampler_filter_to_vk(desc.mag_filter))
+            .min_filter(sampler_filter_to_vk(desc.min_filter))
+            .mipmap_mode(sampler_mip_filter_to_vk(desc.mip_filter))
+            .address_mode_u(sampler_address_mode_to_vk(desc.address_mode_u))
+            .address_mode_v(sampler_address_mode_to_vk(desc.address_mode_v))
+            .address_mode_w(sampler_address_mode_to_vk(desc.address_mode_w))
+            .mip_lod_bias(desc.lod_bias)
+            .anisotropy_enable(desc.enable_anisotropy)
+            .max_anisotropy(desc.max_anisotropy as f32)
+            .min_lod(desc.min_lod)
+            .max_lod(desc.max_lod)
+            .border_color(sampler_border_color_to_vk(desc.border_color))
+            .unnormalized_coordinates(false);
+
+        if let Some(v) = desc.compare_op {
+            create_info = create_info
+                .compare_enable(true)
+                .compare_op(compare_op_to_vk(v))
+        }
+
+        let sampler = unsafe {
+            self.device_loader
+                .create_sampler(&create_info, None)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        set_name(&self.device_loader, sampler, desc.name);
+
+        let name = desc.name.map(String::from);
+        let out = AnyArc::new_cyclic(move |v| Sampler {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            sampler,
+            desc: desc.clone().strip_name(),
+            name,
+        });
+        Ok(AnyArc::map::<dyn ISampler, _>(out, |v| v))
     }
 
     // ========================================================================================== //
