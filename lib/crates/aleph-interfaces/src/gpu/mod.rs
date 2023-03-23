@@ -794,6 +794,10 @@ impl DescriptorSetHandle {
     pub unsafe fn from_raw(v: NonNull<()>) -> Self {
         DescriptorSetHandle(v)
     }
+
+    pub unsafe fn from_raw_int(v: u64) -> Option<Self> {
+        NonNull::new(v as *mut ()).map(DescriptorSetHandle)
+    }
 }
 
 impl From<DescriptorSetHandle> for NonNull<()> {
@@ -4171,7 +4175,13 @@ pub enum DescriptorPoolAllocateError {
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 
+    #[error("The descriptor pool's backing memory has been exhausted due to pool fragmentation")]
+    FragmentedPool,
+
     #[error("The descriptor pool's backing memory has been exhausted")]
+    OutOfPoolMemory,
+
+    #[error("The host or device's memory has been exhausted")]
     OutOfMemory,
 }
 
