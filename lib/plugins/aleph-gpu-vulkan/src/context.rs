@@ -58,7 +58,6 @@ impl IGetPlatformInterface for Context {
 impl Context {
     fn select_device(
         instance: &erupt::InstanceLoader,
-        // features: &PhysicalDeviceFeatures,
         major_version: u32,
         minor_version: u32,
         surface: Option<vk::SurfaceKHR>,
@@ -72,29 +71,18 @@ impl Context {
         let mut scores: Vec<(&str, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
 
         for physical_device in devices.iter().copied() {
-            let (properties, features, extensions) = unsafe {
-                let properties = instance.get_physical_device_properties(physical_device);
-                let features = instance.get_physical_device_features(physical_device);
-                let extensions = instance
-                    .enumerate_device_extension_properties(physical_device, None, None)
-                    .result()
-                    .unwrap_or_default();
-                (properties, features, extensions)
-            };
-
             // Push the score for the device, if the device meets the minimum requirements
             if let Some(score) = Self::score_device(
                 instance,
                 physical_device,
-                &properties,
-                &features,
-                &extensions,
                 major_version,
                 minor_version,
                 surface,
                 power_class,
             ) {
-                // Convert the GPU name to a string
+                let properties =
+                    unsafe { instance.get_physical_device_properties(physical_device) };
+
                 let name = unsafe {
                     CStr::from_ptr(properties.device_name.as_ptr())
                         .to_str()
@@ -117,9 +105,6 @@ impl Context {
     fn score_device(
         instance: &erupt::InstanceLoader,
         physical_device: vk::PhysicalDevice,
-        properties: &vk::PhysicalDeviceProperties,
-        _features: &vk::PhysicalDeviceFeatures,
-        extensions: &[vk::ExtensionProperties],
         major_version: u32,
         minor_version: u32,
         surface: Option<vk::SurfaceKHR>,
@@ -127,17 +112,50 @@ impl Context {
     ) -> Option<i32> {
         use erupt::extensions::*;
 
+        let (properties, _features, extensions) = unsafe {
+            let properties = instance.get_physical_device_properties(physical_device);
+            let features = instance.get_physical_device_features(physical_device);
+            let extensions = instance
+                .enumerate_device_extension_properties(physical_device, None, None)
+                .result()
+                .unwrap_or_default();
+            (properties, features, extensions)
+        };
+
+        {
+            let vendor = pci_id_to_vendor(properties.vendor_id);
+
+            let name = unsafe {
+                CStr::from_ptr(properties.device_name.as_ptr())
+                    .to_str()
+                    .unwrap()
+            };
+
+            log::trace!("=====================");
+            log::trace!("Considering Device: ");
+            log::trace!("Vendor : {vendor}");
+            log::trace!("Name   : {name}");
+        }
+
         let mut score = 0i32;
 
         unsafe {
-            let khr_surface_name = CStr::from_ptr(khr_surface::KHR_SURFACE_EXTENSION_NAME);
+            let ext_name = CStr::from_ptr(khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME)
+                .to_str()
+                .unwrap_unchecked();
+
             let surface_extension_supported = extensions
                 .iter()
-                .map(|v| CStr::from_ptr(v.extension_name.as_ptr()))
-                .any(|v| v == khr_surface_name);
+                .map(|v| {
+                    CStr::from_ptr(v.extension_name.as_ptr())
+                        .to_str()
+                        .unwrap_unchecked()
+                })
+                .any(|v| v == ext_name);
 
             // The VK_KHR_surface must be supported if a surface is requested
             if surface.is_some() & !surface_extension_supported {
+                log::trace!("Device doesn't support '{ext_name}' extension");
                 return None;
             }
         }
@@ -153,18 +171,25 @@ impl Context {
             // No present modes means we can't present to the surface. If empty then the surface
             // is unsupported.
             if present_modes.is_empty() {
+                log::trace!("Device doesn't expose any present modes for requested surface");
                 return None;
             }
 
             // We require at least a single format for the surface to be supported.
             if surface_formats.is_empty() {
+                log::trace!("Device doesn't expose any image formats for requested surface");
                 return None;
             }
         }
 
         // Major version breaks API compatibility so the expected version must match exactly
         let device_major_version = erupt::vk1_0::api_version_major(properties.api_version);
-        if device_major_version == major_version {
+        if device_major_version < major_version {
+            log::trace!(
+                "Device doesn't support required Vulkan version. Got {}.x. Expects {}.x",
+                device_major_version,
+                major_version
+            );
             return None;
         }
 
@@ -172,6 +197,13 @@ impl Context {
         // at least the requested minor version
         let device_minor_version = erupt::vk1_0::api_version_minor(properties.api_version);
         if device_minor_version < minor_version {
+            log::trace!(
+                "Device doesn't support required Vulkan version. Got {}.{} Expects at least {}.{}",
+                device_major_version,
+                device_minor_version,
+                major_version,
+                minor_version
+            );
             return None;
         }
 
