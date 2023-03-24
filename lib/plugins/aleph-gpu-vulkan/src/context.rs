@@ -30,6 +30,7 @@
 use crate::adapter::Adapter;
 use crate::internal::{unwrap, VK_MAJOR_VERSION, VK_MINOR_VERSION};
 use crate::surface::Surface;
+use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
@@ -99,15 +100,9 @@ impl Context {
                         .to_str()
                         .unwrap()
                 };
-                let vendor = match properties.vendor_id {
-                    0x1002 => AdapterVendor::AMD,
-                    0x1010 => AdapterVendor::ImaginationTechnology,
-                    0x10DE => AdapterVendor::NVIDIA,
-                    0x13B5 => AdapterVendor::ARM,
-                    0x5143 => AdapterVendor::Qualcomm,
-                    0x8086 => AdapterVendor::Intel,
-                    _ => AdapterVendor::Unknown,
-                };
+
+                let vendor = pci_id_to_vendor(properties.vendor_id);
+
                 scores.push((name, vendor, physical_device, score));
             }
         }

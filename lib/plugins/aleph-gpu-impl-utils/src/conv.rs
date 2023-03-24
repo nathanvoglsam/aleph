@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use aleph_interfaces::gpu::*;
+
 #[inline(always)]
 #[allow(clippy::erasing_op, clippy::identity_op)]
 pub fn decode_u32_color_to_float(v: u32) -> [f32; 4] {
@@ -35,4 +37,16 @@ pub fn decode_u32_color_to_float(v: u32) -> [f32; 4] {
     let g = ((v >> (8 * 2)) & 0xFF) as f32 / 255.0;
     let r = ((v >> (8 * 3)) & 0xFF) as f32 / 255.0;
     [r, g, b, a]
+}
+
+pub const fn pci_id_to_vendor(v: u32) -> AdapterVendor {
+    match v {
+        0x1002 => AdapterVendor::AMD,
+        0x1010 => AdapterVendor::ImaginationTechnology,
+        0x10DE => AdapterVendor::NVIDIA,
+        0x13B5 => AdapterVendor::ARM,
+        0x5143 => AdapterVendor::Qualcomm,
+        0x8086 => AdapterVendor::Intel,
+        _ => AdapterVendor::Unknown,
+    }
 }

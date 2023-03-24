@@ -35,6 +35,7 @@ use crate::internal::feature_support::FeatureSupport;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::internal::unwrap;
 use crate::surface::Surface;
+use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
@@ -220,17 +221,9 @@ impl Context {
                     // Get the adapter description so we can decide if we want to use it or not
                     let desc = adapter.GetDesc1().unwrap();
 
+                    let vendor = pci_id_to_vendor(desc.VendorId);
                     let name =
                         adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
-                    let vendor = match desc.VendorId {
-                        0x1002 => AdapterVendor::AMD,
-                        0x1010 => AdapterVendor::ImaginationTechnology,
-                        0x10DE => AdapterVendor::NVIDIA,
-                        0x13B5 => AdapterVendor::ARM,
-                        0x5143 => AdapterVendor::Qualcomm,
-                        0x8086 => AdapterVendor::Intel,
-                        _ => AdapterVendor::Unknown,
-                    };
                     log::trace!("=====================");
                     log::trace!("Considering Adapter: ");
                     log::trace!("Vendor : {}", vendor);
@@ -320,16 +313,8 @@ impl IContext for Context {
                     .GetDesc1()
                     .expect("Failed to get adapter description. Something very wrong")
             };
+            let vendor = pci_id_to_vendor(desc.VendorId);
             let name = adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
-            let vendor = match desc.VendorId {
-                0x1002 => AdapterVendor::AMD,
-                0x1010 => AdapterVendor::ImaginationTechnology,
-                0x10DE => AdapterVendor::NVIDIA,
-                0x13B5 => AdapterVendor::ARM,
-                0x5143 => AdapterVendor::Qualcomm,
-                0x8086 => AdapterVendor::Intel,
-                _ => AdapterVendor::Unknown,
-            };
 
             let adapter = AnyArc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
