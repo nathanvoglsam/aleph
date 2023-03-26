@@ -193,7 +193,7 @@ impl IPlugin for PluginRender {
                     let acquired_index = data
                         .swap_chain
                         .acquire_next_image(&AcquireDesc {
-                            signal_semaphores: &[acquire_semaphore.as_ref()],
+                            signal_semaphore: acquire_semaphore.as_ref(),
                         })
                         .unwrap();
                     let acquired_image = data.swap_images[acquired_index as usize].clone();
