@@ -31,6 +31,7 @@ use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
+use crate::internal::unwrap;
 use crate::surface::Surface;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
@@ -85,7 +86,35 @@ impl ISwapChain for SwapChain {
     }
 
     fn get_config(&self) -> SwapChainConfiguration {
-        todo!()
+        let inner = self.inner.lock();
+
+        let present_queue = if self
+            .queue_support
+            .contains(QueuePresentSupportFlags::GENERAL)
+        {
+            QueueType::General
+        } else if self
+            .queue_support
+            .contains(QueuePresentSupportFlags::COMPUTE)
+        {
+            QueueType::Compute
+        } else if self
+            .queue_support
+            .contains(QueuePresentSupportFlags::TRANSFER)
+        {
+            QueueType::Transfer
+        } else {
+            panic!("ISwapChain with no supported present queues (how?)")
+        };
+
+        SwapChainConfiguration {
+            format: inner.format,
+            width: inner.extent.width,
+            height: inner.extent.height,
+            present_mode: inner.present_mode,
+            buffer_count: inner.images.len() as u32,
+            present_queue,
+        }
     }
 
     fn rebuild(
@@ -99,8 +128,29 @@ impl ISwapChain for SwapChain {
         todo!()
     }
 
-    unsafe fn acquire_next_image(&self, _desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
-        todo!()
+    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
+        let semaphore = unwrap::semaphore(desc.signal_semaphore);
+
+        let inner = self.inner.lock();
+        let result = self.device.device_loader.acquire_next_image_khr(
+            inner.swap_chain,
+            u64::MAX - 1,
+            semaphore.semaphore,
+            vk::Fence::null(),
+        );
+
+        return match result.raw {
+            vk::Result::SUBOPTIMAL_KHR => todo!(),
+            vk::Result::NOT_READY => unimplemented!(),
+            vk::Result::TIMEOUT => unimplemented!(),
+            vk::Result::ERROR_OUT_OF_DATE_KHR => Err(ImageAcquireError::OutOfDate),
+            vk::Result::ERROR_SURFACE_LOST_KHR => Err(ImageAcquireError::SurfaceLost),
+            _ => {
+                // Coerce everything we don't explicitly handle to an error.
+                let index = result.map_err(|v| anyhow!(v))?;
+                Ok(index)
+            }
+        };
     }
 
     // unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
@@ -278,13 +328,13 @@ impl SwapChain {
         inner.format = config.format;
         inner.vk_format = format;
         inner.color_space = color_space;
-        inner.present_mode = present_mode;
+        inner.vk_present_mode = present_mode;
         inner.images = images.into_vec();
 
         Ok(())
     }
 
-    unsafe fn select_buffer_count(
+    fn select_buffer_count(
         present_mode: vk::PresentModeKHR,
         capabilities: &vk::SurfaceCapabilitiesKHR,
     ) -> u32 {
@@ -387,7 +437,8 @@ pub struct SwapChainState {
     pub format: Format,
     pub vk_format: vk::Format,
     pub color_space: vk::ColorSpaceKHR,
-    pub present_mode: vk::PresentModeKHR,
+    pub present_mode: PresentationMode,
+    pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
     pub images: Vec<vk::Image>,
     pub acquired: bool,

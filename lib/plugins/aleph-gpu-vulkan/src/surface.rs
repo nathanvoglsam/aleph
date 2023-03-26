@@ -136,6 +136,7 @@ impl ISurface for Surface {
             vk_format: Default::default(),
             color_space: Default::default(),
             present_mode: Default::default(),
+            vk_present_mode: Default::default(),
             extent: Default::default(),
             images: Vec::new(),
             acquired: false,

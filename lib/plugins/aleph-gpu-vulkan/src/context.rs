@@ -40,8 +40,8 @@ use std::any::TypeId;
 use std::ffi::CStr;
 
 pub struct Context {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) entry_loader: erupt::EntryLoader,
+    pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _entry_loader: erupt::EntryLoader,
     pub(crate) instance_loader: erupt::InstanceLoader,
     pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
@@ -261,15 +261,15 @@ impl Context {
 
 impl IContext for Context {
     fn upgrade(&self) -> AnyArc<dyn IContext> {
-        AnyArc::map::<dyn IContext, _>(self.this.upgrade().unwrap(), |v| v)
+        AnyArc::map::<dyn IContext, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
@@ -284,7 +284,7 @@ impl IContext for Context {
         .map(|(name, vendor, physical_device)| {
             let adapter = AnyArc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
-                context: self.this.upgrade().unwrap(),
+                context: self._this.upgrade().unwrap(),
                 name,
                 vendor,
                 physical_device,
@@ -415,7 +415,7 @@ impl IContext for Context {
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),
             surface,
-            context: self.this.upgrade().unwrap(),
+            context: self._this.upgrade().unwrap(),
         });
         Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
     }
