@@ -66,3 +66,13 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
         self._this.weak_count()
     }
 }
+
+impl Drop for DescriptorSetLayout {
+    fn drop(&mut self) {
+        unsafe {
+            self._device
+                .device_loader
+                .destroy_descriptor_set_layout(self.descriptor_set_layout, None);
+        }
+    }
+}

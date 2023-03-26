@@ -508,3 +508,16 @@ pub const fn sampler_border_color_to_vk(v: SamplerBorderColor) -> vk::BorderColo
         SamplerBorderColor::WhiteOpaque => vk::BorderColor::FLOAT_OPAQUE_WHITE,
     }
 }
+
+pub const fn shader_type_to_vk(v: ShaderType) -> vk::ShaderStageFlagBits {
+    match v {
+        ShaderType::Compute => vk::ShaderStageFlagBits::COMPUTE,
+        ShaderType::Vertex => vk::ShaderStageFlagBits::VERTEX,
+        ShaderType::Hull => vk::ShaderStageFlagBits::TESSELLATION_CONTROL,
+        ShaderType::Domain => vk::ShaderStageFlagBits::TESSELLATION_EVALUATION,
+        ShaderType::Geometry => vk::ShaderStageFlagBits::GEOMETRY,
+        ShaderType::Fragment => vk::ShaderStageFlagBits::FRAGMENT,
+        ShaderType::Amplification => vk::ShaderStageFlagBits::TASK_NV,
+        ShaderType::Mesh => vk::ShaderStageFlagBits::MESH_NV,
+    }
+}

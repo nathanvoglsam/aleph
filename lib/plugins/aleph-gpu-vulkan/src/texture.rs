@@ -39,6 +39,7 @@ pub struct Texture {
     pub(crate) device: AnyArc<Device>,
     pub(crate) image: vk::Image,
     pub(crate) vk_format: vk::Format,
+    pub(crate) is_owned: bool,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -74,7 +75,10 @@ impl ITexture for Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
-            self.device.device_loader.destroy_image(self.image, None);
+            // Some images we don't own, like swap chain images, so we shouldn't destroy them
+            if self.is_owned {
+                self.device.device_loader.destroy_image(self.image, None);
+            }
         }
     }
 }

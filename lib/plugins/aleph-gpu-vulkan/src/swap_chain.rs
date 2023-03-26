@@ -33,6 +33,7 @@ use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::unwrap;
 use crate::surface::Surface;
+use crate::texture::Texture;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
@@ -87,45 +88,51 @@ impl ISwapChain for SwapChain {
 
     fn get_config(&self) -> SwapChainConfiguration {
         let inner = self.inner.lock();
-
-        let present_queue = if self
-            .queue_support
-            .contains(QueuePresentSupportFlags::GENERAL)
-        {
-            QueueType::General
-        } else if self
-            .queue_support
-            .contains(QueuePresentSupportFlags::COMPUTE)
-        {
-            QueueType::Compute
-        } else if self
-            .queue_support
-            .contains(QueuePresentSupportFlags::TRANSFER)
-        {
-            QueueType::Transfer
-        } else {
-            panic!("ISwapChain with no supported present queues (how?)")
-        };
-
-        SwapChainConfiguration {
-            format: inner.format,
-            width: inner.extent.width,
-            height: inner.extent.height,
-            present_mode: inner.present_mode,
-            buffer_count: inner.images.len() as u32,
-            present_queue,
-        }
+        inner.get_config(self.queue_support)
     }
 
     fn rebuild(
         &self,
-        _new_size: Option<Extent2D>,
+        new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
-        todo!()
+        // Lock the swap chain immediately, it prevents acquiring any more images
+        let mut inner = self.inner.lock();
+
+        // Trigger a wait idle to flush the GPU of work. Once this returns no work can be in flight
+        // on any swap chain image.
+        self.device.wait_idle();
+
+        // Grab a snapshot of the current 'SwapChainConfiguration' that we use as the base for
+        // recreating the vulkan swap chain. Vulkan may change support for present modes or
+        // resolutions depending on whether the window is fullscreen exclusive or windowed.
+        let mut old_config = inner.get_config(self.queue_support);
+        if let Some(new_size) = new_size {
+            // Override the width/height if the user requests a specific extent. This is just a
+            // suggestion and may be ignored (almost certainly will on Vulkan Windows)
+            old_config.width = new_size.width;
+            old_config.height = new_size.height;
+        }
+
+        unsafe {
+            self.build(&mut inner, &old_config).unwrap();
+        }
+
+        // Return the config after 'build' which represents the actual state of the swap chain. The
+        // build function takes the given config as more of a suggestion as Vulkan's support matrix
+        // for swap chain stuff is stupidly complex and largely has safe fallbacks.
+        //
+        // When the exact config requested can't be matched the implementation will fall back to
+        // values that will work.
+        Ok(inner.get_config(self.queue_support))
     }
 
-    fn get_images(&self, _images: &mut [Option<AnyArc<dyn ITexture>>]) {
-        todo!()
+    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]) {
+        let lock = self.inner.lock();
+        let inner_images = &lock.images;
+
+        for (out, v) in images.iter_mut().zip(inner_images.iter()) {
+            *out = Some(v.upgrade());
+        }
     }
 
     unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
@@ -152,107 +159,6 @@ impl ISwapChain for SwapChain {
             }
         };
     }
-
-    // unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
-    //     let mut inner = self.inner.lock().unwrap();
-    //
-    //     if let Some((width, height)) = inner.queued_resize.take() {
-    //         // TODO: Need to investigate how to correctly synchronize this. It should only
-    //         //       require handling when the old swap chain is destroyed as oldSwapChain is
-    //         //       specifically designed to allow already in flight frames to finish
-    //         self.device.wait_idle();
-    //         self.device.garbage_collect();
-    //
-    //         let width = if width == u32::MAX {
-    //             inner.extent.width
-    //         } else {
-    //             width
-    //         };
-    //         let height = if height == u32::MAX {
-    //             inner.extent.height
-    //         } else {
-    //             height
-    //         };
-    //         let config = SwapChainConfiguration {
-    //             format: inner.format,
-    //             width,
-    //             height,
-    //             present_mode: todo!(),
-    //             preferred_queue: todo!(),
-    //         };
-    //         self.build(&mut inner, &config)
-    //             .map_err(|_| AcquireImageError::SurfaceNotAvailable)?;
-    //     }
-    //
-    //     unsafe {
-    //         let result = self.device.device_loader.acquire_next_image_khr(
-    //             inner.swap_chain,
-    //             u64::MAX,
-    //             vk::Semaphore::null(),
-    //             inner.acquire_fence,
-    //         );
-    //         match result.raw {
-    //             vk::Result::SUCCESS | vk::Result::SUBOPTIMAL_KHR => {
-    //                 let value = result.value.unwrap();
-    //
-    //                 let image = inner.images[value as usize];
-    //
-    //                 if result.raw == vk::Result::SUBOPTIMAL_KHR {
-    //                     inner.queued_resize = Some((u32::MAX, u32::MAX));
-    //                 }
-    //
-    //                 // As an initial solution we'll just use a fence to ensure the image is ready
-    //                 // to use.
-    //                 // TODO: Profile to see if it's worth the effort being smarter about this. Is
-    //                 //       blocking the CPU here that big of a deal?
-    //                 self.device
-    //                     .device_loader
-    //                     .wait_for_fences(&[inner.acquire_fence], true, u64::MAX)
-    //                     .map_err(|e| {
-    //                         anyhow!("Failed to wait on acquire fence with code '{}'", e)
-    //                     })?;
-    //                 self.device
-    //                     .device_loader
-    //                     .reset_fences(&[inner.acquire_fence])
-    //                     .map_err(|e| anyhow!("Failed to reset acquire fence with code '{}'", e))?;
-    //
-    //                 let image = AnyArc::new_cyclic(move |v| SwapTexture {
-    //                     this: v.clone(),
-    //                     swap_chain: self.this.upgrade().unwrap(),
-    //                     image,
-    //                     desc: TextureDesc {
-    //                         width: inner.extent.width,
-    //                         height: inner.extent.height,
-    //                         depth: 1,
-    //                         format: inner.format,
-    //                         dimension: TextureDimension::Texture2D,
-    //                         clear_value: None,
-    //                         array_size: 1,
-    //                         mip_levels: 1,
-    //                         sample_count: 1,
-    //                         sample_quality: 0,
-    //                         allow_unordered_access: false,
-    //                         allow_cube_face: false,
-    //                         is_render_target: true,
-    //                         name: None,
-    //                     },
-    //                     vk_format: inner.vk_format,
-    //                     name: None,
-    //                 });
-    //                 todo!()
-    //                 // Ok(AnyArc::map::<dyn ITexture, _>(image, |v| v))
-    //             }
-    //             vk::Result::ERROR_OUT_OF_DATE_KHR => {
-    //                 inner.queued_resize = Some((u32::MAX, u32::MAX));
-    //                 todo!()
-    //             }
-    //             _ => Err(AcquireImageError::Platform(anyhow!(
-    //                 "Failed to acquire swap chain image with error '{}'",
-    //                 result
-    //             ))),
-    //         }
-    //     }
-    // }
 }
 
 impl SwapChain {
@@ -324,12 +230,43 @@ impl SwapChain {
             .result()
             .map_err(|e| anyhow!(e))?;
 
+        let images: Vec<_> = images
+            .iter()
+            .map(|image| {
+                let desc = TextureDesc {
+                    width: swap_create_info.image_extent.width,
+                    height: swap_create_info.image_extent.height,
+                    depth: 1,
+                    format: config.format,
+                    dimension: TextureDimension::Texture2D,
+                    clear_value: None,
+                    array_size: 1,
+                    mip_levels: 1,
+                    sample_count: 1,
+                    sample_quality: 0,
+                    allow_unordered_access: false,
+                    allow_cube_face: false,
+                    is_render_target: true,
+                    name: None,
+                };
+                AnyArc::new_cyclic(move |v| Texture {
+                    this: v.clone(),
+                    device: self.device.clone(),
+                    image: *image,
+                    vk_format: swap_create_info.image_format,
+                    is_owned: false,
+                    desc,
+                    name: None,
+                })
+            })
+            .collect();
+
         inner.extent = extents;
         inner.format = config.format;
         inner.vk_format = format;
         inner.color_space = color_space;
         inner.vk_present_mode = present_mode;
-        inner.images = images.into_vec();
+        inner.images = images;
 
         Ok(())
     }
@@ -440,6 +377,29 @@ pub struct SwapChainState {
     pub present_mode: PresentationMode,
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
-    pub images: Vec<vk::Image>,
+    pub images: Vec<AnyArc<Texture>>,
     pub acquired: bool,
+}
+
+impl SwapChainState {
+    pub fn get_config(&self, queue_support: QueuePresentSupportFlags) -> SwapChainConfiguration {
+        let present_queue = if queue_support.contains(QueuePresentSupportFlags::GENERAL) {
+            QueueType::General
+        } else if queue_support.contains(QueuePresentSupportFlags::COMPUTE) {
+            QueueType::Compute
+        } else if queue_support.contains(QueuePresentSupportFlags::TRANSFER) {
+            QueueType::Transfer
+        } else {
+            panic!("ISwapChain with no supported present queues (how?)")
+        };
+
+        SwapChainConfiguration {
+            format: self.format,
+            width: self.extent.width,
+            height: self.extent.height,
+            present_mode: self.present_mode,
+            buffer_count: self.images.len() as u32,
+            present_queue,
+        }
+    }
 }

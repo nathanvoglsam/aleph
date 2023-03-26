@@ -28,6 +28,7 @@
 //
 
 use crate::adapter::Adapter;
+use crate::command_list::CommandList;
 use crate::context::Context;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
@@ -42,7 +43,7 @@ use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
-use erupt::vk;
+use erupt::{vk, ExtendableFrom};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
@@ -131,6 +132,10 @@ impl IDevice for Device {
         let builder =
             vk::GraphicsPipelineCreateInfoBuilder::new().layout(pipeline_layout.pipeline_layout);
 
+        let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
+        let dynamic_state =
+            vk::PipelineDynamicStateCreateInfoBuilder::new().dynamic_states(&dynamic_states);
+
         // Translate the vertex input state
         let vertex_binding_descriptions: Vec<_> = Self::translate_vertex_bindings(desc);
         let vertex_attribute_descriptions: Vec<_> = Self::translate_vertex_attributes(desc);
@@ -139,17 +144,39 @@ impl IDevice for Device {
             &vertex_attribute_descriptions,
         );
 
+        let viewport_state = vk::PipelineViewportStateCreateInfoBuilder::new()
+            .viewport_count(1)
+            .scissor_count(1);
         let input_assembly_state = Self::translate_input_assembly_state(desc);
         let rasterization_state = Self::translate_rasterization_state(desc);
         let depth_stencil_state = Self::translate_depth_stencil_state(desc);
 
+        let mut color_formats = Vec::with_capacity(desc.render_target_formats.len());
+        let mut dynamic_rendering = Self::translate_framebuffer_info(desc, &mut color_formats);
+
         let attachments = Self::translate_color_attachment_state(desc);
         let color_blend_state = Self::translate_color_blend_state(&attachments);
 
+        let stages: Vec<_> = desc
+            .shader_stages
+            .iter()
+            .map(unwrap::shader_d)
+            .map(|v| {
+                vk::PipelineShaderStageCreateInfoBuilder::new()
+                    .stage(v.vk_shader_type)
+                    .module(v.module)
+                    .name(v.entry_point.as_ref())
+            })
+            .collect();
+
+        let builder = builder.dynamic_state(&dynamic_state);
+        let builder = builder.stages(&stages);
         let builder = builder.vertex_input_state(&vertex_input_state);
+        let builder = builder.viewport_state(&viewport_state);
         let builder = builder.input_assembly_state(&input_assembly_state);
         let builder = builder.rasterization_state(&rasterization_state);
         let builder = builder.depth_stencil_state(&depth_stencil_state);
+        let builder = builder.extend_from(&mut dynamic_rendering);
         let builder = builder.color_blend_state(&color_blend_state);
 
         let pipeline = unsafe {
@@ -241,6 +268,7 @@ impl IDevice for Device {
                 this: v.clone(),
                 device: self.this.upgrade().unwrap(),
                 shader_type: options.shader_type,
+                vk_shader_type: shader_type_to_vk(options.shader_type),
                 module,
                 entry_point,
             });
@@ -462,9 +490,45 @@ impl IDevice for Device {
 
     fn create_command_list(
         &self,
-        _desc: &CommandListDesc,
+        desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        todo!()
+        let family_index = match desc.queue_type {
+            QueueType::General => self.general_queue.as_ref().unwrap().info.family_index,
+            QueueType::Compute => self.compute_queue.as_ref().unwrap().info.family_index,
+            QueueType::Transfer => self.transfer_queue.as_ref().unwrap().info.family_index,
+        };
+
+        let create_info = vk::CommandPoolCreateInfoBuilder::new()
+            .flags(vk::CommandPoolCreateFlags::TRANSIENT)
+            .queue_family_index(family_index);
+        let command_pool = unsafe {
+            self.device_loader
+                .create_command_pool(&create_info, None)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        let allocate_info = vk::CommandBufferAllocateInfoBuilder::new()
+            .command_pool(command_pool)
+            .level(vk::CommandBufferLevel::PRIMARY)
+            .command_buffer_count(1);
+        let command_buffer = unsafe {
+            self.device_loader
+                .allocate_command_buffers(&allocate_info)
+                .map_err(|v| anyhow!(v))?
+        };
+        let command_buffer = command_buffer[0];
+
+        set_name(&self.device_loader, command_pool, desc.name);
+        set_name(&self.device_loader, command_buffer, desc.name);
+
+        let out = Box::new(CommandList {
+            _device: self.this.upgrade().unwrap(),
+            pool: command_pool,
+            buffer: command_buffer,
+            list_type: desc.queue_type,
+        });
+
+        Ok(out)
     }
 
     // ========================================================================================== //
@@ -732,6 +796,32 @@ impl Device {
             .logic_op(vk::LogicOp::CLEAR)
             .attachments(attachments)
             .blend_constants([0.0, 0.0, 0.0, 0.0])
+    }
+
+    fn translate_framebuffer_info<'a, 'b>(
+        desc: &'b GraphicsPipelineDesc,
+        color_formats: &'a mut Vec<vk::Format>,
+    ) -> vk::PipelineRenderingCreateInfoBuilder<'a> {
+        let builder = vk::PipelineRenderingCreateInfoBuilder::new();
+
+        let iter = desc
+            .render_target_formats
+            .iter()
+            .copied()
+            .map(texture_format_to_vk);
+        color_formats.extend(iter);
+
+        let builder = if let Some(v) = desc.depth_stencil_format {
+            builder
+                .depth_attachment_format(texture_format_to_vk(v))
+                .stencil_attachment_format(texture_format_to_vk(v))
+        } else {
+            builder
+        };
+
+        builder
+            .view_mask(0)
+            .color_attachment_formats(color_formats.as_slice())
     }
 }
 

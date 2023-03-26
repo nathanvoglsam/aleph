@@ -68,6 +68,7 @@ pub struct Shader {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
     pub(crate) shader_type: ShaderType,
+    pub(crate) vk_shader_type: vk::ShaderStageFlagBits,
     pub(crate) module: vk::ShaderModule,
     pub(crate) entry_point: CString,
 }
