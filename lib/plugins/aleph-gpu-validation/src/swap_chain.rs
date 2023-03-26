@@ -132,15 +132,8 @@ impl ISwapChain for ValidationSwapChain {
             panic!("Attempted to acquire an image while one is already acquired");
         }
 
-        let signal_semaphores: Vec<_> = desc
-            .signal_semaphores
-            .iter()
-            .map(unwrap::semaphore_d)
-            .map(|v| v.inner.as_ref())
-            .collect();
-
         let desc = AcquireDesc {
-            signal_semaphores: &signal_semaphores,
+            signal_semaphore: unwrap::semaphore(desc.signal_semaphore),
         };
 
         self.inner.acquire_next_image(&desc)
