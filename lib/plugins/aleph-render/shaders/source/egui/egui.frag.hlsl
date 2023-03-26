@@ -29,7 +29,10 @@
 
 #include "egui.inc.hlsl"
 
+[[vk::binding(0, 0)]]
 Texture2D Tex : register(t0);
+
+[[vk::binding(1, 0)]]
 SamplerState Sampler : register(s1);
 
 float4 main(in EguiPixelInput input) : SV_Target0 {

@@ -34,7 +34,13 @@ struct RootConstantLayout {
     float2 ScreenSize;
 };
 
+#ifdef __spirv__
+[[vk::push_constant]]
+RootConstantLayout RootConstants;
+#else
 ConstantBuffer<RootConstantLayout> RootConstants : register(b0, space1024);
+#endif
+
 
 EguiPixelInput main(in EguiVertexInput input, out float4 Pos : SV_POSITION) {
     EguiPixelInput output;

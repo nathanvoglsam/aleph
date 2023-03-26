@@ -51,10 +51,20 @@ impl GlobalObjects {
         let descriptor_set_layout = Self::create_descriptor_set_layout(device, sampler.deref());
         let pipeline_layout = Self::create_root_signature(device, descriptor_set_layout.deref());
 
+        let (vertex_data, fragment_data) = match device.get_backend_api() {
+            BackendAPI::Vulkan => (
+                crate::shaders::egui_vert_shader_vk(),
+                crate::shaders::egui_frag_shader_vk(),
+            ),
+            BackendAPI::D3D12 => (
+                crate::shaders::egui_vert_shader_dx(),
+                crate::shaders::egui_frag_shader_dx(),
+            ),
+        };
         let vertex_shader = device
             .create_shader(&ShaderOptions {
                 shader_type: ShaderType::Vertex,
-                data: crate::shaders::egui_vert_shader(),
+                data: vertex_data,
                 entry_point: "main",
                 name: Some("egui::VertexShader"),
             })
@@ -63,7 +73,7 @@ impl GlobalObjects {
         let fragment_shader = device
             .create_shader(&ShaderOptions {
                 shader_type: ShaderType::Fragment,
-                data: crate::shaders::egui_frag_shader(),
+                data: fragment_data,
                 entry_point: "main",
                 name: Some("egui::FragmentShader"),
             })

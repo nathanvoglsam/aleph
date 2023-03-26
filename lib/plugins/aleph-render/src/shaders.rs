@@ -31,14 +31,24 @@
 
 use interfaces::gpu::*;
 
-pub fn egui_frag_shader() -> ShaderBinary<'static> {
+pub fn egui_frag_shader_dx() -> ShaderBinary<'static> {
     let bytes = include_bytes!("../shaders/compiled/egui/egui.frag.dxil");
     ShaderBinary::Dxil(bytes)
 }
 
-pub fn egui_vert_shader() -> ShaderBinary<'static> {
+pub fn egui_vert_shader_dx() -> ShaderBinary<'static> {
     let bytes = include_bytes!("../shaders/compiled/egui/egui.vert.dxil");
     ShaderBinary::Dxil(bytes)
+}
+
+pub fn egui_frag_shader_vk() -> ShaderBinary<'static> {
+    let bytes = include_bytes!("../shaders/compiled/egui/egui.frag.spirv");
+    ShaderBinary::Spirv(bytes)
+}
+
+pub fn egui_vert_shader_vk() -> ShaderBinary<'static> {
+    let bytes = include_bytes!("../shaders/compiled/egui/egui.vert.spirv");
+    ShaderBinary::Spirv(bytes)
 }
 
 pub fn standard_frag_shader() -> ShaderBinary<'static> {

@@ -7,3 +7,6 @@ dxc /T ps_6_0 -Fo .\compiled\egui\egui.frag.dxil .\source\egui\egui.frag.hlsl -O
 dxc /T vs_6_0 -Fo .\compiled\egui\egui.vert.dxil .\source\egui\egui.vert.hlsl -O3 -I .\include -I .\source -Wno-ignored-attributes
 dxc /T ps_6_0 -Fo .\compiled\postprocess\tonemapping.frag.dxil .\source\postprocess\tonemapping.frag.hlsl -O3 -I .\include -I .\source -Wno-ignored-attributes
 dxc /T vs_6_0 -Fo .\compiled\fullscreen_quad\fullscreen_quad.vert.dxil .\source\fullscreen_quad\fullscreen_quad.vert.hlsl -O3 -I .\include -I .\source -Wno-ignored-attributes
+
+dxc /T ps_6_0 -Fo .\compiled\egui\egui.frag.spirv .\source\egui\egui.frag.hlsl -spirv -O3 -I .\include -I .\source -Wno-ignored-attributes
+dxc /T vs_6_0 -Fo .\compiled\egui\egui.vert.spirv .\source\egui\egui.vert.hlsl -spirv -O3 -I .\include -I .\source -Wno-ignored-attributes
