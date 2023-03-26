@@ -1430,9 +1430,9 @@ pub struct SwapChainConfiguration {
 
 #[derive(Clone)]
 pub struct AcquireDesc<'a> {
-    /// A list of semaphores that will be signalled once the acquire operation is completed. Only
-    /// once the acquire operation signals is the acquired image safe to use on the GPU timeline.
-    pub signal_semaphores: &'a [&'a dyn ISemaphore],
+    /// A semaphore that will be signalled once the acquire operation is completed. Only once the
+    /// acquire operation signals is the acquired image safe to use on the GPU timeline.
+    pub signal_semaphore: &'a dyn ISemaphore,
 }
 
 #[derive(Debug)]
@@ -4000,6 +4000,12 @@ pub enum ImageAcquireError {
     ///
     #[error("The surface is currently in a state where it can not be used")]
     SurfaceNotAvailable,
+
+    /// This error occurs when the surface backing a swap chain has become permanently lost to the
+    /// RHI and can no longer be used. The swap chain, and the surface it was created from, are now
+    /// 'dead' and must not be accessed.
+    #[error("The surface has been permanently lost")]
+    SurfaceLost,
 
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
