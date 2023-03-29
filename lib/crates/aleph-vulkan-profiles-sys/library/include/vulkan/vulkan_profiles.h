@@ -156,6 +156,12 @@
 typedef struct VpProfileProperties {
     char        profileName[VP_MAX_PROFILE_NAME_SIZE];
     uint32_t    specVersion;
+    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
+    PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties;
+    PFN_vkCreateInstance vkCreateInstance;
+    PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
+    PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
+    PFN_vkCreateDevice vkCreateDevice;
 } VpProfileProperties;
 
 typedef enum VpInstanceCreateFlagBits {

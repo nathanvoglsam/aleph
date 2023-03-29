@@ -1,4 +1,5 @@
 #include <atomic>
+#include <vulkan/vulkan.h>
 
 extern "C" {
     typedef void (*VpDebugMessageCallbackFn)(const char*);
@@ -12,7 +13,7 @@ extern "C" {
     }
 }
 
-void VP_DEBUG_MESSAGE_CALLBACK(const char* message) {
+void vpAlephDebugMessageTrampoline(const char* message) {
     auto* ptr = (VpDebugMessageCallbackFn)ALEPH_ATOMIC_CALLBACK_SLOT.load();
     if (ptr) {
         ptr(message);

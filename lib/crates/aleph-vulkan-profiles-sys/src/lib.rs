@@ -62,6 +62,12 @@ pub const VP_MAX_PROFILE_NAME_SIZE: usize = 256;
 pub struct VpProfileProperties {
     pub profileName: [c_char; VP_MAX_PROFILE_NAME_SIZE],
     pub specVersion: u32,
+    pub vkGetInstanceProcAddr: vk::PFN_vkGetInstanceProcAddr,
+    pub vkEnumerateInstanceExtensionProperties: vk::PFN_vkEnumerateInstanceExtensionProperties,
+    pub vkCreateInstance: vk::PFN_vkCreateInstance,
+    pub vkGetPhysicalDeviceProperties: Option<vk::PFN_vkGetPhysicalDeviceProperties>,
+    pub vkEnumerateDeviceExtensionProperties: Option<vk::PFN_vkEnumerateDeviceExtensionProperties>,
+    pub vkCreateDevice: Option<vk::PFN_vkCreateDevice>,
 }
 
 bitflags::bitflags! {

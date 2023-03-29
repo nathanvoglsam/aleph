@@ -37,7 +37,7 @@ use target::{Architecture, BuildType};
 fn main() {
     let mut build = cmake::Config::new("library");
 
-    if target_build_type() == BuildType::Retail {
+    if target_build_type() == BuildType::Development {
         build.define("ALEPH_VULKAN_PROFILE_DEBUG", "1");
     }
 

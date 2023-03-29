@@ -36,13 +36,14 @@ set(CMAKE_CXX_STANDARD 17)
 
 if (ALEPH_VULKAN_PROFILE_DEBUG)
     add_library(vulkan_profiles STATIC source/debug/vulkan_profiles.cpp source/debug_callback_slot.cpp)
+    target_compile_definitions(vulkan_profiles PUBLIC VP_DEBUG_MESSAGE_CALLBACK=vpAlephDebugMessageTrampoline)
 else()
     add_library(vulkan_profiles STATIC source/vulkan_profiles.cpp source/debug_callback_slot.cpp)
 endif()
 
 target_include_directories(vulkan_profiles PUBLIC "../../../../submodules/Vulkan-Headers/include")
 target_include_directories(vulkan_profiles PUBLIC "include")
-target_compile_definitions(vulkan_profiles PUBLIC "include")
+target_compile_definitions(vulkan_profiles PUBLIC VK_NO_PROTOTYPES)
 
 install(
         TARGETS vulkan_profiles

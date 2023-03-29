@@ -22,7 +22,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <vulkan/debug/vulkan_profiles.h>
+#include <vulkan/vulkan_profiles.h>
 
 #include <stdio.h>
 
@@ -64,7 +64,7 @@ namespace detail {
 
 VPAPI_ATTR bool isMultiple(double source, double multiple) {
     double mod = std::fmod(source, multiple);
-    return std::abs(mod) < 0.0001; 
+    return std::abs(mod) < 0.0001;
 }
 
 VPAPI_ATTR bool isPowerOfTwo(double source) {
@@ -8996,7 +8996,7 @@ VPAPI_ATTR VkResult vpGetInstanceProfileSupport(const char *pLayerName, const Vp
 
     uint32_t apiVersion = VK_MAKE_VERSION(1, 0, 0);
     static PFN_vkEnumerateInstanceVersion pfnEnumerateInstanceVersion =
-        (PFN_vkEnumerateInstanceVersion)vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion");
+        (PFN_vkEnumerateInstanceVersion)pProfile->vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion");
     if (pfnEnumerateInstanceVersion != nullptr) {
         result = pfnEnumerateInstanceVersion(&apiVersion);
         if (result != VK_SUCCESS) {
@@ -9005,12 +9005,12 @@ VPAPI_ATTR VkResult vpGetInstanceProfileSupport(const char *pLayerName, const Vp
     }
 
     uint32_t extCount = 0;
-    result = vkEnumerateInstanceExtensionProperties(pLayerName, &extCount, nullptr);
+    result = pProfile->vkEnumerateInstanceExtensionProperties(pLayerName, &extCount, nullptr);
     if (result != VK_SUCCESS) {
         return result;
     }
     std::vector<VkExtensionProperties> ext(extCount);
-    result = vkEnumerateInstanceExtensionProperties(pLayerName, &extCount, ext.data());
+    result = pProfile->vkEnumerateInstanceExtensionProperties(pLayerName, &extCount, ext.data());
     if (result != VK_SUCCESS) {
         return result;
     }
@@ -9124,7 +9124,7 @@ VPAPI_ATTR VkResult vpCreateInstance(const VpInstanceCreateInfo *pCreateInfo,
         }
     }
 
-    return vkCreateInstance(pInstanceCreateInfo, pAllocator, pInstance);
+    return pCreateInfo->pProfile->vkCreateInstance(pInstanceCreateInfo, pAllocator, pInstance);
 }
 
 VPAPI_ATTR VkResult vpGetPhysicalDeviceProfileSupport(VkInstance instance, VkPhysicalDevice physicalDevice,
@@ -9132,7 +9132,7 @@ VPAPI_ATTR VkResult vpGetPhysicalDeviceProfileSupport(VkInstance instance, VkPhy
     VkResult result = VK_SUCCESS;
 
     uint32_t extCount = 0;
-    result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, nullptr);
+    result = pProfile->vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, nullptr);
     if (result != VK_SUCCESS) {
         return result;
     }
@@ -9140,7 +9140,7 @@ VPAPI_ATTR VkResult vpGetPhysicalDeviceProfileSupport(VkInstance instance, VkPhy
     if (extCount > 0) {
         ext.resize(extCount);
     }
-    result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, ext.data());
+    result = pProfile->vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, ext.data());
     if (result != VK_SUCCESS) {
         return result;
     }
@@ -9172,24 +9172,24 @@ VPAPI_ATTR VkResult vpGetPhysicalDeviceProfileSupport(VkInstance instance, VkPhy
 
     // Attempt to load core versions of the GPDP2 entry points
     userData.gpdp2.pfnGetPhysicalDeviceFeatures2 =
-        (PFN_vkGetPhysicalDeviceFeatures2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFeatures2");
+        (PFN_vkGetPhysicalDeviceFeatures2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFeatures2");
     userData.gpdp2.pfnGetPhysicalDeviceProperties2 =
-        (PFN_vkGetPhysicalDeviceProperties2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceProperties2");
+        (PFN_vkGetPhysicalDeviceProperties2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceProperties2");
     userData.gpdp2.pfnGetPhysicalDeviceFormatProperties2 =
-        (PFN_vkGetPhysicalDeviceFormatProperties2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFormatProperties2");
+        (PFN_vkGetPhysicalDeviceFormatProperties2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFormatProperties2");
     userData.gpdp2.pfnGetPhysicalDeviceQueueFamilyProperties2 =
-        (PFN_vkGetPhysicalDeviceQueueFamilyProperties2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceQueueFamilyProperties2");
+        (PFN_vkGetPhysicalDeviceQueueFamilyProperties2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceQueueFamilyProperties2");
 
     // If not successful, try to load KHR variant
     if (userData.gpdp2.pfnGetPhysicalDeviceFeatures2 == nullptr) {
         userData.gpdp2.pfnGetPhysicalDeviceFeatures2 =
-            (PFN_vkGetPhysicalDeviceFeatures2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFeatures2KHR");
+            (PFN_vkGetPhysicalDeviceFeatures2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFeatures2KHR");
         userData.gpdp2.pfnGetPhysicalDeviceProperties2 =
-            (PFN_vkGetPhysicalDeviceProperties2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceProperties2KHR");
+            (PFN_vkGetPhysicalDeviceProperties2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceProperties2KHR");
         userData.gpdp2.pfnGetPhysicalDeviceFormatProperties2 =
-            (PFN_vkGetPhysicalDeviceFormatProperties2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFormatProperties2KHR");
+            (PFN_vkGetPhysicalDeviceFormatProperties2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceFormatProperties2KHR");
         userData.gpdp2.pfnGetPhysicalDeviceQueueFamilyProperties2 =
-            (PFN_vkGetPhysicalDeviceQueueFamilyProperties2KHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceQueueFamilyProperties2KHR");
+            (PFN_vkGetPhysicalDeviceQueueFamilyProperties2KHR)pProfile->vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceQueueFamilyProperties2KHR");
     }
 
     if (userData.gpdp2.pfnGetPhysicalDeviceFeatures2 == nullptr ||
@@ -9209,7 +9209,7 @@ VPAPI_ATTR VkResult vpGetPhysicalDeviceProfileSupport(VkInstance instance, VkPhy
 
     {
         VkPhysicalDeviceProperties props{};
-        vkGetPhysicalDeviceProperties(physicalDevice, &props);
+        pProfile->vkGetPhysicalDeviceProperties(physicalDevice, &props);
         if (!detail::vpCheckVersion(props.apiVersion, pDesc->minApiVersion)) {
             VP_DEBUG_MSGF("Unsupported API version: %u.%u.%u", VK_API_VERSION_MAJOR(pDesc->minApiVersion), VK_API_VERSION_MINOR(pDesc->minApiVersion), VK_API_VERSION_PATCH(pDesc->minApiVersion));
             *pSupported = VK_FALSE;
@@ -9382,7 +9382,7 @@ VPAPI_ATTR VkResult vpGetPhysicalDeviceProfileSupport(VkInstance instance, VkPhy
 VPAPI_ATTR VkResult vpCreateDevice(VkPhysicalDevice physicalDevice, const VpDeviceCreateInfo *pCreateInfo,
                                    const VkAllocationCallbacks *pAllocator, VkDevice *pDevice) {
     if (physicalDevice == VK_NULL_HANDLE || pCreateInfo == nullptr || pDevice == nullptr) {
-        return vkCreateDevice(physicalDevice, pCreateInfo == nullptr ? nullptr : pCreateInfo->pCreateInfo, pAllocator, pDevice);
+        return pCreateInfo->pProfile->vkCreateDevice(physicalDevice, pCreateInfo == nullptr ? nullptr : pCreateInfo->pCreateInfo, pAllocator, pDevice);
     }
 
     const detail::VpProfileDesc* pDesc = detail::vpGetProfileDesc(pCreateInfo->pProfile->profileName);
@@ -9501,7 +9501,7 @@ VPAPI_ATTR VkResult vpCreateDevice(VkPhysicalDevice physicalDevice, const VpDevi
             if (pCreateInfo->flags & VP_DEVICE_CREATE_OVERRIDE_ALL_FEATURES_BIT) {
                 createInfo.pEnabledFeatures = pCreateInfo->pCreateInfo->pEnabledFeatures;
             }
-            pUserData->result = vkCreateDevice(pUserData->physicalDevice, &createInfo, pUserData->pAllocator, pUserData->pDevice);
+            pUserData->result = pCreateInfo->pProfile->vkCreateDevice(pUserData->physicalDevice, &createInfo, pUserData->pAllocator, pUserData->pDevice);
         }
     );
 
