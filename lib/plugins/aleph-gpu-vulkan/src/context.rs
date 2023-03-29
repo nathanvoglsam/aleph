@@ -28,9 +28,12 @@
 //
 
 use crate::adapter::Adapter;
-use crate::internal::{unwrap, VK_MAJOR_VERSION, VK_MINOR_VERSION};
+use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
+use crate::internal::strcpy::strcpy_str_to_cstr;
+use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
+use aleph_vulkan_profiles::*;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
@@ -57,10 +60,9 @@ impl IGetPlatformInterface for Context {
 }
 
 impl Context {
-    fn select_device(
+    fn select_device<T>(
+        entry: &erupt::CustomEntryLoader<T>,
         instance: &erupt::InstanceLoader,
-        major_version: u32,
-        minor_version: u32,
         surface: Option<vk::SurfaceKHR>,
         power_class: AdapterPowerClass,
     ) -> Option<(String, AdapterVendor, vk::PhysicalDevice)> {
@@ -73,14 +75,9 @@ impl Context {
 
         for physical_device in devices.iter().copied() {
             // Push the score for the device, if the device meets the minimum requirements
-            if let Some(score) = Self::score_device(
-                instance,
-                physical_device,
-                major_version,
-                minor_version,
-                surface,
-                power_class,
-            ) {
+            if let Some(score) =
+                Self::score_device(entry, instance, physical_device, surface, power_class)
+            {
                 let properties =
                     unsafe { instance.get_physical_device_properties(physical_device) };
 
@@ -103,11 +100,10 @@ impl Context {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn score_device(
+    fn score_device<T>(
+        entry: &erupt::CustomEntryLoader<T>,
         instance: &erupt::InstanceLoader,
         physical_device: vk::PhysicalDevice,
-        major_version: u32,
-        minor_version: u32,
         surface: Option<vk::SurfaceKHR>,
         power_class: AdapterPowerClass,
     ) -> Option<i32> {
@@ -182,29 +178,23 @@ impl Context {
             }
         }
 
-        // Major version breaks API compatibility so the expected version must match exactly
-        let device_major_version = erupt::vk1_0::api_version_major(properties.api_version);
-        if device_major_version < major_version {
-            log::trace!(
-                "Device doesn't support required Vulkan version. Got {}.x. Expects {}.x",
-                device_major_version,
-                major_version
-            );
-            return None;
-        }
+        unsafe {
+            let supported = Self::check_device_supports_profile(
+                entry,
+                instance,
+                physical_device,
+                PROFILE_NAME,
+                PROFILE_SPEC,
+            )?;
 
-        // Minor versions are additive so we only need to check be sure the minor version is
-        // at least the requested minor version
-        let device_minor_version = erupt::vk1_0::api_version_minor(properties.api_version);
-        if device_minor_version < minor_version {
-            log::trace!(
-                "Device doesn't support required Vulkan version. Got {}.{} Expects at least {}.{}",
-                device_major_version,
-                device_minor_version,
-                major_version,
-                minor_version
-            );
-            return None;
+            if !supported {
+                log::trace!(
+                    "Device doesn't support required profile '{}:{}'",
+                    PROFILE_NAME,
+                    PROFILE_SPEC
+                );
+                return None;
+            }
         }
 
         // Whether we prefer an integrated or discrete GPU depends on the requested power class
@@ -221,6 +211,31 @@ impl Context {
         }
 
         Some(score)
+    }
+
+    pub(crate) unsafe fn check_device_supports_profile<T>(
+        entry: &erupt::CustomEntryLoader<T>,
+        instance: &erupt::InstanceLoader,
+        physical_device: vk::PhysicalDevice,
+        profile_name: &str,
+        spec_version: u32,
+    ) -> Option<bool> {
+        let profile = profile_props_from_loaders(entry, Some(instance), profile_name, spec_version);
+
+        let mut supported = Default::default();
+        let result = vpGetPhysicalDeviceProfileSupport(
+            instance.handle,
+            physical_device,
+            &profile,
+            &mut supported,
+        );
+
+        if result.0.is_negative() {
+            log::trace!("Call to vpGetPhysicalDeviceProfileSupport failed");
+            None
+        } else {
+            Some(supported != 0)
+        }
     }
 
     pub(crate) fn get_device_surface_support(
@@ -275,9 +290,8 @@ impl IContext for Context {
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
         let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
         Context::select_device(
+            &self.entry_loader,
             &self.instance_loader,
-            VK_MAJOR_VERSION,
-            VK_MINOR_VERSION,
             surface,
             options.power_class,
         )
