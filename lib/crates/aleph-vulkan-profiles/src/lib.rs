@@ -76,10 +76,10 @@ bitflags::bitflags! {
     #[repr(transparent)]
     pub struct VpInstanceCreateFlags: u32 {
         /// Merge application provided extension list and profile extension list
-        const VP_INSTANCE_CREATE_MERGE_EXTENSIONS_BIT = 0x00000001;
+        const MERGE_EXTENSIONS_BIT = 0x00000001;
 
         /// Use application provided extension list
-        const VP_INSTANCE_CREATE_OVERRIDE_EXTENSIONS_BIT = 0x00000002;
+        const OVERRIDE_EXTENSIONS_BIT = 0x00000002;
     }
 }
 
@@ -98,30 +98,30 @@ bitflags::bitflags! {
     #[repr(transparent)]
     pub struct VpDeviceCreateFlags: u32 {
         /// Merge application provided extension list and profile extension list
-        const VP_DEVICE_CREATE_MERGE_EXTENSIONS_BIT = 0x00000001;
+        const MERGE_EXTENSIONS_BIT = 0x00000001;
 
         /// Use application provided extension list
-        const VP_DEVICE_CREATE_OVERRIDE_EXTENSIONS_BIT = 0x00000002;
+        const OVERRIDE_EXTENSIONS_BIT = 0x00000002;
 
         // Merge application provided versions of feature structures with the profile features
         // Currently unsupported, but is considered for future inclusion in which case the
         // default behavior could potentially be changed to merging as the currently defined
         // default behavior is forward-compatible with that
-        // const VP_DEVICE_CREATE_MERGE_FEATURES_BIT = 0x00000004;
+        // const MERGE_FEATURES_BIT = 0x00000004;
 
         /// Use application provided versions of feature structures but use the profile feature
         /// structures when the application doesn't provide one (robust access disable flags are
         /// ignored if the application overrides the corresponding feature structures)
-        const VP_DEVICE_CREATE_OVERRIDE_FEATURES_BIT = 0x00000008;
+        const OVERRIDE_FEATURES_BIT = 0x00000008;
 
         // Only use application provided feature structures, don't add any profile specific
         // feature structures (robust access disable flags are ignored in this case and only the
         // application provided structures are used)
-        const VP_DEVICE_CREATE_OVERRIDE_ALL_FEATURES_BIT = 0x00000010;
+        const OVERRIDE_ALL_FEATURES_BIT = 0x00000010;
 
-        const VP_DEVICE_CREATE_DISABLE_ROBUST_BUFFER_ACCESS_BIT = 0x00000020;
-        const VP_DEVICE_CREATE_DISABLE_ROBUST_IMAGE_ACCESS_BIT = 0x00000040;
-        const VP_DEVICE_CREATE_DISABLE_ROBUST_ACCESS = VpDeviceCreateFlags::VP_DEVICE_CREATE_DISABLE_ROBUST_BUFFER_ACCESS_BIT.bits | VpDeviceCreateFlags::VP_DEVICE_CREATE_DISABLE_ROBUST_IMAGE_ACCESS_BIT.bits;
+        const DISABLE_ROBUST_BUFFER_ACCESS_BIT = 0x00000020;
+        const DISABLE_ROBUST_IMAGE_ACCESS_BIT = 0x00000040;
+        const DISABLE_ROBUST_ACCESS = Self::DISABLE_ROBUST_BUFFER_ACCESS_BIT.bits | Self::DISABLE_ROBUST_IMAGE_ACCESS_BIT.bits;
     }
 }
 
