@@ -31,10 +31,6 @@ use crate::context::Context;
 use crate::internal::messenger::vulkan_debug_messenger;
 use crate::internal::{VK_MAJOR_VERSION, VK_MINOR_VERSION};
 use erupt::vk;
-use erupt::vk::{
-    make_api_version, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
-    DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
-};
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu;
@@ -314,14 +310,14 @@ fn diff_lists<'a>(
 fn app_and_engine_info<'a>(api_version: u32) -> vk::ApplicationInfoBuilder<'a> {
     vk::ApplicationInfoBuilder::new()
         .application_name(crate::cstr!("aleph-gpu"))
-        .application_version(make_api_version(
+        .application_version(vk::make_api_version(
             0,
             gpu::API_VERSION_MAJOR.parse().unwrap(),
             gpu::API_VERSION_MINOR.parse().unwrap(),
             gpu::API_VERSION_PATCH.parse().unwrap(),
         ))
         .engine_name(crate::cstr!("aleph-gpu-vulkan"))
-        .engine_version(make_api_version(
+        .engine_version(vk::make_api_version(
             0,
             env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
             env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
@@ -365,17 +361,17 @@ fn assert_version_supported<T>(
 
 fn install_debug_messenger(
     instance_loader: &erupt::InstanceLoader,
-) -> Result<DebugUtilsMessengerEXT, ContextCreateError> {
-    let create_info = DebugUtilsMessengerCreateInfoEXTBuilder::new()
+) -> Result<vk::DebugUtilsMessengerEXT, ContextCreateError> {
+    let create_info = vk::DebugUtilsMessengerCreateInfoEXTBuilder::new()
         .message_severity(
-            DebugUtilsMessageSeverityFlagsEXT::ERROR_EXT
-                | DebugUtilsMessageSeverityFlagsEXT::INFO_EXT
-                | DebugUtilsMessageSeverityFlagsEXT::VERBOSE_EXT
-                | DebugUtilsMessageSeverityFlagsEXT::WARNING_EXT,
+            vk::DebugUtilsMessageSeverityFlagsEXT::ERROR_EXT
+                | vk::DebugUtilsMessageSeverityFlagsEXT::INFO_EXT
+                | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE_EXT
+                | vk::DebugUtilsMessageSeverityFlagsEXT::WARNING_EXT,
         )
         .message_type(
-            DebugUtilsMessageTypeFlagsEXT::VALIDATION_EXT
-                | DebugUtilsMessageTypeFlagsEXT::PERFORMANCE_EXT,
+            vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION_EXT
+                | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE_EXT,
         )
         .pfn_user_callback(Some(vulkan_debug_messenger));
 
