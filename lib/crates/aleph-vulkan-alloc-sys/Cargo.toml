@@ -33,14 +33,10 @@ version = "1.0.0+vma.2.2.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-vma-sys/"
+documentation = "https://docs.rs/aleph-vulkan-alloc-sys/"
 readme = "README.md"
 edition = "2021"
 build = "build.rs"
-
-[lib]
-path = "src/lib.rs"
-crate-type = ["rlib"]
 
 [features]
 default = [ ]
