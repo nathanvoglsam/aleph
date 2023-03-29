@@ -63,6 +63,7 @@ members = [
     "lib/crates/aleph-vulkan-alloc",
     "lib/crates/aleph-vulkan-alloc-sys",
     "lib/crates/aleph-vulkan-core",
+    "lib/crates/aleph-vulkan-profiles-sys",
     "lib/crates/aleph-windows",
     "lib/plugins/aleph-core",
     "lib/plugins/aleph-egui",
