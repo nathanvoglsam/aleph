@@ -29,13 +29,18 @@
 
 use crate::context::Context;
 use crate::device::Device;
+use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
+use crate::internal::strcpy::strcpy_str_to_cstr;
 use crate::queue::{Queue, QueueInfo};
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use aleph_vulkan_profiles::*;
+use erupt::utils::VulkanResult;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
+use std::mem::transmute;
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
@@ -134,6 +139,46 @@ impl Adapter {
             && !family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
             && !family.queue_flags.contains(vk::QueueFlags::COMPUTE)
     }
+
+    fn build_profile_device_create_fn<T>(
+        entry_loader: &erupt::CustomEntryLoader<T>,
+        instance_loader: &erupt::InstanceLoader,
+        profile_name: &str,
+        spec_version: u32,
+        flags: VpDeviceCreateFlags,
+    ) -> Box<
+        dyn FnOnce(
+            vk::PhysicalDevice,
+            &vk::DeviceCreateInfo,
+            Option<&vk::AllocationCallbacks>,
+        ) -> VulkanResult<vk::Device>,
+    > {
+        let profile = profile_props_from_loaders(
+            entry_loader,
+            Some(instance_loader),
+            profile_name,
+            spec_version,
+        );
+
+        Box::new(move |physical_device, p_create_info, p_allocator| unsafe {
+            // Move the profile into the closure instance
+            let profile = profile;
+            let flags = flags;
+
+            let create_info = VpDeviceCreateInfo {
+                pCreateInfo: p_create_info,
+                pProfile: &profile,
+                flags,
+            };
+
+            let allocator: *const vk::AllocationCallbacks = transmute(p_allocator);
+
+            let mut device = vk::Device::null();
+            let result = vpCreateDevice(physical_device, &create_info, allocator, &mut device);
+
+            VulkanResult::new(result, device)
+        })
+    }
 }
 
 impl IAdapter for Adapter {
@@ -159,30 +204,37 @@ impl IAdapter for Adapter {
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         use erupt::extensions::*;
 
-        let enabled_features = vk::PhysicalDeviceFeatures::default();
         let enabled_extensions = vec![khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME];
 
+        // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
             self.context
                 .instance_loader
                 .get_physical_device_queue_family_properties(self.physical_device, None)
         };
-
-        // Find our general, async compute and transfer queue families
         let found_families = Adapter::get_queue_families(&queue_families);
         let queue_create_infos = found_families.build_create_info_list();
 
         let device_create_info = vk::DeviceCreateInfoBuilder::new()
-            .enabled_features(&enabled_features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
         let device_loader = unsafe {
-            erupt::DeviceLoader::new(
+            let create_fn = Self::build_profile_device_create_fn(
+                &self.context.entry_loader,
                 &self.context.instance_loader,
-                self.physical_device,
-                &device_create_info,
-            )
-            .map_err(|e| anyhow!(e))?
+                PROFILE_NAME,
+                PROFILE_SPEC,
+                VpDeviceCreateFlags::DISABLE_ROBUST_ACCESS
+                    | VpDeviceCreateFlags::MERGE_EXTENSIONS_BIT,
+            );
+            erupt::DeviceLoaderBuilder::new()
+                .create_device_fn(create_fn)
+                .build(
+                    &self.context.instance_loader,
+                    self.physical_device,
+                    &device_create_info,
+                )
+                .map_err(|e| anyhow!(e))?
         };
 
         let device = AnyArc::new_cyclic(move |v| {
