@@ -63,7 +63,7 @@ impl ContextProvider {
         entry_loader: &erupt::CustomEntryLoader<T>,
         debug: bool,
         validation: bool,
-    ) -> Result<(erupt::InstanceLoader, u32), ContextCreateError> {
+    ) -> Result<erupt::InstanceLoader, ContextCreateError> {
         // If validation is requested we must force debug on as we require debug extensions to log
         // the validation messages
         let debug = if validation { true } else { debug };
@@ -109,7 +109,7 @@ impl ContextProvider {
             erupt::InstanceLoader::new(entry_loader, &create_info).map_err(|e| anyhow!(e))?
         };
 
-        Ok((instance_loader, api_version))
+        Ok(instance_loader)
     }
 }
 
@@ -125,7 +125,7 @@ impl IContextProvider for ContextProvider {
             Ok(_) => {
                 let entry_loader = erupt::EntryLoader::new().map_err(|e| anyhow!(e))?;
 
-                let (instance_loader, _version) =
+                let instance_loader =
                     Self::create_instance(&entry_loader, options.debug, options.validation)?;
 
                 let messenger = if options.validation {

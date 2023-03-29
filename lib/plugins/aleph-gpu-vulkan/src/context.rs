@@ -113,14 +113,13 @@ impl Context {
     ) -> Option<i32> {
         use erupt::extensions::*;
 
-        let (properties, _features, extensions) = unsafe {
+        let (properties, extensions) = unsafe {
             let properties = instance.get_physical_device_properties(physical_device);
-            let features = instance.get_physical_device_features(physical_device);
             let extensions = instance
                 .enumerate_device_extension_properties(physical_device, None, None)
                 .result()
                 .unwrap_or_default();
-            (properties, features, extensions)
+            (properties, extensions)
         };
 
         {
