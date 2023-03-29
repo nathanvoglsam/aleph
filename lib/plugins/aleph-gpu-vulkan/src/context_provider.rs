@@ -41,6 +41,7 @@ use interfaces::gpu;
 use interfaces::gpu::*;
 use std::ffi::CStr;
 use std::marker::PhantomData;
+use std::mem::{transmute, ManuallyDrop};
 use std::os::raw::c_char;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -149,8 +150,8 @@ impl IContextProvider for ContextProvider {
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     _this: v.clone(),
-                    _entry_loader: entry_loader,
-                    instance_loader,
+                    entry_loader: ManuallyDrop::new(entry_loader),
+                    instance_loader: ManuallyDrop::new(instance_loader),
                     messenger,
                 });
                 Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))

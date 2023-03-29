@@ -38,11 +38,12 @@ use interfaces::gpu::*;
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use std::any::TypeId;
 use std::ffi::CStr;
+use std::mem::ManuallyDrop;
 
 pub struct Context {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _entry_loader: erupt::EntryLoader,
-    pub(crate) instance_loader: erupt::InstanceLoader,
+    pub(crate) entry_loader: ManuallyDrop<erupt::EntryLoader>,
+    pub(crate) instance_loader: ManuallyDrop<erupt::InstanceLoader>,
     pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
 
@@ -433,6 +434,8 @@ impl Drop for Context {
                     .destroy_debug_utils_messenger_ext(messenger, None);
             }
             self.instance_loader.destroy_instance(None);
+            ManuallyDrop::drop(&mut self.instance_loader);
+            ManuallyDrop::drop(&mut self.entry_loader);
         }
     }
 }
