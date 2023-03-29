@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
-pub const VK_MAJOR_VERSION: u32 = 1;
-pub const VK_MINOR_VERSION: u32 = 3;
+use std::ffi::c_char;
 
-pub mod conv;
-pub mod macros;
-pub mod messenger;
-pub mod profile;
-pub mod queue_present_support;
-pub mod set_name;
-pub mod strcpy;
-pub mod unwrap;
+/// Copies the string in 'src' into 'dst', casting the character type to 'c_char'. For 'dst' to be
+/// a valid null-terminated string 'dst' must be longer than 'src' and have been filled with zeroes.
+pub fn strcpy_str_to_cstr(src: &str, dst: &mut [c_char]) {
+    let n_iter = src.bytes();
+    let p_iter = dst.iter_mut();
+    let z_iter = n_iter.zip(p_iter);
+    for (src, dst) in z_iter {
+        *dst = src as c_char;
+    }
+}

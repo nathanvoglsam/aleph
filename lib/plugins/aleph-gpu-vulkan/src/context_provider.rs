@@ -29,7 +29,10 @@
 
 use crate::context::Context;
 use crate::internal::messenger::vulkan_debug_messenger;
-use crate::internal::{VK_MAJOR_VERSION, VK_MINOR_VERSION};
+use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
+use crate::internal::strcpy::strcpy_str_to_cstr;
+use aleph_vulkan_profiles::*;
+use erupt::utils::VulkanResult;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
@@ -64,6 +67,11 @@ impl ContextProvider {
         debug: bool,
         validation: bool,
     ) -> Result<erupt::InstanceLoader, ContextCreateError> {
+        // Safety: this is fully safe, 'vpAlephSetCallback' is ours and is simply an atomic write.
+        unsafe {
+            vpAlephSetCallback(profile_debug_callback);
+        }
+
         // If validation is requested we must force debug on as we require debug extensions to log
         // the validation messages
         let debug = if validation { true } else { debug };
@@ -89,13 +97,8 @@ impl ContextProvider {
         // available
         check_all_layers_supported(&wanted_layers, &supported_layers)?;
 
-        // We require at least vulkan 1.2. Get the API version the current system supports and assert
-        // that the version is at least 1.2
-        let api_version =
-            assert_version_supported(entry_loader, VK_MAJOR_VERSION, VK_MINOR_VERSION)?;
-
         // Mandatory description we must give vulkan about our app
-        let app_info = app_and_engine_info(api_version);
+        let app_info = app_and_engine_info();
 
         // Fill out InstanceCreateInfo for creating a vulkan instance
         let create_info = erupt::vk1_0::InstanceCreateInfoBuilder::new()
@@ -106,10 +109,53 @@ impl ContextProvider {
         // Construct the vulkan instance
         log::trace!("Creating Vulkan instance");
         let instance_loader = unsafe {
-            erupt::InstanceLoader::new(entry_loader, &create_info).map_err(|e| anyhow!(e))?
+            let create_fn = Self::build_profile_instance_create_fn(
+                entry_loader,
+                PROFILE_NAME,
+                PROFILE_SPEC,
+                VpInstanceCreateFlags::MERGE_EXTENSIONS_BIT,
+            );
+
+            erupt::InstanceLoaderBuilder::new()
+                .create_instance_fn(create_fn)
+                .build(&entry_loader, &create_info)
+                .map_err(|e| anyhow!(e))?
         };
 
         Ok(instance_loader)
+    }
+
+    fn build_profile_instance_create_fn<T>(
+        entry_loader: &erupt::CustomEntryLoader<T>,
+        profile_name: &str,
+        spec_version: u32,
+        flags: VpInstanceCreateFlags,
+    ) -> Box<
+        dyn FnOnce(
+            &vk::InstanceCreateInfo,
+            Option<&vk::AllocationCallbacks>,
+        ) -> VulkanResult<vk::Instance>,
+    > {
+        let profile = profile_props_from_loaders(entry_loader, None, profile_name, spec_version);
+
+        Box::new(move |p_create_info, p_allocator| unsafe {
+            // Move the profile into the closure instance
+            let profile = profile;
+            let flags = flags;
+
+            let create_info = VpInstanceCreateInfo {
+                pCreateInfo: p_create_info,
+                pProfile: &profile,
+                flags,
+            };
+
+            let allocator: *const vk::AllocationCallbacks = transmute(p_allocator);
+
+            let mut instance = vk::Instance::null();
+            let result = vpCreateInstance(&create_info, allocator, &mut instance);
+
+            VulkanResult::new(result, instance)
+        })
     }
 }
 
@@ -307,7 +353,7 @@ fn diff_lists<'a>(
     }
 }
 
-fn app_and_engine_info<'a>(api_version: u32) -> vk::ApplicationInfoBuilder<'a> {
+fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
     vk::ApplicationInfoBuilder::new()
         .application_name(crate::cstr!("aleph-gpu"))
         .application_version(vk::make_api_version(
@@ -323,40 +369,6 @@ fn app_and_engine_info<'a>(api_version: u32) -> vk::ApplicationInfoBuilder<'a> {
             env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
             env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         ))
-        .api_version(api_version)
-}
-
-fn assert_version_supported<T>(
-    entry_loader: &erupt::CustomEntryLoader<T>,
-    major_version: u32,
-    minor_version: u32,
-) -> Result<u32, ContextCreateError> {
-    // Get the latest supported API version
-    let max_version = unsafe {
-        entry_loader
-            .enumerate_instance_version()
-            .map_err(|e| anyhow!(e))?
-    };
-    let max_version_major = erupt::vk1_0::api_version_major(max_version);
-    let max_version_minor = erupt::vk1_0::api_version_minor(max_version);
-
-    // Check if the major version is supported
-    if max_version_major < major_version {
-        let e = format!("Current driver or GPU doesn't support Vulkan {major_version}.x",);
-        return Err(ContextCreateError::Platform(anyhow!(e)));
-    }
-
-    // Check if the minor version is supported
-    if max_version_minor < minor_version {
-        let e = format!(
-            "Current driver or GPU doesn't support Vulkan {major_version}.{minor_version}",
-        );
-        return Err(ContextCreateError::Platform(anyhow!(e)));
-    }
-
-    // Return the packed version
-    let version = erupt::vk1_0::make_api_version(0, major_version, minor_version, 0);
-    Ok(version)
 }
 
 fn install_debug_messenger(
@@ -379,5 +391,14 @@ fn install_debug_messenger(
         instance_loader
             .create_debug_utils_messenger_ext(&create_info, None)
             .map_err(|e| ContextCreateError::Platform(anyhow!(e)))
+    }
+}
+
+extern "C" fn profile_debug_callback(v: *const c_char) {
+    // Safety: trust the profiles library to always give us a good c-string
+    unsafe {
+        let v = CStr::from_ptr(v);
+        let v = v.to_str().unwrap_unchecked();
+        log::info!("{}", v);
     }
 }
