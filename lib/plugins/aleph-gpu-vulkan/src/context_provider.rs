@@ -30,7 +30,6 @@
 use crate::context::Context;
 use crate::internal::messenger::vulkan_debug_messenger;
 use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
-use crate::internal::strcpy::strcpy_str_to_cstr;
 use aleph_vulkan_profiles::*;
 use erupt::utils::VulkanResult;
 use erupt::vk;
@@ -78,29 +77,17 @@ impl ContextProvider {
 
         // Select the set of extensions that we want to load
         let wanted_extensions = get_wanted_extensions(debug);
-
-        // Strip all unsupported extensions from the list of wanted extensions
         let supported_extensions =
             strip_unsupported_extensions(entry_loader, wanted_extensions.clone());
-
-        // Log all unsupported extensions and error if we can't continue with the set of extensions
-        // available
         check_all_extensions_supported(&wanted_extensions, &supported_extensions)?;
 
         // Select the set of layers we want to load
         let wanted_layers = get_wanted_layers(validation);
-
-        // Strip all unsupported layers from the list of wanted layers
         let supported_layers = strip_unsupported_layers(entry_loader, wanted_layers.clone());
-
-        // Log all unsupported layers and error if we can't continue with the set of layers
-        // available
         check_all_layers_supported(&wanted_layers, &supported_layers)?;
 
-        // Mandatory description we must give vulkan about our app
-        let app_info = app_and_engine_info();
-
         // Fill out InstanceCreateInfo for creating a vulkan instance
+        let app_info = app_and_engine_info();
         let create_info = erupt::vk1_0::InstanceCreateInfoBuilder::new()
             .application_info(&app_info)
             .enabled_extension_names(&supported_extensions)
@@ -369,6 +356,7 @@ fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
             env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
             env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         ))
+        .api_version(VP_KHR_ROADMAP_2022_MIN_API_VERSION)
 }
 
 fn install_debug_messenger(

@@ -29,7 +29,6 @@
 
 use crate::adapter::Adapter;
 use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
-use crate::internal::strcpy::strcpy_str_to_cstr;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_gpu_impl_utils::conv::pci_id_to_vendor;

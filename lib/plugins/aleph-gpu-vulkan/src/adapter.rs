@@ -30,7 +30,6 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
-use crate::internal::strcpy::strcpy_str_to_cstr;
 use crate::queue::{Queue, QueueInfo};
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use aleph_vulkan_profiles::*;
