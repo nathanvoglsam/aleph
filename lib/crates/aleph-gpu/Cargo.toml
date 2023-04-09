@@ -49,7 +49,6 @@ aleph-dx12-alloc = { path = "../aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../aleph-pix", version = "0.1" }
 
 [dependencies]
-aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1" }
 aleph-vulkan-alloc = { path = "../aleph-vulkan-alloc", version = "0.1" }
 aleph-interfaces = { workspace = true }
 log = { workspace = true }
