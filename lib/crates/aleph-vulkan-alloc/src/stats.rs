@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_vulkan_core::erupt::vk1_0::DeviceSize;
+use erupt::vk;
 
 ///
 /// VmaStatInfo
@@ -38,14 +38,14 @@ pub struct StatInfo {
     pub block_count: u32,
     pub allocation_count: u32,
     pub unused_range_count: u32,
-    pub used_bytes: DeviceSize,
-    pub unused_bytes: DeviceSize,
-    pub allocation_size_min: DeviceSize,
-    pub allocation_size_avg: DeviceSize,
-    pub allocation_size_max: DeviceSize,
-    pub unused_range_size_min: DeviceSize,
-    pub unused_range_size_avg: DeviceSize,
-    pub unused_range_size_max: DeviceSize,
+    pub used_bytes: vk::DeviceSize,
+    pub unused_bytes: vk::DeviceSize,
+    pub allocation_size_min: vk::DeviceSize,
+    pub allocation_size_avg: vk::DeviceSize,
+    pub allocation_size_max: vk::DeviceSize,
+    pub unused_range_size_min: vk::DeviceSize,
+    pub unused_range_size_avg: vk::DeviceSize,
+    pub unused_range_size_max: vk::DeviceSize,
 }
 
 ///
@@ -65,10 +65,10 @@ pub struct Stats {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default)]
 pub struct PoolStats {
-    pub size: DeviceSize,
-    pub unused_size: DeviceSize,
+    pub size: vk::DeviceSize,
+    pub unused_size: vk::DeviceSize,
     pub allocation_count: usize,
     pub unused_range_count: usize,
-    pub unused_range_size_max: DeviceSize,
+    pub unused_range_size_max: vk::DeviceSize,
     pub block_count: usize,
 }

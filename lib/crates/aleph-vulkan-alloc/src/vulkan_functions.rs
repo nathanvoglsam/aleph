@@ -29,7 +29,6 @@
 
 use aleph_vulkan_alloc_sys::raw;
 
-use aleph_vulkan_core::erupt::{DeviceLoader, InstanceLoader};
 use core::mem;
 use core::ptr;
 
@@ -77,8 +76,8 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn erupt_tables(
         mut self,
-        instance_loader: &InstanceLoader,
-        device_loader: &DeviceLoader,
+        instance_loader: &erupt::InstanceLoader,
+        device_loader: &erupt::DeviceLoader,
     ) -> Self {
         // Get the function lists
         let inst = instance_loader;

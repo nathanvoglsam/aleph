@@ -46,5 +46,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 log = { workspace = true }
-aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1" }
+erupt = { workspace = true }
 aleph-vulkan-alloc-sys = { path = "../aleph-vulkan-alloc-sys", version = "1" }

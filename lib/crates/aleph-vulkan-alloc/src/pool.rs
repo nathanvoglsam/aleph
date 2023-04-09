@@ -29,9 +29,9 @@
 
 use crate::Allocator;
 use aleph_vulkan_alloc_sys::raw;
-use aleph_vulkan_core::erupt::utils::VulkanResult;
-use aleph_vulkan_core::erupt::vk1_0::DeviceSize;
 use core::ptr;
+use erupt::utils::VulkanResult;
+use erupt::vk;
 use std::sync::Arc;
 
 ///
@@ -123,7 +123,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub const fn block_size(mut self, size: DeviceSize) -> Self {
+    pub const fn block_size(mut self, size: vk::DeviceSize) -> Self {
         self.create_info.block_size = size;
         self
     }
@@ -173,7 +173,7 @@ impl PoolBuilder {
             };
             VulkanResult::new_ok(Arc::new(pool))
         } else {
-            VulkanResult::new_err(aleph_vulkan_core::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vk::Result(result as i32))
         }
     }
 }
@@ -186,7 +186,7 @@ impl PoolBuilder {
 struct PoolCreateInfo {
     memory_type_index: u32,
     flags: PoolCreateFlag,
-    block_size: DeviceSize,
+    block_size: vk::DeviceSize,
     min_block_count: usize,
     max_block_count: usize,
     frame_in_use_count: u32,
@@ -254,7 +254,7 @@ impl Pool {
         if result as i32 == 0 {
             VulkanResult::new_ok(())
         } else {
-            VulkanResult::new_err(aleph_vulkan_core::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vk::Result(result as i32))
         }
     }
 }

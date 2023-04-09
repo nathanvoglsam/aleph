@@ -29,8 +29,8 @@
 
 use crate::Pool;
 use aleph_vulkan_alloc_sys::raw;
-use aleph_vulkan_core::erupt::vk1_0::{DeviceMemory, DeviceSize, MemoryPropertyFlags};
 use core::ptr;
+use erupt::vk;
 use std::ops::Deref;
 
 ///
@@ -244,8 +244,8 @@ impl Default for Allocation {
 pub struct AllocationCreateInfo {
     flags: AllocationCreateFlag,
     usage: MemoryUsage,
-    required_flags: MemoryPropertyFlags,
-    preferred_flags: MemoryPropertyFlags,
+    required_flags: vk::MemoryPropertyFlags,
+    preferred_flags: vk::MemoryPropertyFlags,
     memory_type_bits: u32,
     pool: raw::VmaPool,
     p_user_data: *mut ::std::os::raw::c_void,
@@ -284,8 +284,8 @@ impl AllocationCreateInfoBuilder {
         let info = AllocationCreateInfo {
             flags: AllocationCreateFlag(0),
             usage: MemoryUsage::Unknown,
-            required_flags: MemoryPropertyFlags::empty(),
-            preferred_flags: MemoryPropertyFlags::empty(),
+            required_flags: vk::MemoryPropertyFlags::empty(),
+            preferred_flags: vk::MemoryPropertyFlags::empty(),
             memory_type_bits: 0,
             pool: ptr::null_mut(),
             p_user_data: ptr::null_mut(),
@@ -304,7 +304,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub const fn required_flags(mut self, flags: MemoryPropertyFlags) -> Self {
+    pub const fn required_flags(mut self, flags: vk::MemoryPropertyFlags) -> Self {
         self.info.required_flags = flags;
         self
     }
@@ -312,7 +312,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub const fn preferred_flags(mut self, flags: MemoryPropertyFlags) -> Self {
+    pub const fn preferred_flags(mut self, flags: vk::MemoryPropertyFlags) -> Self {
         self.info.preferred_flags = flags;
         self
     }
@@ -362,9 +362,9 @@ impl Deref for AllocationCreateInfoBuilder {
 #[derive(Debug, Copy, Clone)]
 pub struct AllocationInfo {
     pub memory_type: u32,
-    pub device_memory: DeviceMemory,
-    pub offset: DeviceSize,
-    pub size: DeviceSize,
+    pub device_memory: vk::DeviceMemory,
+    pub offset: vk::DeviceSize,
+    pub size: vk::DeviceSize,
     pub p_mapped_data: *mut ::std::os::raw::c_void,
     pub p_user_data: *mut ::std::os::raw::c_void,
 }
