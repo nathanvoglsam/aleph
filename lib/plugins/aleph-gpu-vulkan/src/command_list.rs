@@ -72,6 +72,13 @@ impl ICommandList for CommandList {
                     .device_loader
                     .reset_command_pool(self.pool, Default::default())
                     .map_err(|v| anyhow!(v))?;
+
+                let begin_info = vk::CommandBufferBeginInfoBuilder::new()
+                    .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+                self._device
+                    .device_loader
+                    .begin_command_buffer(self.buffer, &begin_info)
+                    .map_err(|v| anyhow!(v))?;
             }
 
             let encoder = Encoder::<'a> {
