@@ -33,11 +33,13 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::any::TypeId;
+use vulkan_alloc::vma;
 
 pub struct Texture {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) device: AnyArc<Device>,
+    pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) image: vk::Image,
+    pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) vk_format: vk::Format,
     pub(crate) is_owned: bool,
     pub(crate) desc: TextureDesc<'static>,
@@ -54,15 +56,15 @@ impl IGetPlatformInterface for Texture {
 
 impl ITexture for Texture {
     fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
+        AnyArc::map::<dyn ITexture, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
-        self.this.strong_count()
+        self._this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self.this.weak_count()
+        self._this.weak_count()
     }
 
     fn desc(&self) -> TextureDesc {
@@ -77,7 +79,9 @@ impl Drop for Texture {
         unsafe {
             // Some images we don't own, like swap chain images, so we shouldn't destroy them
             if self.is_owned {
-                self.device.device_loader.destroy_image(self.image, None);
+                if let Some(allocation) = self.allocation {
+                    self._device.allocator.destroy_image(self.image, allocation);
+                }
             }
         }
     }

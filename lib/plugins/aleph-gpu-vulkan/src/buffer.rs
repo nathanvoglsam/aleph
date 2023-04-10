@@ -34,11 +34,13 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::any::TypeId;
 use std::ptr::NonNull;
+use vulkan_alloc::vma;
 
 pub struct Buffer {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) buffer: vk::Buffer,
+    pub(crate) allocation: vma::Allocation,
     pub(crate) desc: BufferDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -90,7 +92,9 @@ impl IBuffer for Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
-            self._device.device_loader.destroy_buffer(self.buffer, None);
+            self._device
+                .allocator
+                .destroy_buffer(self.buffer, self.allocation);
         }
     }
 }
