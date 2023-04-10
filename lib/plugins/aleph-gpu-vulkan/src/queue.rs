@@ -129,6 +129,13 @@ impl Queue {
         queue_type: QueueType,
         info: QueueInfo,
     ) -> AnyArc<Self> {
+        let semaphore = unsafe {
+            let mut info = vk::SemaphoreTypeCreateInfoBuilder::new()
+                .initial_value(0)
+                .semaphore_type(vk::SemaphoreType::TIMELINE);
+            let info = vk::SemaphoreCreateInfoBuilder::new().extend_from(&mut info);
+            device.device_loader.create_semaphore(&info, None).unwrap()
+        };
         let is_queue_debug_available = device.context.instance_loader.enabled().ext_debug_utils;
         AnyArc::new_cyclic(|v| Self {
             _this: v.clone(),
@@ -139,7 +146,7 @@ impl Queue {
             submit_lock: Mutex::new(()),
             is_queue_debug_available,
             debug_marker_depth: Default::default(),
-            semaphore: vk::Semaphore::null(),
+            semaphore,
             last_submitted_index: Default::default(),
             last_completed_index: Default::default(),
             in_flight: ArrayQueue::new(256),
