@@ -92,6 +92,8 @@ impl SwapChain {
                 mip_levels: 1,
                 sample_count: 1,
                 sample_quality: 0,
+                allow_copy_dest: true,
+                allow_copy_source: true,
                 allow_unordered_access: false,
                 allow_cube_face: false,
                 is_render_target: true,
