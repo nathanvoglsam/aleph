@@ -39,7 +39,7 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
-use std::mem::transmute;
+use std::mem::{ManuallyDrop, transmute};
 use vulkan_alloc::vma;
 
 pub struct Adapter {
@@ -251,7 +251,7 @@ impl IAdapter for Adapter {
                 adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device_loader,
-                allocator,
+                allocator: ManuallyDrop::new(allocator),
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,
