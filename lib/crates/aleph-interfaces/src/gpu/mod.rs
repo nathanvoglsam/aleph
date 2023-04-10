@@ -2417,6 +2417,12 @@ pub struct TextureDesc<'a> {
     /// Sample quality, for MSAA texture
     pub sample_quality: u32,
 
+    /// Allows the texture to be used as a copy destination
+    pub allow_copy_dest: bool,
+
+    /// Allows the texture to be used as a copy source
+    pub allow_copy_source: bool,
+
     /// Enables the texture to be used with unordered access (unordered access view, storage
     /// texture)
     pub allow_unordered_access: bool,
@@ -2446,6 +2452,8 @@ impl<'a> TextureDesc<'a> {
             mip_levels: self.mip_levels,
             sample_count: self.sample_count,
             sample_quality: self.sample_quality,
+            allow_copy_dest: self.allow_copy_dest,
+            allow_copy_source: self.allow_copy_source,
             allow_unordered_access: self.allow_unordered_access,
             allow_cube_face: self.allow_cube_face,
             is_render_target: self.is_render_target,
