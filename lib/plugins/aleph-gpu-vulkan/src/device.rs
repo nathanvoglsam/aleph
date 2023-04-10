@@ -372,7 +372,7 @@ impl IDevice for Device {
         let pool = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
             _layout: layout,
-            descriptor_pool: Default::default(),
+            descriptor_pool,
         });
 
         Ok(pool)
