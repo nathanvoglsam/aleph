@@ -40,6 +40,7 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
 use std::mem::transmute;
+use vulkan_alloc::vma;
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
@@ -236,12 +237,21 @@ impl IAdapter for Adapter {
                 .map_err(|e| anyhow!(e))?
         };
 
+        let allocator = vma::Allocator::builder()
+            .build(
+                &self.context.instance_loader,
+                &device_loader,
+                self.physical_device,
+            )
+            .map_err(|v| anyhow!(v))?;
+
         let device = AnyArc::new_cyclic(move |v| {
             let mut device = Device {
                 this: v.clone(),
                 adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device_loader,
+                allocator,
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,

@@ -49,12 +49,15 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
 use std::ffi::CString;
+use std::mem::ManuallyDrop;
+use vulkan_alloc::vma;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
     pub(crate) adapter: AnyArc<Adapter>,
     pub(crate) device_loader: erupt::DeviceLoader,
+    pub(crate) allocator: ManuallyDrop<vma::Allocator>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
@@ -828,6 +831,7 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
+            ManuallyDrop::drop(&mut self.allocator);
             self.device_loader.destroy_device(None);
         }
     }
