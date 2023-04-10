@@ -28,6 +28,7 @@
 //
 
 use crate::adapter::Adapter;
+use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::context::Context;
 use crate::descriptor_pool::DescriptorPool;
@@ -42,6 +43,7 @@ use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
+use crate::texture::Texture;
 use byteorder::{ByteOrder, NativeEndian};
 use erupt::{vk, ExtendableFrom};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
@@ -427,8 +429,70 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_buffer(&self, _desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
-        todo!()
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
+        let mut usage = vk::BufferUsageFlags::TRANSFER_SRC | vk::BufferUsageFlags::TRANSFER_DST;
+
+        if desc.allow_unordered_access {
+            usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
+        }
+        if desc.allow_texel_buffer {
+            if desc.allow_unordered_access {
+                usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
+                    | vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
+            } else {
+                usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER;
+            }
+        }
+        if desc.is_vertex_buffer {
+            usage |= vk::BufferUsageFlags::VERTEX_BUFFER;
+        }
+        if desc.is_index_buffer {
+            usage |= vk::BufferUsageFlags::INDEX_BUFFER;
+        }
+        if desc.is_constant_buffer {
+            usage |= vk::BufferUsageFlags::UNIFORM_BUFFER;
+        }
+        if desc.is_indirect_draw_args {
+            usage |= vk::BufferUsageFlags::INDIRECT_BUFFER;
+        }
+        if desc.is_accel_struct_build_input {
+            usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
+        }
+        if desc.is_accel_struct_storage {
+            usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE_KHR;
+        }
+
+        let create_info = vk::BufferCreateInfoBuilder::new()
+            .size(desc.size)
+            .usage(usage)
+            .sharing_mode(vk::SharingMode::EXCLUSIVE);
+
+        let usage = match desc.cpu_access {
+            CpuAccessMode::None => vma::MemoryUsage::GPUOnly,
+            CpuAccessMode::Read => vma::MemoryUsage::GPUToCPU,
+            CpuAccessMode::Write => vma::MemoryUsage::CPUToGPU,
+        };
+        let alloc_info = vma::AllocationCreateInfo::builder()
+            .flags(vma::AllocationCreateFlag::default())
+            .usage(usage);
+
+        let (buffer, allocation) = unsafe {
+            self.allocator
+                .create_buffer(&create_info, &alloc_info)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        let name = desc.name.map(String::from);
+        let desc = desc.clone().strip_name();
+        let out = AnyArc::new_cyclic(move |v| Buffer {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            buffer,
+            allocation,
+            desc,
+            name,
+        });
+        Ok(AnyArc::map::<dyn IBuffer, _>(out, |v| v))
     }
 
     // ========================================================================================== //
@@ -436,9 +500,89 @@ impl IDevice for Device {
 
     fn create_texture(
         &self,
-        _desc: &TextureDesc,
+        desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
-        todo!()
+        let image_type = match desc.dimension {
+            TextureDimension::Texture1D => vk::ImageType::_1D,
+            TextureDimension::Texture2D => vk::ImageType::_2D,
+            TextureDimension::Texture3D => vk::ImageType::_3D,
+        };
+
+        let format = texture_format_to_vk(desc.format);
+
+        let samples = match desc.sample_count {
+            1 => vk::SampleCountFlagBits::_1,
+            2 => vk::SampleCountFlagBits::_2,
+            4 => vk::SampleCountFlagBits::_4,
+            8 => vk::SampleCountFlagBits::_8,
+            16 => vk::SampleCountFlagBits::_16,
+            32 => vk::SampleCountFlagBits::_32,
+            _ => return Err(TextureCreateError::InvalidSampleCount(desc.sample_count)),
+        };
+
+        let mut usage = vk::ImageUsageFlags::empty();
+        if desc.allow_copy_dest {
+            usage |= vk::ImageUsageFlags::TRANSFER_DST
+        }
+        if desc.allow_copy_source {
+            usage |= vk::ImageUsageFlags::TRANSFER_SRC
+        }
+        if desc.allow_unordered_access {
+            usage |= vk::ImageUsageFlags::STORAGE
+        }
+        if desc.is_render_target {
+            if desc.format.is_depth_stencil() {
+                usage |= vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
+            } else {
+                usage |= vk::ImageUsageFlags::COLOR_ATTACHMENT
+            }
+        }
+
+        let mut flags = vk::ImageCreateFlags::empty();
+        if desc.allow_cube_face {
+            flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
+        }
+
+        let create_info = vk::ImageCreateInfoBuilder::new()
+            .flags(flags)
+            .image_type(image_type)
+            .format(format)
+            .extent(vk::Extent3D {
+                width: desc.width,
+                height: desc.height,
+                depth: desc.depth,
+            })
+            .mip_levels(desc.mip_levels)
+            .array_layers(desc.array_size)
+            .samples(samples)
+            .tiling(vk::ImageTiling::OPTIMAL)
+            .usage(usage)
+            .sharing_mode(vk::SharingMode::EXCLUSIVE)
+            .initial_layout(vk::ImageLayout::UNDEFINED);
+
+        let alloc_info = vma::AllocationCreateInfo::builder()
+            .flags(vma::AllocationCreateFlag::default())
+            .usage(vma::MemoryUsage::GPUOnly);
+
+        let (image, allocation) = unsafe {
+            self.allocator
+                .create_image(&create_info, &alloc_info)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        let name = desc.name.map(String::from);
+        let desc = desc.clone().strip_name();
+        let out = AnyArc::new_cyclic(move |v| Texture {
+            _this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            image,
+            allocation: Some(allocation),
+            vk_format: format,
+            is_owned: true,
+            desc,
+            name,
+        });
+        Ok(AnyArc::map::<dyn ITexture, _>(out, |v| v))
     }
 
     // ========================================================================================== //
