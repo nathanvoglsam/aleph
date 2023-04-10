@@ -36,12 +36,14 @@ mod stats;
 mod utils;
 mod vulkan_functions;
 
-pub use self::allocation::{
-    Allocation, AllocationCreateFlag, AllocationCreateInfo, AllocationCreateInfoBuilder,
-    AllocationInfo, MemoryUsage,
-};
-pub use self::allocator::{
-    Allocator, AllocatorBuilder, AllocatorBuilderError, AllocatorCreateFlag,
-};
-pub use self::pool::{Pool, PoolBuilder, PoolCreateFlag};
-pub use self::stats::{PoolStats, StatInfo, Stats};
+pub mod vma {
+    pub use crate::allocation::{
+        Allocation, AllocationCreateFlag, AllocationCreateInfo, AllocationCreateInfoBuilder,
+        AllocationInfo, MemoryUsage,
+    };
+    pub use crate::allocator::{
+        Allocator, AllocatorBuilder, AllocatorBuilderError, AllocatorCreateFlag,
+    };
+    pub use crate::pool::{Pool, PoolBuilder, PoolCreateFlag};
+    pub use crate::stats::{PoolStats, StatInfo, Stats};
+}

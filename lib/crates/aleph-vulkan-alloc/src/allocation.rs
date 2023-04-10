@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::Pool;
+use crate::vma;
 use aleph_vulkan_alloc_sys::raw;
 use core::ptr;
 use erupt::vk;
@@ -183,6 +183,7 @@ impl MemoryUsage {
 /// Wrapper around a VmaAllocation
 ///
 #[derive(Copy, Clone)]
+#[repr(transparent)]
 pub struct Allocation {
     allocation: raw::VmaAllocation,
 }
@@ -328,7 +329,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub const fn pool(mut self, pool: &Pool) -> Self {
+    pub const fn pool(mut self, pool: &vma::Pool) -> Self {
         self.info.pool = pool.get_raw();
         self
     }

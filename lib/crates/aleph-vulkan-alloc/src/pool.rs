@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::Allocator;
+use crate::vma;
 use aleph_vulkan_alloc_sys::raw;
 use core::ptr;
 use erupt::utils::VulkanResult;
@@ -156,7 +156,7 @@ impl PoolBuilder {
     /// vmaCreatePool
     ///
     #[inline]
-    pub unsafe fn build(self, allocator: &Arc<Allocator>) -> VulkanResult<Arc<Pool>> {
+    pub unsafe fn build(self, allocator: &Arc<vma::Allocator>) -> VulkanResult<Arc<Pool>> {
         let mut pool: raw::VmaPool = ptr::null_mut();
 
         let create_ptr = &self.create_info as *const PoolCreateInfo;
@@ -197,7 +197,7 @@ struct PoolCreateInfo {
 ///
 pub struct Pool {
     pool: raw::VmaPool,
-    allocator: Arc<Allocator>,
+    allocator: Arc<vma::Allocator>,
 }
 
 impl Pool {
