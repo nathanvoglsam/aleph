@@ -30,55 +30,11 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-#[cfg(feature = "generate_bindings")]
-use bindgen;
-
-use std::path::Path;
 use target::build::target_architecture;
 use target::build::{target_build_config, target_platform};
 use target::Architecture;
 
-#[cfg(feature = "generate_bindings")]
-fn generate_bindings_internal(path: &Path) {
-    if !path.exists() {
-        let bindings = bindgen::Builder::default()
-            .clang_arg("-Iinclude")
-            .header("lib/vk_mem_alloc.h")
-            .rustified_enum("Vk.*")
-            .rustfmt_bindings(true)
-            .blacklist_type("size_t")
-            .blacklist_type("__uint8_t")
-            .blacklist_type("__uint16_t")
-            .blacklist_type("__uint32_t")
-            .blacklist_type("__uint64_t")
-            .blacklist_type("__int8_t")
-            .blacklist_type("__int16_t")
-            .blacklist_type("__int32_t")
-            .blacklist_type("__int64_t")
-            .blacklist_type("__darwin_.*")
-            .whitelist_type("PFN_vma.*")
-            .whitelist_type("Vma.*")
-            .whitelist_function(".*vma.*")
-            .trust_clang_mangling(false)
-            .layout_tests(false)
-            .generate_comments(false)
-            .generate()
-            .expect("Unable to generate bindings!");
-
-        bindings
-            .write_to_file(path)
-            .expect("Unable to write bindings!");
-    }
-}
-
-#[cfg(not(feature = "generate_bindings"))]
-fn generate_bindings_internal(_: &Path) {}
-
-fn generate_bindings(path: &Path) {
-    generate_bindings_internal(path)
-}
-
-fn build_lib() {
+fn main() {
     let mut build = cmake::Config::new("library");
 
     if cfg!(feature = "corruption_detection") {
@@ -139,11 +95,4 @@ fn build_lib() {
 
     println!("cargo:rustc-link-search=native={}", output_dir.display());
     //println!("cargo:rustc-link-lib=static=vma");
-}
-
-fn main() {
-    let path = Path::new("raw.rs");
-
-    generate_bindings(path);
-    build_lib();
 }

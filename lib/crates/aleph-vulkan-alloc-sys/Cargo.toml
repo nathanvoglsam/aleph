@@ -40,11 +40,13 @@ build = "build.rs"
 
 [features]
 default = [ ]
-generate_bindings = [ "bindgen" ]
 corruption_detection = [ ]
+
+[dependencies]
+erupt = { workspace = true }
+bitflags = { workspace = true }
 
 [build-dependencies]
 aleph-compile = { workspace = true }
 aleph-target-build = { workspace = true }
 cmake = "0.1"
-bindgen = { version = "0.59", optional = true }
