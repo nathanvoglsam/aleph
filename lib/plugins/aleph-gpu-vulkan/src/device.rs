@@ -718,7 +718,7 @@ impl IDevice for Device {
                     for v in v {
                         let image_info = vk::DescriptorImageInfoBuilder::new()
                             .image_view(todo!())
-                            .image_layout(todo!());
+                            .image_layout(image_layout_to_vk(v.image_layout));
                         image_infos.push(image_info);
                     }
                 }
