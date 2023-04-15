@@ -31,6 +31,7 @@ use crate::vma;
 use aleph_vulkan_alloc_sys::raw;
 use core::ptr;
 use erupt::vk;
+use std::fmt::{Debug, Formatter};
 use std::ops::Deref;
 
 ///
@@ -353,6 +354,12 @@ impl Deref for AllocationCreateInfoBuilder {
 
     fn deref(&self) -> &Self::Target {
         &self.info
+    }
+}
+
+impl Debug for AllocationCreateInfoBuilder {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.info.fmt(f)
     }
 }
 
