@@ -268,6 +268,7 @@ pub fn image_descriptor_write<'a>(write: &'a ImageDescriptorWrite<'a>) -> ImageD
     ImageDescriptorWrite {
         image,
         format: write.format,
+        image_layout: write.image_layout,
         view_type: write.view_type,
         sub_resources: write.sub_resources.clone(),
         writable: write.writable,
