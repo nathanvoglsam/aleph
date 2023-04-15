@@ -176,5 +176,26 @@ pub unsafe extern "system" fn vulkan_debug_messenger(
     log!(severity_level, "========================================");
     log!(severity_level, "");
 
+    // Break on debugger, if one is attached (assuming the platform supports the behavior)
+    debug_break();
+
     FALSE
 }
+
+#[cfg(target_os = "windows")]
+#[inline(always)]
+fn debug_break() {
+    unsafe {
+        use aleph_windows::Win32::System::Diagnostics::Debug::DebugBreak;
+        use aleph_windows::Win32::System::Diagnostics::Debug::IsDebuggerPresent;
+
+        let debugger_present: bool = IsDebuggerPresent().as_bool();
+        if debugger_present {
+            DebugBreak();
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+#[inline(always)]
+fn debug_break() {}
