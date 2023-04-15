@@ -976,8 +976,8 @@ impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
             if let Some(queue) = self.general_queue.take() {
-                    self.device_loader.queue_wait_idle(queue.handle).unwrap();
-                    self.device_loader.destroy_semaphore(queue.semaphore, None);
+                self.device_loader.queue_wait_idle(queue.handle).unwrap();
+                self.device_loader.destroy_semaphore(queue.semaphore, None);
             }
             if let Some(queue) = self.compute_queue.take() {
                 self.device_loader.queue_wait_idle(queue.handle).unwrap();
