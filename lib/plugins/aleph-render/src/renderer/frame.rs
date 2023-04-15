@@ -233,6 +233,7 @@ impl PerFrameObjects {
             writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
                 image: self.font_staged.as_ref().unwrap().deref(),
                 format: Format::R8Unorm,
+                image_layout: ImageLayout::ShaderReadOnlyOptimal,
                 view_type: ImageViewType::Tex2D,
                 sub_resources: TextureSubResourceSet {
                     aspect: TextureAspect::COLOR,
