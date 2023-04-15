@@ -58,7 +58,7 @@ pub struct Device {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
     pub(crate) adapter: AnyArc<Adapter>,
-    pub(crate) device_loader: erupt::DeviceLoader,
+    pub(crate) device_loader: ManuallyDrop<erupt::DeviceLoader>,
     pub(crate) allocator: ManuallyDrop<vma::Allocator>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
@@ -975,8 +975,23 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
+            if let Some(queue) = self.general_queue.take() {
+                    self.device_loader.queue_wait_idle(queue.handle).unwrap();
+                    self.device_loader.destroy_semaphore(queue.semaphore, None);
+            }
+            if let Some(queue) = self.compute_queue.take() {
+                self.device_loader.queue_wait_idle(queue.handle).unwrap();
+                self.device_loader.destroy_semaphore(queue.semaphore, None);
+            }
+            if let Some(queue) = self.transfer_queue.take() {
+                self.device_loader.queue_wait_idle(queue.handle).unwrap();
+                self.device_loader.destroy_semaphore(queue.semaphore, None);
+            }
+
             ManuallyDrop::drop(&mut self.allocator);
+
             self.device_loader.destroy_device(None);
+            ManuallyDrop::drop(&mut self.device_loader);
         }
     }
 }

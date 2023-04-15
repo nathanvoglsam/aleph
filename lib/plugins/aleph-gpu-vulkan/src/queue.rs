@@ -465,16 +465,6 @@ impl IQueueDebug for Queue {
     }
 }
 
-impl Drop for Queue {
-    fn drop(&mut self) {
-        let device = self._device.upgrade().unwrap();
-        unsafe {
-            device.device_loader.queue_wait_idle(self.handle).unwrap();
-            device.device_loader.destroy_semaphore(self.semaphore, None);
-        }
-    }
-}
-
 pub struct QueueSubmission {
     /// The index of the queue submission. Used for tracking when the work has been retired
     pub index: u64,
