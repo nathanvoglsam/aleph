@@ -2027,6 +2027,7 @@ pub struct VmaAllocatorCreateInfo {
     pub pHeapSizeLimit: *const VkDeviceSize,
     pub pVulkanFunctions: *const VmaVulkanFunctions,
     pub pRecordSettings: *const VmaRecordSettings,
+    pub vulkanApiVersion: u32,
 }
 extern "C" {
     pub fn vmaCreateAllocator(
