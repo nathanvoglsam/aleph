@@ -216,6 +216,7 @@ impl PerFrameObjects {
                 mip_levels: 1,
                 sample_count: 1,
                 sample_quality: 0,
+                allow_copy_dest: true,
                 ..Default::default()
             })
             .unwrap();
