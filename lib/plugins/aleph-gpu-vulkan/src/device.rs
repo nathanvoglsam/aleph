@@ -701,8 +701,122 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_descriptor_sets(&self, _writes: &[DescriptorWriteDesc]) {
-        todo!()
+    unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
+        let mut image_infos = Vec::new();
+        let mut buffer_infos = Vec::new();
+        let mut texel_buffer_infos = Vec::new();
+        for write in writes {
+            match write.writes {
+                DescriptorWrites::Sampler(v) => {
+                    for v in v {
+                        let image_info = vk::DescriptorImageInfoBuilder::new()
+                            .sampler(unwrap::sampler(v.sampler).sampler);
+                        image_infos.push(image_info);
+                    }
+                }
+                DescriptorWrites::Image(v) => {
+                    for v in v {
+                        let image_info = vk::DescriptorImageInfoBuilder::new()
+                            .image_view(todo!())
+                            .image_layout(todo!());
+                        image_infos.push(image_info);
+                    }
+                }
+                DescriptorWrites::Buffer(v) => {
+                    for v in v {
+                        let buffer = unwrap::buffer(v.buffer).buffer;
+                        let buffer_info = vk::DescriptorBufferInfoBuilder::new()
+                            .buffer(buffer)
+                            .offset(v.offset)
+                            .range(v.len as _);
+                        buffer_infos.push(buffer_info);
+                    }
+                }
+                DescriptorWrites::StructuredBuffer(v) => {
+                    for v in v {
+                        let buffer = unwrap::buffer(v.buffer).buffer;
+                        let buffer_info = vk::DescriptorBufferInfoBuilder::new()
+                            .buffer(buffer)
+                            .offset(v.offset)
+                            .range(v.len as _);
+                        buffer_infos.push(buffer_info);
+                    }
+                }
+                DescriptorWrites::TexelBuffer(v) => {
+                    for v in v {
+                        texel_buffer_infos.push(vk::BufferView::null());
+                    }
+                }
+                DescriptorWrites::InputAttachment(_) => unimplemented!(),
+            }
+        }
+
+        let mut image_info_idx = 0;
+        let mut buffer_info_idx = 0;
+        let mut texel_buffer_info_idx = 0;
+        let mut descriptor_writes = Vec::with_capacity(writes.len());
+        for write in writes {
+            let d_type = match write.descriptor_type {
+                DescriptorType::Sampler => vk::DescriptorType::SAMPLER,
+                DescriptorType::SampledImage => vk::DescriptorType::SAMPLED_IMAGE,
+                DescriptorType::StorageImage => vk::DescriptorType::STORAGE_IMAGE,
+                DescriptorType::UniformTexelBuffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
+                DescriptorType::StorageTexelBuffer => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
+                DescriptorType::UniformBuffer => vk::DescriptorType::UNIFORM_BUFFER,
+                DescriptorType::StorageBuffer => vk::DescriptorType::STORAGE_BUFFER,
+                DescriptorType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
+                DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
+            };
+
+            let new_write = vk::WriteDescriptorSetBuilder::new()
+                .dst_set(std::mem::transmute(write.set.clone()))
+                .dst_binding(write.binding)
+                .dst_array_element(write.array_element);
+
+            let new_write = match write.writes {
+                DescriptorWrites::Sampler(v) => {
+                    let base = image_info_idx;
+                    image_info_idx += v.len();
+                    new_write
+                        .descriptor_type(d_type)
+                        .image_info(&image_infos[base..image_info_idx])
+                }
+                DescriptorWrites::Image(v) => {
+                    let base = image_info_idx;
+                    image_info_idx += v.len();
+                    new_write
+                        .descriptor_type(d_type)
+                        .image_info(&image_infos[base..image_info_idx])
+                }
+                DescriptorWrites::Buffer(v) => {
+                    let base = buffer_info_idx;
+                    buffer_info_idx += v.len();
+                    new_write
+                        .descriptor_type(d_type)
+                        .buffer_info(&buffer_infos[base..buffer_info_idx])
+                }
+                DescriptorWrites::StructuredBuffer(v) => {
+                    let base = buffer_info_idx;
+                    image_info_idx += v.len();
+                    new_write
+                        .descriptor_type(d_type)
+                        .buffer_info(&buffer_infos[base..buffer_info_idx])
+                }
+                DescriptorWrites::TexelBuffer(v) => {
+                    let base = texel_buffer_info_idx;
+                    texel_buffer_info_idx += v.len();
+                    new_write
+                        .descriptor_type(d_type)
+                        .texel_buffer_view(&texel_buffer_infos[base..texel_buffer_info_idx])
+                }
+                DescriptorWrites::InputAttachment(_) => unimplemented!(),
+            };
+
+            descriptor_writes.push(new_write);
+        }
+
+        self.device_loader
+            .update_descriptor_sets(&descriptor_writes, &[]);
     }
 
     // ========================================================================================== //
