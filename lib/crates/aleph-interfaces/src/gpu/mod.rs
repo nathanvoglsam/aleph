@@ -2846,6 +2846,9 @@ pub struct ImageDescriptorWrite<'a> {
     /// The format that the texture will be viewed as through this descriptor
     pub format: Format,
 
+    /// The layout of the image
+    pub image_layout: ImageLayout,
+
     /// The type of view of the given image to create.
     pub view_type: ImageViewType,
 
