@@ -185,13 +185,13 @@ impl VulkanFunctionsBuilder {
 
         // === //
 
-        let func: *mut u32 = ptr::null_mut();
+        let func = dev.get_buffer_memory_requirements2_khr;
         let func: raw::PFN_vkGetBufferMemoryRequirements2KHR = unsafe { mem::transmute(func) };
         self = self.get_buffer_memory_requirements2_khr(func);
 
         // === //
 
-        let func: *mut u32 = ptr::null_mut();
+        let func = dev.get_image_memory_requirements2_khr;
         let func: raw::PFN_vkGetImageMemoryRequirements2KHR = unsafe { mem::transmute(func) };
         self = self.get_image_memory_requirements2_khr(func);
 

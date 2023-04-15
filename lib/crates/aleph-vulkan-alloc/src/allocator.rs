@@ -114,9 +114,16 @@ impl AllocatorBuilder {
             pHeapSizeLimit: ptr::null_mut(),
             pVulkanFunctions: ptr::null_mut(),
             pRecordSettings: ptr::null_mut(),
+            vulkanApiVersion: 0,
         };
 
         AllocatorBuilder { create_info }
+    }
+
+    /// Set the vulkan version being used
+    pub fn vulkan_api_version(mut self, version: u32) -> Self {
+        self.create_info.vulkanApiVersion = version;
+        self
     }
 
     ///
