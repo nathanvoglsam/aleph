@@ -46,5 +46,10 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 erupt = { workspace = true }
+bitflags = { workspace = true }
 thiserror = { workspace = true }
-aleph-vulkan-alloc-sys = { path = "../aleph-vulkan-alloc-sys", version = "1" }
+
+[build-dependencies]
+aleph-compile = { workspace = true }
+aleph-target-build = { workspace = true }
+cmake = "0.1"

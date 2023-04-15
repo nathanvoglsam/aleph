@@ -60,7 +60,6 @@ members = [
     "lib/crates/aleph-target-build",
     "lib/crates/aleph-virtual-buffer",
     "lib/crates/aleph-vulkan-alloc",
-    "lib/crates/aleph-vulkan-alloc-sys",
     "lib/crates/aleph-vulkan-profiles",
     "lib/crates/aleph-windows",
     "lib/plugins/aleph-core",

@@ -27,48 +27,8 @@
 // SOFTWARE.
 //
 
-use erupt::vk;
+use crate::raw;
 
-///
-/// VmaStatInfo
-///
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct StatInfo {
-    pub block_count: u32,
-    pub allocation_count: u32,
-    pub unused_range_count: u32,
-    pub used_bytes: vk::DeviceSize,
-    pub unused_bytes: vk::DeviceSize,
-    pub allocation_size_min: vk::DeviceSize,
-    pub allocation_size_avg: vk::DeviceSize,
-    pub allocation_size_max: vk::DeviceSize,
-    pub unused_range_size_min: vk::DeviceSize,
-    pub unused_range_size_avg: vk::DeviceSize,
-    pub unused_range_size_max: vk::DeviceSize,
-}
-
-///
-/// VmaStats
-///
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct Stats {
-    pub memory_type: [StatInfo; 32usize],
-    pub memory_heap: [StatInfo; 16usize],
-    pub total: StatInfo,
-}
-
-///
-/// VmaPoolStats
-///
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct PoolStats {
-    pub size: vk::DeviceSize,
-    pub unused_size: vk::DeviceSize,
-    pub allocation_count: usize,
-    pub unused_range_count: usize,
-    pub unused_range_size_max: vk::DeviceSize,
-    pub block_count: usize,
-}
+pub type StatInfo = raw::VmaStatInfo;
+pub type Stats = raw::VmaStats;
+pub type PoolStats = raw::VmaPoolStats;

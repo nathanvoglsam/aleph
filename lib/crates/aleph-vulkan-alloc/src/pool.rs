@@ -27,58 +27,14 @@
 // SOFTWARE.
 //
 
+use crate::raw;
 use crate::vma;
-use aleph_vulkan_alloc_sys::raw;
 use core::ptr;
 use erupt::utils::VulkanResult;
 use erupt::vk;
 use std::sync::Arc;
 
-///
-/// A rusty wrapper around the raw VmaPoolCreateFlag constants
-///
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[repr(transparent)]
-pub struct PoolCreateFlag(u32);
-
-impl PoolCreateFlag {
-    ///
-    /// VMA_POOL_CREATE_IGNORE_BUFFER_IMAGE_GRANULARITY_BIT
-    ///
-    pub const IGNORE_BUFFER_IMAGE_GRANULARITY_BIT: PoolCreateFlag = PoolCreateFlag(
-        raw::VmaPoolCreateFlagBits_VMA_POOL_CREATE_IGNORE_BUFFER_IMAGE_GRANULARITY_BIT as u32,
-    );
-
-    ///
-    /// VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT
-    ///
-    pub const LINEAR_ALGORITHM_BIT: PoolCreateFlag =
-        PoolCreateFlag(raw::VmaPoolCreateFlagBits_VMA_POOL_CREATE_LINEAR_ALGORITHM_BIT as u32);
-
-    ///
-    /// VMA_POOL_CREATE_BUDDY_ALGORITHM_BIT
-    ///
-    pub const BUDDY_ALGORITHM_BIT: PoolCreateFlag =
-        PoolCreateFlag(raw::VmaPoolCreateFlagBits_VMA_POOL_CREATE_BUDDY_ALGORITHM_BIT as u32);
-
-    ///
-    /// VMA_POOL_CREATE_ALGORITHM_MASK
-    ///
-    pub const ALGORITHM_MASK: PoolCreateFlag =
-        PoolCreateFlag(raw::VmaPoolCreateFlagBits_VMA_POOL_CREATE_ALGORITHM_MASK as u32);
-}
-
-impl From<u32> for PoolCreateFlag {
-    fn from(input: u32) -> Self {
-        PoolCreateFlag(input)
-    }
-}
-
-impl From<PoolCreateFlag> for u32 {
-    fn from(v: PoolCreateFlag) -> u32 {
-        v.0
-    }
-}
+pub use raw::PoolCreateFlags;
 
 ///
 /// Builder for a VmaPool, wraps VmaPoolCreateInfo, vmaCreatePool and vmaDestroyPool (drop)
@@ -95,7 +51,7 @@ impl PoolBuilder {
         PoolBuilder {
             create_info: PoolCreateInfo {
                 memory_type_index: 0,
-                flags: PoolCreateFlag(0u32),
+                flags: PoolCreateFlags::empty(),
                 block_size: 0,
                 min_block_count: 0,
                 max_block_count: 0,
@@ -115,7 +71,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub const fn flags(mut self, flags: PoolCreateFlag) -> Self {
+    pub const fn flags(mut self, flags: PoolCreateFlags) -> Self {
         self.create_info.flags = flags;
         self
     }
@@ -162,35 +118,21 @@ impl PoolBuilder {
         let create_ptr = &self.create_info as *const PoolCreateInfo;
         let create_ptr = create_ptr as *const raw::VmaPoolCreateInfo;
 
-        let result = raw::vmaCreatePool(allocator.as_raw(), create_ptr, &mut pool as *mut _);
+        let result = raw::vmaCreatePool(allocator.as_raw(), create_ptr, &mut pool);
 
         debug_assert!(pool.is_null(), "Pool should not be null");
 
-        if result as i32 == 0 {
-            let pool = Pool {
+        VulkanResult::new(
+            result,
+            Arc::new(Pool {
                 pool,
                 allocator: allocator.clone(),
-            };
-            VulkanResult::new_ok(Arc::new(pool))
-        } else {
-            VulkanResult::new_err(vk::Result(result as i32))
-        }
+            }),
+        )
     }
 }
 
-///
-/// VmaPoolCreateInfo
-///
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-struct PoolCreateInfo {
-    memory_type_index: u32,
-    flags: PoolCreateFlag,
-    block_size: vk::DeviceSize,
-    min_block_count: usize,
-    max_block_count: usize,
-    frame_in_use_count: u32,
-}
+pub type PoolCreateInfo = raw::VmaPoolCreateInfo;
 
 ///
 /// VmaPool
@@ -215,11 +157,11 @@ impl Pool {
     pub unsafe fn get_pool_stats(&self) -> raw::VmaPoolStats {
         let mut stats = raw::VmaPoolStats {
             size: 0,
-            unusedSize: 0,
-            allocationCount: 0,
-            unusedRangeCount: 0,
-            unusedRangeSizeMax: 0,
-            blockCount: 0,
+            unused_size: 0,
+            allocation_count: 0,
+            unused_range_count: 0,
+            unused_range_size_max: 0,
+            block_count: 0,
         };
 
         raw::vmaGetPoolStats(
@@ -251,11 +193,7 @@ impl Pool {
     pub unsafe fn check_pool_corruption(&self) -> VulkanResult<()> {
         let result = raw::vmaCheckPoolCorruption(self.allocator.as_raw(), self.pool);
 
-        if result as i32 == 0 {
-            VulkanResult::new_ok(())
-        } else {
-            VulkanResult::new_err(vk::Result(result as i32))
-        }
+        VulkanResult::new(result, ())
     }
 }
 

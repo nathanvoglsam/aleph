@@ -27,10 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_vulkan_alloc_sys::raw;
-
-use core::mem;
-use core::ptr;
+use crate::raw;
+use erupt::vk;
 
 ///
 /// Builder wrapper for the VmaVulkanFunctions struct provided by vma-sys
@@ -84,116 +82,109 @@ impl VulkanFunctionsBuilder {
         let dev = device_loader;
 
         let func = inst.get_physical_device_properties.unwrap();
-        let func: raw::PFN_vkGetPhysicalDeviceProperties = unsafe { mem::transmute(func) };
         self = self.get_physical_device_properties(func);
 
         // === //
 
         let func = inst.get_physical_device_memory_properties.unwrap();
-        let func: raw::PFN_vkGetPhysicalDeviceMemoryProperties = unsafe { mem::transmute(func) };
         self = self.get_physical_device_memory_properties(func);
 
         // === //
 
         let func = dev.allocate_memory.unwrap();
-        let func: raw::PFN_vkAllocateMemory = unsafe { mem::transmute(func) };
         self = self.allocate_memory(func);
 
         // === //
 
         let func = dev.free_memory.unwrap();
-        let func: raw::PFN_vkFreeMemory = unsafe { mem::transmute(func) };
         self = self.free_memory(func);
 
         // === //
 
         let func = dev.map_memory.unwrap();
-        let func: raw::PFN_vkMapMemory = unsafe { mem::transmute(func) };
         self = self.map_memory(func);
 
         // === //
 
         let func = dev.unmap_memory.unwrap();
-        let func: raw::PFN_vkUnmapMemory = unsafe { mem::transmute(func) };
         self = self.unmap_memory(func);
 
         // === //
 
         let func = dev.flush_mapped_memory_ranges.unwrap();
-        let func: raw::PFN_vkFlushMappedMemoryRanges = unsafe { mem::transmute(func) };
         self = self.flush_mapped_memory_ranges(func);
 
         // === //
 
         let func = dev.invalidate_mapped_memory_ranges.unwrap();
-        let func: raw::PFN_vkInvalidateMappedMemoryRanges = unsafe { mem::transmute(func) };
         self = self.invalidate_mapped_memory_ranges(func);
 
         // === //
 
         let func = dev.bind_buffer_memory.unwrap();
-        let func: raw::PFN_vkBindBufferMemory = unsafe { mem::transmute(func) };
         self = self.bind_buffer_memory(func);
 
         // === //
 
         let func = dev.bind_image_memory.unwrap();
-        let func: raw::PFN_vkBindImageMemory = unsafe { mem::transmute(func) };
         self = self.bind_image_memory(func);
 
         // === //
 
         let func = dev.get_buffer_memory_requirements.unwrap();
-        let func: raw::PFN_vkGetBufferMemoryRequirements = unsafe { mem::transmute(func) };
         self = self.get_buffer_memory_requirements(func);
 
         // === //
 
         let func = dev.get_image_memory_requirements.unwrap();
-        let func: raw::PFN_vkGetImageMemoryRequirements = unsafe { mem::transmute(func) };
         self = self.get_image_memory_requirements(func);
 
         // === //
 
         let func = dev.create_buffer.unwrap();
-        let func: raw::PFN_vkCreateBuffer = unsafe { mem::transmute(func) };
         self = self.create_buffer(func);
 
         // === //
 
         let func = dev.destroy_buffer.unwrap();
-        let func: raw::PFN_vkDestroyBuffer = unsafe { mem::transmute(func) };
         self = self.destroy_buffer(func);
 
         // === //
 
         let func = dev.create_image.unwrap();
-        let func: raw::PFN_vkCreateImage = unsafe { mem::transmute(func) };
         self = self.create_image(func);
 
         // === //
 
         let func = dev.destroy_image.unwrap();
-        let func: raw::PFN_vkDestroyImage = unsafe { mem::transmute(func) };
         self = self.destroy_image(func);
 
         // === //
 
         let func = dev.cmd_copy_buffer.unwrap();
-        let func: raw::PFN_vkCmdCopyBuffer = unsafe { mem::transmute(func) };
         self = self.cmd_copy_buffer(func);
 
         // === //
 
-        let func = dev.get_buffer_memory_requirements2_khr;
-        let func: raw::PFN_vkGetBufferMemoryRequirements2KHR = unsafe { mem::transmute(func) };
-        self = self.get_buffer_memory_requirements2_khr(func);
+        let func = dev
+            .get_buffer_memory_requirements2_khr
+            .or(dev.get_buffer_memory_requirements2);
+        self = if let Some(v) = func {
+            self.get_buffer_memory_requirements2_khr(v)
+        } else {
+            self
+        };
 
         // === //
 
-        let func = dev.get_image_memory_requirements2_khr;
-        let func: raw::PFN_vkGetImageMemoryRequirements2KHR = unsafe { mem::transmute(func) };
-        self = self.get_image_memory_requirements2_khr(func);
+        let func = dev
+            .get_image_memory_requirements2_khr
+            .or(dev.get_image_memory_requirements2);
+        self = if let Some(v) = func {
+            self.get_image_memory_requirements2_khr(v)
+        } else {
+            self
+        };
 
         // === //
 
@@ -206,9 +197,9 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_physical_device_properties(
         mut self,
-        f: raw::PFN_vkGetPhysicalDeviceProperties,
+        f: vk::PFN_vkGetPhysicalDeviceProperties,
     ) -> Self {
-        self.functions.vkGetPhysicalDeviceProperties = f;
+        self.functions.vkGetPhysicalDeviceProperties = Some(f);
         self
     }
 
@@ -218,9 +209,9 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_physical_device_memory_properties(
         mut self,
-        f: raw::PFN_vkGetPhysicalDeviceMemoryProperties,
+        f: vk::PFN_vkGetPhysicalDeviceMemoryProperties,
     ) -> Self {
-        self.functions.vkGetPhysicalDeviceMemoryProperties = f;
+        self.functions.vkGetPhysicalDeviceMemoryProperties = Some(f);
         self
     }
 
@@ -228,8 +219,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn allocate_memory(mut self, f: raw::PFN_vkAllocateMemory) -> Self {
-        self.functions.vkAllocateMemory = f;
+    pub fn allocate_memory(mut self, f: vk::PFN_vkAllocateMemory) -> Self {
+        self.functions.vkAllocateMemory = Some(f);
         self
     }
 
@@ -237,8 +228,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn free_memory(mut self, f: raw::PFN_vkFreeMemory) -> Self {
-        self.functions.vkFreeMemory = f;
+    pub fn free_memory(mut self, f: vk::PFN_vkFreeMemory) -> Self {
+        self.functions.vkFreeMemory = Some(f);
         self
     }
 
@@ -246,8 +237,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn map_memory(mut self, f: raw::PFN_vkMapMemory) -> Self {
-        self.functions.vkMapMemory = f;
+    pub fn map_memory(mut self, f: vk::PFN_vkMapMemory) -> Self {
+        self.functions.vkMapMemory = Some(f);
         self
     }
 
@@ -255,8 +246,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn unmap_memory(mut self, f: raw::PFN_vkUnmapMemory) -> Self {
-        self.functions.vkUnmapMemory = f;
+    pub fn unmap_memory(mut self, f: vk::PFN_vkUnmapMemory) -> Self {
+        self.functions.vkUnmapMemory = Some(f);
         self
     }
 
@@ -264,8 +255,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn flush_mapped_memory_ranges(mut self, f: raw::PFN_vkFlushMappedMemoryRanges) -> Self {
-        self.functions.vkFlushMappedMemoryRanges = f;
+    pub fn flush_mapped_memory_ranges(mut self, f: vk::PFN_vkFlushMappedMemoryRanges) -> Self {
+        self.functions.vkFlushMappedMemoryRanges = Some(f);
         self
     }
 
@@ -275,9 +266,9 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn invalidate_mapped_memory_ranges(
         mut self,
-        f: raw::PFN_vkInvalidateMappedMemoryRanges,
+        f: vk::PFN_vkInvalidateMappedMemoryRanges,
     ) -> Self {
-        self.functions.vkInvalidateMappedMemoryRanges = f;
+        self.functions.vkInvalidateMappedMemoryRanges = Some(f);
         self
     }
 
@@ -285,8 +276,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn bind_buffer_memory(mut self, f: raw::PFN_vkBindBufferMemory) -> Self {
-        self.functions.vkBindBufferMemory = f;
+    pub fn bind_buffer_memory(mut self, f: vk::PFN_vkBindBufferMemory) -> Self {
+        self.functions.vkBindBufferMemory = Some(f);
         self
     }
 
@@ -294,8 +285,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn bind_image_memory(mut self, f: raw::PFN_vkBindImageMemory) -> Self {
-        self.functions.vkBindImageMemory = f;
+    pub fn bind_image_memory(mut self, f: vk::PFN_vkBindImageMemory) -> Self {
+        self.functions.vkBindImageMemory = Some(f);
         self
     }
 
@@ -305,9 +296,9 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_buffer_memory_requirements(
         mut self,
-        f: raw::PFN_vkGetBufferMemoryRequirements,
+        f: vk::PFN_vkGetBufferMemoryRequirements,
     ) -> Self {
-        self.functions.vkGetBufferMemoryRequirements = f;
+        self.functions.vkGetBufferMemoryRequirements = Some(f);
         self
     }
 
@@ -317,9 +308,9 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_image_memory_requirements(
         mut self,
-        f: raw::PFN_vkGetImageMemoryRequirements,
+        f: vk::PFN_vkGetImageMemoryRequirements,
     ) -> Self {
-        self.functions.vkGetImageMemoryRequirements = f;
+        self.functions.vkGetImageMemoryRequirements = Some(f);
         self
     }
 
@@ -327,8 +318,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn create_buffer(mut self, f: raw::PFN_vkCreateBuffer) -> Self {
-        self.functions.vkCreateBuffer = f;
+    pub fn create_buffer(mut self, f: vk::PFN_vkCreateBuffer) -> Self {
+        self.functions.vkCreateBuffer = Some(f);
         self
     }
 
@@ -336,8 +327,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn destroy_buffer(mut self, f: raw::PFN_vkDestroyBuffer) -> Self {
-        self.functions.vkDestroyBuffer = f;
+    pub fn destroy_buffer(mut self, f: vk::PFN_vkDestroyBuffer) -> Self {
+        self.functions.vkDestroyBuffer = Some(f);
         self
     }
 
@@ -345,8 +336,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn create_image(mut self, f: raw::PFN_vkCreateImage) -> Self {
-        self.functions.vkCreateImage = f;
+    pub fn create_image(mut self, f: vk::PFN_vkCreateImage) -> Self {
+        self.functions.vkCreateImage = Some(f);
         self
     }
 
@@ -354,8 +345,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn destroy_image(mut self, f: raw::PFN_vkDestroyImage) -> Self {
-        self.functions.vkDestroyImage = f;
+    pub fn destroy_image(mut self, f: vk::PFN_vkDestroyImage) -> Self {
+        self.functions.vkDestroyImage = Some(f);
         self
     }
 
@@ -363,8 +354,8 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     #[inline]
-    pub fn cmd_copy_buffer(mut self, f: raw::PFN_vkCmdCopyBuffer) -> Self {
-        self.functions.vkCmdCopyBuffer = f;
+    pub fn cmd_copy_buffer(mut self, f: vk::PFN_vkCmdCopyBuffer) -> Self {
+        self.functions.vkCmdCopyBuffer = Some(f);
         self
     }
 
@@ -374,9 +365,9 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_buffer_memory_requirements2_khr(
         mut self,
-        f: raw::PFN_vkGetBufferMemoryRequirements2KHR,
+        f: vk::PFN_vkGetBufferMemoryRequirements2KHR,
     ) -> Self {
-        self.functions.vkGetBufferMemoryRequirements2KHR = f;
+        self.functions.vkGetBufferMemoryRequirements2KHR = Some(f);
         self
     }
 
@@ -386,9 +377,9 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_image_memory_requirements2_khr(
         mut self,
-        f: raw::PFN_vkGetImageMemoryRequirements2KHR,
+        f: vk::PFN_vkGetImageMemoryRequirements2KHR,
     ) -> Self {
-        self.functions.vkGetImageMemoryRequirements2KHR = f;
+        self.functions.vkGetImageMemoryRequirements2KHR = Some(f);
         self
     }
 

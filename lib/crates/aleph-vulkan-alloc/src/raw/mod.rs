@@ -29,7 +29,7 @@
 
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
-
+#![allow(unused)]
 #![allow(clippy::all)]
 
 use erupt::vk;
@@ -160,7 +160,6 @@ pub const VMA_MEMORY_USAGE_GPU_ONLY: VmaMemoryUsage = 1;
 pub const VMA_MEMORY_USAGE_CPU_ONLY: VmaMemoryUsage = 2;
 pub const VMA_MEMORY_USAGE_CPU_TO_GPU: VmaMemoryUsage = 3;
 pub const VMA_MEMORY_USAGE_GPU_TO_CPU: VmaMemoryUsage = 4;
-pub const VMA_MEMORY_USAGE_MAX_ENUM: VmaMemoryUsage = 2147483647;
 pub type VmaMemoryUsage = i32;
 
 bitflags::bitflags! {

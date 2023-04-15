@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_vulkan_alloc_sys::raw;
+use crate::raw;
 
 ///
 /// Checks for the minimum required functions for vma allocator
 ///
 #[inline]
-pub fn allocator_functions_valid(funcs: &raw::VmaVulkanFunctions) -> bool {
+pub fn allocator_functions_valid(funcs: &raw::VmaVulkanFunctions, requirements_2: bool) -> bool {
     if funcs.vkGetPhysicalDeviceProperties.is_none() {
         return false;
     }
@@ -85,8 +85,12 @@ pub fn allocator_functions_valid(funcs: &raw::VmaVulkanFunctions) -> bool {
     if funcs.vkCmdCopyBuffer.is_none() {
         return false;
     }
-    //if funcs.vkGetBufferMemoryRequirements2KHR.is_none() { return false; }
-    //if funcs.vkGetImageMemoryRequirements2KHR.is_none() { return false; }
+    if funcs.vkGetBufferMemoryRequirements2KHR.is_none() && requirements_2 {
+        return false;
+    }
+    if funcs.vkGetImageMemoryRequirements2KHR.is_none() && requirements_2 {
+        return false;
+    }
 
     true
 }

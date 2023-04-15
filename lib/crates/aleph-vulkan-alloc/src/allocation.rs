@@ -27,117 +27,14 @@
 // SOFTWARE.
 //
 
+use crate::raw;
 use crate::vma;
-use aleph_vulkan_alloc_sys::raw;
 use core::ptr;
 use erupt::vk;
 use std::fmt::{Debug, Formatter};
 use std::ops::Deref;
 
-///
-/// A rusty wrapper around the raw VmaAllocationCreateFlag constants
-///
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[repr(transparent)]
-pub struct AllocationCreateFlag(raw::VmaAllocationCreateFlagBits);
-
-impl AllocationCreateFlag {
-    ///
-    /// VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
-    ///
-    pub const DEDICATED_MEMORY_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT
-    ///
-    pub const NEVER_ALLOCATE_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_MAPPED_BIT
-    ///
-    pub const MAPPED_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_MAPPED_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_CAN_BECOME_LOST_BIT
-    ///
-    pub const CAN_BECOME_LOST_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_CAN_BECOME_LOST_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_CAN_MAKE_OTHER_LOST_BIT
-    ///
-    pub const CAN_MAKE_OTHER_LOST_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_CAN_MAKE_OTHER_LOST_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT
-    ///
-    pub const USER_DATA_COPY_STRING_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_UPPER_ADDRESS_BIT
-    ///
-    pub const UPPER_ADDRESS_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_UPPER_ADDRESS_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT
-    ///
-    pub const STRATEGY_BEST_FIT_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT
-    ///
-    pub const STRATEGY_WORST_FIT_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT
-    ///
-    pub const STRATEGY_FIRST_FIT_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT
-    ///
-    pub const STRATEGY_MIN_MEMORY_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT
-    ///
-    pub const STRATEGY_MIN_TIME_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT
-    ///
-    pub const STRATEGY_MIN_FRAGMENTATION_BIT: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT);
-
-    ///
-    /// VMA_ALLOCATION_CREATE_STRATEGY_MASK
-    ///
-    pub const STRATEGY_MASK: Self =
-        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MASK);
-}
-
-impl From<raw::VmaAllocationCreateFlagBits> for AllocationCreateFlag {
-    fn from(input: raw::VmaAllocationCreateFlagBits) -> Self {
-        AllocationCreateFlag(input)
-    }
-}
-
-impl From<AllocationCreateFlag> for raw::VmaAllocationCreateFlagBits {
-    fn from(v: AllocationCreateFlag) -> raw::VmaAllocationCreateFlagBits {
-        v.0
-    }
-}
+pub use raw::AllocationCreateFlags;
 
 ///
 /// VmaMemoryUsage
@@ -157,11 +54,11 @@ impl MemoryUsage {
     ///
     pub const fn from_raw(memory_usage: raw::VmaMemoryUsage) -> Self {
         match memory_usage {
-            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_UNKNOWN => MemoryUsage::Unknown,
-            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_ONLY => MemoryUsage::GPUOnly,
-            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_ONLY => MemoryUsage::CPUOnly,
-            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_TO_GPU => MemoryUsage::CPUToGPU,
-            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_TO_CPU => MemoryUsage::GPUToCPU,
+            raw::VMA_MEMORY_USAGE_UNKNOWN => MemoryUsage::Unknown,
+            raw::VMA_MEMORY_USAGE_GPU_ONLY => MemoryUsage::GPUOnly,
+            raw::VMA_MEMORY_USAGE_CPU_ONLY => MemoryUsage::CPUOnly,
+            raw::VMA_MEMORY_USAGE_CPU_TO_GPU => MemoryUsage::CPUToGPU,
+            raw::VMA_MEMORY_USAGE_GPU_TO_CPU => MemoryUsage::GPUToCPU,
             _ => panic!("Invalid VmaMemoryUsage variant"),
         }
     }
@@ -171,11 +68,11 @@ impl MemoryUsage {
     ///
     pub const fn into_raw(self) -> raw::VmaMemoryUsage {
         match self {
-            MemoryUsage::Unknown => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_UNKNOWN,
-            MemoryUsage::GPUOnly => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_ONLY,
-            MemoryUsage::CPUOnly => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_ONLY,
-            MemoryUsage::CPUToGPU => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_TO_GPU,
-            MemoryUsage::GPUToCPU => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_TO_CPU,
+            MemoryUsage::Unknown => raw::VMA_MEMORY_USAGE_UNKNOWN,
+            MemoryUsage::GPUOnly => raw::VMA_MEMORY_USAGE_GPU_ONLY,
+            MemoryUsage::CPUOnly => raw::VMA_MEMORY_USAGE_CPU_ONLY,
+            MemoryUsage::CPUToGPU => raw::VMA_MEMORY_USAGE_CPU_TO_GPU,
+            MemoryUsage::GPUToCPU => raw::VMA_MEMORY_USAGE_GPU_TO_CPU,
         }
     }
 }
@@ -244,7 +141,7 @@ impl Default for Allocation {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct AllocationCreateInfo {
-    flags: AllocationCreateFlag,
+    flags: AllocationCreateFlags,
     usage: MemoryUsage,
     required_flags: vk::MemoryPropertyFlags,
     preferred_flags: vk::MemoryPropertyFlags,
@@ -260,13 +157,13 @@ impl AllocationCreateInfo {
 
     pub(crate) const fn into_raw(self) -> raw::VmaAllocationCreateInfo {
         raw::VmaAllocationCreateInfo {
-            flags: self.flags.0 as u32,
+            flags: self.flags,
             usage: self.usage.into_raw(),
-            requiredFlags: self.required_flags.bits(),
-            preferredFlags: self.preferred_flags.bits(),
-            memoryTypeBits: self.memory_type_bits,
+            required_flags: self.required_flags,
+            preferred_flags: self.preferred_flags,
+            memory_type_bits: self.memory_type_bits,
             pool: self.pool,
-            pUserData: self.p_user_data,
+            p_user_data: self.p_user_data,
         }
     }
 }
@@ -284,7 +181,7 @@ impl AllocationCreateInfoBuilder {
     ///
     pub const fn new() -> Self {
         let info = AllocationCreateInfo {
-            flags: AllocationCreateFlag(0),
+            flags: AllocationCreateFlags::empty(),
             usage: MemoryUsage::Unknown,
             required_flags: vk::MemoryPropertyFlags::empty(),
             preferred_flags: vk::MemoryPropertyFlags::empty(),
@@ -298,7 +195,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub const fn flags(mut self, flags: AllocationCreateFlag) -> Self {
+    pub const fn flags(mut self, flags: AllocationCreateFlags) -> Self {
         self.info.flags = flags;
         self
     }
@@ -363,16 +260,4 @@ impl Debug for AllocationCreateInfoBuilder {
     }
 }
 
-///
-/// VmaAllocationInfo
-///
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct AllocationInfo {
-    pub memory_type: u32,
-    pub device_memory: vk::DeviceMemory,
-    pub offset: vk::DeviceSize,
-    pub size: vk::DeviceSize,
-    pub p_mapped_data: *mut ::std::os::raw::c_void,
-    pub p_user_data: *mut ::std::os::raw::c_void,
-}
+pub type AllocationInfo = raw::VmaAllocationInfo;
