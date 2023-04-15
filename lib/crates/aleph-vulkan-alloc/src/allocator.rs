@@ -157,7 +157,6 @@ impl AllocatorBuilder {
             return Err(AllocatorBuilderError::InvalidExtensionFunctionPointers);
         }
 
-        log::trace!("Creating Vulkan allocator");
         let mut raw_alloc: raw::VmaAllocator = ptr::null_mut();
         unsafe {
             let result = raw::vmaCreateAllocator(&self.create_info, &mut raw_alloc as *mut _);
@@ -847,7 +846,6 @@ impl Drop for Inner {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            log::trace!("Destroying Vulkan allocator");
             raw::vmaDestroyAllocator(self.allocator);
         }
     }

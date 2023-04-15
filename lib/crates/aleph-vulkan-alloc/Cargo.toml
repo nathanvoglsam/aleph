@@ -45,7 +45,6 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-log = { workspace = true }
 erupt = { workspace = true }
 thiserror = { workspace = true }
 aleph-vulkan-alloc-sys = { path = "../aleph-vulkan-alloc-sys", version = "1" }
