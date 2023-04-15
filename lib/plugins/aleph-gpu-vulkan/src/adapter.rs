@@ -29,7 +29,9 @@
 
 use crate::context::Context;
 use crate::device::Device;
-use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
+use crate::internal::profile::{
+    profile_props_from_loaders, PROFILE_MIN_VERSION, PROFILE_NAME, PROFILE_SPEC,
+};
 use crate::queue::{Queue, QueueInfo};
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use aleph_vulkan_profiles::*;
@@ -238,6 +240,7 @@ impl IAdapter for Adapter {
         };
 
         let allocator = vma::Allocator::builder()
+            .vulkan_api_version(PROFILE_MIN_VERSION)
             .build(
                 &self.context.instance_loader,
                 &device_loader,
