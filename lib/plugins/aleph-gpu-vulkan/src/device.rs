@@ -473,7 +473,7 @@ impl IDevice for Device {
             CpuAccessMode::Write => vma::MemoryUsage::CPUToGPU,
         };
         let alloc_info = vma::AllocationCreateInfo::builder()
-            .flags(vma::AllocationCreateFlag::default())
+            .flags(vma::AllocationCreateFlags::empty())
             .usage(usage);
 
         let (buffer, allocation) = unsafe {
@@ -561,7 +561,7 @@ impl IDevice for Device {
             .initial_layout(vk::ImageLayout::UNDEFINED);
 
         let alloc_info = vma::AllocationCreateInfo::builder()
-            .flags(vma::AllocationCreateFlag::default())
+            .flags(vma::AllocationCreateFlags::empty())
             .usage(vma::MemoryUsage::GPUOnly);
 
         let (image, allocation) = unsafe {
