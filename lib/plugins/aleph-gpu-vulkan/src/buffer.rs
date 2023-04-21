@@ -31,6 +31,7 @@ use crate::device::Device;
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
+use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
 use std::ptr::NonNull;
@@ -73,19 +74,36 @@ impl IBuffer for Buffer {
     }
 
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
-        todo!()
+        unsafe {
+            let ptr = self
+                ._device
+                .allocator
+                .map_memory(&self.allocation)
+                .map_err(|v| anyhow!(v))?;
+            NonNull::new(ptr).ok_or(ResourceMapError::MappedNullPointer)
+        }
     }
 
     fn unmap(&self) {
-        todo!()
+        unsafe {
+            self._device.allocator.unmap_memory(&self.allocation);
+        }
     }
 
-    fn flush_range(&self, _offset: u64, _len: u64) {
-        // intentional no-op
+    fn flush_range(&self, offset: u64, len: u64) {
+        unsafe {
+            self._device
+                .allocator
+                .flush_allocation(&self.allocation, offset, len);
+        }
     }
 
-    fn invalidate_range(&self, _offset: u64, _len: u64) {
-        // intentional no-op
+    fn invalidate_range(&self, offset: u64, len: u64) {
+        unsafe {
+            self._device
+                .allocator
+                .invalidate_allocation(&self.allocation, offset, len);
+        }
     }
 }
 

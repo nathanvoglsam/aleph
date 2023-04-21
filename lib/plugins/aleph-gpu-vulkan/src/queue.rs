@@ -359,11 +359,6 @@ impl IQueue for Queue {
         unsafe {
             let mut swap_chain = swap_chain.inner.lock();
 
-            assert!(
-                swap_chain.acquired,
-                "Can't present with a swap chain that isn't acquired"
-            );
-
             let swapchains = [swap_chain.swap_chain];
             let image_indices = [desc.image_index];
             let info = vk::PresentInfoKHRBuilder::new()
@@ -378,8 +373,6 @@ impl IQueue for Queue {
                     .queue_present_khr(self.handle, &info)
                     .map_err(|v| anyhow!(v))?;
             }
-
-            swap_chain.acquired = false;
         }
 
         let index = self.next_submission_index();

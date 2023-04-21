@@ -186,8 +186,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let mut color_attachments =
             BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
         for v in info.color_attachments {
-            let texture = unwrap::texture(v.image);
-            let image_view = Default::default();
+            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
 
             let mut info = vk::RenderingAttachmentInfoBuilder::new()
                 .image_view(image_view)
@@ -205,8 +204,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
         {
-            let texture = unwrap::texture(v.image);
-            let image_view = Default::default();
+            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
 
             let depth_info = if !matches!(&v.depth_load_op, &AttachmentLoadOp::None) {
                 let mut info = vk::RenderingAttachmentInfoBuilder::new()
@@ -256,23 +254,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         //
         // The validation layer should catch this.
         let render_extent = {
-            let desc = if let Some(texture) = info
-                .color_attachments
-                .first()
-                .map(|v| unwrap::texture(v.image))
-            {
-                &texture.desc
-            } else if let Some(texture) = info
-                .depth_stencil_attachment
-                .map(|v| unwrap::texture(v.image))
-            {
-                &texture.desc
-            } else {
-                panic!("No attachments provided to IEncoder::begin_rendering");
-            };
             vk::Extent2D {
-                width: desc.width,
-                height: desc.height,
+                width: info.extent.width,
+                height: info.extent.height,
             }
         };
 
@@ -351,7 +335,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
         let mut new_sets = BumpVec::with_capacity_in(sets.len(), &self.arena);
         for v in sets {
-            new_sets.push(vk::DescriptorSet::null());
+            new_sets.push(std::mem::transmute_copy::<_, vk::DescriptorSet>(v));
         }
 
         self._parent._device.device_loader.cmd_bind_descriptor_sets(
@@ -433,13 +417,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                         .old_layout(image_layout_to_vk(barrier.before_layout))
                         .new_layout(image_layout_to_vk(barrier.after_layout))
                         .image(texture.image)
-                        .subresource_range(vk::ImageSubresourceRange {
-                            aspect_mask: texture_aspect_to_vk(barrier.subresource_range.aspect),
-                            base_mip_level: barrier.subresource_range.base_mip_level,
-                            level_count: barrier.subresource_range.num_mip_levels,
-                            base_array_layer: barrier.subresource_range.base_array_slice,
-                            layer_count: barrier.subresource_range.num_array_slices,
-                        }),
+                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range)),
                 );
             }
         }

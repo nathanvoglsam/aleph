@@ -28,11 +28,14 @@
 //
 
 use crate::device::Device;
+use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
-use erupt::vk;
+use erupt::{vk, ExtendableFrom};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
+use parking_lot::Mutex;
 use std::any::TypeId;
+use std::collections::HashMap;
 use vulkan_alloc::vma;
 
 pub struct Texture {
@@ -42,6 +45,9 @@ pub struct Texture {
     pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) vk_format: vk::Format,
     pub(crate) is_owned: bool,
+    pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -72,11 +78,136 @@ impl ITexture for Texture {
         desc.name = self.name.as_deref();
         desc
     }
+
+    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.views.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let usage = if desc.writable {
+                vk::ImageUsageFlags::STORAGE
+            } else {
+                vk::ImageUsageFlags::SAMPLED
+            };
+
+            let mut usage_info = vk::ImageViewUsageCreateInfoBuilder::new().usage(usage);
+
+            let create_info = vk::ImageViewCreateInfoBuilder::new()
+                .image(self.image)
+                .view_type(image_view_type_to_vk(desc.view_type))
+                .format(texture_format_to_vk(desc.format))
+                .components(vk::ComponentMapping {
+                    r: vk::ComponentSwizzle::IDENTITY,
+                    g: vk::ComponentSwizzle::IDENTITY,
+                    b: vk::ComponentSwizzle::IDENTITY,
+                    a: vk::ComponentSwizzle::IDENTITY,
+                })
+                .subresource_range(subresource_range_to_vk(&desc.sub_resources))
+                .extend_from(&mut usage_info);
+
+            let view = unsafe {
+                self._device
+                    .device_loader
+                    .create_image_view(&create_info, None)
+                    .map_err(|_| ())? // TODO: error handling
+            };
+
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+    }
+
+    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.rtvs.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let mut usage_info = vk::ImageViewUsageCreateInfoBuilder::new()
+                .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT);
+
+            let create_info = vk::ImageViewCreateInfoBuilder::new()
+                .image(self.image)
+                .view_type(image_view_type_to_vk(desc.view_type))
+                .format(texture_format_to_vk(desc.format))
+                .components(vk::ComponentMapping {
+                    r: vk::ComponentSwizzle::IDENTITY,
+                    g: vk::ComponentSwizzle::IDENTITY,
+                    b: vk::ComponentSwizzle::IDENTITY,
+                    a: vk::ComponentSwizzle::IDENTITY,
+                })
+                .subresource_range(subresource_range_to_vk(&desc.sub_resources))
+                .extend_from(&mut usage_info);
+
+            let view = unsafe {
+                self._device
+                    .device_loader
+                    .create_image_view(&create_info, None)
+                    .map_err(|_| ())? // TODO: error handling
+            };
+
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+    }
+
+    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.dsvs.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let mut usage_info = vk::ImageViewUsageCreateInfoBuilder::new()
+                .usage(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT);
+
+            let create_info = vk::ImageViewCreateInfoBuilder::new()
+                .image(self.image)
+                .view_type(image_view_type_to_vk(desc.view_type))
+                .format(texture_format_to_vk(desc.format))
+                .components(vk::ComponentMapping {
+                    r: vk::ComponentSwizzle::IDENTITY,
+                    g: vk::ComponentSwizzle::IDENTITY,
+                    b: vk::ComponentSwizzle::IDENTITY,
+                    a: vk::ComponentSwizzle::IDENTITY,
+                })
+                .subresource_range(subresource_range_to_vk(&desc.sub_resources))
+                .extend_from(&mut usage_info);
+
+            let view = unsafe {
+                self._device
+                    .device_loader
+                    .create_image_view(&create_info, None)
+                    .map_err(|_| ())? // TODO: error handling
+            };
+
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+    }
 }
 
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
+            for (_desc, view) in self.views.get_mut().drain() {
+                self._device.device_loader.destroy_image_view(view, None);
+            }
+
+            for (_desc, view) in self.rtvs.get_mut().drain() {
+                self._device.device_loader.destroy_image_view(view, None);
+            }
+
+            for (_desc, view) in self.dsvs.get_mut().drain() {
+                self._device.device_loader.destroy_image_view(view, None);
+            }
+
             // Some images we don't own, like swap chain images, so we shouldn't destroy them
             if self.is_owned {
                 if let Some(allocation) = self.allocation {

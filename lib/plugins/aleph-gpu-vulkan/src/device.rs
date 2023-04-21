@@ -520,7 +520,7 @@ impl IDevice for Device {
             _ => return Err(TextureCreateError::InvalidSampleCount(desc.sample_count)),
         };
 
-        let mut usage = vk::ImageUsageFlags::empty();
+        let mut usage = vk::ImageUsageFlags::SAMPLED;
         if desc.allow_copy_dest {
             usage |= vk::ImageUsageFlags::TRANSFER_DST
         }
@@ -579,6 +579,9 @@ impl IDevice for Device {
             allocation: Some(allocation),
             vk_format: format,
             is_owned: true,
+            views: Default::default(),
+            rtvs: Default::default(),
+            dsvs: Default::default(),
             desc,
             name,
         });
@@ -717,7 +720,7 @@ impl IDevice for Device {
                 DescriptorWrites::Image(v) => {
                     for v in v {
                         let image_info = vk::DescriptorImageInfoBuilder::new()
-                            .image_view(todo!())
+                            .image_view(std::mem::transmute(v.image_view))
                             .image_layout(image_layout_to_vk(v.image_layout));
                         image_infos.push(image_info);
                     }
@@ -747,7 +750,14 @@ impl IDevice for Device {
                         texel_buffer_infos.push(vk::BufferView::null());
                     }
                 }
-                DescriptorWrites::InputAttachment(_) => unimplemented!(),
+                DescriptorWrites::InputAttachment(v) => {
+                    for v in v {
+                        let image_info = vk::DescriptorImageInfoBuilder::new()
+                            .image_view(std::mem::transmute(v.image_view))
+                            .image_layout(image_layout_to_vk(v.image_layout));
+                        image_infos.push(image_info);
+                    }
+                }
             }
         }
 
@@ -809,7 +819,13 @@ impl IDevice for Device {
                         .descriptor_type(d_type)
                         .texel_buffer_view(&texel_buffer_infos[base..texel_buffer_info_idx])
                 }
-                DescriptorWrites::InputAttachment(_) => unimplemented!(),
+                DescriptorWrites::InputAttachment(v) => {
+                    let base = image_info_idx;
+                    image_info_idx += v.len();
+                    new_write
+                        .descriptor_type(d_type)
+                        .image_info(&image_infos[base..image_info_idx])
+                }
             };
 
             descriptor_writes.push(new_write);

@@ -258,6 +258,9 @@ impl SwapChain {
                     allocation: None,
                     vk_format: swap_create_info.image_format,
                     is_owned: false,
+                    views: Default::default(),
+                    rtvs: Default::default(),
+                    dsvs: Default::default(),
                     desc,
                     name: None,
                 })
@@ -381,7 +384,6 @@ pub struct SwapChainState {
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
     pub images: Vec<AnyArc<Texture>>,
-    pub acquired: bool,
 }
 
 impl SwapChainState {

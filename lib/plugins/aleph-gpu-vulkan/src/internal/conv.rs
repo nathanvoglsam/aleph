@@ -521,3 +521,25 @@ pub const fn shader_type_to_vk(v: ShaderType) -> vk::ShaderStageFlagBits {
         ShaderType::Mesh => vk::ShaderStageFlagBits::MESH_NV,
     }
 }
+
+pub const fn image_view_type_to_vk(v: ImageViewType) -> vk::ImageViewType {
+    match v {
+        ImageViewType::Tex1D => vk::ImageViewType::_1D,
+        ImageViewType::Tex2D => vk::ImageViewType::_2D,
+        ImageViewType::Tex3D => vk::ImageViewType::_3D,
+        ImageViewType::TexCube => vk::ImageViewType::CUBE,
+        ImageViewType::TexArray1D => vk::ImageViewType::_1D_ARRAY,
+        ImageViewType::TexArray2D => vk::ImageViewType::_2D_ARRAY,
+        ImageViewType::TexCubeArray => vk::ImageViewType::CUBE_ARRAY,
+    }
+}
+
+pub const fn subresource_range_to_vk(v: &TextureSubResourceSet) -> vk::ImageSubresourceRange {
+    vk::ImageSubresourceRange {
+        aspect_mask: texture_aspect_to_vk(v.aspect),
+        base_mip_level: v.base_mip_level,
+        level_count: v.num_mip_levels,
+        base_array_layer: v.base_array_slice,
+        layer_count: v.num_array_slices,
+    }
+}

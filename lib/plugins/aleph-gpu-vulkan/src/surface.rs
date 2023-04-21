@@ -139,7 +139,6 @@ impl ISurface for Surface {
             vk_present_mode: Default::default(),
             extent: Default::default(),
             images: Vec::new(),
-            acquired: false,
         };
         let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
             this: v.clone(),
