@@ -163,6 +163,9 @@ impl ValidationSwapChain {
                 _this: v.clone(),
                 _device: device._this.upgrade().unwrap(),
                 inner: image,
+                views: Default::default(),
+                rtvs: Default::default(),
+                dsvs: Default::default(),
             });
             let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
 

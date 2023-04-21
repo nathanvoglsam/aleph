@@ -379,6 +379,9 @@ impl IDevice for ValidationDevice {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
+            views: Default::default(),
+            rtvs: Default::default(),
+            dsvs: Default::default(),
         });
         Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }

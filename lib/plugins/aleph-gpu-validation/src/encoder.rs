@@ -28,6 +28,7 @@
 //
 
 use crate::internal::get_as_unwrapped;
+use crate::texture::ValidationImageView;
 use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationTexture};
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::*;
@@ -156,6 +157,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         let info = BeginRenderingInfo {
             layer_count: info.layer_count,
+            extent: info.extent.clone(),
             color_attachments: &color_attachments,
             depth_stencil_attachment: depth_stencil_attachment.as_ref(),
         };
@@ -454,10 +456,13 @@ impl<T: ?Sized> ValidationEncoder<T> {
         );
 
         info.color_attachments.iter().for_each(|v| {
-            let image = v
-                .image
-                .query_interface::<ValidationTexture>()
-                .expect("Unknown ITexture implementation");
+            let image_view = unsafe {
+                std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
+                    .as_ref()
+                    .unwrap()
+            };
+            let image = image_view._image.upgrade().unwrap();
+
             assert!(
                 image.desc().is_render_target,
                 "Used texture as render target when created with 'is_render_target = false'"
@@ -468,22 +473,19 @@ impl<T: ?Sized> ValidationEncoder<T> {
             );
             Self::validate_sub_resource_mips_and_slices_against_texture(
                 &image.desc(),
-                &TextureSubResourceSet {
-                    aspect: Default::default(),
-                    base_mip_level: v.mip_level,
-                    num_mip_levels: 1,
-                    base_array_slice: v.base_array_slice,
-                    num_array_slices: v.num_array_slices,
-                },
+                &image_view.desc.sub_resources,
             );
         });
 
         // Produce an iterator over all the (width,height) pairs for each color attachment
         let attachment_sizes = info.color_attachments.iter().map(|v| {
-            let image = v
-                .image
-                .query_interface::<ValidationTexture>()
-                .expect("Unknown ITexture implementation");
+            let image_view = unsafe {
+                std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
+                    .as_ref()
+                    .unwrap()
+            };
+            let image = image_view._image.upgrade().unwrap();
+
             (image.desc().width, image.desc().height)
         });
 
@@ -496,10 +498,12 @@ impl<T: ?Sized> ValidationEncoder<T> {
             });
 
         if let Some(v) = info.depth_stencil_attachment {
-            let image = v
-                .image
-                .query_interface::<ValidationTexture>()
-                .expect("Unknown ITexture implementation");
+            let image_view = unsafe {
+                std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
+                    .as_ref()
+                    .unwrap()
+            };
+            let image = image_view._image.upgrade().unwrap();
 
             assert!(
                 image.desc().is_render_target,
@@ -513,13 +517,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
 
             Self::validate_sub_resource_mips_and_slices_against_texture(
                 &image.desc(),
-                &TextureSubResourceSet {
-                    aspect: Default::default(),
-                    base_mip_level: v.mip_level,
-                    num_mip_levels: 1,
-                    base_array_slice: v.base_array_slice,
-                    num_array_slices: v.num_array_slices,
-                },
+                &image_view.desc.sub_resources,
             );
 
             // Check that the depth stencil dimensions match the color dimensions

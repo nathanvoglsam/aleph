@@ -49,6 +49,7 @@
 //!
 
 use crate::internal::descriptor_set::DescriptorSet;
+use crate::texture::ValidationImageView;
 use crate::{
     ValidationBuffer, ValidationCommandList, ValidationDescriptorSetLayout, ValidationFence,
     ValidationSampler, ValidationSemaphore, ValidationSwapChain, ValidationTexture,
@@ -258,20 +259,14 @@ pub fn sampler_descriptor_write<'a>(
     SamplerDescriptorWrite { sampler }
 }
 
-pub fn image_descriptor_write<'a>(write: &'a ImageDescriptorWrite<'a>) -> ImageDescriptorWrite<'a> {
-    let image = write
-        .image
-        .query_interface::<ValidationTexture>()
-        .expect("Unknown ITexture Implementation")
-        .inner
-        .deref();
+pub fn image_descriptor_write(write: &ImageDescriptorWrite) -> ImageDescriptorWrite {
+    let image_view = unsafe {
+        let image_view = std::mem::transmute::<_, *const ValidationImageView>(write.image_view);
+        image_view.read().image_view
+    };
     ImageDescriptorWrite {
-        image,
-        format: write.format,
+        image_view,
         image_layout: write.image_layout,
-        view_type: write.view_type,
-        sub_resources: write.sub_resources.clone(),
-        writable: write.writable,
     }
 }
 
@@ -315,11 +310,11 @@ pub fn texel_buffer_descriptor_write<'a>(
 
 pub enum OwnedDescriptorWrites<'a> {
     Sampler(Vec<SamplerDescriptorWrite<'a>>),
-    Image(Vec<ImageDescriptorWrite<'a>>),
+    Image(Vec<ImageDescriptorWrite>),
     Buffer(Vec<BufferDescriptorWrite<'a>>),
     StructuredBuffer(Vec<StructuredBufferDescriptorWrite<'a>>),
     TexelBuffer(Vec<TexelBufferDescriptorWrite<'a>>),
-    InputAttachment(Vec<ImageDescriptorWrite<'a>>),
+    InputAttachment(Vec<ImageDescriptorWrite>),
 }
 
 impl<'a> OwnedDescriptorWrites<'a> {
@@ -349,31 +344,31 @@ pub fn input_assembly_buffer_binding<'a>(
     }
 }
 
-pub fn rendering_color_attachment_info<'a>(
-    info: &'a RenderingColorAttachmentInfo<'a>,
-) -> RenderingColorAttachmentInfo<'a> {
-    let image = texture(info.image);
+pub fn rendering_color_attachment_info(
+    info: &RenderingColorAttachmentInfo,
+) -> RenderingColorAttachmentInfo {
+    let image_view = unsafe {
+        let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
+        image_view.read().image_view
+    };
     RenderingColorAttachmentInfo {
-        image,
+        image_view,
         image_layout: info.image_layout,
-        mip_level: info.mip_level,
-        base_array_slice: info.base_array_slice,
-        num_array_slices: info.num_array_slices,
         load_op: info.load_op.clone(),
         store_op: info.store_op,
     }
 }
 
-pub fn rendering_depth_stencil_attachment_info<'a>(
-    info: &'a RenderingDepthStencilAttachmentInfo<'a>,
-) -> RenderingDepthStencilAttachmentInfo<'a> {
-    let image = texture(info.image);
+pub fn rendering_depth_stencil_attachment_info(
+    info: &RenderingDepthStencilAttachmentInfo,
+) -> RenderingDepthStencilAttachmentInfo {
+    let image_view = unsafe {
+        let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
+        image_view.read().image_view
+    };
     RenderingDepthStencilAttachmentInfo {
-        image,
+        image_view,
         image_layout: info.image_layout,
-        mip_level: info.mip_level,
-        base_array_slice: info.base_array_slice,
-        num_array_slices: info.num_array_slices,
         depth_load_op: info.depth_load_op.clone(),
         depth_store_op: info.depth_store_op,
         stencil_load_op: info.stencil_load_op.clone(),

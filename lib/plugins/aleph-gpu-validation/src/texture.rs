@@ -30,11 +30,16 @@
 use crate::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
+use parking_lot::Mutex;
+use std::collections::HashMap;
 
 pub struct ValidationTexture {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn ITexture>,
+    pub(crate) views: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
 }
 
 interfaces::any::declare_interfaces!(ValidationTexture, [ITexture]);
@@ -57,4 +62,69 @@ impl ITexture for ValidationTexture {
     fn desc(&self) -> TextureDesc {
         self.inner.desc()
     }
+
+    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.views.lock();
+        let view = if let Some(v) = views.get(desc) {
+            unsafe { std::mem::transmute_copy::<_, ImageView>(v) }
+        } else {
+            let image_view = Box::new(ValidationImageView {
+                _image: self._this.clone(),
+                image_view: self.inner.get_view(desc)?,
+                desc: desc.clone(),
+            });
+
+            let v = unsafe { std::mem::transmute_copy::<_, ImageView>(&image_view) };
+            views.insert(desc.clone(), image_view);
+
+            v
+        };
+        Ok(view)
+    }
+
+    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.rtvs.lock();
+        let view = if let Some(v) = views.get(desc) {
+            let v = unsafe { std::mem::transmute_copy::<_, ImageView>(v) };
+            v
+        } else {
+            let image_view = Box::new(ValidationImageView {
+                _image: self._this.clone(),
+                image_view: self.inner.get_rtv(desc)?,
+                desc: desc.clone(),
+            });
+
+            let v = unsafe { std::mem::transmute_copy::<_, ImageView>(&image_view) };
+            views.insert(desc.clone(), image_view);
+
+            v
+        };
+        Ok(view)
+    }
+
+    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.dsvs.lock();
+        let view = if let Some(v) = views.get(desc) {
+            let v = unsafe { std::mem::transmute_copy::<_, ImageView>(v) };
+            v
+        } else {
+            let image_view = Box::new(ValidationImageView {
+                _image: self._this.clone(),
+                image_view: self.inner.get_dsv(desc)?,
+                desc: desc.clone(),
+            });
+
+            let v = unsafe { std::mem::transmute_copy::<_, ImageView>(&image_view) };
+            views.insert(desc.clone(), image_view);
+
+            v
+        };
+        Ok(view)
+    }
+}
+
+pub struct ValidationImageView {
+    pub _image: AnyWeak<ValidationTexture>,
+    pub image_view: ImageView,
+    pub desc: ImageViewDesc,
 }
