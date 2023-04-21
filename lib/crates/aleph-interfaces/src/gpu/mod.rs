@@ -617,6 +617,12 @@ pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
 
     /// Returns a [TextureDesc] that describes this [ITexture]
     fn desc(&self) -> TextureDesc;
+
+    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
+
+    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
+
+    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
 }
 
 pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
@@ -2777,7 +2783,7 @@ pub enum DescriptorWrites<'a> {
     /// Variant expected for writing
     /// - [DescriptorType::SampledImage]
     /// - [DescriptorType::StorageImage]
-    Image(&'a [ImageDescriptorWrite<'a>]),
+    Image(&'a [ImageDescriptorWrite]),
 
     /// Variant expected for writing
     /// - [DescriptorType::UniformBuffer]
@@ -2795,7 +2801,7 @@ pub enum DescriptorWrites<'a> {
 
     /// Variant expected for writing
     /// - [DescriptorType::InputAttachment]
-    InputAttachment(&'a [ImageDescriptorWrite<'a>]),
+    InputAttachment(&'a [ImageDescriptorWrite]),
 }
 
 impl<'a> DescriptorWrites<'a> {
@@ -2838,25 +2844,13 @@ pub enum ImageViewType {
 }
 
 /// Describes the parameters of a descriptor to write when writing into a texture binding.
-#[derive(Clone)]
-pub struct ImageDescriptorWrite<'a> {
+#[derive(Clone, Hash, Debug)]
+pub struct ImageDescriptorWrite {
     /// The image target.
-    pub image: &'a dyn ITexture,
-
-    /// The format that the texture will be viewed as through this descriptor
-    pub format: Format,
+    pub image_view: ImageView,
 
     /// The layout of the image
     pub image_layout: ImageLayout,
-
-    /// The type of view of the given image to create.
-    pub view_type: ImageViewType,
-
-    /// The set of sub resources that will be accessed through this descriptor
-    pub sub_resources: TextureSubResourceSet,
-
-    /// Whether the image can be written to through this descriptor.
-    pub writable: bool,
 }
 
 /// Describes the parameters of a descriptor to write when writing into a simple buffer like
@@ -2920,6 +2914,27 @@ pub struct TexelBufferDescriptorWrite<'a> {
     /// Whether the buffer can be written to through this descriptor.
     pub writable: bool,
 }
+
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct ImageViewDesc {
+    /// The format that the texture will be viewed as through this descriptor
+    pub format: Format,
+
+    /// The type of view of the given image to create.
+    pub view_type: ImageViewType,
+
+    /// The set of sub resources that will be accessed through this descriptor
+    pub sub_resources: TextureSubResourceSet,
+
+    /// Whether the image can be written to through this descriptor.
+    pub writable: bool,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct ImageView(NonNull<()>);
+
+unsafe impl Send for ImageView {}
+unsafe impl Sync for ImageView {}
 
 //
 //
@@ -3744,59 +3759,30 @@ pub struct Viewport {
     pub max_depth: f32,
 }
 
-#[derive(Clone)]
-pub struct RenderingColorAttachmentInfo<'a> {
-    pub image: &'a dyn ITexture,
+#[derive(Clone, Debug)]
+pub struct RenderingColorAttachmentInfo {
+    pub image_view: ImageView,
     pub image_layout: ImageLayout,
-    pub mip_level: u32,
-    pub base_array_slice: u32,
-    pub num_array_slices: u32,
     pub load_op: AttachmentLoadOp<ColorClearValue>,
     pub store_op: AttachmentStoreOp,
 }
 
-impl<'a> Debug for RenderingColorAttachmentInfo<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RenderingColorAttachmentInfo")
-            .field("image", &"<ptr>")
-            .field("image_layout", &self.image_layout)
-            .field("load_op", &self.load_op)
-            .field("store_op", &self.store_op)
-            .finish()
-    }
-}
-
-#[derive(Clone)]
-pub struct RenderingDepthStencilAttachmentInfo<'a> {
-    pub image: &'a dyn ITexture,
+#[derive(Clone, Debug)]
+pub struct RenderingDepthStencilAttachmentInfo {
+    pub image_view: ImageView,
     pub image_layout: ImageLayout,
-    pub mip_level: u32,
-    pub base_array_slice: u32,
-    pub num_array_slices: u32,
     pub depth_load_op: AttachmentLoadOp<DepthStencilClearValue>,
     pub depth_store_op: AttachmentStoreOp,
     pub stencil_load_op: AttachmentLoadOp<DepthStencilClearValue>,
     pub stencil_store_op: AttachmentStoreOp,
 }
 
-impl<'a> Debug for RenderingDepthStencilAttachmentInfo<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RenderingDepthStencilAttachmentInfo")
-            .field("image", &"<ptr>")
-            .field("image_layout", &self.image_layout)
-            .field("depth_load_op", &self.depth_load_op)
-            .field("depth_store_op", &self.depth_store_op)
-            .field("stencil_load_op", &self.stencil_load_op)
-            .field("stencil_store_op", &self.stencil_store_op)
-            .finish()
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct BeginRenderingInfo<'a> {
     pub layer_count: u32,
-    pub color_attachments: &'a [RenderingColorAttachmentInfo<'a>],
-    pub depth_stencil_attachment: Option<&'a RenderingDepthStencilAttachmentInfo<'a>>,
+    pub extent: Extent2D,
+    pub color_attachments: &'a [RenderingColorAttachmentInfo],
+    pub depth_stencil_attachment: Option<&'a RenderingDepthStencilAttachmentInfo>,
 }
 
 /// A simple description of a buffer -> buffer copy
