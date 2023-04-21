@@ -42,8 +42,6 @@ use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 
-type CacheViewCPU = HashMap<(Format, TextureSubResourceSet), CPUDescriptorHandle>;
-
 pub struct Texture {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
