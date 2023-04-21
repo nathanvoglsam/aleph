@@ -225,15 +225,12 @@ impl PerFrameObjects {
     }
 
     unsafe fn update_srv(&mut self, device: &dyn IDevice) {
-        device.update_descriptor_sets(&[DescriptorWriteDesc {
-            set: self.descriptor_set.clone(),
-            binding: 0,
-            array_element: 0,
-            descriptor_type: DescriptorType::SampledImage,
-            writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
-                image: self.font_staged.as_ref().unwrap().deref(),
+        let view = self
+            .font_staged
+            .as_ref()
+            .unwrap()
+            .get_view(&ImageViewDesc {
                 format: Format::R8Unorm,
-                image_layout: ImageLayout::ShaderReadOnlyOptimal,
                 view_type: ImageViewType::Tex2D,
                 sub_resources: TextureSubResourceSet {
                     aspect: TextureAspect::COLOR,
@@ -243,6 +240,17 @@ impl PerFrameObjects {
                     num_array_slices: 1,
                 },
                 writable: false,
+            })
+            .unwrap();
+
+        device.update_descriptor_sets(&[DescriptorWriteDesc {
+            set: self.descriptor_set.clone(),
+            binding: 0,
+            array_element: 0,
+            descriptor_type: DescriptorType::SampledImage,
+            writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
+                image_view: view,
+                image_layout: ImageLayout::ShaderReadOnlyOptimal,
             }]),
         }]);
     }

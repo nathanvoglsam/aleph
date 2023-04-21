@@ -142,14 +142,30 @@ impl EguiRenderer {
                 }],
             );
 
+            let desc = texture.desc();
+            let image_view = texture
+                .get_rtv(&ImageViewDesc {
+                    format: desc.format,
+                    view_type: ImageViewType::Tex2D,
+                    sub_resources: TextureSubResourceSet {
+                        aspect: TextureAspect::COLOR,
+                        base_mip_level: 0,
+                        num_mip_levels: 1,
+                        base_array_slice: 0,
+                        num_array_slices: 1,
+                    },
+                    writable: false,
+                })
+                .unwrap();
             encoder.begin_rendering(&BeginRenderingInfo {
                 layer_count: 1,
+                extent: Extent2D {
+                    width: desc.width,
+                    height: desc.height,
+                },
                 color_attachments: &[RenderingColorAttachmentInfo {
-                    image: texture,
+                    image_view,
                     image_layout: ImageLayout::ColorAttachmentOptimal,
-                    mip_level: 0,
-                    base_array_slice: 0,
-                    num_array_slices: 1,
                     load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
                     store_op: AttachmentStoreOp::Store,
                 }],
