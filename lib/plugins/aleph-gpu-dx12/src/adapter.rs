@@ -147,6 +147,9 @@ impl IAdapter for Adapter {
                         let id = message_id_name(&id).unwrap_or("Unknown ID");
 
                         log::log!(level, "[{:?}] [{:?}] {:?}", category, id, description);
+
+                        // Break on debugger, if one is attached (assuming the platform supports the behavior)
+                        debug_break();
                     },
                 )
                 .ok()
@@ -173,3 +176,22 @@ impl IAdapter for Adapter {
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
 }
+
+#[cfg(target_os = "windows")]
+#[inline(always)]
+fn debug_break() {
+    unsafe {
+        use aleph_windows::Win32::System::Diagnostics::Debug::DebugBreak;
+        use aleph_windows::Win32::System::Diagnostics::Debug::IsDebuggerPresent;
+
+        let debugger_present: bool = IsDebuggerPresent().as_bool();
+        if debugger_present {
+            DebugBreak();
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+#[inline(always)]
+fn debug_break() {}
+
