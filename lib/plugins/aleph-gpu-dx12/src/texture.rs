@@ -29,12 +29,13 @@
 
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
-use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
-use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
+use crate::internal::{
+    calc_subresource_index, plane_layer_for_aspect, plane_layer_for_aspect_flag,
+};
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 use std::any::TypeId;
 use std::collections::HashMap;
 use windows::utils::CPUDescriptorHandle;
@@ -50,10 +51,9 @@ pub struct Texture {
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
     pub(crate) dxgi_format: DXGI_FORMAT,
-    pub(crate) rtv_cache: RwLock<CacheViewCPU>,
-    pub(crate) dsv_cache: RwLock<CacheViewCPU>,
-    pub(crate) srv_cache: RwLock<CacheViewCPU>,
-    pub(crate) uav_cache: RwLock<CacheViewCPU>,
+    pub(crate) views: Mutex<HashMap<ImageViewDesc, CPUDescriptorHandle>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, CPUDescriptorHandle>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, CPUDescriptorHandle>>,
 }
 
 declare_interfaces!(Texture, [ITexture]);
@@ -82,241 +82,315 @@ impl Texture {
         }
     }
 
-    pub unsafe fn get_or_create_rtv_for_usage(
-        &self,
-        format: Option<Format>,
-        sub_resources: &TextureSubResourceSet,
-    ) -> Option<CPUDescriptorHandle> {
-        let init = |view: CPUDescriptorHandle, format, sub_resources| {
-            let desc = self.make_rtv_desc_for_format_and_sub_resources(format, sub_resources);
-            self.device
-                .device
-                .CreateRenderTargetView(&self.resource, &desc, view.into());
-        };
-        self.get_or_create_view_for_usage(
-            &self.rtv_cache,
-            self.device.descriptor_heaps.cpu_rtv_heap(),
-            format,
-            sub_resources,
-            init,
-        )
-    }
-
-    pub unsafe fn get_or_create_dsv_for_usage(
-        &self,
-        format: Option<Format>,
-        sub_resources: &TextureSubResourceSet,
-    ) -> Option<CPUDescriptorHandle> {
-        let init = |view: CPUDescriptorHandle, format, sub_resources| {
-            let desc = self.make_dsv_desc_for_format_and_sub_resources(format, sub_resources);
-            self.device
-                .device
-                .CreateDepthStencilView(&self.resource, &desc, view.into());
-        };
-        self.get_or_create_view_for_usage(
-            &self.dsv_cache,
-            self.device.descriptor_heaps.cpu_dsv_heap(),
-            format,
-            sub_resources,
-            init,
-        )
-    }
-
-    pub fn get_or_create_view_for_usage<'a>(
-        &self,
-        cache: &RwLock<CacheViewCPU>,
-        allocator: &DescriptorAllocatorCPU,
-        format: Option<Format>,
-        sub_resources: &'a TextureSubResourceSet,
-        init: impl FnOnce(CPUDescriptorHandle, Format, &'a TextureSubResourceSet),
-    ) -> Option<CPUDescriptorHandle> {
-        // First see if we already have a compatible view
-        //
-        // We intentionally take a read lock optimistically as very likely the view is already in
-        // the cache. If it isn't then we hit the slow path of initializing the view so we need to
-        // take a write lock.
-        let views = cache.read();
-
-        // Zero mip levels would imply no image data so is also invalid
-        if sub_resources.num_mip_levels < 1 {
-            return None;
-        }
-
-        let format = format.unwrap_or(self.desc.format);
-        let key = (format, sub_resources.clone());
-        if let Some(view) = views.get(&key) {
-            Some(*view)
-        } else {
-            // Otherwise we need to create a new one. We drop the old read lock and take a new write
-            // lock so we can get exclusive access to the map
-            drop(views);
-            let mut views = cache.write();
-
-            // Allocate a descriptor and write the view into it
-            let view = allocator.allocate().unwrap();
-
-            // Call the initializer to write the descriptor
-            (init)(view, format, sub_resources);
-
-            // Add the view to our cache
-            views.insert(key, view);
-
-            Some(view)
-        }
-    }
-
-    pub fn make_rtv_desc_for_format_and_sub_resources(
-        &self,
-        format: Format,
-        sub_resources: &TextureSubResourceSet,
-    ) -> D3D12_RENDER_TARGET_VIEW_DESC {
-        let is_array = self.desc.array_size > 1;
-        let is_ms = self.desc.sample_count > 1;
-
-        let (view_dimension, anonymous) = match (self.desc.dimension, is_array, is_ms) {
-            (TextureDimension::Texture1D, true, _) => (
+    pub fn make_rtv_desc_for_view_desc(desc: &ImageViewDesc) -> D3D12_RENDER_TARGET_VIEW_DESC {
+        let (view_dimension, anonymous) = match desc.view_type {
+            ImageViewType::TexArray1D => (
                 D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
                 D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture1DArray: D3D12_TEX1D_ARRAY_RTV {
-                        MipSlice: sub_resources.base_mip_level,
-                        FirstArraySlice: sub_resources.base_array_slice,
-                        ArraySize: sub_resources.num_array_slices,
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
                     },
                 },
             ),
-            (TextureDimension::Texture1D, false, _) => (
+            ImageViewType::Tex1D => (
                 D3D12_RTV_DIMENSION_TEXTURE1D,
                 D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture1D: D3D12_TEX1D_RTV {
-                        MipSlice: sub_resources.base_mip_level,
+                        MipSlice: desc.sub_resources.base_mip_level,
                     },
                 },
             ),
-            (TextureDimension::Texture2D, true, false) => (
+            ImageViewType::TexArray2D => (
                 D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
                 D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture2DArray: D3D12_TEX2D_ARRAY_RTV {
-                        MipSlice: sub_resources.base_mip_level,
-                        FirstArraySlice: sub_resources.base_array_slice,
-                        ArraySize: sub_resources.num_array_slices,
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
                         PlaneSlice: 0,
                     },
                 },
             ),
-            (TextureDimension::Texture2D, false, false) => (
+            ImageViewType::Tex2D => (
                 D3D12_RTV_DIMENSION_TEXTURE2D,
                 D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture2D: D3D12_TEX2D_RTV {
-                        MipSlice: sub_resources.base_mip_level,
+                        MipSlice: desc.sub_resources.base_mip_level,
                         PlaneSlice: 0,
                     },
                 },
             ),
-            (TextureDimension::Texture2D, true, true) => (
-                D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
-                D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    Texture2DMSArray: D3D12_TEX2DMS_ARRAY_RTV {
-                        FirstArraySlice: sub_resources.base_array_slice,
-                        ArraySize: sub_resources.num_array_slices,
-                    },
-                },
-            ),
-            (TextureDimension::Texture2D, false, true) => (
-                D3D12_RTV_DIMENSION_TEXTURE2DMS,
-                D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    Texture2DMS: D3D12_TEX2DMS_RTV {
-                        UnusedField_NothingToDefine: 0,
-                    },
-                },
-            ),
-            (TextureDimension::Texture3D, _, _) => (
+            // ImageViewType::Texture2D => (
+            //     D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
+            //     D3D12_RENDER_TARGET_VIEW_DESC_0 {
+            //         Texture2DMSArray: D3D12_TEX2DMS_ARRAY_RTV {
+            //             FirstArraySlice: desc.sub_resources.base_array_slice,
+            //             ArraySize: desc.sub_resources.num_array_slices,
+            //         },
+            //     },
+            // ),
+            // ImageViewType::Texture2D => (
+            //     D3D12_RTV_DIMENSION_TEXTURE2DMS,
+            //     D3D12_RENDER_TARGET_VIEW_DESC_0 {
+            //         Texture2DMS: D3D12_TEX2DMS_RTV {
+            //             UnusedField_NothingToDefine: 0,
+            //         },
+            //     },
+            // ),
+            ImageViewType::Tex3D => (
                 D3D12_RTV_DIMENSION_TEXTURE3D,
                 D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture3D: D3D12_TEX3D_RTV {
-                        MipSlice: sub_resources.base_mip_level,
-                        FirstWSlice: sub_resources.base_array_slice,
-                        WSize: sub_resources.num_array_slices,
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstWSlice: desc.sub_resources.base_array_slice,
+                        WSize: desc.sub_resources.num_array_slices,
                     },
                 },
             ),
+            _ => unimplemented!("Can't make RTVs for texture cubes"),
         };
 
         D3D12_RENDER_TARGET_VIEW_DESC {
-            Format: texture_format_to_dxgi(format),
+            Format: texture_format_to_dxgi(desc.format),
             ViewDimension: view_dimension,
             Anonymous: anonymous,
         }
     }
 
-    pub fn make_dsv_desc_for_format_and_sub_resources(
-        &self,
-        format: Format,
-        sub_resources: &TextureSubResourceSet,
-    ) -> D3D12_DEPTH_STENCIL_VIEW_DESC {
-        let is_array = self.desc.array_size > 1;
-        let is_ms = self.desc.sample_count > 1;
-
-        let (view_dimension, anonymous) = match (self.desc.dimension, is_array, is_ms) {
-            (TextureDimension::Texture1D, true, _) => (
+    pub fn make_dsv_desc_for_view_desc(desc: &ImageViewDesc) -> D3D12_DEPTH_STENCIL_VIEW_DESC {
+        let (view_dimension, anonymous) = match desc.view_type {
+            ImageViewType::TexArray1D => (
                 D3D12_DSV_DIMENSION_TEXTURE1DARRAY,
                 D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
                     Texture1DArray: D3D12_TEX1D_ARRAY_DSV {
-                        MipSlice: sub_resources.base_mip_level,
-                        FirstArraySlice: sub_resources.base_array_slice,
-                        ArraySize: sub_resources.num_array_slices,
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
                     },
                 },
             ),
-            (TextureDimension::Texture1D, false, _) => (
+            ImageViewType::Tex1D => (
                 D3D12_DSV_DIMENSION_TEXTURE1D,
                 D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
                     Texture1D: D3D12_TEX1D_DSV {
-                        MipSlice: sub_resources.base_mip_level,
+                        MipSlice: desc.sub_resources.base_mip_level,
                     },
                 },
             ),
-            (TextureDimension::Texture2D, true, false) => (
+            ImageViewType::TexArray2D => (
                 D3D12_DSV_DIMENSION_TEXTURE2DARRAY,
                 D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
                     Texture2DArray: D3D12_TEX2D_ARRAY_DSV {
-                        MipSlice: sub_resources.base_mip_level,
-                        FirstArraySlice: sub_resources.base_array_slice,
-                        ArraySize: sub_resources.num_array_slices,
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
                     },
                 },
             ),
-            (TextureDimension::Texture2D, false, false) => (
+            ImageViewType::Tex2D => (
                 D3D12_DSV_DIMENSION_TEXTURE2D,
                 D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
                     Texture2D: D3D12_TEX2D_DSV {
-                        MipSlice: sub_resources.base_mip_level,
+                        MipSlice: desc.sub_resources.base_mip_level,
                     },
                 },
             ),
-            (TextureDimension::Texture2D, true, true) => (
-                D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY,
-                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
-                    Texture2DMSArray: D3D12_TEX2DMS_ARRAY_DSV {
-                        FirstArraySlice: sub_resources.base_array_slice,
-                        ArraySize: sub_resources.num_array_slices,
-                    },
-                },
-            ),
-            (TextureDimension::Texture2D, false, true) => (
-                D3D12_DSV_DIMENSION_TEXTURE2DMS,
-                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
-                    Texture2DMS: D3D12_TEX2DMS_DSV {
-                        UnusedField_NothingToDefine: 0,
-                    },
-                },
-            ),
-            (TextureDimension::Texture3D, _, _) => unreachable!(),
+            // ImageViewType::Texture2D => (
+            //     D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY,
+            //     D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+            //         Texture2DMSArray: D3D12_TEX2DMS_ARRAY_DSV {
+            //             FirstArraySlice: desc.sub_resources.base_array_slice,
+            //             ArraySize: desc.sub_resources.num_array_slices,
+            //         },
+            //     },
+            // ),
+            // ImageViewType::Texture2D => (
+            //     D3D12_DSV_DIMENSION_TEXTURE2DMS,
+            //     D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+            //         Texture2DMS: D3D12_TEX2DMS_DSV {
+            //             UnusedField_NothingToDefine: 0,
+            //         },
+            //     },
+            // ),
+            _ => unreachable!(),
         };
 
         D3D12_DEPTH_STENCIL_VIEW_DESC {
-            Format: texture_format_to_dxgi(format),
+            Format: texture_format_to_dxgi(desc.format),
             ViewDimension: view_dimension,
             Flags: Default::default(),
+            Anonymous: anonymous,
+        }
+    }
+
+    pub fn make_srv_desc_for_view_desc(desc: &ImageViewDesc) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+        let (dimension, anonymous) = match desc.view_type {
+            ImageViewType::Tex1D => (
+                D3D12_SRV_DIMENSION_TEXTURE1D,
+                D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Texture1D: D3D12_TEX1D_SRV {
+                        MostDetailedMip: desc.sub_resources.base_mip_level,
+                        MipLevels: desc.sub_resources.num_mip_levels,
+                        ResourceMinLODClamp: 0.0,
+                    },
+                },
+            ),
+            ImageViewType::Tex2D => (
+                D3D12_SRV_DIMENSION_TEXTURE2D,
+                D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Texture2D: D3D12_TEX2D_SRV {
+                        MostDetailedMip: desc.sub_resources.base_mip_level,
+                        MipLevels: desc.sub_resources.num_mip_levels,
+                        PlaneSlice: plane_layer_for_aspect_flag(
+                            desc.format,
+                            desc.sub_resources.aspect,
+                        )
+                        .unwrap(),
+                        ResourceMinLODClamp: 0.0,
+                    },
+                },
+            ),
+            ImageViewType::Tex3D => (
+                D3D12_SRV_DIMENSION_TEXTURE3D,
+                D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Texture3D: D3D12_TEX3D_SRV {
+                        MostDetailedMip: desc.sub_resources.base_mip_level,
+                        MipLevels: desc.sub_resources.num_mip_levels,
+                        ResourceMinLODClamp: 0.0,
+                    },
+                },
+            ),
+            ImageViewType::TexCube => (
+                D3D12_SRV_DIMENSION_TEXTURECUBE,
+                D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    TextureCube: D3D12_TEXCUBE_SRV {
+                        MostDetailedMip: desc.sub_resources.base_mip_level,
+                        MipLevels: desc.sub_resources.num_mip_levels,
+                        ResourceMinLODClamp: 0.0,
+                    },
+                },
+            ),
+            ImageViewType::TexArray1D => (
+                D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
+                D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Texture1DArray: D3D12_TEX1D_ARRAY_SRV {
+                        MostDetailedMip: desc.sub_resources.base_mip_level,
+                        MipLevels: desc.sub_resources.num_mip_levels,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
+                        ResourceMinLODClamp: 0.0,
+                    },
+                },
+            ),
+            ImageViewType::TexArray2D => (
+                D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
+                D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Texture2DArray: D3D12_TEX2D_ARRAY_SRV {
+                        MostDetailedMip: desc.sub_resources.base_mip_level,
+                        MipLevels: desc.sub_resources.num_mip_levels,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
+                        PlaneSlice: plane_layer_for_aspect_flag(
+                            desc.format,
+                            desc.sub_resources.aspect,
+                        )
+                        .unwrap(),
+                        ResourceMinLODClamp: 0.0,
+                    },
+                },
+            ),
+            ImageViewType::TexCubeArray => (
+                D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
+                D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    TextureCubeArray: D3D12_TEXCUBE_ARRAY_SRV {
+                        MostDetailedMip: desc.sub_resources.base_mip_level,
+                        MipLevels: desc.sub_resources.num_mip_levels,
+                        First2DArrayFace: desc.sub_resources.base_array_slice,
+                        NumCubes: desc.sub_resources.num_array_slices / 6,
+                        ResourceMinLODClamp: 0.0,
+                    },
+                },
+            ),
+        };
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC {
+            Format: texture_format_to_dxgi(desc.format),
+            ViewDimension: dimension,
+            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+            Anonymous: anonymous,
+        }
+    }
+
+    pub fn make_uav_desc_for_view_desc(desc: &ImageViewDesc) -> D3D12_UNORDERED_ACCESS_VIEW_DESC {
+        debug_assert!(desc.writable);
+
+        let (dimension, anonymous) = match desc.view_type {
+            ImageViewType::Tex1D => (
+                D3D12_UAV_DIMENSION_TEXTURE1D,
+                D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Texture1D: D3D12_TEX1D_UAV {
+                        MipSlice: desc.sub_resources.base_mip_level,
+                    },
+                },
+            ),
+            ImageViewType::Tex2D => (
+                D3D12_UAV_DIMENSION_TEXTURE2D,
+                D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Texture2D: D3D12_TEX2D_UAV {
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        PlaneSlice: plane_layer_for_aspect_flag(
+                            desc.format,
+                            desc.sub_resources.aspect,
+                        )
+                        .unwrap(),
+                    },
+                },
+            ),
+            ImageViewType::Tex3D => (
+                D3D12_UAV_DIMENSION_TEXTURE3D,
+                D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Texture3D: D3D12_TEX3D_UAV {
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstWSlice: desc.sub_resources.base_array_slice,
+                        WSize: desc.sub_resources.num_array_slices,
+                    },
+                },
+            ),
+            ImageViewType::TexArray1D => (
+                D3D12_UAV_DIMENSION_TEXTURE1DARRAY,
+                D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Texture1DArray: D3D12_TEX1D_ARRAY_UAV {
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
+                    },
+                },
+            ),
+            ImageViewType::TexArray2D => (
+                D3D12_UAV_DIMENSION_TEXTURE2DARRAY,
+                D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Texture2DArray: D3D12_TEX2D_ARRAY_UAV {
+                        MipSlice: desc.sub_resources.base_mip_level,
+                        FirstArraySlice: desc.sub_resources.base_array_slice,
+                        ArraySize: desc.sub_resources.num_array_slices,
+                        PlaneSlice: plane_layer_for_aspect_flag(
+                            desc.format,
+                            desc.sub_resources.aspect,
+                        )
+                        .unwrap(),
+                    },
+                },
+            ),
+            _ => {
+                unimplemented!("Can't make UAVs for cube maps")
+            }
+        };
+
+        D3D12_UNORDERED_ACCESS_VIEW_DESC {
+            Format: texture_format_to_dxgi(desc.format),
+            ViewDimension: dimension,
             Anonymous: anonymous,
         }
     }
@@ -340,6 +414,99 @@ impl ITexture for Texture {
         desc.name = self.name.as_deref();
         desc
     }
+
+    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.views.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let view = self
+                .device
+                .descriptor_heaps
+                .cpu_view_heap()
+                .allocate()
+                .ok_or(())?;
+
+            if desc.writable {
+                let desc = Self::make_uav_desc_for_view_desc(desc);
+                unsafe {
+                    self.device.device.CreateUnorderedAccessView(
+                        &self.resource,
+                        None,
+                        &desc,
+                        view.into(),
+                    );
+                }
+            } else {
+                let desc = Self::make_srv_desc_for_view_desc(desc);
+                unsafe {
+                    self.device
+                        .device
+                        .CreateShaderResourceView(&self.resource, &desc, view.into());
+                }
+            }
+
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+    }
+
+    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.rtvs.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let view = self
+                .device
+                .descriptor_heaps
+                .cpu_rtv_heap()
+                .allocate()
+                .ok_or(())?;
+
+            unsafe {
+                let desc = Self::make_rtv_desc_for_view_desc(desc);
+                self.device
+                    .device
+                    .CreateRenderTargetView(&self.resource, &desc, view.into());
+            }
+
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+    }
+
+    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        let mut views = self.dsvs.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let view = self
+                .device
+                .descriptor_heaps
+                .cpu_dsv_heap()
+                .allocate()
+                .ok_or(())?;
+
+            unsafe {
+                let desc = Self::make_dsv_desc_for_view_desc(desc);
+                self.device
+                    .device
+                    .CreateDepthStencilView(&self.resource, &desc, view.into());
+            }
+
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+    }
 }
 
 impl IGetPlatformInterface for Texture {
@@ -358,15 +525,18 @@ impl Drop for Texture {
     #[inline]
     fn drop(&mut self) {
         // Free all RTVs associated with this texture
-        let rtvs = self.rtv_cache.read();
-        for (_, rtv) in rtvs.iter() {
-            self.device.descriptor_heaps.cpu_rtv_heap().free(*rtv);
+        for (_, view) in self.views.get_mut().drain() {
+            self.device.descriptor_heaps.cpu_view_heap().free(view);
+        }
+
+        // Free all RTVs associated with this texture
+        for (_, rtv) in self.rtvs.get_mut().drain() {
+            self.device.descriptor_heaps.cpu_rtv_heap().free(rtv);
         }
 
         // Free all DSVs associated with this texture
-        let dsvs = self.dsv_cache.read();
-        for (_, dsv) in dsvs.iter() {
-            self.device.descriptor_heaps.cpu_dsv_heap().free(*dsv);
+        for (_, dsv) in self.dsvs.get_mut().drain() {
+            self.device.descriptor_heaps.cpu_dsv_heap().free(dsv);
         }
     }
 }

@@ -107,10 +107,9 @@ impl SwapChain {
                 desc,
                 name: None,
                 dxgi_format,
-                rtv_cache: RwLock::new(HashMap::new()),
-                dsv_cache: RwLock::new(HashMap::new()),
-                srv_cache: RwLock::new(HashMap::new()),
-                uav_cache: RwLock::new(HashMap::new()),
+                views: Default::default(),
+                rtvs: Default::default(),
+                dsvs: Default::default(),
             });
 
             state.textures.push(texture);

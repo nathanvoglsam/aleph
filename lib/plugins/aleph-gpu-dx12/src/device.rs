@@ -53,7 +53,7 @@ use crate::internal::graphics_pipeline_state_stream::{
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
-use crate::internal::{handle_wait_result, plane_layer_for_aspect_flag, unwrap};
+use crate::internal::{handle_wait_result, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -633,10 +633,9 @@ impl IDevice for Device {
             desc,
             name,
             dxgi_format: resource_desc.Format,
-            rtv_cache: RwLock::new(HashMap::new()),
-            dsv_cache: RwLock::new(HashMap::new()),
-            srv_cache: RwLock::new(HashMap::new()),
-            uav_cache: RwLock::new(HashMap::new()),
+            views: Default::default(),
+            rtvs: Default::default(),
+            dsvs: Default::default(),
         });
         Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }
@@ -1461,117 +1460,9 @@ impl Device {
         writes: &[ImageDescriptorWrite],
     ) {
         for (i, v) in writes.iter().enumerate() {
+            let src = std::mem::transmute::<_, CPUDescriptorHandle>(v.image_view);
+
             let (dst, _) = set.assume_r_handle();
-
-            let image = unwrap::texture(v.image);
-
-            let cache = if v.writable {
-                // &image.uav_cache
-                todo!()
-            } else {
-                &image.srv_cache
-            };
-
-            let src = image.get_or_create_view_for_usage(
-                cache,
-                self.descriptor_heaps.cpu_view_heap(),
-                Some(v.format),
-                &v.sub_resources,
-                |handle, format, subresource_set| {
-                    let dimension = match v.view_type {
-                        ImageViewType::Tex1D => D3D12_SRV_DIMENSION_TEXTURE1D,
-                        ImageViewType::Tex2D => D3D12_SRV_DIMENSION_TEXTURE2D,
-                        ImageViewType::Tex3D => D3D12_SRV_DIMENSION_TEXTURE3D,
-                        ImageViewType::TexCube => D3D12_SRV_DIMENSION_TEXTURECUBE,
-                        ImageViewType::TexArray1D => D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
-                        ImageViewType::TexArray2D => D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
-                        ImageViewType::TexCubeArray => D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
-                    };
-                    let anon = match v.view_type {
-                        ImageViewType::Tex1D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            Texture1D: D3D12_TEX1D_SRV {
-                                MostDetailedMip: v.sub_resources.base_mip_level,
-                                MipLevels: v.sub_resources.num_mip_levels,
-                                ResourceMinLODClamp: 0.0,
-                            },
-                        },
-                        ImageViewType::Tex2D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            Texture2D: D3D12_TEX2D_SRV {
-                                MostDetailedMip: v.sub_resources.base_mip_level,
-                                MipLevels: v.sub_resources.num_mip_levels,
-                                PlaneSlice: plane_layer_for_aspect_flag(
-                                    format,
-                                    subresource_set.aspect,
-                                )
-                                .unwrap(),
-                                ResourceMinLODClamp: 0.0,
-                            },
-                        },
-                        ImageViewType::Tex3D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            Texture3D: D3D12_TEX3D_SRV {
-                                MostDetailedMip: v.sub_resources.base_mip_level,
-                                MipLevels: v.sub_resources.num_mip_levels,
-                                ResourceMinLODClamp: 0.0,
-                            },
-                        },
-                        ImageViewType::TexCube => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            TextureCube: D3D12_TEXCUBE_SRV {
-                                MostDetailedMip: v.sub_resources.base_mip_level,
-                                MipLevels: v.sub_resources.num_mip_levels,
-                                ResourceMinLODClamp: 0.0,
-                            },
-                        },
-                        ImageViewType::TexArray1D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            Texture1DArray: D3D12_TEX1D_ARRAY_SRV {
-                                MostDetailedMip: v.sub_resources.base_mip_level,
-                                MipLevels: v.sub_resources.num_mip_levels,
-                                FirstArraySlice: v.sub_resources.base_array_slice,
-                                ArraySize: v.sub_resources.num_array_slices,
-                                ResourceMinLODClamp: 0.0,
-                            },
-                        },
-                        ImageViewType::TexArray2D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            Texture2DArray: D3D12_TEX2D_ARRAY_SRV {
-                                MostDetailedMip: v.sub_resources.base_mip_level,
-                                MipLevels: v.sub_resources.num_mip_levels,
-                                FirstArraySlice: v.sub_resources.base_array_slice,
-                                ArraySize: v.sub_resources.num_array_slices,
-                                PlaneSlice: plane_layer_for_aspect_flag(
-                                    format,
-                                    v.sub_resources.aspect,
-                                )
-                                .unwrap(),
-                                ResourceMinLODClamp: 0.0,
-                            },
-                        },
-                        ImageViewType::TexCubeArray => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                            TextureCubeArray: D3D12_TEXCUBE_ARRAY_SRV {
-                                MostDetailedMip: v.sub_resources.base_mip_level,
-                                MipLevels: v.sub_resources.num_mip_levels,
-                                First2DArrayFace: v.sub_resources.base_array_slice,
-                                NumCubes: v.sub_resources.num_array_slices / 6,
-                                ResourceMinLODClamp: 0.0,
-                            },
-                        },
-                    };
-
-                    let desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
-                        Format: texture_format_to_dxgi(format),
-                        ViewDimension: dimension,
-                        Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-                        Anonymous: anon,
-                    };
-
-                    self.device
-                        .CreateShaderResourceView(&image.resource, &desc, handle.into())
-                },
-            );
-            let src = if let Some(v) = src {
-                v
-            } else {
-                continue;
-            };
-
             let dst = Self::calculate_dst_handle(
                 dst,
                 self.descriptor_heap_info.resource_inc,

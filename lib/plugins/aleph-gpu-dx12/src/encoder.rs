@@ -44,6 +44,7 @@ use interfaces::gpu::*;
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::any::TypeId;
 use std::ptr::NonNull;
+use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -204,43 +205,17 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
 
         for attachment in info.color_attachments {
-            let image = unwrap::texture(attachment.image);
-            let descriptor = image
-                .get_or_create_rtv_for_usage(
-                    None,
-                    &TextureSubResourceSet {
-                        aspect: TextureAspect::empty(), // TODO: D3D12 doesn't handle plane slices for RTVs so this is meaningless
-                        base_mip_level: attachment.mip_level,
-                        num_mip_levels: 1,
-                        base_array_slice: attachment.base_array_slice,
-                        num_array_slices: attachment.num_array_slices,
-                    },
-                )
-                .unwrap();
-            let format = image.dxgi_format;
+            let descriptor = std::mem::transmute::<_, CPUDescriptorHandle>(attachment.image_view);
+            let format: Option<DXGI_FORMAT> = None; // TODO: how?
             color_attachments.push(translate_rendering_color_attachment(
-                attachment,
-                descriptor,
-                Some(format),
+                attachment, descriptor, format,
             ));
         }
 
         let depth_stencil = info.depth_stencil_attachment.map(|attachment| {
-            let image = unwrap::texture(attachment.image);
-            let descriptor = image
-                .get_or_create_dsv_for_usage(
-                    None,
-                    &TextureSubResourceSet {
-                        aspect: TextureAspect::empty(), // TODO: D3D12 can't create a view over only depth or stencil so this is meaningless
-                        base_mip_level: attachment.mip_level,
-                        num_mip_levels: 1,
-                        base_array_slice: attachment.base_array_slice,
-                        num_array_slices: attachment.num_array_slices,
-                    },
-                )
-                .unwrap();
-            let format = image.dxgi_format;
-            translate_rendering_depth_stencil_attachment(attachment, descriptor, Some(format))
+            let descriptor = std::mem::transmute::<_, CPUDescriptorHandle>(attachment.image_view);
+            let format: Option<DXGI_FORMAT> = None; // TODO: how?
+            translate_rendering_depth_stencil_attachment(attachment, descriptor, format)
         });
 
         let depth_stencil_ref = depth_stencil
