@@ -357,7 +357,7 @@ impl IQueue for Queue {
         }
 
         unsafe {
-            let mut swap_chain = swap_chain.inner.lock();
+            let swap_chain = swap_chain.inner.lock();
 
             let swapchains = [swap_chain.swap_chain];
             let image_indices = [desc.image_index];
