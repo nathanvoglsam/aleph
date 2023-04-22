@@ -30,68 +30,52 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-use target::build::{target_architecture, target_build_type};
-use target::build::{target_build_config, target_platform};
-use target::{Architecture, BuildType};
+use std::path::Path;
+use target::build::target_build_type;
+use target::BuildType;
 
 fn main() {
-    let mut build = cmake::Config::new("library");
+    let vk_header_inc = Path::new("../../../submodules/Vulkan-Headers/include");
+
+    let mut build = cc::Build::new();
+    build.cpp(true);
+    build.include(vk_header_inc);
+    build.include("library/include");
+    build.define("VK_NO_PROTOTYPES", "1");
 
     if target_build_type() == BuildType::Development {
-        build.define("ALEPH_VULKAN_PROFILE_DEBUG", "1");
-    }
-
-    let optimized = target_build_config().is_optimized();
-    let debug = target_build_config().is_debug();
-    match (optimized, debug) {
-        (true, true) => {
-            build.profile("RelWithDebInfo");
-        }
-        (false, true) => {
-            build.profile("Debug");
-        }
-        (_, false) => {
-            build.profile("Release");
-        }
-    }
-
-    // Force link stdc++
-    if target_platform().is_gnu() && target_platform().is_windows() {
-        println!("cargo:rustc-link-lib=dylib=stdc++");
-    }
-
-    if target_platform().is_android() {
-        let android_home = std::env::var("ANDROID_HOME").unwrap();
-        let toolchain_file = format!(
-            "{}/ndk-bundle/build/cmake/android.toolchain.cmake",
-            &android_home
-        );
-
-        build.define("CMAKE_TOOLCHAIN_FILE", &toolchain_file);
-        build.define("ANDROID_PLATFORM", "android-24");
-        build.define("ANDROID_STL", "c++_shared");
-        build.define("ANDROID_ABI", target_architecture().ndk_name());
-
-        match target_architecture() {
-            Architecture::X8664 => {
-                build.target("x86_64-none-linux-android24");
-            }
-            Architecture::AARCH64 => {
-                build.target("aarch64-none-linux-android24");
-            }
-            Architecture::Unknown => {
-                panic!("Unsupported architecture");
-            }
-        }
-    }
-
-    if target_platform().is_msvc() {
-        build.generator("Visual Studio 17 2022");
+        build.file("library/source/debug/vulkan_profiles.cpp");
+        build.file("library/source/debug_callback_slot.cpp");
+        build.define("VP_DEBUG_MESSAGE_CALLBACK", "vpAlephDebugMessageTrampoline");
     } else {
-        build.generator("Ninja");
+        build.file("library/source/vulkan_profiles.cpp");
+        build.file("library/source/debug_callback_slot.cpp");
     }
 
-    let output_dir = build.build();
+    // if target_platform().is_android() {
+    //     let android_home = std::env::var("ANDROID_HOME").unwrap();
+    //     let toolchain_file = format!(
+    //         "{}/ndk-bundle/build/cmake/android.toolchain.cmake",
+    //         &android_home
+    //     );
+    //
+    //     build.define("CMAKE_TOOLCHAIN_FILE", &toolchain_file);
+    //     build.define("ANDROID_PLATFORM", "android-24");
+    //     build.define("ANDROID_STL", "c++_shared");
+    //     build.define("ANDROID_ABI", target_architecture().ndk_name());
+    //
+    //     match target_architecture() {
+    //         Architecture::X8664 => {
+    //             build.target("x86_64-none-linux-android24");
+    //         }
+    //         Architecture::AARCH64 => {
+    //             build.target("aarch64-none-linux-android24");
+    //         }
+    //         Architecture::Unknown => {
+    //             panic!("Unsupported architecture");
+    //         }
+    //     }
+    // }
 
-    println!("cargo:rustc-link-search=native={}", output_dir.display());
+    build.compile("vulkan_profiles");
 }
