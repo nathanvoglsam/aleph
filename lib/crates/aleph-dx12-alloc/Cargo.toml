@@ -47,4 +47,4 @@ aleph-windows = { workspace = true }
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 aleph-target-build = { workspace = true }
-cc = "1"
+cc = { workspace = true }

@@ -44,7 +44,7 @@ build = "build.rs"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [build-dependencies]
-cc = "1"
+cc = { workspace = true }
 zip = "0.6"
 aleph-compile = { workspace = true }
 aleph-target-build = { workspace = true }
