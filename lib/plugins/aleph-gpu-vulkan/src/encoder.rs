@@ -131,9 +131,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             new_viewports.push(
                 vk::ViewportBuilder::new()
                     .x(v.x)
-                    .y(v.y)
+                    .y(v.y + v.height)
                     .width(v.width)
-                    .height(v.height)
+                    .height(-v.height)
                     .min_depth(v.min_depth)
                     .max_depth(v.max_depth),
             );
