@@ -28,6 +28,7 @@
 //
 
 use crate::device::Device;
+use crate::sampler::Sampler;
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
@@ -37,6 +38,7 @@ use std::any::TypeId;
 pub struct DescriptorSetLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) _samplers: Vec<AnyArc<Sampler>>,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
     pub(crate) pool_sizes: Vec<vk::DescriptorPoolSizeBuilder<'static>>,
 }

@@ -292,8 +292,19 @@ impl IDevice for Device {
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
         let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
 
-        let mut sizes = [0; 11];
+        let mut _samplers = Vec::new();
+        let mut static_samplers = Vec::new();
+        for v in desc.items {
+            if let Some(samplers) = v.static_samplers {
+                for sampler in unwrap::sampler_iter(samplers) {
+                    _samplers.push(sampler._this.upgrade().unwrap());
+                    static_samplers.push(sampler.sampler);
+                }
+            }
+        }
 
+        let mut sampler_i = 0;
+        let mut sizes = [0; 11];
         let mut bindings = Vec::with_capacity(desc.items.len());
         for v in desc.items {
             let descriptor_type = descriptor_type_to_vk(v.binding_type);
@@ -306,7 +317,15 @@ impl IDevice for Device {
                 .descriptor_type(descriptor_type)
                 .descriptor_count(descriptor_count)
                 .stage_flags(stage_flags);
-            // .immutable_samplers()
+
+            let binding = if let Some(samplers) = v.static_samplers {
+                let base = sampler_i;
+                sampler_i += samplers.len();
+                binding.immutable_samplers(&static_samplers[base..sampler_i])
+            } else {
+                binding
+            };
+
             bindings.push(binding);
         }
 
@@ -335,6 +354,7 @@ impl IDevice for Device {
         let out = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
+            _samplers,
             descriptor_set_layout,
             pool_sizes,
         });
