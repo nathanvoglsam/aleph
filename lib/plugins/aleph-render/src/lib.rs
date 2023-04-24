@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
-
 extern crate aleph_egui as egui;
 extern crate aleph_interfaces as interfaces;
 extern crate cstr;

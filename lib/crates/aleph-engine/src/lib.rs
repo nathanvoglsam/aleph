@@ -81,8 +81,10 @@ impl EngineBuilder {
         self.plugin(core::PluginCore::new());
 
         if !headless {
-            #[cfg(target_os = "windows")]
-            self.plugin(aleph_gpu_dx12::PluginGpuDX12::new());
+            self.plugin(aleph_gpu_vulkan::PluginGpuVulkan::new());
+
+            // #[cfg(target_os = "windows")]
+            // self.plugin(aleph_gpu_dx12::PluginGpuDX12::new());
         }
 
         self.platform(headless);
@@ -90,13 +92,11 @@ impl EngineBuilder {
         // This only makes sense to load on platforms we have a renderer for, and only if we're not
         // trying to run headless
         if !headless {
-            #[cfg(target_os = "windows")]
             self.plugin(egui::PluginEgui::new());
         }
 
         // This only makes sense to load on windows and not headless
         if !headless {
-            #[cfg(target_os = "windows")]
             self.plugin(aleph_render::PluginRender::new());
         }
 

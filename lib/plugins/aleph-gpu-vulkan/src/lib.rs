@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
-
 pub extern crate aleph_vulkan_alloc as vulkan_alloc;
 
 extern crate aleph_interfaces as interfaces;
