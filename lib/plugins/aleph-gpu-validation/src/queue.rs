@@ -108,10 +108,12 @@ impl IQueue for ValidationQueue {
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         for v in desc.command_lists {
-            let v = v
+            let list_box = v.take().unwrap();
+            let list = list_box
                 .query_interface::<ValidationCommandList>()
                 .expect("Unknown ICommandList implementation");
-            self.validate_command_list_submission(v);
+            self.validate_command_list_submission(list);
+            v.set(Some(list_box));
         }
 
         // TODO: Validating semaphore usage requires tracking the submissions to fully track a

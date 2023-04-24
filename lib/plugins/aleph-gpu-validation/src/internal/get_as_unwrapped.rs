@@ -54,8 +54,9 @@ use crate::{
     ValidationBuffer, ValidationCommandList, ValidationDescriptorSetLayout, ValidationFence,
     ValidationSampler, ValidationSemaphore, ValidationSwapChain, ValidationTexture,
 };
-use interfaces::any::QueryInterface;
+use interfaces::any::{box_downcast, QueryInterface};
 use interfaces::gpu::*;
+use std::cell::Cell;
 use std::ops::Deref;
 use std::ptr::NonNull;
 
@@ -141,10 +142,10 @@ pub fn queue_submit_desc<Return>(
         .command_lists
         .iter()
         .map(|v| {
-            v.query_interface::<ValidationCommandList>()
-                .expect("Unknown ICommandList implementation")
-                .inner
-                .as_ref()
+            let v = v.take().unwrap();
+            let v = box_downcast::<_, ValidationCommandList>(v).ok().unwrap();
+            let v = v.inner;
+            Cell::new(Some(v))
         })
         .collect();
 
