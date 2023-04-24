@@ -38,6 +38,7 @@ fn main() {
 
     let mut build = cc::Build::new();
     build.cpp(true);
+    build.flag_if_supported("-w");
     build.define("VMA_STATIC_VULKAN_FUNCTIONS", "0");
     build.file("library/vk_mem_alloc.cpp");
     build.include(vk_header_inc);
