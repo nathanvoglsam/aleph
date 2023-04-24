@@ -39,6 +39,7 @@ fn main() {
 
     let mut build = cc::Build::new();
     build.cpp(true);
+    build.flag_if_supported("-w");
     build.include(vk_header_inc);
     build.include("library/include");
     build.define("VK_NO_PROTOTYPES", "1");
