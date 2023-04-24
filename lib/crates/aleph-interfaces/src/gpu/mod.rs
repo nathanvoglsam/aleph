@@ -35,6 +35,7 @@ use any::{AnyArc, IAny};
 use bitflags::bitflags;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
+use std::cell::Cell;
 use std::fmt::{Debug, Display, Formatter};
 use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
@@ -3527,7 +3528,7 @@ impl Display for QueueType {
 #[derive(Clone)]
 pub struct QueueSubmitDesc<'a> {
     /// A list of the command lists that are to be submitted in this batch
-    pub command_lists: &'a [&'a dyn ICommandList],
+    pub command_lists: &'a [Cell<Option<Box<dyn ICommandList>>>],
 
     /// A list of semaphores that will block the execution of the batch until all semaphores in the
     /// list are signaled.
