@@ -141,7 +141,7 @@ impl ISwapChain for SwapChain {
         let inner = self.inner.lock();
         let result = self.device.device_loader.acquire_next_image_khr(
             inner.swap_chain,
-            u64::MAX - 1,
+            u64::MAX,
             semaphore.semaphore,
             vk::Fence::null(),
         );
