@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
+use crate::command_list::CommandList;
 use crate::internal::unwrap;
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
-use interfaces::any::{AnyArc, AnyWeak, IAny, TraitObject};
+use interfaces::any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::Mutex;
@@ -296,9 +297,14 @@ impl IQueue for Queue {
                 .map_err(|v| anyhow!(v))?;
         }
 
-        let handles: Vec<Option<ID3D12CommandList>> = unwrap::command_list_iter(desc.command_lists)
-            .map(|v| Some(v.list.clone().into()))
-            .collect();
+        let mut handles: Vec<Option<ID3D12CommandList>> =
+            Vec::with_capacity(desc.command_lists.len());
+        for list in desc.command_lists {
+            let list = list.take().unwrap();
+            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
+
+            handles.push(Some(list.list.into()));
+        }
 
         self.handle.ExecuteCommandLists(&handles);
 
