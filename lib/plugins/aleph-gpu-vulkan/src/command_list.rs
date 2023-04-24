@@ -115,10 +115,12 @@ impl ICommandList for CommandList {
 impl Drop for CommandList {
     fn drop(&mut self) {
         unsafe {
-            // The list is destroyed with the pool
-            self._device
-                .device_loader
-                .destroy_command_pool(self.pool, None);
+            if !self.pool.is_null() {
+                // The list is destroyed with the pool
+                self._device
+                    .device_loader
+                    .destroy_command_pool(self.pool, None);
+            }
         }
     }
 }

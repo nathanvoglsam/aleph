@@ -37,7 +37,7 @@ use interfaces::any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::Mutex;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::ffi::CString;
 use std::mem::transmute;
 use std::ops::Deref;
@@ -154,23 +154,6 @@ impl Queue {
         })
     }
 
-    /// Inserts a Signal operation onto the ID3D12Queue that signals self.fence with the ID of the
-    /// most recent submission. This is part of our queue work tracking and is needed to implement
-    /// wait_idle as D3D12 doesn't provide a magic 'wait_idle' function like Vulkan does with
-    /// vkQueueWaitIdle.
-    ///
-    /// This is intended to be used in queue submissions to flag self.fence to be signalled when
-    /// the submission is complete.
-    ///
-    /// # Safety
-    ///
-    /// It is the caller's responsibility to ensure that 'last_submitted_index' is only ever
-    /// monotonically increased. This calls ID3D12Queue::Signal with self.fence. An ID3D12Fence's
-    /// counter must always be signalled monotonically.
-    ///
-    /// This function can't trigger the condition on its own, as it uses a fetch_add to acquire the
-    /// signal value and never decrements the index, but requires the caller to ensure they never
-    /// allow last_submitted_index to be decremented for the program to remain sound.
     pub(crate) fn next_submission_index(&self) -> u64 {
         // Get the state of last_submitted_index before and after we increment it
         let old_index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
@@ -254,6 +237,10 @@ impl IQueue for Queue {
                     .push(v)
                     .ok()
                     .expect("Overflowed in-flight command list tracking buffer");
+            } else {
+                unsafe {
+                    v.items.collect(&device);
+                }
             }
         }
     }
@@ -295,10 +282,15 @@ impl IQueue for Queue {
         signal_semaphores.push(self.semaphore);
         signal_values.push(index);
 
+        let mut collectables: Vec<Box<dyn ICollect>> = Vec::with_capacity(desc.command_lists.len());
         let mut command_buffers = Vec::with_capacity(desc.command_lists.len());
         for list in desc.command_lists {
             let list = list.take().unwrap();
             let mut list = box_downcast::<_, CommandList>(list).ok().unwrap();
+
+            collectables.push(Box::new(CommandListSubmission {
+                pool: std::mem::take(&mut list.pool),
+            }));
             command_buffers.push(std::mem::take(&mut list.buffer));
         }
 
@@ -328,16 +320,14 @@ impl IQueue for Queue {
                 .map_err(|v| anyhow!(v))?;
         }
 
-        for _ in command_buffers {
-            // TODO: we want to do some garbage collection for resources
-            self.in_flight
-                .push(QueueSubmission {
-                    index,
-                    items: Vec::new(),
-                })
-                .ok()
-                .expect("Overflowed in-flight submission tracking buffer");
-        }
+        // TODO: we want to do some garbage collection for resources
+        self.in_flight
+            .push(QueueSubmission {
+                index,
+                items: CollectBundle::Bundle(collectables),
+            })
+            .ok()
+            .expect("Overflowed in-flight submission tracking buffer");
 
         Ok(())
     }
@@ -378,15 +368,6 @@ impl IQueue for Queue {
                     .map_err(|v| anyhow!(v))?;
             }
         }
-
-        let index = self.next_submission_index();
-        let info = vk::SemaphoreSignalInfoBuilder::new()
-            .semaphore(self.semaphore)
-            .value(index);
-        device
-            .device_loader
-            .signal_semaphore(&info)
-            .map_err(|v| anyhow!(v))?;
 
         Ok(())
     }
@@ -462,14 +443,6 @@ impl IQueueDebug for Queue {
     }
 }
 
-pub struct QueueSubmission {
-    /// The index of the queue submission. Used for tracking when the work has been retired
-    pub index: u64,
-
-    /// A list of times to be dropped
-    pub items: Vec<Box<dyn Any + Send + Sync>>,
-}
-
 #[derive(Clone)]
 pub struct QueueInfo {
     pub family_index: u32,
@@ -486,5 +459,64 @@ impl QueueInfo {
             timestamp_valid_bits: family.timestamp_valid_bits,
             sparse_binding: family.queue_flags.contains(vk::QueueFlags::SPARSE_BINDING),
         }
+    }
+}
+
+pub struct QueueSubmission {
+    /// The index of the queue submission. Used for tracking when the work has been retired
+    pub index: u64,
+
+    /// A list of times to be dropped
+    pub items: CollectBundle,
+}
+
+/// Internal trait used by collectable objects to handle being garbage collected
+pub trait ICollect: Send + Sync + 'static {
+    unsafe fn collect(&self, device: &Device);
+}
+
+// TODO: This could be optimized to use a ring buffer for allocating the 'boxed' objects to avoid
+//       hitting the system heap.
+pub enum CollectBundle {
+    Single(Box<dyn ICollect>),
+
+    /// A collection of collectable objects
+    Bundle(Vec<Box<dyn ICollect>>),
+}
+
+impl ICollect for CollectBundle {
+    unsafe fn collect(&self, device: &Device) {
+        match self {
+            CollectBundle::Single(v) => v.collect(device),
+            CollectBundle::Bundle(v) => v.iter().for_each(|v| v.collect(device)),
+        }
+    }
+}
+
+impl From<Box<dyn ICollect>> for CollectBundle {
+    fn from(value: Box<dyn ICollect>) -> Self {
+        Self::Single(value)
+    }
+}
+
+impl<T: ICollect> From<Box<T>> for CollectBundle {
+    fn from(value: Box<T>) -> Self {
+        Self::Single(value)
+    }
+}
+
+impl From<Vec<Box<dyn ICollect>>> for CollectBundle {
+    fn from(value: Vec<Box<dyn ICollect>>) -> Self {
+        Self::Bundle(value)
+    }
+}
+
+pub struct CommandListSubmission {
+    pool: vk::CommandPool,
+}
+
+impl ICollect for CommandListSubmission {
+    unsafe fn collect(&self, device: &Device) {
+        device.device_loader.destroy_command_pool(self.pool, None);
     }
 }
