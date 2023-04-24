@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
+use crate::command_list::CommandList;
 use crate::device::Device;
 use crate::internal::unwrap;
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use erupt::{vk, ExtendableFrom};
-use interfaces::any::{AnyArc, AnyWeak, IAny, TraitObject};
+use interfaces::any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use parking_lot::Mutex;
@@ -294,9 +295,12 @@ impl IQueue for Queue {
         signal_semaphores.push(self.semaphore);
         signal_values.push(index);
 
-        let command_buffers: Vec<vk::CommandBuffer> = unwrap::command_list_iter(desc.command_lists)
-            .map(|v| v.buffer)
-            .collect();
+        let mut command_buffers = Vec::with_capacity(desc.command_lists.len());
+        for list in desc.command_lists {
+            let list = list.take().unwrap();
+            let mut list = box_downcast::<_, CommandList>(list).ok().unwrap();
+            command_buffers.push(std::mem::take(&mut list.buffer));
+        }
 
         // Signal the fence, if one is provided, to let CPU know the submitted commands are
         // now fully retired.
