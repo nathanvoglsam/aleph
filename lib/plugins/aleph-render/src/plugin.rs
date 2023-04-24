@@ -206,7 +206,7 @@ impl IPlugin for PluginRender {
 
                     queue
                         .submit(&QueueSubmitDesc {
-                            command_lists: &[command_list.as_ref()],
+                            command_lists: &[Some(command_list).into()],
                             wait_semaphores: &[acquire_semaphore.as_ref()],
                             signal_semaphores: &[present_semaphore.as_ref()],
                             fence: None,
