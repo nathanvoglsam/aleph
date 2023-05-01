@@ -116,10 +116,7 @@ pub fn installed_memory() -> Option<NonZeroU64> {
     #[cfg(windows)]
     return *windows_memory::SYSTEM_MEMORY;
 
-    #[cfg(target_os = "linux")]
-    return *linux_memory::SYSTEM_MEMORY;
-
-    #[cfg(target_os = "macos")]
+    #[cfg(unix)]
     return *unix_memory::SYSTEM_MEMORY;
 
     return *null_memory::SYSTEM_MEMORY;
