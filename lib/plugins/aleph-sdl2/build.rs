@@ -43,7 +43,7 @@ fn dll_name() -> &'static str {
         | Platform::UniversalWindowsGNU
         | Platform::UniversalWindowsMSVC => "SDL2.dll",
         Platform::Linux | Platform::Android => "libSDL2.so",
-        Platform::MacOS => unimplemented!(),
+        Platform::MacOS => "libSDL2-2.0.dylib",
         Platform::Unknown => panic!("Unsupported Platform"),
     }
 }
@@ -226,7 +226,52 @@ fn main() {
             println!("cargo:rustc-link-search=all={}", lib_dir.display());
         }
         Platform::MacOS => {
-            unimplemented!()
+            // If we're building for macos we need to compile SDL2 ourselves. Same reason as windows
+
+            let mut build = cmake::Config::new("../../../submodules/SDL-mirror");
+            build.generator("Ninja");
+
+            // Don't compile the SDL2 static library
+            build.define("SDL_STATIC", "OFF");
+
+            build.define("HAVE_GCC_WDECLARATION_AFTER_STATEMENT", "FALSE");
+
+            let optimized = target::build::target_build_config().is_optimized();
+            let debug = target::build::target_build_config().is_debug();
+            match (optimized, debug) {
+                (true, true) => {
+                    build.profile("RelWithDebInfo");
+                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
+                }
+                (false, true) => {
+                    build.profile("Debug");
+                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
+                }
+                (_, false) => {
+                    build.profile("Release");
+                }
+            }
+
+            let out_dir = build.build();
+
+            // We're going to need the output lib and bin dir
+            let lib_dir = out_dir.join("lib");
+            let bin_dir = out_dir.join("bin");
+
+            // Give rustc the directory of where to find the lib files to link to
+            println!("cargo:rustc-link-search=all={}", &lib_dir.display());
+
+            // Give rustc the directory of where to find the lib files to link to
+            println!("cargo:rustc-link-search=all={}", &bin_dir.display());
+
+            // Copy the output dll file to the artifacts dir
+            let source = lib_dir.join(dll_name());
+            compile::copy_file_to_artifacts_dir_with_name(&source, "libSDL2.dylib")
+                .expect("Failed to copy SDL2 dll/so to artifacts dir");
+
+            // Copy the output dll file to the target dir
+            compile::copy_file_to_target_dir_with_name(&source, "libSDL2.dylib")
+                .expect("Failed to copy SDL2 dll/so to target dir");
         }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.
