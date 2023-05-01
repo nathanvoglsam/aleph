@@ -43,6 +43,7 @@ fn main() {
     build.include(vk_header_inc);
     build.include("library/include");
     build.define("VK_NO_PROTOTYPES", "1");
+    build.define("VK_ENABLE_BETA_EXTENSIONS", "1");
 
     if target_platform().is_windows() {
         if target_platform().is_gnu() {
