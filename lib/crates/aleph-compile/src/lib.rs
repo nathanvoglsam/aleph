@@ -100,3 +100,38 @@ pub fn copy_file_to_target_dir(source: &Path) -> std::io::Result<()> {
 
     Ok(())
 }
+
+///
+/// Copy a file into the artifacts directory
+///
+pub fn copy_file_to_artifacts_dir_with_name(source: &Path, name: &str) -> std::io::Result<()> {
+    let mut out_artifact = artifacts_dir();
+
+    // Create the artifacts dir if it doesn't already exist
+    if !out_artifact.exists() {
+        std::fs::create_dir_all(&out_artifact).unwrap();
+    }
+
+    // Make the output file name
+    out_artifact.push(name);
+
+    // Do the copy
+    std::fs::copy(source, &out_artifact)?;
+
+    Ok(())
+}
+
+///
+/// Copy a file into the target directory
+///
+pub fn copy_file_to_target_dir_with_name(source: &Path, name: &str) -> std::io::Result<()> {
+    let mut out_artifact = cargo_target_dir();
+
+    // Make the output file name
+    out_artifact.push(name);
+
+    // Do the copy
+    std::fs::copy(source, &out_artifact)?;
+
+    Ok(())
+}
