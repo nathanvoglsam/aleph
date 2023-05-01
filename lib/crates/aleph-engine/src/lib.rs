@@ -195,6 +195,7 @@ impl Engine {
         let logical_cpus = aleph_sys_info::logical_core_count();
         let (system_ram_mib, system_ram_gib) = aleph_sys_info::installed_memory()
             .map(|v| {
+                let v = v.get();
                 let mib = (v / (1024 * 1024)).to_string();
                 let gib = (v / (1024 * 1024 * 1024)).to_string();
                 (mib, gib)
