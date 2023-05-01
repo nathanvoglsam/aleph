@@ -386,7 +386,7 @@ impl IContext for Context {
                 }
 
                 #[cfg(any(target_os = "macos"))]
-                RawWindowHandle::MacOS(handle) => {
+                RawWindowHandle::AppKit(handle) => {
                     use erupt::extensions::mvk_macos_surface::*;
 
                     let create_info = MacOSSurfaceCreateInfoMVK {
