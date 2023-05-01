@@ -67,7 +67,7 @@ utf16_lit = { workspace = true }
 raw-cpuid = "10"
 num_cpus = "1"
 
-[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(windows)'.dependencies]
 aleph-gpu-dx12 = { path = "../../plugins/aleph-gpu-dx12", version = "0.1" }
 aleph-windows = { workspace = true }
 

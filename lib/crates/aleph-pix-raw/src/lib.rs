@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![cfg(windows)]
+
 use std::os::raw::c_char;
 use std::os::raw::c_void;
 

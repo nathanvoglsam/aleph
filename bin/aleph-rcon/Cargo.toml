@@ -41,8 +41,8 @@ log = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 
-[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(windows)'.dependencies]
 aleph-dx12-agility-sdk = { path = "../../lib/crates/aleph-dx12-agility-sdk", version = "1.706.0" }
 
-[target.'cfg(target_os = "windows")'.build-dependencies]
+[target.'cfg(windows)'.build-dependencies]
 aleph-dx12-agility-sdk = { path = "../../lib/crates/aleph-dx12-agility-sdk", version = "1.706.0" }

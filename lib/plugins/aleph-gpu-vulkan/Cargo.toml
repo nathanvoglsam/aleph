@@ -60,5 +60,5 @@ parking_lot = { workspace = true }
 console = "0.15"
 byteorder = "1"
 
-[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

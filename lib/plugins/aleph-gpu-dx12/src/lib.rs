@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
+#![cfg(windows)]
 
 pub extern crate aleph_dx12_alloc as dx12_alloc;
 pub extern crate aleph_pix as pix;

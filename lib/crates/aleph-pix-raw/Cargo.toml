@@ -43,7 +43,7 @@ build = "build.rs"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[build-dependencies]
+[target.'cfg(windows)'.build-dependencies]
 cc = { workspace = true }
 zip = "0.6"
 aleph-compile = { workspace = true }

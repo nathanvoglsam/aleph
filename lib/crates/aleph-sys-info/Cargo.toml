@@ -47,7 +47,7 @@ once_cell = { workspace = true }
 raw-cpuid = "10"
 num_cpus = "1"
 
-[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
 utf16_lit = { workspace = true }
 

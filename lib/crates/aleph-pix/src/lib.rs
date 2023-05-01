@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
+#![cfg(windows)]
 
 extern crate aleph_pix_raw as pix_raw;
 extern crate aleph_windows as windows;
