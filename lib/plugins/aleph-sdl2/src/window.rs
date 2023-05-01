@@ -133,15 +133,33 @@ impl WindowImpl {
         const DEFAULT_WIDTH: u32 = 1600;
         const DEFAULT_HEIGHT: u32 = 900;
 
-        let mut window = video_ctx
-            .window(title, DEFAULT_WIDTH, DEFAULT_HEIGHT)
-            .resizable()
-            .build()
-            .expect("Failed to create window");
+        let mut window = video_ctx.window(title, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        window.resizable();
+
+        #[cfg(target_os = "macos")]
+        {
+            use sdl2_sys::SDL_WindowFlags::SDL_WINDOW_METAL;
+            // Add the SDL_WINDOW_METAL flag on macos as we need it for a graphics context
+            window.set_window_flags(window.window_flags() | SDL_WINDOW_METAL as u32);
+        }
+
+        let mut window = window.build().expect("Failed to create window");
 
         let drawable_size = window.vulkan_drawable_size();
 
         let display_mode = window.display_mode().unwrap();
+
+        let mut raw_window_handle = window.raw_window_handle();
+        #[cfg(target_os = "macos")]
+        unsafe {
+            use sdl2_sys::SDL_Metal_CreateView;
+
+            if let RawWindowHandle::AppKit(v) = &mut raw_window_handle {
+                v.ns_view = SDL_Metal_CreateView(window.raw());
+            } else {
+                panic!("We only support MacOS window handles, not iOS");
+            }
+        }
 
         let window_state = WindowState {
             title: title.to_string(),
@@ -154,7 +172,7 @@ impl WindowImpl {
             refresh_rate: display_mode.refresh_rate as _,
             fullscreen: false,
             focused: false,
-            handle: window.raw_window_handle(),
+            handle: raw_window_handle,
         };
 
         let out = Self {

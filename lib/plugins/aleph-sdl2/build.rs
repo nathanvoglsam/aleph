@@ -266,11 +266,11 @@ fn main() {
 
             // Copy the output dll file to the artifacts dir
             let source = lib_dir.join(dll_name());
-            compile::copy_file_to_artifacts_dir_with_name(&source, "libSDL2.dylib")
+            compile::copy_file_to_artifacts_dir(&source)
                 .expect("Failed to copy SDL2 dll/so to artifacts dir");
 
             // Copy the output dll file to the target dir
-            compile::copy_file_to_target_dir_with_name(&source, "libSDL2.dylib")
+            compile::copy_file_to_target_dir(&source)
                 .expect("Failed to copy SDL2 dll/so to target dir");
         }
         Platform::Unknown => {
