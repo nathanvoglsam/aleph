@@ -341,13 +341,13 @@ impl SwapChain {
 
         // Check if we're outside the valid width range
         if extents.width > capabilities.max_image_extent.width
-            || extents.width < capabilities.max_image_extent.height
+            || extents.width < capabilities.min_image_extent.width
         {
             return Err(SwapChainCreateError::UnsupportedWidth(extents.width));
         }
 
         // Check if we're outside the valid height range
-        if extents.height > capabilities.min_image_extent.width
+        if extents.height > capabilities.max_image_extent.height
             || extents.height < capabilities.min_image_extent.height
         {
             return Err(SwapChainCreateError::UnsupportedHeight(extents.height));
