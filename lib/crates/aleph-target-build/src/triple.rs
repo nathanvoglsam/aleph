@@ -43,7 +43,7 @@ pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&
             Platform::WindowsMSVC => Some("x86_64-pc-windows-msvc"),
             Platform::Linux => Some("x86_64-unknown-linux-gnu"),
             Platform::Android => Some("x86_64-linux-android"),
-            Platform::MacOSX => Some("x86_64-apple-darwin"),
+            Platform::MacOS => Some("x86_64-apple-darwin"),
             Platform::Unknown => None,
         },
         Architecture::AARCH64 => match platform {
@@ -53,7 +53,7 @@ pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&
             Platform::WindowsMSVC => Some("aarch64-pc-windows-msvc"),
             Platform::Linux => Some("aarch64-unknown-linux-gnu"),
             Platform::Android => Some("aarch64-linux-android"),
-            Platform::MacOSX => Some("aarch64-apple-darwin"),
+            Platform::MacOS => Some("aarch64-apple-darwin"),
             Platform::Unknown => None,
         },
         Architecture::Unknown => None,
