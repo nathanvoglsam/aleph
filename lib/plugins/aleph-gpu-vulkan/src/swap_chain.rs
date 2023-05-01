@@ -199,6 +199,8 @@ impl SwapChain {
             panic!("swap chain doesn't support all required usage flags");
         }
 
+        let old_swapchain = inner.swap_chain;
+
         let swap_create_info = vk::SwapchainCreateInfoKHRBuilder::new()
             .surface(self.surface.surface)
             .min_image_count(buffer_count)
@@ -211,7 +213,7 @@ impl SwapChain {
             .pre_transform(vk::SurfaceTransformFlagBitsKHR::IDENTITY_KHR)
             .composite_alpha(vk::CompositeAlphaFlagBitsKHR::OPAQUE_KHR)
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
-            .old_swapchain(inner.swap_chain)
+            .old_swapchain(old_swapchain)
             .clipped(true);
 
         // TODO: Handle destroying the old swap chain
@@ -222,6 +224,12 @@ impl SwapChain {
             .create_swapchain_khr(&swap_create_info, None)
             .result()
             .map_err(|e| anyhow!(e))?;
+
+        if !old_swapchain.is_null() {
+            self.device
+                .device_loader
+                .destroy_swapchain_khr(old_swapchain, None);
+        }
 
         let images = self
             .device

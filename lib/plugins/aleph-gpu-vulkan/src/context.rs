@@ -328,7 +328,8 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.instance_loader.create_wayland_surface_khr(&create_info, None)
+                    self.instance_loader
+                        .create_wayland_surface_khr(&create_info, None)
                 }
 
                 #[cfg(any(
@@ -347,7 +348,8 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.instance_loader.create_xlib_surface_khr(&create_info, None)
+                    self.instance_loader
+                        .create_xlib_surface_khr(&create_info, None)
                 }
 
                 #[cfg(any(
@@ -366,7 +368,8 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.instance_loader.create_xcb_surface_khr(&create_info, None)
+                    self.instance_loader
+                        .create_xcb_surface_khr(&create_info, None)
                 }
 
                 #[cfg(any(target_os = "android"))]
@@ -378,7 +381,8 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.instance_loader.create_android_surface_khr(&create_info, None)
+                    self.instance_loader
+                        .create_android_surface_khr(&create_info, None)
                 }
 
                 #[cfg(any(target_os = "macos"))]
@@ -390,7 +394,8 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.instance_loader.create_mac_os_surface_mvk(&create_info, None)
+                    self.instance_loader
+                        .create_mac_os_surface_mvk(&create_info, None)
                 }
 
                 #[cfg(any(target_os = "ios"))]
@@ -402,7 +407,8 @@ impl IContext for Context {
                         ..Default::default()
                     };
 
-                    self.instance_loader.create_ios_surface_mvk(&create_info, None)
+                    self.instance_loader
+                        .create_ios_surface_mvk(&create_info, None)
                 }
 
                 #[cfg(target_os = "windows")]
