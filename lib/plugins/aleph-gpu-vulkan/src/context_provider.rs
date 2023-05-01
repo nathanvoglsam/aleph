@@ -126,12 +126,19 @@ impl ContextProvider {
         let profile = profile_props_from_loaders(entry_loader, None, profile_name, spec_version);
 
         Box::new(move |p_create_info, p_allocator| unsafe {
+            let mut create_info = p_create_info.clone();
+            if cfg!(target_os = "macos") {
+                // Add the VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR flag manually as erupt
+                // doesn't have it yet.
+                create_info.flags = vk::InstanceCreateFlags::from_bits_unchecked(0b1);
+            }
+
             // Move the profile into the closure instance
             let profile = profile;
             let flags = flags;
 
             let create_info = VpInstanceCreateInfo {
-                pCreateInfo: p_create_info,
+                pCreateInfo: &create_info,
                 pProfile: &profile,
                 flags,
             };
@@ -216,6 +223,12 @@ fn get_wanted_extensions(debug: bool) -> Vec<*const c_char> {
     if cfg!(target_os = "windows") {
         // Windows, again a single WSI extension.
         extensions.push(khr_win32_surface::KHR_WIN32_SURFACE_EXTENSION_NAME);
+    }
+    if cfg!(target_os = "macos") {
+        // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
+        // order for the loader to give us our mvk device.
+        extensions.push(mvk_macos_surface::MVK_MACOS_SURFACE_EXTENSION_NAME);
+        extensions.push("VK_KHR_portability_enumeration\0".as_ptr() as *const _);
     }
 
     // Add the debug extension if requested
