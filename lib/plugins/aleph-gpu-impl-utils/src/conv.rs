@@ -43,6 +43,7 @@ pub const fn pci_id_to_vendor(v: u32) -> AdapterVendor {
     match v {
         0x1002 => AdapterVendor::AMD,
         0x1010 => AdapterVendor::ImaginationTechnology,
+        0x106B => AdapterVendor::Apple,
         0x10DE => AdapterVendor::NVIDIA,
         0x13B5 => AdapterVendor::ARM,
         0x5143 => AdapterVendor::Qualcomm,
