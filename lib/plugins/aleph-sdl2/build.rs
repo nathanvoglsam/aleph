@@ -43,6 +43,7 @@ fn dll_name() -> &'static str {
         | Platform::UniversalWindowsGNU
         | Platform::UniversalWindowsMSVC => "SDL2.dll",
         Platform::Linux | Platform::Android => "libSDL2.so",
+        Platform::MacOS => unimplemented!(),
         Platform::Unknown => panic!("Unsupported Platform"),
     }
 }
@@ -60,6 +61,7 @@ fn get_ndk_build_file() -> String {
         Platform::UniversalWindowsGNU => panic!("Unsupported host"),
         Platform::UniversalWindowsMSVC => panic!("Unsupported host"),
         Platform::Android => panic!("Unsupported host"),
+        Platform::MacOS => unimplemented!(),
         Platform::Unknown => panic!("Unsupported host"),
     }
 }
@@ -222,6 +224,9 @@ fn main() {
             lib_dir.push("local");
             lib_dir.push(target::build::target_architecture().ndk_name());
             println!("cargo:rustc-link-search=all={}", lib_dir.display());
+        }
+        Platform::MacOS => {
+            unimplemented!()
         }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.
