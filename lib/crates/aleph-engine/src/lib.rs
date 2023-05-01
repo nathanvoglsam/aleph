@@ -169,7 +169,7 @@ impl Engine {
     ///
     fn log_engine_info() {
         let engine_name = "AlephEngine";
-        let engine_version = "0.1.0";
+        let engine_version = env!("CARGO_PKG_VERSION");
         let arch = aleph_target::build::target_architecture().name();
         let os = aleph_target::build::target_platform().pretty_name();
         let build = aleph_target::build::target_build_type().pretty_name();
