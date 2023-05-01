@@ -88,7 +88,7 @@ pub mod build {
             aleph_target::Platform::Android
         } else if cfg!(target_os = "linux") {
             aleph_target::Platform::Linux
-        } else if cfg!(target_os = "darwin") {
+        } else if cfg!(target_os = "macos") {
             aleph_target::Platform::MacOS
         } else {
             aleph_target::Platform::Unknown
