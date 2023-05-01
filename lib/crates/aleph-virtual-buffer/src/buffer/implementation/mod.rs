@@ -27,20 +27,20 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 mod windows;
 
-#[cfg(target_os = "windows")]
+#[cfg(windows)]
 pub use windows::*;
 
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
 mod unix;
 
-#[cfg(target_os = "linux")]
+#[cfg(unix)]
 pub use unix::*;
 
-#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+#[cfg(not(any(windows, unix)))]
 mod unsupported;
 
-#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+#[cfg(not(any(windows, unix)))]
 pub use unsupported::*;
