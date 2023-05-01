@@ -33,9 +33,7 @@ fn main() {
 }
 
 #[cfg(not(windows))]
-fn main() {
-
-}
+fn main() {}
 
 #[cfg(windows)]
 mod windows {
@@ -127,4 +125,3 @@ mod windows {
         std::fs::write(out, bytes).unwrap();
     }
 }
-
