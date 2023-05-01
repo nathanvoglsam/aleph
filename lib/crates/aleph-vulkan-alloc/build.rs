@@ -31,6 +31,7 @@ extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
 use std::path::Path;
+use target::build::target_platform;
 
 fn main() {
     let vk_header_inc = Path::new("../../../submodules/Vulkan-Headers/include");
@@ -43,6 +44,16 @@ fn main() {
     build.file("library/vk_mem_alloc.cpp");
     build.include(vk_header_inc);
     build.include(vma_header_inc);
+
+    if target_platform().is_windows() {
+        if target_platform().is_gnu() {
+            build.flag("-std=c++17");
+        } else {
+            build.flag("/std:c++17");
+        }
+    } else {
+        build.flag("-std=c++17");
+    }
 
     if cfg!(feature = "corruption_detection") {
         build.define("VMA_DEBUG_DETECT_CORRUPTION", "1");

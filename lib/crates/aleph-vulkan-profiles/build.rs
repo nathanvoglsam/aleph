@@ -31,7 +31,7 @@ extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
 use std::path::Path;
-use target::build::target_build_type;
+use target::build::{target_build_type, target_platform};
 use target::BuildType;
 
 fn main() {
@@ -43,6 +43,16 @@ fn main() {
     build.include(vk_header_inc);
     build.include("library/include");
     build.define("VK_NO_PROTOTYPES", "1");
+
+    if target_platform().is_windows() {
+        if target_platform().is_gnu() {
+            build.flag("-std=c++17");
+        } else {
+            build.flag("/std:c++17");
+        }
+    } else {
+        build.flag("-std=c++17");
+    }
 
     if target_build_type() == BuildType::Development {
         build.file("library/source/debug/vulkan_profiles.cpp");
