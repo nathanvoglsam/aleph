@@ -35,6 +35,7 @@ pub enum Platform {
     WindowsMSVC,
     Linux,
     Android,
+    MacOSX,
     Unknown,
 }
 
@@ -47,6 +48,7 @@ impl Platform {
             Platform::WindowsMSVC => "windows-msvc",
             Platform::Linux => "linux",
             Platform::Android => "android",
+            Platform::MacOSX => "mac-os",
             Platform::Unknown => "unknown",
         }
     }
@@ -59,6 +61,7 @@ impl Platform {
             Platform::WindowsMSVC => "Windows MSVC",
             Platform::Linux => "Linux",
             Platform::Android => "Android",
+            Platform::MacOSX => "MacOS",
             Platform::Unknown => "Unknown",
         }
     }
@@ -90,6 +93,10 @@ impl Platform {
 
     pub const fn is_linux(self) -> bool {
         matches!(self, Platform::Linux)
+    }
+
+    pub const fn is_macos(self) -> bool {
+        matches!(self, Platform::MacOSX)
     }
 
     pub const fn is_msvc(self) -> bool {
@@ -132,6 +139,8 @@ pub fn get_platform_from(triple: &str) -> Platform {
         Platform::Android
     } else if target.contains("linux") {
         Platform::Linux
+    } else if target.contains("apple-darwin") {
+        Platform::MacOSX
     } else {
         Platform::Unknown
     }
