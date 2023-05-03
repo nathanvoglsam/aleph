@@ -168,8 +168,6 @@ impl Queue {
         // Signal new_index, new_index is the submission ID.
         self.handle.Signal(&self.fence, new_index)?;
 
-        log::trace!("New Latest Submission Index: {}", new_index);
-
         Ok(new_index)
     }
 }
