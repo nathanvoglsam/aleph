@@ -43,7 +43,6 @@ pub struct Texture {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) image: vk::Image,
     pub(crate) allocation: Option<vma::Allocation>,
-    pub(crate) vk_format: vk::Format,
     pub(crate) is_owned: bool,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,

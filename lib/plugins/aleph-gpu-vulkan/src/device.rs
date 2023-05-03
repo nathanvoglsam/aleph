@@ -597,7 +597,6 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             image,
             allocation: Some(allocation),
-            vk_format: format,
             is_owned: true,
             views: Default::default(),
             rtvs: Default::default(),

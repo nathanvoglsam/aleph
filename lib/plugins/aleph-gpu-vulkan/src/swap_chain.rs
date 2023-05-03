@@ -264,7 +264,6 @@ impl SwapChain {
                     _device: self.device.clone(),
                     image: *image,
                     allocation: None,
-                    vk_format: swap_create_info.image_format,
                     is_owned: false,
                     views: Default::default(),
                     rtvs: Default::default(),
