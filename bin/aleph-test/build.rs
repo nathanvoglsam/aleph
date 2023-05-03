@@ -33,4 +33,10 @@ fn main() {
         aleph_dx12_agility_sdk::link_agility_symbol_def();
         aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
     }
+
+    #[cfg(target_os = "macos")]
+    println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
+
+    #[cfg(target_os = "linux")]
+    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
 }
