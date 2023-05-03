@@ -117,12 +117,10 @@ impl IPlugin for PluginRender {
 
         let queue = device.get_queue(QueueType::General).unwrap();
 
-        log::info!("");
         Self::log_gpu_info(
             device.deref().query_interface::<dyn IDevice>().unwrap(),
             adapter.deref(),
         );
-        log::info!("");
 
         let drawable_size = window.drawable_size();
         let config = SwapChainConfiguration {

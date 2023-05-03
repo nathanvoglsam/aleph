@@ -111,16 +111,11 @@ impl EngineBuilder {
     pub fn build(self) -> Engine {
         // Print engine info to the log so we know what engine version we're running on
         // First thing we do is initialize the log backend so everything can log from now on
-        log::info!("");
         log::info!("Aleph Engine Starting");
-        log::info!("");
         Engine::log_engine_info();
-        log::info!("");
 
         // Print some system info to the log so we know what we were running on
-        log::info!("");
         Engine::log_cpu_info();
-        log::info!("");
 
         Engine {
             registry: self.registry.build(),
