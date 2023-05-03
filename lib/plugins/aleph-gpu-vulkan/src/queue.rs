@@ -163,8 +163,6 @@ impl Queue {
         // caused an overflow and broken our monotonicity requirement.
         assert_ne!(old_index, u64::MAX, "last_submitted_index integer overflow");
 
-        log::trace!("New Latest Submission Index: {}", new_index);
-
         new_index
     }
 }
