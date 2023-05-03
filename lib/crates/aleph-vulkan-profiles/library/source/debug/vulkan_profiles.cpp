@@ -8905,7 +8905,6 @@ VPAPI_ATTR bool vpCheckExtension(const VkExtensionProperties *supportedPropertie
             // if (supportedProperties[i].specVersion >= expectedVersion) found = true;
         }
     }
-    VP_DEBUG_COND_MSGF(!found, "Unsupported extension: %s", requestedExtension);
     return found;
 }
 
@@ -9031,8 +9030,9 @@ VPAPI_ATTR VkResult vpGetInstanceProfileSupport(const char *pLayerName, const Vp
     }
 
     for (uint32_t i = 0; i < pDesc->instanceExtensionCount; ++i) {
-        if (!detail::vpCheckExtension(ext.data(), ext.size(),
-            pDesc->pInstanceExtensions[i].extensionName)) {
+        const char* requestedExtension = pDesc->pInstanceExtensions[i].extensionName;
+        if (!detail::vpCheckExtension(ext.data(), ext.size(), requestedExtension)) {
+            VP_DEBUG_MSGF("Unsupported extension: %s", requestedExtension);
             *pSupported = VK_FALSE;
         }
     }
@@ -9217,8 +9217,9 @@ VPAPI_ATTR VkResult vpGetPhysicalDeviceProfileSupport(VkInstance instance, VkPhy
     }
 
     for (uint32_t i = 0; i < pDesc->deviceExtensionCount; ++i) {
-        if (!detail::vpCheckExtension(ext.data(), ext.size(),
-            pDesc->pDeviceExtensions[i].extensionName)) {
+        const char* requestedExtension = pDesc->pDeviceExtensions[i].extensionName;
+        if (!detail::vpCheckExtension(ext.data(), ext.size(), requestedExtension)) {
+            VP_DEBUG_MSGF("Unsupported extension: %s", requestedExtension);
             *pSupported = VK_FALSE;
         }
     }
