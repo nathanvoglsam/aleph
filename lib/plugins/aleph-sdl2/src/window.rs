@@ -149,17 +149,26 @@ impl WindowImpl {
 
         let display_mode = window.display_mode().unwrap();
 
-        let mut raw_window_handle = window.raw_window_handle();
-        #[cfg(target_os = "macos")]
-        unsafe {
-            use sdl2_sys::SDL_Metal_CreateView;
-
-            if let RawWindowHandle::AppKit(v) = &mut raw_window_handle {
-                v.ns_view = SDL_Metal_CreateView(window.raw());
-            } else {
-                panic!("We only support MacOS window handles, not iOS");
+        let raw_window_handle = {
+            #[cfg(not(target_os = "macos"))]
+            {
+                window.raw_window_handle()
             }
-        }
+
+            #[cfg(target_os = "macos")]
+            unsafe {
+                use sdl2_sys::SDL_Metal_CreateView;
+
+                let mut raw_window_handle = window.raw_window_handle();
+                if let RawWindowHandle::AppKit(v) = &mut raw_window_handle {
+                    // TODO: Currently we're never destroying this view
+                    v.ns_view = SDL_Metal_CreateView(window.raw());
+                } else {
+                    panic!("We only support MacOS window handles, not iOS");
+                }
+                raw_window_handle
+            }
+        };
 
         let window_state = WindowState {
             title: title.to_string(),
