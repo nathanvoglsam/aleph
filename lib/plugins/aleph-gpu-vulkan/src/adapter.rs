@@ -164,6 +164,7 @@ impl IAdapter for Adapter {
         let enabled_extensions = vec![
             khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME,
             khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+            khr_synchronization2::KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
         ];
 
         // Find our general, async compute and transfer queue families
@@ -186,7 +187,7 @@ impl IAdapter for Adapter {
             .extend_from(&mut enabled_12_features)
             .extend_from(&mut dynamic_rendering_features);
         #[cfg(target_os = "macos")]
-        let device_features = features.extend_from(&mut portability_features);
+        let device_features = device_features.extend_from(&mut portability_features);
         let device_features = device_features.build_dangling();
 
         let enabled_features = unsafe {

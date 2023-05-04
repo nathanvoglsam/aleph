@@ -429,7 +429,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self._parent
             ._device
             .device_loader
-            .cmd_pipeline_barrier2(self.buffer, &info)
+            .cmd_pipeline_barrier2_khr(self.buffer, &info)
     }
 
     unsafe fn copy_buffer_regions(

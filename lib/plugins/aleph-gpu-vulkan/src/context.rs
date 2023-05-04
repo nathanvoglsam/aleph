@@ -31,7 +31,7 @@ use crate::adapter::Adapter;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
-use erupt::extensions::khr_dynamic_rendering;
+use erupt::extensions::{khr_dynamic_rendering, khr_synchronization2};
 use erupt::{vk, ExtendableFrom};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
@@ -353,6 +353,7 @@ impl Context {
             }
 
             check_for_extension_vk!(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+            check_for_extension_vk!(khr_synchronization2::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
             // macOS will always be MoltenVK and portability subset must be available
             #[cfg(target_os = "macos")]
