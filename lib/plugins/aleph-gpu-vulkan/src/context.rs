@@ -28,11 +28,9 @@
 //
 
 use crate::adapter::Adapter;
-use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
-use aleph_vulkan_profiles::*;
 use erupt::extensions::khr_dynamic_rendering;
 use erupt::{vk, ExtendableFrom};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
@@ -107,22 +105,6 @@ impl Context {
                 log::trace!("Device rejected as doesn't support minimum feature requirements");
                 continue;
             }
-
-            // Check if the device supports the required profile
-            // if let None = Self::check_device_supports_profile(
-            //     entry,
-            //     instance,
-            //     physical_device,
-            //     PROFILE_NAME,
-            //     PROFILE_SPEC,
-            // ) {
-            //     log::trace!(
-            //         "Device doesn't support required profile '{}:{}'",
-            //         PROFILE_NAME,
-            //         PROFILE_SPEC
-            //     );
-            //     continue;
-            // }
 
             // Score the physical device based on the device preferences provided by the user
             let score = Self::score_device(&properties, options);
@@ -304,46 +286,13 @@ impl Context {
         Some(())
     }
 
-    pub fn check_device_supports_profile<T>(
-        entry: &erupt::CustomEntryLoader<T>,
-        instance: &erupt::InstanceLoader,
-        physical_device: vk::PhysicalDevice,
-        profile_name: &str,
-        spec_version: u32,
-    ) -> Option<()> {
-        // SAFETY: This is all just FFI shenanigans, I'm going to assume the FFI code is implemented
-        //         correctly.
-        unsafe {
-            let profile =
-                profile_props_from_loaders(entry, Some(instance), profile_name, spec_version);
-
-            let mut supported = Default::default();
-            let result = vpGetPhysicalDeviceProfileSupport(
-                instance.handle,
-                physical_device,
-                &profile,
-                &mut supported,
-            );
-
-            if result.0.is_negative() {
-                log::trace!("Call to vpGetPhysicalDeviceProfileSupport failed");
-                None
-            } else {
-                if supported != 0 {
-                    Some(())
-                } else {
-                    None
-                }
-            }
-        }
-    }
-
     pub fn check_device_supports_minimum_features(
         instance: &erupt::InstanceLoader,
         physical_device: vk::PhysicalDevice,
         extensions: &[vk::ExtensionProperties],
     ) -> Option<()> {
         unsafe {
+            #[allow(unused)]
             macro_rules! check_for_feature {
                 ($f:expr, $msg:literal) => {
                     if $f == false {
@@ -353,6 +302,7 @@ impl Context {
                 };
             }
 
+            #[allow(unused)]
             macro_rules! check_for_feature_vk {
                 ($f:expr, $msg:literal) => {
                     if $f != vk::TRUE {
@@ -362,27 +312,66 @@ impl Context {
                 };
             }
 
-            let dynamic_rendering_ext_name =
-                CStr::from_ptr(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
-                    .to_str()
-                    .unwrap_unchecked();
-            let dynamic_rendering_extension = extensions
-                .iter()
-                .map(|v| {
-                    CStr::from_ptr(v.extension_name.as_ptr())
-                        .to_str()
-                        .unwrap_unchecked()
-                })
-                .any(|v| v == dynamic_rendering_ext_name);
+            #[allow(unused)]
+            macro_rules! check_for_extension {
+                ($name:expr) => {{
+                    let name = $name;
+                    let has = extensions
+                        .iter()
+                        .map(|v| {
+                            CStr::from_ptr(v.extension_name.as_ptr())
+                                .to_str()
+                                .unwrap_unchecked()
+                        })
+                        .any(|v| v == $name);
 
-            check_for_feature!(dynamic_rendering_extension, "VK_KHR_dynamic_rendering");
+                    if !has {
+                        log::error!("Device does not support extension {}", name);
+                        return None;
+                    }
+                }};
+            }
+
+            #[allow(unused)]
+            macro_rules! check_for_extension_vk {
+                ($name:expr) => {{
+                    let name = CStr::from_ptr($name).to_str().unwrap_unchecked();
+                    let has = extensions
+                        .iter()
+                        .map(|v| {
+                            CStr::from_ptr(v.extension_name.as_ptr())
+                                .to_str()
+                                .unwrap_unchecked()
+                        })
+                        .any(|v| v == name);
+
+                    if !has {
+                        log::error!("Device does not support extension {}", name);
+                        return None;
+                    }
+                }};
+            }
+
+            check_for_extension_vk!(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+
+            // macOS will always be MoltenVK and portability subset must be available
+            #[cfg(target_os = "macos")]
+            check_for_extension!("VK_KHR_portability_subset");
 
             let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
             let mut properties_12 = vk::PhysicalDeviceVulkan12Properties::default();
+            #[cfg(target_os = "macos")]
+            let mut portability_properties =
+                vk::PhysicalDevicePortabilitySubsetPropertiesKHR::default();
+
             let properties = vk::PhysicalDeviceProperties2Builder::new()
                 .extend_from(&mut properties_11)
-                .extend_from(&mut properties_12)
-                .build_dangling();
+                .extend_from(&mut properties_12);
+
+            #[cfg(target_os = "macos")]
+            let properties = properties.extend_from(&mut portability_properties);
+
+            let properties = properties.build_dangling();
             let properties =
                 instance.get_physical_device_properties2(physical_device, Some(properties));
 
@@ -390,11 +379,18 @@ impl Context {
             let mut features_12 = vk::PhysicalDeviceVulkan12Features::default();
             let mut dynamic_rendering_features =
                 vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
+            #[cfg(target_os = "macos")]
+            let mut portability_features =
+                vk::PhysicalDevicePortabilitySubsetFeaturesKHR::default();
             let features = vk::PhysicalDeviceFeatures2Builder::new()
                 .extend_from(&mut features_11)
                 .extend_from(&mut features_12)
-                .extend_from(&mut dynamic_rendering_features)
-                .build_dangling();
+                .extend_from(&mut dynamic_rendering_features);
+
+            #[cfg(target_os = "macos")]
+            let features = features.extend_from(&mut portability_features);
+
+            let features = features.build_dangling();
             let features = instance.get_physical_device_features2(physical_device, Some(features));
 
             check_for_feature_vk!(features_12.descriptor_indexing, "DescriptorIndexing");
