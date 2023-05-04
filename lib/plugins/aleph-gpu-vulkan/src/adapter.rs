@@ -161,11 +161,12 @@ impl IAdapter for Adapter {
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         use erupt::extensions::*;
 
-        let enabled_extensions = vec![
-            khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME,
-            khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-            khr_synchronization2::KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-        ];
+        let mut enabled_extensions = Vec::with_capacity(4);
+        enabled_extensions.push(khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME);
+        enabled_extensions.push(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        enabled_extensions.push(khr_synchronization2::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+        #[cfg(target_os = "macos")]
+        enabled_extensions.push(khr_portability_subset::KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
