@@ -33,7 +33,7 @@ use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
 use aleph_vulkan_profiles::*;
-use erupt::vk;
+use erupt::{vk, ExtendableFrom};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
@@ -81,17 +81,17 @@ impl Context {
                     .unwrap_or_default();
                 (properties, extensions)
             };
-            let vendor = pci_id_to_vendor(properties.vendor_id);
-            let name = unsafe {
-                CStr::from_ptr(properties.device_name.as_ptr())
-                    .to_str()
-                    .unwrap()
-            };
 
-            log::trace!("=====================");
-            log::trace!("Considering Device: ");
-            log::trace!("Vendor : {vendor}");
-            log::trace!("Name   : {name}");
+            Self::log_device_info(instance, physical_device);
+
+            if vk::api_version_major(properties.api_version) < 1 {
+                log::trace!("Device does not support Vulkan 1.x");
+                continue;
+            }
+
+            if vk::api_version_minor(properties.api_version) < 2 {
+                log::trace!("Device does not support Vulkan 1.2");
+            }
 
             // Check if the physical device supports the requested surface
             if Self::check_surface_support(instance, physical_device, &extensions, surface)
@@ -122,6 +122,13 @@ impl Context {
                 None => continue,
                 Some(v) => v,
             };
+
+            let vendor = pci_id_to_vendor(properties.vendor_id);
+            let name = unsafe {
+                CStr::from_ptr(properties.device_name.as_ptr())
+                    .to_str()
+                    .unwrap()
+            };
             scores.push((name, vendor, physical_device, score));
         }
 
@@ -129,6 +136,45 @@ impl Context {
             .iter()
             .max_by_key(|v| &v.3)
             .map(|v| (v.0.to_owned(), v.1, v.2))
+    }
+
+    pub fn log_device_info(instance: &erupt::InstanceLoader, physical_device: vk::PhysicalDevice) {
+        unsafe {
+            let properties = instance.get_physical_device_properties(physical_device);
+
+            let vendor = pci_id_to_vendor(properties.vendor_id);
+            let name = CStr::from_ptr(properties.device_name.as_ptr())
+                .to_str()
+                .unwrap();
+
+            log::trace!("=====================");
+            log::trace!("Considering Device: ");
+            log::trace!("Vendor      : {vendor}");
+            log::trace!("Name        : {name}");
+
+            // Log additional driver information if available
+            if instance.get_physical_device_properties2.is_some() {
+                let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
+                let mut properties_12 = vk::PhysicalDeviceVulkan12Properties::default();
+                let properties = vk::PhysicalDeviceProperties2Builder::new()
+                    .extend_from(&mut properties_11)
+                    .extend_from(&mut properties_12)
+                    .build_dangling();
+                let _properties =
+                    instance.get_physical_device_properties2(physical_device, Some(properties));
+
+                let driver_name = CStr::from_ptr(properties_12.driver_name.as_ptr())
+                    .to_str()
+                    .unwrap();
+                let driver_info = CStr::from_ptr(properties_12.driver_info.as_ptr())
+                    .to_str()
+                    .unwrap();
+
+                log::trace!("Driver      : {driver_name}");
+                log::trace!("Driver ID   : {:?}", properties_12.driver_id);
+                log::trace!("Driver Info : {driver_info}");
+            }
+        }
     }
 
     pub fn score_device(
@@ -387,7 +433,7 @@ impl IContext for Context {
 
                     let create_info = XlibSurfaceCreateInfoKHR {
                         dpy: handle.display as *mut _,
-                        window: handle.window,
+                        window: handle.window as _,
                         ..Default::default()
                     };
 
