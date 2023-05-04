@@ -59,11 +59,11 @@ impl IGetPlatformInterface for Context {
 }
 
 impl Context {
-    fn select_device<T>(
+    pub fn select_device<T>(
         entry: &erupt::CustomEntryLoader<T>,
         instance: &erupt::InstanceLoader,
         surface: Option<vk::SurfaceKHR>,
-        power_class: AdapterPowerClass,
+        options: &AdapterRequestOptions,
     ) -> Option<(String, AdapterVendor, vk::PhysicalDevice)> {
         let devices = unsafe {
             instance
@@ -73,53 +73,15 @@ impl Context {
         let mut scores: Vec<(&str, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
 
         for physical_device in devices.iter().copied() {
-            // Push the score for the device, if the device meets the minimum requirements
-            if let Some(score) =
-                Self::score_device(entry, instance, physical_device, surface, power_class)
-            {
-                let properties =
-                    unsafe { instance.get_physical_device_properties(physical_device) };
-
-                let name = unsafe {
-                    CStr::from_ptr(properties.device_name.as_ptr())
-                        .to_str()
-                        .unwrap()
-                };
-
-                let vendor = pci_id_to_vendor(properties.vendor_id);
-
-                scores.push((name, vendor, physical_device, score));
-            }
-        }
-
-        scores
-            .iter()
-            .max_by_key(|v| &v.3)
-            .map(|v| (v.0.to_owned(), v.1, v.2))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn score_device<T>(
-        entry: &erupt::CustomEntryLoader<T>,
-        instance: &erupt::InstanceLoader,
-        physical_device: vk::PhysicalDevice,
-        surface: Option<vk::SurfaceKHR>,
-        power_class: AdapterPowerClass,
-    ) -> Option<i32> {
-        use erupt::extensions::*;
-
-        let (properties, extensions) = unsafe {
-            let properties = instance.get_physical_device_properties(physical_device);
-            let extensions = instance
-                .enumerate_device_extension_properties(physical_device, None, None)
-                .result()
-                .unwrap_or_default();
-            (properties, extensions)
-        };
-
-        {
+            let (properties, extensions) = unsafe {
+                let properties = instance.get_physical_device_properties(physical_device);
+                let extensions = instance
+                    .enumerate_device_extension_properties(physical_device, None, None)
+                    .result()
+                    .unwrap_or_default();
+                (properties, extensions)
+            };
             let vendor = pci_id_to_vendor(properties.vendor_id);
-
             let name = unsafe {
                 CStr::from_ptr(properties.device_name.as_ptr())
                     .to_str()
@@ -130,9 +92,110 @@ impl Context {
             log::trace!("Considering Device: ");
             log::trace!("Vendor : {vendor}");
             log::trace!("Name   : {name}");
+
+            // Check if the physical device supports the requested surface
+            if Self::check_surface_support(instance, physical_device, &extensions, surface)
+                .is_none()
+            {
+                continue;
+            }
+
+            // Check if the device supports the required profile
+            if let None = Self::check_device_supports_profile(
+                entry,
+                instance,
+                physical_device,
+                PROFILE_NAME,
+                PROFILE_SPEC,
+            ) {
+                log::trace!(
+                    "Device doesn't support required profile '{}:{}'",
+                    PROFILE_NAME,
+                    PROFILE_SPEC
+                );
+                continue;
+            }
+
+            // Score the physical device based on the device preferences provided by the user
+            let score = Self::score_device(&properties, options);
+            let score = match score {
+                None => continue,
+                Some(v) => v,
+            };
+            scores.push((name, vendor, physical_device, score));
         }
 
+        scores
+            .iter()
+            .max_by_key(|v| &v.3)
+            .map(|v| (v.0.to_owned(), v.1, v.2))
+    }
+
+    pub fn score_device(
+        properties: &vk::PhysicalDeviceProperties,
+        options: &AdapterRequestOptions,
+    ) -> Option<i32> {
         let mut score = 0i32;
+
+        // Whether we prefer an integrated or discrete GPU depends on the requested power class
+        let (discrete_score, integrated_score) = match options.power_class {
+            AdapterPowerClass::LowPower => (1_000, 10_000),
+            AdapterPowerClass::HighPower => (10_000, 1_000),
+        };
+
+        // Whether we prefer a hardware or software device depends on the requested type preference
+        let (hardware_score, software_score) = match options.type_preference {
+            AdapterTypePreference::Hardware => (10_000, 1_000),
+            AdapterTypePreference::Software => (1_000, 10_000),
+        };
+
+        match properties.device_type {
+            vk::PhysicalDeviceType::INTEGRATED_GPU => {
+                if !options.deny_hardware_adapters {
+                    score += integrated_score;
+                    score += hardware_score;
+                } else {
+                    return None;
+                }
+            }
+            vk::PhysicalDeviceType::DISCRETE_GPU => {
+                if !options.deny_hardware_adapters {
+                    score += discrete_score;
+                    score += hardware_score;
+                } else {
+                    return None;
+                }
+            }
+            vk::PhysicalDeviceType::CPU => {
+                if options.allow_software_adapters {
+                    // CPU devices will perform very slowly compared to a GPU, we should warn in the
+                    // logs that we've got one.
+                    log::warn!("Device is a CPU");
+                    score += software_score;
+                } else {
+                    return None;
+                }
+            }
+            vk::PhysicalDeviceType::VIRTUAL_GPU => {
+                // We make no determination on virtual GPUs, but warn in the logs when we have one
+                // as they're likely to be less reliable implementations.
+                log::warn!("Device is a 'Virtual GPU'");
+            }
+            v @ _ => {
+                log::warn!("Unknown VkPhysicalDeviceType '{}'", v.0);
+            }
+        }
+
+        Some(score)
+    }
+
+    pub fn check_surface_support(
+        instance: &erupt::InstanceLoader,
+        physical_device: vk::PhysicalDevice,
+        extensions: &[vk::ExtensionProperties],
+        surface: Option<vk::SurfaceKHR>,
+    ) -> Option<()> {
+        use erupt::extensions::*;
 
         unsafe {
             let ext_name = CStr::from_ptr(khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME)
@@ -160,8 +223,15 @@ impl Context {
             // Load information about the device's support of the requested swap chain. If we can't
             // at least load the surface_capabilities then we assume no support and return None to
             // flag the device as unsuitable
-            let (_surface_capabilities, surface_formats, present_modes) =
+            let (surface_capabilities, surface_formats, present_modes) =
                 Self::get_device_surface_support(instance, physical_device, surface).ok()?;
+
+            // Theoretically you could get no allowed usage flags on the surface, which would
+            // mean the device can't actually do anything with the swap images.
+            if surface_capabilities.supported_usage_flags.is_empty() {
+                log::trace!("Device doesn't allow any usage flags for the surface");
+                return None;
+            }
 
             // No present modes means we can't present to the surface. If empty then the surface
             // is unsupported.
@@ -177,67 +247,44 @@ impl Context {
             }
         }
 
-        unsafe {
-            let supported = Self::check_device_supports_profile(
-                entry,
-                instance,
-                physical_device,
-                PROFILE_NAME,
-                PROFILE_SPEC,
-            )?;
-
-            if !supported {
-                log::trace!(
-                    "Device doesn't support required profile '{}:{}'",
-                    PROFILE_NAME,
-                    PROFILE_SPEC
-                );
-                return None;
-            }
-        }
-
-        // Whether we prefer an integrated or discrete GPU depends on the requested power class
-        let (discrete_score, integrated_score) = match power_class {
-            AdapterPowerClass::LowPower => (1_000, 10_000),
-            AdapterPowerClass::HighPower => (10_000, 1_000),
-        };
-        // We only care about choosing between discrete or integrated. The other types are
-        // either obscuring the underlying hardware (virtual) or too slow to care (cpu).
-        if properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU {
-            score += discrete_score;
-        } else if properties.device_type == vk::PhysicalDeviceType::INTEGRATED_GPU {
-            score += integrated_score;
-        }
-
-        Some(score)
+        Some(())
     }
 
-    pub(crate) unsafe fn check_device_supports_profile<T>(
+    pub fn check_device_supports_profile<T>(
         entry: &erupt::CustomEntryLoader<T>,
         instance: &erupt::InstanceLoader,
         physical_device: vk::PhysicalDevice,
         profile_name: &str,
         spec_version: u32,
-    ) -> Option<bool> {
-        let profile = profile_props_from_loaders(entry, Some(instance), profile_name, spec_version);
+    ) -> Option<()> {
+        // SAFETY: This is all just FFI shenanigans, I'm going to assume the FFI code is implemented
+        //         correctly.
+        unsafe {
+            let profile =
+                profile_props_from_loaders(entry, Some(instance), profile_name, spec_version);
 
-        let mut supported = Default::default();
-        let result = vpGetPhysicalDeviceProfileSupport(
-            instance.handle,
-            physical_device,
-            &profile,
-            &mut supported,
-        );
+            let mut supported = Default::default();
+            let result = vpGetPhysicalDeviceProfileSupport(
+                instance.handle,
+                physical_device,
+                &profile,
+                &mut supported,
+            );
 
-        if result.0.is_negative() {
-            log::trace!("Call to vpGetPhysicalDeviceProfileSupport failed");
-            None
-        } else {
-            Some(supported != 0)
+            if result.0.is_negative() {
+                log::trace!("Call to vpGetPhysicalDeviceProfileSupport failed");
+                None
+            } else {
+                if supported != 0 {
+                    Some(())
+                } else {
+                    None
+                }
+            }
         }
     }
 
-    pub(crate) fn get_device_surface_support(
+    pub fn get_device_surface_support(
         instance: &erupt::InstanceLoader,
         physical_device: vk::PhysicalDevice,
         surface: vk::SurfaceKHR,
@@ -288,22 +335,18 @@ impl IContext for Context {
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
         let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
-        Context::select_device(
-            &self.entry_loader,
-            &self.instance_loader,
-            surface,
-            options.power_class,
+        Context::select_device(&self.entry_loader, &self.instance_loader, surface, options).map(
+            |(name, vendor, physical_device)| {
+                let adapter = AnyArc::new_cyclic(move |v| Adapter {
+                    this: v.clone(),
+                    context: self._this.upgrade().unwrap(),
+                    name,
+                    vendor,
+                    physical_device,
+                });
+                AnyArc::map::<dyn IAdapter, _>(adapter, |v| v)
+            },
         )
-        .map(|(name, vendor, physical_device)| {
-            let adapter = AnyArc::new_cyclic(move |v| Adapter {
-                this: v.clone(),
-                context: self._this.upgrade().unwrap(),
-                name,
-                vendor,
-                physical_device,
-            });
-            AnyArc::map::<dyn IAdapter, _>(adapter, |v| v)
-        })
     }
 
     fn create_surface(
