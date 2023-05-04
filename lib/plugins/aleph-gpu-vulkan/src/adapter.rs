@@ -36,7 +36,7 @@ use crate::queue::{Queue, QueueInfo};
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use aleph_vulkan_profiles::*;
 use erupt::utils::VulkanResult;
-use erupt::vk;
+use erupt::{ExtendableFrom, vk};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
@@ -141,46 +141,6 @@ impl Adapter {
             && !family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
             && !family.queue_flags.contains(vk::QueueFlags::COMPUTE)
     }
-
-    fn build_profile_device_create_fn<T>(
-        entry_loader: &erupt::CustomEntryLoader<T>,
-        instance_loader: &erupt::InstanceLoader,
-        profile_name: &str,
-        spec_version: u32,
-        flags: VpDeviceCreateFlags,
-    ) -> Box<
-        dyn FnOnce(
-            vk::PhysicalDevice,
-            &vk::DeviceCreateInfo,
-            Option<&vk::AllocationCallbacks>,
-        ) -> VulkanResult<vk::Device>,
-    > {
-        let profile = profile_props_from_loaders(
-            entry_loader,
-            Some(instance_loader),
-            profile_name,
-            spec_version,
-        );
-
-        Box::new(move |physical_device, p_create_info, p_allocator| unsafe {
-            // Move the profile into the closure instance
-            let profile = profile;
-            let flags = flags;
-
-            let create_info = VpDeviceCreateInfo {
-                pCreateInfo: p_create_info,
-                pProfile: &profile,
-                flags,
-            };
-
-            let allocator: *const vk::AllocationCallbacks = transmute(p_allocator);
-
-            let mut device = vk::Device::null();
-            let result = vpCreateDevice(physical_device, &create_info, allocator, &mut device);
-
-            VulkanResult::new(result, device)
-        })
-    }
 }
 
 impl IAdapter for Adapter {
@@ -206,7 +166,7 @@ impl IAdapter for Adapter {
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         use erupt::extensions::*;
 
-        let enabled_extensions = vec![khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME];
+        let enabled_extensions = vec![khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME, khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME];
 
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
@@ -217,20 +177,32 @@ impl IAdapter for Adapter {
         let found_families = Adapter::get_queue_families(&queue_families);
         let queue_create_infos = found_families.build_create_info_list();
 
+        let mut enabled_11_features = vk::PhysicalDeviceVulkan11Features::default();
+        let mut enabled_12_features = vk::PhysicalDeviceVulkan12Features::default();
+        let mut dynamic_rendering_features = vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
+        let device_features = vk::PhysicalDeviceFeatures2Builder::new()
+            .extend_from(&mut enabled_11_features)
+            .extend_from(&mut enabled_12_features)
+            .extend_from(&mut dynamic_rendering_features)
+            .build_dangling();
+
+        let enabled_features = unsafe {
+            self.context.instance_loader.get_physical_device_features2(self.physical_device, Some(device_features))
+        };
+
+        enabled_11_features.p_next = std::ptr::null_mut();
+        enabled_12_features.p_next = std::ptr::null_mut();
+        dynamic_rendering_features.p_next = std::ptr::null_mut();
+
         let device_create_info = vk::DeviceCreateInfoBuilder::new()
+            .extend_from(&mut enabled_11_features)
+            .extend_from(&mut enabled_12_features)
+            .extend_from(&mut dynamic_rendering_features)
+            .enabled_features(&enabled_features.features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
         let device_loader = unsafe {
-            let create_fn = Self::build_profile_device_create_fn(
-                &self.context.entry_loader,
-                &self.context.instance_loader,
-                PROFILE_NAME,
-                PROFILE_SPEC,
-                VpDeviceCreateFlags::DISABLE_ROBUST_ACCESS
-                    | VpDeviceCreateFlags::MERGE_EXTENSIONS_BIT,
-            );
             erupt::DeviceLoaderBuilder::new()
-                .create_device_fn(create_fn)
                 .build(
                     &self.context.instance_loader,
                     self.physical_device,

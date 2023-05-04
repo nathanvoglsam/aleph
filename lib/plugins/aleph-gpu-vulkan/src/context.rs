@@ -33,6 +33,7 @@ use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
 use aleph_vulkan_profiles::*;
+use erupt::extensions::khr_dynamic_rendering;
 use erupt::{vk, ExtendableFrom};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
@@ -100,26 +101,28 @@ impl Context {
                 continue;
             }
 
-            if let None = Self::check_device_supports_minimum_features(entry, instance, physical_device, &extensions) {
+            if let None =
+                Self::check_device_supports_minimum_features(instance, physical_device, &extensions)
+            {
                 log::trace!("Device rejected as doesn't support minimum feature requirements");
                 continue;
             }
 
             // Check if the device supports the required profile
-            if let None = Self::check_device_supports_profile(
-                entry,
-                instance,
-                physical_device,
-                PROFILE_NAME,
-                PROFILE_SPEC,
-            ) {
-                log::trace!(
-                    "Device doesn't support required profile '{}:{}'",
-                    PROFILE_NAME,
-                    PROFILE_SPEC
-                );
-                continue;
-            }
+            // if let None = Self::check_device_supports_profile(
+            //     entry,
+            //     instance,
+            //     physical_device,
+            //     PROFILE_NAME,
+            //     PROFILE_SPEC,
+            // ) {
+            //     log::trace!(
+            //         "Device doesn't support required profile '{}:{}'",
+            //         PROFILE_NAME,
+            //         PROFILE_SPEC
+            //     );
+            //     continue;
+            // }
 
             // Score the physical device based on the device preferences provided by the user
             let score = Self::score_device(&properties, options);
@@ -335,21 +338,44 @@ impl Context {
         }
     }
 
-    pub fn check_device_supports_minimum_features<T>(
-        entry: &erupt::CustomEntryLoader<T>,
+    pub fn check_device_supports_minimum_features(
         instance: &erupt::InstanceLoader,
         physical_device: vk::PhysicalDevice,
         extensions: &[vk::ExtensionProperties],
     ) -> Option<()> {
         unsafe {
             macro_rules! check_for_feature {
-                ($f:expr, $expected:expr, $msg:literal) => {
-                    if $f != $expected {
+                ($f:expr, $msg:literal) => {
+                    if $f == false {
                         log::error!("Device does not support feature: '{}'", $msg);
                         return None;
                     }
                 };
             }
+
+            macro_rules! check_for_feature_vk {
+                ($f:expr, $msg:literal) => {
+                    if $f != vk::TRUE {
+                        log::error!("Device does not support feature: '{}'", $msg);
+                        return None;
+                    }
+                };
+            }
+
+            let dynamic_rendering_ext_name =
+                CStr::from_ptr(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+                    .to_str()
+                    .unwrap_unchecked();
+            let dynamic_rendering_extension = extensions
+                .iter()
+                .map(|v| {
+                    CStr::from_ptr(v.extension_name.as_ptr())
+                        .to_str()
+                        .unwrap_unchecked()
+                })
+                .any(|v| v == dynamic_rendering_ext_name);
+
+            check_for_feature!(dynamic_rendering_extension, "VK_KHR_dynamic_rendering");
 
             let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
             let mut properties_12 = vk::PhysicalDeviceVulkan12Properties::default();
@@ -363,7 +389,7 @@ impl Context {
             let mut features_11 = vk::PhysicalDeviceVulkan11Features::default();
             let mut features_12 = vk::PhysicalDeviceVulkan12Features::default();
             let mut dynamic_rendering_features =
-                vk::PhysicalDeviceDynamicRenderingFeatures::default();
+                vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
             let features = vk::PhysicalDeviceFeatures2Builder::new()
                 .extend_from(&mut features_11)
                 .extend_from(&mut features_12)
@@ -371,25 +397,12 @@ impl Context {
                 .build_dangling();
             let features = instance.get_physical_device_features2(physical_device, Some(features));
 
-            check_for_feature!(
-                features_12.descriptor_indexing,
-                vk::TRUE,
-                "DescriptorIndexing"
-            );
-            check_for_feature!(
-                features_12.buffer_device_address,
-                vk::TRUE,
-                "BufferDeviceAddress"
-            );
-            check_for_feature!(
-                features_12.timeline_semaphore,
-                vk::TRUE,
-                "TimelineSemaphore"
-            );
-            check_for_feature!(
+            check_for_feature_vk!(features_12.descriptor_indexing, "DescriptorIndexing");
+            check_for_feature_vk!(features_12.buffer_device_address, "BufferDeviceAddress");
+            check_for_feature_vk!(features_12.timeline_semaphore, "TimelineSemaphore");
+            check_for_feature_vk!(
                 dynamic_rendering_features.dynamic_rendering,
-                vk::TRUE,
-                "DynamicRendering"
+                "VK_KHR_dynamic_rendering feature"
             );
 
             Some(())
