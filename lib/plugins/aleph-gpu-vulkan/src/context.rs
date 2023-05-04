@@ -100,6 +100,11 @@ impl Context {
                 continue;
             }
 
+            if let None = Self::check_device_supports_minimum_features(entry, instance, physical_device, &extensions) {
+                log::trace!("Device rejected as doesn't support minimum feature requirements");
+                continue;
+            }
+
             // Check if the device supports the required profile
             if let None = Self::check_device_supports_profile(
                 entry,
@@ -327,6 +332,67 @@ impl Context {
                     None
                 }
             }
+        }
+    }
+
+    pub fn check_device_supports_minimum_features<T>(
+        entry: &erupt::CustomEntryLoader<T>,
+        instance: &erupt::InstanceLoader,
+        physical_device: vk::PhysicalDevice,
+        extensions: &[vk::ExtensionProperties],
+    ) -> Option<()> {
+        unsafe {
+            macro_rules! check_for_feature {
+                ($f:expr, $expected:expr, $msg:literal) => {
+                    if $f != $expected {
+                        log::error!("Device does not support feature: '{}'", $msg);
+                        return None;
+                    }
+                };
+            }
+
+            let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
+            let mut properties_12 = vk::PhysicalDeviceVulkan12Properties::default();
+            let properties = vk::PhysicalDeviceProperties2Builder::new()
+                .extend_from(&mut properties_11)
+                .extend_from(&mut properties_12)
+                .build_dangling();
+            let properties =
+                instance.get_physical_device_properties2(physical_device, Some(properties));
+
+            let mut features_11 = vk::PhysicalDeviceVulkan11Features::default();
+            let mut features_12 = vk::PhysicalDeviceVulkan12Features::default();
+            let mut dynamic_rendering_features =
+                vk::PhysicalDeviceDynamicRenderingFeatures::default();
+            let features = vk::PhysicalDeviceFeatures2Builder::new()
+                .extend_from(&mut features_11)
+                .extend_from(&mut features_12)
+                .extend_from(&mut dynamic_rendering_features)
+                .build_dangling();
+            let features = instance.get_physical_device_features2(physical_device, Some(features));
+
+            check_for_feature!(
+                features_12.descriptor_indexing,
+                vk::TRUE,
+                "DescriptorIndexing"
+            );
+            check_for_feature!(
+                features_12.buffer_device_address,
+                vk::TRUE,
+                "BufferDeviceAddress"
+            );
+            check_for_feature!(
+                features_12.timeline_semaphore,
+                vk::TRUE,
+                "TimelineSemaphore"
+            );
+            check_for_feature!(
+                dynamic_rendering_features.dynamic_rendering,
+                vk::TRUE,
+                "DynamicRendering"
+            );
+
+            Some(())
         }
     }
 
