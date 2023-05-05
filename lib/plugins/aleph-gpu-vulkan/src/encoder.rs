@@ -277,14 +277,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self._parent
             ._device
             .device_loader
-            .cmd_begin_rendering(self.buffer, &info);
+            .cmd_begin_rendering_khr(self.buffer, &info);
     }
 
     unsafe fn end_rendering(&mut self) {
         self._parent
             ._device
             .device_loader
-            .cmd_end_rendering(self.buffer);
+            .cmd_end_rendering_khr(self.buffer);
     }
 
     unsafe fn draw(

@@ -58,8 +58,7 @@ impl IGetPlatformInterface for Context {
 }
 
 impl Context {
-    pub fn select_device<T>(
-        entry: &erupt::CustomEntryLoader<T>,
+    pub fn select_device(
         instance: &erupt::InstanceLoader,
         surface: Option<vk::SurfaceKHR>,
         options: &AdapterRequestOptions,
@@ -191,6 +190,7 @@ impl Context {
                     score += integrated_score;
                     score += hardware_score;
                 } else {
+                    log::error!("Device is a GPU and deny_hardware_adapters = true");
                     return None;
                 }
             }
@@ -199,6 +199,7 @@ impl Context {
                     score += discrete_score;
                     score += hardware_score;
                 } else {
+                    log::error!("Device is a GPU and deny_hardware_adapters = true");
                     return None;
                 }
             }
@@ -209,6 +210,7 @@ impl Context {
                     log::warn!("Device is a CPU");
                     score += software_score;
                 } else {
+                    log::error!("Device is a CPU and allow_software_adapters = false");
                     return None;
                 }
             }
@@ -294,9 +296,10 @@ impl Context {
         unsafe {
             #[allow(unused)]
             macro_rules! check_for_feature {
-                ($f:expr, $msg:literal) => {
+                ($f:expr) => {
+                    let text = stringify!($f);
                     if $f == false {
-                        log::error!("Device does not support feature: '{}'", $msg);
+                        log::error!("Device does not support feature: '{}'", text);
                         return None;
                     }
                 };
@@ -304,9 +307,10 @@ impl Context {
 
             #[allow(unused)]
             macro_rules! check_for_feature_vk {
-                ($f:expr, $msg:literal) => {
+                ($f:expr) => {
+                    let text = stringify!($f);
                     if $f != vk::TRUE {
-                        log::error!("Device does not support feature: '{}'", $msg);
+                        log::error!("Device does not support feature: '{}'", text);
                         return None;
                     }
                 };
@@ -352,6 +356,21 @@ impl Context {
                 }};
             }
 
+            #[allow(unused)]
+            macro_rules! check_for_limit_min {
+                ($limit:expr, $min:expr) => {{
+                    let limit_name = stringify!($limit);
+                    let limit = $limit;
+                    let min = $min;
+                    if limit < min {
+                        log::error!(
+                            "Device limit '{limit_name}' too low. Want: {min}, got {limit}"
+                        );
+                        return None;
+                    }
+                }};
+            }
+
             check_for_extension_vk!(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
             check_for_extension_vk!(khr_synchronization2::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
@@ -373,8 +392,11 @@ impl Context {
             let properties = properties.extend_from(&mut portability_properties);
 
             let properties = properties.build_dangling();
-            let properties =
-                instance.get_physical_device_properties2(physical_device, Some(properties));
+            let properties = instance
+                .get_physical_device_properties2(physical_device, Some(properties))
+                .properties;
+
+            check_for_limit_min!(properties.limits.max_bound_descriptor_sets, 8);
 
             let mut features_11 = vk::PhysicalDeviceVulkan11Features::default();
             let mut features_12 = vk::PhysicalDeviceVulkan12Features::default();
@@ -392,15 +414,15 @@ impl Context {
             let features = features.extend_from(&mut portability_features);
 
             let features = features.build_dangling();
-            let features = instance.get_physical_device_features2(physical_device, Some(features));
+            let features = instance
+                .get_physical_device_features2(physical_device, Some(features))
+                .features;
 
-            check_for_feature_vk!(features_12.descriptor_indexing, "DescriptorIndexing");
-            check_for_feature_vk!(features_12.buffer_device_address, "BufferDeviceAddress");
-            check_for_feature_vk!(features_12.timeline_semaphore, "TimelineSemaphore");
-            check_for_feature_vk!(
-                dynamic_rendering_features.dynamic_rendering,
-                "VK_KHR_dynamic_rendering feature"
-            );
+            check_for_feature_vk!(features.full_draw_index_uint32);
+            check_for_feature_vk!(features_12.descriptor_indexing);
+            check_for_feature_vk!(features_12.buffer_device_address);
+            check_for_feature_vk!(features_12.timeline_semaphore);
+            check_for_feature_vk!(dynamic_rendering_features.dynamic_rendering);
 
             Some(())
         }
@@ -457,7 +479,7 @@ impl IContext for Context {
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
         let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
-        Context::select_device(&self.entry_loader, &self.instance_loader, surface, options).map(
+        Context::select_device(&self.instance_loader, surface, options).map(
             |(name, vendor, physical_device)| {
                 let adapter = AnyArc::new_cyclic(move |v| Adapter {
                     this: v.clone(),

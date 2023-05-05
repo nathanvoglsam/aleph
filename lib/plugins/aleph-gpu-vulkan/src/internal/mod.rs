@@ -30,8 +30,6 @@
 pub mod conv;
 pub mod macros;
 pub mod messenger;
-pub mod profile;
 pub mod queue_present_support;
 pub mod set_name;
-pub mod strcpy;
 pub mod unwrap;

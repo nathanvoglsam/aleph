@@ -47,7 +47,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-interfaces = { workspace = true }
 aleph-vulkan-alloc = { path = "../../crates/aleph-vulkan-alloc", version = "0.1" }
-aleph-vulkan-profiles = { path = "../../crates/aleph-vulkan-profiles", version = "0.1" }
 aleph-gpu-impl-utils = { path = "../aleph-gpu-impl-utils", version = "0.1" }
 log = { workspace = true }
 bitflags = { workspace = true }

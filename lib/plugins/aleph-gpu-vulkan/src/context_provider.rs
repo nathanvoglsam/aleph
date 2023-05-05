@@ -29,9 +29,6 @@
 
 use crate::context::Context;
 use crate::internal::messenger::vulkan_debug_messenger;
-use crate::internal::profile::{profile_props_from_loaders, PROFILE_NAME, PROFILE_SPEC};
-use aleph_vulkan_profiles::*;
-use erupt::utils::VulkanResult;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
@@ -39,7 +36,7 @@ use interfaces::gpu;
 use interfaces::gpu::*;
 use std::ffi::CStr;
 use std::marker::PhantomData;
-use std::mem::{transmute, ManuallyDrop};
+use std::mem::ManuallyDrop;
 use std::os::raw::c_char;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -66,14 +63,21 @@ impl ContextProvider {
         debug: bool,
         validation: bool,
     ) -> Result<erupt::InstanceLoader, ContextCreateError> {
-        // Safety: this is fully safe, 'vpAlephSetCallback' is ours and is simply an atomic write.
-        unsafe {
-            vpAlephSetCallback(profile_debug_callback);
-        }
-
         // If validation is requested we must force debug on as we require debug extensions to log
         // the validation messages
         let debug = if validation { true } else { debug };
+
+        let instance_version = entry_loader.instance_version();
+        if vk::api_version_major(instance_version) < 1 {
+            return Err(ContextCreateError::Platform(anyhow!(
+                "Vulkan Instance doesn't support Vulkan 1.x"
+            )));
+        }
+        if vk::api_version_minor(instance_version) < 2 {
+            return Err(ContextCreateError::Platform(anyhow!(
+                "Vulkan Instance doesn't support Vulkan 1.2"
+            )));
+        }
 
         // Select the set of extensions that we want to load
         let wanted_extensions = get_wanted_extensions(debug);
@@ -87,69 +91,29 @@ impl ContextProvider {
         check_all_layers_supported(&wanted_layers, &supported_layers)?;
 
         // Fill out InstanceCreateInfo for creating a vulkan instance
+        let flags = if cfg!(target_os = "macos") {
+            // Add the VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR flag manually as erupt
+            // doesn't have it yet.
+            unsafe { vk::InstanceCreateFlags::from_bits_unchecked(0b1) }
+        } else {
+            vk::InstanceCreateFlags::empty()
+        };
         let app_info = app_and_engine_info();
         let create_info = erupt::vk1_0::InstanceCreateInfoBuilder::new()
             .application_info(&app_info)
             .enabled_extension_names(&supported_extensions)
-            .enabled_layer_names(&supported_layers);
+            .enabled_layer_names(&supported_layers)
+            .flags(flags);
 
         // Construct the vulkan instance
         log::trace!("Creating Vulkan instance");
         let instance_loader = unsafe {
-            let create_fn = Self::build_profile_instance_create_fn(
-                entry_loader,
-                PROFILE_NAME,
-                PROFILE_SPEC,
-                VpInstanceCreateFlags::MERGE_EXTENSIONS_BIT,
-            );
-
             erupt::InstanceLoaderBuilder::new()
-                .create_instance_fn(create_fn)
                 .build(&entry_loader, &create_info)
                 .map_err(|e| anyhow!(e))?
         };
 
         Ok(instance_loader)
-    }
-
-    fn build_profile_instance_create_fn<T>(
-        entry_loader: &erupt::CustomEntryLoader<T>,
-        profile_name: &str,
-        spec_version: u32,
-        flags: VpInstanceCreateFlags,
-    ) -> Box<
-        dyn FnOnce(
-            &vk::InstanceCreateInfo,
-            Option<&vk::AllocationCallbacks>,
-        ) -> VulkanResult<vk::Instance>,
-    > {
-        let profile = profile_props_from_loaders(entry_loader, None, profile_name, spec_version);
-
-        Box::new(move |p_create_info, p_allocator| unsafe {
-            let mut create_info = p_create_info.clone();
-            if cfg!(target_os = "macos") {
-                // Add the VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR flag manually as erupt
-                // doesn't have it yet.
-                create_info.flags = vk::InstanceCreateFlags::from_bits_unchecked(0b1);
-            }
-
-            // Move the profile into the closure instance
-            let profile = profile;
-            let flags = flags;
-
-            let create_info = VpInstanceCreateInfo {
-                pCreateInfo: &create_info,
-                pProfile: &profile,
-                flags,
-            };
-
-            let allocator: *const vk::AllocationCallbacks = transmute(p_allocator);
-
-            let mut instance = vk::Instance::null();
-            let result = vpCreateInstance(&create_info, allocator, &mut instance);
-
-            VulkanResult::new(result, instance)
-        })
     }
 }
 
@@ -267,13 +231,13 @@ fn strip_unsupported_extensions<T>(
 }
 
 fn check_all_layers_supported(
-    wanted_extensions: &[*const c_char],
-    supported_extensions: &[*const c_char],
+    wanted_layers: &[*const c_char],
+    supported_layers: &[*const c_char],
 ) -> Result<(), ContextCreateError> {
-    let mut missing_extensions = diff_lists(wanted_extensions, supported_extensions).peekable();
+    let mut missing_extensions = diff_lists(wanted_layers, supported_layers).peekable();
     if missing_extensions.peek().is_some() {
         for missing in missing_extensions {
-            log::error!("Runtime requested unsupported extension '{:#?}'.", missing);
+            log::error!("Runtime requested unsupported layer '{:#?}'.", missing);
         }
         return Err(ContextCreateError::Platform(anyhow!(
             "Unsupported extension is required by runtime"
@@ -318,13 +282,13 @@ fn strip_unsupported_layers<T>(
 }
 
 fn check_all_extensions_supported(
-    wanted_layers: &[*const c_char],
-    supported_layers: &[*const c_char],
+    wanted_extensions: &[*const c_char],
+    supported_extensions: &[*const c_char],
 ) -> Result<(), ContextCreateError> {
-    let mut missing_layers = diff_lists(wanted_layers, supported_layers).peekable();
+    let mut missing_layers = diff_lists(wanted_extensions, supported_extensions).peekable();
     if missing_layers.peek().is_some() {
         for missing in missing_layers {
-            log::error!("Runtime requested unsupported layer '{:#?}'.", missing);
+            log::error!("Runtime requested unsupported extension '{:#?}'.", missing);
         }
         return Err(ContextCreateError::Platform(anyhow!(
             "Unsupported layer is required by runtime"
@@ -369,7 +333,7 @@ fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
             env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
             env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         ))
-        .api_version(VP_KHR_ROADMAP_2022_MIN_API_VERSION)
+        .api_version(vk::API_VERSION_1_2)
 }
 
 fn install_debug_messenger(
@@ -392,14 +356,5 @@ fn install_debug_messenger(
         instance_loader
             .create_debug_utils_messenger_ext(&create_info, None)
             .map_err(|e| ContextCreateError::Platform(anyhow!(e)))
-    }
-}
-
-extern "C" fn profile_debug_callback(v: *const c_char) {
-    // Safety: trust the profiles library to always give us a good c-string
-    unsafe {
-        let v = CStr::from_ptr(v);
-        let v = v.to_str().unwrap_unchecked();
-        log::info!("{}", v);
     }
 }
