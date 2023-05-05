@@ -154,6 +154,12 @@ impl IDevice for Device {
             .scissor_count(1);
         let input_assembly_state = Self::translate_input_assembly_state(desc);
         let rasterization_state = Self::translate_rasterization_state(desc);
+        let multisample_state = vk::PipelineMultisampleStateCreateInfoBuilder::new()
+            .rasterization_samples(vk::SampleCountFlagBits::_1)
+            .sample_shading_enable(false)
+            .min_sample_shading(0.0)
+            .alpha_to_coverage_enable(false)
+            .alpha_to_one_enable(false);
         let depth_stencil_state = Self::translate_depth_stencil_state(desc);
 
         let mut color_formats = Vec::with_capacity(desc.render_target_formats.len());
@@ -180,6 +186,7 @@ impl IDevice for Device {
         let builder = builder.viewport_state(&viewport_state);
         let builder = builder.input_assembly_state(&input_assembly_state);
         let builder = builder.rasterization_state(&rasterization_state);
+        let builder = builder.multisample_state(&multisample_state);
         let builder = builder.depth_stencil_state(&depth_stencil_state);
         let builder = builder.extend_from(&mut dynamic_rendering);
         let builder = builder.color_blend_state(&color_blend_state);
