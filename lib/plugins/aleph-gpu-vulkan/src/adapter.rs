@@ -29,6 +29,7 @@
 
 use crate::context::Context;
 use crate::device::Device;
+use crate::internal::device_info::DeviceInfo;
 use crate::queue::{Queue, QueueInfo};
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use erupt::{vk, ExtendableFrom};
@@ -45,6 +46,7 @@ pub struct Adapter {
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
     pub(crate) physical_device: vk::PhysicalDevice,
+    pub(crate) device_info: DeviceInfo,
 }
 
 declare_interfaces!(Adapter, [IAdapter]);
@@ -159,14 +161,23 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        use erupt::extensions::*;
-
         let mut enabled_extensions = Vec::with_capacity(4);
-        enabled_extensions.push(khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME);
-        enabled_extensions.push(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        enabled_extensions.push(khr_synchronization2::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-        #[cfg(target_os = "macos")]
-        enabled_extensions.push(khr_portability_subset::KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        enabled_extensions.push(vk::KHR_SWAPCHAIN_EXTENSION_NAME);
+        enabled_extensions.push(vk::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+
+        if self
+            .device_info
+            .supports_extension_ptr(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+        {
+            enabled_extensions.push(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+        }
+
+        if self
+            .device_info
+            .supports_extension_ptr(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
+        {
+            enabled_extensions.push(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        }
 
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
@@ -177,41 +188,29 @@ impl IAdapter for Adapter {
         let found_families = Adapter::get_queue_families(&queue_families);
         let queue_create_infos = found_families.build_create_info_list();
 
-        let mut enabled_11_features = vk::PhysicalDeviceVulkan11Features::default();
-        let mut enabled_12_features = vk::PhysicalDeviceVulkan12Features::default();
-        let mut dynamic_rendering_features =
-            vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
-        #[allow(unused)]
-        let mut portability_features = vk::PhysicalDevicePortabilitySubsetFeaturesKHR::default();
-        let device_features = vk::PhysicalDeviceFeatures2Builder::new()
-            .extend_from(&mut enabled_11_features)
-            .extend_from(&mut enabled_12_features)
-            .extend_from(&mut dynamic_rendering_features);
-        #[cfg(target_os = "macos")]
-        let device_features = device_features.extend_from(&mut portability_features);
-        let device_features = device_features.build_dangling();
-
-        let enabled_features = unsafe {
-            self.context
-                .instance_loader
-                .get_physical_device_features2(self.physical_device, Some(device_features))
-        };
-
-        // Zero out all the p_next pointers so we don't get busted lists in the next chain
-        enabled_11_features.p_next = std::ptr::null_mut();
-        enabled_12_features.p_next = std::ptr::null_mut();
-        dynamic_rendering_features.p_next = std::ptr::null_mut();
-        portability_features.p_next = std::ptr::null_mut();
+        let enabled_10_features = self.device_info.features_10.clone();
+        let mut enabled_11_features = self.device_info.features_11.clone();
+        let mut enabled_12_features = self.device_info.features_12.clone();
+        let mut dynamic_rendering_features = self.device_info.dynamic_rendering_features.clone();
+        let mut portability_features = self.device_info.portability_features.clone();
 
         let device_create_info = vk::DeviceCreateInfoBuilder::new()
             .extend_from(&mut enabled_11_features)
             .extend_from(&mut enabled_12_features)
             .extend_from(&mut dynamic_rendering_features)
-            .enabled_features(&enabled_features.features)
+            .enabled_features(&enabled_10_features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
-        #[cfg(target_os = "macos")]
-        let device_create_info = device_create_info.extend_from(&mut portability_features);
+
+        let device_create_info = if self
+            .device_info
+            .supports_extension_ptr(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
+        {
+            device_create_info.extend_from(&mut portability_features)
+        } else {
+            device_create_info
+        };
+
         let device_loader = unsafe {
             erupt::DeviceLoaderBuilder::new()
                 .build(

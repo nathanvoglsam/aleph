@@ -337,7 +337,6 @@ impl Context {
             }
 
             check_for_extension_vk!(vk::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-            check_for_extension_vk!(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
             // macOS will always be MoltenVK and portability subset must be available
             if cfg!(target_os = "macos") {
@@ -415,6 +414,7 @@ impl IContext for Context {
                     name,
                     vendor,
                     physical_device,
+                    device_info: DeviceInfo::load(&self.instance_loader, physical_device),
                 });
                 AnyArc::map::<dyn IAdapter, _>(adapter, |v| v)
             },

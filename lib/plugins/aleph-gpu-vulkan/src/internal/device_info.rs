@@ -194,3 +194,6 @@ impl DeviceInfo {
             .any(|v| v == wanted)
     }
 }
+
+unsafe impl Send for DeviceInfo {}
+unsafe impl Sync for DeviceInfo {}

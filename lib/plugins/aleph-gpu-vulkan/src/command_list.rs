@@ -29,6 +29,7 @@
 
 use crate::device::Device;
 use crate::encoder::Encoder;
+use crate::internal::conv::SyncShaderFeatures;
 use aleph_gpu_impl_utils::try_clone_value_into_slot;
 use bumpalo::Bump;
 use erupt::vk;
@@ -81,11 +82,19 @@ impl ICommandList for CommandList {
                     .map_err(|v| anyhow!(v))?;
             }
 
+            let features_10 = &self._device.adapter.device_info.features_10;
+            let enabled_shader_features = SyncShaderFeatures {
+                tessellation: features_10.tessellation_shader == vk::TRUE,
+                geometry: features_10.geometry_shader == vk::TRUE,
+                mesh: false,
+                task: false,
+            };
             let encoder = Encoder::<'a> {
                 buffer: self.buffer.clone(),
                 _parent: self,
                 bound_graphics_pipeline: None,
                 arena: Bump::with_capacity(1024 * 16),
+                enabled_shader_features,
             };
             Ok(Box::new(encoder))
         } else {

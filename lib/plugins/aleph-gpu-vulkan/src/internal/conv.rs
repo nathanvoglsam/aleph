@@ -212,7 +212,7 @@ macro_rules! translate_flag_onto {
     };
 }
 
-pub fn barrier_sync_to_vk(sync: BarrierSync) -> vk::PipelineStageFlags2 {
+pub fn barrier_sync_to_vk2(sync: BarrierSync) -> vk::PipelineStageFlags2 {
     let mut out = vk::PipelineStageFlags2::empty();
     translate_flag_onto!(
         sync,
@@ -304,7 +304,134 @@ pub fn barrier_sync_to_vk(sync: BarrierSync) -> vk::PipelineStageFlags2 {
     out
 }
 
-pub fn barrier_access_to_vk(access: BarrierAccess) -> vk::AccessFlags2 {
+#[derive(Clone)]
+pub struct SyncShaderFeatures {
+    /// Whether tessellation shaders are enabled
+    pub tessellation: bool,
+
+    /// Whether geometry shaders are enabled
+    pub geometry: bool,
+
+    /// Whether mesh shaders are enabled
+    pub mesh: bool,
+
+    /// Whether task shaders are enabled
+    pub task: bool,
+}
+
+pub fn barrier_sync_to_vk(
+    sync: BarrierSync,
+    enabled_shader_features: &SyncShaderFeatures,
+) -> vk::PipelineStageFlags {
+    let mut out = vk::PipelineStageFlags::empty();
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::ALL,
+        vk::PipelineStageFlags::ALL_COMMANDS
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::DRAW,
+        vk::PipelineStageFlags::ALL_GRAPHICS
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::INPUT_ASSEMBLER,
+        vk::PipelineStageFlags::VERTEX_INPUT
+    );
+    #[allow(clippy::assign_op_pattern)]
+    if sync.contains(BarrierSync::VERTEX_SHADING) {
+        out = out | (vk::PipelineStageFlags::VERTEX_SHADER);
+
+        if enabled_shader_features.tessellation {
+            out = out | (vk::PipelineStageFlags::TESSELLATION_CONTROL_SHADER);
+            out = out | (vk::PipelineStageFlags::TESSELLATION_EVALUATION_SHADER);
+        }
+        if enabled_shader_features.geometry {
+            out = out | (vk::PipelineStageFlags::GEOMETRY_SHADER);
+        }
+        if enabled_shader_features.mesh {
+            out = out | (vk::PipelineStageFlags::MESH_SHADER_NV)
+        };
+        if enabled_shader_features.task {
+            out = out | (vk::PipelineStageFlags::TASK_SHADER_NV)
+        };
+    }
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::PIXEL_SHADING,
+        vk::PipelineStageFlags::FRAGMENT_SHADER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::DEPTH_STENCIL,
+        (vk::PipelineStageFlags::EARLY_FRAGMENT_TESTS
+            | vk::PipelineStageFlags::LATE_FRAGMENT_TESTS)
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RENDER_TARGET,
+        vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COMPUTE_SHADING,
+        vk::PipelineStageFlags::COMPUTE_SHADER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RAYTRACING,
+        vk::PipelineStageFlags::RAY_TRACING_SHADER_KHR
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COPY,
+        vk::PipelineStageFlags::TRANSFER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RESOLVE,
+        vk::PipelineStageFlags::TRANSFER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::EXECUTE_INDIRECT,
+        vk::PipelineStageFlags::DRAW_INDIRECT
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::CLEAR_UNORDERED_ACCESS_VIEW,
+        vk::PipelineStageFlags::TRANSFER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE,
+        vk::PipelineStageFlags::ACCELERATION_STRUCTURE_BUILD_KHR
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COPY_RAYTRACING_ACCELERATION_STRUCTURE,
+        todo!()
+    ); //vk::PipelineStageFlags2::ACCELERATION_STRUCTURE_COPY_KHR
+
+    out
+}
+
+pub fn barrier_access_to_vk2(access: BarrierAccess) -> vk::AccessFlags2 {
     let mut out = vk::AccessFlags2::empty();
     translate_flag_onto!(
         access,
@@ -383,6 +510,90 @@ pub fn barrier_access_to_vk(access: BarrierAccess) -> vk::AccessFlags2 {
         out,
         BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
         vk::AccessFlags2::ACCELERATION_STRUCTURE_WRITE_KHR
+    );
+
+    out
+}
+
+pub fn barrier_access_to_vk(access: BarrierAccess) -> vk::AccessFlags {
+    let mut out = vk::AccessFlags::empty();
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::VERTEX_BUFFER_READ,
+        vk::AccessFlags::VERTEX_ATTRIBUTE_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::INDEX_BUFFER_READ,
+        vk::AccessFlags::INDEX_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::CONSTANT_BUFFER_READ,
+        vk::AccessFlags::UNIFORM_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::INDIRECT_COMMAND_READ,
+        vk::AccessFlags::INDIRECT_COMMAND_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_SAMPLED_READ,
+        vk::AccessFlags::SHADER_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RENDER_TARGET_READ,
+        vk::AccessFlags::COLOR_ATTACHMENT_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RENDER_TARGET_WRITE,
+        vk::AccessFlags::COLOR_ATTACHMENT_WRITE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::DEPTH_STENCIL_READ,
+        vk::AccessFlags::DEPTH_STENCIL_ATTACHMENT_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::DEPTH_STENCIL_WRITE,
+        vk::AccessFlags::DEPTH_STENCIL_ATTACHMENT_WRITE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COPY_READ,
+        vk::AccessFlags::TRANSFER_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COPY_WRITE,
+        vk::AccessFlags::TRANSFER_WRITE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ,
+        vk::AccessFlags::ACCELERATION_STRUCTURE_READ_KHR
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
+        vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_KHR
     );
 
     out
