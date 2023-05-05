@@ -38,13 +38,14 @@ pub fn get_egui_input(
     frame_timer: &dyn IFrameTimer,
     events: &dyn IEvents,
 ) -> egui::RawInput {
+    let drawable_size = window.drawable_size();
     let window_size = window.size();
 
     let screen_rect = egui::Pos2::new(window_size.0 as f32, window_size.1 as f32);
     let screen_rect = Some(egui::Rect::from_min_max(Default::default(), screen_rect));
 
     // TODO: Integrate with SDL2 hdpi stuff
-    let pixels_per_point = Some(1.0);
+    let pixels_per_point = Some(drawable_size.0 as f32 / window_size.0 as f32);
 
     let time = Some(frame_timer.elapsed_time());
 
