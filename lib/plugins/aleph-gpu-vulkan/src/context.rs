@@ -28,11 +28,11 @@
 //
 
 use crate::adapter::Adapter;
+use crate::internal::device_info::DeviceInfo;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
-use erupt::extensions::{khr_dynamic_rendering, khr_synchronization2};
-use erupt::{vk, ExtendableFrom};
+use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
@@ -71,50 +71,46 @@ impl Context {
         let mut scores: Vec<(&str, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
 
         for physical_device in devices.iter().copied() {
-            let (properties, extensions) = unsafe {
-                let properties = instance.get_physical_device_properties(physical_device);
-                let extensions = instance
-                    .enumerate_device_extension_properties(physical_device, None, None)
-                    .result()
-                    .unwrap_or_default();
-                (properties, extensions)
-            };
+            let device_info = DeviceInfo::load(instance, physical_device);
 
-            Self::log_device_info(instance, physical_device);
+            Self::log_device_info(&device_info);
 
-            if vk::api_version_major(properties.api_version) < 1 {
+            if vk::api_version_major(device_info.properties_10.api_version) < 1 {
                 log::trace!("Device does not support Vulkan 1.x");
                 continue;
             }
 
-            if vk::api_version_minor(properties.api_version) < 2 {
+            if vk::api_version_minor(device_info.properties_10.api_version) < 2 {
                 log::trace!("Device does not support Vulkan 1.2");
             }
 
             // Check if the physical device supports the requested surface
-            if Self::check_surface_support(instance, physical_device, &extensions, surface)
-                .is_none()
+            if Self::check_surface_support(
+                instance,
+                physical_device,
+                &device_info.extensions,
+                surface,
+            )
+            .is_none()
             {
                 continue;
             }
 
-            if let None =
-                Self::check_device_supports_minimum_features(instance, physical_device, &extensions)
-            {
+            if let None = Self::check_device_supports_minimum_features(&device_info) {
                 log::trace!("Device rejected as doesn't support minimum feature requirements");
                 continue;
             }
 
             // Score the physical device based on the device preferences provided by the user
-            let score = Self::score_device(&properties, options);
+            let score = Self::score_device(&device_info, options);
             let score = match score {
                 None => continue,
                 Some(v) => v,
             };
 
-            let vendor = pci_id_to_vendor(properties.vendor_id);
+            let vendor = pci_id_to_vendor(device_info.properties_10.vendor_id);
             let name = unsafe {
-                CStr::from_ptr(properties.device_name.as_ptr())
+                CStr::from_ptr(device_info.properties_10.device_name.as_ptr())
                     .to_str()
                     .unwrap()
             };
@@ -127,49 +123,41 @@ impl Context {
             .map(|v| (v.0.to_owned(), v.1, v.2))
     }
 
-    pub fn log_device_info(instance: &erupt::InstanceLoader, physical_device: vk::PhysicalDevice) {
+    pub fn log_device_info(device_info: &DeviceInfo) {
         unsafe {
-            let properties = instance.get_physical_device_properties(physical_device);
-
-            let vendor = pci_id_to_vendor(properties.vendor_id);
-            let name = CStr::from_ptr(properties.device_name.as_ptr())
+            let vendor = pci_id_to_vendor(device_info.properties_10.vendor_id);
+            let name = CStr::from_ptr(device_info.properties_10.device_name.as_ptr())
                 .to_str()
                 .unwrap();
 
             log::trace!("=====================");
             log::trace!("Considering Device: ");
-            log::trace!("Vendor      : {vendor}");
-            log::trace!("Name        : {name}");
+            log::trace!("Vendor         : {vendor}");
+            log::trace!("Name           : {name}");
 
             // Log additional driver information if available
-            if instance.get_physical_device_properties2.is_some() {
-                let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
-                let mut properties_12 = vk::PhysicalDeviceVulkan12Properties::default();
-                let properties = vk::PhysicalDeviceProperties2Builder::new()
-                    .extend_from(&mut properties_11)
-                    .extend_from(&mut properties_12)
-                    .build_dangling();
-                let _properties =
-                    instance.get_physical_device_properties2(physical_device, Some(properties));
-
-                let driver_name = CStr::from_ptr(properties_12.driver_name.as_ptr())
+            let v = device_info.properties_10.api_version;
+            if vk::api_version_major(v) >= 1 && vk::api_version_minor(v) >= 2 {
+                let driver_name = CStr::from_ptr(device_info.properties_12.driver_name.as_ptr())
                     .to_str()
                     .unwrap();
-                let driver_info = CStr::from_ptr(properties_12.driver_info.as_ptr())
+                let driver_info = CStr::from_ptr(device_info.properties_12.driver_info.as_ptr())
                     .to_str()
                     .unwrap();
 
-                log::trace!("Driver      : {driver_name}");
-                log::trace!("Driver ID   : {:?}", properties_12.driver_id);
-                log::trace!("Driver Info : {driver_info}");
+                log::trace!("Driver         : {driver_name}");
+                log::trace!("Driver ID      : {:?}", device_info.properties_12.driver_id);
+                log::trace!("Driver Info    : {driver_info}");
             }
+
+            let dv_major = vk::api_version_major(device_info.properties_10.driver_version);
+            let dv_minor = vk::api_version_minor(device_info.properties_10.driver_version);
+            let dv_patch = vk::api_version_patch(device_info.properties_10.driver_version);
+            log::trace!("Driver Version : {dv_major}.{dv_minor}.{dv_patch}");
         }
     }
 
-    pub fn score_device(
-        properties: &vk::PhysicalDeviceProperties,
-        options: &AdapterRequestOptions,
-    ) -> Option<i32> {
+    pub fn score_device(device_info: &DeviceInfo, options: &AdapterRequestOptions) -> Option<i32> {
         let mut score = 0i32;
 
         // Whether we prefer an integrated or discrete GPU depends on the requested power class
@@ -184,7 +172,7 @@ impl Context {
             AdapterTypePreference::Software => (1_000, 10_000),
         };
 
-        match properties.device_type {
+        match device_info.properties_10.device_type {
             vk::PhysicalDeviceType::INTEGRATED_GPU => {
                 if !options.deny_hardware_adapters {
                     score += integrated_score;
@@ -288,11 +276,21 @@ impl Context {
         Some(())
     }
 
-    pub fn check_device_supports_minimum_features(
-        instance: &erupt::InstanceLoader,
-        physical_device: vk::PhysicalDevice,
-        extensions: &[vk::ExtensionProperties],
-    ) -> Option<()> {
+    pub fn check_device_supports_minimum_features(device_info: &DeviceInfo) -> Option<()> {
+        let DeviceInfo {
+            extensions,
+            properties_10,
+            // properties_11,
+            // properties_12,
+            // portability_properties,
+            features_10,
+            // features_11,
+            features_12,
+            dynamic_rendering_features,
+            // portability_features,
+            ..
+        } = device_info;
+
         unsafe {
             #[allow(unused)]
             macro_rules! check_for_feature {
@@ -371,54 +369,17 @@ impl Context {
                 }};
             }
 
-            check_for_extension_vk!(khr_dynamic_rendering::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-            check_for_extension_vk!(khr_synchronization2::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+            check_for_extension_vk!(vk::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+            check_for_extension_vk!(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
             // macOS will always be MoltenVK and portability subset must be available
-            #[cfg(target_os = "macos")]
-            check_for_extension!("VK_KHR_portability_subset");
+            if cfg!(target_os = "macos") {
+                check_for_extension_vk!(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+            }
 
-            let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
-            let mut properties_12 = vk::PhysicalDeviceVulkan12Properties::default();
-            #[cfg(target_os = "macos")]
-            let mut portability_properties =
-                vk::PhysicalDevicePortabilitySubsetPropertiesKHR::default();
+            check_for_limit_min!(properties_10.limits.max_bound_descriptor_sets, 8);
 
-            let properties = vk::PhysicalDeviceProperties2Builder::new()
-                .extend_from(&mut properties_11)
-                .extend_from(&mut properties_12);
-
-            #[cfg(target_os = "macos")]
-            let properties = properties.extend_from(&mut portability_properties);
-
-            let properties = properties.build_dangling();
-            let properties = instance
-                .get_physical_device_properties2(physical_device, Some(properties))
-                .properties;
-
-            check_for_limit_min!(properties.limits.max_bound_descriptor_sets, 8);
-
-            let mut features_11 = vk::PhysicalDeviceVulkan11Features::default();
-            let mut features_12 = vk::PhysicalDeviceVulkan12Features::default();
-            let mut dynamic_rendering_features =
-                vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
-            #[cfg(target_os = "macos")]
-            let mut portability_features =
-                vk::PhysicalDevicePortabilitySubsetFeaturesKHR::default();
-            let features = vk::PhysicalDeviceFeatures2Builder::new()
-                .extend_from(&mut features_11)
-                .extend_from(&mut features_12)
-                .extend_from(&mut dynamic_rendering_features);
-
-            #[cfg(target_os = "macos")]
-            let features = features.extend_from(&mut portability_features);
-
-            let features = features.build_dangling();
-            let features = instance
-                .get_physical_device_features2(physical_device, Some(features))
-                .features;
-
-            check_for_feature_vk!(features.full_draw_index_uint32);
+            check_for_feature_vk!(features_10.full_draw_index_uint32);
             check_for_feature_vk!(features_12.descriptor_indexing);
             check_for_feature_vk!(features_12.buffer_device_address);
             check_for_feature_vk!(features_12.timeline_semaphore);

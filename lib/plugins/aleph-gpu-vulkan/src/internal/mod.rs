@@ -28,6 +28,7 @@
 //
 
 pub mod conv;
+pub mod device_info;
 pub mod macros;
 pub mod messenger;
 pub mod queue_present_support;
