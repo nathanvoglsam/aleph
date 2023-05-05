@@ -43,6 +43,7 @@ pub struct DeviceInfo {
     pub features_12: vk::PhysicalDeviceVulkan12Features,
     pub dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR,
     pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
+    pub synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR,
 }
 
 impl DeviceInfo {
@@ -92,6 +93,8 @@ impl DeviceInfo {
         let mut dynamic_rendering_features =
             vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
         let mut portability_features = vk::PhysicalDevicePortabilitySubsetFeaturesKHR::default();
+        let mut synchronization_2_features =
+            vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
 
         // Glue all the feature extension structs together into our monster instance
         let features = vk::PhysicalDeviceFeatures2Builder::new()
@@ -118,6 +121,16 @@ impl DeviceInfo {
                 features
             }
         };
+        let features = unsafe {
+            if Self::list_contains_extension_ptr(
+                &extensions,
+                vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+            ) {
+                features.extend_from(&mut synchronization_2_features)
+            } else {
+                features
+            }
+        };
 
         let features_10 = unsafe {
             instance
@@ -134,6 +147,7 @@ impl DeviceInfo {
         features_12.p_next = std::ptr::null_mut();
         dynamic_rendering_features.p_next = std::ptr::null_mut();
         portability_features.p_next = std::ptr::null_mut();
+        synchronization_2_features.p_next = std::ptr::null_mut();
 
         Self {
             extensions,
@@ -146,6 +160,7 @@ impl DeviceInfo {
             features_12,
             dynamic_rendering_features,
             portability_features,
+            synchronization_2_features,
         }
     }
 }

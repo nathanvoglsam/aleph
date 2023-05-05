@@ -193,6 +193,7 @@ impl IAdapter for Adapter {
         let mut enabled_12_features = self.device_info.features_12.clone();
         let mut dynamic_rendering_features = self.device_info.dynamic_rendering_features.clone();
         let mut portability_features = self.device_info.portability_features.clone();
+        let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
 
         let device_create_info = vk::DeviceCreateInfoBuilder::new()
             .extend_from(&mut enabled_11_features)
@@ -207,6 +208,14 @@ impl IAdapter for Adapter {
             .supports_extension_ptr(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
         {
             device_create_info.extend_from(&mut portability_features)
+        } else {
+            device_create_info
+        };
+        let device_create_info = if self
+            .device_info
+            .supports_extension_ptr(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+        {
+            device_create_info.extend_from(&mut synchronization_2_features)
         } else {
             device_create_info
         };
