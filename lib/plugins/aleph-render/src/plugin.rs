@@ -123,6 +123,7 @@ impl IPlugin for PluginRender {
         );
 
         let drawable_size = window.drawable_size();
+        let window_size = window.size();
         let config = SwapChainConfiguration {
             format: Format::Bgra8UnormSrgb,
             width: drawable_size.0,
@@ -140,7 +141,8 @@ impl IPlugin for PluginRender {
 
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
-        let renderer = EguiRenderer::new(device.clone(), drawable_size);
+        let pixels_per_point = drawable_size.0 as f32 / window_size.0 as f32;
+        let renderer = EguiRenderer::new(device.clone(), drawable_size, pixels_per_point);
 
         let schedule_cell = registry
             .get_interface::<dyn IScheduleProvider>()
@@ -166,10 +168,11 @@ impl IPlugin for PluginRender {
 
                 if data.window.resized() {
                     data.swap_images.clear();
-                    let dimensions = data.window.drawable_size();
+                    let window_size = data.window.size();
+                    let drawable_size = data.window.drawable_size();
                     let new_config = data
                         .swap_chain
-                        .rebuild(Some(Extent2D::new(dimensions.0, dimensions.1)))
+                        .rebuild(Some(Extent2D::new(drawable_size.0, drawable_size.1)))
                         .unwrap();
 
                     let mut swap_images: Vec<_> =
@@ -177,6 +180,8 @@ impl IPlugin for PluginRender {
                     data.swap_chain.get_images(&mut swap_images);
                     data.swap_images = swap_images.into_iter().map(|v| v.unwrap()).collect();
 
+                    data.renderer
+                        .update_screen_info(drawable_size.0 as f32 / window_size.0 as f32);
                     data.renderer
                         .recreate_swap_resources((new_config.width, new_config.height));
                 }

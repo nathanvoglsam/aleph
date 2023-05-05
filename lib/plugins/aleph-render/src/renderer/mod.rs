@@ -50,7 +50,7 @@ pub struct EguiRenderer {
 }
 
 impl EguiRenderer {
-    pub fn new(device: AnyArc<dyn IDevice>, dimensions: (u32, u32)) -> Self {
+    pub fn new(device: AnyArc<dyn IDevice>, dimensions: (u32, u32), pixels_per_point: f32) -> Self {
         log::trace!("Initializing Egui Renderer");
 
         let global = GlobalObjects::new(device.deref(), dimensions);
@@ -64,11 +64,10 @@ impl EguiRenderer {
             device,
             frames,
             global,
-            pixels_per_point: 1.0,
+            pixels_per_point,
         }
     }
 
-    #[allow(unused)]
     pub fn update_screen_info(&mut self, pixels_per_point: f32) {
         self.pixels_per_point = pixels_per_point;
     }
