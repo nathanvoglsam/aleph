@@ -85,13 +85,8 @@ impl Context {
             }
 
             // Check if the physical device supports the requested surface
-            if Self::check_surface_support(
-                instance,
-                physical_device,
-                &device_info.extensions,
-                surface,
-            )
-            .is_none()
+            if Self::check_surface_support(instance, &device_info, physical_device, surface)
+                .is_none()
             {
                 continue;
             }
@@ -217,25 +212,15 @@ impl Context {
 
     pub fn check_surface_support(
         instance: &erupt::InstanceLoader,
+        device_info: &DeviceInfo,
         physical_device: vk::PhysicalDevice,
-        extensions: &[vk::ExtensionProperties],
         surface: Option<vk::SurfaceKHR>,
     ) -> Option<()> {
-        use erupt::extensions::*;
-
         unsafe {
-            let ext_name = CStr::from_ptr(khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME)
+            let ext_name = CStr::from_ptr(vk::KHR_SWAPCHAIN_EXTENSION_NAME)
                 .to_str()
                 .unwrap_unchecked();
-
-            let surface_extension_supported = extensions
-                .iter()
-                .map(|v| {
-                    CStr::from_ptr(v.extension_name.as_ptr())
-                        .to_str()
-                        .unwrap_unchecked()
-                })
-                .any(|v| v == ext_name);
+            let surface_extension_supported = device_info.supports_extension(ext_name);
 
             // The VK_KHR_surface must be supported if a surface is requested
             if surface.is_some() & !surface_extension_supported {
@@ -278,7 +263,7 @@ impl Context {
 
     pub fn check_device_supports_minimum_features(device_info: &DeviceInfo) -> Option<()> {
         let DeviceInfo {
-            extensions,
+            // extensions,
             properties_10,
             // properties_11,
             // properties_12,
@@ -318,16 +303,7 @@ impl Context {
             macro_rules! check_for_extension {
                 ($name:expr) => {{
                     let name = $name;
-                    let has = extensions
-                        .iter()
-                        .map(|v| {
-                            CStr::from_ptr(v.extension_name.as_ptr())
-                                .to_str()
-                                .unwrap_unchecked()
-                        })
-                        .any(|v| v == $name);
-
-                    if !has {
+                    if !device_info.supports_extension(name) {
                         log::error!("Device does not support extension {}", name);
                         return None;
                     }
@@ -338,16 +314,7 @@ impl Context {
             macro_rules! check_for_extension_vk {
                 ($name:expr) => {{
                     let name = CStr::from_ptr($name).to_str().unwrap_unchecked();
-                    let has = extensions
-                        .iter()
-                        .map(|v| {
-                            CStr::from_ptr(v.extension_name.as_ptr())
-                                .to_str()
-                                .unwrap_unchecked()
-                        })
-                        .any(|v| v == name);
-
-                    if !has {
+                    if !device_info.supports_extension(name) {
                         log::error!("Device does not support extension {}", name);
                         return None;
                     }

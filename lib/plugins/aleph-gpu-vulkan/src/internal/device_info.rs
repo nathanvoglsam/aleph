@@ -151,6 +151,21 @@ impl DeviceInfo {
 }
 
 impl DeviceInfo {
+    #[allow(unused)]
+    pub fn supports_extension_ptr(&self, wanted: *const c_char) -> bool {
+        unsafe { Self::list_contains_extension_ptr(&self.extensions, wanted) }
+    }
+
+    #[allow(unused)]
+    pub fn supports_extension_cstr(&self, wanted: &CStr) -> bool {
+        unsafe { Self::list_contains_extension_cstr(&self.extensions, wanted) }
+    }
+
+    #[allow(unused)]
+    pub fn supports_extension(&self, wanted: &str) -> bool {
+        unsafe { Self::list_contains_extension(&self.extensions, wanted) }
+    }
+
     unsafe fn list_contains_extension_ptr(
         extensions: &[vk::ExtensionProperties],
         wanted: *const c_char,
