@@ -166,7 +166,7 @@ impl IPlugin for PluginRender {
 
                 if data.window.resized() {
                     data.swap_images.clear();
-                    let dimensions = data.window.size();
+                    let dimensions = data.window.drawable_size();
                     let new_config = data
                         .swap_chain
                         .rebuild(Some(Extent2D::new(dimensions.0, dimensions.1)))
