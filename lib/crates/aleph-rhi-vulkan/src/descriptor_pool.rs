@@ -29,12 +29,12 @@
 
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use anyhow::anyhow;
 use erupt::utils::VulkanResult;
 use erupt::{vk, SmallVec};
-use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::anyhow::anyhow;
-use interfaces::gpu::*;
 use std::any::TypeId;
 
 pub struct DescriptorPool {

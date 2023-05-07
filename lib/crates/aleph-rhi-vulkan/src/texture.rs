@@ -29,10 +29,10 @@
 
 use crate::device::Device;
 use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::{vk, ExtendableFrom};
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::*;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::collections::HashMap;

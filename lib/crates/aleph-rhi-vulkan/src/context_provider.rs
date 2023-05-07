@@ -29,11 +29,10 @@
 
 use crate::context::Context;
 use crate::internal::messenger::vulkan_debug_messenger;
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
+use anyhow::anyhow;
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::anyhow::anyhow;
-use interfaces::gpu;
-use interfaces::gpu::*;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
@@ -322,9 +321,9 @@ fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
         .application_name(crate::cstr!("aleph-gpu"))
         .application_version(vk::make_api_version(
             0,
-            gpu::API_VERSION_MAJOR.parse().unwrap(),
-            gpu::API_VERSION_MINOR.parse().unwrap(),
-            gpu::API_VERSION_PATCH.parse().unwrap(),
+            API_VERSION_MAJOR.parse().unwrap(),
+            API_VERSION_MINOR.parse().unwrap(),
+            API_VERSION_PATCH.parse().unwrap(),
         ))
         .engine_name(crate::cstr!("aleph-gpu-vulkan"))
         .engine_version(vk::make_api_version(

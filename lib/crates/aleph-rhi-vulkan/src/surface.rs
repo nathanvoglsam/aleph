@@ -32,10 +32,10 @@ use crate::device::Device;
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::*;
 use parking_lot::Mutex;
 use std::any::TypeId;
 

@@ -29,7 +29,6 @@
 
 pub extern crate aleph_vulkan_alloc as vulkan_alloc;
 
-extern crate aleph_interfaces as interfaces;
 extern crate cstr;
 
 mod adapter;
@@ -57,8 +56,8 @@ pub use plugin::PluginGpuVulkan;
 
 mod plugin {
     use crate::context_provider::ContextProvider;
-    use interfaces::any::{declare_interfaces, AnyArc, IAny};
-    use interfaces::gpu::*;
+    use aleph_any::{declare_interfaces, AnyArc, IAny};
+    use aleph_rhi_api::*;
     use interfaces::make_plugin_description_for_crate;
     use interfaces::plugin::{
         IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,

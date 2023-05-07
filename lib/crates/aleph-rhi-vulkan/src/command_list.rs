@@ -30,12 +30,12 @@
 use crate::device::Device;
 use crate::encoder::Encoder;
 use crate::internal::conv::SyncShaderFeatures;
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use anyhow::anyhow;
 use bumpalo::Bump;
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::anyhow::anyhow;
-use interfaces::gpu::*;
 use std::any::TypeId;
 
 pub struct CommandList {

@@ -34,10 +34,10 @@ use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use crate::texture::Texture;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use anyhow::anyhow;
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::anyhow::anyhow;
-use interfaces::gpu::*;
 use parking_lot::Mutex;
 use std::any::TypeId;
 
