@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-gpu-dx12"
+name = "aleph-rhi-dx12"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "The aleph-engine dx12 RHI backend"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-gpu-dx12/"
+documentation = "https://docs.rs/aleph-rhi-dx12/"
 readme = "README.md"
 keywords = ["engine", "graphics", "game"]
 categories = ["game-engines"]
@@ -46,8 +46,8 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-interfaces = { workspace = true }
-aleph-gpu-validation = { path = "../aleph-gpu-validation", version = "0.1" }
-aleph-gpu-impl-utils = { path = "../aleph-gpu-impl-utils", version = "0.1" }
+aleph-rhi-validation = { path = "../aleph-rhi-validation", version = "0.1" }
+aleph-rhi-impl-utils = { path = "../aleph-rhi-impl-utils", version = "0.1" }
 log = { workspace = true }
 cstr = { workspace = true }
 crossbeam = { workspace = true }
@@ -57,6 +57,6 @@ bumpalo = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
-aleph-dx12-alloc = { path = "../../crates/aleph-dx12-alloc", version = "0.1" }
-aleph-pix = { path = "../../crates/aleph-pix", version = "0.1" }
+aleph-dx12-alloc = { path = "../aleph-dx12-alloc", version = "0.1" }
+aleph-pix = { path = "../aleph-pix", version = "0.1" }
 libc = { workspace = true }

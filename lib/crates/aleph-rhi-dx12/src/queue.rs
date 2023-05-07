@@ -29,7 +29,7 @@
 
 use crate::command_list::CommandList;
 use crate::internal::unwrap;
-use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use interfaces::any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use interfaces::anyhow::anyhow;
