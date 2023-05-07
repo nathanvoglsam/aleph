@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use aleph_rhi_api::*;
 use egui::ImageData;
 use interfaces::any::AnyArc;
-use interfaces::gpu::*;
 use std::ops::Deref;
 
 /// Wraps d3d12 objects that don't ever need to be recreated

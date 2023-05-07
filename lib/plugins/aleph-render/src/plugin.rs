@@ -28,8 +28,8 @@
 //
 
 use crate::renderer::EguiRenderer;
+use aleph_rhi_api::*;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
-use interfaces::gpu::*;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
 use interfaces::plugin::*;

@@ -29,7 +29,7 @@
 
 #![allow(unused)]
 
-use interfaces::gpu::*;
+use aleph_rhi_api::*;
 
 pub fn egui_frag_shader_dx() -> ShaderBinary<'static> {
     let bytes = include_bytes!("../shaders/compiled/egui/egui.frag.dxil");

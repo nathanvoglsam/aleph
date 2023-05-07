@@ -29,8 +29,8 @@
 
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
+use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
-use interfaces::gpu::*;
 use std::ops::Deref;
 
 pub struct PerFrameObjects {

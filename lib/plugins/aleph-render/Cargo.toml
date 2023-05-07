@@ -47,6 +47,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-egui = { path = "../aleph-egui", version = "0.1" }
 aleph-interfaces = { workspace = true }
+aleph-rhi-api = { workspace = true }
 log = { workspace = true }
 cstr = { workspace = true }
 once_cell = { workspace = true }

@@ -30,11 +30,11 @@
 mod frame;
 mod global;
 
+use aleph_rhi_api::*;
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::AnyArc;
-use interfaces::gpu::*;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
