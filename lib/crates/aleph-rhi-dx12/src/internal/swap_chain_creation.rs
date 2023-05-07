@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use windows::core::{IInspectable, IUnknown, Interface};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct3D12::*;

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::gpu::*;
+use aleph_rhi_api::*;
 
 pub mod adapter_description_decoder;
 pub mod conv;

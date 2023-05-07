@@ -29,11 +29,11 @@
 
 use crate::command_list::CommandList;
 use crate::internal::unwrap;
+use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use anyhow::anyhow;
 use crossbeam::queue::ArrayQueue;
-use interfaces::any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
-use interfaces::anyhow::anyhow;
-use interfaces::gpu::*;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::any::{Any, TypeId};

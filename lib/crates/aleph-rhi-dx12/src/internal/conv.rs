@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::decode_u32_color_to_float;
-use interfaces::gpu::*;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;

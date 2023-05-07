@@ -35,8 +35,8 @@
 //! signature.
 
 use crate::device::Device;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::collections::HashMap;
 use windows::Win32::Graphics::Direct3D12::*;

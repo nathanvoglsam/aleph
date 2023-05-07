@@ -33,7 +33,6 @@ pub extern crate aleph_dx12_alloc as dx12_alloc;
 pub extern crate aleph_pix as pix;
 pub extern crate aleph_windows as windows;
 
-extern crate aleph_interfaces as interfaces;
 extern crate cstr;
 
 mod adapter;
@@ -62,8 +61,8 @@ pub use shader::ShaderData;
 
 mod plugin {
     use crate::context_provider::ContextProvider;
-    use interfaces::any::{declare_interfaces, AnyArc, IAny};
-    use interfaces::gpu::*;
+    use aleph_any::{declare_interfaces, AnyArc, IAny};
+    use aleph_rhi_api::*;
     use interfaces::make_plugin_description_for_crate;
     use interfaces::plugin::{
         IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,

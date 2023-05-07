@@ -28,8 +28,8 @@
 //
 
 use crate::descriptor_set_layout::DescriptorSetLayout;
-use interfaces::any::AnyArc;
-use interfaces::gpu::*;
+use aleph_any::AnyArc;
+use aleph_rhi_api::*;
 use std::ptr::NonNull;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 

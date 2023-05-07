@@ -36,11 +36,11 @@ use crate::internal::conv::{
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::unwrap;
 use crate::pipeline::GraphicsPipeline;
+use aleph_any::AnyArc;
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
-use interfaces::any::AnyArc;
-use interfaces::gpu::*;
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::any::TypeId;
 use std::ptr::NonNull;

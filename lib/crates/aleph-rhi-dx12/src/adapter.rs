@@ -37,10 +37,10 @@ use crate::internal::register_message_callback::{
     category_name, device_register_message_callback, message_id_name,
 };
 use crate::queue::Queue;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::anyhow::anyhow;
-use interfaces::gpu::*;
+use anyhow::anyhow;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::ops::Deref;

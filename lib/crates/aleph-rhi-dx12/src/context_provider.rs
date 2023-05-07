@@ -31,9 +31,9 @@ use crate::context::Context;
 use crate::internal::create_dxgi_factory::create_dxgi_factory;
 use crate::internal::debug_interface::DebugInterface;
 use crate::internal::dxgi_debug_interface::dxgi_get_debug_interface;
-use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::anyhow::anyhow;
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
+use anyhow::anyhow;
 use parking_lot::Mutex;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -82,7 +82,7 @@ impl IContextProvider for ContextProvider {
                 let context = AnyArc::map::<dyn IContext, _>(context, |v| v);
 
                 if options.validation {
-                    Ok(aleph_gpu_validation::ValidationContext::wrap_context(
+                    Ok(aleph_rhi_validation::ValidationContext::wrap_context(
                         context,
                     ))
                 } else {

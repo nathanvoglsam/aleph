@@ -32,9 +32,9 @@ use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::{
     calc_subresource_index, plane_layer_for_aspect, plane_layer_for_aspect_flag,
 };
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::*;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::collections::HashMap;
