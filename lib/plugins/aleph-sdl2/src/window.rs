@@ -130,8 +130,8 @@ impl WindowImpl {
         video_ctx: &sdl2::VideoSubsystem,
         title: &str,
     ) -> (AnyArc<Self>, sdl2::video::Window) {
-        const DEFAULT_WIDTH: u32 = 1600;
-        const DEFAULT_HEIGHT: u32 = 900;
+        const DEFAULT_WIDTH: u32 = 1280;
+        const DEFAULT_HEIGHT: u32 = 800;
 
         let mut window = video_ctx.window(title, DEFAULT_WIDTH, DEFAULT_HEIGHT);
         window.resizable();
