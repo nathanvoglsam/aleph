@@ -116,6 +116,7 @@ impl RhiLoader {
                     Err(ContextCreateError::RequiredBackendUnavailable(required))
                 };
             } else {
+                log::info!("Backend '{required}' chosen by user requirement");
                 let backend = self.select_backend(required);
                 let context = backend.make_context(options)?;
                 return Ok(Self::wrap_with_validation(options, context));
@@ -125,14 +126,21 @@ impl RhiLoader {
         // Next try and create a context with the preferred API. Failing this is a soft fail.
         if let Some(preferred) = options.preferred_api {
             if allowed_backends.contains(&preferred) {
+                log::info!("Backend '{preferred}' chosen by user preference");
                 let backend = self.select_backend(preferred);
                 let context = backend.make_context(options)?;
                 return Ok(Self::wrap_with_validation(options, context));
+            } else {
+                log::info!("Preferred backend '{preferred}' not available");
             }
         }
 
         // Finally we use the statically preferred API on the current platform.
         if allowed_backends.contains(&Self::preferred_backend()) {
+            log::info!(
+                "Backend '{}' chosen as platform default",
+                Self::preferred_backend()
+            );
             let backend = self.select_backend(Self::preferred_backend());
             let context = backend.make_context(options)?;
             Ok(Self::wrap_with_validation(options, context))
