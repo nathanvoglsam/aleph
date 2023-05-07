@@ -33,7 +33,6 @@ pub extern crate anyhow;
 
 pub mod components;
 pub mod console;
-pub mod gpu;
 pub mod platform;
 pub mod plugin;
 pub mod schedule;

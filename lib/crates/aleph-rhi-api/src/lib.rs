@@ -27,11 +27,7 @@
 // SOFTWARE.
 //
 
-pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
-pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
-pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
-
-use any::{AnyArc, IAny};
+use aleph_any::{AnyArc, IAny};
 use bitflags::bitflags;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
@@ -41,6 +37,10 @@ use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 use thiserror::Error;
+
+pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
+pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
+pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 
 //
 // =================================================================================================
