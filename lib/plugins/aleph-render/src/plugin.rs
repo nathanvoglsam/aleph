@@ -33,6 +33,7 @@ use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
 use interfaces::plugin::*;
+use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 use std::ops::Deref;
 
@@ -61,11 +62,11 @@ impl IPlugin for PluginRender {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.depends_on::<dyn IContextProvider>();
-        registrar.must_init_after::<dyn IContextProvider>();
-
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
+
+        registrar.depends_on::<dyn IRhiProvider>();
+        registrar.must_init_after::<dyn IRhiProvider>();
 
         registrar.depends_on::<dyn IScheduleProvider>();
         registrar.must_init_after::<dyn IScheduleProvider>();
@@ -87,32 +88,11 @@ impl IPlugin for PluginRender {
             .get_interface::<dyn egui::IEguiRenderData>()
             .unwrap();
 
-        // Get our context provider for creating graphics API context and create our GPU context
-        let options = ContextOptions {
-            validation: true,
-            debug: true,
-        };
-        let gpu_context = registry
-            .get_interface::<dyn IContextProvider>()
-            .unwrap()
-            .make_context(&options)
-            .unwrap();
+        let rhi_provider = registry.get_interface::<dyn IRhiProvider>().unwrap();
+        let surface = rhi_provider.surface().unwrap();
+        let adapter = rhi_provider.adapter();
+        let device = rhi_provider.device();
 
-        // Create a surface for the window we want to render with
-        let surface = gpu_context.create_surface(&window.deref()).unwrap();
-
-        // Get an adapter compatible with the requested surface
-        let options = AdapterRequestOptions {
-            surface: Some(surface.deref()),
-            allow_software_adapters: true,
-            ..Default::default()
-        };
-        let adapter = gpu_context
-            .request_adapter(&options)
-            .expect("Find suitable adapter");
-
-        // Create our device
-        let device = adapter.request_device().unwrap();
         self.device = Some(device.clone());
 
         let queue = device.get_queue(QueueType::General).unwrap();
