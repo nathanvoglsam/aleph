@@ -157,22 +157,6 @@ impl<T: IGetPlatformInterface + ?Sized> GetPlatformInterface for T {
 //
 //
 // _________________________________________________________________________________________________
-// ContextProvider
-
-/// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
-/// some other use can request a handle to the [IContextProvider] instance and create the context.
-pub trait IContextProvider: IAny {
-    /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
-    /// will always return Err.
-    fn make_context(
-        &self,
-        options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError>;
-}
-
-//
-//
-// _________________________________________________________________________________________________
 // Context
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
@@ -1163,40 +1147,6 @@ impl Display for BackendAPI {
             BackendAPI::D3D12 => f.write_str("D3D12"),
         }
     }
-}
-
-/// Options provided when a context is created
-#[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
-pub struct ContextOptions {
-    /// Whether backend API validation should be enabled.
-    ///
-    /// Will implicitly force the `debug` option to true if `validation` is also true as on some
-    /// backends the `validation` option requires loading the same `debug` utilities to function.
-    ///
-    /// This flag requests that the backend should enable their backend specific API validation.
-    ///
-    /// This will add massive amounts of overhead and should never be enabled unless debugging the
-    /// backends themselves.
-    ///
-    /// # Detail
-    ///
-    /// This is will enable w/e API validation and debug tools that are available to the backend.
-    ///
-    /// For Vulkan this will enable the validation layers and install a debug messenger the uses
-    /// the rust `log` framework.
-    ///
-    /// For Direct3D 12 this will enable API validation.
-    pub validation: bool,
-
-    /// Whether backend debug utilities should be enabled. This enables debug integrations for
-    /// naming objects and marking code sections to the backend's API for markup in debug tools.
-    ///
-    /// # Detail
-    ///
-    /// Basically just a request to enable `VK_EXT_debug_utils` for Vulkan without enabling
-    /// validation layers. Vulkan requires `VK_EXT_debug_utils` for object naming as that is the
-    /// extension that provides the naming functionality.
-    pub debug: bool,
 }
 
 //
@@ -3899,22 +3849,6 @@ pub enum PipelineBindPoint {
 // ERROR TYPES
 // =================================================================================================
 //
-
-//
-//
-// _________________________________________________________________________________________________
-// Context
-
-/// Set of errors that can occur when creating an [IContext]
-#[derive(Error, Debug)]
-#[non_exhaustive]
-pub enum ContextCreateError {
-    #[error("A context has already been created by this provider")]
-    ContextAlreadyCreated,
-
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
-}
 
 //
 //
