@@ -45,6 +45,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-vulkan-alloc = { path = "../aleph-vulkan-alloc", version = "0.1" }
+aleph-rhi-loader-api = { path = "../aleph-rhi-loader-api", version = "0.1" }
 aleph-rhi-impl-utils = { path = "../aleph-rhi-impl-utils", version = "0.1" }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
@@ -58,6 +59,7 @@ erupt = { workspace = true }
 bumpalo = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
+libloading = { workspace = true }
 console = "0.15"
 byteorder = "1"
 

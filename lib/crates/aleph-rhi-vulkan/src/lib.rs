@@ -45,6 +45,7 @@ mod internal;
 mod pipeline;
 mod pipeline_layout;
 mod queue;
+mod rhi_backend;
 mod sampler;
 mod semaphore;
 mod shader;
@@ -100,3 +101,4 @@ mod plugin {
 
     declare_interfaces!(PluginGpuVulkan, [IPlugin]);
 }
+pub use rhi_backend::RHI_BACKEND;
