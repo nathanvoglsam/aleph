@@ -245,7 +245,7 @@ impl RhiLoader {
                 .copied()
                 .filter(|v| {
                     if denied.contains(v) {
-                        log::trace!("Backend '{:?}' denied by user", *v);
+                        log::trace!("Backend '{}' denied by user", *v);
                         false
                     } else {
                         true
