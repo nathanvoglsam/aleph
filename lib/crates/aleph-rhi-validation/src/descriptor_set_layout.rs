@@ -28,8 +28,8 @@
 //
 
 use crate::ValidationDevice;
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 
@@ -40,7 +40,7 @@ pub struct ValidationDescriptorSetLayout {
     pub(crate) binding_info: HashMap<u32, DescriptorBindingInfo>,
 }
 
-interfaces::any::declare_interfaces!(ValidationDescriptorSetLayout, [IDescriptorSetLayout]);
+declare_interfaces!(ValidationDescriptorSetLayout, [IDescriptorSetLayout]);
 
 crate::impl_platform_interface_passthrough!(ValidationDescriptorSetLayout);
 

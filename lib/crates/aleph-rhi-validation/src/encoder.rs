@@ -30,8 +30,8 @@
 use crate::internal::get_as_unwrapped;
 use crate::texture::ValidationImageView;
 use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationTexture};
-use interfaces::any::{AnyArc, QueryInterface};
-use interfaces::gpu::*;
+use aleph_any::{AnyArc, QueryInterface};
+use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::ops::Deref;
 

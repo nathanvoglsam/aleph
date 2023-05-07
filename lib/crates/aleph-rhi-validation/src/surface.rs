@@ -28,8 +28,8 @@
 //
 
 use crate::{ValidationContext, ValidationDevice, ValidationSwapChain};
-use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_rhi_api::*;
 use parking_lot::Mutex;
 
 pub struct ValidationSurface {
@@ -39,7 +39,7 @@ pub struct ValidationSurface {
     pub(crate) has_swap_chain: Mutex<bool>,
 }
 
-interfaces::any::declare_interfaces!(ValidationSurface, [ISurface]);
+declare_interfaces!(ValidationSurface, [ISurface]);
 
 crate::impl_platform_interface_passthrough!(ValidationSurface);
 

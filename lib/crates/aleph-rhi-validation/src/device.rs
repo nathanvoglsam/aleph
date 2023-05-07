@@ -38,9 +38,9 @@ use crate::{
     ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationQueue, ValidationSampler,
     ValidationSemaphore, ValidationShader, ValidationTexture,
 };
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
-use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
-use interfaces::gpu::*;
 use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::ops::Deref;
@@ -57,7 +57,7 @@ pub struct ValidationDevice {
     pub(crate) transfer_queue: Option<AnyArc<ValidationQueue>>,
 }
 
-interfaces::any::declare_interfaces!(ValidationDevice, [IDevice]);
+declare_interfaces!(ValidationDevice, [IDevice]);
 
 crate::impl_platform_interface_passthrough!(ValidationDevice);
 

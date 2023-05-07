@@ -28,8 +28,8 @@
 //
 
 use crate::{ValidationDevice, ValidationPipelineLayout};
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 
 pub struct ValidationGraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,
@@ -38,7 +38,7 @@ pub struct ValidationGraphicsPipeline {
     pub(crate) inner: AnyArc<dyn IGraphicsPipeline>,
 }
 
-interfaces::any::declare_interfaces!(ValidationGraphicsPipeline, [IGraphicsPipeline]);
+declare_interfaces!(ValidationGraphicsPipeline, [IGraphicsPipeline]);
 
 crate::impl_platform_interface_passthrough!(ValidationGraphicsPipeline);
 
@@ -63,7 +63,7 @@ pub struct ValidationComputePipeline {
     pub(crate) inner: AnyArc<dyn IComputePipeline>,
 }
 
-interfaces::any::declare_interfaces!(ValidationComputePipeline, [IComputePipeline]);
+declare_interfaces!(ValidationComputePipeline, [IComputePipeline]);
 
 crate::impl_platform_interface_passthrough!(ValidationComputePipeline);
 

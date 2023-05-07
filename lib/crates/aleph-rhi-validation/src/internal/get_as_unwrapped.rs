@@ -54,8 +54,8 @@ use crate::{
     ValidationBuffer, ValidationCommandList, ValidationDescriptorSetLayout, ValidationFence,
     ValidationSampler, ValidationSemaphore, ValidationSwapChain, ValidationTexture,
 };
-use interfaces::any::{box_downcast, QueryInterface};
-use interfaces::gpu::*;
+use aleph_any::{box_downcast, QueryInterface};
+use aleph_rhi_api::*;
 use std::cell::Cell;
 use std::ops::Deref;
 use std::ptr::NonNull;

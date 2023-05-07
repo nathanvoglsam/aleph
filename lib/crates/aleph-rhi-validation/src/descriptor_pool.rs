@@ -31,8 +31,8 @@
 
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::{ValidationDescriptorSetLayout, ValidationDevice};
-use interfaces::any::AnyArc;
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
 use std::ptr::NonNull;
 
 pub struct ValidationDescriptorPool {
@@ -44,7 +44,7 @@ pub struct ValidationDescriptorPool {
     pub(crate) free_list: Vec<DescriptorSetHandle>,
 }
 
-interfaces::any::declare_interfaces!(ValidationDescriptorPool, [IDescriptorPool]);
+declare_interfaces!(ValidationDescriptorPool, [IDescriptorPool]);
 
 crate::impl_platform_interface_passthrough!(ValidationDescriptorPool);
 

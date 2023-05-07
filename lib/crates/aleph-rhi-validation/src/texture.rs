@@ -28,8 +28,8 @@
 //
 
 use crate::ValidationDevice;
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use parking_lot::Mutex;
 use std::collections::HashMap;
 
@@ -42,7 +42,7 @@ pub struct ValidationTexture {
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
 }
 
-interfaces::any::declare_interfaces!(ValidationTexture, [ITexture]);
+declare_interfaces!(ValidationTexture, [ITexture]);
 
 crate::impl_platform_interface_passthrough!(ValidationTexture);
 

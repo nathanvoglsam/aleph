@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-extern crate aleph_interfaces as interfaces;
+#[doc(hidden)]
+extern crate aleph_rhi_api;
 
 mod adapter;
 mod buffer;

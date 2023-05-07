@@ -28,8 +28,8 @@
 //
 
 use crate::ValidationDevice;
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 
 pub struct ValidationShader {
     pub(crate) _this: AnyWeak<Self>,
@@ -38,7 +38,7 @@ pub struct ValidationShader {
     pub(crate) shader_type: ShaderType,
 }
 
-interfaces::any::declare_interfaces!(ValidationShader, [IShader]);
+declare_interfaces!(ValidationShader, [IShader]);
 
 crate::impl_platform_interface_passthrough!(ValidationShader);
 

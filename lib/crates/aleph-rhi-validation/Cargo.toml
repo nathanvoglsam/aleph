@@ -44,8 +44,10 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-interfaces = { workspace = true }
 aleph-rhi-impl-utils = { path = "../aleph-rhi-impl-utils", version = "0.1" }
+aleph-any = { workspace = true }
+aleph-rhi-api = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true }
+raw-window-handle = { workspace = true }
 crossbeam = { workspace = true }

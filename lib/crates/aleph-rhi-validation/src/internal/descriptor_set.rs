@@ -28,8 +28,8 @@
 //
 
 use crate::ValidationDescriptorSetLayout;
-use interfaces::any::AnyArc;
-use interfaces::gpu::*;
+use aleph_any::AnyArc;
+use aleph_rhi_api::*;
 use std::ptr::NonNull;
 
 #[repr(C)]

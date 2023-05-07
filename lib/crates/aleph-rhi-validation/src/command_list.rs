@@ -28,8 +28,8 @@
 //
 
 use crate::{ValidationDevice, ValidationEncoder};
-use interfaces::any::AnyArc;
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
 
 pub struct ValidationCommandList {
     pub(crate) _device: AnyArc<ValidationDevice>,
@@ -37,7 +37,7 @@ pub struct ValidationCommandList {
     pub(crate) list_type: QueueType,
 }
 
-interfaces::any::declare_interfaces!(ValidationCommandList, [ICommandList]);
+declare_interfaces!(ValidationCommandList, [ICommandList]);
 
 crate::impl_platform_interface_passthrough!(ValidationCommandList);
 

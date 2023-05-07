@@ -29,8 +29,8 @@
 
 use crate::internal::unwrap;
 use crate::{ValidationDevice, ValidationSurface, ValidationTexture};
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -44,7 +44,7 @@ pub struct ValidationSwapChain {
     pub(crate) acquired: AtomicBool,
 }
 
-interfaces::any::declare_interfaces!(ValidationSwapChain, [ISwapChain]);
+declare_interfaces!(ValidationSwapChain, [ISwapChain]);
 
 crate::impl_platform_interface_passthrough!(ValidationSwapChain);
 

@@ -28,16 +28,16 @@
 //
 
 use crate::{ValidationAdapter, ValidationSurface};
-use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
-use interfaces::gpu::*;
-use interfaces::platform::HasRawWindowHandle;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_rhi_api::*;
+use raw_window_handle::HasRawWindowHandle;
 
 pub struct ValidationContext {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) inner: AnyArc<dyn IContext>,
 }
 
-interfaces::any::declare_interfaces!(ValidationContext, [IContext]);
+declare_interfaces!(ValidationContext, [IContext]);
 
 crate::impl_platform_interface_passthrough!(ValidationContext);
 

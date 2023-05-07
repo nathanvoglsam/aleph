@@ -28,8 +28,8 @@
 //
 
 use crate::ValidationDevice;
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 
 pub struct ValidationSampler {
     pub(crate) _this: AnyWeak<Self>,
@@ -37,7 +37,7 @@ pub struct ValidationSampler {
     pub(crate) inner: AnyArc<dyn ISampler>,
 }
 
-interfaces::any::declare_interfaces!(ValidationSampler, [ISampler]);
+declare_interfaces!(ValidationSampler, [ISampler]);
 
 crate::impl_platform_interface_passthrough!(ValidationSampler);
 

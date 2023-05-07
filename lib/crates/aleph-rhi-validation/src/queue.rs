@@ -34,8 +34,8 @@ use crate::{
     ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
     ValidationSwapChain,
 };
-use interfaces::any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
-use interfaces::gpu::*;
+use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
+use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::mem::transmute;
 use std::ptr;

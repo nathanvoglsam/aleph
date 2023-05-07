@@ -28,8 +28,8 @@
 //
 
 use crate::{ValidationContext, ValidationDevice, ValidationQueue};
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 
 pub struct ValidationAdapter {
     pub(crate) _this: AnyWeak<Self>,
@@ -37,7 +37,7 @@ pub struct ValidationAdapter {
     pub(crate) inner: AnyArc<dyn IAdapter>,
 }
 
-interfaces::any::declare_interfaces!(ValidationAdapter, [IAdapter]);
+declare_interfaces!(ValidationAdapter, [IAdapter]);
 
 crate::impl_platform_interface_passthrough!(ValidationAdapter);
 

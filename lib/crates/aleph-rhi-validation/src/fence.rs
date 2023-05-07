@@ -28,9 +28,9 @@
 //
 
 use crate::ValidationDevice;
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
-use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::*;
 
 pub struct ValidationFence {
     pub(crate) _this: AnyWeak<Self>,
@@ -39,7 +39,7 @@ pub struct ValidationFence {
     pub(crate) state: AtomicCell<FenceState>,
 }
 
-interfaces::any::declare_interfaces!(ValidationFence, [IFence]);
+declare_interfaces!(ValidationFence, [IFence]);
 
 crate::impl_platform_interface_passthrough!(ValidationFence);
 
