@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_gpu_impl_utils::conv::decode_u32_color_to_float;
+use aleph_rhi_impl_utils::conv::decode_u32_color_to_float;
 use erupt::vk;
 use interfaces::gpu::*;
 

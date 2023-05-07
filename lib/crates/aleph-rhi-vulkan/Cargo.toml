@@ -29,14 +29,13 @@
 
 
 [package]
-name = "aleph-gpu-vulkan"
+name = "aleph-rhi-vulkan"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "The aleph-engine Vulkan RHI backend"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-gpu-vulkan/"
-readme = "README.md"
+documentation = "https://docs.rs/aleph-rhi-vulkan/"
 keywords = ["engine", "graphics", "vulkan", "game"]
 categories = ["game-engines"]
 edition = "2021"
@@ -46,8 +45,8 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-interfaces = { workspace = true }
-aleph-vulkan-alloc = { path = "../../crates/aleph-vulkan-alloc", version = "0.1" }
-aleph-gpu-impl-utils = { path = "../aleph-gpu-impl-utils", version = "0.1" }
+aleph-vulkan-alloc = { path = "../aleph-vulkan-alloc", version = "0.1" }
+aleph-rhi-impl-utils = { path = "../aleph-rhi-impl-utils", version = "0.1" }
 log = { workspace = true }
 bitflags = { workspace = true }
 cstr = { workspace = true }

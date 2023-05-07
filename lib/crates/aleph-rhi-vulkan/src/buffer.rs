@@ -28,31 +28,35 @@
 //
 
 use crate::device::Device;
-use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
+use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
+use std::ptr::NonNull;
+use vulkan_alloc::vma;
 
-pub struct Sampler {
+pub struct Buffer {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) sampler: vk::Sampler,
-    pub(crate) desc: SamplerDesc<'static>,
+    pub(crate) buffer: vk::Buffer,
+    pub(crate) allocation: vma::Allocation,
+    pub(crate) desc: BufferDesc<'static>,
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(Sampler, [ISampler]);
+declare_interfaces!(Buffer, [IBuffer]);
 
-impl IGetPlatformInterface for Sampler {
+impl IGetPlatformInterface for Buffer {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.sampler, out, target)
+        try_clone_value_into_slot(&self.buffer, out, target)
     }
 }
 
-impl ISampler for Sampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self._this.upgrade().unwrap(), |v| v)
+impl IBuffer for Buffer {
+    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
+        AnyArc::map::<dyn IBuffer, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -63,19 +67,52 @@ impl ISampler for Sampler {
         self._this.weak_count()
     }
 
-    fn desc(&self) -> SamplerDesc {
+    fn desc(&self) -> BufferDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
+
+    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
+        unsafe {
+            let ptr = self
+                ._device
+                .allocator
+                .map_memory(&self.allocation)
+                .map_err(|v| anyhow!(v))?;
+            NonNull::new(ptr).ok_or(ResourceMapError::MappedNullPointer)
+        }
+    }
+
+    fn unmap(&self) {
+        unsafe {
+            self._device.allocator.unmap_memory(&self.allocation);
+        }
+    }
+
+    fn flush_range(&self, offset: u64, len: u64) {
+        unsafe {
+            self._device
+                .allocator
+                .flush_allocation(&self.allocation, offset, len);
+        }
+    }
+
+    fn invalidate_range(&self, offset: u64, len: u64) {
+        unsafe {
+            self._device
+                .allocator
+                .invalidate_allocation(&self.allocation, offset, len);
+        }
+    }
 }
 
-impl Drop for Sampler {
+impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
             self._device
-                .device_loader
-                .destroy_sampler(self.sampler, None)
+                .allocator
+                .destroy_buffer(self.buffer, self.allocation);
         }
     }
 }

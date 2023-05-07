@@ -29,7 +29,7 @@
 
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
-use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::utils::VulkanResult;
 use erupt::{vk, SmallVec};
 use interfaces::any::{declare_interfaces, AnyArc};

@@ -28,29 +28,31 @@
 //
 
 use crate::device::Device;
-use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::any::TypeId;
 
-pub struct Semaphore {
+pub struct Sampler {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) semaphore: vk::Semaphore,
+    pub(crate) sampler: vk::Sampler,
+    pub(crate) desc: SamplerDesc<'static>,
+    pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(Semaphore, [ISemaphore]);
+declare_interfaces!(Sampler, [ISampler]);
 
-impl IGetPlatformInterface for Semaphore {
+impl IGetPlatformInterface for Sampler {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.semaphore, out, target)
+        try_clone_value_into_slot(&self.sampler, out, target)
     }
 }
 
-impl ISemaphore for Semaphore {
-    fn upgrade(&self) -> AnyArc<dyn ISemaphore> {
-        AnyArc::map::<dyn ISemaphore, _>(self._this.upgrade().unwrap(), |v| v)
+impl ISampler for Sampler {
+    fn upgrade(&self) -> AnyArc<dyn ISampler> {
+        AnyArc::map::<dyn ISampler, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -60,14 +62,20 @@ impl ISemaphore for Semaphore {
     fn weak_count(&self) -> usize {
         self._this.weak_count()
     }
+
+    fn desc(&self) -> SamplerDesc {
+        let mut desc = self.desc.clone();
+        desc.name = self.name.as_deref();
+        desc
+    }
 }
 
-impl Drop for Semaphore {
+impl Drop for Sampler {
     fn drop(&mut self) {
         unsafe {
             self._device
                 .device_loader
-                .destroy_semaphore(self.semaphore, None);
+                .destroy_sampler(self.sampler, None)
         }
     }
 }

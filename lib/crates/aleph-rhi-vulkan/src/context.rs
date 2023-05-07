@@ -31,7 +31,7 @@ use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
 use crate::internal::unwrap;
 use crate::surface::Surface;
-use aleph_gpu_impl_utils::conv::pci_id_to_vendor;
+use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;

@@ -28,31 +28,29 @@
 //
 
 use crate::device::Device;
-use crate::pipeline_layout::PipelineLayout;
-use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::any::TypeId;
 
-pub struct GraphicsPipeline {
+pub struct Semaphore {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
-    pub(crate) pipeline: vk::Pipeline,
+    pub(crate) semaphore: vk::Semaphore,
 }
 
-declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
+declare_interfaces!(Semaphore, [ISemaphore]);
 
-impl IGetPlatformInterface for GraphicsPipeline {
+impl IGetPlatformInterface for Semaphore {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
+        try_clone_value_into_slot(&self.semaphore, out, target)
     }
 }
 
-impl IGraphicsPipeline for GraphicsPipeline {
-    fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
-        AnyArc::map::<dyn IGraphicsPipeline, _>(self._this.upgrade().unwrap(), |v| v)
+impl ISemaphore for Semaphore {
+    fn upgrade(&self) -> AnyArc<dyn ISemaphore> {
+        AnyArc::map::<dyn ISemaphore, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -64,51 +62,12 @@ impl IGraphicsPipeline for GraphicsPipeline {
     }
 }
 
-impl Drop for GraphicsPipeline {
+impl Drop for Semaphore {
     fn drop(&mut self) {
         unsafe {
             self._device
                 .device_loader
-                .destroy_pipeline(self.pipeline, None);
-        }
-    }
-}
-
-pub struct ComputePipeline {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
-    pub(crate) pipeline: vk::Pipeline,
-}
-
-declare_interfaces!(ComputePipeline, [IComputePipeline]);
-
-impl IGetPlatformInterface for ComputePipeline {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
-    }
-}
-
-impl IComputePipeline for ComputePipeline {
-    fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
-        AnyArc::map::<dyn IComputePipeline, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-}
-
-impl Drop for ComputePipeline {
-    fn drop(&mut self) {
-        unsafe {
-            self._device
-                .device_loader
-                .destroy_pipeline(self.pipeline, None);
+                .destroy_semaphore(self.semaphore, None);
         }
     }
 }

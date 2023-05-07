@@ -28,30 +28,36 @@
 //
 
 use crate::device::Device;
-use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use crate::sampler::Sampler;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::any::TypeId;
 
-pub struct PipelineLayout {
+pub struct DescriptorSetLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) pipeline_layout: vk::PipelineLayout,
-    pub(crate) push_constant_blocks: Vec<vk::PushConstantRangeBuilder<'static>>,
+    pub(crate) _samplers: Vec<AnyArc<Sampler>>,
+    pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
+    pub(crate) pool_sizes: Vec<vk::DescriptorPoolSizeBuilder<'static>>,
 }
 
-declare_interfaces!(PipelineLayout, [IPipelineLayout]);
+declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);
 
-impl IGetPlatformInterface for PipelineLayout {
+impl IGetPlatformInterface for DescriptorSetLayout {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::PipelineLayout>(&self.pipeline_layout, out, target)
+        try_clone_value_into_slot::<vk::DescriptorSetLayout>(
+            &self.descriptor_set_layout,
+            out,
+            target,
+        )
     }
 }
 
-impl IPipelineLayout for PipelineLayout {
-    fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {
-        AnyArc::map::<dyn IPipelineLayout, _>(self._this.upgrade().unwrap(), |v| v)
+impl IDescriptorSetLayout for DescriptorSetLayout {
+    fn upgrade(&self) -> AnyArc<dyn IDescriptorSetLayout> {
+        AnyArc::map::<dyn IDescriptorSetLayout, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -63,12 +69,12 @@ impl IPipelineLayout for PipelineLayout {
     }
 }
 
-impl Drop for PipelineLayout {
+impl Drop for DescriptorSetLayout {
     fn drop(&mut self) {
         unsafe {
             self._device
                 .device_loader
-                .destroy_pipeline_layout(self.pipeline_layout, None);
+                .destroy_descriptor_set_layout(self.descriptor_set_layout, None);
         }
     }
 }

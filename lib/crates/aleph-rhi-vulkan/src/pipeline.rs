@@ -28,35 +28,31 @@
 //
 
 use crate::device::Device;
-use aleph_gpu_impl_utils::try_clone_value_into_slot;
+use crate::pipeline_layout::PipelineLayout;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::anyhow::anyhow;
 use interfaces::gpu::*;
 use std::any::TypeId;
-use std::ptr::NonNull;
-use vulkan_alloc::vma;
 
-pub struct Buffer {
+pub struct GraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) buffer: vk::Buffer,
-    pub(crate) allocation: vma::Allocation,
-    pub(crate) desc: BufferDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) pipeline: vk::Pipeline,
 }
 
-declare_interfaces!(Buffer, [IBuffer]);
+declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
 
-impl IGetPlatformInterface for Buffer {
+impl IGetPlatformInterface for GraphicsPipeline {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.buffer, out, target)
+        try_clone_value_into_slot(&self.pipeline, out, target)
     }
 }
 
-impl IBuffer for Buffer {
-    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
-        AnyArc::map::<dyn IBuffer, _>(self._this.upgrade().unwrap(), |v| v)
+impl IGraphicsPipeline for GraphicsPipeline {
+    fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
+        AnyArc::map::<dyn IGraphicsPipeline, _>(self._this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -66,53 +62,53 @@ impl IBuffer for Buffer {
     fn weak_count(&self) -> usize {
         self._this.weak_count()
     }
+}
 
-    fn desc(&self) -> BufferDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
-        unsafe {
-            let ptr = self
-                ._device
-                .allocator
-                .map_memory(&self.allocation)
-                .map_err(|v| anyhow!(v))?;
-            NonNull::new(ptr).ok_or(ResourceMapError::MappedNullPointer)
-        }
-    }
-
-    fn unmap(&self) {
-        unsafe {
-            self._device.allocator.unmap_memory(&self.allocation);
-        }
-    }
-
-    fn flush_range(&self, offset: u64, len: u64) {
+impl Drop for GraphicsPipeline {
+    fn drop(&mut self) {
         unsafe {
             self._device
-                .allocator
-                .flush_allocation(&self.allocation, offset, len);
-        }
-    }
-
-    fn invalidate_range(&self, offset: u64, len: u64) {
-        unsafe {
-            self._device
-                .allocator
-                .invalidate_allocation(&self.allocation, offset, len);
+                .device_loader
+                .destroy_pipeline(self.pipeline, None);
         }
     }
 }
 
-impl Drop for Buffer {
+pub struct ComputePipeline {
+    pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) pipeline: vk::Pipeline,
+}
+
+declare_interfaces!(ComputePipeline, [IComputePipeline]);
+
+impl IGetPlatformInterface for ComputePipeline {
+    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+        try_clone_value_into_slot(&self.pipeline, out, target)
+    }
+}
+
+impl IComputePipeline for ComputePipeline {
+    fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
+        AnyArc::map::<dyn IComputePipeline, _>(self._this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self._this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self._this.weak_count()
+    }
+}
+
+impl Drop for ComputePipeline {
     fn drop(&mut self) {
         unsafe {
             self._device
-                .allocator
-                .destroy_buffer(self.buffer, self.allocation);
+                .device_loader
+                .destroy_pipeline(self.pipeline, None);
         }
     }
 }
