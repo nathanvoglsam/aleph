@@ -80,14 +80,11 @@ impl EngineBuilder {
     pub fn default_plugins(&mut self, headless: bool) -> &mut Self {
         self.plugin(core::PluginCore::new());
 
-        if !headless {
-            self.plugin(aleph_gpu_vulkan::PluginGpuVulkan::new());
-
-            // #[cfg(target_os = "windows")]
-            // self.plugin(aleph_gpu_dx12::PluginGpuDX12::new());
-        }
-
         self.platform(headless);
+
+        if !headless {
+            self.plugin(aleph_rhi::PluginRHI::new());
+        }
 
         // This only makes sense to load on platforms we have a renderer for, and only if we're not
         // trying to run headless

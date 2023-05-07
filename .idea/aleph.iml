@@ -149,6 +149,7 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-validation/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-render/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-rhi/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
