@@ -49,6 +49,7 @@ mod internal;
 mod pipeline;
 mod pipeline_layout;
 mod queue;
+mod rhi_backend;
 mod sampler;
 mod semaphore;
 mod shader;
@@ -57,6 +58,7 @@ mod swap_chain;
 mod texture;
 
 pub use plugin::PluginGpuDX12;
+pub use rhi_backend::RHI_BACKEND;
 pub use shader::ShaderData;
 
 mod plugin {

@@ -35,7 +35,7 @@ use windows::Win32::Graphics::Dxgi::*;
 type CreateFn =
     extern "system" fn(u32, *const GUID, *mut *mut ::std::ffi::c_void) -> windows::core::HRESULT;
 
-static CREATE_FN: DynamicLoadCell<CreateFn> =
+pub static CREATE_FN: DynamicLoadCell<CreateFn> =
     DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
 
 #[inline]
