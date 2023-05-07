@@ -127,8 +127,6 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/utils/aleph-vk-format/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-egui/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-dx12/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-headless/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-combine-utils/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-ktx/src" isTestSource="false" />
@@ -138,9 +136,18 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-ref-ptr/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-dx12-agility-sdk/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-validation/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-impl-utils/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-vulkan-profiles/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-gpu-dx12/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-gpu-impl-utils/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-gpu-validation/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-gpu-vulkan/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-api/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-dx12/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-impl-utils/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-loader-api/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-loader/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-validation/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
