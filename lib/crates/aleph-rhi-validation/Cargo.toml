@@ -29,14 +29,13 @@
 
 
 [package]
-name = "aleph-gpu-validation"
+name = "aleph-rhi-validation"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "The aleph-engine dx12 RHI backend"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-gpu-validation/"
-readme = "README.md"
+documentation = "https://docs.rs/aleph-rhi-validation/"
 keywords = ["engine", "graphics", "game"]
 categories = ["game-engines"]
 edition = "2021"
@@ -46,7 +45,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-interfaces = { workspace = true }
-aleph-gpu-impl-utils = { path = "../aleph-gpu-impl-utils", version = "0.1" }
+aleph-rhi-impl-utils = { path = "../aleph-rhi-impl-utils", version = "0.1" }
 log = { workspace = true }
 parking_lot = { workspace = true }
 crossbeam = { workspace = true }

@@ -33,7 +33,7 @@ use crate::{
     ValidationPipelineLayout, ValidationSampler, ValidationSemaphore, ValidationShader,
     ValidationSurface, ValidationSwapChain, ValidationTexture,
 };
-use aleph_gpu_impl_utils::conversion_function;
+use aleph_rhi_impl_utils::conversion_function;
 use interfaces::gpu::*;
 
 conversion_function!(IBuffer, ValidationBuffer, buffer, buffer_d, buffer_iter);
