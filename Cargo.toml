@@ -58,6 +58,8 @@ members = [
     "lib/crates/aleph-rhi-api",
     "lib/crates/aleph-rhi-dx12",
     "lib/crates/aleph-rhi-impl-utils",
+    "lib/crates/aleph-rhi-loader",
+    "lib/crates/aleph-rhi-loader-api",
     "lib/crates/aleph-rhi-validation",
     "lib/crates/aleph-rhi-vulkan",
     "lib/crates/aleph-sys-info",
@@ -98,6 +100,7 @@ aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
 aleph-compile = { path = "./lib/crates/aleph-compile", version = "1" }
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-rhi-api = { path = "./lib/crates/aleph-rhi-api", version = "0.1" }
+aleph-rhi-loader-api = { path = "./lib/crates/aleph-rhi-loader-api", version = "0.1" }
 aleph-target = { path = "./lib/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./lib/crates/aleph-target-build", version = "2" }
 aleph-windows = { path = "./lib/crates/aleph-windows", version = "0.1" }
