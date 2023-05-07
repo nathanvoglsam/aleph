@@ -34,8 +34,8 @@ macro_rules! conversion_function {
         /// Converts the given dynamic object to a concrete type, panicking if it is not the
         /// expected concrete type.
         pub fn $name(v: &dyn $from) -> &$to {
-            use $crate::aleph_interfaces::any::*;
-            use $crate::aleph_interfaces::gpu::*;
+            use $crate::aleph_any::*;
+            use $crate::aleph_rhi_api::*;
             v.query_interface::<$to>().expect(concat!(
                 "Unknown ",
                 stringify!($from),

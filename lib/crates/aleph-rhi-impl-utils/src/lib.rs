@@ -28,7 +28,10 @@
 //
 
 #[doc(hidden)]
-pub extern crate aleph_interfaces;
+pub extern crate aleph_any;
+
+#[doc(hidden)]
+pub extern crate aleph_rhi_api;
 
 use std::any::TypeId;
 

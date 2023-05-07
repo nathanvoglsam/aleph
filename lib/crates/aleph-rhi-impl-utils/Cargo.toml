@@ -44,4 +44,5 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-interfaces = { workspace = true }
+aleph-any = { workspace = true }
+aleph-rhi-api = { workspace = true }

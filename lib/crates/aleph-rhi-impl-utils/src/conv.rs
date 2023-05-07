@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_interfaces::gpu::*;
+use aleph_rhi_api::*;
 
 #[inline(always)]
 #[allow(clippy::erasing_op, clippy::identity_op)]
