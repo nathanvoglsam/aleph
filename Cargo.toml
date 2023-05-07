@@ -72,6 +72,7 @@ members = [
     "lib/plugins/aleph-egui",
     "lib/plugins/aleph-headless",
     "lib/plugins/aleph-render",
+    "lib/plugins/aleph-rhi",
     "lib/plugins/aleph-sdl2",
     "bin/aleph-test",
     "bin/aleph-rcon",
