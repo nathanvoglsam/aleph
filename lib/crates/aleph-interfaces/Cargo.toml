@@ -47,10 +47,11 @@ console = ["aleph-console/console"]
 remote-console = ["aleph-console/remote"]
 
 [dependencies]
-aleph-any = { workspace = true }
 aleph-console = { path = "../aleph-console", version = "0.1" }
 aleph-ecs = { path = "../aleph-ecs", version = "0.1" }
 aleph-label = { path = "../aleph-label", version = "1" }
+aleph-any = { workspace = true }
+aleph-rhi-api = { workspace = true }
 raw-window-handle = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }

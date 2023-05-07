@@ -27,17 +27,22 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
-pub extern crate aleph_label as label;
-pub extern crate anyhow;
+use aleph_rhi_api::{IAdapter, IDevice, ISurface};
+use any::{AnyArc, IAny};
 
-pub mod components;
-pub mod console;
-pub mod platform;
-pub mod plugin;
-pub mod rhi;
-pub mod schedule;
-pub mod system;
-pub mod world;
+/// This trait is used to provide the engine access to the system GPU using the `aleph-rhi-api`
+/// render hardware interface. The plugin that implements an [IRhiProvider] is expected to fully
+/// own the initialization and integration of the GPU device with the rest of the engine.
+///
+/// This interface is expected to provide handles to GPU objects that were *already-created* prior
+/// to any of the functions on this trait being called.
+pub trait IRhiProvider: IAny {
+    /// Returns the surface handle, if one is available
+    fn surface(&self) -> Option<AnyArc<dyn ISurface>>;
 
-mod utils;
+    /// Returns the GPU adapter that was selected
+    fn adapter(&self) -> AnyArc<dyn IAdapter>;
+
+    /// Returns the 'logical' device handle that was created from the selected adapter
+    fn device(&self) -> AnyArc<dyn IDevice>;
+}
