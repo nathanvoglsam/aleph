@@ -39,7 +39,6 @@ mod adapter;
 mod buffer;
 mod command_list;
 mod context;
-mod context_provider;
 mod descriptor_pool;
 mod descriptor_set_layout;
 mod device;
@@ -57,53 +56,5 @@ mod surface;
 mod swap_chain;
 mod texture;
 
-pub use plugin::PluginGpuDX12;
 pub use rhi_backend::RHI_BACKEND;
 pub use shader::ShaderData;
-
-mod plugin {
-    use crate::context_provider::ContextProvider;
-    use aleph_any::{declare_interfaces, AnyArc, IAny};
-    use aleph_rhi_api::*;
-    use interfaces::make_plugin_description_for_crate;
-    use interfaces::plugin::{
-        IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
-    };
-    use std::any::TypeId;
-
-    pub struct PluginGpuDX12();
-
-    impl PluginGpuDX12 {
-        pub fn new() -> Self {
-            Self()
-        }
-    }
-
-    impl IPlugin for PluginGpuDX12 {
-        fn get_description(&self) -> PluginDescription {
-            make_plugin_description_for_crate!()
-        }
-
-        fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-            registrar.provides_interface::<dyn IContextProvider>();
-        }
-
-        fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-            let context_provider = AnyArc::new(ContextProvider::new());
-
-            let response = vec![(
-                TypeId::of::<dyn IContextProvider>(),
-                AnyArc::map::<dyn IAny, _>(context_provider, |v| v),
-            )];
-            Box::new(response)
-        }
-    }
-
-    impl Default for PluginGpuDX12 {
-        fn default() -> Self {
-            Self::new()
-        }
-    }
-
-    declare_interfaces!(PluginGpuDX12, [IPlugin]);
-}
