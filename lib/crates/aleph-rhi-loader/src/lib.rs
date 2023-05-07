@@ -195,19 +195,19 @@ impl RhiLoader {
 
     /// Returns the statically preferred API for the current platform
     #[cfg(target_os = "macos")]
-    fn preferred_backend() -> Self {
+    fn preferred_backend() -> BackendAPI {
         BackendAPI::Vulkan
     }
 
     /// Returns the statically preferred API for the current platform
     #[cfg(target_os = "linux")]
-    fn preferred_backend() -> Self {
+    fn preferred_backend() -> BackendAPI {
         BackendAPI::Vulkan
     }
 
     /// Returns the statically preferred API for the current platform
     #[cfg(target_os = "android")]
-    fn preferred_backend() -> Self {
+    fn preferred_backend() -> BackendAPI {
         BackendAPI::Vulkan
     }
 
