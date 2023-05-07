@@ -46,6 +46,103 @@ pub struct RhiLoader {
 }
 
 impl RhiLoader {
+    /// Constructs a new RhiLoader object.
+    ///
+    /// Will dynamically query the system to confirm whether the underlying APIs needed for each
+    /// potential backend is available on the current system. Query with
+    /// [RhiLoader::is_backend_available] or check [RhiLoader::backends] to see which are available.
+    #[inline]
+    pub fn new() -> Self {
+        let mut v = Self::make_loader();
+        v.try_load_backends();
+        v.prune_missing_backends();
+        v
+    }
+
+    /// Returns a list of all the RHI backends available from the loader
+    #[inline]
+    pub fn backends(&self) -> &[BackendAPI] {
+        &self.backends
+    }
+
+    /// Returns whether a specific backend is available from the loader
+    #[inline]
+    pub fn is_backend_available(&self, backend: BackendAPI) -> bool {
+        self.backends.contains(&backend)
+    }
+
+    /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
+    /// will always return Err.
+    pub fn make_context(
+        &self,
+        options: &ContextOptions,
+    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+        // Check if the backends list is empty, meaning none are available
+        if self.backends.is_empty() {
+            return Err(ContextCreateError::NoBackendsAvailable);
+        };
+
+        // While this shouldn't be possible and would be a bug we should fail nicely for clients
+        if self.vulkan.is_none() && self.d3d12.is_none() {
+            log::debug!("'backends' isn't empty but no backend objects are loaded. Likely a bug");
+            return Err(ContextCreateError::NoBackendsAvailable);
+        }
+
+        // Filter out any denied backends from the available backend set
+        let allowed_backends: Vec<_> = if let Some(denied) = options.denied_backends {
+            self.backends
+                .iter()
+                .copied()
+                .filter(|v| {
+                    if denied.contains(v) {
+                        log::trace!("Backend '{}' denied by user", *v);
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .collect()
+        } else {
+            self.backends.clone()
+        };
+
+        // First try and create a context with the explicitly required backend (if requested)
+        if let Some(required) = options.required_backend {
+            if !allowed_backends.contains(&required) {
+                let denied = self.backends.contains(&required);
+                return if denied {
+                    Err(ContextCreateError::RequiredBackendDenied(required))
+                } else {
+                    Err(ContextCreateError::RequiredBackendUnavailable(required))
+                };
+            } else {
+                let backend = self.select_backend(required);
+                let context = backend.make_context(options)?;
+                return Ok(Self::wrap_with_validation(options, context));
+            }
+        }
+
+        // Next try and create a context with the preferred API. Failing this is a soft fail.
+        if let Some(preferred) = options.preferred_api {
+            if allowed_backends.contains(&preferred) {
+                let backend = self.select_backend(preferred);
+                let context = backend.make_context(options)?;
+                return Ok(Self::wrap_with_validation(options, context));
+            }
+        }
+
+        // Finally we use the statically preferred API on the current platform.
+        if allowed_backends.contains(&Self::preferred_backend()) {
+            let backend = self.select_backend(Self::preferred_backend());
+            let context = backend.make_context(options)?;
+            Ok(Self::wrap_with_validation(options, context))
+        } else {
+            Err(ContextCreateError::NoAllowedBackendsAvailable)
+        }
+    }
+}
+
+impl RhiLoader {
     #[cfg(windows)]
     fn make_loader() -> Self {
         return Self {
@@ -90,71 +187,20 @@ impl RhiLoader {
 
     /// Returns the statically preferred API for the current platform
     #[cfg(target_os = "macos")]
-    fn make_loader() -> Self {
+    fn preferred_backend() -> Self {
         BackendAPI::Vulkan
     }
 
     /// Returns the statically preferred API for the current platform
     #[cfg(target_os = "linux")]
-    fn make_loader() -> Self {
+    fn preferred_backend() -> Self {
         BackendAPI::Vulkan
     }
 
     /// Returns the statically preferred API for the current platform
     #[cfg(target_os = "android")]
-    fn make_loader() -> Self {
+    fn preferred_backend() -> Self {
         BackendAPI::Vulkan
-    }
-}
-
-impl RhiLoader {
-    /// Constructs a new RhiLoader object.
-    ///
-    /// Will dynamically query the system to confirm whether the underlying APIs needed for each
-    /// potential backend is available on the current system. Query with
-    /// [RhiLoader::is_backend_available] or check [RhiLoader::backends] to see which are available.
-    #[inline]
-    pub fn new() -> Self {
-        let mut v = Self::make_loader();
-        v.try_load_backends();
-        v.prune_missing_backends();
-        v
-    }
-
-    #[cfg(windows)]
-    fn make_loader() -> Self {
-        return Self {
-            backends: vec![BackendAPI::D3D12, BackendAPI::Vulkan],
-            d3d12: None,
-            vulkan: None,
-        };
-    }
-
-    #[cfg(target_os = "macos")]
-    fn make_loader() -> Self {
-        return Self {
-            backends: vec![BackendAPI::Vulkan],
-            d3d12: None,
-            vulkan: None,
-        };
-    }
-
-    #[cfg(target_os = "linux")]
-    fn make_loader() -> Self {
-        return Self {
-            backends: vec![BackendAPI::Vulkan],
-            d3d12: None,
-            vulkan: None,
-        };
-    }
-
-    #[cfg(target_os = "android")]
-    fn make_loader() -> Self {
-        return Self {
-            backends: vec![BackendAPI::Vulkan],
-            d3d12: None,
-            vulkan: None,
-        };
     }
 
     /// Internal function that will attempt to load the plugins that the loader has statically
@@ -168,7 +214,9 @@ impl RhiLoader {
     /// objects and load them into the [RhiLoader]
     fn try_load_backends(&mut self) {
         #[cfg(windows)]
-        self.d3d12 = Some(aleph_rhi_dx12::RHI_BACKEND);
+        {
+            self.d3d12 = Some(aleph_rhi_dx12::RHI_BACKEND);
+        }
 
         #[cfg(any(
             windows,
@@ -176,7 +224,9 @@ impl RhiLoader {
             target_os = "linux",
             target_os = "android"
         ))]
-        self.vulkan = Some(aleph_rhi_vulkan::RHI_BACKEND);
+        {
+            self.vulkan = Some(aleph_rhi_vulkan::RHI_BACKEND);
+        }
     }
 
     /// Internal function that will prune any backends in the original `backends` set that are
@@ -206,88 +256,6 @@ impl RhiLoader {
                 // it
                 let _ = self.backends.swap_remove(index);
             }
-        }
-    }
-
-    /// Returns a list of all the RHI backends available from the loader
-    #[inline]
-    pub fn backends(&self) -> &[BackendAPI] {
-        &self.backends
-    }
-
-    /// Returns whether a specific backend is available from the loader
-    #[inline]
-    pub fn is_backend_available(&self, backend: BackendAPI) -> bool {
-        self.backends.contains(&backend)
-    }
-
-    /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
-    /// will always return Err.
-    pub fn make_context(
-        &self,
-        options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
-        // Check if the backends list is empty, meaning none are available
-        if self.backends.is_empty() {
-            return Err(ContextCreateError::NoBackendsAvailable);
-        };
-
-        // While this shouldn't be possible and would be a bug we should fail nicely for clients
-        if self.vulkan.is_none() && self.d3d12.is_none() {
-            log::debug!("'backends' isn't empty but no backend objects are loaded. Likely a bug");
-            return Err(ContextCreateError::NoBackendsAvailable);
-        }
-
-        // Filter out any denied backends from the available backend set
-        let mut allowed_backends: Vec<_> = if let Some(denied) = options.denied_backends {
-            self.backends
-                .iter()
-                .copied()
-                .filter(|v| {
-                    if denied.contains(v) {
-                        log::trace!("Backend '{}' denied by user", *v);
-                        false
-                    } else {
-                        true
-                    }
-                })
-                .collect()
-        } else {
-            self.backends.clone()
-        };
-
-        // First try and create a context with the explicitly required backend (if requested)
-        if let Some(required) = options.required_backend {
-            if !allowed_backends.contains(&required) {
-                let denied = self.backends.contains(&required);
-                return if denied {
-                    Err(ContextCreateError::RequiredBackendDenied(*required))
-                } else {
-                    Err(ContextCreateError::RequiredBackendUnavailable(*required))
-                };
-            } else {
-                let backend = self.select_backend(*required);
-                let context = backend.make_context(options)?;
-                return Ok(Self::wrap_with_validation(options, context));
-            }
-        }
-
-        // Next try and create a context with the preferred API. Failing this is a soft fail.
-        if let Some(preferred) = options.preferred_api {
-            if allowed_backends.contains(&preferred) {
-                let backend = self.select_backend(*required);
-                let context = backend.make_context(options)?;
-                return Ok(Self::wrap_with_validation(options, context));
-            }
-        }
-
-        // Finally we use the statically preferred API on the current platform.
-        if allowed_backends.contains(&Self::preferred_backend()) {
-            let backend = self.select_backend(Self::preferred_backend());
-            let context = backend.make_context(options)?;
-            Ok(Self::wrap_with_validation(options, context))
-        } else {
-            Err(ContextCreateError::NoAllowedBackendsAvailable)
         }
     }
 
