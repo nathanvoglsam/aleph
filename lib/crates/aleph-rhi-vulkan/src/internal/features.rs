@@ -99,7 +99,7 @@ macro_rules! lmin {
         let limit_name = stringify!($v);
         let limit = $base.$v;
         let min = $compare.$v;
-        if limit <= min {
+        if limit < min {
             log::error!("Device limit '{limit_name}' too low. Want: {min}, got {limit}");
             return None;
         }
@@ -112,7 +112,7 @@ macro_rules! lmin_arr {
         let limit = &$base.$v;
         let min = &$compare.$v;
         for (l, m) in limit.iter().zip(min.iter()) {
-            if l <= m {
+            if l < m {
                 log::error!(
                     "Device limit '{limit_name}' too low. Want: {:?}, got {:?}",
                     min,
@@ -129,7 +129,7 @@ macro_rules! lmax {
         let limit_name = stringify!($v);
         let limit = $base.$v;
         let max = $compare.$v;
-        if limit >= max {
+        if limit > max {
             log::error!("Device limit '{limit_name}' too high. Want: {max}, got {limit}");
             return None;
         }
