@@ -169,16 +169,7 @@ impl RhiLoader {
         };
     }
 
-    #[cfg(target_os = "linux")]
-    fn make_loader() -> Self {
-        return Self {
-            backends: vec![BackendAPI::Vulkan],
-            d3d12: None,
-            vulkan: None,
-        };
-    }
-
-    #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     fn make_loader() -> Self {
         return Self {
             backends: vec![BackendAPI::Vulkan],
@@ -200,13 +191,7 @@ impl RhiLoader {
     }
 
     /// Returns the statically preferred API for the current platform
-    #[cfg(target_os = "linux")]
-    fn preferred_backend() -> BackendAPI {
-        BackendAPI::Vulkan
-    }
-
-    /// Returns the statically preferred API for the current platform
-    #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     fn preferred_backend() -> BackendAPI {
         BackendAPI::Vulkan
     }
