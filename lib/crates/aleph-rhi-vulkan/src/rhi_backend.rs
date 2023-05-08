@@ -1,5 +1,6 @@
 use crate::context::Context;
 use crate::internal::messenger::vulkan_debug_messenger;
+use crate::internal::mvk;
 use aleph_any::AnyArc;
 use aleph_rhi_api::{BackendAPI, IContext};
 use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
@@ -98,6 +99,13 @@ impl RhiBackend {
         // the validation messages
         let debug = if validation { true } else { debug };
 
+        // We need to configure MoltenVK before we do much of anything with Vulkan so we can
+        // properly observe all the configuration stuff we change.
+        let result = Self::configure_mvk(debug);
+        if result.is_none() && cfg!(target_os = "macos") {
+            log::warn!("Failed to configure MoltenVK on macOS");
+        }
+
         let instance_version = entry_loader.instance_version();
         if vk::api_version_major(instance_version) < 1 {
             return Err(ContextCreateError::Platform(anyhow!(
@@ -145,6 +153,52 @@ impl RhiBackend {
         };
 
         Ok(instance_loader)
+    }
+
+    fn configure_mvk(debug: bool) -> Option<()> {
+        unsafe {
+            let library = libloading::Library::new("libMoltenVK.dylib").ok()?;
+
+            let name = "vkGetMoltenVKConfigurationMVK\0".as_bytes();
+            let get_fn = library
+                .get::<mvk::PFN_vkGetMoltenVKConfigurationMVK>(name)
+                .ok()?;
+
+            let name = "vkSetMoltenVKConfigurationMVK\0".as_bytes();
+            let set_fn = library
+                .get::<mvk::PFN_vkSetMoltenVKConfigurationMVK>(name)
+                .ok()?;
+
+            let mut config = mvk::Configuration::default();
+            let mut size = std::mem::size_of_val(&config);
+
+            let result = get_fn(vk::Instance::null(), &mut config, &mut size);
+            if result.0 < 0 {
+                log::warn!("'vkGetMoltenVKConfigurationMVK' failed with error '{result}'");
+                return None;
+            }
+            if size < std::mem::size_of_val(&config) {
+                log::warn!(
+                    "Size from 'vkGetMoltenVKConfigurationMVK' too small, can't give mvk required \
+                    configuration settings"
+                );
+            }
+
+            if debug {
+                config.log_level = mvk::ConfigLogLevel::DEBUG;
+            } else {
+                config.log_level = mvk::ConfigLogLevel::NONE;
+            }
+            config.use_metal_argument_buffers = mvk::UseMetalArgumentBuffers::DESCRIPTOR_INDEXING;
+
+            let mut size = std::mem::size_of_val(&config);
+            let result = set_fn(vk::Instance::null(), &config, &mut size);
+            if result.0 < 0 {
+                log::warn!("'vkSetMoltenVKConfigurationMVK' failed with error '{result}'");
+                return None;
+            };
+        }
+        Some(())
     }
 }
 
