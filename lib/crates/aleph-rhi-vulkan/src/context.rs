@@ -29,6 +29,8 @@
 
 use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
+use crate::internal::features::CheckMeetsProfile;
+use crate::internal::profile::CreateProfile;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -265,11 +267,11 @@ impl Context {
         let DeviceInfo {
             // extensions,
             properties_10,
-            // properties_11,
-            // properties_12,
+            properties_11,
+            properties_12,
             // portability_properties,
             features_10,
-            // features_11,
+            features_11,
             features_12,
             dynamic_rendering_features,
             // portability_features,
@@ -277,28 +279,6 @@ impl Context {
         } = device_info;
 
         unsafe {
-            #[allow(unused)]
-            macro_rules! check_for_feature {
-                ($f:expr) => {
-                    let text = stringify!($f);
-                    if $f == false {
-                        log::error!("Device does not support feature: '{}'", text);
-                        return None;
-                    }
-                };
-            }
-
-            #[allow(unused)]
-            macro_rules! check_for_feature_vk {
-                ($f:expr) => {
-                    let text = stringify!($f);
-                    if $f != vk::TRUE {
-                        log::error!("Device does not support feature: '{}'", text);
-                        return None;
-                    }
-                };
-            }
-
             #[allow(unused)]
             macro_rules! check_for_extension {
                 ($name:expr) => {{
@@ -321,21 +301,6 @@ impl Context {
                 }};
             }
 
-            #[allow(unused)]
-            macro_rules! check_for_limit_min {
-                ($limit:expr, $min:expr) => {{
-                    let limit_name = stringify!($limit);
-                    let limit = $limit;
-                    let min = $min;
-                    if limit < min {
-                        log::error!(
-                            "Device limit '{limit_name}' too low. Want: {min}, got {limit}"
-                        );
-                        return None;
-                    }
-                }};
-            }
-
             check_for_extension_vk!(vk::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 
             // macOS will always be MoltenVK and portability subset must be available
@@ -343,13 +308,24 @@ impl Context {
                 check_for_extension_vk!(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
             }
 
-            check_for_limit_min!(properties_10.limits.max_bound_descriptor_sets, 8);
+            let wanted_properties_10 = vk::PhysicalDeviceProperties::minimum();
+            let wanted_properties_11 = vk::PhysicalDeviceVulkan11Properties::minimum();
+            let wanted_properties_12 = vk::PhysicalDeviceVulkan12Properties::minimum();
 
-            check_for_feature_vk!(features_10.full_draw_index_uint32);
-            check_for_feature_vk!(features_12.descriptor_indexing);
-            check_for_feature_vk!(features_12.buffer_device_address);
-            check_for_feature_vk!(features_12.timeline_semaphore);
-            check_for_feature_vk!(dynamic_rendering_features.dynamic_rendering);
+            properties_10.meets_profile(&wanted_properties_10)?;
+            properties_11.meets_profile(&wanted_properties_11)?;
+            properties_12.meets_profile(&wanted_properties_12)?;
+
+            let wanted_features_10 = vk::PhysicalDeviceFeatures::minimum();
+            let wanted_features_11 = vk::PhysicalDeviceVulkan11Features::minimum();
+            let wanted_features_12 = vk::PhysicalDeviceVulkan12Features::minimum();
+            let wanted_dynamic_rendering_features =
+                vk::PhysicalDeviceDynamicRenderingFeatures::minimum();
+
+            features_10.meets_profile(&wanted_features_10)?;
+            features_11.meets_profile(&wanted_features_11)?;
+            features_12.meets_profile(&wanted_features_12)?;
+            dynamic_rendering_features.meets_profile(&wanted_dynamic_rendering_features);
 
             Some(())
         }
