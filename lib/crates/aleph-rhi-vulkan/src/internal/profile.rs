@@ -305,7 +305,35 @@ impl CreateProfile for vk::PhysicalDeviceFeatures {
 
     fn minimum() -> Self {
         Self {
+            // robust_buffer_access: vk::TRUE,
             full_draw_index_uint32: vk::TRUE,
+            image_cube_array: vk::TRUE,
+            independent_blend: vk::TRUE,
+            sample_rate_shading: vk::TRUE,
+            dual_src_blend: vk::TRUE,
+            multi_draw_indirect: vk::TRUE,
+            draw_indirect_first_instance: vk::TRUE,
+            depth_clamp: vk::TRUE,
+            depth_bias_clamp: vk::TRUE,
+            fill_mode_non_solid: vk::TRUE,
+            large_points: vk::TRUE,
+            multi_viewport: vk::TRUE,
+            sampler_anisotropy: vk::TRUE,
+            texture_compression_bc: vk::TRUE,
+            occlusion_query_precise: vk::TRUE,
+            vertex_pipeline_stores_and_atomics: vk::TRUE,
+            fragment_stores_and_atomics: vk::TRUE,
+            // shader_tessellation_and_geometry_point_size: vk::TRUE,
+            shader_image_gather_extended: vk::TRUE,
+            shader_storage_image_extended_formats: vk::TRUE,
+            // shader_storage_image_read_without_format: vk::TRUE,
+            shader_storage_image_write_without_format: vk::TRUE,
+            shader_uniform_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_sampled_image_array_dynamic_indexing: vk::TRUE,
+            shader_storage_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_storage_image_array_dynamic_indexing: vk::TRUE,
+            shader_clip_distance: vk::TRUE,
+            inherited_queries: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
@@ -318,6 +346,12 @@ impl CreateProfile for vk::PhysicalDeviceVulkan11Features {
 
     fn minimum() -> Self {
         Self {
+            storage_buffer16_bit_access: vk::TRUE,
+            uniform_and_storage_buffer16_bit_access: vk::TRUE,
+            multiview: vk::TRUE,
+            variable_pointers_storage_buffer: vk::TRUE,
+            variable_pointers: vk::TRUE,
+            // shader_draw_parameters: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
@@ -329,6 +363,13 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Features {
     }
 
     fn minimum() -> Self {
+        // hostQueryReset 	                                    ✔️ 	❌ 	❌ 	⚠️ 	✔️ 	⚠️
+        // imagelessFramebuffer 	                            ✔️ 	❌ 	❌ 	❌ 	✔️ 	❌
+        // runtimeDescriptorArray 	                            ✔️ 	❌ 	❌ 	⚠️ 	✔️ 	⚠️
+        // samplerMirrorClampToEdge 	                        ✔️ 	❌ 	❌ 	❌ 	✔️ 	❌
+        // scalarBlockLayout 	                                ✔️ 	❌ 	❌ 	⚠️ 	❌ 	⚠️
+        // separateDepthStencilLayouts 	                        ✔️ 	❌ 	❌ 	❌ 	✔️ 	❌
+        // subgroupBroadcastDynamicId 	                        ✔️ 	❌ 	❌ 	❌ 	❌ 	❌
         Self {
             buffer_device_address: vk::TRUE,
             timeline_semaphore: vk::TRUE,
@@ -341,6 +382,14 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Features {
             descriptor_binding_storage_buffer_update_after_bind: vk::TRUE,
             descriptor_binding_uniform_texel_buffer_update_after_bind: vk::TRUE,
             descriptor_binding_storage_texel_buffer_update_after_bind: vk::TRUE,
+            shader_sampled_image_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_texel_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_uniform_texel_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_uniform_texel_buffer_array_non_uniform_indexing: vk::TRUE,
+            shader_int8: vk::TRUE,
+            storage_buffer8_bit_access: vk::TRUE,
+            uniform_and_storage_buffer8_bit_access: vk::TRUE,
+            uniform_buffer_standard_layout: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
