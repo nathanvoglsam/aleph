@@ -274,6 +274,10 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Properties {
 
     fn minimum() -> Self {
         Self {
+            supported_depth_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
+            supported_stencil_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
+            independent_resolve_none: vk::TRUE,
+            independent_resolve: vk::TRUE,
             max_per_stage_descriptor_update_after_bind_samplers: 1024,
             max_per_stage_descriptor_update_after_bind_uniform_buffers: 12,
             max_per_stage_descriptor_update_after_bind_storage_buffers: 500_000,

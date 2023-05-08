@@ -30,6 +30,7 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::device_info::DeviceInfo;
+use crate::internal::profile::CreateProfile;
 use crate::queue::{Queue, QueueInfo};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -188,10 +189,10 @@ impl IAdapter for Adapter {
         let found_families = Adapter::get_queue_families(&queue_families);
         let queue_create_infos = found_families.build_create_info_list();
 
-        let enabled_10_features = self.device_info.features_10.clone();
-        let mut enabled_11_features = self.device_info.features_11.clone();
-        let mut enabled_12_features = self.device_info.features_12.clone();
-        let mut dynamic_rendering_features = self.device_info.dynamic_rendering_features.clone();
+        let enabled_10_features = vk::PhysicalDeviceFeatures::minimum();
+        let mut enabled_11_features = vk::PhysicalDeviceVulkan11Features::minimum();
+        let mut enabled_12_features = vk::PhysicalDeviceVulkan12Features::minimum();
+        let mut dynamic_rendering_features = vk::PhysicalDeviceDynamicRenderingFeatures::minimum();
         let mut portability_features = self.device_info.portability_features.clone();
         let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
 
