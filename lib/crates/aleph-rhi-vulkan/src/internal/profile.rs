@@ -363,33 +363,43 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Features {
     }
 
     fn minimum() -> Self {
-        // hostQueryReset 	                                    ✔️ 	❌ 	❌ 	⚠️ 	✔️ 	⚠️
-        // imagelessFramebuffer 	                            ✔️ 	❌ 	❌ 	❌ 	✔️ 	❌
-        // runtimeDescriptorArray 	                            ✔️ 	❌ 	❌ 	⚠️ 	✔️ 	⚠️
-        // samplerMirrorClampToEdge 	                        ✔️ 	❌ 	❌ 	❌ 	✔️ 	❌
-        // scalarBlockLayout 	                                ✔️ 	❌ 	❌ 	⚠️ 	❌ 	⚠️
-        // separateDepthStencilLayouts 	                        ✔️ 	❌ 	❌ 	❌ 	✔️ 	❌
-        // subgroupBroadcastDynamicId 	                        ✔️ 	❌ 	❌ 	❌ 	❌ 	❌
         Self {
+            // sampler_mirror_clamp_to_edge: vk::TRUE,
             buffer_device_address: vk::TRUE,
+            // buffer_device_address_capture_replay: vk::TRUE,
             timeline_semaphore: vk::TRUE,
             descriptor_indexing: vk::TRUE,
             descriptor_binding_partially_bound: vk::TRUE,
             descriptor_binding_update_unused_while_pending: vk::TRUE,
             descriptor_binding_variable_descriptor_count: vk::TRUE,
+            runtime_descriptor_array: vk::TRUE,
+            // scalar_block_layout: vk::TRUE,
             descriptor_binding_sampled_image_update_after_bind: vk::TRUE,
             descriptor_binding_storage_image_update_after_bind: vk::TRUE,
             descriptor_binding_storage_buffer_update_after_bind: vk::TRUE,
             descriptor_binding_uniform_texel_buffer_update_after_bind: vk::TRUE,
             descriptor_binding_storage_texel_buffer_update_after_bind: vk::TRUE,
             shader_sampled_image_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_buffer_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_image_array_non_uniform_indexing: vk::TRUE,
             shader_storage_texel_buffer_array_dynamic_indexing: vk::TRUE,
             shader_uniform_texel_buffer_array_dynamic_indexing: vk::TRUE,
             shader_uniform_texel_buffer_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_texel_buffer_array_non_uniform_indexing: vk::TRUE,
             shader_int8: vk::TRUE,
             storage_buffer8_bit_access: vk::TRUE,
             uniform_and_storage_buffer8_bit_access: vk::TRUE,
+            // shader_buffer_int64_atomics: vk::TRUE,
+            // shader_shared_int64_atomics: vk::TRUE,
             uniform_buffer_standard_layout: vk::TRUE,
+            // draw_indirect_count: vk::TRUE,
+            // shader_float16: vk::TRUE,
+            shader_input_attachment_array_dynamic_indexing: 0,
+            shader_uniform_buffer_array_non_uniform_indexing: 0,
+            shader_input_attachment_array_non_uniform_indexing: 0,
+            descriptor_binding_uniform_buffer_update_after_bind: 0,
+            // imageless_framebuffer: vk::TRUE,
+            host_query_reset: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
