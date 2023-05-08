@@ -364,7 +364,7 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Features {
 
     fn minimum() -> Self {
         Self {
-            // sampler_mirror_clamp_to_edge: vk::TRUE,
+            sampler_mirror_clamp_to_edge: vk::TRUE,
             buffer_device_address: vk::TRUE,
             // buffer_device_address_capture_replay: vk::TRUE,
             timeline_semaphore: vk::TRUE,
