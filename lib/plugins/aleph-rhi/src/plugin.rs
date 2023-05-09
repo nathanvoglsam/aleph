@@ -35,7 +35,7 @@ use aleph_interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
 use aleph_interfaces::rhi::IRhiProvider;
-use aleph_rhi_api::AdapterRequestOptions;
+use aleph_rhi_api::{AdapterRequestOptions, BackendAPI};
 use aleph_rhi_loader::{ContextOptions, RhiLoader};
 use std::any::TypeId;
 use std::ops::Deref;
@@ -84,7 +84,7 @@ impl IPlugin for PluginRHI {
         let context = self
             .rhi_loader
             .make_context(&ContextOptions {
-                preferred_api: None,
+                preferred_api: Some(BackendAPI::Vulkan),
                 denied_backends: None,
                 required_backend: None,
                 validation: false,
