@@ -39,6 +39,7 @@ use std::ops::Deref;
 
 struct Data {
     index: usize,
+    should_resize: bool,
     window: AnyArc<dyn IWindow>,
     render_data: AnyArc<dyn egui::IEguiRenderData>,
     swap_chain: AnyArc<dyn ISwapChain>,
@@ -132,6 +133,7 @@ impl IPlugin for PluginRender {
 
         let mut data = Data {
             index: 0,
+            should_resize: false,
             window,
             render_data,
             swap_chain,
@@ -146,7 +148,7 @@ impl IPlugin for PluginRender {
 
                 let data = &mut data;
 
-                if data.window.resized() {
+                if data.window.resized() || data.should_resize {
                     data.swap_images.clear();
                     let window_size = data.window.size();
                     let drawable_size = data.window.drawable_size();
@@ -173,12 +175,16 @@ impl IPlugin for PluginRender {
                     let present_semaphore =
                         data.renderer.frames[data.index].present_semaphore.clone();
 
-                    let acquired_index = data
-                        .swap_chain
-                        .acquire_next_image(&AcquireDesc {
-                            signal_semaphore: acquire_semaphore.as_ref(),
-                        })
-                        .unwrap();
+                    let acquired_index = match data.swap_chain.acquire_next_image(&AcquireDesc {
+                        signal_semaphore: acquire_semaphore.as_ref(),
+                    }) {
+                        Ok(i) => i,
+                        Err(ImageAcquireError::SubOptimal(i)) => {
+                            data.should_resize = true;
+                            i
+                        }
+                        v @ _ => v.unwrap(),
+                    };
                     let acquired_image = data.swap_images[acquired_index as usize].clone();
 
                     let command_list = data.renderer.record_frame(
