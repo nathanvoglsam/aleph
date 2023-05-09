@@ -37,6 +37,7 @@ license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-ktx/"
 edition = "2021"
+publish = false
 
 [dependencies]
 aleph-vk-format = { path = "../aleph-vk-format", version = "1" }
