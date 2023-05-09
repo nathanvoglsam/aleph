@@ -32,8 +32,8 @@ fn main() {
     use aleph_target_build::build::target_platform;
     use std::path::Path;
 
-    let cpp_file = Path::new("../../../submodules/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp");
-    let inc_dir = Path::new("../../../submodules/D3D12MemoryAllocator/src");
+    let cpp_file = Path::new("thirdparty/src/D3D12MemAlloc.cpp");
+    let inc_dir = Path::new("thirdparty/src");
 
     if target_platform().is_windows() && target_platform().is_gnu() {
         cc::Build::new()

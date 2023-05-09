@@ -124,7 +124,7 @@ fn main() {
             // source for android builds so we may as well build for windows as well rather than
             // try to bundle binaries
 
-            let mut build = cmake::Config::new("../../../submodules/SDL-mirror");
+            let mut build = cmake::Config::new("thirdparty");
             if target_platform.is_msvc() {
                 build.generator("Visual Studio 17 2022");
             } else {
@@ -228,7 +228,7 @@ fn main() {
         Platform::MacOS => {
             // If we're building for macos we need to compile SDL2 ourselves. Same reason as windows
 
-            let mut build = cmake::Config::new("../../../submodules/SDL-mirror");
+            let mut build = cmake::Config::new("thirdparty");
             build.generator("Ninja");
 
             // Don't compile the SDL2 static library

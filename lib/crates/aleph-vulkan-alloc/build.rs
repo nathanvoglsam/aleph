@@ -34,8 +34,8 @@ use std::path::Path;
 use target::build::target_platform;
 
 fn main() {
-    let vk_header_inc = Path::new("../../../submodules/Vulkan-Headers/include");
-    let vma_header_inc = Path::new("../../../submodules/VulkanMemoryAllocator/src");
+    let vk_header_inc = Path::new("Vulkan-Headers/include");
+    let vma_header_inc = Path::new("VulkanMemoryAllocator/src");
 
     let mut build = cc::Build::new();
     build.cpp(true);
