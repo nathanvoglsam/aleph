@@ -481,8 +481,8 @@ pub trait ISwapChain: IAny + IGetPlatformInterface {
     /// of the function being called.
     ///
     /// The state may change after this function is called. If a rebuild was needed internally in
-    /// [ISwapChain::acquire_image] then the size may be different once the
-    /// [ISwapChain::acquire_image] call returns.
+    /// [ISwapChain::acquire_next_image] then the size may be different once the
+    /// [ISwapChain::acquire_next_image] call returns.
     fn get_config(&self) -> SwapChainConfiguration;
 
     /// Performs a swap chain rebuild operation, recreating the swap images while remaining attached
@@ -3912,6 +3912,19 @@ pub enum SwapChainRebuildError {
 pub enum ImageAcquireError {
     #[error("The swap chain is out of date and needs to be rebuilt")]
     OutOfDate,
+
+    /// This 'error' is a soft failure case for [ISwapChain::acquire_next_image]. In some cases it
+    /// is possible for the swapchain to be placed in a state where it does not fully match the
+    /// underlying surface being rendered too. For example, when the window is resized but the
+    /// surface isn't lost. This can happen on composited platforms where they stretch/squash the
+    /// swap images into the real surface.
+    ///
+    /// This is not a hard error, and it is perfectly valid to continue using and presenting to a
+    /// sub-optimal swapchain. It is, however, recommended that the swapchain be rebuilt to
+    /// correctly match the underlying surface again. This error variant flags the sub-optimal case
+    /// for the caller to handle.
+    #[error("The swapchain is sub-optimal for the surface and should be rebuilt")]
+    SubOptimal(u32),
 
     ///
     /// This error is subtle and requires explanation.
