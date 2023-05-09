@@ -1,4 +1,4 @@
-// auto-generated: "lalrpop 0.19.8"
+// auto-generated: "lalrpop 0.19.12"
 // sha3: 7d8f586ff49002e25e72a4934c2289356d9f8e130b3bb907d37cb016a7aa702c
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
