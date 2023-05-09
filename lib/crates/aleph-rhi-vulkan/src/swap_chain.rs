@@ -147,7 +147,7 @@ impl ISwapChain for SwapChain {
         );
 
         return match result.raw {
-            vk::Result::SUBOPTIMAL_KHR => todo!(),
+            vk::Result::SUBOPTIMAL_KHR => Err(ImageAcquireError::SubOptimal(result.unwrap())),
             vk::Result::NOT_READY => unimplemented!(),
             vk::Result::TIMEOUT => unimplemented!(),
             vk::Result::ERROR_OUT_OF_DATE_KHR => Err(ImageAcquireError::OutOfDate),
