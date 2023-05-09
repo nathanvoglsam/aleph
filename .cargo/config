@@ -37,3 +37,9 @@ codegen-units = 1
 incremental = false
 panic = "abort"
 strip = true
+
+[registries.gitea]
+index = "https://gitea.hmmr-cloud.com.au/MindSpunk/_cargo-index.git"
+
+[net]
+git-fetch-with-cli = true
