@@ -36,7 +36,6 @@ description = "Build Script Utilities for the DX12 Agility SDK"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-dx12-agility-sdk/"
-readme = "README.md"
 edition = "2021"
 
 [badges]

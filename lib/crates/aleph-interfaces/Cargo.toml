@@ -36,7 +36,6 @@ description = "Definitions of aleph's core interfaces"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-interfaces/"
-readme = "README.md"
 edition = "2021"
 
 [badges]

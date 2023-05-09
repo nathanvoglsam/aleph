@@ -36,7 +36,6 @@ description = "A platform plugin designed for running headless with minimal depe
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-headless/"
-readme = "README.md"
 edition = "2021"
 
 [dependencies]

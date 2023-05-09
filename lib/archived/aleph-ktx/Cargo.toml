@@ -36,7 +36,6 @@ description = "KTX 2.0 parsing library"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-ktx/"
-readme = "README.md"
 edition = "2021"
 
 [dependencies]

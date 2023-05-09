@@ -36,7 +36,6 @@ description = "A generic mechanism for user defined identifier types"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-label/"
-readme = "README.md"
 edition = "2021"
 
 [badges]

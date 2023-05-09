@@ -36,7 +36,6 @@ description = "Utility functions for dealing with the combine crate"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-combine-utils/"
-readme = "README.md"
 edition = "2021"
 
 [badges]

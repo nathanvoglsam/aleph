@@ -36,7 +36,6 @@ description = "Aleph's ecs"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-ecs/"
-readme = "README.md"
 edition = "2021"
 
 [badges]

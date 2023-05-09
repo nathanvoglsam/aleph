@@ -36,7 +36,6 @@ description = "Utilities used by aleph build scripts"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-compile/"
-readme = "README.md"
 keywords = ["build", "compilation", "utility"]
 categories = ["development-tools::build-utils"]
 edition = "2021"

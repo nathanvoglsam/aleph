@@ -36,7 +36,6 @@ description = "The aleph-engine dx12 RHI backend"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-rhi-dx12/"
-readme = "README.md"
 keywords = ["engine", "graphics", "game"]
 categories = ["game-engines"]
 edition = "2021"

@@ -36,7 +36,6 @@ description = "Simple utility crate for getting basic system info"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-sys-info/"
-readme = "README.md"
 edition = "2021"
 
 [badges]

@@ -35,7 +35,6 @@ description = "Library for compile time platform detection"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-target-build/"
-readme = "README.md"
 keywords = ["platform-detection", "platform", "build", "build-script", "const"]
 edition = "2021"
 

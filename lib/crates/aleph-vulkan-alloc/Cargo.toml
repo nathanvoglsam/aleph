@@ -36,7 +36,6 @@ description = "Wrapper for AMD's VulkanMemoryAllocator"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-vulkan-alloc/"
-readme = "README.md"
 keywords = ["engine", "graphics", "vulkan", "game"]
 categories = ["game-engines"]
 edition = "2021"
