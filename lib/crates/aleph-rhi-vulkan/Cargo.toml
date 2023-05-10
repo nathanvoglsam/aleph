@@ -55,6 +55,7 @@ bitflags = { workspace = true }
 cstr = { workspace = true }
 crossbeam = { workspace = true }
 once_cell = { workspace = true }
+ash = { workspace = true }
 erupt = { workspace = true }
 bumpalo = { workspace = true }
 parking_lot = { workspace = true }

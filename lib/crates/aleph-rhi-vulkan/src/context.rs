@@ -37,17 +37,19 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use anyhow::anyhow;
-use erupt::vk;
+use ash::vk;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::any::TypeId;
 use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 
 pub struct Context {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) entry_loader: ManuallyDrop<erupt::EntryLoader>,
-    pub(crate) instance_loader: ManuallyDrop<erupt::InstanceLoader>,
-    pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
+    pub _this: AnyWeak<Self>,
+    pub entry_loader: ManuallyDrop<ash::Entry>,
+    pub instance: ManuallyDrop<ash::Instance>,
+    pub surface_loaders: SurfaceLoaders,
+    pub debug_loader: Option<ash::extensions::ext::DebugUtils>,
+    pub messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
 
 declare_interfaces!(Context, [IContext]);
@@ -61,13 +63,14 @@ impl IGetPlatformInterface for Context {
 
 impl Context {
     pub fn select_device(
-        instance: &erupt::InstanceLoader,
+        entry: &ash::Entry,
+        instance: &ash::Instance,
         surface: Option<vk::SurfaceKHR>,
         options: &AdapterRequestOptions,
     ) -> Option<(String, AdapterVendor, vk::PhysicalDevice)> {
         let devices = unsafe {
             instance
-                .enumerate_physical_devices(None)
+                .enumerate_physical_devices()
                 .expect("Failed to enumerate vulkan devices")
         };
         let mut scores: Vec<(&str, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
@@ -87,7 +90,7 @@ impl Context {
             }
 
             // Check if the physical device supports the requested surface
-            if Self::check_surface_support(instance, &device_info, physical_device, surface)
+            if Self::check_surface_support(entry, instance, &device_info, physical_device, surface)
                 .is_none()
             {
                 continue;
@@ -205,7 +208,7 @@ impl Context {
                 log::warn!("Device is a 'Virtual GPU'");
             }
             v @ _ => {
-                log::warn!("Unknown VkPhysicalDeviceType '{}'", v.0);
+                log::warn!("Unknown VkPhysicalDeviceType '{}'", v.as_raw());
             }
         }
 
@@ -213,15 +216,14 @@ impl Context {
     }
 
     pub fn check_surface_support(
-        instance: &erupt::InstanceLoader,
+        entry: &ash::Entry,
+        instance: &ash::Instance,
         device_info: &DeviceInfo,
         physical_device: vk::PhysicalDevice,
         surface: Option<vk::SurfaceKHR>,
     ) -> Option<()> {
         unsafe {
-            let ext_name = CStr::from_ptr(vk::KHR_SWAPCHAIN_EXTENSION_NAME)
-                .to_str()
-                .unwrap_unchecked();
+            let ext_name = vk::KhrSwapchainFn::name().to_str().unwrap_unchecked();
             let surface_extension_supported = device_info.supports_extension(ext_name);
 
             // The VK_KHR_surface must be supported if a surface is requested
@@ -233,11 +235,13 @@ impl Context {
 
         // Check if the device can present to the requested surface, if one was requested
         if let Some(surface) = surface {
+            let surface_khr = ash::extensions::khr::Surface::new(entry, instance);
+
             // Load information about the device's support of the requested swap chain. If we can't
             // at least load the surface_capabilities then we assume no support and return None to
             // flag the device as unsuitable
             let (surface_capabilities, surface_formats, present_modes) =
-                Self::get_device_surface_support(instance, physical_device, surface).ok()?;
+                Self::get_device_surface_support(&surface_khr, physical_device, surface).ok()?;
 
             // Theoretically you could get no allowed usage flags on the surface, which would
             // mean the device can't actually do anything with the swap images.
@@ -301,11 +305,11 @@ impl Context {
                 }};
             }
 
-            check_for_extension_vk!(vk::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+            check_for_extension_vk!(vk::KhrDynamicRenderingFn::name().as_ptr());
 
             // macOS will always be MoltenVK and portability subset must be available
             if cfg!(target_os = "macos") {
-                check_for_extension_vk!(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+                check_for_extension_vk!(vk::KhrPortabilitySubsetFn::name().as_ptr());
             }
 
             let wanted_properties_10 = vk::PhysicalDeviceProperties::minimum();
@@ -332,7 +336,7 @@ impl Context {
     }
 
     pub fn get_device_surface_support(
-        instance: &erupt::InstanceLoader,
+        surface_khr: &ash::extensions::khr::Surface,
         physical_device: vk::PhysicalDevice,
         surface: vk::SurfaceKHR,
     ) -> Result<
@@ -344,21 +348,17 @@ impl Context {
         vk::Result,
     > {
         let capabilities = unsafe {
-            instance
-                .get_physical_device_surface_capabilities_khr(physical_device, surface)
-                .result()?
+            surface_khr.get_physical_device_surface_capabilities(physical_device, surface)?
         };
         let formats = unsafe {
-            instance
-                .get_physical_device_surface_formats_khr(physical_device, surface, None)
-                .result()
+            surface_khr
+                .get_physical_device_surface_formats(physical_device, surface)
                 .unwrap_or_default()
                 .to_vec()
         };
         let present_modes = unsafe {
-            instance
-                .get_physical_device_surface_present_modes_khr(physical_device, surface, None)
-                .result()
+            surface_khr
+                .get_physical_device_surface_present_modes(physical_device, surface)
                 .unwrap_or_default()
                 .to_vec()
         };
@@ -382,7 +382,7 @@ impl IContext for Context {
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
         let surface = options.surface.map(unwrap::surface).map(|v| v.surface);
-        Context::select_device(&self.instance_loader, surface, options).map(
+        Context::select_device(&self.entry_loader, &self.instance, surface, options).map(
             |(name, vendor, physical_device)| {
                 let adapter = AnyArc::new_cyclic(move |v| Adapter {
                     this: v.clone(),
@@ -390,7 +390,7 @@ impl IContext for Context {
                     name,
                     vendor,
                     physical_device,
-                    device_info: DeviceInfo::load(&self.instance_loader, physical_device),
+                    device_info: DeviceInfo::load(&self.instance, physical_device),
                 });
                 AnyArc::map::<dyn IAdapter, _>(adapter, |v| v)
             },
@@ -411,16 +411,17 @@ impl IContext for Context {
                     target_os = "openbsd"
                 ))]
                 RawWindowHandle::Wayland(handle) => {
-                    use erupt::extensions::khr_wayland_surface::*;
-
-                    let create_info = WaylandSurfaceCreateInfoKHR {
+                    let create_info = vk::WaylandSurfaceCreateInfoKHR {
                         display: handle.display,
                         surface: handle.surface,
                         ..Default::default()
                     };
 
-                    self.instance_loader
-                        .create_wayland_surface_khr(&create_info, None)
+                    self.surface_loaders
+                        .wayland
+                        .as_ref()
+                        .unwrap()
+                        .create_wayland_surface(&create_info, None)
                 }
 
                 #[cfg(any(
@@ -431,16 +432,17 @@ impl IContext for Context {
                     target_os = "openbsd"
                 ))]
                 RawWindowHandle::Xlib(handle) => {
-                    use erupt::extensions::khr_xlib_surface::*;
-
-                    let create_info = XlibSurfaceCreateInfoKHR {
+                    let create_info = vk::XlibSurfaceCreateInfoKHR {
                         dpy: handle.display as *mut _,
                         window: handle.window as _,
                         ..Default::default()
                     };
 
-                    self.instance_loader
-                        .create_xlib_surface_khr(&create_info, None)
+                    self.surface_loaders
+                        .xlib
+                        .as_ref()
+                        .unwrap()
+                        .create_xlib_surface(&create_info, None)
                 }
 
                 #[cfg(any(
@@ -451,76 +453,81 @@ impl IContext for Context {
                     target_os = "openbsd"
                 ))]
                 RawWindowHandle::Xcb(handle) => {
-                    use erupt::extensions::khr_xcb_surface::*;
-
-                    let create_info = XcbSurfaceCreateInfoKHR {
+                    let create_info = vk::XcbSurfaceCreateInfoKHR {
                         connection: handle.connection as *mut _,
                         window: handle.window,
                         ..Default::default()
                     };
 
-                    self.instance_loader
-                        .create_xcb_surface_khr(&create_info, None)
+                    self.surface_loaders
+                        .xcb
+                        .as_ref()
+                        .unwrap()
+                        .create_xcb_surface(&create_info, None)
                 }
 
                 #[cfg(any(target_os = "android"))]
                 RawWindowHandle::Android(handle) => {
-                    use erupt::extensions::khr_android_surface::*;
-
-                    let create_info = AndroidSurfaceCreateInfoKHR {
+                    let create_info = vk::AndroidSurfaceCreateInfoKHR {
                         window: handle.a_native_window as _,
                         ..Default::default()
                     };
 
-                    self.instance_loader
-                        .create_android_surface_khr(&create_info, None)
+                    self.surface_loaders
+                        .android
+                        .as_ref()
+                        .unwrap()
+                        .create_android_surface(&create_info, None)
                 }
 
                 #[cfg(any(target_os = "macos"))]
                 RawWindowHandle::AppKit(handle) => {
-                    use erupt::extensions::mvk_macos_surface::*;
-
-                    let create_info = MacOSSurfaceCreateInfoMVK {
+                    let create_info = vk::MacOSSurfaceCreateInfoMVK {
                         p_view: &*handle.ns_view,
                         ..Default::default()
                     };
 
-                    self.instance_loader
-                        .create_mac_os_surface_mvk(&create_info, None)
+                    self.surface_loaders
+                        .macos
+                        .as_ref()
+                        .unwrap()
+                        .create_mac_os_surface(&create_info, None)
                 }
 
                 #[cfg(any(target_os = "ios"))]
                 RawWindowHandle::IOS(handle) => {
-                    use erupt::extensions::mvk_ios_surface::*;
-
-                    let create_info = IOSSurfaceCreateInfoMVK {
+                    let create_info = vk::IOSSurfaceCreateInfoMVK {
                         p_view: &*handle.ui_view,
                         ..Default::default()
                     };
 
-                    self.instance_loader
-                        .create_ios_surface_mvk(&create_info, None)
+                    self.surface_loaders
+                        .ios
+                        .as_ref()
+                        .unwrap()
+                        .create_ios_surface(&create_info, None)
                 }
 
                 #[cfg(target_os = "windows")]
                 RawWindowHandle::Win32(handle) => {
-                    use erupt::extensions::khr_win32_surface::*;
-
-                    let create_info = Win32SurfaceCreateInfoKHR {
+                    let create_info = vk::Win32SurfaceCreateInfoKHR {
                         hinstance: handle.hinstance,
                         hwnd: handle.hwnd,
                         ..Default::default()
                     };
 
-                    self.instance_loader
-                        .create_win32_surface_khr(&create_info, None)
+                    self.surface_loaders
+                        .win32
+                        .as_ref()
+                        .unwrap()
+                        .create_win32_surface(&create_info, None)
                 }
 
                 _ => panic!("Unsupported WSI type"),
             }
         };
 
-        let surface = result.result().map_err(|e| anyhow!(e))?;
+        let surface = result.map_err(|e| anyhow!(e))?;
 
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),
@@ -538,13 +545,27 @@ impl IContext for Context {
 impl Drop for Context {
     fn drop(&mut self) {
         unsafe {
-            if let Some(messenger) = self.messenger {
-                self.instance_loader
-                    .destroy_debug_utils_messenger_ext(messenger, None);
+            match (&self.debug_loader, &self.messenger) {
+                (Some(debug_loader), Some(messenger)) => {
+                    debug_loader.destroy_debug_utils_messenger(*messenger, None);
+                }
+                _ => {}
             }
-            self.instance_loader.destroy_instance(None);
-            ManuallyDrop::drop(&mut self.instance_loader);
+            self.instance.destroy_instance(None);
+            ManuallyDrop::drop(&mut self.instance);
             ManuallyDrop::drop(&mut self.entry_loader);
         }
     }
+}
+
+/// Internal wrapper struct to make it easier to pass the surface extensions around
+pub struct SurfaceLoaders {
+    pub base: Option<ash::extensions::khr::Surface>,
+    pub win32: Option<ash::extensions::khr::Win32Surface>,
+    pub xlib: Option<ash::extensions::khr::XlibSurface>,
+    pub xcb: Option<ash::extensions::khr::XcbSurface>,
+    pub wayland: Option<ash::extensions::khr::WaylandSurface>,
+    pub android: Option<ash::extensions::khr::AndroidSurface>,
+    pub macos: Option<ash::extensions::mvk::MacOSSurface>,
+    pub ios: Option<ash::extensions::mvk::IOSSurface>,
 }

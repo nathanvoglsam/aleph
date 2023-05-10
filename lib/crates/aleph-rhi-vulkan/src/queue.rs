@@ -34,8 +34,8 @@ use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use anyhow::anyhow;
+use ash::vk;
 use crossbeam::queue::ArrayQueue;
-use erupt::{vk, ExtendableFrom};
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::ffi::CString;
@@ -131,13 +131,13 @@ impl Queue {
         info: QueueInfo,
     ) -> AnyArc<Self> {
         let semaphore = unsafe {
-            let mut info = vk::SemaphoreTypeCreateInfoBuilder::new()
+            let mut info = vk::SemaphoreTypeCreateInfo::builder()
                 .initial_value(0)
                 .semaphore_type(vk::SemaphoreType::TIMELINE);
-            let info = vk::SemaphoreCreateInfoBuilder::new().extend_from(&mut info);
-            device.device_loader.create_semaphore(&info, None).unwrap()
+            let info = vk::SemaphoreCreateInfo::builder().push_next(&mut info);
+            device.device.create_semaphore(&info, None).unwrap()
         };
-        let is_queue_debug_available = device.context.instance_loader.enabled().ext_debug_utils;
+        let is_queue_debug_available = device.context.debug_loader.is_some();
         AnyArc::new_cyclic(|v| Self {
             _this: v.clone(),
             _device: device.this.clone(),
@@ -207,7 +207,7 @@ impl IQueue for Queue {
             let old_last_completed = self.last_completed_index.load(Ordering::Relaxed);
             let new_last_completed = unsafe {
                 device
-                    .device_loader
+                    .device
                     .get_semaphore_counter_value(self.semaphore)
                     .unwrap()
             };
@@ -248,7 +248,7 @@ impl IQueue for Queue {
 
         unsafe {
             let _lock = self.submit_lock.lock();
-            device.device_loader.queue_wait_idle(self.handle).unwrap();
+            device.device.queue_wait_idle(self.handle).unwrap();
         }
     }
 
@@ -300,21 +300,21 @@ impl IQueue for Queue {
             .map(|v| v.fence)
             .unwrap_or(vk::Fence::null());
 
-        let mut timeline_info = vk::TimelineSemaphoreSubmitInfoBuilder::new()
+        let mut timeline_info = vk::TimelineSemaphoreSubmitInfo::builder()
             .wait_semaphore_values(&wait_values)
             .signal_semaphore_values(&signal_values);
-        let info = vk::SubmitInfoBuilder::new()
+        let info = vk::SubmitInfo::builder()
             .wait_semaphores(&wait_semaphores)
             .wait_dst_stage_mask(&wait_dst_stage_masks)
             .signal_semaphores(&signal_semaphores)
             .command_buffers(&command_buffers)
-            .extend_from(&mut timeline_info);
+            .push_next(&mut timeline_info);
 
         {
             let _lock = self.submit_lock.lock();
             device
-                .device_loader
-                .queue_submit(self.handle, &[info], fence)
+                .device
+                .queue_submit(self.handle, &[info.build()], fence)
                 .map_err(|v| anyhow!(v))?;
         }
 
@@ -330,9 +330,10 @@ impl IQueue for Queue {
         Ok(())
     }
 
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<bool, QueuePresentError> {
         let device = self._device.upgrade().unwrap();
         let swap_chain = unwrap::swap_chain(desc.swap_chain);
+        let loader = device.swapchain.as_ref().unwrap();
 
         // Checks if the queue supports present operations. While this could use a debug_assert
         // instead like other validation code, the cost of this check compared to the cost of the
@@ -348,26 +349,25 @@ impl IQueue for Queue {
             wait_semaphores.push(semaphore.semaphore);
         }
 
-        unsafe {
+        let is_suboptimal = unsafe {
             let swap_chain = swap_chain.inner.lock();
 
             let swapchains = [swap_chain.swap_chain];
             let image_indices = [desc.image_index];
-            let info = vk::PresentInfoKHRBuilder::new()
+            let info = vk::PresentInfoKHR::builder()
                 .wait_semaphores(&wait_semaphores)
                 .swapchains(&swapchains)
                 .image_indices(&image_indices);
 
             {
                 let _lock = self.submit_lock.lock();
-                device
-                    .device_loader
-                    .queue_present_khr(self.handle, &info)
-                    .map_err(|v| anyhow!(v))?;
+                loader
+                    .queue_present(self.handle, &info)
+                    .map_err(|v| anyhow!(v))?
             }
-        }
+        };
 
-        Ok(())
+        Ok(is_suboptimal)
     }
 }
 
@@ -376,16 +376,16 @@ impl IQueueDebug for Queue {
         let device = self._device.upgrade().unwrap();
         let _lock = self.submit_lock.lock();
         unsafe {
-            if let Some(func) = device.device_loader.queue_insert_debug_utils_label_ext {
+            if let Some(loader) = device.context.debug_loader.as_ref() {
                 let name = CString::new(message).unwrap();
                 let color: [f32; 4] = color.into();
-                let info = vk::DebugUtilsLabelEXTBuilder::new()
+                let info = vk::DebugUtilsLabelEXT::builder()
                     .label_name(&name)
                     .color(color);
 
                 {
                     let _lock = self.submit_lock.lock();
-                    (func)(self.handle, info.deref())
+                    loader.queue_insert_debug_utils_label(self.handle, info.deref())
                 }
             }
         }
@@ -395,7 +395,7 @@ impl IQueueDebug for Queue {
         let device = self._device.upgrade().unwrap();
         let _lock = self.submit_lock.lock();
         unsafe {
-            if let Some(func) = device.device_loader.queue_begin_debug_utils_label_ext {
+            if let Some(loader) = device.context.debug_loader.as_ref() {
                 // Use a counter to track the event stack depth. Prevents mismatched
                 // end_event+begin_event pairs.
                 let previous_event_depth = self.debug_marker_depth.fetch_add(1, Ordering::Relaxed);
@@ -407,13 +407,13 @@ impl IQueueDebug for Queue {
 
                 let name = CString::new(message).unwrap();
                 let color: [f32; 4] = color.into();
-                let info = vk::DebugUtilsLabelEXTBuilder::new()
+                let info = vk::DebugUtilsLabelEXT::builder()
                     .label_name(&name)
                     .color(color);
 
                 {
                     let _lock = self.submit_lock.lock();
-                    (func)(self.handle, info.deref());
+                    loader.queue_begin_debug_utils_label(self.handle, info.deref());
                 }
             }
         }
@@ -423,7 +423,7 @@ impl IQueueDebug for Queue {
         let device = self._device.upgrade().unwrap();
         let _lock = self.submit_lock.lock();
         unsafe {
-            if let Some(func) = device.device_loader.queue_end_debug_utils_label_ext {
+            if let Some(loader) = device.context.debug_loader.as_ref() {
                 // Use a counter to track the event stack depth. Prevents mismatched
                 // end_event+begin_event pairs.
                 let previous_event_depth = self.debug_marker_depth.fetch_sub(1, Ordering::Relaxed);
@@ -434,7 +434,7 @@ impl IQueueDebug for Queue {
 
                 {
                     let _lock = self.submit_lock.lock();
-                    (func)(self.handle);
+                    loader.queue_end_debug_utils_label(self.handle);
                 }
             }
         }
@@ -515,6 +515,6 @@ pub struct CommandListSubmission {
 
 impl ICollect for CommandListSubmission {
     unsafe fn collect(&self, device: &Device) {
-        device.device_loader.destroy_command_pool(self.pool, None);
+        device.device.destroy_command_pool(self.pool, None);
     }
 }

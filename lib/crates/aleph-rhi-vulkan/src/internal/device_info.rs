@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use erupt::{vk, ExtendableFrom};
+use ash::vk;
 use std::ffi::{c_char, CStr};
 
 pub struct DeviceInfo {
@@ -47,14 +47,10 @@ pub struct DeviceInfo {
 }
 
 impl DeviceInfo {
-    pub fn load(
-        instance: &erupt::InstanceLoader,
-        physical_device: vk::PhysicalDevice,
-    ) -> DeviceInfo {
+    pub fn load(instance: &ash::Instance, physical_device: vk::PhysicalDevice) -> DeviceInfo {
         let extensions = unsafe {
             instance
-                .enumerate_device_extension_properties(physical_device, None, None)
-                .result()
+                .enumerate_device_extension_properties(physical_device)
                 .unwrap_or_default()
                 .to_vec()
         };
@@ -65,27 +61,26 @@ impl DeviceInfo {
             vk::PhysicalDevicePortabilitySubsetPropertiesKHR::default();
 
         // Unconditionally required properties
-        let properties = vk::PhysicalDeviceProperties2Builder::new()
-            .extend_from(&mut properties_11)
-            .extend_from(&mut properties_12);
+        let properties = vk::PhysicalDeviceProperties2::builder()
+            .push_next(&mut properties_11)
+            .push_next(&mut properties_12);
 
         // Safety: we assume all the strings vulkan gives us are valid
-        let properties = unsafe {
+        let mut properties = unsafe {
             // We load the portability subset properties if the extension is present
             if Self::list_contains_extension_ptr(
                 &extensions,
-                vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+                vk::KhrPortabilitySubsetFn::name().as_ptr(),
             ) {
-                properties.extend_from(&mut portability_properties)
+                properties.push_next(&mut portability_properties)
             } else {
                 properties
             }
         };
 
         let properties_10 = unsafe {
-            instance
-                .get_physical_device_properties2(physical_device, Some(properties.build_dangling()))
-                .properties
+            instance.get_physical_device_properties2(physical_device, &mut properties);
+            properties.properties
         };
 
         let mut features_11 = vk::PhysicalDeviceVulkan11Features::default();
@@ -97,16 +92,16 @@ impl DeviceInfo {
             vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
 
         // Glue all the feature extension structs together into our monster instance
-        let features = vk::PhysicalDeviceFeatures2Builder::new()
-            .extend_from(&mut features_11)
-            .extend_from(&mut features_12);
+        let features = vk::PhysicalDeviceFeatures2::builder()
+            .push_next(&mut features_11)
+            .push_next(&mut features_12);
 
         let features = unsafe {
             if Self::list_contains_extension_ptr(
                 &extensions,
-                vk::KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                vk::KhrDynamicRenderingFn::name().as_ptr(),
             ) {
-                features.extend_from(&mut dynamic_rendering_features)
+                features.push_next(&mut dynamic_rendering_features)
             } else {
                 features
             }
@@ -114,28 +109,27 @@ impl DeviceInfo {
         let features = unsafe {
             if Self::list_contains_extension_ptr(
                 &extensions,
-                vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+                vk::KhrPortabilitySubsetFn::name().as_ptr(),
             ) {
-                features.extend_from(&mut portability_features)
+                features.push_next(&mut portability_features)
             } else {
                 features
             }
         };
-        let features = unsafe {
+        let mut features = unsafe {
             if Self::list_contains_extension_ptr(
                 &extensions,
-                vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+                vk::KhrSynchronization2Fn::name().as_ptr(),
             ) {
-                features.extend_from(&mut synchronization_2_features)
+                features.push_next(&mut synchronization_2_features)
             } else {
                 features
             }
         };
 
         let features_10 = unsafe {
-            instance
-                .get_physical_device_features2(physical_device, Some(features.build_dangling()))
-                .features
+            instance.get_physical_device_features2(physical_device, &mut features);
+            features.features
         };
 
         // Null the p_next chain pointers to avoid leaving the dangling references. They can't be

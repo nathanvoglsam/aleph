@@ -29,8 +29,8 @@
 
 #![allow(unused)]
 
+use ash::vk;
 use bitflags::bitflags;
-use erupt::vk;
 use std::ffi::c_char;
 use std::ptr::NonNull;
 

@@ -32,7 +32,7 @@ use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, text
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use erupt::{vk, ExtendableFrom};
+use ash::vk;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -90,9 +90,9 @@ impl ITexture for Texture {
                 vk::ImageUsageFlags::SAMPLED
             };
 
-            let mut usage_info = vk::ImageViewUsageCreateInfoBuilder::new().usage(usage);
+            let mut usage_info = vk::ImageViewUsageCreateInfo::builder().usage(usage);
 
-            let create_info = vk::ImageViewCreateInfoBuilder::new()
+            let create_info = vk::ImageViewCreateInfo::builder()
                 .image(self.image)
                 .view_type(image_view_type_to_vk(desc.view_type))
                 .format(texture_format_to_vk(desc.format))
@@ -103,11 +103,11 @@ impl ITexture for Texture {
                     a: vk::ComponentSwizzle::IDENTITY,
                 })
                 .subresource_range(subresource_range_to_vk(&desc.sub_resources))
-                .extend_from(&mut usage_info);
+                .push_next(&mut usage_info);
 
             let view = unsafe {
                 self._device
-                    .device_loader
+                    .device
                     .create_image_view(&create_info, None)
                     .map_err(|_| ())? // TODO: error handling
             };
@@ -125,10 +125,10 @@ impl ITexture for Texture {
         let view = if let Some(view) = views.get(desc) {
             *view
         } else {
-            let mut usage_info = vk::ImageViewUsageCreateInfoBuilder::new()
+            let mut usage_info = vk::ImageViewUsageCreateInfo::builder()
                 .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT);
 
-            let create_info = vk::ImageViewCreateInfoBuilder::new()
+            let create_info = vk::ImageViewCreateInfo::builder()
                 .image(self.image)
                 .view_type(image_view_type_to_vk(desc.view_type))
                 .format(texture_format_to_vk(desc.format))
@@ -139,11 +139,11 @@ impl ITexture for Texture {
                     a: vk::ComponentSwizzle::IDENTITY,
                 })
                 .subresource_range(subresource_range_to_vk(&desc.sub_resources))
-                .extend_from(&mut usage_info);
+                .push_next(&mut usage_info);
 
             let view = unsafe {
                 self._device
-                    .device_loader
+                    .device
                     .create_image_view(&create_info, None)
                     .map_err(|_| ())? // TODO: error handling
             };
@@ -161,10 +161,10 @@ impl ITexture for Texture {
         let view = if let Some(view) = views.get(desc) {
             *view
         } else {
-            let mut usage_info = vk::ImageViewUsageCreateInfoBuilder::new()
+            let mut usage_info = vk::ImageViewUsageCreateInfo::builder()
                 .usage(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT);
 
-            let create_info = vk::ImageViewCreateInfoBuilder::new()
+            let create_info = vk::ImageViewCreateInfo::builder()
                 .image(self.image)
                 .view_type(image_view_type_to_vk(desc.view_type))
                 .format(texture_format_to_vk(desc.format))
@@ -175,11 +175,11 @@ impl ITexture for Texture {
                     a: vk::ComponentSwizzle::IDENTITY,
                 })
                 .subresource_range(subresource_range_to_vk(&desc.sub_resources))
-                .extend_from(&mut usage_info);
+                .push_next(&mut usage_info);
 
             let view = unsafe {
                 self._device
-                    .device_loader
+                    .device
                     .create_image_view(&create_info, None)
                     .map_err(|_| ())? // TODO: error handling
             };
@@ -196,15 +196,15 @@ impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
             for (_desc, view) in self.views.get_mut().drain() {
-                self._device.device_loader.destroy_image_view(view, None);
+                self._device.device.destroy_image_view(view, None);
             }
 
             for (_desc, view) in self.rtvs.get_mut().drain() {
-                self._device.device_loader.destroy_image_view(view, None);
+                self._device.device.destroy_image_view(view, None);
             }
 
             for (_desc, view) in self.dsvs.get_mut().drain() {
-                self._device.device_loader.destroy_image_view(view, None);
+                self._device.device.destroy_image_view(view, None);
             }
 
             // Some images we don't own, like swap chain images, so we shouldn't destroy them

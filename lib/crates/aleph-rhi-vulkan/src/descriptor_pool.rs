@@ -33,8 +33,9 @@ use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use anyhow::anyhow;
-use erupt::utils::VulkanResult;
-use erupt::{vk, SmallVec};
+use ash::prelude::VkResult;
+use ash::vk;
+use ash::vk::Handle;
 use std::any::TypeId;
 
 pub struct DescriptorPool {
@@ -53,23 +54,23 @@ impl IGetPlatformInterface for DescriptorPool {
 
 impl DescriptorPool {
     pub fn handle_allocate_result(
-        v: VulkanResult<SmallVec<vk::DescriptorSet>>,
-    ) -> Result<SmallVec<vk::DescriptorSet>, DescriptorPoolAllocateError> {
-        match v.raw {
-            vk::Result::ERROR_OUT_OF_POOL_MEMORY => {
-                return Err(DescriptorPoolAllocateError::OutOfPoolMemory)
-            }
-            vk::Result::ERROR_OUT_OF_DEVICE_MEMORY | vk::Result::ERROR_OUT_OF_HOST_MEMORY => {
-                return Err(DescriptorPoolAllocateError::OutOfMemory)
-            }
-            vk::Result::ERROR_FRAGMENTED_POOL => {
-                return Err(DescriptorPoolAllocateError::FragmentedPool)
-            }
-            _ => {}
+        v: VkResult<Vec<vk::DescriptorSet>>,
+    ) -> Result<Vec<vk::DescriptorSet>, DescriptorPoolAllocateError> {
+        match v {
+            Ok(v) => Ok(v),
+            Err(e) => match e {
+                vk::Result::ERROR_OUT_OF_POOL_MEMORY => {
+                    Err(DescriptorPoolAllocateError::OutOfPoolMemory)
+                }
+                vk::Result::ERROR_OUT_OF_DEVICE_MEMORY | vk::Result::ERROR_OUT_OF_HOST_MEMORY => {
+                    Err(DescriptorPoolAllocateError::OutOfMemory)
+                }
+                vk::Result::ERROR_FRAGMENTED_POOL => {
+                    Err(DescriptorPoolAllocateError::FragmentedPool)
+                }
+                _ => Err(DescriptorPoolAllocateError::Platform(anyhow!(e))),
+            },
         }
-
-        let v = v.map_err(|v| anyhow!(v))?;
-        Ok(v)
     }
 }
 
@@ -77,20 +78,17 @@ impl IDescriptorPool for DescriptorPool {
     fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         let set_layouts = [self._layout.descriptor_set_layout];
 
-        let allocate_info = vk::DescriptorSetAllocateInfoBuilder::new()
+        let allocate_info = vk::DescriptorSetAllocateInfo::builder()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
         let descriptor_sets = unsafe {
-            let result = self
-                ._device
-                .device_loader
-                .allocate_descriptor_sets(&allocate_info);
+            let result = self._device.device.allocate_descriptor_sets(&allocate_info);
 
             Self::handle_allocate_result(result)?
         };
         let descriptor_set = descriptor_sets[0];
 
-        unsafe { Ok(DescriptorSetHandle::from_raw_int(descriptor_set.0).unwrap()) }
+        unsafe { Ok(DescriptorSetHandle::from_raw_int(descriptor_set.as_raw()).unwrap()) }
     }
 
     fn allocate_sets(
@@ -102,14 +100,11 @@ impl IDescriptorPool for DescriptorPool {
             set_layouts.push(self._layout.descriptor_set_layout);
         }
 
-        let allocate_info = vk::DescriptorSetAllocateInfoBuilder::new()
+        let allocate_info = vk::DescriptorSetAllocateInfo::builder()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
         let descriptor_sets = unsafe {
-            let result = self
-                ._device
-                .device_loader
-                .allocate_descriptor_sets(&allocate_info);
+            let result = self._device.device.allocate_descriptor_sets(&allocate_info);
 
             Self::handle_allocate_result(result)?
         };
@@ -121,14 +116,14 @@ impl IDescriptorPool for DescriptorPool {
         let descriptor_sets =
             core::slice::from_raw_parts(sets.as_ptr() as *const vk::DescriptorSet, sets.len());
         self._device
-            .device_loader
+            .device
             .free_descriptor_sets(self.descriptor_pool, descriptor_sets)
             .unwrap()
     }
 
     unsafe fn reset(&mut self) {
         self._device
-            .device_loader
+            .device
             .reset_descriptor_pool(self.descriptor_pool, Default::default())
             .unwrap();
     }
@@ -138,7 +133,7 @@ impl Drop for DescriptorPool {
     fn drop(&mut self) {
         unsafe {
             self._device
-                .device_loader
+                .device
                 .destroy_descriptor_pool(self.descriptor_pool, None);
         }
     }

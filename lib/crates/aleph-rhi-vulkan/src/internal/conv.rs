@@ -29,7 +29,7 @@
 
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::decode_u32_color_to_float;
-use erupt::vk;
+use ash::vk;
 
 /// Internal function for converting texture format to VkFormat
 pub const fn texture_format_to_vk(format: Format) -> vk::Format {
@@ -83,9 +83,9 @@ pub const fn texture_format_to_vk(format: Format) -> vk::Format {
 /// Internal function for converting present mode to VkPresentModeKHR
 pub const fn present_mode_to_vk(mode: PresentationMode) -> vk::PresentModeKHR {
     match mode {
-        PresentationMode::Immediate => vk::PresentModeKHR::IMMEDIATE_KHR,
-        PresentationMode::Mailbox => vk::PresentModeKHR::MAILBOX_KHR,
-        PresentationMode::Fifo => vk::PresentModeKHR::FIFO_KHR,
+        PresentationMode::Immediate => vk::PresentModeKHR::IMMEDIATE,
+        PresentationMode::Mailbox => vk::PresentModeKHR::MAILBOX,
+        PresentationMode::Fifo => vk::PresentModeKHR::FIFO,
     }
 }
 
@@ -630,7 +630,7 @@ pub const fn texture_aspect_to_vk(aspect: TextureAspect) -> vk::ImageAspectFlags
     // TextureAspect is a subset of vk::ImageAspectFlags so any TextureAspect flag is valid and
     // matches the vk::ImageAspectFlags value it represents. This means this is sound, in isolation
     // anyway.
-    unsafe { vk::ImageAspectFlags::from_bits_unchecked(aspect.bits()) }
+    vk::ImageAspectFlags::from_raw(aspect.bits())
 }
 
 pub fn color_clear_to_vk(v: &ColorClearValue) -> vk::ClearColorValue {
@@ -720,27 +720,27 @@ pub const fn sampler_border_color_to_vk(v: SamplerBorderColor) -> vk::BorderColo
     }
 }
 
-pub const fn shader_type_to_vk(v: ShaderType) -> vk::ShaderStageFlagBits {
+pub const fn shader_type_to_vk(v: ShaderType) -> vk::ShaderStageFlags {
     match v {
-        ShaderType::Compute => vk::ShaderStageFlagBits::COMPUTE,
-        ShaderType::Vertex => vk::ShaderStageFlagBits::VERTEX,
-        ShaderType::Hull => vk::ShaderStageFlagBits::TESSELLATION_CONTROL,
-        ShaderType::Domain => vk::ShaderStageFlagBits::TESSELLATION_EVALUATION,
-        ShaderType::Geometry => vk::ShaderStageFlagBits::GEOMETRY,
-        ShaderType::Fragment => vk::ShaderStageFlagBits::FRAGMENT,
-        ShaderType::Amplification => vk::ShaderStageFlagBits::TASK_NV,
-        ShaderType::Mesh => vk::ShaderStageFlagBits::MESH_NV,
+        ShaderType::Compute => vk::ShaderStageFlags::COMPUTE,
+        ShaderType::Vertex => vk::ShaderStageFlags::VERTEX,
+        ShaderType::Hull => vk::ShaderStageFlags::TESSELLATION_CONTROL,
+        ShaderType::Domain => vk::ShaderStageFlags::TESSELLATION_EVALUATION,
+        ShaderType::Geometry => vk::ShaderStageFlags::GEOMETRY,
+        ShaderType::Fragment => vk::ShaderStageFlags::FRAGMENT,
+        ShaderType::Amplification => vk::ShaderStageFlags::TASK_NV,
+        ShaderType::Mesh => vk::ShaderStageFlags::MESH_NV,
     }
 }
 
 pub const fn image_view_type_to_vk(v: ImageViewType) -> vk::ImageViewType {
     match v {
-        ImageViewType::Tex1D => vk::ImageViewType::_1D,
-        ImageViewType::Tex2D => vk::ImageViewType::_2D,
-        ImageViewType::Tex3D => vk::ImageViewType::_3D,
+        ImageViewType::Tex1D => vk::ImageViewType::TYPE_1D,
+        ImageViewType::Tex2D => vk::ImageViewType::TYPE_2D,
+        ImageViewType::Tex3D => vk::ImageViewType::TYPE_3D,
         ImageViewType::TexCube => vk::ImageViewType::CUBE,
-        ImageViewType::TexArray1D => vk::ImageViewType::_1D_ARRAY,
-        ImageViewType::TexArray2D => vk::ImageViewType::_2D_ARRAY,
+        ImageViewType::TexArray1D => vk::ImageViewType::TYPE_1D_ARRAY,
+        ImageViewType::TexArray2D => vk::ImageViewType::TYPE_2D_ARRAY,
         ImageViewType::TexCubeArray => vk::ImageViewType::CUBE_ARRAY,
     }
 }

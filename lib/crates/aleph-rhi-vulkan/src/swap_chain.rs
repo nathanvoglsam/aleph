@@ -37,7 +37,7 @@ use crate::texture::Texture;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use anyhow::anyhow;
-use erupt::vk;
+use ash::vk;
 use parking_lot::Mutex;
 use std::any::TypeId;
 
@@ -138,24 +138,31 @@ impl ISwapChain for SwapChain {
     unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
         let semaphore = unwrap::semaphore(desc.signal_semaphore);
 
+        let loader = self.device.swapchain.as_ref().unwrap();
+
         let inner = self.inner.lock();
-        let result = self.device.device_loader.acquire_next_image_khr(
+        let result = loader.acquire_next_image(
             inner.swap_chain,
             u64::MAX,
             semaphore.semaphore,
             vk::Fence::null(),
         );
 
-        return match result.raw {
-            vk::Result::SUBOPTIMAL_KHR => Err(ImageAcquireError::SubOptimal(result.unwrap())),
-            vk::Result::NOT_READY => unimplemented!(),
-            vk::Result::TIMEOUT => unimplemented!(),
-            vk::Result::ERROR_OUT_OF_DATE_KHR => Err(ImageAcquireError::OutOfDate),
-            vk::Result::ERROR_SURFACE_LOST_KHR => Err(ImageAcquireError::SurfaceLost),
+        return match result {
+            Ok((i, false)) => Ok(i),
+            Ok((i, true)) => Err(ImageAcquireError::SubOptimal(i)),
+            Err(vk::Result::NOT_READY) => unimplemented!(),
+            Err(vk::Result::TIMEOUT) => unimplemented!(),
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(ImageAcquireError::OutOfDate),
+            Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(ImageAcquireError::SurfaceLost),
             _ => {
                 // Coerce everything we don't explicitly handle to an error.
-                let index = result.map_err(|v| anyhow!(v))?;
-                Ok(index)
+                let (i, sub_optimal) = result.map_err(|v| anyhow!(v))?;
+                if sub_optimal {
+                    Err(ImageAcquireError::SubOptimal(i))
+                } else {
+                    Ok(i)
+                }
             }
         };
     }
@@ -167,8 +174,10 @@ impl SwapChain {
         inner: &mut SwapChainState,
         config: &SwapChainConfiguration,
     ) -> Result<(), SwapChainCreateError> {
+        let surface_loader = self.device.context.surface_loaders.base.as_ref().unwrap();
+        let swapchain_loader = self.device.swapchain.as_ref().unwrap();
         let (capabilities, formats, present_modes) = Context::get_device_surface_support(
-            &self.device.context.instance_loader,
+            surface_loader,
             self.device.adapter.physical_device,
             self.surface.surface,
         )
@@ -201,7 +210,7 @@ impl SwapChain {
 
         let old_swapchain = inner.swap_chain;
 
-        let swap_create_info = vk::SwapchainCreateInfoKHRBuilder::new()
+        let swap_create_info = vk::SwapchainCreateInfoKHR::builder()
             .surface(self.surface.surface)
             .min_image_count(buffer_count)
             .present_mode(present_mode)
@@ -210,32 +219,24 @@ impl SwapChain {
             .image_extent(extents)
             .image_array_layers(1)
             .image_usage(image_usage)
-            .pre_transform(vk::SurfaceTransformFlagBitsKHR::IDENTITY_KHR)
-            .composite_alpha(vk::CompositeAlphaFlagBitsKHR::OPAQUE_KHR)
+            .pre_transform(vk::SurfaceTransformFlagsKHR::IDENTITY)
+            .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
             .old_swapchain(old_swapchain)
             .clipped(true);
 
         // TODO: Handle destroying the old swap chain
 
-        inner.swap_chain = self
-            .device
-            .device_loader
-            .create_swapchain_khr(&swap_create_info, None)
-            .result()
+        inner.swap_chain = swapchain_loader
+            .create_swapchain(&swap_create_info, None)
             .map_err(|e| anyhow!(e))?;
 
-        if !old_swapchain.is_null() {
-            self.device
-                .device_loader
-                .destroy_swapchain_khr(old_swapchain, None);
+        if old_swapchain == vk::SwapchainKHR::null() {
+            swapchain_loader.destroy_swapchain(old_swapchain, None);
         }
 
-        let images = self
-            .device
-            .device_loader
-            .get_swapchain_images_khr(inner.swap_chain, None)
-            .result()
+        let images = swapchain_loader
+            .get_swapchain_images(inner.swap_chain)
             .map_err(|e| anyhow!(e))?;
 
         let images: Vec<_> = images
@@ -289,9 +290,9 @@ impl SwapChain {
         capabilities: &vk::SurfaceCapabilitiesKHR,
     ) -> u32 {
         let buffer_count = match present_mode {
-            vk::PresentModeKHR::IMMEDIATE_KHR => 2,
-            vk::PresentModeKHR::MAILBOX_KHR => 3,
-            vk::PresentModeKHR::FIFO_KHR | vk::PresentModeKHR::FIFO_RELAXED_KHR => 2,
+            vk::PresentModeKHR::IMMEDIATE => 2,
+            vk::PresentModeKHR::MAILBOX => 3,
+            vk::PresentModeKHR::FIFO | vk::PresentModeKHR::FIFO_RELAXED => 2,
             _ => unreachable!(),
         };
         buffer_count
@@ -311,7 +312,7 @@ impl SwapChain {
             .iter()
             .copied()
             .find_map(|v| {
-                if v.format == format && v.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR_KHR {
+                if v.format == format && v.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR {
                     Some((v.format, v.color_space))
                 } else {
                     None
@@ -366,7 +367,7 @@ impl SwapChain {
         if present_modes.contains(&wanted_mode) {
             wanted_mode
         } else {
-            vk::PresentModeKHR::FIFO_KHR
+            vk::PresentModeKHR::FIFO
         }
     }
 }
@@ -374,10 +375,9 @@ impl SwapChain {
 impl Drop for SwapChain {
     fn drop(&mut self) {
         let inner = self.inner.lock();
+        let loader = self.device.swapchain.as_ref().unwrap();
         unsafe {
-            self.device
-                .device_loader
-                .destroy_swapchain_khr(inner.swap_chain, None);
+            loader.destroy_swapchain(inner.swap_chain, None);
         }
     }
 }

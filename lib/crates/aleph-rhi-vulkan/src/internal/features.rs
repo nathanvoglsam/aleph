@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use erupt::vk;
+use ash::vk;
 
 pub trait CheckMeetsProfile {
     fn meets_profile(&self, v: &Self) -> Option<()>;
@@ -96,7 +96,7 @@ macro_rules! feat_mask {
 
 macro_rules! merge_feat_mask {
     ($base:ident, $compare:ident, $v:ident) => {
-        $base.$v = $base.$v.union($compare.$v);
+        $base.$v = $base.$v | $compare.$v;
     };
 }
 
@@ -994,7 +994,7 @@ impl CheckMeetsProfile for vk::ShaderFloatControlsIndependence {
         // NONE is the default
 
         // only NONE is less capable than 32_ONLY
-        if *self == vk::ShaderFloatControlsIndependence::_32_ONLY {
+        if *self == vk::ShaderFloatControlsIndependence::TYPE_32_ONLY {
             if *v == vk::ShaderFloatControlsIndependence::NONE {
                 return None;
             }
@@ -1015,7 +1015,7 @@ impl CheckMeetsProfile for vk::ShaderFloatControlsIndependence {
             vk::ShaderFloatControlsIndependence::NONE => *self = *v,
 
             // _32_ONLY overwritten by only ALL
-            vk::ShaderFloatControlsIndependence::_32_ONLY => {
+            vk::ShaderFloatControlsIndependence::TYPE_32_ONLY => {
                 if *v == vk::ShaderFloatControlsIndependence::ALL {
                     *self = *v
                 }

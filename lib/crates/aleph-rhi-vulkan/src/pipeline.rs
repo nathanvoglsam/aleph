@@ -32,7 +32,7 @@ use crate::pipeline_layout::PipelineLayout;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use erupt::vk;
+use ash::vk;
 use std::any::TypeId;
 
 pub struct GraphicsPipeline {
@@ -67,9 +67,7 @@ impl IGraphicsPipeline for GraphicsPipeline {
 impl Drop for GraphicsPipeline {
     fn drop(&mut self) {
         unsafe {
-            self._device
-                .device_loader
-                .destroy_pipeline(self.pipeline, None);
+            self._device.device.destroy_pipeline(self.pipeline, None);
         }
     }
 }
@@ -106,9 +104,7 @@ impl IComputePipeline for ComputePipeline {
 impl Drop for ComputePipeline {
     fn drop(&mut self) {
         unsafe {
-            self._device
-                .device_loader
-                .destroy_pipeline(self.pipeline, None);
+            self._device.device.destroy_pipeline(self.pipeline, None);
         }
     }
 }

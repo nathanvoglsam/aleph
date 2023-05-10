@@ -35,7 +35,7 @@ use crate::swap_chain::{SwapChain, SwapChainState};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use erupt::vk;
+use ash::vk;
 use parking_lot::Mutex;
 use std::any::TypeId;
 
@@ -60,45 +60,34 @@ impl Surface {
         surface: vk::SurfaceKHR,
     ) -> Result<QueuePresentSupportFlags, vk::Result> {
         let mut flags = QueuePresentSupportFlags::empty();
+        let loader = device.context.surface_loaders.base.as_ref().unwrap();
 
         if let Some(queue) = device.general_queue.as_ref() {
-            let supported = device
-                .context
-                .instance_loader
-                .get_physical_device_surface_support_khr(
-                    device.adapter.physical_device,
-                    queue.info.family_index,
-                    surface,
-                )
-                .result()?;
+            let supported = loader.get_physical_device_surface_support(
+                device.adapter.physical_device,
+                queue.info.family_index,
+                surface,
+            )?;
             if supported {
                 flags |= QueuePresentSupportFlags::GENERAL;
             }
         }
         if let Some(queue) = device.compute_queue.as_ref() {
-            let supported = device
-                .context
-                .instance_loader
-                .get_physical_device_surface_support_khr(
-                    device.adapter.physical_device,
-                    queue.info.family_index,
-                    surface,
-                )
-                .result()?;
+            let supported = loader.get_physical_device_surface_support(
+                device.adapter.physical_device,
+                queue.info.family_index,
+                surface,
+            )?;
             if supported {
                 flags |= QueuePresentSupportFlags::COMPUTE;
             }
         }
         if let Some(queue) = device.transfer_queue.as_ref() {
-            let supported = device
-                .context
-                .instance_loader
-                .get_physical_device_surface_support_khr(
-                    device.adapter.physical_device,
-                    queue.info.family_index,
-                    surface,
-                )
-                .result()?;
+            let supported = loader.get_physical_device_surface_support(
+                device.adapter.physical_device,
+                queue.info.family_index,
+                surface,
+            )?;
             if supported {
                 flags |= QueuePresentSupportFlags::TRANSFER;
             }
@@ -161,9 +150,8 @@ impl ISurface for Surface {
 impl Drop for Surface {
     fn drop(&mut self) {
         unsafe {
-            self.context
-                .instance_loader
-                .destroy_surface_khr(self.surface, None);
+            let loader = self.context.surface_loaders.base.as_ref().unwrap();
+            loader.destroy_surface(self.surface, None);
         }
     }
 }

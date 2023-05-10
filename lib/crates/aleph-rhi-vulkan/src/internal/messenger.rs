@@ -31,53 +31,48 @@ use std::ffi::c_void;
 use std::ffi::CStr;
 use std::slice;
 
-use erupt::extensions::ext_debug_utils::DebugUtilsMessageTypeFlagsEXT;
-use erupt::extensions::ext_debug_utils::DebugUtilsMessengerCallbackDataEXT;
-use erupt::extensions::ext_debug_utils::{
-    DebugUtilsMessageSeverityFlagBitsEXT, DebugUtilsMessageSeverityFlagsEXT,
-};
-use erupt::vk1_0::{Bool32, FALSE};
+use ash::vk;
 use log::{log, Level};
 
-fn message_severity_log_level(severity: DebugUtilsMessageSeverityFlagsEXT) -> Level {
-    if severity == DebugUtilsMessageSeverityFlagsEXT::INFO_EXT {
+fn message_severity_log_level(severity: vk::DebugUtilsMessageSeverityFlagsEXT) -> Level {
+    if severity == vk::DebugUtilsMessageSeverityFlagsEXT::INFO {
         Level::Debug
-    } else if severity == DebugUtilsMessageSeverityFlagsEXT::WARNING_EXT {
+    } else if severity == vk::DebugUtilsMessageSeverityFlagsEXT::WARNING {
         Level::Warn
-    } else if severity == DebugUtilsMessageSeverityFlagsEXT::ERROR_EXT {
+    } else if severity == vk::DebugUtilsMessageSeverityFlagsEXT::ERROR {
         Level::Error
-    } else if severity == DebugUtilsMessageSeverityFlagsEXT::VERBOSE_EXT {
+    } else if severity == vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE {
         Level::Trace
     } else {
         Level::Debug
     }
 }
 
-fn message_type_colour(mtype: DebugUtilsMessageTypeFlagsEXT) -> console::Color {
-    if mtype == DebugUtilsMessageTypeFlagsEXT::GENERAL_EXT {
+fn message_type_colour(mtype: vk::DebugUtilsMessageTypeFlagsEXT) -> console::Color {
+    if mtype == vk::DebugUtilsMessageTypeFlagsEXT::GENERAL {
         console::Color::Green
-    } else if mtype == DebugUtilsMessageTypeFlagsEXT::VALIDATION_EXT {
+    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION {
         console::Color::Red
-    } else if mtype == DebugUtilsMessageTypeFlagsEXT::PERFORMANCE_EXT {
+    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE {
         console::Color::Yellow
     } else {
         console::Color::Black
     }
 }
 
-fn message_type_string(mtype: DebugUtilsMessageTypeFlagsEXT) -> &'static str {
-    if mtype == DebugUtilsMessageTypeFlagsEXT::GENERAL_EXT {
+fn message_type_string(mtype: vk::DebugUtilsMessageTypeFlagsEXT) -> &'static str {
+    if mtype == vk::DebugUtilsMessageTypeFlagsEXT::GENERAL {
         "GENERAL"
-    } else if mtype == DebugUtilsMessageTypeFlagsEXT::VALIDATION_EXT {
+    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION {
         "VALIDATION"
-    } else if mtype == DebugUtilsMessageTypeFlagsEXT::PERFORMANCE_EXT {
+    } else if mtype == vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE {
         "PERFORMANCE"
     } else {
         "NONE"
     }
 }
 
-unsafe fn print_message(callback_data: &DebugUtilsMessengerCallbackDataEXT, level: Level) {
+unsafe fn print_message(callback_data: &vk::DebugUtilsMessengerCallbackDataEXT, level: Level) {
     let message = CStr::from_ptr(callback_data.p_message).to_str().unwrap();
     let message = console::style(message).italic();
 
@@ -86,7 +81,7 @@ unsafe fn print_message(callback_data: &DebugUtilsMessengerCallbackDataEXT, leve
     log!(level, "{}", message);
 }
 
-unsafe fn print_call_stack(callback_data: &DebugUtilsMessengerCallbackDataEXT, level: Level) {
+unsafe fn print_call_stack(callback_data: &vk::DebugUtilsMessengerCallbackDataEXT, level: Level) {
     let queue_labels = slice::from_raw_parts(
         callback_data.p_queue_labels,
         callback_data.queue_label_count as usize,
@@ -153,12 +148,12 @@ unsafe fn print_call_stack(callback_data: &DebugUtilsMessengerCallbackDataEXT, l
 }
 
 pub unsafe extern "system" fn vulkan_debug_messenger(
-    message_severity: DebugUtilsMessageSeverityFlagBitsEXT,
-    message_types: DebugUtilsMessageTypeFlagsEXT,
-    p_callback_data: *const DebugUtilsMessengerCallbackDataEXT,
+    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    message_types: vk::DebugUtilsMessageTypeFlagsEXT,
+    p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
     _p_user_data: *mut c_void,
-) -> Bool32 {
-    let severity_level = message_severity_log_level(message_severity.bitmask());
+) -> vk::Bool32 {
+    let severity_level = message_severity_log_level(message_severity);
 
     let mtype_colour = message_type_colour(message_types);
     let mtype_string = message_type_string(message_types);
@@ -179,7 +174,7 @@ pub unsafe extern "system" fn vulkan_debug_messenger(
     // Break on debugger, if one is attached (assuming the platform supports the behavior)
     debug_break();
 
-    FALSE
+    vk::FALSE
 }
 
 #[cfg(target_os = "windows")]

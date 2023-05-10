@@ -34,9 +34,10 @@ use crate::pipeline::GraphicsPipeline;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use ash::extensions::khr::Synchronization2;
+use ash::vk;
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
-use erupt::vk;
 use std::any::TypeId;
 use std::ffi::CStr;
 use std::ops::Deref;
@@ -55,7 +56,7 @@ impl<'a> Drop for Encoder<'a> {
         unsafe {
             self._parent
                 ._device
-                .device_loader
+                .device
                 .end_command_buffer(self.buffer)
                 .unwrap()
         }
@@ -73,7 +74,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let concrete = unwrap::graphics_pipeline(pipeline);
 
         // Binds the pipeline
-        self._parent._device.device_loader.cmd_bind_pipeline(
+        self._parent._device.device.cmd_bind_pipeline(
             self.buffer,
             vk::PipelineBindPoint::GRAPHICS,
             concrete.pipeline,
@@ -98,7 +99,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             offsets.push(v.offset);
         }
 
-        self._parent._device.device_loader.cmd_bind_vertex_buffers(
+        self._parent._device.device.cmd_bind_vertex_buffers(
             self.buffer,
             first_binding,
             &buffers,
@@ -118,7 +119,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             IndexType::U32 => vk::IndexType::UINT32,
         };
 
-        self._parent._device.device_loader.cmd_bind_index_buffer(
+        self._parent._device.device.cmd_bind_index_buffer(
             self.buffer,
             buffer.buffer,
             binding.offset,
@@ -130,36 +131,37 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let mut new_viewports = BumpVec::with_capacity_in(viewports.len(), &self.arena);
         for v in viewports {
             new_viewports.push(
-                vk::ViewportBuilder::new()
+                vk::Viewport::builder()
                     .x(v.x)
                     .y(v.y + v.height)
                     .width(v.width)
                     .height(-v.height)
                     .min_depth(v.min_depth)
-                    .max_depth(v.max_depth),
+                    .max_depth(v.max_depth)
+                    .build(),
             );
         }
 
         self._parent
             ._device
-            .device_loader
+            .device
             .cmd_set_viewport(self.buffer, 0, &new_viewports)
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
         let mut new_rects = BumpVec::with_capacity_in(rects.len(), &self.arena);
         for v in rects {
-            let mut rect = vk::Rect2DBuilder::new();
+            let mut rect = vk::Rect2D::builder();
             rect.offset.x = v.x as i32;
             rect.offset.y = v.y as i32;
             rect.extent.width = v.w;
             rect.extent.height = v.h;
-            new_rects.push(rect);
+            new_rects.push(rect.build());
         }
 
         self._parent
             ._device
-            .device_loader
+            .device
             .cmd_set_scissor(self.buffer, 0, &new_rects)
     }
 
@@ -173,13 +175,12 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let info = &pipeline_layout.push_constant_blocks[block_index];
 
-        self._parent._device.device_loader.cmd_push_constants(
+        self._parent._device.device.cmd_push_constants(
             self.buffer,
             pipeline_layout.pipeline_layout,
             info.stage_flags,
             info.offset,
-            data.len() as u32,
-            data.as_ptr() as *const _,
+            data,
         )
     }
 
@@ -189,7 +190,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         for v in info.color_attachments {
             let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
 
-            let mut info = vk::RenderingAttachmentInfoBuilder::new()
+            let mut info = vk::RenderingAttachmentInfo::builder()
                 .image_view(image_view)
                 .image_layout(image_layout_to_vk(v.image_layout))
                 .load_op(load_op_to_vk(&v.load_op))
@@ -200,7 +201,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                     color: color_clear_to_vk(v),
                 });
             };
-            color_attachments.push(info);
+            color_attachments.push(info.build());
         }
 
         let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
@@ -208,7 +209,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
 
             let depth_info = if !matches!(&v.depth_load_op, &AttachmentLoadOp::None) {
-                let mut info = vk::RenderingAttachmentInfoBuilder::new()
+                let mut info = vk::RenderingAttachmentInfo::builder()
                     .image_view(image_view)
                     .image_layout(image_layout_to_vk(v.image_layout))
                     .load_op(load_op_to_vk(&v.depth_load_op))
@@ -226,7 +227,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             };
 
             let stencil_info = if !matches!(&v.stencil_load_op, &AttachmentLoadOp::None) {
-                let mut info = vk::RenderingAttachmentInfoBuilder::new()
+                let mut info = vk::RenderingAttachmentInfo::builder()
                     .image_view(image_view)
                     .image_layout(image_layout_to_vk(v.image_layout))
                     .load_op(load_op_to_vk(&v.stencil_load_op))
@@ -261,7 +262,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             }
         };
 
-        let mut info = vk::RenderingInfoBuilder::new()
+        let mut info = vk::RenderingInfo::builder()
             .render_area(vk::Rect2D {
                 offset: vk::Offset2D::default(),
                 extent: render_extent,
@@ -277,15 +278,15 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         self._parent
             ._device
-            .device_loader
-            .cmd_begin_rendering_khr(self.buffer, &info);
+            .dynamic_rendering
+            .cmd_begin_rendering(self.buffer, &info);
     }
 
     unsafe fn end_rendering(&mut self) {
         self._parent
             ._device
-            .device_loader
-            .cmd_end_rendering_khr(self.buffer);
+            .dynamic_rendering
+            .cmd_end_rendering(self.buffer);
     }
 
     unsafe fn draw(
@@ -295,7 +296,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_vertex: u32,
         first_instance: u32,
     ) {
-        self._parent._device.device_loader.cmd_draw(
+        self._parent._device.device.cmd_draw(
             self.buffer,
             vertex_count,
             instance_count,
@@ -312,7 +313,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        self._parent._device.device_loader.cmd_draw_indexed(
+        self._parent._device.device.cmd_draw_indexed(
             self.buffer,
             index_count,
             instance_count,
@@ -339,7 +340,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             new_sets.push(std::mem::transmute_copy::<_, vk::DescriptorSet>(v));
         }
 
-        self._parent._device.device_loader.cmd_bind_descriptor_sets(
+        self._parent._device.device.cmd_bind_descriptor_sets(
             self.buffer,
             bind_point,
             pipeline_layout.pipeline_layout,
@@ -350,7 +351,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        self._parent._device.device_loader.cmd_dispatch(
+        self._parent._device.device.cmd_dispatch(
             self.buffer,
             group_count_x,
             group_count_y,
@@ -366,16 +367,10 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        if self
-            ._parent
-            ._device
-            .device_loader
-            .cmd_pipeline_barrier2_khr
-            .is_none()
-        {
-            self.resource_barrier_fallback(global_barriers, buffer_barriers, texture_barriers)
+        if let Some(loader) = self._parent._device.synchronization_2.clone() {
+            self.resource_barrier_sync2(&loader, global_barriers, buffer_barriers, texture_barriers)
         } else {
-            self.resource_barrier_sync2(global_barriers, buffer_barriers, texture_barriers)
+            self.resource_barrier_fallback(global_barriers, buffer_barriers, texture_barriers)
         }
     }
 
@@ -391,14 +386,15 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
         for v in regions {
             new_regions.push(
-                vk::BufferCopyBuilder::new()
+                vk::BufferCopy::builder()
                     .src_offset(v.src_offset)
                     .dst_offset(v.dst_offset)
-                    .size(v.size),
+                    .size(v.size)
+                    .build(),
             );
         }
 
-        self._parent._device.device_loader.cmd_copy_buffer(
+        self._parent._device.device.cmd_copy_buffer(
             self.buffer,
             src.buffer,
             dst.buffer,
@@ -419,7 +415,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
         for v in regions {
             new_regions.push(
-                vk::BufferImageCopyBuilder::new()
+                vk::BufferImageCopy::builder()
                     .buffer_offset(v.src.offset)
                     .buffer_row_length(v.src.extent.width)
                     .buffer_image_height(v.src.extent.height)
@@ -438,13 +434,14 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                         width: v.dst.extent.width,
                         height: v.dst.extent.height,
                         depth: v.dst.extent.depth,
-                    }),
+                    })
+                    .build(),
             );
         }
 
         let layout = image_layout_to_vk(dst_layout);
 
-        self._parent._device.device_loader.cmd_copy_buffer_to_image(
+        self._parent._device.device.cmd_copy_buffer_to_image(
             self.buffer,
             src.buffer,
             dst.image,
@@ -454,12 +451,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
-        if let Some(func) = self
-            ._parent
-            ._device
-            .device_loader
-            .cmd_debug_marker_insert_ext
-        {
+        if let Some(loader) = self._parent._device.context.debug_loader.as_ref() {
             // Create our null terminated string in the encoder's arena
             let mut name = BumpVec::with_capacity_in(message.len() + 1, &self.arena);
             name.extend_from_slice(message.as_bytes());
@@ -467,36 +459,31 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_slice());
 
             let color: [f32; 4] = color.into();
-            let info = vk::DebugMarkerMarkerInfoEXTBuilder::new()
-                .marker_name(name_cstr)
+            let info = vk::DebugUtilsLabelEXT::builder()
+                .label_name(name_cstr)
                 .color(color);
-            (func)(self.buffer, info.deref())
+            loader.cmd_insert_debug_utils_label(self.buffer, info.deref())
         }
     }
 
     unsafe fn begin_event(&mut self, color: Color, message: &str) {
-        if let Some(func) = self
-            ._parent
-            ._device
-            .device_loader
-            .cmd_debug_marker_begin_ext
-        {
+        if let Some(loader) = self._parent._device.context.debug_loader.as_ref() {
             let mut name = BumpVec::with_capacity_in(message.len() + 1, &self.arena);
             name.extend_from_slice(message.as_bytes());
             name.push(0);
             let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_slice());
 
             let color: [f32; 4] = color.into();
-            let info = vk::DebugMarkerMarkerInfoEXTBuilder::new()
-                .marker_name(name_cstr)
+            let info = vk::DebugUtilsLabelEXT::builder()
+                .label_name(name_cstr)
                 .color(color);
-            (func)(self.buffer, info.deref())
+            loader.cmd_begin_debug_utils_label(self.buffer, info.deref())
         }
     }
 
     unsafe fn end_event(&mut self) {
-        if let Some(func) = self._parent._device.device_loader.cmd_debug_marker_end_ext {
-            (func)(self.buffer)
+        if let Some(loader) = self._parent._device.context.debug_loader.as_ref() {
+            loader.cmd_end_debug_utils_label(self.buffer)
         }
     }
 }
@@ -526,9 +513,10 @@ impl<'a> Encoder<'a> {
                 dst_stage_mask |=
                     barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
                 translated_global_barriers.push(
-                    vk::MemoryBarrierBuilder::new()
+                    vk::MemoryBarrier::builder()
                         .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk(barrier.after_access)),
+                        .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                        .build(),
                 );
             }
         }
@@ -542,12 +530,13 @@ impl<'a> Encoder<'a> {
                 dst_stage_mask |=
                     barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
                 translated_buffer_barriers.push(
-                    vk::BufferMemoryBarrierBuilder::new()
+                    vk::BufferMemoryBarrier::builder()
                         .src_access_mask(barrier_access_to_vk(barrier.before_access))
                         .dst_access_mask(barrier_access_to_vk(barrier.after_access))
                         .buffer(buffer.buffer)
                         .offset(barrier.offset)
-                        .size(barrier.size),
+                        .size(barrier.size)
+                        .build(),
                 );
             }
         }
@@ -562,18 +551,19 @@ impl<'a> Encoder<'a> {
                 dst_stage_mask |=
                     barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
                 translated_texture_barriers.push(
-                    vk::ImageMemoryBarrierBuilder::new()
+                    vk::ImageMemoryBarrier::builder()
                         .src_access_mask(barrier_access_to_vk(barrier.before_access))
                         .dst_access_mask(barrier_access_to_vk(barrier.after_access))
                         .old_layout(image_layout_to_vk(barrier.before_layout))
                         .new_layout(image_layout_to_vk(barrier.after_layout))
                         .image(texture.image)
-                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range)),
+                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                        .build(),
                 );
             }
         }
 
-        self._parent._device.device_loader.cmd_pipeline_barrier(
+        self._parent._device.device.cmd_pipeline_barrier(
             self.buffer,
             src_stage_mask,
             dst_stage_mask,
@@ -586,6 +576,7 @@ impl<'a> Encoder<'a> {
 
     unsafe fn resource_barrier_sync2(
         &mut self,
+        loader: &Synchronization2,
         global_barriers: &[GlobalBarrier],
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
@@ -602,11 +593,12 @@ impl<'a> Encoder<'a> {
         if !buffer_barriers.is_empty() {
             for barrier in global_barriers {
                 translated_global_barriers.push(
-                    vk::MemoryBarrier2Builder::new()
+                    vk::MemoryBarrier2::builder()
                         .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
                         .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
                         .src_access_mask(barrier_access_to_vk2(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk2(barrier.after_access)),
+                        .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
+                        .build(),
                 );
             }
         }
@@ -616,14 +608,15 @@ impl<'a> Encoder<'a> {
                 let buffer = unwrap::buffer(barrier.buffer);
 
                 translated_buffer_barriers.push(
-                    vk::BufferMemoryBarrier2Builder::new()
+                    vk::BufferMemoryBarrier2::builder()
                         .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
                         .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
                         .src_access_mask(barrier_access_to_vk2(barrier.before_access))
                         .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
                         .buffer(buffer.buffer)
                         .offset(barrier.offset)
-                        .size(barrier.size),
+                        .size(barrier.size)
+                        .build(),
                 );
             }
         }
@@ -634,7 +627,7 @@ impl<'a> Encoder<'a> {
                 let texture = unwrap::texture(barrier.texture);
 
                 translated_texture_barriers.push(
-                    vk::ImageMemoryBarrier2Builder::new()
+                    vk::ImageMemoryBarrier2::builder()
                         .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
                         .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
                         .src_access_mask(barrier_access_to_vk2(barrier.before_access))
@@ -642,18 +635,16 @@ impl<'a> Encoder<'a> {
                         .old_layout(image_layout_to_vk(barrier.before_layout))
                         .new_layout(image_layout_to_vk(barrier.after_layout))
                         .image(texture.image)
-                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range)),
+                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                        .build(),
                 );
             }
         }
 
-        let info = vk::DependencyInfoBuilder::new()
+        let info = vk::DependencyInfo::builder()
             .memory_barriers(&translated_global_barriers)
             .buffer_memory_barriers(&translated_buffer_barriers)
             .image_memory_barriers(&translated_texture_barriers);
-        self._parent
-            ._device
-            .device_loader
-            .cmd_pipeline_barrier2_khr(self.buffer, &info)
+        loader.cmd_pipeline_barrier2(self.buffer, &info)
     }
 }

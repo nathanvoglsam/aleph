@@ -34,8 +34,8 @@ use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use anyhow::anyhow;
+use ash::vk;
 use bumpalo::Bump;
-use erupt::vk;
 use std::any::TypeId;
 
 pub struct CommandList {
@@ -70,14 +70,14 @@ impl ICommandList for CommandList {
             // the command allocator
             unsafe {
                 self._device
-                    .device_loader
+                    .device
                     .reset_command_pool(self.pool, Default::default())
                     .map_err(|v| anyhow!(v))?;
 
-                let begin_info = vk::CommandBufferBeginInfoBuilder::new()
+                let begin_info = vk::CommandBufferBeginInfo::builder()
                     .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
                 self._device
-                    .device_loader
+                    .device
                     .begin_command_buffer(self.buffer, &begin_info)
                     .map_err(|v| anyhow!(v))?;
             }
@@ -124,11 +124,9 @@ impl ICommandList for CommandList {
 impl Drop for CommandList {
     fn drop(&mut self) {
         unsafe {
-            if !self.pool.is_null() {
+            if self.pool == vk::CommandPool::null() {
                 // The list is destroyed with the pool
-                self._device
-                    .device_loader
-                    .destroy_command_pool(self.pool, None);
+                self._device.device.destroy_command_pool(self.pool, None);
             }
         }
     }

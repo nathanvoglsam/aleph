@@ -31,7 +31,7 @@ use crate::device::Device;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use erupt::vk;
+use ash::vk;
 use std::any::TypeId;
 
 pub struct Sampler {
@@ -72,10 +72,6 @@ impl ISampler for Sampler {
 
 impl Drop for Sampler {
     fn drop(&mut self) {
-        unsafe {
-            self._device
-                .device_loader
-                .destroy_sampler(self.sampler, None)
-        }
+        unsafe { self._device.device.destroy_sampler(self.sampler, None) }
     }
 }

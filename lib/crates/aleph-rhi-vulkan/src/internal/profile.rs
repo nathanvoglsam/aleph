@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use erupt::vk;
+use ash::vk;
 use std::ffi::c_float;
 
 pub trait CreateProfile {

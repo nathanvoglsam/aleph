@@ -87,8 +87,8 @@ impl IPlugin for PluginRHI {
                 preferred_api: Some(BackendAPI::Vulkan),
                 denied_backends: None,
                 required_backend: None,
-                validation: false,
-                debug: false,
+                validation: true,
+                debug: true,
             })
             .unwrap();
 

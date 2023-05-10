@@ -31,7 +31,7 @@ use crate::device::Device;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use erupt::vk;
+use ash::vk;
 use std::any::TypeId;
 
 pub struct Fence {
@@ -65,7 +65,7 @@ impl IFence for Fence {
 impl Drop for Fence {
     fn drop(&mut self) {
         unsafe {
-            self._device.device_loader.destroy_fence(self.fence, None);
+            self._device.device.destroy_fence(self.fence, None);
         }
     }
 }

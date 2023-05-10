@@ -31,14 +31,14 @@ use crate::device::Device;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use erupt::vk;
+use ash::vk;
 use std::any::TypeId;
 
 pub struct PipelineLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) pipeline_layout: vk::PipelineLayout,
-    pub(crate) push_constant_blocks: Vec<vk::PushConstantRangeBuilder<'static>>,
+    pub(crate) push_constant_blocks: Vec<vk::PushConstantRange>,
 }
 
 declare_interfaces!(PipelineLayout, [IPipelineLayout]);
@@ -67,7 +67,7 @@ impl Drop for PipelineLayout {
     fn drop(&mut self) {
         unsafe {
             self._device
-                .device_loader
+                .device
                 .destroy_pipeline_layout(self.pipeline_layout, None);
         }
     }

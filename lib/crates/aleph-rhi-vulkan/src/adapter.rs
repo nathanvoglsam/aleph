@@ -36,7 +36,7 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use anyhow::anyhow;
-use erupt::{vk, ExtendableFrom};
+use ash::vk;
 use std::any::TypeId;
 use std::mem::ManuallyDrop;
 use vulkan_alloc::vma;
@@ -66,7 +66,7 @@ impl Adapter {
         let mut transfer = None;
 
         for (index, family) in queue_families.iter().enumerate() {
-            let create_info = vk::DeviceQueueCreateInfoBuilder::new()
+            let create_info = vk::DeviceQueueCreateInfo::builder()
                 .queue_family_index(index as u32)
                 .queue_priorities(&PRIORITIES[0..1]);
 
@@ -103,12 +103,12 @@ impl Adapter {
     }
 
     #[inline]
-    fn is_general_family(family: &vk::QueueFamilyProperties) -> bool {
+    const fn is_general_family(family: &vk::QueueFamilyProperties) -> bool {
         /// The mask of queue requirements for a general queue
-        const GENERAL_MASK: vk::QueueFlags = vk::QueueFlags::from_bits_truncate(
-            vk::QueueFlags::GRAPHICS.bits()
-                | vk::QueueFlags::COMPUTE.bits()
-                | vk::QueueFlags::TRANSFER.bits(),
+        const GENERAL_MASK: vk::QueueFlags = vk::QueueFlags::from_raw(
+            vk::QueueFlags::GRAPHICS.as_raw()
+                | vk::QueueFlags::COMPUTE.as_raw()
+                | vk::QueueFlags::TRANSFER.as_raw(),
         );
 
         // For general
@@ -116,10 +116,10 @@ impl Adapter {
     }
 
     #[inline]
-    fn is_async_compute_family(family: &vk::QueueFamilyProperties) -> bool {
+    const fn is_async_compute_family(family: &vk::QueueFamilyProperties) -> bool {
         /// The mask of queue requirements for a compute queue
-        const COMPUTE_MASK: vk::QueueFlags = vk::QueueFlags::from_bits_truncate(
-            vk::QueueFlags::COMPUTE.bits() | vk::QueueFlags::TRANSFER.bits(),
+        const COMPUTE_MASK: vk::QueueFlags = vk::QueueFlags::from_raw(
+            vk::QueueFlags::COMPUTE.as_raw() | vk::QueueFlags::TRANSFER.as_raw(),
         );
 
         // For async compute we specifically want the non graphics queues so check for
@@ -129,7 +129,7 @@ impl Adapter {
     }
 
     #[inline]
-    fn is_dedicated_transfer_family(family: &vk::QueueFamilyProperties) -> bool {
+    const fn is_dedicated_transfer_family(family: &vk::QueueFamilyProperties) -> bool {
         /// The mask of queue requirements for a transfer queue
         const TRANSFER_MASK: vk::QueueFlags = vk::QueueFlags::TRANSFER;
 
@@ -163,28 +163,28 @@ impl IAdapter for Adapter {
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         let mut enabled_extensions = Vec::with_capacity(4);
-        enabled_extensions.push(vk::KHR_SWAPCHAIN_EXTENSION_NAME);
-        enabled_extensions.push(vk::KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        enabled_extensions.push(vk::KhrSwapchainFn::name().as_ptr());
+        enabled_extensions.push(vk::KhrDynamicRenderingFn::name().as_ptr());
 
         if self
             .device_info
-            .supports_extension_ptr(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
         {
-            enabled_extensions.push(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+            enabled_extensions.push(vk::KhrSynchronization2Fn::name().as_ptr());
         }
 
         if self
             .device_info
-            .supports_extension_ptr(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
+            .supports_extension_ptr(vk::KhrPortabilitySubsetFn::name().as_ptr())
         {
-            enabled_extensions.push(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+            enabled_extensions.push(vk::KhrPortabilitySubsetFn::name().as_ptr());
         }
 
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
             self.context
-                .instance_loader
-                .get_physical_device_queue_family_properties(self.physical_device, None)
+                .instance
+                .get_physical_device_queue_family_properties(self.physical_device)
         };
         let found_families = Adapter::get_queue_families(&queue_families);
         let queue_create_infos = found_families.build_create_info_list();
@@ -196,48 +196,68 @@ impl IAdapter for Adapter {
         let mut portability_features = self.device_info.portability_features.clone();
         let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
 
-        let device_create_info = vk::DeviceCreateInfoBuilder::new()
-            .extend_from(&mut enabled_11_features)
-            .extend_from(&mut enabled_12_features)
-            .extend_from(&mut dynamic_rendering_features)
+        let device_create_info = vk::DeviceCreateInfo::builder()
+            .push_next(&mut enabled_11_features)
+            .push_next(&mut enabled_12_features)
+            .push_next(&mut dynamic_rendering_features)
             .enabled_features(&enabled_10_features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
 
         let device_create_info = if self
             .device_info
-            .supports_extension_ptr(vk::KHR_PORTABILITY_SUBSET_EXTENSION_NAME)
+            .supports_extension_ptr(vk::KhrPortabilitySubsetFn::name().as_ptr())
         {
-            device_create_info.extend_from(&mut portability_features)
+            device_create_info.push_next(&mut portability_features)
         } else {
             device_create_info
         };
         let device_create_info = if self
             .device_info
-            .supports_extension_ptr(vk::KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
+            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
         {
-            device_create_info.extend_from(&mut synchronization_2_features)
+            device_create_info.push_next(&mut synchronization_2_features)
         } else {
             device_create_info
         };
 
-        let device_loader = unsafe {
-            erupt::DeviceLoaderBuilder::new()
-                .build(
-                    &self.context.instance_loader,
-                    self.physical_device,
-                    &device_create_info,
-                )
+        let device = unsafe {
+            self.context
+                .instance
+                .create_device(self.physical_device, &device_create_info, None)
                 .map_err(|e| anyhow!(e))?
+        };
+
+        let dynamic_rendering =
+            ash::extensions::khr::DynamicRendering::new(&self.context.instance, &device);
+
+        let swapchain = if self
+            .device_info
+            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
+        {
+            Some(ash::extensions::khr::Swapchain::new(
+                &self.context.instance,
+                &device,
+            ))
+        } else {
+            None
+        };
+
+        let synchronization_2 = if self
+            .device_info
+            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
+        {
+            Some(ash::extensions::khr::Synchronization2::new(
+                &self.context.instance,
+                &device,
+            ))
+        } else {
+            None
         };
 
         let allocator = vma::Allocator::builder()
             .vulkan_api_version(vk::API_VERSION_1_2)
-            .build(
-                &self.context.instance_loader,
-                &device_loader,
-                self.physical_device,
-            )
+            .build(&self.context.instance, &device, self.physical_device)
             .map_err(|v| anyhow!(v))?;
 
         let device = AnyArc::new_cyclic(move |v| {
@@ -245,7 +265,10 @@ impl IAdapter for Adapter {
                 this: v.clone(),
                 adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
-                device_loader: ManuallyDrop::new(device_loader),
+                device: ManuallyDrop::new(device),
+                dynamic_rendering,
+                swapchain,
+                synchronization_2,
                 allocator: ManuallyDrop::new(allocator),
                 general_queue: None,
                 compute_queue: None,
@@ -272,25 +295,25 @@ struct FoundQueueFamilies<'a> {
 }
 
 impl<'a> FoundQueueFamilies<'a> {
-    fn build_create_info_list(&self) -> Vec<vk::DeviceQueueCreateInfoBuilder> {
+    fn build_create_info_list(&self) -> Vec<vk::DeviceQueueCreateInfo> {
         // List to flatten the set of queue create infos into so we can pass it into vkCreateDevice
-        let mut queue_create_infos = Vec::with_capacity(4);
+        let mut queue_create_infos: Vec<vk::DeviceQueueCreateInfo> = Vec::with_capacity(4);
 
         if let Some(info) = self.general.as_ref() {
-            queue_create_infos.push(info.create_info);
+            queue_create_infos.push(info.create_info.clone());
         }
         if let Some(info) = self.compute.as_ref() {
-            queue_create_infos.push(info.create_info);
+            queue_create_infos.push(info.create_info.clone());
         }
         if let Some(info) = self.transfer.as_ref() {
-            queue_create_infos.push(info.create_info);
+            queue_create_infos.push(info.create_info.clone());
         }
 
         queue_create_infos
     }
 
     unsafe fn build_queue_objects(&self, device: &mut Device) {
-        let device_loader = &device.device_loader;
+        let device_loader = &device.device;
 
         if let Some(info) = self.general.as_ref() {
             let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);

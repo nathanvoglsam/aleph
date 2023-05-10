@@ -60,7 +60,7 @@ use crate::device::Device;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use erupt::vk;
+use ash::vk;
 use std::any::TypeId;
 use std::ffi::CString;
 
@@ -68,7 +68,7 @@ pub struct Shader {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
     pub(crate) shader_type: ShaderType,
-    pub(crate) vk_shader_type: vk::ShaderStageFlagBits,
+    pub(crate) vk_shader_type: vk::ShaderStageFlags,
     pub(crate) module: vk::ShaderModule,
     pub(crate) entry_point: CString,
 }
@@ -110,9 +110,7 @@ impl IShader for Shader {
 impl Drop for Shader {
     fn drop(&mut self) {
         unsafe {
-            self.device
-                .device_loader
-                .destroy_shader_module(self.module, None);
+            self.device.device.destroy_shader_module(self.module, None);
         }
     }
 }
