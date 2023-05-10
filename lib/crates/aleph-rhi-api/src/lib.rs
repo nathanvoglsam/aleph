@@ -425,13 +425,15 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// The image to be presented is the most recently acquired image from the swap chain.
     ///
+    /// Returns whether the swap chain is currently sub-optimal for the surface being presented to.
+    ///
     /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the image that is being presented will be
     /// in the required resource state for presentation by the time this operation will be executed
     /// on the GPU timeline.
     ///
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError>;
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<bool, QueuePresentError>;
 }
 
 /// Optional extension to [IQueue] that provides various debug utilities, like setting debug markers
