@@ -991,38 +991,34 @@ impl CheckMeetsProfile for vk::ConformanceVersion {
 
 impl CheckMeetsProfile for vk::ShaderFloatControlsIndependence {
     fn meets_profile(&self, v: &Self) -> Option<()> {
-        // NONE is the default
-
-        // only NONE is less capable than 32_ONLY
-        if *self == vk::ShaderFloatControlsIndependence::TYPE_32_ONLY {
-            if *v == vk::ShaderFloatControlsIndependence::NONE {
-                return None;
-            }
+        type V = vk::ShaderFloatControlsIndependence;
+        match (*self, *v) {
+            (V::NONE, V::NONE) => Some(()),
+            (V::NONE, V::TYPE_32_ONLY) => None,
+            (V::NONE, V::ALL) => None,
+            (V::TYPE_32_ONLY, V::NONE) => Some(()),
+            (V::TYPE_32_ONLY, V::TYPE_32_ONLY) => Some(()),
+            (V::TYPE_32_ONLY, V::ALL) => None,
+            (V::ALL, V::NONE) => Some(()),
+            (V::ALL, V::TYPE_32_ONLY) => Some(()),
+            (V::ALL, V::ALL) => Some(()),
+            _ => Some(())
         }
-
-        // ALL is the most capable
-        if *self == vk::ShaderFloatControlsIndependence::ALL {
-            if *v != vk::ShaderFloatControlsIndependence::ALL {
-                return None;
-            }
-        }
-        Some(())
     }
 
     fn merge(&mut self, v: &Self) {
-        match *self {
-            // Anything can override NONE
-            vk::ShaderFloatControlsIndependence::NONE => *self = *v,
-
-            // _32_ONLY overwritten by only ALL
-            vk::ShaderFloatControlsIndependence::TYPE_32_ONLY => {
-                if *v == vk::ShaderFloatControlsIndependence::ALL {
-                    *self = *v
-                }
-            }
-
-            // Anything else does nothing
-            _ => {}
+        type V = vk::ShaderFloatControlsIndependence;
+        match (*self, *v) {
+            (V::NONE, V::NONE) => (),
+            (V::NONE, V::TYPE_32_ONLY) => *self = *v,
+            (V::NONE, V::ALL) => *self = *v,
+            (V::TYPE_32_ONLY, V::NONE) => (),
+            (V::TYPE_32_ONLY, V::TYPE_32_ONLY) => (),
+            (V::TYPE_32_ONLY, V::ALL) => *self = *v,
+            (V::ALL, V::NONE) => (),
+            (V::ALL, V::TYPE_32_ONLY) => (),
+            (V::ALL, V::ALL) => (),
+            _ => ()
         }
     }
 }
