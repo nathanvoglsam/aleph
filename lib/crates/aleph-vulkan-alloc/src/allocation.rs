@@ -29,8 +29,8 @@
 
 use crate::raw;
 use crate::vma;
+use ash::vk;
 use core::ptr;
-use erupt::vk;
 use std::fmt::{Debug, Formatter};
 use std::ops::Deref;
 

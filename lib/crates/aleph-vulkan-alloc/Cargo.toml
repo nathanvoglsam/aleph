@@ -44,7 +44,7 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-erupt = { workspace = true }
+ash = { workspace = true }
 bitflags = { workspace = true }
 thiserror = { workspace = true }
 

@@ -28,7 +28,7 @@
 //
 
 use crate::raw;
-use erupt::vk;
+use ash::vk;
 
 ///
 /// Builder wrapper for the VmaVulkanFunctions struct provided by vma-sys
@@ -69,127 +69,227 @@ impl VulkanFunctionsBuilder {
     }
 
     ///
-    /// Fill out the function pointers from erupt's function pointer tables
+    /// Fill out the function pointers from ash's function pointer tables
     ///
     #[inline]
-    pub fn erupt_tables(
+    pub fn ash_vk_1_0(
         mut self,
-        instance_loader: &erupt::InstanceLoader,
-        device_loader: &erupt::DeviceLoader,
+        instance_loader: &ash::Instance,
+        device_loader: &ash::Device,
     ) -> Self {
         // Get the function lists
         let inst = instance_loader;
         let dev = device_loader;
 
-        let func = inst.get_physical_device_properties.unwrap();
+        let func = inst.fp_v1_0().get_physical_device_properties;
         self = self.get_physical_device_properties(func);
 
         // === //
 
-        let func = inst.get_physical_device_memory_properties.unwrap();
+        let func = inst.fp_v1_0().get_physical_device_memory_properties;
         self = self.get_physical_device_memory_properties(func);
 
         // === //
 
-        let func = dev.allocate_memory.unwrap();
+        let func = dev.fp_v1_0().allocate_memory;
         self = self.allocate_memory(func);
 
         // === //
 
-        let func = dev.free_memory.unwrap();
+        let func = dev.fp_v1_0().free_memory;
         self = self.free_memory(func);
 
         // === //
 
-        let func = dev.map_memory.unwrap();
+        let func = dev.fp_v1_0().map_memory;
         self = self.map_memory(func);
 
         // === //
 
-        let func = dev.unmap_memory.unwrap();
+        let func = dev.fp_v1_0().unmap_memory;
         self = self.unmap_memory(func);
 
         // === //
 
-        let func = dev.flush_mapped_memory_ranges.unwrap();
+        let func = dev.fp_v1_0().flush_mapped_memory_ranges;
         self = self.flush_mapped_memory_ranges(func);
 
         // === //
 
-        let func = dev.invalidate_mapped_memory_ranges.unwrap();
+        let func = dev.fp_v1_0().invalidate_mapped_memory_ranges;
         self = self.invalidate_mapped_memory_ranges(func);
 
         // === //
 
-        let func = dev.bind_buffer_memory.unwrap();
+        let func = dev.fp_v1_0().bind_buffer_memory;
         self = self.bind_buffer_memory(func);
 
         // === //
 
-        let func = dev.bind_image_memory.unwrap();
+        let func = dev.fp_v1_0().bind_image_memory;
         self = self.bind_image_memory(func);
 
         // === //
 
-        let func = dev.get_buffer_memory_requirements.unwrap();
+        let func = dev.fp_v1_0().get_buffer_memory_requirements;
         self = self.get_buffer_memory_requirements(func);
 
         // === //
 
-        let func = dev.get_image_memory_requirements.unwrap();
+        let func = dev.fp_v1_0().get_image_memory_requirements;
         self = self.get_image_memory_requirements(func);
 
         // === //
 
-        let func = dev.create_buffer.unwrap();
+        let func = dev.fp_v1_0().create_buffer;
         self = self.create_buffer(func);
 
         // === //
 
-        let func = dev.destroy_buffer.unwrap();
+        let func = dev.fp_v1_0().destroy_buffer;
         self = self.destroy_buffer(func);
 
         // === //
 
-        let func = dev.create_image.unwrap();
+        let func = dev.fp_v1_0().create_image;
         self = self.create_image(func);
 
         // === //
 
-        let func = dev.destroy_image.unwrap();
+        let func = dev.fp_v1_0().destroy_image;
         self = self.destroy_image(func);
 
         // === //
 
-        let func = dev.cmd_copy_buffer.unwrap();
+        let func = dev.fp_v1_0().cmd_copy_buffer;
         self = self.cmd_copy_buffer(func);
-
-        // === //
-
-        let func = dev
-            .get_buffer_memory_requirements2_khr
-            .or(dev.get_buffer_memory_requirements2);
-        self = if let Some(v) = func {
-            self.get_buffer_memory_requirements2_khr(v)
-        } else {
-            self
-        };
-
-        // === //
-
-        let func = dev
-            .get_image_memory_requirements2_khr
-            .or(dev.get_image_memory_requirements2);
-        self = if let Some(v) = func {
-            self.get_image_memory_requirements2_khr(v)
-        } else {
-            self
-        };
 
         // === //
 
         self
     }
+
+    ///
+    /// Fill out the function pointers from ash's function pointer tables
+    ///
+    #[inline]
+    pub fn ash_vk_1_1(
+        mut self,
+        instance_loader: &ash::Instance,
+        device_loader: &ash::Device,
+    ) -> Self {
+        // Get the function lists
+        let inst = instance_loader;
+        let dev = device_loader;
+
+        let func = inst.fp_v1_0().get_physical_device_properties;
+        self = self.get_physical_device_properties(func);
+
+        // === //
+
+        let func = inst.fp_v1_0().get_physical_device_memory_properties;
+        self = self.get_physical_device_memory_properties(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().allocate_memory;
+        self = self.allocate_memory(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().free_memory;
+        self = self.free_memory(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().map_memory;
+        self = self.map_memory(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().unmap_memory;
+        self = self.unmap_memory(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().flush_mapped_memory_ranges;
+        self = self.flush_mapped_memory_ranges(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().invalidate_mapped_memory_ranges;
+        self = self.invalidate_mapped_memory_ranges(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().bind_buffer_memory;
+        self = self.bind_buffer_memory(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().bind_image_memory;
+        self = self.bind_image_memory(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().get_buffer_memory_requirements;
+        self = self.get_buffer_memory_requirements(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().get_image_memory_requirements;
+        self = self.get_image_memory_requirements(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().create_buffer;
+        self = self.create_buffer(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().destroy_buffer;
+        self = self.destroy_buffer(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().create_image;
+        self = self.create_image(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().destroy_image;
+        self = self.destroy_image(func);
+
+        // === //
+
+        let func = dev.fp_v1_0().cmd_copy_buffer;
+        self = self.cmd_copy_buffer(func);
+
+        // === //
+
+        let func = dev.fp_v1_1().get_buffer_memory_requirements2;
+        self = self.get_buffer_memory_requirements2_khr(func);
+
+        // === //
+
+        let func = dev.fp_v1_1().get_image_memory_requirements2;
+        self = self.get_image_memory_requirements2_khr(func);
+
+        self
+    }
+
+    // pub fn ash_get_memory_requirements_2(
+    //     mut self,
+    //     loader: &ash::extensions::khr::GetMemoryRequirements2,
+    // ) -> Self {
+    //     let func = loader.fp().get_buffer_memory_requirements2_khr;
+    //     self = self.get_buffer_memory_requirements2_khr(func);
+    //
+    //     let func = loader.fp().get_image_memory_requirements2_khr;
+    //     self = self.get_image_memory_requirements2_khr(func);
+    //
+    //     self
+    // }
 
     ///
     ///
@@ -365,7 +465,7 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_buffer_memory_requirements2_khr(
         mut self,
-        f: vk::PFN_vkGetBufferMemoryRequirements2KHR,
+        f: vk::PFN_vkGetBufferMemoryRequirements2,
     ) -> Self {
         self.functions.vkGetBufferMemoryRequirements2KHR = Some(f);
         self
@@ -377,7 +477,7 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn get_image_memory_requirements2_khr(
         mut self,
-        f: vk::PFN_vkGetImageMemoryRequirements2KHR,
+        f: vk::PFN_vkGetImageMemoryRequirements2,
     ) -> Self {
         self.functions.vkGetImageMemoryRequirements2KHR = Some(f);
         self

@@ -32,7 +32,7 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 
-use erupt::vk;
+use ash::vk;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -91,8 +91,8 @@ pub struct VmaVulkanFunctions {
     pub vkCreateImage: Option<vk::PFN_vkCreateImage>,
     pub vkDestroyImage: Option<vk::PFN_vkDestroyImage>,
     pub vkCmdCopyBuffer: Option<vk::PFN_vkCmdCopyBuffer>,
-    pub vkGetBufferMemoryRequirements2KHR: Option<vk::PFN_vkGetBufferMemoryRequirements2KHR>,
-    pub vkGetImageMemoryRequirements2KHR: Option<vk::PFN_vkGetImageMemoryRequirements2KHR>,
+    pub vkGetBufferMemoryRequirements2KHR: Option<vk::PFN_vkGetBufferMemoryRequirements2>,
+    pub vkGetImageMemoryRequirements2KHR: Option<vk::PFN_vkGetImageMemoryRequirements2>,
 }
 
 bitflags::bitflags! {

@@ -29,9 +29,9 @@
 
 use crate::raw;
 use crate::vma;
+use ash::prelude::VkResult;
+use ash::vk;
 use core::ptr;
-use erupt::utils::VulkanResult;
-use erupt::vk;
 use std::sync::Arc;
 
 pub use raw::PoolCreateFlags;
@@ -112,7 +112,7 @@ impl PoolBuilder {
     /// vmaCreatePool
     ///
     #[inline]
-    pub unsafe fn build(self, allocator: &Arc<vma::Allocator>) -> VulkanResult<Arc<Pool>> {
+    pub unsafe fn build(self, allocator: &Arc<vma::Allocator>) -> VkResult<Arc<Pool>> {
         let mut pool: raw::VmaPool = ptr::null_mut();
 
         let create_ptr = &self.create_info as *const PoolCreateInfo;
@@ -122,13 +122,10 @@ impl PoolBuilder {
 
         debug_assert!(pool.is_null(), "Pool should not be null");
 
-        VulkanResult::new(
-            result,
-            Arc::new(Pool {
-                pool,
-                allocator: allocator.clone(),
-            }),
-        )
+        result.result_with_success(Arc::new(Pool {
+            pool,
+            allocator: allocator.clone(),
+        }))
     }
 }
 
@@ -190,10 +187,9 @@ impl Pool {
     }
 
     #[inline]
-    pub unsafe fn check_pool_corruption(&self) -> VulkanResult<()> {
+    pub unsafe fn check_pool_corruption(&self) -> VkResult<()> {
         let result = raw::vmaCheckPoolCorruption(self.allocator.as_raw(), self.pool);
-
-        VulkanResult::new(result, ())
+        result.result()
     }
 }
 

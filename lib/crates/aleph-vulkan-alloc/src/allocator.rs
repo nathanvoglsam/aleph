@@ -31,10 +31,10 @@ use crate::raw;
 use crate::utils;
 use crate::vma;
 use crate::vulkan_functions::VulkanFunctionsBuilder;
+use ash::prelude::VkResult;
+use ash::vk;
 use core::mem;
 use core::ptr;
-use erupt::utils::VulkanResult;
-use erupt::vk;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::os::raw::c_char;
@@ -106,16 +106,23 @@ impl AllocatorBuilder {
     #[inline]
     pub fn build(
         mut self,
-        instance_loader: &erupt::InstanceLoader,
-        device_loader: &erupt::DeviceLoader,
+        instance_loader: &ash::Instance,
+        device_loader: &ash::Device,
         physical_device: vk::PhysicalDevice,
     ) -> Result<Allocator, AllocatorBuilderError> {
-        self.create_info.device = device_loader.handle;
+        self.create_info.device = device_loader.handle();
         self.create_info.physical_device = physical_device;
 
-        let functions = VulkanFunctionsBuilder::new()
-            .erupt_tables(instance_loader, device_loader)
-            .build();
+        let vulkan_1_1 = self.create_info.vulkan_api_version >= vk::API_VERSION_1_1;
+        let functions = if vulkan_1_1 {
+            VulkanFunctionsBuilder::new()
+                .ash_vk_1_1(instance_loader, device_loader)
+                .build()
+        } else {
+            VulkanFunctionsBuilder::new()
+                .ash_vk_1_0(instance_loader, device_loader)
+                .build()
+        };
 
         // The library will require the 'requirements 2' functions either if required based on the
         // config flag, or unconditionally if the API version is 1.1 or higher (extension became
@@ -156,7 +163,7 @@ impl AllocatorBuilder {
         let alloc = Allocator {
             inner: Arc::new(Inner {
                 allocator: raw_alloc,
-                device: device_loader.handle,
+                device: device_loader.handle(),
             }),
         };
 
@@ -290,7 +297,7 @@ impl Allocator {
         &self,
         memory_type_bits: u32,
         allocation_create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<u32> {
+    ) -> VkResult<u32> {
         let mut idx = 0u32;
 
         let alloc_create_info = allocation_create_info.into_raw();
@@ -303,7 +310,7 @@ impl Allocator {
             &mut idx,
         );
 
-        VulkanResult::new(result, idx)
+        result.result_with_success(idx)
     }
 
     ///
@@ -314,7 +321,7 @@ impl Allocator {
         &self,
         buffer_create_info: &vk::BufferCreateInfo,
         allocation_create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<u32> {
+    ) -> VkResult<u32> {
         let mut idx = 0u32;
 
         let alloc_create_info = allocation_create_info.into_raw();
@@ -327,7 +334,7 @@ impl Allocator {
             &mut idx,
         );
 
-        VulkanResult::new(result, idx)
+        result.result_with_success(idx)
     }
 
     ///
@@ -338,7 +345,7 @@ impl Allocator {
         &self,
         image_create_info: &vk::ImageCreateInfo,
         allocation_create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<u32> {
+    ) -> VkResult<u32> {
         let mut idx = 0u32;
 
         let allocation_create_info = allocation_create_info.into_raw();
@@ -351,7 +358,7 @@ impl Allocator {
             &mut idx,
         );
 
-        VulkanResult::new(result, idx)
+        result.result_with_success(idx)
     }
 
     ///
@@ -362,7 +369,7 @@ impl Allocator {
         &self,
         memory_requirements: &vk::MemoryRequirements,
         create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<vma::Allocation> {
+    ) -> VkResult<vma::Allocation> {
         let mut allocation: raw::VmaAllocation = ptr::null_mut();
 
         let create_info = create_info.into_raw();
@@ -376,7 +383,7 @@ impl Allocator {
             ptr::null_mut(),
         );
 
-        VulkanResult::new(result, vma::Allocation::from_raw(allocation))
+        result.result_with_success(vma::Allocation::from_raw(allocation))
     }
 
     ///
@@ -388,7 +395,7 @@ impl Allocator {
         memory_requirements: &vk::MemoryRequirements,
         create_info: &vma::AllocationCreateInfo,
         allocation_count: usize,
-    ) -> VulkanResult<Vec<vma::Allocation>> {
+    ) -> VkResult<Vec<vma::Allocation>> {
         let mut ret: Vec<vma::Allocation> = Vec::with_capacity(allocation_count);
         ret.resize(allocation_count, vma::Allocation::from_raw(ptr::null_mut()));
 
@@ -404,7 +411,7 @@ impl Allocator {
             ptr::null_mut(),
         );
 
-        VulkanResult::new(result, ret)
+        result.result_with_success(ret)
     }
 
     ///
@@ -415,7 +422,7 @@ impl Allocator {
         &self,
         buffer: vk::Buffer,
         create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<vma::Allocation> {
+    ) -> VkResult<vma::Allocation> {
         let mut allocation: raw::VmaAllocation = ptr::null_mut();
 
         let create_info = create_info.into_raw();
@@ -429,7 +436,7 @@ impl Allocator {
             ptr::null_mut(),
         );
 
-        VulkanResult::new(result, vma::Allocation::from_raw(allocation))
+        result.result_with_success(vma::Allocation::from_raw(allocation))
     }
 
     ///
@@ -440,7 +447,7 @@ impl Allocator {
         &self,
         image: vk::Image,
         create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<vma::Allocation> {
+    ) -> VkResult<vma::Allocation> {
         let mut allocation: raw::VmaAllocation = ptr::null_mut();
 
         let create_info = create_info.into_raw();
@@ -454,7 +461,7 @@ impl Allocator {
             ptr::null_mut(),
         );
 
-        VulkanResult::new(result, vma::Allocation::from_raw(allocation))
+        result.result_with_success(vma::Allocation::from_raw(allocation))
     }
 
     ///
@@ -485,11 +492,11 @@ impl Allocator {
         &self,
         allocation: &vma::Allocation,
         new_size: vk::DeviceSize,
-    ) -> VulkanResult<()> {
+    ) -> VkResult<()> {
         let result =
             raw::vmaResizeAllocation(self.inner.allocator, allocation.into_raw(), new_size);
 
-        VulkanResult::new(result, ())
+        result.result()
     }
 
     ///
@@ -541,12 +548,12 @@ impl Allocator {
     /// vmaMapMemory
     ///
     #[inline]
-    pub unsafe fn map_memory(&self, allocation: &vma::Allocation) -> VulkanResult<*mut u8> {
+    pub unsafe fn map_memory(&self, allocation: &vma::Allocation) -> VkResult<*mut u8> {
         let mut pointer: *mut c_void = ptr::null_mut();
 
         let result = raw::vmaMapMemory(self.inner.allocator, allocation.into_raw(), &mut pointer);
 
-        VulkanResult::new(result, pointer as *mut u8)
+        result.result_with_success(pointer as *mut u8)
     }
 
     ///
@@ -586,10 +593,10 @@ impl Allocator {
     /// vmaCheckCorruption
     ///
     #[inline]
-    pub unsafe fn check_corruption(&self, memory_type_bits: u32) -> VulkanResult<()> {
+    pub unsafe fn check_corruption(&self, memory_type_bits: u32) -> VkResult<()> {
         let result = raw::vmaCheckCorruption(self.inner.allocator, memory_type_bits);
 
-        VulkanResult::new(result, ())
+        result.result()
     }
 
     // TODO : vmaDefragmentationBegin
@@ -604,10 +611,10 @@ impl Allocator {
         &self,
         allocation: &vma::Allocation,
         buffer: vk::Buffer,
-    ) -> VulkanResult<()> {
+    ) -> VkResult<()> {
         let result = raw::vmaBindBufferMemory(self.inner.allocator, allocation.into_raw(), buffer);
 
-        VulkanResult::new(result, ())
+        result.result()
     }
 
     ///
@@ -618,14 +625,14 @@ impl Allocator {
         &self,
         allocation: &vma::Allocation,
         image: vk::Image,
-    ) -> VulkanResult<()> {
+    ) -> VkResult<()> {
         let result = raw::vmaBindImageMemory(
             self.inner.allocator,
             allocation.into_raw(),
             mem::transmute(image),
         );
 
-        VulkanResult::new(result, ())
+        result.result()
     }
 
     ///
@@ -636,7 +643,7 @@ impl Allocator {
         &self,
         buffer_create_info: &vk::BufferCreateInfo,
         alloc_create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<(vk::Buffer, vma::Allocation)> {
+    ) -> VkResult<(vk::Buffer, vma::Allocation)> {
         let alloc_create_info = alloc_create_info.into_raw();
         let a_create_info_ptr = &alloc_create_info as *const raw::VmaAllocationCreateInfo;
 
@@ -652,7 +659,7 @@ impl Allocator {
             ptr::null_mut(),
         );
 
-        VulkanResult::new(result, (buffer, vma::Allocation::from_raw(allocation)))
+        result.result_with_success((buffer, vma::Allocation::from_raw(allocation)))
     }
 
     ///
@@ -675,7 +682,7 @@ impl Allocator {
         &self,
         image_create_info: &vk::ImageCreateInfo,
         alloc_create_info: &vma::AllocationCreateInfo,
-    ) -> VulkanResult<(vk::Image, vma::Allocation)> {
+    ) -> VkResult<(vk::Image, vma::Allocation)> {
         let alloc_create_info = alloc_create_info.into_raw();
         let a_create_info_ptr = &alloc_create_info as *const raw::VmaAllocationCreateInfo;
 
@@ -691,7 +698,7 @@ impl Allocator {
             ptr::null_mut(),
         );
 
-        VulkanResult::new(result, (image, vma::Allocation::from_raw(allocation)))
+        result.result_with_success((image, vma::Allocation::from_raw(allocation)))
     }
 
     ///
