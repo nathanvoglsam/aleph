@@ -45,8 +45,8 @@ macro_rules! delegate {
             log::error!(
                 "Device does not meet requirement: '{}'. Want {:?}, got {:?}",
                 text,
-                b,
-                c
+                c,
+                b
             );
             return None;
         }
@@ -86,8 +86,8 @@ macro_rules! feat_mask {
             log::error!(
                 "Device does not support feature: '{}'. Want {:?}, got {:?}",
                 t,
-                b,
-                c
+                c,
+                b
             );
             return None;
         }
@@ -108,8 +108,8 @@ macro_rules! range {
         if b[0] > c[0] || b[1] < c[1] {
             log::error!(
                 "Device limit '{limit_name}' incompatible. Want: {:?}, got {:?}",
-                b,
-                c
+                c,
+                b
             );
             return None;
         }
