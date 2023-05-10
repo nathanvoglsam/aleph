@@ -163,8 +163,14 @@ impl IAdapter for Adapter {
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         let mut enabled_extensions = Vec::with_capacity(4);
-        enabled_extensions.push(vk::KhrSwapchainFn::name().as_ptr());
         enabled_extensions.push(vk::KhrDynamicRenderingFn::name().as_ptr());
+
+        if self
+            .device_info
+            .supports_extension_cstr(vk::KhrSwapchainFn::name())
+        {
+            enabled_extensions.push(vk::KhrSwapchainFn::name().as_ptr());
+        }
 
         if self
             .device_info
@@ -206,7 +212,7 @@ impl IAdapter for Adapter {
 
         let device_create_info = if self
             .device_info
-            .supports_extension_ptr(vk::KhrPortabilitySubsetFn::name().as_ptr())
+            .supports_extension_cstr(vk::KhrPortabilitySubsetFn::name())
         {
             device_create_info.push_next(&mut portability_features)
         } else {
@@ -214,7 +220,7 @@ impl IAdapter for Adapter {
         };
         let device_create_info = if self
             .device_info
-            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
+            .supports_extension_cstr(vk::KhrSynchronization2Fn::name())
         {
             device_create_info.push_next(&mut synchronization_2_features)
         } else {
@@ -233,7 +239,7 @@ impl IAdapter for Adapter {
 
         let swapchain = if self
             .device_info
-            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
+            .supports_extension_cstr(vk::KhrSwapchainFn::name())
         {
             Some(ash::extensions::khr::Swapchain::new(
                 &self.context.instance,

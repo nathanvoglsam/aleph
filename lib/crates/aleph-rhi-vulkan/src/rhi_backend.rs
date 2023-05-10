@@ -11,7 +11,7 @@ use ash::extensions::khr::{
 };
 use ash::extensions::mvk::{IOSSurface, MacOSSurface};
 use ash::vk;
-use std::ffi::{c_char, CStr};
+use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -322,13 +322,13 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
         // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
         // order for the loader to give us our mvk device.
         extensions.push(vk::MvkMacosSurfaceFn::name());
-        extensions.push(vk::KhrPortabilitySubsetFn::name());
+        extensions.push(vk::KhrPortabilityEnumerationFn::name());
     }
     if cfg!(target_os = "ios") {
         // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
         // order for the loader to give us our mvk device.
         extensions.push(vk::MvkIosSurfaceFn::name());
-        extensions.push(vk::KhrPortabilitySubsetFn::name());
+        extensions.push(vk::KhrPortabilityEnumerationFn::name());
     }
 
     // Add the debug extension if requested
@@ -414,7 +414,7 @@ fn check_all_extensions_supported(
             log::error!("Runtime requested unsupported extension '{:#?}'.", missing);
         }
         return Err(ContextCreateError::Platform(anyhow!(
-            "Unsupported layer is required by runtime"
+            "Unsupported extension is required by runtime"
         )));
     }
     Ok(())
