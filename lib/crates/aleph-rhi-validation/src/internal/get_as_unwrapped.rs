@@ -263,7 +263,7 @@ pub fn sampler_descriptor_write<'a>(
 pub fn image_descriptor_write(write: &ImageDescriptorWrite) -> ImageDescriptorWrite {
     let image_view = unsafe {
         let image_view = std::mem::transmute::<_, *const ValidationImageView>(write.image_view);
-        image_view.read().image_view
+        (&*image_view).image_view
     };
     ImageDescriptorWrite {
         image_view,
@@ -350,7 +350,7 @@ pub fn rendering_color_attachment_info(
 ) -> RenderingColorAttachmentInfo {
     let image_view = unsafe {
         let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
-        image_view.read().image_view
+        (&*image_view).image_view
     };
     RenderingColorAttachmentInfo {
         image_view,
@@ -365,7 +365,7 @@ pub fn rendering_depth_stencil_attachment_info(
 ) -> RenderingDepthStencilAttachmentInfo {
     let image_view = unsafe {
         let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
-        image_view.read().image_view
+        (&*image_view).image_view
     };
     RenderingDepthStencilAttachmentInfo {
         image_view,
