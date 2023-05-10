@@ -343,7 +343,7 @@ impl IQueue for Queue {
         Ok(())
     }
 
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<bool, QueuePresentError> {
         let swap_chain = unwrap::swap_chain(desc.swap_chain);
 
         // Checks if the queue supports present operations. While this could use a debug_assert
@@ -392,7 +392,7 @@ impl IQueue for Queue {
             .record_submission_index_signal()
             .map_err(|v| anyhow!(v))?;
 
-        Ok(())
+        Ok(false)
     }
 }
 
