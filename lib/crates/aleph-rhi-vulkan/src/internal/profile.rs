@@ -220,8 +220,8 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Properties {
     fn baseline() -> Self {
         Self {
             conformance_version: Default::default(),
-            denorm_behavior_independence: Default::default(),
-            rounding_mode_independence: Default::default(),
+            denorm_behavior_independence: vk::ShaderFloatControlsIndependence::NONE,
+            rounding_mode_independence: vk::ShaderFloatControlsIndependence::NONE,
             shader_signed_zero_inf_nan_preserve_float16: vk::FALSE,
             shader_signed_zero_inf_nan_preserve_float32: vk::FALSE,
             shader_signed_zero_inf_nan_preserve_float64: vk::FALSE,
