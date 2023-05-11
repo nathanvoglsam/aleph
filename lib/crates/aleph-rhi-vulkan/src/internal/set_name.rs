@@ -29,11 +29,13 @@
 
 use ash::extensions::ext::DebugUtils;
 use ash::vk;
-use std::ffi::CString;
+use bumpalo::Bump;
+use std::ffi::CStr;
 
 pub fn set_name<T: vk::Handle>(
     loader: Option<&DebugUtils>,
     device: vk::Device,
+    bump: &Bump,
     handle: T,
     name: Option<&str>,
 ) {
@@ -41,7 +43,13 @@ pub fn set_name<T: vk::Handle>(
     if let Some(loader) = loader {
         // Can only set a name if one is provided
         if let Some(name) = name {
-            let name = CString::new(name).unwrap();
+            let iter = name.bytes().chain([0u8].into_iter());
+            let name = bump.alloc_slice_fill_default(name.len() + 1);
+            name.iter_mut().zip(iter).for_each(|(n, v)| {
+                *n = v;
+            });
+            let name = unsafe { CStr::from_bytes_with_nul_unchecked(name) };
+
             let info = vk::DebugUtilsObjectNameInfoEXT::builder()
                 .object_type(T::TYPE)
                 .object_handle(handle.as_raw())

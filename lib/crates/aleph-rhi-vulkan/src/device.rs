@@ -46,8 +46,11 @@ use crate::shader::Shader;
 use crate::texture::Texture;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use anyhow::anyhow;
 use ash::vk;
+use bumpalo::collections::Vec as BVec;
+use bumpalo::Bump;
 use byteorder::{ByteOrder, NativeEndian};
 use std::any::TypeId;
 use std::ffi::CString;
@@ -135,87 +138,89 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
-        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let builder =
-            vk::GraphicsPipelineCreateInfo::builder().layout(pipeline_layout.pipeline_layout);
+            let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
 
-        let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
-        let dynamic_state =
-            vk::PipelineDynamicStateCreateInfo::builder().dynamic_states(&dynamic_states);
+            let builder =
+                vk::GraphicsPipelineCreateInfo::builder().layout(pipeline_layout.pipeline_layout);
 
-        // Translate the vertex input state
-        let vertex_binding_descriptions: Vec<_> = Self::translate_vertex_bindings(desc);
-        let vertex_attribute_descriptions: Vec<_> = Self::translate_vertex_attributes(desc);
-        let vertex_input_state = Self::translate_vertex_input_state(
-            &vertex_binding_descriptions,
-            &vertex_attribute_descriptions,
-        );
+            let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
+            let dynamic_state =
+                vk::PipelineDynamicStateCreateInfo::builder().dynamic_states(&dynamic_states);
 
-        let viewport_state = vk::PipelineViewportStateCreateInfo::builder()
-            .viewport_count(1)
-            .scissor_count(1);
-        let input_assembly_state = Self::translate_input_assembly_state(desc);
-        let rasterization_state = Self::translate_rasterization_state(desc);
-        let multisample_state = vk::PipelineMultisampleStateCreateInfo::builder()
-            .rasterization_samples(vk::SampleCountFlags::TYPE_1)
-            .sample_shading_enable(false)
-            .min_sample_shading(0.0)
-            .alpha_to_coverage_enable(false)
-            .alpha_to_one_enable(false);
-        let depth_stencil_state = Self::translate_depth_stencil_state(desc);
+            // Translate the vertex input state
+            let vertex_binding_descriptions: BVec<_> = Self::translate_vertex_bindings(&bump, desc);
+            let vertex_attribute_descriptions: BVec<_> =
+                Self::translate_vertex_attributes(&bump, desc);
+            let vertex_input_state = Self::translate_vertex_input_state(
+                &vertex_binding_descriptions,
+                &vertex_attribute_descriptions,
+            );
 
-        let mut color_formats = Vec::with_capacity(desc.render_target_formats.len());
-        let mut dynamic_rendering = Self::translate_framebuffer_info(desc, &mut color_formats);
+            let viewport_state = vk::PipelineViewportStateCreateInfo::builder()
+                .viewport_count(1)
+                .scissor_count(1);
+            let input_assembly_state = Self::translate_input_assembly_state(desc);
+            let rasterization_state = Self::translate_rasterization_state(desc);
+            let multisample_state = vk::PipelineMultisampleStateCreateInfo::builder()
+                .rasterization_samples(vk::SampleCountFlags::TYPE_1)
+                .sample_shading_enable(false)
+                .min_sample_shading(0.0)
+                .alpha_to_coverage_enable(false)
+                .alpha_to_one_enable(false);
+            let depth_stencil_state = Self::translate_depth_stencil_state(desc);
 
-        let attachments = Self::translate_color_attachment_state(desc);
-        let color_blend_state = Self::translate_color_blend_state(&attachments);
+            let mut color_formats = BVec::with_capacity_in(desc.render_target_formats.len(), &bump);
+            let mut dynamic_rendering = Self::translate_framebuffer_info(desc, &mut color_formats);
 
-        let stages: Vec<_> = desc
-            .shader_stages
-            .iter()
-            .map(unwrap::shader_d)
-            .map(|v| {
+            let attachments = Self::translate_color_attachment_state(&bump, desc);
+            let color_blend_state = Self::translate_color_blend_state(&attachments);
+
+            let stages_iter = desc.shader_stages.iter().map(unwrap::shader_d).map(|v| {
                 vk::PipelineShaderStageCreateInfo::builder()
                     .stage(v.vk_shader_type)
                     .module(v.module)
                     .name(v.entry_point.as_ref())
                     .build()
-            })
-            .collect();
+            });
+            let stages = BVec::from_iter_in(stages_iter, &bump);
 
-        let builder = builder.dynamic_state(&dynamic_state);
-        let builder = builder.stages(&stages);
-        let builder = builder.vertex_input_state(&vertex_input_state);
-        let builder = builder.viewport_state(&viewport_state);
-        let builder = builder.input_assembly_state(&input_assembly_state);
-        let builder = builder.rasterization_state(&rasterization_state);
-        let builder = builder.multisample_state(&multisample_state);
-        let builder = builder.depth_stencil_state(&depth_stencil_state);
-        let builder = builder.push_next(&mut dynamic_rendering);
-        let builder = builder.color_blend_state(&color_blend_state);
+            let builder = builder.dynamic_state(&dynamic_state);
+            let builder = builder.stages(&stages);
+            let builder = builder.vertex_input_state(&vertex_input_state);
+            let builder = builder.viewport_state(&viewport_state);
+            let builder = builder.input_assembly_state(&input_assembly_state);
+            let builder = builder.rasterization_state(&rasterization_state);
+            let builder = builder.multisample_state(&multisample_state);
+            let builder = builder.depth_stencil_state(&depth_stencil_state);
+            let builder = builder.push_next(&mut dynamic_rendering);
+            let builder = builder.color_blend_state(&color_blend_state);
 
-        let pipeline = unsafe {
-            self.device
-                .create_graphics_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
-                .map_err(|(_, v)| anyhow!(v))?
-        };
-        let pipeline = pipeline[0];
+            let pipeline = unsafe {
+                self.device
+                    .create_graphics_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
+                    .map_err(|(_, v)| anyhow!(v))?
+            };
+            let pipeline = pipeline[0];
 
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            pipeline,
-            desc.name,
-        );
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                pipeline,
+                desc.name,
+            );
 
-        let out = AnyArc::new_cyclic(move |v| GraphicsPipeline {
-            _this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
-            pipeline,
-        });
-        Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(out, |v| v))
+            let out = AnyArc::new_cyclic(move |v| GraphicsPipeline {
+                _this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+                pipeline,
+            });
+            Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(out, |v| v))
+        })
     }
 
     // ========================================================================================== //
@@ -225,40 +230,45 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
-        let module = unwrap::shader(desc.shader_module);
-        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let builder = vk::ComputePipelineCreateInfo::builder()
-            .layout(pipeline_layout.pipeline_layout)
-            .stage(
-                vk::PipelineShaderStageCreateInfo::builder()
-                    .stage(vk::ShaderStageFlags::COMPUTE)
-                    .module(module.module)
-                    .name(&module.entry_point)
-                    .build(),
+            let module = unwrap::shader(desc.shader_module);
+            let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
+
+            let builder = vk::ComputePipelineCreateInfo::builder()
+                .layout(pipeline_layout.pipeline_layout)
+                .stage(
+                    vk::PipelineShaderStageCreateInfo::builder()
+                        .stage(vk::ShaderStageFlags::COMPUTE)
+                        .module(module.module)
+                        .name(&module.entry_point)
+                        .build(),
+                );
+
+            let pipeline = unsafe {
+                self.device
+                    .create_compute_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
+                    .map_err(|(_, v)| anyhow!(v))?
+            };
+            let pipeline = pipeline[0];
+
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                pipeline,
+                desc.name,
             );
 
-        let pipeline = unsafe {
-            self.device
-                .create_compute_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
-                .map_err(|(_, v)| anyhow!(v))?
-        };
-        let pipeline = pipeline[0];
-
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            pipeline,
-            desc.name,
-        );
-
-        let out = AnyArc::new_cyclic(move |v| ComputePipeline {
-            _this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
-            pipeline,
-        });
-        Ok(AnyArc::map::<dyn IComputePipeline, _>(out, |v| v))
+            let out = AnyArc::new_cyclic(move |v| ComputePipeline {
+                _this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+                pipeline,
+            });
+            Ok(AnyArc::map::<dyn IComputePipeline, _>(out, |v| v))
+        })
     }
 
     // ========================================================================================== //
@@ -268,45 +278,50 @@ impl IDevice for Device {
         &self,
         options: &ShaderOptions,
     ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        if let ShaderBinary::Spirv(data) = options.data {
-            // Vulkan shaders must always have a buffer length that is a multiple of 4. SPIR-V's binary
-            // representation is a sequence of u32 values.
-            if data.len() % 4 != 0 || data.is_empty() {
-                return Err(ShaderCreateError::InvalidInputSize(data.len()));
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
+            if let ShaderBinary::Spirv(data) = options.data {
+                // Vulkan shaders must always have a buffer length that is a multiple of 4. SPIR-V's binary
+                // representation is a sequence of u32 values.
+                if data.len() % 4 != 0 || data.is_empty() {
+                    return Err(ShaderCreateError::InvalidInputSize(data.len()));
+                }
+
+                // We need to copy the data into a u32 buffer to satisfy alignment requirements
+                let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
+                let data = BVec::from_iter_in(data_iter, &bump);
+
+                let module = unsafe {
+                    let create_info = vk::ShaderModuleCreateInfo::builder().code(&data);
+                    self.device
+                        .create_shader_module(&create_info, None)
+                        .map_err(|v| anyhow!(v))?
+                };
+
+                set_name(
+                    self.context.debug_loader.as_ref(),
+                    self.device.handle(),
+                    &bump,
+                    module,
+                    options.name,
+                );
+
+                let entry_point = CString::new(options.entry_point)
+                    .map_err(|_| ShaderCreateError::InvalidEntryPointName)?;
+
+                let shader = AnyArc::new_cyclic(move |v| Shader {
+                    this: v.clone(),
+                    device: self.this.upgrade().unwrap(),
+                    shader_type: options.shader_type,
+                    vk_shader_type: shader_type_to_vk(options.shader_type),
+                    module,
+                    entry_point,
+                });
+                Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
+            } else {
+                Err(ShaderCreateError::UnsupportedShaderFormat)
             }
-
-            // We need to copy the data into a u32 buffer to satisfy alignment requirements
-            let data: Vec<u32> = data.chunks_exact(4).map(NativeEndian::read_u32).collect();
-
-            let module = unsafe {
-                let create_info = vk::ShaderModuleCreateInfo::builder().code(&data);
-                self.device
-                    .create_shader_module(&create_info, None)
-                    .map_err(|v| anyhow!(v))?
-            };
-
-            set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
-                module,
-                options.name,
-            );
-
-            let entry_point = CString::new(options.entry_point)
-                .map_err(|_| ShaderCreateError::InvalidEntryPointName)?;
-
-            let shader = AnyArc::new_cyclic(move |v| Shader {
-                this: v.clone(),
-                device: self.this.upgrade().unwrap(),
-                shader_type: options.shader_type,
-                vk_shader_type: shader_type_to_vk(options.shader_type),
-                module,
-                entry_point,
-            });
-            Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
-        } else {
-            Err(ShaderCreateError::UnsupportedShaderFormat)
-        }
+        })
     }
 
     // ========================================================================================== //
@@ -316,81 +331,86 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
-        let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let mut _samplers = Vec::new();
-        let mut static_samplers = Vec::new();
-        for v in desc.items {
-            if let Some(samplers) = v.static_samplers {
-                for sampler in unwrap::sampler_iter(samplers) {
-                    _samplers.push(sampler._this.upgrade().unwrap());
-                    static_samplers.push(sampler.sampler);
+            let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
+
+            let mut _samplers = Vec::new();
+            let mut static_samplers = BVec::new_in(&bump);
+            for v in desc.items {
+                if let Some(samplers) = v.static_samplers {
+                    for sampler in unwrap::sampler_iter(samplers) {
+                        _samplers.push(sampler._this.upgrade().unwrap());
+                        static_samplers.push(sampler.sampler);
+                    }
                 }
             }
-        }
 
-        let mut sampler_i = 0;
-        let mut sizes = [0; 11];
-        let mut bindings = Vec::with_capacity(desc.items.len());
-        for v in desc.items {
-            let descriptor_type = descriptor_type_to_vk(v.binding_type);
-            let descriptor_count = v.binding_count.map(|v| v.get()).unwrap_or(1);
+            let mut sampler_i = 0;
+            let mut sizes = [0; 11];
+            let mut bindings = BVec::with_capacity_in(desc.items.len(), &bump);
+            for v in desc.items {
+                let descriptor_type = descriptor_type_to_vk(v.binding_type);
+                let descriptor_count = v.binding_count.map(|v| v.get()).unwrap_or(1);
 
-            sizes[descriptor_type.as_raw() as usize] += descriptor_count;
+                sizes[descriptor_type.as_raw() as usize] += descriptor_count;
 
-            let binding = vk::DescriptorSetLayoutBinding::builder()
-                .binding(v.binding_num)
-                .descriptor_type(descriptor_type)
-                .descriptor_count(descriptor_count)
-                .stage_flags(stage_flags);
+                let binding = vk::DescriptorSetLayoutBinding::builder()
+                    .binding(v.binding_num)
+                    .descriptor_type(descriptor_type)
+                    .descriptor_count(descriptor_count)
+                    .stage_flags(stage_flags);
 
-            let binding = if let Some(samplers) = v.static_samplers {
-                let base = sampler_i;
-                sampler_i += samplers.len();
-                binding.immutable_samplers(&static_samplers[base..sampler_i])
-            } else {
-                binding
+                let binding = if let Some(samplers) = v.static_samplers {
+                    let base = sampler_i;
+                    sampler_i += samplers.len();
+                    binding.immutable_samplers(&static_samplers[base..sampler_i])
+                } else {
+                    binding
+                };
+
+                bindings.push(binding.build());
+            }
+
+            let mut pool_sizes = Vec::with_capacity(sizes.len());
+            for (i, v) in sizes.iter().copied().enumerate() {
+                // Accumulate any non-zero pool size into the list
+                if v > 0 {
+                    pool_sizes.push(
+                        vk::DescriptorPoolSize::builder()
+                            .ty(vk::DescriptorType::from_raw(i as i32))
+                            .descriptor_count(v)
+                            .build(),
+                    );
+                }
+            }
+
+            let create_info = vk::DescriptorSetLayoutCreateInfo::builder().bindings(&bindings);
+
+            let descriptor_set_layout = unsafe {
+                self.device
+                    .create_descriptor_set_layout(&create_info, None)
+                    .map_err(|v| anyhow!(v))?
             };
 
-            bindings.push(binding.build());
-        }
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                descriptor_set_layout,
+                desc.name,
+            );
 
-        let mut pool_sizes = Vec::with_capacity(sizes.len());
-        for (i, v) in sizes.iter().copied().enumerate() {
-            // Accumulate any non-zero pool size into the list
-            if v > 0 {
-                pool_sizes.push(
-                    vk::DescriptorPoolSize::builder()
-                        .ty(vk::DescriptorType::from_raw(i as i32))
-                        .descriptor_count(v)
-                        .build(),
-                );
-            }
-        }
-
-        let create_info = vk::DescriptorSetLayoutCreateInfo::builder().bindings(&bindings);
-
-        let descriptor_set_layout = unsafe {
-            self.device
-                .create_descriptor_set_layout(&create_info, None)
-                .map_err(|v| anyhow!(v))?
-        };
-
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            descriptor_set_layout,
-            desc.name,
-        );
-
-        let out = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
-            _this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            _samplers,
-            descriptor_set_layout,
-            pool_sizes,
-        });
-        Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(out, |v| v))
+            let out = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
+                _this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                _samplers,
+                descriptor_set_layout,
+                pool_sizes,
+            });
+            Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(out, |v| v))
+        })
     }
 
     // ========================================================================================== //
@@ -400,41 +420,46 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let layout = unwrap::descriptor_set_layout(desc.layout)
-            ._this
-            .upgrade()
-            .unwrap();
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let mut pool_sizes = layout.pool_sizes.clone();
-        for size in &mut pool_sizes {
-            size.descriptor_count *= desc.num_sets;
-        }
+            let layout = unwrap::descriptor_set_layout(desc.layout)
+                ._this
+                .upgrade()
+                .unwrap();
 
-        let create_info = vk::DescriptorPoolCreateInfo::builder()
-            .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET) // TODO: perhaps this could be exposed to the API? D3D12 could do it easy as just a bump allocator
-            .max_sets(desc.num_sets)
-            .pool_sizes(&pool_sizes);
+            let mut pool_sizes = BVec::from_iter_in(layout.pool_sizes.iter().copied(), &bump);
+            for size in &mut pool_sizes {
+                size.descriptor_count *= desc.num_sets;
+            }
 
-        let descriptor_pool = unsafe {
-            self.device
-                .create_descriptor_pool(&create_info, None)
-                .map_err(|v| anyhow!(v))?
-        };
+            let create_info = vk::DescriptorPoolCreateInfo::builder()
+                .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET) // TODO: perhaps this could be exposed to the API? D3D12 could do it easy as just a bump allocator
+                .max_sets(desc.num_sets)
+                .pool_sizes(&pool_sizes);
 
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            descriptor_pool,
-            desc.name,
-        );
+            let descriptor_pool = unsafe {
+                self.device
+                    .create_descriptor_pool(&create_info, None)
+                    .map_err(|v| anyhow!(v))?
+            };
 
-        let pool = Box::new(DescriptorPool {
-            _device: self.this.upgrade().unwrap(),
-            _layout: layout,
-            descriptor_pool,
-        });
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                descriptor_pool,
+                desc.name,
+            );
 
-        Ok(pool)
+            let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
+                _device: self.this.upgrade().unwrap(),
+                _layout: layout,
+                descriptor_pool,
+            });
+
+            Ok(pool)
+        })
     }
 
     // ========================================================================================== //
@@ -444,48 +469,53 @@ impl IDevice for Device {
         &self,
         desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        let mut set_layouts = Vec::with_capacity(desc.set_layouts.len());
-        for v in desc.set_layouts {
-            let v = unwrap::descriptor_set_layout_d(v);
-            set_layouts.push(v.descriptor_set_layout);
-        }
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let mut offset = 0;
-        let mut ranges = Vec::with_capacity(desc.push_constant_blocks.len());
-        for v in desc.push_constant_blocks {
-            let range = vk::PushConstantRange::builder()
-                .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
-                .offset(offset)
-                .size(v.size as u32);
-            ranges.push(range.build());
+            let mut set_layouts = BVec::with_capacity_in(desc.set_layouts.len(), &bump);
+            for v in desc.set_layouts {
+                let v = unwrap::descriptor_set_layout_d(v);
+                set_layouts.push(v.descriptor_set_layout);
+            }
 
-            offset += v.size as u32;
-        }
+            let mut offset = 0;
+            let mut ranges = Vec::with_capacity(desc.push_constant_blocks.len());
+            for v in desc.push_constant_blocks {
+                let range = vk::PushConstantRange::builder()
+                    .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
+                    .offset(offset)
+                    .size(v.size as u32);
+                ranges.push(range.build());
 
-        let create_info = vk::PipelineLayoutCreateInfo::builder()
-            .set_layouts(&set_layouts)
-            .push_constant_ranges(&ranges);
+                offset += v.size as u32;
+            }
 
-        let pipeline_layout = unsafe {
-            self.device
-                .create_pipeline_layout(&create_info, None)
-                .map_err(|v| anyhow!(v))?
-        };
+            let create_info = vk::PipelineLayoutCreateInfo::builder()
+                .set_layouts(&set_layouts)
+                .push_constant_ranges(&ranges);
 
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            pipeline_layout,
-            desc.name,
-        );
+            let pipeline_layout = unsafe {
+                self.device
+                    .create_pipeline_layout(&create_info, None)
+                    .map_err(|v| anyhow!(v))?
+            };
 
-        let out = AnyArc::new_cyclic(move |v| PipelineLayout {
-            _this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            pipeline_layout,
-            push_constant_blocks: ranges,
-        });
-        Ok(AnyArc::map::<dyn IPipelineLayout, _>(out, |v| v))
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                pipeline_layout,
+                desc.name,
+            );
+
+            let out = AnyArc::new_cyclic(move |v| PipelineLayout {
+                _this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                pipeline_layout,
+                push_constant_blocks: ranges,
+            });
+            Ok(AnyArc::map::<dyn IPipelineLayout, _>(out, |v| v))
+        })
     }
 
     // ========================================================================================== //
@@ -656,49 +686,54 @@ impl IDevice for Device {
         &self,
         desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
-        let mut create_info = vk::SamplerCreateInfo::builder()
-            .mag_filter(sampler_filter_to_vk(desc.mag_filter))
-            .min_filter(sampler_filter_to_vk(desc.min_filter))
-            .mipmap_mode(sampler_mip_filter_to_vk(desc.mip_filter))
-            .address_mode_u(sampler_address_mode_to_vk(desc.address_mode_u))
-            .address_mode_v(sampler_address_mode_to_vk(desc.address_mode_v))
-            .address_mode_w(sampler_address_mode_to_vk(desc.address_mode_w))
-            .mip_lod_bias(desc.lod_bias)
-            .anisotropy_enable(desc.enable_anisotropy)
-            .max_anisotropy(desc.max_anisotropy as f32)
-            .min_lod(desc.min_lod)
-            .max_lod(desc.max_lod)
-            .border_color(sampler_border_color_to_vk(desc.border_color))
-            .unnormalized_coordinates(false);
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        if let Some(v) = desc.compare_op {
-            create_info = create_info
-                .compare_enable(true)
-                .compare_op(compare_op_to_vk(v))
-        }
+            let mut create_info = vk::SamplerCreateInfo::builder()
+                .mag_filter(sampler_filter_to_vk(desc.mag_filter))
+                .min_filter(sampler_filter_to_vk(desc.min_filter))
+                .mipmap_mode(sampler_mip_filter_to_vk(desc.mip_filter))
+                .address_mode_u(sampler_address_mode_to_vk(desc.address_mode_u))
+                .address_mode_v(sampler_address_mode_to_vk(desc.address_mode_v))
+                .address_mode_w(sampler_address_mode_to_vk(desc.address_mode_w))
+                .mip_lod_bias(desc.lod_bias)
+                .anisotropy_enable(desc.enable_anisotropy)
+                .max_anisotropy(desc.max_anisotropy as f32)
+                .min_lod(desc.min_lod)
+                .max_lod(desc.max_lod)
+                .border_color(sampler_border_color_to_vk(desc.border_color))
+                .unnormalized_coordinates(false);
 
-        let sampler = unsafe {
-            self.device
-                .create_sampler(&create_info, None)
-                .map_err(|v| anyhow!(v))?
-        };
+            if let Some(v) = desc.compare_op {
+                create_info = create_info
+                    .compare_enable(true)
+                    .compare_op(compare_op_to_vk(v))
+            }
 
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            sampler,
-            desc.name,
-        );
+            let sampler = unsafe {
+                self.device
+                    .create_sampler(&create_info, None)
+                    .map_err(|v| anyhow!(v))?
+            };
 
-        let name = desc.name.map(String::from);
-        let out = AnyArc::new_cyclic(move |v| Sampler {
-            _this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            sampler,
-            desc: desc.clone().strip_name(),
-            name,
-        });
-        Ok(AnyArc::map::<dyn ISampler, _>(out, |v| v))
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                sampler,
+                desc.name,
+            );
+
+            let name = desc.name.map(String::from);
+            let out = AnyArc::new_cyclic(move |v| Sampler {
+                _this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                sampler,
+                desc: desc.clone().strip_name(),
+                name,
+            });
+            Ok(AnyArc::map::<dyn ISampler, _>(out, |v| v))
+        })
     }
 
     // ========================================================================================== //
@@ -708,53 +743,59 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        let family_index = match desc.queue_type {
-            QueueType::General => self.general_queue.as_ref().unwrap().info.family_index,
-            QueueType::Compute => self.compute_queue.as_ref().unwrap().info.family_index,
-            QueueType::Transfer => self.transfer_queue.as_ref().unwrap().info.family_index,
-        };
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let create_info = vk::CommandPoolCreateInfo::builder()
-            .flags(vk::CommandPoolCreateFlags::TRANSIENT)
-            .queue_family_index(family_index);
-        let command_pool = unsafe {
-            self.device
-                .create_command_pool(&create_info, None)
-                .map_err(|v| anyhow!(v))?
-        };
+            let family_index = match desc.queue_type {
+                QueueType::General => self.general_queue.as_ref().unwrap().info.family_index,
+                QueueType::Compute => self.compute_queue.as_ref().unwrap().info.family_index,
+                QueueType::Transfer => self.transfer_queue.as_ref().unwrap().info.family_index,
+            };
 
-        let allocate_info = vk::CommandBufferAllocateInfo::builder()
-            .command_pool(command_pool)
-            .level(vk::CommandBufferLevel::PRIMARY)
-            .command_buffer_count(1);
-        let command_buffer = unsafe {
-            self.device
-                .allocate_command_buffers(&allocate_info)
-                .map_err(|v| anyhow!(v))?
-        };
-        let command_buffer = command_buffer[0];
+            let create_info = vk::CommandPoolCreateInfo::builder()
+                .flags(vk::CommandPoolCreateFlags::TRANSIENT)
+                .queue_family_index(family_index);
+            let command_pool = unsafe {
+                self.device
+                    .create_command_pool(&create_info, None)
+                    .map_err(|v| anyhow!(v))?
+            };
 
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            command_pool,
-            desc.name,
-        );
-        set_name(
-            self.context.debug_loader.as_ref(),
-            self.device.handle(),
-            command_buffer,
-            desc.name,
-        );
+            let allocate_info = vk::CommandBufferAllocateInfo::builder()
+                .command_pool(command_pool)
+                .level(vk::CommandBufferLevel::PRIMARY)
+                .command_buffer_count(1);
+            let command_buffer = unsafe {
+                self.device
+                    .allocate_command_buffers(&allocate_info)
+                    .map_err(|v| anyhow!(v))?
+            };
+            let command_buffer = command_buffer[0];
 
-        let out = Box::new(CommandList {
-            _device: self.this.upgrade().unwrap(),
-            pool: command_pool,
-            buffer: command_buffer,
-            list_type: desc.queue_type,
-        });
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                command_pool,
+                desc.name,
+            );
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                command_buffer,
+                desc.name,
+            );
 
-        Ok(out)
+            let out: Box<dyn ICommandList> = Box::new(CommandList {
+                _device: self.this.upgrade().unwrap(),
+                pool: command_pool,
+                buffer: command_buffer,
+                list_type: desc.queue_type,
+            });
+
+            Ok(out)
+        })
     }
 
     // ========================================================================================== //
@@ -781,138 +822,142 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
-        let mut image_infos = Vec::new();
-        let mut buffer_infos = Vec::new();
-        let mut texel_buffer_infos = Vec::new();
-        for write in writes {
-            match write.writes {
-                DescriptorWrites::Sampler(v) => {
-                    for v in v {
-                        let image_info = vk::DescriptorImageInfo::builder()
-                            .sampler(unwrap::sampler(v.sampler).sampler)
-                            .build();
-                        image_infos.push(image_info);
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
+
+            let mut image_infos = BVec::new_in(&bump);
+            let mut buffer_infos = BVec::new_in(&bump);
+            let mut texel_buffer_infos = BVec::new_in(&bump);
+            for write in writes {
+                match write.writes {
+                    DescriptorWrites::Sampler(v) => {
+                        for v in v {
+                            let image_info = vk::DescriptorImageInfo::builder()
+                                .sampler(unwrap::sampler(v.sampler).sampler)
+                                .build();
+                            image_infos.push(image_info);
+                        }
                     }
-                }
-                DescriptorWrites::Image(v) => {
-                    for v in v {
-                        let image_info = vk::DescriptorImageInfo::builder()
-                            .image_view(std::mem::transmute(v.image_view))
-                            .image_layout(image_layout_to_vk(v.image_layout))
-                            .build();
-                        image_infos.push(image_info);
+                    DescriptorWrites::Image(v) => {
+                        for v in v {
+                            let image_info = vk::DescriptorImageInfo::builder()
+                                .image_view(std::mem::transmute(v.image_view))
+                                .image_layout(image_layout_to_vk(v.image_layout))
+                                .build();
+                            image_infos.push(image_info);
+                        }
                     }
-                }
-                DescriptorWrites::Buffer(v) => {
-                    for v in v {
-                        let buffer = unwrap::buffer(v.buffer).buffer;
-                        let buffer_info = vk::DescriptorBufferInfo::builder()
-                            .buffer(buffer)
-                            .offset(v.offset)
-                            .range(v.len as _)
-                            .build();
-                        buffer_infos.push(buffer_info);
+                    DescriptorWrites::Buffer(v) => {
+                        for v in v {
+                            let buffer = unwrap::buffer(v.buffer).buffer;
+                            let buffer_info = vk::DescriptorBufferInfo::builder()
+                                .buffer(buffer)
+                                .offset(v.offset)
+                                .range(v.len as _)
+                                .build();
+                            buffer_infos.push(buffer_info);
+                        }
                     }
-                }
-                DescriptorWrites::StructuredBuffer(v) => {
-                    for v in v {
-                        let buffer = unwrap::buffer(v.buffer).buffer;
-                        let buffer_info = vk::DescriptorBufferInfo::builder()
-                            .buffer(buffer)
-                            .offset(v.offset)
-                            .range(v.len as _)
-                            .build();
-                        buffer_infos.push(buffer_info);
+                    DescriptorWrites::StructuredBuffer(v) => {
+                        for v in v {
+                            let buffer = unwrap::buffer(v.buffer).buffer;
+                            let buffer_info = vk::DescriptorBufferInfo::builder()
+                                .buffer(buffer)
+                                .offset(v.offset)
+                                .range(v.len as _)
+                                .build();
+                            buffer_infos.push(buffer_info);
+                        }
                     }
-                }
-                DescriptorWrites::TexelBuffer(v) => {
-                    for v in v {
-                        texel_buffer_infos.push(vk::BufferView::null());
+                    DescriptorWrites::TexelBuffer(v) => {
+                        for v in v {
+                            texel_buffer_infos.push(vk::BufferView::null());
+                        }
                     }
-                }
-                DescriptorWrites::InputAttachment(v) => {
-                    for v in v {
-                        let image_info = vk::DescriptorImageInfo::builder()
-                            .image_view(std::mem::transmute(v.image_view))
-                            .image_layout(image_layout_to_vk(v.image_layout))
-                            .build();
-                        image_infos.push(image_info);
+                    DescriptorWrites::InputAttachment(v) => {
+                        for v in v {
+                            let image_info = vk::DescriptorImageInfo::builder()
+                                .image_view(std::mem::transmute(v.image_view))
+                                .image_layout(image_layout_to_vk(v.image_layout))
+                                .build();
+                            image_infos.push(image_info);
+                        }
                     }
                 }
             }
-        }
 
-        let mut image_info_idx = 0;
-        let mut buffer_info_idx = 0;
-        let mut texel_buffer_info_idx = 0;
-        let mut descriptor_writes = Vec::with_capacity(writes.len());
-        for write in writes {
-            let d_type = match write.descriptor_type {
-                DescriptorType::Sampler => vk::DescriptorType::SAMPLER,
-                DescriptorType::SampledImage => vk::DescriptorType::SAMPLED_IMAGE,
-                DescriptorType::StorageImage => vk::DescriptorType::STORAGE_IMAGE,
-                DescriptorType::UniformTexelBuffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
-                DescriptorType::StorageTexelBuffer => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
-                DescriptorType::UniformBuffer => vk::DescriptorType::UNIFORM_BUFFER,
-                DescriptorType::StorageBuffer => vk::DescriptorType::STORAGE_BUFFER,
-                DescriptorType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
-                DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
-            };
+            let mut image_info_idx = 0;
+            let mut buffer_info_idx = 0;
+            let mut texel_buffer_info_idx = 0;
+            let mut descriptor_writes = BVec::with_capacity_in(writes.len(), &bump);
+            for write in writes {
+                let d_type = match write.descriptor_type {
+                    DescriptorType::Sampler => vk::DescriptorType::SAMPLER,
+                    DescriptorType::SampledImage => vk::DescriptorType::SAMPLED_IMAGE,
+                    DescriptorType::StorageImage => vk::DescriptorType::STORAGE_IMAGE,
+                    DescriptorType::UniformTexelBuffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
+                    DescriptorType::StorageTexelBuffer => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
+                    DescriptorType::UniformBuffer => vk::DescriptorType::UNIFORM_BUFFER,
+                    DescriptorType::StorageBuffer => vk::DescriptorType::STORAGE_BUFFER,
+                    DescriptorType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
+                    DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
+                };
 
-            let new_write = vk::WriteDescriptorSet::builder()
-                .dst_set(std::mem::transmute(write.set.clone()))
-                .dst_binding(write.binding)
-                .dst_array_element(write.array_element);
+                let new_write = vk::WriteDescriptorSet::builder()
+                    .dst_set(std::mem::transmute(write.set.clone()))
+                    .dst_binding(write.binding)
+                    .dst_array_element(write.array_element);
 
-            let new_write = match write.writes {
-                DescriptorWrites::Sampler(v) => {
-                    let base = image_info_idx;
-                    image_info_idx += v.len();
-                    new_write
-                        .descriptor_type(d_type)
-                        .image_info(&image_infos[base..image_info_idx])
-                }
-                DescriptorWrites::Image(v) => {
-                    let base = image_info_idx;
-                    image_info_idx += v.len();
-                    new_write
-                        .descriptor_type(d_type)
-                        .image_info(&image_infos[base..image_info_idx])
-                }
-                DescriptorWrites::Buffer(v) => {
-                    let base = buffer_info_idx;
-                    buffer_info_idx += v.len();
-                    new_write
-                        .descriptor_type(d_type)
-                        .buffer_info(&buffer_infos[base..buffer_info_idx])
-                }
-                DescriptorWrites::StructuredBuffer(v) => {
-                    let base = buffer_info_idx;
-                    image_info_idx += v.len();
-                    new_write
-                        .descriptor_type(d_type)
-                        .buffer_info(&buffer_infos[base..buffer_info_idx])
-                }
-                DescriptorWrites::TexelBuffer(v) => {
-                    let base = texel_buffer_info_idx;
-                    texel_buffer_info_idx += v.len();
-                    new_write
-                        .descriptor_type(d_type)
-                        .texel_buffer_view(&texel_buffer_infos[base..texel_buffer_info_idx])
-                }
-                DescriptorWrites::InputAttachment(v) => {
-                    let base = image_info_idx;
-                    image_info_idx += v.len();
-                    new_write
-                        .descriptor_type(d_type)
-                        .image_info(&image_infos[base..image_info_idx])
-                }
-            };
+                let new_write = match write.writes {
+                    DescriptorWrites::Sampler(v) => {
+                        let base = image_info_idx;
+                        image_info_idx += v.len();
+                        new_write
+                            .descriptor_type(d_type)
+                            .image_info(&image_infos[base..image_info_idx])
+                    }
+                    DescriptorWrites::Image(v) => {
+                        let base = image_info_idx;
+                        image_info_idx += v.len();
+                        new_write
+                            .descriptor_type(d_type)
+                            .image_info(&image_infos[base..image_info_idx])
+                    }
+                    DescriptorWrites::Buffer(v) => {
+                        let base = buffer_info_idx;
+                        buffer_info_idx += v.len();
+                        new_write
+                            .descriptor_type(d_type)
+                            .buffer_info(&buffer_infos[base..buffer_info_idx])
+                    }
+                    DescriptorWrites::StructuredBuffer(v) => {
+                        let base = buffer_info_idx;
+                        image_info_idx += v.len();
+                        new_write
+                            .descriptor_type(d_type)
+                            .buffer_info(&buffer_infos[base..buffer_info_idx])
+                    }
+                    DescriptorWrites::TexelBuffer(v) => {
+                        let base = texel_buffer_info_idx;
+                        texel_buffer_info_idx += v.len();
+                        new_write
+                            .descriptor_type(d_type)
+                            .texel_buffer_view(&texel_buffer_infos[base..texel_buffer_info_idx])
+                    }
+                    DescriptorWrites::InputAttachment(v) => {
+                        let base = image_info_idx;
+                        image_info_idx += v.len();
+                        new_write
+                            .descriptor_type(d_type)
+                            .image_info(&image_infos[base..image_info_idx])
+                    }
+                };
 
-            descriptor_writes.push(new_write.build());
-        }
+                descriptor_writes.push(new_write.build());
+            }
 
-        self.device.update_descriptor_sets(&descriptor_writes, &[]);
+            self.device.update_descriptor_sets(&descriptor_writes, &[]);
+        })
     }
 
     // ========================================================================================== //
@@ -957,24 +1002,29 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
-        let timeout = if timeout == u32::MAX {
-            u64::MAX
-        } else {
-            timeout as u64 * 1000000 // Convert to nanoseconds
-        };
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let fences: Vec<_> = unwrap::fence_iter(fences).map(|v| v.fence).collect();
+            let timeout = if timeout == u32::MAX {
+                u64::MAX
+            } else {
+                timeout as u64 * 1000000 // Convert to nanoseconds
+            };
 
-        let result = unsafe { self.device.wait_for_fences(&fences, wait_all, timeout) };
+            let iter = unwrap::fence_iter(fences).map(|v| v.fence);
+            let fences = BVec::from_iter_in(iter, &bump);
 
-        match result {
-            Ok(_) => FenceWaitResult::Complete,
-            Err(vk::Result::TIMEOUT) => FenceWaitResult::Timeout,
-            v @ _ => {
-                v.unwrap();
-                unreachable!()
+            let result = unsafe { self.device.wait_for_fences(&fences, wait_all, timeout) };
+
+            match result {
+                Ok(_) => FenceWaitResult::Complete,
+                Err(vk::Result::TIMEOUT) => FenceWaitResult::Timeout,
+                v @ _ => {
+                    v.unwrap();
+                    unreachable!()
+                }
             }
-        }
+        })
     }
 
     // ========================================================================================== //
@@ -999,9 +1049,14 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn reset_fences(&self, fences: &[&dyn IFence]) {
-        let fences: Vec<_> = unwrap::fence_iter(fences).map(|v| v.fence).collect();
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        unsafe { self.device.reset_fences(&fences).unwrap() }
+            let iter = unwrap::fence_iter(fences).map(|v| v.fence);
+            let fences = BVec::from_iter_in(iter, &bump);
+
+            unsafe { self.device.reset_fences(&fences).unwrap() }
+        })
     }
 
     // ========================================================================================== //
@@ -1013,37 +1068,33 @@ impl IDevice for Device {
 }
 
 impl Device {
-    fn translate_vertex_bindings(
+    fn translate_vertex_bindings<'a>(
+        bump: &'a Bump,
         desc: &GraphicsPipelineDesc,
-    ) -> Vec<vk::VertexInputBindingDescription> {
-        desc.vertex_layout
-            .input_bindings
-            .iter()
-            .map(|v| {
-                vk::VertexInputBindingDescription::builder()
-                    .binding(v.binding)
-                    .stride(v.stride)
-                    .input_rate(vertex_input_rate_to_vk(v.input_rate))
-                    .build()
-            })
-            .collect()
+    ) -> BVec<'a, vk::VertexInputBindingDescription> {
+        let iter = desc.vertex_layout.input_bindings.iter().map(|v| {
+            vk::VertexInputBindingDescription::builder()
+                .binding(v.binding)
+                .stride(v.stride)
+                .input_rate(vertex_input_rate_to_vk(v.input_rate))
+                .build()
+        });
+        BVec::from_iter_in(iter, bump)
     }
 
-    fn translate_vertex_attributes(
+    fn translate_vertex_attributes<'a>(
+        bump: &'a Bump,
         desc: &GraphicsPipelineDesc,
-    ) -> Vec<vk::VertexInputAttributeDescription> {
-        desc.vertex_layout
-            .input_attributes
-            .iter()
-            .map(|v| {
-                vk::VertexInputAttributeDescription::builder()
-                    .location(v.location)
-                    .binding(v.binding)
-                    .offset(v.offset)
-                    .format(texture_format_to_vk(v.format))
-                    .build()
-            })
-            .collect()
+    ) -> BVec<'a, vk::VertexInputAttributeDescription> {
+        let iter = desc.vertex_layout.input_attributes.iter().map(|v| {
+            vk::VertexInputAttributeDescription::builder()
+                .location(v.location)
+                .binding(v.binding)
+                .offset(v.offset)
+                .format(texture_format_to_vk(v.format))
+                .build()
+        });
+        BVec::from_iter_in(iter, bump)
     }
 
     fn translate_vertex_input_state<'a>(
@@ -1122,27 +1173,25 @@ impl Device {
             .max_depth_bounds(desc.depth_stencil_state.max_depth_bounds)
     }
 
-    fn translate_color_attachment_state(
+    fn translate_color_attachment_state<'a>(
+        bump: &'a Bump,
         desc: &GraphicsPipelineDesc,
-    ) -> Vec<vk::PipelineColorBlendAttachmentState> {
-        desc.blend_state
-            .attachments
-            .iter()
-            .map(|v| {
-                vk::PipelineColorBlendAttachmentState::builder()
-                    .blend_enable(v.blend_enabled)
-                    .src_color_blend_factor(blend_factor_to_vk(v.src_factor))
-                    .dst_color_blend_factor(blend_factor_to_vk(v.dst_factor))
-                    .color_blend_op(blend_op_to_vk(v.blend_op))
-                    .src_alpha_blend_factor(blend_factor_to_vk(v.alpha_src_factor))
-                    .dst_alpha_blend_factor(blend_factor_to_vk(v.alpha_dst_factor))
-                    .alpha_blend_op(blend_op_to_vk(v.alpha_blend_op))
-                    .color_write_mask(vk::ColorComponentFlags::from_raw(
-                        v.color_write_mask.bits() as _
-                    ))
-                    .build()
-            })
-            .collect()
+    ) -> BVec<'a, vk::PipelineColorBlendAttachmentState> {
+        let iter = desc.blend_state.attachments.iter().map(|v| {
+            vk::PipelineColorBlendAttachmentState::builder()
+                .blend_enable(v.blend_enabled)
+                .src_color_blend_factor(blend_factor_to_vk(v.src_factor))
+                .dst_color_blend_factor(blend_factor_to_vk(v.dst_factor))
+                .color_blend_op(blend_op_to_vk(v.blend_op))
+                .src_alpha_blend_factor(blend_factor_to_vk(v.alpha_src_factor))
+                .dst_alpha_blend_factor(blend_factor_to_vk(v.alpha_dst_factor))
+                .alpha_blend_op(blend_op_to_vk(v.alpha_blend_op))
+                .color_write_mask(vk::ColorComponentFlags::from_raw(
+                    v.color_write_mask.bits() as _
+                ))
+                .build()
+        });
+        BVec::from_iter_in(iter, bump)
     }
 
     fn translate_color_blend_state(
@@ -1157,7 +1206,7 @@ impl Device {
 
     fn translate_framebuffer_info<'a, 'b>(
         desc: &'b GraphicsPipelineDesc,
-        color_formats: &'a mut Vec<vk::Format>,
+        color_formats: &'a mut BVec<vk::Format>,
     ) -> vk::PipelineRenderingCreateInfoBuilder<'a> {
         let builder = vk::PipelineRenderingCreateInfo::builder();
 
@@ -1204,4 +1253,8 @@ impl Drop for Device {
             ManuallyDrop::drop(&mut self.device);
         }
     }
+}
+
+thread_local! {
+    pub static DEVICE_BUMP: BumpCell = BumpCell::with_capacity(8192 * 2);
 }

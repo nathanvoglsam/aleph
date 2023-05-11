@@ -1002,7 +1002,7 @@ impl CheckMeetsProfile for vk::ShaderFloatControlsIndependence {
             (V::ALL, V::NONE) => Some(()),
             (V::ALL, V::TYPE_32_ONLY) => Some(()),
             (V::ALL, V::ALL) => Some(()),
-            _ => Some(())
+            _ => Some(()),
         }
     }
 
@@ -1018,7 +1018,7 @@ impl CheckMeetsProfile for vk::ShaderFloatControlsIndependence {
             (V::ALL, V::NONE) => (),
             (V::ALL, V::TYPE_32_ONLY) => (),
             (V::ALL, V::ALL) => (),
-            _ => ()
+            _ => (),
         }
     }
 }
