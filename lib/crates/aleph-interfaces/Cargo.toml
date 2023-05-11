@@ -55,4 +55,4 @@ raw-window-handle = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 bitflags = { workspace = true }
-ultraviolet = { version = "0.9", features = ["f64"] }
+ultraviolet = { workspace = true }

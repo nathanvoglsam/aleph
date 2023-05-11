@@ -43,11 +43,11 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 once_cell = { workspace = true }
-num_cpus = "1"
+num_cpus = { workspace = true }
 
 ## Use the CPUID instruction directly to minimize dependencies
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-raw-cpuid = "10"
+raw-cpuid = { workspace = true }
 
 ## Pull system info directly with windows APIs to minimize dependencies (and handle UWP)
 [target.'cfg(windows)'.dependencies]
@@ -56,4 +56,4 @@ utf16_lit = { workspace = true }
 
 ## Use the sys-info crate on anything that isn't windows or x86 as ain't nobody got time for that
 [target.'cfg(any(unix, not(target_arch = "x86_64")))'.dependencies]
-sysinfo = "0.28"
+sysinfo = "0.29"

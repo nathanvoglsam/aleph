@@ -96,7 +96,10 @@ serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 bumpalo = { version = "3", features = ["boxed", "collections"] }
 cc = "1"
-libloading = "0.7"
+libloading = "0.8"
+ultraviolet = { version = "0.9", features = ["f64"] }
+raw-cpuid = "11"
+num_cpus = "1"
 
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
 aleph-compile = { path = "./lib/crates/aleph-compile", version = "1" }

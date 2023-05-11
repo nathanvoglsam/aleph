@@ -111,6 +111,7 @@ pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec
                         let event = egui::Event::Key {
                             key,
                             pressed: true,
+                            repeat: e.repeat,
                             modifiers: translate_modifiers(e.modifiers),
                         };
                         out.push(event);
@@ -121,6 +122,7 @@ pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec
                         let event = egui::Event::Key {
                             key,
                             pressed: false,
+                            repeat: e.repeat,
                             modifiers: translate_modifiers(e.modifiers),
                         };
 

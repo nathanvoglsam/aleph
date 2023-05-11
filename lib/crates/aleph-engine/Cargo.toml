@@ -63,8 +63,8 @@ aleph-rhi = { path = "../../plugins/aleph-rhi", version = "0.1" }
 log = { workspace = true }
 once_cell = { workspace = true }
 utf16_lit = { workspace = true }
-raw-cpuid = "10"
-num_cpus = "1"
+raw-cpuid = { workspace = true }
+num_cpus = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

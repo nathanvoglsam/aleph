@@ -50,5 +50,5 @@ aleph-rhi-api = { workspace = true }
 log = { workspace = true }
 cstr = { workspace = true }
 once_cell = { workspace = true }
-ultraviolet = { version = "0.9", features = ["f64"] }
+ultraviolet = { workspace = true }
 bytemuck = "1"

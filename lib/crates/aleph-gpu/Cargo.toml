@@ -55,4 +55,4 @@ once_cell = { workspace = true }
 crossbeam = { workspace = true }
 bitflags = { workspace = true }
 cstr = { workspace = true }
-ultraviolet = { version = "0.9", features = ["f64"] }
+ultraviolet = { workspace = true }
