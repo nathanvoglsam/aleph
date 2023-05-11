@@ -231,7 +231,7 @@ impl SwapChain {
             .create_swapchain(&swap_create_info, None)
             .map_err(|e| anyhow!(e))?;
 
-        if old_swapchain == vk::SwapchainKHR::null() {
+        if old_swapchain != vk::SwapchainKHR::null() {
             swapchain_loader.destroy_swapchain(old_swapchain, None);
         }
 
