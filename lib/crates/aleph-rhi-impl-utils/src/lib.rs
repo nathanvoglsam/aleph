@@ -35,6 +35,7 @@ pub extern crate aleph_rhi_api;
 
 use std::any::TypeId;
 
+pub mod bump_cell;
 pub mod conv;
 pub mod manually_drop;
 pub mod unwrap;
