@@ -40,7 +40,7 @@ pub struct ValidationSwapChain {
     pub(crate) _surface: AnyArc<ValidationSurface>,
     pub(crate) inner: AnyArc<dyn ISwapChain>,
     pub(crate) queue_support: QueueType,
-    pub(crate) textures: Mutex<Vec<AnyArc<dyn ITexture>>>,
+    pub(crate) textures: Mutex<Vec<AnyArc<ValidationTexture>>>,
     pub(crate) acquired: AtomicBool,
 }
 
@@ -84,6 +84,10 @@ impl ISwapChain for ValidationSwapChain {
 
         // Validate that we have exclusive ownership of the textures. This is an API requirement.
         for x in textures.iter() {
+            // Need to drop all the views before asserting the ref count as there's weak references
+            // to the image inside it's own view set. These are fine to destroy as all views are
+            // made invalid to access for the images as soon as 'rebuild' is entered.
+            x.drop_views();
             assert!(
                 x.weak_count() == 1 && x.strong_count() == 1,
                 "It is invalid to resize a swap chain while still holding references to its images"
@@ -119,7 +123,7 @@ impl ISwapChain for ValidationSwapChain {
         let textures = self.textures.lock();
 
         for (out, v) in images.iter_mut().zip(textures.iter()) {
-            *out = Some(v.clone());
+            *out = Some(AnyArc::map::<dyn ITexture, _>(v.clone(), |v| v));
         }
     }
 
@@ -153,7 +157,7 @@ impl Drop for ValidationSwapChain {
 impl ValidationSwapChain {
     pub(crate) fn wrap_images(
         device: &ValidationDevice,
-        textures: &mut Vec<AnyArc<dyn ITexture>>,
+        textures: &mut Vec<AnyArc<ValidationTexture>>,
         images: &mut [Option<AnyArc<dyn ITexture>>],
     ) {
         // The returned images are from the inner implementation, wrap them in ValidationTexture.
@@ -167,7 +171,6 @@ impl ValidationSwapChain {
                 rtvs: Default::default(),
                 dsvs: Default::default(),
             });
-            let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
 
             textures.push(image);
         }

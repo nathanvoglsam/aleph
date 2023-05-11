@@ -123,6 +123,14 @@ impl ITexture for ValidationTexture {
     }
 }
 
+impl ValidationTexture {
+    pub fn drop_views(&self) {
+        self.views.lock().clear();
+        self.rtvs.lock().clear();
+        self.dsvs.lock().clear();
+    }
+}
+
 pub struct ValidationImageView {
     pub _image: AnyWeak<ValidationTexture>,
     pub image_view: ImageView,
