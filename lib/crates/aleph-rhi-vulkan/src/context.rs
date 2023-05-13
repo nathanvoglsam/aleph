@@ -73,7 +73,7 @@ impl Context {
                 .enumerate_physical_devices()
                 .expect("Failed to enumerate vulkan devices")
         };
-        let mut scores: Vec<(&str, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
+        let mut scores: Vec<(String, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
 
         for physical_device in devices.iter().copied() {
             let device_info = DeviceInfo::load(instance, physical_device);
@@ -113,14 +113,22 @@ impl Context {
                 CStr::from_ptr(device_info.properties_10.device_name.as_ptr())
                     .to_str()
                     .unwrap()
+                    .to_owned()
             };
             scores.push((name, vendor, physical_device, score));
         }
 
-        scores
+        let selected_index = scores
             .iter()
-            .max_by_key(|v| &v.3)
-            .map(|v| (v.0.to_owned(), v.1, v.2))
+            .enumerate()
+            .max_by_key(|(i, v)| &v.3)
+            .map(|(i, _)| i);
+        if let Some(i) = selected_index {
+            let out = scores.swap_remove(i);
+            Some((out.0, out.1, out.2))
+        } else {
+            None
+        }
     }
 
     pub fn log_device_info(device_info: &DeviceInfo) {
