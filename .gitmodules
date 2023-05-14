@@ -10,3 +10,6 @@
 [submodule "submodules/VulkanMemoryAllocator"]
 	path = submodules/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "submodules/SDL"]
+	path = submodules/SDL
+	url = https://github.com/libsdl-org/SDL.git

@@ -135,12 +135,6 @@ fn main() {
             build.define("SDL_STATIC", "OFF");
             build.define("DIRECTX", "OFF");
 
-            // When compiling for MSVC we need to include vcruntime as some symbols are missing
-            // if we don't link in this lib
-            if target_platform.is_msvc() && target_platform.is_win32() {
-                build.define("EXTRA_LIBS", "vcruntime");
-            }
-
             if target_platform.is_uwp() {
                 build.define("CMAKE_SYSTEM_NAME", "WindowsStore");
                 build.define("CMAKE_SYSTEM_VERSION", "10.0");
