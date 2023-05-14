@@ -60,7 +60,10 @@ fn get_memory() -> Option<NonZeroU64> {
             NonZeroU64::new(memory * 1024)
         } else {
             use aleph_windows::System::MemoryManager;
-            MemoryManager::AppMemoryUsageLimit().ok()
+            MemoryManager::AppMemoryUsageLimit()
+                .ok()
+                .map(NonZeroU64::new)
+                .flatten()
         }
     }
 }
