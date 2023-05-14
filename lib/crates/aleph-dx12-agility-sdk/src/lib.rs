@@ -27,10 +27,9 @@
 // SOFTWARE.
 //
 
-use aleph_target_build::build::target_platform;
-use std::io::{Cursor, Read};
+use aleph_target_build::build::{target_architecture, target_platform};
 use std::path::{Path, PathBuf};
-use zip::ZipArchive;
+use aleph_target_build::Architecture;
 
 ///
 /// This function will perform the necessary work to allow rust to export the `D3D12SDKVersion` and
@@ -76,7 +75,6 @@ pub fn link_agility_symbol_def() {
 ///
 fn def_location() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("pkg")
         .join("symbols.def")
 }
 
@@ -85,8 +83,7 @@ fn def_location() -> PathBuf {
 ///
 fn pkg_location() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("pkg")
-        .join("microsoft.direct3d.d3d12.1.706.3-preview.nupkg")
+        .join("thirdparty")
 }
 
 ///
@@ -156,46 +153,22 @@ macro_rules! export_standard_agility_sdk_symbols {
 ///
 pub fn extract_agility_sdk_binaries() {
     if target_platform().is_windows() {
-        const CORE_DLL: &str = "build/native/bin/x64/D3D12Core.dll";
-        const CORE_NAME: &str = "D3D12Core.dll";
-        const LAYERS_DLL: &str = "build/native/bin/x64/d3d12SDKLayers.dll";
-        const LAYERS_NAME: &str = "d3d12SDKLayers.dll";
+        let arch = match target_architecture() {
+            Architecture::X8664 => "x64",
+            Architecture::AARCH64 => "arm64",
+            Architecture::Unknown => panic!("Unknown architecture"),
+        };
 
-        let out_dir = std::env::var("OUT_DIR").unwrap();
-        let out_dir = Path::new(&out_dir);
+        let bin_dir = pkg_location()
+            .join("bin")
+            .join(arch);
 
-        let bytes = std::fs::read(pkg_location()).unwrap();
-        let cursor = Cursor::new(bytes.as_slice());
-        let mut package = ZipArchive::new(cursor).unwrap();
+        let core_dll = bin_dir.join("D3D12Core.dll");
+        aleph_compile::copy_file_to_artifacts_dir(&core_dll).unwrap();
+        aleph_compile::copy_file_to_target_dir(&core_dll).unwrap();
 
-        write_zip_file(&mut package, out_dir, CORE_DLL, CORE_NAME);
-        write_zip_file(&mut package, out_dir, LAYERS_DLL, LAYERS_NAME);
-
-        let src = out_dir.join(CORE_NAME);
-        aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
-        aleph_compile::copy_file_to_target_dir(&src).unwrap();
-
-        let src = out_dir.join(LAYERS_NAME);
-        aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
-        aleph_compile::copy_file_to_target_dir(&src).unwrap();
+        let layers_dll = bin_dir.join("d3d12SDKLayers.dll");
+        aleph_compile::copy_file_to_artifacts_dir(&layers_dll).unwrap();
+        aleph_compile::copy_file_to_target_dir(&layers_dll).unwrap();
     }
-}
-
-fn write_zip_file<R: Read + std::io::Seek>(
-    package: &mut ZipArchive<R>,
-    out_dir: &Path,
-    zip_path: &str,
-    name: &str,
-) {
-    // Try to get the file, asserting it is in fact a file
-    let mut file = package.by_name(zip_path).unwrap();
-    assert!(file.is_file());
-
-    // Read the bytes into a buffer
-    let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes).unwrap();
-
-    // Output the bytes into the file
-    let out = out_dir.join(name);
-    std::fs::write(out, bytes).unwrap();
 }

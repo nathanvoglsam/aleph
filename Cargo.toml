@@ -27,12 +27,6 @@
 ## SOFTWARE.
 ##
 
-## Uncomment on an absolute final release build to maximize the compiler's optimization ability
-##[profile.release]
-##lto = "fat"
-##panic = 'unwind'
-##codegen-units = 1
-
 [workspace]
 
 resolver = "2"
@@ -112,7 +106,6 @@ sysinfo = "0.29"
 thiserror = "1"
 ultraviolet = { version = "0.9", features = ["f64"] }
 utf16_lit = "2"
-zip = "0.6"
 
 # Aleph Crates
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }

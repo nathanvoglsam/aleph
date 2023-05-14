@@ -13,3 +13,6 @@
 [submodule "submodules/WinPixEventRuntime"]
 	path = submodules/WinPixEventRuntime
 	url = https://gitea.hmmr-cloud.com.au/MindSpunk/WinPixEventRuntime.git
+[submodule "submodules/DirectX12AgilitySDK"]
+	path = submodules/DirectX12AgilitySDK
+	url = https://gitea.hmmr-cloud.com.au/MindSpunk/DirectX12AgilitySDK.git
