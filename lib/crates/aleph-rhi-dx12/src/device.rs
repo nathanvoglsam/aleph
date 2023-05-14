@@ -63,7 +63,7 @@ use crate::shader::Shader;
 use crate::texture::Texture;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
 use anyhow::anyhow;
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -971,7 +971,7 @@ impl Device {
             // This requires some modification to existing shaders to be compatible but makes
             // mapping Vulkan easier. It is also much simpler, just an "index" compared to a string
             // identifier + index combo.
-            let semantic_name = cstr::cstr!("A");
+            let semantic_name = cstr!("A");
             let semantic_index = attribute.location;
 
             // Input slot directly translates to Vulkan's concept of a vertex attribute binding

@@ -50,7 +50,6 @@ aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 anyhow = { workspace = true }
 log = { workspace = true }
-cstr = { workspace = true }
 crossbeam = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
