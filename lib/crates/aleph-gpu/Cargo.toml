@@ -54,5 +54,4 @@ log = { workspace = true }
 once_cell = { workspace = true }
 crossbeam = { workspace = true }
 bitflags = { workspace = true }
-cstr = { workspace = true }
 ultraviolet = { workspace = true }

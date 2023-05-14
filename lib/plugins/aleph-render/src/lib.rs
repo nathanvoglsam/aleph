@@ -29,7 +29,6 @@
 
 extern crate aleph_egui as egui;
 extern crate aleph_interfaces as interfaces;
-extern crate cstr;
 
 mod plugin;
 mod renderer;
