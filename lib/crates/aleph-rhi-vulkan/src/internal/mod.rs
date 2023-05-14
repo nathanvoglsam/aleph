@@ -30,7 +30,6 @@
 pub mod conv;
 pub mod device_info;
 pub mod features;
-pub mod macros;
 pub mod messenger;
 pub mod mvk;
 pub mod profile;

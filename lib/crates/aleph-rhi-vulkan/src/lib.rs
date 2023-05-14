@@ -29,8 +29,6 @@
 
 pub extern crate aleph_vulkan_alloc as vulkan_alloc;
 
-extern crate cstr;
-
 mod adapter;
 mod buffer;
 mod command_list;

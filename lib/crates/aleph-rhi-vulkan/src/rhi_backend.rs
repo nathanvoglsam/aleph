@@ -3,6 +3,7 @@ use crate::internal::messenger::vulkan_debug_messenger;
 use crate::internal::mvk;
 use aleph_any::AnyArc;
 use aleph_rhi_api::{BackendAPI, IContext};
+use aleph_rhi_impl_utils::cstr;
 use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
 use anyhow::anyhow;
 use ash::extensions::ext::DebugUtils;
@@ -380,7 +381,7 @@ fn check_all_layers_supported(
 fn get_wanted_layers(validation: bool) -> Vec<&'static CStr> {
     let mut layers = Vec::new();
     if validation {
-        layers.push(crate::cstr!("VK_LAYER_KHRONOS_validation"));
+        layers.push(cstr!("VK_LAYER_KHRONOS_validation"));
     }
     layers
 }
@@ -432,14 +433,14 @@ fn diff_lists<'a>(
 
 fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
     vk::ApplicationInfo::builder()
-        .application_name(crate::cstr!("aleph-gpu"))
+        .application_name(cstr!("aleph-gpu"))
         .application_version(vk::make_api_version(
             0,
             aleph_rhi_api::API_VERSION_MAJOR.parse().unwrap(),
             aleph_rhi_api::API_VERSION_MINOR.parse().unwrap(),
             aleph_rhi_api::API_VERSION_PATCH.parse().unwrap(),
         ))
-        .engine_name(crate::cstr!("aleph-gpu-vulkan"))
+        .engine_name(cstr!("aleph-gpu-vulkan"))
         .engine_version(vk::make_api_version(
             0,
             env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),

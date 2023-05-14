@@ -52,7 +52,6 @@ aleph-rhi-api = { workspace = true }
 anyhow = { workspace = true }
 log = { workspace = true }
 bitflags = { workspace = true }
-cstr = { workspace = true }
 crossbeam = { workspace = true }
 once_cell = { workspace = true }
 ash = { workspace = true }
