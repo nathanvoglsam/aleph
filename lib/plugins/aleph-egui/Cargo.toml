@@ -41,7 +41,7 @@ edition = "2021"
 [dependencies]
 aleph-interfaces = { workspace = true }
 log = { workspace = true }
-egui = "0.21"
+egui = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

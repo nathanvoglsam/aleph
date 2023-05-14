@@ -51,4 +51,4 @@ log = { workspace = true }
 cstr = { workspace = true }
 once_cell = { workspace = true }
 ultraviolet = { workspace = true }
-bytemuck = "1"
+bytemuck = { workspace = true }

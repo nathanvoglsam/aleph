@@ -60,8 +60,8 @@ bumpalo = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
 libloading = { workspace = true }
-console = "0.15"
-byteorder = "1"
+console = { workspace = true }
+byteorder = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

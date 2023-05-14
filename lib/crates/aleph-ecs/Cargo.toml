@@ -45,5 +45,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-virtual-buffer = { path = "../aleph-virtual-buffer", version = "0.1" }
 aleph-label = { path = "../aleph-label", version = "1" }
 crossbeam = { workspace = true }
-rayon = "1.5"
+rayon = { workspace = true }
 

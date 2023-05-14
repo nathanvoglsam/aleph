@@ -43,7 +43,7 @@ aleph-interfaces = { workspace = true }
 log = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
-ctrlc = "3"
+ctrlc = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
