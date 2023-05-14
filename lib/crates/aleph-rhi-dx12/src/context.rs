@@ -133,27 +133,43 @@ impl Context {
     fn check_mandatory_features(device: ID3D12Device) -> Option<()> {
         let feature_support = FeatureSupport::new(device).ok()?;
 
-        if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_12_0.0 {
-            log::trace!("Adapter doesn't support Feature Level 12_0");
-            return None;
+        let mut failed = false;
+
+        if feature_support.ResourceBindingTier().0 < D3D12_RESOURCE_BINDING_TIER_3.0 {
+            log::error!("Adapter doesn't support Resource Binding Tier 3");
+            failed = true;
+        }
+
+        if !feature_support.OutputMergerLogicOp() {
+            log::error!("Adapter doesn't support Output Merger Logic Op");
+            failed = true;
         }
 
         if !feature_support.EnhancedBarriersSupported() {
-            log::trace!("Adapter doesn't support Enhanced Barriers");
-            return None;
+            log::error!("Adapter doesn't support Enhanced Barriers");
+            failed = true;
         }
 
         if feature_support.HighestShaderModel().0 < D3D_SHADER_MODEL_6_0.0 {
-            log::trace!("Adapter doesn't support Shader Model 6.0");
-            return None;
+            log::error!("Adapter doesn't support Shader Model 6.0");
+            failed = true;
         }
 
         if feature_support.HighestRootSignatureVersion().0 < D3D_ROOT_SIGNATURE_VERSION_1_1.0 {
-            log::trace!("Adapter doesn't support Root Signature 1.1");
-            return None;
+            log::error!("Adapter doesn't support Root Signature 1.1");
+            failed = true;
         }
 
-        Some(())
+        if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_11_0.0 {
+            log::error!("Adapter doesn't support Feature Level 11_0");
+            failed = true;
+        }
+
+        if failed {
+            None
+        } else {
+            Some(())
+        }
     }
 
     fn adapter_meets_requirements(
