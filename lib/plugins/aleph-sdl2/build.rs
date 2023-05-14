@@ -31,6 +31,7 @@ extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 extern crate cmake;
 
+use std::path::Path;
 use target::{Architecture, Platform};
 
 ///
@@ -118,82 +119,36 @@ fn android_compile_sdl2(arch: Architecture) {
 ///
 fn main() {
     let target_platform = target::build::target_platform();
+    let target_arch = target::build::target_architecture();
     match target_platform {
         Platform::WindowsGNU | Platform::WindowsMSVC | Platform::UniversalWindowsMSVC => {
-            // If we're building for windows we need to compile SDL2 ourselves. We already have the
-            // source for android builds so we may as well build for windows as well rather than
-            // try to bundle binaries
-
-            let mut build = cmake::Config::new("thirdparty");
-            if target_platform.is_msvc() {
-                build.generator("Visual Studio 17 2022");
+            let arch = match target_arch {
+                Architecture::X8664 => "x86_64",
+                Architecture::AARCH64 => "aarch64",
+                Architecture::Unknown => panic!("Unknown architecture"),
+            };
+            let vendor = if target_platform.is_uwp() {
+                "winrt"
             } else {
-                build.generator("Ninja");
-            }
+                "win32"
+            };
+            let abi = if target_platform.is_gnu() {
+                "gnu"
+            } else {
+                "msvc"
+            };
 
-            // Don't compile the SDL2 static library
-            build.define("SDL_STATIC", "OFF");
-            build.define("DIRECTX", "OFF");
+            let binary_path = format!("./thirdparty/out/{arch}/{vendor}/{abi}");
+            let binary_path = Path::new(&binary_path);
+            let link_path = binary_path.join("lib").canonicalize().unwrap();
 
-            if target_platform.is_uwp() {
-                build.define("CMAKE_SYSTEM_NAME", "WindowsStore");
-                build.define("CMAKE_SYSTEM_VERSION", "10.0");
-                build.define("WINDOWS_STORE", "TRUE");
-                build.define("SDL_SENSOR", "FALSE");
-            }
+            println!("cargo:rustc-link-search=all={}", link_path.display());
 
-            let optimized = target::build::target_build_config().is_optimized();
-            let debug = target::build::target_build_config().is_debug();
-            match (optimized, debug) {
-                (true, true) => {
-                    build.profile("RelWithDebInfo");
-                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
-                }
-                (false, true) => {
-                    build.profile("Debug");
-                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
-                }
-                (_, false) => {
-                    build.profile("Release");
-                }
-            }
-
-            let out_dir = build.build();
-
-            // We're going to need the output lib and bin dir
-            let lib_dir = out_dir.join("lib");
-            let bin_dir = out_dir.join("bin");
-            let bld_dir = out_dir.join("build");
-
-            // Give rustc the directory of where to find the lib files to link to
-            println!("cargo:rustc-link-search=all={}", &lib_dir.display());
-
-            // Give rustc the directory of where to find the lib files to link to
-            println!("cargo:rustc-link-search=all={}", &bin_dir.display());
-
-            // Copy the output dll file to the artifacts dir
-            let source = bin_dir.join(dll_name());
+            let source = binary_path.join("bin").join(dll_name());
             compile::copy_file_to_artifacts_dir(&source)
-                .expect("Failed to copy SDL2 dll/so to artifacts dir");
-
-            // Copy the output dll file to the target dir
+                .expect("Failed to copy SDL2 dll to artifacts dir");
             compile::copy_file_to_target_dir(&source)
-                .expect("Failed to copy SDL2 dll/so to target dir");
-
-            // Copy the SDL2 pdb
-            if target::build::target_platform().is_msvc() && debug {
-                let build_profile = match (optimized, debug) {
-                    (true, true) => "RelWithDebInfo",
-                    (false, true) => "Debug",
-                    (_, false) => "Release",
-                };
-                let source = bld_dir.join(build_profile).join("SDL2.pdb");
-
-                compile::copy_file_to_artifacts_dir(&source)
-                    .expect("Failed to copy SDL2 pdb to artifacts dir");
-                compile::copy_file_to_target_dir(&source)
-                    .expect("Failed to copy SDL2 pdb to target dir");
-            }
+                .expect("Failed to copy SDL2 dll to target dir");
         }
         Platform::UniversalWindowsGNU => {
             // We can't compile SDL2 for this platform as it requires msvc
@@ -222,7 +177,7 @@ fn main() {
         Platform::MacOS => {
             // If we're building for macos we need to compile SDL2 ourselves. Same reason as windows
 
-            let mut build = cmake::Config::new("thirdparty");
+            let mut build = cmake::Config::new("thirdparty/submodules/SDL");
             build.generator("Ninja");
 
             // Don't compile the SDL2 static library

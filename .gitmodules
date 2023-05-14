@@ -7,12 +7,12 @@
 [submodule "submodules/VulkanMemoryAllocator"]
 	path = submodules/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "submodules/SDL"]
-	path = submodules/SDL
-	url = https://github.com/libsdl-org/SDL.git
 [submodule "submodules/WinPixEventRuntime"]
 	path = submodules/WinPixEventRuntime
 	url = https://gitea.hmmr-cloud.com.au/MindSpunk/WinPixEventRuntime.git
 [submodule "submodules/DirectX12AgilitySDK"]
 	path = submodules/DirectX12AgilitySDK
 	url = https://gitea.hmmr-cloud.com.au/MindSpunk/DirectX12AgilitySDK.git
+[submodule "submodules/SDL2-builds"]
+	path = submodules/SDL2-builds
+	url = https://gitea.hmmr-cloud.com.au/MindSpunk/SDL2-builds.git
