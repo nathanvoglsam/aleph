@@ -10,3 +10,6 @@
 [submodule "submodules/SDL"]
 	path = submodules/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "submodules/WinPixEventRuntime"]
+	path = submodules/WinPixEventRuntime
+	url = https://gitea.hmmr-cloud.com.au/MindSpunk/WinPixEventRuntime.git

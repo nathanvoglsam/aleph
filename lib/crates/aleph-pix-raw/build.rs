@@ -27,101 +27,59 @@
 // SOFTWARE.
 //
 
-#[cfg(windows)]
+use aleph_target_build::build::{target_architecture, target_platform};
+use aleph_target_build::Architecture;
+use std::path::Path;
+
 fn main() {
-    windows::windows_main();
-}
-
-#[cfg(not(windows))]
-fn main() {}
-
-#[cfg(windows)]
-mod windows {
-    use aleph_target_build::build::target_platform;
-    use std::io::{Cursor, Read};
-    use std::path::Path;
-    use zip::ZipArchive;
-
-    pub fn windows_main() {
-        const HEADER_1: &str = "Include/WinPixEventRuntime/pix3.h";
-        const HEADER_1_NAME: &str = "pix3.h";
-        const HEADER_2: &str = "Include/WinPixEventRuntime/pix3_win.h";
-        const HEADER_2_NAME: &str = "pix3_win.h";
-        const HEADER_3: &str = "Include/WinPixEventRuntime/PIXEvents.h";
-        const HEADER_3_NAME: &str = "PIXEvents.h";
-        const HEADER_4: &str = "Include/WinPixEventRuntime/PIXEventsCommon.h";
-        const HEADER_4_NAME: &str = "PIXEventsCommon.h";
-
-        const WIN32_DLL: &str = "bin/x64/WinPixEventRuntime.dll";
-        const WIN32_LIB: &str = "bin/x64/WinPixEventRuntime.lib";
-        const WINRT_DLL: &str = "bin/x64/WinPixEventRuntime_UAP.dll";
-        const WINRT_LIB: &str = "bin/x64/WinPixEventRuntime_UAP.lib";
-
-        const WIN32_DLL_NAME: &str = "WinPixEventRuntime.dll";
-        const WIN32_LIB_NAME: &str = "WinPixEventRuntime.lib";
-        const WINRT_DLL_NAME: &str = "WinPixEventRuntime_UAP.dll";
-        const WINRT_LIB_NAME: &str = "WinPixEventRuntime_UAP.lib";
-
-        let out_dir = std::env::var("OUT_DIR").unwrap();
-        let out_dir = Path::new(&out_dir);
-
-        let bytes = std::fs::read("pkg/winpixeventruntime.1.0.200127001.nupkg").unwrap();
-        let cursor = Cursor::new(bytes.as_slice());
-        let mut package = zip::ZipArchive::new(cursor).unwrap();
-
-        write_zip_file(&mut package, out_dir, HEADER_1, HEADER_1_NAME);
-        write_zip_file(&mut package, out_dir, HEADER_2, HEADER_2_NAME);
-        write_zip_file(&mut package, out_dir, HEADER_3, HEADER_3_NAME);
-        write_zip_file(&mut package, out_dir, HEADER_4, HEADER_4_NAME);
-        write_zip_file(&mut package, out_dir, WIN32_DLL, WIN32_DLL_NAME);
-        write_zip_file(&mut package, out_dir, WIN32_LIB, WIN32_LIB_NAME);
-        write_zip_file(&mut package, out_dir, WINRT_DLL, WINRT_DLL_NAME);
-        write_zip_file(&mut package, out_dir, WINRT_LIB, WINRT_LIB_NAME);
-
-        if target_platform().is_gnu() || !target_platform().is_windows() {
-            cc::Build::new()
-                .cpp(true)
-                .file("cpp/shim_noop.cpp")
-                .flag("-w")
-                .include(out_dir)
-                .compile("winpix_shim");
-        } else {
-            cc::Build::new()
-                .cpp(true)
-                .file("cpp/shim.cpp")
-                .include(out_dir)
-                .compile("winpix_shim");
-        };
-
-        if target_platform().is_uwp() {
-            let src = out_dir.join(WINRT_DLL_NAME);
-            aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
-            aleph_compile::copy_file_to_target_dir(&src).unwrap();
-            println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime_UAP");
-        } else if target_platform().is_windows() && target_platform().is_msvc() {
-            let src = out_dir.join(WIN32_DLL_NAME);
-            aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
-            aleph_compile::copy_file_to_target_dir(&src).unwrap();
-            println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
-        }
+    if !target_platform().is_windows() {
+        // This script should do nothing if we're building for windows
+        return;
     }
 
-    fn write_zip_file<R: Read + std::io::Seek>(
-        package: &mut ZipArchive<R>,
-        out_dir: &Path,
-        zip_path: &str,
-        name: &str,
-    ) {
-        // Try to get the file, asserting it is in fact a file
-        let mut file = package.by_name(zip_path).unwrap();
-        assert!(file.is_file());
+    // Whether we should link to WinPixEventRuntime depends on whether we used the no-op shim or not
+    let should_link = if target_platform().is_gnu() {
+        cc::Build::new()
+            .cpp(true)
+            .file("cpp/shim_noop.cpp")
+            .flag("-w")
+            .include("thirdparty/Include/WinPixEventRuntime")
+            .compile("winpix_shim");
+        false
+    } else {
+        cc::Build::new()
+            .cpp(true)
+            .file("cpp/shim.cpp")
+            .include("thirdparty/Include/WinPixEventRuntime")
+            .compile("winpix_shim");
+        true
+    };
 
-        // Read the bytes into a buffer
-        let mut bytes = Vec::new();
-        file.read_to_end(&mut bytes).unwrap();
+    if should_link {
+        let arch = match target_architecture() {
+            Architecture::X8664 => "x64",
+            Architecture::AARCH64 => "ARM64",
+            Architecture::Unknown => panic!("Unknown architecture"),
+        };
+        let win32_dll = format!("./thirdparty/bin/{arch}/WinPixEventRuntime.dll");
+        let winrt_dll = format!("./thirdparty/bin/{arch}/WinPixEventRuntime_UAP.dll");
+        let link_path = format!("./thirdparty/bin/{arch}");
+        let link_path = Path::new(&link_path).canonicalize().unwrap();
+        let link_path_full = link_path.display();
 
-        // Output the bytes into the file
-        let out = out_dir.join(name);
-        std::fs::write(out, bytes).unwrap();
+        // Which DLL we link to depends on if we're targeting UWP or not
+        if target_platform().is_uwp() {
+            let src = Path::new(&winrt_dll);
+            aleph_compile::copy_file_to_artifacts_dir(src).unwrap();
+            aleph_compile::copy_file_to_target_dir(src).unwrap();
+            println!("cargo:rustc-link-search=dylib={link_path_full}");
+            println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime_UAP");
+        } else {
+            let src = Path::new(&win32_dll);
+            aleph_compile::copy_file_to_artifacts_dir(src).unwrap();
+            aleph_compile::copy_file_to_target_dir(src).unwrap();
+            println!("cargo:rustc-link-search=dylib={link_path_full}");
+            println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime");
+        }
     }
 }
