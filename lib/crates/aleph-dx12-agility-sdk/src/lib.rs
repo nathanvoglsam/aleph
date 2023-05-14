@@ -28,8 +28,8 @@
 //
 
 use aleph_target_build::build::{target_architecture, target_platform};
-use std::path::{Path, PathBuf};
 use aleph_target_build::Architecture;
+use std::path::{Path, PathBuf};
 
 ///
 /// This function will perform the necessary work to allow rust to export the `D3D12SDKVersion` and
@@ -74,16 +74,14 @@ pub fn link_agility_symbol_def() {
 /// Internal function which returns the location of the .def file for giving to the linker
 ///
 fn def_location() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("symbols.def")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("symbols.def")
 }
 
 ///
 /// Internal function which returns the location of the agility SDK .nupkg file.
 ///
 fn pkg_location() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("thirdparty")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("thirdparty")
 }
 
 ///
@@ -159,9 +157,7 @@ pub fn extract_agility_sdk_binaries() {
             Architecture::Unknown => panic!("Unknown architecture"),
         };
 
-        let bin_dir = pkg_location()
-            .join("bin")
-            .join(arch);
+        let bin_dir = pkg_location().join("bin").join(arch);
 
         let core_dll = bin_dir.join("D3D12Core.dll");
         aleph_compile::copy_file_to_artifacts_dir(&core_dll).unwrap();
