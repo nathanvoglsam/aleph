@@ -1,4 +1,4 @@
-// auto-generated: "lalrpop 0.19.12"
+// auto-generated: "lalrpop 0.20.0"
 // sha3: 7d8f586ff49002e25e72a4934c2289356d9f8e130b3bb907d37cb016a7aa702c
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
@@ -7,9 +7,9 @@ use self::__lalrpop_util::state_machine as __state_machine;
 extern crate alloc;
 extern crate core;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 mod __parse__Atom {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -58,19 +58,34 @@ mod __parse__Atom {
             _ => 0,
         }
     }
+    const __TERMINAL: &[&str] = &[
+        r###""(""###,
+        r###"")""###,
+        r###""string""###,
+        r###""word""###,
+    ];
     fn __expected_tokens(__state: i8) -> alloc::vec::Vec<alloc::string::String> {
-        const __TERMINAL: &[&str] = &[
-            r###""(""###,
-            r###"")""###,
-            r###""string""###,
-            r###""word""###,
-        ];
         __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
             let next_state = __action(__state, index);
             if next_state == 0 {
                 None
             } else {
                 Some(alloc::string::ToString::to_string(terminal))
+            }
+        }).collect()
+    }
+    fn __expected_tokens_from_states<
+        'input,
+    >(
+        __states: &[i8],
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> alloc::vec::Vec<alloc::string::String>
+    {
+        __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
+            if __accepts(None, __states, Some(index), core::marker::PhantomData::<(&())>) {
+                Some(alloc::string::ToString::to_string(terminal))
+            } else {
+                None
             }
         }).collect()
     }
@@ -136,6 +151,10 @@ mod __parse__Atom {
             __expected_tokens(state)
         }
 
+        fn expected_tokens_from_states(&self, states: &[i8]) -> alloc::vec::Vec<alloc::string::String> {
+            __expected_tokens_from_states(states, core::marker::PhantomData::<(&())>)
+        }
+
         #[inline]
         fn uses_error_recovery(&self) -> bool {
             false
@@ -166,7 +185,7 @@ mod __parse__Atom {
         }
 
         fn simulate_reduce(&self, action: i8) -> __state_machine::SimulatedReduce<Self> {
-            panic!("error recovery not enabled for this grammar")
+            __simulate_reduce(action, core::marker::PhantomData::<(&())>)
         }
     }
     fn __token_to_integer<
@@ -201,6 +220,156 @@ mod __parse__Atom {
             _ => unreachable!(),
         }
     }
+    fn __simulate_reduce<
+        'input,
+    >(
+        __reduce_index: i8,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> __state_machine::SimulatedReduce<__StateMachine<'input>>
+    {
+        match __reduce_index {
+            0 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 0,
+                }
+            }
+            1 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 1,
+                }
+            }
+            2 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            3 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            4 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 3,
+                }
+            }
+            5 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 3,
+                }
+            }
+            6 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            7 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            8 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 5,
+                }
+            }
+            9 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 5,
+                }
+            }
+            10 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 6,
+                }
+            }
+            11 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 6,
+                }
+            }
+            12 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 7,
+                }
+            }
+            13 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 8,
+                }
+            }
+            14 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 9,
+                }
+            }
+            15 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 9,
+                }
+            }
+            16 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 10,
+                }
+            }
+            17 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 10,
+                }
+            }
+            18 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 11,
+                }
+            }
+            19 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 3,
+                    nonterminal_produced: 11,
+                }
+            }
+            20 => __state_machine::SimulatedReduce::Accept,
+            21 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 13,
+                }
+            }
+            22 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 14,
+                }
+            }
+            23 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 15,
+                }
+            }
+            _ => panic!("invalid reduction index {}", __reduce_index)
+        }
+    }
     pub struct AtomParser {
         _priv: (),
     }
@@ -230,6 +399,39 @@ mod __parse__Atom {
                 },
                 __tokens,
             )
+        }
+    }
+    fn __accepts<
+        'input,
+    >(
+        __error_state: Option<i8>,
+        __states: &[i8],
+        __opt_integer: Option<usize>,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> bool
+    {
+        let mut __states = __states.to_vec();
+        __states.extend(__error_state);
+        loop {
+            let mut __states_len = __states.len();
+            let __top = __states[__states_len - 1];
+            let __action = match __opt_integer {
+                None => __EOF_ACTION[__top as usize],
+                Some(__integer) => __action(__top, __integer),
+            };
+            if __action == 0 { return false; }
+            if __action > 0 { return true; }
+            let (__to_pop, __nt) = match __simulate_reduce(-(__action + 1), core::marker::PhantomData::<(&())>) {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop, nonterminal_produced
+                } => (states_to_pop, nonterminal_produced),
+                __state_machine::SimulatedReduce::Accept => return true,
+            };
+            __states_len -= __to_pop;
+            __states.truncate(__states_len);
+            let __top = __states[__states_len - 1];
+            let __next_state = __goto(__top, __nt);
+            __states.push(__next_state);
         }
     }
     pub(crate) fn __reduce<
@@ -306,8 +508,8 @@ mod __parse__Atom {
             20 => {
                 // __Atom = Atom => ActionFn(3);
                 let __sym0 = __pop_Variant3(__symbols);
-                let __start = __sym0.0.clone();
-                let __end = __sym0.2.clone();
+                let __start = __sym0.0;
+                let __end = __sym0.2;
                 let __nt = super::__action3::<>(__sym0);
                 return Some(Ok(__nt));
             }
@@ -450,8 +652,8 @@ mod __parse__Atom {
     {
         // Atom = "string" => ActionFn(10);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action10::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -466,8 +668,8 @@ mod __parse__Atom {
     {
         // Atom = "word" => ActionFn(11);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action11::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -497,8 +699,8 @@ mod __parse__Atom {
     {
         // File = ItemList+ => ActionFn(29);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action29::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
@@ -513,8 +715,8 @@ mod __parse__Atom {
     {
         // Item = ItemList => ActionFn(5);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action5::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -529,8 +731,8 @@ mod __parse__Atom {
     {
         // Item = ItemAtom => ActionFn(6);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action6::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -560,8 +762,8 @@ mod __parse__Atom {
     {
         // Item* = Item+ => ActionFn(13);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action13::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
@@ -576,8 +778,8 @@ mod __parse__Atom {
     {
         // Item+ = Item => ActionFn(20);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action20::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
@@ -594,8 +796,8 @@ mod __parse__Atom {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action21::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
@@ -610,8 +812,8 @@ mod __parse__Atom {
     {
         // ItemAtom = Atom => ActionFn(24);
         let __sym0 = __pop_Variant3(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action24::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
@@ -626,8 +828,8 @@ mod __parse__Atom {
     {
         // ItemList = List => ActionFn(25);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action25::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
@@ -657,8 +859,8 @@ mod __parse__Atom {
     {
         // ItemList* = ItemList+ => ActionFn(17);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action17::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
@@ -673,8 +875,8 @@ mod __parse__Atom {
     {
         // ItemList+ = ItemList => ActionFn(18);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action18::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
@@ -691,8 +893,8 @@ mod __parse__Atom {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action19::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
@@ -709,8 +911,8 @@ mod __parse__Atom {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant0(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action26::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
@@ -728,8 +930,8 @@ mod __parse__Atom {
         let __sym2 = __pop_Variant0(__symbols);
         let __sym1 = __pop_Variant6(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym2.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym2.2;
         let __nt = super::__action27::<>(__sym0, __sym1, __sym2);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
@@ -744,8 +946,8 @@ mod __parse__Atom {
     {
         // __File = File => ActionFn(0);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action0::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 13)
@@ -760,8 +962,8 @@ mod __parse__Atom {
     {
         // __Item = Item => ActionFn(1);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action1::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 14)
@@ -776,8 +978,8 @@ mod __parse__Atom {
     {
         // __List = List => ActionFn(2);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action2::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 15)
@@ -785,9 +987,9 @@ mod __parse__Atom {
 }
 pub use self::__parse__Atom::AtomParser;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 mod __parse__File {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -902,19 +1104,34 @@ mod __parse__File {
             _ => 0,
         }
     }
+    const __TERMINAL: &[&str] = &[
+        r###""(""###,
+        r###"")""###,
+        r###""string""###,
+        r###""word""###,
+    ];
     fn __expected_tokens(__state: i8) -> alloc::vec::Vec<alloc::string::String> {
-        const __TERMINAL: &[&str] = &[
-            r###""(""###,
-            r###"")""###,
-            r###""string""###,
-            r###""word""###,
-        ];
         __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
             let next_state = __action(__state, index);
             if next_state == 0 {
                 None
             } else {
                 Some(alloc::string::ToString::to_string(terminal))
+            }
+        }).collect()
+    }
+    fn __expected_tokens_from_states<
+        'input,
+    >(
+        __states: &[i8],
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> alloc::vec::Vec<alloc::string::String>
+    {
+        __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
+            if __accepts(None, __states, Some(index), core::marker::PhantomData::<(&())>) {
+                Some(alloc::string::ToString::to_string(terminal))
+            } else {
+                None
             }
         }).collect()
     }
@@ -980,6 +1197,10 @@ mod __parse__File {
             __expected_tokens(state)
         }
 
+        fn expected_tokens_from_states(&self, states: &[i8]) -> alloc::vec::Vec<alloc::string::String> {
+            __expected_tokens_from_states(states, core::marker::PhantomData::<(&())>)
+        }
+
         #[inline]
         fn uses_error_recovery(&self) -> bool {
             false
@@ -1010,7 +1231,7 @@ mod __parse__File {
         }
 
         fn simulate_reduce(&self, action: i8) -> __state_machine::SimulatedReduce<Self> {
-            panic!("error recovery not enabled for this grammar")
+            __simulate_reduce(action, core::marker::PhantomData::<(&())>)
         }
     }
     fn __token_to_integer<
@@ -1045,6 +1266,156 @@ mod __parse__File {
             _ => unreachable!(),
         }
     }
+    fn __simulate_reduce<
+        'input,
+    >(
+        __reduce_index: i8,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> __state_machine::SimulatedReduce<__StateMachine<'input>>
+    {
+        match __reduce_index {
+            0 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 0,
+                }
+            }
+            1 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 1,
+                }
+            }
+            2 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            3 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            4 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 3,
+                }
+            }
+            5 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 3,
+                }
+            }
+            6 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            7 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            8 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 5,
+                }
+            }
+            9 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 5,
+                }
+            }
+            10 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 6,
+                }
+            }
+            11 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 6,
+                }
+            }
+            12 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 7,
+                }
+            }
+            13 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 8,
+                }
+            }
+            14 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 9,
+                }
+            }
+            15 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 9,
+                }
+            }
+            16 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 10,
+                }
+            }
+            17 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 10,
+                }
+            }
+            18 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 11,
+                }
+            }
+            19 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 3,
+                    nonterminal_produced: 11,
+                }
+            }
+            20 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 12,
+                }
+            }
+            21 => __state_machine::SimulatedReduce::Accept,
+            22 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 14,
+                }
+            }
+            23 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 15,
+                }
+            }
+            _ => panic!("invalid reduction index {}", __reduce_index)
+        }
+    }
     pub struct FileParser {
         _priv: (),
     }
@@ -1074,6 +1445,39 @@ mod __parse__File {
                 },
                 __tokens,
             )
+        }
+    }
+    fn __accepts<
+        'input,
+    >(
+        __error_state: Option<i8>,
+        __states: &[i8],
+        __opt_integer: Option<usize>,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> bool
+    {
+        let mut __states = __states.to_vec();
+        __states.extend(__error_state);
+        loop {
+            let mut __states_len = __states.len();
+            let __top = __states[__states_len - 1];
+            let __action = match __opt_integer {
+                None => __EOF_ACTION[__top as usize],
+                Some(__integer) => __action(__top, __integer),
+            };
+            if __action == 0 { return false; }
+            if __action > 0 { return true; }
+            let (__to_pop, __nt) = match __simulate_reduce(-(__action + 1), core::marker::PhantomData::<(&())>) {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop, nonterminal_produced
+                } => (states_to_pop, nonterminal_produced),
+                __state_machine::SimulatedReduce::Accept => return true,
+            };
+            __states_len -= __to_pop;
+            __states.truncate(__states_len);
+            let __top = __states[__states_len - 1];
+            let __next_state = __goto(__top, __nt);
+            __states.push(__next_state);
         }
     }
     pub(crate) fn __reduce<
@@ -1153,8 +1557,8 @@ mod __parse__File {
             21 => {
                 // __File = File => ActionFn(0);
                 let __sym0 = __pop_Variant4(__symbols);
-                let __start = __sym0.0.clone();
-                let __end = __sym0.2.clone();
+                let __start = __sym0.0;
+                let __end = __sym0.2;
                 let __nt = super::__action0::<>(__sym0);
                 return Some(Ok(__nt));
             }
@@ -1294,8 +1698,8 @@ mod __parse__File {
     {
         // Atom = "string" => ActionFn(10);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action10::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -1310,8 +1714,8 @@ mod __parse__File {
     {
         // Atom = "word" => ActionFn(11);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action11::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -1341,8 +1745,8 @@ mod __parse__File {
     {
         // File = ItemList+ => ActionFn(29);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action29::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
@@ -1357,8 +1761,8 @@ mod __parse__File {
     {
         // Item = ItemList => ActionFn(5);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action5::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -1373,8 +1777,8 @@ mod __parse__File {
     {
         // Item = ItemAtom => ActionFn(6);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action6::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -1404,8 +1808,8 @@ mod __parse__File {
     {
         // Item* = Item+ => ActionFn(13);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action13::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
@@ -1420,8 +1824,8 @@ mod __parse__File {
     {
         // Item+ = Item => ActionFn(20);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action20::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
@@ -1438,8 +1842,8 @@ mod __parse__File {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action21::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
@@ -1454,8 +1858,8 @@ mod __parse__File {
     {
         // ItemAtom = Atom => ActionFn(24);
         let __sym0 = __pop_Variant3(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action24::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
@@ -1470,8 +1874,8 @@ mod __parse__File {
     {
         // ItemList = List => ActionFn(25);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action25::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
@@ -1501,8 +1905,8 @@ mod __parse__File {
     {
         // ItemList* = ItemList+ => ActionFn(17);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action17::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
@@ -1517,8 +1921,8 @@ mod __parse__File {
     {
         // ItemList+ = ItemList => ActionFn(18);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action18::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
@@ -1535,8 +1939,8 @@ mod __parse__File {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action19::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
@@ -1553,8 +1957,8 @@ mod __parse__File {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant0(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action26::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
@@ -1572,8 +1976,8 @@ mod __parse__File {
         let __sym2 = __pop_Variant0(__symbols);
         let __sym1 = __pop_Variant6(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym2.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym2.2;
         let __nt = super::__action27::<>(__sym0, __sym1, __sym2);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
@@ -1588,8 +1992,8 @@ mod __parse__File {
     {
         // __Atom = Atom => ActionFn(3);
         let __sym0 = __pop_Variant3(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action3::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 12)
@@ -1604,8 +2008,8 @@ mod __parse__File {
     {
         // __Item = Item => ActionFn(1);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action1::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 14)
@@ -1620,8 +2024,8 @@ mod __parse__File {
     {
         // __List = List => ActionFn(2);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action2::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 15)
@@ -1629,9 +2033,9 @@ mod __parse__File {
 }
 pub use self::__parse__File::FileParser;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 mod __parse__Item {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -1729,19 +2133,34 @@ mod __parse__Item {
             _ => 0,
         }
     }
+    const __TERMINAL: &[&str] = &[
+        r###""(""###,
+        r###"")""###,
+        r###""string""###,
+        r###""word""###,
+    ];
     fn __expected_tokens(__state: i8) -> alloc::vec::Vec<alloc::string::String> {
-        const __TERMINAL: &[&str] = &[
-            r###""(""###,
-            r###"")""###,
-            r###""string""###,
-            r###""word""###,
-        ];
         __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
             let next_state = __action(__state, index);
             if next_state == 0 {
                 None
             } else {
                 Some(alloc::string::ToString::to_string(terminal))
+            }
+        }).collect()
+    }
+    fn __expected_tokens_from_states<
+        'input,
+    >(
+        __states: &[i8],
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> alloc::vec::Vec<alloc::string::String>
+    {
+        __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
+            if __accepts(None, __states, Some(index), core::marker::PhantomData::<(&())>) {
+                Some(alloc::string::ToString::to_string(terminal))
+            } else {
+                None
             }
         }).collect()
     }
@@ -1807,6 +2226,10 @@ mod __parse__Item {
             __expected_tokens(state)
         }
 
+        fn expected_tokens_from_states(&self, states: &[i8]) -> alloc::vec::Vec<alloc::string::String> {
+            __expected_tokens_from_states(states, core::marker::PhantomData::<(&())>)
+        }
+
         #[inline]
         fn uses_error_recovery(&self) -> bool {
             false
@@ -1837,7 +2260,7 @@ mod __parse__Item {
         }
 
         fn simulate_reduce(&self, action: i8) -> __state_machine::SimulatedReduce<Self> {
-            panic!("error recovery not enabled for this grammar")
+            __simulate_reduce(action, core::marker::PhantomData::<(&())>)
         }
     }
     fn __token_to_integer<
@@ -1872,6 +2295,156 @@ mod __parse__Item {
             _ => unreachable!(),
         }
     }
+    fn __simulate_reduce<
+        'input,
+    >(
+        __reduce_index: i8,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> __state_machine::SimulatedReduce<__StateMachine<'input>>
+    {
+        match __reduce_index {
+            0 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 0,
+                }
+            }
+            1 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 1,
+                }
+            }
+            2 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            3 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            4 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 3,
+                }
+            }
+            5 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 3,
+                }
+            }
+            6 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            7 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            8 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 5,
+                }
+            }
+            9 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 5,
+                }
+            }
+            10 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 6,
+                }
+            }
+            11 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 6,
+                }
+            }
+            12 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 7,
+                }
+            }
+            13 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 8,
+                }
+            }
+            14 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 9,
+                }
+            }
+            15 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 9,
+                }
+            }
+            16 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 10,
+                }
+            }
+            17 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 10,
+                }
+            }
+            18 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 11,
+                }
+            }
+            19 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 3,
+                    nonterminal_produced: 11,
+                }
+            }
+            20 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 12,
+                }
+            }
+            21 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 13,
+                }
+            }
+            22 => __state_machine::SimulatedReduce::Accept,
+            23 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 15,
+                }
+            }
+            _ => panic!("invalid reduction index {}", __reduce_index)
+        }
+    }
     pub struct ItemParser {
         _priv: (),
     }
@@ -1901,6 +2474,39 @@ mod __parse__Item {
                 },
                 __tokens,
             )
+        }
+    }
+    fn __accepts<
+        'input,
+    >(
+        __error_state: Option<i8>,
+        __states: &[i8],
+        __opt_integer: Option<usize>,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> bool
+    {
+        let mut __states = __states.to_vec();
+        __states.extend(__error_state);
+        loop {
+            let mut __states_len = __states.len();
+            let __top = __states[__states_len - 1];
+            let __action = match __opt_integer {
+                None => __EOF_ACTION[__top as usize],
+                Some(__integer) => __action(__top, __integer),
+            };
+            if __action == 0 { return false; }
+            if __action > 0 { return true; }
+            let (__to_pop, __nt) = match __simulate_reduce(-(__action + 1), core::marker::PhantomData::<(&())>) {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop, nonterminal_produced
+                } => (states_to_pop, nonterminal_produced),
+                __state_machine::SimulatedReduce::Accept => return true,
+            };
+            __states_len -= __to_pop;
+            __states.truncate(__states_len);
+            let __top = __states[__states_len - 1];
+            let __next_state = __goto(__top, __nt);
+            __states.push(__next_state);
         }
     }
     pub(crate) fn __reduce<
@@ -1983,8 +2589,8 @@ mod __parse__Item {
             22 => {
                 // __Item = Item => ActionFn(1);
                 let __sym0 = __pop_Variant5(__symbols);
-                let __start = __sym0.0.clone();
-                let __end = __sym0.2.clone();
+                let __start = __sym0.0;
+                let __end = __sym0.2;
                 let __nt = super::__action1::<>(__sym0);
                 return Some(Ok(__nt));
             }
@@ -2121,8 +2727,8 @@ mod __parse__Item {
     {
         // Atom = "string" => ActionFn(10);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action10::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -2137,8 +2743,8 @@ mod __parse__Item {
     {
         // Atom = "word" => ActionFn(11);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action11::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -2168,8 +2774,8 @@ mod __parse__Item {
     {
         // File = ItemList+ => ActionFn(29);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action29::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
@@ -2184,8 +2790,8 @@ mod __parse__Item {
     {
         // Item = ItemList => ActionFn(5);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action5::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -2200,8 +2806,8 @@ mod __parse__Item {
     {
         // Item = ItemAtom => ActionFn(6);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action6::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -2231,8 +2837,8 @@ mod __parse__Item {
     {
         // Item* = Item+ => ActionFn(13);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action13::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
@@ -2247,8 +2853,8 @@ mod __parse__Item {
     {
         // Item+ = Item => ActionFn(20);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action20::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
@@ -2265,8 +2871,8 @@ mod __parse__Item {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action21::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
@@ -2281,8 +2887,8 @@ mod __parse__Item {
     {
         // ItemAtom = Atom => ActionFn(24);
         let __sym0 = __pop_Variant3(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action24::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
@@ -2297,8 +2903,8 @@ mod __parse__Item {
     {
         // ItemList = List => ActionFn(25);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action25::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
@@ -2328,8 +2934,8 @@ mod __parse__Item {
     {
         // ItemList* = ItemList+ => ActionFn(17);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action17::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
@@ -2344,8 +2950,8 @@ mod __parse__Item {
     {
         // ItemList+ = ItemList => ActionFn(18);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action18::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
@@ -2362,8 +2968,8 @@ mod __parse__Item {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action19::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
@@ -2380,8 +2986,8 @@ mod __parse__Item {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant0(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action26::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
@@ -2399,8 +3005,8 @@ mod __parse__Item {
         let __sym2 = __pop_Variant0(__symbols);
         let __sym1 = __pop_Variant6(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym2.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym2.2;
         let __nt = super::__action27::<>(__sym0, __sym1, __sym2);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
@@ -2415,8 +3021,8 @@ mod __parse__Item {
     {
         // __Atom = Atom => ActionFn(3);
         let __sym0 = __pop_Variant3(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action3::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 12)
@@ -2431,8 +3037,8 @@ mod __parse__Item {
     {
         // __File = File => ActionFn(0);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action0::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 13)
@@ -2447,8 +3053,8 @@ mod __parse__Item {
     {
         // __List = List => ActionFn(2);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action2::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 15)
@@ -2456,9 +3062,9 @@ mod __parse__Item {
 }
 pub use self::__parse__Item::ItemParser;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 mod __parse__List {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -2558,19 +3164,34 @@ mod __parse__List {
             _ => 0,
         }
     }
+    const __TERMINAL: &[&str] = &[
+        r###""(""###,
+        r###"")""###,
+        r###""string""###,
+        r###""word""###,
+    ];
     fn __expected_tokens(__state: i8) -> alloc::vec::Vec<alloc::string::String> {
-        const __TERMINAL: &[&str] = &[
-            r###""(""###,
-            r###"")""###,
-            r###""string""###,
-            r###""word""###,
-        ];
         __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
             let next_state = __action(__state, index);
             if next_state == 0 {
                 None
             } else {
                 Some(alloc::string::ToString::to_string(terminal))
+            }
+        }).collect()
+    }
+    fn __expected_tokens_from_states<
+        'input,
+    >(
+        __states: &[i8],
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> alloc::vec::Vec<alloc::string::String>
+    {
+        __TERMINAL.iter().enumerate().filter_map(|(index, terminal)| {
+            if __accepts(None, __states, Some(index), core::marker::PhantomData::<(&())>) {
+                Some(alloc::string::ToString::to_string(terminal))
+            } else {
+                None
             }
         }).collect()
     }
@@ -2636,6 +3257,10 @@ mod __parse__List {
             __expected_tokens(state)
         }
 
+        fn expected_tokens_from_states(&self, states: &[i8]) -> alloc::vec::Vec<alloc::string::String> {
+            __expected_tokens_from_states(states, core::marker::PhantomData::<(&())>)
+        }
+
         #[inline]
         fn uses_error_recovery(&self) -> bool {
             false
@@ -2666,7 +3291,7 @@ mod __parse__List {
         }
 
         fn simulate_reduce(&self, action: i8) -> __state_machine::SimulatedReduce<Self> {
-            panic!("error recovery not enabled for this grammar")
+            __simulate_reduce(action, core::marker::PhantomData::<(&())>)
         }
     }
     fn __token_to_integer<
@@ -2701,6 +3326,156 @@ mod __parse__List {
             _ => unreachable!(),
         }
     }
+    fn __simulate_reduce<
+        'input,
+    >(
+        __reduce_index: i8,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> __state_machine::SimulatedReduce<__StateMachine<'input>>
+    {
+        match __reduce_index {
+            0 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 0,
+                }
+            }
+            1 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 1,
+                }
+            }
+            2 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            3 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 2,
+                }
+            }
+            4 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 3,
+                }
+            }
+            5 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 3,
+                }
+            }
+            6 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            7 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 4,
+                }
+            }
+            8 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 5,
+                }
+            }
+            9 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 5,
+                }
+            }
+            10 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 6,
+                }
+            }
+            11 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 6,
+                }
+            }
+            12 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 7,
+                }
+            }
+            13 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 8,
+                }
+            }
+            14 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 0,
+                    nonterminal_produced: 9,
+                }
+            }
+            15 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 9,
+                }
+            }
+            16 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 10,
+                }
+            }
+            17 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 10,
+                }
+            }
+            18 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 2,
+                    nonterminal_produced: 11,
+                }
+            }
+            19 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 3,
+                    nonterminal_produced: 11,
+                }
+            }
+            20 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 12,
+                }
+            }
+            21 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 13,
+                }
+            }
+            22 => {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop: 1,
+                    nonterminal_produced: 14,
+                }
+            }
+            23 => __state_machine::SimulatedReduce::Accept,
+            _ => panic!("invalid reduction index {}", __reduce_index)
+        }
+    }
     pub struct ListParser {
         _priv: (),
     }
@@ -2730,6 +3505,39 @@ mod __parse__List {
                 },
                 __tokens,
             )
+        }
+    }
+    fn __accepts<
+        'input,
+    >(
+        __error_state: Option<i8>,
+        __states: &[i8],
+        __opt_integer: Option<usize>,
+        _: core::marker::PhantomData<(&'input ())>,
+    ) -> bool
+    {
+        let mut __states = __states.to_vec();
+        __states.extend(__error_state);
+        loop {
+            let mut __states_len = __states.len();
+            let __top = __states[__states_len - 1];
+            let __action = match __opt_integer {
+                None => __EOF_ACTION[__top as usize],
+                Some(__integer) => __action(__top, __integer),
+            };
+            if __action == 0 { return false; }
+            if __action > 0 { return true; }
+            let (__to_pop, __nt) = match __simulate_reduce(-(__action + 1), core::marker::PhantomData::<(&())>) {
+                __state_machine::SimulatedReduce::Reduce {
+                    states_to_pop, nonterminal_produced
+                } => (states_to_pop, nonterminal_produced),
+                __state_machine::SimulatedReduce::Accept => return true,
+            };
+            __states_len -= __to_pop;
+            __states.truncate(__states_len);
+            let __top = __states[__states_len - 1];
+            let __next_state = __goto(__top, __nt);
+            __states.push(__next_state);
         }
     }
     pub(crate) fn __reduce<
@@ -2815,8 +3623,8 @@ mod __parse__List {
             23 => {
                 // __List = List => ActionFn(2);
                 let __sym0 = __pop_Variant4(__symbols);
-                let __start = __sym0.0.clone();
-                let __end = __sym0.2.clone();
+                let __start = __sym0.0;
+                let __end = __sym0.2;
                 let __nt = super::__action2::<>(__sym0);
                 return Some(Ok(__nt));
             }
@@ -2950,8 +3758,8 @@ mod __parse__List {
     {
         // Atom = "string" => ActionFn(10);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action10::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -2966,8 +3774,8 @@ mod __parse__List {
     {
         // Atom = "word" => ActionFn(11);
         let __sym0 = __pop_Variant1(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action11::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
@@ -2997,8 +3805,8 @@ mod __parse__List {
     {
         // File = ItemList+ => ActionFn(29);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action29::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
@@ -3013,8 +3821,8 @@ mod __parse__List {
     {
         // Item = ItemList => ActionFn(5);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action5::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -3029,8 +3837,8 @@ mod __parse__List {
     {
         // Item = ItemAtom => ActionFn(6);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action6::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
@@ -3060,8 +3868,8 @@ mod __parse__List {
     {
         // Item* = Item+ => ActionFn(13);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action13::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
@@ -3076,8 +3884,8 @@ mod __parse__List {
     {
         // Item+ = Item => ActionFn(20);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action20::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
@@ -3094,8 +3902,8 @@ mod __parse__List {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action21::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
@@ -3110,8 +3918,8 @@ mod __parse__List {
     {
         // ItemAtom = Atom => ActionFn(24);
         let __sym0 = __pop_Variant3(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action24::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
@@ -3126,8 +3934,8 @@ mod __parse__List {
     {
         // ItemList = List => ActionFn(25);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action25::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
@@ -3157,8 +3965,8 @@ mod __parse__List {
     {
         // ItemList* = ItemList+ => ActionFn(17);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action17::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
@@ -3173,8 +3981,8 @@ mod __parse__List {
     {
         // ItemList+ = ItemList => ActionFn(18);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action18::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
@@ -3191,8 +3999,8 @@ mod __parse__List {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant5(__symbols);
         let __sym0 = __pop_Variant6(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action19::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
@@ -3209,8 +4017,8 @@ mod __parse__List {
         assert!(__symbols.len() >= 2);
         let __sym1 = __pop_Variant0(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym1.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym1.2;
         let __nt = super::__action26::<>(__sym0, __sym1);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
@@ -3228,8 +4036,8 @@ mod __parse__List {
         let __sym2 = __pop_Variant0(__symbols);
         let __sym1 = __pop_Variant6(__symbols);
         let __sym0 = __pop_Variant0(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym2.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym2.2;
         let __nt = super::__action27::<>(__sym0, __sym1, __sym2);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
@@ -3244,8 +4052,8 @@ mod __parse__List {
     {
         // __Atom = Atom => ActionFn(3);
         let __sym0 = __pop_Variant3(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action3::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 12)
@@ -3260,8 +4068,8 @@ mod __parse__List {
     {
         // __File = File => ActionFn(0);
         let __sym0 = __pop_Variant4(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action0::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 13)
@@ -3276,8 +4084,8 @@ mod __parse__List {
     {
         // __Item = Item => ActionFn(1);
         let __sym0 = __pop_Variant5(__symbols);
-        let __start = __sym0.0.clone();
-        let __end = __sym0.2.clone();
+        let __start = __sym0.0;
+        let __end = __sym0.2;
         let __nt = super::__action1::<>(__sym0);
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 14)
@@ -3285,48 +4093,56 @@ mod __parse__List {
 }
 pub use self::__parse__List::ListParser;
 
+#[allow(clippy::too_many_arguments)]
 fn __action0<'input>(
     (_, __0, _): (usize, crate::ast::List<'input>, usize),
 ) -> crate::ast::List<'input> {
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action1<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> crate::ast::Item<'input> {
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action2<'input>(
     (_, __0, _): (usize, crate::ast::List<'input>, usize),
 ) -> crate::ast::List<'input> {
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action3<'input>(
     (_, __0, _): (usize, crate::ast::Atom<'input>, usize),
 ) -> crate::ast::Atom<'input> {
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action4<'input>(
     (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> crate::ast::List<'input> {
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action5<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> crate::ast::Item<'input> {
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action6<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> crate::ast::Item<'input> {
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action7<'input>(
     (_, pl, _): (usize, usize, usize),
     (_, l, _): (usize, crate::ast::List<'input>, usize),
@@ -3338,6 +4154,7 @@ fn __action7<'input>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action8<'input>(
     (_, pl, _): (usize, usize, usize),
     (_, a, _): (usize, crate::ast::Atom<'input>, usize),
@@ -3349,6 +4166,7 @@ fn __action8<'input>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action9<'input>(
     (_, _, _): (usize, crate::lexer::Tok<'input>, usize),
     (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
@@ -3357,14 +4175,17 @@ fn __action9<'input>(
     __0
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action10<'input>((_, s, _): (usize, &'input str, usize)) -> crate::ast::Atom<'input> {
     crate::ast::Atom::string(s)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action11<'input>((_, w, _): (usize, &'input str, usize)) -> crate::ast::Atom<'input> {
     crate::ast::Atom::word(w)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action12<'input>(
     __lookbehind: &usize,
     __lookahead: &usize,
@@ -3372,6 +4193,7 @@ fn __action12<'input>(
     alloc::vec![]
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action13<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
@@ -3379,13 +4201,14 @@ fn __action13<'input>(
 }
 
 fn __action14<'input>(__lookbehind: &usize, __lookahead: &usize) -> usize {
-    __lookbehind.clone()
+    *__lookbehind
 }
 
 fn __action15<'input>(__lookbehind: &usize, __lookahead: &usize) -> usize {
-    __lookahead.clone()
+    *__lookahead
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action16<'input>(
     __lookbehind: &usize,
     __lookahead: &usize,
@@ -3393,18 +4216,21 @@ fn __action16<'input>(
     alloc::vec![]
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action17<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
     v
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action18<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
     alloc::vec![__0]
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action19<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
     (_, e, _): (usize, crate::ast::Item<'input>, usize),
@@ -3416,12 +4242,14 @@ fn __action19<'input>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action20<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
     alloc::vec![__0]
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action21<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
     (_, e, _): (usize, crate::ast::Item<'input>, usize),
@@ -3433,84 +4261,93 @@ fn __action21<'input>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action22<'input>(
     __0: (usize, crate::ast::Atom<'input>, usize),
     __1: (usize, usize, usize),
 ) -> crate::ast::Item<'input> {
-    let __start0 = __0.0.clone();
-    let __end0 = __0.0.clone();
+    let __start0 = __0.0;
+    let __end0 = __0.0;
     let __temp0 = __action15(&__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
     __action8(__temp0, __0, __1)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action23<'input>(
     __0: (usize, crate::ast::List<'input>, usize),
     __1: (usize, usize, usize),
 ) -> crate::ast::Item<'input> {
-    let __start0 = __0.0.clone();
-    let __end0 = __0.0.clone();
+    let __start0 = __0.0;
+    let __end0 = __0.0;
     let __temp0 = __action15(&__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
     __action7(__temp0, __0, __1)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action24<'input>(__0: (usize, crate::ast::Atom<'input>, usize)) -> crate::ast::Item<'input> {
-    let __start0 = __0.2.clone();
-    let __end0 = __0.2.clone();
+    let __start0 = __0.2;
+    let __end0 = __0.2;
     let __temp0 = __action14(&__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
     __action22(__0, __temp0)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action25<'input>(__0: (usize, crate::ast::List<'input>, usize)) -> crate::ast::Item<'input> {
-    let __start0 = __0.2.clone();
-    let __end0 = __0.2.clone();
+    let __start0 = __0.2;
+    let __end0 = __0.2;
     let __temp0 = __action14(&__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
     __action23(__0, __temp0)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action26<'input>(
     __0: (usize, crate::lexer::Tok<'input>, usize),
     __1: (usize, crate::lexer::Tok<'input>, usize),
 ) -> crate::ast::List<'input> {
-    let __start0 = __0.2.clone();
-    let __end0 = __1.0.clone();
+    let __start0 = __0.2;
+    let __end0 = __1.0;
     let __temp0 = __action12(&__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
     __action9(__0, __temp0, __1)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action27<'input>(
     __0: (usize, crate::lexer::Tok<'input>, usize),
     __1: (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
     __2: (usize, crate::lexer::Tok<'input>, usize),
 ) -> crate::ast::List<'input> {
-    let __start0 = __1.0.clone();
-    let __end0 = __1.2.clone();
+    let __start0 = __1.0;
+    let __end0 = __1.2;
     let __temp0 = __action13(__1);
     let __temp0 = (__start0, __temp0, __end0);
     __action9(__0, __temp0, __2)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action28<'input>(__lookbehind: &usize, __lookahead: &usize) -> crate::ast::List<'input> {
-    let __start0 = __lookbehind.clone();
-    let __end0 = __lookahead.clone();
+    let __start0 = *__lookbehind;
+    let __end0 = *__lookahead;
     let __temp0 = __action16(&__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
     __action4(__temp0)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn __action29<'input>(
     __0: (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> crate::ast::List<'input> {
-    let __start0 = __0.0.clone();
-    let __end0 = __0.2.clone();
+    let __start0 = __0.0;
+    let __end0 = __0.2;
     let __temp0 = __action17(__0);
     let __temp0 = (__start0, __temp0, __end0);
     __action4(__temp0)
 }
+#[allow(clippy::type_complexity)]
 
 pub trait __ToTriple<'input> {
     fn to_triple(
