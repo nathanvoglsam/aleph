@@ -29,10 +29,79 @@
 
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
-extern crate cmake;
 
 use std::path::Path;
 use target::{Architecture, Platform};
+
+///
+/// Main driver for compiling SDL2, handles switching between w/e implementation is needed for the
+/// target platforms.
+///
+fn main() {
+    let target_platform = target::build::target_platform();
+    let target_arch = target::build::target_architecture();
+    match target_platform {
+        Platform::WindowsGNU | Platform::WindowsMSVC | Platform::UniversalWindowsMSVC => {
+            let arch = match target_arch {
+                Architecture::X8664 => "x86_64",
+                Architecture::AARCH64 => "aarch64",
+                Architecture::Unknown => panic!("Unknown architecture"),
+            };
+            let vendor = if target_platform.is_uwp() {
+                "winrt"
+            } else {
+                "win32"
+            };
+            let abi = if target_platform.is_gnu() {
+                "gnu"
+            } else {
+                "msvc"
+            };
+
+            let binary_path = format!("./thirdparty/out/{arch}/{vendor}/{abi}");
+            let binary_path = Path::new(&binary_path);
+            let link_path = binary_path.join("lib").canonicalize().unwrap();
+
+            println!("cargo:rustc-link-search=all={}", link_path.display());
+
+            let source = binary_path.join("bin").join(dll_name());
+            compile::copy_file_to_artifacts_dir(&source)
+                .expect("Failed to copy SDL2 dll to artifacts dir");
+            compile::copy_file_to_target_dir(&source)
+                .expect("Failed to copy SDL2 dll to target dir");
+        }
+        Platform::UniversalWindowsGNU => {
+            // We can't compile SDL2 for this platform as it requires msvc
+            panic!("Unsupported platform")
+        }
+        Platform::Linux => {
+            // Nothing has to be done on linux as the most sane choice is to use the system provided
+            // SDL2 lest we wake the horrible demons of distributing your own libraries on linux.
+            // If it's in the distro repository, get it from there as it will probably play much
+            // nicer than compiling our own.
+        }
+        Platform::Android => {
+            // On android we need to compile with ndk-build so it will play nicely with all the
+            // wacky things android has done for building.
+
+            // Driver function for doing the android compile
+            android_compile_sdl2(target::build::target_architecture());
+
+            // Get the location of the link files and add it to rustc's search path
+            let mut lib_dir = compile::artifacts_dir();
+            lib_dir.push("obj");
+            lib_dir.push("local");
+            lib_dir.push(target::build::target_architecture().ndk_name());
+            println!("cargo:rustc-link-search=all={}", lib_dir.display());
+        }
+        Platform::MacOS => {
+            build_with_cmake_macos();
+        }
+        Platform::Unknown => {
+            // Do nothing on 'unknown' as a safe default.
+        }
+    }
+}
 
 ///
 /// Gets the name of the dll/so file that will need to be copied around
@@ -113,117 +182,54 @@ fn android_compile_sdl2(arch: Architecture) {
     }
 }
 
-///
-/// Main driver for compiling SDL2, handles switching between w/e implementation is needed for the
-/// target platforms.
-///
-fn main() {
-    let target_platform = target::build::target_platform();
-    let target_arch = target::build::target_architecture();
-    match target_platform {
-        Platform::WindowsGNU | Platform::WindowsMSVC | Platform::UniversalWindowsMSVC => {
-            let arch = match target_arch {
-                Architecture::X8664 => "x86_64",
-                Architecture::AARCH64 => "aarch64",
-                Architecture::Unknown => panic!("Unknown architecture"),
-            };
-            let vendor = if target_platform.is_uwp() {
-                "winrt"
-            } else {
-                "win32"
-            };
-            let abi = if target_platform.is_gnu() {
-                "gnu"
-            } else {
-                "msvc"
-            };
+#[cfg(target_os = "macos")]
+fn build_with_cmake_macos() {
+    // If we're building for macos we need to compile SDL2 ourselves. Same reason as windows
 
-            let binary_path = format!("./thirdparty/out/{arch}/{vendor}/{abi}");
-            let binary_path = Path::new(&binary_path);
-            let link_path = binary_path.join("lib").canonicalize().unwrap();
+    let mut build = cmake::Config::new("thirdparty/submodules/SDL");
+    build.generator("Ninja");
 
-            println!("cargo:rustc-link-search=all={}", link_path.display());
+    // Don't compile the SDL2 static library
+    build.define("SDL_STATIC", "OFF");
 
-            let source = binary_path.join("bin").join(dll_name());
-            compile::copy_file_to_artifacts_dir(&source)
-                .expect("Failed to copy SDL2 dll to artifacts dir");
-            compile::copy_file_to_target_dir(&source)
-                .expect("Failed to copy SDL2 dll to target dir");
+    build.define("HAVE_GCC_WDECLARATION_AFTER_STATEMENT", "FALSE");
+
+    let optimized = target::build::target_build_config().is_optimized();
+    let debug = target::build::target_build_config().is_debug();
+    match (optimized, debug) {
+        (true, true) => {
+            build.profile("RelWithDebInfo");
+            build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
         }
-        Platform::UniversalWindowsGNU => {
-            // We can't compile SDL2 for this platform as it requires msvc
-            panic!("Unsupported platform")
+        (false, true) => {
+            build.profile("Debug");
+            build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
         }
-        Platform::Linux => {
-            // Nothing has to be done on linux as the most sane choice is to use the system provided
-            // SDL2 lest we wake the horrible demons of distributing your own libraries on linux.
-            // If it's in the distro repository, get it from there as it will probably play much
-            // nicer than compiling our own.
-        }
-        Platform::Android => {
-            // On android we need to compile with ndk-build so it will play nicely with all the
-            // wacky things android has done for building.
-
-            // Driver function for doing the android compile
-            android_compile_sdl2(target::build::target_architecture());
-
-            // Get the location of the link files and add it to rustc's search path
-            let mut lib_dir = compile::artifacts_dir();
-            lib_dir.push("obj");
-            lib_dir.push("local");
-            lib_dir.push(target::build::target_architecture().ndk_name());
-            println!("cargo:rustc-link-search=all={}", lib_dir.display());
-        }
-        Platform::MacOS => {
-            // If we're building for macos we need to compile SDL2 ourselves. Same reason as windows
-
-            let mut build = cmake::Config::new("thirdparty/submodules/SDL");
-            build.generator("Ninja");
-
-            // Don't compile the SDL2 static library
-            build.define("SDL_STATIC", "OFF");
-
-            build.define("HAVE_GCC_WDECLARATION_AFTER_STATEMENT", "FALSE");
-
-            let optimized = target::build::target_build_config().is_optimized();
-            let debug = target::build::target_build_config().is_debug();
-            match (optimized, debug) {
-                (true, true) => {
-                    build.profile("RelWithDebInfo");
-                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
-                }
-                (false, true) => {
-                    build.profile("Debug");
-                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
-                }
-                (_, false) => {
-                    build.profile("Release");
-                }
-            }
-
-            let out_dir = build.build();
-
-            // We're going to need the output lib and bin dir
-            let lib_dir = out_dir.join("lib");
-            let bin_dir = out_dir.join("bin");
-
-            // Give rustc the directory of where to find the lib files to link to
-            println!("cargo:rustc-link-search=all={}", &lib_dir.display());
-
-            // Give rustc the directory of where to find the lib files to link to
-            println!("cargo:rustc-link-search=all={}", &bin_dir.display());
-
-            // Copy the output dll file to the artifacts dir
-            let source = lib_dir.join(dll_name());
-            compile::copy_file_to_artifacts_dir(&source)
-                .expect("Failed to copy SDL2 dll/so to artifacts dir");
-
-            // Copy the output dll file to the target dir
-            compile::copy_file_to_target_dir(&source)
-                .expect("Failed to copy SDL2 dll/so to target dir");
-        }
-        Platform::Unknown => {
-            // Do nothing on 'unknown' as a safe default.
+        (_, false) => {
+            build.profile("Release");
         }
     }
+
+    let out_dir = build.build();
+
+    // We're going to need the output lib and bin dir
+    let lib_dir = out_dir.join("lib");
+    let bin_dir = out_dir.join("bin");
+
+    // Give rustc the directory of where to find the lib files to link to
+    println!("cargo:rustc-link-search=all={}", &lib_dir.display());
+
+    // Give rustc the directory of where to find the lib files to link to
+    println!("cargo:rustc-link-search=all={}", &bin_dir.display());
+
+    // Copy the output dll file to the artifacts dir
+    let source = lib_dir.join(dll_name());
+    compile::copy_file_to_artifacts_dir(&source)
+        .expect("Failed to copy SDL2 dll/so to artifacts dir");
+
+    // Copy the output dll file to the target dir
+    compile::copy_file_to_target_dir(&source).expect("Failed to copy SDL2 dll/so to target dir");
 }
+
+#[cfg(not(target_os = "macos"))]
+fn build_with_cmake_macos() {}

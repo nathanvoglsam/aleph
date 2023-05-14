@@ -55,7 +55,9 @@ log = { workspace = true }
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
 
-[build-dependencies]
+[target.'cfg(target_os = "macos")'.build-dependencies]
 cmake = { workspace = true }
+
+[build-dependencies]
 aleph-compile = { workspace = true }
 aleph-target-build = { workspace = true }
