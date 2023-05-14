@@ -27,31 +27,34 @@
 // SOFTWARE.
 //
 
-#[doc(hidden)]
-pub extern crate aleph_any;
+#[inline]
+#[allow(dead_code)]
+pub unsafe fn str_to_cstr(string: &'static str) -> &'static std::ffi::CStr {
+    std::mem::transmute(string)
+}
 
-#[doc(hidden)]
-pub extern crate aleph_rhi_api;
+#[macro_export]
+macro_rules! cstr {
+    ($strval:expr) => {{
+        fn caster(string: &'static str) -> &'static std::ffi::CStr {
+            unsafe { $crate::macros::str_to_cstr(string) }
+        }
+        caster(concat!($strval, "\0"))
+    }};
+}
 
-use std::any::TypeId;
+#[inline]
+#[allow(dead_code)]
+pub unsafe fn str_to_cstr_raw(string: &'static str) -> *const std::os::raw::c_char {
+    string.as_ptr() as *const _
+}
 
-pub mod bump_cell;
-pub mod conv;
-pub mod macros;
-pub mod manually_drop;
-pub mod unwrap;
-
-pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
-    src: &T,
-    out: *mut (),
-    expecting: TypeId,
-) -> Option<()> {
-    if expecting == TypeId::of::<T>() {
-        let out = out as *mut T;
-        out.write(src.clone());
-
-        Some(())
-    } else {
-        None
-    }
+#[macro_export]
+macro_rules! cstr_ptr {
+    ($strval:expr) => {{
+        fn caster(string: &'static str) -> *const std::os::raw::c_char {
+            unsafe { $crate::macros::str_to_cstr_raw(string) }
+        }
+        caster(concat!($strval, "\0"))
+    }};
 }
