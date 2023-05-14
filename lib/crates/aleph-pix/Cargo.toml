@@ -43,4 +43,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
-aleph-pix-raw = { path = "../aleph-pix-raw", version = "0.1" }
+aleph-pix-raw = { workspace = true }

@@ -40,9 +40,9 @@ edition = "2021"
 publish = false
 
 [dependencies]
-aleph-vk-format = { path = "../aleph-vk-format", version = "1" }
-byteorder = "1"
-num-integer = "0.1"
+aleph-vk-format = { workspace = true }
+byteorder = { workspace = true }
+num-integer = { workspace = true }
 bitflags = { workspace = true }
 
 [badges]

@@ -44,7 +44,7 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-egui = { path = "../aleph-egui", version = "0.1" }
+aleph-egui = { workspace = true }
 aleph-interfaces = { workspace = true }
 aleph-rhi-api = { workspace = true }
 log = { workspace = true }

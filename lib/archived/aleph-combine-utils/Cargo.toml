@@ -43,6 +43,6 @@ publish = false
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-combine = "4"
-unicode-width = "0.1"
-num-integer = "0.1"
+combine = { workspace = true }
+unicode-width = { workspace = true }
+num-integer = { workspace = true }

@@ -52,13 +52,13 @@ remote-console = ["aleph-interfaces/remote-console"]
 [dependencies]
 aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }
-aleph-sys-info = { path = "../aleph-sys-info", version = "0.1" }
-aleph-core = { path = "../../plugins/aleph-core", version = "0.1" }
-aleph-egui = { path = "../../plugins/aleph-egui", version = "0.1" }
-aleph-sdl2 = { path = "../../plugins/aleph-sdl2", version = "0.1", optional = true }
-aleph-headless = { path = "../../plugins/aleph-headless", version = "0.1" }
-aleph-render = { path = "../../plugins/aleph-render", version = "0.1" }
-aleph-rhi = { path = "../../plugins/aleph-rhi", version = "0.1" }
+aleph-sys-info = { workspace = true }
+aleph-core = { workspace = true }
+aleph-egui = { workspace = true }
+aleph-sdl2 = { workspace = true, optional = true }
+aleph-headless = { workspace = true }
+aleph-render = { workspace = true }
+aleph-rhi = { workspace = true }
 
 log = { workspace = true }
 once_cell = { workspace = true }

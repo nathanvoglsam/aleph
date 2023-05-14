@@ -43,8 +43,8 @@ publish = false
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [build-dependencies]
-lalrpop = "0.19.5"
+lalrpop = { workspace = true }
 
 [dependencies]
-aleph-combine-utils = { version = "0.1", path = "../aleph-combine-utils" }
-lalrpop-util = "0.19.5"
+aleph-combine-utils = { workspace = true }
+lalrpop-util = { workspace = true }

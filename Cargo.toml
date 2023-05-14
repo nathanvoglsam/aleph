@@ -79,6 +79,8 @@ members = [
 ]
 
 [workspace.dependencies]
+
+# Third Party Crates
 anyhow = "1"
 ash = "0.37"
 bitflags = "1"
@@ -113,11 +115,52 @@ ultraviolet = { version = "0.9", features = ["f64"] }
 utf16_lit = "2"
 zip = "0.6"
 
+# Aleph Crates
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
 aleph-compile = { path = "./lib/crates/aleph-compile", version = "1" }
+aleph-console = { path = "./lib/crates/aleph-console", version = "0.1" }
+aleph-dx12-agility-sdk = { path = "./lib/crates/aleph-dx12-agility-sdk", version = "0.1" }
+aleph-dx12-alloc = { path = "./lib/crates/aleph-dx12-alloc", version = "0.1" }
+aleph-ecs = { path = "./lib/crates/aleph-ecs", version = "0.1" }
+aleph-engine = { path = "./lib/crates/aleph-engine", version = "0.1" }
+aleph-gpu = { path = "./lib/crates/aleph-gpu", version = "0.1" }
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
+aleph-label = { path = "./lib/crates/aleph-label", version = "1" }
+aleph-pix = { path = "./lib/crates/aleph-pix", version = "0.1" }
+aleph-pix-raw = { path = "./lib/crates/aleph-pix-raw", version = "0.1" }
 aleph-rhi-api = { path = "./lib/crates/aleph-rhi-api", version = "0.1" }
+aleph-rhi-dx12 = { path = "./lib/crates/aleph-rhi-dx12", version = "0.1" }
+aleph-rhi-impl-utils = { path = "./lib/crates/aleph-rhi-impl-utils", version = "0.1" }
+aleph-rhi-loader = { path = "./lib/crates/aleph-rhi-loader", version = "0.1" }
 aleph-rhi-loader-api = { path = "./lib/crates/aleph-rhi-loader-api", version = "0.1" }
+aleph-rhi-validation = { path = "./lib/crates/aleph-rhi-validation", version = "0.1" }
+aleph-rhi-vulkan = { path = "./lib/crates/aleph-rhi-vulkan", version = "0.1" }
+aleph-sys-info = { path = "./lib/crates/aleph-sys-info", version = "0.1" }
 aleph-target = { path = "./lib/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./lib/crates/aleph-target-build", version = "2" }
+aleph-virtual-buffer = { path = "./lib/crates/aleph-virtual-buffer", version = "0.1" }
+aleph-vulkan-alloc = { path = "./lib/crates/aleph-vulkan-alloc", version = "0.1" }
 aleph-windows = { path = "./lib/crates/aleph-windows", version = "0.1" }
+
+# Aleph Plugins
+aleph-core = { path = "./lib/plugins/aleph-core", version = "0.1" }
+aleph-egui = { path = "./lib/plugins/aleph-egui", version = "0.1" }
+aleph-headless = { path = "./lib/plugins/aleph-headless", version = "0.1" }
+aleph-render = { path = "./lib/plugins/aleph-render", version = "0.1" }
+aleph-rhi = { path = "./lib/plugins/aleph-rhi", version = "0.1" }
+aleph-sdl2 = { path = "./lib/plugins/aleph-sdl2", version = "0.1" }
+
+# 'archived' Crates
+aleph-combine-utils = { path = "./lib/archived/aleph-combine-utils", version = "0.1" }
+aleph-ktx = { path = "./lib/archived/aleph-ktx", version = "0.1" }
+aleph-schema = { path = "./lib/archived/aleph-schema", version = "0.1" }
+aleph-sexpr = { path = "./lib/archived/aleph-sexpr", version = "0.1" }
+aleph-vk-format = { path = "./lib/archived/aleph-vk-format", version = "1" }
+
+# 'archived' Dependencies
+combine = "4"
+unicode-width = "0.1"
+num-integer = "0.1"
+smartstring = "1"
+lalrpop = "0.20.0"
+lalrpop-util = "0.20.0"

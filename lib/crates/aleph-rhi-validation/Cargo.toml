@@ -44,7 +44,7 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-rhi-impl-utils = { path = "../aleph-rhi-impl-utils", version = "0.1" }
+aleph-rhi-impl-utils = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 log = { workspace = true }

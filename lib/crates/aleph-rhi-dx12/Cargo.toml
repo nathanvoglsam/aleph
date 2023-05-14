@@ -44,8 +44,8 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-rhi-loader-api = { path = "../aleph-rhi-loader-api", version = "0.1" }
-aleph-rhi-impl-utils = { path = "../aleph-rhi-impl-utils", version = "0.1" }
+aleph-rhi-loader-api = { workspace = true }
+aleph-rhi-impl-utils = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 anyhow = { workspace = true }
@@ -59,6 +59,6 @@ bumpalo = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
-aleph-dx12-alloc = { path = "../aleph-dx12-alloc", version = "0.1" }
-aleph-pix = { path = "../aleph-pix", version = "0.1" }
+aleph-dx12-alloc = { workspace = true }
+aleph-pix = { workspace = true }
 libc = { workspace = true }

@@ -49,12 +49,12 @@ backend-d3d12 = ["aleph-rhi-dx12"]
 [dependencies]
 aleph-rhi-api = { workspace = true }
 aleph-rhi-loader-api = { workspace = true }
-aleph-rhi-validation = { path = "../aleph-rhi-validation", version = "0.1" }
+aleph-rhi-validation = { workspace = true }
 aleph-any = { workspace = true }
 log = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
-aleph-rhi-dx12 = { path = "../aleph-rhi-dx12", version = "0.1", optional = true }
+aleph-rhi-dx12 = { workspace = true, optional = true }
 
 [target.'cfg(any(windows, target_os = "macos", target_os = "linux", target_os = "android"))'.dependencies]
-aleph-rhi-vulkan = { path = "../aleph-rhi-vulkan", version = "0.1", optional = true }
+aleph-rhi-vulkan = { workspace = true, optional = true }

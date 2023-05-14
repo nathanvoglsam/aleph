@@ -39,7 +39,7 @@ documentation = "https://docs.rs/aleph-core/"
 edition = "2021"
 
 [dependencies]
-aleph-label = { path = "../../crates/aleph-label", version = "1" }
+aleph-label = { workspace = true }
 aleph-interfaces = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }

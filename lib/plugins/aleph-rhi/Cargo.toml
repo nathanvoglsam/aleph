@@ -39,7 +39,7 @@ documentation = "https://docs.rs/aleph-rhi/"
 edition = "2021"
 
 [dependencies]
-aleph-rhi-loader = { path = "../../crates/aleph-rhi-loader", version = "0.1" }
+aleph-rhi-loader = { workspace = true }
 aleph-interfaces = { workspace = true }
 aleph-rhi-api = { workspace = true }
 log = { workspace = true }
