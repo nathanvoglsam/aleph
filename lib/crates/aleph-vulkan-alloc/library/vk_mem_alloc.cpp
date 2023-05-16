@@ -45,7 +45,5 @@
 #   define VMA_USE_STL_SHARED_MUTEX 1
 #endif
 
-
-
-
+#include <cstdio>
 #include "vk_mem_alloc.h"
