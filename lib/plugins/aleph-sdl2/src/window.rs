@@ -261,7 +261,7 @@ impl WindowImpl {
             sdl2::event::WindowEvent::Close => WindowEvent::Close,
             sdl2::event::WindowEvent::TakeFocus => WindowEvent::TakeFocus,
             sdl2::event::WindowEvent::HitTest => WindowEvent::HitTest,
-            sdl2::event::WindowEvent::None => panic!("Unsupported event"),
+            sdl2::event::WindowEvent::None => return,
         };
         window_events.push(converted_event.clone());
         all_events.push(Event::WindowEvent(converted_event));
