@@ -331,12 +331,28 @@ impl SwapChain {
             capabilities.current_extent.height,
         ) {
             // Size we want is allowed in this case
-            (u32::MAX, u32::MAX) => vk::Extent2D {
-                width: config.width,
-                height: config.height,
-            },
+            (u32::MAX, u32::MAX) => {
+                log::trace!(
+                    "Selecting exact width/height ({}, {})",
+                    config.width,
+                    config.height
+                );
+                vk::Extent2D {
+                    width: config.width,
+                    height: config.height,
+                }
+            }
             // Otherwise only the exact size here is allowed
-            (width, height) => vk::Extent2D { width, height },
+            (width, height) => {
+                log::trace!(
+                    "Requested width/height unsupported ({}, {}), using ({}, {})",
+                    config.width,
+                    config.height,
+                    width,
+                    height
+                );
+                vk::Extent2D { width, height }
+            }
         };
 
         // Check if we're outside the valid width range
@@ -365,8 +381,13 @@ impl SwapChain {
 
         // Give the user exactly the mode they want, or fallback to FIFO
         if present_modes.contains(&wanted_mode) {
+            log::trace!("Got wanted presentation mode {}", config.present_mode);
             wanted_mode
         } else {
+            log::trace!(
+                "Wanted presentation mode unsupported '{}', falling back to FIFO",
+                config.present_mode
+            );
             vk::PresentModeKHR::FIFO
         }
     }
@@ -377,7 +398,9 @@ impl Drop for SwapChain {
         let inner = self.inner.lock();
         let loader = self.device.swapchain.as_ref().unwrap();
         unsafe {
-            loader.destroy_swapchain(inner.swap_chain, None);
+            if inner.swap_chain != vk::SwapchainKHR::null() {
+                loader.destroy_swapchain(inner.swap_chain, None);
+            }
         }
     }
 }
