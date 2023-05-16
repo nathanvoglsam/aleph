@@ -28,9 +28,7 @@
 //
 
 #[cfg(not(windows))]
-fn main() {
-
-}
+fn main() {}
 
 #[cfg(windows)]
 fn main() {
