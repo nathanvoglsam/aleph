@@ -61,11 +61,19 @@ use std::path::{Path, PathBuf};
 /// This function will do nothing on non windows platforms.
 ///
 pub fn link_agility_symbol_def() {
+    // Copy the file into a temp directory for the building exe crate so we don't lock on the
+    // symbol file if multiple crates are trying to use it simultaneously.
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let out_dir = Path::new(&out_dir);
+    let def_file = out_dir.join("symbols.def");
+    std::fs::copy(def_location(), &def_file).unwrap();
+
+    // Add the linker flag
     if target_platform().is_windows() {
         if target_platform().is_msvc() {
-            println!("cargo:rustc-link-arg=/DEF:{}", def_location().display());
+            println!("cargo:rustc-link-arg=/DEF:{}", def_file.display());
         } else {
-            println!("cargo:rustc-link-arg={}", def_location().display());
+            println!("cargo:rustc-link-arg={}", def_file.display());
         }
     }
 }
