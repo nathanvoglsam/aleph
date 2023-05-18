@@ -134,6 +134,11 @@ impl IPlugin for PluginPlatformSDL2 {
         })
         .expect("Failed to registr ctrl+c handler");
 
+        #[cfg(windows)]
+        {
+            sdl2::hint::set("SDL_WINDOWS_DPI_SCALING", "1");
+        }
+
         log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
 

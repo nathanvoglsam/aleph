@@ -135,13 +135,13 @@ impl WindowImpl {
 
         let mut window = video_ctx.window(title, DEFAULT_WIDTH, DEFAULT_HEIGHT);
         window.resizable();
+        window.allow_highdpi();
 
         #[cfg(target_os = "macos")]
         {
             use sdl2_sys::SDL_WindowFlags::SDL_WINDOW_METAL;
             // Add the SDL_WINDOW_METAL flag on macos as we need it for a graphics context
             window.set_window_flags(window.window_flags() | SDL_WINDOW_METAL as u32);
-            window.allow_highdpi();
         }
 
         let mut window = window.build().expect("Failed to create window");
