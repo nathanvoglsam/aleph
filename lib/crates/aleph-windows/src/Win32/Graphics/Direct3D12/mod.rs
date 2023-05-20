@@ -40,26 +40,6 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub use windows::Win32::Graphics::Direct3D12::*;
 
-macro_rules! com_object_into_impls {
-    ($from: path, $to: path) => {
-        impl ::core::convert::From<$from> for $to {
-            fn from(value: $from) -> Self {
-                unsafe { core::mem::transmute(value) }
-            }
-        }
-        impl<'a> From<&'a $from> for &'a $to {
-            fn from(value: &'a $from) -> Self {
-                unsafe { core::mem::transmute(value) }
-            }
-        }
-        impl From<&$from> for $to {
-            fn from(value: &$from) -> Self {
-                ::core::convert::From::from(::core::clone::Clone::clone(value))
-            }
-        }
-    };
-}
-
 pub const D3D12_FEATURE_D3D12_OPTIONS12: D3D12_FEATURE = D3D12_FEATURE(41i32);
 
 #[repr(transparent)]
@@ -260,8 +240,6 @@ pub union D3D12_BARRIER_GROUP_0 {
     pub pBufferBarriers: *const D3D12_BUFFER_BARRIER,
 }
 
-type ID3D12GraphicsCommandList6Vtbl = ID3D12GraphicsCommandList6_Vtbl;
-
 #[windows_interface::interface("DD171223-8B61-4769-90E3-160CCDE4E2C1")]
 pub unsafe trait ID3D12GraphicsCommandList7: ID3D12GraphicsCommandList6 {
     fn __Barrier_ABI(&self, numbarriergroups: u32, pbarriergroups: *const D3D12_BARRIER_GROUP);
@@ -286,18 +264,20 @@ impl Deref for ID3D12GraphicsCommandList7 {
     }
 }
 
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12Object);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12DeviceChild);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12CommandList);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList1);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList2);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList3);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList4);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList5);
-com_object_into_impls!(ID3D12GraphicsCommandList7, ID3D12GraphicsCommandList6);
-
-type ID3D12Device9Vtbl = ID3D12Device9_Vtbl;
+windows::imp::interface_hierarchy!(
+    ID3D12GraphicsCommandList7,
+    ::windows::core::IUnknown,
+    ID3D12Object,
+    ID3D12DeviceChild,
+    ID3D12CommandList,
+    ID3D12GraphicsCommandList,
+    ID3D12GraphicsCommandList1,
+    ID3D12GraphicsCommandList2,
+    ID3D12GraphicsCommandList3,
+    ID3D12GraphicsCommandList4,
+    ID3D12GraphicsCommandList5,
+    ID3D12GraphicsCommandList6
+);
 
 #[windows_interface::interface("517F8718-AA66-49F9-B02B-A7AB89C06031")]
 pub unsafe trait ID3D12Device10: ID3D12Device9 {
@@ -355,8 +335,8 @@ impl ID3D12Device10 {
         pcastableformats: *const DXGI_FORMAT,
     ) -> windows::core::Result<T>
     where
-        P0: Into<windows::core::InParam<'a, ID3D12ProtectedResourceSession>>,
-        T: windows::core::Interface,
+        P0: windows::core::IntoParam<ID3D12ProtectedResourceSession>,
+        T: windows::core::ComInterface,
     {
         let mut result__ = None;
         (windows::core::Interface::vtable(self).__CreateCommittedResource3_ABI)(
@@ -366,10 +346,10 @@ impl ID3D12Device10 {
             pdesc,
             initiallayout,
             poptimizedclearvalue,
-            pprotectedsession.into().abi(),
+            pprotectedsession.into_param().abi(),
             numcastableformats,
             pcastableformats,
-            &<T as windows::core::Interface>::IID,
+            &<T as windows::core::ComInterface>::IID,
             &mut result__ as *mut _ as *mut _,
         )
         .and_some(result__)
@@ -387,20 +367,20 @@ impl ID3D12Device10 {
         pcastableformats: *const DXGI_FORMAT,
     ) -> windows::core::Result<T>
     where
-        P0: Into<windows::core::InParam<'a, ID3D12Heap>>,
-        T: windows::core::Interface,
+        P0: windows::core::IntoParam<ID3D12Heap>,
+        T: windows::core::ComInterface,
     {
         let mut result__ = None;
         (windows::core::Interface::vtable(self).__CreatePlacedResource2_ABI)(
             windows::core::Interface::as_raw(self),
-            pheap.into().abi(),
+            pheap.into_param().abi(),
             heapoffset,
             pdesc,
             initiallayout,
             poptimizedclearvalue,
             numcastableformats,
             pcastableformats,
-            &<T as windows::core::Interface>::IID,
+            &<T as windows::core::ComInterface>::IID,
             &mut result__ as *mut _ as *mut _,
         )
         .and_some(result__)
@@ -417,8 +397,8 @@ impl ID3D12Device10 {
         pcastableformats: *const DXGI_FORMAT,
     ) -> windows::core::Result<T>
     where
-        P0: Into<windows::core::InParam<'a, ID3D12ProtectedResourceSession>>,
-        T: windows::core::Interface,
+        P0: windows::core::IntoParam<ID3D12ProtectedResourceSession>,
+        T: windows::core::ComInterface,
     {
         let mut result__ = None;
         (windows::core::Interface::vtable(self).__CreateReservedResource2_ABI)(
@@ -426,10 +406,10 @@ impl ID3D12Device10 {
             pdesc,
             initiallayout,
             poptimizedclearvalue,
-            pprotectedsession.into().abi(),
+            pprotectedsession.into_param().abi(),
             numcastableformats,
             pcastableformats,
-            &<T as windows::core::Interface>::IID,
+            &<T as windows::core::ComInterface>::IID,
             &mut result__ as *mut _ as *mut _,
         )
         .and_some(result__)
@@ -444,14 +424,18 @@ impl Deref for ID3D12Device10 {
     }
 }
 
-com_object_into_impls!(ID3D12Device10, ID3D12Object);
-com_object_into_impls!(ID3D12Device10, ID3D12Device);
-com_object_into_impls!(ID3D12Device10, ID3D12Device1);
-com_object_into_impls!(ID3D12Device10, ID3D12Device2);
-com_object_into_impls!(ID3D12Device10, ID3D12Device3);
-com_object_into_impls!(ID3D12Device10, ID3D12Device4);
-com_object_into_impls!(ID3D12Device10, ID3D12Device5);
-com_object_into_impls!(ID3D12Device10, ID3D12Device6);
-com_object_into_impls!(ID3D12Device10, ID3D12Device7);
-com_object_into_impls!(ID3D12Device10, ID3D12Device8);
-com_object_into_impls!(ID3D12Device10, ID3D12Device9);
+windows::imp::interface_hierarchy!(
+    ID3D12Device10,
+    ::windows::core::IUnknown,
+    ID3D12Object,
+    ID3D12Device,
+    ID3D12Device1,
+    ID3D12Device2,
+    ID3D12Device3,
+    ID3D12Device4,
+    ID3D12Device5,
+    ID3D12Device6,
+    ID3D12Device7,
+    ID3D12Device8,
+    ID3D12Device9
+);

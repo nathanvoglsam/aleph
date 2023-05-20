@@ -159,7 +159,7 @@ impl<T: Sized> DynamicLoadCell<T> {
     pub unsafe fn get(&self) -> windows::core::Result<&T> {
         self.cell.get_or_try_init(|| {
             // Attempt to load the library
-            let h_module: HINSTANCE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))?;
+            let h_module: HMODULE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))?;
 
             if h_module.0 == 0 {
                 return Err(windows::core::Error::from(E_NOINTERFACE));
