@@ -30,6 +30,7 @@
 use super::functions::*;
 use crate::Colour;
 use std::ffi::CStr;
+use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
 ///
@@ -38,13 +39,13 @@ use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCom
 /// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
 ///
 #[inline(always)]
-pub unsafe fn scoped_for_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
-    queue: T,
+pub unsafe fn scoped_for_queue<'a>(
+    queue: &'a impl CanInto<ID3D12CommandQueue>,
     colour: Colour,
     text: &str,
     f: impl FnOnce(&'a ID3D12CommandQueue),
 ) {
-    let queue = queue.into();
+    let queue = queue.can_into();
     begin_event_on_queue(queue, colour, text);
     f(queue);
     end_event_on_queue(queue);
@@ -56,13 +57,13 @@ pub unsafe fn scoped_for_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
 /// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
 ///
 #[inline(always)]
-pub unsafe fn scoped_for_queue_cstr<'a, T: Into<&'a ID3D12CommandQueue>>(
-    queue: T,
+pub unsafe fn scoped_for_queue_cstr<'a>(
+    queue: &'a impl CanInto<ID3D12CommandQueue>,
     colour: Colour,
     text: &CStr,
     f: impl FnOnce(&'a ID3D12CommandQueue),
 ) {
-    let queue = queue.into();
+    let queue = queue.can_into();
     begin_event_cstr_on_queue(queue, colour, text);
     f(queue);
     end_event_on_queue(queue);
@@ -92,13 +93,13 @@ pub unsafe fn scoped_for_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
 /// FFI Call to `PIXBeginEvent` and `PIXEndEvent`
 ///
 #[inline(always)]
-pub unsafe fn scoped_for_list_cstr<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
-    list: T,
+pub unsafe fn scoped_for_list_cstr<'a>(
+    list: &'a impl CanInto<ID3D12GraphicsCommandList>,
     colour: Colour,
     text: &CStr,
     f: impl FnOnce(&'a ID3D12GraphicsCommandList),
 ) {
-    let list = list.into();
+    let list = list.can_into();
     begin_event_cstr_on_list(list, colour, text);
     f(list);
     end_event_on_list(list);
