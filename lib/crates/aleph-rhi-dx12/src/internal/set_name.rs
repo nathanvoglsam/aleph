@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use windows::core::PCWSTR;
+use windows::core::{CanInto, PCWSTR};
 use windows::Win32::Graphics::Direct3D12::*;
 
-pub fn set_name<'a, T: Into<&'a ID3D12Object>>(object: T, name: &str) -> windows::core::Result<()> {
-    let object = object.into();
+pub fn set_name<T: CanInto<ID3D12Object>>(object: &T, name: &str) -> windows::core::Result<()> {
+    let object = object.can_into();
 
     let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
     let name = PCWSTR::from_raw(utf16.as_ptr());

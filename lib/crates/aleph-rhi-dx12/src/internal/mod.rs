@@ -28,6 +28,7 @@
 //
 
 use aleph_rhi_api::*;
+use windows::Win32::Foundation::WIN32_ERROR;
 
 pub mod adapter_description_decoder;
 pub mod conv;
@@ -116,28 +117,28 @@ pub const fn plane_layer_for_aspect_flag(format: Format, aspect: TextureAspect) 
 ///
 /// Calls `GetLastError` internally on error
 ///
-pub unsafe fn handle_wait_result(result: u32) -> bool {
+pub unsafe fn handle_wait_result(result: WIN32_ERROR) -> bool {
     use windows::Win32::Foundation::*;
 
     // Successfully waited on the event
-    if result == WAIT_OBJECT_0.0 {
+    if result == WAIT_OBJECT_0 {
         return true;
     }
 
     // Timeout is an error as we're supposed to block until the event is signalled
-    if result == WAIT_TIMEOUT.0 {
+    if result == WAIT_TIMEOUT {
         return false;
     }
 
     // Handle the error case
-    if result == WAIT_FAILED.0 {
+    if result == WAIT_FAILED {
         GetLastError().to_hresult().unwrap();
         unreachable!("WaitForSingleObject failed");
     }
 
     // This shouldn't even be possible to observe as the event is thread-local so can't
     // event be observed across threads. But handle it anyway as you never know
-    if result == WAIT_ABANDONED.0 {
+    if result == WAIT_ABANDONED {
         panic!("Event was abandoned by owning thread");
     }
 

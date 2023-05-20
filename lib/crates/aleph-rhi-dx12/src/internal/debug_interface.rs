@@ -31,7 +31,7 @@
 #![warn(unused_imports)]
 
 use utf16_lit::utf16_null;
-use windows::core::Interface;
+use windows::core::ComInterface;
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D12::*;
 

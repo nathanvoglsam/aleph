@@ -43,7 +43,7 @@ use parking_lot::Mutex;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::ops::Deref;
-use windows::core::Interface;
+use windows::core::{CanInto, ComInterface};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -88,9 +88,11 @@ impl Context {
     /// overhead at init time to do this.
     fn check_surface_compatibility(
         factory: &IDXGIFactory2,
-        device: &ID3D12Device,
+        device: &impl CanInto<ID3D12Device>,
         surface: &Surface,
     ) -> Option<()> {
+        let device = device.can_into();
+
         // Create a direct queue so we can create a swapchain
         let desc = D3D12_COMMAND_QUEUE_DESC {
             Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -130,7 +132,7 @@ impl Context {
 
     /// Checks if the adapter supports all the minimum required features. This requires a full
     /// device initialization because of D3D12's API.
-    fn check_mandatory_features(device: ID3D12Device) -> Option<()> {
+    fn check_mandatory_features(device: &impl CanInto<ID3D12Device>) -> Option<()> {
         let feature_support = FeatureSupport::new(device).ok()?;
 
         let mut failed = false;
@@ -187,13 +189,13 @@ impl Context {
 
         if let Some(surface) = options.surface {
             let surface = unwrap::surface(surface);
-            if Self::check_surface_compatibility(factory, (&device).into(), surface).is_none() {
+            if Self::check_surface_compatibility(factory, &device, surface).is_none() {
                 log::trace!("Adapter Can't Use Requested Surface");
                 return false;
             }
         }
 
-        if Self::check_mandatory_features(device.into()).is_none() {
+        if Self::check_mandatory_features(&device).is_none() {
             return false;
         }
 
@@ -235,7 +237,8 @@ impl Context {
                 // a big error or enumerated all of them already
                 if let Ok(adapter) = adapter {
                     // Get the adapter description so we can decide if we want to use it or not
-                    let desc = adapter.GetDesc1().unwrap();
+                    let mut desc = Default::default();
+                    adapter.GetDesc1(&mut desc).unwrap();
 
                     let vendor = pci_id_to_vendor(desc.VendorId);
                     let name =
@@ -321,13 +324,15 @@ impl IContext for Context {
 
             if let Some(surface) = options.surface {
                 let surface = unwrap::surface(surface);
-                Self::check_surface_compatibility(&factory, &device.into(), surface)?;
+                Self::check_surface_compatibility(&factory, &device, surface)?;
             }
 
             let desc = unsafe {
+                let mut desc = Default::default();
                 adapter
-                    .GetDesc1()
-                    .expect("Failed to get adapter description. Something very wrong")
+                    .GetDesc1(&mut desc)
+                    .expect("Failed to get adapter description. Something very wrong");
+                desc
             };
             let vendor = pci_id_to_vendor(desc.VendorId);
             let name = adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());

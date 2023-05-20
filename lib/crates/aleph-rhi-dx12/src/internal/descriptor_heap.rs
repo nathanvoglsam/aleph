@@ -30,6 +30,7 @@
 use parking_lot::Mutex;
 use std::num::{NonZeroU64, NonZeroUsize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use windows::core::CanInto;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -59,11 +60,13 @@ pub struct DescriptorHeap {
 impl DescriptorHeap {
     /// Creates a new [DescriptorHeap] based on the provided settings
     pub fn new(
-        device: &ID3D12Device,
+        device: &impl CanInto<ID3D12Device>,
         r#type: D3D12_DESCRIPTOR_HEAP_TYPE,
         num_descriptors: u32,
         gpu_visible: bool,
     ) -> windows::core::Result<Self> {
+        let device = device.can_into();
+
         if num_descriptors == 0 {
             // A descriptor heap with 0 size makes no sense
             panic!("Creating a DescriptorHeap with num_descriptors = 0 is an error");

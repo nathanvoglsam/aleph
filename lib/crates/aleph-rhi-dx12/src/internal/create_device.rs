@@ -28,7 +28,7 @@
 //
 
 use utf16_lit::utf16_null;
-use windows::core::{IUnknown, Interface};
+use windows::core::{ComInterface, IUnknown};
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;

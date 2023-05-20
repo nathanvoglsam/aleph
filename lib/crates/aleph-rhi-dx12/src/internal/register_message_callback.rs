@@ -28,15 +28,17 @@
 //
 
 use std::ffi::CStr;
-use windows::core::Interface;
+use windows::core::{CanInto, ComInterface};
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub unsafe fn device_register_message_callback<
     T: Fn(D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY, D3D12_MESSAGE_ID, &CStr) + 'static,
 >(
-    device: &ID3D12Device,
+    device: &impl CanInto<ID3D12Device>,
     callback: T,
 ) -> windows::core::Result<u32> {
+    let device = device.can_into();
+
     /// Internal callback that wraps the closure in an FFI compatible function
     unsafe extern "system" fn raw_callback<
         X: Fn(D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY, D3D12_MESSAGE_ID, &CStr) + 'static,
@@ -74,9 +76,10 @@ pub unsafe fn device_register_message_callback<
 }
 
 pub unsafe fn device_unregister_message_callback(
-    device: &ID3D12Device,
+    device: &impl CanInto<ID3D12Device>,
     cookie: u32,
 ) -> windows::core::Result<()> {
+    let device = device.can_into();
     let casted: ID3D12InfoQueue1 = device.cast::<ID3D12InfoQueue1>()?;
     casted.UnregisterMessageCallback(cookie)?;
     Ok(())

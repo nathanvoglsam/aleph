@@ -29,6 +29,7 @@
 
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap::DescriptorHeap;
+use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::*;
 
 /// Internal struct that caches the descriptor increment sizes needed for allocating space in
@@ -41,7 +42,7 @@ pub struct DescriptorHeaps {
 
 impl DescriptorHeaps {
     #[allow(unused)]
-    pub fn new(device: &ID3D12Device) -> windows::core::Result<Self> {
+    pub fn new(device: &impl CanInto<ID3D12Device>) -> windows::core::Result<Self> {
         // Construct the CPU side heaps for all 4 descriptor types
         let cpu_heaps = [
             DescriptorAllocatorCPU::new(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),

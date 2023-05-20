@@ -67,6 +67,7 @@ use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
 use anyhow::anyhow;
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::mem::transmute_copy;
 use std::ops::Deref;
 use std::sync::atomic::AtomicU64;
 use windows::core::PCSTR;
@@ -253,7 +254,7 @@ impl IDevice for Device {
         let module = unwrap::shader(desc.shader_module);
 
         let pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: Some(pipeline_layout.root_signature.clone()),
+            pRootSignature: unsafe { transmute_copy(&pipeline_layout.root_signature) },
             CS: D3D12_SHADER_BYTECODE {
                 pShaderBytecode: module.data.as_ptr() as *const _,
                 BytecodeLength: module.data.len(),
@@ -808,7 +809,7 @@ impl IDevice for Device {
                 // Special case a single fence with 'SetEventOnCompletion'
                 thread_local! {
                     pub static WAIT_HANDLE: HANDLE = unsafe {
-                        CreateEventW(std::ptr::null(), false, false, None).unwrap()
+                        CreateEventW(None, false, false, None).unwrap()
                     };
                 }
                 let fence = unwrap::fence(fences[0]);
@@ -831,7 +832,7 @@ impl IDevice for Device {
                 thread_local! {
 
                     pub static MULTIPLE_WAIT_HANDLE: HANDLE = unsafe {
-                        CreateEventW(std::ptr::null(), false, false, None).unwrap()
+                        CreateEventW(None, false, false, None).unwrap()
                     };
                 }
 
@@ -1595,7 +1596,8 @@ impl Device {
             BufferLocation: location,
             SizeInBytes: write.len,
         };
-        self.device.CreateConstantBufferView(&view, dst.into());
+        self.device
+            .CreateConstantBufferView(Some(&view), dst.into());
     }
 
     // ========================================================================================== //
@@ -1622,7 +1624,7 @@ impl Device {
                 },
             };
             self.device
-                .CreateUnorderedAccessView(&buffer.resource, None, &view, dst.into());
+                .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
         } else {
             let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: DXGI_FORMAT_R32_TYPELESS,
@@ -1638,7 +1640,7 @@ impl Device {
                 },
             };
             self.device
-                .CreateShaderResourceView(&buffer.resource, &view, dst.into());
+                .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
         }
     }
 
@@ -1668,7 +1670,7 @@ impl Device {
                 },
             };
             self.device
-                .CreateUnorderedAccessView(&buffer.resource, None, &view, dst.into());
+                .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
         } else {
             let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: DXGI_FORMAT_UNKNOWN,
@@ -1684,7 +1686,7 @@ impl Device {
                 },
             };
             self.device
-                .CreateShaderResourceView(&buffer.resource, &view, dst.into());
+                .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
         }
     }
 
@@ -1716,7 +1718,7 @@ impl Device {
                 },
             };
             self.device
-                .CreateUnorderedAccessView(&buffer.resource, None, &view, dst.into());
+                .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
         } else {
             let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format,
@@ -1732,7 +1734,7 @@ impl Device {
                 },
             };
             self.device
-                .CreateShaderResourceView(&buffer.resource, &view, dst.into());
+                .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
         }
     }
 
@@ -1805,7 +1807,7 @@ impl Drop for Device {
         // SAFETY: This should be safe but I can't prove it
         unsafe {
             if let Some(cookie) = self.debug_message_cookie {
-                let _sink = device_unregister_message_callback((&self.device).into(), cookie);
+                let _sink = device_unregister_message_callback(&self.device, cookie);
             }
         }
     }

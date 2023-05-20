@@ -432,16 +432,18 @@ impl ITexture for Texture {
                     self.device.device.CreateUnorderedAccessView(
                         &self.resource,
                         None,
-                        &desc,
+                        Some(&desc),
                         view.into(),
                     );
                 }
             } else {
                 let desc = Self::make_srv_desc_for_view_desc(desc);
                 unsafe {
-                    self.device
-                        .device
-                        .CreateShaderResourceView(&self.resource, &desc, view.into());
+                    self.device.device.CreateShaderResourceView(
+                        &self.resource,
+                        Some(&desc),
+                        view.into(),
+                    );
                 }
             }
 
@@ -469,7 +471,7 @@ impl ITexture for Texture {
                 let desc = Self::make_rtv_desc_for_view_desc(desc);
                 self.device
                     .device
-                    .CreateRenderTargetView(&self.resource, &desc, view.into());
+                    .CreateRenderTargetView(&self.resource, Some(&desc), view.into());
             }
 
             views.insert(desc.clone(), view);
@@ -496,7 +498,7 @@ impl ITexture for Texture {
                 let desc = Self::make_dsv_desc_for_view_desc(desc);
                 self.device
                     .device
-                    .CreateDepthStencilView(&self.resource, &desc, view.into());
+                    .CreateDepthStencilView(&self.resource, Some(&desc), view.into());
             }
 
             views.insert(desc.clone(), view);

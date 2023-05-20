@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::*;
 
 /// Internal struct that caches the descriptor increment sizes needed for allocating space in
@@ -46,7 +47,8 @@ pub struct DescriptorHeapInfo {
 }
 
 impl DescriptorHeapInfo {
-    pub fn new(device: &ID3D12Device) -> Self {
+    pub fn new(device: &impl CanInto<ID3D12Device>) -> Self {
+        let device = device.can_into();
         // Safety: there is no un-safety beyond FFI, the function is thread-safe
         unsafe {
             Self {

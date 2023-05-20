@@ -43,6 +43,7 @@ use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::any::TypeId;
+use std::mem::transmute_copy;
 use std::ptr::NonNull;
 use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Foundation::RECT;
@@ -124,7 +125,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             views.push(view);
         }
 
-        self.list.IASetVertexBuffers(first_binding, &views);
+        self.list.IASetVertexBuffers(first_binding, Some(&views));
     }
 
     unsafe fn bind_index_buffer(
@@ -147,7 +148,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 IndexType::U32 => DXGI_FORMAT_R32_UINT,
             },
         };
-        self.list.IASetIndexBuffer(&view);
+        self.list.IASetIndexBuffer(Some(&view));
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
@@ -224,8 +225,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             .unwrap_or(std::ptr::null());
 
         self.list.BeginRenderPass(
-            &color_attachments,
-            depth_stencil_ref,
+            Some(&color_attachments),
+            Some(depth_stencil_ref),
             D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES, // TODO: This *could* be suboptimal
         );
     }
@@ -475,7 +476,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
         let bytes_per_element = dst.desc.format.bytes_per_element();
         let mut src_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: Some(src.resource.clone()),
+            pResource: unsafe { transmute_copy(&src.resource) },
             Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
             Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                 PlacedFootprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
@@ -492,7 +493,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         };
 
         let mut dst_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: Some(dst.resource.clone()),
+            pResource: unsafe { transmute_copy(&dst.resource) },
             Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
             Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                 SubresourceIndex: 0,
@@ -534,7 +535,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 region.dst.origin.y,
                 region.dst.origin.z,
                 &src_location,
-                &src_box,
+                Some(&src_box),
             );
         }
     }

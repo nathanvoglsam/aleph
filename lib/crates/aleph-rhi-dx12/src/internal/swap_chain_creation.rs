@@ -28,7 +28,7 @@
 //
 
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use windows::core::{IInspectable, IUnknown, Interface};
+use windows::core::{ComInterface, IInspectable, IUnknown};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -66,7 +66,7 @@ pub unsafe fn dxgi_create_swap_chain_for_hwnd(
     hwnd: HWND,
     desc: &DXGI_SWAP_CHAIN_DESC1,
 ) -> windows::core::Result<IDXGISwapChain4> {
-    let swapchain = factory.CreateSwapChainForHwnd(queue, hwnd, desc, std::ptr::null(), None)?;
+    let swapchain = factory.CreateSwapChainForHwnd(queue, hwnd, desc, None, None)?;
     swapchain.cast::<IDXGISwapChain4>()
 }
 

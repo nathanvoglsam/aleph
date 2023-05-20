@@ -78,7 +78,7 @@ impl IBuffer for Buffer {
         unsafe {
             let mut ptr = std::ptr::null_mut();
             self.resource
-                .Map(0, std::ptr::null(), &mut ptr)
+                .Map(0, None, Some(&mut ptr))
                 .map_err(|v| anyhow!(v))?;
             NonNull::new(ptr as *mut u8).ok_or(ResourceMapError::MappedNullPointer)
         }
@@ -87,7 +87,7 @@ impl IBuffer for Buffer {
     fn unmap(&self) {
         // TODO: should we expose 'written_range'
         unsafe {
-            self.resource.Unmap(0, std::ptr::null());
+            self.resource.Unmap(0, None);
         }
     }
 

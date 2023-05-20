@@ -31,6 +31,7 @@ use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+use windows::core::CanInto;
 use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -53,8 +54,8 @@ pub struct DescriptorAllocatorCPU {
 
 impl DescriptorAllocatorCPU {
     #[allow(unused)]
-    pub fn new(device: &ID3D12Device, heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> Self {
-        let device: ID3D12Device = device.clone();
+    pub fn new(device: &impl CanInto<ID3D12Device>, heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> Self {
+        let device: ID3D12Device = device.can_clone_into();
         let heap_info = HeapInfo::new(&device, heap_type);
         Self {
             device,

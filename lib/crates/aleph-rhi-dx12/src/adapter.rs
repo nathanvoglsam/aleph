@@ -44,6 +44,7 @@ use anyhow::anyhow;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::ops::Deref;
+use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -73,10 +74,11 @@ impl IGetPlatformInterface for Adapter {
 
 impl Adapter {
     fn create_queue(
-        device: &ID3D12Device,
+        device: &impl CanInto<ID3D12Device>,
         queue_type: QueueType,
         debug: bool,
     ) -> Option<AnyArc<Queue>> {
+        let device = device.can_into();
         unsafe {
             let desc = D3D12_COMMAND_QUEUE_DESC {
                 Type: queue_type_to_dx12(queue_type),
@@ -122,18 +124,15 @@ impl IAdapter for Adapter {
         let debug_queue = self.context.debug.is_some() && pix::is_library_available();
 
         // Load our 3 queues
-        let general_queue =
-            Adapter::create_queue((&device).into(), QueueType::General, debug_queue);
-        let compute_queue =
-            Adapter::create_queue((&device).into(), QueueType::Compute, debug_queue);
-        let transfer_queue =
-            Adapter::create_queue((&device).into(), QueueType::Transfer, debug_queue);
+        let general_queue = Adapter::create_queue(&device, QueueType::General, debug_queue);
+        let compute_queue = Adapter::create_queue(&device, QueueType::Compute, debug_queue);
+        let transfer_queue = Adapter::create_queue(&device, QueueType::Transfer, debug_queue);
 
         let debug_message_cookie = if self.context.debug.is_some() {
             // SAFETY: Should be safe but I don't have a proof
             unsafe {
                 device_register_message_callback(
-                    (&device).into(),
+                    &device,
                     move |category, severity, id, description| {
                         let category = category_name(&category).unwrap_or("Unknown Category");
                         let level = match severity {
@@ -158,7 +157,7 @@ impl IAdapter for Adapter {
             None
         };
 
-        let descriptor_heaps = DescriptorHeaps::new((&device).into()).map_err(|e| anyhow!(e))?;
+        let descriptor_heaps = DescriptorHeaps::new(&device).map_err(|e| anyhow!(e))?;
 
         // Bundle and return the device
         let device = AnyArc::new_cyclic(move |v| Device {
@@ -166,7 +165,7 @@ impl IAdapter for Adapter {
             _context: self.context.clone(),
             _adapter: self.this.upgrade().unwrap(),
             debug_message_cookie,
-            descriptor_heap_info: DescriptorHeapInfo::new((&device).into()),
+            descriptor_heap_info: DescriptorHeapInfo::new(&device),
             descriptor_heaps,
             device,
             general_queue,

@@ -301,7 +301,7 @@ impl IQueue for Queue {
             let list = list.take().unwrap();
             let list = box_downcast::<_, CommandList>(list).ok().unwrap();
 
-            handles.push(Some(list.list.into()));
+            handles.push(Some(transmute(list.list)));
         }
 
         self.handle.ExecuteCommandLists(&handles);

@@ -28,7 +28,7 @@
 //
 
 use utf16_lit::utf16_null;
-use windows::core::{Interface, GUID};
+use windows::core::{ComInterface, GUID};
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Dxgi::*;
 
