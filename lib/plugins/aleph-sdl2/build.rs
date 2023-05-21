@@ -95,7 +95,23 @@ fn main() {
             println!("cargo:rustc-link-search=all={}", lib_dir.display());
         }
         Platform::MacOS => {
-            build_with_cmake_macos();
+            let arch = match target_arch {
+                Architecture::X8664 => panic!("Unsupported architecture+platform"),
+                Architecture::AARCH64 => "aarch64",
+                Architecture::Unknown => panic!("Unknown architecture"),
+            };
+
+            let binary_path = format!("./thirdparty/out/{arch}/macos");
+            let binary_path = Path::new(&binary_path);
+            let link_path = binary_path.join("lib").canonicalize().unwrap();
+
+            println!("cargo:rustc-link-search=all={}", link_path.display());
+
+            let source = binary_path.join("lib").join("libSDL2-2.0.0.dylib");
+            compile::copy_file_to_artifacts_dir(&source)
+                .expect("Failed to copy SDL2 dylib to artifacts dir");
+            compile::copy_file_to_target_dir(&source)
+                .expect("Failed to copy SDL2 dylib to target dir");
         }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.
@@ -181,55 +197,3 @@ fn android_compile_sdl2(arch: Architecture) {
         panic!("ndk-build failed");
     }
 }
-
-#[cfg(target_os = "macos")]
-fn build_with_cmake_macos() {
-    // If we're building for macos we need to compile SDL2 ourselves. Same reason as windows
-
-    let mut build = cmake::Config::new("thirdparty/submodules/SDL");
-    build.generator("Ninja");
-
-    // Don't compile the SDL2 static library
-    build.define("SDL_STATIC", "OFF");
-
-    build.define("HAVE_GCC_WDECLARATION_AFTER_STATEMENT", "FALSE");
-
-    let optimized = target::build::target_build_config().is_optimized();
-    let debug = target::build::target_build_config().is_debug();
-    match (optimized, debug) {
-        (true, true) => {
-            build.profile("RelWithDebInfo");
-            build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
-        }
-        (false, true) => {
-            build.profile("Debug");
-            build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
-        }
-        (_, false) => {
-            build.profile("Release");
-        }
-    }
-
-    let out_dir = build.build();
-
-    // We're going to need the output lib and bin dir
-    let lib_dir = out_dir.join("lib");
-    let bin_dir = out_dir.join("bin");
-
-    // Give rustc the directory of where to find the lib files to link to
-    println!("cargo:rustc-link-search=all={}", &lib_dir.display());
-
-    // Give rustc the directory of where to find the lib files to link to
-    println!("cargo:rustc-link-search=all={}", &bin_dir.display());
-
-    // Copy the output dll file to the artifacts dir
-    let source = lib_dir.join(dll_name());
-    compile::copy_file_to_artifacts_dir(&source)
-        .expect("Failed to copy SDL2 dll/so to artifacts dir");
-
-    // Copy the output dll file to the target dir
-    compile::copy_file_to_target_dir(&source).expect("Failed to copy SDL2 dll/so to target dir");
-}
-
-#[cfg(not(target_os = "macos"))]
-fn build_with_cmake_macos() {}
