@@ -42,12 +42,7 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
     let alloc_type = MEM_RESERVE;
     let page_type = PAGE_READWRITE;
 
-    let result = VirtualAlloc(
-        std::ptr::null_mut(),
-        pages * page_size(),
-        MEM_RESERVE,
-        page_type,
-    );
+    let result = VirtualAlloc(None, pages * page_size(), MEM_RESERVE, page_type);
 
     if result.is_null() {
         Err(std::io::Error::last_os_error())
@@ -76,7 +71,7 @@ pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::
     let alloc_type = MEM_COMMIT;
     let page_type = PAGE_READWRITE;
 
-    let result = VirtualAlloc(base as _, pages * page_size(), alloc_type, page_type);
+    let result = VirtualAlloc(Some(base as _), pages * page_size(), alloc_type, page_type);
 
     if result.is_null() {
         Err(std::io::Error::last_os_error())
