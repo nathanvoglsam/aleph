@@ -64,7 +64,7 @@ impl EngineBuilder {
         #[cfg(target_os = "windows")]
         unsafe {
             use aleph_windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
-            CoInitializeEx(std::ptr::null(), COINIT_MULTITHREADED).unwrap();
+            CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
         }
 
         #[cfg(target_os = "windows")]
