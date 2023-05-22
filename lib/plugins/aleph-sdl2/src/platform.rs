@@ -91,24 +91,6 @@ impl Default for PluginPlatformSDL2 {
     }
 }
 
-impl Drop for PluginPlatformSDL2 {
-    fn drop(&mut self) {
-        let mut sdl = self.sdl.take().unwrap();
-
-        sdl._ctx = None;
-        sdl._video = None;
-        sdl._event = None;
-        sdl.event_pump = None;
-        sdl.mouse_util = None;
-        sdl.timer = None;
-        sdl.window = None;
-
-        unsafe { crate::sdl_main_wrapper::run_sdl_exit(&sdl.main_ctx) }
-
-        self.sdl.set(Some(sdl));
-    }
-}
-
 impl IPlugin for PluginPlatformSDL2 {
     fn get_description(&self) -> PluginDescription {
         make_plugin_description_for_crate!()
@@ -251,6 +233,20 @@ impl IPlugin for PluginPlatformSDL2 {
             ),
         ];
         Box::new(response)
+    }
+
+    fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {
+        let mut sdl = self.sdl.take().unwrap();
+
+        sdl._ctx = None;
+        sdl._video = None;
+        sdl._event = None;
+        sdl.event_pump = None;
+        sdl.mouse_util = None;
+        sdl.timer = None;
+        sdl.window = None;
+
+        unsafe { crate::sdl_main_wrapper::run_sdl_exit(&sdl.main_ctx) }
     }
 }
 
