@@ -162,7 +162,6 @@ impl WindowImpl {
 
                 let mut raw_window_handle = window.raw_window_handle();
                 if let RawWindowHandle::AppKit(v) = &mut raw_window_handle {
-                    // TODO: Currently we're never destroying this view
                     v.ns_view = SDL_Metal_CreateView(window.raw());
                 } else {
                     panic!("We only support MacOS window handles, not iOS");
@@ -480,6 +479,22 @@ impl IWindow for WindowImpl {
 unsafe impl HasRawWindowHandle for WindowImpl {
     fn raw_window_handle(&self) -> RawWindowHandle {
         self.state.read().handle
+    }
+}
+
+impl Drop for WindowImpl {
+    fn drop(&mut self) {
+        #[cfg(target_os = "macos")]
+        unsafe {
+            use sdl2_sys::SDL_Metal_DestroyView;
+            let state = self.state.write();
+
+            if let RawWindowHandle::AppKit(v) = &state.raw_window_handle {
+                SDL_Metal_DestroyView(v.ns_view);
+            } else {
+                panic!("We only support MacOS window handles, not iOS");
+            }
+        }
     }
 }
 
