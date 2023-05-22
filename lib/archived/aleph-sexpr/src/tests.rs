@@ -340,7 +340,7 @@ fn test_valid_doc_comment() {
 
 #[test]
 fn test_invalid_unterminated_list() {
-    let expected = lalrpop_util::ParseError::UnrecognizedEOF {
+    let expected = lalrpop_util::ParseError::UnrecognizedEof {
         location: 37,
         expected: vec![
             "\"(\"".to_string(),
