@@ -489,7 +489,7 @@ impl Drop for WindowImpl {
             use sdl2_sys::SDL_Metal_DestroyView;
             let state = self.state.write();
 
-            if let RawWindowHandle::AppKit(v) = &state.raw_window_handle {
+            if let RawWindowHandle::AppKit(v) = &state.handle {
                 SDL_Metal_DestroyView(v.ns_view);
             } else {
                 panic!("We only support MacOS window handles, not iOS");
