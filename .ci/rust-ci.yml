@@ -19,6 +19,7 @@ steps:
   - checkout: self
     lfs: true
     submodules: recursive
+    fetchDepth: 0
 
   ## Then we install the rust toolchain through w/e platform specific means are required
 
