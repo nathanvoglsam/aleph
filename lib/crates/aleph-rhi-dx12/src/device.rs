@@ -1050,9 +1050,9 @@ impl Device {
             FillMode: fill_mode,
             CullMode: cull_mode,
             FrontCounterClockwise: front_counter_clockwise,
-            DepthBias: 0,                         // TODO: translate
-            DepthBiasClamp: 0.0,                  // TODO: translate
-            SlopeScaledDepthBias: 0.0,            // TODO: translate
+            DepthBias: desc.depth_bias,
+            DepthBiasClamp: desc.depth_bias_clamp,
+            SlopeScaledDepthBias: desc.depth_bias_slope_factor,
             DepthClipEnable: BOOL::from(true),    // TODO: translate
             MultisampleEnable: BOOL::from(false), // TODO: translate
             AntialiasedLineEnable: BOOL::from(false),
