@@ -3066,7 +3066,7 @@ impl Default for FrontFaceOrder {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct RasterizerStateDesc {
     /// Specifies the triangle facing directions used for primitive culling
     pub cull_mode: CullMode,
@@ -3076,6 +3076,15 @@ pub struct RasterizerStateDesc {
 
     /// Specifies the triangle rendering mode
     pub polygon_mode: PolygonMode,
+
+    /// Specifies the value to apply as a depth bias. If 0, depth bias is disabled
+    pub depth_bias: i32,
+
+    /// Specifies the depth bias clamp value, if depth bias is enabled
+    pub depth_bias_clamp: f32,
+
+    /// Specifies the depth bias slop factor value, if depth bias is enabled
+    pub depth_bias_slope_factor: f32,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
