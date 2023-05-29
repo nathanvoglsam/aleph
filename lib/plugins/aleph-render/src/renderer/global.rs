@@ -174,6 +174,9 @@ impl GlobalObjects {
             cull_mode: CullMode::None,
             front_face: FrontFaceOrder::CounterClockwise,
             polygon_mode: PolygonMode::Fill,
+            depth_bias: 0,
+            depth_bias_clamp: 0.0,
+            depth_bias_slope_factor: 0.0,
         };
 
         let depth_stencil_state_new = DepthStencilStateDesc {
