@@ -368,7 +368,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
                     AccessBefore: barrier_access_to_dx12(barrier.before_access),
                     AccessAfter: barrier_access_to_dx12(barrier.after_access),
-                    pResource: Some(resource.resource.clone()),
+                    pResource: transmute_copy(&resource.resource),
                     Offset: barrier.offset,
                     Size: barrier.size,
                 });
@@ -413,7 +413,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     AccessAfter: barrier_access_to_dx12(barrier.after_access),
                     LayoutBefore: image_layout_to_dx12(barrier.before_layout),
                     LayoutAfter: image_layout_to_dx12(barrier.after_layout),
-                    pResource: Some(texture.resource.clone()),
+                    pResource: transmute_copy(&texture.resource),
                     Subresources: D3D12_BARRIER_SUBRESOURCE_RANGE {
                         IndexOrFirstMipLevel: barrier.subresource_range.base_mip_level,
                         NumMipLevels: barrier.subresource_range.num_mip_levels,
