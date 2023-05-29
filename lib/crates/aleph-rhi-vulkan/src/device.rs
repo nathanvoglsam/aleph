@@ -1127,10 +1127,10 @@ impl Device {
             .front_face(front_face)
             .depth_clamp_enable(true)
             .rasterizer_discard_enable(false) // No support in dx12
-            .depth_bias_enable(false)
-            .depth_bias_constant_factor(0.0)
-            .depth_bias_clamp(0.0)
-            .depth_bias_slope_factor(0.0)
+            .depth_bias_enable(desc.rasterizer_state.depth_bias != 0)
+            .depth_bias_constant_factor(desc.rasterizer_state.depth_bias as f32)
+            .depth_bias_clamp(desc.rasterizer_state.depth_bias_clamp)
+            .depth_bias_slope_factor(desc.rasterizer_state.depth_bias_slope_factor)
             .line_width(1.0)
     }
 
