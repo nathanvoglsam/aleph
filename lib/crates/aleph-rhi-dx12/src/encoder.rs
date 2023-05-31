@@ -36,6 +36,7 @@ use crate::internal::conv::{
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::unwrap;
 use crate::pipeline::GraphicsPipeline;
+use crate::texture::ImageViewObject;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -206,17 +207,21 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
 
         for attachment in info.color_attachments {
-            let descriptor = std::mem::transmute::<_, CPUDescriptorHandle>(attachment.image_view);
-            let format: Option<DXGI_FORMAT> = None; // TODO: how?
+            let view = std::mem::transmute::<_, *const ImageViewObject>(attachment.image_view);
+            let descriptor = (*view).handle;
+            let format = (*view).format;
             color_attachments.push(translate_rendering_color_attachment(
-                attachment, descriptor, format,
+                attachment,
+                descriptor,
+                Some(format),
             ));
         }
 
         let depth_stencil = info.depth_stencil_attachment.map(|attachment| {
-            let descriptor = std::mem::transmute::<_, CPUDescriptorHandle>(attachment.image_view);
-            let format: Option<DXGI_FORMAT> = None; // TODO: how?
-            translate_rendering_depth_stencil_attachment(attachment, descriptor, format)
+            let view = std::mem::transmute::<_, *const ImageViewObject>(attachment.image_view);
+            let descriptor = (*view).handle;
+            let format = (*view).format;
+            translate_rendering_depth_stencil_attachment(attachment, descriptor, Some(format))
         });
 
         let depth_stencil_ref = depth_stencil

@@ -60,14 +60,16 @@ use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
-use crate::texture::Texture;
+use crate::texture::{ImageViewObject, Texture};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
 use anyhow::anyhow;
+use bumpalo::Bump;
+use parking_lot::Mutex;
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::mem::transmute_copy;
+use std::mem::{size_of, transmute_copy};
 use std::ops::Deref;
 use std::sync::atomic::AtomicU64;
 use windows::core::PCSTR;
@@ -636,6 +638,7 @@ impl IDevice for Device {
             views: Default::default(),
             rtvs: Default::default(),
             dsvs: Default::default(),
+            image_views: Mutex::new(Bump::with_capacity(size_of::<ImageViewObject>() * 8)),
         });
         Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }
@@ -1460,7 +1463,11 @@ impl Device {
         writes: &[ImageDescriptorWrite],
     ) {
         for (i, v) in writes.iter().enumerate() {
-            let src = std::mem::transmute::<_, CPUDescriptorHandle>(v.image_view);
+            // SAFETY: It is the caller's responsibility to ensure that the view points to a live
+            //         and valid ImageViewObject. The objects are immutable so parallel access is
+            //         safe implicitly.
+            let src = std::mem::transmute::<_, *const ImageViewObject>(v.image_view);
+            let src = (*src).handle;
 
             let (dst, _) = set.assume_r_handle();
             let dst = Self::calculate_dst_handle(

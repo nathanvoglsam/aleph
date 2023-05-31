@@ -30,15 +30,16 @@
 use crate::device::Device;
 use crate::internal::unwrap;
 use crate::surface::Surface;
-use crate::texture::Texture;
+use crate::texture::{ImageViewObject, Texture};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::manually_drop;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use anyhow::anyhow;
+use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::TypeId;
-use std::mem::ManuallyDrop;
+use std::mem::{size_of, ManuallyDrop};
 use std::sync::atomic::{AtomicBool, Ordering};
 use windows::core::IUnknown;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -109,6 +110,7 @@ impl SwapChain {
                 views: Default::default(),
                 rtvs: Default::default(),
                 dsvs: Default::default(),
+                image_views: Mutex::new(Bump::with_capacity(size_of::<ImageViewObject>() * 8)),
             });
 
             state.textures.push(texture);

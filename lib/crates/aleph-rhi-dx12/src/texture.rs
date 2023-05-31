@@ -35,9 +35,11 @@ use crate::internal::{
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::ptr::NonNull;
 use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -49,9 +51,10 @@ pub struct Texture {
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
     pub(crate) dxgi_format: DXGI_FORMAT,
-    pub(crate) views: Mutex<HashMap<ImageViewDesc, CPUDescriptorHandle>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, CPUDescriptorHandle>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, CPUDescriptorHandle>>,
+    pub(crate) views: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
+    pub(crate) image_views: Mutex<Bump>,
 }
 
 declare_interfaces!(Texture, [ITexture]);
@@ -426,7 +429,7 @@ impl ITexture for Texture {
                 .allocate()
                 .ok_or(())?;
 
-            if desc.writable {
+            let format = if desc.writable {
                 let desc = Self::make_uav_desc_for_view_desc(desc);
                 unsafe {
                     self.device.device.CreateUnorderedAccessView(
@@ -436,6 +439,7 @@ impl ITexture for Texture {
                         view.into(),
                     );
                 }
+                desc.Format
             } else {
                 let desc = Self::make_srv_desc_for_view_desc(desc);
                 unsafe {
@@ -445,7 +449,17 @@ impl ITexture for Texture {
                         view.into(),
                     );
                 }
-            }
+                desc.Format
+            };
+
+            let view = {
+                let views = self.image_views.lock();
+                let view = views.alloc(ImageViewObject {
+                    handle: view,
+                    format,
+                });
+                NonNull::from(view)
+            };
 
             views.insert(desc.clone(), view);
             view
@@ -467,12 +481,23 @@ impl ITexture for Texture {
                 .allocate()
                 .ok_or(())?;
 
+            let t_desc = Self::make_rtv_desc_for_view_desc(desc);
             unsafe {
-                let desc = Self::make_rtv_desc_for_view_desc(desc);
-                self.device
-                    .device
-                    .CreateRenderTargetView(&self.resource, Some(&desc), view.into());
+                self.device.device.CreateRenderTargetView(
+                    &self.resource,
+                    Some(&t_desc),
+                    view.into(),
+                );
             }
+
+            let view = {
+                let views = self.image_views.lock();
+                let view = views.alloc(ImageViewObject {
+                    handle: view,
+                    format: t_desc.Format,
+                });
+                NonNull::from(view)
+            };
 
             views.insert(desc.clone(), view);
             view
@@ -494,12 +519,23 @@ impl ITexture for Texture {
                 .allocate()
                 .ok_or(())?;
 
+            let t_desc = Self::make_dsv_desc_for_view_desc(desc);
             unsafe {
-                let desc = Self::make_dsv_desc_for_view_desc(desc);
-                self.device
-                    .device
-                    .CreateDepthStencilView(&self.resource, Some(&desc), view.into());
+                self.device.device.CreateDepthStencilView(
+                    &self.resource,
+                    Some(&t_desc),
+                    view.into(),
+                );
             }
+
+            let view = {
+                let views = self.image_views.lock();
+                let view = views.alloc(ImageViewObject {
+                    handle: view,
+                    format: t_desc.Format,
+                });
+                NonNull::from(view)
+            };
 
             views.insert(desc.clone(), view);
             view
@@ -521,22 +557,34 @@ impl IGetPlatformInterface for Texture {
     }
 }
 
+unsafe impl Send for Texture {}
+unsafe impl Sync for Texture {}
+
 impl Drop for Texture {
     #[inline]
     fn drop(&mut self) {
         // Free all RTVs associated with this texture
         for (_, view) in self.views.get_mut().drain() {
+            let view = unsafe { view.as_ref().handle };
             self.device.descriptor_heaps.cpu_view_heap().free(view);
         }
 
         // Free all RTVs associated with this texture
         for (_, rtv) in self.rtvs.get_mut().drain() {
+            let rtv = unsafe { rtv.as_ref().handle };
             self.device.descriptor_heaps.cpu_rtv_heap().free(rtv);
         }
 
         // Free all DSVs associated with this texture
         for (_, dsv) in self.dsvs.get_mut().drain() {
+            let dsv = unsafe { dsv.as_ref().handle };
             self.device.descriptor_heaps.cpu_dsv_heap().free(dsv);
         }
     }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub struct ImageViewObject {
+    pub handle: CPUDescriptorHandle,
+    pub format: DXGI_FORMAT,
 }
