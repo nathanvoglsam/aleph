@@ -475,7 +475,7 @@ impl IContext for Context {
                 }
 
                 #[cfg(any(target_os = "android"))]
-                RawWindowHandle::Android(handle) => {
+                RawWindowHandle::AndroidNdk(handle) => {
                     let create_info = vk::AndroidSurfaceCreateInfoKHR {
                         window: handle.a_native_window as _,
                         ..Default::default()
