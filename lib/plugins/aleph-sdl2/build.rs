@@ -81,18 +81,23 @@ fn main() {
             // nicer than compiling our own.
         }
         Platform::Android => {
-            // On android we need to compile with ndk-build so it will play nicely with all the
-            // wacky things android has done for building.
+            let arch = match target_arch {
+                Architecture::X8664 => "x86_64",
+                Architecture::AARCH64 => "aarch64",
+                Architecture::Unknown => panic!("Unknown architecture"),
+            };
 
-            // Driver function for doing the android compile
-            android_compile_sdl2(target::build::target_architecture());
+            let binary_path = format!("./thirdparty/out/{arch}/android/api-30");
+            let binary_path = Path::new(&binary_path);
+            let link_path = binary_path.join("lib").canonicalize().unwrap();
 
-            // Get the location of the link files and add it to rustc's search path
-            let mut lib_dir = compile::artifacts_dir();
-            lib_dir.push("obj");
-            lib_dir.push("local");
-            lib_dir.push(target::build::target_architecture().ndk_name());
-            println!("cargo:rustc-link-search=all={}", lib_dir.display());
+            println!("cargo:rustc-link-search=all={}", link_path.display());
+
+            let source = binary_path.join("lib").join("libSDL2.so");
+            compile::copy_file_to_artifacts_dir(&source)
+                .expect("Failed to copy SDL2 .so to artifacts dir");
+            compile::copy_file_to_target_dir(&source)
+                .expect("Failed to copy SDL2 .so to target dir");
         }
         Platform::MacOS => {
             let arch = match target_arch {
@@ -131,69 +136,5 @@ fn dll_name() -> &'static str {
         Platform::Linux | Platform::Android => "libSDL2.so",
         Platform::MacOS => "libSDL2-2.0.dylib",
         Platform::Unknown => panic!("Unsupported Platform"),
-    }
-}
-
-///
-/// Gets the name of the ndk-build driver
-///
-fn get_ndk_build_file() -> String {
-    let ndk_build = std::env::var("ANDROID_HOME").unwrap();
-    match target::build::host_platform() {
-        Platform::WindowsGNU | Platform::WindowsMSVC => {
-            format!("{}\\ndk-bundle\\ndk-build.cmd", &ndk_build)
-        }
-        Platform::Linux => format!("{}/ndk-bundle/ndk-build", &ndk_build),
-        Platform::UniversalWindowsGNU => panic!("Unsupported host"),
-        Platform::UniversalWindowsMSVC => panic!("Unsupported host"),
-        Platform::Android => panic!("Unsupported host"),
-        Platform::MacOS => unimplemented!(),
-        Platform::Unknown => panic!("Unsupported host"),
-    }
-}
-
-///
-/// Driver for compiling SDL2 for android, handles all the pain of dealing with ndk-build and
-/// the different architectures
-///
-fn android_compile_sdl2(arch: Architecture) {
-    let ndk_build_dir = get_ndk_build_file();
-    let mut ndk_build = std::process::Command::new(&ndk_build_dir);
-
-    let out_dir = compile::artifacts_dir();
-
-    let mut obj_dir = out_dir.clone();
-    obj_dir.push("obj");
-    let obj_dir = format!("NDK_OUT={}", obj_dir.display());
-
-    let mut lib_dir = out_dir;
-    lib_dir.push("lib");
-    let lib_dir = format!("NDK_LIBS_OUT={}", lib_dir.display());
-
-    ndk_build.arg("NDK_PROJECT_PATH=null");
-    ndk_build.arg("APP_BUILD_SCRIPT=Android.mk");
-    ndk_build.arg("APP_PLATFORM=android-24");
-    ndk_build.arg("APP_STL=c++_shared");
-    ndk_build.arg("APP_MODULES=SDL2 SDL2_main");
-    ndk_build.arg(&obj_dir);
-    ndk_build.arg(&lib_dir);
-
-    let abi = format!("APP_ABI={}", arch.ndk_name());
-    ndk_build.arg(&abi);
-
-    ndk_build.current_dir("./thirdparty/sdl2");
-
-    ndk_build.stdout(std::process::Stdio::inherit());
-    ndk_build.stderr(std::process::Stdio::inherit());
-
-    println!("ndk-build: {}", &ndk_build_dir);
-    let exit_status = ndk_build
-        .spawn()
-        .expect("Failed to start ndk-build")
-        .wait()
-        .expect("ndk-build failed unexpectedly");
-
-    if !exit_status.success() {
-        panic!("ndk-build failed");
     }
 }
