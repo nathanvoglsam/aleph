@@ -30,8 +30,7 @@
 use aleph_target_build::build::target_platform;
 
 pub fn add_platform_flags() {
-    if target_platform().is_windows()
-    {
+    if target_platform().is_windows() {
         aleph_dx12_agility_sdk::link_agility_symbol_def();
         aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
     }
