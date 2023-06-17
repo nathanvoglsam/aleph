@@ -22,13 +22,9 @@ rustflags = ["-C", "target-cpu=sandybridge"]
 ## Android
 [target.x86_64-linux-android]
 rustflags = ["-C", "target-cpu=sandybridge"]
-linker = "C:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk\\ndk-bundle\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\x86_64-linux-android24-clang.cmd"
-ar = "C:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk\\ndk-bundle\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\x86_64-linux-android-ar"
 
 [target.aarch64-linux-android]
 rustflags = ["-C", "link-args=-fuse-ld=gold"]
-linker = "C:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk\\ndk-bundle\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\aarch64-linux-android24-clang.cmd"
-ar = "C:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk\\ndk-bundle\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\aarch64-linux-android-ar"
 
 [profile.retail]
 inherits = "release"
