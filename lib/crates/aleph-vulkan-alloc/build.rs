@@ -72,10 +72,14 @@ fn main() {
             panic!("ndk-build failed");
         }
 
-        let link_dir = obj_dir.join("local").join(arch.ndk_name());
-        println!("cargo:rustc-link-search=all={}", link_dir.display());
+        // Copy the output archive to the OUT_DIR so we don't get the copied libc++_shared messing
+        // our linking up
+        let archive_dir = obj_dir.join("local").join(arch.ndk_name());
+        let lib = archive_dir.join("libvma.a");
+        std::fs::copy(lib, out_dir.join("libvma.a")).unwrap();
+
+        println!("cargo:rustc-link-search=all={}", out_dir.display());
         println!("cargo:rustc-link-lib=static=vma");
-        println!("cargo:rustc-link-lib=dylib=c++_shared");
     } else {
         let vk_header_inc = Path::new("Vulkan-Headers/include");
         let vma_header_inc = Path::new("VulkanMemoryAllocator/src");
