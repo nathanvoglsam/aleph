@@ -42,7 +42,7 @@ aleph-engine = { path = "../../lib/crates/aleph-engine", version = "0.1.0", feat
 egui_demo_lib = "0.21"
 
 [target.'cfg(windows)'.dependencies]
-aleph-dx12-agility-sdk = { path = "../../lib/crates/aleph-dx12-agility-sdk", version = "1.706.0" }
+aleph-dx12-agility-sdk = { workspace = true }
 
-[target.'cfg(windows)'.build-dependencies]
-aleph-dx12-agility-sdk = { path = "../../lib/crates/aleph-dx12-agility-sdk", version = "1.706.0" }
+[build-dependencies]
+aleph-engine-build = { workspace = true }
