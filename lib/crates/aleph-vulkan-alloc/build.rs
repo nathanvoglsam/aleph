@@ -31,58 +31,92 @@ extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
 use std::path::Path;
-use target::build::target_platform;
+use target::build::{target_architecture, target_platform};
+use target::Platform;
 
 fn main() {
-    let vk_header_inc = Path::new("Vulkan-Headers/include");
-    let vma_header_inc = Path::new("VulkanMemoryAllocator/src");
+    if target_platform().is_android() {
+        let arch = target_architecture();
 
-    let mut build = cc::Build::new();
-    build.cpp(true);
-    build.flag_if_supported("-w");
-    build.define("VMA_STATIC_VULKAN_FUNCTIONS", "0");
-    build.file("library/vk_mem_alloc.cpp");
-    build.include(vk_header_inc);
-    build.include(vma_header_inc);
+        let ndk_build_dir = get_ndk_build_file();
+        let mut ndk_build = std::process::Command::new(&ndk_build_dir);
+        ndk_build.current_dir("./library");
+        ndk_build.stdout(std::process::Stdio::inherit());
+        ndk_build.stderr(std::process::Stdio::inherit());
 
-    if target_platform().is_windows() {
-        if target_platform().is_gnu() {
-            build.flag("-std=c++17");
-        } else {
-            build.flag("/std:c++17");
+        let out_dir = compile::cargo_out_dir();
+        let obj_dir = out_dir.join("obj");
+        let lib_dir = out_dir.join("lib");
+
+        let abi = format!("APP_ABI={}", arch.ndk_name());
+        let obj_dir_arg = format!("NDK_OUT={}", obj_dir.display());
+        let lib_dir_arg = format!("NDK_LIBS_OUT={}", lib_dir.display());
+
+        ndk_build.arg("NDK_PROJECT_PATH=null");
+        ndk_build.arg("APP_BUILD_SCRIPT=Android.mk");
+        ndk_build.arg("APP_PLATFORM=android-30");
+        ndk_build.arg("APP_STL=c++_shared");
+        ndk_build.arg("APP_MODULES=vma");
+        ndk_build.arg(&obj_dir_arg);
+        ndk_build.arg(&lib_dir_arg);
+        ndk_build.arg(&abi);
+
+        println!("ndk-build: {}", &ndk_build_dir);
+        let exit_status = ndk_build
+            .spawn()
+            .expect("Failed to start ndk-build")
+            .wait()
+            .expect("ndk-build failed unexpectedly");
+
+        if !exit_status.success() {
+            panic!("ndk-build failed");
         }
+
+        let link_dir = obj_dir.join("local").join(arch.ndk_name());
+        println!("cargo:rustc-link-search=all={}", link_dir.display());
+        println!("cargo:rustc-link-lib=static=vma");
+        println!("cargo:rustc-link-lib=dylib=c++_shared");
     } else {
-        build.flag("-std=c++17");
+        let vk_header_inc = Path::new("Vulkan-Headers/include");
+        let vma_header_inc = Path::new("VulkanMemoryAllocator/src");
+
+        let mut build = cc::Build::new();
+        build.cpp(true);
+        build.flag_if_supported("-w");
+        build.define("VMA_STATIC_VULKAN_FUNCTIONS", "0");
+        build.file("library/vk_mem_alloc.cpp");
+        build.include(vk_header_inc);
+        build.include(vma_header_inc);
+
+        if target_platform().is_windows() {
+            if target_platform().is_gnu() {
+                build.flag("-std=c++17");
+            } else {
+                build.flag("/std:c++17");
+            }
+        } else {
+            build.flag("-std=c++17");
+        }
+
+        if cfg!(feature = "corruption_detection") {
+            build.define("VMA_DEBUG_DETECT_CORRUPTION", "1");
+        }
+
+        build.compile("vma");
     }
+}
 
-    if cfg!(feature = "corruption_detection") {
-        build.define("VMA_DEBUG_DETECT_CORRUPTION", "1");
+///
+/// Gets the name of the ndk-build driver
+///
+fn get_ndk_build_file() -> String {
+    let ndk_build = std::env::var("ANDROID_NDK_HOME").unwrap();
+    match target::build::host_platform() {
+        Platform::WindowsGNU | Platform::WindowsMSVC => format!("{ndk_build}\\ndk-build.cmd"),
+        Platform::Linux | Platform::MacOS => format!("{ndk_build}/ndk-build"),
+        Platform::Android => panic!("Unsupported host"),
+        Platform::UniversalWindowsGNU => panic!("Unsupported host"),
+        Platform::UniversalWindowsMSVC => panic!("Unsupported host"),
+        Platform::Unknown => panic!("Unsupported host"),
     }
-
-    // if target_platform().is_android() {
-    //     let android_home = std::env::var("ANDROID_HOME").unwrap();
-    //     let toolchain_file = format!(
-    //         "{}/ndk-bundle/build/cmake/android.toolchain.cmake",
-    //         &android_home
-    //     );
-    //
-    //     build.define("CMAKE_TOOLCHAIN_FILE", &toolchain_file);
-    //     build.define("ANDROID_PLATFORM", "android-24");
-    //     build.define("ANDROID_STL", "c++_shared");
-    //     build.define("ANDROID_ABI", target_architecture().ndk_name());
-    //
-    //     match target_architecture() {
-    //         Architecture::X8664 => {
-    //             build.target("x86_64-none-linux-android24");
-    //         }
-    //         Architecture::AARCH64 => {
-    //             build.target("aarch64-none-linux-android24");
-    //         }
-    //         Architecture::Unknown => {
-    //             panic!("Unsupported architecture");
-    //         }
-    //     }
-    // }
-
-    build.compile("vma");
 }
