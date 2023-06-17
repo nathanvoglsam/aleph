@@ -44,6 +44,6 @@ pub fn add_platform_flags() {
     }
 
     if target_platform().is_android() {
-        // to do
+        println!("cargo:rustc-link-lib=dylib=c++_shared");
     }
 }
