@@ -44,6 +44,7 @@ members = [
     "lib/crates/aleph-dx12-alloc",
     "lib/crates/aleph-ecs",
     "lib/crates/aleph-engine",
+    "lib/crates/aleph-engine-build",
     "lib/crates/aleph-gpu",
     "lib/crates/aleph-interfaces",
     "lib/crates/aleph-label",
@@ -111,10 +112,11 @@ utf16_lit = "2"
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
 aleph-compile = { path = "./lib/crates/aleph-compile", version = "1" }
 aleph-console = { path = "./lib/crates/aleph-console", version = "0.1" }
-aleph-dx12-agility-sdk = { path = "./lib/crates/aleph-dx12-agility-sdk", version = "0.1" }
+aleph-dx12-agility-sdk = { path = "./lib/crates/aleph-dx12-agility-sdk", version = "1.706.0" }
 aleph-dx12-alloc = { path = "./lib/crates/aleph-dx12-alloc", version = "0.1" }
 aleph-ecs = { path = "./lib/crates/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./lib/crates/aleph-engine", version = "0.1" }
+aleph-engine-build = { path = "./lib/crates/aleph-engine-build", version = "0.1" }
 aleph-gpu = { path = "./lib/crates/aleph-gpu", version = "0.1" }
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./lib/crates/aleph-label", version = "1" }
