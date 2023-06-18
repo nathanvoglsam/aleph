@@ -23,9 +23,6 @@ rustflags = ["-C", "target-cpu=sandybridge"]
 [target.x86_64-linux-android]
 rustflags = ["-C", "target-cpu=sandybridge"]
 
-[target.aarch64-linux-android]
-rustflags = ["-C", "link-args=-fuse-ld=gold"]
-
 [profile.retail]
 inherits = "release"
 lto = true
