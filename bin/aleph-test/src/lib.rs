@@ -30,6 +30,10 @@
 mod game_logic;
 
 #[no_mangle]
-pub extern "C" fn engine_main() {
+pub extern "C" fn SDL_main(
+    _argc: std::ffi::c_int,
+    _argv: *const *const std::ffi::c_char,
+) -> std::ffi::c_int {
     game_logic::engine_runner();
+    return 0;
 }
