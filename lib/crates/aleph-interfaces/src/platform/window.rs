@@ -167,11 +167,6 @@ pub trait IWindow: IAny + HasRawWindowHandle + Send + Sync + 'static {
     fn drawable_size(&self) -> (u32, u32);
 
     ///
-    /// Returns the current refresh rate of the window
-    ///
-    fn refresh_rate(&self) -> u32;
-
-    ///
     /// Return if the window is currently fullscreen
     ///
     fn fullscreen(&self) -> bool;
