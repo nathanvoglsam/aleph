@@ -134,6 +134,16 @@ impl WindowImpl {
         window.resizable();
         window.allow_highdpi();
 
+        // Android can only use Vulkan, and we need to set this flag to *use* Vulkan so I think this
+        // is the best way to handle it. There shouldn't be any coupling between the RHI and'
+        // windowing ideally but in practice this works and keeps the rest of the engine clean.
+        //
+        // It's not like you can use D3D12 on Android anyway.
+        #[cfg(target_os = "android")]
+        {
+            window.vulkan();
+        }
+
         #[cfg(target_os = "macos")]
         {
             use sdl2_sys::SDL_WindowFlags::SDL_WINDOW_METAL;
