@@ -38,7 +38,7 @@
 //! expressions.
 //!
 
-use log::{Level, Metadata, Record};
+use log::{Level, LevelFilter, Metadata, Record};
 use std::io::{BufWriter, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -148,13 +148,13 @@ impl Default for DebugConsole {
 /// Provides a [log::Log] implementation that wraps an [env_logger::Logger] for local logging and
 /// implements a network logging protocol for logging to a remote machine
 ///
-pub struct Logger {
-    env_logger: env_logger::Logger,
+pub struct Logger<T: log::Log + 'static> {
+    env_logger: T,
     remote: Option<Mutex<BufWriter<TcpStream>>>,
     has_remote: AtomicBool,
 }
 
-impl Logger {
+impl<T: log::Log + 'static> Logger<T> {
     /// Consumes `self`, installing this logger as the global logger instance
     pub fn install(mut self) -> Option<TcpStream> {
         let remote = Self::listen_for_and_connect_to_remote().ok().flatten();
@@ -176,9 +176,9 @@ impl Logger {
             None
         };
 
-        let level = self.env_logger.filter();
+        // let level = self.env_logger.filter();
         log::set_boxed_logger(Box::new(self)).expect("Attempting to install logger");
-        log::set_max_level(level);
+        log::set_max_level(LevelFilter::Trace);
 
         remote
     }
@@ -280,8 +280,8 @@ impl Logger {
     }
 }
 
-impl From<env_logger::Logger> for Logger {
-    fn from(env_logger: env_logger::Logger) -> Self {
+impl<T: log::Log + 'static> From<T> for Logger<T> {
+    fn from(env_logger: T) -> Self {
         Self {
             env_logger,
             remote: None,
@@ -290,7 +290,7 @@ impl From<env_logger::Logger> for Logger {
     }
 }
 
-impl log::Log for Logger {
+impl<T: log::Log + 'static> log::Log for Logger<T> {
     fn enabled(&self, metadata: &Metadata) -> bool {
         // We rely on env_logger for our log filtering
         self.env_logger.enabled(metadata)
