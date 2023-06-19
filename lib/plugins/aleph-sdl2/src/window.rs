@@ -60,9 +60,6 @@ pub struct WindowState {
     /// The height of the window when not fullscreen
     pub windowed_height: u32,
 
-    /// The refresh rate of the surface
-    pub refresh_rate: u32,
-
     /// Whether the window is currently fullscreen
     pub fullscreen: bool,
 
@@ -148,8 +145,6 @@ impl WindowImpl {
 
         let drawable_size = window.drawable_size();
 
-        let display_mode = window.display_mode().unwrap();
-
         let raw_window_handle = {
             #[cfg(not(target_os = "macos"))]
             {
@@ -178,7 +173,6 @@ impl WindowImpl {
             drawable_height: drawable_size.1,
             windowed_width: DEFAULT_WIDTH,
             windowed_height: DEFAULT_HEIGHT,
-            refresh_rate: display_mode.refresh_rate as _,
             fullscreen: false,
             focused: false,
             handle: raw_window_handle,
@@ -343,13 +337,11 @@ impl WindowImpl {
         window_state.fullscreen = true;
         window_state.current_width = display_mode.w as _;
         window_state.current_height = display_mode.h as _;
-        window_state.refresh_rate = display_mode.refresh_rate as _;
         log::trace!("Successfully went fullscreen");
         log::trace!(
-            "Window Size: {}x{} at {}hz",
+            "Window Size: {}x{}",
             window_state.current_width,
             window_state.current_height,
-            window_state.refresh_rate
         );
     }
 
@@ -366,15 +358,11 @@ impl WindowImpl {
             .set_size(window_state.windowed_width, window_state.windowed_height)
             .expect("Failed to reset window size after leaving fullscreen");
 
-        let display_mode = window.display_mode().unwrap();
-        window_state.refresh_rate = display_mode.refresh_rate as _;
-
         log::trace!("Successfully went windowed");
         log::trace!(
-            "Window Size: {}x{} at {}hz",
+            "Window Size: {}x{}",
             window_state.current_width,
             window_state.current_height,
-            window_state.refresh_rate
         );
     }
 
@@ -382,9 +370,6 @@ impl WindowImpl {
     /// Internal function for getting new mouse state from SDL2
     ///
     pub fn update_state(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
-        let display_mode = window.display_mode().unwrap();
-        window_state.refresh_rate = display_mode.refresh_rate as _;
-
         let drawable_size = window.vulkan_drawable_size();
         window_state.drawable_width = drawable_size.0;
         window_state.drawable_height = drawable_size.1;
@@ -444,10 +429,6 @@ impl IWindow for WindowImpl {
     fn drawable_size(&self) -> (u32, u32) {
         let state = self.state.read();
         (state.drawable_width, state.drawable_height)
-    }
-
-    fn refresh_rate(&self) -> u32 {
-        self.state.read().refresh_rate
     }
 
     fn fullscreen(&self) -> bool {
