@@ -13,6 +13,8 @@ use ash::extensions::khr::{
 use ash::extensions::mvk::{IOSSurface, MacOSSurface};
 use ash::vk;
 use std::ffi::CStr;
+use std::io::Read;
+use std::iter;
 use std::mem::ManuallyDrop;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -136,21 +138,22 @@ impl RhiBackend {
             )));
         }
 
-        // Select the set of extensions that we want to load
-        let wanted_extensions = get_wanted_extensions(debug);
-        let supported_extensions = strip_unsupported_extensions(entry, wanted_extensions.clone());
-        check_all_extensions_supported(&wanted_extensions, &supported_extensions)?;
-        let extensions: Vec<_> = supported_extensions
-            .iter()
-            .copied()
-            .map(|v| v.as_ptr())
-            .collect();
-
         // Select the set of layers we want to load
         let wanted_layers = get_wanted_layers(validation);
         let supported_layers = strip_unsupported_layers(entry, wanted_layers.clone());
         check_all_layers_supported(&wanted_layers, &supported_layers)?;
         let layers: Vec<_> = supported_layers
+            .iter()
+            .copied()
+            .map(|v| v.as_ptr())
+            .collect();
+
+        // Select the set of extensions that we want to load
+        let wanted_extensions = get_wanted_extensions(debug);
+        let supported_extensions =
+            strip_unsupported_extensions(entry, &supported_layers, wanted_extensions.clone());
+        check_all_extensions_supported(&wanted_extensions, &supported_extensions)?;
+        let extensions: Vec<_> = supported_extensions
             .iter()
             .copied()
             .map(|v| v.as_ptr())
@@ -342,21 +345,36 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
 
 fn strip_unsupported_extensions<'a>(
     entry: &ash::Entry,
+    layers: &[&CStr],
     mut extensions: Vec<&'a CStr>,
 ) -> Vec<&'a CStr> {
-    let supported_instance_extensions: Vec<vk::ExtensionProperties> = entry
-        .enumerate_instance_extension_properties(None)
-        .unwrap_or_default();
+    // We can source extensions from the loader/driver directly, *or* from layers. We have to ask
+    // for extensions from the driver and extensions from the layer in separate calls as separate
+    // 'sets' of supported extensions. This is what we do here. 'layers' contains a list of layers
+    // that *will* be loaded so we can include those layers each as a source of extensions.
+    //
+    // This is primarily needed on platforms where some extensions are provided by layers like
+    // android where VK_EXT_debug_utils is provided by the validation layers. Other examples would
+    // be feature emulation layers.
+    let extension_sources = iter::once(None).chain(layers.iter().map(|v| Some(*v)));
+    let supported_instance_extension_sets: Vec<Vec<vk::ExtensionProperties>> = extension_sources
+        .map(|v| {
+            entry
+                .enumerate_instance_extension_properties(v)
+                .unwrap_or_default()
+        })
+        .collect();
 
     // Strip all unsupported extensions
     extensions.retain(|&v| {
         // SAFETY: Everything is guaranteed to be a C string here
         unsafe {
             // Strip any unsupported extensions
-            supported_instance_extensions
-                .iter()
-                .map(|s| CStr::from_ptr(s.extension_name.as_ptr()))
-                .any(|s| v == s)
+            supported_instance_extension_sets.iter().any(|set| {
+                set.iter()
+                    .map(|s| CStr::from_ptr(s.extension_name.as_ptr()))
+                    .any(|s| v == s)
+            })
         }
     });
     extensions
