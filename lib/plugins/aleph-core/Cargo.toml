@@ -43,7 +43,12 @@ aleph-label = { workspace = true }
 aleph-interfaces = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
 env_logger = { workspace = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

@@ -76,6 +76,7 @@ members = [
 [workspace.dependencies]
 
 # Third Party Crates
+android_logger = "0.13"
 anyhow = "1"
 ash = "0.37"
 bitflags = "1"

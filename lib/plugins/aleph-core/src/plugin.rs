@@ -52,12 +52,30 @@ pub struct PluginCore {
 
 impl PluginCore {
     pub fn new() -> Self {
+        #[cfg(not(target_os = "android"))]
+        fn create_logger() -> env_logger::Logger {
+            env_logger::Builder::from_default_env()
+                .filter_level(LevelFilter::Trace)
+                .build()
+        }
+
+        #[cfg(target_os = "android")]
+        fn create_logger() -> android_logger::AndroidLogger {
+            let config = android_logger::Config::default().with_max_level(log::LevelFilter::Trace);
+            android_logger::AndroidLogger::new(config)
+        }
+
         // This will be one of the earliest pieces of code to run in aleph engine so initialize the
         // logger here. By initializing it here then this plugin remains optional (technically)
-        let env_logger = env_logger::Builder::from_default_env()
-            .filter_level(LevelFilter::Trace)
-            .build();
-        let command_stream = interfaces::console::Logger::from(env_logger).install();
+        let logger = create_logger();
+        let command_stream = interfaces::console::Logger::from(logger).install();
+
+        // Android won't log panics properly afaik? We re-route to log so we can see it in logcat.
+        if cfg!(target_os = "android") {
+            std::panic::set_hook(Box::new(|v| {
+                log::error!("{}", v);
+            }));
+        }
 
         // Construct the debug console. If the console feature is disabled then this will just make
         // an empty object so we don't need to be conditional here
