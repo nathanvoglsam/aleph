@@ -158,10 +158,16 @@ impl Context {
                 log::trace!("Driver Info    : {driver_info}");
             }
 
-            let dv_major = vk::api_version_major(device_info.properties_10.driver_version);
-            let dv_minor = vk::api_version_minor(device_info.properties_10.driver_version);
-            let dv_patch = vk::api_version_patch(device_info.properties_10.driver_version);
-            log::trace!("Driver Version : {dv_major}.{dv_minor}.{dv_patch}");
+            // The VERSION_x functions are deprecated but we're supposed to use them here as this
+            // is a driver version not an API version. We don't have any 'variant' shenanigans to
+            // care about.
+            #[allow(deprecated)]
+            {
+                let dv_major = vk::version_major(device_info.properties_10.driver_version);
+                let dv_minor = vk::version_minor(device_info.properties_10.driver_version);
+                let dv_patch = vk::version_patch(device_info.properties_10.driver_version);
+                log::trace!("Driver Version : {dv_major}.{dv_minor}.{dv_patch}");
+            }
         }
     }
 
