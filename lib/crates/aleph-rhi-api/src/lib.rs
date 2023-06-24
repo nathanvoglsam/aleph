@@ -3557,22 +3557,13 @@ pub struct DepthStencilClearValue {
 }
 
 /// Enum flags for barrier commands for specifying queue ownership transition behavior.
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum QueueTransitionMode {
-    /// No queue ownership transition will be performed
-    None,
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct QueueTransition {
+    /// The queue that the resource is being transferred _from_ to another queue
+    pub before_queue: QueueType,
 
-    /// Flag the barrier to acquire the resource from the queue provided
-    Acquire(QueueType),
-
-    /// Flag the barrier to release the flag to the queue provided
-    Release(QueueType),
-}
-
-impl Default for QueueTransitionMode {
-    fn default() -> Self {
-        Self::None
-    }
+    /// The queue that the resource is being transferred _to_ from another queue
+    pub after_queue: QueueType,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
@@ -3615,7 +3606,7 @@ pub struct BufferBarrier<'a> {
 
     /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
     /// passed from one queue to another to be used across multiple queues.
-    pub queue_transition_mode: QueueTransitionMode,
+    pub queue_transition: Option<QueueTransition>,
 }
 
 impl<'a> Debug for BufferBarrier<'a> {
@@ -3626,7 +3617,7 @@ impl<'a> Debug for BufferBarrier<'a> {
             .field("after_sync", &self.after_sync)
             .field("before_access", &self.before_access)
             .field("after_access", &self.after_access)
-            .field("queue_transition_mode", &self.queue_transition_mode)
+            .field("queue_transition", &self.queue_transition)
             .finish()
     }
 }
@@ -3650,7 +3641,7 @@ pub struct TextureBarrier<'a> {
 
     /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
     /// passed from one queue to another to be used across multiple queues.
-    pub queue_transition_mode: QueueTransitionMode,
+    pub queue_transition: Option<QueueTransition>,
 }
 
 impl<'a> Debug for TextureBarrier<'a> {
@@ -3664,7 +3655,7 @@ impl<'a> Debug for TextureBarrier<'a> {
             .field("after_access", &self.after_access)
             .field("before_layout", &self.before_layout)
             .field("after_layout", &self.after_layout)
-            .field("queue_transition_mode", &self.queue_transition_mode)
+            .field("queue_transition", &self.queue_transition)
             .finish()
     }
 }
