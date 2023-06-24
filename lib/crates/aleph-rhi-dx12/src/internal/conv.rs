@@ -293,20 +293,57 @@ pub const fn sampler_filters_to_dx12(
     }
 }
 
-pub fn image_layout_to_dx12(layout: ImageLayout) -> D3D12_BARRIER_LAYOUT {
-    match layout {
-        ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
-        ImageLayout::Common => D3D12_BARRIER_LAYOUT::COMMON,
-        ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
-        ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
-        ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
-        ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
-        ImageLayout::ShaderReadOnlyOptimal => D3D12_BARRIER_LAYOUT::SHADER_RESOURCE,
-        ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::COPY_SOURCE,
-        ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::COPY_DEST,
-        ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::UNORDERED_ACCESS,
-        ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
-        ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+pub const fn image_layout_to_dx12(
+    layout: ImageLayout,
+    queue_type: Option<QueueType>,
+) -> D3D12_BARRIER_LAYOUT {
+    match queue_type {
+        Some(QueueType::General) => match layout {
+            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_COMMON,
+            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
+            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
+            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
+            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
+            ImageLayout::ShaderReadOnlyOptimal => {
+                D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_SHADER_RESOURCE
+            }
+            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_COPY_SOURCE,
+            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_COPY_DEST,
+            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_UNORDERED_ACCESS,
+            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
+            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+        },
+        Some(QueueType::Compute) => match layout {
+            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_COMMON,
+            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
+            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
+            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
+            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
+            ImageLayout::ShaderReadOnlyOptimal => {
+                D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_SHADER_RESOURCE
+            }
+            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_COPY_SOURCE,
+            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_COPY_DEST,
+            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_UNORDERED_ACCESS,
+            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
+            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+        },
+        Some(QueueType::Transfer) | None => match layout {
+            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT::COMMON,
+            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
+            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
+            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
+            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
+            ImageLayout::ShaderReadOnlyOptimal => D3D12_BARRIER_LAYOUT::SHADER_RESOURCE,
+            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::COPY_SOURCE,
+            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::COPY_DEST,
+            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::UNORDERED_ACCESS,
+            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
+            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+        },
     }
 }
 
