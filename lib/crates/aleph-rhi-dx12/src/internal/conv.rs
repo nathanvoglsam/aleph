@@ -363,8 +363,8 @@ pub fn barrier_sync_to_dx12(sync: BarrierSync) -> D3D12_BARRIER_SYNC {
     translate_flag_onto!(
         sync,
         out,
-        BarrierSync::INPUT_ASSEMBLER,
-        D3D12_BARRIER_SYNC::INPUT_ASSEMBLER
+        BarrierSync::INDEX_INPUT,
+        D3D12_BARRIER_SYNC::INDEX_INPUT
     );
     translate_flag_onto!(
         sync,
