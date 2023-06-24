@@ -13,7 +13,6 @@ use ash::extensions::khr::{
 use ash::extensions::mvk::{IOSSurface, MacOSSurface};
 use ash::vk;
 use std::ffi::CStr;
-use std::io::Read;
 use std::iter;
 use std::mem::ManuallyDrop;
 use std::sync::atomic::{AtomicBool, Ordering};

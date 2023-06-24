@@ -870,7 +870,7 @@ impl IDevice for Device {
                         }
                     }
                     DescriptorWrites::TexelBuffer(v) => {
-                        for v in v {
+                        for _v in v {
                             texel_buffer_infos.push(vk::BufferView::null());
                         }
                     }

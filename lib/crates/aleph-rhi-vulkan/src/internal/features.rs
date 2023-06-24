@@ -982,11 +982,11 @@ impl CheckMeetsProfile for vk::PointClippingBehavior {
 }
 
 impl CheckMeetsProfile for vk::ConformanceVersion {
-    fn meets_profile(&self, v: &Self) -> Option<()> {
+    fn meets_profile(&self, _v: &Self) -> Option<()> {
         Some(())
     }
 
-    fn merge(&mut self, v: &Self) {}
+    fn merge(&mut self, _v: &Self) {}
 }
 
 impl CheckMeetsProfile for vk::ShaderFloatControlsIndependence {

@@ -121,7 +121,7 @@ impl Context {
         let selected_index = scores
             .iter()
             .enumerate()
-            .max_by_key(|(i, v)| &v.3)
+            .max_by_key(|(_i, v)| &v.3)
             .map(|(i, _)| i);
         if let Some(i) = selected_index {
             let out = scores.swap_remove(i);
