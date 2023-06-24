@@ -299,50 +299,48 @@ pub const fn image_layout_to_dx12(
 ) -> D3D12_BARRIER_LAYOUT {
     match queue_type {
         Some(QueueType::General) => match layout {
-            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
-            ImageLayout::Common => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_COMMON,
-            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
-            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
-            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
-            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
-            ImageLayout::ShaderReadOnlyOptimal => {
-                D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_SHADER_RESOURCE
-            }
-            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_COPY_SOURCE,
-            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_COPY_DEST,
-            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::DIRECT_QUEUE_UNORDERED_ACCESS,
-            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
-            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COMMON,
+            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT_PRESENT,
+            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT_RENDER_TARGET,
+            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
+            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ,
+            ImageLayout::ShaderReadOnlyOptimal => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_SHADER_RESOURCE,
+            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COPY_SOURCE,
+            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COPY_DEST,
+            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_UNORDERED_ACCESS,
+            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE,
+            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT_RESOLVE_DEST,
         },
         Some(QueueType::Compute) => match layout {
-            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
-            ImageLayout::Common => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_COMMON,
-            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
-            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
-            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
-            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
+            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_COMMON,
+            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT_PRESENT,
+            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT_RENDER_TARGET,
+            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
+            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ,
             ImageLayout::ShaderReadOnlyOptimal => {
-                D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_SHADER_RESOURCE
+                D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_SHADER_RESOURCE
             }
-            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_COPY_SOURCE,
-            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_COPY_DEST,
-            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::COMPUTE_QUEUE_UNORDERED_ACCESS,
-            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
-            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_COPY_SOURCE,
+            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_COPY_DEST,
+            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_UNORDERED_ACCESS,
+            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE,
+            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT_RESOLVE_DEST,
         },
         Some(QueueType::Transfer) | None => match layout {
-            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
-            ImageLayout::Common => D3D12_BARRIER_LAYOUT::COMMON,
-            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
-            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
-            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
-            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
-            ImageLayout::ShaderReadOnlyOptimal => D3D12_BARRIER_LAYOUT::SHADER_RESOURCE,
-            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::COPY_SOURCE,
-            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::COPY_DEST,
-            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::UNORDERED_ACCESS,
-            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
-            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+            ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT_COMMON,
+            ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT_PRESENT,
+            ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT_RENDER_TARGET,
+            ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
+            ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ,
+            ImageLayout::ShaderReadOnlyOptimal => D3D12_BARRIER_LAYOUT_SHADER_RESOURCE,
+            ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT_COPY_SOURCE,
+            ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT_COPY_DEST,
+            ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT_UNORDERED_ACCESS,
+            ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE,
+            ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT_RESOLVE_DEST,
         },
     }
 }
@@ -357,165 +355,165 @@ macro_rules! translate_flag_onto {
 }
 
 pub fn barrier_sync_to_dx12(sync: BarrierSync) -> D3D12_BARRIER_SYNC {
-    let mut out = D3D12_BARRIER_SYNC::empty();
-    translate_flag_onto!(sync, out, BarrierSync::ALL, D3D12_BARRIER_SYNC::ALL);
-    translate_flag_onto!(sync, out, BarrierSync::DRAW, D3D12_BARRIER_SYNC::DRAW);
+    let mut out = D3D12_BARRIER_SYNC::default();
+    translate_flag_onto!(sync, out, BarrierSync::ALL, D3D12_BARRIER_SYNC_ALL);
+    translate_flag_onto!(sync, out, BarrierSync::DRAW, D3D12_BARRIER_SYNC_DRAW);
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::INDEX_INPUT,
-        D3D12_BARRIER_SYNC::INDEX_INPUT
+        D3D12_BARRIER_SYNC_INDEX_INPUT
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::VERTEX_SHADING,
-        D3D12_BARRIER_SYNC::VERTEX_SHADING
+        D3D12_BARRIER_SYNC_VERTEX_SHADING
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::PIXEL_SHADING,
-        D3D12_BARRIER_SYNC::PIXEL_SHADING
+        D3D12_BARRIER_SYNC_PIXEL_SHADING
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::DEPTH_STENCIL,
-        D3D12_BARRIER_SYNC::DEPTH_STENCIL
+        D3D12_BARRIER_SYNC_DEPTH_STENCIL
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::RENDER_TARGET,
-        D3D12_BARRIER_SYNC::RENDER_TARGET
+        D3D12_BARRIER_SYNC_RENDER_TARGET
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::COMPUTE_SHADING,
-        D3D12_BARRIER_SYNC::COMPUTE_SHADING
+        D3D12_BARRIER_SYNC_COMPUTE_SHADING
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::RAYTRACING,
-        D3D12_BARRIER_SYNC::RAYTRACING
+        D3D12_BARRIER_SYNC_RAYTRACING
     );
-    translate_flag_onto!(sync, out, BarrierSync::COPY, D3D12_BARRIER_SYNC::COPY);
-    translate_flag_onto!(sync, out, BarrierSync::RESOLVE, D3D12_BARRIER_SYNC::RESOLVE);
+    translate_flag_onto!(sync, out, BarrierSync::COPY, D3D12_BARRIER_SYNC_COPY);
+    translate_flag_onto!(sync, out, BarrierSync::RESOLVE, D3D12_BARRIER_SYNC_RESOLVE);
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::EXECUTE_INDIRECT,
-        D3D12_BARRIER_SYNC::EXECUTE_INDIRECT
+        D3D12_BARRIER_SYNC_EXECUTE_INDIRECT
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::CLEAR_UNORDERED_ACCESS_VIEW,
-        D3D12_BARRIER_SYNC::CLEAR_UNORDERED_ACCESS_VIEW
+        D3D12_BARRIER_SYNC_CLEAR_UNORDERED_ACCESS_VIEW
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE,
-        (D3D12_BARRIER_SYNC::BUILD_RAYTRACING_ACCELERATION_STRUCTURE
-            | D3D12_BARRIER_SYNC::EMIT_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO)
+        (D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE
+            | D3D12_BARRIER_SYNC_EMIT_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO)
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::COPY_RAYTRACING_ACCELERATION_STRUCTURE,
-        D3D12_BARRIER_SYNC::COPY_RAYTRACING_ACCELERATION_STRUCTURE
+        D3D12_BARRIER_SYNC_COPY_RAYTRACING_ACCELERATION_STRUCTURE
     );
 
     out
 }
 
 pub fn barrier_access_to_dx12(access: BarrierAccess) -> D3D12_BARRIER_ACCESS {
-    let mut out = D3D12_BARRIER_ACCESS::empty();
+    let mut out = D3D12_BARRIER_ACCESS::default();
     if access.is_empty() {
         // RHI uses 0 set bits for no access like vulkan
-        return D3D12_BARRIER_ACCESS::NO_ACCESS;
+        return D3D12_BARRIER_ACCESS_NO_ACCESS;
     }
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::VERTEX_BUFFER_READ,
-        D3D12_BARRIER_ACCESS::VERTEX_BUFFER
+        D3D12_BARRIER_ACCESS_VERTEX_BUFFER
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::INDEX_BUFFER_READ,
-        D3D12_BARRIER_ACCESS::INDEX_BUFFER
+        D3D12_BARRIER_ACCESS_INDEX_BUFFER
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::CONSTANT_BUFFER_READ,
-        D3D12_BARRIER_ACCESS::CONSTANT_BUFFER
+        D3D12_BARRIER_ACCESS_CONSTANT_BUFFER
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::INDIRECT_COMMAND_READ,
-        D3D12_BARRIER_ACCESS::INDIRECT_ARGUMENT
+        D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::SHADER_SAMPLED_READ,
-        D3D12_BARRIER_ACCESS::SHADER_RESOURCE
+        D3D12_BARRIER_ACCESS_SHADER_RESOURCE
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::RENDER_TARGET_READ,
-        D3D12_BARRIER_ACCESS::RENDER_TARGET
+        D3D12_BARRIER_ACCESS_RENDER_TARGET
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::RENDER_TARGET_WRITE,
-        D3D12_BARRIER_ACCESS::RENDER_TARGET
+        D3D12_BARRIER_ACCESS_RENDER_TARGET
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::DEPTH_STENCIL_READ,
-        D3D12_BARRIER_ACCESS::DEPTH_STENCIL_READ
+        D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::DEPTH_STENCIL_WRITE,
-        D3D12_BARRIER_ACCESS::DEPTH_STENCIL_WRITE
+        D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::COPY_READ,
-        D3D12_BARRIER_ACCESS::COPY_SOURCE
+        D3D12_BARRIER_ACCESS_COPY_SOURCE
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::COPY_WRITE,
-        D3D12_BARRIER_ACCESS::COPY_DEST
+        D3D12_BARRIER_ACCESS_COPY_DEST
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ,
-        D3D12_BARRIER_ACCESS::RAYTRACING_ACCELERATION_STRUCTURE_READ
+        D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_READ
     );
     translate_flag_onto!(
         access,
         out,
         BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
-        D3D12_BARRIER_ACCESS::RAYTRACING_ACCELERATION_STRUCTURE_WRITE
+        D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE
     );
 
     out

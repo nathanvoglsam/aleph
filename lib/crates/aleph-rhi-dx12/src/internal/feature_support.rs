@@ -208,7 +208,7 @@ impl FeatureSupport {
 
             let options_12 = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS12)
                 .unwrap_or(D3D12_FEATURE_DATA_D3D12_OPTIONS12 {
-                    MSPrimitivesPipelineStatisticIncludesCulledPrimitives: D3D12_TRI_STATE::UNKNOWN,
+                    MSPrimitivesPipelineStatisticIncludesCulledPrimitives: D3D12_TRI_STATE_UNKNOWN,
                     EnhancedBarriersSupported: BOOL(0),
                     RelaxedFormatCastingSupported: BOOL(0),
                 });

@@ -549,17 +549,19 @@ impl IDevice for Device {
             VisibleNodeMask: 0,
         };
         let resource = unsafe {
+            let mut resource: Option<ID3D12Resource> = None;
             self.device
                 .CreateCommittedResource3::<_, ID3D12Resource>(
                     &heap_properties,
                     Default::default(),
                     &resource_desc,
-                    D3D12_BARRIER_LAYOUT::UNDEFINED,
-                    core::ptr::null(),
+                    D3D12_BARRIER_LAYOUT_UNDEFINED,
                     None,
-                    0,
-                    std::ptr::null(),
+                    None,
+                    None,
+                    &mut resource,
                 )
+                .map(|_| resource.unwrap())
                 .map_err(|v| anyhow!(v))?
         };
         let base_address =
@@ -602,22 +604,23 @@ impl IDevice for Device {
 
         let resource = unsafe {
             let optimized_clear_value = optimized_clear_value.map(D3D12_CLEAR_VALUE::from);
-            let optimized_clear_value_ref = match optimized_clear_value.as_ref() {
-                None => core::ptr::null(),
-                Some(v) => v as *const D3D12_CLEAR_VALUE,
-            };
+            let optimized_clear_value_ref = optimized_clear_value
+                .as_ref()
+                .map(|v| v as *const D3D12_CLEAR_VALUE);
 
+            let mut resource: Option<ID3D12Resource> = None;
             self.device
                 .CreateCommittedResource3::<_, ID3D12Resource>(
                     &heap_properties,
                     Default::default(),
                     &resource_desc,
-                    D3D12_BARRIER_LAYOUT::UNDEFINED,
+                    D3D12_BARRIER_LAYOUT_UNDEFINED,
                     optimized_clear_value_ref,
                     None,
-                    0,
-                    std::ptr::null(), // TODO: We could use this maybe?
+                    None, // TODO: We could use this maybe?
+                    &mut resource,
                 )
+                .map(|_| resource.unwrap())
                 .map_err(|v| anyhow!(v))?
         };
 

@@ -355,7 +355,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             }
 
             barrier_groups.push(D3D12_BARRIER_GROUP {
-                Type: D3D12_BARRIER_TYPE::GLOBAL,
+                Type: D3D12_BARRIER_TYPE_GLOBAL,
                 NumBarriers: translated_global_barriers.len() as _,
                 Anonymous: D3D12_BARRIER_GROUP_0 {
                     pGlobalBarriers: translated_global_barriers.as_ptr(),
@@ -380,7 +380,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             }
 
             barrier_groups.push(D3D12_BARRIER_GROUP {
-                Type: D3D12_BARRIER_TYPE::BUFFER,
+                Type: D3D12_BARRIER_TYPE_BUFFER,
                 NumBarriers: translated_buffer_barriers.len() as _,
                 Anonymous: D3D12_BARRIER_GROUP_0 {
                     pBufferBarriers: translated_buffer_barriers.as_ptr(),
@@ -401,9 +401,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 // should only initialize the layout metadata and not the actual data unlike a full
                 // clear.
                 let Flags = if barrier.before_layout == ImageLayout::Undefined {
-                    D3D12_TEXTURE_BARRIER_FLAGS::DISCARD
+                    D3D12_TEXTURE_BARRIER_FLAG_DISCARD
                 } else {
-                    D3D12_TEXTURE_BARRIER_FLAGS::empty()
+                    D3D12_TEXTURE_BARRIER_FLAGS::default()
                 };
 
                 let (first_plane, num_planes) = translate_barrier_texture_aspect_to_plane_range(
@@ -448,7 +448,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 });
             }
             barrier_groups.push(D3D12_BARRIER_GROUP {
-                Type: D3D12_BARRIER_TYPE::TEXTURE,
+                Type: D3D12_BARRIER_TYPE_TEXTURE,
                 NumBarriers: translated_texture_barriers.len() as _,
                 Anonymous: D3D12_BARRIER_GROUP_0 {
                     pTextureBarriers: translated_texture_barriers.as_ptr(),
@@ -456,14 +456,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             });
         }
 
-        self._list.Barrier(
-            barrier_groups.len() as _,
-            if barrier_groups.is_empty() {
-                std::ptr::null()
-            } else {
-                barrier_groups.as_ptr()
-            },
-        );
+        self._list.Barrier(&barrier_groups);
     }
 
     unsafe fn copy_buffer_regions(
@@ -605,10 +598,7 @@ impl<'a> Encoder<'a> {
             // If the before and current queue are different then this is the 'acquire' half of the
             // transition and so we should have no accesses before and we're transitioning from the
             // common layout to our target real layout.
-            (
-                D3D12_BARRIER_LAYOUT::COMMON,
-                D3D12_BARRIER_ACCESS::NO_ACCESS,
-            )
+            (D3D12_BARRIER_LAYOUT_COMMON, D3D12_BARRIER_ACCESS_NO_ACCESS)
         };
 
         // Handle the 'acquire' edge of the transition
@@ -623,10 +613,7 @@ impl<'a> Encoder<'a> {
             // The mirror to the above before case, this is the 'release' half of the transition.
             // Here we transition to COMMON layout and say the resource is _not_ accessed after the
             // transition.
-            (
-                D3D12_BARRIER_LAYOUT::COMMON,
-                D3D12_BARRIER_ACCESS::NO_ACCESS,
-            )
+            (D3D12_BARRIER_LAYOUT_COMMON, D3D12_BARRIER_ACCESS_NO_ACCESS)
         };
 
         (layout_before, layout_after, access_before, access_after)
