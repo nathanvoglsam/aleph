@@ -521,6 +521,20 @@ impl<'a> Encoder<'a> {
         for barrier in buffer_barriers {
             let buffer = unwrap::buffer(barrier.buffer);
 
+            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                let src_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.before_queue);
+                let dst_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.after_queue);
+                (src_family, dst_family)
+            } else {
+                (0, 0)
+            };
+
             src_stage_mask |=
                 barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
             dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
@@ -531,6 +545,8 @@ impl<'a> Encoder<'a> {
                     .buffer(buffer.buffer)
                     .offset(barrier.offset)
                     .size(barrier.size)
+                    .src_queue_family_index(src_family)
+                    .dst_queue_family_index(dst_family)
                     .build(),
             );
         }
@@ -538,6 +554,20 @@ impl<'a> Encoder<'a> {
         for barrier in texture_barriers {
             // Grab the d3d12 resource handle from our texture impls
             let texture = unwrap::texture(barrier.texture);
+
+            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                let src_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.before_queue);
+                let dst_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.after_queue);
+                (src_family, dst_family)
+            } else {
+                (0, 0)
+            };
 
             src_stage_mask |=
                 barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
@@ -550,6 +580,8 @@ impl<'a> Encoder<'a> {
                     .new_layout(image_layout_to_vk(barrier.after_layout))
                     .image(texture.image)
                     .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                    .src_queue_family_index(src_family)
+                    .dst_queue_family_index(dst_family)
                     .build(),
             );
         }
@@ -595,6 +627,20 @@ impl<'a> Encoder<'a> {
         for barrier in buffer_barriers {
             let buffer = unwrap::buffer(barrier.buffer);
 
+            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                let src_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.before_queue);
+                let dst_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.after_queue);
+                (src_family, dst_family)
+            } else {
+                (0, 0)
+            };
+
             translated_buffer_barriers.push(
                 vk::BufferMemoryBarrier2::builder()
                     .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
@@ -604,6 +650,8 @@ impl<'a> Encoder<'a> {
                     .buffer(buffer.buffer)
                     .offset(barrier.offset)
                     .size(barrier.size)
+                    .src_queue_family_index(src_family)
+                    .dst_queue_family_index(dst_family)
                     .build(),
             );
         }
@@ -611,6 +659,20 @@ impl<'a> Encoder<'a> {
         for barrier in texture_barriers {
             // Grab the d3d12 resource handle from our texture impls
             let texture = unwrap::texture(barrier.texture);
+
+            let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
+                let src_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.before_queue);
+                let dst_family = self
+                    ._parent
+                    ._device
+                    .get_queue_family_index(transition.after_queue);
+                (src_family, dst_family)
+            } else {
+                (0, 0)
+            };
 
             translated_texture_barriers.push(
                 vk::ImageMemoryBarrier2::builder()
@@ -622,6 +684,8 @@ impl<'a> Encoder<'a> {
                     .new_layout(image_layout_to_vk(barrier.after_layout))
                     .image(texture.image)
                     .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                    .src_queue_family_index(src_family)
+                    .dst_queue_family_index(dst_family)
                     .build(),
             );
         }

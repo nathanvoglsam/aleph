@@ -1068,6 +1068,14 @@ impl IDevice for Device {
 }
 
 impl Device {
+    pub(crate) fn get_queue_family_index(&self, queue_type: QueueType) -> u32 {
+        match queue_type {
+            QueueType::General => self.general_queue.unwrap().info.family_index,
+            QueueType::Compute => self.compute_queue.unwrap().info.family_index,
+            QueueType::Transfer => self.transfer_queue.unwrap().info.family_index,
+        }
+    }
+
     fn translate_vertex_bindings<'a>(
         bump: &'a Bump,
         desc: &GraphicsPipelineDesc,
