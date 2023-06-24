@@ -30,7 +30,7 @@
 
 [package]
 name = "aleph-dx12-agility-sdk"
-version = "1.706.0"
+version = "1.711.3"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Build Script Utilities for the DX12 Agility SDK"
 license = "MIT"

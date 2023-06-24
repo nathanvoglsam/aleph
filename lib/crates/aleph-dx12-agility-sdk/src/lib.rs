@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_target_build::build::{target_architecture, target_platform};
+use aleph_target_build::build::{target_architecture, target_build_config, target_platform};
 use aleph_target_build::Architecture;
 use std::path::{Path, PathBuf};
 
@@ -97,7 +97,7 @@ fn pkg_location() -> PathBuf {
 ///
 /// They will be defined with the following values
 ///
-/// - `D3D12SDKVersion` = 706
+/// - `D3D12SDKVersion` = 711
 ///     - This is the version identifier of the SDK version bundled with this crate
 /// - `D3D12SDKPath` = ".\"
 ///     - This allows 'D3D12Core.dll' to be next to the app executable and is compatible with the
@@ -111,7 +111,7 @@ fn pkg_location() -> PathBuf {
 /// #[no_mangle]
 /// #[allow(non_upper_case_globals)]
 /// /// Replace 706 with your minimum required SDK version
-/// pub static D3D12SDKVersion: u32 = 706;
+/// pub static D3D12SDKVersion: u32 = 711;
 ///
 /// #[used]
 /// #[no_mangle]
@@ -129,7 +129,7 @@ macro_rules! export_standard_agility_sdk_symbols {
         #[used]
         #[no_mangle]
         #[allow(non_upper_case_globals)]
-        pub static D3D12SDKVersion: u32 = 706;
+        pub static D3D12SDKVersion: u32 = 711;
 
         #[used]
         #[no_mangle]
@@ -174,5 +174,15 @@ pub fn extract_agility_sdk_binaries() {
         let layers_dll = bin_dir.join("d3d12SDKLayers.dll");
         aleph_compile::copy_file_to_artifacts_dir(&layers_dll).unwrap();
         aleph_compile::copy_file_to_target_dir(&layers_dll).unwrap();
+
+        if target_platform().is_msvc() && target_build_config().is_debug() {
+            let core_pdb = bin_dir.join("D3D12Core.pdb");
+            aleph_compile::copy_file_to_artifacts_dir(&core_pdb).unwrap();
+            aleph_compile::copy_file_to_target_dir(&core_pdb).unwrap();
+
+            let layers_pdb = bin_dir.join("d3d12SDKLayers.pdb");
+            aleph_compile::copy_file_to_artifacts_dir(&layers_pdb).unwrap();
+            aleph_compile::copy_file_to_target_dir(&layers_pdb).unwrap();
+        }
     }
 }
