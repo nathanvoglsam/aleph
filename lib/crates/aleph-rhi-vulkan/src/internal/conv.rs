@@ -345,7 +345,7 @@ pub fn barrier_sync_to_vk(
     );
     #[allow(clippy::assign_op_pattern)]
     if sync.contains(BarrierSync::VERTEX_SHADING) {
-        out = out | (vk::PipelineStageFlags::VERTEX_SHADER) | (vk::PipelineStageFlags::VERTEX_INPUT);
+        out = out | vk::PipelineStageFlags::VERTEX_SHADER | vk::PipelineStageFlags::VERTEX_INPUT;
 
         if enabled_shader_features.tessellation {
             out = out | (vk::PipelineStageFlags::TESSELLATION_CONTROL_SHADER);

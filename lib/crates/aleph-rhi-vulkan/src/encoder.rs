@@ -506,61 +506,52 @@ impl<'a> Encoder<'a> {
         let mut src_stage_mask = vk::PipelineStageFlags::default();
         let mut dst_stage_mask = vk::PipelineStageFlags::default();
 
-        if !buffer_barriers.is_empty() {
-            for barrier in global_barriers {
-                src_stage_mask |=
-                    barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
-                dst_stage_mask |=
-                    barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
-                translated_global_barriers.push(
-                    vk::MemoryBarrier::builder()
-                        .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk(barrier.after_access))
-                        .build(),
-                );
-            }
+        for barrier in global_barriers {
+            src_stage_mask |=
+                barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
+            dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
+            translated_global_barriers.push(
+                vk::MemoryBarrier::builder()
+                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                    .build(),
+            );
         }
 
-        if !buffer_barriers.is_empty() {
-            for barrier in buffer_barriers {
-                let buffer = unwrap::buffer(barrier.buffer);
+        for barrier in buffer_barriers {
+            let buffer = unwrap::buffer(barrier.buffer);
 
-                src_stage_mask |=
-                    barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
-                dst_stage_mask |=
-                    barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
-                translated_buffer_barriers.push(
-                    vk::BufferMemoryBarrier::builder()
-                        .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk(barrier.after_access))
-                        .buffer(buffer.buffer)
-                        .offset(barrier.offset)
-                        .size(barrier.size)
-                        .build(),
-                );
-            }
+            src_stage_mask |=
+                barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
+            dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
+            translated_buffer_barriers.push(
+                vk::BufferMemoryBarrier::builder()
+                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                    .buffer(buffer.buffer)
+                    .offset(barrier.offset)
+                    .size(barrier.size)
+                    .build(),
+            );
         }
 
-        if !texture_barriers.is_empty() {
-            for barrier in texture_barriers {
-                // Grab the d3d12 resource handle from our texture impls
-                let texture = unwrap::texture(barrier.texture);
+        for barrier in texture_barriers {
+            // Grab the d3d12 resource handle from our texture impls
+            let texture = unwrap::texture(barrier.texture);
 
-                src_stage_mask |=
-                    barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
-                dst_stage_mask |=
-                    barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
-                translated_texture_barriers.push(
-                    vk::ImageMemoryBarrier::builder()
-                        .src_access_mask(barrier_access_to_vk(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk(barrier.after_access))
-                        .old_layout(image_layout_to_vk(barrier.before_layout))
-                        .new_layout(image_layout_to_vk(barrier.after_layout))
-                        .image(texture.image)
-                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
-                        .build(),
-                );
-            }
+            src_stage_mask |=
+                barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
+            dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
+            translated_texture_barriers.push(
+                vk::ImageMemoryBarrier::builder()
+                    .src_access_mask(barrier_access_to_vk(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk(barrier.after_access))
+                    .old_layout(image_layout_to_vk(barrier.before_layout))
+                    .new_layout(image_layout_to_vk(barrier.after_layout))
+                    .image(texture.image)
+                    .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                    .build(),
+            );
         }
 
         self._parent._device.device.cmd_pipeline_barrier(
@@ -590,55 +581,49 @@ impl<'a> Encoder<'a> {
         let mut translated_texture_barriers =
             BumpVec::with_capacity_in(texture_barriers.len(), &self.arena);
 
-        if !buffer_barriers.is_empty() {
-            for barrier in global_barriers {
-                translated_global_barriers.push(
-                    vk::MemoryBarrier2::builder()
-                        .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
-                        .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
-                        .src_access_mask(barrier_access_to_vk2(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
-                        .build(),
-                );
-            }
+        for barrier in global_barriers {
+            translated_global_barriers.push(
+                vk::MemoryBarrier2::builder()
+                    .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
+                    .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
+                    .src_access_mask(barrier_access_to_vk2(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
+                    .build(),
+            );
         }
 
-        if !buffer_barriers.is_empty() {
-            for barrier in buffer_barriers {
-                let buffer = unwrap::buffer(barrier.buffer);
+        for barrier in buffer_barriers {
+            let buffer = unwrap::buffer(barrier.buffer);
 
-                translated_buffer_barriers.push(
-                    vk::BufferMemoryBarrier2::builder()
-                        .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
-                        .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
-                        .src_access_mask(barrier_access_to_vk2(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
-                        .buffer(buffer.buffer)
-                        .offset(barrier.offset)
-                        .size(barrier.size)
-                        .build(),
-                );
-            }
+            translated_buffer_barriers.push(
+                vk::BufferMemoryBarrier2::builder()
+                    .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
+                    .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
+                    .src_access_mask(barrier_access_to_vk2(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
+                    .buffer(buffer.buffer)
+                    .offset(barrier.offset)
+                    .size(barrier.size)
+                    .build(),
+            );
         }
 
-        if !texture_barriers.is_empty() {
-            for barrier in texture_barriers {
-                // Grab the d3d12 resource handle from our texture impls
-                let texture = unwrap::texture(barrier.texture);
+        for barrier in texture_barriers {
+            // Grab the d3d12 resource handle from our texture impls
+            let texture = unwrap::texture(barrier.texture);
 
-                translated_texture_barriers.push(
-                    vk::ImageMemoryBarrier2::builder()
-                        .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
-                        .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
-                        .src_access_mask(barrier_access_to_vk2(barrier.before_access))
-                        .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
-                        .old_layout(image_layout_to_vk(barrier.before_layout))
-                        .new_layout(image_layout_to_vk(barrier.after_layout))
-                        .image(texture.image)
-                        .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
-                        .build(),
-                );
-            }
+            translated_texture_barriers.push(
+                vk::ImageMemoryBarrier2::builder()
+                    .src_stage_mask(barrier_sync_to_vk2(barrier.before_sync))
+                    .dst_stage_mask(barrier_sync_to_vk2(barrier.after_sync))
+                    .src_access_mask(barrier_access_to_vk2(barrier.before_access))
+                    .dst_access_mask(barrier_access_to_vk2(barrier.after_access))
+                    .old_layout(image_layout_to_vk(barrier.before_layout))
+                    .new_layout(image_layout_to_vk(barrier.after_layout))
+                    .image(texture.image)
+                    .subresource_range(subresource_range_to_vk(&barrier.subresource_range))
+                    .build(),
+            );
         }
 
         let info = vk::DependencyInfo::builder()
