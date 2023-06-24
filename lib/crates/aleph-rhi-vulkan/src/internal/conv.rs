@@ -229,14 +229,15 @@ pub fn barrier_sync_to_vk2(sync: BarrierSync) -> vk::PipelineStageFlags2 {
     translate_flag_onto!(
         sync,
         out,
-        BarrierSync::INPUT_ASSEMBLER,
-        vk::PipelineStageFlags2::VERTEX_INPUT
+        BarrierSync::INDEX_INPUT,
+        vk::PipelineStageFlags2::INDEX_INPUT
     );
     translate_flag_onto!(
         sync,
         out,
         BarrierSync::VERTEX_SHADING,
-        vk::PipelineStageFlags2::PRE_RASTERIZATION_SHADERS
+        (vk::PipelineStageFlags2::PRE_RASTERIZATION_SHADERS
+            | vk::PipelineStageFlags2::VERTEX_ATTRIBUTE_INPUT)
     );
     translate_flag_onto!(
         sync,
@@ -339,7 +340,7 @@ pub fn barrier_sync_to_vk(
     translate_flag_onto!(
         sync,
         out,
-        BarrierSync::INPUT_ASSEMBLER,
+        BarrierSync::INDEX_INPUT,
         vk::PipelineStageFlags::VERTEX_INPUT
     );
     #[allow(clippy::assign_op_pattern)]
