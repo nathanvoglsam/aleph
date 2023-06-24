@@ -231,7 +231,7 @@ impl EguiRenderer {
                         num_array_slices: 1,
                     },
                     before_sync: BarrierSync::RENDER_TARGET,
-                    after_sync: BarrierSync::ALL,
+                    after_sync: BarrierSync::NONE,
                     before_access: BarrierAccess::RENDER_TARGET_WRITE,
                     after_access: BarrierAccess::NONE,
                     before_layout: ImageLayout::ColorAttachmentOptimal,
@@ -256,6 +256,12 @@ impl EguiRenderer {
     ) {
         if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
             let scissor_rect = self.calculate_clip_rect(job);
+
+            // Reject the command if the scissor rect is 0 as we'll never actually draw anything
+            if (scissor_rect.w * scissor_rect.h) == 0 {
+                return;
+            }
+
             encoder.set_scissor_rects(&[scissor_rect]);
             encoder.draw_indexed(
                 triangles.indices.len() as _,
