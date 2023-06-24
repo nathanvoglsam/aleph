@@ -435,6 +435,10 @@ pub fn barrier_sync_to_dx12(sync: BarrierSync) -> D3D12_BARRIER_SYNC {
 
 pub fn barrier_access_to_dx12(access: BarrierAccess) -> D3D12_BARRIER_ACCESS {
     let mut out = D3D12_BARRIER_ACCESS::empty();
+    if access.is_empty() {
+        // RHI uses 0 set bits for no access like vulkan
+        return D3D12_BARRIER_ACCESS::NO_ACCESS;
+    }
     translate_flag_onto!(
         access,
         out,
