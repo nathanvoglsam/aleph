@@ -182,7 +182,7 @@ impl PerFrameObjects {
             &[],
             &[],
             &[TextureBarrier {
-                texture: self.font_staged.as_ref().unwrap().deref(),
+                texture: self.font_staged.as_deref().unwrap(),
                 subresource_range: TextureSubResourceSet {
                     aspect: TextureAspect::COLOR,
                     base_mip_level: 0,
