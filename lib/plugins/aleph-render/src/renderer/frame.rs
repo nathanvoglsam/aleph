@@ -150,7 +150,7 @@ impl PerFrameObjects {
                 after_access: BarrierAccess::COPY_WRITE,
                 before_layout: ImageLayout::Undefined,
                 after_layout: ImageLayout::CopyDst,
-                queue_transition_mode: Default::default(),
+                queue_transition: None,
             }],
         );
 
@@ -196,7 +196,7 @@ impl PerFrameObjects {
                 after_access: BarrierAccess::SHADER_SAMPLED_READ,
                 before_layout: ImageLayout::CopyDst,
                 after_layout: ImageLayout::ShaderReadOnlyOptimal,
-                queue_transition_mode: Default::default(),
+                queue_transition: None,
             }],
         );
 
