@@ -1718,36 +1718,7 @@ bitflags! {
 
 bitflags! {
     pub struct BarrierAccess: u64 {
-        ///
-        /// This one is still up in the air. D3D12 doesn't really have a way to declare that a
-        /// resource is not accessed. Rather it has a system that allows putting a resource into
-        /// a strange "NO_ACCESS" state where it is illegal to access until transitioned out of the
-        /// "NO_ACCESS" state. It does not mean what Vulkan's no access means.
-        ///
-        /// The 'all zeroes' case in Vulkan specifies no access, while in D3D12 it specifies an
-        /// adaptive access depending on the image layout. I can't see how D3D12 specifies no access
-        /// in either the before or after scope.
-        ///
-        /// In Vulkan the primary use of a 'none' access is for initializing images. This will
-        /// always be used with an `Undefined` layout. I would assume D3D12 to understand that
-        /// 'COMMON' accessed paired with `Undefined` would mean no-access as it is not possible to
-        /// access an image with `Undefined` layout.
-        ///
-        /// I think `NONE` will suffice for this purpose.
-        ///
-        /// How to represent an after scope with no-access escapes me. This will most commonly be
-        /// used for transitioning images into `PresentSrc` for presentation. On Vulkan sync `NONE`
-        /// is fine in the after scope as presentation will always be sequenced with a semaphore.
-        ///
-        /// D3D12 aliases 'Common' and 'PresentSrc' layouts, so the 'COMMON' access will infer all
-        /// valid accesses for a 'Common' layout. This is a significant over-synchronization which
-        /// theoretically could have performance implications. In practice the transition to present
-        /// will likely be the very last command submitted to the queue so there won't be
-        /// any commands in the after scope to synchronize with anyway, and D3D12 will sync on the
-        /// `ExecuteCommandLists` boundary as well.
-        ///
-        /// Perhaps a special access 'PRESENT' should added to handle the platform differences?
-        /// Swap images are a little magical sometimes.
+
         ///
         /// ## Vulkan
         ///
@@ -1755,7 +1726,7 @@ bitflags! {
         ///
         /// ## D3D12
         ///
-        /// - `COMMON`
+        /// - `NO_ACCESS`
         ///
         const NONE = 0x0;
 
