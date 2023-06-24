@@ -107,7 +107,7 @@ bitflags! {
         const NONE                                                     = 0x0;
         const ALL                                                      = 0x1;
         const DRAW                                                     = 0x2;
-        const INPUT_ASSEMBLER                                          = 0x4;
+        const INDEX_INPUT                                              = 0x4;
         const VERTEX_SHADING                                           = 0x8;
         const PIXEL_SHADING                                            = 0x10;
         const DEPTH_STENCIL                                            = 0x20;
