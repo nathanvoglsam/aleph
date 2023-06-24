@@ -53,6 +53,7 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 pub struct Encoder<'a> {
     pub(crate) _list: ID3D12GraphicsCommandList7,
     pub(crate) _parent: &'a mut CommandList,
+    pub(crate) _queue_type: QueueType,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
     pub(crate) arena: Bump,
