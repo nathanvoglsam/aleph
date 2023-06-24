@@ -388,7 +388,7 @@ pub fn buffer_barrier<'a>(barrier: &'a BufferBarrier<'a>) -> BufferBarrier<'a> {
         after_sync: barrier.after_sync,
         before_access: barrier.before_access,
         after_access: barrier.after_access,
-        queue_transition_mode: barrier.queue_transition_mode,
+        queue_transition: barrier.queue_transition,
     }
 }
 
@@ -403,7 +403,7 @@ pub fn texture_barrier<'a>(barrier: &'a TextureBarrier<'a>) -> TextureBarrier<'a
         after_access: barrier.after_access,
         before_layout: barrier.before_layout,
         after_layout: barrier.after_layout,
-        queue_transition_mode: barrier.queue_transition_mode,
+        queue_transition: barrier.queue_transition,
         subresource_range: barrier.subresource_range.clone(),
     }
 }
