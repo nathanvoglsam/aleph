@@ -175,7 +175,7 @@ pub fn extract_agility_sdk_binaries() {
         aleph_compile::copy_file_to_artifacts_dir(&layers_dll).unwrap();
         aleph_compile::copy_file_to_target_dir(&layers_dll).unwrap();
 
-        if target_platform().is_msvc() && target_build_config().is_debug() {
+        if target_build_config().is_debug() {
             let core_pdb = bin_dir.join("D3D12Core.pdb");
             aleph_compile::copy_file_to_artifacts_dir(&core_pdb).unwrap();
             aleph_compile::copy_file_to_target_dir(&core_pdb).unwrap();
