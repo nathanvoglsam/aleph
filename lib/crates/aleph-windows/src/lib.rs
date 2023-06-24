@@ -31,8 +31,7 @@
 
 extern crate windows;
 
-#[allow(non_snake_case)]
-pub mod Win32;
+pub use windows::Win32;
 
 #[cfg(all(target_vendor = "uwp", target_os = "windows"))]
 pub use windows::System;
