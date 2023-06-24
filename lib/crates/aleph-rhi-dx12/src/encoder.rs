@@ -411,16 +411,30 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     texture.desc.format,
                 );
 
+                let (layout_before, layout_after, access_before, access_after) =
+                    if let Some(transition) = barrier.queue_transition {
+                        // A queue transition requires a more complex translation, where we
+                        // transition into and out of common in the release/acquire and flag
+                        // NO_ACCESS in the release/acquire edge.
+                        self.barrier_args_with_queue_transition(barrier, transition)
+                    } else {
+                        // In the no transition state we just translate the layout and access
+                        // directly
+                        (
+                            image_layout_to_dx12(barrier.before_layout, Some(self._queue_type)),
+                            image_layout_to_dx12(barrier.after_layout, Some(self._queue_type)),
+                            barrier_access_to_dx12(barrier.before_access),
+                            barrier_access_to_dx12(barrier.after_access),
+                        )
+                    };
+
                 translated_texture_barriers.push(D3D12_TEXTURE_BARRIER {
                     SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
                     SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
-                    AccessBefore: barrier_access_to_dx12(barrier.before_access),
-                    AccessAfter: barrier_access_to_dx12(barrier.after_access),
-                    LayoutBefore: image_layout_to_dx12(
-                        barrier.before_layout,
-                        Some(self._queue_type),
-                    ),
-                    LayoutAfter: image_layout_to_dx12(barrier.after_layout, Some(self._queue_type)),
+                    AccessBefore: access_before,
+                    AccessAfter: access_after,
+                    LayoutBefore: layout_before,
+                    LayoutAfter: layout_after,
                     pResource: transmute_copy(&texture.resource),
                     Subresources: D3D12_BARRIER_SUBRESOURCE_RANGE {
                         IndexOrFirstMipLevel: barrier.subresource_range.base_mip_level,
@@ -558,5 +572,63 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn end_event(&mut self) {
         end_event_on_list(&self._list);
+    }
+}
+
+impl<'a> Encoder<'a> {
+    fn barrier_args_with_queue_transition(
+        &self,
+        barrier: &TextureBarrier,
+        transition: QueueTransition,
+    ) -> (
+        D3D12_BARRIER_LAYOUT,
+        D3D12_BARRIER_LAYOUT,
+        D3D12_BARRIER_ACCESS,
+        D3D12_BARRIER_ACCESS,
+    ) {
+        if transition.before_queue == transition.after_queue {
+            panic!(
+                "Trying to transition from queue {:?} to queue {:?}, but they're the same queue",
+                transition.before_queue, transition.after_queue
+            );
+        }
+
+        let (layout_before, access_before) = if transition.before_queue == self._queue_type {
+            // If the before queue and current queue are the same then we issue the layout and
+            // access like normal to make all the work on the before queue available to the
+            // transition operation.
+            (
+                image_layout_to_dx12(barrier.before_layout, Some(self._queue_type)),
+                barrier_access_to_dx12(barrier.before_access),
+            )
+        } else {
+            // If the before and current queue are different then this is the 'acquire' half of the
+            // transition and so we should have no accesses before and we're transitioning from the
+            // common layout to our target real layout.
+            (
+                D3D12_BARRIER_LAYOUT::COMMON,
+                D3D12_BARRIER_ACCESS::NO_ACCESS,
+            )
+        };
+
+        // Handle the 'acquire' edge of the transition
+        let (layout_after, access_after) = if transition.after_queue == self._queue_type {
+            // Like in the before case, when 'after_queue' and the current queue are the same then
+            // we should translate the layout and access as normal.
+            (
+                image_layout_to_dx12(barrier.after_layout, Some(self._queue_type)),
+                barrier_access_to_dx12(barrier.after_access),
+            )
+        } else {
+            // The mirror to the above before case, this is the 'release' half of the transition.
+            // Here we transition to COMMON layout and say the resource is _not_ accessed after the
+            // transition.
+            (
+                D3D12_BARRIER_LAYOUT::COMMON,
+                D3D12_BARRIER_ACCESS::NO_ACCESS,
+            )
+        };
+
+        (layout_before, layout_after, access_before, access_after)
     }
 }
