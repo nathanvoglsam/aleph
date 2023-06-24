@@ -1563,13 +1563,13 @@ bitflags! {
         ///
         /// ## Vulkan
         ///
-        /// - `VERTEX_INPUT_BIT`
+        /// - `INDEX_INPUT_BIT`
         ///
         /// ## D3D12
         ///
-        /// - `INPUT_ASSEMBLER`
+        /// - `INDEX_INPUT`
         ///
-        const INPUT_ASSEMBLER = 0x4;
+        const INDEX_INPUT = 0x4;
 
         ///
         /// ## Vulkan
