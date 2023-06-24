@@ -46,7 +46,6 @@ use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::any::TypeId;
 use std::mem::transmute_copy;
 use std::ptr::NonNull;
-use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
