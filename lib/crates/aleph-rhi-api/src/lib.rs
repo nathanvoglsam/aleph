@@ -1574,7 +1574,7 @@ bitflags! {
         ///
         /// ## Vulkan
         ///
-        /// - `PRE_RASTERIZATION_SHADERS_BIT`
+        /// - `PRE_RASTERIZATION_SHADERS_BIT | VERTEX_ATTRIBUTE_INPUT`
         ///
         /// ## D3D12
         ///
