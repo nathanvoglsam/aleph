@@ -418,7 +418,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     AccessAfter: barrier_access_to_dx12(barrier.after_access),
                     LayoutBefore: image_layout_to_dx12(
                         barrier.before_layout,
-                        None,
+                        Some(self._queue_type),
                     ),
                     LayoutAfter: image_layout_to_dx12(barrier.after_layout, Some(self._queue_type)),
                     pResource: transmute_copy(&texture.resource),
