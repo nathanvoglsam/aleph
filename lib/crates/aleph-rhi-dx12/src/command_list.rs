@@ -77,7 +77,7 @@ impl ICommandList for CommandList {
             }
 
             let encoder = Encoder::<'a> {
-                list: self.list.clone(),
+                _list: self.list.clone(),
                 _parent: self,
                 bound_graphics_pipeline: None,
                 input_binding_strides: [0; 16],
