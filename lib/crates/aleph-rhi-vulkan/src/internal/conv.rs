@@ -299,8 +299,8 @@ pub fn barrier_sync_to_vk2(sync: BarrierSync) -> vk::PipelineStageFlags2 {
         sync,
         out,
         BarrierSync::COPY_RAYTRACING_ACCELERATION_STRUCTURE,
-        todo!()
-    ); //vk::PipelineStageFlags2::ACCELERATION_STRUCTURE_COPY_KHR
+        vk::PipelineStageFlags2::ACCELERATION_STRUCTURE_COPY_KHR
+    );
 
     out
 }
@@ -426,8 +426,8 @@ pub fn barrier_sync_to_vk(
         sync,
         out,
         BarrierSync::COPY_RAYTRACING_ACCELERATION_STRUCTURE,
-        todo!()
-    ); //vk::PipelineStageFlags2::ACCELERATION_STRUCTURE_COPY_KHR
+        vk::PipelineStageFlags::TRANSFER
+    );
 
     out
 }
