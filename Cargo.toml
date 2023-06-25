@@ -76,7 +76,7 @@ members = [
 
 # Third Party Crates
 android_logger = "0.13"
-ash = "0.37"
+ash = { version = "0.37", default-features = false, features = ["debug"] }
 bitflags = "1"
 bumpalo = { version = "3", features = ["boxed", "collections"] }
 bytemuck = "1"

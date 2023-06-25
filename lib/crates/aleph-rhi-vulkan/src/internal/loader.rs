@@ -27,13 +27,43 @@
 // SOFTWARE.
 //
 
-pub mod conv;
-pub mod device_info;
-pub mod features;
-pub mod loader;
-pub mod messenger;
-pub mod mvk;
-pub mod profile;
-pub mod queue_present_support;
-pub mod set_name;
-pub mod unwrap;
+use ash::vk;
+use libloading::Library;
+use std::ffi::OsStr;
+use std::ptr;
+
+pub const fn platform_library_name() -> &'static str {
+    #[cfg(windows)]
+    const LIB_PATH: &str = "vulkan-1.dll";
+
+    #[cfg(all(
+        unix,
+        not(any(target_os = "macos", target_os = "ios", target_os = "android"))
+    ))]
+    const LIB_PATH: &str = "libvulkan.so.1";
+
+    #[cfg(target_os = "android")]
+    const LIB_PATH: &str = "libvulkan.so";
+
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    const LIB_PATH: &str = "libvulkan.dylib";
+
+    LIB_PATH
+}
+
+pub unsafe fn load() -> Option<(Library, ash::Entry)> {
+    load_from(platform_library_name())
+}
+
+unsafe fn load_from(path: impl AsRef<OsStr>) -> Option<(Library, ash::Entry)> {
+    let lib = Library::new(path).ok()?;
+
+    let static_fn = vk::StaticFn::load_checked(|name| {
+        lib.get(name.to_bytes_with_nul())
+            .map(|symbol| *symbol)
+            .unwrap_or(ptr::null_mut())
+    })
+    .ok()?;
+
+    Some((lib, ash::Entry::from_static_fn(static_fn)))
+}

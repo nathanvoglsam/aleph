@@ -1,6 +1,6 @@
 use crate::context::{Context, SurfaceLoaders};
 use crate::internal::messenger::vulkan_debug_messenger;
-use crate::internal::mvk;
+use crate::internal::{loader, mvk};
 use aleph_any::AnyArc;
 use aleph_rhi_api::{BackendAPI, IContext};
 use aleph_rhi_impl_utils::cstr;
@@ -10,7 +10,8 @@ use ash::extensions::khr::{
     AndroidSurface, Surface, WaylandSurface, Win32Surface, XcbSurface, XlibSurface,
 };
 use ash::extensions::mvk::{IOSSurface, MacOSSurface};
-use ash::vk;
+use ash::{vk, Entry};
+use libloading::Library;
 use std::ffi::CStr;
 use std::iter;
 use std::mem::ManuallyDrop;
@@ -33,23 +34,8 @@ impl IRhiBackend for RhiBackend {
     }
 
     fn is_available(&self) -> bool {
-        #[cfg(all(
-            unix,
-            not(any(target_os = "macos", target_os = "ios", target_os = "android"))
-        ))]
-        const LIB_PATH: &str = "libvulkan.so.1";
-
-        #[cfg(target_os = "android")]
-        const LIB_PATH: &str = "libvulkan.so";
-
-        #[cfg(any(target_os = "macos", target_os = "ios"))]
-        const LIB_PATH: &str = "libvulkan.dylib";
-
-        #[cfg(windows)]
-        const LIB_PATH: &str = "vulkan-1.dll";
-
         // Safety: We assume that loading the vulkan dll does not have any unsafe side effects
-        unsafe { libloading::Library::new(LIB_PATH).is_ok() }
+        unsafe { Library::new(loader::platform_library_name()).is_ok() }
     }
 
     fn make_context(
@@ -61,8 +47,14 @@ impl IRhiBackend for RhiBackend {
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         {
             Ok(_) => {
-                let entry = unsafe {
-                    ash::Entry::load().map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                let (library, entry) = unsafe {
+                    match loader::load() {
+                        None => {
+                            log::error!("Failed to load Vulkan library");
+                            return Err(ContextCreateError::Platform);
+                        }
+                        Some(v) => v,
+                    }
                 };
 
                 let (instance, extensions) =
@@ -93,6 +85,7 @@ impl IRhiBackend for RhiBackend {
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     _this: v.clone(),
+                    library: ManuallyDrop::new(library),
                     entry_loader: ManuallyDrop::new(entry),
                     instance: ManuallyDrop::new(instance),
                     surface_loaders: extensions.surface_loaders(),

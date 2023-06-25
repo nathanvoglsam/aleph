@@ -29,6 +29,7 @@
 
 use crate::command_list::CommandList;
 use crate::context::Context;
+use crate::device::Device;
 use crate::internal::conv::*;
 use crate::internal::unwrap;
 use crate::pipeline::GraphicsPipeline;
@@ -43,7 +44,6 @@ use std::any::TypeId;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::ops::Deref;
-use crate::device::Device;
 
 pub struct Encoder<'a> {
     pub(crate) _buffer: vk::CommandBuffer,
@@ -59,8 +59,7 @@ impl<'a> Drop for Encoder<'a> {
     fn drop(&mut self) {
         // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
         unsafe {
-            self
-                ._device
+            self._device
                 .device
                 .end_command_buffer(self._buffer)
                 .unwrap()
@@ -104,12 +103,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             offsets.push(v.offset);
         }
 
-        self._device.device.cmd_bind_vertex_buffers(
-            self._buffer,
-            first_binding,
-            &buffers,
-            &offsets,
-        )
+        self._device
+            .device
+            .cmd_bind_vertex_buffers(self._buffer, first_binding, &buffers, &offsets)
     }
 
     unsafe fn bind_index_buffer(
@@ -147,8 +143,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             );
         }
 
-        self
-            ._device
+        self._device
             .device
             .cmd_set_viewport(self._buffer, 0, &new_viewports)
     }
@@ -164,8 +159,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             new_rects.push(rect.build());
         }
 
-        self
-            ._device
+        self._device
             .device
             .cmd_set_scissor(self._buffer, 0, &new_rects)
     }
@@ -281,15 +275,13 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             info = info.stencil_attachment(&v);
         }
 
-        self
-            ._device
+        self._device
             .dynamic_rendering
             .cmd_begin_rendering(self._buffer, &info);
     }
 
     unsafe fn end_rendering(&mut self) {
-        self
-            ._device
+        self._device
             .dynamic_rendering
             .cmd_end_rendering(self._buffer);
     }
@@ -356,12 +348,9 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        self._device.device.cmd_dispatch(
-            self._buffer,
-            group_count_x,
-            group_count_y,
-            group_count_z,
-        );
+        self._device
+            .device
+            .cmd_dispatch(self._buffer, group_count_x, group_count_y, group_count_z);
     }
 }
 
@@ -399,12 +388,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             );
         }
 
-        self._device.device.cmd_copy_buffer(
-            self._buffer,
-            src.buffer,
-            dst.buffer,
-            &new_regions,
-        )
+        self._device
+            .device
+            .cmd_copy_buffer(self._buffer, src.buffer, dst.buffer, &new_regions)
     }
 
     unsafe fn copy_buffer_to_texture(
@@ -527,12 +513,8 @@ impl<'a> Encoder<'a> {
             let buffer = unwrap::buffer(barrier.buffer);
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self
-                    ._device
-                    .get_queue_family_index(transition.before_queue);
-                let dst_family = self
-                    ._device
-                    .get_queue_family_index(transition.after_queue);
+                let src_family = self._device.get_queue_family_index(transition.before_queue);
+                let dst_family = self._device.get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
             } else {
                 (0, 0)
@@ -559,12 +541,8 @@ impl<'a> Encoder<'a> {
             let texture = unwrap::texture(barrier.texture);
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self
-                    ._device
-                    .get_queue_family_index(transition.before_queue);
-                let dst_family = self
-                    ._device
-                    .get_queue_family_index(transition.after_queue);
+                let src_family = self._device.get_queue_family_index(transition.before_queue);
+                let dst_family = self._device.get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
             } else {
                 (0, 0)
@@ -629,12 +607,8 @@ impl<'a> Encoder<'a> {
             let buffer = unwrap::buffer(barrier.buffer);
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self
-                    ._device
-                    .get_queue_family_index(transition.before_queue);
-                let dst_family = self
-                    ._device
-                    .get_queue_family_index(transition.after_queue);
+                let src_family = self._device.get_queue_family_index(transition.before_queue);
+                let dst_family = self._device.get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
             } else {
                 (0, 0)
@@ -660,12 +634,8 @@ impl<'a> Encoder<'a> {
             let texture = unwrap::texture(barrier.texture);
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
-                let src_family = self
-                    ._device
-                    .get_queue_family_index(transition.before_queue);
-                let dst_family = self
-                    ._device
-                    .get_queue_family_index(transition.after_queue);
+                let src_family = self._device.get_queue_family_index(transition.before_queue);
+                let dst_family = self._device.get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
             } else {
                 (0, 0)

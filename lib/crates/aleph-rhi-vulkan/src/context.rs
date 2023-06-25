@@ -44,6 +44,7 @@ use std::mem::ManuallyDrop;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
+    pub library: ManuallyDrop<libloading::Library>,
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,
     pub surface_loaders: SurfaceLoaders,
@@ -567,6 +568,7 @@ impl Drop for Context {
             self.instance.destroy_instance(None);
             ManuallyDrop::drop(&mut self.instance);
             ManuallyDrop::drop(&mut self.entry_loader);
+            ManuallyDrop::drop(&mut self.library);
         }
     }
 }
