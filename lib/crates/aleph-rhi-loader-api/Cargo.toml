@@ -47,5 +47,4 @@ aleph-rhi-api = { workspace = true }
 aleph-any = { workspace = true }
 raw-window-handle = { workspace = true }
 thiserror = { workspace = true }
-anyhow = { workspace = true }
 bitflags = { workspace = true }

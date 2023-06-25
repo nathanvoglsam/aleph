@@ -106,8 +106,18 @@ pub enum ContextCreateError {
     #[error("The specifically requested backend '{0}' was denied by the deny list")]
     RequiredBackendDenied(BackendAPI),
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("The context could not be created due to not meeting the minimum feature level")]
+    MissingRequiredFeatures,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+
+impl From<()> for ContextCreateError {
+    #[inline(always)]
+    fn from(_value: ()) -> Self {
+        Self::Platform
+    }
 }
 
 pub trait IRhiBackend: Send + Sync {
