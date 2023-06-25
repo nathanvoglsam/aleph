@@ -89,11 +89,13 @@ impl ICommandList for CommandList {
                 task: false,
             };
             let encoder = Encoder::<'a> {
-                buffer: self.buffer.clone(),
-                _parent: self,
+                _buffer: self.buffer.clone(),
+                _context: self._device.context.clone(),
+                _device: self._device.clone(),
                 bound_graphics_pipeline: None,
                 arena: Bump::with_capacity(1024 * 16),
                 enabled_shader_features,
+                phantom_data: Default::default(),
             };
             Ok(Box::new(encoder))
         } else {

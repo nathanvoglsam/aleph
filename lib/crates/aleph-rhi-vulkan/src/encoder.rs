@@ -28,6 +28,7 @@
 //
 
 use crate::command_list::CommandList;
+use crate::context::Context;
 use crate::internal::conv::*;
 use crate::internal::unwrap;
 use crate::pipeline::GraphicsPipeline;
@@ -40,24 +41,28 @@ use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
 use std::any::TypeId;
 use std::ffi::CStr;
+use std::marker::PhantomData;
 use std::ops::Deref;
+use crate::device::Device;
 
 pub struct Encoder<'a> {
-    pub(crate) buffer: vk::CommandBuffer,
-    pub(crate) _parent: &'a mut CommandList,
+    pub(crate) _buffer: vk::CommandBuffer,
+    pub(crate) _context: AnyArc<Context>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) arena: Bump,
     pub(crate) enabled_shader_features: SyncShaderFeatures,
+    pub(crate) phantom_data: PhantomData<&'a mut CommandList>,
 }
 
 impl<'a> Drop for Encoder<'a> {
     fn drop(&mut self) {
         // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
         unsafe {
-            self._parent
+            self
                 ._device
                 .device
-                .end_command_buffer(self.buffer)
+                .end_command_buffer(self._buffer)
                 .unwrap()
         }
     }
@@ -65,7 +70,7 @@ impl<'a> Drop for Encoder<'a> {
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::CommandBuffer>(&self.buffer, out, target)
+        try_clone_value_into_slot::<vk::CommandBuffer>(&self._buffer, out, target)
     }
 }
 
@@ -74,8 +79,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let concrete = unwrap::graphics_pipeline(pipeline);
 
         // Binds the pipeline
-        self._parent._device.device.cmd_bind_pipeline(
-            self.buffer,
+        self._device.device.cmd_bind_pipeline(
+            self._buffer,
             vk::PipelineBindPoint::GRAPHICS,
             concrete.pipeline,
         );
@@ -99,8 +104,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             offsets.push(v.offset);
         }
 
-        self._parent._device.device.cmd_bind_vertex_buffers(
-            self.buffer,
+        self._device.device.cmd_bind_vertex_buffers(
+            self._buffer,
             first_binding,
             &buffers,
             &offsets,
@@ -119,8 +124,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             IndexType::U32 => vk::IndexType::UINT32,
         };
 
-        self._parent._device.device.cmd_bind_index_buffer(
-            self.buffer,
+        self._device.device.cmd_bind_index_buffer(
+            self._buffer,
             buffer.buffer,
             binding.offset,
             index_type,
@@ -142,10 +147,10 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             );
         }
 
-        self._parent
+        self
             ._device
             .device
-            .cmd_set_viewport(self.buffer, 0, &new_viewports)
+            .cmd_set_viewport(self._buffer, 0, &new_viewports)
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
@@ -159,10 +164,10 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             new_rects.push(rect.build());
         }
 
-        self._parent
+        self
             ._device
             .device
-            .cmd_set_scissor(self.buffer, 0, &new_rects)
+            .cmd_set_scissor(self._buffer, 0, &new_rects)
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
@@ -175,8 +180,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let info = &pipeline_layout.push_constant_blocks[block_index];
 
-        self._parent._device.device.cmd_push_constants(
-            self.buffer,
+        self._device.device.cmd_push_constants(
+            self._buffer,
             pipeline_layout.pipeline_layout,
             info.stage_flags,
             info.offset,
@@ -276,17 +281,17 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             info = info.stencil_attachment(&v);
         }
 
-        self._parent
+        self
             ._device
             .dynamic_rendering
-            .cmd_begin_rendering(self.buffer, &info);
+            .cmd_begin_rendering(self._buffer, &info);
     }
 
     unsafe fn end_rendering(&mut self) {
-        self._parent
+        self
             ._device
             .dynamic_rendering
-            .cmd_end_rendering(self.buffer);
+            .cmd_end_rendering(self._buffer);
     }
 
     unsafe fn draw(
@@ -296,8 +301,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_vertex: u32,
         first_instance: u32,
     ) {
-        self._parent._device.device.cmd_draw(
-            self.buffer,
+        self._device.device.cmd_draw(
+            self._buffer,
             vertex_count,
             instance_count,
             first_vertex,
@@ -313,8 +318,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        self._parent._device.device.cmd_draw_indexed(
-            self.buffer,
+        self._device.device.cmd_draw_indexed(
+            self._buffer,
             index_count,
             instance_count,
             first_index,
@@ -340,8 +345,8 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             new_sets.push(std::mem::transmute_copy::<_, vk::DescriptorSet>(v));
         }
 
-        self._parent._device.device.cmd_bind_descriptor_sets(
-            self.buffer,
+        self._device.device.cmd_bind_descriptor_sets(
+            self._buffer,
             bind_point,
             pipeline_layout.pipeline_layout,
             first_set,
@@ -351,8 +356,8 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        self._parent._device.device.cmd_dispatch(
-            self.buffer,
+        self._device.device.cmd_dispatch(
+            self._buffer,
             group_count_x,
             group_count_y,
             group_count_z,
@@ -367,7 +372,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        if let Some(loader) = self._parent._device.synchronization_2.clone() {
+        if let Some(loader) = self._device.synchronization_2.clone() {
             self.resource_barrier_sync2(&loader, global_barriers, buffer_barriers, texture_barriers)
         } else {
             self.resource_barrier_fallback(global_barriers, buffer_barriers, texture_barriers)
@@ -394,8 +399,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             );
         }
 
-        self._parent._device.device.cmd_copy_buffer(
-            self.buffer,
+        self._device.device.cmd_copy_buffer(
+            self._buffer,
             src.buffer,
             dst.buffer,
             &new_regions,
@@ -441,8 +446,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
         let layout = image_layout_to_vk(dst_layout);
 
-        self._parent._device.device.cmd_copy_buffer_to_image(
-            self.buffer,
+        self._device.device.cmd_copy_buffer_to_image(
+            self._buffer,
             src.buffer,
             dst.image,
             layout,
@@ -451,7 +456,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
-        if let Some(loader) = self._parent._device.context.debug_loader.as_ref() {
+        if let Some(loader) = self._context.debug_loader.as_ref() {
             // Create our null terminated string in the encoder's arena
             let mut name = BumpVec::with_capacity_in(message.len() + 1, &self.arena);
             name.extend_from_slice(message.as_bytes());
@@ -462,12 +467,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let info = vk::DebugUtilsLabelEXT::builder()
                 .label_name(name_cstr)
                 .color(color);
-            loader.cmd_insert_debug_utils_label(self.buffer, info.deref())
+            loader.cmd_insert_debug_utils_label(self._buffer, info.deref())
         }
     }
 
     unsafe fn begin_event(&mut self, color: Color, message: &str) {
-        if let Some(loader) = self._parent._device.context.debug_loader.as_ref() {
+        if let Some(loader) = self._context.debug_loader.as_ref() {
             let mut name = BumpVec::with_capacity_in(message.len() + 1, &self.arena);
             name.extend_from_slice(message.as_bytes());
             name.push(0);
@@ -477,13 +482,13 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let info = vk::DebugUtilsLabelEXT::builder()
                 .label_name(name_cstr)
                 .color(color);
-            loader.cmd_begin_debug_utils_label(self.buffer, info.deref())
+            loader.cmd_begin_debug_utils_label(self._buffer, info.deref())
         }
     }
 
     unsafe fn end_event(&mut self) {
-        if let Some(loader) = self._parent._device.context.debug_loader.as_ref() {
-            loader.cmd_end_debug_utils_label(self.buffer)
+        if let Some(loader) = self._context.debug_loader.as_ref() {
+            loader.cmd_end_debug_utils_label(self._buffer)
         }
     }
 }
@@ -523,11 +528,9 @@ impl<'a> Encoder<'a> {
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.before_queue);
                 let dst_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
@@ -557,11 +560,9 @@ impl<'a> Encoder<'a> {
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.before_queue);
                 let dst_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
@@ -586,8 +587,8 @@ impl<'a> Encoder<'a> {
             );
         }
 
-        self._parent._device.device.cmd_pipeline_barrier(
-            self.buffer,
+        self._device.device.cmd_pipeline_barrier(
+            self._buffer,
             src_stage_mask,
             dst_stage_mask,
             vk::DependencyFlags::default(),
@@ -629,11 +630,9 @@ impl<'a> Encoder<'a> {
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.before_queue);
                 let dst_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
@@ -662,11 +661,9 @@ impl<'a> Encoder<'a> {
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.before_queue);
                 let dst_family = self
-                    ._parent
                     ._device
                     .get_queue_family_index(transition.after_queue);
                 (src_family, dst_family)
@@ -694,6 +691,6 @@ impl<'a> Encoder<'a> {
             .memory_barriers(&translated_global_barriers)
             .buffer_memory_barriers(&translated_buffer_barriers)
             .image_memory_barriers(&translated_texture_barriers);
-        loader.cmd_pipeline_barrier2(self.buffer, &info)
+        loader.cmd_pipeline_barrier2(self._buffer, &info)
     }
 }
