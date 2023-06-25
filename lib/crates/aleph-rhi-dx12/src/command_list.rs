@@ -78,10 +78,10 @@ impl ICommandList for CommandList {
             let encoder = Encoder::<'a> {
                 _list: self.list.clone(),
                 _queue_type: self.list_type,
-                _parent: self,
                 bound_graphics_pipeline: None,
                 input_binding_strides: [0; 16],
                 arena: Bump::with_capacity(1024 * 16),
+                phantom_data: Default::default(),
             };
             Ok(Box::new(encoder))
         } else {

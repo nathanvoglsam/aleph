@@ -44,6 +44,7 @@ use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::any::TypeId;
+use std::marker::PhantomData;
 use std::mem::transmute_copy;
 use std::ptr::NonNull;
 use windows::Win32::Foundation::RECT;
@@ -52,11 +53,11 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub struct Encoder<'a> {
     pub(crate) _list: ID3D12GraphicsCommandList7,
-    pub(crate) _parent: &'a mut CommandList,
     pub(crate) _queue_type: QueueType,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
     pub(crate) arena: Bump,
+    pub(crate) phantom_data: PhantomData<&'a mut CommandList>,
 }
 
 impl<'a> Drop for Encoder<'a> {
