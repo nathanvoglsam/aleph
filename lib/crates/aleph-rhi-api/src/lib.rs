@@ -77,6 +77,17 @@ macro_rules! any_arc_trait_utils_decl {
     };
 }
 
+macro_rules! error_enum_from_unit_type {
+    ($x: ident) => {
+        impl From<()> for $x {
+            #[inline(always)]
+            fn from(_value: ()) -> Self {
+                $x::Platform
+            }
+        }
+    };
+}
+
 //
 // =================================================================================================
 // INTERFACES
@@ -3832,9 +3843,10 @@ pub enum PipelineBindPoint {
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum SurfaceCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(SurfaceCreateError);
 
 //
 //
@@ -3869,16 +3881,18 @@ pub enum SwapChainCreateError {
     #[error("The surface is currently in a state where it can not be used")]
     SurfaceNotAvailable,
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(SwapChainCreateError);
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum SwapChainRebuildError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(SwapChainRebuildError);
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -3925,9 +3939,10 @@ pub enum ImageAcquireError {
     #[error("The surface has been permanently lost")]
     SurfaceLost,
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(ImageAcquireError);
 
 //
 //
@@ -3938,9 +3953,10 @@ pub enum ImageAcquireError {
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum RequestDeviceError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(RequestDeviceError);
 
 //
 //
@@ -3949,9 +3965,10 @@ pub enum RequestDeviceError {
 
 #[derive(Error, Debug)]
 pub enum FenceCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(FenceCreateError);
 
 //
 //
@@ -3960,9 +3977,10 @@ pub enum FenceCreateError {
 
 #[derive(Error, Debug)]
 pub enum SemaphoreCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(SemaphoreCreateError);
 
 //
 //
@@ -3973,12 +3991,13 @@ pub enum SemaphoreCreateError {
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum ResourceMapError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 
     #[error("The backend got a null pointer when attempting to map the buffer memory")]
     MappedNullPointer,
 }
+error_enum_from_unit_type!(ResourceMapError);
 
 //
 //
@@ -3987,9 +4006,10 @@ pub enum ResourceMapError {
 
 #[derive(Error, Debug)]
 pub enum BufferCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(BufferCreateError);
 
 //
 //
@@ -4019,9 +4039,10 @@ pub enum TextureCreateError {
     #[error("Requested optimal clear value '{0}' is invalid")]
     InvalidOptimalClearValue(OptimalClearValue),
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(TextureCreateError);
 
 //
 //
@@ -4030,9 +4051,10 @@ pub enum TextureCreateError {
 
 #[derive(Error, Debug)]
 pub enum SamplerCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(SamplerCreateError);
 
 //
 //
@@ -4070,9 +4092,10 @@ pub enum ShaderCreateError {
     #[error("The shader binary is of unsupported format")]
     UnsupportedShaderFormat,
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(ShaderCreateError);
 
 //
 //
@@ -4081,24 +4104,23 @@ pub enum ShaderCreateError {
 
 #[derive(Error, Debug)]
 pub enum DescriptorSetLayoutCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(DescriptorSetLayoutCreateError);
 
 #[derive(Error, Debug)]
 pub enum DescriptorPoolCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
-
     #[error("There is not enough descriptor memory to create a pool with the requested capacity")]
     OutOfMemory,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(DescriptorPoolCreateError);
 
 #[derive(Error, Debug)]
 pub enum DescriptorPoolAllocateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
-
     #[error("The descriptor pool's backing memory has been exhausted due to pool fragmentation")]
     FragmentedPool,
 
@@ -4107,7 +4129,11 @@ pub enum DescriptorPoolAllocateError {
 
     #[error("The host or device's memory has been exhausted")]
     OutOfMemory,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(DescriptorPoolAllocateError);
 
 //
 //
@@ -4119,21 +4145,24 @@ pub enum PipelineLayoutCreateError {
     #[error("A push constant block has an invalid size")]
     InvalidPushConstantBlockSize,
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(PipelineLayoutCreateError);
 
 #[derive(Error, Debug)]
 pub enum GraphicsPipelineCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(GraphicsPipelineCreateError);
 
 #[derive(Error, Debug)]
 pub enum ComputePipelineCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(ComputePipelineCreateError);
 
 //
 //
@@ -4142,9 +4171,10 @@ pub enum ComputePipelineCreateError {
 
 #[derive(Error, Debug)]
 pub enum CommandPoolCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(CommandPoolCreateError);
 
 //
 //
@@ -4153,18 +4183,20 @@ pub enum CommandPoolCreateError {
 
 #[derive(Error, Debug)]
 pub enum CommandListCreateError {
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(CommandListCreateError);
 
 #[derive(Error, Debug)]
 pub enum CommandListBeginError {
     #[error("The command list does not support encoding commands for a '{0}' queue")]
     InvalidEncoderType(QueueType),
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(CommandListBeginError);
 
 //
 //
@@ -4176,15 +4208,17 @@ pub enum QueueSubmitError {
     #[error("The queue does not support submitting '{0}' commands")]
     InvalidEncoderType(QueueType),
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(QueueSubmitError);
 
 #[derive(Error, Debug)]
 pub enum QueuePresentError {
     #[error("The queue '{0}' does not support presentation to the requested swap chain")]
     QueuePresentationNotSupported(QueueType),
 
-    #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] anyhow::Error),
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
 }
+error_enum_from_unit_type!(QueuePresentError);

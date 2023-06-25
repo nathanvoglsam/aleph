@@ -45,5 +45,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-any = { workspace = true }
 raw-window-handle = { workspace = true }
 thiserror = { workspace = true }
-anyhow = { workspace = true }
 bitflags = { workspace = true }
