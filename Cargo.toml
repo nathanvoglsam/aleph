@@ -76,7 +76,6 @@ members = [
 
 # Third Party Crates
 android_logger = "0.13"
-anyhow = "1"
 ash = "0.37"
 bitflags = "1"
 bumpalo = { version = "3", features = ["boxed", "collections"] }
