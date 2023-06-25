@@ -32,7 +32,6 @@ use crate::device::Device;
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Handle;
@@ -68,7 +67,10 @@ impl DescriptorPool {
                 vk::Result::ERROR_FRAGMENTED_POOL => {
                     Err(DescriptorPoolAllocateError::FragmentedPool)
                 }
-                _ => Err(DescriptorPoolAllocateError::Platform(anyhow!(e))),
+                _ => {
+                    log::error!("Platform Error: {:#?}", e);
+                    Err(DescriptorPoolAllocateError::Platform)
+                }
             },
         }
     }

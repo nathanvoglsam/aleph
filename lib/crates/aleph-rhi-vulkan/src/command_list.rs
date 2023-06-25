@@ -33,7 +33,6 @@ use crate::internal::conv::SyncShaderFeatures;
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use ash::vk;
 use bumpalo::Bump;
 use std::any::TypeId;
@@ -72,14 +71,14 @@ impl ICommandList for CommandList {
                 self._device
                     .device
                     .reset_command_pool(self.pool, Default::default())
-                    .map_err(|v| anyhow!(v))?;
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
                 let begin_info = vk::CommandBufferBeginInfo::builder()
                     .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
                 self._device
                     .device
                     .begin_command_buffer(self.buffer, &begin_info)
-                    .map_err(|v| anyhow!(v))?;
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
             }
 
             let features_10 = &self._device.adapter.device_info.features_10;

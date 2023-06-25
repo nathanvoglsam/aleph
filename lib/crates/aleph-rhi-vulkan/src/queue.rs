@@ -33,7 +33,6 @@ use crate::internal::unwrap;
 use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use ash::vk;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
@@ -315,7 +314,7 @@ impl IQueue for Queue {
             device
                 .device
                 .queue_submit(self.handle, &[info.build()], fence)
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
         // TODO: we want to do some garbage collection for resources
@@ -363,7 +362,7 @@ impl IQueue for Queue {
                 let _lock = self.submit_lock.lock();
                 loader
                     .queue_present(self.handle, &info)
-                    .map_err(|v| anyhow!(v))?
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             }
         };
 

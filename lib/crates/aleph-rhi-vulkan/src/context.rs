@@ -36,7 +36,6 @@ use crate::surface::Surface;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
-use anyhow::anyhow;
 use ash::vk;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::any::TypeId;
@@ -541,7 +540,7 @@ impl IContext for Context {
             }
         };
 
-        let surface = result.map_err(|e| anyhow!(e))?;
+        let surface = result.map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),

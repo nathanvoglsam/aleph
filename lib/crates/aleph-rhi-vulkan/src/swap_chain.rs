@@ -36,7 +36,6 @@ use crate::surface::Surface;
 use crate::texture::Texture;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use anyhow::anyhow;
 use ash::vk;
 use parking_lot::Mutex;
 use std::any::TypeId;
@@ -157,7 +156,8 @@ impl ISwapChain for SwapChain {
             Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(ImageAcquireError::SurfaceLost),
             _ => {
                 // Coerce everything we don't explicitly handle to an error.
-                let (i, sub_optimal) = result.map_err(|v| anyhow!(v))?;
+                let (i, sub_optimal) =
+                    result.map_err(|v| log::error!("Platform Error: {:#?}", v))?;
                 if sub_optimal {
                     Err(ImageAcquireError::SubOptimal(i))
                 } else {
@@ -181,7 +181,7 @@ impl SwapChain {
             self.device.adapter.physical_device,
             self.surface.surface,
         )
-        .map_err(|e| anyhow!(e))?;
+        .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
         // If any of these are zero than the window is minimized. We can't create a swap chain for
         // a minimized window as the extents are invalid so we error out and let the user handle it.
@@ -229,7 +229,7 @@ impl SwapChain {
 
         inner.swap_chain = swapchain_loader
             .create_swapchain(&swap_create_info, None)
-            .map_err(|e| anyhow!(e))?;
+            .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
         if old_swapchain != vk::SwapchainKHR::null() {
             swapchain_loader.destroy_swapchain(old_swapchain, None);
@@ -237,7 +237,7 @@ impl SwapChain {
 
         let images = swapchain_loader
             .get_swapchain_images(inner.swap_chain)
-            .map_err(|e| anyhow!(e))?;
+            .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
         let images: Vec<_> = images
             .iter()

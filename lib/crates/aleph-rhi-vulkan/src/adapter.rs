@@ -35,7 +35,6 @@ use crate::queue::{Queue, QueueInfo};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use ash::vk;
 use std::any::TypeId;
 use std::mem::ManuallyDrop;
@@ -231,7 +230,7 @@ impl IAdapter for Adapter {
             self.context
                 .instance
                 .create_device(self.physical_device, &device_create_info, None)
-                .map_err(|e| anyhow!(e))?
+                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
         let dynamic_rendering =
@@ -264,7 +263,7 @@ impl IAdapter for Adapter {
         let allocator = vma::Allocator::builder()
             .vulkan_api_version(vk::API_VERSION_1_2)
             .build(&self.context.instance, &device, self.physical_device)
-            .map_err(|v| anyhow!(v))?;
+            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
         let device = AnyArc::new_cyclic(move |v| {
             let mut device = Device {

@@ -31,7 +31,6 @@ use crate::device::Device;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use ash::vk;
 use std::any::TypeId;
 use std::ptr::NonNull;
@@ -79,7 +78,7 @@ impl IBuffer for Buffer {
                 ._device
                 .allocator
                 .map_memory(&self.allocation)
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
             NonNull::new(ptr).ok_or(ResourceMapError::MappedNullPointer)
         }
     }

@@ -5,7 +5,6 @@ use aleph_any::AnyArc;
 use aleph_rhi_api::{BackendAPI, IContext};
 use aleph_rhi_impl_utils::cstr;
 use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
-use anyhow::anyhow;
 use ash::extensions::ext::DebugUtils;
 use ash::extensions::khr::{
     AndroidSurface, Surface, WaylandSurface, Win32Surface, XcbSurface, XlibSurface,
@@ -62,7 +61,9 @@ impl IRhiBackend for RhiBackend {
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         {
             Ok(_) => {
-                let entry = unsafe { ash::Entry::load().map_err(|e| anyhow!(e))? };
+                let entry = unsafe {
+                    ash::Entry::load().map_err(|e| log::error!("Platform Error: {:#?}", e))?
+                };
 
                 let (instance, extensions) =
                     Self::create_instance(&entry, options.debug, options.validation)?;
@@ -124,17 +125,15 @@ impl RhiBackend {
 
         let instance_version = entry
             .try_enumerate_instance_version()
-            .map_err(|v| anyhow!(v))?;
+            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         let instance_version = instance_version.unwrap();
         if vk::api_version_major(instance_version) < 1 {
-            return Err(ContextCreateError::Platform(anyhow!(
-                "Vulkan Instance doesn't support Vulkan 1.x"
-            )));
+            log::error!("Vulkan Instance doesn't support Vulkan 1.x");
+            return Err(ContextCreateError::Platform);
         }
         if vk::api_version_minor(instance_version) < 2 {
-            return Err(ContextCreateError::Platform(anyhow!(
-                "Vulkan Instance doesn't support Vulkan 1.2"
-            )));
+            log::error!("Vulkan Instance doesn't support Vulkan 1.2");
+            return Err(ContextCreateError::Platform);
         }
 
         // Select the set of layers we want to load
@@ -176,7 +175,7 @@ impl RhiBackend {
         let instance_loader = unsafe {
             entry
                 .create_instance(&create_info, None)
-                .map_err(|e| anyhow!(e))?
+                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
         let extensions =
@@ -388,9 +387,8 @@ fn check_all_layers_supported(
         for missing in missing_extensions {
             log::error!("Runtime requested unsupported layer '{:#?}'.", missing);
         }
-        return Err(ContextCreateError::Platform(anyhow!(
-            "Unsupported extension is required by runtime"
-        )));
+        log::error!("Unsupported layer is required by runtime");
+        return Err(ContextCreateError::Platform);
     }
     Ok(())
 }
@@ -431,9 +429,8 @@ fn check_all_extensions_supported(
         for missing in missing_layers {
             log::error!("Runtime requested unsupported extension '{:#?}'.", missing);
         }
-        return Err(ContextCreateError::Platform(anyhow!(
-            "Unsupported extension is required by runtime"
-        )));
+        log::error!("Unsupported extension is required by runtime");
+        return Err(ContextCreateError::Platform);
     }
     Ok(())
 }
@@ -483,11 +480,12 @@ fn install_debug_messenger(
         )
         .pfn_user_callback(Some(vulkan_debug_messenger));
 
-    unsafe {
+    let messenger = unsafe {
         loader
             .create_debug_utils_messenger(&create_info, None)
-            .map_err(|e| ContextCreateError::Platform(anyhow!(e)))
-    }
+            .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+    };
+    Ok(messenger)
 }
 
 struct Extensions {

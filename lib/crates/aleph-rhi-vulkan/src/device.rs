@@ -47,7 +47,6 @@ use crate::texture::Texture;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
-use anyhow::anyhow;
 use ash::vk;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
@@ -201,7 +200,7 @@ impl IDevice for Device {
             let pipeline = unsafe {
                 self.device
                     .create_graphics_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
-                    .map_err(|(_, v)| anyhow!(v))?
+                    .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
 
@@ -249,7 +248,7 @@ impl IDevice for Device {
             let pipeline = unsafe {
                 self.device
                     .create_compute_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
-                    .map_err(|(_, v)| anyhow!(v))?
+                    .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
 
@@ -295,7 +294,7 @@ impl IDevice for Device {
                     let create_info = vk::ShaderModuleCreateInfo::builder().code(&data);
                     self.device
                         .create_shader_module(&create_info, None)
-                        .map_err(|v| anyhow!(v))?
+                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?
                 };
 
                 set_name(
@@ -391,7 +390,7 @@ impl IDevice for Device {
             let descriptor_set_layout = unsafe {
                 self.device
                     .create_descriptor_set_layout(&create_info, None)
-                    .map_err(|v| anyhow!(v))?
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
@@ -441,7 +440,7 @@ impl IDevice for Device {
             let descriptor_pool = unsafe {
                 self.device
                     .create_descriptor_pool(&create_info, None)
-                    .map_err(|v| anyhow!(v))?
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
@@ -497,7 +496,7 @@ impl IDevice for Device {
             let pipeline_layout = unsafe {
                 self.device
                     .create_pipeline_layout(&create_info, None)
-                    .map_err(|v| anyhow!(v))?
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
@@ -571,7 +570,7 @@ impl IDevice for Device {
         let (buffer, allocation) = unsafe {
             self.allocator
                 .create_buffer(&create_info, &alloc_info)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         let name = desc.name.map(String::from);
@@ -659,7 +658,7 @@ impl IDevice for Device {
         let (image, allocation) = unsafe {
             self.allocator
                 .create_image(&create_info, &alloc_info)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         let name = desc.name.map(String::from);
@@ -713,7 +712,7 @@ impl IDevice for Device {
             let sampler = unsafe {
                 self.device
                     .create_sampler(&create_info, None)
-                    .map_err(|v| anyhow!(v))?
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             set_name(
@@ -758,7 +757,7 @@ impl IDevice for Device {
             let command_pool = unsafe {
                 self.device
                     .create_command_pool(&create_info, None)
-                    .map_err(|v| anyhow!(v))?
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
             let allocate_info = vk::CommandBufferAllocateInfo::builder()
@@ -768,7 +767,7 @@ impl IDevice for Device {
             let command_buffer = unsafe {
                 self.device
                     .allocate_command_buffers(&allocate_info)
-                    .map_err(|v| anyhow!(v))?
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
             let command_buffer = command_buffer[0];
 
@@ -968,7 +967,7 @@ impl IDevice for Device {
             let info = vk::FenceCreateInfo::builder();
             self.device
                 .create_fence(&info, None)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         let fence = AnyArc::new_cyclic(move |v| Fence {
@@ -987,7 +986,7 @@ impl IDevice for Device {
             let info = vk::SemaphoreCreateInfo::builder();
             self.device
                 .create_semaphore(&info, None)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         let semaphore = AnyArc::new_cyclic(move |v| Semaphore {

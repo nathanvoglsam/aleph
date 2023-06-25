@@ -49,7 +49,6 @@ aleph-rhi-loader-api = { workspace = true }
 aleph-rhi-impl-utils = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
-anyhow = { workspace = true }
 log = { workspace = true }
 bitflags = { workspace = true }
 crossbeam = { workspace = true }
