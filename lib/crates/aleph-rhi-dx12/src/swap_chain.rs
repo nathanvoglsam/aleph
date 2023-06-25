@@ -35,7 +35,6 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::manually_drop;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::TypeId;
@@ -256,7 +255,7 @@ impl ISwapChain for SwapChain {
             inner.config.width = width;
             inner.config.height = height;
             self.recreate_swap_images(&mut inner, queues.len() as u32)
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
         self.acquired.store(false, Ordering::SeqCst);
@@ -285,7 +284,9 @@ impl ISwapChain for SwapChain {
         let index = self.swap_chain.GetCurrentBackBufferIndex();
 
         let semaphore = unwrap::semaphore(desc.signal_semaphore);
-        semaphore.signal_from_cpu().map_err(|v| anyhow!(v))?;
+        semaphore
+            .signal_from_cpu()
+            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
         Ok(index)
     }

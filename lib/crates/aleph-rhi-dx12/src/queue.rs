@@ -32,7 +32,6 @@ use crate::internal::unwrap;
 use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
@@ -292,7 +291,7 @@ impl IQueue for Queue {
         for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
             semaphore
                 .wait_on_queue(&self.handle)
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
         let mut handles: Vec<Option<ID3D12CommandList>> =
@@ -311,7 +310,7 @@ impl IQueue for Queue {
         for semaphore in unwrap::semaphore_iter(desc.signal_semaphores) {
             semaphore
                 .signal_on_queue(&self.handle)
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
         // Signal the fence, if one is provided, to let CPU know the submitted commands are
@@ -319,14 +318,14 @@ impl IQueue for Queue {
         if let Some(fence) = desc.fence.map(unwrap::fence) {
             fence
                 .signal_on_queue(&self.handle)
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
         // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
         // it to be decremented.
         let index = self
             .record_submission_index_signal()
-            .map_err(|v| anyhow!(v))?;
+            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
         for handle in handles {
             let _handle = handle.unwrap();
@@ -363,7 +362,7 @@ impl IQueue for Queue {
         for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
             semaphore
                 .wait_on_queue(&self.handle)
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
         let presentation_params = DXGI_PRESENT_PARAMETERS {
@@ -376,7 +375,7 @@ impl IQueue for Queue {
             .swap_chain
             .Present1(0, 0, &presentation_params)
             .ok()
-            .map_err(|v| anyhow!(v))?;
+            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
         if swap_chain
             .acquired
@@ -390,7 +389,7 @@ impl IQueue for Queue {
         // it to be decremented.
         let _index = self
             .record_submission_index_signal()
-            .map_err(|v| anyhow!(v))?;
+            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
         Ok(false)
     }

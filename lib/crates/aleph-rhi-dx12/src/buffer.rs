@@ -31,7 +31,6 @@ use crate::device::Device;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use std::any::TypeId;
 use std::ptr::NonNull;
 use windows::utils::GPUDescriptorHandle;
@@ -79,7 +78,7 @@ impl IBuffer for Buffer {
             let mut ptr = std::ptr::null_mut();
             self.resource
                 .Map(0, None, Some(&mut ptr))
-                .map_err(|v| anyhow!(v))?;
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
             NonNull::new(ptr as *mut u8).ok_or(ResourceMapError::MappedNullPointer)
         }
     }

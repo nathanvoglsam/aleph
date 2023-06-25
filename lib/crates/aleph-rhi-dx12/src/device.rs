@@ -64,7 +64,6 @@ use crate::texture::{ImageViewObject, Texture};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
-use anyhow::anyhow;
 use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::TypeId;
@@ -221,7 +220,7 @@ impl IDevice for Device {
         let pipeline = unsafe {
             self.device
                 .CreatePipelineState(&state_stream_ref)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         if let Some(name) = desc.name {
@@ -272,7 +271,7 @@ impl IDevice for Device {
         let pipeline = unsafe {
             self.device
                 .CreateComputePipelineState(&pipeline_desc)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         if let Some(name) = desc.name {
@@ -485,10 +484,11 @@ impl IDevice for Device {
                     },
                 },
             };
-            let blob = RootSignatureBlob::new(&desc).map_err(|v| anyhow!(v))?;
+            let blob = RootSignatureBlob::new(&desc)
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
             self.device
                 .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         if let Some(name) = desc.name {
@@ -562,7 +562,7 @@ impl IDevice for Device {
                     &mut resource,
                 )
                 .map(|_| resource.unwrap())
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
         let base_address =
             unsafe { GPUDescriptorHandle::try_from(resource.GetGPUVirtualAddress()).unwrap() };
@@ -621,7 +621,7 @@ impl IDevice for Device {
                     &mut resource,
                 )
                 .map(|_| resource.unwrap())
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         if let Some(name) = desc.name {
@@ -708,18 +708,18 @@ impl IDevice for Device {
         let allocator = unsafe {
             self.device
                 .CreateCommandAllocator(platform_list_type)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         let list = unsafe {
             self.device
                 .CreateCommandList1(0, platform_list_type, Default::default())
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
         if let Some(name) = desc.name {
-            set_name(&allocator, name).map_err(|v| anyhow!(v))?;
-            set_name(&list, name).map_err(|v| anyhow!(v))?;
+            set_name(&allocator, name).map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            set_name(&list, name).map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
         let descriptor_heaps = [
@@ -773,7 +773,7 @@ impl IDevice for Device {
         let fence: ID3D12Fence = unsafe {
             self.device
                 .CreateFence(0, D3D12_FENCE_FLAG_NONE)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
         let fence = AnyArc::new_cyclic(move |v| Fence {
             _this: v.clone(),
@@ -791,7 +791,7 @@ impl IDevice for Device {
         let fence: ID3D12Fence = unsafe {
             self.device
                 .CreateFence(0, D3D12_FENCE_FLAG_NONE)
-                .map_err(|v| anyhow!(v))?
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
         let semaphore = AnyArc::new_cyclic(move |v| Semaphore {
             _this: v.clone(),

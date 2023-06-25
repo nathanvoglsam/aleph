@@ -34,7 +34,6 @@ use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use anyhow::anyhow;
 use parking_lot::Mutex;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::any::TypeId;
@@ -154,7 +153,8 @@ impl Surface {
         // Create the actual swap chain object
         let swap_chain = unsafe {
             let factory = self.context.factory.as_ref().unwrap().lock();
-            dxgi_create_swap_chain(&factory, &queue, self, &desc).map_err(|e| anyhow!(e))?
+            dxgi_create_swap_chain(&factory, &queue, self, &desc)
+                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
         let inner = SwapChainState {
@@ -178,7 +178,7 @@ impl Surface {
             let mut state = swap_chain.inner.lock();
             swap_chain
                 .recreate_swap_images(&mut state, desc.BufferCount)
-                .map_err(|e| anyhow!(e))?;
+                .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
         }
 
         Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))

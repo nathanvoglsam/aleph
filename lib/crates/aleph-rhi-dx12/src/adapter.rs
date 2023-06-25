@@ -40,7 +40,6 @@ use crate::queue::Queue;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use parking_lot::Mutex;
 use std::any::TypeId;
 use std::ops::Deref;
@@ -118,8 +117,8 @@ impl IAdapter for Adapter {
         let adapter = self.adapter.lock();
 
         // Create the actual d3d12 device
-        let device =
-            create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0).map_err(|e| anyhow!(e))?;
+        let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0)
+            .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
         let debug_queue = self.context.debug.is_some() && pix::is_library_available();
 
@@ -157,7 +156,8 @@ impl IAdapter for Adapter {
             None
         };
 
-        let descriptor_heaps = DescriptorHeaps::new(&device).map_err(|e| anyhow!(e))?;
+        let descriptor_heaps =
+            DescriptorHeaps::new(&device).map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
         // Bundle and return the device
         let device = AnyArc::new_cyclic(move |v| Device {

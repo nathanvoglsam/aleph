@@ -32,7 +32,6 @@ use crate::encoder::Encoder;
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use anyhow::anyhow;
 use bumpalo::Bump;
 use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -71,7 +70,7 @@ impl ICommandList for CommandList {
             unsafe {
                 self.list
                     .Reset(&self.allocator, None)
-                    .map_err(|v| anyhow!(v))?;
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
                 self.list.SetDescriptorHeaps(&self.descriptor_heaps);
             }

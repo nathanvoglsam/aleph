@@ -6,7 +6,6 @@ use crate::internal::{create_device, create_dxgi_factory};
 use aleph_any::AnyArc;
 use aleph_rhi_api::{BackendAPI, IContext};
 use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
-use anyhow::anyhow;
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 use windows::Win32::Graphics::Dxgi::*;
@@ -42,8 +41,8 @@ impl IRhiBackend for RhiBackend {
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
         {
             Ok(_) => {
-                let dxgi_factory =
-                    create_dxgi_factory(options.validation).map_err(|e| anyhow!(e))?;
+                let dxgi_factory = create_dxgi_factory(options.validation)
+                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
                 let gpu_assisted = !cfg!(target_vendor = "uwp");
                 let debug = unsafe { setup_debug_layer(options.validation, gpu_assisted) };
