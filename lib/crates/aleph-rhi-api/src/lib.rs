@@ -1405,62 +1405,6 @@ pub struct AcquireDesc<'a> {
     pub signal_semaphore: &'a dyn ISemaphore,
 }
 
-#[derive(Debug)]
-pub enum AcquireResult {
-    /// Specifies a successful image acquisition. The associated value contains the index of the
-    /// acquired image.
-    Ok(usize),
-
-    /// Specifies a successful image acquisition, but also flags that the current swap chain
-    /// configuration is out-of-date. The swap chain can still be used, but it is encouraged to
-    /// perform a rebuild operation to return to an optimal state. The associated value contains
-    /// the index of the acquired image.
-    ///
-    /// This may happen, for example, when a window is resized and the swap chain resolution and
-    /// backing window size don't match. The platform compositor can compensate for this but this
-    /// does introduce latency and overhead which is sub-optimal.
-    SubOptimal(usize),
-
-    /// Specifies the image acquisition has failed, providing a reason in the associated value.
-    Err(ImageAcquireError),
-}
-
-impl From<ImageAcquireError> for AcquireResult {
-    fn from(value: ImageAcquireError) -> Self {
-        Self::Err(value)
-    }
-}
-
-impl AcquireResult {
-    /// Coerces the result to an Option, discarding the error and ignoring the 'sub-optimal' case.
-    ///
-    /// # Warning
-    ///
-    /// In general the 'sub-optimal' case should *not* be ignored.
-    #[inline]
-    pub fn ok(self) -> Option<usize> {
-        match self {
-            AcquireResult::Ok(v) => Some(v),
-            AcquireResult::SubOptimal(v) => Some(v),
-            AcquireResult::Err(_) => None,
-        }
-    }
-
-    /// Coerces the result to an Option, ignoring the 'sub-optimal' case and treating it as Ok.
-    ///
-    /// # Warning
-    ///
-    /// In general the 'sub-optimal' case should *not* be ignored.
-    #[inline]
-    pub fn err(self) -> Result<usize, ImageAcquireError> {
-        match self {
-            AcquireResult::Ok(v) => Ok(v),
-            AcquireResult::SubOptimal(v) => Ok(v),
-            AcquireResult::Err(v) => Err(v),
-        }
-    }
-}
-
 //
 //
 // _________________________________________________________________________________________________
