@@ -61,20 +61,15 @@ impl DeviceInfo {
             vk::PhysicalDevicePortabilitySubsetPropertiesKHR::default();
 
         // Unconditionally required properties
-        let properties = vk::PhysicalDeviceProperties2::builder()
+        let mut properties = vk::PhysicalDeviceProperties2::builder()
             .push_next(&mut properties_11)
             .push_next(&mut properties_12);
 
         // Safety: we assume all the strings vulkan gives us are valid
-        let mut properties = unsafe {
+        unsafe {
             // We load the portability subset properties if the extension is present
-            if Self::list_contains_extension_ptr(
-                &extensions,
-                vk::KhrPortabilitySubsetFn::name().as_ptr(),
-            ) {
-                properties.push_next(&mut portability_properties)
-            } else {
-                properties
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
+                properties = properties.push_next(&mut portability_properties)
             }
         };
 
@@ -92,38 +87,23 @@ impl DeviceInfo {
             vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
 
         // Glue all the feature extension structs together into our monster instance
-        let features = vk::PhysicalDeviceFeatures2::builder()
+        let mut features = vk::PhysicalDeviceFeatures2::builder()
             .push_next(&mut features_11)
             .push_next(&mut features_12);
 
-        let features = unsafe {
-            if Self::list_contains_extension_ptr(
-                &extensions,
-                vk::KhrDynamicRenderingFn::name().as_ptr(),
-            ) {
-                features.push_next(&mut dynamic_rendering_features)
-            } else {
-                features
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrDynamicRenderingFn::name()) {
+                features = features.push_next(&mut dynamic_rendering_features)
             }
         };
-        let features = unsafe {
-            if Self::list_contains_extension_ptr(
-                &extensions,
-                vk::KhrPortabilitySubsetFn::name().as_ptr(),
-            ) {
-                features.push_next(&mut portability_features)
-            } else {
-                features
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
+                features = features.push_next(&mut portability_features)
             }
         };
-        let mut features = unsafe {
-            if Self::list_contains_extension_ptr(
-                &extensions,
-                vk::KhrSynchronization2Fn::name().as_ptr(),
-            ) {
-                features.push_next(&mut synchronization_2_features)
-            } else {
-                features
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrSynchronization2Fn::name()) {
+                features = features.push_next(&mut synchronization_2_features)
             }
         };
 
