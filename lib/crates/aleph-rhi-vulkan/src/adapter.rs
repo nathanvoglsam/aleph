@@ -169,10 +169,28 @@ impl IAdapter for Adapter {
         let mut enable_if_supported = |wanted: &CStr| {
             if is_supported(wanted) {
                 enabled_extensions.push(wanted.as_ptr());
+                true
+            } else {
+                false
             }
         };
 
-        enable_if_supported(vk::KhrDynamicRenderingFn::name());
+        if !enable_if_supported(vk::KhrDynamicRenderingFn::name()) {
+            // If we don't have dynamic rendering we need to load one of the extensions that
+            // provides store op none, otherwise unhappiness will ensue. Try the khronos one first,
+            // then the original qualcomm one.
+            //
+            // We can't work without store op none, fail if none of the extensions are available.
+            if !enable_if_supported(vk::ExtLoadStoreOpNoneFn::name()) {
+                if !enable_if_supported(vk::QcomRenderPassStoreOpsFn::name()) {
+                    panic!(
+                        "Missing mandatory extension, either '{:?}', or '{:?}'",
+                        vk::ExtLoadStoreOpNoneFn::name(),
+                        vk::QcomRenderPassStoreOpsFn::name()
+                    );
+                }
+            }
+        }
         enable_if_supported(vk::KhrSwapchainFn::name());
         enable_if_supported(vk::KhrSynchronization2Fn::name());
         enable_if_supported(vk::KhrPortabilitySubsetFn::name());

@@ -297,6 +297,8 @@ impl Context {
         } = device_info;
 
         unsafe {
+            let is_supported = |v: &CStr| device_info.supports_extension_cstr(v);
+
             #[allow(unused)]
             macro_rules! check_for_extension {
                 ($name:expr) => {{
@@ -311,7 +313,7 @@ impl Context {
             #[allow(unused)]
             macro_rules! check_for_extension_vk {
                 ($name:expr) => {{
-                    let name = CStr::from_ptr($name).to_str().unwrap_unchecked();
+                    let name = $name.to_str().unwrap_unchecked();
                     if !device_info.supports_extension(name) {
                         log::error!("Device does not support extension {}", name);
                         return None;
@@ -319,11 +321,27 @@ impl Context {
                 }};
             }
 
-            check_for_extension_vk!(vk::KhrCreateRenderpass2Fn::name().as_ptr());
+            check_for_extension_vk!(vk::KhrCreateRenderpass2Fn::name());
+
+            // Check we meet requirements for store op none. Check for the three extensions that
+            // provide it, failing only if none of them are available.
+            if !is_supported(vk::KhrDynamicRenderingFn::name()) {
+                log::warn!(
+                    "Device does not support extension {:?}. Support will be emulated",
+                    vk::KhrDynamicRenderingFn::name()
+                );
+                if !is_supported(vk::ExtLoadStoreOpNoneFn::name()) {
+                    log::warn!(
+                        "Device does not support extension {:?}. Falling back to QCOM extension",
+                        vk::QcomRenderPassStoreOpsFn::name()
+                    );
+                    check_for_extension_vk!(vk::QcomRenderPassStoreOpsFn::name())
+                }
+            }
 
             // macOS will always be MoltenVK and portability subset must be available
             if cfg!(target_os = "macos") {
-                check_for_extension_vk!(vk::KhrPortabilitySubsetFn::name().as_ptr());
+                check_for_extension_vk!(vk::KhrPortabilitySubsetFn::name());
             }
 
             let wanted_properties_10 = vk::PhysicalDeviceProperties::minimum();
