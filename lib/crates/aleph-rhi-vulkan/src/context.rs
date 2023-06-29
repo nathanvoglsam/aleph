@@ -291,7 +291,7 @@ impl Context {
             features_10,
             features_11,
             features_12,
-            dynamic_rendering_features,
+            // dynamic_rendering_features,
             // portability_features,
             ..
         } = device_info;
@@ -319,7 +319,7 @@ impl Context {
                 }};
             }
 
-            check_for_extension_vk!(vk::KhrDynamicRenderingFn::name().as_ptr());
+            check_for_extension_vk!(vk::KhrCreateRenderpass2Fn::name().as_ptr());
 
             // macOS will always be MoltenVK and portability subset must be available
             if cfg!(target_os = "macos") {
@@ -337,13 +337,10 @@ impl Context {
             let wanted_features_10 = vk::PhysicalDeviceFeatures::minimum();
             let wanted_features_11 = vk::PhysicalDeviceVulkan11Features::minimum();
             let wanted_features_12 = vk::PhysicalDeviceVulkan12Features::minimum();
-            let wanted_dynamic_rendering_features =
-                vk::PhysicalDeviceDynamicRenderingFeatures::minimum();
 
             features_10.meets_profile(&wanted_features_10)?;
             features_11.meets_profile(&wanted_features_11)?;
             features_12.meets_profile(&wanted_features_12)?;
-            dynamic_rendering_features.meets_profile(&wanted_dynamic_rendering_features);
 
             Some(())
         }

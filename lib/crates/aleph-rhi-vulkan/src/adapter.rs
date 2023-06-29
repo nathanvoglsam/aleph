@@ -37,6 +37,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use std::any::TypeId;
+use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 use vulkan_alloc::vma;
 
@@ -161,29 +162,20 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        let mut enabled_extensions = Vec::with_capacity(4);
-        enabled_extensions.push(vk::KhrDynamicRenderingFn::name().as_ptr());
+        let mut enabled_extensions = Vec::with_capacity(8);
+        enabled_extensions.push(vk::KhrCreateRenderpass2Fn::name().as_ptr());
 
-        if self
-            .device_info
-            .supports_extension_cstr(vk::KhrSwapchainFn::name())
-        {
-            enabled_extensions.push(vk::KhrSwapchainFn::name().as_ptr());
-        }
+        let is_supported = |v: &CStr| self.device_info.supports_extension_cstr(v);
+        let mut enable_if_supported = |wanted: &CStr| {
+            if is_supported(wanted) {
+                enabled_extensions.push(wanted.as_ptr());
+            }
+        };
 
-        if self
-            .device_info
-            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
-        {
-            enabled_extensions.push(vk::KhrSynchronization2Fn::name().as_ptr());
-        }
-
-        if self
-            .device_info
-            .supports_extension_ptr(vk::KhrPortabilitySubsetFn::name().as_ptr())
-        {
-            enabled_extensions.push(vk::KhrPortabilitySubsetFn::name().as_ptr());
-        }
+        enable_if_supported(vk::KhrDynamicRenderingFn::name());
+        enable_if_supported(vk::KhrSwapchainFn::name());
+        enable_if_supported(vk::KhrSynchronization2Fn::name());
+        enable_if_supported(vk::KhrPortabilitySubsetFn::name());
 
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
@@ -201,30 +193,22 @@ impl IAdapter for Adapter {
         let mut portability_features = self.device_info.portability_features.clone();
         let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
 
-        let device_create_info = vk::DeviceCreateInfo::builder()
+        let mut device_create_info = vk::DeviceCreateInfo::builder()
             .push_next(&mut enabled_11_features)
             .push_next(&mut enabled_12_features)
-            .push_next(&mut dynamic_rendering_features)
             .enabled_features(&enabled_10_features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
 
-        let device_create_info = if self
-            .device_info
-            .supports_extension_cstr(vk::KhrPortabilitySubsetFn::name())
-        {
-            device_create_info.push_next(&mut portability_features)
-        } else {
-            device_create_info
-        };
-        let device_create_info = if self
-            .device_info
-            .supports_extension_cstr(vk::KhrSynchronization2Fn::name())
-        {
-            device_create_info.push_next(&mut synchronization_2_features)
-        } else {
-            device_create_info
-        };
+        if is_supported(vk::KhrDynamicRenderingFn::name()) {
+            device_create_info = device_create_info.push_next(&mut dynamic_rendering_features)
+        }
+        if is_supported(vk::KhrPortabilitySubsetFn::name()) {
+            device_create_info = device_create_info.push_next(&mut portability_features)
+        }
+        if is_supported(vk::KhrSynchronization2Fn::name()) {
+            device_create_info = device_create_info.push_next(&mut synchronization_2_features)
+        }
 
         let device = unsafe {
             self.context
@@ -233,13 +217,19 @@ impl IAdapter for Adapter {
                 .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
-        let dynamic_rendering =
-            ash::extensions::khr::DynamicRendering::new(&self.context.instance, &device);
+        let create_renderpass_2 =
+            ash::extensions::khr::CreateRenderPass2::new(&self.context.instance, &device);
 
-        let swapchain = if self
-            .device_info
-            .supports_extension_cstr(vk::KhrSwapchainFn::name())
-        {
+        let dynamic_rendering = if is_supported(vk::KhrDynamicRenderingFn::name()) {
+            Some(ash::extensions::khr::DynamicRendering::new(
+                &self.context.instance,
+                &device,
+            ))
+        } else {
+            None
+        };
+
+        let swapchain = if is_supported(vk::KhrSwapchainFn::name()) {
             Some(ash::extensions::khr::Swapchain::new(
                 &self.context.instance,
                 &device,
@@ -248,10 +238,7 @@ impl IAdapter for Adapter {
             None
         };
 
-        let synchronization_2 = if self
-            .device_info
-            .supports_extension_ptr(vk::KhrSynchronization2Fn::name().as_ptr())
-        {
+        let synchronization_2 = if is_supported(vk::KhrSynchronization2Fn::name()) {
             Some(ash::extensions::khr::Synchronization2::new(
                 &self.context.instance,
                 &device,
@@ -271,6 +258,7 @@ impl IAdapter for Adapter {
                 adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device: ManuallyDrop::new(device),
+                create_renderpass_2,
                 dynamic_rendering,
                 swapchain,
                 synchronization_2,

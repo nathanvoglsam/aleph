@@ -184,106 +184,19 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        let mut color_attachments =
-            BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
-        for v in info.color_attachments {
-            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
-
-            let mut info = vk::RenderingAttachmentInfo::builder()
-                .image_view(image_view)
-                .image_layout(image_layout_to_vk(v.image_layout))
-                .load_op(load_op_to_vk(&v.load_op))
-                .store_op(store_op_to_vk(&v.store_op));
-
-            if let AttachmentLoadOp::Clear(v) = &v.load_op {
-                info = info.clear_value(vk::ClearValue {
-                    color: color_clear_to_vk(v),
-                });
-            };
-            color_attachments.push(info.build());
-        }
-
-        let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
-        {
-            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
-
-            let depth_info = if !matches!(&v.depth_load_op, &AttachmentLoadOp::None) {
-                let mut info = vk::RenderingAttachmentInfo::builder()
-                    .image_view(image_view)
-                    .image_layout(image_layout_to_vk(v.image_layout))
-                    .load_op(load_op_to_vk(&v.depth_load_op))
-                    .store_op(store_op_to_vk(&v.depth_store_op));
-
-                if let AttachmentLoadOp::Clear(v) = &v.depth_load_op {
-                    info = info.clear_value(vk::ClearValue {
-                        depth_stencil: depth_stencil_clear_to_vk(*v),
-                    });
-                };
-
-                Some(info)
-            } else {
-                None
-            };
-
-            let stencil_info = if !matches!(&v.stencil_load_op, &AttachmentLoadOp::None) {
-                let mut info = vk::RenderingAttachmentInfo::builder()
-                    .image_view(image_view)
-                    .image_layout(image_layout_to_vk(v.image_layout))
-                    .load_op(load_op_to_vk(&v.stencil_load_op))
-                    .store_op(store_op_to_vk(&v.stencil_store_op));
-
-                if let AttachmentLoadOp::Clear(v) = &v.stencil_load_op {
-                    let value = vk::ClearValue {
-                        depth_stencil: depth_stencil_clear_to_vk(*v),
-                    };
-                    info = info.clear_value(value);
-                };
-
-                Some(info)
-            } else {
-                None
-            };
-
-            (depth_info, stencil_info)
+        if self._device.dynamic_rendering.is_some() {
+            self.begin_rendering_dynamic(info)
         } else {
-            (None, None)
-        };
-
-        // Select the width/height of the first attachment we find. We require that all attachments
-        // are the same size in the API so we only need to grab the size for one of them and assume
-        // the rest are the same size.
-        //
-        // The validation layer should catch this.
-        let render_extent = {
-            vk::Extent2D {
-                width: info.extent.width,
-                height: info.extent.height,
-            }
-        };
-
-        let mut info = vk::RenderingInfo::builder()
-            .render_area(vk::Rect2D {
-                offset: vk::Offset2D::default(),
-                extent: render_extent,
-            })
-            .layer_count(info.layer_count)
-            .color_attachments(&color_attachments);
-        if let Some(v) = &depth_attachment {
-            info = info.depth_attachment(&v);
+            self.begin_rendering_fallback(info)
         }
-        if let Some(v) = &stencil_attachment {
-            info = info.stencil_attachment(&v);
-        }
-
-        self._device
-            .dynamic_rendering
-            .cmd_begin_rendering(self._buffer, &info);
     }
 
     unsafe fn end_rendering(&mut self) {
-        self._device
-            .dynamic_rendering
-            .cmd_end_rendering(self._buffer);
+        if self._device.dynamic_rendering.is_some() {
+            self.end_rendering_dynamic()
+        } else {
+            self.end_rendering_fallback()
+        }
     }
 
     unsafe fn draw(
@@ -480,6 +393,116 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 }
 
 impl<'a> Encoder<'a> {
+    unsafe fn begin_rendering_fallback(&mut self, info: &BeginRenderingInfo) {
+    }
+
+    unsafe fn begin_rendering_dynamic(&mut self, info: &BeginRenderingInfo) {
+        // This must be present for it to be safe to call this function
+        let dynamic_rendering = self._device.dynamic_rendering.as_ref().unwrap_unchecked();
+
+        let mut color_attachments =
+            BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
+        for v in info.color_attachments {
+            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
+
+            let mut info = vk::RenderingAttachmentInfo::builder()
+                .image_view(image_view)
+                .image_layout(image_layout_to_vk(v.image_layout))
+                .load_op(load_op_to_vk(&v.load_op))
+                .store_op(store_op_to_vk(&v.store_op));
+
+            if let AttachmentLoadOp::Clear(v) = &v.load_op {
+                info = info.clear_value(vk::ClearValue {
+                    color: color_clear_to_vk(v),
+                });
+            };
+            color_attachments.push(info.build());
+        }
+
+        let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
+        {
+            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
+
+            let depth_info = if !matches!(&v.depth_load_op, &AttachmentLoadOp::None) {
+                let mut info = vk::RenderingAttachmentInfo::builder()
+                    .image_view(image_view)
+                    .image_layout(image_layout_to_vk(v.image_layout))
+                    .load_op(load_op_to_vk(&v.depth_load_op))
+                    .store_op(store_op_to_vk(&v.depth_store_op));
+
+                if let AttachmentLoadOp::Clear(v) = &v.depth_load_op {
+                    info = info.clear_value(vk::ClearValue {
+                        depth_stencil: depth_stencil_clear_to_vk(*v),
+                    });
+                };
+
+                Some(info)
+            } else {
+                None
+            };
+
+            let stencil_info = if !matches!(&v.stencil_load_op, &AttachmentLoadOp::None) {
+                let mut info = vk::RenderingAttachmentInfo::builder()
+                    .image_view(image_view)
+                    .image_layout(image_layout_to_vk(v.image_layout))
+                    .load_op(load_op_to_vk(&v.stencil_load_op))
+                    .store_op(store_op_to_vk(&v.stencil_store_op));
+
+                if let AttachmentLoadOp::Clear(v) = &v.stencil_load_op {
+                    let value = vk::ClearValue {
+                        depth_stencil: depth_stencil_clear_to_vk(*v),
+                    };
+                    info = info.clear_value(value);
+                };
+
+                Some(info)
+            } else {
+                None
+            };
+
+            (depth_info, stencil_info)
+        } else {
+            (None, None)
+        };
+
+        // Select the width/height of the first attachment we find. We require that all attachments
+        // are the same size in the API so we only need to grab the size for one of them and assume
+        // the rest are the same size.
+        //
+        // The validation layer should catch this.
+        let render_extent = {
+            vk::Extent2D {
+                width: info.extent.width,
+                height: info.extent.height,
+            }
+        };
+
+        let mut info = vk::RenderingInfo::builder()
+            .render_area(vk::Rect2D {
+                offset: vk::Offset2D::default(),
+                extent: render_extent,
+            })
+            .layer_count(info.layer_count)
+            .color_attachments(&color_attachments);
+        if let Some(v) = &depth_attachment {
+            info = info.depth_attachment(&v);
+        }
+        if let Some(v) = &stencil_attachment {
+            info = info.stencil_attachment(&v);
+        }
+
+        dynamic_rendering.cmd_begin_rendering(self._buffer, &info);
+    }
+
+    unsafe fn end_rendering_fallback(&mut self) {
+    }
+
+    unsafe fn end_rendering_dynamic(&mut self) {
+        // This must be present for it to be safe to call this function
+        let dynamic_rendering = self._device.dynamic_rendering.as_ref().unwrap_unchecked();
+        dynamic_rendering.cmd_end_rendering(self._buffer);
+    }
+
     unsafe fn resource_barrier_fallback(
         &mut self,
         global_barriers: &[GlobalBarrier],

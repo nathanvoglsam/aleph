@@ -10,7 +10,7 @@ use ash::extensions::khr::{
     AndroidSurface, Surface, WaylandSurface, Win32Surface, XcbSurface, XlibSurface,
 };
 use ash::extensions::mvk::{IOSSurface, MacOSSurface};
-use ash::{vk, Entry};
+use ash::vk;
 use libloading::Library;
 use std::ffi::CStr;
 use std::iter;
