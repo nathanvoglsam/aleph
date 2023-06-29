@@ -621,6 +621,8 @@ impl ValidationDevice {
             }
         }
 
+        Self::validate_no_mixed_samplers_and_views(desc);
+
         fn calculate_binding_range(v: &DescriptorSetLayoutBinding) -> (u32, u32) {
             let start = v.binding_num;
             let num = v.binding_count.map(NonZeroU32::get).unwrap_or(1);
@@ -648,6 +650,79 @@ impl ValidationDevice {
                 );
             })
         });
+    }
+
+    fn validate_no_mixed_samplers_and_views(desc: &DescriptorSetLayoutDesc) {
+        let mut has_resource_views = false;
+        let mut has_samplers = false;
+        for (i, binding) in desc.items.iter().enumerate() {
+            match binding.binding_type {
+                DescriptorType::Sampler => {
+                    has_samplers = true;
+                    if has_resource_views {
+                        log::error!(
+                            "Binding '{i}' is Sampler but set layout contains resource views"
+                        );
+                        break;
+                    }
+                }
+                DescriptorType::SampledImage
+                | DescriptorType::StorageImage
+                | DescriptorType::UniformTexelBuffer
+                | DescriptorType::StorageTexelBuffer
+                | DescriptorType::UniformBuffer
+                | DescriptorType::StorageBuffer
+                | DescriptorType::StructuredBuffer
+                | DescriptorType::InputAttachment => {
+                    has_resource_views = true;
+                    if has_samplers {
+                        log::error!(
+                            "Binding '{i}' is resource view but set layout contains samplers"
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Because D3D12 is a bitch and only gives us 2048 addressable descriptors it's a nightmare
+        // to handle descriptor sets with samplers in them. Pools will greedily take address space
+        // from the tiny sampler heaps and likely exhaust available address space and cause pool
+        // creation to fail in other places.
+        //
+        // Vulkan doesn't have this problem because the binding model is very abstract, it can just
+        // throw a layer of indirection in the middle. D3D12 can't because samplers can only be
+        // accessed through a descriptor table, which requires stamping the descriptors out in
+        // whatever pattern the set layout requires in the sampler address space. This means that
+        // we end up writing a bunch of copies of the same sampler for each set, rather than just
+        // being able to make one big table of the unique samplers we need and indexing them.
+        //
+        // Backend emulation isn't very viable as we require either direct heap access on D3D12 or
+        // full bindless on Vulkan, and shader authoring has to be changed or we need to patch
+        // shaders in the backend.
+        //
+        // Going full bindless is a solution too, but that has shader authoring issues of its own.
+        // It's still likely the best solution, but requires some thought into how to do a 'bindless
+        // only' RHI. Realistically it just becomes 'do the set layout yourself lol', with users
+        // passing in parameter buffer indices as root/push constants. Drivers can be less smart,
+        // and there's no obvious way to deal with UBOs (which _are_ useful as they offer hardware
+        // magic).
+        //
+        // Although in desktop land UBOs are only useful for driver magic and Nvidia hardware which
+        // still has some UBO acceleration (unlike AMD, which is just memory and pointers
+        // everywhere). I don't know how much Mobile cares, in both how much it wants UBOs and how
+        // much I care to support mobile.
+        //
+        // Buffers become a bit icky in the Vulkan model too, because buffer descriptors are really
+        // just pointers or pointer+len pairs, you end up with a lot of indirection. Roughly the
+        // chain goes PushConstant->IndexedDescriptor->RealData. Ideally you could just pack the
+        // buffer pointers directly into the push constants so you can go PushConstant->RealData,
+        // but I don't think D3D12 can do that _at all_ and Vulkan requires 'buffer_device_address'
+        // support. The shader authoring gets gnarly too.
+        assert!(
+            !(has_resource_views && has_samplers),
+            "It is invalid for a set layout to contain dynamic samplers and resource views"
+        );
     }
 
     // ========================================================================================== //
