@@ -33,6 +33,7 @@ use crate::device::Device;
 use crate::internal::conv::*;
 use crate::internal::unwrap;
 use crate::pipeline::GraphicsPipeline;
+use crate::texture::RenderTargetView;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -403,7 +404,8 @@ impl<'a> Encoder<'a> {
         let mut color_attachments =
             BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
         for v in info.color_attachments {
-            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
+            let view = &*RenderTargetView::from_view(v.image_view);
+            let image_view = view.image_view;
 
             let mut info = vk::RenderingAttachmentInfo::builder()
                 .image_view(image_view)
@@ -421,7 +423,8 @@ impl<'a> Encoder<'a> {
 
         let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
         {
-            let image_view = std::mem::transmute::<_, vk::ImageView>(v.image_view);
+            let view = &*RenderTargetView::from_view(v.image_view);
+            let image_view = view.image_view;
 
             let depth_info = if !matches!(&v.depth_load_op, &AttachmentLoadOp::None) {
                 let mut info = vk::RenderingAttachmentInfo::builder()
