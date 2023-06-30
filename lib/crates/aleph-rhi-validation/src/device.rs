@@ -658,7 +658,11 @@ impl ValidationDevice {
         for (i, binding) in desc.items.iter().enumerate() {
             match binding.binding_type {
                 DescriptorType::Sampler => {
-                    has_samplers = true;
+                    // Only dynamic samplers are a problem
+                    if binding.static_samplers.is_none() {
+                        has_samplers = true;
+                    }
+
                     if has_resource_views {
                         log::error!(
                             "Binding '{i}' is Sampler but set layout contains resource views"
