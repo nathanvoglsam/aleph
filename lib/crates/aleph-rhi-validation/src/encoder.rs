@@ -28,7 +28,7 @@
 //
 
 use crate::internal::get_as_unwrapped;
-use crate::texture::ValidationImageView;
+use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationTexture};
 use aleph_any::{AnyArc, QueryInterface};
 use aleph_rhi_api::*;
@@ -463,6 +463,12 @@ impl<T: ?Sized> ValidationEncoder<T> {
             };
             let image = image_view._image.upgrade().unwrap();
 
+            assert_eq!(
+                image_view.view_type,
+                ValidationViewType::RenderTargetView,
+                "Trying to use a view of type '{:?}' as an RTV",
+                image_view.view_type
+            );
             assert!(
                 image.desc().is_render_target,
                 "Used texture as render target when created with 'is_render_target = false'"
@@ -504,6 +510,13 @@ impl<T: ?Sized> ValidationEncoder<T> {
                     .unwrap()
             };
             let image = image_view._image.upgrade().unwrap();
+
+            assert_eq!(
+                image_view.view_type,
+                ValidationViewType::DepthStencilView,
+                "Trying to use a view of type '{:?}' as a DSV",
+                image_view.view_type
+            );
 
             assert!(
                 image.desc().is_render_target,
