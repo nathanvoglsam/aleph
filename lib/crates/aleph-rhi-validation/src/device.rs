@@ -32,6 +32,7 @@ use crate::fence::FenceState;
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::get_as_unwrapped;
 use crate::semaphore::SemaphoreState;
+use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{
     ValidationAdapter, ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
     ValidationContext, ValidationDescriptorPool, ValidationDescriptorSetLayout, ValidationFence,
@@ -798,43 +799,37 @@ impl ValidationDevice {
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::SampledImage => assert!(
-                matches!(write.writes, DescriptorWrites::Image(_)),
-                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::StorageImage => assert!(
-                matches!(write.writes, DescriptorWrites::Image(_)),
-                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::UniformTexelBuffer => assert!(
+            DescriptorType::SampledImage | DescriptorType::StorageImage => {
+                if let DescriptorWrites::Image(writes) = write.writes {
+                    for v in writes {
+                        let image_view =
+                            &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view);
+                        assert!(
+                            matches!(image_view.view_type, ValidationViewType::ResourceView),
+                            "Writing a resource view with an '{:?}' image view is invalid",
+                            image_view.view_type
+                        );
+                    }
+                }
+                assert!(
+                    matches!(write.writes, DescriptorWrites::Image(_)),
+                    "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                    write.descriptor_type
+                )
+            }
+
+            DescriptorType::UniformTexelBuffer | DescriptorType::StorageTexelBuffer => assert!(
                 matches!(write.writes, DescriptorWrites::TexelBuffer(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::StorageTexelBuffer => assert!(
-                matches!(write.writes, DescriptorWrites::TexelBuffer(_)),
-                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::UniformBuffer => assert!(
+            DescriptorType::UniformBuffer | DescriptorType::StorageBuffer => assert!(
                 matches!(write.writes, DescriptorWrites::Buffer(_)),
                 "Invalid DescriptorWrites type' for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
-            DescriptorType::StorageBuffer => assert!(
-                matches!(write.writes, DescriptorWrites::Buffer(_)),
-                "Invalid DescriptorWrites type' for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::StructuredBuffer => assert!(
+            DescriptorType::StructuredBuffer | DescriptorType::InputAttachment => assert!(
                 matches!(write.writes, DescriptorWrites::StructuredBuffer(_)),
-                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::InputAttachment => assert!(
-                matches!(write.writes, DescriptorWrites::InputAttachment(_)),
                 "Invalid DescriptorWrites type for descriptor type '{:#?}'",
                 write.descriptor_type
             ),
