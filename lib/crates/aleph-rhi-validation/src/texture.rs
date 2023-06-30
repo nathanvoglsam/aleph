@@ -70,6 +70,7 @@ impl ITexture for ValidationTexture {
         } else {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
+                view_type: ValidationViewType::ResourceView,
                 image_view: self.inner.get_view(desc)?,
                 desc: desc.clone(),
             });
@@ -90,6 +91,7 @@ impl ITexture for ValidationTexture {
         } else {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
+                view_type: ValidationViewType::RenderTargetView,
                 image_view: self.inner.get_rtv(desc)?,
                 desc: desc.clone(),
             });
@@ -110,6 +112,7 @@ impl ITexture for ValidationTexture {
         } else {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
+                view_type: ValidationViewType::DepthStencilView,
                 image_view: self.inner.get_dsv(desc)?,
                 desc: desc.clone(),
             });
@@ -131,8 +134,16 @@ impl ValidationTexture {
     }
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ValidationViewType {
+    ResourceView,
+    RenderTargetView,
+    DepthStencilView,
+}
+
 pub struct ValidationImageView {
     pub _image: AnyWeak<ValidationTexture>,
+    pub view_type: ValidationViewType,
     pub image_view: ImageView,
     pub desc: ImageViewDesc,
 }
