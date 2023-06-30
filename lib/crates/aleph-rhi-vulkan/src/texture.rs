@@ -45,8 +45,8 @@ pub struct Texture {
     pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) is_owned: bool,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, Box<RenderTargetView>>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, Box<RenderTargetView>>>,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -123,7 +123,7 @@ impl ITexture for Texture {
         let mut views = self.rtvs.lock();
 
         let view = if let Some(view) = views.get(desc) {
-            *view
+            view.as_ref() as *const RenderTargetView
         } else {
             let mut usage_info = vk::ImageViewUsageCreateInfo::builder()
                 .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT);
@@ -148,8 +148,17 @@ impl ITexture for Texture {
                     .map_err(|_| ())? // TODO: error handling
             };
 
+            // Wrap into our RTV wrapper object
+            let view = Box::new(RenderTargetView {
+                _texture: self._this.clone(),
+                image_view: view,
+                format: create_info.format,
+            });
+            let view_ptr = view.as_ref() as *const RenderTargetView;
+
             views.insert(desc.clone(), view);
-            view
+
+            view_ptr
         };
 
         unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
@@ -159,7 +168,7 @@ impl ITexture for Texture {
         let mut views = self.dsvs.lock();
 
         let view = if let Some(view) = views.get(desc) {
-            *view
+            view.as_ref() as *const RenderTargetView
         } else {
             let mut usage_info = vk::ImageViewUsageCreateInfo::builder()
                 .usage(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT);
@@ -184,8 +193,17 @@ impl ITexture for Texture {
                     .map_err(|_| ())? // TODO: error handling
             };
 
+            // Wrap into our RTV wrapper object
+            let view = Box::new(RenderTargetView {
+                _texture: self._this.clone(),
+                image_view: view,
+                format: create_info.format,
+            });
+            let view_ptr = view.as_ref() as *const RenderTargetView;
+
             views.insert(desc.clone(), view);
-            view
+
+            view_ptr
         };
 
         unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
@@ -200,11 +218,15 @@ impl Drop for Texture {
             }
 
             for (_desc, view) in self.rtvs.get_mut().drain() {
-                self._device.device.destroy_image_view(view, None);
+                self._device
+                    .device
+                    .destroy_image_view(view.image_view, None);
             }
 
             for (_desc, view) in self.dsvs.get_mut().drain() {
-                self._device.device.destroy_image_view(view, None);
+                self._device
+                    .device
+                    .destroy_image_view(view.image_view, None);
             }
 
             // Some images we don't own, like swap chain images, so we shouldn't destroy them
@@ -214,5 +236,19 @@ impl Drop for Texture {
                 }
             }
         }
+    }
+}
+
+/// Unfortunately, to sometimes need the format of an RTV. We create a proxy object so we can fetch
+/// it in our implementation.
+pub struct RenderTargetView {
+    pub _texture: AnyWeak<Texture>,
+    pub image_view: vk::ImageView,
+    pub format: vk::Format,
+}
+
+impl RenderTargetView {
+    pub unsafe fn from_view(v: ImageView) -> *const RenderTargetView {
+        std::mem::transmute(v)
     }
 }
