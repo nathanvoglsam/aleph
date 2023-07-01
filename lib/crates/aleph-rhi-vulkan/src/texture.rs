@@ -90,27 +90,7 @@ impl ITexture for Texture {
                 vk::ImageUsageFlags::SAMPLED
             };
 
-            let mut usage_info = vk::ImageViewUsageCreateInfo::builder().usage(usage);
-
-            let create_info = vk::ImageViewCreateInfo::builder()
-                .image(self.image)
-                .view_type(image_view_type_to_vk(desc.view_type))
-                .format(texture_format_to_vk(desc.format))
-                .components(vk::ComponentMapping {
-                    r: vk::ComponentSwizzle::IDENTITY,
-                    g: vk::ComponentSwizzle::IDENTITY,
-                    b: vk::ComponentSwizzle::IDENTITY,
-                    a: vk::ComponentSwizzle::IDENTITY,
-                })
-                .subresource_range(subresource_range_to_vk(&desc.sub_resources))
-                .push_next(&mut usage_info);
-
-            let view = unsafe {
-                self._device
-                    .device
-                    .create_image_view(&create_info, None)
-                    .map_err(|_| ())? // TODO: error handling
-            };
+            let view = self.create_view_for_usage(desc, usage)?;
 
             views.insert(desc.clone(), view);
             view
@@ -120,39 +100,32 @@ impl ITexture for Texture {
     }
 
     fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        let mut views = self.rtvs.lock();
+        self.get_rtv_or_dsv(desc, vk::ImageUsageFlags::COLOR_ATTACHMENT)
+    }
+
+    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        self.get_rtv_or_dsv(desc, vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
+    }
+}
+
+impl Texture {
+    fn get_rtv_or_dsv(
+        &self,
+        desc: &ImageViewDesc,
+        usage: vk::ImageUsageFlags,
+    ) -> Result<ImageView, ()> {
+        let mut views = self.dsvs.lock();
 
         let view = if let Some(view) = views.get(desc) {
             view.as_ref() as *const RenderTargetView
         } else {
-            let mut usage_info = vk::ImageViewUsageCreateInfo::builder()
-                .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT);
-
-            let create_info = vk::ImageViewCreateInfo::builder()
-                .image(self.image)
-                .view_type(image_view_type_to_vk(desc.view_type))
-                .format(texture_format_to_vk(desc.format))
-                .components(vk::ComponentMapping {
-                    r: vk::ComponentSwizzle::IDENTITY,
-                    g: vk::ComponentSwizzle::IDENTITY,
-                    b: vk::ComponentSwizzle::IDENTITY,
-                    a: vk::ComponentSwizzle::IDENTITY,
-                })
-                .subresource_range(subresource_range_to_vk(&desc.sub_resources))
-                .push_next(&mut usage_info);
-
-            let view = unsafe {
-                self._device
-                    .device
-                    .create_image_view(&create_info, None)
-                    .map_err(|_| ())? // TODO: error handling
-            };
+            let view = self.create_view_for_usage(desc, usage)?;
 
             // Wrap into our RTV wrapper object
             let view = Box::new(RenderTargetView {
                 _texture: self._this.clone(),
                 image_view: view,
-                format: create_info.format,
+                format: texture_format_to_vk(desc.format),
             });
             let view_ptr = view.as_ref() as *const RenderTargetView;
 
@@ -164,49 +137,34 @@ impl ITexture for Texture {
         unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
     }
 
-    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        let mut views = self.dsvs.lock();
+    fn create_view_for_usage(
+        &self,
+        desc: &ImageViewDesc,
+        usage: vk::ImageUsageFlags,
+    ) -> Result<vk::ImageView, ()> {
+        let mut usage_info = vk::ImageViewUsageCreateInfo::builder().usage(usage);
 
-        let view = if let Some(view) = views.get(desc) {
-            view.as_ref() as *const RenderTargetView
-        } else {
-            let mut usage_info = vk::ImageViewUsageCreateInfo::builder()
-                .usage(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT);
+        let create_info = vk::ImageViewCreateInfo::builder()
+            .image(self.image)
+            .view_type(image_view_type_to_vk(desc.view_type))
+            .format(texture_format_to_vk(desc.format))
+            .components(vk::ComponentMapping {
+                r: vk::ComponentSwizzle::IDENTITY,
+                g: vk::ComponentSwizzle::IDENTITY,
+                b: vk::ComponentSwizzle::IDENTITY,
+                a: vk::ComponentSwizzle::IDENTITY,
+            })
+            .subresource_range(subresource_range_to_vk(&desc.sub_resources))
+            .push_next(&mut usage_info);
 
-            let create_info = vk::ImageViewCreateInfo::builder()
-                .image(self.image)
-                .view_type(image_view_type_to_vk(desc.view_type))
-                .format(texture_format_to_vk(desc.format))
-                .components(vk::ComponentMapping {
-                    r: vk::ComponentSwizzle::IDENTITY,
-                    g: vk::ComponentSwizzle::IDENTITY,
-                    b: vk::ComponentSwizzle::IDENTITY,
-                    a: vk::ComponentSwizzle::IDENTITY,
-                })
-                .subresource_range(subresource_range_to_vk(&desc.sub_resources))
-                .push_next(&mut usage_info);
-
-            let view = unsafe {
-                self._device
-                    .device
-                    .create_image_view(&create_info, None)
-                    .map_err(|_| ())? // TODO: error handling
-            };
-
-            // Wrap into our RTV wrapper object
-            let view = Box::new(RenderTargetView {
-                _texture: self._this.clone(),
-                image_view: view,
-                format: create_info.format,
-            });
-            let view_ptr = view.as_ref() as *const RenderTargetView;
-
-            views.insert(desc.clone(), view);
-
-            view_ptr
+        let view = unsafe {
+            self._device
+                .device
+                .create_image_view(&create_info, None)
+                .map_err(|_| ())? // TODO: error handling
         };
 
-        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+        Ok(view)
     }
 }
 
