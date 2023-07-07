@@ -34,6 +34,7 @@ pub use aleph_target::recreate_triple;
 pub use aleph_target::Architecture;
 pub use aleph_target::BuildType;
 pub use aleph_target::Platform;
+pub use aleph_target::Profile;
 
 pub use aleph_target::get_architecture_from;
 pub use aleph_target::get_platform_from;
