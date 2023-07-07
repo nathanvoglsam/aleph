@@ -30,7 +30,7 @@
 ///
 /// Enumeration of all supported architectures
 ///
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Architecture {
     X8664,
     AARCH64,

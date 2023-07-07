@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Platform {
     UniversalWindowsGNU,
     UniversalWindowsMSVC,
