@@ -63,6 +63,7 @@ mod architecture;
 mod build_config;
 mod build_type;
 mod platform;
+mod profile;
 mod triple;
 
 pub mod build {
@@ -160,4 +161,5 @@ pub use build_config::BuildConfig;
 pub use build_type::BuildType;
 pub use platform::get_platform_from;
 pub use platform::Platform;
+pub use profile::Profile;
 pub use triple::recreate_triple;
