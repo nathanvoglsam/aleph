@@ -44,3 +44,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-target-build = { workspace = true }
 aleph-dx12-agility-sdk = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+embed-resource = { workspace = true }

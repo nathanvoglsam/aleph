@@ -28,9 +28,11 @@
 //
 
 use aleph_target_build::build::target_platform;
+use std::path::{Path, PathBuf};
 
 pub fn add_platform_flags() {
     if target_platform().is_windows() {
+        compile_and_link_windows_resource_file();
         aleph_dx12_agility_sdk::link_agility_symbol_def();
         aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
     }
@@ -47,3 +49,24 @@ pub fn add_platform_flags() {
         println!("cargo:rustc-link-lib=dylib=c++_shared");
     }
 }
+
+#[cfg(windows)]
+fn compile_and_link_windows_resource_file() {
+    let icon_path = std::env::var("ALEPH_WIN32_ICON_FILE").unwrap_or_else(|_| {
+        let v = Path::new(env!("CARGO_MANIFEST_DIR")).join("app_icon.ico");
+        let v = v.to_str().unwrap().to_string();
+        v.replace("\\", "/")
+    });
+
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let out_dir = PathBuf::from(out_dir);
+    let rc_file = out_dir.join("icon.rc");
+
+    std::fs::write(&rc_file, format!("IDI_ICON1 ICON \"{}\"", icon_path)).unwrap();
+
+    let name = std::env::var("CARGO_PKG_NAME").unwrap();
+    embed_resource::compile_for(&rc_file, &[&name], embed_resource::NONE);
+}
+
+#[cfg(not(windows))]
+fn compile_and_link_windows_resource_file() {}
