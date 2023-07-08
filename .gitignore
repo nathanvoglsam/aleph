@@ -9,10 +9,3 @@ Cargo.lock
 
 # Ignore Vulkan shader cache
 shader_cache.bin
-
-# Ignore .pfx certificates (private key)
-*.pfx
-
-# Ignore .appx and .msix packages (build artifact)
-*.appx
-*.msix
