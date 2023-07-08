@@ -38,6 +38,24 @@ pub enum Architecture {
 }
 
 impl Architecture {
+    #[inline(always)]
+    pub fn from_name(name: &str) -> Self {
+        match name {
+            "x86_64" => Architecture::X8664,
+            "aarch64" => Architecture::AARCH64,
+            _ => Architecture::Unknown,
+        }
+    }
+
+    #[inline(always)]
+    pub fn from_name_opt(name: &str) -> Option<Self> {
+        match Self::from_name(name) {
+            Architecture::X8664 => Some(Architecture::X8664),
+            Architecture::AARCH64 => Some(Architecture::AARCH64),
+            Architecture::Unknown => None,
+        }
+    }
+
     pub const fn name(self) -> &'static str {
         match self {
             Architecture::X8664 => "x86_64",
