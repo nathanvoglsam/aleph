@@ -2,3 +2,6 @@
 /.gradle
 /app/build
 local.properties
+
+# Ignore any .so files, they're build artifacts
+*.so
