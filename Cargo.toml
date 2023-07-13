@@ -68,6 +68,7 @@ members = [
     "lib/plugins/aleph-render",
     "lib/plugins/aleph-rhi",
     "lib/plugins/aleph-sdl2",
+    "bin/aleph",
     "bin/aleph-test",
     "bin/aleph-rcon",
 ]
@@ -76,12 +77,15 @@ members = [
 
 # Third Party Crates
 android_logger = "0.13"
+anyhow = "1"
 ash = { version = "0.37", default-features = false, features = ["debug"] }
 bitflags = "1"
 bumpalo = { version = "3", features = ["boxed", "collections"] }
 bytemuck = "1"
 byteorder = "1"
+cargo_metadata = "0.15"
 cc = "1"
+clap = "4"
 cmake = "0.1"
 console = "0.15"
 crossbeam = "0.8"
@@ -104,9 +108,12 @@ sdl2-sys = "^0.35.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sysinfo = "0.29"
+tera = "1"
 thiserror = "1"
+toml = "0.7"
 ultraviolet = { version = "0.9", features = ["f64"] }
 utf16_lit = "2"
+zip = "0.6"
 
 # Aleph Crates
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }

@@ -1,0 +1,45 @@
+[game]
+# The name of the crate in the current workspace that implements the game entry point
+crate_name = "aleph-test"
+
+# The name of the game, as should appear as a pretty string like an app title
+name = "Aleph Test"
+
+# The name of the publisher/author of the game.
+author = "Nathan Voglsam"
+
+# The list of allowed platforms that the game is designed to target
+# Current possible values: "windows", "macos", "linux", "android", "uwp"
+target_platforms = ["windows", "macos", "linux", "android", "uwp"]
+
+# Information needed to generate a valid UWP project/bundle
+[uwp]
+identity_name = "f50434c1-fbf7-422c-8525-8f908bff5778"
+identity_publisher = "CN=F914AB1C-A8B5-465F-80AA-98480F374DC1"
+certificate = ".aleph/certs/AlephCert.pfx"
+
+# Information needed to generate a valid android project/bundle
+[android]
+app_id = "com.alephengine.alephtest.game"
+version_id = 1
+
+# Specification of app branding for Windows
+[windows.branding]
+icon = "branding/windows/app_icon.ico"
+
+# Specification of app branding for UWP
+[uwp.branding]
+lock_screen_logo = "branding/uwp/LockScreenLogo.png"
+splash_screen = "branding/uwp/SplashScreen.png"
+square_44_x_44_logo = "branding/uwp/Square44x44Logo.png"
+square_150_x_150_logo = "branding/uwp/Square150x150Logo.png"
+store_logo = "branding/uwp/StoreLogo.png"
+wide_310_x_150_logo = "branding/uwp/Wide310x150Logo.png"
+
+# Specification of app branding for Android
+[android.branding]
+icon_mdpi = "branding/android/mipmap-mdpi/ic_launcher.png"
+icon_hdpi = "branding/android/mipmap-hdpi/ic_launcher.png"
+icon_xhdpi = "branding/android/mipmap-xhdpi/ic_launcher.png"
+icon_xxhdpi = "branding/android/mipmap-xxhdpi/ic_launcher.png"
+icon_xxxhdpi = "branding/android/mipmap-xxxhdpi/ic_launcher.png"

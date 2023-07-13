@@ -1,0 +1,4 @@
+# Ignore Build Folders
+/.gradle
+/app/build
+local.properties
