@@ -29,7 +29,7 @@
 
 use crate::env::project_root;
 use aleph_target::build::{target_architecture, target_platform};
-use aleph_target::{Architecture, Platform};
+use aleph_target::{Architecture, Platform, Profile};
 use anyhow::anyhow;
 use std::io::{Read, Seek};
 use std::path::{Path, PathBuf};
@@ -115,6 +115,15 @@ pub fn architecture_from_arg(arg: &str) -> Option<Architecture> {
         Some(target_architecture())
     } else {
         Architecture::from_name_opt(&arg)
+    }
+}
+
+pub fn profile_from_arg(arg: &str) -> Option<Profile> {
+    match arg.to_lowercase().as_str() {
+        "debug" => Some(Profile::Debug),
+        "release" => Some(Profile::Release),
+        "retail" => Some(Profile::Retail),
+        _ => None,
     }
 }
 

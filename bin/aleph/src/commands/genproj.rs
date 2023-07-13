@@ -43,7 +43,6 @@ use crate::utils::{
 use aleph_target::Architecture;
 use anyhow::anyhow;
 use clap::{Arg, ArgMatches, Command};
-use serde::Serialize;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use tera::{Context, Tera};
@@ -61,6 +60,8 @@ impl ISubcommand for GenProj {
             .long_help("The platform to generate a project for. Supported values: uwp, android")
             .required(true);
         let arch = Arg::new("arch")
+            .short('a')
+            .long("arch")
             .help("The architecture to generate the project for.")
             .long_help("The architecture to generate the project for, if the target needs architecture specific projects.")
             .default_value("native")
@@ -73,7 +74,6 @@ impl ISubcommand for GenProj {
     }
 
     fn exec(&mut self, mut matches: ArgMatches) -> anyhow::Result<()> {
-        // let project_root = project_root()?;
         let project_toml = project_file()?;
 
         let toml = std::fs::read_to_string(&project_toml)?;

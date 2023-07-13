@@ -47,12 +47,6 @@ pub fn aleph_root() -> std::io::Result<PathBuf> {
     project_root().map(|v| v.join(".aleph"))
 }
 
-pub fn ensure_aleph_root() -> std::io::Result<PathBuf> {
-    let path = aleph_root()?;
-    std::fs::create_dir_all(&path)?;
-    Ok(path)
-}
-
 pub fn target_project_root(target: &Target) -> anyhow::Result<PathBuf> {
     assert_ne!(target.arch, Architecture::Unknown);
 
@@ -71,7 +65,7 @@ pub fn target_project_root(target: &Target) -> anyhow::Result<PathBuf> {
             Ok(root)
         }
         _ => Err(anyhow!(
-            "Subcommand 'genproj' does not support target platform \"{}\".",
+            "Platform \"{}\" does not have a target specific sub-project.",
             target.platform.name()
         )),
     }

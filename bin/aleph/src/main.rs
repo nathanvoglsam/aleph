@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::commands::{GenProj, ISubcommand};
+use crate::commands::{Build, GenProj, ISubcommand};
 use log::LevelFilter;
 use std::collections::HashMap;
 
-mod build;
 mod commands;
 mod env;
 mod project;
@@ -47,6 +46,7 @@ fn main() {
 
     let mut subcommands: HashMap<String, Box<dyn ISubcommand>> = HashMap::new();
     register_subcommand(&mut subcommands, GenProj {});
+    register_subcommand(&mut subcommands, Build {});
 
     for (name, subcommand) in subcommands.iter_mut() {
         let description = subcommand.description();

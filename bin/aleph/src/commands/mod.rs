@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
+mod build;
 mod genproj;
 
+pub use build::Build;
 pub use genproj::GenProj;
 
 use clap::{ArgMatches, Command};
