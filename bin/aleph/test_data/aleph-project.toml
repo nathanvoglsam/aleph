@@ -5,6 +5,9 @@ crate_name = "aleph-test"
 # The name of the game, as should appear as a pretty string like an app title
 name = "Aleph Test"
 
+# The name of the publisher/author of the game.
+author = "Nathan Voglsam"
+
 # The list of allowed platforms that the game is designed to target
 # Current possible values: "windows", "macos", "linux", "android", "uwp"
 target_platforms = ["windows", "macos", "linux", "android", "uwp"]
@@ -13,10 +16,12 @@ target_platforms = ["windows", "macos", "linux", "android", "uwp"]
 [uwp]
 identity_name = "f50434c1-fbf7-422c-8525-8f908bff5778"
 identity_publisher = "CN=F914AB1C-A8B5-465F-80AA-98480F374DC1"
+certificate = ".aleph/certs/AlephCert.pfx"
 
 # Information needed to generate a valid android project/bundle
 [android]
 app_id = "com.alephengine.alephtest.game"
+version_id = 1
 
 # Specification of app branding for Windows
 [windows.branding]
