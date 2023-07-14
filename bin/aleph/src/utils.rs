@@ -196,9 +196,9 @@ pub fn extract_zip<R: Seek + Read>(
         // Get and Set permissions
         #[cfg(unix)]
         {
-            use std::os::unix::fs::PermissionsExt;
-
             if let Some(mode) = file.unix_mode() {
+                use std::fs;
+                use std::os::unix::fs::PermissionsExt;
                 fs::set_permissions(&outpath, fs::Permissions::from_mode(mode)).unwrap();
             }
         }

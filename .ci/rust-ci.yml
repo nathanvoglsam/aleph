@@ -21,10 +21,6 @@ steps:
     submodules: recursive
     fetchDepth: 0
 
-  - bash: |
-      cargo install cargo-deny
-    displayName: "Install cargo-deny"
-
   ## Section for installing some extra stuff through rustup
 
   # Install additional targets:

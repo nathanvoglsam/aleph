@@ -18,33 +18,25 @@ jobs:
             - pwsh: |
                 cargo test --release
               displayName: Test
-
-            - pwsh: |
-                cargo deny check
-              displayName: Check cargo-deny
-  - job: MacOS
-    pool:
-      vmImage: "macOS-latest"
-    steps:
-      - template: ".ci/rust-ci.yml"
-        parameters:
-          setupSteps:
-            - powershell: |
-                brew install ninja
-              displayName: Install Dependencies
-
-            # The actual build
-            - pwsh: |
-                cargo build --release
-              displayName: Build
-
-            - pwsh: |
-                cargo test --release
-              displayName: Test
-
-            - pwsh: |
-                cargo deny check
-              displayName: Check cargo-deny
+  ## - job: MacOS
+  ##   pool:
+  ##     vmImage: "macOS-latest"
+  ##   steps:
+  ##     - template: ".ci/rust-ci.yml"
+  ##       parameters:
+  ##         setupSteps:
+  ##           - powershell: |
+  ##               brew install ninja
+  ##             displayName: Install Dependencies
+  ##
+  ##           # The actual build
+  ##           - pwsh: |
+  ##               cargo build --release
+  ##             displayName: Build
+  ##
+  ##           - pwsh: |
+  ##               cargo test --release
+  ##             displayName: Test
   - job: Linux
     pool:
       vmImage: "ubuntu-latest"
@@ -65,29 +57,38 @@ jobs:
             - pwsh: |
                 cargo test --release
               displayName: Test
-
-            - pwsh: |
-                cargo deny check
-              displayName: Check cargo-deny
-  - job: Android
+  ## - job: Android
+  ##   pool:
+  ##     vmImage: "ubuntu-latest"
+  ##   steps:
+  ##     - template: ".ci/rust-ci.yml"
+  ##       parameters:
+  ##         targets:
+  ##           - "aarch64-linux-android"
+  ##         setupSteps:
+  ##           - powershell: |
+  ##               sudo apt -y update -qq
+  ##               sudo apt -y install -qq wget cmake ninja-build curl p7zip-full p7zip-rar
+  ##             displayName: Install Dependencies
+  ##
+  ##           - bash: |
+  ##               cargo install cargo-ndk
+  ##             displayName: "Install cargo-ndk"
+  ##
+  ##           # The actual build
+  ##           - pwsh: |
+  ##               cargo ndk -t arm64-v8a -p 30 build --release --target=aarch64-linux-android
+  ##             displayName: Build
+  - job: Cargo_Deny
     pool:
       vmImage: "ubuntu-latest"
     steps:
       - template: ".ci/rust-ci.yml"
         parameters:
-          targets:
-            - "aarch64-linux-android"
           setupSteps:
-            - powershell: |
-                sudo apt -y update -qq
-                sudo apt -y install -qq wget cmake ninja-build curl p7zip-full p7zip-rar
-              displayName: Install Dependencies
-
-            # The actual build
-            - pwsh: |
-                cargo build --release --target=aarch64-linux-android
-              displayName: Build
-
+            - bash: |
+                cargo install cargo-deny
+              displayName: "Install cargo-deny"
             - pwsh: |
                 cargo deny check
               displayName: Check cargo-deny
