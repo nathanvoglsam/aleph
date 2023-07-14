@@ -9,14 +9,85 @@ jobs:
             - powershell: |
                 choco install ninja
               displayName: Install Binary Dependencies
+
+            # The actual build
+            - pwsh: |
+                cargo build --release
+              displayName: Build
+
+            - pwsh: |
+                cargo test --release
+              displayName: Test
+
+            - pwsh: |
+                cargo deny check
+              displayName: Check cargo-deny
+  - job: MacOS
+    pool:
+      vmImage: "macOS-latest"
+    steps:
+      - template: ".ci/rust-ci.yml"
+        parameters:
+          setupSteps:
+            - powershell: |
+                brew install ninja
+              displayName: Install Dependencies
+
+            # The actual build
+            - pwsh: |
+                cargo build --release
+              displayName: Build
+
+            - pwsh: |
+                cargo test --release
+              displayName: Test
+
+            - pwsh: |
+                cargo deny check
+              displayName: Check cargo-deny
   - job: Linux
     pool:
-      vmImage: "ubuntu-20.04"
+      vmImage: "ubuntu-latest"
     steps:
       - template: ".ci/rust-ci.yml"
         parameters:
           setupSteps:
             - powershell: |
                 sudo apt -y update -qq
-                sudo apt -y install -qq wget cmake libgtk-3-dev libsdl2-dev ninja-build libx11-dev libxext-dev libpulse-dev libasound2-dev curl p7zip-full p7zip-rar
+                sudo apt -y install -qq wget libgtk-3-dev libsdl2-dev ninja-build libx11-dev libxext-dev libpulse-dev libasound2-dev curl p7zip-full p7zip-rar
               displayName: Install Dependencies
+
+            # The actual build
+            - pwsh: |
+                cargo build --release
+              displayName: Build
+
+            - pwsh: |
+                cargo test --release
+              displayName: Test
+
+            - pwsh: |
+                cargo deny check
+              displayName: Check cargo-deny
+  - job: Android
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+      - template: ".ci/rust-ci.yml"
+        parameters:
+          targets:
+            - "aarch64-linux-android"
+          setupSteps:
+            - powershell: |
+                sudo apt -y update -qq
+                sudo apt -y install -qq wget cmake ninja-build curl p7zip-full p7zip-rar
+              displayName: Install Dependencies
+
+            # The actual build
+            - pwsh: |
+                cargo build --release --target=aarch64-linux-android
+              displayName: Build
+
+            - pwsh: |
+                cargo deny check
+              displayName: Check cargo-deny

@@ -21,39 +21,6 @@ steps:
     submodules: recursive
     fetchDepth: 0
 
-  ## Then we install the rust toolchain through w/e platform specific means are required
-
-  # Linux and macOS.
-  - script: |
-      set -e
-      curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain $RUSTUP_TOOLCHAIN
-      echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-    env:
-      RUSTUP_TOOLCHAIN: ${{parameters.rust}}
-    displayName: "Install rust (*nix)"
-    condition: not(eq(variables['Agent.OS'], 'Windows_NT'))
-
-  # Windows.
-  - script: |
-      curl -sSf -o rustup-init.exe https://win.rustup.rs
-      rustup-init.exe -y --profile minimal --default-toolchain %RUSTUP_TOOLCHAIN% --default-host x86_64-pc-windows-msvc
-      set PATH=%PATH%;%USERPROFILE%\.cargo\bin
-      echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
-    env:
-      RUSTUP_TOOLCHAIN: ${{parameters.rust}}
-    displayName: "Install rust (windows)"
-    condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-  ## Tell rust to use the toolchain we want it to
-
-  # Set correct toolchain
-  - bash: |
-      rustup default $RUSTUP_TOOLCHAIN
-      rustup update $RUSTUP_TOOLCHAIN
-    env:
-      RUSTUP_TOOLCHAIN: ${{parameters.rust}}
-    displayName: "Set correct Rust version"
-
   - bash: |
       cargo install cargo-deny
     displayName: "Install cargo-deny"
@@ -90,16 +57,3 @@ steps:
   - ${{ each step in parameters.setupSteps }}:
       - ${{ each pair in step }}:
           ${{ pair.key }}: ${{ pair.value }}
-
-  # The actual build
-  - pwsh: |
-      cargo build --release
-    displayName: Build
-
-  - pwsh: |
-      cargo test --release
-    displayName: Test
-
-  - pwsh: |
-      cargo deny check
-    displayName: Check cargo-deny
