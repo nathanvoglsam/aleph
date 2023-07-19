@@ -95,18 +95,24 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        let mut buffers = BumpVec::with_capacity_in(bindings.len(), &self.arena);
-        let mut offsets = BumpVec::with_capacity_in(bindings.len(), &self.arena);
-        for v in bindings.iter() {
-            let buffer = unwrap::buffer(v.buffer);
+        {
+            let mut buffers = BumpVec::with_capacity_in(bindings.len(), &self.arena);
+            let mut offsets = BumpVec::with_capacity_in(bindings.len(), &self.arena);
+            for v in bindings.iter() {
+                let buffer = unwrap::buffer(v.buffer);
 
-            buffers.push(buffer.buffer);
-            offsets.push(v.offset);
+                buffers.push(buffer.buffer);
+                offsets.push(v.offset);
+            }
+
+            self._device.device.cmd_bind_vertex_buffers(
+                self._buffer,
+                first_binding,
+                &buffers,
+                &offsets,
+            );
         }
-
-        self._device
-            .device
-            .cmd_bind_vertex_buffers(self._buffer, first_binding, &buffers, &offsets)
+        self.arena.reset();
     }
 
     unsafe fn bind_index_buffer(
@@ -130,39 +136,47 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
-        let mut new_viewports = BumpVec::with_capacity_in(viewports.len(), &self.arena);
-        for v in viewports {
-            new_viewports.push(
-                vk::Viewport::builder()
-                    .x(v.x)
-                    .y(v.y + v.height)
-                    .width(v.width)
-                    .height(-v.height)
-                    .min_depth(v.min_depth)
-                    .max_depth(v.max_depth)
-                    .build(),
-            );
+        {
+            let mut new_viewports = BumpVec::with_capacity_in(viewports.len(), &self.arena);
+            for v in viewports {
+                new_viewports.push(
+                    vk::Viewport::builder()
+                        .x(v.x)
+                        .y(v.y + v.height)
+                        .width(v.width)
+                        .height(-v.height)
+                        .min_depth(v.min_depth)
+                        .max_depth(v.max_depth)
+                        .build(),
+                );
+            }
+
+            self._device
+                .device
+                .cmd_set_viewport(self._buffer, 0, &new_viewports);
         }
 
-        self._device
-            .device
-            .cmd_set_viewport(self._buffer, 0, &new_viewports)
+        self.arena.reset();
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
-        let mut new_rects = BumpVec::with_capacity_in(rects.len(), &self.arena);
-        for v in rects {
-            let mut rect = vk::Rect2D::builder();
-            rect.offset.x = v.x as i32;
-            rect.offset.y = v.y as i32;
-            rect.extent.width = v.w;
-            rect.extent.height = v.h;
-            new_rects.push(rect.build());
+        {
+            let mut new_rects = BumpVec::with_capacity_in(rects.len(), &self.arena);
+            for v in rects {
+                let mut rect = vk::Rect2D::builder();
+                rect.offset.x = v.x as i32;
+                rect.offset.y = v.y as i32;
+                rect.extent.width = v.w;
+                rect.extent.height = v.h;
+                new_rects.push(rect.build());
+            }
+
+            self._device
+                .device
+                .cmd_set_scissor(self._buffer, 0, &new_rects);
         }
 
-        self._device
-            .device
-            .cmd_set_scissor(self._buffer, 0, &new_rects)
+        self.arena.reset();
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
@@ -190,6 +204,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         } else {
             self.begin_rendering_fallback(info)
         }
+        self.arena.reset();
     }
 
     unsafe fn end_rendering(&mut self) {
@@ -243,22 +258,26 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         first_set: u32,
         sets: &[DescriptorSetHandle],
     ) {
-        let pipeline_layout = unwrap::pipeline_layout(pipeline_layout);
-        let bind_point = pipeline_bind_point_to_vk(bind_point);
+        {
+            let pipeline_layout = unwrap::pipeline_layout(pipeline_layout);
+            let bind_point = pipeline_bind_point_to_vk(bind_point);
 
-        let mut new_sets = BumpVec::with_capacity_in(sets.len(), &self.arena);
-        for v in sets {
-            new_sets.push(std::mem::transmute_copy::<_, vk::DescriptorSet>(v));
+            let mut new_sets = BumpVec::with_capacity_in(sets.len(), &self.arena);
+            for v in sets {
+                new_sets.push(std::mem::transmute_copy::<_, vk::DescriptorSet>(v));
+            }
+
+            self._device.device.cmd_bind_descriptor_sets(
+                self._buffer,
+                bind_point,
+                pipeline_layout.pipeline_layout,
+                first_set,
+                &new_sets,
+                &[],
+            );
         }
 
-        self._device.device.cmd_bind_descriptor_sets(
-            self._buffer,
-            bind_point,
-            pipeline_layout.pipeline_layout,
-            first_set,
-            &new_sets,
-            &[],
-        );
+        self.arena.reset();
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
@@ -280,6 +299,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         } else {
             self.resource_barrier_fallback(global_barriers, buffer_barriers, texture_barriers)
         }
+        self.arena.reset();
     }
 
     unsafe fn copy_buffer_regions(
@@ -288,23 +308,26 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         dst: &dyn IBuffer,
         regions: &[BufferCopyRegion],
     ) {
-        let src = unwrap::buffer(src);
-        let dst = unwrap::buffer(dst);
+        {
+            let src = unwrap::buffer(src);
+            let dst = unwrap::buffer(dst);
 
-        let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
-        for v in regions {
-            new_regions.push(
-                vk::BufferCopy::builder()
-                    .src_offset(v.src_offset)
-                    .dst_offset(v.dst_offset)
-                    .size(v.size)
-                    .build(),
-            );
+            let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
+            for v in regions {
+                new_regions.push(
+                    vk::BufferCopy::builder()
+                        .src_offset(v.src_offset)
+                        .dst_offset(v.dst_offset)
+                        .size(v.size)
+                        .build(),
+                );
+            }
+
+            self._device
+                .device
+                .cmd_copy_buffer(self._buffer, src.buffer, dst.buffer, &new_regions);
         }
-
-        self._device
-            .device
-            .cmd_copy_buffer(self._buffer, src.buffer, dst.buffer, &new_regions)
+        self.arena.reset();
     }
 
     unsafe fn copy_buffer_to_texture(
@@ -314,45 +337,48 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
-        let src = unwrap::buffer(src);
-        let dst = unwrap::texture(dst);
+        {
+            let src = unwrap::buffer(src);
+            let dst = unwrap::texture(dst);
 
-        let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
-        for v in regions {
-            new_regions.push(
-                vk::BufferImageCopy::builder()
-                    .buffer_offset(v.src.offset)
-                    .buffer_row_length(v.src.extent.width)
-                    .buffer_image_height(v.src.extent.height)
-                    .image_subresource(vk::ImageSubresourceLayers {
-                        aspect_mask: texture_copy_aspect_to_vk(v.dst.aspect),
-                        mip_level: v.dst.mip_level,
-                        base_array_layer: v.dst.array_layer,
-                        layer_count: 1,
-                    })
-                    .image_offset(vk::Offset3D {
-                        x: v.dst.origin.x as i32,
-                        y: v.dst.origin.y as i32,
-                        z: v.dst.origin.z as i32,
-                    })
-                    .image_extent(vk::Extent3D {
-                        width: v.dst.extent.width,
-                        height: v.dst.extent.height,
-                        depth: v.dst.extent.depth,
-                    })
-                    .build(),
+            let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
+            for v in regions {
+                new_regions.push(
+                    vk::BufferImageCopy::builder()
+                        .buffer_offset(v.src.offset)
+                        .buffer_row_length(v.src.extent.width)
+                        .buffer_image_height(v.src.extent.height)
+                        .image_subresource(vk::ImageSubresourceLayers {
+                            aspect_mask: texture_copy_aspect_to_vk(v.dst.aspect),
+                            mip_level: v.dst.mip_level,
+                            base_array_layer: v.dst.array_layer,
+                            layer_count: 1,
+                        })
+                        .image_offset(vk::Offset3D {
+                            x: v.dst.origin.x as i32,
+                            y: v.dst.origin.y as i32,
+                            z: v.dst.origin.z as i32,
+                        })
+                        .image_extent(vk::Extent3D {
+                            width: v.dst.extent.width,
+                            height: v.dst.extent.height,
+                            depth: v.dst.extent.depth,
+                        })
+                        .build(),
+                );
+            }
+
+            let layout = image_layout_to_vk(dst_layout);
+
+            self._device.device.cmd_copy_buffer_to_image(
+                self._buffer,
+                src.buffer,
+                dst.image,
+                layout,
+                &new_regions,
             );
         }
-
-        let layout = image_layout_to_vk(dst_layout);
-
-        self._device.device.cmd_copy_buffer_to_image(
-            self._buffer,
-            src.buffer,
-            dst.image,
-            layout,
-            &new_regions,
-        );
+        self.arena.reset();
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
@@ -367,8 +393,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let info = vk::DebugUtilsLabelEXT::builder()
                 .label_name(name_cstr)
                 .color(color);
-            loader.cmd_insert_debug_utils_label(self._buffer, info.deref())
+            loader.cmd_insert_debug_utils_label(self._buffer, info.deref());
         }
+        self.arena.reset();
     }
 
     unsafe fn begin_event(&mut self, color: Color, message: &str) {
@@ -382,8 +409,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let info = vk::DebugUtilsLabelEXT::builder()
                 .label_name(name_cstr)
                 .color(color);
-            loader.cmd_begin_debug_utils_label(self._buffer, info.deref())
+            loader.cmd_begin_debug_utils_label(self._buffer, info.deref());
         }
+        self.arena.reset();
     }
 
     unsafe fn end_event(&mut self) {
@@ -599,7 +627,7 @@ impl<'a> Encoder<'a> {
             &translated_global_barriers,
             &translated_buffer_barriers,
             &translated_texture_barriers,
-        )
+        );
     }
 
     unsafe fn resource_barrier_sync2(
@@ -687,6 +715,6 @@ impl<'a> Encoder<'a> {
             .memory_barriers(&translated_global_barriers)
             .buffer_memory_barriers(&translated_buffer_barriers)
             .image_memory_barriers(&translated_texture_barriers);
-        loader.cmd_pipeline_barrier2(self._buffer, &info)
+        loader.cmd_pipeline_barrier2(self._buffer, &info);
     }
 }
