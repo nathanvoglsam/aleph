@@ -373,19 +373,23 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Features {
             descriptor_binding_update_unused_while_pending: vk::TRUE,
             descriptor_binding_variable_descriptor_count: vk::TRUE,
             runtime_descriptor_array: vk::TRUE,
-            scalar_block_layout: vk::TRUE,
             descriptor_binding_sampled_image_update_after_bind: vk::TRUE,
             descriptor_binding_storage_image_update_after_bind: vk::TRUE,
+            // descriptor_binding_uniform_buffer_update_after_bind: vk::TRUE,
             descriptor_binding_storage_buffer_update_after_bind: vk::TRUE,
             descriptor_binding_uniform_texel_buffer_update_after_bind: vk::TRUE,
             descriptor_binding_storage_texel_buffer_update_after_bind: vk::TRUE,
             shader_sampled_image_array_non_uniform_indexing: vk::TRUE,
+            // shader_uniform_buffer_array_non_uniform_indexing: vk::TRUE,
             // shader_storage_buffer_array_non_uniform_indexing: vk::TRUE,
             shader_storage_image_array_non_uniform_indexing: vk::TRUE,
+            // shader_input_attachment_array_dynamic_indexing: vk::TRUE,
+            // shader_input_attachment_array_non_uniform_indexing: vk::TRUE,
             shader_storage_texel_buffer_array_dynamic_indexing: vk::TRUE,
             shader_uniform_texel_buffer_array_dynamic_indexing: vk::TRUE,
             shader_uniform_texel_buffer_array_non_uniform_indexing: vk::TRUE,
             shader_storage_texel_buffer_array_non_uniform_indexing: vk::TRUE,
+            scalar_block_layout: vk::TRUE,
             shader_int8: vk::TRUE,
             storage_buffer8_bit_access: vk::TRUE,
             uniform_and_storage_buffer8_bit_access: vk::TRUE,
@@ -409,6 +413,296 @@ impl CreateProfile for vk::PhysicalDeviceDynamicRenderingFeatures {
     fn minimum() -> Self {
         Self {
             dynamic_rendering: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceImagelessFramebufferFeaturesKHR {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            imageless_framebuffer: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceDescriptorIndexingFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            descriptor_binding_partially_bound: vk::TRUE,
+            descriptor_binding_update_unused_while_pending: vk::TRUE,
+            descriptor_binding_variable_descriptor_count: vk::TRUE,
+            runtime_descriptor_array: vk::TRUE,
+            descriptor_binding_sampled_image_update_after_bind: vk::TRUE,
+            descriptor_binding_storage_image_update_after_bind: vk::TRUE,
+            // descriptor_binding_uniform_buffer_update_after_bind: vk::TRUE,
+            descriptor_binding_storage_buffer_update_after_bind: vk::TRUE,
+            descriptor_binding_uniform_texel_buffer_update_after_bind: vk::TRUE,
+            descriptor_binding_storage_texel_buffer_update_after_bind: vk::TRUE,
+            shader_sampled_image_array_non_uniform_indexing: vk::TRUE,
+            // shader_uniform_buffer_array_non_uniform_indexing: vk::TRUE,
+            // shader_storage_buffer_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_image_array_non_uniform_indexing: vk::TRUE,
+            // shader_input_attachment_array_dynamic_indexing: vk::TRUE,
+            // shader_input_attachment_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_texel_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_uniform_texel_buffer_array_dynamic_indexing: vk::TRUE,
+            shader_uniform_texel_buffer_array_non_uniform_indexing: vk::TRUE,
+            shader_storage_texel_buffer_array_non_uniform_indexing: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            scalar_block_layout: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            timeline_semaphore: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            buffer_device_address: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            uniform_buffer_standard_layout: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDevice8BitStorageFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            storage_buffer8_bit_access: vk::TRUE,
+            // storage_push_constant8: vk::TRUE,
+            uniform_and_storage_buffer8_bit_access: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceShaderFloat16Int8Features {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // shader_int8: vk::TRUE,
+            // shader_float16: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceHostQueryResetFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            host_query_reset: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceDescriptorIndexingProperties {
+    fn baseline() -> Self {
+        Self {
+            max_update_after_bind_descriptors_in_all_pools: u32::MIN,
+            shader_uniform_buffer_array_non_uniform_indexing_native: vk::FALSE,
+            shader_sampled_image_array_non_uniform_indexing_native: vk::FALSE,
+            shader_storage_buffer_array_non_uniform_indexing_native: vk::FALSE,
+            shader_storage_image_array_non_uniform_indexing_native: vk::FALSE,
+            shader_input_attachment_array_non_uniform_indexing_native: vk::FALSE,
+            robust_buffer_access_update_after_bind: vk::FALSE,
+            quad_divergent_implicit_lod: vk::FALSE,
+            max_per_stage_descriptor_update_after_bind_samplers: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_uniform_buffers: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_storage_buffers: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_sampled_images: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_storage_images: u32::MIN,
+            max_per_stage_descriptor_update_after_bind_input_attachments: u32::MIN,
+            max_per_stage_update_after_bind_resources: u32::MIN,
+            max_descriptor_set_update_after_bind_samplers: u32::MIN,
+            max_descriptor_set_update_after_bind_uniform_buffers: u32::MIN,
+            max_descriptor_set_update_after_bind_uniform_buffers_dynamic: u32::MIN,
+            max_descriptor_set_update_after_bind_storage_buffers: u32::MIN,
+            max_descriptor_set_update_after_bind_storage_buffers_dynamic: u32::MIN,
+            max_descriptor_set_update_after_bind_sampled_images: u32::MIN,
+            max_descriptor_set_update_after_bind_storage_images: u32::MIN,
+            max_descriptor_set_update_after_bind_input_attachments: u32::MIN,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            max_per_stage_descriptor_update_after_bind_samplers: 1024,
+            max_per_stage_descriptor_update_after_bind_uniform_buffers: 12,
+            max_per_stage_descriptor_update_after_bind_storage_buffers: 500_000,
+            max_per_stage_descriptor_update_after_bind_sampled_images: 500_000,
+            max_per_stage_descriptor_update_after_bind_storage_images: 500_000,
+            max_per_stage_descriptor_update_after_bind_input_attachments: 7,
+            max_per_stage_update_after_bind_resources: 500_000,
+            max_descriptor_set_update_after_bind_samplers: 1024,
+            max_descriptor_set_update_after_bind_uniform_buffers: 72,
+            max_descriptor_set_update_after_bind_uniform_buffers_dynamic: 8,
+            max_descriptor_set_update_after_bind_storage_buffers: 500_000,
+            max_descriptor_set_update_after_bind_storage_buffers_dynamic: 4,
+            max_descriptor_set_update_after_bind_sampled_images: 500_000,
+            max_descriptor_set_update_after_bind_storage_images: 500_000,
+            max_descriptor_set_update_after_bind_input_attachments: 7,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceFloatControlsProperties {
+    fn baseline() -> Self {
+        Self {
+            denorm_behavior_independence: vk::ShaderFloatControlsIndependence::NONE,
+            rounding_mode_independence: vk::ShaderFloatControlsIndependence::NONE,
+            shader_signed_zero_inf_nan_preserve_float16: vk::FALSE,
+            shader_signed_zero_inf_nan_preserve_float32: vk::FALSE,
+            shader_signed_zero_inf_nan_preserve_float64: vk::FALSE,
+            shader_denorm_preserve_float16: vk::FALSE,
+            shader_denorm_preserve_float32: vk::FALSE,
+            shader_denorm_preserve_float64: vk::FALSE,
+            shader_denorm_flush_to_zero_float16: vk::FALSE,
+            shader_denorm_flush_to_zero_float32: vk::FALSE,
+            shader_denorm_flush_to_zero_float64: vk::FALSE,
+            shader_rounding_mode_rte_float16: vk::FALSE,
+            shader_rounding_mode_rte_float32: vk::FALSE,
+            shader_rounding_mode_rte_float64: vk::FALSE,
+            shader_rounding_mode_rtz_float16: vk::FALSE,
+            shader_rounding_mode_rtz_float32: vk::FALSE,
+            shader_rounding_mode_rtz_float64: vk::FALSE,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceDepthStencilResolveProperties {
+    fn baseline() -> Self {
+        Self {
+            supported_depth_resolve_modes: Default::default(),
+            supported_stencil_resolve_modes: Default::default(),
+            independent_resolve_none: vk::FALSE,
+            independent_resolve: vk::FALSE,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            supported_depth_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
+            supported_stencil_resolve_modes: vk::ResolveModeFlags::SAMPLE_ZERO,
+            independent_resolve_none: vk::TRUE,
+            independent_resolve: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceTimelineSemaphoreProperties {
+    fn baseline() -> Self {
+        Self {
+            max_timeline_semaphore_value_difference: u64::MIN,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties {
+    fn baseline() -> Self {
+        Self {
+            filter_minmax_single_component_formats: vk::FALSE,
+            filter_minmax_image_component_mapping: vk::FALSE,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceDriverProperties {
+    fn baseline() -> Self {
+        Self {
+            conformance_version: Default::default(),
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
             ..CreateProfile::baseline()
         }
     }
