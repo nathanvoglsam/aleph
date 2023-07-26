@@ -271,6 +271,8 @@ impl IAdapter for Adapter {
                 .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
+        let timeline_semaphore =
+            ash::extensions::khr::TimelineSemaphore::new(&self.context.instance, &device);
         let create_renderpass_2 =
             ash::extensions::khr::CreateRenderPass2::new(&self.context.instance, &device);
 
@@ -312,6 +314,7 @@ impl IAdapter for Adapter {
                 adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device: ManuallyDrop::new(device),
+                timeline_semaphore,
                 create_renderpass_2,
                 dynamic_rendering,
                 swapchain,

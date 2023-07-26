@@ -206,7 +206,7 @@ impl IQueue for Queue {
             let old_last_completed = self.last_completed_index.load(Ordering::Relaxed);
             let new_last_completed = unsafe {
                 device
-                    .device
+                    .timeline_semaphore
                     .get_semaphore_counter_value(self.semaphore)
                     .unwrap()
             };

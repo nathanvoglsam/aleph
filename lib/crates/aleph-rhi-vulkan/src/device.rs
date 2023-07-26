@@ -61,6 +61,7 @@ pub struct Device {
     pub(crate) context: AnyArc<Context>,
     pub(crate) adapter: AnyArc<Adapter>,
     pub(crate) device: ManuallyDrop<ash::Device>,
+    pub(crate) timeline_semaphore: ash::extensions::khr::TimelineSemaphore,
     pub(crate) create_renderpass_2: ash::extensions::khr::CreateRenderPass2,
     pub(crate) dynamic_rendering: Option<ash::extensions::khr::DynamicRendering>,
     pub(crate) swapchain: Option<ash::extensions::khr::Swapchain>,
