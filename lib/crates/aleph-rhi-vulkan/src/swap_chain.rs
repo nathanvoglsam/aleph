@@ -242,6 +242,9 @@ impl SwapChain {
         let images: Vec<_> = images
             .iter()
             .map(|image| {
+                // This shadows swap_create_info to a reference to itself so the new_cyclic move
+                // closure moves the reference and not the object itself
+                let swap_create_info = &swap_create_info;
                 let desc = TextureDesc {
                     width: swap_create_info.image_extent.width,
                     height: swap_create_info.image_extent.height,
@@ -264,6 +267,8 @@ impl SwapChain {
                     _this: v.clone(),
                     _device: self.device.clone(),
                     image: *image,
+                    creation_flags: Default::default(),
+                    created_usage: swap_create_info.image_usage,
                     allocation: None,
                     is_owned: false,
                     views: Default::default(),

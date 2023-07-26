@@ -42,6 +42,8 @@ pub struct Texture {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) image: vk::Image,
+    pub(crate) creation_flags: vk::ImageCreateFlags,
+    pub(crate) created_usage: vk::ImageUsageFlags,
     pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) is_owned: bool,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
@@ -126,6 +128,8 @@ impl Texture {
                 _texture: self._this.clone(),
                 image_view: view,
                 format: texture_format_to_vk(desc.format),
+                creation_flags: self.creation_flags,
+                created_usage: self.created_usage,
             });
             let view_ptr = view.as_ref() as *const RenderTargetView;
 
@@ -203,6 +207,8 @@ pub struct RenderTargetView {
     pub _texture: AnyWeak<Texture>,
     pub image_view: vk::ImageView,
     pub format: vk::Format,
+    pub creation_flags: vk::ImageCreateFlags,
+    pub created_usage: vk::ImageUsageFlags,
 }
 
 impl RenderTargetView {

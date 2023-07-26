@@ -668,6 +668,8 @@ impl IDevice for Device {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             image,
+            creation_flags: create_info.flags,
+            created_usage: create_info.usage,
             allocation: Some(allocation),
             is_owned: true,
             views: Default::default(),
