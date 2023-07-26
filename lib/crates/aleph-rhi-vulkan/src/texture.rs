@@ -129,7 +129,7 @@ impl Texture {
                 image_view: view,
                 format: texture_format_to_vk(desc.format),
                 creation_flags: self.creation_flags,
-                created_usage: self.created_usage,
+                usage,
             });
             let view_ptr = view.as_ref() as *const RenderTargetView;
 
@@ -208,7 +208,7 @@ pub struct RenderTargetView {
     pub image_view: vk::ImageView,
     pub format: vk::Format,
     pub creation_flags: vk::ImageCreateFlags,
-    pub created_usage: vk::ImageUsageFlags,
+    pub usage: vk::ImageUsageFlags,
 }
 
 impl RenderTargetView {
