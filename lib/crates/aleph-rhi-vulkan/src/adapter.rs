@@ -107,8 +107,7 @@ impl Adapter {
         /// The mask of queue requirements for a general queue
         const GENERAL_MASK: vk::QueueFlags = vk::QueueFlags::from_raw(
             vk::QueueFlags::GRAPHICS.as_raw()
-                | vk::QueueFlags::COMPUTE.as_raw()
-                | vk::QueueFlags::TRANSFER.as_raw(),
+                | vk::QueueFlags::COMPUTE.as_raw(),
         );
 
         // For general
@@ -119,7 +118,7 @@ impl Adapter {
     const fn is_async_compute_family(family: &vk::QueueFamilyProperties) -> bool {
         /// The mask of queue requirements for a compute queue
         const COMPUTE_MASK: vk::QueueFlags = vk::QueueFlags::from_raw(
-            vk::QueueFlags::COMPUTE.as_raw() | vk::QueueFlags::TRANSFER.as_raw(),
+            vk::QueueFlags::COMPUTE.as_raw(),
         );
 
         // For async compute we specifically want the non graphics queues so check for
