@@ -604,7 +604,13 @@ impl<'a> Encoder<'a> {
 
             src_stage_mask |=
                 barrier_sync_to_vk(barrier.before_sync, &self.enabled_shader_features);
+            if src_stage_mask.is_empty() {
+                src_stage_mask = vk::PipelineStageFlags::BOTTOM_OF_PIPE;
+            }
             dst_stage_mask |= barrier_sync_to_vk(barrier.after_sync, &self.enabled_shader_features);
+            if dst_stage_mask.is_empty() {
+                dst_stage_mask = vk::PipelineStageFlags::TOP_OF_PIPE;
+            }
             translated_texture_barriers.push(
                 vk::ImageMemoryBarrier::builder()
                     .src_access_mask(barrier_access_to_vk(barrier.before_access))
