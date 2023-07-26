@@ -32,15 +32,26 @@ use std::ffi::{c_char, CStr};
 
 pub struct DeviceInfo {
     pub extensions: Vec<vk::ExtensionProperties>,
-
     pub properties_10: vk::PhysicalDeviceProperties,
     pub properties_11: vk::PhysicalDeviceVulkan11Properties,
-    pub properties_12: vk::PhysicalDeviceVulkan12Properties,
+    pub descriptor_indexing_properties: vk::PhysicalDeviceDescriptorIndexingProperties,
+    pub float_controls_properties: vk::PhysicalDeviceFloatControlsProperties,
+    pub depth_stencil_resolve_properties: vk::PhysicalDeviceDepthStencilResolveProperties,
+    pub timeline_semaphore_properties: vk::PhysicalDeviceTimelineSemaphoreProperties,
+    pub sampler_filter_minmax_properties: vk::PhysicalDeviceSamplerFilterMinmaxProperties,
+    pub driver_properties: vk::PhysicalDeviceDriverProperties,
     pub portability_properties: vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
-
     pub features_10: vk::PhysicalDeviceFeatures,
     pub features_11: vk::PhysicalDeviceVulkan11Features,
-    pub features_12: vk::PhysicalDeviceVulkan12Features,
+    pub descriptor_indexing_features: vk::PhysicalDeviceDescriptorIndexingFeatures,
+    pub imageless_framebuffer_features: vk::PhysicalDeviceImagelessFramebufferFeaturesKHR,
+    pub scalar_block_layout_features: vk::PhysicalDeviceScalarBlockLayoutFeatures,
+    pub timeline_semaphore_features: vk::PhysicalDeviceTimelineSemaphoreFeatures,
+    pub buffer_device_address_features: vk::PhysicalDeviceBufferDeviceAddressFeatures,
+    pub uniform_buffer_standard_layout_features: vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
+    pub t_8bit_storage_features: vk::PhysicalDevice8BitStorageFeatures,
+    pub shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features,
+    pub host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures,
     pub dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR,
     pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
     pub synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR,
@@ -56,14 +67,28 @@ impl DeviceInfo {
         };
 
         let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
-        let mut properties_12 = vk::PhysicalDeviceVulkan12Properties::default();
+        let mut descriptor_indexing_properties =
+            vk::PhysicalDeviceDescriptorIndexingProperties::default();
+        let mut float_controls_properties = vk::PhysicalDeviceFloatControlsProperties::default();
+        let mut depth_stencil_resolve_properties =
+            vk::PhysicalDeviceDepthStencilResolveProperties::default();
+        let mut timeline_semaphore_properties =
+            vk::PhysicalDeviceTimelineSemaphoreProperties::default();
+        let mut sampler_filter_minmax_properties =
+            vk::PhysicalDeviceSamplerFilterMinmaxProperties::default();
+        let mut driver_properties = vk::PhysicalDeviceDriverProperties::default();
         let mut portability_properties =
             vk::PhysicalDevicePortabilitySubsetPropertiesKHR::default();
 
         // Unconditionally required properties
         let mut properties = vk::PhysicalDeviceProperties2::builder()
             .push_next(&mut properties_11)
-            .push_next(&mut properties_12);
+            .push_next(&mut descriptor_indexing_properties)
+            .push_next(&mut float_controls_properties)
+            .push_next(&mut depth_stencil_resolve_properties)
+            .push_next(&mut timeline_semaphore_properties)
+            .push_next(&mut sampler_filter_minmax_properties)
+            .push_next(&mut driver_properties);
 
         // Safety: we assume all the strings vulkan gives us are valid
         unsafe {
@@ -79,7 +104,21 @@ impl DeviceInfo {
         };
 
         let mut features_11 = vk::PhysicalDeviceVulkan11Features::default();
-        let mut features_12 = vk::PhysicalDeviceVulkan12Features::default();
+        let mut descriptor_indexing_features =
+            vk::PhysicalDeviceDescriptorIndexingFeatures::default();
+        let mut imageless_framebuffer_features =
+            vk::PhysicalDeviceImagelessFramebufferFeaturesKHR::default();
+        let mut scalar_block_layout_features =
+            vk::PhysicalDeviceScalarBlockLayoutFeatures::default();
+        let mut timeline_semaphore_features =
+            vk::PhysicalDeviceTimelineSemaphoreFeatures::default();
+        let mut buffer_device_address_features =
+            vk::PhysicalDeviceBufferDeviceAddressFeatures::default();
+        let mut uniform_buffer_standard_layout_features =
+            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures::default();
+        let mut t_8bit_storage_features = vk::PhysicalDevice8BitStorageFeatures::default();
+        let mut shader_float16int8features = vk::PhysicalDeviceShaderFloat16Int8Features::default();
+        let mut host_query_reset_features = vk::PhysicalDeviceHostQueryResetFeatures::default();
         let mut dynamic_rendering_features =
             vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
         let mut portability_features = vk::PhysicalDevicePortabilitySubsetFeaturesKHR::default();
@@ -89,7 +128,15 @@ impl DeviceInfo {
         // Glue all the feature extension structs together into our monster instance
         let mut features = vk::PhysicalDeviceFeatures2::builder()
             .push_next(&mut features_11)
-            .push_next(&mut features_12);
+            .push_next(&mut descriptor_indexing_features)
+            .push_next(&mut imageless_framebuffer_features)
+            .push_next(&mut scalar_block_layout_features)
+            .push_next(&mut timeline_semaphore_features)
+            .push_next(&mut buffer_device_address_features)
+            .push_next(&mut uniform_buffer_standard_layout_features)
+            .push_next(&mut t_8bit_storage_features)
+            .push_next(&mut shader_float16int8features)
+            .push_next(&mut host_query_reset_features);
 
         unsafe {
             if Self::list_contains_extension_cstr(&extensions, vk::KhrDynamicRenderingFn::name()) {
@@ -115,10 +162,23 @@ impl DeviceInfo {
         // Null the p_next chain pointers to avoid leaving the dangling references. They can't be
         // *used* without unsafe but better be careful.
         properties_11.p_next = std::ptr::null_mut();
-        properties_12.p_next = std::ptr::null_mut();
+        descriptor_indexing_properties.p_next = std::ptr::null_mut();
+        float_controls_properties.p_next = std::ptr::null_mut();
+        depth_stencil_resolve_properties.p_next = std::ptr::null_mut();
+        timeline_semaphore_properties.p_next = std::ptr::null_mut();
+        sampler_filter_minmax_properties.p_next = std::ptr::null_mut();
+        driver_properties.p_next = std::ptr::null_mut();
         portability_properties.p_next = std::ptr::null_mut();
         features_11.p_next = std::ptr::null_mut();
-        features_12.p_next = std::ptr::null_mut();
+        descriptor_indexing_features.p_next = std::ptr::null_mut();
+        imageless_framebuffer_features.p_next = std::ptr::null_mut();
+        scalar_block_layout_features.p_next = std::ptr::null_mut();
+        timeline_semaphore_features.p_next = std::ptr::null_mut();
+        buffer_device_address_features.p_next = std::ptr::null_mut();
+        uniform_buffer_standard_layout_features.p_next = std::ptr::null_mut();
+        t_8bit_storage_features.p_next = std::ptr::null_mut();
+        shader_float16int8features.p_next = std::ptr::null_mut();
+        host_query_reset_features.p_next = std::ptr::null_mut();
         dynamic_rendering_features.p_next = std::ptr::null_mut();
         portability_features.p_next = std::ptr::null_mut();
         synchronization_2_features.p_next = std::ptr::null_mut();
@@ -127,14 +187,27 @@ impl DeviceInfo {
             extensions,
             properties_10,
             properties_11,
-            properties_12,
+            descriptor_indexing_properties,
+            float_controls_properties,
+            depth_stencil_resolve_properties,
+            timeline_semaphore_properties,
+            sampler_filter_minmax_properties,
+            driver_properties,
             portability_properties,
             features_10,
             features_11,
-            features_12,
             dynamic_rendering_features,
             portability_features,
             synchronization_2_features,
+            imageless_framebuffer_features,
+            scalar_block_layout_features,
+            timeline_semaphore_features,
+            buffer_device_address_features,
+            uniform_buffer_standard_layout_features,
+            t_8bit_storage_features,
+            shader_float16int8features,
+            descriptor_indexing_features,
+            host_query_reset_features,
         }
     }
 }

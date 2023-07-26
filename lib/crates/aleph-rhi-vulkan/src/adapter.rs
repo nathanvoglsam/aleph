@@ -34,7 +34,7 @@ use crate::internal::profile::CreateProfile;
 use crate::queue::{Queue, QueueInfo};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use aleph_rhi_impl_utils::{cstr_ptr, try_clone_value_into_slot};
 use ash::vk;
 use std::any::TypeId;
 use std::ffi::CStr;
@@ -162,8 +162,30 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        let mut enabled_extensions = Vec::with_capacity(8);
-        enabled_extensions.push(vk::KhrCreateRenderpass2Fn::name().as_ptr());
+        let mut enabled_extensions = Vec::with_capacity(64);
+        enabled_extensions.push(cstr_ptr!("VK_KHR_timeline_semaphore"));
+        enabled_extensions.push(cstr_ptr!("VK_EXT_descriptor_indexing"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_buffer_device_address"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_imageless_framebuffer"));
+        enabled_extensions.push(cstr_ptr!("VK_EXT_host_query_reset"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_uniform_buffer_standard_layout"));
+        enabled_extensions.push(cstr_ptr!("VK_EXT_scalar_block_layout"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_draw_indirect_count"));
+        enabled_extensions.push(cstr_ptr!("VK_EXT_separate_stencil_usage"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_separate_depth_stencil_layouts"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_driver_properties"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_create_renderpass2"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_image_format_list"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_sampler_mirror_clamp_to_edge"));
+        enabled_extensions.push(cstr_ptr!("VK_EXT_sampler_filter_minmax"));
+        enabled_extensions.push(cstr_ptr!("VK_EXT_shader_viewport_index_layer"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_float16_int8"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_float_controls"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_vulkan_memory_model"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_subgroup_extended_types"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_8bit_storage"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_atomic_int64"));
+        enabled_extensions.push(cstr_ptr!("VK_KHR_depth_stencil_resolve"));
 
         let is_supported = |v: &CStr| self.device_info.supports_extension_cstr(v);
         let mut enable_if_supported = |wanted: &CStr| {
@@ -206,18 +228,33 @@ impl IAdapter for Adapter {
 
         let enabled_10_features = vk::PhysicalDeviceFeatures::minimum();
         let mut enabled_11_features = vk::PhysicalDeviceVulkan11Features::minimum();
-        let mut enabled_12_features = vk::PhysicalDeviceVulkan12Features::minimum();
-        let mut dynamic_rendering_features = vk::PhysicalDeviceDynamicRenderingFeatures::minimum();
-        let mut portability_features = self.device_info.portability_features.clone();
-        let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
-
+        let mut descriptor_indexing_features = vk::PhysicalDeviceDescriptorIndexingFeatures::minimum();
+        let mut imageless_framebuffer_features = vk::PhysicalDeviceImagelessFramebufferFeaturesKHR::minimum();
+        let mut scalar_block_layout_features = vk::PhysicalDeviceScalarBlockLayoutFeatures::minimum();
+        let mut timeline_semaphore_features = vk::PhysicalDeviceTimelineSemaphoreFeatures::minimum();
+        let mut buffer_device_address_features = vk::PhysicalDeviceBufferDeviceAddressFeatures::minimum();
+        let mut uniform_buffer_standard_layout_features = vk::PhysicalDeviceUniformBufferStandardLayoutFeatures::minimum();
+        let mut t_8bit_storage_features = vk::PhysicalDevice8BitStorageFeatures::minimum();
+        let mut shader_float16int8features = vk::PhysicalDeviceShaderFloat16Int8Features::minimum();
+        let mut host_query_reset_features = vk::PhysicalDeviceHostQueryResetFeatures::minimum();
         let mut device_create_info = vk::DeviceCreateInfo::builder()
             .push_next(&mut enabled_11_features)
-            .push_next(&mut enabled_12_features)
+            .push_next(&mut descriptor_indexing_features)
+            .push_next(&mut imageless_framebuffer_features)
+            .push_next(&mut scalar_block_layout_features)
+            .push_next(&mut timeline_semaphore_features)
+            .push_next(&mut buffer_device_address_features)
+            .push_next(&mut uniform_buffer_standard_layout_features)
+            .push_next(&mut t_8bit_storage_features)
+            .push_next(&mut shader_float16int8features)
+            .push_next(&mut host_query_reset_features)
             .enabled_features(&enabled_10_features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
 
+        let mut dynamic_rendering_features = vk::PhysicalDeviceDynamicRenderingFeatures::minimum();
+        let mut portability_features = self.device_info.portability_features.clone();
+        let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
         if is_supported(vk::KhrDynamicRenderingFn::name()) {
             device_create_info = device_create_info.push_next(&mut dynamic_rendering_features)
         }

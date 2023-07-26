@@ -28,11 +28,23 @@
 //
 
 use ash::vk;
+use crate::internal::profile::CreateProfile;
 
 pub trait CheckMeetsProfile {
     fn meets_profile(&self, v: &Self) -> Option<()>;
 
     fn merge(&mut self, v: &Self);
+}
+
+pub trait CheckMeetsMinimum {
+    fn meets_minimum(&self) -> Option<()>;
+}
+
+impl<T: CheckMeetsProfile + CreateProfile> CheckMeetsMinimum for T {
+    fn meets_minimum(&self) -> Option<()> {
+        let other = Self::minimum();
+        self.meets_profile(&other)
+    }
 }
 
 macro_rules! delegate {

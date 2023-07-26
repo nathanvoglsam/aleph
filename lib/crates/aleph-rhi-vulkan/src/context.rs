@@ -29,7 +29,7 @@
 
 use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
-use crate::internal::features::CheckMeetsProfile;
+use crate::internal::features::{CheckMeetsMinimum, CheckMeetsProfile};
 use crate::internal::profile::CreateProfile;
 use crate::internal::unwrap;
 use crate::surface::Surface;
@@ -85,8 +85,8 @@ impl Context {
                 continue;
             }
 
-            if vk::api_version_minor(device_info.properties_10.api_version) < 2 {
-                log::trace!("Device does not support Vulkan 1.2");
+            if vk::api_version_minor(device_info.properties_10.api_version) < 1 {
+                log::trace!("Device does not support Vulkan 1.1");
             }
 
             // Check if the physical device supports the requested surface
@@ -146,15 +146,15 @@ impl Context {
             // Log additional driver information if available
             let v = device_info.properties_10.api_version;
             if vk::api_version_major(v) >= 1 && vk::api_version_minor(v) >= 2 {
-                let driver_name = CStr::from_ptr(device_info.properties_12.driver_name.as_ptr())
+                let driver_name = CStr::from_ptr(device_info.driver_properties.driver_name.as_ptr())
                     .to_str()
                     .unwrap();
-                let driver_info = CStr::from_ptr(device_info.properties_12.driver_info.as_ptr())
+                let driver_info = CStr::from_ptr(device_info.driver_properties.driver_info.as_ptr())
                     .to_str()
                     .unwrap();
 
                 log::trace!("Driver         : {driver_name}");
-                log::trace!("Driver ID      : {:?}", device_info.properties_12.driver_id);
+                log::trace!("Driver ID      : {:?}", device_info.driver_properties.driver_id);
                 log::trace!("Driver Info    : {driver_info}");
             }
 
@@ -286,11 +286,24 @@ impl Context {
             // extensions,
             properties_10,
             properties_11,
-            properties_12,
+            descriptor_indexing_properties,
+            float_controls_properties,
+            depth_stencil_resolve_properties,
+            timeline_semaphore_properties,
+            sampler_filter_minmax_properties,
+            driver_properties,
             // portability_properties,
             features_10,
             features_11,
-            features_12,
+            descriptor_indexing_features,
+            imageless_framebuffer_features,
+            scalar_block_layout_features,
+            timeline_semaphore_features,
+            buffer_device_address_features,
+            uniform_buffer_standard_layout_features,
+            t_8bit_storage_features,
+            shader_float16int8features,
+            host_query_reset_features,
             // dynamic_rendering_features,
             // portability_features,
             ..
@@ -321,7 +334,29 @@ impl Context {
                 }};
             }
 
-            check_for_extension_vk!(vk::KhrCreateRenderpass2Fn::name());
+            check_for_extension!("VK_KHR_timeline_semaphore");
+            check_for_extension!("VK_EXT_descriptor_indexing");
+            check_for_extension!("VK_KHR_buffer_device_address");
+            check_for_extension!("VK_KHR_imageless_framebuffer");
+            check_for_extension!("VK_EXT_host_query_reset");
+            check_for_extension!("VK_KHR_uniform_buffer_standard_layout");
+            check_for_extension!("VK_EXT_scalar_block_layout");
+            check_for_extension!("VK_KHR_draw_indirect_count");
+            check_for_extension!("VK_EXT_separate_stencil_usage");
+            check_for_extension!("VK_KHR_separate_depth_stencil_layouts");
+            check_for_extension!("VK_KHR_driver_properties");
+            check_for_extension!("VK_KHR_create_renderpass2");
+            check_for_extension!("VK_KHR_image_format_list");
+            check_for_extension!("VK_KHR_sampler_mirror_clamp_to_edge");
+            check_for_extension!("VK_EXT_sampler_filter_minmax");
+            check_for_extension!("VK_EXT_shader_viewport_index_layer");
+            check_for_extension!("VK_KHR_shader_float16_int8");
+            check_for_extension!("VK_KHR_shader_float_controls");
+            check_for_extension!("VK_KHR_vulkan_memory_model");
+            check_for_extension!("VK_KHR_shader_subgroup_extended_types");
+            check_for_extension!("VK_KHR_8bit_storage");
+            check_for_extension!("VK_KHR_shader_atomic_int64");
+            check_for_extension!("VK_KHR_depth_stencil_resolve");
 
             // Check we meet requirements for store op none. Check for the three extensions that
             // provide it, failing only if none of them are available.
@@ -344,21 +379,26 @@ impl Context {
                 check_for_extension_vk!(vk::KhrPortabilitySubsetFn::name());
             }
 
-            let wanted_properties_10 = vk::PhysicalDeviceProperties::minimum();
-            let wanted_properties_11 = vk::PhysicalDeviceVulkan11Properties::minimum();
-            let wanted_properties_12 = vk::PhysicalDeviceVulkan12Properties::minimum();
+            properties_10.meets_minimum()?;
+            properties_11.meets_minimum()?;
+            descriptor_indexing_properties.meets_minimum()?;
+            float_controls_properties.meets_minimum()?;
+            depth_stencil_resolve_properties.meets_minimum()?;
+            timeline_semaphore_properties.meets_minimum()?;
+            sampler_filter_minmax_properties.meets_minimum()?;
+            driver_properties.meets_minimum()?;
 
-            properties_10.meets_profile(&wanted_properties_10)?;
-            properties_11.meets_profile(&wanted_properties_11)?;
-            properties_12.meets_profile(&wanted_properties_12)?;
-
-            let wanted_features_10 = vk::PhysicalDeviceFeatures::minimum();
-            let wanted_features_11 = vk::PhysicalDeviceVulkan11Features::minimum();
-            let wanted_features_12 = vk::PhysicalDeviceVulkan12Features::minimum();
-
-            features_10.meets_profile(&wanted_features_10)?;
-            features_11.meets_profile(&wanted_features_11)?;
-            features_12.meets_profile(&wanted_features_12)?;
+            features_10.meets_minimum()?;
+            features_11.meets_minimum()?;
+            descriptor_indexing_features.meets_minimum()?;
+            imageless_framebuffer_features.meets_minimum()?;
+            scalar_block_layout_features.meets_minimum()?;
+            timeline_semaphore_features.meets_minimum()?;
+            buffer_device_address_features.meets_minimum()?;
+            uniform_buffer_standard_layout_features.meets_minimum()?;
+            t_8bit_storage_features.meets_minimum()?;
+            shader_float16int8features.meets_minimum()?;
+            host_query_reset_features.meets_minimum()?;
 
             Some(())
         }
