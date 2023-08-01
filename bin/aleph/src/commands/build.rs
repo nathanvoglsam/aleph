@@ -312,7 +312,11 @@ fn base_uwp_build(target: &Target, package: &str) -> std::io::Result<Command> {
     // cargo +nightly-msvc build -Z build-std=std,panic_abort --target={arch}-uwp-windows-msvc --package {package} --bin
     let mut cmd = Command::new("rustup");
     cmd.arg("run");
-    cmd.arg("nightly-msvc");
+    if cfg!(windows) {
+        cmd.arg("nightly-msvc");
+    } else {
+        cmd.arg("nightly");
+    }
     cmd.arg("cargo");
     cmd.arg("build");
     cmd.arg("-Z");
@@ -390,7 +394,11 @@ fn base_native_build(package: &str) -> std::io::Result<Command> {
     // cargo build --package aleph-test --bin
     let mut cmd = Command::new("rustup");
     cmd.arg("run");
-    cmd.arg("stable-msvc");
+    if cfg!(windows) {
+        cmd.arg("stable-msvc");
+    } else {
+        cmd.arg("stable");
+    }
     cmd.arg("cargo");
     cmd.arg("build");
     cmd.arg("--package");
