@@ -213,9 +213,11 @@ impl IAdapter for Adapter {
             }
         }
         enable_if_supported(vk::KhrSwapchainFn::name());
-        enable_if_supported(vk::KhrSynchronization2Fn::name());
         enable_if_supported(vk::KhrPortabilitySubsetFn::name());
 
+        if !self.context.config.deny_sync_2 {
+            enable_if_supported(vk::KhrSynchronization2Fn::name());
+        }
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
             self.context
@@ -276,12 +278,18 @@ impl IAdapter for Adapter {
         let create_renderpass_2 =
             ash::extensions::khr::CreateRenderPass2::new(&self.context.instance, &device);
 
-        let dynamic_rendering = if is_supported(vk::KhrDynamicRenderingFn::name()) {
+        let deny_dynamic_rendering = self.context.config.deny_dynamic_rendering;
+        let have_dynamic_rendering =
+            is_supported(vk::KhrDynamicRenderingFn::name()) && !deny_dynamic_rendering;
+        let dynamic_rendering = if have_dynamic_rendering {
             Some(ash::extensions::khr::DynamicRendering::new(
                 &self.context.instance,
                 &device,
             ))
         } else {
+            if deny_dynamic_rendering {
+                log::warn!("VK_KHR_dynamic_rendering begin/end rendering path has been disabled");
+            }
             None
         };
 
@@ -294,7 +302,9 @@ impl IAdapter for Adapter {
             None
         };
 
-        let synchronization_2 = if is_supported(vk::KhrSynchronization2Fn::name()) {
+        let have_sync_2 =
+            is_supported(vk::KhrSynchronization2Fn::name()) && !self.context.config.deny_sync_2;
+        let synchronization_2 = if have_sync_2 {
             Some(ash::extensions::khr::Synchronization2::new(
                 &self.context.instance,
                 &device,

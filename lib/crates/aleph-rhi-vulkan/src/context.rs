@@ -33,6 +33,7 @@ use crate::internal::features::{CheckMeetsMinimum, CheckMeetsProfile};
 use crate::internal::profile::CreateProfile;
 use crate::internal::unwrap;
 use crate::surface::Surface;
+use crate::ContextConfig;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
@@ -44,6 +45,7 @@ use std::mem::ManuallyDrop;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
+    pub config: ContextConfig,
     pub library: ManuallyDrop<libloading::Library>,
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,

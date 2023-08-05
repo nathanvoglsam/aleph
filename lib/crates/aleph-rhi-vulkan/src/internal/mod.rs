@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod config;
 pub mod conv;
 pub mod device_info;
 pub mod features;

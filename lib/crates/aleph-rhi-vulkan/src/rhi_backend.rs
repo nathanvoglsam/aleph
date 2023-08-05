@@ -85,6 +85,7 @@ impl IRhiBackend for RhiBackend {
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     _this: v.clone(),
+                    config: Default::default(),
                     library: ManuallyDrop::new(library),
                     entry_loader: ManuallyDrop::new(entry),
                     instance: ManuallyDrop::new(instance),
