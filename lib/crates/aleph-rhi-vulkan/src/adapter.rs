@@ -218,6 +218,7 @@ impl IAdapter for Adapter {
         if !self.context.config.deny_sync_2 {
             enable_if_supported(vk::KhrSynchronization2Fn::name());
         }
+
         // Find our general, async compute and transfer queue families
         let queue_families = unsafe {
             self.context
@@ -227,19 +228,23 @@ impl IAdapter for Adapter {
         let found_families = Adapter::get_queue_families(&queue_families);
         let queue_create_infos = found_families.build_create_info_list();
 
-        let enabled_10_features = vk::PhysicalDeviceFeatures::minimum();
-        let mut enabled_11_features = vk::PhysicalDeviceVulkan11Features::minimum();
-        let mut descriptor_indexing_features = vk::PhysicalDeviceDescriptorIndexingFeatures::minimum();
-        let mut imageless_framebuffer_features = vk::PhysicalDeviceImagelessFramebufferFeaturesKHR::minimum();
-        let mut scalar_block_layout_features = vk::PhysicalDeviceScalarBlockLayoutFeatures::minimum();
-        let mut timeline_semaphore_features = vk::PhysicalDeviceTimelineSemaphoreFeatures::minimum();
-        let mut buffer_device_address_features = vk::PhysicalDeviceBufferDeviceAddressFeatures::minimum();
-        let mut uniform_buffer_standard_layout_features = vk::PhysicalDeviceUniformBufferStandardLayoutFeatures::minimum();
-        let mut t_8bit_storage_features = vk::PhysicalDevice8BitStorageFeatures::minimum();
-        let mut shader_float16int8features = vk::PhysicalDeviceShaderFloat16Int8Features::minimum();
-        let mut host_query_reset_features = vk::PhysicalDeviceHostQueryResetFeatures::minimum();
+        let DeviceInfo {
+            features_10,
+            mut features_11,
+            mut descriptor_indexing_features,
+            mut imageless_framebuffer_features,
+            mut scalar_block_layout_features,
+            mut timeline_semaphore_features,
+            mut buffer_device_address_features,
+            mut uniform_buffer_standard_layout_features,
+            mut t_8bit_storage_features,
+            mut shader_float16int8features,
+            mut host_query_reset_features,
+            mut dynamic_rendering_features,
+            ..
+        } = DeviceInfo::minimum();
         let mut device_create_info = vk::DeviceCreateInfo::builder()
-            .push_next(&mut enabled_11_features)
+            .push_next(&mut features_11)
             .push_next(&mut descriptor_indexing_features)
             .push_next(&mut imageless_framebuffer_features)
             .push_next(&mut scalar_block_layout_features)
@@ -249,11 +254,10 @@ impl IAdapter for Adapter {
             .push_next(&mut t_8bit_storage_features)
             .push_next(&mut shader_float16int8features)
             .push_next(&mut host_query_reset_features)
-            .enabled_features(&enabled_10_features)
+            .enabled_features(&features_10)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
 
-        let mut dynamic_rendering_features = vk::PhysicalDeviceDynamicRenderingFeatures::minimum();
         let mut portability_features = self.device_info.portability_features.clone();
         let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
         if is_supported(vk::KhrDynamicRenderingFn::name()) {
