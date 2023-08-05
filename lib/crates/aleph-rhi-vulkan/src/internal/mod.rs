@@ -37,3 +37,11 @@ pub mod profile;
 pub mod queue_present_support;
 pub mod set_name;
 pub mod unwrap;
+
+pub unsafe fn slice_from_ptr_len_vk<'a, T>(ptr: *const T, len: u32) -> &'a [T] {
+    if ptr.is_null() {
+        &[]
+    } else {
+        std::slice::from_raw_parts(ptr, len as usize)
+    }
+}
