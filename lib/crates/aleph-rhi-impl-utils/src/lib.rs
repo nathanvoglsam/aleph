@@ -34,6 +34,7 @@ pub extern crate aleph_any;
 pub extern crate aleph_rhi_api;
 
 use std::any::TypeId;
+use std::ffi::{c_char, CStr};
 
 pub mod bump_cell;
 pub mod conv;
@@ -54,4 +55,9 @@ pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
     } else {
         None
     }
+}
+
+#[inline(always)]
+pub unsafe fn str_from_ptr<'a>(v: *const c_char) -> &'a str {
+    CStr::from_ptr(v).to_str().unwrap()
 }
