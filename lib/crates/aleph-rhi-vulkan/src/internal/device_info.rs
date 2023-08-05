@@ -31,6 +31,7 @@ use crate::internal::profile::CreateProfile;
 use ash::vk;
 use std::ffi::{c_char, CStr};
 
+#[rustfmt::skip]
 pub struct DeviceInfo {
     pub extensions: Vec<vk::ExtensionProperties>,
     pub properties_10: vk::PhysicalDeviceProperties,
@@ -97,19 +98,14 @@ impl DeviceInfo {
                 .to_vec()
         };
 
-        let mut properties_11 = vk::PhysicalDeviceVulkan11Properties::default();
-        let mut descriptor_indexing_properties =
-            vk::PhysicalDeviceDescriptorIndexingProperties::default();
-        let mut float_controls_properties = vk::PhysicalDeviceFloatControlsProperties::default();
-        let mut depth_stencil_resolve_properties =
-            vk::PhysicalDeviceDepthStencilResolveProperties::default();
-        let mut timeline_semaphore_properties =
-            vk::PhysicalDeviceTimelineSemaphoreProperties::default();
-        let mut sampler_filter_minmax_properties =
-            vk::PhysicalDeviceSamplerFilterMinmaxProperties::default();
-        let mut driver_properties = vk::PhysicalDeviceDriverProperties::default();
-        let mut portability_properties =
-            vk::PhysicalDevicePortabilitySubsetPropertiesKHR::default();
+        let mut properties_11: vk::PhysicalDeviceVulkan11Properties = Default::default();
+        let mut descriptor_indexing_properties: vk::PhysicalDeviceDescriptorIndexingProperties = Default::default();
+        let mut float_controls_properties: vk::PhysicalDeviceFloatControlsProperties = Default::default();
+        let mut depth_stencil_resolve_properties: vk::PhysicalDeviceDepthStencilResolveProperties = Default::default();
+        let mut timeline_semaphore_properties: vk::PhysicalDeviceTimelineSemaphoreProperties = Default::default();
+        let mut sampler_filter_minmax_properties: vk::PhysicalDeviceSamplerFilterMinmaxProperties = Default::default();
+        let mut driver_properties: vk::PhysicalDeviceDriverProperties = Default::default();
+        let mut portability_properties: vk::PhysicalDevicePortabilitySubsetPropertiesKHR = Default::default();
 
         // Unconditionally required properties
         let mut properties = vk::PhysicalDeviceProperties2::builder()
@@ -134,27 +130,19 @@ impl DeviceInfo {
             properties.properties
         };
 
-        let mut features_11 = vk::PhysicalDeviceVulkan11Features::default();
-        let mut descriptor_indexing_features =
-            vk::PhysicalDeviceDescriptorIndexingFeatures::default();
-        let mut imageless_framebuffer_features =
-            vk::PhysicalDeviceImagelessFramebufferFeaturesKHR::default();
-        let mut scalar_block_layout_features =
-            vk::PhysicalDeviceScalarBlockLayoutFeatures::default();
-        let mut timeline_semaphore_features =
-            vk::PhysicalDeviceTimelineSemaphoreFeatures::default();
-        let mut buffer_device_address_features =
-            vk::PhysicalDeviceBufferDeviceAddressFeatures::default();
-        let mut uniform_buffer_standard_layout_features =
-            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures::default();
-        let mut t_8bit_storage_features = vk::PhysicalDevice8BitStorageFeatures::default();
-        let mut shader_float16int8features = vk::PhysicalDeviceShaderFloat16Int8Features::default();
-        let mut host_query_reset_features = vk::PhysicalDeviceHostQueryResetFeatures::default();
-        let mut dynamic_rendering_features =
-            vk::PhysicalDeviceDynamicRenderingFeaturesKHR::default();
-        let mut portability_features = vk::PhysicalDevicePortabilitySubsetFeaturesKHR::default();
-        let mut synchronization_2_features =
-            vk::PhysicalDeviceSynchronization2FeaturesKHR::default();
+        let mut features_11: vk::PhysicalDeviceVulkan11Features = Default::default();
+        let mut descriptor_indexing_features: vk::PhysicalDeviceDescriptorIndexingFeatures = Default::default();
+        let mut imageless_framebuffer_features: vk::PhysicalDeviceImagelessFramebufferFeaturesKHR = Default::default();
+        let mut scalar_block_layout_features: vk::PhysicalDeviceScalarBlockLayoutFeatures = Default::default();
+        let mut timeline_semaphore_features: vk::PhysicalDeviceTimelineSemaphoreFeatures = Default::default();
+        let mut buffer_device_address_features: vk::PhysicalDeviceBufferDeviceAddressFeatures = Default::default();
+        let mut uniform_buffer_standard_layout_features: vk::PhysicalDeviceUniformBufferStandardLayoutFeatures = Default::default();
+        let mut t_8bit_storage_features: vk::PhysicalDevice8BitStorageFeatures = Default::default();
+        let mut shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features = Default::default();
+        let mut host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures = Default::default();
+        let mut dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR = Default::default();
+        let mut portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR = Default::default();
+        let mut synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR = Default::default();
 
         // Glue all the feature extension structs together into our monster instance
         let mut features = vk::PhysicalDeviceFeatures2::builder()
