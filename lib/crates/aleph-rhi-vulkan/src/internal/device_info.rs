@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::internal::profile::CreateProfile;
 use ash::vk;
 use std::ffi::{c_char, CStr};
 
@@ -58,6 +59,36 @@ pub struct DeviceInfo {
 }
 
 impl DeviceInfo {
+    pub fn minimum() -> Self {
+        Self {
+            extensions: vec![],
+            properties_10: CreateProfile::minimum(),
+            properties_11: CreateProfile::minimum(),
+            descriptor_indexing_properties: CreateProfile::minimum(),
+            float_controls_properties: CreateProfile::minimum(),
+            depth_stencil_resolve_properties: CreateProfile::minimum(),
+            timeline_semaphore_properties: CreateProfile::minimum(),
+            sampler_filter_minmax_properties: CreateProfile::minimum(),
+            driver_properties: CreateProfile::minimum(),
+            portability_properties: Default::default(),
+            features_10: CreateProfile::minimum(),
+            features_11: CreateProfile::minimum(),
+            descriptor_indexing_features: CreateProfile::minimum(),
+            imageless_framebuffer_features: CreateProfile::minimum(),
+            scalar_block_layout_features: CreateProfile::minimum(),
+            timeline_semaphore_features: CreateProfile::minimum(),
+            buffer_device_address_features: CreateProfile::minimum(),
+            uniform_buffer_standard_layout_features: CreateProfile::minimum(),
+            t_8bit_storage_features: CreateProfile::minimum(),
+            shader_float16int8features: CreateProfile::minimum(),
+            host_query_reset_features: CreateProfile::minimum(),
+            dynamic_rendering_features: CreateProfile::minimum(),
+            portability_features: Default::default(),
+            synchronization_2_features: Default::default(),
+        }
+    }
+
+    #[rustfmt::skip]
     pub fn load(instance: &ash::Instance, physical_device: vk::PhysicalDevice) -> DeviceInfo {
         let extensions = unsafe {
             instance
