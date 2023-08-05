@@ -29,14 +29,14 @@
 
 use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
-use crate::internal::features::{CheckMeetsMinimum, CheckMeetsProfile};
-use crate::internal::profile::CreateProfile;
+use crate::internal::features::CheckMeetsMinimum;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use crate::ContextConfig;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
+use aleph_rhi_impl_utils::str_from_ptr;
 use ash::vk;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::any::TypeId;
@@ -111,12 +111,8 @@ impl Context {
             };
 
             let vendor = pci_id_to_vendor(device_info.properties_10.vendor_id);
-            let name = unsafe {
-                CStr::from_ptr(device_info.properties_10.device_name.as_ptr())
-                    .to_str()
-                    .unwrap()
-                    .to_owned()
-            };
+            let name =
+                unsafe { str_from_ptr(device_info.properties_10.device_name.as_ptr()).to_owned() };
             scores.push((name, vendor, physical_device, score));
         }
 
@@ -136,9 +132,7 @@ impl Context {
     pub fn log_device_info(device_info: &DeviceInfo) {
         unsafe {
             let vendor = pci_id_to_vendor(device_info.properties_10.vendor_id);
-            let name = CStr::from_ptr(device_info.properties_10.device_name.as_ptr())
-                .to_str()
-                .unwrap();
+            let name = str_from_ptr(device_info.properties_10.device_name.as_ptr());
 
             log::trace!("=====================");
             log::trace!("Considering Device: ");
@@ -148,15 +142,12 @@ impl Context {
             // Log additional driver information if available
             let v = device_info.properties_10.api_version;
             if vk::api_version_major(v) >= 1 && vk::api_version_minor(v) >= 2 {
-                let driver_name = CStr::from_ptr(device_info.driver_properties.driver_name.as_ptr())
-                    .to_str()
-                    .unwrap();
-                let driver_info = CStr::from_ptr(device_info.driver_properties.driver_info.as_ptr())
-                    .to_str()
-                    .unwrap();
+                let driver_name = str_from_ptr(device_info.driver_properties.driver_name.as_ptr());
+                let driver_info = str_from_ptr(device_info.driver_properties.driver_info.as_ptr());
+                let driver_id = device_info.driver_properties.driver_id;
 
                 log::trace!("Driver         : {driver_name}");
-                log::trace!("Driver ID      : {:?}", device_info.driver_properties.driver_id);
+                log::trace!("Driver ID      : {driver_id:?}");
                 log::trace!("Driver Info    : {driver_info}");
             }
 
