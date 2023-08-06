@@ -30,7 +30,6 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::device_info::DeviceInfo;
-use crate::internal::profile::CreateProfile;
 use crate::queue::{Queue, QueueInfo};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -337,6 +336,7 @@ impl IAdapter for Adapter {
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,
+                render_pass_cache: Default::default(),
             };
 
             unsafe { found_families.build_queue_objects(&mut device) };

@@ -29,6 +29,7 @@
 
 use crate::device::Device;
 use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
+use crate::internal::framebuffer_cache::FramebufferCache;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -43,12 +44,13 @@ pub struct Texture {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) image: vk::Image,
     pub(crate) creation_flags: vk::ImageCreateFlags,
-    pub(crate) created_usage: vk::ImageUsageFlags,
+    // pub(crate) created_usage: vk::ImageUsageFlags,
     pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) is_owned: bool,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, Box<RenderTargetView>>>,
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, Box<RenderTargetView>>>,
+    pub(crate) framebuffers: Mutex<FramebufferCache>,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -175,6 +177,14 @@ impl Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
+            // Destroy all the framebuffers in the framebuffer cache.
+            //
+            // This is okay as it's the user's responsibility to guarantee that the images live as
+            // long as they are in use on the GPU timeline. Destroying this image, and the
+            // framebuffers at the correct time is something the user must already be handling so
+            // it's okay to destroy these here too.
+            self.framebuffers.get_mut().destroy(&self._device.device);
+
             for (_desc, view) in self.views.get_mut().drain() {
                 self._device.device.destroy_image_view(view, None);
             }

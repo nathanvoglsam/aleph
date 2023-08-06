@@ -31,6 +31,7 @@ use crate::command_list::CommandList;
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::*;
+use crate::internal::framebuffer_cache_key::{FramebufferCacheKey, FramebufferCacheKeyItem};
 use crate::internal::unwrap;
 use crate::pipeline::GraphicsPipeline;
 use crate::texture::RenderTargetView;
@@ -423,6 +424,135 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
 impl<'a> Encoder<'a> {
     unsafe fn begin_rendering_fallback(&mut self, info: &BeginRenderingInfo) {
+        // Allocate an array for a reasonable upper bound for number of render pass attachments
+        //
+        // If it becomes a problem just increase the limit. This gets indexed by attachment number
+        // in the driver.
+        let mut clear_values = [vk::ClearValue::default(); 16];
+
+        // Number of attachments is number of color attachments + 1 if we have a depth attachment
+        let num_attachments =
+            info.color_attachments.len() + info.depth_stencil_attachment.map(|_| 1).unwrap_or(0);
+
+        let mut attachments = Vec::with_capacity(num_attachments);
+        let mut views = Vec::with_capacity(num_attachments);
+
+        let first_target = info
+            .color_attachments
+            .first()
+            .map(|v| {
+                let v = &*RenderTargetView::from_view(v.image_view);
+                v._texture.upgrade().unwrap()
+            })
+            .unwrap_or_else(|| {
+                let v = info.depth_stencil_attachment.unwrap();
+                let v = &*RenderTargetView::from_view(v.image_view);
+                v._texture.upgrade().unwrap()
+            });
+
+        let mut attachment_index = 0;
+        for v in info.color_attachments.iter() {
+            let view = &*RenderTargetView::from_view(v.image_view);
+
+            match &v.load_op {
+                AttachmentLoadOp::Clear(v) => {
+                    clear_values[attachment_index].color = color_clear_to_vk(v)
+                }
+                AttachmentLoadOp::Load | AttachmentLoadOp::DontCare | AttachmentLoadOp::None => {}
+            }
+
+            views.push(view.image_view);
+
+            attachments.push(FramebufferCacheKeyItem {
+                format: view.format,
+                creation_flags: view.creation_flags,
+                usage: view.usage,
+            });
+
+            attachment_index += 1;
+        }
+
+        if let Some(v) = info.depth_stencil_attachment {
+            let view = &*RenderTargetView::from_view(v.image_view);
+
+            match &v.depth_load_op {
+                AttachmentLoadOp::Clear(v) => {
+                    let v = depth_stencil_clear_to_vk(*v);
+                    clear_values[attachment_index].depth_stencil.depth = v.depth;
+                }
+                AttachmentLoadOp::Load | AttachmentLoadOp::DontCare | AttachmentLoadOp::None => {}
+            }
+
+            match &v.stencil_load_op {
+                AttachmentLoadOp::Clear(v) => {
+                    let v = depth_stencil_clear_to_vk(*v);
+                    clear_values[attachment_index].depth_stencil.stencil = v.stencil;
+                }
+                AttachmentLoadOp::Load | AttachmentLoadOp::DontCare | AttachmentLoadOp::None => {}
+            }
+
+            views.push(view.image_view);
+
+            attachments.push(FramebufferCacheKeyItem {
+                format: view.format,
+                creation_flags: view.creation_flags,
+                usage: view.usage,
+            });
+        }
+
+        let render_pass = {
+            let mut render_pass_cache = self._device.render_pass_cache.lock();
+            render_pass_cache
+                .get_render_pass_for_begin_rendering(&self._device, info, &self.arena)
+                .unwrap()
+        };
+
+        // Lookup a framebuffer (or create a new one) on the cache on the first target in the
+        // begin_rendering info.
+        let framebuffer = {
+            let mut cache = first_target.framebuffers.lock();
+            cache
+                .get_render_pass_for_key(
+                    &self._device,
+                    &FramebufferCacheKey {
+                        layer_count: info.layer_count,
+                        attachments: &attachments,
+                    },
+                    first_target.desc.width,
+                    first_target.desc.height,
+                    render_pass,
+                )
+                .unwrap()
+        };
+
+        // Select the width/height of the first attachment we find. We require that all attachments
+        // are the same size in the API so we only need to grab the size for one of them and assume
+        // the rest are the same size.
+        //
+        // The validation layer should catch this.
+        let render_extent = {
+            vk::Extent2D {
+                width: info.extent.width,
+                height: info.extent.height,
+            }
+        };
+
+        let mut attachment_info = vk::RenderPassAttachmentBeginInfo::builder().attachments(&views);
+        let info = vk::RenderPassBeginInfo::builder()
+            .render_pass(render_pass)
+            .framebuffer(framebuffer)
+            .render_area(vk::Rect2D {
+                offset: vk::Offset2D::default(),
+                extent: render_extent,
+            })
+            .clear_values(&clear_values[0..num_attachments])
+            .push_next(&mut attachment_info);
+
+        self._device.create_renderpass_2.cmd_begin_render_pass2(
+            self._buffer,
+            &info,
+            &vk::SubpassBeginInfo::default(),
+        );
     }
 
     unsafe fn begin_rendering_dynamic(&mut self, info: &BeginRenderingInfo) {
@@ -526,6 +656,10 @@ impl<'a> Encoder<'a> {
     }
 
     unsafe fn end_rendering_fallback(&mut self) {
+        let subpass_info = vk::SubpassEndInfo::default();
+        self._device
+            .create_renderpass_2
+            .cmd_end_render_pass2(self._buffer, &subpass_info);
     }
 
     unsafe fn end_rendering_dynamic(&mut self) {
