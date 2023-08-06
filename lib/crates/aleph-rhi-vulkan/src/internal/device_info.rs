@@ -54,6 +54,7 @@ pub struct DeviceInfo {
     pub t_8bit_storage_features: vk::PhysicalDevice8BitStorageFeatures,
     pub shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features,
     pub host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures,
+    pub shader_atomic_int_64_features: vk::PhysicalDeviceShaderAtomicInt64Features,
     pub dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR,
     pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
     pub synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR,
@@ -83,6 +84,7 @@ impl DeviceInfo {
             t_8bit_storage_features: CreateProfile::minimum(),
             shader_float16int8features: CreateProfile::minimum(),
             host_query_reset_features: CreateProfile::minimum(),
+            shader_atomic_int_64_features: CreateProfile::minimum(),
             dynamic_rendering_features: CreateProfile::minimum(),
             portability_features: Default::default(),
             synchronization_2_features: Default::default(),
@@ -140,6 +142,7 @@ impl DeviceInfo {
         let mut t_8bit_storage_features: vk::PhysicalDevice8BitStorageFeatures = Default::default();
         let mut shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features = Default::default();
         let mut host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures = Default::default();
+        let mut shader_atomic_int_64_features: vk::PhysicalDeviceShaderAtomicInt64Features = Default::default();
         let mut dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR = Default::default();
         let mut portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR = Default::default();
         let mut synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR = Default::default();
@@ -153,10 +156,23 @@ impl DeviceInfo {
             .push_next(&mut timeline_semaphore_features)
             .push_next(&mut buffer_device_address_features)
             .push_next(&mut uniform_buffer_standard_layout_features)
-            .push_next(&mut t_8bit_storage_features)
-            .push_next(&mut shader_float16int8features)
             .push_next(&mut host_query_reset_features);
 
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::Khr8bitStorageFn::name()) {
+                features = features.push_next(&mut t_8bit_storage_features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderFloat16Int8Fn::name()) {
+                features = features.push_next(&mut shader_float16int8features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderAtomicInt64Fn::name()) {
+                features = features.push_next(&mut shader_atomic_int_64_features)
+            }
+        };
         unsafe {
             if Self::list_contains_extension_cstr(&extensions, vk::KhrDynamicRenderingFn::name()) {
                 features = features.push_next(&mut dynamic_rendering_features)
@@ -197,6 +213,7 @@ impl DeviceInfo {
         uniform_buffer_standard_layout_features.p_next = std::ptr::null_mut();
         t_8bit_storage_features.p_next = std::ptr::null_mut();
         shader_float16int8features.p_next = std::ptr::null_mut();
+        shader_atomic_int_64_features.p_next = std::ptr::null_mut();
         host_query_reset_features.p_next = std::ptr::null_mut();
         dynamic_rendering_features.p_next = std::ptr::null_mut();
         portability_features.p_next = std::ptr::null_mut();
@@ -224,6 +241,7 @@ impl DeviceInfo {
             buffer_device_address_features,
             uniform_buffer_standard_layout_features,
             t_8bit_storage_features,
+            shader_atomic_int_64_features,
             shader_float16int8features,
             descriptor_indexing_features,
             host_query_reset_features,

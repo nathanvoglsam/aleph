@@ -177,12 +177,9 @@ impl IAdapter for Adapter {
         enabled_extensions.push(cstr_ptr!("VK_KHR_sampler_mirror_clamp_to_edge"));
         enabled_extensions.push(cstr_ptr!("VK_EXT_sampler_filter_minmax"));
         enabled_extensions.push(cstr_ptr!("VK_EXT_shader_viewport_index_layer"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_float16_int8"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_shader_float_controls"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_vulkan_memory_model"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_shader_subgroup_extended_types"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_8bit_storage"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_atomic_int64"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_depth_stencil_resolve"));
 
         let is_supported = |v: &CStr| self.device_info.supports_extension_cstr(v);
@@ -195,6 +192,9 @@ impl IAdapter for Adapter {
             }
         };
 
+        enable_if_supported(vk::Khr8bitStorageFn::name());
+        enable_if_supported(vk::KhrShaderFloat16Int8Fn::name());
+        enable_if_supported(vk::KhrShaderAtomicInt64Fn::name());
         if !enable_if_supported(vk::KhrDynamicRenderingFn::name()) {
             // If we don't have dynamic rendering we need to load one of the extensions that
             // provides store op none, otherwise unhappiness will ensue. Try the khronos one first,
@@ -238,6 +238,7 @@ impl IAdapter for Adapter {
             mut uniform_buffer_standard_layout_features,
             mut t_8bit_storage_features,
             mut shader_float16int8features,
+            mut shader_atomic_int_64_features,
             mut host_query_reset_features,
             mut dynamic_rendering_features,
             ..
@@ -250,8 +251,6 @@ impl IAdapter for Adapter {
             .push_next(&mut timeline_semaphore_features)
             .push_next(&mut buffer_device_address_features)
             .push_next(&mut uniform_buffer_standard_layout_features)
-            .push_next(&mut t_8bit_storage_features)
-            .push_next(&mut shader_float16int8features)
             .push_next(&mut host_query_reset_features)
             .enabled_features(&features_10)
             .enabled_extension_names(&enabled_extensions)
@@ -259,6 +258,15 @@ impl IAdapter for Adapter {
 
         let mut portability_features = self.device_info.portability_features.clone();
         let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
+        if is_supported(vk::Khr8bitStorageFn::name()) {
+            device_create_info = device_create_info.push_next(&mut t_8bit_storage_features)
+        }
+        if is_supported(vk::KhrShaderFloat16Int8Fn::name()) {
+            device_create_info = device_create_info.push_next(&mut shader_float16int8features)
+        }
+        if is_supported(vk::KhrDynamicRenderingFn::name()) {
+            device_create_info = device_create_info.push_next(&mut shader_atomic_int_64_features)
+        }
         if is_supported(vk::KhrDynamicRenderingFn::name()) {
             device_create_info = device_create_info.push_next(&mut dynamic_rendering_features)
         }

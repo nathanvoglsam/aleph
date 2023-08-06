@@ -557,6 +557,20 @@ impl CreateProfile for vk::PhysicalDeviceHostQueryResetFeatures {
     }
 }
 
+impl CreateProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // shader_buffer_int64_atomics: vk::TRUE,
+            // shader_shared_int64_atomics: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
 impl CreateProfile for vk::PhysicalDeviceDescriptorIndexingProperties {
     fn baseline() -> Self {
         Self {

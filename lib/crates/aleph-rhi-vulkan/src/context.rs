@@ -297,6 +297,7 @@ impl Context {
             t_8bit_storage_features,
             shader_float16int8features,
             host_query_reset_features,
+            shader_atomic_int_64_features,
             // dynamic_rendering_features,
             // portability_features,
             ..
@@ -343,12 +344,9 @@ impl Context {
             check_for_extension!("VK_KHR_sampler_mirror_clamp_to_edge");
             check_for_extension!("VK_EXT_sampler_filter_minmax");
             check_for_extension!("VK_EXT_shader_viewport_index_layer");
-            check_for_extension!("VK_KHR_shader_float16_int8");
             check_for_extension!("VK_KHR_shader_float_controls");
             check_for_extension!("VK_KHR_vulkan_memory_model");
             check_for_extension!("VK_KHR_shader_subgroup_extended_types");
-            check_for_extension!("VK_KHR_8bit_storage");
-            check_for_extension!("VK_KHR_shader_atomic_int64");
             check_for_extension!("VK_KHR_depth_stencil_resolve");
 
             // Check we meet requirements for store op none. Check for the three extensions that
@@ -391,6 +389,7 @@ impl Context {
             uniform_buffer_standard_layout_features.meets_minimum()?;
             t_8bit_storage_features.meets_minimum()?;
             shader_float16int8features.meets_minimum()?;
+            shader_atomic_int_64_features.meets_minimum()?;
             host_query_reset_features.meets_minimum()?;
 
             Some(())

@@ -1298,6 +1298,21 @@ impl CheckMeetsProfile for vk::PhysicalDeviceSynchronization2Features {
     }
 }
 
+impl CheckMeetsProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, shader_buffer_int64_atomics);
+        feat!(self, v, shader_shared_int64_atomics);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, shader_buffer_int64_atomics);
+        merge_feat!(self, v, shader_shared_int64_atomics);
+    }
+}
+
 impl CheckMeetsProfile for vk::PointClippingBehavior {
     fn meets_profile(&self, v: &Self) -> Option<()> {
         // USER_CLIP_PLANES_ONLY is the default
