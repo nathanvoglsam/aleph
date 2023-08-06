@@ -378,3 +378,102 @@ fn cmp<T: PartialEq + Eq>(l: &T, r: &T) -> Option<()> {
         None
     }
 }
+
+#[cfg(test)]
+mod test {
+    use ash::vk;
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    use crate::internal::render_pass_cache::RenderPassCache;
+    use crate::internal::rendering_info_key::RenderingInfoKey;
+
+    #[test]
+    pub fn hash_test() {
+        unsafe {
+            hash_test_unsafe()
+        }
+
+    }
+
+    unsafe fn hash_test_unsafe() {
+        let attachments = [
+            vk::AttachmentDescription2::builder()
+                .flags(vk::AttachmentDescriptionFlags::MAY_ALIAS)
+                .format(vk::Format::R8G8B8A8_UNORM)
+                .samples(vk::SampleCountFlags::TYPE_8)
+                .load_op(vk::AttachmentLoadOp::LOAD)
+                .store_op(vk::AttachmentStoreOp::STORE)
+                .stencil_load_op(vk::AttachmentLoadOp::LOAD)
+                .stencil_store_op(vk::AttachmentStoreOp::STORE)
+                .initial_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL)
+                .final_layout(vk::ImageLayout::GENERAL)
+                .build(),
+            vk::AttachmentDescription2::builder()
+                .flags(vk::AttachmentDescriptionFlags::MAY_ALIAS)
+                .format(vk::Format::R8_UNORM)
+                .samples(vk::SampleCountFlags::TYPE_4)
+                .load_op(vk::AttachmentLoadOp::DONT_CARE)
+                .store_op(vk::AttachmentStoreOp::DONT_CARE)
+                .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
+                .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+                .initial_layout(vk::ImageLayout::GENERAL)
+                .final_layout(vk::ImageLayout::UNDEFINED)
+                .build(),
+        ];
+
+        let reference_1 = vk::AttachmentReference2::builder()
+            .attachment(56)
+            .layout(vk::ImageLayout::FRAGMENT_DENSITY_MAP_OPTIMAL_EXT)
+            .aspect_mask(vk::ImageAspectFlags::DEPTH)
+            .build();
+        let reference_2 = vk::AttachmentReference2::builder()
+            .attachment(21)
+            .layout(vk::ImageLayout::SHARED_PRESENT_KHR)
+            .aspect_mask(vk::ImageAspectFlags::PLANE_0)
+            .build();
+        let reference_3 = vk::AttachmentReference2::builder()
+            .attachment(420)
+            .layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+            .aspect_mask(vk::ImageAspectFlags::MEMORY_PLANE_0_EXT)
+            .build();
+
+        let input_attachments = [reference_1, reference_2, reference_3];
+        let color_attachments = [reference_2, reference_1];
+        let resolve_attachments = [reference_3, reference_1];
+        let preserve_attachments = [1, 4];
+        let subpasses = [vk::SubpassDescription2::builder()
+            .flags(vk::SubpassDescriptionFlags::FRAGMENT_REGION_QCOM)
+            .view_mask(0b110)
+            .input_attachments(&input_attachments)
+            .color_attachments(&color_attachments)
+            // .resolve_attachments(&resolve_attachments)
+            .depth_stencil_attachment(&reference_3)
+            .preserve_attachments(&preserve_attachments)
+            .build()];
+
+        let info = vk::RenderPassCreateInfo2::builder()
+            .flags(vk::RenderPassCreateFlags::TRANSFORM_QCOM)
+            .attachments(&attachments)
+            .subpasses(&subpasses)
+            // .dependencies()
+            // .correlated_view_masks()
+            .build();
+
+        let info_key = RenderingInfoKey::from_info(&info);
+
+        let bump = bumpalo::Bump::new();
+        let cloned_info = RenderPassCache::clone_create_info_in(&info, &bump);
+        let cloned_info_key = RenderingInfoKey::from_info(&cloned_info);
+
+        let mut hasher = DefaultHasher::new();
+        info_key.hash(&mut hasher);
+        let hash = hasher.finish();
+
+        let mut hasher = DefaultHasher::new();
+        cloned_info_key.hash(&mut hasher);
+        let cloned_hash = hasher.finish();
+
+        assert_eq!(hash, cloned_hash);
+        assert!(info_key == cloned_info_key);
+    }
+}

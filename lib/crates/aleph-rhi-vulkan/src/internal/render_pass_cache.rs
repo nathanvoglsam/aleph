@@ -195,7 +195,7 @@ impl RenderPassCache {
         // .dependencies();
     }
 
-    unsafe fn clone_create_info_in(
+    pub(crate) unsafe fn clone_create_info_in(
         info: &vk::RenderPassCreateInfo2,
         bump: &Bump,
     ) -> vk::RenderPassCreateInfo2 {
@@ -236,8 +236,10 @@ impl RenderPassCache {
                 .view_mask(v.view_mask)
                 .input_attachments(input_attachments)
                 .color_attachments(color_attachments)
-                .resolve_attachments(resolve_attachments)
                 .preserve_attachments(preserve_attachments);
+            if !v.p_resolve_attachments.is_null() {
+                b = b.resolve_attachments(resolve_attachments);
+            }
             b.p_depth_stencil_attachment = depth_stencil_attachment;
             b.build()
         }));
