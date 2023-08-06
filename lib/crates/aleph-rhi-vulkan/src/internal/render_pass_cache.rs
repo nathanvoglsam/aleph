@@ -105,7 +105,8 @@ impl RenderPassCache {
             // references are valid for the lifetime of the map.
             let create_info = Self::clone_create_info_in(&create_info, &self.bump);
             let key = RenderingInfoKey::new(create_info);
-            let _ = self.map.insert(key, new); // Can't get an old value here so drop it
+            let old = self.map.insert(key, new);
+            debug_assert!(old.is_none());
 
             Ok(new)
         }

@@ -142,7 +142,8 @@ impl FramebufferCache {
 
             // Can't get an old value here so drop it. Transmute for our naughty lifetime hacks.
             // Don't try this at home kids! We're 'trained professionals' (morons)
-            let _ = self.map.insert(std::mem::transmute(key), new);
+            let old = self.map.insert(std::mem::transmute(key), new);
+            debug_assert!(old.is_none());
 
             Ok(new)
         }
