@@ -85,6 +85,49 @@ pub struct ContextOptions<'a> {
     /// validation layers. Vulkan requires `VK_EXT_debug_utils` for object naming as that is the
     /// extension that provides the naming functionality.
     pub debug: bool,
+
+    /// A set of per-backend configs that will be used by the loader to configure the loaded backend
+    /// when creating the context. Only one of these will be used, depending on what backend API
+    /// was selected by the user/loader.
+    pub config: BackendConfigs,
+}
+
+#[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
+pub struct BackendConfigs {
+    /// The config to use for the Vulkan backend
+    pub vulkan: Option<VulkanConfig>,
+
+    /// The config to use for the D3D12 backend
+    pub d3d12: Option<D3D12Config>,
+}
+
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct VulkanConfig {
+    /// Force disable the VK_KHR_dynamic_rendering path. Intended for testing the fallback on
+    /// platforms that support dynamic rendering.
+    pub deny_dynamic_rendering: bool,
+
+    /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
+    /// platforms that support sync2.
+    pub deny_sync_2: bool,
+}
+
+impl Default for VulkanConfig {
+    fn default() -> Self {
+        Self {
+            deny_dynamic_rendering: false,
+            deny_sync_2: false,
+        }
+    }
+}
+
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct D3D12Config {}
+
+impl Default for D3D12Config {
+    fn default() -> Self {
+        Self {}
+    }
 }
 
 /// Set of errors that can occur when creating an [IContext]
