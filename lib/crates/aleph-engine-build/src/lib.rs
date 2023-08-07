@@ -28,7 +28,6 @@
 //
 
 use aleph_target_build::build::target_platform;
-use std::path::{Path, PathBuf};
 
 pub fn add_platform_flags() {
     if target_platform().is_windows() {
@@ -52,6 +51,8 @@ pub fn add_platform_flags() {
 
 #[cfg(windows)]
 fn compile_and_link_windows_resource_file() {
+    use std::path::{Path, PathBuf};
+
     let icon_path = std::env::var("ALEPH_WIN32_ICON_FILE").unwrap_or_else(|_| {
         let v = Path::new(env!("CARGO_MANIFEST_DIR")).join("app_icon.ico");
         let v = v.to_str().unwrap().to_string();
