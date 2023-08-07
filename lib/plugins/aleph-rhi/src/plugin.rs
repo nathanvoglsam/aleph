@@ -89,6 +89,7 @@ impl IPlugin for PluginRHI {
                 required_backend: None,
                 validation: true,
                 debug: true,
+                config: Default::default(),
             })
             .unwrap();
 
