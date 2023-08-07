@@ -299,25 +299,6 @@ impl Context {
                 }};
             }
 
-            check_for_extension!("VK_KHR_timeline_semaphore");
-            check_for_extension!("VK_EXT_descriptor_indexing");
-            check_for_extension!("VK_KHR_buffer_device_address");
-            check_for_extension!("VK_KHR_imageless_framebuffer");
-            check_for_extension!("VK_EXT_host_query_reset");
-            check_for_extension!("VK_KHR_uniform_buffer_standard_layout");
-            check_for_extension!("VK_EXT_scalar_block_layout");
-            check_for_extension!("VK_KHR_draw_indirect_count");
-            check_for_extension!("VK_EXT_separate_stencil_usage");
-            check_for_extension!("VK_KHR_separate_depth_stencil_layouts");
-            check_for_extension!("VK_KHR_driver_properties");
-            check_for_extension!("VK_KHR_create_renderpass2");
-            check_for_extension!("VK_KHR_image_format_list");
-            check_for_extension!("VK_KHR_sampler_mirror_clamp_to_edge");
-            check_for_extension!("VK_EXT_sampler_filter_minmax");
-            check_for_extension!("VK_KHR_shader_float_controls");
-            check_for_extension!("VK_KHR_shader_subgroup_extended_types");
-            check_for_extension!("VK_KHR_depth_stencil_resolve");
-
             // Check we meet requirements for store op none. Check for the three extensions that
             // provide it, failing only if none of them are available.
             if !is_supported(vk::KhrDynamicRenderingFn::name()) {

@@ -158,25 +158,14 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        let mut enabled_extensions = Vec::with_capacity(64);
-        enabled_extensions.push(cstr_ptr!("VK_KHR_timeline_semaphore"));
-        enabled_extensions.push(cstr_ptr!("VK_EXT_descriptor_indexing"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_buffer_device_address"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_imageless_framebuffer"));
-        enabled_extensions.push(cstr_ptr!("VK_EXT_host_query_reset"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_uniform_buffer_standard_layout"));
-        enabled_extensions.push(cstr_ptr!("VK_EXT_scalar_block_layout"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_draw_indirect_count"));
-        enabled_extensions.push(cstr_ptr!("VK_EXT_separate_stencil_usage"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_separate_depth_stencil_layouts"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_driver_properties"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_create_renderpass2"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_image_format_list"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_sampler_mirror_clamp_to_edge"));
-        enabled_extensions.push(cstr_ptr!("VK_EXT_sampler_filter_minmax"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_float_controls"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_shader_subgroup_extended_types"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_depth_stencil_resolve"));
+        let DeviceInfo {
+            extensions: minimum_extensions,
+            ..
+        } = DeviceInfo::minimum();
+        let mut enabled_extensions: Vec<_> = minimum_extensions
+            .iter()
+            .map(|v| v.extension_name.as_ptr())
+            .collect();
 
         let is_supported = |v: &CStr| self.device_info.supports_extension_cstr(v);
         let mut enable_if_supported = |wanted: &CStr| {

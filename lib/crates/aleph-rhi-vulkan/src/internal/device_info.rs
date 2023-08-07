@@ -65,8 +65,50 @@ pub struct DeviceInfo {
 
 impl DeviceInfo {
     pub fn minimum() -> Self {
+        fn make_ext_prop(v: &'static str) -> vk::ExtensionProperties {
+            assert!(
+                v.len() < vk::MAX_EXTENSION_NAME_SIZE - 1,
+                "Extension name must be shorter than 255"
+            );
+
+            // Zero initialized buffer. Max length of 'v' is 255 to leave one space for a null
+            // terminator.
+            let mut props = vk::ExtensionProperties {
+                extension_name: [0; vk::MAX_EXTENSION_NAME_SIZE],
+                spec_version: 0,
+            };
+
+            // Memcpy the source string into the destination buffer
+            unsafe {
+                assert_eq!(std::mem::size_of::<u8>(), std::mem::size_of::<c_char>());
+                let src = v.as_ptr() as *const c_char;
+                let dst = props.extension_name.as_mut_ptr() as *mut c_char;
+                std::ptr::copy(src, dst, v.len());
+            }
+
+            props
+        }
         Self {
-            extensions: vec![],
+            extensions: vec![
+                make_ext_prop("VK_KHR_timeline_semaphore\0"),
+                make_ext_prop("VK_EXT_descriptor_indexing\0"),
+                make_ext_prop("VK_KHR_buffer_device_address\0"),
+                make_ext_prop("VK_KHR_imageless_framebuffer\0"),
+                make_ext_prop("VK_EXT_host_query_reset\0"),
+                make_ext_prop("VK_KHR_uniform_buffer_standard_layout\0"),
+                make_ext_prop("VK_EXT_scalar_block_layout\0"),
+                make_ext_prop("VK_KHR_draw_indirect_count\0"),
+                make_ext_prop("VK_EXT_separate_stencil_usage\0"),
+                make_ext_prop("VK_KHR_separate_depth_stencil_layouts\0"),
+                make_ext_prop("VK_KHR_driver_properties\0"),
+                make_ext_prop("VK_KHR_create_renderpass2\0"),
+                make_ext_prop("VK_KHR_image_format_list\0"),
+                make_ext_prop("VK_KHR_sampler_mirror_clamp_to_edge\0"),
+                make_ext_prop("VK_EXT_sampler_filter_minmax\0"),
+                make_ext_prop("VK_KHR_shader_float_controls\0"),
+                make_ext_prop("VK_KHR_shader_subgroup_extended_types\0"),
+                make_ext_prop("VK_KHR_depth_stencil_resolve\0"),
+            ],
             properties_10: CreateProfile::minimum(),
             properties_11: CreateProfile::minimum(),
             descriptor_indexing_properties: CreateProfile::minimum(),
@@ -263,6 +305,13 @@ impl DeviceInfo {
 
     #[rustfmt::skip]
     pub fn meets_minimum_requirements(&self) -> Option<()> {
+        let DeviceInfo { extensions: minimum_extensions, .. } = Self::minimum();
+        for required in minimum_extensions {
+            if !self.supports_extension_ptr(required.extension_name.as_ptr()) {
+                return None;
+            }
+        }
+
         self.properties_10.meets_minimum()?;
         self.properties_11.meets_minimum()?;
         self.descriptor_indexing_properties.meets_minimum()?;
