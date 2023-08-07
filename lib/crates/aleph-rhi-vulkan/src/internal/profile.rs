@@ -348,9 +348,15 @@ impl CreateProfile for vk::PhysicalDeviceVulkan11Features {
         Self {
             storage_buffer16_bit_access: vk::TRUE,
             uniform_and_storage_buffer16_bit_access: vk::TRUE,
+            // storage_push_constant16: vk::TRUE,
+            // storage_input_output16: vk::TRUE,
             multiview: vk::TRUE,
+            // multiview_geometry_shader: vk::TRUE,
+            // multiview_tessellation_shader: vk::TRUE,
             variable_pointers_storage_buffer: vk::TRUE,
             variable_pointers: vk::TRUE,
+            // protected_memory: vk::TRUE,
+            // sampler_ycbcr_conversion: vk::TRUE,
             // shader_draw_parameters: vk::TRUE,
             ..CreateProfile::baseline()
         }
