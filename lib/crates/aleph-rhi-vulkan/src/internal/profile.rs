@@ -412,7 +412,7 @@ impl CreateProfile for vk::PhysicalDeviceDynamicRenderingFeatures {
 
     fn minimum() -> Self {
         Self {
-            dynamic_rendering: vk::TRUE,
+            // dynamic_rendering: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
@@ -566,6 +566,77 @@ impl CreateProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
         Self {
             // shader_buffer_int64_atomics: vk::TRUE,
             // shader_shared_int64_atomics: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // vulkan_memory_model: vk::TRUE,
+            // vulkan_memory_model_device_scope: vk::TRUE,
+            // vulkan_memory_model_availability_visibility_chains: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // constant_alpha_color_blend_factors: vk::TRUE,
+            // events: vk::TRUE,
+            // image_view_format_reinterpretation: vk::TRUE,
+            // image_view_format_swizzle: vk::TRUE,
+            // image_view2_d_on3_d_image: vk::TRUE,
+            // multisample_array_image: vk::TRUE,
+            // mutable_comparison_samplers: vk::TRUE,
+            // point_polygons: vk::TRUE,
+            // sampler_mip_lod_bias: vk::TRUE,
+            // separate_stencil_mask_ref: vk::TRUE,
+            // shader_sample_rate_interpolation_functions: vk::TRUE,
+            // tessellation_isolines: vk::TRUE,
+            // tessellation_point_mode: vk::TRUE,
+            // triangle_fans: vk::TRUE,
+            // vertex_attribute_access_beyond_stride: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceSynchronization2FeaturesKHR {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // synchronization2: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR {
+    fn baseline() -> Self {
+        Self {
+            min_vertex_input_binding_stride_alignment: u32::MAX,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // min_vertex_input_binding_stride_alignment: 0,
             ..CreateProfile::baseline()
         }
     }

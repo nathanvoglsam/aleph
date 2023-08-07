@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
+use crate::internal::features::CheckMeetsMinimum;
 use crate::internal::profile::CreateProfile;
 use ash::vk;
 use std::ffi::{c_char, CStr};
 
+#[derive(Clone, Default)]
 #[rustfmt::skip]
 pub struct DeviceInfo {
     pub extensions: Vec<vk::ExtensionProperties>,
@@ -55,6 +57,7 @@ pub struct DeviceInfo {
     pub shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features,
     pub host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures,
     pub shader_atomic_int_64_features: vk::PhysicalDeviceShaderAtomicInt64Features,
+    pub vulkan_memory_model_features: vk::PhysicalDeviceVulkanMemoryModelFeatures,
     pub dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR,
     pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
     pub synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR,
@@ -85,13 +88,13 @@ impl DeviceInfo {
             shader_float16int8features: CreateProfile::minimum(),
             host_query_reset_features: CreateProfile::minimum(),
             shader_atomic_int_64_features: CreateProfile::minimum(),
+            vulkan_memory_model_features: CreateProfile::minimum(),
             dynamic_rendering_features: CreateProfile::minimum(),
             portability_features: Default::default(),
             synchronization_2_features: Default::default(),
         }
     }
 
-    #[rustfmt::skip]
     pub fn load(instance: &ash::Instance, physical_device: vk::PhysicalDevice) -> DeviceInfo {
         let extensions = unsafe {
             instance
@@ -100,126 +103,11 @@ impl DeviceInfo {
                 .to_vec()
         };
 
-        let mut properties_11: vk::PhysicalDeviceVulkan11Properties = Default::default();
-        let mut descriptor_indexing_properties: vk::PhysicalDeviceDescriptorIndexingProperties = Default::default();
-        let mut float_controls_properties: vk::PhysicalDeviceFloatControlsProperties = Default::default();
-        let mut depth_stencil_resolve_properties: vk::PhysicalDeviceDepthStencilResolveProperties = Default::default();
-        let mut timeline_semaphore_properties: vk::PhysicalDeviceTimelineSemaphoreProperties = Default::default();
-        let mut sampler_filter_minmax_properties: vk::PhysicalDeviceSamplerFilterMinmaxProperties = Default::default();
-        let mut driver_properties: vk::PhysicalDeviceDriverProperties = Default::default();
-        let mut portability_properties: vk::PhysicalDevicePortabilitySubsetPropertiesKHR = Default::default();
-
-        // Unconditionally required properties
-        let mut properties = vk::PhysicalDeviceProperties2::builder()
-            .push_next(&mut properties_11)
-            .push_next(&mut descriptor_indexing_properties)
-            .push_next(&mut float_controls_properties)
-            .push_next(&mut depth_stencil_resolve_properties)
-            .push_next(&mut timeline_semaphore_properties)
-            .push_next(&mut sampler_filter_minmax_properties)
-            .push_next(&mut driver_properties);
-
-        // Safety: we assume all the strings vulkan gives us are valid
-        unsafe {
-            // We load the portability subset properties if the extension is present
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
-                properties = properties.push_next(&mut portability_properties)
-            }
+        let mut out = DeviceInfo {
+            extensions,
+            ..Default::default()
         };
-
-        let properties_10 = unsafe {
-            instance.get_physical_device_properties2(physical_device, &mut properties);
-            properties.properties
-        };
-
-        let mut features_11: vk::PhysicalDeviceVulkan11Features = Default::default();
-        let mut descriptor_indexing_features: vk::PhysicalDeviceDescriptorIndexingFeatures = Default::default();
-        let mut imageless_framebuffer_features: vk::PhysicalDeviceImagelessFramebufferFeaturesKHR = Default::default();
-        let mut scalar_block_layout_features: vk::PhysicalDeviceScalarBlockLayoutFeatures = Default::default();
-        let mut timeline_semaphore_features: vk::PhysicalDeviceTimelineSemaphoreFeatures = Default::default();
-        let mut buffer_device_address_features: vk::PhysicalDeviceBufferDeviceAddressFeatures = Default::default();
-        let mut uniform_buffer_standard_layout_features: vk::PhysicalDeviceUniformBufferStandardLayoutFeatures = Default::default();
-        let mut t_8bit_storage_features: vk::PhysicalDevice8BitStorageFeatures = Default::default();
-        let mut shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features = Default::default();
-        let mut host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures = Default::default();
-        let mut shader_atomic_int_64_features: vk::PhysicalDeviceShaderAtomicInt64Features = Default::default();
-        let mut dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR = Default::default();
-        let mut portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR = Default::default();
-        let mut synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR = Default::default();
-
-        // Glue all the feature extension structs together into our monster instance
-        let mut features = vk::PhysicalDeviceFeatures2::builder()
-            .push_next(&mut features_11)
-            .push_next(&mut descriptor_indexing_features)
-            .push_next(&mut imageless_framebuffer_features)
-            .push_next(&mut scalar_block_layout_features)
-            .push_next(&mut timeline_semaphore_features)
-            .push_next(&mut buffer_device_address_features)
-            .push_next(&mut uniform_buffer_standard_layout_features)
-            .push_next(&mut host_query_reset_features);
-
-        unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::Khr8bitStorageFn::name()) {
-                features = features.push_next(&mut t_8bit_storage_features)
-            }
-        };
-        unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderFloat16Int8Fn::name()) {
-                features = features.push_next(&mut shader_float16int8features)
-            }
-        };
-        unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderAtomicInt64Fn::name()) {
-                features = features.push_next(&mut shader_atomic_int_64_features)
-            }
-        };
-        unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrDynamicRenderingFn::name()) {
-                features = features.push_next(&mut dynamic_rendering_features)
-            }
-        };
-        unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
-                features = features.push_next(&mut portability_features)
-            }
-        };
-        unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrSynchronization2Fn::name()) {
-                features = features.push_next(&mut synchronization_2_features)
-            }
-        };
-
-        let features_10 = unsafe {
-            instance.get_physical_device_features2(physical_device, &mut features);
-            features.features
-        };
-
-        // Null the p_next chain pointers to avoid leaving the dangling references. They can't be
-        // *used* without unsafe but better be careful.
-        properties_11.p_next = std::ptr::null_mut();
-        descriptor_indexing_properties.p_next = std::ptr::null_mut();
-        float_controls_properties.p_next = std::ptr::null_mut();
-        depth_stencil_resolve_properties.p_next = std::ptr::null_mut();
-        timeline_semaphore_properties.p_next = std::ptr::null_mut();
-        sampler_filter_minmax_properties.p_next = std::ptr::null_mut();
-        driver_properties.p_next = std::ptr::null_mut();
-        portability_properties.p_next = std::ptr::null_mut();
-        features_11.p_next = std::ptr::null_mut();
-        descriptor_indexing_features.p_next = std::ptr::null_mut();
-        imageless_framebuffer_features.p_next = std::ptr::null_mut();
-        scalar_block_layout_features.p_next = std::ptr::null_mut();
-        timeline_semaphore_features.p_next = std::ptr::null_mut();
-        buffer_device_address_features.p_next = std::ptr::null_mut();
-        uniform_buffer_standard_layout_features.p_next = std::ptr::null_mut();
-        t_8bit_storage_features.p_next = std::ptr::null_mut();
-        shader_float16int8features.p_next = std::ptr::null_mut();
-        shader_atomic_int_64_features.p_next = std::ptr::null_mut();
-        host_query_reset_features.p_next = std::ptr::null_mut();
-        dynamic_rendering_features.p_next = std::ptr::null_mut();
-        portability_features.p_next = std::ptr::null_mut();
-        synchronization_2_features.p_next = std::ptr::null_mut();
-
-        Self {
+        let DeviceInfo {
             extensions,
             properties_10,
             properties_11,
@@ -232,20 +120,128 @@ impl DeviceInfo {
             portability_properties,
             features_10,
             features_11,
-            dynamic_rendering_features,
-            portability_features,
-            synchronization_2_features,
+            descriptor_indexing_features,
             imageless_framebuffer_features,
             scalar_block_layout_features,
             timeline_semaphore_features,
             buffer_device_address_features,
             uniform_buffer_standard_layout_features,
             t_8bit_storage_features,
-            shader_atomic_int_64_features,
             shader_float16int8features,
-            descriptor_indexing_features,
             host_query_reset_features,
-        }
+            shader_atomic_int_64_features,
+            vulkan_memory_model_features,
+            dynamic_rendering_features,
+            portability_features,
+            synchronization_2_features,
+        } = &mut out;
+
+        // Unconditionally required properties
+        let mut properties = vk::PhysicalDeviceProperties2::builder()
+            .push_next(properties_11)
+            .push_next(descriptor_indexing_properties)
+            .push_next(float_controls_properties)
+            .push_next(depth_stencil_resolve_properties)
+            .push_next(timeline_semaphore_properties)
+            .push_next(sampler_filter_minmax_properties)
+            .push_next(driver_properties);
+
+        // Safety: we assume all the strings vulkan gives us are valid
+        unsafe {
+            // We load the portability subset properties if the extension is present
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
+                properties = properties.push_next(portability_properties)
+            }
+        };
+
+        *properties_10 = unsafe {
+            instance.get_physical_device_properties2(physical_device, &mut properties);
+            properties.properties
+        };
+
+        // Glue all the feature extension structs together into our monster instance
+        let mut features = vk::PhysicalDeviceFeatures2::builder()
+            .push_next(features_11)
+            .push_next(descriptor_indexing_features)
+            .push_next(imageless_framebuffer_features)
+            .push_next(scalar_block_layout_features)
+            .push_next(timeline_semaphore_features)
+            .push_next(buffer_device_address_features)
+            .push_next(uniform_buffer_standard_layout_features)
+            .push_next(host_query_reset_features);
+
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrVulkanMemoryModelFn::name()) {
+                features = features.push_next(vulkan_memory_model_features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::Khr8bitStorageFn::name()) {
+                features = features.push_next(t_8bit_storage_features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderFloat16Int8Fn::name()) {
+                features = features.push_next(shader_float16int8features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderAtomicInt64Fn::name()) {
+                features = features.push_next(shader_atomic_int_64_features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrDynamicRenderingFn::name()) {
+                features = features.push_next(dynamic_rendering_features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
+                features = features.push_next(portability_features)
+            }
+        };
+        unsafe {
+            if Self::list_contains_extension_cstr(&extensions, vk::KhrSynchronization2Fn::name()) {
+                features = features.push_next(synchronization_2_features)
+            }
+        };
+
+        *features_10 = unsafe {
+            instance.get_physical_device_features2(physical_device, &mut features);
+            features.features
+        };
+
+        // Null the p_next chain pointers to avoid leaving the dangling references. They can't be
+        // *used* without unsafe but better be careful.
+        out.null_p_next_ptrs();
+
+        out
+    }
+
+    fn null_p_next_ptrs(&mut self) {
+        self.properties_11.p_next = std::ptr::null_mut();
+        self.descriptor_indexing_properties.p_next = std::ptr::null_mut();
+        self.float_controls_properties.p_next = std::ptr::null_mut();
+        self.depth_stencil_resolve_properties.p_next = std::ptr::null_mut();
+        self.timeline_semaphore_properties.p_next = std::ptr::null_mut();
+        self.sampler_filter_minmax_properties.p_next = std::ptr::null_mut();
+        self.driver_properties.p_next = std::ptr::null_mut();
+        self.portability_properties.p_next = std::ptr::null_mut();
+        self.features_11.p_next = std::ptr::null_mut();
+        self.descriptor_indexing_features.p_next = std::ptr::null_mut();
+        self.imageless_framebuffer_features.p_next = std::ptr::null_mut();
+        self.scalar_block_layout_features.p_next = std::ptr::null_mut();
+        self.timeline_semaphore_features.p_next = std::ptr::null_mut();
+        self.buffer_device_address_features.p_next = std::ptr::null_mut();
+        self.uniform_buffer_standard_layout_features.p_next = std::ptr::null_mut();
+        self.t_8bit_storage_features.p_next = std::ptr::null_mut();
+        self.shader_float16int8features.p_next = std::ptr::null_mut();
+        self.host_query_reset_features.p_next = std::ptr::null_mut();
+        self.shader_atomic_int_64_features.p_next = std::ptr::null_mut();
+        self.vulkan_memory_model_features.p_next = std::ptr::null_mut();
+        self.dynamic_rendering_features.p_next = std::ptr::null_mut();
+        self.portability_features.p_next = std::ptr::null_mut();
+        self.synchronization_2_features.p_next = std::ptr::null_mut();
     }
 }
 
@@ -263,6 +259,36 @@ impl DeviceInfo {
     #[allow(unused)]
     pub fn supports_extension(&self, wanted: &str) -> bool {
         unsafe { Self::list_contains_extension(&self.extensions, wanted) }
+    }
+
+    #[rustfmt::skip]
+    pub fn meets_minimum_requirements(&self) -> Option<()> {
+        self.properties_10.meets_minimum()?;
+        self.properties_11.meets_minimum()?;
+        self.descriptor_indexing_properties.meets_minimum()?;
+        self.float_controls_properties.meets_minimum()?;
+        self.depth_stencil_resolve_properties.meets_minimum()?;
+        self.timeline_semaphore_properties.meets_minimum()?;
+        self.sampler_filter_minmax_properties.meets_minimum()?;
+        self.driver_properties.meets_minimum()?;
+        self.portability_properties.meets_minimum()?;
+        self.features_10.meets_minimum()?;
+        self.features_11.meets_minimum()?;
+        self.descriptor_indexing_features.meets_minimum()?;
+        self.imageless_framebuffer_features.meets_minimum()?;
+        self.scalar_block_layout_features.meets_minimum()?;
+        self.timeline_semaphore_features.meets_minimum()?;
+        self.buffer_device_address_features.meets_minimum()?;
+        self.uniform_buffer_standard_layout_features.meets_minimum()?;
+        self.t_8bit_storage_features.meets_minimum()?;
+        self.shader_float16int8features.meets_minimum()?;
+        self.host_query_reset_features.meets_minimum()?;
+        self.shader_atomic_int_64_features.meets_minimum()?;
+        self.vulkan_memory_model_features.meets_minimum()?;
+        self.dynamic_rendering_features.meets_minimum()?;
+        self.portability_features.meets_minimum()?;
+        self.synchronization_2_features.meets_minimum()?;
+        Some(())
     }
 
     unsafe fn list_contains_extension_ptr(

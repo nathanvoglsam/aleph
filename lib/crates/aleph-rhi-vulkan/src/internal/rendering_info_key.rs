@@ -381,18 +381,15 @@ fn cmp<T: PartialEq + Eq>(l: &T, r: &T) -> Option<()> {
 
 #[cfg(test)]
 mod test {
+    use crate::internal::render_pass_cache::RenderPassCache;
+    use crate::internal::rendering_info_key::RenderingInfoKey;
     use ash::vk;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    use crate::internal::render_pass_cache::RenderPassCache;
-    use crate::internal::rendering_info_key::RenderingInfoKey;
 
     #[test]
     pub fn hash_test() {
-        unsafe {
-            hash_test_unsafe()
-        }
-
+        unsafe { hash_test_unsafe() }
     }
 
     unsafe fn hash_test_unsafe() {

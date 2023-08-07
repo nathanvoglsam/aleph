@@ -1313,6 +1313,77 @@ impl CheckMeetsProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
     }
 }
 
+impl CheckMeetsProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, vulkan_memory_model);
+        feat!(self, v, vulkan_memory_model_device_scope);
+        feat!(self, v, vulkan_memory_model_availability_visibility_chains);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, vulkan_memory_model);
+        merge_feat!(self, v, vulkan_memory_model_device_scope);
+        merge_feat!(self, v, vulkan_memory_model_availability_visibility_chains);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        lmax!(self, v, min_vertex_input_binding_stride_alignment);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_lmax!(self, v, min_vertex_input_binding_stride_alignment);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, constant_alpha_color_blend_factors);
+        feat!(self, v, events);
+        feat!(self, v, image_view_format_reinterpretation);
+        feat!(self, v, image_view_format_swizzle);
+        feat!(self, v, image_view2_d_on3_d_image);
+        feat!(self, v, multisample_array_image);
+        feat!(self, v, mutable_comparison_samplers);
+        feat!(self, v, point_polygons);
+        feat!(self, v, sampler_mip_lod_bias);
+        feat!(self, v, separate_stencil_mask_ref);
+        feat!(self, v, shader_sample_rate_interpolation_functions);
+        feat!(self, v, tessellation_isolines);
+        feat!(self, v, tessellation_point_mode);
+        feat!(self, v, triangle_fans);
+        feat!(self, v, vertex_attribute_access_beyond_stride);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, constant_alpha_color_blend_factors);
+        merge_feat!(self, v, events);
+        merge_feat!(self, v, image_view_format_reinterpretation);
+        merge_feat!(self, v, image_view_format_swizzle);
+        merge_feat!(self, v, image_view2_d_on3_d_image);
+        merge_feat!(self, v, multisample_array_image);
+        merge_feat!(self, v, mutable_comparison_samplers);
+        merge_feat!(self, v, point_polygons);
+        merge_feat!(self, v, sampler_mip_lod_bias);
+        merge_feat!(self, v, separate_stencil_mask_ref);
+        merge_feat!(self, v, shader_sample_rate_interpolation_functions);
+        merge_feat!(self, v, tessellation_isolines);
+        merge_feat!(self, v, tessellation_point_mode);
+        merge_feat!(self, v, triangle_fans);
+        merge_feat!(self, v, vertex_attribute_access_beyond_stride);
+    }
+}
+
 impl CheckMeetsProfile for vk::PointClippingBehavior {
     fn meets_profile(&self, v: &Self) -> Option<()> {
         // USER_CLIP_PLANES_ONLY is the default

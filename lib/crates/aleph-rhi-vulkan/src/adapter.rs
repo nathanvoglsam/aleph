@@ -105,8 +105,7 @@ impl Adapter {
     const fn is_general_family(family: &vk::QueueFamilyProperties) -> bool {
         /// The mask of queue requirements for a general queue
         const GENERAL_MASK: vk::QueueFlags = vk::QueueFlags::from_raw(
-            vk::QueueFlags::GRAPHICS.as_raw()
-                | vk::QueueFlags::COMPUTE.as_raw(),
+            vk::QueueFlags::GRAPHICS.as_raw() | vk::QueueFlags::COMPUTE.as_raw(),
         );
 
         // For general
@@ -116,9 +115,8 @@ impl Adapter {
     #[inline]
     const fn is_async_compute_family(family: &vk::QueueFamilyProperties) -> bool {
         /// The mask of queue requirements for a compute queue
-        const COMPUTE_MASK: vk::QueueFlags = vk::QueueFlags::from_raw(
-            vk::QueueFlags::COMPUTE.as_raw(),
-        );
+        const COMPUTE_MASK: vk::QueueFlags =
+            vk::QueueFlags::from_raw(vk::QueueFlags::COMPUTE.as_raw());
 
         // For async compute we specifically want the non graphics queues so check for
         // compute+transfer and no graphics
@@ -176,9 +174,7 @@ impl IAdapter for Adapter {
         enabled_extensions.push(cstr_ptr!("VK_KHR_image_format_list"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_sampler_mirror_clamp_to_edge"));
         enabled_extensions.push(cstr_ptr!("VK_EXT_sampler_filter_minmax"));
-        enabled_extensions.push(cstr_ptr!("VK_EXT_shader_viewport_index_layer"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_shader_float_controls"));
-        enabled_extensions.push(cstr_ptr!("VK_KHR_vulkan_memory_model"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_shader_subgroup_extended_types"));
         enabled_extensions.push(cstr_ptr!("VK_KHR_depth_stencil_resolve"));
 
@@ -192,6 +188,8 @@ impl IAdapter for Adapter {
             }
         };
 
+        enable_if_supported(vk::KhrVulkanMemoryModelFn::name());
+        enable_if_supported(vk::ExtShaderViewportIndexLayerFn::name());
         enable_if_supported(vk::Khr8bitStorageFn::name());
         enable_if_supported(vk::KhrShaderFloat16Int8Fn::name());
         enable_if_supported(vk::KhrShaderAtomicInt64Fn::name());
@@ -236,11 +234,7 @@ impl IAdapter for Adapter {
             mut timeline_semaphore_features,
             mut buffer_device_address_features,
             mut uniform_buffer_standard_layout_features,
-            mut t_8bit_storage_features,
-            mut shader_float16int8features,
-            mut shader_atomic_int_64_features,
             mut host_query_reset_features,
-            mut dynamic_rendering_features,
             ..
         } = DeviceInfo::minimum();
         let mut device_create_info = vk::DeviceCreateInfo::builder()
@@ -256,8 +250,19 @@ impl IAdapter for Adapter {
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
 
-        let mut portability_features = self.device_info.portability_features.clone();
-        let mut synchronization_2_features = self.device_info.synchronization_2_features.clone();
+        let DeviceInfo {
+            mut vulkan_memory_model_features,
+            mut t_8bit_storage_features,
+            mut shader_float16int8features,
+            mut shader_atomic_int_64_features,
+            mut dynamic_rendering_features,
+            mut portability_features,
+            mut synchronization_2_features,
+            ..
+        } = self.device_info.clone();
+        if is_supported(vk::KhrVulkanMemoryModelFn::name()) {
+            device_create_info = device_create_info.push_next(&mut vulkan_memory_model_features)
+        }
         if is_supported(vk::Khr8bitStorageFn::name()) {
             device_create_info = device_create_info.push_next(&mut t_8bit_storage_features)
         }
@@ -290,9 +295,9 @@ impl IAdapter for Adapter {
             ash::extensions::khr::CreateRenderPass2::new(&self.context.instance, &device);
 
         let deny_dynamic_rendering = self.context.config.deny_dynamic_rendering;
-        let have_dynamic_rendering =
-            is_supported(vk::KhrDynamicRenderingFn::name()) && !deny_dynamic_rendering;
-        let dynamic_rendering = if have_dynamic_rendering {
+        let have_dynamic_rendering = dynamic_rendering_features.dynamic_rendering != 0;
+        let load_dynamic_rendering = have_dynamic_rendering && !deny_dynamic_rendering;
+        let dynamic_rendering = if load_dynamic_rendering {
             Some(ash::extensions::khr::DynamicRendering::new(
                 &self.context.instance,
                 &device,
@@ -313,9 +318,10 @@ impl IAdapter for Adapter {
             None
         };
 
-        let have_sync_2 =
-            is_supported(vk::KhrSynchronization2Fn::name()) && !self.context.config.deny_sync_2;
-        let synchronization_2 = if have_sync_2 {
+        let deny_sync_2 = self.context.config.deny_sync_2;
+        let have_sync_2 = synchronization_2_features.synchronization2 != 0;
+        let load_sync_2 = have_sync_2 && !deny_sync_2;
+        let synchronization_2 = if load_sync_2 {
             Some(ash::extensions::khr::Synchronization2::new(
                 &self.context.instance,
                 &device,

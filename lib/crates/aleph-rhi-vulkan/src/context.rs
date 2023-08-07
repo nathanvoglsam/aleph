@@ -29,7 +29,6 @@
 
 use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
-use crate::internal::features::CheckMeetsMinimum;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use crate::ContextConfig;
@@ -275,34 +274,6 @@ impl Context {
     }
 
     pub fn check_device_supports_minimum_features(device_info: &DeviceInfo) -> Option<()> {
-        let DeviceInfo {
-            // extensions,
-            properties_10,
-            properties_11,
-            descriptor_indexing_properties,
-            float_controls_properties,
-            depth_stencil_resolve_properties,
-            timeline_semaphore_properties,
-            sampler_filter_minmax_properties,
-            driver_properties,
-            // portability_properties,
-            features_10,
-            features_11,
-            descriptor_indexing_features,
-            imageless_framebuffer_features,
-            scalar_block_layout_features,
-            timeline_semaphore_features,
-            buffer_device_address_features,
-            uniform_buffer_standard_layout_features,
-            t_8bit_storage_features,
-            shader_float16int8features,
-            host_query_reset_features,
-            shader_atomic_int_64_features,
-            // dynamic_rendering_features,
-            // portability_features,
-            ..
-        } = device_info;
-
         unsafe {
             let is_supported = |v: &CStr| device_info.supports_extension_cstr(v);
 
@@ -343,9 +314,7 @@ impl Context {
             check_for_extension!("VK_KHR_image_format_list");
             check_for_extension!("VK_KHR_sampler_mirror_clamp_to_edge");
             check_for_extension!("VK_EXT_sampler_filter_minmax");
-            check_for_extension!("VK_EXT_shader_viewport_index_layer");
             check_for_extension!("VK_KHR_shader_float_controls");
-            check_for_extension!("VK_KHR_vulkan_memory_model");
             check_for_extension!("VK_KHR_shader_subgroup_extended_types");
             check_for_extension!("VK_KHR_depth_stencil_resolve");
 
@@ -359,7 +328,7 @@ impl Context {
                 if !is_supported(vk::ExtLoadStoreOpNoneFn::name()) {
                     log::warn!(
                         "Device does not support extension {:?}. Falling back to QCOM extension",
-                        vk::QcomRenderPassStoreOpsFn::name()
+                        vk::ExtLoadStoreOpNoneFn::name()
                     );
                     check_for_extension_vk!(vk::QcomRenderPassStoreOpsFn::name())
                 }
@@ -370,27 +339,7 @@ impl Context {
                 check_for_extension_vk!(vk::KhrPortabilitySubsetFn::name());
             }
 
-            properties_10.meets_minimum()?;
-            properties_11.meets_minimum()?;
-            descriptor_indexing_properties.meets_minimum()?;
-            float_controls_properties.meets_minimum()?;
-            depth_stencil_resolve_properties.meets_minimum()?;
-            timeline_semaphore_properties.meets_minimum()?;
-            sampler_filter_minmax_properties.meets_minimum()?;
-            driver_properties.meets_minimum()?;
-
-            features_10.meets_minimum()?;
-            features_11.meets_minimum()?;
-            descriptor_indexing_features.meets_minimum()?;
-            imageless_framebuffer_features.meets_minimum()?;
-            scalar_block_layout_features.meets_minimum()?;
-            timeline_semaphore_features.meets_minimum()?;
-            buffer_device_address_features.meets_minimum()?;
-            uniform_buffer_standard_layout_features.meets_minimum()?;
-            t_8bit_storage_features.meets_minimum()?;
-            shader_float16int8features.meets_minimum()?;
-            shader_atomic_int_64_features.meets_minimum()?;
-            host_query_reset_features.meets_minimum()?;
+            device_info.meets_minimum_requirements()?;
 
             Some(())
         }
