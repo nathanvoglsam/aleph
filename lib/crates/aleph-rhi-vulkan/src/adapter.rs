@@ -33,7 +33,7 @@ use crate::internal::device_info::DeviceInfo;
 use crate::queue::{Queue, QueueInfo};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::{cstr_ptr, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use std::any::TypeId;
 use std::ffi::CStr;
