@@ -51,22 +51,3 @@ mod swap_chain;
 mod texture;
 
 pub use rhi_backend::RHI_BACKEND;
-
-pub struct ContextConfig {
-    /// Force disable the VK_KHR_dynamic_rendering path. Intended for testing the fallback on
-    /// platforms that support dynamic rendering.
-    pub deny_dynamic_rendering: bool,
-
-    /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
-    /// platforms that support sync2.
-    pub deny_sync_2: bool,
-}
-
-impl Default for ContextConfig {
-    fn default() -> Self {
-        Self {
-            deny_dynamic_rendering: false,
-            deny_sync_2: false,
-        }
-    }
-}
