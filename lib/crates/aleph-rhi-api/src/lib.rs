@@ -1481,6 +1481,7 @@ impl Default for ImageLayout {
 }
 
 bitflags! {
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct BarrierSync: u64 {
         ///
         /// ## Vulkan
@@ -1672,6 +1673,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct BarrierAccess: u64 {
 
         ///
@@ -3126,6 +3128,7 @@ impl Default for LogicOp {
 bitflags! {
     /// Bit flags used for identifying and/or masking the color components in operations regarding
     /// texels.
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct ColorComponentFlags: u8 {
         /// Specifies the 'red' channel
         const R = 0b0001;
@@ -3736,7 +3739,7 @@ impl From<TextureCopyAspect> for TextureAspect {
 }
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct TextureAspect: u32 {
         /// Bit that specifies the 'color' aspect of a texture
         const COLOR = 0b00000001;
@@ -3748,7 +3751,7 @@ bitflags! {
         const STENCIL = 0b00000100;
 
         /// A combination of the [TextureAspect::DEPTH] and [TextureAspect::STENCIL] flags
-        const DEPTH_STENCIL = Self::DEPTH.bits | Self::STENCIL.bits;
+        const DEPTH_STENCIL = Self::DEPTH.bits() | Self::STENCIL.bits();
     }
 }
 

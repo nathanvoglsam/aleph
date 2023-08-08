@@ -110,7 +110,7 @@ impl ConfigAutoGPUCaptureScope {
 bitflags! {
     /// Identifies extensions to advertise as part of MoltenVK configuration.
     #[repr(transparent)]
-    #[derive(Default)]
+    #[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct ConfigAdvertiseExtensions: i32 {
         /// All supported extensions
         const ALL = 0b00000001;

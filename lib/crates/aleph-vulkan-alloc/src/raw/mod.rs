@@ -61,6 +61,7 @@ pub struct VmaDeviceMemoryCallbacks {
 
 bitflags::bitflags! {
     #[repr(transparent)]
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct AllocatorCreateFlags: u32 {
         /// VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT
         const EXTERNALLY_SYNCHRONIZED_BIT = 1;
@@ -97,6 +98,7 @@ pub struct VmaVulkanFunctions {
 
 bitflags::bitflags! {
     #[repr(transparent)]
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct RecordFlags: u32 {
         /// VMA_RECORD_FLUSH_AFTER_CALL_BIT
         const FLUSH_AFTER_CALL_BIT = 1;
@@ -164,6 +166,7 @@ pub type VmaMemoryUsage = i32;
 
 bitflags::bitflags! {
     #[repr(transparent)]
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct AllocationCreateFlags: u32 {
         /// VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
         const DEDICATED_MEMORY_BIT = 1;
@@ -223,6 +226,7 @@ pub struct VmaAllocationCreateInfo {
 
 bitflags::bitflags! {
     #[repr(transparent)]
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct PoolCreateFlags: u32 {
         /// VMA_POOL_CREATE_IGNORE_BUFFER_IMAGE_GRANULARITY_BIT
         const IGNORE_BUFFER_IMAGE_GRANULARITY_BIT = 2;
@@ -283,6 +287,7 @@ pub type VmaDefragmentationContext = *mut VmaDefragmentationContext_T;
 
 bitflags::bitflags! {
     #[repr(transparent)]
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct DefragmentationFlags: u32 {}
 }
 

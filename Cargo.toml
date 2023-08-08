@@ -79,7 +79,7 @@ members = [
 android_logger = "0.13"
 anyhow = "1"
 ash = { version = "0.37", default-features = false, features = ["debug"] }
-bitflags = "1"
+bitflags = "2"
 bumpalo = { version = "3", features = ["boxed", "collections"] }
 bytemuck = "1"
 byteorder = "1"

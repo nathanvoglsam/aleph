@@ -29,6 +29,7 @@
 
 bitflags::bitflags! {
     /// Internal bitflags used for flagging which queues support present operations
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct QueuePresentSupportFlags: u32 {
         const GENERAL = 0b00000001;
         const COMPUTE = 0b00000010;

@@ -31,6 +31,7 @@ bitflags::bitflags! {
     ///
     /// The set of DFD flags defined by the DFD spec
     ///
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct DFDFlags: u8 {
         const ALPHA_PREMULTIPLIED = 0b00000001;
     }
@@ -40,6 +41,7 @@ bitflags::bitflags! {
     ///
     /// The set of sample flags that can be found in a sample info block
     ///
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct SampleFlags: u8 {
         const LINEAR = 0b0001;
         const EXPONENT = 0b0010;
