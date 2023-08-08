@@ -30,10 +30,7 @@
 use crate::fence::FenceState;
 use crate::internal::{get_as_unwrapped, unwrap};
 use crate::semaphore::SemaphoreState;
-use crate::{
-    ValidationCommandList, ValidationDevice, ValidationSemaphore,
-    ValidationSwapChain,
-};
+use crate::{ValidationCommandList, ValidationDevice, ValidationSemaphore, ValidationSwapChain};
 use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
 use aleph_rhi_api::*;
 use std::any::TypeId;
