@@ -770,11 +770,7 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
-        let initial_value = if signalled {
-            1
-        } else {
-            0
-        };
+        let initial_value = if signalled { 1 } else { 0 };
         let fence: ID3D12Fence = unsafe {
             self.device
                 .CreateFence(initial_value, D3D12_FENCE_FLAG_NONE)
