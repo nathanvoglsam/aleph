@@ -334,8 +334,8 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// restrictive.
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]);
 
-    /// Constructs a new fence in the default (reset) state.
-    fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError>;
+    /// Constructs a new fence in the requested state.
+    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError>;
 
     /// Constructs a new semaphore in the default (reset) state.
     fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError>;
