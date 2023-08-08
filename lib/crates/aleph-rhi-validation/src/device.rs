@@ -644,7 +644,7 @@ impl ValidationDevice {
                         has_samplers = true;
                     }
 
-                    if has_resource_views {
+                    if has_resource_views && has_samplers {
                         log::error!(
                             "Binding '{i}' is Sampler but set layout contains resource views"
                         );
