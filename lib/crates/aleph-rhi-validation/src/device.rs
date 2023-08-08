@@ -30,7 +30,7 @@
 use crate::descriptor_set_layout::DescriptorBindingInfo;
 use crate::fence::FenceState;
 use crate::internal::descriptor_set::DescriptorSet;
-use crate::internal::get_as_unwrapped;
+use crate::internal::{get_as_unwrapped, unwrap};
 use crate::semaphore::SemaphoreState;
 use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{
@@ -109,11 +109,8 @@ impl IDevice for ValidationDevice {
         let shader_stages: Vec<&dyn IShader> = desc
             .shader_stages
             .iter()
-            .copied()
             .map(|v| {
-                let v = v
-                    .query_interface::<ValidationShader>()
-                    .expect("Unknown IShader implementation");
+                let v = unwrap::shader_d(v);
 
                 let duplicate_stage = !stage_set.insert(v.shader_type as u32);
                 assert!(
@@ -455,13 +452,18 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
-        let inner = self.inner.create_fence()?;
+    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+        let initial_state = if signalled {
+            FenceState::ObservedAsSignalled
+        } else {
+            FenceState::NotSignalled
+        };
+        let inner = self.inner.create_fence(signalled)?;
         let fence = AnyArc::new_cyclic(move |v| ValidationFence {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
-            state: AtomicCell::new(FenceState::Reset),
+            state: AtomicCell::new(initial_state),
         });
         Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
     }
@@ -485,25 +487,20 @@ impl IDevice for ValidationDevice {
 
     fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
         fences.iter().for_each(|v| {
-            let v = v
-                .query_interface::<ValidationFence>()
-                .expect("Unknown IFence implementation");
-            let fence_state = v.state.load();
-            assert_eq!(
-                fence_state,
-                FenceState::Waiting,
-                "It is invalid to wait on a fence after already having waited on it before"
-            );
+            let v = unwrap::fence_d(v);
+            if timeout == u32::MAX {
+                let fence_state = v.state.load();
+                assert_ne!(
+                    fence_state,
+                    FenceState::NotSignalled,
+                    "It is invalid to wait on a fence with no pending work with a u32::MAX timeout"
+                );
+            }
         });
 
         let inner_fences: Vec<_> = fences
             .iter()
-            .map(|v| {
-                v.query_interface::<ValidationFence>()
-                    .expect("Unknown IFence implementation")
-                    .inner
-                    .as_ref()
-            })
+            .map(|v| unwrap::fence_d(v).inner.as_ref())
             .collect();
         let result = self.inner.wait_fences(&inner_fences, wait_all, timeout);
 
@@ -511,9 +508,7 @@ impl IDevice for ValidationDevice {
             // If we met the wait condition we can update the fence states as at least one of them
             // have been signalled
             fences.iter().for_each(|v| {
-                let v = v
-                    .query_interface::<ValidationFence>()
-                    .expect("Unknown IFence implementation");
+                let v = unwrap::fence_d(v);
 
                 // We can only update the state if we can prove the fence is signalled.
                 //
@@ -523,8 +518,12 @@ impl IDevice for ValidationDevice {
                 // If 'wait_all' is false then we only know that at least one fence is signalled.
                 // We poll all the fences after the wait to confirm they are in fact signalled and
                 // update the state accordingly.
-                if wait_all || self.poll_fence(v.inner.as_ref()) {
-                    v.state.store(FenceState::Waited);
+                if wait_all {
+                    v.state.store(FenceState::ObservedAsSignalled);
+                } else {
+                    // Will update the state as a side effect of calling poll_fence. Skips storing
+                    // to the state twice
+                    self.poll_fence(v.inner.as_ref());
                 }
             });
         }
@@ -536,21 +535,12 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn poll_fence(&self, fence: &dyn IFence) -> bool {
-        let fence = fence
-            .query_interface::<ValidationFence>()
-            .expect("Unknown IFence implementation");
-
-        let fence_state = fence.state.load();
-        assert_ne!(
-            fence_state,
-            FenceState::Reset,
-            "It is invalid to poll a fence in the 'reset' state"
-        );
+        let fence = unwrap::fence(fence);
 
         let result = self.inner.poll_fence(fence.inner.as_ref());
 
         if result {
-            fence.state.store(FenceState::Waited);
+            fence.state.store(FenceState::ObservedAsSignalled);
         }
 
         result
@@ -558,35 +548,25 @@ impl IDevice for ValidationDevice {
 
     fn reset_fences(&self, fences: &[&dyn IFence]) {
         fences.iter().for_each(|v| {
-            let v = v
-                .query_interface::<ValidationFence>()
-                .expect("Unknown IFence implementation");
+            let v = unwrap::fence_d(v);
             let fence_state = v.state.load();
             assert_ne!(
                 fence_state,
-                FenceState::Waiting,
+                FenceState::Pending,
                 "It is invalid to reset a fence while it is still in use on a queue."
             );
         });
 
         let inner_fences: Vec<_> = fences
             .iter()
-            .map(|v| {
-                v.query_interface::<ValidationFence>()
-                    .expect("Unknown IFence implementation")
-                    .inner
-                    .as_ref()
-            })
+            .map(|v| unwrap::fence_d(v).inner.as_ref())
             .collect();
 
         self.inner.reset_fences(&inner_fences);
 
         fences.iter().for_each(|v| {
-            let v = v
-                .query_interface::<ValidationFence>()
-                .expect("Unknown IFence implementation");
-
-            v.state.store(FenceState::Reset);
+            let v = unwrap::fence_d(v);
+            v.state.store(FenceState::NotSignalled);
         });
     }
 

@@ -28,10 +28,10 @@
 //
 
 use crate::fence::FenceState;
-use crate::internal::get_as_unwrapped;
+use crate::internal::{get_as_unwrapped, unwrap};
 use crate::semaphore::SemaphoreState;
 use crate::{
-    ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
+    ValidationCommandList, ValidationDevice, ValidationSemaphore,
     ValidationSwapChain,
 };
 use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
@@ -146,14 +146,12 @@ impl IQueue for ValidationQueue {
         // }
 
         if let Some(v) = desc.fence {
-            let v = v
-                .query_interface::<ValidationFence>()
-                .expect("Unknown IFence implementation");
+            let v = unwrap::fence(v);
             let fence_state = v.state.load();
 
             assert_eq!(
                 fence_state,
-                FenceState::Reset,
+                FenceState::NotSignalled,
                 "It is invalid to submit a wait fence without resetting it from prior use"
             );
         }
@@ -170,18 +168,13 @@ impl IQueue for ValidationQueue {
             // }
 
             for v in desc.signal_semaphores {
-                let v = v
-                    .query_interface::<ValidationSemaphore>()
-                    .expect("Unknown ISemaphore implementation");
-
+                let v = unwrap::semaphore_d(v);
                 v.state.store(SemaphoreState::Waiting);
             }
 
             if let Some(v) = desc.fence {
-                let v = v
-                    .query_interface::<ValidationFence>()
-                    .expect("Unknown IFence implementation");
-                v.state.store(FenceState::Waiting);
+                let v = unwrap::fence(v);
+                v.state.store(FenceState::Pending);
             }
 
             result

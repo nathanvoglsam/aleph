@@ -59,16 +59,32 @@ impl IFence for ValidationFence {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum FenceState {
-    /// The default state of a fence, before it has been used as a wait handle for a queue
-    /// submission.
-    Reset,
+    /// The state of a fence in the following conditions:
+    /// - After creation when created as unsignalled
+    /// - After the fence is reset but before it is used as a signal target again
+    ///
+    /// In this state it is valid to do the following:
+    /// - Reset the fence. Simply does nothing.
+    /// - Use the fence as a signal target.
+    /// - Wait on the fence. But only with a timeout.
+    /// - Poll the state of the fence as signalled or unsignalled.
+    NotSignalled,
 
     /// The state a fence transitions to when used to wait on GPU work in a queue submission. This
     /// state is specifically only active before the GPU work is complete.
-    Waiting,
+    ///
+    /// In this state it is valid to do the following:
+    /// - Wait on the fence.
+    /// - Poll the state of the fence as signalled or unsignalled.
+    Pending,
 
     /// The state a fence transitions to when the GPU work it is waiting on is completed. The
     /// transition specifically only happens when the fence is actually waited on. An outstanding
     /// fence only becomes 'waited' after use in 'wait_fences'.
-    Waited,
+    ///
+    /// In this state it is valid to do the following:
+    /// - Reset the fence. Returns to the NotSignalled state.
+    /// - Wait on the fence.
+    /// - Poll the state of the fence as signalled or unsignalled.
+    ObservedAsSignalled,
 }
