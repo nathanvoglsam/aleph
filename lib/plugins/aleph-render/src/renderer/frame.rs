@@ -48,6 +48,8 @@ pub struct PerFrameObjects {
 
     pub descriptor_pool: Box<dyn IDescriptorPool>,
     pub descriptor_set: DescriptorSetHandle,
+
+    pub done_fence: AnyArc<dyn IFence>,
 }
 
 impl PerFrameObjects {
@@ -93,6 +95,7 @@ impl PerFrameObjects {
             font_staged_size: (0, 0),
             descriptor_pool,
             descriptor_set,
+            done_fence: device.create_fence(true).unwrap(),
         }
     }
 

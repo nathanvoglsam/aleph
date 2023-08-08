@@ -55,7 +55,7 @@ impl EguiRenderer {
 
         let global = GlobalObjects::new(device.deref(), dimensions);
 
-        let frames = (0..3)
+        let frames = (0..2)
             .into_iter()
             .map(|_| PerFrameObjects::new(device.deref(), &global))
             .collect();

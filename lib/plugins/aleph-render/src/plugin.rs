@@ -169,11 +169,18 @@ impl IPlugin for PluginRender {
                 }
 
                 unsafe {
-                    data.index = (data.index + 1) % 3;
+                    data.index = (data.index + 1) % 2;
                     let acquire_semaphore =
                         data.renderer.frames[data.index].acquire_semaphore.clone();
                     let present_semaphore =
                         data.renderer.frames[data.index].present_semaphore.clone();
+                    let fence = data.renderer.frames[data.index].done_fence.clone();
+
+                    assert_eq!(
+                        device.wait_fences(&[fence.as_ref()], true, u32::MAX),
+                        FenceWaitResult::Complete
+                    );
+                    device.reset_fences(&[fence.as_ref()]);
 
                     let acquired_index = match data.swap_chain.acquire_next_image(&AcquireDesc {
                         signal_semaphore: acquire_semaphore.as_ref(),
@@ -188,7 +195,7 @@ impl IPlugin for PluginRender {
                     let acquired_image = data.swap_images[acquired_index as usize].clone();
 
                     let command_list = data.renderer.record_frame(
-                        acquired_index as usize,
+                        data.index,
                         acquired_image.deref(),
                         data.render_data.take(),
                     );
@@ -198,7 +205,7 @@ impl IPlugin for PluginRender {
                             command_lists: &[Some(command_list).into()],
                             wait_semaphores: &[acquire_semaphore.as_ref()],
                             signal_semaphores: &[present_semaphore.as_ref()],
-                            fence: None,
+                            fence: Some(fence.as_ref()),
                         })
                         .unwrap();
                     queue
