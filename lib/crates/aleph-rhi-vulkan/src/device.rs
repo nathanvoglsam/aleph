@@ -981,9 +981,12 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
         let fence = unsafe {
-            let info = vk::FenceCreateInfo::builder();
+            let mut info = vk::FenceCreateInfo::builder();
+            if signalled {
+                info = info.flags(vk::FenceCreateFlags::SIGNALED)
+            }
             self.device
                 .create_fence(&info, None)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
