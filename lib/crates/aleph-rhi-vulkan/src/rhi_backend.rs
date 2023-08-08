@@ -125,8 +125,8 @@ impl RhiBackend {
             log::error!("Vulkan Instance doesn't support Vulkan 1.x");
             return Err(ContextCreateError::Platform);
         }
-        if vk::api_version_minor(instance_version) < 2 {
-            log::error!("Vulkan Instance doesn't support Vulkan 1.2");
+        if vk::api_version_minor(instance_version) < 1 {
+            log::error!("Vulkan Instance doesn't support Vulkan 1.1");
             return Err(ContextCreateError::Platform);
         }
 
@@ -455,7 +455,7 @@ fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
             env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
             env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         ))
-        .api_version(vk::API_VERSION_1_2)
+        .api_version(vk::API_VERSION_1_1)
 }
 
 fn install_debug_messenger(

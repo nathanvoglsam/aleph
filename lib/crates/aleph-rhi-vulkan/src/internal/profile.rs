@@ -216,6 +216,100 @@ impl CreateProfile for vk::PhysicalDeviceVulkan11Properties {
     }
 }
 
+impl CreateProfile for vk::PhysicalDeviceIDProperties {
+    fn baseline() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceSubgroupProperties {
+    fn baseline() -> Self {
+        Self {
+            subgroup_size: u32::MIN,
+            supported_stages: Default::default(),
+            supported_operations: Default::default(),
+            quad_operations_in_all_stages: vk::FALSE,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDevicePointClippingProperties {
+    fn baseline() -> Self {
+        Self {
+            point_clipping_behavior: Default::default(),
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceMultiviewProperties {
+    fn baseline() -> Self {
+        Self {
+            max_multiview_view_count: u32::MIN,
+            max_multiview_instance_index: u32::MIN,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceProtectedMemoryProperties {
+    fn baseline() -> Self {
+        Self {
+            protected_no_fault: vk::FALSE,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceMaintenance3Properties {
+    fn baseline() -> Self {
+        Self {
+            max_per_set_descriptors: u32::MIN,
+            max_memory_allocation_size: vk::DeviceSize::MIN,
+            ..Default::default()
+        }
+    }
+
+    fn minimum() -> Self {
+        Self {
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
 impl CreateProfile for vk::PhysicalDeviceVulkan12Properties {
     fn baseline() -> Self {
         Self {
@@ -357,6 +451,90 @@ impl CreateProfile for vk::PhysicalDeviceVulkan11Features {
             variable_pointers: vk::TRUE,
             // protected_memory: vk::TRUE,
             // sampler_ycbcr_conversion: vk::TRUE,
+            // shader_draw_parameters: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDevice16BitStorageFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            storage_buffer16_bit_access: vk::TRUE,
+            // uniform_and_storage_buffer16_bit_access: vk::TRUE,
+            // storage_push_constant16: vk::TRUE,
+            // storage_input_output16: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceMultiviewFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            multiview: vk::TRUE,
+            // multiview_geometry_shader: vk::TRUE,
+            // multiview_tessellation_shader: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceVariablePointersFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            variable_pointers_storage_buffer: vk::TRUE,
+            variable_pointers: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceProtectedMemoryFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // protected_memory: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
+            // sampler_ycbcr_conversion: vk::TRUE,
+            ..CreateProfile::baseline()
+        }
+    }
+}
+
+impl CreateProfile for vk::PhysicalDeviceShaderDrawParametersFeatures {
+    fn baseline() -> Self {
+        Self::default()
+    }
+
+    fn minimum() -> Self {
+        Self {
             // shader_draw_parameters: vk::TRUE,
             ..CreateProfile::baseline()
         }

@@ -575,6 +575,92 @@ impl CheckMeetsProfile for vk::PhysicalDeviceVulkan11Properties {
     }
 }
 
+impl CheckMeetsProfile for vk::PhysicalDeviceIDProperties {
+    #[rustfmt::skip]
+    fn meets_profile(&self, _v: &Self) -> Option<()> {
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, _v: &Self) {
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceSubgroupProperties {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        lmin!(self, v, subgroup_size);
+        feat_mask!(self, v, supported_stages);
+        feat_mask!(self, v, supported_operations);
+        feat!(self, v, quad_operations_in_all_stages);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_lmin!(self, v, subgroup_size);
+        merge_feat_mask!(self, v, supported_stages);
+        merge_feat_mask!(self, v, supported_operations);
+        merge_feat!(self, v, quad_operations_in_all_stages);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDevicePointClippingProperties {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        delegate!(self, v, point_clipping_behavior);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_delegate!(self, v, point_clipping_behavior);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceMultiviewProperties {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        lmin!(self, v, max_multiview_view_count);
+        lmin!(self, v, max_multiview_instance_index);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_lmin!(self, v, max_multiview_view_count);
+        merge_lmin!(self, v, max_multiview_instance_index);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryProperties {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, protected_no_fault);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, protected_no_fault);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceMaintenance3Properties {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        lmin!(self, v, max_per_set_descriptors);
+        lmin!(self, v, max_memory_allocation_size);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_lmin!(self, v, max_per_set_descriptors);
+        merge_lmin!(self, v, max_memory_allocation_size);
+    }
+}
+
 impl CheckMeetsProfile for vk::PhysicalDeviceVulkan12Properties {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
@@ -836,6 +922,96 @@ impl CheckMeetsProfile for vk::PhysicalDeviceVulkan11Features {
         merge_feat!(self, v, variable_pointers);
         merge_feat!(self, v, protected_memory);
         merge_feat!(self, v, sampler_ycbcr_conversion);
+        merge_feat!(self, v, shader_draw_parameters);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDevice16BitStorageFeatures {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, storage_buffer16_bit_access);
+        feat!(self, v, uniform_and_storage_buffer16_bit_access);
+        feat!(self, v, storage_push_constant16);
+        feat!(self, v, storage_input_output16);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, storage_buffer16_bit_access);
+        merge_feat!(self, v, uniform_and_storage_buffer16_bit_access);
+        merge_feat!(self, v, storage_push_constant16);
+        merge_feat!(self, v, storage_input_output16);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceMultiviewFeatures {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, multiview);
+        feat!(self, v, multiview_geometry_shader);
+        feat!(self, v, multiview_tessellation_shader);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, multiview);
+        merge_feat!(self, v, multiview_geometry_shader);
+        merge_feat!(self, v, multiview_tessellation_shader);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceVariablePointersFeatures {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, variable_pointers_storage_buffer);
+        feat!(self, v, variable_pointers);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, variable_pointers_storage_buffer);
+        merge_feat!(self, v, variable_pointers);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryFeatures {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, protected_memory);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, protected_memory);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, sampler_ycbcr_conversion);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
+        merge_feat!(self, v, sampler_ycbcr_conversion);
+    }
+}
+
+impl CheckMeetsProfile for vk::PhysicalDeviceShaderDrawParametersFeatures {
+    #[rustfmt::skip]
+    fn meets_profile(&self, v: &Self) -> Option<()> {
+        feat!(self, v, shader_draw_parameters);
+        Some(())
+    }
+
+    #[rustfmt::skip]
+    fn merge(&mut self, v: &Self) {
         merge_feat!(self, v, shader_draw_parameters);
     }
 }

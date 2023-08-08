@@ -37,7 +37,12 @@ use std::ffi::{c_char, CStr};
 pub struct DeviceInfo {
     pub extensions: Vec<vk::ExtensionProperties>,
     pub properties_10: vk::PhysicalDeviceProperties,
-    pub properties_11: vk::PhysicalDeviceVulkan11Properties,
+    pub id_properties: vk::PhysicalDeviceIDProperties,
+    pub subgroup_properties: vk::PhysicalDeviceSubgroupProperties,
+    pub point_clipping_properties: vk::PhysicalDevicePointClippingProperties,
+    pub multiview_properties: vk::PhysicalDeviceMultiviewProperties,
+    pub protected_memory_properties: vk::PhysicalDeviceProtectedMemoryProperties,
+    pub maintenance_3_properties: vk::PhysicalDeviceMaintenance3Properties,
     pub descriptor_indexing_properties: vk::PhysicalDeviceDescriptorIndexingProperties,
     pub float_controls_properties: vk::PhysicalDeviceFloatControlsProperties,
     pub depth_stencil_resolve_properties: vk::PhysicalDeviceDepthStencilResolveProperties,
@@ -46,7 +51,12 @@ pub struct DeviceInfo {
     pub driver_properties: vk::PhysicalDeviceDriverProperties,
     pub portability_properties: vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
     pub features_10: vk::PhysicalDeviceFeatures,
-    pub features_11: vk::PhysicalDeviceVulkan11Features,
+    pub t_16bit_storage_features: vk::PhysicalDevice16BitStorageFeatures,
+    pub multiview_features: vk::PhysicalDeviceMultiviewFeatures,
+    pub variable_pointers_features: vk::PhysicalDeviceVariablePointersFeatures,
+    pub protected_memory_features: vk::PhysicalDeviceProtectedMemoryFeatures,
+    pub sampler_ycbcr_conversion_features: vk::PhysicalDeviceSamplerYcbcrConversionFeatures,
+    pub shader_draw_parameters_features: vk::PhysicalDeviceShaderDrawParametersFeatures,
     pub descriptor_indexing_features: vk::PhysicalDeviceDescriptorIndexingFeatures,
     pub imageless_framebuffer_features: vk::PhysicalDeviceImagelessFramebufferFeaturesKHR,
     pub scalar_block_layout_features: vk::PhysicalDeviceScalarBlockLayoutFeatures,
@@ -110,7 +120,12 @@ impl DeviceInfo {
                 make_ext_prop("VK_KHR_depth_stencil_resolve\0"),
             ],
             properties_10: CreateProfile::minimum(),
-            properties_11: CreateProfile::minimum(),
+            id_properties: CreateProfile::minimum(),
+            subgroup_properties: CreateProfile::minimum(),
+            point_clipping_properties: CreateProfile::minimum(),
+            multiview_properties: CreateProfile::minimum(),
+            protected_memory_properties: CreateProfile::minimum(),
+            maintenance_3_properties: CreateProfile::minimum(),
             descriptor_indexing_properties: CreateProfile::minimum(),
             float_controls_properties: CreateProfile::minimum(),
             depth_stencil_resolve_properties: CreateProfile::minimum(),
@@ -119,7 +134,12 @@ impl DeviceInfo {
             driver_properties: CreateProfile::minimum(),
             portability_properties: Default::default(),
             features_10: CreateProfile::minimum(),
-            features_11: CreateProfile::minimum(),
+            t_16bit_storage_features: CreateProfile::minimum(),
+            multiview_features: CreateProfile::minimum(),
+            variable_pointers_features: CreateProfile::minimum(),
+            protected_memory_features: CreateProfile::minimum(),
+            sampler_ycbcr_conversion_features: CreateProfile::minimum(),
+            shader_draw_parameters_features: CreateProfile::minimum(),
             descriptor_indexing_features: CreateProfile::minimum(),
             imageless_framebuffer_features: CreateProfile::minimum(),
             scalar_block_layout_features: CreateProfile::minimum(),
@@ -152,7 +172,12 @@ impl DeviceInfo {
         let DeviceInfo {
             extensions,
             properties_10,
-            properties_11,
+            id_properties,
+            subgroup_properties,
+            point_clipping_properties,
+            multiview_properties,
+            protected_memory_properties,
+            maintenance_3_properties,
             descriptor_indexing_properties,
             float_controls_properties,
             depth_stencil_resolve_properties,
@@ -161,7 +186,12 @@ impl DeviceInfo {
             driver_properties,
             portability_properties,
             features_10,
-            features_11,
+            t_16bit_storage_features,
+            multiview_features,
+            variable_pointers_features,
+            protected_memory_features,
+            sampler_ycbcr_conversion_features,
+            shader_draw_parameters_features,
             descriptor_indexing_features,
             imageless_framebuffer_features,
             scalar_block_layout_features,
@@ -180,7 +210,12 @@ impl DeviceInfo {
 
         // Unconditionally required properties
         let mut properties = vk::PhysicalDeviceProperties2::builder()
-            .push_next(properties_11)
+            .push_next(id_properties)
+            .push_next(subgroup_properties)
+            .push_next(point_clipping_properties)
+            .push_next(multiview_properties)
+            .push_next(protected_memory_properties)
+            .push_next(maintenance_3_properties)
             .push_next(descriptor_indexing_properties)
             .push_next(float_controls_properties)
             .push_next(depth_stencil_resolve_properties)
@@ -203,7 +238,12 @@ impl DeviceInfo {
 
         // Glue all the feature extension structs together into our monster instance
         let mut features = vk::PhysicalDeviceFeatures2::builder()
-            .push_next(features_11)
+            .push_next(t_16bit_storage_features)
+            .push_next(multiview_features)
+            .push_next(variable_pointers_features)
+            .push_next(protected_memory_features)
+            .push_next(sampler_ycbcr_conversion_features)
+            .push_next(shader_draw_parameters_features)
             .push_next(descriptor_indexing_features)
             .push_next(imageless_framebuffer_features)
             .push_next(scalar_block_layout_features)
@@ -261,7 +301,12 @@ impl DeviceInfo {
     }
 
     fn null_p_next_ptrs(&mut self) {
-        self.properties_11.p_next = std::ptr::null_mut();
+        self.id_properties.p_next = std::ptr::null_mut();
+        self.subgroup_properties.p_next = std::ptr::null_mut();
+        self.point_clipping_properties.p_next = std::ptr::null_mut();
+        self.multiview_properties.p_next = std::ptr::null_mut();
+        self.protected_memory_properties.p_next = std::ptr::null_mut();
+        self.maintenance_3_properties.p_next = std::ptr::null_mut();
         self.descriptor_indexing_properties.p_next = std::ptr::null_mut();
         self.float_controls_properties.p_next = std::ptr::null_mut();
         self.depth_stencil_resolve_properties.p_next = std::ptr::null_mut();
@@ -269,7 +314,12 @@ impl DeviceInfo {
         self.sampler_filter_minmax_properties.p_next = std::ptr::null_mut();
         self.driver_properties.p_next = std::ptr::null_mut();
         self.portability_properties.p_next = std::ptr::null_mut();
-        self.features_11.p_next = std::ptr::null_mut();
+        self.t_16bit_storage_features.p_next = std::ptr::null_mut();
+        self.multiview_features.p_next = std::ptr::null_mut();
+        self.variable_pointers_features.p_next = std::ptr::null_mut();
+        self.protected_memory_features.p_next = std::ptr::null_mut();
+        self.sampler_ycbcr_conversion_features.p_next = std::ptr::null_mut();
+        self.shader_draw_parameters_features.p_next = std::ptr::null_mut();
         self.descriptor_indexing_features.p_next = std::ptr::null_mut();
         self.imageless_framebuffer_features.p_next = std::ptr::null_mut();
         self.scalar_block_layout_features.p_next = std::ptr::null_mut();
@@ -313,7 +363,12 @@ impl DeviceInfo {
         }
 
         self.properties_10.meets_minimum()?;
-        self.properties_11.meets_minimum()?;
+        self.id_properties.meets_minimum()?;
+        self.subgroup_properties.meets_minimum()?;
+        self.point_clipping_properties.meets_minimum()?;
+        self.multiview_properties.meets_minimum()?;
+        self.protected_memory_properties.meets_minimum()?;
+        self.maintenance_3_properties.meets_minimum()?;
         self.descriptor_indexing_properties.meets_minimum()?;
         self.float_controls_properties.meets_minimum()?;
         self.depth_stencil_resolve_properties.meets_minimum()?;
@@ -322,7 +377,12 @@ impl DeviceInfo {
         self.driver_properties.meets_minimum()?;
         self.portability_properties.meets_minimum()?;
         self.features_10.meets_minimum()?;
-        self.features_11.meets_minimum()?;
+        self.t_16bit_storage_features.meets_minimum()?;
+        self.multiview_features.meets_minimum()?;
+        self.variable_pointers_features.meets_minimum()?;
+        self.protected_memory_features.meets_minimum()?;
+        self.sampler_ycbcr_conversion_features.meets_minimum()?;
+        self.shader_draw_parameters_features.meets_minimum()?;
         self.descriptor_indexing_features.meets_minimum()?;
         self.imageless_framebuffer_features.meets_minimum()?;
         self.scalar_block_layout_features.meets_minimum()?;

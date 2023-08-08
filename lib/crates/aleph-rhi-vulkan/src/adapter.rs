@@ -216,7 +216,12 @@ impl IAdapter for Adapter {
 
         let DeviceInfo {
             features_10,
-            mut features_11,
+            mut t_16bit_storage_features,
+            mut multiview_features,
+            mut variable_pointers_features,
+            mut protected_memory_features,
+            mut sampler_ycbcr_conversion_features,
+            mut shader_draw_parameters_features,
             mut descriptor_indexing_features,
             mut imageless_framebuffer_features,
             mut scalar_block_layout_features,
@@ -227,7 +232,12 @@ impl IAdapter for Adapter {
             ..
         } = DeviceInfo::minimum();
         let mut device_create_info = vk::DeviceCreateInfo::builder()
-            .push_next(&mut features_11)
+            .push_next(&mut t_16bit_storage_features)
+            .push_next(&mut multiview_features)
+            .push_next(&mut variable_pointers_features)
+            .push_next(&mut protected_memory_features)
+            .push_next(&mut sampler_ycbcr_conversion_features)
+            .push_next(&mut shader_draw_parameters_features)
             .push_next(&mut descriptor_indexing_features)
             .push_next(&mut imageless_framebuffer_features)
             .push_next(&mut scalar_block_layout_features)
