@@ -769,17 +769,22 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+        let initial_value = if signalled {
+            1
+        } else {
+            0
+        };
         let fence: ID3D12Fence = unsafe {
             self.device
-                .CreateFence(0, D3D12_FENCE_FLAG_NONE)
+                .CreateFence(initial_value, D3D12_FENCE_FLAG_NONE)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
         let fence = AnyArc::new_cyclic(move |v| Fence {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             fence,
-            value: AtomicU64::new(0),
+            value: AtomicU64::new(2),
         });
         Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
     }
