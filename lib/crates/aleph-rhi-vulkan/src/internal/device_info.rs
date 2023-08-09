@@ -356,7 +356,6 @@ impl DeviceInfo {
     #[rustfmt::skip]
     pub fn meets_minimum_requirements(&self) -> Option<()> {
         let DeviceInfo { extensions: minimum_extensions, .. } = Self::minimum();
-        
         let mut is_missing_required_extensions = false;
         for required in minimum_extensions {
             if !self.supports_extension_ptr(required.extension_name.as_ptr()) {
