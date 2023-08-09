@@ -37,8 +37,8 @@ use crate::templates::{
     LOCAL_PROPERTIES_TEMPLATE,
 };
 use crate::utils::{
-    architecture_from_arg, extract_zip, find_crate_and_target, get_cargo_metadata, BuildPlatform,
-    Target,
+    architecture_from_arg, extract_zip, find_crate_and_target, get_cargo_metadata,
+    resolve_absolute_or_root_relative_path, BuildPlatform, Target,
 };
 use aleph_target::Architecture;
 use anyhow::anyhow;
@@ -269,17 +269,10 @@ fn make_branding_file_copier<'a>(
             }
         }
 
-        if src.is_absolute() {
-            let from = src;
-            let to = root.join(dst);
-            log::trace!("Copying '{:?} -> {:?}'", from, &to);
-            std::fs::copy(from, to)?;
-        } else {
-            let from = project_root.join(src);
-            let to = root.join(dst);
-            log::trace!("Copying '{:?} -> {:?}'", from, &to);
-            std::fs::copy(from, to)?;
-        }
+        let from = resolve_absolute_or_root_relative_path(project_root, src);
+        let to = root.join(dst);
+        log::trace!("Copying '{:?} -> {:?}'", from, &to);
+        std::fs::copy(from, to)?;
         Ok(())
     };
 

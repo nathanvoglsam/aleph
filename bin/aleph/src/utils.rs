@@ -246,3 +246,15 @@ pub fn find_crate_and_target<'a>(
         Ok((package, None))
     }
 }
+
+pub fn resolve_absolute_or_root_relative_path<P: AsRef<Path>>(
+    project_root: &Path,
+    v: P,
+) -> PathBuf {
+    let v = v.as_ref();
+    if v.is_absolute() {
+        v.to_path_buf()
+    } else {
+        project_root.join(v)
+    }
+}

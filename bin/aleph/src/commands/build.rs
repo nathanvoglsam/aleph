@@ -32,7 +32,7 @@ use crate::env::{project_file, project_root, target_project_root};
 use crate::project::ProjectSchema;
 use crate::utils::{
     architecture_from_arg, find_crate_and_target, get_cargo_metadata, profile_from_arg,
-    BuildPlatform, Target,
+    resolve_absolute_or_root_relative_path, BuildPlatform, Target,
 };
 use aleph_target::build::target_platform;
 use aleph_target::Profile;
@@ -138,7 +138,7 @@ impl Build {
     fn windows(
         &self,
         project: ProjectSchema,
-        root: PathBuf,
+        project_root: PathBuf,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -147,13 +147,13 @@ impl Build {
             BuildPlatform::Windows,
             "It is only valid to build windows on windows"
         );
-        self.plain_cargo_build(project, root, profile, target)
+        self.plain_cargo_build(project, project_root, profile, target)
     }
 
     fn macos(
         &self,
         project: ProjectSchema,
-        root: PathBuf,
+        project_root: PathBuf,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -162,13 +162,13 @@ impl Build {
             BuildPlatform::MacOS,
             "It is only valid to build macos on macos"
         );
-        self.plain_cargo_build(project, root, profile, target)
+        self.plain_cargo_build(project, project_root, profile, target)
     }
 
     fn linux(
         &self,
         project: ProjectSchema,
-        root: PathBuf,
+        project_root: PathBuf,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -177,95 +177,87 @@ impl Build {
             BuildPlatform::Linux,
             "It is only valid to build linux on linux"
         );
-        self.plain_cargo_build(project, root, profile, target)
+        self.plain_cargo_build(project, project_root, profile, target)
     }
 
     fn plain_cargo_build(
         &self,
         project: ProjectSchema,
-        _root: PathBuf,
+        project_root: PathBuf,
         profile: Profile,
-        _target: &Target,
+        target: &Target,
     ) -> anyhow::Result<()> {
-        match profile {
-            Profile::Debug => {
-                let mut command = base_native_build(&project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
-            Profile::Release => {
-                let mut command = release_native_build(&project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
-            Profile::Retail => {
-                let mut command = retail_native_build(&project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
+        let mut command = match profile {
+            Profile::Debug => base_native_build(&project.game.crate_name)?,
+            Profile::Release => release_native_build(&project.game.crate_name)?,
+            Profile::Retail => retail_native_build(&project.game.crate_name)?,
         };
+
+        self.add_win32_branding_env_vars(project, project_root, target, &mut command)?;
+
+        log::info!("{:?}", &command);
+        command.status()?;
+        Ok(())
+    }
+
+    fn add_win32_branding_env_vars(
+        &self,
+        project: ProjectSchema,
+        project_root: PathBuf,
+        target: &Target,
+        command: &mut Command,
+    ) -> anyhow::Result<()> {
+        // For windows or uwp we need to add an environment var for configuring the executable icon
+        if matches!(target.platform, BuildPlatform::Windows | BuildPlatform::UWP) {
+            if let Some(branding) = project.windows.and_then(|v| v.branding) {
+                let icon = branding.icon.as_ref();
+                let icon = resolve_absolute_or_root_relative_path(&project_root, icon);
+                log::info!("ALEPH_WIN32_ICON_FILE = {:#?}", &icon);
+                command.env("ALEPH_WIN32_ICON_FILE", icon);
+            }
+        }
         Ok(())
     }
 
     fn uwp(
         &self,
         project: ProjectSchema,
-        _root: PathBuf,
+        _project_root: PathBuf,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
-        match profile {
-            Profile::Debug => {
-                let mut command = base_uwp_build(target, &project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
-            Profile::Release => {
-                let mut command = release_uwp_build(target, &project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
-            Profile::Retail => {
-                let mut command = retail_uwp_build(target, &project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
+        let mut command = match profile {
+            Profile::Debug => base_uwp_build(target, &project.game.crate_name)?,
+            Profile::Release => release_uwp_build(target, &project.game.crate_name)?,
+            Profile::Retail => retail_uwp_build(target, &project.game.crate_name)?,
         };
+        log::info!("{:?}", &command);
+        command.status()?;
         Ok(())
     }
 
     fn android(
         &self,
         project: ProjectSchema,
-        root: PathBuf,
+        project_root: PathBuf,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
-        match profile {
-            Profile::Debug => {
-                let mut command = base_android_build(target, &project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
-            Profile::Release => {
-                let mut command = release_android_build(target, &project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
-            Profile::Retail => {
-                let mut command = retail_android_build(target, &project.game.crate_name)?;
-                log::info!("{:?}", &command);
-                command.status()?;
-            }
+        let mut command = match profile {
+            Profile::Debug => base_android_build(target, &project.game.crate_name)?,
+            Profile::Release => release_android_build(target, &project.game.crate_name)?,
+            Profile::Retail => retail_android_build(target, &project.game.crate_name)?,
         };
+        log::info!("{:?}", &command);
+        command.status()?;
 
-        let project_root = target_project_root(target)?;
-        if project_root.exists() {
-            let mut output_dir = project_root.join("app");
+        let android_project_root = target_project_root(target)?;
+        if android_project_root.exists() {
+            let mut output_dir = android_project_root.join("app");
             output_dir.push("libs");
             output_dir.push(target.arch.ndk_name());
 
-            let mut target_dir = root.join("target");
+            let mut target_dir = project_root.join("target");
             target_dir.push(format!("{}-linux-android", target.arch.name()));
             target_dir.push(profile.name());
 
