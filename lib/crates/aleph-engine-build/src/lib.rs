@@ -55,9 +55,9 @@ fn compile_and_link_windows_resource_file() {
 
     let icon_path = std::env::var("ALEPH_WIN32_ICON_FILE").unwrap_or_else(|_| {
         let v = Path::new(env!("CARGO_MANIFEST_DIR")).join("app_icon.ico");
-        let v = v.to_str().unwrap().to_string();
-        v.replace("\\", "/")
+        v.to_str().unwrap().to_string()
     });
+    let icon_path = icon_path.replace("\\", "/");
 
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let out_dir = PathBuf::from(out_dir);
