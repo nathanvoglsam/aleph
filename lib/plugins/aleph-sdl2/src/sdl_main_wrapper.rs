@@ -57,7 +57,7 @@ mod uwp {
         _argc: std::os::raw::c_int,
         _argv: *const *const std::os::raw::c_char,
     ) -> std::os::raw::c_int {
-        let winrt_fiber = ConvertThreadToFiberEx(std::ptr::null_mut(), 0);
+        let winrt_fiber = ConvertThreadToFiberEx(None, 0);
         let winrt_fiber = NonNull::new(winrt_fiber).expect("Failed to convert thread to fiber");
         let payload = FiberPayload { fiber: winrt_fiber };
         if WINRT_PAYLOAD.set(payload).is_err() {
@@ -97,7 +97,7 @@ mod uwp {
 
     pub unsafe fn run_sdl_main() -> MainCtx {
         // Convert to fiber so we can jump back here from within the main function
-        let main_fiber = ConvertThreadToFiberEx(std::ptr::null_mut(), 0);
+        let main_fiber = ConvertThreadToFiberEx(None, 0);
         let main_fiber = NonNull::new(main_fiber).expect("Failed to convert thread to fiber");
 
         // Push into our global payload a pointer to the fiber to return to once SDL_WinRTRunApp
@@ -108,7 +108,7 @@ mod uwp {
         }
 
         // Create a new fiber which will drive our SDL_WinRTRunApp wrapper
-        let sdl_fiber = CreateFiberEx(0, 0, 0, Some(fiber_proc), std::ptr::null_mut());
+        let sdl_fiber = CreateFiberEx(0, 0, 0, Some(fiber_proc), None);
         let sdl_fiber = NonNull::new(sdl_fiber).expect("Failed to crate main fiber");
 
         // Switch to the created fiber to run the SDL_WinRTRunApp to initialize required
