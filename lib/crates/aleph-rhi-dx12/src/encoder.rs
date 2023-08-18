@@ -273,53 +273,46 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 impl<'a> IComputeEncoder for Encoder<'a> {
     unsafe fn bind_descriptor_sets(
         &mut self,
-        _pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &dyn IPipelineLayout,
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
     ) {
-        pub unsafe fn set_compute(
-            encoder: &Encoder,
-            rootparameterindex: u32,
-            basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
-        ) {
-            encoder
-                ._list
-                .SetComputeRootDescriptorTable(rootparameterindex, basedescriptor)
-        }
-        pub unsafe fn set_graphics(
-            encoder: &Encoder,
-            rootparameterindex: u32,
-            basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
-        ) {
-            encoder
-                ._list
-                .SetGraphicsRootDescriptorTable(rootparameterindex, basedescriptor)
-        }
-
-        // let pipeline_layout = _pipeline_layout.query_interface::<PipelineLayout>()
-        //     .expect("Unknown IPipelineLayout implementation");
+        let pipeline_layout = unwrap::pipeline_layout(pipeline_layout);
 
         let bind_fn = match bind_point {
-            PipelineBindPoint::Compute => set_compute,
-            PipelineBindPoint::Graphics => set_graphics,
+            PipelineBindPoint::Compute => set_compute_descriptor_table,
+            PipelineBindPoint::Graphics => set_graphics_descriptor_table,
         };
 
-        sets.iter()
-            .enumerate()
-            .map(|(i, v)| {
-                let v: NonNull<()> = v.clone().into();
-                let v: NonNull<DescriptorSet> = v.cast();
+        for (set_index, set) in sets.iter().enumerate() {
+            // Safety: No checks, all up to the caller to ensure this is safe
+            let v: NonNull<()> = set.clone().into();
+            let v: NonNull<DescriptorSet> = v.cast();
+            let v = v.as_ref();
 
-                // Safety: No checks, all up to the caller to ensure this is safe
-                (i as u32, v.as_ref())
-            })
-            .for_each(|(i, v)| {
-                if let Some(handle) = v.resource_handle_gpu {
-                    // TODO: I'm not sure if mapping directly to table index is correct
-                    bind_fn(self, first_set + i, handle.into());
+            // Fetch the base root parameter index for this set from the pipeline layout
+            let mut param_index =
+                pipeline_layout.set_root_param_indices[first_set as usize + set_index];
+
+            // First bind the resource descriptors, which will always take a single descriptor table
+            // slot
+            if let Some(handle) = v.resource_handle_gpu {
+                bind_fn(self, param_index, handle.into());
+
+                // Increment the param index, as the samplers will always be placed in the following
+                // root parameter indices.
+                param_index += 1;
+            }
+
+            // Next we bind the samplers, which are separated out and bound as one table for each
+            // sampler to work around limits making a single table of samplers impractical.
+            if let Some(samplers) = v.s_list_ref() {
+                for (i, sampler) in samplers.iter().cloned().enumerate() {
+                    bind_fn(self, param_index + i as u32, sampler.unwrap().into());
                 }
-            });
+            }
+        }
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
@@ -619,4 +612,23 @@ impl<'a> Encoder<'a> {
 
         (layout_before, layout_after, access_before, access_after)
     }
+}
+
+unsafe fn set_compute_descriptor_table(
+    encoder: &Encoder,
+    rootparameterindex: u32,
+    basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
+) {
+    encoder
+        ._list
+        .SetComputeRootDescriptorTable(rootparameterindex, basedescriptor)
+}
+unsafe fn set_graphics_descriptor_table(
+    encoder: &Encoder,
+    rootparameterindex: u32,
+    basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
+) {
+    encoder
+        ._list
+        .SetGraphicsRootDescriptorTable(rootparameterindex, basedescriptor)
 }
