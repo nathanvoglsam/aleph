@@ -34,6 +34,7 @@ use crate::internal::descriptor_set::DescriptorSet;
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use std::any::TypeId;
+use std::cell::UnsafeCell;
 use std::ptr::NonNull;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
@@ -48,7 +49,7 @@ pub struct DescriptorPool {
     pub(crate) sampler_arena: Option<DescriptorArena>,
 
     /// Backing storage for all the descriptor set objects this pool gives out
-    pub(crate) set_objects: Vec<DescriptorSet>,
+    pub(crate) set_objects: Vec<UnsafeCell<DescriptorSet>>,
 
     /// List of free handles
     pub(crate) free_list: Vec<DescriptorSetHandle>,
@@ -140,7 +141,7 @@ impl DescriptorPool {
         // This won't solve use-after-free, or un-synchronized access to the underlying descriptor
         // memory. Thus any API that reads or writes from descriptors or descriptor sets is unsafe.
         let handle = self.set_objects.as_ptr().wrapping_add(set_index);
-        let handle = handle as *mut DescriptorSet;
+        let handle = handle as *mut UnsafeCell<DescriptorSet>;
 
         // Safety: It's the caller's responsibility to ensure 'set_index' is in bounds. The pointer
         // is guaranteed to be valid if the index is in bounds.
@@ -177,7 +178,7 @@ impl IDescriptorPool for DescriptorPool {
         // Take the next free set, we create fresh set objects linearly
         let set_index = self.set_objects.len();
         let set = self.create_set_object_for_set_index(set_index as u32);
-        self.set_objects.push(set);
+        self.set_objects.push(UnsafeCell::new(set));
 
         // Safety: set_index is guaranteed to be < set_objects.len() because it is created from
         // set_objects.len() immediately prior to pushing a new element in set_objects.
