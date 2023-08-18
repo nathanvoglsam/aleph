@@ -1405,9 +1405,8 @@ impl Device {
                     BaseShaderRegister: base_shader_register,
                     RegisterSpace: 0,
                     Flags: D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
-                    OffsetInDescriptorsFromTableStart: offset,
+                    OffsetInDescriptorsFromTableStart: 0,
                 };
-                offset += self.descriptor_heap_info.sampler_inc * num_descriptors;
                 sampler_tables.push(item);
             }
         }
