@@ -70,6 +70,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::mem::{size_of, transmute_copy};
 use std::ops::Deref;
+use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
 use windows::core::PCSTR;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
@@ -1385,8 +1386,16 @@ impl Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_set(&self, set_write: &DescriptorWriteDesc) {
-        let set = DescriptorSet::ref_from_handle(&set_write.set);
-        let set_layout = set._layout.deref();
+        let set = DescriptorSet::ptr_from_handle(set_write.set.clone());
+        let set_layout = {
+            let set = set.as_ref();
+            let layout = set._layout.deref();
+            // Safety: We _must_ drop this 'set' reference as any one of the update_x_descriptors
+            //         functions could create a mutable reference to 'set'. If this reference stayed
+            //         live then we would have aliasing references.
+            drop(set);
+            layout
+        };
         let binding_layout = set_layout
             .get_binding_info(set_write.binding)
             .unwrap()
@@ -1418,10 +1427,11 @@ impl Device {
     unsafe fn update_sampler_descriptors(
         &self,
         set_write: &DescriptorWriteDesc,
-        set: &DescriptorSet,
         binding_layout: &DescriptorBindingLayout,
+        set: NonNull<DescriptorSet>,
         writes: &[SamplerDescriptorWrite],
     ) {
+        let set = set.as_ref();
         for (i, v) in writes.iter().enumerate() {
             let (dst, _) = set.assume_s_handle();
 
@@ -1452,10 +1462,12 @@ impl Device {
     unsafe fn update_image_descriptors(
         &self,
         set_write: &DescriptorWriteDesc,
-        set: &DescriptorSet,
+        set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[ImageDescriptorWrite],
     ) {
+        let set = set.as_ref();
+
         for (i, v) in writes.iter().enumerate() {
             // SAFETY: It is the caller's responsibility to ensure that the view points to a live
             //         and valid ImageViewObject. The objects are immutable so parallel access is
@@ -1487,10 +1499,12 @@ impl Device {
     unsafe fn update_buffer_descriptors(
         &self,
         set_write: &DescriptorWriteDesc,
-        set: &DescriptorSet,
+        set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[BufferDescriptorWrite],
     ) {
+        let set = set.as_ref();
+
         for (i, v) in writes.iter().enumerate() {
             let (dst, _) = set.assume_r_handle();
 
@@ -1522,10 +1536,12 @@ impl Device {
     unsafe fn update_structured_buffer_descriptors(
         &self,
         set_write: &DescriptorWriteDesc,
-        set: &DescriptorSet,
+        set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[StructuredBufferDescriptorWrite],
     ) {
+        let set = set.as_ref();
+
         for (i, v) in writes.iter().enumerate() {
             let (dst, _) = set.assume_r_handle();
 
@@ -1551,10 +1567,12 @@ impl Device {
     unsafe fn update_texel_buffer_descriptors(
         &self,
         set_write: &DescriptorWriteDesc,
-        set: &DescriptorSet,
+        set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[TexelBufferDescriptorWrite],
     ) {
+        let set = set.as_ref();
+
         for (i, v) in writes.iter().enumerate() {
             let (dst, _) = set.assume_r_handle();
 

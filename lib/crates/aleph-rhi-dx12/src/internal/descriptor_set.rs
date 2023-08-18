@@ -85,19 +85,14 @@ impl DescriptorSet {
     }
 
     /// Grabs the pointer inside a [DescriptorSetHandle] as a non-null [DescriptorSet] ptr
-    pub fn ptr_from_handle(handle: DescriptorSetHandle) -> NonNull<DescriptorSet> {
-        let inner: NonNull<()> = handle.into();
-        inner.cast()
-    }
-
-    /// Constructs a reference to a [DescriptorSet] from the given handle, with the lifetime
-    /// attached to the lifetime of the handle.
     ///
     /// # Safety
     ///
-    /// This function has all the same soundness requirements as creating a reference from a raw
-    /// pointer. At the very least a [DescriptorSetHandle] is guaranteed to be non-null, but many
-    /// things are not known at this call-site without the caller tracking these things themselves.
+    /// Lets be real. You're going to be making a reference out of this pointer...
+    ///
+    /// This has all the soundness requirements for creating a reference from a raw pointer. At the
+    /// very least a [DescriptorSetHandle] is guaranteed to be non-null, but many things are not
+    /// known at this call-site without the caller tracking these things themselves.
     ///
     /// - It is the caller's responsibility to ensure that no mutable reference can exist at the
     ///   same time as the reference this function creates. If it can't be proven statically then
@@ -119,10 +114,8 @@ impl DescriptorSet {
     ///       created from. If the two devices use different implementations then the handles
     ///       *will* be interpreted as the incorrect type.
     ///
-    pub unsafe fn ref_from_handle(handle: &DescriptorSetHandle) -> &DescriptorSet {
-        let ptr = Self::ptr_from_handle(handle.clone());
-
-        // Safety: all left to the caller lmao
-        ptr.as_ref()
+    pub fn ptr_from_handle(handle: DescriptorSetHandle) -> NonNull<DescriptorSet> {
+        let inner: NonNull<()> = handle.into();
+        inner.cast()
     }
 }
