@@ -639,10 +639,24 @@ impl IDevice for Device {
         &self,
         desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
-        let sampler_handle = self.descriptor_heaps.cpu_sampler_heap().allocate().unwrap();
+        let descriptor_id = self
+            .descriptor_heaps
+            .gpu_sampler_heap()
+            .allocate(1)
+            .unwrap();
+        let cpu_handle = self
+            .descriptor_heaps
+            .gpu_sampler_heap()
+            .id_to_cpu_handle(descriptor_id)
+            .unwrap();
+        let gpu_handle = self
+            .descriptor_heaps
+            .gpu_sampler_heap()
+            .id_to_gpu_handle(descriptor_id)
+            .unwrap();
 
+        // TODO: hash and cache unique samplers
         // TODO: we probably need to validate the sampler description to keep this API safe.
-
         unsafe {
             let desc = D3D12_SAMPLER_DESC {
                 Filter: sampler_filters_to_dx12(
@@ -665,7 +679,7 @@ impl IDevice for Device {
                 MinLOD: desc.min_lod,
                 MaxLOD: desc.max_lod,
             };
-            self.device.CreateSampler(&desc, sampler_handle.into());
+            self.device.CreateSampler(&desc, cpu_handle.into());
         }
 
         let static_desc = D3D12_STATIC_SAMPLER_DESC {
@@ -701,7 +715,8 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             desc,
             name,
-            sampler_handle,
+            descriptor_id,
+            gpu_handle,
             static_desc,
         });
         Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))

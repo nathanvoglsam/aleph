@@ -28,17 +28,20 @@
 //
 
 use crate::device::Device;
+use crate::internal::descriptor_heap::DescriptorID;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use std::any::TypeId;
-use windows::utils::CPUDescriptorHandle;
+use windows::utils::GPUDescriptorHandle;
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct Sampler {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) desc: SamplerDesc<'static>,
     pub(crate) name: Option<String>,
-    pub(crate) sampler_handle: CPUDescriptorHandle,
+    pub(crate) descriptor_id: DescriptorID,
+    pub(crate) gpu_handle: GPUDescriptorHandle,
 
     /// A cache of a mostly pre-translated static sampler desc. May as well create this upfront
     /// right?
@@ -77,7 +80,7 @@ impl Drop for Sampler {
     fn drop(&mut self) {
         self._device
             .descriptor_heaps
-            .cpu_sampler_heap()
-            .free(self.sampler_handle);
+            .gpu_sampler_heap()
+            .release(self.descriptor_id, 1);
     }
 }
