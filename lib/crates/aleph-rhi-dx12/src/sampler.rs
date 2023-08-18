@@ -39,6 +39,10 @@ pub struct Sampler {
     pub(crate) desc: SamplerDesc<'static>,
     pub(crate) name: Option<String>,
     pub(crate) sampler_handle: CPUDescriptorHandle,
+
+    /// A cache of a mostly pre-translated static sampler desc. May as well create this upfront
+    /// right?
+    pub(crate) static_desc: D3D12_STATIC_SAMPLER_DESC,
 }
 
 declare_interfaces!(Sampler, [ISampler]);
