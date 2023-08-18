@@ -50,13 +50,12 @@ pub struct DescriptorSet {
     /// be null when no resources are present in the set layout (it contains only samplers).
     pub resource_handle_gpu: Option<GPUDescriptorHandle>,
 
-    /// The CPU virtual address of the beginning of the set's memory in the sampler heap. This can
-    /// be null when no samplers are present in the set layout (it contains only resources).
-    pub sampler_handle_cpu: Option<CPUDescriptorHandle>,
+    /// A list of all the distinct samplers in the order they are expected to be arranged as
+    /// distinct descriptor tables.
+    pub samplers: Option<NonNull<Option<GPUDescriptorHandle>>>,
 
-    /// The GPU virtual address of the beginning of the set's memory in the sampler heap. This can
-    /// be null when no samplers are present in the set layout (it contains only resources).
-    pub sampler_handle_gpu: Option<GPUDescriptorHandle>,
+    /// Length of the 'samplers' list
+    pub num_samplers: usize,
 }
 
 impl DescriptorSet {
@@ -70,18 +69,31 @@ impl DescriptorSet {
 
     #[track_caller]
     #[inline(always)]
-    pub unsafe fn assume_s_handle(&self) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
-        let cpu = if cfg!(debug_assertions) {
-            self.sampler_handle_cpu.unwrap()
+    pub unsafe fn assume_s_list_mut(&mut self) -> &mut [Option<GPUDescriptorHandle>] {
+        self.s_list_mut().unwrap_unchecked()
+    }
+
+    #[track_caller]
+    #[inline(always)]
+    pub unsafe fn s_list_ref(&self) -> Option<&[Option<GPUDescriptorHandle>]> {
+        if let Some(ptr) = self.samplers {
+            Some(std::slice::from_raw_parts(ptr.as_ptr(), self.num_samplers))
         } else {
-            self.sampler_handle_cpu.unwrap_unchecked()
-        };
-        let gpu = if cfg!(debug_assertions) {
-            self.sampler_handle_gpu.unwrap()
+            None
+        }
+    }
+
+    #[track_caller]
+    #[inline(always)]
+    pub unsafe fn s_list_mut(&mut self) -> Option<&mut [Option<GPUDescriptorHandle>]> {
+        if let Some(ptr) = self.samplers {
+            Some(std::slice::from_raw_parts_mut(
+                ptr.as_ptr(),
+                self.num_samplers,
+            ))
         } else {
-            self.sampler_handle_gpu.unwrap_unchecked()
-        };
-        (cpu, gpu)
+            None
+        }
     }
 
     /// Grabs the pointer inside a [DescriptorSetHandle] as a non-null [DescriptorSet] ptr
@@ -119,3 +131,6 @@ impl DescriptorSet {
         inner.cast()
     }
 }
+
+unsafe impl Send for DescriptorSet {}
+unsafe impl Sync for DescriptorSet {}

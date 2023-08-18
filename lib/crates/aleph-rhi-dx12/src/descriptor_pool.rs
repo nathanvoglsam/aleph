@@ -45,11 +45,11 @@ pub struct DescriptorPool {
     /// The base address of the arena this pool allocates resource descriptors from
     pub(crate) resource_arena: Option<DescriptorArena>,
 
-    /// The base address of the arena this pool allocates sampler descriptors from
-    pub(crate) sampler_arena: Option<DescriptorArena>,
-
     /// Backing storage for all the descriptor set objects this pool gives out
     pub(crate) set_objects: Vec<UnsafeCell<DescriptorSet>>,
+
+    /// Backing storage for all the set object's sampler slots
+    pub(crate) sampler_buffer: Vec<Option<GPUDescriptorHandle>>,
 
     /// List of free handles
     pub(crate) free_list: Vec<DescriptorSetHandle>,
@@ -94,15 +94,19 @@ impl DescriptorPool {
         let (resource_handle_cpu, resource_handle_gpu) =
             Self::get_optional_handles_for_arena(self.resource_arena.as_ref(), set_index);
 
-        let (sampler_handle_cpu, sampler_handle_gpu) =
-            Self::get_optional_handles_for_arena(self.resource_arena.as_ref(), set_index);
+        let samplers = if !self._layout.sampler_tables.is_empty() {
+            let idx = set_index as usize * self._layout.sampler_tables.len();
+            Some(NonNull::from(&self.sampler_buffer[idx]))
+        } else {
+            None
+        };
 
         DescriptorSet {
             _layout: self._layout.clone(),
             resource_handle_cpu,
             resource_handle_gpu,
-            sampler_handle_cpu,
-            sampler_handle_gpu,
+            samplers,
+            num_samplers: self._layout.sampler_tables.len(),
         }
     }
 
@@ -228,13 +232,6 @@ impl Drop for DescriptorPool {
             // being unsafe. We still leave preventing user-after-free to the caller.
             unsafe {
                 arena.release_allocation_to_heap(self._device.descriptor_heaps.gpu_view_heap());
-            }
-        }
-
-        if let Some(arena) = self.sampler_arena.as_ref() {
-            // Safety: see above
-            unsafe {
-                arena.release_allocation_to_heap(self._device.descriptor_heaps.gpu_sampler_heap());
             }
         }
     }

@@ -362,24 +362,19 @@ impl IDevice for Device {
             .upgrade()
             .unwrap();
 
+        let sampler_buffer_size = layout.sampler_tables.len() * desc.num_sets as usize;
         let resource_arena = DescriptorArena::new(
             self.descriptor_heaps.gpu_view_heap(),
             desc.num_sets,
             layout.resource_num,
         )?;
 
-        let sampler_arena = DescriptorArena::new(
-            self.descriptor_heaps.gpu_sampler_heap(),
-            desc.num_sets,
-            layout.sampler_num,
-        )?;
-
         let pool = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
             _layout: layout,
             resource_arena,
-            sampler_arena,
             set_objects: Vec::with_capacity(desc.num_sets as usize),
+            sampler_buffer: vec![Default::default(); sampler_buffer_size],
             free_list: Vec::with_capacity(128),
         });
 
