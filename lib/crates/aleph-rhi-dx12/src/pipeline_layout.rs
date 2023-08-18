@@ -39,6 +39,9 @@ pub struct PipelineLayout {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) root_signature: ID3D12RootSignature,
     pub(crate) push_constant_blocks: Vec<PushConstantBlockInfo>,
+
+    /// Maps a set index to the base root parameter index of that descriptor set
+    pub(crate) set_root_param_indices: Vec<u32>,
 }
 
 declare_interfaces!(PipelineLayout, [IPipelineLayout]);

@@ -394,8 +394,15 @@ impl IDevice for Device {
         let mut static_samplers = Vec::new();
         let mut parameters =
             Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_blocks.len());
+        let mut set_root_param_indices = Vec::with_capacity(desc.set_layouts.len());
+
+        let mut root_param_index = 0;
         for (i, layout) in desc.set_layouts.iter().enumerate() {
             let layout = unwrap::descriptor_set_layout_d(layout);
+
+            // First thing is we store the base root parameter index into our set->param_index
+            // lookup table.
+            set_root_param_indices.push(root_param_index);
 
             // Create a parameter for the resource table only if this set has resources in its
             // layout.
@@ -408,6 +415,7 @@ impl IDevice for Device {
                 // will be extended so the reference remains valid
                 let param = root_param_for_range_list(&table, layout.visibility);
                 parameters.push(param);
+                root_param_index += 1; // Advance the counter as we added a root param
 
                 // Extend the lifetime of 'table' so it remains alive for the CreateRootSignature
                 // call.
@@ -426,6 +434,7 @@ impl IDevice for Device {
                     // will be extended so the reference remains valid
                     let param = root_param_for_range_list(range, layout.visibility);
                     parameters.push(param);
+                    root_param_index += 1; // Advance the counter as we added a root param
                 }
 
                 resource_tables.push(table);
@@ -498,6 +507,7 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             root_signature,
             push_constant_blocks,
+            set_root_param_indices,
         });
         Ok(AnyArc::map::<dyn IPipelineLayout, _>(
             pipeline_layout,
