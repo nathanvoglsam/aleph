@@ -476,8 +476,6 @@ impl IDevice for Device {
             parameters.push(range);
         }
 
-        // TODO: dynamic samplers
-
         let root_signature = unsafe {
             let desc = D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
                 Version: D3D_ROOT_SIGNATURE_VERSION_1_1,
@@ -1458,32 +1456,47 @@ impl Device {
     unsafe fn update_sampler_descriptors(
         &self,
         set_write: &DescriptorWriteDesc,
-        binding_layout: &DescriptorBindingLayout,
-        set: NonNull<DescriptorSet>,
+        mut set: NonNull<DescriptorSet>,
+        _binding_layout: &DescriptorBindingLayout,
         writes: &[SamplerDescriptorWrite],
     ) {
-        let set = set.as_ref();
-        for (i, v) in writes.iter().enumerate() {
-            let (dst, _) = set.assume_s_handle();
+        let set = set.as_mut();
 
+        // Find which index in the set's sampler array maps to the binding we're writing to.
+        //
+        // Linear search is best here as the 'sampler_tables' array is rarely if _ever_ going to
+        // have more than a few elements. Linear search is best for tiny search spaces on modern
+        // GPUs.
+        let sampler_index = set
+            ._layout
+            .sampler_tables
+            .iter()
+            .enumerate()
+            .find_map(|(i, v)| {
+                if v.BaseShaderRegister == set_write.binding {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .unwrap();
+
+        // We don't support sampler arrays so we assert if someone tries to write one
+        debug_assert_eq!(writes.len(), 1, "No support for sampler arrays currently");
+
+        for (_i, v) in writes.iter().enumerate() {
+            let target = set.assume_s_list_mut();
             let sampler = unwrap::sampler(v.sampler);
 
-            let src = sampler.sampler_handle;
-
-            let dst = Self::calculate_dst_handle(
-                dst,
-                self.descriptor_heap_info.sampler_inc,
-                binding_layout.base,
-                set_write.array_element,
-                i,
-            );
-
-            self.device.CopyDescriptorsSimple(
-                1,
-                dst.into(),
-                src.into(),
-                D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-            );
+            // Copy the gpu descriptor handle into the descriptor set's internal list of samplers.
+            // This internal list will be consumed at bind time to set each sampler as samplers are
+            // always encoded as single entry descriptor tables to work around tight sampler limit
+            // foot guns.
+            //
+            // This makes adopting Vulkan's binding style friendlier to the developer at the cost of
+            // not being able to support 'update after bind' for sampler descriptors.
+            let src = sampler.gpu_handle;
+            target[sampler_index] = Some(src);
         }
     }
 
