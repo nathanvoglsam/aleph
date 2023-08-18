@@ -63,16 +63,8 @@ impl DescriptorSet {
     #[track_caller]
     #[inline(always)]
     pub unsafe fn assume_r_handle(&self) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
-        let cpu = if cfg!(debug_assertions) {
-            self.resource_handle_cpu.unwrap()
-        } else {
-            self.resource_handle_cpu.unwrap_unchecked()
-        };
-        let gpu = if cfg!(debug_assertions) {
-            self.resource_handle_gpu.unwrap()
-        } else {
-            self.resource_handle_gpu.unwrap_unchecked()
-        };
+        let cpu = self.resource_handle_cpu.unwrap_unchecked();
+        let gpu = self.resource_handle_gpu.unwrap_unchecked();
         (cpu, gpu)
     }
 
