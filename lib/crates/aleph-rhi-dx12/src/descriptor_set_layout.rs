@@ -48,8 +48,7 @@ pub struct DescriptorSetLayout {
     pub(crate) visibility: D3D12_SHADER_VISIBILITY,
     pub(crate) resource_table: Vec<D3D12_DESCRIPTOR_RANGE1>,
     pub(crate) resource_num: u32,
-    pub(crate) sampler_table: Option<Vec<D3D12_DESCRIPTOR_RANGE1>>,
-    pub(crate) sampler_num: u32,
+    pub(crate) sampler_tables: Vec<D3D12_DESCRIPTOR_RANGE1>,
     pub(crate) static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
 }
 

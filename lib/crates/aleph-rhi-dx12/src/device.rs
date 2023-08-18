@@ -330,17 +330,8 @@ impl IDevice for Device {
         // Any non-immutable samplers require a second descriptor table.
         let mut binding_info = HashMap::with_capacity(desc.items.len());
         let resource_table = self.build_resource_table_layout(desc, &mut binding_info);
-        let (sampler_table, static_samplers) =
-            self.build_sampler_table_layout(desc, &mut binding_info)?;
+        let (sampler_tables, static_samplers) = self.build_sampler_tables(desc, &mut binding_info);
         let resource_num = Self::calculate_descriptor_num(&resource_table);
-        let sampler_num = Self::calculate_descriptor_num(&sampler_table);
-
-        // Convert an empty sampler table into none to better encode the meaning in the type
-        let sampler_table = if sampler_table.is_empty() {
-            None
-        } else {
-            Some(sampler_table)
-        };
 
         let descriptor_set_layout = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
             this: v.clone(),
@@ -349,8 +340,7 @@ impl IDevice for Device {
             visibility,
             resource_table,
             resource_num,
-            sampler_table,
-            sampler_num,
+            sampler_tables,
             static_samplers,
         });
         Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(
@@ -1321,16 +1311,12 @@ impl Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn build_sampler_table_layout(
+    fn build_sampler_tables(
         &self,
         desc: &DescriptorSetLayoutDesc,
         binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
-    ) -> Result<
-        (Vec<D3D12_DESCRIPTOR_RANGE1>, Vec<D3D12_STATIC_SAMPLER_DESC>),
-        DescriptorSetLayoutCreateError,
-    > {
-        let mut offset = 0;
-        let mut sampler_table = Vec::new();
+    ) -> (Vec<D3D12_DESCRIPTOR_RANGE1>, Vec<D3D12_STATIC_SAMPLER_DESC>) {
+        let mut sampler_tables = Vec::new();
         let mut static_samplers = Vec::new();
         for item in desc
             .items
@@ -1388,11 +1374,11 @@ impl Device {
                     Flags: D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
                     OffsetInDescriptorsFromTableStart: offset,
                 };
-                sampler_table.push(item);
                 offset += self.descriptor_heap_info.sampler_inc * num_descriptors;
+                sampler_tables.push(item);
             }
         }
-        Ok((sampler_table, static_samplers))
+        (sampler_tables, static_samplers)
     }
 
     // ========================================================================================== //
