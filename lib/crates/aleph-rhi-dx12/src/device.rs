@@ -63,7 +63,9 @@ use crate::shader::Shader;
 use crate::texture::{ImageViewObject, Texture};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
+use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::TypeId;
@@ -163,81 +165,83 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
-        // Unwrap the pipeline layout trait object into the concrete implementation
-        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout)
-            .this
-            .upgrade()
-            .unwrap();
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let builder = GraphicsPipelineStateStreamBuilder::new();
+            // Unwrap the pipeline layout trait object into the concrete implementation
+            let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout)
+                .this
+                .upgrade()
+                .unwrap();
 
-        // Add all shaders in the list to their corresponding slot
-        let builder = Self::translate_shader_stage_list(desc.shader_stages, builder)?;
+            let builder = GraphicsPipelineStateStreamBuilder::new();
 
-        let builder = builder.root_signature(pipeline_layout.root_signature.clone());
+            // Add all shaders in the list to their corresponding slot
+            let builder = Self::translate_shader_stage_list(desc.shader_stages, builder)?;
 
-        let (input_binding_strides, input_layout) =
-            Self::translate_vertex_input_state_desc(desc.vertex_layout);
-        let builder = builder.input_layout(&input_layout);
+            let builder = builder.root_signature(pipeline_layout.root_signature.clone());
 
-        let (builder, primitive_topology) =
-            Self::translate_input_assembly_state_desc(desc, builder);
+            let (input_binding_strides, input_layout) =
+                Self::translate_vertex_input_state_desc(&bump, desc.vertex_layout);
+            let builder = builder.input_layout(&input_layout);
 
-        let rasterizer_state = Self::translate_rasterizer_state_desc(desc.rasterizer_state);
-        let builder = builder.rasterizer_state(rasterizer_state);
+            let (builder, primitive_topology) =
+                Self::translate_input_assembly_state_desc(desc, builder);
 
-        let (depth_bounds, depth_stencil_state) =
-            Self::translate_depth_stencil_desc(desc.depth_stencil_state);
-        let builder = builder.depth_stencil_state(depth_stencil_state);
+            let rasterizer_state = Self::translate_rasterizer_state_desc(desc.rasterizer_state);
+            let builder = builder.rasterizer_state(rasterizer_state);
 
-        let blend_state = Self::translate_blend_state_desc(desc.blend_state);
-        let builder = builder.blend_state(blend_state);
+            let (depth_bounds, depth_stencil_state) =
+                Self::translate_depth_stencil_desc(desc.depth_stencil_state);
+            let builder = builder.depth_stencil_state(depth_stencil_state);
 
-        // TODO: we should be able to expose this in the API
-        let builder = builder.sample_mask(u32::MAX);
+            let blend_state = Self::translate_blend_state_desc(desc.blend_state);
+            let builder = builder.blend_state(blend_state);
 
-        // Render target format translation is straight forward, just convert the formats and add
-        let rtv_formats: Vec<DXGI_FORMAT> = desc
-            .render_target_formats
-            .iter()
-            .copied()
-            .map(texture_format_to_dxgi)
-            .collect();
-        let builder = builder.rtv_formats(&rtv_formats);
-        let builder =
-            if let Some(dsv_format) = desc.depth_stencil_format.map(texture_format_to_dxgi) {
-                builder.dsv_format(dsv_format)
-            } else {
-                builder
+            // TODO: we should be able to expose this in the API
+            let builder = builder.sample_mask(u32::MAX);
+
+            // Render target format translation is straight forward, just convert the formats and add
+            let mut rtv_formats = BVec::with_capacity_in(desc.render_target_formats.len(), &bump);
+            for v in desc.render_target_formats.iter().copied() {
+                rtv_formats.push(texture_format_to_dxgi(v))
+            }
+            let builder = builder.rtv_formats(&rtv_formats);
+            let builder =
+                if let Some(dsv_format) = desc.depth_stencil_format.map(texture_format_to_dxgi) {
+                    builder.dsv_format(dsv_format)
+                } else {
+                    builder
+                };
+
+            // Construct the D3D12 pipeline object
+            let state_stream = builder.build();
+            let state_stream_ref = D3D12_PIPELINE_STATE_STREAM_DESC {
+                SizeInBytes: std::mem::size_of_val(&state_stream),
+                pPipelineStateSubobjectStream: &state_stream as *const GraphicsPipelineStateStream
+                    as *mut _,
+            };
+            let pipeline = unsafe {
+                self.device
+                    .CreatePipelineState(&state_stream_ref)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
-        // Construct the D3D12 pipeline object
-        let state_stream = builder.build();
-        let state_stream_ref = D3D12_PIPELINE_STATE_STREAM_DESC {
-            SizeInBytes: std::mem::size_of_val(&state_stream),
-            pPipelineStateSubobjectStream: &state_stream as *const GraphicsPipelineStateStream
-                as *mut _,
-        };
-        let pipeline = unsafe {
-            self.device
-                .CreatePipelineState(&state_stream_ref)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-        };
+            if let Some(name) = desc.name {
+                set_name(&pipeline, name).unwrap();
+            }
 
-        if let Some(name) = desc.name {
-            set_name(&pipeline, name).unwrap();
-        }
-
-        let pipeline = AnyArc::new_cyclic(move |v| GraphicsPipeline {
-            this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            pipeline,
-            pipeline_layout,
-            primitive_topology,
-            input_binding_strides,
-            depth_bounds,
-        });
-        Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
+            let pipeline = AnyArc::new_cyclic(move |v| GraphicsPipeline {
+                this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                pipeline,
+                pipeline_layout,
+                primitive_topology,
+                input_binding_strides,
+                depth_bounds,
+            });
+            Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
+        })
     }
 
     // ========================================================================================== //
@@ -388,129 +392,137 @@ impl IDevice for Device {
         &self,
         desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        // Bundle up all the table layouts after we patch them for use in this layout as we need to
-        // extend the lifetime for the call to create the root signature
-        let mut resource_tables = Vec::with_capacity(desc.set_layouts.len());
-        let mut static_samplers = Vec::new();
-        let mut parameters =
-            Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_blocks.len());
-        let mut set_root_param_indices = Vec::with_capacity(desc.set_layouts.len());
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let mut root_param_index = 0;
-        for (i, layout) in desc.set_layouts.iter().enumerate() {
-            let layout = unwrap::descriptor_set_layout_d(layout);
+            // Bundle up all the table layouts after we patch them for use in this layout as we need to
+            // extend the lifetime for the call to create the root signature
+            let mut resource_tables = BVec::with_capacity_in(desc.set_layouts.len(), &bump);
+            let mut static_samplers = BVec::new_in(&bump);
+            let mut parameters = BVec::with_capacity_in(
+                desc.set_layouts.len() + desc.push_constant_blocks.len(),
+                &bump,
+            );
+            let mut set_root_param_indices = Vec::with_capacity(desc.set_layouts.len());
 
-            // First thing is we store the base root parameter index into our set->param_index
-            // lookup table.
-            set_root_param_indices.push(root_param_index);
+            let mut root_param_index = 0;
+            for (i, layout) in desc.set_layouts.iter().enumerate() {
+                let layout = unwrap::descriptor_set_layout_d(layout);
 
-            // Create a parameter for the resource table only if this set has resources in its
-            // layout.
-            if !layout.resource_table.is_empty() {
-                // Take a copy of the pre-calculated layout and patch the register space to match the
-                // set index that it is being used for
-                let table = create_descriptor_range_list(&layout.resource_table, i as u32);
+                // First thing is we store the base root parameter index into our set->param_index
+                // lookup table.
+                set_root_param_indices.push(root_param_index);
 
-                // Create the root parameter referencing the list in 'table', the lifetime of 'table'
-                // will be extended so the reference remains valid
-                let param = root_param_for_range_list(&table, layout.visibility);
-                parameters.push(param);
-                root_param_index += 1; // Advance the counter as we added a root param
+                // Create a parameter for the resource table only if this set has resources in its
+                // layout.
+                if !layout.resource_table.is_empty() {
+                    // Take a copy of the pre-calculated layout and patch the register space to match the
+                    // set index that it is being used for
+                    let table =
+                        create_descriptor_range_list(&bump, &layout.resource_table, i as u32);
 
-                // Extend the lifetime of 'table' so it remains alive for the CreateRootSignature
-                // call.
-                resource_tables.push(table);
-            }
-
-            // Create a table for each sampler binding in the set, only if there are samplers in the
-            // set.
-            if !layout.sampler_tables.is_empty() {
-                let table = create_descriptor_range_list(&layout.sampler_tables, i as u32);
-
-                // We create a single table for _each_ individual sampler.
-                for range in table.iter() {
-                    let range = std::slice::from_ref(range);
                     // Create the root parameter referencing the list in 'table', the lifetime of 'table'
                     // will be extended so the reference remains valid
-                    let param = root_param_for_range_list(range, layout.visibility);
+                    let param = root_param_for_range_list(&table, layout.visibility);
                     parameters.push(param);
                     root_param_index += 1; // Advance the counter as we added a root param
+
+                    // Extend the lifetime of 'table' so it remains alive for the CreateRootSignature
+                    // call.
+                    resource_tables.push(table);
                 }
 
-                resource_tables.push(table);
+                // Create a table for each sampler binding in the set, only if there are samplers in the
+                // set.
+                if !layout.sampler_tables.is_empty() {
+                    let table =
+                        create_descriptor_range_list(&bump, &layout.sampler_tables, i as u32);
+
+                    // We create a single table for _each_ individual sampler.
+                    for range in table.iter() {
+                        let range = std::slice::from_ref(range);
+                        // Create the root parameter referencing the list in 'table', the lifetime of 'table'
+                        // will be extended so the reference remains valid
+                        let param = root_param_for_range_list(range, layout.visibility);
+                        parameters.push(param);
+                        root_param_index += 1; // Advance the counter as we added a root param
+                    }
+
+                    resource_tables.push(table);
+                }
+
+                // Extend our list of static samplers based on the provided list for this binding
+                static_samplers.extend(layout.static_samplers.iter().map(|v| {
+                    let mut out = *v;
+                    out.RegisterSpace = i as u32;
+                    out
+                }));
             }
 
-            // Extend our list of static samplers based on the provided list for this binding
-            static_samplers.extend(layout.static_samplers.iter().map(|v| {
-                let mut out = *v;
-                out.RegisterSpace = i as u32;
-                out
-            }));
-        }
-
-        // TODO: Putting root constants after all descriptors may have performance implications.
-        //       D3D12 requires priority to lower root parameter indices so, (on AMD) having push
-        //       constants after descriptors means the constants are more likely to spill into
-        //       memory instead of being in the registers.
-        let mut push_constant_blocks = Vec::new();
-        for block in desc.push_constant_blocks {
-            if (block.size % 4) != 0 {
-                return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
-            }
-            let num32_bit_values = (block.size / 4) as u32;
-            let range = D3D12_ROOT_PARAMETER1 {
-                ParameterType: D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
-                Anonymous: D3D12_ROOT_PARAMETER1_0 {
-                    Constants: D3D12_ROOT_CONSTANTS {
-                        ShaderRegister: block.binding,
-                        RegisterSpace: 1024, // A reserved space for root/push constants
-                        Num32BitValues: num32_bit_values,
+            // TODO: Putting root constants after all descriptors may have performance implications.
+            //       D3D12 requires priority to lower root parameter indices so, (on AMD) having push
+            //       constants after descriptors means the constants are more likely to spill into
+            //       memory instead of being in the registers.
+            let mut push_constant_blocks = Vec::with_capacity(desc.push_constant_blocks.len());
+            for block in desc.push_constant_blocks {
+                if (block.size % 4) != 0 {
+                    return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
+                }
+                let num32_bit_values = (block.size / 4) as u32;
+                let range = D3D12_ROOT_PARAMETER1 {
+                    ParameterType: D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+                    Anonymous: D3D12_ROOT_PARAMETER1_0 {
+                        Constants: D3D12_ROOT_CONSTANTS {
+                            ShaderRegister: block.binding,
+                            RegisterSpace: 1024, // A reserved space for root/push constants
+                            Num32BitValues: num32_bit_values,
+                        },
                     },
-                },
-                ShaderVisibility: shader_visibility_to_dx12(block.visibility),
+                    ShaderVisibility: shader_visibility_to_dx12(block.visibility),
+                };
+                push_constant_blocks.push(PushConstantBlockInfo {
+                    size: num32_bit_values * 4,
+                    root_parameter_index: parameters.len() as u32,
+                });
+                parameters.push(range);
+            }
+
+            let root_signature = unsafe {
+                let desc = D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+                    Version: D3D_ROOT_SIGNATURE_VERSION_1_1,
+                    Anonymous: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
+                        Desc_1_1: D3D12_ROOT_SIGNATURE_DESC1 {
+                            NumParameters: parameters.len() as _,
+                            pParameters: parameters.as_ptr(),
+                            NumStaticSamplers: static_samplers.len() as _,
+                            pStaticSamplers: static_samplers.as_ptr(),
+                            Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
+                        },
+                    },
+                };
+                let blob = RootSignatureBlob::new(&desc)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                self.device
+                    .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
-            push_constant_blocks.push(PushConstantBlockInfo {
-                size: num32_bit_values * 4,
-                root_parameter_index: parameters.len() as u32,
+
+            if let Some(name) = desc.name {
+                set_name(&root_signature, name).unwrap();
+            }
+
+            let pipeline_layout = AnyArc::new_cyclic(move |v| PipelineLayout {
+                this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                root_signature,
+                push_constant_blocks,
+                set_root_param_indices,
             });
-            parameters.push(range);
-        }
-
-        let root_signature = unsafe {
-            let desc = D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-                Version: D3D_ROOT_SIGNATURE_VERSION_1_1,
-                Anonymous: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
-                    Desc_1_1: D3D12_ROOT_SIGNATURE_DESC1 {
-                        NumParameters: parameters.len() as _,
-                        pParameters: parameters.as_ptr(),
-                        NumStaticSamplers: static_samplers.len() as _,
-                        pStaticSamplers: static_samplers.as_ptr(),
-                        Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
-                    },
-                },
-            };
-            let blob = RootSignatureBlob::new(&desc)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-            self.device
-                .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-        };
-
-        if let Some(name) = desc.name {
-            set_name(&root_signature, name).unwrap();
-        }
-
-        let pipeline_layout = AnyArc::new_cyclic(move |v| PipelineLayout {
-            this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            root_signature,
-            push_constant_blocks,
-            set_root_param_indices,
-        });
-        Ok(AnyArc::map::<dyn IPipelineLayout, _>(
-            pipeline_layout,
-            |v| v,
-        ))
+            Ok(AnyArc::map::<dyn IPipelineLayout, _>(
+                pipeline_layout,
+                |v| v,
+            ))
+        })
     }
 
     // ========================================================================================== //
@@ -854,76 +866,81 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
-        match fences.len() {
-            0 => {
-                // Do nothing on empty list,
-                FenceWaitResult::Complete
-            }
-            1 => {
-                // Special case a single fence with 'SetEventOnCompletion'
-                thread_local! {
-                    pub static WAIT_HANDLE: HANDLE = unsafe {
-                        CreateEventW(None, false, false, None).unwrap()
-                    };
-                }
-                let fence = unwrap::fence(fences[0]);
-                let wait_value = fence.get_wait_value();
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-                WAIT_HANDLE.with(|handle| unsafe {
-                    fence
-                        .fence
-                        .SetEventOnCompletion(wait_value, *handle)
-                        .unwrap();
-                    if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
-                        FenceWaitResult::Complete
-                    } else {
-                        FenceWaitResult::Timeout
+            match fences.len() {
+                0 => {
+                    // Do nothing on empty list,
+                    FenceWaitResult::Complete
+                }
+                1 => {
+                    // Special case a single fence with 'SetEventOnCompletion'
+                    thread_local! {
+                        pub static WAIT_HANDLE: HANDLE = unsafe {
+                            CreateEventW(None, false, false, None).unwrap()
+                        };
                     }
-                })
-            }
-            _ => {
-                // Handle the 'n' case with 'SetEventOnMultipleFenceCompletion'
-                thread_local! {
+                    let fence = unwrap::fence(fences[0]);
+                    let wait_value = fence.get_wait_value();
 
-                    pub static MULTIPLE_WAIT_HANDLE: HANDLE = unsafe {
-                        CreateEventW(None, false, false, None).unwrap()
-                    };
+                    WAIT_HANDLE.with(|handle| unsafe {
+                        fence
+                            .fence
+                            .SetEventOnCompletion(wait_value, *handle)
+                            .unwrap();
+                        if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
+                            FenceWaitResult::Complete
+                        } else {
+                            FenceWaitResult::Timeout
+                        }
+                    })
                 }
+                _ => {
+                    // Handle the 'n' case with 'SetEventOnMultipleFenceCompletion'
+                    thread_local! {
 
-                // Unwrap the fences into the form accepted by D3D12, and produce a matching array
-                // of values filled with the expected value for a signalled fence.
-                let mut inner_fences: Vec<Option<ID3D12Fence>> = Vec::with_capacity(fences.len());
-                let mut wait_values: Vec<u64> = Vec::with_capacity(fences.len());
-                for fence in unwrap::fence_iter(fences) {
-                    inner_fences.push(Some(fence.fence.clone()));
-                    wait_values.push(fence.get_wait_value());
-                }
-
-                MULTIPLE_WAIT_HANDLE.with(|handle| unsafe {
-                    let flags = if wait_all {
-                        D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL
-                    } else {
-                        D3D12_MULTIPLE_FENCE_WAIT_FLAG_ANY
-                    };
-
-                    self.device
-                        .SetEventOnMultipleFenceCompletion(
-                            inner_fences.as_ptr(),
-                            wait_values.as_ptr(),
-                            fences.len() as u32,
-                            flags,
-                            *handle,
-                        )
-                        .unwrap();
-
-                    if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
-                        FenceWaitResult::Complete
-                    } else {
-                        FenceWaitResult::Timeout
+                        pub static MULTIPLE_WAIT_HANDLE: HANDLE = unsafe {
+                            CreateEventW(None, false, false, None).unwrap()
+                        };
                     }
-                })
+
+                    // Unwrap the fences into the form accepted by D3D12, and produce a matching array
+                    // of values filled with the expected value for a signalled fence.
+                    let mut inner_fences: BVec<Option<ID3D12Fence>> =
+                        BVec::with_capacity_in(fences.len(), &bump);
+                    let mut wait_values: BVec<u64> = BVec::with_capacity_in(fences.len(), &bump);
+                    for fence in unwrap::fence_iter(fences) {
+                        inner_fences.push(Some(fence.fence.clone()));
+                        wait_values.push(fence.get_wait_value());
+                    }
+
+                    MULTIPLE_WAIT_HANDLE.with(|handle| unsafe {
+                        let flags = if wait_all {
+                            D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL
+                        } else {
+                            D3D12_MULTIPLE_FENCE_WAIT_FLAG_ANY
+                        };
+
+                        self.device
+                            .SetEventOnMultipleFenceCompletion(
+                                inner_fences.as_ptr(),
+                                wait_values.as_ptr(),
+                                fences.len() as u32,
+                                flags,
+                                *handle,
+                            )
+                            .unwrap();
+
+                        if handle_wait_result(WaitForSingleObject(*handle, timeout)) {
+                            FenceWaitResult::Complete
+                        } else {
+                            FenceWaitResult::Timeout
+                        }
+                    })
+                }
             }
-        }
+        })
     }
 
     // ========================================================================================== //
@@ -983,9 +1000,10 @@ impl Device {
 
     /// Internal function for translating the [VertexInputStateDesc] field of a pipeline
     /// description
-    fn translate_vertex_input_state_desc(
+    fn translate_vertex_input_state_desc<'a>(
+        bump: &'a Bump,
         desc: &VertexInputStateDesc,
-    ) -> ([u32; 16], Vec<D3D12_INPUT_ELEMENT_DESC>) {
+    ) -> ([u32; 16], BVec<'a, D3D12_INPUT_ELEMENT_DESC>) {
         // Copy the input binding strides into a buffer the pipeline will hold on to so it can be
         // used in the command encoders. Vulkan bakes these in the pipeline, d3d12 gets the values
         // when the input bindings are bound
@@ -995,7 +1013,7 @@ impl Device {
         }
 
         // Translate the vertex input description
-        let mut input_layout = Vec::new();
+        let mut input_layout = BVec::with_capacity_in(desc.input_attributes.len(), bump);
         for attribute in desc.input_attributes {
             // DX12 describes vertex attributes differently. The RHI exposes the Vulkan way as it
             // is easier to map vulkan->dx12 here than the other way around, and is more robust.
@@ -1876,11 +1894,12 @@ impl Drop for Device {
     }
 }
 
-fn create_descriptor_range_list(
+fn create_descriptor_range_list<'a>(
+    bump: &'a Bump,
     v: &[D3D12_DESCRIPTOR_RANGE1],
     i: u32,
-) -> Vec<D3D12_DESCRIPTOR_RANGE1> {
-    let mut table = v.to_vec();
+) -> BVec<'a, D3D12_DESCRIPTOR_RANGE1> {
+    let mut table = BVec::from_iter_in(v.iter().copied(), bump);
     for binding in table.iter_mut() {
         binding.RegisterSpace = i;
     }
@@ -1901,4 +1920,8 @@ fn root_param_for_range_list(
         },
         ShaderVisibility: visibility,
     }
+}
+
+thread_local! {
+    pub static DEVICE_BUMP: BumpCell = BumpCell::with_capacity(8192 * 2);
 }
