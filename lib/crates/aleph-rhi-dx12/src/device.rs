@@ -392,16 +392,44 @@ impl IDevice for Device {
         // extend the lifetime for the call to create the root signature
         let mut resource_tables = Vec::with_capacity(desc.set_layouts.len());
         let mut static_samplers = Vec::new();
+        let mut parameters =
+            Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_blocks.len());
         for (i, layout) in desc.set_layouts.iter().enumerate() {
             let layout = unwrap::descriptor_set_layout_d(layout);
 
-            // Take a copy of the pre-calculated layout and patch the register space to match the
-            // set index that it is being used for
-            let mut table = layout.resource_table.clone();
-            for binding in table.iter_mut() {
-                binding.RegisterSpace = i as u32;
+            // Create a parameter for the resource table only if this set has resources in its
+            // layout.
+            if !layout.resource_table.is_empty() {
+                // Take a copy of the pre-calculated layout and patch the register space to match the
+                // set index that it is being used for
+                let table = create_descriptor_range_list(&layout.resource_table, i as u32);
+
+                // Create the root parameter referencing the list in 'table', the lifetime of 'table'
+                // will be extended so the reference remains valid
+                let param = root_param_for_range_list(&table, layout.visibility);
+                parameters.push(param);
+
+                // Extend the lifetime of 'table' so it remains alive for the CreateRootSignature
+                // call.
+                resource_tables.push(table);
             }
-            resource_tables.push((table, layout.visibility));
+
+            // Create a table for each sampler binding in the set, only if there are samplers in the
+            // set.
+            if !layout.sampler_tables.is_empty() {
+                let table = create_descriptor_range_list(&layout.sampler_tables, i as u32);
+
+                // We create a single table for _each_ individual sampler.
+                for range in table.iter() {
+                    let range = std::slice::from_ref(range);
+                    // Create the root parameter referencing the list in 'table', the lifetime of 'table'
+                    // will be extended so the reference remains valid
+                    let param = root_param_for_range_list(range, layout.visibility);
+                    parameters.push(param);
+                }
+
+                resource_tables.push(table);
+            }
 
             // Extend our list of static samplers based on the provided list for this binding
             static_samplers.extend(layout.static_samplers.iter().map(|v| {
@@ -409,22 +437,6 @@ impl IDevice for Device {
                 out.RegisterSpace = i as u32;
                 out
             }));
-        }
-
-        let mut parameters =
-            Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_blocks.len());
-        for (ranges, visibility) in &resource_tables {
-            let param = D3D12_ROOT_PARAMETER1 {
-                ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-                Anonymous: D3D12_ROOT_PARAMETER1_0 {
-                    DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE1 {
-                        NumDescriptorRanges: ranges.len() as _,
-                        pDescriptorRanges: ranges.as_ptr(),
-                    },
-                },
-                ShaderVisibility: *visibility,
-            };
-            parameters.push(param);
         }
 
         // TODO: Putting root constants after all descriptors may have performance implications.
@@ -1839,5 +1851,32 @@ impl Drop for Device {
                 let _sink = device_unregister_message_callback(&self.device, cookie);
             }
         }
+    }
+}
+
+fn create_descriptor_range_list(
+    v: &[D3D12_DESCRIPTOR_RANGE1],
+    i: u32,
+) -> Vec<D3D12_DESCRIPTOR_RANGE1> {
+    let mut table = v.to_vec();
+    for binding in table.iter_mut() {
+        binding.RegisterSpace = i;
+    }
+    table
+}
+
+fn root_param_for_range_list(
+    v: &[D3D12_DESCRIPTOR_RANGE1],
+    visibility: D3D12_SHADER_VISIBILITY,
+) -> D3D12_ROOT_PARAMETER1 {
+    D3D12_ROOT_PARAMETER1 {
+        ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+        Anonymous: D3D12_ROOT_PARAMETER1_0 {
+            DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE1 {
+                NumDescriptorRanges: v.len() as _,
+                pDescriptorRanges: v.as_ptr(),
+            },
+        },
+        ShaderVisibility: visibility,
     }
 }
