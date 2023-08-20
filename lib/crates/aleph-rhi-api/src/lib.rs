@@ -3998,6 +3998,9 @@ error_enum_from_unit_type!(TextureCreateError);
 
 #[derive(Error, Debug)]
 pub enum SamplerCreateError {
+    #[error("The device has run out of space to allocate additional samplers.")]
+    OutOfSamplers,
+
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
