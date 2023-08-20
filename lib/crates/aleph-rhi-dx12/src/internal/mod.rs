@@ -46,6 +46,8 @@ pub mod feature_support;
 pub mod graphics_pipeline_state_stream;
 pub mod register_message_callback;
 pub mod root_signature_blob;
+pub mod sampler_cache;
+pub mod sampler_cache_key;
 pub mod set_name;
 pub mod swap_chain_creation;
 pub mod unwrap;

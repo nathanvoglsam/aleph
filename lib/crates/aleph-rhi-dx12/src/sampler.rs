@@ -40,7 +40,6 @@ pub struct Sampler {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) desc: SamplerDesc<'static>,
     pub(crate) name: Option<String>,
-    pub(crate) descriptor_id: DescriptorID,
     pub(crate) gpu_handle: GPUDescriptorHandle,
 
     /// A cache of a mostly pre-translated static sampler desc. May as well create this upfront
@@ -73,14 +72,5 @@ impl ISampler for Sampler {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
-    }
-}
-
-impl Drop for Sampler {
-    fn drop(&mut self) {
-        self._device
-            .descriptor_heaps
-            .gpu_sampler_heap()
-            .release(self.descriptor_id, 1);
     }
 }

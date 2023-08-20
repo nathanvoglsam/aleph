@@ -29,6 +29,7 @@
 
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap::DescriptorHeap;
+use crate::internal::sampler_cache::SamplerCache;
 use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -37,7 +38,7 @@ use windows::Win32::Graphics::Direct3D12::*;
 pub struct DescriptorHeaps {
     cpu_heaps: [DescriptorAllocatorCPU; 4],
     view_heap: DescriptorHeap,
-    sampler_heap: DescriptorHeap,
+    sampler_cache: SamplerCache,
 }
 
 impl DescriptorHeaps {
@@ -58,17 +59,12 @@ impl DescriptorHeaps {
             D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_1,
             true,
         )?;
-        let sampler_heap = DescriptorHeap::new(
-            device,
-            D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-            D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE,
-            true,
-        )?;
+        let sampler_cache = SamplerCache::new(device)?;
 
         let out = Self {
             cpu_heaps,
             view_heap,
-            sampler_heap,
+            sampler_cache,
         };
         Ok(out)
     }
@@ -116,10 +112,10 @@ impl DescriptorHeaps {
         &self.view_heap
     }
 
-    /// Returns a reference to the gpu side [DescriptorHeap] for descriptors of type
+    /// Returns a reference to the gpu side [SamplerCache] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER].
     #[allow(unused)]
-    pub const fn gpu_sampler_heap(&self) -> &DescriptorHeap {
-        &self.sampler_heap
+    pub const fn gpu_sampler_cache(&self) -> &SamplerCache {
+        &self.sampler_cache
     }
 }
