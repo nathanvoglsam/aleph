@@ -28,7 +28,6 @@
 //
 
 use crate::device::Device;
-use crate::internal::descriptor_heap::DescriptorID;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use std::any::TypeId;
