@@ -242,6 +242,8 @@ impl SwapChain {
         let images: Vec<_> = images
             .iter()
             .map(|image| {
+                use TextureUsageFlags as F;
+
                 // This shadows swap_create_info to a reference to itself so the new_cyclic move
                 // closure moves the reference and not the object itself
                 let swap_create_info = &swap_create_info;
@@ -256,11 +258,7 @@ impl SwapChain {
                     mip_levels: 1,
                     sample_count: 1,
                     sample_quality: 0,
-                    allow_copy_dest: true,
-                    allow_copy_source: true,
-                    allow_unordered_access: false,
-                    allow_cube_face: false,
-                    is_render_target: true,
+                    usage: F::COPY_DEST | F::COPY_SOURCE | F::RENDER_TARGET,
                     name: None,
                 };
                 AnyArc::new_cyclic(move |v| Texture {

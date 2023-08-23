@@ -539,33 +539,39 @@ impl IDevice for Device {
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
         let mut usage = vk::BufferUsageFlags::TRANSFER_SRC | vk::BufferUsageFlags::TRANSFER_DST;
 
-        if desc.allow_unordered_access {
+        if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
             usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
         }
-        if desc.allow_texel_buffer {
-            if desc.allow_unordered_access {
+        if desc.usage.contains(BufferUsageFlags::TEXEL_BUFFER) {
+            if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
                 usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
                     | vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
             } else {
                 usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER;
             }
         }
-        if desc.is_vertex_buffer {
+        if desc.usage.contains(BufferUsageFlags::VERTEX_BUFFER) {
             usage |= vk::BufferUsageFlags::VERTEX_BUFFER;
         }
-        if desc.is_index_buffer {
+        if desc.usage.contains(BufferUsageFlags::INDEX_BUFFER) {
             usage |= vk::BufferUsageFlags::INDEX_BUFFER;
         }
-        if desc.is_constant_buffer {
+        if desc.usage.contains(BufferUsageFlags::CONSTANT_BUFFER) {
             usage |= vk::BufferUsageFlags::UNIFORM_BUFFER;
         }
-        if desc.is_indirect_draw_args {
+        if desc.usage.contains(BufferUsageFlags::INDIRECT_DRAW_ARGS) {
             usage |= vk::BufferUsageFlags::INDIRECT_BUFFER;
         }
-        if desc.is_accel_struct_build_input {
+        if desc
+            .usage
+            .contains(BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT)
+        {
             usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
         }
-        if desc.is_accel_struct_storage {
+        if desc
+            .usage
+            .contains(BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE)
+        {
             usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE_KHR;
         }
 
@@ -627,17 +633,20 @@ impl IDevice for Device {
             _ => return Err(TextureCreateError::InvalidSampleCount(desc.sample_count)),
         };
 
-        let mut usage = vk::ImageUsageFlags::SAMPLED;
-        if desc.allow_copy_dest {
+        let mut usage = vk::ImageUsageFlags::empty();
+        if desc.usage.contains(TextureUsageFlags::SAMPLED_ACCESS) {
+            usage |= vk::ImageUsageFlags::SAMPLED
+        }
+        if desc.usage.contains(TextureUsageFlags::COPY_DEST) {
             usage |= vk::ImageUsageFlags::TRANSFER_DST
         }
-        if desc.allow_copy_source {
+        if desc.usage.contains(TextureUsageFlags::COPY_SOURCE) {
             usage |= vk::ImageUsageFlags::TRANSFER_SRC
         }
-        if desc.allow_unordered_access {
+        if desc.usage.contains(TextureUsageFlags::UNORDERED_ACCESS) {
             usage |= vk::ImageUsageFlags::STORAGE
         }
-        if desc.is_render_target {
+        if desc.usage.contains(TextureUsageFlags::RENDER_TARGET) {
             if desc.format.is_depth_stencil() {
                 usage |= vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
             } else {
@@ -646,7 +655,7 @@ impl IDevice for Device {
         }
 
         let mut flags = vk::ImageCreateFlags::empty();
-        if desc.allow_cube_face {
+        if desc.usage.contains(TextureUsageFlags::CUBE_FACE) {
             flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
         }
 

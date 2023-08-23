@@ -2148,6 +2148,28 @@ impl Display for Format {
 // _________________________________________________________________________________________________
 // Resources - Buffer
 
+bitflags! {
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
+    pub struct BufferUsageFlags: u32 {
+        const NONE = 0x0;
+        const VERTEX_BUFFER = 0x1;
+        const INDEX_BUFFER = 0x2;
+        const CONSTANT_BUFFER = 0x4;
+        const UNORDERED_ACCESS = 0x8;
+        const TEXEL_BUFFER = 0x10;
+        const INDIRECT_DRAW_ARGS = 0x20;
+        const ACCELERATION_STRUCTURE_BUILD_INPUT = 0x40;
+        const ACCELERATION_STRUCTURE_STORAGE = 0x80;
+    }
+}
+
+impl Default for BufferUsageFlags {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 /// Description object used for creating a new buffer.
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct BufferDesc<'a> {
@@ -2160,29 +2182,8 @@ pub struct BufferDesc<'a> {
     /// - Write -> upload
     pub cpu_access: CpuAccessMode,
 
-    /// Enables the buffer to be used with unordered access (unordered access view, storage buffer)
-    pub allow_unordered_access: bool,
-
-    /// Enables the buffer to be used as a texel buffer
-    pub allow_texel_buffer: bool,
-
-    /// Enables the buffer to be used as a vertex buffer
-    pub is_vertex_buffer: bool,
-
-    /// Enables the buffer to be used as an index buffer
-    pub is_index_buffer: bool,
-
-    /// Enables the buffer to be used as a constant buffer
-    pub is_constant_buffer: bool,
-
-    /// Enables the buffer to be used as an argument buffer for indirect draw calls
-    pub is_indirect_draw_args: bool,
-
-    /// Enables the buffer to be used as input for ray tracing acceleration structure builds
-    pub is_accel_struct_build_input: bool,
-
-    /// Enables the buffer to store a constructed and ready to use rt acceleration structure
-    pub is_accel_struct_storage: bool,
+    /// Specifies in what ways the buffer can be used
+    pub usage: BufferUsageFlags,
 
     /// The name of the object
     pub name: Option<&'a str>,
@@ -2195,14 +2196,7 @@ impl<'a> BufferDesc<'a> {
         BufferDesc::<'static> {
             size: self.size,
             cpu_access: self.cpu_access,
-            allow_unordered_access: self.allow_unordered_access,
-            allow_texel_buffer: self.allow_texel_buffer,
-            is_vertex_buffer: self.is_vertex_buffer,
-            is_index_buffer: self.is_index_buffer,
-            is_constant_buffer: self.is_constant_buffer,
-            is_indirect_draw_args: self.is_indirect_draw_args,
-            is_accel_struct_build_input: self.is_accel_struct_build_input,
-            is_accel_struct_storage: self.is_accel_struct_storage,
+            usage: self.usage,
             name: None,
         }
     }
@@ -2270,6 +2264,38 @@ impl Display for OptimalClearValue {
     }
 }
 
+bitflags! {
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
+    pub struct TextureUsageFlags: u32 {
+        const NONE = 0x0;
+
+        /// Specifies usage as the source of a texture copy operation
+        const COPY_SOURCE = 0x1;
+
+        /// Specifies usage as the destination of a texture copy operation
+        const COPY_DEST = 0x2;
+
+        /// Specifies usage as a sampled image
+        const SAMPLED_ACCESS = 0x2;
+
+        /// Specifies usage through an unordered access view (storage image)
+        const UNORDERED_ACCESS = 0x4;
+
+        /// Specifies usage as a render target
+        const RENDER_TARGET = 0x8;
+
+        /// Specifies the textuer can be used as a cubemap face
+        const CUBE_FACE = 0x10;
+    }
+}
+
+impl Default for TextureUsageFlags {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 /// Description object used for creating a new texture.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct TextureDesc<'a> {
@@ -2311,21 +2337,8 @@ pub struct TextureDesc<'a> {
     /// Sample quality, for MSAA texture
     pub sample_quality: u32,
 
-    /// Allows the texture to be used as a copy destination
-    pub allow_copy_dest: bool,
-
-    /// Allows the texture to be used as a copy source
-    pub allow_copy_source: bool,
-
-    /// Enables the texture to be used with unordered access (unordered access view, storage
-    /// texture)
-    pub allow_unordered_access: bool,
-
-    /// Enables the texture to be used as a face for a cube map
-    pub allow_cube_face: bool,
-
-    /// Enables the texture to be used as a render target
-    pub is_render_target: bool,
+    /// Specifies in what ways the texture can be used
+    pub usage: TextureUsageFlags,
 
     /// The name of the object
     pub name: Option<&'a str>,
@@ -2346,11 +2359,7 @@ impl<'a> TextureDesc<'a> {
             mip_levels: self.mip_levels,
             sample_count: self.sample_count,
             sample_quality: self.sample_quality,
-            allow_copy_dest: self.allow_copy_dest,
-            allow_copy_source: self.allow_copy_source,
-            allow_unordered_access: self.allow_unordered_access,
-            allow_cube_face: self.allow_cube_face,
-            is_render_target: self.is_render_target,
+            usage: self.usage,
             name: None,
         }
     }

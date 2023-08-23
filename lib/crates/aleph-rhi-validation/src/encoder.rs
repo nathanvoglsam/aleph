@@ -469,9 +469,13 @@ impl<T: ?Sized> ValidationEncoder<T> {
                 "Trying to use a view of type '{:?}' as an RTV",
                 image_view.view_type
             );
+
             assert!(
-                image.desc().is_render_target,
-                "Used texture as render target when created with 'is_render_target = false'"
+                image
+                    .desc()
+                    .usage
+                    .contains(TextureUsageFlags::RENDER_TARGET),
+                "Used texture as render target when created without RENDER_TARGET usage"
             );
             assert!(
                 !image.desc().format.is_depth_stencil(),
@@ -519,8 +523,11 @@ impl<T: ?Sized> ValidationEncoder<T> {
             );
 
             assert!(
-                image.desc().is_render_target,
-                "Used texture as depth/stencil target when created with 'is_render_target = false'"
+                image
+                    .desc()
+                    .usage
+                    .contains(TextureUsageFlags::RENDER_TARGET),
+                "Used texture as depth/stencil target when created without RENDER_TARGET usage"
             );
 
             assert!(

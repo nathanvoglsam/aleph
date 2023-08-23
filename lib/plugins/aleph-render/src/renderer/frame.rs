@@ -58,7 +58,7 @@ impl PerFrameObjects {
             let desc = BufferDesc {
                 size: Self::vertex_buffer_size() as _,
                 cpu_access: CpuAccessMode::Write,
-                is_vertex_buffer: true,
+                usage: BufferUsageFlags::VERTEX_BUFFER,
                 ..Default::default()
             };
             device.create_buffer(&desc).unwrap()
@@ -68,7 +68,7 @@ impl PerFrameObjects {
             let desc = BufferDesc {
                 size: Self::index_buffer_size() as _,
                 cpu_access: CpuAccessMode::Write,
-                is_index_buffer: true,
+                usage: BufferUsageFlags::INDEX_BUFFER,
                 ..Default::default()
             };
             device.create_buffer(&desc).unwrap()
@@ -219,7 +219,7 @@ impl PerFrameObjects {
                 mip_levels: 1,
                 sample_count: 1,
                 sample_quality: 0,
-                allow_copy_dest: true,
+                usage: TextureUsageFlags::COPY_DEST | TextureUsageFlags::SAMPLED_ACCESS,
                 ..Default::default()
             })
             .unwrap();

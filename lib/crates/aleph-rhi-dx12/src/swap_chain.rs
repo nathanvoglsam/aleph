@@ -77,6 +77,7 @@ impl SwapChain {
         state: &mut SwapChainState,
         count: u32,
     ) -> windows::core::Result<()> {
+        use TextureUsageFlags as F;
         state.textures.clear();
         for i in 0..count {
             let resource = self.swap_chain.GetBuffer::<ID3D12Resource>(i)?;
@@ -91,11 +92,7 @@ impl SwapChain {
                 mip_levels: 1,
                 sample_count: 1,
                 sample_quality: 0,
-                allow_copy_dest: true,
-                allow_copy_source: true,
-                allow_unordered_access: false,
-                allow_cube_face: false,
-                is_render_target: true,
+                usage: F::COPY_DEST | F::COPY_SOURCE | F::RENDER_TARGET,
                 name: None,
             };
             let dxgi_format = state.dxgi_format;

@@ -549,7 +549,7 @@ impl IDevice for Device {
 
         resource_desc.Width = desc.size;
 
-        if desc.allow_unordered_access {
+        if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
             resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
