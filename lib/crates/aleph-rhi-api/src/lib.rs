@@ -1119,7 +1119,7 @@ impl From<Color> for u64 {
 }
 
 impl From<Color> for (f32, f32, f32, f32) {
-    #[inline(always)]
+    #[inline]
     fn from(val: Color) -> Self {
         #[inline(always)]
         fn convert_channel(c: u64) -> f32 {
@@ -1134,6 +1134,7 @@ impl From<Color> for (f32, f32, f32, f32) {
 }
 
 impl From<Color> for [f32; 4] {
+    #[inline]
     fn from(value: Color) -> Self {
         type V = (f32, f32, f32, f32);
         let (a, r, g, b) = V::from(value);
@@ -1324,6 +1325,7 @@ pub enum PresentationMode {
 }
 
 impl Default for PresentationMode {
+    #[inline(always)]
     fn default() -> Self {
         Self::Immediate
     }
@@ -1424,6 +1426,7 @@ pub enum CpuAccessMode {
 }
 
 impl Default for CpuAccessMode {
+    #[inline(always)]
     fn default() -> Self {
         Self::None
     }
@@ -1475,6 +1478,7 @@ pub enum ImageLayout {
 }
 
 impl Default for ImageLayout {
+    #[inline(always)]
     fn default() -> Self {
         ImageLayout::Undefined
     }
@@ -1880,6 +1884,7 @@ pub enum Format {
 }
 
 impl Default for Format {
+    #[inline(always)]
     fn default() -> Self {
         Self::R8Unorm
     }
@@ -2186,7 +2191,7 @@ pub struct BufferDesc<'a> {
 impl<'a> BufferDesc<'a> {
     /// A utility function that strips the debug name from the description so we can get a static
     /// lifetime on the desc
-    pub fn strip_name(self) -> BufferDesc<'static> {
+    pub const fn strip_name(self) -> BufferDesc<'static> {
         BufferDesc::<'static> {
             size: self.size,
             cpu_access: self.cpu_access,
@@ -2222,6 +2227,7 @@ pub enum TextureDimension {
 }
 
 impl Default for TextureDimension {
+    #[inline(always)]
     fn default() -> Self {
         Self::Texture1D
     }
@@ -2242,6 +2248,7 @@ pub enum OptimalClearValue {
 }
 
 impl From<u32> for OptimalClearValue {
+    #[inline(always)]
     fn from(v: u32) -> Self {
         Self::ColorInt(v)
     }
@@ -2327,7 +2334,7 @@ pub struct TextureDesc<'a> {
 impl<'a> TextureDesc<'a> {
     /// A utility function that strips the debug name from the description so we can get a static
     /// lifetime on the desc
-    pub fn strip_name(self) -> TextureDesc<'static> {
+    pub const fn strip_name(self) -> TextureDesc<'static> {
         TextureDesc::<'static> {
             width: self.width,
             height: self.height,
@@ -2364,6 +2371,7 @@ pub enum SamplerAddressMode {
 }
 
 impl Default for SamplerAddressMode {
+    #[inline(always)]
     fn default() -> Self {
         Self::Wrap
     }
@@ -2376,6 +2384,7 @@ pub enum SamplerFilter {
 }
 
 impl Default for SamplerFilter {
+    #[inline(always)]
     fn default() -> Self {
         Self::Nearest
     }
@@ -2388,6 +2397,7 @@ pub enum SamplerMipFilter {
 }
 
 impl Default for SamplerMipFilter {
+    #[inline(always)]
     fn default() -> Self {
         Self::Nearest
     }
@@ -2401,6 +2411,7 @@ pub enum SamplerBorderColor {
 }
 
 impl Default for SamplerBorderColor {
+    #[inline(always)]
     fn default() -> Self {
         Self::BlackTransparent
     }
@@ -2427,6 +2438,7 @@ pub struct SamplerDesc<'a> {
 }
 
 impl<'a> Default for SamplerDesc<'a> {
+    #[inline]
     fn default() -> Self {
         Self {
             min_filter: SamplerFilter::Linear,
@@ -2450,7 +2462,7 @@ impl<'a> Default for SamplerDesc<'a> {
 impl<'a> SamplerDesc<'a> {
     /// A utility function that strips the debug name from the description so we can get a static
     /// lifetime on the desc
-    pub fn strip_name(self) -> SamplerDesc<'static> {
+    pub const fn strip_name(self) -> SamplerDesc<'static> {
         SamplerDesc::<'static> {
             min_filter: self.min_filter,
             mag_filter: self.mag_filter,
@@ -2499,6 +2511,7 @@ pub enum ShaderType {
 }
 
 impl Default for ShaderType {
+    #[inline(always)]
     fn default() -> Self {
         Self::Compute
     }
@@ -2541,6 +2554,7 @@ pub enum DescriptorType {
 }
 
 impl Default for DescriptorType {
+    #[inline(always)]
     fn default() -> Self {
         Self::Sampler
     }
@@ -2560,6 +2574,7 @@ pub enum DescriptorShaderVisibility {
 }
 
 impl Default for DescriptorShaderVisibility {
+    #[inline(always)]
     fn default() -> Self {
         Self::All
     }
@@ -2866,7 +2881,7 @@ pub enum VertexInputRate {
 }
 
 impl Default for VertexInputRate {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::PerVertex
     }
@@ -2934,7 +2949,7 @@ pub enum PrimitiveTopology {
 }
 
 impl Default for PrimitiveTopology {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::PointList
     }
@@ -2952,7 +2967,7 @@ pub enum PolygonMode {
 }
 
 impl Default for PolygonMode {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::Fill
     }
@@ -2971,7 +2986,7 @@ pub enum CullMode {
 }
 
 impl Default for CullMode {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::None
     }
@@ -2988,7 +3003,7 @@ pub enum FrontFaceOrder {
 }
 
 impl Default for FrontFaceOrder {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::CounterClockwise
     }
@@ -3033,7 +3048,7 @@ pub enum BlendFactor {
 }
 
 impl Default for BlendFactor {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::Zero
     }
@@ -3049,7 +3064,7 @@ pub enum BlendOp {
 }
 
 impl Default for BlendOp {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::Add
     }
@@ -3120,6 +3135,7 @@ pub enum LogicOp {
 }
 
 impl Default for LogicOp {
+    #[inline(always)]
     fn default() -> Self {
         Self::Clear
     }
@@ -3145,7 +3161,7 @@ bitflags! {
 }
 
 impl Default for ColorComponentFlags {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         ColorComponentFlags::empty()
     }
@@ -3213,6 +3229,7 @@ pub enum CompareOp {
 }
 
 impl Default for CompareOp {
+    #[inline(always)]
     fn default() -> Self {
         Self::Never
     }
@@ -3247,7 +3264,7 @@ pub enum StencilOp {
 }
 
 impl Default for StencilOp {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::Keep
     }
@@ -3400,6 +3417,7 @@ pub enum QueueType {
 }
 
 impl Default for QueueType {
+    #[inline(always)]
     fn default() -> Self {
         Self::General
     }
@@ -3489,6 +3507,7 @@ pub enum ColorClearValue {
 }
 
 impl From<u32> for ColorClearValue {
+    #[inline(always)]
     fn from(v: u32) -> Self {
         Self::Int(v)
     }
@@ -3733,6 +3752,7 @@ impl TextureCopyAspect {
 }
 
 impl From<TextureCopyAspect> for TextureAspect {
+    #[inline(always)]
     fn from(val: TextureCopyAspect) -> Self {
         val.as_flag()
     }
