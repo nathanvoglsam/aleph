@@ -30,26 +30,29 @@
 #[cfg(target_os = "windows")]
 fn main() {
     use aleph_target_build::build::target_platform;
-    use std::path::Path;
-
-    let cpp_file = Path::new("thirdparty/src/D3D12MemAlloc.cpp");
-    let inc_dir = Path::new("thirdparty/src");
 
     if target_platform().is_windows() && target_platform().is_gnu() {
         cc::Build::new()
             .cpp(true)
-            .file(cpp_file)
+            .file("thirdparty/src/D3D12MemAlloc.cpp")
             .file("thirdparty_shim/shim.cpp")
             .flag("-fpermissive")
             .flag("-w")
-            .include(inc_dir)
+            .define("__REQUIRED_RPCNDR_H_VERSION__", "475")
+            .include("DirectX-Headers/include")
+            .include("DirectX-Headers/include/directx")
+            .include("thirdparty/include")
+            .include("thirdparty/src")
             .compile("d3d12ma");
     } else if target_platform().is_msvc() {
         cc::Build::new()
             .cpp(true)
-            .file(cpp_file)
+            .file("thirdparty/src/D3D12MemAlloc.cpp")
             .file("thirdparty_shim/shim.cpp")
-            .include(inc_dir)
+            .include("DirectX-Headers/include")
+            .include("DirectX-Headers/include/directx")
+            .include("thirdparty/include")
+            .include("thirdparty/src")
             .compile("d3d12ma");
     }
 }

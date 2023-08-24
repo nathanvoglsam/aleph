@@ -1,6 +1,3 @@
-[submodule "submodules/D3D12MemoryAllocator"]
-	path = submodules/D3D12MemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
 [submodule "submodules/Vulkan-Headers"]
 	path = submodules/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
@@ -16,3 +13,9 @@
 [submodule "submodules/SDL2-builds"]
 	path = submodules/SDL2-builds
 	url = https://gitea.hmmr-cloud.com.au/MindSpunk/SDL2-builds.git
+[submodule "submodules/D3D12MemoryAllocator"]
+	path = submodules/D3D12MemoryAllocator
+	url = https://gitea.hmmr-cloud.com.au/MindSpunk/D3D12MemoryAllocator.git
+[submodule "submodules/DirectX-Headers"]
+	path = submodules/DirectX-Headers
+	url = https://github.com/microsoft/DirectX-Headers.git
