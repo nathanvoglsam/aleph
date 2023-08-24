@@ -37,7 +37,7 @@ mod project;
 mod templates;
 mod utils;
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let mut command = clap::Command::new(env!("CARGO_PKG_NAME"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .version(env!("CARGO_PKG_VERSION"))
@@ -68,16 +68,13 @@ fn main() {
 
             // Now we can run the command
             let result = subcommand.exec(matches.clone());
-            match result.as_ref() {
-                Ok(_) => log::info!("Subcommand {subcommand_name} completed successfully!"),
-                Err(v) => {
-                    log::error!("{:?}", v);
-                    result.unwrap();
-                }
+            if result.is_ok() {
+                log::info!("Subcommand {subcommand_name} completed successfully!");
             }
-            log::info!("Exiting");
+            return result;
         }
     }
+    Ok(())
 }
 
 fn register_subcommand(
