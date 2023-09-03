@@ -123,10 +123,10 @@ void D3D12MA_Pool_BeginDefragmentation(
 
 // CreateAllocator
 HRESULT D3D12MA_Allocator_CreateAllocator(
-    const D3D12MA::ALLOCATOR_DESC* p_desc,
-    D3D12MA::Allocator** pp_allocator
+    const D3D12MA::ALLOCATOR_DESC* pDesc,
+    D3D12MA::Allocator** ppAllocator
 ) {
-    return D3D12MA::CreateAllocator(p_desc, pp_allocator);
+    return D3D12MA::CreateAllocator(pDesc, ppAllocator);
 }
 
 // Allocator::Release
@@ -166,22 +166,22 @@ UINT64 D3D12MA_Allocator_GetMemoryCapacity(
 // Allocator::CreateResource
 HRESULT D3D12MA_Allocator_CreateResource(
     D3D12MA::Allocator* self,
-    const D3D12MA::ALLOCATION_DESC* p_alloc_desc,
-    const D3D12_RESOURCE_DESC* p_resource_desc,
-    D3D12_RESOURCE_STATES initial_resource_state,
-    const D3D12_CLEAR_VALUE* p_optimized_clear_value,
-    D3D12MA::Allocation** pp_allocation,
-    REFIID riid_resource,
-    void** ppv_resource
+    const D3D12MA::ALLOCATION_DESC* pAllocDesc,
+    const D3D12_RESOURCE_DESC* pResourceDesc,
+    D3D12_RESOURCE_STATES InitialResourceState,
+    const D3D12_CLEAR_VALUE* pOptimizedClearValue,
+    D3D12MA::Allocation** ppAllocation,
+    REFIID riidResource,
+    void** ppvResource
 ) {
     return self->CreateResource(
-        p_alloc_desc,
-        p_resource_desc,
-        initial_resource_state,
-        p_optimized_clear_value,
-        pp_allocation,
-        riid_resource,
-        ppv_resource
+        pAllocDesc,
+        pResourceDesc,
+        InitialResourceState,
+        pOptimizedClearValue,
+        ppAllocation,
+        riidResource,
+        ppvResource
     );
 }
 
@@ -189,22 +189,22 @@ HRESULT D3D12MA_Allocator_CreateResource(
 // Allocator::CreateResource2
 HRESULT D3D12MA_Allocator_CreateResource2(
     D3D12MA::Allocator* self,
-    const D3D12MA::ALLOCATION_DESC* p_alloc_desc,
-    const D3D12_RESOURCE_DESC1* p_resource_desc,
-    D3D12_RESOURCE_STATES initial_resource_state,
-    const D3D12_CLEAR_VALUE* p_optimized_clear_value,
-    D3D12MA::Allocation** pp_allocation,
-    REFIID riid_resource,
-    void** ppv_resource
+    const D3D12MA::ALLOCATION_DESC* pAllocDesc,
+    const D3D12_RESOURCE_DESC1* pResourceDesc,
+    D3D12_RESOURCE_STATES InitialResourceState,
+    const D3D12_CLEAR_VALUE* pOptimizedClearValue,
+    D3D12MA::Allocation** ppAllocation,
+    REFIID riidResource,
+    void** ppvResource
 ) {
     return self->CreateResource2(
-        p_alloc_desc,
-        p_resource_desc,
-        initial_resource_state,
-        p_optimized_clear_value,
-        pp_allocation,
-        riid_resource,
-        ppv_resource
+        pAllocDesc,
+        pResourceDesc,
+        InitialResourceState,
+        pOptimizedClearValue,
+        ppAllocation,
+        riidResource,
+        ppvResource
     );
 }
 #endif // #ifdef __ID3D12Device8_INTERFACE_DEFINED__
@@ -212,60 +212,60 @@ HRESULT D3D12MA_Allocator_CreateResource2(
 // Allocator::AllocateMemory
 HRESULT D3D12MA_Allocator_AllocateMemory(
     D3D12MA::Allocator* self,
-    const D3D12MA::ALLOCATION_DESC* p_alloc_desc,
-    const D3D12_RESOURCE_ALLOCATION_INFO* p_alloc_info,
-    D3D12MA::Allocation** pp_allocation
+    const D3D12MA::ALLOCATION_DESC* pAllocDesc,
+    const D3D12_RESOURCE_ALLOCATION_INFO* pAllocInfo,
+    D3D12MA::Allocation** ppAllocation
 ) {
     return self->AllocateMemory(
-        p_alloc_desc,
-        p_alloc_info,
-        pp_allocation
+        pAllocDesc,
+        pAllocInfo,
+        ppAllocation
     );
 }
 
 // Allocator::CreateAliasingResource
 HRESULT D3D12MA_Allocator_CreateAliasingResource(
     D3D12MA::Allocator* self,
-    D3D12MA::Allocation* p_allocation,
-    UINT64 allocation_local_offset,
-    const D3D12_RESOURCE_DESC* p_resource_desc,
-    D3D12_RESOURCE_STATES initial_resource_state,
-    const D3D12_CLEAR_VALUE* p_optimized_clear_value,
-    REFIID riid_resource,
-    void** ppv_resource
+    D3D12MA::Allocation* pAllocation,
+    UINT64 AllocationLocalOffset,
+    const D3D12_RESOURCE_DESC* pResourceDesc,
+    D3D12_RESOURCE_STATES InitialResourceState,
+    const D3D12_CLEAR_VALUE* pOptimizedClearValue,
+    REFIID riidResource,
+    void** ppvResource
 ) {
     return self->CreateAliasingResource(
-        p_allocation,
-        allocation_local_offset,
-        p_resource_desc,
-        initial_resource_state,
-        p_optimized_clear_value,
-        riid_resource,
-        ppv_resource
+        pAllocation,
+        AllocationLocalOffset,
+        pResourceDesc,
+        InitialResourceState,
+        pOptimizedClearValue,
+        riidResource,
+        ppvResourcee
     );
 }
 
 // Allocator::CreatePool
 HRESULT D3D12MA_Allocator_CreatePool(
     D3D12MA::Allocator* self,
-    const D3D12MA::POOL_DESC* p_pool_desc,
-    D3D12MA::Pool** pp_pool
+    const D3D12MA::POOL_DESC* pPoolDesc,
+    D3D12MA::Pool** ppPool
 ) {
-    return self->CreatePool(p_pool_desc, pp_pool);
+    return self->CreatePool(pPoolDesc, ppPool);
 }
 
 // Allocator::SetCurrentFrameIndex
-void D3D12MA_Allocator_SetCurrentFrameIndex(D3D12MA::Allocator* self, UINT frame_index) {
-    self->SetCurrentFrameIndex(frame_index);
+void D3D12MA_Allocator_SetCurrentFrameIndex(D3D12MA::Allocator* self, UINT frameIndex) {
+    self->SetCurrentFrameIndex(frameIndex);
 }
 
 // Allocator::GetBudget
 void D3D12MA_Allocator_GetBudget(
     D3D12MA::Allocator* self,
-    D3D12MA::Budget* p_gpu_budget,
-    D3D12MA::Budget* p_cpu_budget
+    D3D12MA::Budget* pLocalBudget,
+    D3D12MA::Budget* pNonLocalBudget
 ) {
-    self->GetBudget(p_gpu_budget, p_cpu_budget);
+    self->GetBudget(pLocalBudget, pNonLocalBudget);
 }
 
 // Allocator::CalculateStatistics
@@ -276,15 +276,15 @@ void D3D12MA_Allocator_CalculateStatistics(D3D12MA::Allocator* self, D3D12MA::To
 // Allocator::BuildStatsString
 void D3D12MA_Allocator_BuildStatsString(
     const D3D12MA::Allocator* self,
-    WCHAR** pp_stats_string,
-    BOOL detailed_map
+    WCHAR** ppStatsString,
+    BOOL DetailedMap
 ) {
-    self->BuildStatsString(pp_stats_string, detailed_map);
+    self->BuildStatsString(ppStatsString, DetailedMap);
 }
 
 // Allocator::FreeStatsString
-void D3D12MA_Allocator_FreeStatsString(const D3D12MA::Allocator* self, WCHAR* p_stats_string) {
-    self->FreeStatsString(p_stats_string);
+void D3D12MA_Allocator_FreeStatsString(const D3D12MA::Allocator* self, WCHAR* pStatsString) {
+    self->FreeStatsString(pStatsString);
 }
 
 // Allocator::BeginDefragmentation
@@ -383,6 +383,35 @@ void D3D12MA_VirtualBlock_BuildStatsString(
 // VirtualBlock::FreeStatsString
 void D3D12MA_VirtualBlock_FreeStatsString(const D3D12MA::VirtualBlock* self, WCHAR* pStatsString) {
     self->FreeStatsString(pStatsString);
+}
+
+// =====================================================================================================================
+// DefragmentationContext
+// =====================================================================================================================
+
+void D3D12MA_DefragmentationContext_Release(D3D12MA::DefragmentationContext* self) {
+    self->Release();
+}
+
+HRESULT D3D12MA_DefragmentationContext_BeginPass(
+    D3D12MA::DefragmentationContext* self,
+    D3D12MA::DEFRAGMENTATION_PASS_MOVE_INFO* pPassInfo
+) {
+    return self->BeginPass(pPassInfo);
+}
+
+HRESULT D3D12MA_DefragmentationContext_EndPass(
+    D3D12MA::DefragmentationContext* self,
+    D3D12MA::DEFRAGMENTATION_PASS_MOVE_INFO* pPassInfo
+) {
+    return self->EndPass(pPassInfo);
+}
+
+void D3D12MA_DefragmentationContext_GetStats(
+    D3D12MA::DefragmentationContext* self,
+    D3D12MA::DEFRAGMENTATION_STATS* pStats
+) {
+    self->GetStats(pStats);
 }
 
 } // extern "C"

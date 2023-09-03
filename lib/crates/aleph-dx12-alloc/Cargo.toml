@@ -43,6 +43,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }
+bitflags = { workspace = true }
 
 [target.'cfg(windows)'.build-dependencies]
 aleph-target-build = { workspace = true }

@@ -30,30 +30,30 @@
 #![allow(non_snake_case)]
 
 use crate::raw::{
-    D3D12MA_VirtualBlock_Allocate, D3D12MA_VirtualBlock_CalculateStats, D3D12MA_VirtualBlock_Clear,
-    D3D12MA_VirtualBlock_CreateAllocator, D3D12MA_VirtualBlock_FreeAllocation,
-    D3D12MA_VirtualBlock_GetAllocationInfo, D3D12MA_VirtualBlock_IsEmpty,
-    D3D12MA_VirtualBlock_Release, D3D12MA_VirtualBlock_SetAllocationUserData,
+    D3D12MA_VirtualBlock_Allocate, D3D12MA_VirtualBlock_CalculateStatistics,
+    D3D12MA_VirtualBlock_Clear, D3D12MA_VirtualBlock_CreateVirtualBlock,
+    D3D12MA_VirtualBlock_FreeAllocation, D3D12MA_VirtualBlock_GetAllocationInfo,
+    D3D12MA_VirtualBlock_GetStatistics, D3D12MA_VirtualBlock_IsEmpty, D3D12MA_VirtualBlock_Release,
+    D3D12MA_VirtualBlock_SetAllocationPrivateData,
 };
 use crate::{
-    D3D12MA_STATS, D3D12MA_VIRTUAL_ALLOCATION_DESC, D3D12MA_VIRTUAL_ALLOCATION_INFO,
-    D3D12MA_VIRTUAL_BLOCK_DESC,
+    DetailedStatistics, Statistics, VirtualAllocation, VIRTUAL_ALLOCATION_DESC,
+    VIRTUAL_ALLOCATION_INFO, VIRTUAL_BLOCK_DESC,
 };
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-#[derive(Clone)]
 #[repr(transparent)]
-pub struct D3D12MAVirtualBlock(pub(crate) NonNull<c_void>);
+pub struct VirtualBlock(pub(crate) NonNull<c_void>);
 
-impl D3D12MAVirtualBlock {
+impl VirtualBlock {
     #[inline(always)]
-    pub fn new(pBlockDesc: &D3D12MA_VIRTUAL_BLOCK_DESC) -> windows::core::Result<Self> {
+    pub fn new(pBlockDesc: &VIRTUAL_BLOCK_DESC) -> windows::core::Result<Self> {
         unsafe {
             let mut out = std::ptr::null_mut();
-            D3D12MA_VirtualBlock_CreateAllocator(pBlockDesc, &mut out)
+            D3D12MA_VirtualBlock_CreateVirtualBlock(pBlockDesc, &mut out)
                 .ok()
-                .map(|_| D3D12MAVirtualBlock(NonNull::new(out).unwrap()))
+                .map(|_| VirtualBlock(NonNull::new(out).unwrap()))
         }
     }
 
@@ -62,27 +62,47 @@ impl D3D12MAVirtualBlock {
         unsafe { D3D12MA_VirtualBlock_IsEmpty(self.0.as_ptr()).as_bool() }
     }
 
+    /// # Unsafe
+    ///
+    /// It is the caller's responsibility to ensure that the given [VirtualAllocation] handle is
+    /// both alive (hasn't been freed) and was allocated from this allocator.
     #[inline(always)]
-    pub fn GetAllocationInfo(&self, Offset: u64, pInfo: &mut D3D12MA_VIRTUAL_ALLOCATION_INFO) {
-        unsafe { D3D12MA_VirtualBlock_GetAllocationInfo(self.0.as_ptr(), Offset, pInfo) }
+    pub unsafe fn GetAllocationInfo(
+        &self,
+        allocation: VirtualAllocation,
+    ) -> VIRTUAL_ALLOCATION_INFO {
+        let mut info = VIRTUAL_ALLOCATION_INFO {
+            Offset: 0,
+            Size: 0,
+            pPrivateData: std::ptr::null_mut(),
+        };
+
+        D3D12MA_VirtualBlock_GetAllocationInfo(self.0.as_ptr(), allocation, &mut info);
+
+        info
     }
 
     #[inline(always)]
     pub fn Allocate(
         &mut self,
-        pDesc: &D3D12MA_VIRTUAL_ALLOCATION_DESC,
-    ) -> windows::core::Result<u64> {
+        pDesc: &VIRTUAL_ALLOCATION_DESC,
+    ) -> windows::core::Result<(VirtualAllocation, u64)> {
         unsafe {
-            let mut out = 0;
-            D3D12MA_VirtualBlock_Allocate(self.0.as_ptr(), pDesc, &mut out)
+            let mut offset = 0;
+            let mut out = None;
+            D3D12MA_VirtualBlock_Allocate(self.0.as_ptr(), pDesc, &mut out, &mut offset)
                 .ok()
-                .map(|_| out)
+                .map(|_| (out.unwrap(), offset))
         }
     }
 
+    /// # Unsafe
+    ///
+    /// It is the caller's responsibility to ensure that the given [VirtualAllocation] handle is
+    /// both alive (hasn't been freed) and was allocated from this allocator.
     #[inline(always)]
-    pub fn FreeAllocation(&mut self, Offset: u64) {
-        unsafe { D3D12MA_VirtualBlock_FreeAllocation(self.0.as_ptr(), Offset) }
+    pub unsafe fn FreeAllocation(&mut self, allocation: VirtualAllocation) {
+        D3D12MA_VirtualBlock_FreeAllocation(self.0.as_ptr(), allocation)
     }
 
     #[inline(always)]
@@ -90,17 +110,32 @@ impl D3D12MAVirtualBlock {
         unsafe { D3D12MA_VirtualBlock_Clear(self.0.as_ptr()) }
     }
 
+    /// # Unsafe
+    ///
+    /// It is the caller's responsibility to ensure that the given [VirtualAllocation] handle is
+    /// both alive (hasn't been freed) and was allocated from this allocator.
     #[inline(always)]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn SetAllocationUserData(&mut self, Offset: u64, pUserData: *mut c_void) {
-        unsafe {
-            D3D12MA_VirtualBlock_SetAllocationUserData(self.0.as_ptr(), Offset, pUserData);
-        }
+    pub unsafe fn SetAllocationPrivateData(
+        &mut self,
+        allocation: VirtualAllocation,
+        pPrivateData: *mut c_void,
+    ) {
+        D3D12MA_VirtualBlock_SetAllocationPrivateData(self.0.as_ptr(), allocation, pPrivateData);
     }
 
     #[inline(always)]
-    pub fn CalculateStats(&self, pStats: &mut D3D12MA_STATS) {
-        unsafe { D3D12MA_VirtualBlock_CalculateStats(self.0.as_ptr(), pStats) }
+    pub fn GetStatistics(&self) -> Statistics {
+        let mut stats = Statistics::default();
+        unsafe { D3D12MA_VirtualBlock_GetStatistics(self.0.as_ptr(), &mut stats) }
+        stats
+    }
+
+    #[inline(always)]
+    pub fn CalculateStatistics(&self) -> DetailedStatistics {
+        let mut stats = DetailedStatistics::default();
+        unsafe { D3D12MA_VirtualBlock_CalculateStatistics(self.0.as_ptr(), &mut stats) }
+        stats
     }
 
     // #[inline(always)]
@@ -109,7 +144,7 @@ impl D3D12MAVirtualBlock {
     // pub fn FreeStatsString(this: ThisPtrConst, pStatsString: *mut u16);
 }
 
-impl Drop for D3D12MAVirtualBlock {
+impl Drop for VirtualBlock {
     #[inline(always)]
     fn drop(&mut self) {
         unsafe {

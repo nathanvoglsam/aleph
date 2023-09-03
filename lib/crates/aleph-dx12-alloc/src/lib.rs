@@ -33,27 +33,45 @@ extern crate aleph_windows as windows;
 
 mod allocation;
 mod allocator;
+mod defragmentation_context;
 mod pool;
 mod raw;
 mod virtual_block;
 
-pub use crate::allocation::D3D12MAAllocation;
-pub use crate::allocator::D3D12MAAllocator;
-pub use crate::pool::D3D12MAPool;
-pub use crate::virtual_block::D3D12MAVirtualBlock;
+pub use crate::allocation::Allocation;
+pub use crate::allocator::Allocator;
+pub use crate::defragmentation_context::DefragmentationContext;
+pub use crate::pool::Pool;
+pub use crate::virtual_block::VirtualBlock;
 
-pub use raw::D3D12MA_ALLOCATE_FN;
-pub use raw::D3D12MA_ALLOCATION_CALLBACKS;
-pub use raw::D3D12MA_ALLOCATION_DESC;
-pub use raw::D3D12MA_ALLOCATION_FLAGS;
-pub use raw::D3D12MA_ALLOCATOR_DESC;
-pub use raw::D3D12MA_ALLOCATOR_FLAGS;
-pub use raw::D3D12MA_BUDGET;
-pub use raw::D3D12MA_FREE_FN;
-pub use raw::D3D12MA_POOL_DESC;
-pub use raw::D3D12MA_STATS;
-pub use raw::D3D12MA_STAT_INFO;
-pub use raw::D3D12MA_VIRTUAL_ALLOCATION_DESC;
-pub use raw::D3D12MA_VIRTUAL_ALLOCATION_INFO;
-pub use raw::D3D12MA_VIRTUAL_BLOCK_DESC;
-pub use raw::HEAP_TYPE_COUNT;
+pub use raw::ALLOCATE_FN;
+pub use raw::ALLOCATION_CALLBACKS;
+pub use raw::ALLOCATOR_DESC;
+pub use raw::ALLOCATOR_FLAGS;
+pub use raw::FREE_FN;
+
+pub use raw::AllocHandle;
+pub use raw::ALLOCATION_DESC;
+pub use raw::ALLOCATION_FLAGS;
+
+pub use raw::POOL_DESC;
+pub use raw::POOL_FLAGS;
+
+pub use raw::DEFRAGMENTATION_DESC;
+pub use raw::DEFRAGMENTATION_FLAGS;
+pub use raw::DEFRAGMENTATION_MOVE;
+pub use raw::DEFRAGMENTATION_MOVE_OPERATION;
+pub use raw::DEFRAGMENTATION_PASS_MOVE_INFO;
+pub use raw::DEFRAGMENTATION_STATS;
+
+pub use raw::Budget;
+pub use raw::DetailedStatistics;
+pub use raw::Statistics;
+pub use raw::TotalStatistics;
+
+pub use raw::VirtualAllocation;
+pub use raw::VIRTUAL_ALLOCATION_DESC;
+pub use raw::VIRTUAL_ALLOCATION_FLAGS;
+pub use raw::VIRTUAL_ALLOCATION_INFO;
+pub use raw::VIRTUAL_BLOCK_DESC;
+pub use raw::VIRTUAL_BLOCK_FLAGS;
