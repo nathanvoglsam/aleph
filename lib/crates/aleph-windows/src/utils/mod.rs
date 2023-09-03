@@ -40,7 +40,10 @@ use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
+use std::ops::Deref;
 use std::os::raw::c_char;
+use windows::core::ComInterface;
 
 pub use d3d12_component_mapping::D3D12ComponentMapping;
 pub use d3d12_component_mapping::D3D12ComponentMappingValue;
@@ -349,4 +352,64 @@ macro_rules! deref_impl {
             }
         }
     };
+}
+
+///
+/// A utility object for safe 'weak reference' like behavior for COM objects. This allows passing
+/// COM pointers around without calling AddRef while remaining safe against use-after-free.
+///
+#[repr(transparent)]
+pub struct WeakRef<'a, T: ComInterface> {
+    object: ManuallyDrop<T>,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T: ComInterface + Clone> WeakRef<'a, T> {
+    /// Constructs a new [WeakRef] from the given COM object.
+    ///
+    /// This creates a copy of the COM pointer without calling AddRef. Under normal circumstances
+    /// this would allow UB as it would be possible to create a dangling reference. The [WeakRef]
+    /// makes this safe by tying the lifetime of the [WeakRef] to the COM object it was created
+    /// from.
+    ///
+    /// The borrow checker will prevent the [WeakRef] for an object outliving the object it was
+    /// created from, making it safe to create usable 'dangling' references
+    #[inline]
+    pub fn new(v: &'a T) -> Self {
+        use std::mem::size_of;
+        use std::mem::size_of_val;
+
+        // Assert that object and manually drop object are the same size (should compile away as
+        // it's compile time known)
+        assert_eq!(size_of_val(v), size_of::<ManuallyDrop<T>>());
+
+        // Assert that we keep the niche value optimization of the underlying com ptr. Again compile
+        // time known so this should be optimized out.
+        assert_eq!(size_of::<Self>(), size_of::<Option<Self>>());
+
+        Self {
+            object: unsafe { std::mem::transmute_copy(v) },
+            phantom: Default::default(),
+        }
+    }
+
+    /// Upgrades a non-weak COM reference from the wrapped object.
+    pub fn upgrade(&self) -> T {
+        <T as Clone>::clone(self.object.deref())
+    }
+}
+
+impl<'a, T: ComInterface + Clone> Deref for WeakRef<'a, T> {
+    type Target = T;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        self.object.deref()
+    }
+}
+
+impl<'a, T: ComInterface + Clone> From<&'a T> for WeakRef<'a, T> {
+    fn from(value: &'a T) -> Self {
+        WeakRef::new(value)
+    }
 }
