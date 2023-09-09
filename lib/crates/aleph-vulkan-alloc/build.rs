@@ -30,7 +30,6 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-use std::path::Path;
 use target::build::{target_architecture, target_platform};
 use target::Platform;
 
@@ -81,16 +80,17 @@ fn main() {
         println!("cargo:rustc-link-search=all={}", out_dir.display());
         println!("cargo:rustc-link-lib=static=vma");
     } else {
-        let vk_header_inc = Path::new("Vulkan-Headers/include");
-        let vma_header_inc = Path::new("VulkanMemoryAllocator/src");
-
         let mut build = cc::Build::new();
         build.cpp(true);
+        build.debug(true);
         build.flag_if_supported("-w");
         build.define("VMA_STATIC_VULKAN_FUNCTIONS", "0");
-        build.file("library/vk_mem_alloc.cpp");
-        build.include(vk_header_inc);
-        build.include(vma_header_inc);
+        build.define("VMA_USE_STL_SHARED_MUTEX", "1");
+        build.define("VMA_STATS_STRING_ENABLED", "0");
+        build.file("VulkanMemoryAllocator/src/VmaUsage.cpp");
+        build.include("Vulkan-Headers/include");
+        build.include("VulkanMemoryAllocator/include");
+        build.include("VulkanMemoryAllocator/src");
 
         if target_platform().is_windows() {
             if target_platform().is_gnu() {
@@ -100,10 +100,6 @@ fn main() {
             }
         } else {
             build.flag("-std=c++17");
-        }
-
-        if cfg!(feature = "corruption_detection") {
-            build.define("VMA_DEBUG_DETECT_CORRUPTION", "1");
         }
 
         build.compile("vma");

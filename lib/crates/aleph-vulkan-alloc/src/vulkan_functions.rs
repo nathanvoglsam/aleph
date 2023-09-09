@@ -34,7 +34,7 @@ use ash::vk;
 /// Builder wrapper for the VmaVulkanFunctions struct provided by vma-sys
 ///
 pub struct VulkanFunctionsBuilder {
-    functions: raw::VmaVulkanFunctions,
+    functions: raw::VulkanFunctions,
 }
 
 impl VulkanFunctionsBuilder {
@@ -43,7 +43,9 @@ impl VulkanFunctionsBuilder {
     ///
     #[inline]
     pub fn new() -> Self {
-        let functions = raw::VmaVulkanFunctions {
+        let functions = raw::VulkanFunctions {
+            vkGetInstanceProcAddr: None,
+            vkGetDeviceProcAddr: None,
             vkGetPhysicalDeviceProperties: None,
             vkGetPhysicalDeviceMemoryProperties: None,
             vkAllocateMemory: None,
@@ -63,6 +65,11 @@ impl VulkanFunctionsBuilder {
             vkCmdCopyBuffer: None,
             vkGetBufferMemoryRequirements2KHR: None,
             vkGetImageMemoryRequirements2KHR: None,
+            vkBindBufferMemory2KHR: None,
+            vkBindImageMemory2KHR: None,
+            vkGetPhysicalDeviceMemoryProperties2KHR: None,
+            vkGetDeviceBufferMemoryRequirements: None,
+            vkGetDeviceImageMemoryRequirements: None,
         };
 
         VulkanFunctionsBuilder { functions }
@@ -74,12 +81,24 @@ impl VulkanFunctionsBuilder {
     #[inline]
     pub fn ash_vk_1_0(
         mut self,
+        entry_loader: &ash::Entry,
         instance_loader: &ash::Instance,
         device_loader: &ash::Device,
     ) -> Self {
         // Get the function lists
+        let ent = entry_loader;
         let inst = instance_loader;
         let dev = device_loader;
+
+        let func = ent.static_fn().get_instance_proc_addr;
+        self = self.get_instance_proc_addr(func);
+
+        // === //
+
+        let func = inst.fp_v1_0().get_device_proc_addr;
+        self = self.get_device_proc_addr(func);
+
+        // === //
 
         let func = inst.fp_v1_0().get_physical_device_properties;
         self = self.get_physical_device_properties(func);
@@ -182,91 +201,6 @@ impl VulkanFunctionsBuilder {
         let inst = instance_loader;
         let dev = device_loader;
 
-        let func = inst.fp_v1_0().get_physical_device_properties;
-        self = self.get_physical_device_properties(func);
-
-        // === //
-
-        let func = inst.fp_v1_0().get_physical_device_memory_properties;
-        self = self.get_physical_device_memory_properties(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().allocate_memory;
-        self = self.allocate_memory(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().free_memory;
-        self = self.free_memory(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().map_memory;
-        self = self.map_memory(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().unmap_memory;
-        self = self.unmap_memory(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().flush_mapped_memory_ranges;
-        self = self.flush_mapped_memory_ranges(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().invalidate_mapped_memory_ranges;
-        self = self.invalidate_mapped_memory_ranges(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().bind_buffer_memory;
-        self = self.bind_buffer_memory(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().bind_image_memory;
-        self = self.bind_image_memory(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().get_buffer_memory_requirements;
-        self = self.get_buffer_memory_requirements(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().get_image_memory_requirements;
-        self = self.get_image_memory_requirements(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().create_buffer;
-        self = self.create_buffer(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().destroy_buffer;
-        self = self.destroy_buffer(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().create_image;
-        self = self.create_image(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().destroy_image;
-        self = self.destroy_image(func);
-
-        // === //
-
-        let func = dev.fp_v1_0().cmd_copy_buffer;
-        self = self.cmd_copy_buffer(func);
-
-        // === //
-
         let func = dev.fp_v1_1().get_buffer_memory_requirements2;
         self = self.get_buffer_memory_requirements2_khr(func);
 
@@ -275,25 +209,64 @@ impl VulkanFunctionsBuilder {
         let func = dev.fp_v1_1().get_image_memory_requirements2;
         self = self.get_image_memory_requirements2_khr(func);
 
+        // === //
+
+        let func = dev.fp_v1_1().bind_buffer_memory2;
+        self = self.bind_buffer_memory2_khr(func);
+
+        // === //
+
+        let func = dev.fp_v1_1().bind_image_memory2;
+        self = self.bind_image_memory2_khr(func);
+
+        // === //
+
+        let func = inst.fp_v1_1().get_physical_device_memory_properties2;
+        self = self.get_physical_device_memory_properties2_khr(func);
+
+        // === //
+
         self
     }
 
-    // pub fn ash_get_memory_requirements_2(
-    //     mut self,
-    //     loader: &ash::extensions::khr::GetMemoryRequirements2,
-    // ) -> Self {
-    //     let func = loader.fp().get_buffer_memory_requirements2_khr;
-    //     self = self.get_buffer_memory_requirements2_khr(func);
-    //
-    //     let func = loader.fp().get_image_memory_requirements2_khr;
-    //     self = self.get_image_memory_requirements2_khr(func);
-    //
-    //     self
-    // }
+    ///
+    /// Fill out the function pointers from ash's function pointer tables
+    ///
+    #[inline]
+    pub fn ash_vk_1_3(
+        mut self,
+        instance_loader: &ash::Instance,
+        device_loader: &ash::Device,
+    ) -> Self {
+        // Get the function lists
+        let _inst = instance_loader;
+        let dev = device_loader;
 
-    ///
-    ///
-    ///
+        let func = dev.fp_v1_3().get_device_buffer_memory_requirements;
+        self = self.get_device_buffer_memory_requirements(func);
+
+        // === //
+
+        let func = dev.fp_v1_3().get_device_image_memory_requirements;
+        self = self.get_device_image_memory_requirements(func);
+
+        // === //
+
+        self
+    }
+
+    #[inline]
+    pub fn get_instance_proc_addr(mut self, f: vk::PFN_vkGetInstanceProcAddr) -> Self {
+        self.functions.vkGetInstanceProcAddr = Some(f);
+        self
+    }
+
+    #[inline]
+    pub fn get_device_proc_addr(mut self, f: vk::PFN_vkGetDeviceProcAddr) -> Self {
+        self.functions.vkGetDeviceProcAddr = Some(f);
+        self
+    }
+
     #[inline]
     pub fn get_physical_device_properties(
         mut self,
@@ -303,9 +276,6 @@ impl VulkanFunctionsBuilder {
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn get_physical_device_memory_properties(
         mut self,
@@ -315,54 +285,36 @@ impl VulkanFunctionsBuilder {
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn allocate_memory(mut self, f: vk::PFN_vkAllocateMemory) -> Self {
         self.functions.vkAllocateMemory = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn free_memory(mut self, f: vk::PFN_vkFreeMemory) -> Self {
         self.functions.vkFreeMemory = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn map_memory(mut self, f: vk::PFN_vkMapMemory) -> Self {
         self.functions.vkMapMemory = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn unmap_memory(mut self, f: vk::PFN_vkUnmapMemory) -> Self {
         self.functions.vkUnmapMemory = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn flush_mapped_memory_ranges(mut self, f: vk::PFN_vkFlushMappedMemoryRanges) -> Self {
         self.functions.vkFlushMappedMemoryRanges = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn invalidate_mapped_memory_ranges(
         mut self,
@@ -372,27 +324,18 @@ impl VulkanFunctionsBuilder {
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn bind_buffer_memory(mut self, f: vk::PFN_vkBindBufferMemory) -> Self {
         self.functions.vkBindBufferMemory = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn bind_image_memory(mut self, f: vk::PFN_vkBindImageMemory) -> Self {
         self.functions.vkBindImageMemory = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn get_buffer_memory_requirements(
         mut self,
@@ -402,9 +345,6 @@ impl VulkanFunctionsBuilder {
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn get_image_memory_requirements(
         mut self,
@@ -414,54 +354,36 @@ impl VulkanFunctionsBuilder {
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn create_buffer(mut self, f: vk::PFN_vkCreateBuffer) -> Self {
         self.functions.vkCreateBuffer = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn destroy_buffer(mut self, f: vk::PFN_vkDestroyBuffer) -> Self {
         self.functions.vkDestroyBuffer = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn create_image(mut self, f: vk::PFN_vkCreateImage) -> Self {
         self.functions.vkCreateImage = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn destroy_image(mut self, f: vk::PFN_vkDestroyImage) -> Self {
         self.functions.vkDestroyImage = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn cmd_copy_buffer(mut self, f: vk::PFN_vkCmdCopyBuffer) -> Self {
         self.functions.vkCmdCopyBuffer = Some(f);
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn get_buffer_memory_requirements2_khr(
         mut self,
@@ -471,9 +393,6 @@ impl VulkanFunctionsBuilder {
         self
     }
 
-    ///
-    ///
-    ///
     #[inline]
     pub fn get_image_memory_requirements2_khr(
         mut self,
@@ -483,10 +402,49 @@ impl VulkanFunctionsBuilder {
         self
     }
 
+    #[inline]
+    pub fn bind_buffer_memory2_khr(mut self, f: vk::PFN_vkBindBufferMemory2) -> Self {
+        self.functions.vkBindBufferMemory2KHR = Some(f);
+        self
+    }
+
+    #[inline]
+    pub fn bind_image_memory2_khr(mut self, f: vk::PFN_vkBindImageMemory2) -> Self {
+        self.functions.vkBindImageMemory2KHR = Some(f);
+        self
+    }
+
+    #[inline]
+    pub fn get_physical_device_memory_properties2_khr(
+        mut self,
+        f: vk::PFN_vkGetPhysicalDeviceMemoryProperties2,
+    ) -> Self {
+        self.functions.vkGetPhysicalDeviceMemoryProperties2KHR = Some(f);
+        self
+    }
+
+    #[inline]
+    pub fn get_device_buffer_memory_requirements(
+        mut self,
+        f: vk::PFN_vkGetDeviceBufferMemoryRequirements,
+    ) -> Self {
+        self.functions.vkGetDeviceBufferMemoryRequirements = Some(f);
+        self
+    }
+
+    #[inline]
+    pub fn get_device_image_memory_requirements(
+        mut self,
+        f: vk::PFN_vkGetDeviceImageMemoryRequirements,
+    ) -> Self {
+        self.functions.vkGetDeviceImageMemoryRequirements = Some(f);
+        self
+    }
+
     ///
     /// Return the VmaVulkanFunctions struct if it is valid, otherwise return None
     ///
-    pub const fn build(self) -> raw::VmaVulkanFunctions {
+    pub const fn build(self) -> raw::VulkanFunctions {
         self.functions
     }
 }

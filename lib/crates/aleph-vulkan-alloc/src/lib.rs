@@ -33,18 +33,21 @@ mod allocation;
 mod allocator;
 mod pool;
 mod raw;
-mod stats;
 mod utils;
 mod vulkan_functions;
 
 pub mod vma {
-    pub use crate::allocation::{
-        Allocation, AllocationCreateFlags, AllocationCreateInfo, AllocationCreateInfoBuilder,
-        AllocationInfo, MemoryUsage,
+    pub use crate::allocation::{Allocation, AllocationCreateInfoBuilder};
+    pub use crate::allocator::{Allocator, AllocatorBuilder, AllocatorBuilderError};
+    pub use crate::pool::{Pool, PoolBuilder};
+    pub use crate::raw::{
+        AllocationCreateFlags, AllocationCreateInfo, AllocationInfo, AllocatorCreateFlags,
+        AllocatorCreateInfo, AllocatorInfo, Budget, DefragmentationFlags, DefragmentationInfo,
+        DefragmentationMove, DefragmentationMoveOperation, DefragmentationPassMoveInfo,
+        DefragmentationStats, DetailedStatistics, DeviceMemoryCallbacks, MemoryUsage,
+        PFN_vmaAllocateDeviceMemoryFunction, PFN_vmaFreeDeviceMemoryFunction, PoolCreateFlags,
+        PoolCreateInfo, Statistics, TotalStatistics, VirtualAllocationCreateFlags,
+        VirtualAllocationCreateInfo, VirtualAllocationInfo, VirtualBlockCreateFlags,
+        VirtualBlockCreateInfo, VulkanFunctions,
     };
-    pub use crate::allocator::{
-        Allocator, AllocatorBuilder, AllocatorBuilderError, AllocatorCreateFlags,
-    };
-    pub use crate::pool::{Pool, PoolBuilder, PoolCreateFlags};
-    pub use crate::stats::{PoolStats, StatInfo, Stats};
 }

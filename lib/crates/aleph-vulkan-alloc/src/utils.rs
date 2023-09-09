@@ -33,7 +33,7 @@ use crate::raw;
 /// Checks for the minimum required functions for vma allocator
 ///
 #[inline]
-pub fn allocator_functions_valid(funcs: &raw::VmaVulkanFunctions, requirements_2: bool) -> bool {
+pub fn allocator_functions_valid(funcs: &raw::VulkanFunctions, requirements_2: bool) -> bool {
     if funcs.vkGetPhysicalDeviceProperties.is_none() {
         return false;
     }
