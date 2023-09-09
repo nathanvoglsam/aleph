@@ -581,15 +581,15 @@ impl IDevice for Device {
             .sharing_mode(vk::SharingMode::EXCLUSIVE);
 
         let usage = match desc.cpu_access {
-            CpuAccessMode::None => vma::MemoryUsage::GPUOnly,
-            CpuAccessMode::Read => vma::MemoryUsage::GPUToCPU,
-            CpuAccessMode::Write => vma::MemoryUsage::CPUToGPU,
+            CpuAccessMode::None => vma::MemoryUsage::GpuOnly,
+            CpuAccessMode::Read => vma::MemoryUsage::GpuToCpu,
+            CpuAccessMode::Write => vma::MemoryUsage::CpuToGpu,
         };
         let alloc_info = vma::AllocationCreateInfo::builder()
             .flags(vma::AllocationCreateFlags::empty())
             .usage(usage);
 
-        let (buffer, allocation) = unsafe {
+        let (buffer, allocation, _) = unsafe {
             self.allocator
                 .create_buffer(&create_info, &alloc_info)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
@@ -678,9 +678,9 @@ impl IDevice for Device {
 
         let alloc_info = vma::AllocationCreateInfo::builder()
             .flags(vma::AllocationCreateFlags::empty())
-            .usage(vma::MemoryUsage::GPUOnly);
+            .usage(vma::MemoryUsage::GpuOnly);
 
-        let (image, allocation) = unsafe {
+        let (image, allocation, _) = unsafe {
             self.allocator
                 .create_image(&create_info, &alloc_info)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?

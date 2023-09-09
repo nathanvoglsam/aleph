@@ -159,8 +159,6 @@ impl<'a> AllocatorBuilder<'a> {
 
         let mut raw_alloc: Option<AllocatorH> = None;
         unsafe {
-            dbg!(vk::api_version_major(self.create_info.vulkan_api_version));
-            dbg!(vk::api_version_minor(self.create_info.vulkan_api_version));
             let result = raw::vmaCreateAllocator(
                 NonNull::from(&self.create_info),
                 NonNull::from(&mut raw_alloc),

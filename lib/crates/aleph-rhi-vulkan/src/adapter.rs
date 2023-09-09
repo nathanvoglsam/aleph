@@ -330,8 +330,13 @@ impl IAdapter for Adapter {
         };
 
         let allocator = vma::Allocator::builder()
-            .vulkan_api_version(vk::API_VERSION_1_2)
-            .build(&self.context.instance, &device, self.physical_device)
+            .vulkan_api_version(vk::API_VERSION_1_1)
+            .build(
+                &self.context.entry_loader,
+                &self.context.instance,
+                &device,
+                self.physical_device,
+            )
             .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
         let device = AnyArc::new_cyclic(move |v| {

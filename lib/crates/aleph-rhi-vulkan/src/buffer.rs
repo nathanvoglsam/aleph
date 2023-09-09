@@ -79,7 +79,8 @@ impl IBuffer for Buffer {
                 .allocator
                 .map_memory(&self.allocation)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-            NonNull::new(ptr).ok_or(ResourceMapError::MappedNullPointer)
+            ptr.ok_or(ResourceMapError::MappedNullPointer)
+                .map(|v| v.cast::<u8>())
         }
     }
 
@@ -93,7 +94,8 @@ impl IBuffer for Buffer {
         unsafe {
             self._device
                 .allocator
-                .flush_allocation(&self.allocation, offset, len);
+                .flush_allocation(&self.allocation, offset, len)
+                .unwrap();
         }
     }
 
@@ -101,7 +103,8 @@ impl IBuffer for Buffer {
         unsafe {
             self._device
                 .allocator
-                .invalidate_allocation(&self.allocation, offset, len);
+                .invalidate_allocation(&self.allocation, offset, len)
+                .unwrap();
         }
     }
 }
