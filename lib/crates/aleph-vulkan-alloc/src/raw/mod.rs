@@ -579,7 +579,7 @@ extern "C" {
         pCreateInfo: Option<NonNull<AllocationCreateInfo>>,
         allocationCount: usize,
         pAllocations: NonNull<Option<AllocationH>>,
-        pAllocationInfo: NonNull<AllocationInfo>,
+        pAllocationInfo: Option<NonNull<AllocationInfo>>,
     ) -> vk::Result;
     pub fn vmaAllocateMemoryForBuffer(
         allocator: AllocatorH,

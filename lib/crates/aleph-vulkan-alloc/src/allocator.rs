@@ -371,28 +371,29 @@ impl Allocator {
         &self,
         memory_requirements: &vk::MemoryRequirements,
         create_info: &vma::AllocationCreateInfo,
-        allocation_count: usize,
-    ) -> VkResult<(Vec<vma::Allocation>, Vec<AllocationInfo>)> {
-        if allocation_count > 0 {
-            let mut allocations: Vec<Option<vma::Allocation>> =
-                Vec::with_capacity(allocation_count);
-            allocations.resize(allocation_count, None);
-            let allocations_ptr = NonNull::new(allocations.as_ptr().cast_mut()).unwrap_unchecked();
-            let allocations_ptr = allocations_ptr.cast::<Option<AllocationH>>();
+        allocations: &mut [Option<vma::Allocation>],
+        allocation_infos: &mut [AllocationInfo],
+    ) -> VkResult<()> {
+        if allocations.len() > 0 {
+            let get_infos = if allocation_infos.len() > 0 {
+                assert_eq!(allocations.len(), allocation_infos.len());
+                true
+            } else {
+                false
+            };
 
-            let mut allocation_infos: Vec<AllocationInfo> = Vec::with_capacity(allocation_count);
-            allocation_infos.resize(allocation_count, AllocationInfo::default());
-            let allocation_infos_ptr =
-                NonNull::new(allocation_infos.as_ptr().cast_mut()).unwrap_unchecked();
-            let allocation_infos_ptr = allocation_infos_ptr.cast::<AllocationInfo>();
+            let ptr = NonNull::new(allocations.as_ptr().cast_mut()).unwrap_unchecked();
+            let ptr = ptr.cast::<Option<AllocationH>>();
+            let infos_ptr = NonNull::new(allocation_infos.as_ptr().cast_mut()).unwrap_unchecked();
+            let infos_ptr = infos_ptr.cast::<AllocationInfo>();
 
             let result = raw::vmaAllocateMemoryPages(
                 self.inner.allocator,
                 Some(NonNull::from(memory_requirements)),
                 Some(NonNull::from(create_info)),
-                allocation_count as _,
-                allocations_ptr,
-                allocation_infos_ptr,
+                allocations.len() as _,
+                ptr,
+                if get_infos { None } else { Some(infos_ptr) },
             );
 
             // Enforce that everything has been written and is non-null
@@ -402,11 +403,33 @@ impl Allocator {
                 }
             }
 
-            let allocations: Vec<vma::Allocation> = mem::transmute(allocations);
-            result.result_with_success((allocations, allocation_infos))
+            result.result()
         } else {
-            Ok((Vec::new(), Vec::new()))
+            Ok(())
         }
+    }
+
+    /// vmaAllocateMemoryPages
+    #[inline]
+    pub unsafe fn allocate_memory_pages_dyn(
+        &self,
+        memory_requirements: &vk::MemoryRequirements,
+        create_info: &vma::AllocationCreateInfo,
+        allocation_count: usize,
+    ) -> VkResult<(Vec<vma::Allocation>, Vec<AllocationInfo>)> {
+        let mut allocations: Vec<_> = Vec::with_capacity(allocation_count);
+        allocations.resize(allocation_count, None);
+        let mut allocation_infos: Vec<_> = Vec::with_capacity(allocation_count);
+        allocation_infos.resize(allocation_count, AllocationInfo::default());
+
+        self.allocate_memory_pages(
+            memory_requirements,
+            create_info,
+            &mut allocations,
+            &mut allocation_infos,
+        ).map(|_| {
+            (mem::transmute(allocations), allocation_infos)
+        })
     }
 
     /// vmaAllocateMemoryForBuffer
