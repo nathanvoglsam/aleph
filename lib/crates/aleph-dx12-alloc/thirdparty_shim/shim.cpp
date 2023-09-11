@@ -241,7 +241,7 @@ HRESULT D3D12MA_Allocator_CreateAliasingResource(
         InitialResourceState,
         pOptimizedClearValue,
         riidResource,
-        ppvResourcee
+        ppvResource
     );
 }
 
