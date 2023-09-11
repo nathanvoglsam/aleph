@@ -39,10 +39,8 @@ use ash::vk;
 use core::mem;
 use core::ptr;
 use std::ffi::c_void;
-use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::ops::Deref;
-use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use thiserror::Error;
@@ -482,7 +480,7 @@ impl Allocator {
 
     /// vmaGetAllocationInfo
     #[inline]
-    pub unsafe fn get_allocation_info(&self, allocation: &vma::Allocation) -> AllocationInfo {
+    pub unsafe fn get_allocation_info(&self, allocation: vma::Allocation) -> AllocationInfo {
         let mut info = AllocationInfo::default();
 
         raw::vmaGetAllocationInfo(
@@ -500,7 +498,7 @@ impl Allocator {
     #[inline]
     pub unsafe fn map_memory(
         &self,
-        allocation: &vma::Allocation,
+        allocation: vma::Allocation,
     ) -> VkResult<Option<NonNull<c_void>>> {
         let mut pointer: Option<NonNull<c_void>> = None;
 
@@ -515,7 +513,7 @@ impl Allocator {
 
     /// vmaUnmapMemory
     #[inline]
-    pub unsafe fn unmap_memory(&self, allocation: &vma::Allocation) {
+    pub unsafe fn unmap_memory(&self, allocation: vma::Allocation) {
         raw::vmaUnmapMemory(self.inner.allocator, allocation.allocation)
     }
 
@@ -523,7 +521,7 @@ impl Allocator {
     #[inline]
     pub unsafe fn flush_allocation(
         &self,
-        allocation: &vma::Allocation,
+        allocation: vma::Allocation,
         offset: vk::DeviceSize,
         size: vk::DeviceSize,
     ) -> VkResult<()> {
@@ -533,7 +531,7 @@ impl Allocator {
     #[inline]
     pub unsafe fn invalidate_allocation(
         &self,
-        allocation: &vma::Allocation,
+        allocation: vma::Allocation,
         offset: vk::DeviceSize,
         size: vk::DeviceSize,
     ) -> VkResult<()> {
@@ -555,7 +553,7 @@ impl Allocator {
     #[inline]
     pub unsafe fn bind_buffer_memory(
         &self,
-        allocation: &vma::Allocation,
+        allocation: vma::Allocation,
         buffer: vk::Buffer,
     ) -> VkResult<()> {
         raw::vmaBindBufferMemory(self.inner.allocator, allocation.allocation, buffer).result()
@@ -565,7 +563,7 @@ impl Allocator {
     #[inline]
     pub unsafe fn bind_image_memory(
         &self,
-        allocation: &vma::Allocation,
+        allocation: vma::Allocation,
         image: vk::Image,
     ) -> VkResult<()> {
         raw::vmaBindImageMemory(
