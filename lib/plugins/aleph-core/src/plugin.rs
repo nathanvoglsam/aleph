@@ -39,7 +39,6 @@ use interfaces::plugin::{
 };
 use interfaces::schedule::{CoreStage, IScheduleProvider, Schedule, Stage, SystemSchedule};
 use interfaces::world::IWorldProvider;
-use log::LevelFilter;
 use std::any::TypeId;
 use std::io::BufReader;
 use std::net::TcpStream;
@@ -55,7 +54,7 @@ impl PluginCore {
         #[cfg(not(target_os = "android"))]
         fn create_logger() -> env_logger::Logger {
             env_logger::Builder::from_default_env()
-                .filter_level(LevelFilter::Trace)
+                .filter_level(log::LevelFilter::Trace)
                 .build()
         }
 
