@@ -427,8 +427,13 @@ impl Allocator {
             create_info,
             &mut allocations,
             &mut allocation_infos,
-        ).map(|_| {
-            (mem::transmute(allocations), allocation_infos)
+        )
+        .map(|_| {
+            let ptr = allocations.as_mut_ptr() as *mut vma::Allocation;
+            let length = allocations.len();
+            let capacity = allocations.capacity();
+            let allocations = Vec::from_raw_parts(ptr, length, capacity);
+            (allocations, allocation_infos)
         })
     }
 
