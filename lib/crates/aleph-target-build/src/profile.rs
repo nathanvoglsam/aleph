@@ -68,7 +68,16 @@ pub enum Profile {
 
 impl Profile {
     #[inline]
-    pub fn name(&self) -> &'static str {
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "debug" => Some(Profile::Debug),
+            "release" => Some(Profile::Release),
+            "retail" => Some(Profile::Retail),
+            _ => None,
+        }
+    }
+
+    pub const fn name(&self) -> &'static str {
         match self {
             Profile::Debug => "debug",
             Profile::Release => "release",
@@ -76,8 +85,7 @@ impl Profile {
         }
     }
 
-    #[inline]
-    pub fn pretty_name(&self) -> &'static str {
+    pub const fn pretty_name(&self) -> &'static str {
         match self {
             Profile::Debug => "Debug",
             Profile::Release => "Release",
