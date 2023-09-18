@@ -27,107 +27,228 @@
 // SOFTWARE.
 //
 
-use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
+use crate::utils::{find_project_file, BuildPlatform, Target};
+use aleph_target::{Architecture, Profile};
+use anyhow::{anyhow, Context};
+use once_cell::sync::OnceCell;
+use std::path::{Path, PathBuf};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ProjectSchema<'a> {
-    /// General game project configuration
-    pub game: GameSchema<'a>,
+#[derive(Clone)]
+pub struct AlephProject {
+    /// The path to the 'aleph-project.toml' file for this project
+    project_file: PathBuf,
 
-    /// Windows specific project configuration
-    pub windows: Option<WindowsSchema<'a>>,
+    /// The path to the directory that contains 'aleph-project.toml' for this project. Just a cached
+    /// form of `project_file.parent()`
+    project_root: PathBuf,
 
-    /// UWP specific project configuration
-    pub uwp: Option<UwpSchema<'a>>,
+    /// The path to the '.aleph' folder for this project
+    dot_aleph_path: PathBuf,
 
-    /// Android specific project configuration
-    pub android: Option<AndroidSchema<'a>>,
+    /// Path to the android project in the '.aleph/proj' directory
+    android_proj_path: PathBuf,
+
+    /// Path to the uwp x86_64 project in the '.aleph/proj' directory
+    uwp_x86_64_proj_path: PathBuf,
+
+    /// Path to the uwp aarch64 project in the '.aleph/proj' directory
+    uwp_aarch64_proj_path: PathBuf,
+
+    /// The path to the Cargo.toml file adjacent to the aleph-project.toml
+    cargo_toml_file: PathBuf,
+
+    /// The cargo target directory
+    cargo_target_dir: PathBuf,
+
+    /// A cached copy of the collect Cargo metadata
+    cargo_metadata: OnceCell<cargo_metadata::Metadata>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GameSchema<'a> {
-    /// The name of the game, as a pretty string. Example: "My Cool Game"
-    pub name: Cow<'a, str>,
+impl AlephProject {
+    pub fn new() -> anyhow::Result<Self> {
+        let project_file = find_project_file(std::env::current_dir()?)
+            .context("Finding aleph-project.toml in current working directory")?
+            .canonicalize()
+            .context("Canonicalizing aleph-project.toml path")?;
+        let project_root = project_file.parent().unwrap().to_path_buf();
+        let dot_aleph_path = project_root.join(".aleph");
+        let cargo_toml_file = project_root.join("Cargo.toml");
+        let cargo_target_dir = project_root.join("target");
 
-    /// The name of the crate as specified in the Cargo.toml. Example "my-cool-game"
-    pub crate_name: Cow<'a, str>,
+        let target = Target::new(Architecture::Unknown, BuildPlatform::Android);
+        let android_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
+        let target = Target::new(Architecture::X8664, BuildPlatform::UWP);
+        let uwp_x86_64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
+        let target = Target::new(Architecture::AARCH64, BuildPlatform::UWP);
+        let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
-    /// The name of the game author. Example: "My Cool Studio"
-    pub author: Cow<'a, str>,
+        let out = Self {
+            project_file,
+            project_root,
+            dot_aleph_path,
+            android_proj_path,
+            uwp_x86_64_proj_path,
+            uwp_aarch64_proj_path,
+            cargo_toml_file,
+            cargo_target_dir,
+            cargo_metadata: Default::default(),
+        };
 
-    /// A list of supported platforms that the project is allowed to target. Allowed values: "uwp",
-    /// "android", "windows", "macos", "linux"
-    pub target_platforms: Vec<Cow<'a, str>>,
+        out.ensure_core_files_and_directories()?;
+
+        Ok(out)
+    }
+
+    /// Returns the path to the `aleph-project.toml` file for the project we're working with
+    pub fn project_file(&self) -> &Path {
+        &self.project_file
+    }
+
+    /// Returns the path to the folder that contains the `aleph-project.toml` file for the project
+    /// we're working with
+    pub fn project_root(&self) -> &Path {
+        &self.project_root
+    }
+
+    // /// The path to the '.aleph' directory for the current project. The .aleph directory will be
+    // /// in the same directory as the 'aleph-project.toml' file.
+    // pub fn dot_aleph_path(&self) -> &Path {
+    //     &self.dot_aleph_path
+    // }
+
+    /// A utility around [Self::target_project_root] that returns also ensures that the project
+    /// directory exists and is a directory.
+    pub fn ensure_target_project_root(&self, target: &Target) -> anyhow::Result<&Path> {
+        let path = self.target_project_root(target)?;
+        std::fs::create_dir_all(path)?;
+        Ok(path)
+    }
+
+    /// Returns the path to the platform project for the requested target.
+    ///
+    /// # Warning
+    ///
+    /// This will only return a result for platforms that have a bundling project. Those platforms
+    /// are:
+    /// - Android (all architectures in one project)
+    /// - UWP x86_64
+    /// - UWP aarch64
+    ///
+    /// All other targets will return Err()
+    pub fn target_project_root(&self, target: &Target) -> anyhow::Result<&Path> {
+        match target.platform {
+            BuildPlatform::UWP => {
+                assert_ne!(target.arch, Architecture::Unknown);
+                match target.arch {
+                    Architecture::X8664 => Ok(&self.uwp_x86_64_proj_path),
+                    Architecture::AARCH64 => Ok(&self.uwp_aarch64_proj_path),
+                    Architecture::Unknown => unreachable!(),
+                }
+            }
+            BuildPlatform::Android => Ok(&self.android_proj_path),
+            _ => Err(anyhow!(
+                "Platform \"{}\" does not have a target specific sub-project.",
+                target.platform.name()
+            )),
+        }
+    }
+
+    /// Returns the path to the Cargo.toml file that the project is using, adjacent to the
+    /// 'aleph-project.toml'
+    pub fn cargo_toml_file(&self) -> &Path {
+        &self.cargo_toml_file
+    }
+
+    /// Returns the path to the cargo target directory root, which will be adjacent to the
+    /// 'aleph-project.toml' and 'Cargo.toml'
+    pub fn cargo_target_dir(&self) -> &Path {
+        &self.cargo_target_dir
+    }
+
+    /// Returns the './target/{target-triple}/{profile}' path for the request target + profile set.
+    pub fn cargo_build_dir_for_target(
+        &self,
+        target: &Target,
+        profile: Profile,
+    ) -> anyhow::Result<PathBuf> {
+        assert_ne!(target.arch, Architecture::Unknown);
+
+        match target.platform {
+            BuildPlatform::UWP => {
+                let mut target_dir = self.cargo_target_dir().to_path_buf();
+                target_dir.push(format!("{}-uwp-windows-msvc", target.arch.name()));
+                target_dir.push(profile.name());
+                Ok(target_dir)
+            }
+            BuildPlatform::Android => {
+                let mut target_dir = self.cargo_target_dir().to_path_buf();
+                target_dir.push(format!("{}-linux-android", target.arch.name()));
+                target_dir.push(profile.name());
+                Ok(target_dir)
+            }
+            _ => Err(anyhow!(
+                "Platform \"{}\" does not support cargo_build_dir_for_target",
+                target.platform.name()
+            )),
+        }
+    }
+
+    /// Attempts to load cargo metadata for the cargo workspace/project based on an assumed
+    /// 'Cargo.toml' adjacent to 'aleph-project.toml'. Caches the result after the first load.
+    ///
+    /// # Warning
+    ///
+    /// Will _not_ re-query after the first call. Create a new [AlephProject] to re-query.
+    pub fn get_cargo_metadata(&self) -> anyhow::Result<&cargo_metadata::Metadata> {
+        self.cargo_metadata.get_or_try_init(|| {
+            let mut cmd = cargo_metadata::MetadataCommand::new();
+            cmd.manifest_path(self.cargo_toml_file());
+
+            let metadata = cmd.exec()?;
+
+            Ok(metadata)
+        })
+    }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct WindowsSchema<'a> {
-    /// Specification of branding information for the windows executable. This includes things like
-    /// the .exe icon to use.
-    pub branding: Option<WindowsBrandingSchema<'a>>,
-}
+impl AlephProject {
+    fn ensure_core_files_and_directories(&self) -> anyhow::Result<()> {
+        // Ensure that 'aleph-project.toml' exists and that it is a file
+        let project_file_meta = self
+            .project_file
+            .metadata()
+            .context("Checking if 'aleph-project.toml' exists")?;
+        if !project_file_meta.is_file() {
+            return Err(anyhow!("{:?} is not a file", self.project_file));
+        }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UwpSchema<'a> {
-    /// Specification of branding information for the UWP executable. This includes things like
-    /// the app icon to use, as well as other iconography for the app.
-    pub branding: Option<UwpBrandingSchema<'a>>,
+        // Create the .aleph folder if it doesn't already exist
+        std::fs::create_dir_all(&self.dot_aleph_path)
+            .context("Creating .aleph directory if missing")?;
 
-    /// A path, relative to the "aleph-project.toml", to the .pfx file used to sign the output app
-    /// bundles.
-    pub certificate: Cow<'a, str>,
+        Ok(())
+    }
 
-    pub identity_name: Cow<'a, str>,
-    pub identity_publisher: Cow<'a, str>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AndroidSchema<'a> {
-    /// Specification of branding information for the Android app. This includes information like
-    /// the app icons to use.
-    pub branding: Option<AndroidBrandingSchema<'a>>,
-
-    /// The app's ID. Example: "com.mycoolstudio.mycoolgame.game"
-    pub app_id: Cow<'a, str>,
-
-    /// The app's version code. Monotonically increasing version count for app releases.
-    pub version_id: usize,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct WindowsBrandingSchema<'a> {
-    /// A path, relative to the "aleph-project.toml", to the .ico file to use as the application's
-    /// icon.
-    pub icon: Cow<'a, str>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UwpBrandingSchema<'a> {
-    pub lock_screen_logo: Cow<'a, str>,
-    pub splash_screen: Cow<'a, str>,
-    pub square_44_x_44_logo: Cow<'a, str>,
-    pub square_150_x_150_logo: Cow<'a, str>,
-    pub store_logo: Cow<'a, str>,
-    pub wide_310_x_150_logo: Cow<'a, str>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AndroidBrandingSchema<'a> {
-    pub icon_mdpi: Cow<'a, str>,
-    pub icon_hdpi: Cow<'a, str>,
-    pub icon_xhdpi: Cow<'a, str>,
-    pub icon_xxhdpi: Cow<'a, str>,
-    pub icon_xxxhdpi: Cow<'a, str>,
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::project::ProjectSchema;
-
-    #[test]
-    pub fn parse_schema() {
-        let text = std::fs::read_to_string("./test_data/aleph-project.toml").unwrap();
-        let project: ProjectSchema = toml::from_str(&text).unwrap();
+    fn compute_target_project_root(root: &Path, target: &Target) -> anyhow::Result<PathBuf> {
+        match target.platform {
+            BuildPlatform::UWP => {
+                assert_ne!(target.arch, Architecture::Unknown);
+                let mut root = root.to_path_buf();
+                root.push("proj");
+                root.push("uwp");
+                root.push(target.arch.name());
+                Ok(root)
+            }
+            BuildPlatform::Android => {
+                let mut root = root.to_path_buf();
+                root.push("proj");
+                root.push("android");
+                Ok(root)
+            }
+            _ => Err(anyhow!(
+                "Platform \"{}\" does not have a target specific sub-project.",
+                target.platform.name()
+            )),
+        }
     }
 }

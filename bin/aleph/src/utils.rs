@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::env::project_root;
 use aleph_target::build::{target_architecture, target_platform};
-use aleph_target::{Architecture, Platform, Profile};
+use aleph_target::{Architecture, Platform};
 use anyhow::anyhow;
+use std::fmt::{Display, Formatter};
 use std::io::{Read, Seek};
 use std::path::{Path, PathBuf};
 use zip::ZipArchive;
@@ -39,6 +39,12 @@ use zip::ZipArchive;
 pub struct Target {
     pub arch: Architecture,
     pub platform: BuildPlatform,
+}
+
+impl Target {
+    pub const fn new(arch: Architecture, platform: BuildPlatform) -> Self {
+        Self { arch, platform }
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -71,7 +77,7 @@ impl BuildPlatform {
         target_platform().into()
     }
 
-    pub fn name(&self) -> &'static str {
+    pub const fn name(&self) -> &'static str {
         match self {
             BuildPlatform::Windows => "windows",
             BuildPlatform::MacOS => "macos",
@@ -83,7 +89,7 @@ impl BuildPlatform {
 
     /// Returns whether the given platform is a valid platform for the aleph tool to be running
     /// on.
-    pub fn is_valid_native_platform(&self) -> bool {
+    pub const fn is_valid_native_platform(&self) -> bool {
         match self {
             BuildPlatform::Windows => true,
             BuildPlatform::MacOS => true,
@@ -109,21 +115,18 @@ impl From<Platform> for BuildPlatform {
     }
 }
 
+impl Display for BuildPlatform {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
+    }
+}
+
 pub fn architecture_from_arg(arg: &str) -> Option<Architecture> {
     let arg = arg.to_lowercase();
     if arg == "native" {
         Some(target_architecture())
     } else {
         Architecture::from_name_opt(&arg)
-    }
-}
-
-pub fn profile_from_arg(arg: &str) -> Option<Profile> {
-    match arg.to_lowercase().as_str() {
-        "debug" => Some(Profile::Debug),
-        "release" => Some(Profile::Release),
-        "retail" => Some(Profile::Retail),
-        _ => None,
     }
 }
 
@@ -143,7 +146,7 @@ pub fn find_file_in_parents_of<A: AsRef<Path>, B: AsRef<Path>>(
     if !current.is_dir() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
-            format!("Path \"{:?}\" does not point to a directory", path),
+            format!("Path \"{}\" does not point to a directory", path.display()),
         ));
     }
     assert!(current.is_dir());
@@ -160,8 +163,9 @@ pub fn find_file_in_parents_of<A: AsRef<Path>, B: AsRef<Path>>(
     Err(std::io::Error::new(
         std::io::ErrorKind::NotFound,
         format!(
-            "Failed to find \"{:?}\" in any parents of the \"{:?}\"",
-            file, path,
+            "Failed to find \"{}\" in any parents of the \"{}\"",
+            file.display(),
+            path.display(),
         ),
     ))
 }
@@ -204,15 +208,6 @@ pub fn extract_zip<R: Seek + Read>(
         }
     }
     Ok(())
-}
-
-pub fn get_cargo_metadata() -> anyhow::Result<cargo_metadata::Metadata> {
-    let mut cmd = cargo_metadata::MetadataCommand::new();
-    cmd.manifest_path(project_root()?.join("Cargo.toml"));
-
-    let metadata = cmd.exec()?;
-
-    Ok(metadata)
 }
 
 pub fn find_crate_and_target<'a>(

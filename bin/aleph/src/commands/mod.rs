@@ -33,6 +33,7 @@ mod genproj;
 pub use build::Build;
 pub use genproj::GenProj;
 
+use crate::project::AlephProject;
 use clap::{ArgMatches, Command};
 
 pub trait ISubcommand {
@@ -40,5 +41,5 @@ pub trait ISubcommand {
 
     fn description(&mut self) -> Command;
 
-    fn exec(&mut self, matches: ArgMatches) -> anyhow::Result<()>;
+    fn exec(&mut self, project: &AlephProject, matches: ArgMatches) -> anyhow::Result<()>;
 }

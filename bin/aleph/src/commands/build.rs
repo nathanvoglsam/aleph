@@ -28,17 +28,17 @@
 //
 
 use crate::commands::ISubcommand;
-use crate::env::{project_file, project_root, target_project_root};
-use crate::project::ProjectSchema;
+use crate::project::AlephProject;
+use crate::project_schema::ProjectSchema;
 use crate::utils::{
-    architecture_from_arg, find_crate_and_target, get_cargo_metadata, profile_from_arg,
-    resolve_absolute_or_root_relative_path, BuildPlatform, Target,
+    architecture_from_arg, find_crate_and_target, resolve_absolute_or_root_relative_path,
+    BuildPlatform, Target,
 };
 use aleph_target::build::target_platform;
 use aleph_target::Profile;
 use anyhow::anyhow;
 use clap::{Arg, ArgMatches};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 pub struct Build {}
@@ -77,12 +77,9 @@ impl ISubcommand for Build {
             .arg(config)
     }
 
-    fn exec(&mut self, mut matches: ArgMatches) -> anyhow::Result<()> {
-        let project_root = project_root()?;
-        let project_toml = project_file()?;
-
-        let toml = std::fs::read_to_string(&project_toml)?;
-        let project: ProjectSchema = toml::from_str(&toml)?;
+    fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
+        let toml = std::fs::read_to_string(project.project_file())?;
+        let project_schema: ProjectSchema = toml::from_str(&toml)?;
 
         let platform_arg: String = matches
             .remove_one("platform")
@@ -98,7 +95,7 @@ impl ISubcommand for Build {
             .ok_or(anyhow!("Unknown platform \"{}\"", &platform_arg))?;
         let arch = architecture_from_arg(&arch_arg)
             .ok_or(anyhow!("Unknown architecture \"{}\"", &arch_arg))?;
-        let profile = profile_from_arg(&profile_arg)
+        let profile = Profile::from_name(&profile_arg.to_lowercase())
             .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
 
         if platform_arg == "native" {
@@ -111,11 +108,11 @@ impl ISubcommand for Build {
         match platform {
             p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux) => {
                 if p != native_build_platform {
-                    log::error!("Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling", p.name(), native_build_platform.name());
+                    log::error!("Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling", p, native_build_platform);
                     return Err(anyhow!(
                         "Trying to build platform '{}' on host '{}'.",
-                        p.name(),
-                        native_build_platform.name()
+                        p,
+                        native_build_platform
                     ));
                 }
             }
@@ -125,11 +122,11 @@ impl ISubcommand for Build {
         let target = Target { arch, platform };
 
         match target.platform {
-            BuildPlatform::Windows => self.windows(project, project_root, profile, &target),
-            BuildPlatform::MacOS => self.macos(project, project_root, profile, &target),
-            BuildPlatform::Linux => self.linux(project, project_root, profile, &target),
-            BuildPlatform::UWP => self.uwp(project, project_root, profile, &target),
-            BuildPlatform::Android => self.android(project, project_root, profile, &target),
+            BuildPlatform::Windows => self.windows(project, &project_schema, profile, &target),
+            BuildPlatform::MacOS => self.macos(project, &project_schema, profile, &target),
+            BuildPlatform::Linux => self.linux(project, &project_schema, profile, &target),
+            BuildPlatform::UWP => self.uwp(project, &project_schema, profile, &target),
+            BuildPlatform::Android => self.android(project, &project_schema, profile, &target),
         }
     }
 }
@@ -137,8 +134,8 @@ impl ISubcommand for Build {
 impl Build {
     fn windows(
         &self,
-        project: ProjectSchema,
-        project_root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -147,13 +144,13 @@ impl Build {
             BuildPlatform::Windows,
             "It is only valid to build windows on windows"
         );
-        self.plain_cargo_build(project, project_root, profile, target)
+        self.plain_cargo_build(project, project_schema, profile, target)
     }
 
     fn macos(
         &self,
-        project: ProjectSchema,
-        project_root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -162,13 +159,13 @@ impl Build {
             BuildPlatform::MacOS,
             "It is only valid to build macos on macos"
         );
-        self.plain_cargo_build(project, project_root, profile, target)
+        self.plain_cargo_build(project, project_schema, profile, target)
     }
 
     fn linux(
         &self,
-        project: ProjectSchema,
-        project_root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -177,23 +174,23 @@ impl Build {
             BuildPlatform::Linux,
             "It is only valid to build linux on linux"
         );
-        self.plain_cargo_build(project, project_root, profile, target)
+        self.plain_cargo_build(project, project_schema, profile, target)
     }
 
     fn uwp(
         &self,
-        project: ProjectSchema,
-        project_root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
         let mut command = match profile {
-            Profile::Debug => base_uwp_build(target, &project.game.crate_name)?,
-            Profile::Release => release_uwp_build(target, &project.game.crate_name)?,
-            Profile::Retail => retail_uwp_build(target, &project.game.crate_name)?,
+            Profile::Debug => base_uwp_build(target, &project_schema.game.crate_name)?,
+            Profile::Release => release_uwp_build(target, &project_schema.game.crate_name)?,
+            Profile::Retail => retail_uwp_build(target, &project_schema.game.crate_name)?,
         };
 
-        self.add_win32_branding_env_vars(&project, &project_root, target, &mut command)?;
+        self.add_win32_branding_env_vars(project, project_schema, target, &mut command)?;
 
         log::info!("{:?}", &command);
         let status = command.status()?;
@@ -203,22 +200,22 @@ impl Build {
             return Err(anyhow!("cargo invocation failed!"));
         }
 
-        self.copy_uwp_build_to_appx_folder(&project, &project_root, profile, target)?;
+        self.copy_uwp_build_to_appx_folder(project, project_schema, profile, target)?;
 
         Ok(())
     }
 
     fn android(
         &self,
-        project: ProjectSchema,
-        project_root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
         let mut command = match profile {
-            Profile::Debug => base_android_build(target, &project.game.crate_name)?,
-            Profile::Release => release_android_build(target, &project.game.crate_name)?,
-            Profile::Retail => retail_android_build(target, &project.game.crate_name)?,
+            Profile::Debug => base_android_build(target, &project_schema.game.crate_name)?,
+            Profile::Release => release_android_build(target, &project_schema.game.crate_name)?,
+            Profile::Retail => retail_android_build(target, &project_schema.game.crate_name)?,
         };
         log::info!("{:?}", &command);
         let status = command.status()?;
@@ -228,7 +225,7 @@ impl Build {
             return Err(anyhow!("cargo invocation failed!"));
         }
 
-        self.copy_android_build_to_gradle_project(project, project_root, profile, target)?;
+        self.copy_android_build_to_gradle_project(project, project_schema, profile, target)?;
 
         Ok(())
     }
@@ -237,18 +234,18 @@ impl Build {
 impl Build {
     fn plain_cargo_build(
         &self,
-        project: ProjectSchema,
-        project_root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
         let mut command = match profile {
-            Profile::Debug => base_native_build(&project.game.crate_name)?,
-            Profile::Release => release_native_build(&project.game.crate_name)?,
-            Profile::Retail => retail_native_build(&project.game.crate_name)?,
+            Profile::Debug => base_native_build(&project_schema.game.crate_name)?,
+            Profile::Release => release_native_build(&project_schema.game.crate_name)?,
+            Profile::Retail => retail_native_build(&project_schema.game.crate_name)?,
         };
 
-        self.add_win32_branding_env_vars(&project, &project_root, target, &mut command)?;
+        self.add_win32_branding_env_vars(&project, project_schema, target, &mut command)?;
 
         log::info!("{:?}", &command);
         let status = command.status()?;
@@ -263,16 +260,20 @@ impl Build {
 
     fn add_win32_branding_env_vars(
         &self,
-        project: &ProjectSchema,
-        project_root: &Path,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         target: &Target,
         command: &mut Command,
     ) -> anyhow::Result<()> {
         // For windows or uwp we need to add an environment var for configuring the executable icon
         if matches!(target.platform, BuildPlatform::Windows | BuildPlatform::UWP) {
-            if let Some(branding) = project.windows.as_ref().and_then(|v| v.branding.as_ref()) {
+            if let Some(branding) = project_schema
+                .windows
+                .as_ref()
+                .and_then(|v| v.branding.as_ref())
+            {
                 let icon = branding.icon.as_ref();
-                let icon = resolve_absolute_or_root_relative_path(project_root, icon);
+                let icon = resolve_absolute_or_root_relative_path(project.project_root(), icon);
                 log::info!("ALEPH_WIN32_ICON_FILE = {:#?}", &icon);
                 command.env("ALEPH_WIN32_ICON_FILE", icon);
             }
@@ -282,43 +283,42 @@ impl Build {
 
     fn copy_android_build_to_gradle_project(
         &self,
-        project: ProjectSchema,
-        project_root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
-        let android_project_root = target_project_root(target)?;
-        if android_project_root.exists() {
-            let mut output_dir = android_project_root.join("app");
-            output_dir.push("libs");
-            output_dir.push(target.arch.ndk_name());
+        let android_project_root = project.target_project_root(target)?;
+        let mut output_dir = android_project_root.join("app");
+        output_dir.push("libs");
+        output_dir.push(target.arch.ndk_name());
+        let target_dir = project.cargo_build_dir_for_target(target, profile)?;
 
-            let mut target_dir = project_root.join("target");
-            target_dir.push(format!("{}-linux-android", target.arch.name()));
-            target_dir.push(profile.name());
-
-            let cargo_metadata = get_cargo_metadata()?;
-            let (_, library_target) =
-                find_crate_and_target(&cargo_metadata, &project.game.crate_name, Some("cdylib"))?;
+        if output_dir.exists() {
+            let cargo_metadata = project.get_cargo_metadata()?;
+            let (_, library_target) = find_crate_and_target(
+                &cargo_metadata,
+                &project_schema.game.crate_name,
+                Some("cdylib"),
+            )?;
             let library_target = library_target.unwrap();
 
             let lib_name = format!("lib{}.so", &library_target.name);
             let target_lib = target_dir.join(&lib_name);
             let dst_lib = output_dir.join(&lib_name);
-            log::trace!("Copying '{:?}' -> '{:?}'", target_lib, dst_lib);
+            log::trace!(
+                "Copying '{}' -> '{}'",
+                target_lib.display(),
+                dst_lib.display()
+            );
             std::fs::copy(target_lib, dst_lib)?;
 
-            let target_artifacts_dir = target_dir.join("artifacts");
-            for item in target_artifacts_dir.read_dir()? {
-                let item = item?;
-                if item.metadata()?.is_file() {
-                    let item_path = item.path();
-                    let dst = output_dir.join(item_path.file_name().unwrap());
-
-                    log::trace!("Copying '{:?}' -> '{:?}'", &item_path, &dst);
-                    std::fs::copy(item_path, dst)?;
-                }
-            }
+            Self::copy_artifacts_from_target_to_project(&target_dir, &output_dir)?;
+        } else {
+            log::warn!(
+                "Skipping android build artifact copy as \"{}\" does not exist",
+                output_dir.display()
+            );
         }
 
         Ok(())
@@ -326,40 +326,54 @@ impl Build {
 
     fn copy_uwp_build_to_appx_folder(
         &self,
-        project: &ProjectSchema,
-        project_root: &PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
-        let uwp_project_root = target_project_root(target)?;
-        if uwp_project_root.exists() {
-            let mut target_dir = project_root.join("target");
-            target_dir.push(format!("{}-uwp-windows-msvc", target.arch.name()));
-            target_dir.push(profile.name());
+        let uwp_project_root = project.target_project_root(target)?;
+        let target_dir = project.cargo_build_dir_for_target(target, profile)?;
 
-            let cargo_metadata = get_cargo_metadata()?;
-            let (package, _) =
-                find_crate_and_target(&cargo_metadata, &project.game.crate_name, Some("cdylib"))?;
+        if uwp_project_root.exists() {
+            let cargo_metadata = project.get_cargo_metadata()?;
+            let (package, _) = find_crate_and_target(
+                &cargo_metadata,
+                &project_schema.game.crate_name,
+                Some("cdylib"),
+            )?;
             let exe_name = format!("{}.exe", &package.name);
 
             let src_exe = target_dir.join(&exe_name);
             let dst_exe = uwp_project_root.join(&exe_name);
-            log::trace!("Copying '{:?}' -> '{:?}'", src_exe, dst_exe);
+            log::trace!("Copying '{}' -> '{}'", src_exe.display(), dst_exe.display());
             std::fs::copy(src_exe, dst_exe)?;
 
-            let target_artifacts_dir = target_dir.join("artifacts");
-            for item in target_artifacts_dir.read_dir()? {
-                let item = item?;
-                if item.metadata()?.is_file() {
-                    let item_path = item.path();
-                    let dst = uwp_project_root.join(item_path.file_name().unwrap());
-
-                    log::trace!("Copying '{:?}' -> '{:?}'", &item_path, &dst);
-                    std::fs::copy(item_path, dst)?;
-                }
-            }
+            Self::copy_artifacts_from_target_to_project(&target_dir, &uwp_project_root)?;
+        } else {
+            log::warn!(
+                "Skipping uwp build artifact copy as \"{}\" does not exist",
+                uwp_project_root.display()
+            );
         }
 
+        Ok(())
+    }
+
+    fn copy_artifacts_from_target_to_project(
+        target_dir: &Path,
+        output_dir: &Path,
+    ) -> anyhow::Result<()> {
+        let target_artifacts_dir = target_dir.join("artifacts");
+        for item in target_artifacts_dir.read_dir()? {
+            let item = item?;
+            if item.metadata()?.is_file() {
+                let item_path = item.path();
+                let dst = output_dir.join(item_path.file_name().unwrap());
+
+                log::trace!("Copying '{}' -> '{}'", item_path.display(), dst.display());
+                std::fs::copy(item_path, dst)?;
+            }
+        }
         Ok(())
     }
 }

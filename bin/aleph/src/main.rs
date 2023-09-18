@@ -28,12 +28,14 @@
 //
 
 use crate::commands::{Build, GenProj, ISubcommand};
+use crate::project::AlephProject;
+use anyhow::Context;
 use log::LevelFilter;
 use std::collections::HashMap;
 
 mod commands;
-mod env;
 mod project;
+mod project_schema;
 mod templates;
 mod utils;
 
@@ -66,8 +68,12 @@ fn main() -> anyhow::Result<()> {
                 .filter_level(LevelFilter::Trace)
                 .init();
 
+            // Finds the 'aleph-project.toml' and deduces all the project directories against the
+            // active project.
+            let project = AlephProject::new().context("Loading project information")?;
+
             // Now we can run the command
-            let result = subcommand.exec(matches.clone());
+            let result = subcommand.exec(&project, matches.clone());
             if result.is_ok() {
                 log::info!("Subcommand {subcommand_name} completed successfully!");
             }

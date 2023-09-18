@@ -28,8 +28,8 @@
 //
 
 use crate::commands::ISubcommand;
-use crate::env::{ensure_target_project_root, project_file, project_root};
-use crate::project::{
+use crate::project::AlephProject;
+use crate::project_schema::{
     AndroidBrandingSchema, AndroidSchema, GameSchema, ProjectSchema, UwpBrandingSchema, UwpSchema,
 };
 use crate::templates::{
@@ -37,14 +37,14 @@ use crate::templates::{
     LOCAL_PROPERTIES_TEMPLATE,
 };
 use crate::utils::{
-    architecture_from_arg, extract_zip, find_crate_and_target, get_cargo_metadata,
+    architecture_from_arg, extract_zip, find_crate_and_target,
     resolve_absolute_or_root_relative_path, BuildPlatform, Target,
 };
 use aleph_target::Architecture;
 use anyhow::anyhow;
 use clap::{Arg, ArgMatches, Command};
 use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tera::{Context, Tera};
 
 pub struct GenProj {}
@@ -73,11 +73,11 @@ impl ISubcommand for GenProj {
             .arg(arch)
     }
 
-    fn exec(&mut self, mut matches: ArgMatches) -> anyhow::Result<()> {
-        let project_toml = project_file()?;
+    fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
+        let project_toml = project.project_file();
 
         let toml = std::fs::read_to_string(&project_toml)?;
-        let project: ProjectSchema = toml::from_str(&toml)?;
+        let project_schema: ProjectSchema = toml::from_str(&toml)?;
 
         let platform_arg: String = matches
             .remove_one("platform")
@@ -99,19 +99,25 @@ impl ISubcommand for GenProj {
 
         let target = Target { arch, platform };
 
-        let root = ensure_target_project_root(&target)?;
+        let root = project.ensure_target_project_root(&target)?;
 
         match target.platform {
-            BuildPlatform::UWP => self.uwp(project, root, &target),
-            BuildPlatform::Android => self.android(project, root, &target),
+            BuildPlatform::UWP => self.uwp(project, &project_schema, root, &target),
+            BuildPlatform::Android => self.android(project, &project_schema, root, &target),
             _ => Err(anyhow!("Unsupported genproj platform '{platform_arg}'")),
         }
     }
 }
 
 impl GenProj {
-    fn uwp(&self, project: ProjectSchema, root: PathBuf, target: &Target) -> anyhow::Result<()> {
-        let context = build_uwp_template_context(&project, target)?;
+    fn uwp(
+        &self,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
+        root: &Path,
+        target: &Target,
+    ) -> anyhow::Result<()> {
+        let context = build_uwp_template_context(project, project_schema, target)?;
 
         // Extract the .zip file onto our target directory
         let mut bundle = uwp_project_bundle();
@@ -121,7 +127,7 @@ impl GenProj {
         let template_files = [manifest_path.as_path()];
         apply_template_context_to_files(&context, &template_files)?;
 
-        let uwp = project.uwp.as_ref().unwrap();
+        let uwp = project_schema.uwp.as_ref().unwrap();
         if let Some(branding) = uwp.branding.as_ref() {
             let UwpBrandingSchema {
                 lock_screen_logo,
@@ -132,7 +138,7 @@ impl GenProj {
                 wide_310_x_150_logo,
             } = branding;
 
-            let project_root = project_root()?;
+            let project_root = project.project_root();
 
             // Ensure the 'Assets' directory exists within the UWP project folder
             let asset_dir = root.join("Assets");
@@ -154,11 +160,12 @@ impl GenProj {
 
     fn android(
         &self,
-        project: ProjectSchema,
-        root: PathBuf,
+        project: &AlephProject,
+        project_schema: &ProjectSchema,
+        root: &Path,
         _target: &Target,
     ) -> anyhow::Result<()> {
-        let context = build_android_template_context(&project)?;
+        let context = build_android_template_context(project, project_schema)?;
 
         // Extract the .zip file onto our target directory
         let mut bundle = android_project_bundle();
@@ -174,7 +181,7 @@ impl GenProj {
         ];
         apply_template_context_to_files(&context, &template_files)?;
 
-        let android = project.android.as_ref().unwrap();
+        let android = project_schema.android.as_ref().unwrap();
 
         // Check if we have the empty string, which is not a valid App ID
         if android.app_id.is_empty() {
@@ -196,7 +203,7 @@ impl GenProj {
         create_activity_from_template(android, &root, &context)?;
 
         let local_properties = root.join("local.properties");
-        log::trace!("Writing template file '{:?}'", &local_properties);
+        log::trace!("Writing template file '{}'", local_properties.display());
         std::fs::write(&local_properties, LOCAL_PROPERTIES_TEMPLATE)?;
 
         if let Some(branding) = android.branding.as_ref() {
@@ -208,7 +215,7 @@ impl GenProj {
                 icon_xxxhdpi,
             } = branding;
 
-            let project_root = project_root()?;
+            let project_root = project.project_root();
 
             // Ensure the mipmap directories exists within the Android project folder
             let res_dir = root.join("app/src/main/res");
@@ -235,7 +242,7 @@ impl GenProj {
 
 fn create_activity_from_template(
     android: &AndroidSchema,
-    root: &PathBuf,
+    root: &Path,
     context: &Context,
 ) -> anyhow::Result<()> {
     // Create the path chain for the main AlephActivity
@@ -249,7 +256,7 @@ fn create_activity_from_template(
     let rendered_activity = tera.render("a", &context)?;
 
     let java_file_path = package_path.join("AlephActivity.java");
-    log::trace!("Writing template file '{:?}'", &java_file_path);
+    log::trace!("Writing template file '{}'", java_file_path.display());
     std::fs::write(java_file_path, rendered_activity)?;
 
     Ok(())
@@ -261,17 +268,25 @@ fn make_branding_file_copier<'a>(
 ) -> impl (FnOnce(&[(&str, &str)]) -> anyhow::Result<()>) + 'a {
     let copy_branding_file = |src: &Path, dst: &str| -> anyhow::Result<()> {
         match src.extension() {
-            None => return Err(anyhow!("Branding file \"{:?}\" is not a .png file", src)),
+            None => {
+                return Err(anyhow!(
+                    "Branding file \"{}\" is not a .png file",
+                    src.display()
+                ))
+            }
             Some(v) => {
                 if v != OsStr::new("png") {
-                    return Err(anyhow!("Branding file \"{:?}\" is not a .png file", src));
+                    return Err(anyhow!(
+                        "Branding file \"{}\" is not a .png file",
+                        src.display()
+                    ));
                 }
             }
         }
 
         let from = resolve_absolute_or_root_relative_path(project_root, src);
         let to = root.join(dst);
-        log::trace!("Copying '{:?} -> {:?}'", from, &to);
+        log::trace!("Copying '{} -> {}'", from.display(), to.display());
         std::fs::copy(from, to)?;
         Ok(())
     };
@@ -284,13 +299,17 @@ fn make_branding_file_copier<'a>(
     }
 }
 
-fn build_uwp_template_context(project: &ProjectSchema, target: &Target) -> anyhow::Result<Context> {
+fn build_uwp_template_context(
+    project: &AlephProject,
+    project_schema: &ProjectSchema,
+    target: &Target,
+) -> anyhow::Result<Context> {
     // Grab needed info from the project schema
     let UwpSchema {
         identity_name,
         identity_publisher,
         ..
-    } = project.uwp.as_ref().ok_or(anyhow!(
+    } = project_schema.uwp.as_ref().ok_or(anyhow!(
         "Trying to generate a uwp project with missing uwp table in project.toml"
     ))?;
     let GameSchema {
@@ -298,10 +317,10 @@ fn build_uwp_template_context(project: &ProjectSchema, target: &Target) -> anyho
         crate_name,
         author,
         ..
-    } = &project.game;
+    } = &project_schema.game;
 
     // Fetch the cargo metadata from the current cargo workspace
-    let cargo_metadata = get_cargo_metadata()?;
+    let cargo_metadata = project.get_cargo_metadata()?;
     let (package, _) = find_crate_and_target(&cargo_metadata, &crate_name, None)?;
 
     // Produce the uwp version string, leaving the last item as 0. We could in the future make
@@ -343,19 +362,22 @@ fn build_uwp_template_context(project: &ProjectSchema, target: &Target) -> anyho
     Ok(context)
 }
 
-fn build_android_template_context(project: &ProjectSchema) -> anyhow::Result<Context> {
+fn build_android_template_context(
+    project: &AlephProject,
+    project_schema: &ProjectSchema,
+) -> anyhow::Result<Context> {
     // Grab needed info from the project schema
     let AndroidSchema {
         app_id, version_id, ..
-    } = project.android.as_ref().ok_or(anyhow!(
+    } = project_schema.android.as_ref().ok_or(anyhow!(
         "Trying to generate an android project with missing android table in project.toml"
     ))?;
     let GameSchema {
         name, crate_name, ..
-    } = &project.game;
+    } = &project_schema.game;
 
     // Fetch the cargo metadata from the current cargo workspace
-    let cargo_metadata = get_cargo_metadata()?;
+    let cargo_metadata = project.get_cargo_metadata()?;
     let (package, library_target) =
         find_crate_and_target(&cargo_metadata, &crate_name, Some("cdylib"))?;
     let library_target = library_target.unwrap();
@@ -394,7 +416,7 @@ fn apply_template_context_to_files(context: &Context, files: &[&Path]) -> anyhow
         tera.add_raw_template(&path_string, &file_content)?;
         let rendered_content = tera.render(&path_string, context)?;
 
-        log::trace!("Writing template file '{:?}'", file);
+        log::trace!("Writing template file '{}'", file.display());
         std::fs::write(file, rendered_content)?;
     }
     Ok(())
