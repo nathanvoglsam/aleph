@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::project_schema::ProjectSchema;
 use crate::utils::{find_project_file, BuildPlatform, Target};
 use aleph_target::{Architecture, Profile};
 use anyhow::{anyhow, Context};
@@ -62,6 +63,9 @@ pub struct AlephProject {
 
     /// A cached copy of the collect Cargo metadata
     cargo_metadata: OnceCell<cargo_metadata::Metadata>,
+
+    /// A cached copy of the aleph-project.toml file
+    project_schema: OnceCell<ProjectSchema<'static>>,
 }
 
 impl AlephProject {
@@ -92,6 +96,7 @@ impl AlephProject {
             cargo_toml_file,
             cargo_target_dir,
             cargo_metadata: Default::default(),
+            project_schema: Default::default(),
         };
 
         out.ensure_core_files_and_directories()?;
@@ -207,6 +212,21 @@ impl AlephProject {
             let metadata = cmd.exec()?;
 
             Ok(metadata)
+        })
+    }
+
+    /// Attempts to load and parse the aleph-project.toml file. Caches the result after the first
+    /// load.
+    ///
+    /// # Warning
+    ///
+    /// Will _not_ re-query after the first call. Create a new [AlephProject] to re-query.
+    pub fn get_project_schema(&self) -> anyhow::Result<&ProjectSchema> {
+        self.project_schema.get_or_try_init(|| {
+            let toml = std::fs::read_to_string(self.project_file())?;
+            let project_schema: ProjectSchema = toml::from_str(&toml)?;
+
+            Ok(project_schema)
         })
     }
 }

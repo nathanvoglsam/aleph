@@ -30,7 +30,7 @@
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 use crate::project_schema::{
-    AndroidBrandingSchema, AndroidSchema, GameSchema, ProjectSchema, UwpBrandingSchema, UwpSchema,
+    AndroidBrandingSchema, AndroidSchema, GameSchema, UwpBrandingSchema, UwpSchema,
 };
 use crate::templates::{
     android_project_bundle, uwp_project_bundle, ANDROID_ACTIVITY_SOURCE_TEMPLATE,
@@ -74,11 +74,6 @@ impl ISubcommand for GenProj {
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
-        let project_toml = project.project_file();
-
-        let toml = std::fs::read_to_string(&project_toml)?;
-        let project_schema: ProjectSchema = toml::from_str(&toml)?;
-
         let platform_arg: String = matches
             .remove_one("platform")
             .expect("platform is required");
@@ -102,22 +97,18 @@ impl ISubcommand for GenProj {
         let root = project.ensure_target_project_root(&target)?;
 
         match target.platform {
-            BuildPlatform::UWP => self.uwp(project, &project_schema, root, &target),
-            BuildPlatform::Android => self.android(project, &project_schema, root, &target),
+            BuildPlatform::UWP => self.uwp(project, root, &target),
+            BuildPlatform::Android => self.android(project, root, &target),
             _ => Err(anyhow!("Unsupported genproj platform '{platform_arg}'")),
         }
     }
 }
 
 impl GenProj {
-    fn uwp(
-        &self,
-        project: &AlephProject,
-        project_schema: &ProjectSchema,
-        root: &Path,
-        target: &Target,
-    ) -> anyhow::Result<()> {
-        let context = build_uwp_template_context(project, project_schema, target)?;
+    fn uwp(&self, project: &AlephProject, root: &Path, target: &Target) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
+        let context = build_uwp_template_context(project, target)?;
 
         // Extract the .zip file onto our target directory
         let mut bundle = uwp_project_bundle();
@@ -158,14 +149,10 @@ impl GenProj {
         Ok(())
     }
 
-    fn android(
-        &self,
-        project: &AlephProject,
-        project_schema: &ProjectSchema,
-        root: &Path,
-        _target: &Target,
-    ) -> anyhow::Result<()> {
-        let context = build_android_template_context(project, project_schema)?;
+    fn android(&self, project: &AlephProject, root: &Path, _target: &Target) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
+        let context = build_android_template_context(project)?;
 
         // Extract the .zip file onto our target directory
         let mut bundle = android_project_bundle();
@@ -299,11 +286,9 @@ fn make_branding_file_copier<'a>(
     }
 }
 
-fn build_uwp_template_context(
-    project: &AlephProject,
-    project_schema: &ProjectSchema,
-    target: &Target,
-) -> anyhow::Result<Context> {
+fn build_uwp_template_context(project: &AlephProject, target: &Target) -> anyhow::Result<Context> {
+    let project_schema = project.get_project_schema()?;
+
     // Grab needed info from the project schema
     let UwpSchema {
         identity_name,
@@ -362,10 +347,9 @@ fn build_uwp_template_context(
     Ok(context)
 }
 
-fn build_android_template_context(
-    project: &AlephProject,
-    project_schema: &ProjectSchema,
-) -> anyhow::Result<Context> {
+fn build_android_template_context(project: &AlephProject) -> anyhow::Result<Context> {
+    let project_schema = project.get_project_schema()?;
+
     // Grab needed info from the project schema
     let AndroidSchema {
         app_id, version_id, ..

@@ -29,7 +29,6 @@
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
-use crate::project_schema::ProjectSchema;
 use crate::utils::{
     architecture_from_arg, find_crate_and_target, resolve_absolute_or_root_relative_path,
     BuildPlatform, Target,
@@ -78,9 +77,6 @@ impl ISubcommand for Build {
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
-        let toml = std::fs::read_to_string(project.project_file())?;
-        let project_schema: ProjectSchema = toml::from_str(&toml)?;
-
         let platform_arg: String = matches
             .remove_one("platform")
             .expect("platform should have a default");
@@ -122,11 +118,11 @@ impl ISubcommand for Build {
         let target = Target { arch, platform };
 
         match target.platform {
-            BuildPlatform::Windows => self.windows(project, &project_schema, profile, &target),
-            BuildPlatform::MacOS => self.macos(project, &project_schema, profile, &target),
-            BuildPlatform::Linux => self.linux(project, &project_schema, profile, &target),
-            BuildPlatform::UWP => self.uwp(project, &project_schema, profile, &target),
-            BuildPlatform::Android => self.android(project, &project_schema, profile, &target),
+            BuildPlatform::Windows => self.windows(project, profile, &target),
+            BuildPlatform::MacOS => self.macos(project, profile, &target),
+            BuildPlatform::Linux => self.linux(project, profile, &target),
+            BuildPlatform::UWP => self.uwp(project, profile, &target),
+            BuildPlatform::Android => self.android(project, profile, &target),
         }
     }
 }
@@ -135,7 +131,6 @@ impl Build {
     fn windows(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -144,13 +139,12 @@ impl Build {
             BuildPlatform::Windows,
             "It is only valid to build windows on windows"
         );
-        self.plain_cargo_build(project, project_schema, profile, target)
+        self.plain_cargo_build(project, profile, target)
     }
 
     fn macos(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -159,13 +153,12 @@ impl Build {
             BuildPlatform::MacOS,
             "It is only valid to build macos on macos"
         );
-        self.plain_cargo_build(project, project_schema, profile, target)
+        self.plain_cargo_build(project, profile, target)
     }
 
     fn linux(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
@@ -174,23 +167,19 @@ impl Build {
             BuildPlatform::Linux,
             "It is only valid to build linux on linux"
         );
-        self.plain_cargo_build(project, project_schema, profile, target)
+        self.plain_cargo_build(project, profile, target)
     }
 
-    fn uwp(
-        &self,
-        project: &AlephProject,
-        project_schema: &ProjectSchema,
-        profile: Profile,
-        target: &Target,
-    ) -> anyhow::Result<()> {
+    fn uwp(&self, project: &AlephProject, profile: Profile, target: &Target) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
         let mut command = match profile {
             Profile::Debug => base_uwp_build(target, &project_schema.game.crate_name)?,
             Profile::Release => release_uwp_build(target, &project_schema.game.crate_name)?,
             Profile::Retail => retail_uwp_build(target, &project_schema.game.crate_name)?,
         };
 
-        self.add_win32_branding_env_vars(project, project_schema, target, &mut command)?;
+        self.add_win32_branding_env_vars(project, target, &mut command)?;
 
         log::info!("{:?}", &command);
         let status = command.status()?;
@@ -200,7 +189,7 @@ impl Build {
             return Err(anyhow!("cargo invocation failed!"));
         }
 
-        self.copy_uwp_build_to_appx_folder(project, project_schema, profile, target)?;
+        self.copy_uwp_build_to_appx_folder(project, profile, target)?;
 
         Ok(())
     }
@@ -208,10 +197,11 @@ impl Build {
     fn android(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
         let mut command = match profile {
             Profile::Debug => base_android_build(target, &project_schema.game.crate_name)?,
             Profile::Release => release_android_build(target, &project_schema.game.crate_name)?,
@@ -225,7 +215,7 @@ impl Build {
             return Err(anyhow!("cargo invocation failed!"));
         }
 
-        self.copy_android_build_to_gradle_project(project, project_schema, profile, target)?;
+        self.copy_android_build_to_gradle_project(project, profile, target)?;
 
         Ok(())
     }
@@ -235,17 +225,18 @@ impl Build {
     fn plain_cargo_build(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
         let mut command = match profile {
             Profile::Debug => base_native_build(&project_schema.game.crate_name)?,
             Profile::Release => release_native_build(&project_schema.game.crate_name)?,
             Profile::Retail => retail_native_build(&project_schema.game.crate_name)?,
         };
 
-        self.add_win32_branding_env_vars(&project, project_schema, target, &mut command)?;
+        self.add_win32_branding_env_vars(&project, target, &mut command)?;
 
         log::info!("{:?}", &command);
         let status = command.status()?;
@@ -261,10 +252,11 @@ impl Build {
     fn add_win32_branding_env_vars(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         target: &Target,
         command: &mut Command,
     ) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
         // For windows or uwp we need to add an environment var for configuring the executable icon
         if matches!(target.platform, BuildPlatform::Windows | BuildPlatform::UWP) {
             if let Some(branding) = project_schema
@@ -284,10 +276,11 @@ impl Build {
     fn copy_android_build_to_gradle_project(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
         let android_project_root = project.target_project_root(target)?;
         let mut output_dir = android_project_root.join("app");
         output_dir.push("libs");
@@ -327,10 +320,11 @@ impl Build {
     fn copy_uwp_build_to_appx_folder(
         &self,
         project: &AlephProject,
-        project_schema: &ProjectSchema,
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
         let uwp_project_root = project.target_project_root(target)?;
         let target_dir = project.cargo_build_dir_for_target(target, profile)?;
 
