@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use crate::utils::TypeIdHasher;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
-use std::hash::{BuildHasherDefault, Hasher};
+use std::hash::{BuildHasherDefault, Hash, Hasher};
 
 ///
 /// This trait needs to be implemented by any type that wishes to be used as a component
@@ -76,8 +77,9 @@ impl ComponentTypeId {
     /// Returns the ComponentTypeId of the given component type
     #[inline]
     pub fn of<T: Component>() -> Self {
-        // SAFETY: Just a bitcast from one wrapped u64 to another wrapped u64
-        unsafe { std::mem::transmute(TypeId::of::<T>()) }
+        let mut hasher = TypeIdHasher(0);
+        TypeId::of::<T>().hash(&mut hasher);
+        Self(hasher.finish())
     }
 
     /// Returns the ComponentTypeId of the given component type by value. The value's type can be
