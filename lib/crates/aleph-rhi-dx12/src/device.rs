@@ -1401,10 +1401,6 @@ impl Device {
         let set_layout = {
             let set = set.as_ref();
             let layout = set._layout.deref();
-            // Safety: We _must_ drop this 'set' reference as any one of the update_x_descriptors
-            //         functions could create a mutable reference to 'set'. If this reference stayed
-            //         live then we would have aliasing references.
-            drop(set);
             layout
         };
         let binding_layout = set_layout
