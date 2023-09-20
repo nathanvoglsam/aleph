@@ -27,12 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::console_provider::ConsoleProvider;
 use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;
 use aleph_label::Label;
 use interfaces::any::{AnyArc, IAny};
-use interfaces::console::{DebugConsole, IDebugConsoleProvider};
 use interfaces::make_plugin_description_for_crate;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
@@ -46,7 +44,6 @@ use std::net::TcpStream;
 pub struct PluginCore {
     world_provider: AnyArc<WorldProvider>,
     schedule_provider: AnyArc<ScheduleProvider>,
-    console_provider: AnyArc<ConsoleProvider>,
 }
 
 impl PluginCore {
@@ -67,7 +64,7 @@ impl PluginCore {
         // This will be one of the earliest pieces of code to run in aleph engine so initialize the
         // logger here. By initializing it here then this plugin remains optional (technically)
         let logger = create_logger();
-        let command_stream = interfaces::console::Logger::from(logger).install();
+        let command_stream = aleph_console::Logger::from(logger).install();
 
         // Android won't log panics properly afaik? We re-route to log so we can see it in logcat.
         if cfg!(target_os = "android") {
@@ -76,16 +73,12 @@ impl PluginCore {
             }));
         }
 
-        // Construct the debug console. If the console feature is disabled then this will just make
-        // an empty object so we don't need to be conditional here
-        let debug_console = DebugConsole::new();
-
         // Construct a thread that handles reading messages from the remote console and publishes
         // complete command messages to a channel which can be read by the main thread.
         //
         // This transparently handles when the "remote" feature is disabled as Logger::install will
         // just always return None and so this code will never execute.
-        let channel = if let Some(command_stream) = command_stream {
+        let _channel = if let Some(command_stream) = command_stream {
             // Construct our channel
             let (channel, receiver) = std::sync::mpsc::sync_channel(1024);
 
@@ -97,22 +90,7 @@ impl PluginCore {
             None
         };
 
-        let mut core_schedule = SystemSchedule::default();
-
-        // Add a system that runs at the absolute very start of the frame for handling rcon
-        // commands. No feature gating is needed here as when "remote" is disabled the channel will
-        // never be constructed so this will never execute.
-        if let Some(channel) = channel {
-            let console = debug_console.clone();
-            core_schedule.add_exclusive_at_start_system(
-                "aleph_core::internal_core_stage",
-                move || {
-                    while let Ok(message) = channel.try_recv() {
-                        console.eval(&message);
-                    }
-                },
-            );
-        }
+        let core_schedule = SystemSchedule::default();
 
         let mut schedule = Schedule::default();
         schedule.add_stage(InternalStage::Core, core_schedule);
@@ -124,11 +102,9 @@ impl PluginCore {
 
         let world_provider = AnyArc::new(WorldProvider::new());
         let schedule_provider = AnyArc::new(ScheduleProvider::new(schedule));
-        let console_provider = AnyArc::new(ConsoleProvider::new(debug_console));
         Self {
             world_provider,
             schedule_provider,
-            console_provider,
         }
     }
 }
@@ -151,7 +127,6 @@ impl IPlugin for PluginCore {
         // We export two interfaces
         registrar.provides_interface::<dyn IWorldProvider>();
         registrar.provides_interface::<dyn IScheduleProvider>();
-        registrar.provides_interface::<dyn IDebugConsoleProvider>();
     }
 
     fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
@@ -163,10 +138,6 @@ impl IPlugin for PluginCore {
             (
                 TypeId::of::<dyn IScheduleProvider>(),
                 AnyArc::map::<dyn IAny, _>(self.schedule_provider.clone(), |v| v),
-            ),
-            (
-                TypeId::of::<dyn IDebugConsoleProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.console_provider.clone(), |v| v),
             ),
         ];
         Box::new(response)

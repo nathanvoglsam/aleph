@@ -41,12 +41,7 @@ edition = "2021"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[features]
-console = ["aleph-console/console"]
-remote-console = ["aleph-console/remote"]
-
 [dependencies]
-aleph-console = { workspace = true }
 aleph-ecs = { workspace = true }
 aleph-label = { workspace = true }
 aleph-any = { workspace = true }

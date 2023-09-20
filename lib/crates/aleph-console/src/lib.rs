@@ -28,14 +28,7 @@
 //
 
 //!
-//! This crate provides a debug console like object for use with game engines that want a simple way
-//! to dynamically call functions from user input.
-//!
-//! This crate also provides a [log::Log] implementation in [Logger].
-//!
-//! The [DebugConsole] provides the interface for the debug console. It just wraps an `rhai`
-//! [rhai::Engine] into a constrained interface that only allows adding functions and evaluating
-//! expressions.
+//! This provides a [log::Log] implementation in [Logger].
 //!
 
 use log::{Level, LevelFilter, Metadata, Record};
@@ -43,106 +36,6 @@ use std::io::{BufWriter, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-
-/// A ref-counted handle to a debug console.
-#[derive(Clone)]
-pub struct DebugConsole {
-    #[cfg(feature = "console")]
-    inner: std::rc::Rc<std::cell::RefCell<rhai::Engine>>,
-}
-
-impl DebugConsole {
-    /// Constructs a new debug console instance and returns a ref-counted handle to it.
-    ///
-    /// [DebugConsole] implements [Clone] and internally wraps an [Rc] so can be shared around like
-    /// an [Rc]. Only once all [DebugConsole] handles pointing to a console instance are dropped
-    /// will the console be dropped.
-    pub fn new() -> Self {
-        Self {
-            #[cfg(feature = "console")]
-            inner: std::rc::Rc::new(std::cell::RefCell::new(rhai::Engine::new())),
-        }
-    }
-
-    #[cfg(feature = "console")]
-    /// Register a custom function with the [`DebugConsole`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use aleph_console::DebugConsole;
-    ///
-    /// // Normal function
-    /// fn add(x: i64, y: i64) -> i64 {
-    ///     x + y
-    /// }
-    ///
-    /// let mut console = DebugConsole::new();
-    ///
-    /// // Register a function
-    /// console.register_fn("add", add);
-    ///
-    /// // You can also register a closure.
-    /// console.register_fn("sub", |x: i64, y: i64| x - y );
-    ///
-    /// // Logs the result of the expressions
-    /// console.eval("add(40, 2)");
-    /// console.eval("sub(44, 2)");
-    /// ```
-    pub fn register_fn<
-        A: 'static,
-        const N: usize,
-        const C: bool,
-        R: rhai::Variant + Clone,
-        const L: bool,
-        F: rhai::RegisterNativeFunction<A, N, C, R, L>,
-    >(
-        &self,
-        name: impl AsRef<str> + Into<rhai::Identifier>,
-        func: F,
-    ) {
-        self.inner.borrow_mut().register_fn(name, func);
-    }
-
-    /// Evaluate a string containing an expression.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use aleph_console::DebugConsole;
-    ///
-    /// let console = DebugConsole::new();
-    ///
-    /// console.eval("40 + 2");
-    /// ```
-    pub fn eval(&self, expr: &str) {
-        self.eval_inner(expr)
-    }
-
-    #[cfg(feature = "console")]
-    fn eval_inner(&self, expr: &str) {
-        let v: Result<rhai::Dynamic, Box<rhai::EvalAltResult>> =
-            self.inner.borrow().eval_expression::<rhai::Dynamic>(expr);
-
-        match v {
-            Ok(v) => {
-                log::info!("{} = {}", expr, v);
-            }
-            Err(v) => {
-                log::info!("{} = {}", expr, v);
-            }
-        }
-    }
-
-    #[cfg(not(feature = "console"))]
-    fn eval_inner(&self, _expr: &str) {}
-}
-
-impl Default for DebugConsole {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 ///
 /// Provides a [log::Log] implementation that wraps an [env_logger::Logger] for local logging and

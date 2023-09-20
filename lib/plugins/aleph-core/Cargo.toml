@@ -38,7 +38,11 @@ repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-core/"
 edition = "2021"
 
+[features]
+remote-console = ["aleph-console/remote"]
+
 [dependencies]
+aleph-console = { workspace = true }
 aleph-label = { workspace = true }
 aleph-interfaces = { workspace = true }
 log = { workspace = true }

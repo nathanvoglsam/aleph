@@ -31,7 +31,6 @@ pub extern crate aleph_any as any;
 pub extern crate aleph_label as label;
 
 pub mod components;
-pub mod console;
 pub mod platform;
 pub mod plugin;
 pub mod rhi;

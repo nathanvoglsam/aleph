@@ -29,7 +29,6 @@
 
 extern crate aleph_interfaces as interfaces;
 
-mod console_provider;
 mod plugin;
 mod schedule_provider;
 mod world_provider;

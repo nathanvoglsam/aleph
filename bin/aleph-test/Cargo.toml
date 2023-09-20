@@ -43,7 +43,7 @@ name = "aleph_test_lib"
 path = "./src/lib.rs"
 
 [dependencies]
-aleph-engine = { path = "../../lib/crates/aleph-engine", version = "0.1.0", features = ["default", "remote-console", "console"] }
+aleph-engine = { path = "../../lib/crates/aleph-engine", version = "0.1.0", features = ["default", "remote-console"] }
 egui_demo_lib = "0.21"
 
 [target.'cfg(windows)'.dependencies]
