@@ -33,11 +33,11 @@ use crate::utils::{
     architecture_from_arg, find_crate_and_target, resolve_absolute_or_root_relative_path,
     BuildPlatform, Target,
 };
-use aleph_target::build::target_platform;
+use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::Profile;
 use anyhow::anyhow;
-use clap::{Arg, ArgMatches};
-use std::path::Path;
+use clap::{Arg, ArgAction, ArgMatches};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub struct Build {}
@@ -68,12 +68,19 @@ impl ISubcommand for Build {
             )
             .default_value("debug")
             .required(false);
+        let build_std = Arg::new("build-std")
+            .long("build-std")
+            .help("Force building the rust standard library with the build-std option")
+            .long_help("Force building the rust standard library with the build-std option. Currently requires a nightly compiler and the rust-src component.")
+            .action(ArgAction::SetTrue)
+            .required(false);
         clap::Command::new(self.name())
             .about("Builds the game for the requested platform/architecture/config")
             .long_about("Tool for building the game for the requested platform/architecture/config. Will also copy build artifacts into project directories, if they exist")
             .arg(platform)
             .arg(arch)
             .arg(config)
+            .arg(build_std)
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -117,10 +124,19 @@ impl ISubcommand for Build {
 
         let target = Target { arch, platform };
 
+        let build_std = matches.get_flag("build-std");
+
+        if build_std && matches!(platform, BuildPlatform::Android) {
+            log::warn!("--build-std flag specified for Android, but Android does not support this flag. --build-std will be ignored!");
+        }
+        if build_std && matches!(platform, BuildPlatform::UWP) {
+            log::warn!("--build-std flag specified for UWP, but UWP does not require this flag. UWP always builds with build-std");
+        }
+
         match target.platform {
-            BuildPlatform::Windows => self.windows(project, profile, &target),
-            BuildPlatform::MacOS => self.macos(project, profile, &target),
-            BuildPlatform::Linux => self.linux(project, profile, &target),
+            BuildPlatform::Windows => self.windows(project, profile, &target, build_std),
+            BuildPlatform::MacOS => self.macos(project, profile, &target, build_std),
+            BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
             BuildPlatform::UWP => self.uwp(project, profile, &target),
             BuildPlatform::Android => self.android(project, profile, &target),
         }
@@ -133,13 +149,14 @@ impl Build {
         project: &AlephProject,
         profile: Profile,
         target: &Target,
+        build_std: bool,
     ) -> anyhow::Result<()> {
         assert_eq!(
             BuildPlatform::from(target_platform()),
             BuildPlatform::Windows,
             "It is only valid to build windows on windows"
         );
-        self.plain_cargo_build(project, profile, target)
+        self.plain_cargo_build(project, profile, target, build_std)
     }
 
     fn macos(
@@ -147,13 +164,14 @@ impl Build {
         project: &AlephProject,
         profile: Profile,
         target: &Target,
+        build_std: bool,
     ) -> anyhow::Result<()> {
         assert_eq!(
             BuildPlatform::from(target_platform()),
             BuildPlatform::MacOS,
             "It is only valid to build macos on macos"
         );
-        self.plain_cargo_build(project, profile, target)
+        self.plain_cargo_build(project, profile, target, build_std)
     }
 
     fn linux(
@@ -161,24 +179,20 @@ impl Build {
         project: &AlephProject,
         profile: Profile,
         target: &Target,
+        build_std: bool,
     ) -> anyhow::Result<()> {
         assert_eq!(
             BuildPlatform::from(target_platform()),
             BuildPlatform::Linux,
             "It is only valid to build linux on linux"
         );
-        self.plain_cargo_build(project, profile, target)
+        self.plain_cargo_build(project, profile, target, build_std)
     }
 
     fn uwp(&self, project: &AlephProject, profile: Profile, target: &Target) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
-        let mut command = match profile {
-            Profile::Debug => base_uwp_build(target, &project_schema.game.crate_name)?,
-            Profile::Release => release_uwp_build(target, &project_schema.game.crate_name)?,
-            Profile::Retail => retail_uwp_build(target, &project_schema.game.crate_name)?,
-        };
-
+        let mut command = uwp_build(target, profile, &project_schema.game.crate_name);
         self.add_win32_branding_env_vars(project, target, &mut command)?;
 
         log::info!("{:?}", &command);
@@ -202,11 +216,7 @@ impl Build {
     ) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
-        let mut command = match profile {
-            Profile::Debug => base_android_build(target, &project_schema.game.crate_name)?,
-            Profile::Release => release_android_build(target, &project_schema.game.crate_name)?,
-            Profile::Retail => retail_android_build(target, &project_schema.game.crate_name)?,
-        };
+        let mut command = android_build(project, target, profile, &project_schema.game.crate_name)?;
         log::info!("{:?}", &command);
         let status = command.status()?;
 
@@ -227,15 +237,11 @@ impl Build {
         project: &AlephProject,
         profile: Profile,
         target: &Target,
+        build_std: bool,
     ) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
-        let mut command = match profile {
-            Profile::Debug => base_native_build(&project_schema.game.crate_name)?,
-            Profile::Release => release_native_build(&project_schema.game.crate_name)?,
-            Profile::Retail => retail_native_build(&project_schema.game.crate_name)?,
-        };
-
+        let mut command = native_build(profile, &project_schema.game.crate_name, build_std);
         self.add_win32_branding_env_vars(&project, target, &mut command)?;
 
         log::info!("{:?}", &command);
@@ -372,63 +378,56 @@ impl Build {
     }
 }
 
-fn apply_release_args(cmd: &mut Command) {
-    cmd.arg("--release");
-}
+fn bin_build(profile: Profile, target: Option<&str>, package: &str, build_std: bool) -> Command {
+    let toolchain = if build_std { "nightly" } else { "stable" };
 
-fn apply_retail_args(cmd: &mut Command) {
-    cmd.arg("--profile=retail");
-    cmd.env("ALEPH_BUILD_TYPE", "Retail");
-}
-
-fn base_uwp_build(target: &Target, package: &str) -> std::io::Result<Command> {
-    assert_eq!(target.platform, BuildPlatform::UWP);
-
-    // cargo +nightly-msvc build -Z build-std=std,panic_abort --target={arch}-uwp-windows-msvc --package {package} --bin
     let mut cmd = Command::new("rustup");
     cmd.arg("run");
     if cfg!(windows) {
-        cmd.arg("nightly-msvc");
+        cmd.arg(format!("{}-msvc", toolchain));
     } else {
-        cmd.arg("nightly");
+        cmd.arg(toolchain);
     }
     cmd.arg("cargo");
     cmd.arg("build");
-    cmd.arg("-Z");
-    cmd.arg("build-std=std,panic_abort");
-    cmd.arg(format!("--target={}-uwp-windows-msvc", target.arch.name()));
+    if build_std {
+        cmd.arg("-Z");
+        cmd.arg("build-std=std,panic_abort");
+    }
+    if let Some(target) = target {
+        cmd.arg(format!("--target={}", target));
+    }
     cmd.arg("--package");
     cmd.arg(package);
     cmd.arg("--bin");
     cmd.arg(package);
 
-    Ok(cmd)
+    profile_args(&mut cmd, profile);
+
+    cmd
 }
 
-fn release_uwp_build(target: &Target, package: &str) -> std::io::Result<Command> {
+fn uwp_build(target: &Target, profile: Profile, package: &str) -> Command {
     assert_eq!(target.platform, BuildPlatform::UWP);
 
-    // cargo +nightly-msvc build -Z build-std=std,panic_abort --target={arch}-uwp-windows-msvc --package {package} --bin --release
-    let mut cmd = base_uwp_build(target, package)?;
-    apply_release_args(&mut cmd);
-
-    Ok(cmd)
+    let target = format!("--target={}-uwp-windows-msvc", target.arch.name());
+    bin_build(profile, Some(&target), package, true)
 }
 
-fn retail_uwp_build(target: &Target, package: &str) -> std::io::Result<Command> {
-    assert_eq!(target.platform, BuildPlatform::UWP);
-
-    // cargo +nightly-msvc build -Z build-std=std,panic_abort --target={arch}-uwp-windows-msvc --package {package} --bin --profile="retail"
-    let mut cmd = base_uwp_build(target, package)?;
-    apply_retail_args(&mut cmd);
-
-    Ok(cmd)
+fn native_build(profile: Profile, package: &str, build_std: bool) -> Command {
+    let target = build_std
+        .then(|| aleph_target::recreate_triple(target_platform(), target_architecture()).unwrap());
+    bin_build(profile, target, package, build_std)
 }
 
-fn base_android_build(target: &Target, package: &str) -> std::io::Result<Command> {
+fn android_build(
+    project: &AlephProject,
+    target: &Target,
+    profile: Profile,
+    package: &str,
+) -> anyhow::Result<Command> {
     assert_eq!(target.platform, BuildPlatform::Android);
 
-    // cargo ndk -t {arch} -p 30 build --target={arch}-linux-android --package {package} --lib
     let mut cmd = Command::new("cargo");
     cmd.arg("ndk");
     cmd.arg("-t");
@@ -440,62 +439,33 @@ fn base_android_build(target: &Target, package: &str) -> std::io::Result<Command
     cmd.arg("--package");
     cmd.arg(package);
     cmd.arg("--lib");
-    // cmd.env("ANDROID_NDK_HOME", "TODO");
+
+    profile_args(&mut cmd, profile);
+
+    let ndk_home = std::env::var("ANDROID_NDK_HOME").map(PathBuf::from).or_else(|_err| {
+        let ndk_path = project.ndk_path();
+        if !ndk_path.exists() {
+            log::error!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!");
+            log::error!("Building for android requires either ANDROID_NDK_HOME to be set or for an NDK to be present at .aleph/sdks/ndk");
+            Err(anyhow!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!"))
+        } else {
+            Ok(ndk_path.to_path_buf())
+        }
+    })?;
+    cmd.env("ANDROID_NDK_HOME", ndk_home);
 
     Ok(cmd)
 }
 
-fn release_android_build(target: &Target, package: &str) -> std::io::Result<Command> {
-    assert_eq!(target.platform, BuildPlatform::Android);
-
-    // cargo ndk -t {arch} -p 30 build --target={arch}-linux-android --package {package} --lib --release
-    let mut cmd = base_android_build(target, package)?;
-    apply_release_args(&mut cmd);
-
-    Ok(cmd)
-}
-
-fn retail_android_build(target: &Target, package: &str) -> std::io::Result<Command> {
-    assert_eq!(target.platform, BuildPlatform::Android);
-
-    // cargo ndk -t {arch} -p 30 build --profile=retail --target={arch}-linux-android --package {package} --lib
-    let mut cmd = base_android_build(target, package)?;
-    apply_retail_args(&mut cmd);
-
-    Ok(cmd)
-}
-
-fn base_native_build(package: &str) -> std::io::Result<Command> {
-    // cargo build --package aleph-test --bin
-    let mut cmd = Command::new("rustup");
-    cmd.arg("run");
-    if cfg!(windows) {
-        cmd.arg("stable-msvc");
-    } else {
-        cmd.arg("stable");
+fn profile_args(cmd: &mut Command, profile: Profile) {
+    match profile {
+        Profile::Debug => {}
+        Profile::Release => {
+            cmd.arg("--release");
+        }
+        Profile::Retail => {
+            cmd.arg("--profile=retail");
+            cmd.env("ALEPH_BUILD_TYPE", "Retail");
+        }
     }
-    cmd.arg("cargo");
-    cmd.arg("build");
-    cmd.arg("--package");
-    cmd.arg(package);
-    cmd.arg("--bin");
-    cmd.arg(package);
-
-    Ok(cmd)
-}
-
-fn release_native_build(package: &str) -> std::io::Result<Command> {
-    // cargo build --package aleph-test --bin --release
-    let mut cmd = base_native_build(package)?;
-    apply_release_args(&mut cmd);
-
-    Ok(cmd)
-}
-
-fn retail_native_build(package: &str) -> std::io::Result<Command> {
-    // cargo build --profile=retail --package aleph-test --bin
-    let mut cmd = base_native_build(package)?;
-    apply_retail_args(&mut cmd);
-
-    Ok(cmd)
 }

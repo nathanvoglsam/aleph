@@ -9,6 +9,3 @@ Cargo.lock
 
 # Ignore Vulkan shader cache
 shader_cache.bin
-
-# Aleph Generated Projects
-.aleph/proj

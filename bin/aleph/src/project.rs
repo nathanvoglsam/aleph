@@ -55,6 +55,9 @@ pub struct AlephProject {
     /// Path to the uwp aarch64 project in the '.aleph/proj' directory
     uwp_aarch64_proj_path: PathBuf,
 
+    /// The path to the '.aleph/sdks/ndk' folder for this project
+    ndk_path: PathBuf,
+
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
     cargo_toml_file: PathBuf,
 
@@ -86,6 +89,10 @@ impl AlephProject {
         let target = Target::new(Architecture::AARCH64, BuildPlatform::UWP);
         let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
+        let mut ndk_path = dot_aleph_path.clone();
+        ndk_path.push("sdks");
+        ndk_path.push("ndk");
+
         let out = Self {
             project_file,
             project_root,
@@ -93,6 +100,7 @@ impl AlephProject {
             android_proj_path,
             uwp_x86_64_proj_path,
             uwp_aarch64_proj_path,
+            ndk_path,
             cargo_toml_file,
             cargo_target_dir,
             cargo_metadata: Default::default(),
@@ -168,6 +176,12 @@ impl AlephProject {
     /// 'aleph-project.toml' and 'Cargo.toml'
     pub fn cargo_target_dir(&self) -> &Path {
         &self.cargo_target_dir
+    }
+
+    /// Returns the path to the project's bundled NDK, in '.aleph/sdks/ndk'. This path may not exist
+    /// so check before using!
+    pub fn ndk_path(&self) -> &Path {
+        &self.ndk_path
     }
 
     /// Returns the './target/{target-triple}/{profile}' path for the request target + profile set.
