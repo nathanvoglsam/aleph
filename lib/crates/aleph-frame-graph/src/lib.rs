@@ -26,3 +26,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+mod pin_board;
+
+pub use pin_board::PinBoard;
