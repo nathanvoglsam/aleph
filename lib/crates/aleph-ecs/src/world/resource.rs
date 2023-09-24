@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::utils::TypeIdHasher;
+use aleph_type_id_hasher::TypeIdHasher;
 use std::any::{Any, TypeId};
-use std::hash::{Hash, Hasher};
+use std::hash::{Hash};
 
 ///
 /// This trait specifies the requirements of a type that will be used as a [`Resource`] within the
@@ -62,9 +62,8 @@ impl ResourceId {
     /// Returns the [`ResourceId`] of the given resource.
     #[inline]
     pub fn of<T: Resource>() -> Self {
-        let mut hasher = TypeIdHasher(0);
-        TypeId::of::<T>().hash(&mut hasher);
-        Self(hasher.finish())
+        let v = TypeIdHasher::hash(TypeId::of::<T>());
+        Self(v)
     }
 
     /// Returns the [`ResourceId`] of the given resource by value using generics. This function will
@@ -78,9 +77,7 @@ impl ResourceId {
     /// type is known at compile-time use [`ResourceId::of`] of [`ResourceId::of_val`].
     pub fn of_any(val: &dyn Resource) -> Self {
         let id = val.type_id();
-
-        let mut hasher = TypeIdHasher(0);
-        id.hash(&mut hasher);
-        Self(hasher.finish())
+        let v = TypeIdHasher::hash(id);
+        Self(v)
     }
 }

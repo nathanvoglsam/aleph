@@ -27,11 +27,34 @@
 // SOFTWARE.
 //
 
-use std::hash::Hasher;
+use std::any::TypeId;
+use std::hash::{Hash, Hasher};
 
 /// Internal utility for extracting a u64 from TypeId. Uses the 'write_u64' specialization to
 /// extract the u64 that TypeId::hash gives us.
+///
+/// This wrapper should be zero cost, and functionally should just amount to grabbing one of the
+/// upper/lower 64bit blocks of the underlying u128 used in the TypeId. This will just optimize to
+/// nothing (ideally) as nothing actually happens.
+///
+/// Not zero-cost in a debug build though :/
 pub struct TypeIdHasher(pub u64);
+
+impl TypeIdHasher {
+    #[inline(always)]
+    pub fn hash(v: TypeId) -> u64 {
+        let mut hasher = Self(0);
+        v.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
+impl Default for TypeIdHasher {
+    #[inline(always)]
+    fn default() -> Self {
+        Self(0)
+    }
+}
 
 impl Hasher for TypeIdHasher {
     #[inline(always)]

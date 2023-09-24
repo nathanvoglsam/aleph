@@ -33,8 +33,6 @@ pub mod scheduler;
 pub mod system;
 pub mod world;
 
-mod utils;
-
 #[cfg(test)]
 mod tests;
 

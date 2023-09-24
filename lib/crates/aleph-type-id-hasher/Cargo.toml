@@ -29,22 +29,14 @@
 
 
 [package]
-name = "aleph-ecs"
-version = "0.1.0"
+name = "aleph-type-id-hasher"
+version = "1.0.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "Aleph's ecs"
+description = "A utility hasher that crunches a TypeId down to a 64bit integer"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-ecs/"
+documentation = "https://docs.rs/aleph-type-id-hasher/"
 edition = "2021"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
-[dependencies]
-aleph-type-id-hasher = { workspace = true }
-aleph-virtual-buffer = { workspace = true }
-aleph-label = { workspace = true }
-crossbeam = { workspace = true }
-rayon = { workspace = true }
-

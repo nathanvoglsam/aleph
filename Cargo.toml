@@ -59,6 +59,7 @@ members = [
     "lib/crates/aleph-sys-info",
     "lib/crates/aleph-target",
     "lib/crates/aleph-target-build",
+    "lib/crates/aleph-type-id-hasher",
     "lib/crates/aleph-virtual-buffer",
     "lib/crates/aleph-vulkan-alloc",
     "lib/crates/aleph-windows",
@@ -138,6 +139,7 @@ aleph-rhi-vulkan = { path = "./lib/crates/aleph-rhi-vulkan", version = "0.1" }
 aleph-sys-info = { path = "./lib/crates/aleph-sys-info", version = "0.1" }
 aleph-target = { path = "./lib/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./lib/crates/aleph-target-build", version = "2" }
+aleph-type-id-hasher = { path = "./lib/crates/aleph-type-id-hasher", version = "1" }
 aleph-virtual-buffer = { path = "./lib/crates/aleph-virtual-buffer", version = "0.1" }
 aleph-vulkan-alloc = { path = "./lib/crates/aleph-vulkan-alloc", version = "0.1" }
 aleph-windows = { path = "./lib/crates/aleph-windows", version = "0.1" }

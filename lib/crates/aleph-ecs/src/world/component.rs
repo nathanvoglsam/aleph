@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::utils::TypeIdHasher;
+use aleph_type_id_hasher::TypeIdHasher;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
@@ -77,9 +77,8 @@ impl ComponentTypeId {
     /// Returns the ComponentTypeId of the given component type
     #[inline]
     pub fn of<T: Component>() -> Self {
-        let mut hasher = TypeIdHasher(0);
-        TypeId::of::<T>().hash(&mut hasher);
-        Self(hasher.finish())
+        let v = TypeIdHasher::hash(TypeId::of::<T>());
+        Self(v)
     }
 
     /// Returns the ComponentTypeId of the given component type by value. The value's type can be
