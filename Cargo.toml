@@ -45,6 +45,7 @@ members = [
     "lib/crates/aleph-ecs",
     "lib/crates/aleph-engine",
     "lib/crates/aleph-engine-build",
+    "lib/crates/aleph-frame-graph",
     "lib/crates/aleph-interfaces",
     "lib/crates/aleph-label",
     "lib/crates/aleph-pix",
