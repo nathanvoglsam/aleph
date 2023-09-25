@@ -32,6 +32,7 @@ use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 
 /// A data structure for publishing data keyed by type that can be shared among a group of threads
@@ -113,9 +114,7 @@ impl TableSet {
     /// 256 mutex wrapped hash tables. Don't call this too often, prefer to create a set upfront
     /// and reuse them with [TableSet::clear].
     pub fn new() -> Self {
-        let tables = Vec::from_iter((0..256)
-            .into_iter()
-            .map(|_| Mutex::new(Table::new())));
+        let tables = Vec::from_iter((0..256).into_iter().map(|_| Mutex::new(Table::new())));
 
         debug_assert_eq!(tables.len(), 256);
 
@@ -130,11 +129,12 @@ impl TableSet {
         let mut i = i.lock();
 
         let v = i.arena.alloc(v);
-        let v = NonNull::from(v).cast::<()>();
+        let v = NonNull::from(v).cast::<ManuallyDrop<()>>();
 
         // Lock the map and insert our entry into the table
 
-        i.table.insert(TypeId::of::<T>(), v);
+        i.table.insert(TypeId::of::<T>(), v.cast());
+        i.drop_list.push((v, dropper_impl::<T>))
     }
 
     /// Fetches the pointer stored for a specific type, if one has been stored.
@@ -155,6 +155,14 @@ impl TableSet {
         for i in self.tables.iter_mut() {
             let i = i.get_mut();
             i.table.clear();
+
+            // Call drop on all the inserted objects
+            for (ptr, dropper) in i.drop_list.drain(..) {
+                // Safety: implementation and API guarantees that dropper only gets called once per
+                //         object, and always on the correct type.
+                unsafe { dropper(ptr) }
+            }
+
             i.arena.reset();
         }
     }
@@ -171,12 +179,33 @@ impl TableSet {
     }
 }
 
+impl Drop for TableSet {
+    fn drop(&mut self) {
+        for i in self.tables.drain(..) {
+            let mut i = i.into_inner();
+
+            // Call drop on all the inserted objects
+            for (ptr, dropper) in i.drop_list.drain(..) {
+                // Safety: implementation and API guarantees that dropper only gets called once per
+                //         object, and always on the correct type.
+                unsafe { dropper(ptr) }
+            }
+        }
+    }
+}
+
 struct Table {
     /// The bump allocator arena used to allocate any newly inserted object
     pub arena: Bump,
 
     /// The table that maps TypeId -> object
     pub table: HashMap<TypeId, NonNull<()>>,
+
+    /// A list of ptr + function pairs that will be used to drop any inserted objects
+    pub drop_list: Vec<(
+        NonNull<ManuallyDrop<()>>,
+        unsafe fn(NonNull<ManuallyDrop<()>>),
+    )>,
 }
 
 impl Table {
@@ -184,6 +213,7 @@ impl Table {
         Self {
             arena: Default::default(),
             table: Default::default(),
+            drop_list: Default::default(),
         }
     }
 }
@@ -191,13 +221,29 @@ impl Table {
 unsafe impl Send for Table {}
 unsafe impl Sync for Table {}
 
+/// Internal utility used for dropping objects published to a 'PinBoard'
+unsafe fn dropper_impl<T: Send + Sync + Any>(v: NonNull<ManuallyDrop<()>>) {
+    let mut v = v.cast::<ManuallyDrop<T>>();
+    let v = v.as_mut();
+    ManuallyDrop::drop(v);
+}
+
 #[cfg(test)]
 mod tests {
     use crate::PinBoard;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     struct A(usize);
     struct B(u32);
     struct C(bool);
+
+    struct D(Arc<AtomicUsize>);
+    impl Drop for D {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
 
     /// This test will fail to compile if [PinBoard] does not implement Send + Sync
     #[test]
@@ -240,5 +286,37 @@ mod tests {
         assert!(pin_board.get::<A>().is_none());
         assert!(pin_board.get::<B>().is_none());
         assert!(pin_board.get::<C>().is_none());
+    }
+
+    #[test]
+    fn test_pin_board_drop_1() {
+        let mut pin_board = PinBoard::new();
+
+        let v = Arc::new(AtomicUsize::new(0));
+        pin_board.publish(D(v.clone()));
+
+        pin_board.clear();
+
+        assert_eq!(v.load(Ordering::SeqCst), 1);
+
+        pin_board.clear();
+
+        assert_eq!(v.load(Ordering::SeqCst), 1);
+
+        drop(pin_board);
+
+        assert_eq!(v.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn test_pin_board_drop_2() {
+        let pin_board = PinBoard::new();
+
+        let v = Arc::new(AtomicUsize::new(0));
+        pin_board.publish(D(v.clone()));
+
+        drop(pin_board);
+
+        assert_eq!(v.load(Ordering::SeqCst), 1);
     }
 }
