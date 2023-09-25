@@ -128,13 +128,25 @@ impl TableSet {
         let i = &self.tables[Self::id_to_index(TypeId::of::<T>())];
         let mut i = i.lock();
 
+        // Store the object we're storing into the arena and get the reference as a type-erased
+        // pointer
         let v = i.arena.alloc(v);
         let v = NonNull::from(v).cast::<ManuallyDrop<()>>();
 
-        // Lock the map and insert our entry into the table
+        // Create and store the link in the dropper linked list for this object
+        let v_dropper = TableDropLink {
+            ptr: v,
+            dropper: dropper_impl::<T>,
+            prev: i.drop_head,
+        };
+        let v_dropper = i.arena.alloc(v_dropper);
+        let v_dropper = NonNull::from(v_dropper);
 
+        // Insert the reference to our object into the ID -> ptr table
         i.table.insert(TypeId::of::<T>(), v.cast());
-        i.drop_list.push((v, dropper_impl::<T>))
+
+        // Update the linked-list head for this table
+        i.drop_head = Some(v_dropper);
     }
 
     /// Fetches the pointer stored for a specific type, if one has been stored.
@@ -157,11 +169,16 @@ impl TableSet {
             i.table.clear();
 
             // Call drop on all the inserted objects
-            for (ptr, dropper) in i.drop_list.drain(..) {
+            let mut current = i.drop_head;
+            while let Some(v) = current {
                 // Safety: implementation and API guarantees that dropper only gets called once per
                 //         object, and always on the correct type.
-                unsafe { dropper(ptr) }
+                unsafe {
+                    let v = v.as_ref();
+                    current = v.drop_object();
+                }
             }
+            i.drop_head = None;
 
             i.arena.reset();
         }
@@ -185,11 +202,16 @@ impl Drop for TableSet {
             let mut i = i.into_inner();
 
             // Call drop on all the inserted objects
-            for (ptr, dropper) in i.drop_list.drain(..) {
+            let mut current = i.drop_head;
+            while let Some(v) = current {
                 // Safety: implementation and API guarantees that dropper only gets called once per
                 //         object, and always on the correct type.
-                unsafe { dropper(ptr) }
+                unsafe {
+                    let v = v.as_ref();
+                    current = v.drop_object();
+                }
             }
+            i.drop_head = None; // Null this just-in-case
         }
     }
 }
@@ -201,11 +223,9 @@ struct Table {
     /// The table that maps TypeId -> object
     pub table: HashMap<TypeId, NonNull<()>>,
 
-    /// A list of ptr + function pairs that will be used to drop any inserted objects
-    pub drop_list: Vec<(
-        NonNull<ManuallyDrop<()>>,
-        unsafe fn(NonNull<ManuallyDrop<()>>),
-    )>,
+    /// The head of a linked list that contains a list of 'ptr + dropper' pairs used for dropping
+    /// the objects stored inside this table (need virtual dispatch as they're stored type erased).
+    pub drop_head: Option<NonNull<TableDropLink>>,
 }
 
 impl Table {
@@ -213,13 +233,36 @@ impl Table {
         Self {
             arena: Default::default(),
             table: Default::default(),
-            drop_list: Default::default(),
+            drop_head: Default::default(),
         }
     }
 }
 
 unsafe impl Send for Table {}
 unsafe impl Sync for Table {}
+
+struct TableDropLink {
+    pub ptr: NonNull<ManuallyDrop<()>>,
+    pub dropper: unsafe fn(NonNull<ManuallyDrop<()>>),
+    pub prev: Option<NonNull<TableDropLink>>,
+}
+
+impl TableDropLink {
+    /// Drops the object referenced by 'ptr' and returns a reference to the next link in the chain,
+    /// or None if we've reached the end of the list.
+    ///
+    /// This _will_ lead to the referenced object being dropped.
+    ///
+    /// # Safety
+    ///
+    /// Synchronizing and validating access to the underlying object referenced by 'ptr' is the
+    /// caller's responsibility. Links are immutable once created so the [TableDropLink] itself is
+    /// thread safe.
+    pub unsafe fn drop_object(&self) -> Option<NonNull<TableDropLink>> {
+        (self.dropper)(self.ptr);
+        self.prev
+    }
+}
 
 /// Internal utility used for dropping objects published to a 'PinBoard'
 unsafe fn dropper_impl<T: Send + Sync + Any>(v: NonNull<ManuallyDrop<()>>) {
