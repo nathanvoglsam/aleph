@@ -128,6 +128,6 @@ mod tests {
     #[test]
     pub fn parse_schema() {
         let text = std::fs::read_to_string("./test_data/aleph-project.toml").unwrap();
-        let project: ProjectSchema = toml::from_str(&text).unwrap();
+        let _project: ProjectSchema = toml::from_str(&text).unwrap();
     }
 }
