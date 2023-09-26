@@ -35,7 +35,7 @@ use crate::VirtualBuffer;
 pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuffer> {
     let result: *mut libc::c_void = libc::mmap(
         std::ptr::null_mut(),
-        pages * 4096,
+        pages * page_size(),
         libc::PROT_NONE,
         libc::MAP_SHARED | libc::MAP_ANON,
         -1,
@@ -47,14 +47,14 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
     } else {
         Ok(VirtualBuffer {
             data: result as _,
-            len: pages * 4096,
+            len: pages * page_size(),
         })
     }
 }
 
 #[inline]
 pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    if libc::munmap(base as _, pages * 4096) != 0 {
+    if libc::munmap(base as _, pages * page_size()) != 0 {
         Err(std::io::Error::last_os_error())
     } else {
         Ok(())
@@ -88,5 +88,13 @@ pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std:
 }
 
 pub const fn page_size() -> usize {
-    4096
+    if cfg!(target_os = "macos") {
+        if cfg!(target_arch = "aarch64") {
+            16384
+        } else {
+            4096
+        }
+    } else {
+        4096
+    }
 }
