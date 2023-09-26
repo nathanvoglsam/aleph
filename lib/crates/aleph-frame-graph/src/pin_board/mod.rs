@@ -66,53 +66,13 @@ use std::ptr::NonNull;
 /// live until [PinBoard::clear] is called. Whether you _should_ or not?
 pub struct PinBoard {
     /// The underlying 'slot' data structure that takes [TypeId]s and will yield the stored value
-    table_set: TableSet,
-}
-
-impl PinBoard {
-    /// Constructs a new, empty [PinBoard]
-    pub fn new() -> Self {
-        Self {
-            table_set: TableSet::new(),
-        }
-    }
-
-    /// Publishes a new item into the [PinBoard]. Once published all future calls to [PinBoard::get]
-    /// will yield the item we just published, until another item is published in its place.
-    pub fn publish<T: Send + Sync + Any>(&self, v: T) {
-        self.table_set.update(v)
-    }
-
-    /// Look up a published item by its type. May return None if no value has been published yet.
-    pub fn get<T: Send + Sync + Any>(&self) -> Option<&T> {
-        self.table_set.query(TypeId::of::<T>()).map(|v| {
-            // Safety: The PinBoard guarantees that whatever is stored in a slot for 'T' is always
-            //         a 'T'
-            unsafe { v.cast::<T>().as_ref() }
-        })
-    }
-
-    /// Resets the [PinBoard] back to the default state, with no objects 'pinned' inside it. This
-    /// internally resets the arena used for storing objects and clears the [TableSet] using
-    /// [TableSet::clear].
-    ///
-    /// # Note
-    ///
-    /// This only frees memory from the arena allocator. The [TableSet] will still hold memory. To
-    /// fully free all memory used by a [PinBoard] you must drop it.
-    pub fn clear(&mut self) {
-        self.table_set.clear();
-    }
-}
-
-pub struct TableSet {
     tables: Vec<Mutex<Table>>,
 }
 
-impl TableSet {
-    /// Constructs a new [TableSet]. This is relatively expensive as it needs to create an array of
+impl PinBoard {
+    /// Constructs a new [PinBoard]. This is relatively expensive as it needs to create an array of
     /// 256 mutex wrapped hash tables. Don't call this too often, prefer to create a set upfront
-    /// and reuse them with [TableSet::clear].
+    /// and reuse them with [PinBoard::clear].
     pub fn new() -> Self {
         let tables = Vec::from_iter((0..256).into_iter().map(|_| Mutex::new(Table::new())));
 
@@ -121,8 +81,9 @@ impl TableSet {
         Self { tables }
     }
 
-    /// Updates the pointer stored in the [TableSet] for the given type.
-    pub fn update<T: Send + Sync + Any>(&self, v: T) {
+    /// Publishes a new item into the [PinBoard]. Once published all future calls to [PinBoard::get]
+    /// will yield the item we just published, until another item is published in its place.
+    pub fn publish<T: Send + Sync + Any>(&self, v: T) {
         debug_assert_eq!(self.tables.len(), 256);
 
         let i = &self.tables[Self::id_to_index(TypeId::of::<T>())];
@@ -149,21 +110,36 @@ impl TableSet {
         i.drop_head = Some(v_dropper);
     }
 
-    /// Fetches the pointer stored for a specific type, if one has been stored.
-    pub fn query(&self, t: TypeId) -> Option<NonNull<()>> {
+    /// Look up a published item by its type. May return None if no value has been published yet.
+    pub fn get<T: Send + Sync + Any>(&self) -> Option<&T> {
         debug_assert_eq!(self.tables.len(), 256);
 
+        let t = TypeId::of::<T>();
         let i = &self.tables[Self::id_to_index(t)];
         let i = i.lock();
-        i.table.get(&t).copied()
+        let ptr = i.table.get(&t).copied();
+
+        ptr.map(|v| {
+            // Safety: The PinBoard guarantees that whatever is stored in a slot for 'T' is always
+            //         a 'T'
+            unsafe { v.cast::<T>().as_ref() }
+        })
     }
 
-    /// Resets all the individual tables in the table set. This won't free any memory as we
-    /// internally use 'HashMap::clear'. This is intentional as the intended purpose is to reuse
-    /// the existing allocations to reduce how many times we have to hit the allocator.
+    /// Resets the [PinBoard] back to the default state, with no objects 'pinned' inside it. This
+    /// internally resets the arena used for storing objects and clears the [TableSet] using
+    /// [TableSet::clear].
+    ///
+    /// # Note
+    ///
+    /// This only frees memory from the arena allocator. The [TableSet] will still hold memory. To
+    /// fully free all memory used by a [PinBoard] you must drop it.
     pub fn clear(&mut self) {
         debug_assert_eq!(self.tables.len(), 256);
 
+        // Resets all the individual tables in the table set. This won't free any memory as we
+        // internally use 'HashMap::clear'. This is intentional as the intended purpose is to reuse
+        // the existing allocations to reduce how many times we have to hit the allocator.
         for i in self.tables.iter_mut() {
             let i = i.get_mut();
             i.table.clear();
@@ -196,7 +172,7 @@ impl TableSet {
     }
 }
 
-impl Drop for TableSet {
+impl Drop for PinBoard {
     fn drop(&mut self) {
         for i in self.tables.drain(..) {
             let mut i = i.into_inner();
