@@ -28,5 +28,7 @@
 //
 
 mod pin_board;
+mod resource;
 
 pub use pin_board::PinBoard;
+pub use resource::{ResourceMut, ResourceRef};
