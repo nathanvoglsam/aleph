@@ -32,7 +32,7 @@ use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
-use std::mem::ManuallyDrop;
+use std::mem::{needs_drop, ManuallyDrop};
 use std::ptr::NonNull;
 
 /// A data structure for publishing data keyed by type that can be shared among a group of threads
@@ -94,20 +94,23 @@ impl PinBoard {
         let v = i.arena.alloc(v);
         let v = NonNull::from(v).cast::<ManuallyDrop<()>>();
 
-        // Create and store the link in the dropper linked list for this object
-        let v_dropper = TableDropLink {
-            ptr: v,
-            dropper: dropper_impl::<T>,
-            prev: i.drop_head,
-        };
-        let v_dropper = i.arena.alloc(v_dropper);
-        let v_dropper = NonNull::from(v_dropper);
-
         // Insert the reference to our object into the ID -> ptr table
         i.table.insert(TypeId::of::<T>(), v.cast());
 
-        // Update the linked-list head for this table
-        i.drop_head = Some(v_dropper);
+        // Only append to the drop list if we actually need to drop the object
+        if needs_drop::<T>() {
+            // Create and store the link in the dropper linked list for this object
+            let v_dropper = TableDropLink {
+                ptr: v,
+                dropper: dropper_impl::<T>,
+                prev: i.drop_head,
+            };
+            let v_dropper = i.arena.alloc(v_dropper);
+            let v_dropper = NonNull::from(v_dropper);
+
+            // Update the linked-list head for this table
+            i.drop_head = Some(v_dropper);
+        }
     }
 
     /// Look up a published item by its type. May return None if no value has been published yet.
