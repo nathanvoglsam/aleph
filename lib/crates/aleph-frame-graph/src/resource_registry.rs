@@ -27,15 +27,32 @@
 // SOFTWARE.
 //
 
-mod frame_graph;
-mod pin_board;
-mod render_pass;
-mod resource;
-mod resource_registry;
-mod utils;
+use crate::resource::ResourceId;
+use crate::{ResourceMut, ResourceRef};
+use bumpalo::collections::Vec as BVec;
+use std::num::NonZeroU64;
 
-pub use frame_graph::{FrameGraph, FrameGraphBuilder};
-pub use pin_board::PinBoard;
-pub use render_pass::IRenderPass;
-pub use resource::{ResourceMut, ResourceRef};
-pub use resource_registry::ResourceRegistry;
+pub struct ResourceRegistry<'bump> {
+    pub(crate) reads: BVec<'bump, ResourceRef>,
+    pub(crate) writes: BVec<'bump, ResourceMut>,
+    pub(crate) creates: BVec<'bump, ()>,
+}
+
+impl<'bump> ResourceRegistry<'bump> {
+    pub fn read_resource<R: Into<ResourceRef>>(&mut self, resource: R) -> ResourceRef {
+        let r = resource.into();
+        self.reads.push(r);
+        r
+    }
+
+    pub fn write_resource<R: Into<ResourceMut>>(&mut self, resource: R) -> ResourceMut {
+        let r = resource.into();
+        self.writes.push(r);
+        r
+    }
+
+    pub fn create_resource(&mut self) -> ResourceMut {
+        self.creates.push(());
+        ResourceMut(ResourceId(NonZeroU64::new(9876).unwrap())) // TODO: This is temporary
+    }
+}

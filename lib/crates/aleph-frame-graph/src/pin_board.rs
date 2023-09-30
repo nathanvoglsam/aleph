@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
+use crate::utils::DropLink;
 use aleph_type_id_hasher::TypeIdHasher;
 use bumpalo::Bump;
 use parking_lot::Mutex;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
-use std::mem::{needs_drop, ManuallyDrop};
+use std::mem::needs_drop;
 use std::ptr::NonNull;
 
 /// A data structure for publishing data keyed by type that can be shared among a group of threads
@@ -92,7 +93,7 @@ impl PinBoard {
         // Store the object we're storing into the arena and get the reference as a type-erased
         // pointer
         let v = i.arena.alloc(v);
-        let v = NonNull::from(v).cast::<ManuallyDrop<()>>();
+        let v = NonNull::from(v);
 
         // Insert the reference to our object into the ID -> ptr table
         i.table.insert(TypeId::of::<T>(), v.cast());
@@ -100,16 +101,12 @@ impl PinBoard {
         // Only append to the drop list if we actually need to drop the object
         if needs_drop::<T>() {
             // Create and store the link in the dropper linked list for this object
-            let v_dropper = TableDropLink {
-                ptr: v,
-                dropper: dropper_impl::<T>,
-                prev: i.drop_head,
-            };
+            let mut v_dropper = DropLink::new::<T>(v);
+            v_dropper.prev = i.drop_head;
             let v_dropper = i.arena.alloc(v_dropper);
-            let v_dropper = NonNull::from(v_dropper);
 
             // Update the linked-list head for this table
-            i.drop_head = Some(v_dropper);
+            i.drop_head = Some(NonNull::from(v_dropper));
         }
     }
 
@@ -180,17 +177,11 @@ impl Drop for PinBoard {
         for i in self.tables.drain(..) {
             let mut i = i.into_inner();
 
-            // Call drop on all the inserted objects
-            let mut current = i.drop_head;
-            while let Some(v) = current {
-                // Safety: implementation and API guarantees that dropper only gets called once per
-                //         object, and always on the correct type.
-                unsafe {
-                    let v = v.as_ref();
-                    current = v.drop_object();
-                }
+            // Safety: implementation and API guarantees that dropper only gets called once per
+            //         object, and always on the correct type.
+            unsafe {
+                DropLink::drop_and_null(&mut i.drop_head);
             }
-            i.drop_head = None; // Null this just-in-case
         }
     }
 }
@@ -204,7 +195,7 @@ struct Table {
 
     /// The head of a linked list that contains a list of 'ptr + dropper' pairs used for dropping
     /// the objects stored inside this table (need virtual dispatch as they're stored type erased).
-    pub drop_head: Option<NonNull<TableDropLink>>,
+    pub drop_head: Option<NonNull<DropLink>>,
 }
 
 impl Table {
@@ -219,36 +210,6 @@ impl Table {
 
 unsafe impl Send for Table {}
 unsafe impl Sync for Table {}
-
-struct TableDropLink {
-    pub ptr: NonNull<ManuallyDrop<()>>,
-    pub dropper: unsafe fn(NonNull<ManuallyDrop<()>>),
-    pub prev: Option<NonNull<TableDropLink>>,
-}
-
-impl TableDropLink {
-    /// Drops the object referenced by 'ptr' and returns a reference to the next link in the chain,
-    /// or None if we've reached the end of the list.
-    ///
-    /// This _will_ lead to the referenced object being dropped.
-    ///
-    /// # Safety
-    ///
-    /// Synchronizing and validating access to the underlying object referenced by 'ptr' is the
-    /// caller's responsibility. Links are immutable once created so the [TableDropLink] itself is
-    /// thread safe.
-    pub unsafe fn drop_object(&self) -> Option<NonNull<TableDropLink>> {
-        (self.dropper)(self.ptr);
-        self.prev
-    }
-}
-
-/// Internal utility used for dropping objects published to a 'PinBoard'
-unsafe fn dropper_impl<T: Send + Sync + Any>(v: NonNull<ManuallyDrop<()>>) {
-    let mut v = v.cast::<ManuallyDrop<T>>();
-    let v = v.as_mut();
-    ManuallyDrop::drop(v);
-}
 
 #[cfg(test)]
 mod tests {

@@ -42,6 +42,8 @@ edition.workspace = true
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
+aleph-any = { workspace = true }
+aleph-rhi-api = { workspace = true }
 aleph-type-id-hasher = { workspace = true }
 parking_lot = { workspace = true }
 bumpalo = { workspace = true }
