@@ -30,18 +30,65 @@
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
-/// The underlying, binary representation of a Resource ID handle
+/// The underlying, binary representation of a Resource ID handle.
+///
+/// The ID is bit-packed to contain a number of different indices within a single 64-bit handle. The
+/// data is laid out like so, in hexadecimal:
+///
+/// `0xHHVVBBBB` where:
+/// - H = 'handle id'
+/// - V = 'version index'
+/// - B = 'base id'
+///
+/// # Base ID
+///
+/// Identifies the root resource that the handle points to. This allows easily mapping the handle
+/// to the underlying resource handle.
+///
+/// Base ID is 32-bits, so we can have up to 2^32 concrete resources (plenty)
+///
+/// # Version Index
+///
+/// Encodes the version number the handle refers to. This is used to identify which specific state
+/// the resource is trying to view. A new version of a base resource is created on every write, so
+/// that future passes can discriminate between reading a resource from before or after a write from
+/// another pass.
+///
+/// Version index is 16-bits. We can have up to 2^16 - 1 versions of a particular resource. The -1
+/// is because the first version index we use is 1. A 0 version is not a valid version. This allows
+/// us to get niche value optimization for when the whole ID is zero while allowing base and handle
+/// IDs to have zero as a valid value. Any valid handle must have a version index >0 making it
+/// impossible for a valid resource ID to have a zero version index, base ID and handle ID. This
+/// means it's impossible for all zeroes to encode a valid resource handle.
+///
+/// # Handle ID
+///
+/// The handle ID uniquely identifies the specific handle from when it was generated. This allows
+/// for associating information with the handle itself from when it's created by an import or
+/// declared resource write.
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct ResourceId(pub(crate) NonZeroU64);
 
 impl ResourceId {
-    pub const fn version_id(&self) -> u16 {
-        todo!()
+    pub const fn new(base: u32, version: u16, handle: u16) -> Option<ResourceId> {
+        let base = base as u64;
+        let version = version as u64;
+        let handle = handle as u64;
+        let id = base & (version << 32) & (handle << 48);
+        NonZeroU64::new(id).map(|v| ResourceId(v))
     }
 
-    pub const fn resource_id(&self) -> u32 {
-        todo!()
+    pub const fn base_id(&self) -> u32 {
+        (self.0.get() & 0xFFFF) as u32
+    }
+
+    pub const fn version_id(&self) -> u16 {
+        ((self.0.get() >> 32) & 0xFF) as u16
+    }
+
+    pub const fn handle_id(&self) -> u16 {
+        ((self.0.get() >> 48) & 0xFF) as u16
     }
 }
 

@@ -29,13 +29,17 @@
 
 use crate::resource::ResourceId;
 use crate::{ResourceMut, ResourceRef};
+use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
+use bumpalo::Bump;
 use std::num::NonZeroU64;
+use std::ptr::NonNull;
 
 pub struct ResourceRegistry<'bump> {
+    pub(crate) arena: &'bump Bump,
     pub(crate) reads: BVec<'bump, ResourceRef>,
     pub(crate) writes: BVec<'bump, ResourceMut>,
-    pub(crate) creates: BVec<'bump, ()>,
+    pub(crate) creates: BVec<'bump, CreatedResource>,
 }
 
 impl<'bump> ResourceRegistry<'bump> {
@@ -51,8 +55,69 @@ impl<'bump> ResourceRegistry<'bump> {
         r
     }
 
-    pub fn create_resource(&mut self) -> ResourceMut {
-        self.creates.push(());
+    pub fn create_texture(&mut self, desc: &TextureDesc) -> ResourceMut {
+        let name = desc.name.map(|v| self.arena.alloc_str(v));
+        let name = name.map(|v| NonNull::from(v));
+
+        let desc = CreatedTexture {
+            width: desc.width,
+            height: desc.height,
+            depth: desc.depth,
+            format: desc.format,
+            dimension: desc.dimension,
+            clear_value: desc.clear_value.clone(),
+            array_size: desc.array_size,
+            mip_levels: desc.mip_levels,
+            sample_count: desc.sample_count,
+            sample_quality: desc.sample_quality,
+            usage: desc.usage,
+            name,
+        };
+        let created = CreatedResource::Texture(desc);
+        self.creates.push(created);
+
         ResourceMut(ResourceId(NonZeroU64::new(9876).unwrap())) // TODO: This is temporary
     }
+
+    pub fn create_buffer(&mut self, desc: &BufferDesc) -> ResourceMut {
+        let name = desc.name.map(|v| self.arena.alloc_str(v));
+        let name = name.map(|v| NonNull::from(v));
+
+        let desc = CreatedBuffer {
+            size: desc.size,
+            cpu_access: desc.cpu_access,
+            usage: desc.usage,
+            name,
+        };
+        let created = CreatedResource::Buffer(desc);
+        self.creates.push(created);
+        ResourceMut(ResourceId(NonZeroU64::new(858484).unwrap())) // TODO: This is temporary
+    }
+}
+
+pub enum CreatedResource {
+    Buffer(CreatedBuffer),
+    Texture(CreatedTexture),
+}
+
+pub struct CreatedBuffer {
+    pub size: u64,
+    pub cpu_access: CpuAccessMode,
+    pub usage: BufferUsageFlags,
+    pub name: Option<NonNull<str>>,
+}
+
+pub struct CreatedTexture {
+    pub width: u32,
+    pub height: u32,
+    pub depth: u32,
+    pub format: Format,
+    pub dimension: TextureDimension,
+    pub clear_value: Option<OptimalClearValue>,
+    pub array_size: u32,
+    pub mip_levels: u32,
+    pub sample_count: u32,
+    pub sample_quality: u32,
+    pub usage: TextureUsageFlags,
+    pub name: Option<NonNull<str>>,
 }

@@ -47,9 +47,18 @@ pub struct FrameGraphBuilder {
     /// as long as the graph is being built.
     build_arena: Bump,
 
+    /// The list of all the render passes in the graph. The index of the pass in this list is the
+    /// identity of the pass and is used to key to a number of different names
     render_passes: Vec<NonNull<dyn IRenderPass>>,
+
+    /// Stores the names of each render pass keyed by the matching index in the render_passes list.
     render_pass_names: Vec<(*const u8, usize)>,
+
+    /// The head of the dropper linked-list that contains all the drop functions for the render
+    /// passes.
     pass_dropper_head: Option<NonNull<DropLink>>,
+
+    /// The head of the dropper linked-list that contains droppers for the callback pass payloads.
     payload_dropper_head: Option<NonNull<DropLink>>,
 }
 
@@ -193,10 +202,25 @@ impl Drop for FrameGraphBuilder {
 }
 
 pub struct FrameGraph {
+    /// The bump allocation arena that provides the backing memory for the render passes and any
+    /// other memory that's needed for them.
+    ///
+    /// This typically includes the IRenderPass objects themselves, their name strings and the
+    /// payload objects for callback passes.
     arena: Bump,
+
+    /// The list of all the render passes in the graph. The index of the pass in this list is the
+    /// identity of the pass and is used to key to a number of different names
     render_passes: Vec<NonNull<dyn IRenderPass>>,
+
+    /// Stores the names of each render pass keyed by the matching index in the render_passes list.
     render_pass_names: Vec<(*const u8, usize)>,
+
+    /// The head of the dropper linked-list that contains all the drop functions for the render
+    /// passes.
     pass_dropper_head: Option<NonNull<DropLink>>,
+
+    /// The head of the dropper linked-list that contains droppers for the callback pass payloads.
     payload_dropper_head: Option<NonNull<DropLink>>,
 }
 
