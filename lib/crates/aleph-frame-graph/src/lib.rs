@@ -28,14 +28,11 @@
 //
 
 mod frame_graph;
-mod pin_board;
 mod render_pass;
 mod resource;
 mod resource_registry;
-mod utils;
 
 pub use frame_graph::{FrameGraph, FrameGraphBuilder};
-pub use pin_board::PinBoard;
 pub use render_pass::IRenderPass;
 pub use resource::{ResourceMut, ResourceRef};
 pub use resource_registry::ResourceRegistry;

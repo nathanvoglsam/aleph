@@ -27,18 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::PinBoard;
 use std::mem::size_of_val;
 use std::ptr::NonNull;
 
 pub trait IRenderPass: Send + 'static {
-    fn execute(&mut self, pin_board: &PinBoard);
+    fn execute(&mut self);
 }
 
-pub(crate) struct CallbackRenderPass<
-    T: Send + 'static,
-    ExecFn: FnMut(&T, &PinBoard) + Send + 'static,
-> {
+pub(crate) struct CallbackRenderPass<T: Send + 'static, ExecFn: FnMut(&T) + Send + 'static> {
     /// A type-erased pointer to the payload object of type 'T'.
     payload: NonNull<T>,
 
@@ -49,7 +45,7 @@ pub(crate) struct CallbackRenderPass<
 impl<T, ExecFn> CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(&T, &PinBoard) + Send + 'static,
+    ExecFn: FnMut(&T) + Send + 'static,
 {
     pub fn new(payload: NonNull<T>, exec_fn: ExecFn) -> Self {
         assert!(
@@ -66,9 +62,9 @@ where
 impl<T, ExecFn> IRenderPass for CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(&T, &PinBoard) + Send + 'static,
+    ExecFn: FnMut(&T) + Send + 'static,
 {
-    fn execute(&mut self, pin_board: &PinBoard) {
+    fn execute(&mut self) {
         // Safety: It is the responsibility of the frame graph implementation to ensure that this
         //         is safe to do. So, it's the responsibility of whoever constructs the callback
         //         pass.
@@ -77,13 +73,13 @@ where
         //         can simply store it in the arena and give the callback pass the only pointer
         //         to it, making it safe to access here.
         let payload = unsafe { self.payload.as_ref() };
-        (self.exec_fn)(payload, pin_board)
+        (self.exec_fn)(payload)
     }
 }
 
 unsafe impl<T, ExecFn> Send for CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(&T, &PinBoard) + Send + 'static,
+    ExecFn: FnMut(&T) + Send + 'static,
 {
 }

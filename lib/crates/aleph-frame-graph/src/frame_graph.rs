@@ -28,9 +28,10 @@
 //
 
 use crate::render_pass::{CallbackRenderPass, IRenderPass};
-use crate::utils::DropLink;
-use crate::{PinBoard, ResourceMut, ResourceRegistry};
+use crate::resource::ResourceId;
+use crate::{ResourceMut, ResourceRef, ResourceRegistry};
 use aleph_any::AnyArc;
+use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
@@ -121,7 +122,7 @@ impl FrameGraphBuilder {
     pub fn add_callback_pass<
         T: Send + Default + 'static,
         SetupFn: FnOnce(&mut T, &mut ResourceRegistry),
-        ExecFn: FnMut(&T, &PinBoard) + Send + 'static,
+        ExecFn: FnMut(&T) + Send + 'static,
     >(
         &mut self,
         name: &str,
@@ -309,7 +310,7 @@ pub struct ImportedResource {
 #[cfg(test)]
 mod tests {
     use crate::resource::ResourceId;
-    use crate::{FrameGraph, PinBoard, ResourceMut, ResourceRef, ResourceRegistry};
+    use crate::{FrameGraph, ResourceMut, ResourceRef, ResourceRegistry};
     use std::num::NonZeroU64;
 
     // fn dummy_resource_ref() -> ResourceRef {
@@ -332,7 +333,6 @@ mod tests {
             value: i16,
             resource: Option<ResourceRef>,
         }
-        struct PinBoardPayload(u32);
 
         let a_resource = dummy_resource_mut();
         let mut out_write = None;
@@ -348,10 +348,8 @@ mod tests {
                 data.resource = Some(resources.write_resource(a_resource));
                 out_write = data.resource;
             },
-            |data: &TestPassData, pin_board: &PinBoard| {
+            |data: &TestPassData| {
                 assert_eq!(data.value, 1234);
-
-                pin_board.publish(PinBoardPayload(56));
             },
         );
 
@@ -363,11 +361,7 @@ mod tests {
                 data.resource = Some(resources.read_resource(out_write.unwrap()));
                 out_read = data.resource;
             },
-            |data: &TestPassData2, pin_board: &PinBoard| {
                 assert_eq!(data.value, -432);
-
-                let v = pin_board.get::<PinBoardPayload>().unwrap();
-                assert_eq!(v.0, 56);
             },
         );
 
