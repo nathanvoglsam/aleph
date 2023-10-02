@@ -153,6 +153,7 @@
       <sourceFolder url="file://$MODULE_DIR$/bin/aleph/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-frame-graph/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-type-id-hasher/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-arena-drop-list/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-rhi/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
