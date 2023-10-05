@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::frame_graph_builder::internal::{ResourceHandleInfo, ResourceRoot, ResourceVersion};
+use crate::internal::{ResourceHandleInfo, ResourceRoot, ResourceVersion};
 use crate::render_pass::IRenderPass;
 use crate::FrameGraphBuilder;
 use aleph_arena_drop_list::DropLink;
@@ -47,7 +47,7 @@ pub struct FrameGraph {
     pub(crate) render_passes: Vec<NonNull<dyn IRenderPass>>,
 
     /// Stores the names of each render pass keyed by the matching index in the render_passes list.
-    pub(crate) render_pass_names: Vec<(*const u8, usize)>,
+    pub(crate) render_pass_names: Vec<NonNull<str>>,
 
     pub(crate) root_resources: Vec<ResourceRoot>,
     pub(crate) resource_versions: Vec<ResourceVersion>,

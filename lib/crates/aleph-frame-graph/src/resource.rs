@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::frame_graph_builder::internal::VersionIndex;
+use crate::internal::VersionIndex;
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
 

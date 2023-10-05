@@ -130,9 +130,9 @@
 
 mod frame_graph;
 mod frame_graph_builder;
+mod internal;
 mod render_pass;
 mod resource;
-mod internal;
 
 pub use frame_graph::FrameGraph;
 pub use frame_graph_builder::{FrameGraphBuilder, ResourceRegistry};

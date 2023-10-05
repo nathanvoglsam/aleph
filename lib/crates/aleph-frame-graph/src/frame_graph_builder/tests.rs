@@ -117,7 +117,7 @@ pub fn test_builder() {
 
     let mut builder = FrameGraph::builder();
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-0",
         |data: &mut TestPassData, resources: &mut ResourceRegistry| {
             // Payload init
@@ -138,7 +138,7 @@ pub fn test_builder() {
         },
     );
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-1",
         |data: &mut TestPassData, resources: &mut ResourceRegistry| {
             // Payload init
@@ -159,7 +159,7 @@ pub fn test_builder() {
         },
     );
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-2",
         |data: &mut TestPassData2, resources: &mut ResourceRegistry| {
             // Payload init
@@ -211,7 +211,7 @@ pub fn test_handle_equality() {
         after_usage: BufferUsageFlags::default(),
     });
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-0",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_read_import = Some(resources.read_buffer(
@@ -229,7 +229,7 @@ pub fn test_handle_equality() {
         |_data: &()| {},
     );
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-1",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_write_import = Some(resources.write_buffer(
@@ -246,7 +246,7 @@ pub fn test_handle_equality() {
         |_data: &()| {},
     );
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-2",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_read_transient = Some(resources.read_buffer(
@@ -306,7 +306,7 @@ pub fn test_usage_collection() {
         after_usage: BufferUsageFlags::default(),
     });
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-0",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             resources.read_buffer(
@@ -324,7 +324,7 @@ pub fn test_usage_collection() {
         |_data: &()| {},
     );
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-1",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_write_import = Some(resources.write_buffer(
@@ -341,7 +341,7 @@ pub fn test_usage_collection() {
         |_data: &()| {},
     );
 
-    builder.add_callback_pass(
+    builder.add_pass(
         "test-pass-2",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             resources.read_buffer(

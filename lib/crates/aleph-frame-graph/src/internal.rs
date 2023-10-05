@@ -37,11 +37,57 @@ use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
 
-pub enum ResourceCreate {
-    Buffer(BufferCreate),
-    Texture(TextureCreate),
+#[derive(Default)]
+pub struct ResourceRoot {
+    /// The type of this resource
+    pub resource_type: ResourceType,
+
+    /// The accumulated usage flags for a texture resource. This is the union of all the ways a
+    /// resource is used as within the frame graph.
+    pub usage_tex: TextureUsageFlags,
+
+    /// The accumulated usage flags for a buffer resource. This is the union of all the ways a
+    /// resource is used as within the frame graph.
+    pub usage_buf: BufferUsageFlags,
 }
 
+pub enum ResourceType {
+    Uninitialized,
+    Buffer {
+        import_info: Option<ImportedBuffer>,
+        create_desc: BufferCreate,
+    },
+    Texture {
+        import_info: Option<ImportedTexture>,
+        create_desc: TextureCreate,
+    },
+}
+
+impl Default for ResourceType {
+    fn default() -> Self {
+        ResourceType::Uninitialized
+    }
+}
+
+pub struct ImportedBuffer {
+    pub resource: AnyArc<dyn IBuffer>,
+    pub before_sync: BarrierSync,
+    pub before_usage: BufferUsageFlags,
+    pub after_sync: BarrierSync,
+    pub after_usage: BufferUsageFlags,
+}
+
+pub struct ImportedTexture {
+    pub resource: AnyArc<dyn ITexture>,
+    pub before_sync: BarrierSync,
+    pub before_usage: TextureUsageFlags,
+    pub before_layout: ImageLayout,
+    pub after_sync: BarrierSync,
+    pub after_usage: TextureUsageFlags,
+    pub after_layout: ImageLayout,
+}
+
+#[derive(Default)]
 pub struct BufferCreate {
     /// The size of the buffer to be created
     pub size: u64,
@@ -60,6 +106,7 @@ pub struct BufferCreate {
     pub name: Option<NonNull<str>>,
 }
 
+#[derive(Default)]
 pub struct TextureCreate {
     pub width: u32,
     pub height: u32,
@@ -82,6 +129,20 @@ pub struct TextureCreate {
     /// that the passes are stored in. It is only sound to access this string immutably, and the
     /// caller must ensure the relevant arena is still live.
     pub name: Option<NonNull<str>>,
+}
+
+#[derive(Default)]
+pub struct PassAccessInfo {
+    pub current_pass_index: usize,
+    pub reads: Vec<ResourceAccess>,
+    pub writes: Vec<ResourceAccess>,
+}
+
+impl PassAccessInfo {
+    pub fn clear(&mut self) {
+        self.reads.clear();
+        self.writes.clear();
+    }
 }
 
 pub enum ResourceAccess {
@@ -116,40 +177,6 @@ pub struct TextureAccess {
 
     /// The image layout the texture needs to be in for the registering pass
     pub layout: ImageLayout,
-}
-
-/// Enum that encodes a resource as a combination of either a buffer or a texture
-pub enum ResourceVariant {
-    Buffer(AnyArc<dyn IBuffer>),
-    Texture(AnyArc<dyn ITexture>),
-}
-
-pub struct ImportedResource {
-    pub resource: ResourceVariant,
-    pub before_sync: BarrierSync,
-    pub before_usage_buf: BufferUsageFlags,
-    pub before_usage_tex: TextureUsageFlags,
-    pub before_layout: ImageLayout,
-    pub after_sync: BarrierSync,
-    pub after_usage_buf: BufferUsageFlags,
-    pub after_usage_tex: TextureUsageFlags,
-    pub after_layout: ImageLayout,
-}
-
-#[derive(Default)]
-pub struct PassAccessInfo {
-    pub current_pass_index: usize,
-    pub reads: Vec<ResourceAccess>,
-    pub writes: Vec<ResourceAccess>,
-    pub creates: Vec<ResourceCreate>,
-}
-
-impl PassAccessInfo {
-    pub fn clear(&mut self) {
-        self.reads.clear();
-        self.writes.clear();
-        self.creates.clear();
-    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
@@ -214,33 +241,7 @@ impl ResourceHandleInfo {
         self.written = true;
     }
 
-    pub fn is_written(&mut self) -> bool {
+    pub fn is_written(&self) -> bool {
         self.written
-    }
-}
-
-#[derive(Default)]
-pub struct ResourceRoot {
-    /// The type of this resource
-    pub resource_type: ResourceType,
-
-    /// The accumulated usage flags for a texture resource. This is the union of all the ways a
-    /// resource is used as within the frame graph.
-    pub usage_tex: TextureUsageFlags,
-
-    /// The accumulated usage flags for a buffer resource. This is the union of all the ways a
-    /// resource is used as within the frame graph.
-    pub usage_buf: BufferUsageFlags,
-}
-
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum ResourceType {
-    Buffer = 0,
-    Texture,
-}
-
-impl Default for ResourceType {
-    fn default() -> Self {
-        ResourceType::Buffer
     }
 }
