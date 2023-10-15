@@ -2276,16 +2276,16 @@ bitflags! {
         const COPY_DEST = 0x2;
 
         /// Specifies usage as a sampled image
-        const SAMPLED_ACCESS = 0x2;
+        const SAMPLED_ACCESS = 0x4;
 
         /// Specifies usage through an unordered access view (storage image)
-        const UNORDERED_ACCESS = 0x4;
+        const UNORDERED_ACCESS = 0x8;
 
         /// Specifies usage as a render target
-        const RENDER_TARGET = 0x8;
+        const RENDER_TARGET = 0x10;
 
-        /// Specifies the textuer can be used as a cubemap face
-        const CUBE_FACE = 0x10;
+        /// Specifies the texture can be used as a cubemap face
+        const CUBE_FACE = 0x20;
     }
 }
 
