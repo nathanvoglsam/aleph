@@ -537,8 +537,14 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
-        let mut usage = vk::BufferUsageFlags::TRANSFER_SRC | vk::BufferUsageFlags::TRANSFER_DST;
+        let mut usage = vk::BufferUsageFlags::default();
 
+        if desc.usage.contains(BufferUsageFlags::COPY_SOURCE) {
+            usage |= vk::BufferUsageFlags::TRANSFER_SRC
+        }
+        if desc.usage.contains(BufferUsageFlags::COPY_DEST) {
+            usage |= vk::BufferUsageFlags::TRANSFER_DST
+        }
         if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
             usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
         }
