@@ -2152,14 +2152,16 @@ bitflags! {
     #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct BufferUsageFlags: u32 {
         const NONE = 0x0;
-        const VERTEX_BUFFER = 0x1;
-        const INDEX_BUFFER = 0x2;
-        const CONSTANT_BUFFER = 0x4;
-        const UNORDERED_ACCESS = 0x8;
-        const TEXEL_BUFFER = 0x10;
-        const INDIRECT_DRAW_ARGS = 0x20;
-        const ACCELERATION_STRUCTURE_BUILD_INPUT = 0x40;
-        const ACCELERATION_STRUCTURE_STORAGE = 0x80;
+        const COPY_SOURCE = 0x1;
+        const COPY_DEST = 0x2;
+        const VERTEX_BUFFER = 0x4;
+        const INDEX_BUFFER = 0x8;
+        const CONSTANT_BUFFER = 0x10;
+        const UNORDERED_ACCESS = 0x20;
+        const TEXEL_BUFFER = 0x40;
+        const INDIRECT_DRAW_ARGS = 0x80;
+        const ACCELERATION_STRUCTURE_BUILD_INPUT = 0x100;
+        const ACCELERATION_STRUCTURE_STORAGE = 0x200;
     }
 }
 
