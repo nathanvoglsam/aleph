@@ -182,8 +182,6 @@ impl FrameGraphBuilder {
                 setup_fn(payload.as_mut(), &mut resources);
             }
 
-            self.pass_access_info.clear();
-
             // Construct the CallbackRenderPass instance and handoff to add_pass
             let payload = NonNull::from(payload);
             let callback_pass = CallbackRenderPass::new(payload, exec_fn);
@@ -228,13 +226,29 @@ impl FrameGraphBuilder {
         DropLink::append_drop_list(&self.graph_arena, &mut self.pass_dropper_head, pass);
 
         unsafe {
+            let reads = self
+                .graph_arena
+                .alloc_slice_clone(&self.pass_access_info.reads);
+            let reads = NonNull::from(reads);
+            let writes = self
+                .graph_arena
+                .alloc_slice_clone(&self.pass_access_info.writes);
+            let writes = NonNull::from(writes);
+
             let pass = NonNull::from(pass.as_mut() as &mut dyn IRenderPass);
             let pass = RenderPass {
                 pass,
                 name,
+                reads,
+                writes,
             };
             self.render_passes.push(pass);
         }
+
+        // Reset the pass info accumulator. This still holds onto allocated memory so we should stop
+        // allocating once we've grown to the size of our biggest pass
+        self.pass_access_info.clear();
+    }
     }
 
     pub(crate) fn read_texture<R: Into<ResourceRef>>(

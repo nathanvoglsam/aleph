@@ -41,6 +41,8 @@ use std::ptr::NonNull;
 pub struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
     pub name: NonNull<str>,
+    pub reads: NonNull<[ResourceAccess]>,
+    pub writes: NonNull<[ResourceAccess]>,
 }
 
 #[derive(Default)]
