@@ -195,6 +195,7 @@ impl FrameGraphBuilder {
         // With the graph finalized we can now iterate all our resource versions and collect the
         // full set of usage flags the resources have been declared to be used with.
         self.collect_resource_usages();
+        self.resolve_usage_flags();
         self.validate_imported_resource_usages();
 
         let arena = std::mem::take(&mut self.graph_arena);
@@ -240,18 +241,18 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: TextureUsageFlags,
+        access: BarrierAccess,
         layout: ImageLayout,
     ) -> ResourceRef {
         let r = resource.into();
 
         self.assert_resource_handle_is_texture(r);
-        self.add_texture_flags_to_version_for(r, usage);
+        self.add_texture_flags_to_version_for(r, access);
 
         let desc = TextureAccess {
             texture: r.0,
             sync,
-            usage,
+            access,
             layout,
         };
         self.pass_access_info
@@ -264,17 +265,17 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: BufferUsageFlags,
+        access: BarrierAccess,
     ) -> ResourceRef {
         let r = resource.into();
 
         self.assert_resource_handle_is_buffer(r);
-        self.add_buffer_flags_to_version_for(r, usage);
+        self.add_buffer_flags_to_version_for(r, access);
 
         let desc = BufferAccess {
             buffer: r.0,
             sync,
-            usage,
+            access,
         };
         self.pass_access_info
             .reads
@@ -286,7 +287,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: TextureUsageFlags,
+        access: BarrierAccess,
         layout: ImageLayout,
     ) -> ResourceMut {
         let r = resource.into();
@@ -299,12 +300,12 @@ impl FrameGraphBuilder {
         //
         // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
         // matching entry in resource_versions to write our usage flags into.
-        self.add_texture_flags_to_version_for(renamed_r, usage);
+        self.add_texture_flags_to_version_for(renamed_r, access);
 
         let desc = TextureAccess {
             texture: r.0,
             sync,
-            usage,
+            access,
             layout,
         };
         self.pass_access_info
@@ -318,7 +319,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: BufferUsageFlags,
+        access: BarrierAccess,
     ) -> ResourceMut {
         let r = resource.into();
 
@@ -330,12 +331,12 @@ impl FrameGraphBuilder {
         //
         // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
         // matching entry in resource_versions to write our usage flags into.
-        self.add_buffer_flags_to_version_for(renamed_r, usage);
+        self.add_buffer_flags_to_version_for(renamed_r, access);
 
         let desc = BufferAccess {
             buffer: r.0,
             sync,
-            usage,
+            access,
         };
         self.pass_access_info
             .writes
@@ -361,7 +362,18 @@ impl FrameGraphBuilder {
         handle_info.mark_written();
     }
 
-    pub(crate) fn create_texture(&mut self, desc: &TextureDesc) -> ResourceMut {
+    pub(crate) fn create_texture(
+        &mut self,
+        desc: &TextureDesc,
+        sync: BarrierSync,
+        access: BarrierAccess,
+        layout: ImageLayout,
+    ) -> ResourceMut {
+        debug_assert!(
+            desc.usage.is_empty(),
+            "The value of desc.usage is ignored, do not use it!"
+        );
+
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let create_desc = TextureCreate {
@@ -375,7 +387,10 @@ impl FrameGraphBuilder {
             mip_levels: desc.mip_levels,
             sample_count: desc.sample_count,
             sample_quality: desc.sample_quality,
-            usage: desc.usage,
+            sync,
+            access,
+            layout,
+            usage: Default::default(),
             name,
         };
 
@@ -387,17 +402,29 @@ impl FrameGraphBuilder {
                 import_info: None,
             },
         );
-        self.add_texture_flags_to_version_for(r, desc.usage);
+        self.add_texture_flags_to_version_for(r, access);
 
         r
     }
 
-    pub(crate) fn create_buffer(&mut self, desc: &BufferDesc) -> ResourceMut {
+    pub(crate) fn create_buffer(
+        &mut self,
+        desc: &BufferDesc,
+        sync: BarrierSync,
+        access: BarrierAccess,
+    ) -> ResourceMut {
+        debug_assert!(
+            desc.usage.is_empty(),
+            "The value of desc.usage is ignored, do not use it!"
+        );
+
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let create_desc = BufferCreate {
             size: desc.size,
-            usage: desc.usage,
+            sync,
+            access,
+            usage: Default::default(),
             name,
         };
 
@@ -409,7 +436,7 @@ impl FrameGraphBuilder {
                 import_info: None,
             },
         );
-        self.add_buffer_flags_to_version_for(r, desc.usage);
+        self.add_buffer_flags_to_version_for(r, access);
 
         r
     }
@@ -428,25 +455,25 @@ impl FrameGraphBuilder {
     pub(crate) fn add_buffer_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
-        usage: BufferUsageFlags,
+        access: BarrierAccess,
     ) {
         let r = r.into();
 
         // Add the requested usage flags to the resource version's usage set
         let version_id = r.0.version_id();
-        self.resource_versions[version_id as usize].usage_buf |= usage;
+        self.resource_versions[version_id as usize].access |= access;
     }
 
     pub(crate) fn add_texture_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
-        usage: TextureUsageFlags,
+        access: BarrierAccess,
     ) {
         let r = r.into();
 
         // Add the requested usage flags to the resource version's usage set
         let version_id = r.0.version_id();
-        self.resource_versions[version_id as usize].usage_tex |= usage;
+        self.resource_versions[version_id as usize].access |= access;
     }
 
     pub(crate) fn increment_handle_for_write(
@@ -468,8 +495,8 @@ impl FrameGraphBuilder {
             previous: VersionIndex::new(r.0.version_id()).unwrap(),
 
             // Defaults to empty, this will be initialized elsewhere
-            usage_tex: Default::default(),
-            usage_buf: Default::default(),
+            access: Default::default(),
+
             render_pass,
         });
         self.resource_handles.push(ResourceHandleInfo::default());
@@ -499,8 +526,7 @@ impl FrameGraphBuilder {
             previous: VersionIndex::INVALID,
 
             // Defaults to empty, this will be initialized elsewhere
-            usage_tex: Default::default(),
-            usage_buf: Default::default(),
+            access: Default::default(),
 
             render_pass,
         });
@@ -536,8 +562,30 @@ impl FrameGraphBuilder {
     pub(crate) fn collect_resource_usages(&mut self) {
         for version in self.resource_versions.iter() {
             let root = &mut self.root_resources[version.root_resource as usize];
-            root.usage_tex |= version.usage_tex;
-            root.usage_buf |= version.usage_buf;
+            root.access_flags |= version.access;
+        }
+    }
+
+    /// Iterates all root resources and converts the accumulated access flags into the usage flags
+    /// needed to satisfy all the specified usages.
+    pub(crate) fn resolve_usage_flags(&mut self) {
+        for root in self.root_resources.iter_mut() {
+            match &mut root.resource_type {
+                ResourceType::Uninitialized => {}
+                ResourceType::Buffer {
+                    import_info: None,
+                    create_desc,
+                } => {
+                    create_desc.usage = barrier_access_to_buffer_usage_flags(root.access_flags);
+                }
+                ResourceType::Texture {
+                    import_info: None,
+                    create_desc,
+                } => {
+                    create_desc.usage = barrier_access_to_texture_usage_flags(root.access_flags);
+                }
+                _ => {} // Do nothing for imported resources
+            }
         }
     }
 
@@ -556,12 +604,13 @@ impl FrameGraphBuilder {
                 } => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
+                    let root_usage = barrier_access_to_buffer_usage_flags(root.access_flags);
                     assert!(
-                        desc.usage.contains(root.usage_buf),
+                        desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
                         r_name,
                         desc.usage,
-                        root.usage_buf
+                        root_usage
                     );
                 }
                 ResourceType::Texture {
@@ -570,12 +619,13 @@ impl FrameGraphBuilder {
                 } => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
+                    let root_usage = barrier_access_to_texture_usage_flags(root.access_flags);
                     assert!(
-                        desc.usage.contains(root.usage_tex),
+                        desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
                         r_name,
                         desc.usage,
-                        root.usage_buf
+                        root_usage
                     );
                 }
                 _ => {}
@@ -624,10 +674,10 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: TextureUsageFlags,
+        access: BarrierAccess,
         layout: ImageLayout,
     ) -> ResourceRef {
-        self.0.read_texture(resource, sync, usage, layout)
+        self.0.read_texture(resource, sync, access, layout)
     }
 
     /// Declares a read access to the given buffer, with the given sync parameters.
@@ -638,9 +688,9 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: BufferUsageFlags,
+        access: BarrierAccess,
     ) -> ResourceRef {
-        self.0.read_buffer(resource, sync, usage)
+        self.0.read_buffer(resource, sync, access)
     }
 
     /// Declares a write access to the given texture, with the given sync parameters.
@@ -656,10 +706,10 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: TextureUsageFlags,
+        access: BarrierAccess,
         layout: ImageLayout,
     ) -> ResourceMut {
-        self.0.write_texture(resource, sync, usage, layout)
+        self.0.write_texture(resource, sync, access, layout)
     }
 
     /// Declares a write access to the given buffer, with the given sync parameters.
@@ -675,43 +725,56 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        usage: BufferUsageFlags,
+        access: BarrierAccess,
     ) -> ResourceMut {
-        self.0.write_buffer(resource, sync, usage)
+        self.0.write_buffer(resource, sync, access)
     }
 
-    /// Declares that a new, transient texture will be created and used by the pass.
+    /// Declares that a new, transient texture will be created and used by the pass. Use 'access' to
+    /// specify how the creating pass will use the resource.
     ///
     /// The resource will be created with the given parameters with only a single exception. The
-    /// resource 'usage' flagged in the resource description 'desc' encodes only what usage flags
-    /// the creating pass will use the resource as and _NOT_ the set of all usage flags the resource
-    /// can ever be used as. This is a noteworthy difference compared to the documentation on the
-    /// desc struct, which _will_ say otherwise, as it is intended for creating new resources at
-    /// the RHI level.
+    /// resource usage flags in the [TextureDesc] will be ignored. The frame graph implementation
+    /// will not use the given flags, and instead will collect all the unique ways the resource was
+    /// used within the frame graph and initialize the resource with the usage flag it calculates
+    /// itself. This is a noteworthy difference compared to the documentation on the [TextureDesc],
+    /// which _will_ say otherwise, as it is intended for creating new resources at the RHI level.
     ///
-    /// The transient resource will be created by the frame graph internally. The full set of usage
-    /// flags will be deduced as the union of all the usages declared for the resource across all
-    /// passes within the graph. Otherwise a pass would have to know all the ways a resource would
-    /// be used, either leading to overly broad usage flags or poorly composable passes.
-    pub fn create_texture(&mut self, desc: &TextureDesc) -> ResourceMut {
-        self.0.create_texture(desc)
+    /// It would be intractable to require specifying all the usage flags up front with this
+    /// function as it is impossible for a frame graph pass to know all the ways the resource will
+    /// be used in the graph. Requiring a graph pass to know this would either have passes
+    /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
+    pub fn create_texture(
+        &mut self,
+        desc: &TextureDesc,
+        sync: BarrierSync,
+        access: BarrierAccess,
+        layout: ImageLayout,
+    ) -> ResourceMut {
+        self.0.create_texture(desc, sync, access, layout)
     }
 
-    /// Declares that a new, transient buffer will be created and used by the pass.
+    /// Declares that a new, transient buffer will be created and used by the pass. Use 'access' to
+    /// specify how the creating pass will use the resource.
     ///
     /// The resource will be created with the given parameters with only a single exception. The
-    /// resource 'usage' flagged in the resource description 'desc' encodes only what usage flags
-    /// the creating pass will use the resource as and _NOT_ the set of all usage flags the resource
-    /// can ever be used as. This is a noteworthy difference compared to the documentation on the
-    /// desc struct, which _will_ say otherwise, as it is intended for creating new resources at
-    /// the RHI level.
+    /// resource usage flags in the [BufferDesc] will be ignored. The frame graph implementation
+    /// will not use the given flags, and instead will collect all the unique ways the resource was
+    /// used within the frame graph and initialize the resource with the usage flag it calculates
+    /// itself. This is a noteworthy difference compared to the documentation on the [BufferDesc],
+    /// which _will_ say otherwise, as it is intended for creating new resources at the RHI level.
     ///
-    /// The transient resource will be created by the frame graph internally. The full set of usage
-    /// flags will be deduced as the union of all the usages declared for the resource across all
-    /// passes within the graph. Otherwise a pass would have to know all the ways a resource would
-    /// be used, either leading to overly broad usage flags or poorly composable passes.
-    pub fn create_buffer(&mut self, desc: &BufferDesc) -> ResourceMut {
-        self.0.create_buffer(desc)
+    /// It would be intractable to require specifying all the usage flags up front with this
+    /// function as it is impossible for a frame graph pass to know all the ways the resource will
+    /// be used in the graph. Requiring a graph pass to know this would either have passes
+    /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
+    pub fn create_buffer(
+        &mut self,
+        desc: &BufferDesc,
+        sync: BarrierSync,
+        access: BarrierAccess,
+    ) -> ResourceMut {
+        self.0.create_buffer(desc, sync, access)
     }
 }
 
@@ -722,9 +785,9 @@ pub struct TextureImportDesc<'a> {
     /// The pipeline stage to synchronize with on first use within the frame graph
     pub before_sync: BarrierSync,
 
-    /// The usage flags to synchronize with before the first use of the resource within the frame
+    /// The access flags to synchronize with before the first use of the resource within the frame
     /// graph
-    pub before_usage: TextureUsageFlags,
+    pub before_access: BarrierAccess,
 
     /// The image layout the resource is expected to be in prior to the frame graph executing
     pub before_layout: ImageLayout,
@@ -733,8 +796,8 @@ pub struct TextureImportDesc<'a> {
     /// completed
     pub after_sync: BarrierSync,
 
-    /// The usage flags to synchronize with as the immediate use after the frame graph is completed
-    pub after_usage: TextureUsageFlags,
+    /// The access flags to synchronize with as the immediate use after the frame graph is completed
+    pub after_access: BarrierAccess,
 
     /// The image layout the resource is expected to be transitioned to when completing the frame
     /// graph
@@ -748,16 +811,16 @@ pub struct BufferImportDesc<'a> {
     /// The pipeline stage to synchronize with on first use within the frame graph
     pub before_sync: BarrierSync,
 
-    /// The usage flags to synchronize with before the first use of the resource within the frame
+    /// The access flags to synchronize with before the first use of the resource within the frame
     /// graph
-    pub before_usage: BufferUsageFlags,
+    pub before_access: BarrierAccess,
 
     /// The pipeline stage to synchronize with as the immediate use after the frame graph is
     /// completed
     pub after_sync: BarrierSync,
 
-    /// The usage flags to synchronize with as the immediate use after the frame graph is completed
-    pub after_usage: BufferUsageFlags,
+    /// The access flags to synchronize with as the immediate use after the frame graph is completed
+    pub after_access: BarrierAccess,
 }
 
 #[cfg(test)]
