@@ -79,6 +79,10 @@ pub struct FrameGraphBuilder {
     /// is used to help validate resources are accessed in a valid way.
     pub(crate) resource_handles: Vec<ResourceHandleInfo>,
 
+    /// The set of resources within the graph that were imported, stored as indices into the
+    /// root_resources array.
+    pub(crate) imported_resources: Vec<u16>,
+
     /// This will hold the collected pass information, such as reads/writes/creates for whatever
     /// pass is being setup current. The data stored in here is ephemeral and will be cleared
     /// between each 'add pass' call. It simply serves to accumulate the information from a pass
@@ -102,54 +106,11 @@ impl FrameGraphBuilder {
             root_resources: Default::default(),
             resource_versions: Default::default(),
             resource_handles: Default::default(),
+            imported_resources: Default::default(),
             pass_access_info: Default::default(),
             pass_dropper_head: Default::default(),
             payload_dropper_head: Default::default(),
         }
-    }
-
-    pub fn import_texture(&mut self, desc: &TextureImportDesc) -> ResourceMut {
-        let imported = ImportedTexture {
-            resource: desc.resource.upgrade(),
-            before_sync: desc.before_sync,
-            before_usage: desc.before_usage,
-            before_layout: desc.before_layout,
-            after_sync: desc.after_sync,
-            after_usage: desc.after_usage,
-            after_layout: desc.after_layout,
-        };
-        let r_type = ResourceType::Texture {
-            create_desc: TextureCreate::default(),
-            import_info: Some(imported),
-        };
-
-        // render pass index doesn't matter here as imported resources aren't created by a render
-        // pass
-        let r = self.create_new_handle(usize::MAX);
-        self.set_resource_type_for(r, r_type);
-
-        r
-    }
-
-    pub fn import_buffer(&mut self, desc: &BufferImportDesc) -> ResourceMut {
-        let imported = ImportedBuffer {
-            resource: desc.resource.upgrade(),
-            before_sync: desc.before_sync,
-            before_usage: desc.before_usage,
-            after_sync: desc.after_sync,
-            after_usage: desc.after_usage,
-        };
-        let r_type = ResourceType::Buffer {
-            create_desc: BufferCreate::default(),
-            import_info: Some(imported),
-        };
-
-        // render pass index doesn't matter here as imported resources aren't created by a render
-        // pass
-        let r = self.create_new_handle(usize::MAX);
-        self.set_resource_type_for(r, r_type);
-
-        r
     }
 
     pub fn add_pass<
@@ -249,6 +210,51 @@ impl FrameGraphBuilder {
         // allocating once we've grown to the size of our biggest pass
         self.pass_access_info.clear();
     }
+
+    pub(crate) fn import_texture(&mut self, desc: &TextureImportDesc) -> ResourceMut {
+        let imported = ImportedTexture {
+            resource: desc.resource.upgrade(),
+            before_sync: desc.before_sync,
+            before_access: desc.before_access,
+            before_layout: desc.before_layout,
+            after_sync: desc.after_sync,
+            after_access: desc.after_access,
+            after_layout: desc.after_layout,
+        };
+        let r_type = ResourceType::Texture {
+            create_desc: TextureCreate::default(),
+            import_info: Some(imported),
+        };
+
+        // render pass index doesn't matter here as imported resources aren't created by a render
+        // pass
+        let r = self.create_new_handle(usize::MAX);
+        self.set_resource_type_for(r, r_type);
+        self.add_imported_resource_to_list(r);
+
+        r
+    }
+
+    pub(crate) fn import_buffer(&mut self, desc: &BufferImportDesc) -> ResourceMut {
+        let imported = ImportedBuffer {
+            resource: desc.resource.upgrade(),
+            before_sync: desc.before_sync,
+            before_access: desc.before_access,
+            after_sync: desc.after_sync,
+            after_access: desc.after_access,
+        };
+        let r_type = ResourceType::Buffer {
+            create_desc: BufferCreate::default(),
+            import_info: Some(imported),
+        };
+
+        // render pass index doesn't matter here as imported resources aren't created by a render
+        // pass
+        let r = self.create_new_handle(usize::MAX);
+        self.set_resource_type_for(r, r_type);
+        self.add_imported_resource_to_list(r);
+
+        r
     }
 
     pub(crate) fn read_texture<R: Into<ResourceRef>>(
@@ -453,6 +459,11 @@ impl FrameGraphBuilder {
         self.add_buffer_flags_to_version_for(r, access);
 
         r
+    }
+
+    pub(crate) fn add_imported_resource_to_list(&mut self, r: impl Into<ResourceRef>) {
+        let r = r.into();
+        self.imported_resources.push(r.0.root_id());
     }
 
     pub(crate) fn set_resource_type_for(
