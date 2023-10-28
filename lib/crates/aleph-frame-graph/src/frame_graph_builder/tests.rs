@@ -124,12 +124,15 @@ pub fn test_builder() {
             data.value = 54321;
 
             // Create a transient resource and send it out of the setup closure
-            data.resource = Some(resources.create_buffer(&BufferDesc {
-                size: 256,
-                // usage,
-                name: Some("test-pass-0-transient-resource"),
-                ..Default::default()
-            }));
+            data.resource = Some(resources.create_buffer(
+                &BufferDesc {
+                    size: 256,
+                    name: Some("test-pass-0-transient-resource"),
+                    ..Default::default()
+                },
+                BarrierSync::COMPUTE_SHADING,
+                BarrierAccess::SHADER_WRITE,
+            ));
             out_create = data.resource;
         },
         |data: &TestPassData| {
@@ -149,7 +152,7 @@ pub fn test_builder() {
             data.resource = Some(resources.write_buffer(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
-                BufferUsageFlags::UNORDERED_ACCESS,
+                BarrierAccess::SHADER_WRITE,
             ));
             out_write = data.resource;
         },
@@ -170,7 +173,7 @@ pub fn test_builder() {
             data.resource = Some(resources.read_buffer(
                 out_write.unwrap(),
                 BarrierSync::PIXEL_SHADING,
-                BufferUsageFlags::CONSTANT_BUFFER,
+                BarrierAccess::CONSTANT_BUFFER_READ,
             ));
             out_read = data.resource;
         },
@@ -206,9 +209,9 @@ pub fn test_handle_equality() {
     let imported_resource = builder.import_buffer(&BufferImportDesc {
         resource: mock_buffer.as_ref(),
         before_sync: BarrierSync::COMPUTE_SHADING,
-        before_usage: BufferUsageFlags::UNORDERED_ACCESS,
+        before_access: BarrierAccess::SHADER_WRITE,
         after_sync: BarrierSync::COPY,
-        after_usage: BufferUsageFlags::default(),
+        after_access: BarrierAccess::COPY_READ,
     });
 
     builder.add_pass(
@@ -217,14 +220,17 @@ pub fn test_handle_equality() {
             out_read_import = Some(resources.read_buffer(
                 imported_resource,
                 BarrierSync::PIXEL_SHADING,
-                BufferUsageFlags::CONSTANT_BUFFER,
+                BarrierAccess::CONSTANT_BUFFER_READ,
             ));
-            out_create = Some(resources.create_buffer(&BufferDesc {
-                size: 256,
-                // usage,
-                name: Some("test-pass-0-transient-resource"),
-                ..Default::default()
-            }));
+            out_create = Some(resources.create_buffer(
+                &BufferDesc {
+                    size: 256,
+                    name: Some("test-pass-0-transient-resource"),
+                    ..Default::default()
+                },
+                BarrierSync::COMPUTE_SHADING,
+                BarrierAccess::SHADER_WRITE,
+            ));
         },
         |_data: &()| {},
     );
@@ -235,12 +241,12 @@ pub fn test_handle_equality() {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
-                BufferUsageFlags::UNORDERED_ACCESS,
+                BarrierAccess::SHADER_WRITE,
             ));
             out_write_transient = Some(resources.write_buffer(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
-                BufferUsageFlags::UNORDERED_ACCESS,
+                BarrierAccess::SHADER_WRITE,
             ));
         },
         |_data: &()| {},
@@ -252,7 +258,7 @@ pub fn test_handle_equality() {
             out_read_transient = Some(resources.read_buffer(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
-                BufferUsageFlags::CONSTANT_BUFFER,
+                BarrierAccess::CONSTANT_BUFFER_READ,
             ));
         },
         |_data: &()| {},
@@ -301,9 +307,9 @@ pub fn test_usage_collection() {
     let imported_resource = builder.import_buffer(&BufferImportDesc {
         resource: mock_buffer.as_ref(),
         before_sync: BarrierSync::COMPUTE_SHADING,
-        before_usage: BufferUsageFlags::UNORDERED_ACCESS,
+        before_access: BarrierAccess::SHADER_WRITE,
         after_sync: BarrierSync::COPY,
-        after_usage: BufferUsageFlags::default(),
+        after_access: BarrierAccess::COPY_READ,
     });
 
     builder.add_pass(
@@ -312,14 +318,17 @@ pub fn test_usage_collection() {
             resources.read_buffer(
                 imported_resource,
                 BarrierSync::VERTEX_SHADING,
-                BufferUsageFlags::VERTEX_BUFFER,
+                BarrierAccess::VERTEX_BUFFER_READ,
             );
-            out_create = Some(resources.create_buffer(&BufferDesc {
-                size: 256,
-                usage: BufferUsageFlags::INDEX_BUFFER,
-                name: Some("test-pass-0-transient-resource"),
-                ..Default::default()
-            }));
+            out_create = Some(resources.create_buffer(
+                &BufferDesc {
+                    size: 256,
+                    name: Some("test-pass-0-transient-resource"),
+                    ..Default::default()
+                },
+                BarrierSync::VERTEX_SHADING,
+                BarrierAccess::INDEX_BUFFER_READ,
+            ));
         },
         |_data: &()| {},
     );
@@ -330,12 +339,12 @@ pub fn test_usage_collection() {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
-                BufferUsageFlags::UNORDERED_ACCESS,
+                BarrierAccess::SHADER_WRITE,
             ));
             out_write_transient = Some(resources.write_buffer(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
-                BufferUsageFlags::UNORDERED_ACCESS,
+                BarrierAccess::SHADER_WRITE,
             ));
         },
         |_data: &()| {},
@@ -347,7 +356,7 @@ pub fn test_usage_collection() {
             resources.read_buffer(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
-                BufferUsageFlags::CONSTANT_BUFFER,
+                BarrierAccess::CONSTANT_BUFFER_READ,
             );
         },
         |_data: &()| {},
@@ -358,19 +367,19 @@ pub fn test_usage_collection() {
     let out_create = out_create.unwrap();
 
     let imported_r = imported_resource.0.root_id();
-    let imported_usage = graph.root_resources[imported_r as usize].usage_buf;
+    let imported_usage = graph.root_resources[imported_r as usize].access_flags;
     assert_eq!(
         imported_usage,
-        BufferUsageFlags::UNORDERED_ACCESS | BufferUsageFlags::VERTEX_BUFFER
+        BarrierAccess::SHADER_WRITE | BarrierAccess::VERTEX_BUFFER_READ
     );
 
     let out_create_r = out_create.0.root_id();
-    let out_create_usage = graph.root_resources[out_create_r as usize].usage_buf;
+    let out_create_usage = graph.root_resources[out_create_r as usize].access_flags;
     assert_eq!(
         out_create_usage,
-        BufferUsageFlags::UNORDERED_ACCESS
-            | BufferUsageFlags::CONSTANT_BUFFER
-            | BufferUsageFlags::INDEX_BUFFER
+        BarrierAccess::SHADER_WRITE
+            | BarrierAccess::CONSTANT_BUFFER_READ
+            | BarrierAccess::INDEX_BUFFER_READ
     );
 
     unsafe {
