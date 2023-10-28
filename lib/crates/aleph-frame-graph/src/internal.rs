@@ -33,9 +33,15 @@
 //!
 
 use crate::resource::ResourceId;
+use crate::IRenderPass;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
+
+pub struct RenderPass {
+    pub pass: NonNull<dyn IRenderPass>,
+    pub name: NonNull<str>,
+}
 
 #[derive(Default)]
 pub struct ResourceRoot {

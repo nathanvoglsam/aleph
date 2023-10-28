@@ -27,6 +27,28 @@
 // SOFTWARE.
 //
 
+//!
+//! Idea for Aliasing Resource in the Frame Graph
+//!
+//! - Graph is constructed without doing any aliasing analysis
+//! - Graph gets linearized into a series of passes on a timeline with all the necessary barriers
+//!   still without any aliasing analysis
+//! - Track each resource's first and last pass that they're used by in our serialized pass order
+//! - Once we know when a resource is created and destroyed we can walk over our ordered list of
+//!   passes and, using an arbitrary logical address space, 'allocate' and 'free' each resource as
+//!   their lifetime progresses.
+//! - This effectively replays the frame (without actually recording it) and allows us to allocate
+//!   resources with disparate memory on top of the same address space, giving us aliasing.
+//! - The final step of this is to keep track of which resources intersected a particular region
+//!   of memory so we know what resources are aliased so we can insert aliasing barriers
+//! - This means we only have to care about resource aliasing at the end of the pipeline, the graph
+//!   construction doesn't need to care about it
+//! - This ignores optimization choices when linearizing the graph into a sequence of passes. We
+//!   could choice a specific order that maximizes aliasing, but this is typically at odds with
+//!   having our pipelines fed as it encourages narrow pipes and short resource lifetimes. Open
+//!   problem to be solved when it matters.
+//!
+
 use crate::internal::*;
 use crate::render_pass::CallbackRenderPass;
 use crate::resource::ResourceId;
@@ -48,10 +70,7 @@ pub struct FrameGraphBuilder {
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: Vec<NonNull<dyn IRenderPass>>,
-
-    /// Stores the names of each render pass keyed by the matching index in the render_passes list.
-    pub(crate) render_pass_names: Vec<NonNull<str>>,
+    pub(crate) render_passes: Vec<RenderPass>,
 
     pub(crate) root_resources: Vec<ResourceRoot>,
     pub(crate) resource_versions: Vec<ResourceVersion>,
@@ -80,7 +99,6 @@ impl FrameGraphBuilder {
             graph_arena: Default::default(),
             // build_arena: Default::default(),
             render_passes: Default::default(),
-            render_pass_names: Default::default(),
             root_resources: Default::default(),
             resource_versions: Default::default(),
             resource_handles: Default::default(),
@@ -181,7 +199,6 @@ impl FrameGraphBuilder {
 
         let arena = std::mem::take(&mut self.graph_arena);
         let render_passes = std::mem::take(&mut self.render_passes);
-        let render_pass_names = std::mem::take(&mut self.render_pass_names);
         let root_resources = std::mem::take(&mut self.root_resources);
         let resource_versions = std::mem::take(&mut self.resource_versions);
         let resource_handles = std::mem::take(&mut self.resource_handles);
@@ -191,7 +208,6 @@ impl FrameGraphBuilder {
         FrameGraph {
             arena,
             render_passes,
-            render_pass_names,
             root_resources,
             resource_versions,
             resource_handles,
@@ -212,8 +228,11 @@ impl FrameGraphBuilder {
 
         unsafe {
             let pass = NonNull::from(pass.as_mut() as &mut dyn IRenderPass);
+            let pass = RenderPass {
+                pass,
+                name,
+            };
             self.render_passes.push(pass);
-            self.render_pass_names.push(name);
         }
     }
 

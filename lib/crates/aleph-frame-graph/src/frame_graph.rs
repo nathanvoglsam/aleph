@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::internal::{ResourceHandleInfo, ResourceRoot, ResourceVersion};
-use crate::render_pass::IRenderPass;
+use crate::internal::{RenderPass, ResourceHandleInfo, ResourceRoot, ResourceVersion};
 use crate::FrameGraphBuilder;
 use aleph_arena_drop_list::DropLink;
 use bumpalo::Bump;
@@ -44,10 +43,7 @@ pub struct FrameGraph {
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: Vec<NonNull<dyn IRenderPass>>,
-
-    /// Stores the names of each render pass keyed by the matching index in the render_passes list.
-    pub(crate) render_pass_names: Vec<NonNull<str>>,
+    pub(crate) render_passes: Vec<RenderPass>,
 
     pub(crate) root_resources: Vec<ResourceRoot>,
     pub(crate) resource_versions: Vec<ResourceVersion>,
