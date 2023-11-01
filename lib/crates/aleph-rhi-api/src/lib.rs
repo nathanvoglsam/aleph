@@ -1676,6 +1676,13 @@ bitflags! {
     }
 }
 
+impl Default for BarrierSync {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 bitflags! {
     #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct BarrierAccess: u64 {
@@ -1833,6 +1840,35 @@ bitflags! {
         /// - `RAYTRACING_ACCELERATION_STRUCTURE_WRITE`
         ///
         const RAYTRACING_ACCELERATION_STRUCTURE_WRITE = 0x1000;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `SHADER_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `UNORDERED_ACCESS`
+        ///
+        const SHADER_READ = 0x2000;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `SHADER_WRITE_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `UNORDERED_ACCESS`
+        ///
+        const SHADER_WRITE = 0x4000;
+    }
+}
+
+impl Default for BarrierAccess {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::NONE
     }
 }
 
