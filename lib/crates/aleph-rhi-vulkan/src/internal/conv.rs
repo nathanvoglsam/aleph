@@ -512,6 +512,18 @@ pub fn barrier_access_to_vk2(access: BarrierAccess) -> vk::AccessFlags2 {
         BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
         vk::AccessFlags2::ACCELERATION_STRUCTURE_WRITE_KHR
     );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_READ,
+        vk::AccessFlags2::SHADER_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_WRITE,
+        vk::AccessFlags2::SHADER_WRITE
+    );
 
     out
 }
@@ -595,6 +607,18 @@ pub fn barrier_access_to_vk(access: BarrierAccess) -> vk::AccessFlags {
         out,
         BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
         vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_KHR
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_READ,
+        vk::AccessFlags::SHADER_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_WRITE,
+        vk::AccessFlags::SHADER_WRITE
     );
 
     out
