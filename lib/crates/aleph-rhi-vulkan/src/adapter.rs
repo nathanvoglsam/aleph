@@ -268,7 +268,7 @@ impl IAdapter for Adapter {
         if is_supported(vk::KhrShaderFloat16Int8Fn::name()) {
             device_create_info = device_create_info.push_next(&mut shader_float16int8features)
         }
-        if is_supported(vk::KhrDynamicRenderingFn::name()) {
+        if is_supported(vk::KhrShaderAtomicInt64Fn::name()) {
             device_create_info = device_create_info.push_next(&mut shader_atomic_int_64_features)
         }
         if is_supported(vk::KhrDynamicRenderingFn::name()) {
