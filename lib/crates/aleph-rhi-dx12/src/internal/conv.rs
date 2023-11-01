@@ -515,6 +515,18 @@ pub fn barrier_access_to_dx12(access: BarrierAccess) -> D3D12_BARRIER_ACCESS {
         BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
         D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE
     );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_READ,
+        D3D12_BARRIER_ACCESS_SHADER_RESOURCE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_WRITE,
+        D3D12_BARRIER_ACCESS_UNORDERED_ACCESS
+    );
 
     out
 }
