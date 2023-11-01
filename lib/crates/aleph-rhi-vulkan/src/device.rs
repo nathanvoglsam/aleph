@@ -537,7 +537,9 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
-        let mut usage = vk::BufferUsageFlags::default();
+        // Storage buffer is always enabled as this is the most basic usage, essentially meaning
+        // "bag of bytes".
+        let mut usage = vk::BufferUsageFlags::STORAGE_BUFFER;
 
         if desc.usage.contains(BufferUsageFlags::COPY_SOURCE) {
             usage |= vk::BufferUsageFlags::TRANSFER_SRC
@@ -545,10 +547,8 @@ impl IDevice for Device {
         if desc.usage.contains(BufferUsageFlags::COPY_DEST) {
             usage |= vk::BufferUsageFlags::TRANSFER_DST
         }
-        if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
-            usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
-        }
         if desc.usage.contains(BufferUsageFlags::TEXEL_BUFFER) {
+            // TODO: consider just always enabling storage texel buffer to simplify
             if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
                 usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
                     | vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
