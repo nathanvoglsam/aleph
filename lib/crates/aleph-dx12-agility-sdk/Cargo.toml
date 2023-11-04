@@ -31,12 +31,12 @@
 [package]
 name = "aleph-dx12-agility-sdk"
 version = "1.711.3"
-authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+authors.workspace = true
 description = "Build Script Utilities for the DX12 Agility SDK"
-license = "MIT"
-repository = "https://github.com/nathanvoglsam/aleph"
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/aleph-dx12-agility-sdk/"
-edition = "2021"
+edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

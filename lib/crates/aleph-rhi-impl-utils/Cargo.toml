@@ -31,14 +31,14 @@
 [package]
 name = "aleph-rhi-impl-utils"
 version = "0.1.0"
-authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+authors.workspace = true
 description = "A set of utilities shared between AlephEngine RHI implementations"
-license = "MIT"
-repository = "https://github.com/nathanvoglsam/aleph"
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/aleph-rhi-impl-utils/"
 keywords = ["engine", "graphics", "game"]
 categories = ["game-engines"]
-edition = "2021"
+edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

@@ -30,13 +30,13 @@
 [package]
 name = "aleph-target"
 version = "2.0.0"
-authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+authors.workspace = true
 description = "Library for compile time platform detection"
-license = "MIT"
-repository = "https://github.com/nathanvoglsam/aleph"
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/aleph-target/"
 keywords = ["platform-detection", "platform", "build", "build-script", "const"]
-edition = "2021"
+edition.workspace = true
 build = "build.rs"
 
 [badges]

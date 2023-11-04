@@ -31,12 +31,12 @@
 [package]
 name = "aleph-vk-format"
 version = "1.0.0+145"
-authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+authors.workspace = true
 description = "A standalone description of VkFormat with some utility methods attached"
-license = "MIT"
-repository = "https://github.com/nathanvoglsam/aleph"
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/aleph-vk-format/"
-edition = "2021"
+edition.workspace = true
 publish = false
 
 [badges]

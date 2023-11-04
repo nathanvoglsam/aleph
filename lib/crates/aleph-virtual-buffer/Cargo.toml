@@ -31,12 +31,12 @@
 [package]
 name = "aleph-virtual-buffer"
 version = "0.1.0"
-authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+authors.workspace = true
 description = "Aleph's virtual buffer"
-license = "MIT"
-repository = "https://github.com/nathanvoglsam/aleph"
+license.workspace = true
+repository.workspace = true
 documentation = "https://docs.rs/aleph-virtual-buffer/"
-edition = "2021"
+edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

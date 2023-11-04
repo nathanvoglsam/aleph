@@ -75,6 +75,12 @@ members = [
     "bin/aleph-rcon",
 ]
 
+[workspace.package]
+edition = "2021"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+repository = "https://github.com/nathanvoglsam/aleph"
+license = "MIT"
+
 [workspace.dependencies]
 
 # Third Party Crates
