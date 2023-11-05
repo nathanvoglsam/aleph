@@ -99,7 +99,12 @@ impl PerFrameObjects {
         }
     }
 
-    pub unsafe fn update_texture_data(&mut self, device: &dyn IDevice, texture: &FontTexture) {
+    pub unsafe fn update_texture_data(
+        &mut self,
+        device: &dyn IDevice,
+        sampler: &dyn ISampler,
+        texture: &FontTexture,
+    ) {
         // Check the data is correct
         assert_eq!(texture.bytes.len(), texture.width * texture.height);
 
@@ -114,7 +119,7 @@ impl PerFrameObjects {
         self.create_staged_resources(device, dimensions);
 
         // Update the srv to point at the newly created image
-        self.update_srv(device.deref());
+        self.update_srv(device, sampler);
 
         // Update the metadata for determining when to re-upload the texture
         self.font_version = texture.version;
@@ -227,7 +232,7 @@ impl PerFrameObjects {
         self.font_staged = Some(image);
     }
 
-    unsafe fn update_srv(&mut self, device: &dyn IDevice) {
+    unsafe fn update_srv(&mut self, device: &dyn IDevice, sampler: &dyn ISampler) {
         let view = self
             .font_staged
             .as_ref()
@@ -246,16 +251,25 @@ impl PerFrameObjects {
             })
             .unwrap();
 
-        device.update_descriptor_sets(&[DescriptorWriteDesc {
-            set: self.descriptor_set.clone(),
-            binding: 0,
-            array_element: 0,
-            descriptor_type: DescriptorType::SampledImage,
-            writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
-                image_view: view,
-                image_layout: ImageLayout::ShaderReadOnlyOptimal,
-            }]),
-        }]);
+        device.update_descriptor_sets(&[
+            DescriptorWriteDesc {
+                set: self.descriptor_set.clone(),
+                binding: 0,
+                array_element: 0,
+                descriptor_type: DescriptorType::SampledImage,
+                writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
+                    image_view: view,
+                    image_layout: ImageLayout::ShaderReadOnlyOptimal,
+                }]),
+            },
+            DescriptorWriteDesc {
+                set: self.descriptor_set.clone(),
+                binding: 1,
+                array_element: 0,
+                descriptor_type: DescriptorType::Sampler,
+                writes: DescriptorWrites::Sampler(&[SamplerDescriptorWrite { sampler }]),
+            },
+        ]);
     }
 
     fn create_font_staging_allocation(

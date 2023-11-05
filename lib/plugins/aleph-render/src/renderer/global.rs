@@ -48,7 +48,7 @@ pub struct GlobalObjects {
 impl GlobalObjects {
     pub fn new(device: &dyn IDevice, dimensions: (u32, u32)) -> Self {
         let sampler = Self::create_sampler(device);
-        let descriptor_set_layout = Self::create_descriptor_set_layout(device, sampler.deref());
+        let descriptor_set_layout = Self::create_descriptor_set_layout(device);
         let pipeline_layout = Self::create_root_signature(device, descriptor_set_layout.deref());
 
         let (vertex_data, fragment_data) = match device.get_backend_api() {
@@ -117,11 +117,7 @@ impl GlobalObjects {
         device.create_sampler(&desc).unwrap()
     }
 
-    pub fn create_descriptor_set_layout(
-        device: &dyn IDevice,
-        sampler: &dyn ISampler,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
-        let samplers = [sampler];
+    pub fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
             items: &[
@@ -135,7 +131,6 @@ impl GlobalObjects {
                     binding_num: 1,
                     binding_type: DescriptorType::Sampler,
                     binding_count: None,
-                    static_samplers: Some(&samplers),
                     ..Default::default()
                 },
             ],

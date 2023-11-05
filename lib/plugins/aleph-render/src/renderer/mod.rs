@@ -105,8 +105,11 @@ impl EguiRenderer {
 
             // If the versions do not match then we should re-upload the texture to the GPU
             if self.frames[index].font_version != self.global.font_texture.version {
-                self.frames[index]
-                    .update_texture_data(self.device.deref(), &self.global.font_texture);
+                self.frames[index].update_texture_data(
+                    self.device.deref(),
+                    self.global.sampler.deref(),
+                    &self.global.font_texture,
+                );
                 self.frames[index].record_texture_upload(encoder.deref_mut());
             }
 
