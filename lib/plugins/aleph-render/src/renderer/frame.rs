@@ -256,8 +256,7 @@ impl PerFrameObjects {
                 set: self.descriptor_set.clone(),
                 binding: 0,
                 array_element: 0,
-                descriptor_type: DescriptorType::SampledImage,
-                writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
+                writes: DescriptorWrites::TextureRW(&[ImageDescriptorWrite {
                     image_view: view,
                     image_layout: ImageLayout::ShaderReadOnlyOptimal,
                 }]),
@@ -266,7 +265,6 @@ impl PerFrameObjects {
                 set: self.descriptor_set.clone(),
                 binding: 1,
                 array_element: 0,
-                descriptor_type: DescriptorType::Sampler,
                 writes: DescriptorWrites::Sampler(&[SamplerDescriptorWrite { sampler }]),
             },
         ]);
