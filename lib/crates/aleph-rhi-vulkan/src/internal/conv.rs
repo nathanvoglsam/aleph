@@ -702,13 +702,15 @@ pub const fn descriptor_shader_visibility_to_vk(
 pub const fn descriptor_type_to_vk(v: DescriptorType) -> vk::DescriptorType {
     match v {
         DescriptorType::Sampler => vk::DescriptorType::SAMPLER,
-        DescriptorType::SampledImage => vk::DescriptorType::SAMPLED_IMAGE,
-        DescriptorType::StorageImage => vk::DescriptorType::STORAGE_IMAGE,
-        DescriptorType::UniformTexelBuffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
-        DescriptorType::StorageTexelBuffer => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
+        DescriptorType::TexelBuffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
+        DescriptorType::TexelBufferRW => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
+        DescriptorType::Texture => vk::DescriptorType::SAMPLED_IMAGE,
+        DescriptorType::TextureRW => vk::DescriptorType::STORAGE_IMAGE,
         DescriptorType::UniformBuffer => vk::DescriptorType::UNIFORM_BUFFER,
-        DescriptorType::StorageBuffer => vk::DescriptorType::STORAGE_BUFFER,
         DescriptorType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        DescriptorType::StructuredBufferRW => vk::DescriptorType::STORAGE_BUFFER,
+        DescriptorType::ByteAddressBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        DescriptorType::ByteAddressBufferRW => vk::DescriptorType::STORAGE_BUFFER,
         DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
     }
 }
