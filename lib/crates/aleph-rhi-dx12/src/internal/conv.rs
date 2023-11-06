@@ -783,3 +783,19 @@ pub const fn translate_barrier_texture_aspect_to_plane_range(
         (0, 0)
     }
 }
+
+pub const fn descriptor_type_to_dx12(v: DescriptorType) -> D3D12_DESCRIPTOR_RANGE_TYPE {
+    match v {
+        DescriptorType::Sampler => D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+        DescriptorType::TexelBuffer => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+        DescriptorType::TexelBufferRW => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+        DescriptorType::Texture => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+        DescriptorType::TextureRW => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+        DescriptorType::UniformBuffer => D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+        DescriptorType::StructuredBuffer => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+        DescriptorType::StructuredBufferRW => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+        DescriptorType::ByteAddressBuffer => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+        DescriptorType::ByteAddressBufferRW => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+        DescriptorType::InputAttachment => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+    }
+}

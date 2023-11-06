@@ -38,10 +38,10 @@ use crate::descriptor_set_layout::{
 use crate::fence::Fence;
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12_static, compare_op_to_dx12,
-    cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
-    queue_type_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
-    shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
-    texture_create_desc_to_dx12, texture_format_to_dxgi,
+    cull_mode_to_dx12, descriptor_type_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12,
+    primitive_topology_to_dx12, queue_type_to_dx12, sampler_address_mode_to_dx12,
+    sampler_filters_to_dx12, shader_visibility_to_dx12, stencil_op_to_dx12,
+    texture_create_clear_value_to_dx12, texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
 use crate::internal::descriptor_arena::DescriptorArena;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
@@ -1249,46 +1249,7 @@ impl Device {
                 unimplemented!("Currently descriptor arrays are unimplemented");
             }
 
-            let range_type = match (item.binding_type, item.allow_writes) {
-                // Samplers can't happen here because we filter them out in the iterator
-                (DescriptorType::Sampler, _) => unreachable!(),
-
-                // SampledImage can never be written, StorageImage is SRV when no writes are allowed
-                (DescriptorType::SampledImage, _) | (DescriptorType::StorageImage, false) => {
-                    D3D12_DESCRIPTOR_RANGE_TYPE_SRV
-                }
-
-                // StorageImage with writes is a UAV
-                (DescriptorType::StorageImage, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-
-                // Read-only TexelBuffer always an SRV as D3D12 doesn't have a 'uniform' version
-                (DescriptorType::UniformTexelBuffer, _)
-                | (DescriptorType::StorageTexelBuffer, false) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-
-                // Write-able StorageTexelBuffer is a UAV
-                (DescriptorType::StorageTexelBuffer, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-
-                // As expected, UniformBuffer maps directly to CBV
-                (DescriptorType::UniformBuffer, _) => D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
-
-                // Read-only non-uniform is SRV
-                (DescriptorType::StorageBuffer, false) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-
-                // Write-able non-uniform is UAV
-                (DescriptorType::StorageBuffer, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-
-                // Read-only StorageStructuredBuffer is a UAV
-                (DescriptorType::StructuredBuffer, false) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-
-                // Write-able StorageStructuredBuffer is a UAV
-                (DescriptorType::StructuredBuffer, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-
-                // In the future an InputAttachment will map roughly to sampled or storage image.
-                // We should be able to emulate input attachments with plain texture accesses.
-                (DescriptorType::InputAttachment, _) => {
-                    unimplemented!("Currently we haven't implemented subpass emulation")
-                }
-            };
+            let range_type = descriptor_type_to_dx12(item.binding_type);
 
             let num_descriptors = match item.binding_count {
                 None => 1,
@@ -1410,20 +1371,37 @@ impl Device {
 
         match set_write.writes {
             DescriptorWrites::Sampler(writes) => {
-                self.update_sampler_descriptors(set_write, set, &binding_layout, writes)
+                self.update_sampler_descriptors(set_write.binding, set, &binding_layout, writes)
             }
-            DescriptorWrites::Image(writes) => {
-                self.update_image_descriptors(set_write, set, binding_layout, writes)
+            DescriptorWrites::TexelBufferRW(writes) | DescriptorWrites::TexelBuffer(writes) => self
+                .update_texel_buffer_descriptors(
+                    set_write.array_element,
+                    set,
+                    binding_layout,
+                    writes,
+                    set_write.writes.descriptor_type(),
+                ),
+            DescriptorWrites::TextureRW(writes) | DescriptorWrites::Texture(writes) => {
+                self.update_image_descriptors(set_write.array_element, set, binding_layout, writes)
             }
-            DescriptorWrites::Buffer(writes) => {
-                self.update_buffer_descriptors(set_write, set, binding_layout, writes)
-            }
-            DescriptorWrites::StructuredBuffer(writes) => {
-                self.update_structured_buffer_descriptors(set_write, set, binding_layout, writes)
-            }
-            DescriptorWrites::TexelBuffer(writes) => {
-                self.update_texel_buffer_descriptors(set_write, set, binding_layout, writes)
-            }
+            DescriptorWrites::ByteAddressBufferRW(writes)
+            | DescriptorWrites::ByteAddressBuffer(writes)
+            | DescriptorWrites::UniformBuffer(writes) => self.update_buffer_descriptors(
+                set_write.array_element,
+                set,
+                binding_layout,
+                writes,
+                set_write.writes.descriptor_type(),
+            ),
+            DescriptorWrites::StructuredBufferRW(writes)
+            | DescriptorWrites::StructuredBuffer(writes) => self
+                .update_structured_buffer_descriptors(
+                    set_write.array_element,
+                    set,
+                    binding_layout,
+                    writes,
+                    set_write.writes.descriptor_type(),
+                ),
             _ => unimplemented!(),
         };
     }
@@ -1433,7 +1411,7 @@ impl Device {
 
     unsafe fn update_sampler_descriptors(
         &self,
-        set_write: &DescriptorWriteDesc,
+        binding: u32,
         mut set: NonNull<DescriptorSet>,
         _binding_layout: &DescriptorBindingLayout,
         writes: &[SamplerDescriptorWrite],
@@ -1451,7 +1429,7 @@ impl Device {
             .iter()
             .enumerate()
             .find_map(|(i, v)| {
-                if v.BaseShaderRegister == set_write.binding {
+                if v.BaseShaderRegister == binding {
                     Some(i)
                 } else {
                     None
@@ -1483,7 +1461,7 @@ impl Device {
 
     unsafe fn update_image_descriptors(
         &self,
-        set_write: &DescriptorWriteDesc,
+        array_base: u32,
         set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[ImageDescriptorWrite],
@@ -1502,7 +1480,7 @@ impl Device {
                 dst,
                 self.descriptor_heap_info.resource_inc,
                 binding_layout.base,
-                set_write.array_element,
+                array_base,
                 i,
             );
 
@@ -1520,10 +1498,11 @@ impl Device {
 
     unsafe fn update_buffer_descriptors(
         &self,
-        set_write: &DescriptorWriteDesc,
+        array_base: u32,
         set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[BufferDescriptorWrite],
+        d_type: DescriptorType,
     ) {
         let set = set.as_ref();
 
@@ -1536,16 +1515,19 @@ impl Device {
                 dst,
                 self.descriptor_heap_info.resource_inc,
                 binding_layout.base,
-                set_write.array_element,
+                array_base,
                 i,
             );
 
-            match set_write.descriptor_type {
+            match d_type {
                 DescriptorType::UniformBuffer => {
                     self.update_uniform_buffer_descriptor(v, buffer, dst);
                 }
-                DescriptorType::StorageBuffer => {
-                    self.update_storage_buffer_descriptor(v, buffer, dst);
+                DescriptorType::ByteAddressBuffer => {
+                    self.update_storage_buffer_descriptor_srv(v, buffer, dst);
+                }
+                DescriptorType::ByteAddressBufferRW => {
+                    self.update_storage_buffer_descriptor_uav(v, buffer, dst);
                 }
                 _ => {}
             }
@@ -1557,10 +1539,11 @@ impl Device {
 
     unsafe fn update_structured_buffer_descriptors(
         &self,
-        set_write: &DescriptorWriteDesc,
+        array_base: u32,
         set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[StructuredBufferDescriptorWrite],
+        d_type: DescriptorType,
     ) {
         let set = set.as_ref();
 
@@ -1573,12 +1556,18 @@ impl Device {
                 dst,
                 self.descriptor_heap_info.resource_inc,
                 binding_layout.base,
-                set_write.array_element,
+                array_base,
                 i,
             );
 
-            if set_write.descriptor_type == DescriptorType::StructuredBuffer {
-                self.update_structured_buffer_descriptor(v, buffer, dst);
+            match d_type {
+                DescriptorType::StructuredBuffer => {
+                    self.update_structured_buffer_descriptor_srv(v, buffer, dst);
+                }
+                DescriptorType::StructuredBufferRW => {
+                    self.update_structured_buffer_descriptor_uav(v, buffer, dst);
+                }
+                _ => {}
             }
         }
     }
@@ -1588,10 +1577,11 @@ impl Device {
 
     unsafe fn update_texel_buffer_descriptors(
         &self,
-        set_write: &DescriptorWriteDesc,
+        array_base: u32,
         set: NonNull<DescriptorSet>,
         binding_layout: DescriptorBindingLayout,
         writes: &[TexelBufferDescriptorWrite],
+        d_type: DescriptorType,
     ) {
         let set = set.as_ref();
 
@@ -1604,16 +1594,16 @@ impl Device {
                 dst,
                 self.descriptor_heap_info.resource_inc,
                 binding_layout.base,
-                set_write.array_element,
+                array_base,
                 i,
             );
 
-            match set_write.descriptor_type {
-                DescriptorType::UniformTexelBuffer => {
-                    self.update_texel_buffer_descriptor(v, buffer, dst);
+            match d_type {
+                DescriptorType::TexelBuffer => {
+                    self.update_texel_buffer_descriptor_srv(v, buffer, dst);
                 }
-                DescriptorType::StorageTexelBuffer => {
-                    self.update_texel_buffer_descriptor(v, buffer, dst);
+                DescriptorType::TexelBufferRW => {
+                    self.update_texel_buffer_descriptor_uav(v, buffer, dst);
                 }
                 _ => {}
             }
@@ -1644,51 +1634,59 @@ impl Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_storage_buffer_descriptor(
+    unsafe fn update_storage_buffer_descriptor_srv(
         &self,
         write: &BufferDescriptorWrite,
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        if write.writable {
-            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
-                Format: Default::default(),
-                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
-                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_UAV {
-                        FirstElement: 0,
-                        NumElements: 0,
-                        StructureByteStride: 0,
-                        CounterOffsetInBytes: 0,
-                        Flags: D3D12_BUFFER_UAV_FLAG_RAW,
-                    },
+        let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+            Format: DXGI_FORMAT_R32_TYPELESS,
+            ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                Buffer: D3D12_BUFFER_SRV {
+                    FirstElement: write.offset / 4,
+                    NumElements: write.len / 4,
+                    StructureByteStride: 0,
+                    Flags: D3D12_BUFFER_SRV_FLAG_RAW,
                 },
-            };
-            self.device
-                .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
-        } else {
-            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
-                Format: DXGI_FORMAT_R32_TYPELESS,
-                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
-                Shader4ComponentMapping: 0,
-                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_SRV {
-                        FirstElement: 0,
-                        NumElements: 0,
-                        StructureByteStride: 0,
-                        Flags: D3D12_BUFFER_SRV_FLAG_RAW,
-                    },
-                },
-            };
-            self.device
-                .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
-        }
+            },
+        };
+        self.device
+            .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_structured_buffer_descriptor(
+    unsafe fn update_storage_buffer_descriptor_uav(
+        &self,
+        write: &BufferDescriptorWrite,
+        buffer: &Buffer,
+        dst: CPUDescriptorHandle,
+    ) {
+        let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+            Format: DXGI_FORMAT_R32_TYPELESS,
+            ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+            Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                Buffer: D3D12_BUFFER_UAV {
+                    FirstElement: write.offset / 4,
+                    NumElements: write.len / 4,
+                    StructureByteStride: 0,
+                    CounterOffsetInBytes: 0,
+                    Flags: D3D12_BUFFER_UAV_FLAG_RAW,
+                },
+            },
+        };
+        self.device
+            .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_structured_buffer_descriptor_srv(
         &self,
         write: &StructuredBufferDescriptorWrite,
         buffer: &Buffer,
@@ -1696,45 +1694,52 @@ impl Device {
     ) {
         let first_element = write.offset / write.structure_byte_stride as u64;
         let num_elements = write.len / write.structure_byte_stride;
-        if write.writable {
-            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
-                Format: DXGI_FORMAT_UNKNOWN,
-                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
-                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_UAV {
-                        FirstElement: first_element,
-                        NumElements: num_elements,
-                        StructureByteStride: write.structure_byte_stride,
-                        CounterOffsetInBytes: 0,
-                        Flags: Default::default(),
-                    },
+        let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+            Format: DXGI_FORMAT_UNKNOWN,
+            ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                Buffer: D3D12_BUFFER_SRV {
+                    FirstElement: first_element,
+                    NumElements: num_elements,
+                    StructureByteStride: write.structure_byte_stride,
+                    Flags: Default::default(),
                 },
-            };
-            self.device
-                .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
-        } else {
-            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
-                Format: DXGI_FORMAT_UNKNOWN,
-                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
-                Shader4ComponentMapping: 0,
-                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_SRV {
-                        FirstElement: first_element,
-                        NumElements: num_elements,
-                        StructureByteStride: write.structure_byte_stride,
-                        Flags: Default::default(),
-                    },
+            },
+        };
+        self.device
+            .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
+    }
+
+    unsafe fn update_structured_buffer_descriptor_uav(
+        &self,
+        write: &StructuredBufferDescriptorWrite,
+        buffer: &Buffer,
+        dst: CPUDescriptorHandle,
+    ) {
+        let first_element = write.offset / write.structure_byte_stride as u64;
+        let num_elements = write.len / write.structure_byte_stride;
+        let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+            Format: DXGI_FORMAT_UNKNOWN,
+            ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+            Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                Buffer: D3D12_BUFFER_UAV {
+                    FirstElement: first_element,
+                    NumElements: num_elements,
+                    StructureByteStride: write.structure_byte_stride,
+                    CounterOffsetInBytes: 0,
+                    Flags: Default::default(),
                 },
-            };
-            self.device
-                .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
-        }
+            },
+        };
+        self.device
+            .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_texel_buffer_descriptor(
+    unsafe fn update_texel_buffer_descriptor_srv(
         &self,
         write: &TexelBufferDescriptorWrite,
         buffer: &Buffer,
@@ -1744,39 +1749,48 @@ impl Device {
         let bytes_per_element = write.format.bytes_per_element();
         let first_element = write.offset / bytes_per_element as u64;
         let num_elements = write.len / bytes_per_element;
-        if write.writable {
-            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
-                Format: format,
-                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
-                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_UAV {
-                        FirstElement: first_element,
-                        NumElements: num_elements,
-                        StructureByteStride: 0,
-                        CounterOffsetInBytes: 0,
-                        Flags: Default::default(),
-                    },
+        let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+            Format: format,
+            ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                Buffer: D3D12_BUFFER_SRV {
+                    FirstElement: first_element,
+                    NumElements: num_elements,
+                    StructureByteStride: 0,
+                    Flags: Default::default(),
                 },
-            };
-            self.device
-                .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
-        } else {
-            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
-                Format: format,
-                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
-                Shader4ComponentMapping: 0,
-                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                    Buffer: D3D12_BUFFER_SRV {
-                        FirstElement: first_element,
-                        NumElements: num_elements,
-                        StructureByteStride: 0,
-                        Flags: Default::default(),
-                    },
+            },
+        };
+        self.device
+            .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
+    }
+
+    unsafe fn update_texel_buffer_descriptor_uav(
+        &self,
+        write: &TexelBufferDescriptorWrite,
+        buffer: &Buffer,
+        dst: CPUDescriptorHandle,
+    ) {
+        let format = texture_format_to_dxgi(write.format);
+        let bytes_per_element = write.format.bytes_per_element();
+        let first_element = write.offset / bytes_per_element as u64;
+        let num_elements = write.len / bytes_per_element;
+        let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+            Format: format,
+            ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+            Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                Buffer: D3D12_BUFFER_UAV {
+                    FirstElement: first_element,
+                    NumElements: num_elements,
+                    StructureByteStride: 0,
+                    CounterOffsetInBytes: 0,
+                    Flags: Default::default(),
                 },
-            };
-            self.device
-                .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
-        }
+            },
+        };
+        self.device
+            .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
     }
 
     // ========================================================================================== //
