@@ -2587,14 +2587,43 @@ pub struct ShaderOptions<'a> {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum DescriptorType {
+    /// A sampler descriptor. Maps as a sampler on both DX12 and Vulkan
     Sampler,
-    SampledImage,
-    StorageImage,
-    UniformTexelBuffer,
-    StorageTexelBuffer,
+
+    /// A Texel Buffer, or typed buffer. Uniform texel buffer on Vulkan, 'Buffer' on DX12
+    TexelBuffer,
+
+    /// A Texel Buffer with read/write access. Storage texel buffer on Vulkan, 'BufferRW' on DX12.
+    /// This is a UAV for DX12.
+    TexelBufferRW,
+
+    /// A Texture descriptor. Sampled Image on Vulkan, 'Texture' on DX12.
+    Texture,
+
+    /// A read/write Texture descriptor. Storage Image on Vulkan, 'RWTexture' on DX12. This is a
+    /// UAV for DX12.
+    TextureRW,
+
+    /// A UniformBuffer/ConstantBuffer descriptor. Maps accordingly on Vulkan/D3D12. CBV on DX12.
     UniformBuffer,
-    StorageBuffer,
+
+    /// A buffer with a stride that represents N*stride items. Layout defined in the shader. On
+    /// Vulkan this is just a storage buffer, D3D12 this is a SRV as it's read-only.
     StructuredBuffer,
+
+    /// The same as [DescriptorType::StructuredBuffer], but read/write. Still a storage buffer on
+    /// Vulkan but D3D12 requires a UAV for write access.
+    StructuredBufferRW,
+
+    /// A raw 'bag of bytes' like buffer. No stride info. Again a storage buffer on Vulkan, but it's
+    /// a SRV on D3D12.
+    ByteAddressBuffer,
+
+    /// The same as [DescriptorType::ByteAddressBuffer] but read/write. Remains a storage buffer on
+    /// Vulkan but D3D12 needs UAV again because of write access.
+    ByteAddressBufferRW,
+
+    /// UNIMPLEMENTED
     InputAttachment,
     // TODO: Can we do something with VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK?
     // TODO: VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR
@@ -2704,10 +2733,6 @@ pub struct DescriptorWriteDesc<'a> {
     /// The array element in the binding to write. Ignored for non-array bindings.
     pub array_element: u32,
 
-    /// The type of descriptor writing. This must match the descriptor type described in the set
-    /// layout, and determines the expected variant of [DescriptorWrites] in `writes`.
-    pub descriptor_type: DescriptorType,
-
     /// The list of descriptor writes to perform. The variant to use depends on `descriptor_type`.
     pub writes: DescriptorWrites<'a>,
 }
@@ -2719,35 +2744,36 @@ pub struct DescriptorWriteDesc<'a> {
 /// types in [DescriptorType].
 #[derive(Clone)]
 pub enum DescriptorWrites<'a> {
-    /// Variant expected for writing
-    /// - [DescriptorType::Sampler]
     Sampler(&'a [SamplerDescriptorWrite<'a>]),
-
-    /// Variant expected for writing
-    /// - [DescriptorType::SampledImage]
-    /// - [DescriptorType::StorageImage]
-    Image(&'a [ImageDescriptorWrite]),
-
-    /// Variant expected for writing
-    /// - [DescriptorType::UniformBuffer]
-    /// - [DescriptorType::StorageBuffer]
-    Buffer(&'a [BufferDescriptorWrite<'a>]),
-
-    /// Variant expected for writing
-    /// - [DescriptorType::StructuredBuffer]
-    StructuredBuffer(&'a [StructuredBufferDescriptorWrite<'a>]),
-
-    /// Variant expected for writing
-    /// - [DescriptorType::UniformTexelBuffer]
-    /// - [DescriptorType::StorageTexelBuffer]
     TexelBuffer(&'a [TexelBufferDescriptorWrite<'a>]),
-
-    /// Variant expected for writing
-    /// - [DescriptorType::InputAttachment]
+    TexelBufferRW(&'a [TexelBufferDescriptorWrite<'a>]),
+    Texture(&'a [ImageDescriptorWrite]),
+    TextureRW(&'a [ImageDescriptorWrite]),
+    UniformBuffer(&'a [BufferDescriptorWrite<'a>]),
+    StructuredBuffer(&'a [StructuredBufferDescriptorWrite<'a>]),
+    StructuredBufferRW(&'a [StructuredBufferDescriptorWrite<'a>]),
+    ByteAddressBuffer(&'a [BufferDescriptorWrite<'a>]),
+    ByteAddressBufferRW(&'a [BufferDescriptorWrite<'a>]),
     InputAttachment(&'a [ImageDescriptorWrite]),
 }
 
 impl<'a> DescriptorWrites<'a> {
+    pub const fn descriptor_type(&self) -> DescriptorType {
+        match self {
+            DescriptorWrites::Sampler(_) => DescriptorType::Sampler,
+            DescriptorWrites::TexelBuffer(_) => DescriptorType::TexelBuffer,
+            DescriptorWrites::TexelBufferRW(_) => DescriptorType::TexelBufferRW,
+            DescriptorWrites::Texture(_) => DescriptorType::Texture,
+            DescriptorWrites::TextureRW(_) => DescriptorType::TextureRW,
+            DescriptorWrites::UniformBuffer(_) => DescriptorType::UniformBuffer,
+            DescriptorWrites::StructuredBuffer(_) => DescriptorType::StructuredBuffer,
+            DescriptorWrites::StructuredBufferRW(_) => DescriptorType::StructuredBufferRW,
+            DescriptorWrites::ByteAddressBuffer(_) => DescriptorType::ByteAddressBuffer,
+            DescriptorWrites::ByteAddressBufferRW(_) => DescriptorType::ByteAddressBufferRW,
+            DescriptorWrites::InputAttachment(_) => DescriptorType::InputAttachment,
+        }
+    }
+
     /// Returns true if the array stored on the active variant of `self` is empty, that is: when
     /// `self.len() == 0`.
     pub const fn is_empty(&self) -> bool {
@@ -2758,12 +2784,17 @@ impl<'a> DescriptorWrites<'a> {
     /// of `self`.
     pub const fn len(&self) -> usize {
         match self {
-            DescriptorWrites::Sampler(v) => v.len(),
-            DescriptorWrites::Image(v) => v.len(),
-            DescriptorWrites::Buffer(v) => v.len(),
-            DescriptorWrites::StructuredBuffer(v) => v.len(),
-            DescriptorWrites::TexelBuffer(v) => v.len(),
-            DescriptorWrites::InputAttachment(v) => v.len(),
+            Self::Sampler(v) => v.len(),
+            Self::TexelBuffer(v) => v.len(),
+            Self::TexelBufferRW(v) => v.len(),
+            Self::Texture(v) => v.len(),
+            Self::TextureRW(v) => v.len(),
+            Self::UniformBuffer(v) => v.len(),
+            Self::StructuredBuffer(v) => v.len(),
+            Self::StructuredBufferRW(v) => v.len(),
+            Self::ByteAddressBuffer(v) => v.len(),
+            Self::ByteAddressBufferRW(v) => v.len(),
+            Self::InputAttachment(v) => v.len(),
         }
     }
 }
@@ -2810,9 +2841,6 @@ pub struct BufferDescriptorWrite<'a> {
     /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
     /// from offset to the end of the buffer.
     pub len: u32,
-
-    /// Whether the buffer can be written to through this descriptor.
-    pub writable: bool,
 }
 
 /// Describes the parameters of a descriptor to write when writing into a structured buffer like
@@ -2832,9 +2860,6 @@ pub struct StructuredBufferDescriptorWrite<'a> {
 
     /// The stride/size of an individual structure in the structured buffer, in bytes
     pub structure_byte_stride: u32,
-
-    /// Whether the buffer can be written to through this descriptor.
-    pub writable: bool,
 }
 
 /// Describes the parameters of a descriptor to write when writing into a texel buffer binding.
@@ -2853,9 +2878,6 @@ pub struct TexelBufferDescriptorWrite<'a> {
     /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
     /// from offset to the end of the buffer.
     pub len: u32,
-
-    /// Whether the buffer can be written to through this descriptor.
-    pub writable: bool,
 }
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
