@@ -2685,9 +2685,6 @@ pub struct DescriptorSetLayoutBinding<'a> {
     /// single binding, or >1 to declare an array of descriptors.
     pub binding_count: Option<NonZeroU32>,
 
-    /// Declares whether the descriptor's underlying resource can be accessed with write access.
-    pub allow_writes: bool,
-
     /// An optional list of `binding_count` samplers to specify static samplers for `Sampler`
     /// descriptors. If `binding_type` is `Sampler` but `static_samplers` is `None` then the
     /// samplers are dynamic.
@@ -2750,8 +2747,8 @@ pub enum DescriptorWrites<'a> {
     Texture(&'a [ImageDescriptorWrite]),
     TextureRW(&'a [ImageDescriptorWrite]),
     UniformBuffer(&'a [BufferDescriptorWrite<'a>]),
-    StructuredBuffer(&'a [StructuredBufferDescriptorWrite<'a>]),
-    StructuredBufferRW(&'a [StructuredBufferDescriptorWrite<'a>]),
+    StructuredBuffer(&'a [BufferDescriptorWrite<'a>]),
+    StructuredBufferRW(&'a [BufferDescriptorWrite<'a>]),
     ByteAddressBuffer(&'a [BufferDescriptorWrite<'a>]),
     ByteAddressBufferRW(&'a [BufferDescriptorWrite<'a>]),
     InputAttachment(&'a [ImageDescriptorWrite]),
@@ -2841,24 +2838,9 @@ pub struct BufferDescriptorWrite<'a> {
     /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
     /// from offset to the end of the buffer.
     pub len: u32,
-}
 
-/// Describes the parameters of a descriptor to write when writing into a structured buffer like
-/// binding.
-#[derive(Clone)]
-pub struct StructuredBufferDescriptorWrite<'a> {
-    /// The buffer target
-    pub buffer: &'a dyn IBuffer,
-
-    /// The offset in bytes from the start of buffer. Access to buffer memory via this descriptor
-    /// uses addressing that is relative to this starting offset.
-    pub offset: u64,
-
-    /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
-    /// from offset to the end of the buffer.
-    pub len: u32,
-
-    /// The stride/size of an individual structure in the structured buffer, in bytes
+    /// The stride/size of an individual structure in the structured buffer, in bytes. This is only
+    /// relevant for structured buffers. All other buffer types will ignore this field.
     pub structure_byte_stride: u32,
 }
 
