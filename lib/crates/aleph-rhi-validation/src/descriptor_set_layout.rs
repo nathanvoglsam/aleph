@@ -79,7 +79,4 @@ pub struct DescriptorBindingInfo {
 
     /// Whether this binding is a static sampler.
     pub is_static_sampler: bool,
-
-    /// Declares whether the descriptor's underlying resource can be accessed with write access.
-    pub allow_writes: bool,
 }

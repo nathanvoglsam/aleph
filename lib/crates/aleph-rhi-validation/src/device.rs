@@ -229,7 +229,6 @@ impl IDevice for ValidationDevice {
                     r#type: binding.binding_type,
                     descriptor_count: binding.binding_count,
                     is_static_sampler: binding.static_samplers.is_some(),
-                    allow_writes: binding.allow_writes,
                 },
             );
         }
@@ -267,7 +266,6 @@ impl IDevice for ValidationDevice {
                 binding_num: v.binding_num,
                 binding_type: v.binding_type,
                 binding_count: v.binding_count,
-                allow_writes: v.allow_writes,
                 static_samplers,
             };
             items.push(item);
@@ -587,19 +585,6 @@ impl ValidationDevice {
             if binding.binding_count.is_some() {
                 unimplemented!("Currently descriptor arrays are unimplemented");
             }
-
-            if matches!(
-                binding.binding_type,
-                DescriptorType::UniformBuffer
-                    | DescriptorType::UniformTexelBuffer
-                    | DescriptorType::Sampler
-                    | DescriptorType::InputAttachment
-            ) {
-                assert!(
-                    !binding.allow_writes,
-                    "DescriptorType ConstantBuffer or Sampler can't allow writes"
-                )
-            }
         }
 
         fn calculate_binding_range(v: &DescriptorSetLayoutBinding) -> (u32, u32) {
@@ -665,7 +650,7 @@ impl ValidationDevice {
         // 'descriptor_type' in the write description must match the type declared in the descriptor
         // set layout.
         let expected_binding_type = info.r#type;
-        let actual_binding_type = write.descriptor_type;
+        let actual_binding_type = write.writes.descriptor_type();
         assert_eq!(
             expected_binding_type, actual_binding_type,
             "It is invalid to write the incorrect descriptor type into a binding."
@@ -694,46 +679,19 @@ impl ValidationDevice {
         );
 
         // Check that the declared descriptor type matches the DescriptorWrites variant provided.
-        match write.descriptor_type {
-            DescriptorType::Sampler => assert!(
-                matches!(write.writes, DescriptorWrites::Sampler(_)),
-                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::SampledImage | DescriptorType::StorageImage => {
-                if let DescriptorWrites::Image(writes) = write.writes {
-                    for v in writes {
-                        let image_view =
-                            &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view);
-                        assert!(
-                            matches!(image_view.view_type, ValidationViewType::ResourceView),
-                            "Writing a resource view with an '{:?}' image view is invalid",
-                            image_view.view_type
-                        );
-                    }
+        match &write.writes {
+            DescriptorWrites::Texture(writes) | DescriptorWrites::TextureRW(writes) => {
+                for v in writes.iter() {
+                    let image_view =
+                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view);
+                    assert!(
+                        matches!(image_view.view_type, ValidationViewType::ResourceView),
+                        "Writing a resource view with an '{:?}' image view is invalid",
+                        image_view.view_type
+                    );
                 }
-                assert!(
-                    matches!(write.writes, DescriptorWrites::Image(_)),
-                    "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                    write.descriptor_type
-                )
             }
-
-            DescriptorType::UniformTexelBuffer | DescriptorType::StorageTexelBuffer => assert!(
-                matches!(write.writes, DescriptorWrites::TexelBuffer(_)),
-                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::UniformBuffer | DescriptorType::StorageBuffer => assert!(
-                matches!(write.writes, DescriptorWrites::Buffer(_)),
-                "Invalid DescriptorWrites type' for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
-            DescriptorType::StructuredBuffer | DescriptorType::InputAttachment => assert!(
-                matches!(write.writes, DescriptorWrites::StructuredBuffer(_)),
-                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
-                write.descriptor_type
-            ),
+            _ => {}
         }
     }
 }

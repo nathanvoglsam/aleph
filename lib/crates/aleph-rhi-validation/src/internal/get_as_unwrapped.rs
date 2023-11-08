@@ -126,7 +126,6 @@ pub fn descriptor_set_updates<Return>(
             set,
             binding: v.binding,
             array_element: v.array_element,
-            descriptor_type: v.descriptor_type,
             writes: new_descriptor_writes[i].as_ref(),
         });
     }
@@ -225,21 +224,41 @@ pub fn descriptor_writes<'a>(writes: &'a DescriptorWrites<'a>) -> OwnedDescripto
             let writes: Vec<_> = v.iter().map(sampler_descriptor_write).collect();
             OwnedDescriptorWrites::Sampler(writes)
         }
-        DescriptorWrites::Image(v) => {
-            let writes: Vec<_> = v.iter().map(image_descriptor_write).collect();
-            OwnedDescriptorWrites::Image(writes)
-        }
-        DescriptorWrites::Buffer(v) => {
-            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::Buffer(writes)
-        }
-        DescriptorWrites::StructuredBuffer(v) => {
-            let writes: Vec<_> = v.iter().map(structured_buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::StructuredBuffer(writes)
-        }
         DescriptorWrites::TexelBuffer(v) => {
             let writes: Vec<_> = v.iter().map(texel_buffer_descriptor_write).collect();
             OwnedDescriptorWrites::TexelBuffer(writes)
+        }
+        DescriptorWrites::TexelBufferRW(v) => {
+            let writes: Vec<_> = v.iter().map(texel_buffer_descriptor_write).collect();
+            OwnedDescriptorWrites::TexelBufferRW(writes)
+        }
+        DescriptorWrites::Texture(v) => {
+            let writes: Vec<_> = v.iter().map(image_descriptor_write).collect();
+            OwnedDescriptorWrites::Texture(writes)
+        }
+        DescriptorWrites::TextureRW(v) => {
+            let writes: Vec<_> = v.iter().map(image_descriptor_write).collect();
+            OwnedDescriptorWrites::TextureRW(writes)
+        }
+        DescriptorWrites::UniformBuffer(v) => {
+            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
+            OwnedDescriptorWrites::UniformBuffer(writes)
+        }
+        DescriptorWrites::StructuredBuffer(v) => {
+            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
+            OwnedDescriptorWrites::StructuredBuffer(writes)
+        }
+        DescriptorWrites::StructuredBufferRW(v) => {
+            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
+            OwnedDescriptorWrites::StructuredBufferRW(writes)
+        }
+        DescriptorWrites::ByteAddressBuffer(v) => {
+            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
+            OwnedDescriptorWrites::ByteAddressBuffer(writes)
+        }
+        DescriptorWrites::ByteAddressBufferRW(v) => {
+            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
+            OwnedDescriptorWrites::ByteAddressBufferRW(writes)
         }
         DescriptorWrites::InputAttachment(v) => {
             let writes: Vec<_> = v.iter().map(image_descriptor_write).collect();
@@ -279,20 +298,7 @@ pub fn buffer_descriptor_write<'a>(
         buffer,
         offset: write.offset,
         len: write.len,
-        writable: write.writable,
-    }
-}
-
-pub fn structured_buffer_descriptor_write<'a>(
-    write: &'a StructuredBufferDescriptorWrite<'a>,
-) -> StructuredBufferDescriptorWrite<'a> {
-    let buffer = buffer(write.buffer);
-    StructuredBufferDescriptorWrite {
-        buffer,
-        offset: write.offset,
-        len: write.len,
         structure_byte_stride: write.structure_byte_stride,
-        writable: write.writable,
     }
 }
 
@@ -305,32 +311,37 @@ pub fn texel_buffer_descriptor_write<'a>(
         format: write.format,
         offset: write.offset,
         len: write.len,
-        writable: write.writable,
     }
 }
 
 pub enum OwnedDescriptorWrites<'a> {
     Sampler(Vec<SamplerDescriptorWrite<'a>>),
-    Image(Vec<ImageDescriptorWrite>),
-    Buffer(Vec<BufferDescriptorWrite<'a>>),
-    StructuredBuffer(Vec<StructuredBufferDescriptorWrite<'a>>),
     TexelBuffer(Vec<TexelBufferDescriptorWrite<'a>>),
+    TexelBufferRW(Vec<TexelBufferDescriptorWrite<'a>>),
+    Texture(Vec<ImageDescriptorWrite>),
+    TextureRW(Vec<ImageDescriptorWrite>),
+    UniformBuffer(Vec<BufferDescriptorWrite<'a>>),
+    StructuredBuffer(Vec<BufferDescriptorWrite<'a>>),
+    StructuredBufferRW(Vec<BufferDescriptorWrite<'a>>),
+    ByteAddressBuffer(Vec<BufferDescriptorWrite<'a>>),
+    ByteAddressBufferRW(Vec<BufferDescriptorWrite<'a>>),
     InputAttachment(Vec<ImageDescriptorWrite>),
 }
 
 impl<'a> OwnedDescriptorWrites<'a> {
     pub fn as_ref(&self) -> DescriptorWrites {
         match self {
-            OwnedDescriptorWrites::Sampler(v) => DescriptorWrites::Sampler(v.as_slice()),
-            OwnedDescriptorWrites::Image(v) => DescriptorWrites::Image(v.as_slice()),
-            OwnedDescriptorWrites::Buffer(v) => DescriptorWrites::Buffer(v.as_slice()),
-            OwnedDescriptorWrites::StructuredBuffer(v) => {
-                DescriptorWrites::StructuredBuffer(v.as_slice())
-            }
-            OwnedDescriptorWrites::TexelBuffer(v) => DescriptorWrites::TexelBuffer(v.as_slice()),
-            OwnedDescriptorWrites::InputAttachment(v) => {
-                DescriptorWrites::InputAttachment(v.as_slice())
-            }
+            Self::Sampler(v) => DescriptorWrites::Sampler(v.as_slice()),
+            Self::TexelBuffer(v) => DescriptorWrites::TexelBuffer(v.as_slice()),
+            Self::TexelBufferRW(v) => DescriptorWrites::TexelBufferRW(v.as_slice()),
+            Self::Texture(v) => DescriptorWrites::Texture(v.as_slice()),
+            Self::TextureRW(v) => DescriptorWrites::TextureRW(v.as_slice()),
+            Self::UniformBuffer(v) => DescriptorWrites::UniformBuffer(v.as_slice()),
+            Self::StructuredBuffer(v) => DescriptorWrites::StructuredBuffer(v.as_slice()),
+            Self::StructuredBufferRW(v) => DescriptorWrites::StructuredBufferRW(v.as_slice()),
+            Self::ByteAddressBuffer(v) => DescriptorWrites::ByteAddressBuffer(v.as_slice()),
+            Self::ByteAddressBufferRW(v) => DescriptorWrites::ByteAddressBufferRW(v.as_slice()),
+            Self::InputAttachment(v) => DescriptorWrites::InputAttachment(v.as_slice()),
         }
     }
 }
