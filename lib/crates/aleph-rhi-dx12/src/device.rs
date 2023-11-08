@@ -1386,6 +1386,8 @@ impl Device {
             }
             DescriptorWrites::ByteAddressBufferRW(writes)
             | DescriptorWrites::ByteAddressBuffer(writes)
+            | DescriptorWrites::StructuredBufferRW(writes)
+            | DescriptorWrites::StructuredBuffer(writes)
             | DescriptorWrites::UniformBuffer(writes) => self.update_buffer_descriptors(
                 set_write.array_element,
                 set,
@@ -1393,16 +1395,9 @@ impl Device {
                 writes,
                 set_write.writes.descriptor_type(),
             ),
-            DescriptorWrites::StructuredBufferRW(writes)
-            | DescriptorWrites::StructuredBuffer(writes) => self
-                .update_structured_buffer_descriptors(
-                    set_write.array_element,
-                    set,
-                    binding_layout,
-                    writes,
-                    set_write.writes.descriptor_type(),
-                ),
-            _ => unimplemented!(),
+            DescriptorWrites::InputAttachment(_) => {
+                unimplemented!()
+            }
         };
     }
 
@@ -1529,38 +1524,6 @@ impl Device {
                 DescriptorType::ByteAddressBufferRW => {
                     self.update_storage_buffer_descriptor_uav(v, buffer, dst);
                 }
-                _ => {}
-            }
-        }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    unsafe fn update_structured_buffer_descriptors(
-        &self,
-        array_base: u32,
-        set: NonNull<DescriptorSet>,
-        binding_layout: DescriptorBindingLayout,
-        writes: &[StructuredBufferDescriptorWrite],
-        d_type: DescriptorType,
-    ) {
-        let set = set.as_ref();
-
-        for (i, v) in writes.iter().enumerate() {
-            let (dst, _) = set.assume_r_handle();
-
-            let buffer = unwrap::buffer(v.buffer);
-
-            let dst = Self::calculate_dst_handle(
-                dst,
-                self.descriptor_heap_info.resource_inc,
-                binding_layout.base,
-                array_base,
-                i,
-            );
-
-            match d_type {
                 DescriptorType::StructuredBuffer => {
                     self.update_structured_buffer_descriptor_srv(v, buffer, dst);
                 }
@@ -1688,7 +1651,7 @@ impl Device {
 
     unsafe fn update_structured_buffer_descriptor_srv(
         &self,
-        write: &StructuredBufferDescriptorWrite,
+        write: &BufferDescriptorWrite,
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
@@ -1711,9 +1674,12 @@ impl Device {
             .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     unsafe fn update_structured_buffer_descriptor_uav(
         &self,
-        write: &StructuredBufferDescriptorWrite,
+        write: &BufferDescriptorWrite,
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
@@ -1765,6 +1731,9 @@ impl Device {
         self.device
             .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     unsafe fn update_texel_buffer_descriptor_uav(
         &self,
