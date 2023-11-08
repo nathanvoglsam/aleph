@@ -858,74 +858,6 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            // TODO: perf. this can be made single pass (and simpler)
-            let mut image_infos = BVec::new_in(&bump);
-            let mut buffer_infos = BVec::new_in(&bump);
-            let mut texel_buffer_infos = BVec::new_in(&bump);
-            for write in writes {
-                match write.writes {
-                    DescriptorWrites::Sampler(v) => {
-                        for v in v {
-                            let image_info = vk::DescriptorImageInfo::builder()
-                                .sampler(unwrap::sampler(v.sampler).sampler)
-                                .build();
-                            image_infos.push(image_info);
-                        }
-                    }
-                    DescriptorWrites::TexelBufferRW(v) | DescriptorWrites::TexelBuffer(v) => {
-                        for _v in v {
-                            texel_buffer_infos.push(vk::BufferView::null());
-                        }
-                    }
-                    DescriptorWrites::TextureRW(v) | DescriptorWrites::Texture(v) => {
-                        for v in v {
-                            let image_info = vk::DescriptorImageInfo::builder()
-                                .image_view(std::mem::transmute(v.image_view))
-                                .image_layout(image_layout_to_vk(v.image_layout))
-                                .build();
-                            image_infos.push(image_info);
-                        }
-                    }
-                    DescriptorWrites::ByteAddressBuffer(v)
-                    | DescriptorWrites::ByteAddressBufferRW(v)
-                    | DescriptorWrites::UniformBuffer(v) => {
-                        for v in v {
-                            let buffer = unwrap::buffer(v.buffer).buffer;
-                            let buffer_info = vk::DescriptorBufferInfo::builder()
-                                .buffer(buffer)
-                                .offset(v.offset)
-                                .range(v.len as _)
-                                .build();
-                            buffer_infos.push(buffer_info);
-                        }
-                    }
-                    DescriptorWrites::StructuredBufferRW(v)
-                    | DescriptorWrites::StructuredBuffer(v) => {
-                        for v in v {
-                            let buffer = unwrap::buffer(v.buffer).buffer;
-                            let buffer_info = vk::DescriptorBufferInfo::builder()
-                                .buffer(buffer)
-                                .offset(v.offset)
-                                .range(v.len as _)
-                                .build();
-                            buffer_infos.push(buffer_info);
-                        }
-                    }
-                    DescriptorWrites::InputAttachment(v) => {
-                        for v in v {
-                            let image_info = vk::DescriptorImageInfo::builder()
-                                .image_view(std::mem::transmute(v.image_view))
-                                .image_layout(image_layout_to_vk(v.image_layout))
-                                .build();
-                            image_infos.push(image_info);
-                        }
-                    }
-                }
-            }
-
-            let mut image_info_idx = 0;
-            let mut buffer_info_idx = 0;
-            let mut texel_buffer_info_idx = 0;
             let mut descriptor_writes = BVec::with_capacity_in(writes.len(), &bump);
             for write in writes {
                 let d_type = write.writes.descriptor_type();
@@ -935,34 +867,50 @@ impl IDevice for Device {
                     .dst_binding(write.binding)
                     .dst_array_element(write.array_element)
                     .descriptor_type(d_type);
-
-                let len = write.writes.len();
                 let new_write = match write.writes {
-                    DescriptorWrites::TexelBufferRW(_) | DescriptorWrites::TexelBuffer(_) => {
-                        let base = texel_buffer_info_idx;
-                        texel_buffer_info_idx += len;
-                        new_write
-                            .texel_buffer_view(&texel_buffer_infos[base..texel_buffer_info_idx])
+                    DescriptorWrites::Sampler(v) => {
+                        let translator = v.iter().map(|v| {
+                            vk::DescriptorImageInfo::builder()
+                                .sampler(unwrap::sampler(v.sampler).sampler)
+                                .build()
+                        });
+                        let image_infos = bump.alloc_slice_fill_iter(translator);
+                        new_write.image_info(image_infos)
                     }
-                    DescriptorWrites::Sampler(_)
-                    | DescriptorWrites::InputAttachment(_)
-                    | DescriptorWrites::TextureRW(_)
-                    | DescriptorWrites::Texture(_) => {
-                        let base = image_info_idx;
-                        image_info_idx += len;
-                        new_write.image_info(&image_infos[base..image_info_idx])
+                    DescriptorWrites::TexelBufferRW(v) | DescriptorWrites::TexelBuffer(v) => {
+                        let translator = v.iter().map(|_v| vk::BufferView::null());
+                        let texel_buffer_infos = bump.alloc_slice_fill_iter(translator);
+                        new_write.texel_buffer_view(texel_buffer_infos)
                     }
-                    DescriptorWrites::ByteAddressBufferRW(_)
-                    | DescriptorWrites::ByteAddressBuffer(_)
-                    | DescriptorWrites::StructuredBufferRW(_)
-                    | DescriptorWrites::StructuredBuffer(_)
-                    | DescriptorWrites::UniformBuffer(_) => {
-                        let base = buffer_info_idx;
-                        buffer_info_idx += len;
-                        new_write.buffer_info(&buffer_infos[base..buffer_info_idx])
+                    DescriptorWrites::InputAttachment(v)
+                    | DescriptorWrites::TextureRW(v)
+                    | DescriptorWrites::Texture(v) => {
+                        let translator = v.iter().map(|v| {
+                            vk::DescriptorImageInfo::builder()
+                                .image_view(std::mem::transmute(v.image_view))
+                                .image_layout(image_layout_to_vk(v.image_layout))
+                                .build()
+                        });
+                        let image_infos = bump.alloc_slice_fill_iter(translator);
+                        new_write.image_info(image_infos)
+                    }
+                    DescriptorWrites::ByteAddressBuffer(v)
+                    | DescriptorWrites::ByteAddressBufferRW(v)
+                    | DescriptorWrites::StructuredBufferRW(v)
+                    | DescriptorWrites::StructuredBuffer(v)
+                    | DescriptorWrites::UniformBuffer(v) => {
+                        let translator = v.iter().map(|v| {
+                            let buffer = unwrap::buffer(v.buffer).buffer;
+                            vk::DescriptorBufferInfo::builder()
+                                .buffer(buffer)
+                                .offset(v.offset)
+                                .range(v.len as _)
+                                .build()
+                        });
+                        let buffer_infos = bump.alloc_slice_fill_iter(translator);
+                        new_write.buffer_info(buffer_infos)
                     }
                 };
-
                 descriptor_writes.push(new_write.build());
             }
 
