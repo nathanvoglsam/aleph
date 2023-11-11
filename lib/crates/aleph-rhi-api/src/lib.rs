@@ -2835,7 +2835,7 @@ pub struct BufferDescriptorWrite<'a> {
     /// uses addressing that is relative to this starting offset.
     pub offset: u64,
 
-    /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
+    /// The size in bytes that is used for this descriptor update, or [u32::MAX] to use the range
     /// from offset to the end of the buffer.
     pub len: u32,
 
@@ -2857,7 +2857,7 @@ pub struct TexelBufferDescriptorWrite<'a> {
     /// uses addressing that is relative to this starting offset.
     pub offset: u64,
 
-    /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
+    /// The size in bytes that is used for this descriptor update, or [u32::MAX] to use the range
     /// from offset to the end of the buffer.
     pub len: u32,
 }
