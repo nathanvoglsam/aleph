@@ -900,11 +900,12 @@ impl IDevice for Device {
                     | DescriptorWrites::StructuredBuffer(v)
                     | DescriptorWrites::UniformBuffer(v) => {
                         let translator = v.iter().map(|v| {
-                            let buffer = unwrap::buffer(v.buffer).buffer;
+                            let buffer = unwrap::buffer(v.buffer);
+                            let len = buffer.clamp_max_size_for_view(v.len);
                             vk::DescriptorBufferInfo::builder()
-                                .buffer(buffer)
+                                .buffer(buffer.buffer)
                                 .offset(v.offset)
-                                .range(v.len as _)
+                                .range(len)
                                 .build()
                         });
                         let buffer_infos = bump.alloc_slice_fill_iter(translator);
