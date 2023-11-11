@@ -53,6 +53,26 @@ impl IGetPlatformInterface for Buffer {
     }
 }
 
+impl Buffer {
+    /// When creating buffer views the API user can request the full buffer's range be bound without
+    /// knowing the size by specifying the size as [u32::MAX]. This function is a utility wrapper
+    /// for clamping the given size to the buffer's size when a full buffer binding is requested.
+    ///
+    /// This will only clamp when u32::MAX is given, otherwise the value will pass through
+    /// unchanged. If the size is larger than the buffer then we'll likely UB in the underlying
+    /// rendering API. We do have a debug assert here though for this case, but it will only run on
+    /// debug builds.
+    pub(crate) fn clamp_max_size_for_view(&self, size: u32) -> u32 {
+        if size == u32::MAX {
+            self.desc.size.try_into()
+                .expect("The buffer is too large to create a full range view")
+        } else {
+            debug_assert!((size as u64) <= self.desc.size, "The requested view range is larger than the buffer");
+            size
+        }
+    }
+}
+
 impl IBuffer for Buffer {
     fn upgrade(&self) -> AnyArc<dyn IBuffer> {
         AnyArc::map::<dyn IBuffer, _>(self.this.upgrade().unwrap(), |v| v)

@@ -1603,6 +1603,8 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
+        let len = buffer.clamp_max_size_for_view(write.len);
+
         let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
             Format: DXGI_FORMAT_R32_TYPELESS,
             ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
@@ -1610,7 +1612,7 @@ impl Device {
             Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                 Buffer: D3D12_BUFFER_SRV {
                     FirstElement: write.offset / 4,
-                    NumElements: write.len / 4,
+                    NumElements: len / 4,
                     StructureByteStride: 0,
                     Flags: D3D12_BUFFER_SRV_FLAG_RAW,
                 },
@@ -1629,13 +1631,15 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
+        let len = buffer.clamp_max_size_for_view(write.len);
+
         let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
             Format: DXGI_FORMAT_R32_TYPELESS,
             ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
             Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
                 Buffer: D3D12_BUFFER_UAV {
                     FirstElement: write.offset / 4,
-                    NumElements: write.len / 4,
+                    NumElements: len / 4,
                     StructureByteStride: 0,
                     CounterOffsetInBytes: 0,
                     Flags: D3D12_BUFFER_UAV_FLAG_RAW,
@@ -1655,8 +1659,10 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
+        let len = buffer.clamp_max_size_for_view(write.len);
+
         let first_element = write.offset / write.structure_byte_stride as u64;
-        let num_elements = write.len / write.structure_byte_stride;
+        let num_elements = len / write.structure_byte_stride;
         let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
             Format: DXGI_FORMAT_UNKNOWN,
             ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
@@ -1683,8 +1689,10 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
+        let len = buffer.clamp_max_size_for_view(write.len);
+
         let first_element = write.offset / write.structure_byte_stride as u64;
-        let num_elements = write.len / write.structure_byte_stride;
+        let num_elements = len / write.structure_byte_stride;
         let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
             Format: DXGI_FORMAT_UNKNOWN,
             ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
@@ -1711,10 +1719,12 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
+        let len = buffer.clamp_max_size_for_view(write.len);
+
         let format = texture_format_to_dxgi(write.format);
         let bytes_per_element = write.format.bytes_per_element();
         let first_element = write.offset / bytes_per_element as u64;
-        let num_elements = write.len / bytes_per_element;
+        let num_elements = len / bytes_per_element;
         let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
             Format: format,
             ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
@@ -1741,10 +1751,12 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
+        let len = buffer.clamp_max_size_for_view(write.len);
+
         let format = texture_format_to_dxgi(write.format);
         let bytes_per_element = write.format.bytes_per_element();
         let first_element = write.offset / bytes_per_element as u64;
-        let num_elements = write.len / bytes_per_element;
+        let num_elements = len / bytes_per_element;
         let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
             Format: format,
             ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
