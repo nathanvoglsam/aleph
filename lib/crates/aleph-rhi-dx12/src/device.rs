@@ -1519,10 +1519,10 @@ impl Device {
                     self.update_uniform_buffer_descriptor(v, buffer, dst);
                 }
                 DescriptorType::ByteAddressBuffer => {
-                    self.update_storage_buffer_descriptor_srv(v, buffer, dst);
+                    self.update_byte_address_buffer_descriptor_srv(v, buffer, dst);
                 }
                 DescriptorType::ByteAddressBufferRW => {
-                    self.update_storage_buffer_descriptor_uav(v, buffer, dst);
+                    self.update_byte_address_buffer_descriptor_uav(v, buffer, dst);
                 }
                 DescriptorType::StructuredBuffer => {
                     self.update_structured_buffer_descriptor_srv(v, buffer, dst);
@@ -1597,7 +1597,7 @@ impl Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_storage_buffer_descriptor_srv(
+    unsafe fn update_byte_address_buffer_descriptor_srv(
         &self,
         write: &BufferDescriptorWrite,
         buffer: &Buffer,
@@ -1623,7 +1623,7 @@ impl Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_storage_buffer_descriptor_uav(
+    unsafe fn update_byte_address_buffer_descriptor_uav(
         &self,
         write: &BufferDescriptorWrite,
         buffer: &Buffer,
