@@ -83,6 +83,15 @@ impl Texture {
         }
     }
 
+    fn alloc_image_view(&self, view: CPUDescriptorHandle, format: DXGI_FORMAT) -> NonNull<ImageViewObject> {
+        let views = self.image_views.lock();
+        let view = views.alloc(ImageViewObject {
+            handle: view,
+            format,
+        });
+        NonNull::from(view)
+    }
+
     pub fn make_rtv_desc_for_view_desc(desc: &ImageViewDesc) -> D3D12_RENDER_TARGET_VIEW_DESC {
         let (view_dimension, anonymous) = match desc.view_type {
             ImageViewType::TexArray1D => (
@@ -452,15 +461,7 @@ impl ITexture for Texture {
                 desc.Format
             };
 
-            let view = {
-                let views = self.image_views.lock();
-                let view = views.alloc(ImageViewObject {
-                    handle: view,
-                    format,
-                });
-                NonNull::from(view)
-            };
-
+            let view = self.alloc_image_view(view, format);
             views.insert(desc.clone(), view);
             view
         };
@@ -490,15 +491,7 @@ impl ITexture for Texture {
                 );
             }
 
-            let view = {
-                let views = self.image_views.lock();
-                let view = views.alloc(ImageViewObject {
-                    handle: view,
-                    format: t_desc.Format,
-                });
-                NonNull::from(view)
-            };
-
+            let view = self.alloc_image_view(view, t_desc.Format);
             views.insert(desc.clone(), view);
             view
         };
@@ -528,15 +521,7 @@ impl ITexture for Texture {
                 );
             }
 
-            let view = {
-                let views = self.image_views.lock();
-                let view = views.alloc(ImageViewObject {
-                    handle: view,
-                    format: t_desc.Format,
-                });
-                NonNull::from(view)
-            };
-
+            let view = self.alloc_image_view(view, t_desc.Format);
             views.insert(desc.clone(), view);
             view
         };
