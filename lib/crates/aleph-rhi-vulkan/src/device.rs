@@ -637,7 +637,7 @@ impl IDevice for Device {
         };
 
         let mut usage = vk::ImageUsageFlags::empty();
-        if desc.usage.contains(TextureUsageFlags::SAMPLED_ACCESS) {
+        if desc.usage.contains(TextureUsageFlags::SHADER_RESOURCE) {
             usage |= vk::ImageUsageFlags::SAMPLED
         }
         if desc.usage.contains(TextureUsageFlags::COPY_DEST) {
