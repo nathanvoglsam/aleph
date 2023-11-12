@@ -187,20 +187,16 @@ pub const fn image_layout_to_vk(layout: ImageLayout) -> vk::ImageLayout {
         ImageLayout::Undefined => vk::ImageLayout::UNDEFINED,
         ImageLayout::Common => vk::ImageLayout::GENERAL,
         ImageLayout::PresentSrc => vk::ImageLayout::PRESENT_SRC_KHR,
-        ImageLayout::ColorAttachmentOptimal => vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-        ImageLayout::DepthStencilAttachmentOptimal => {
-            vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-        }
-        ImageLayout::DepthStencilReadOnlyOptimal => {
-            vk::ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL
-        }
-        ImageLayout::ShaderReadOnlyOptimal => vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+        ImageLayout::ColorAttachment => vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+        ImageLayout::DepthStencilAttachment => vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        ImageLayout::DepthStencilReadOnly => vk::ImageLayout::DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+        ImageLayout::ShaderReadOnly => vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
         ImageLayout::CopySrc => vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
         ImageLayout::CopyDst => vk::ImageLayout::TRANSFER_DST_OPTIMAL,
         ImageLayout::UnorderedAccess => vk::ImageLayout::GENERAL,
         ImageLayout::ResolveSource => vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
         ImageLayout::ResolveDest => vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-        ImageLayout::ShadingRateAttachmentOptimal => {
+        ImageLayout::ShadingRateAttachment => {
             vk::ImageLayout::FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR
         }
     }
