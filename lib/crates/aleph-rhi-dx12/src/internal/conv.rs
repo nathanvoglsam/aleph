@@ -300,7 +300,7 @@ pub const fn image_layout_to_dx12(
     match queue_type {
         Some(QueueType::General) => match layout {
             ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
-            ImageLayout::Common => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_COMMON,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_GENERIC_READ,
             ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT_PRESENT,
             ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT_RENDER_TARGET,
             ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
@@ -315,7 +315,7 @@ pub const fn image_layout_to_dx12(
         },
         Some(QueueType::Compute) => match layout {
             ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
-            ImageLayout::Common => D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_COMMON,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_GENERIC_READ,
             ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT_PRESENT,
             ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT_RENDER_TARGET,
             ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
@@ -332,7 +332,7 @@ pub const fn image_layout_to_dx12(
         },
         Some(QueueType::Transfer) | None => match layout {
             ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
-            ImageLayout::Common => D3D12_BARRIER_LAYOUT_COMMON,
+            ImageLayout::Common => D3D12_BARRIER_LAYOUT_GENERIC_READ,
             ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT_PRESENT,
             ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT_RENDER_TARGET,
             ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE,
