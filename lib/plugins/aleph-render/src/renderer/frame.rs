@@ -201,7 +201,7 @@ impl PerFrameObjects {
                 before_sync: BarrierSync::COPY,
                 after_sync: BarrierSync::ALL,
                 before_access: BarrierAccess::COPY_WRITE,
-                after_access: BarrierAccess::SHADER_SAMPLED_READ,
+                after_access: BarrierAccess::SHADER_READ,
                 before_layout: ImageLayout::CopyDst,
                 after_layout: ImageLayout::ShaderReadOnly,
                 queue_transition: None,
@@ -224,7 +224,7 @@ impl PerFrameObjects {
                 mip_levels: 1,
                 sample_count: 1,
                 sample_quality: 0,
-                usage: TextureUsageFlags::COPY_DEST | TextureUsageFlags::SAMPLED_ACCESS,
+                usage: TextureUsageFlags::COPY_DEST | TextureUsageFlags::SHADER_RESOURCE,
                 ..Default::default()
             })
             .unwrap();
