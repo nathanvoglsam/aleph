@@ -83,7 +83,11 @@ impl Texture {
         }
     }
 
-    fn alloc_image_view(&self, view: CPUDescriptorHandle, format: DXGI_FORMAT) -> NonNull<ImageViewObject> {
+    fn alloc_image_view(
+        &self,
+        view: CPUDescriptorHandle,
+        format: DXGI_FORMAT,
+    ) -> NonNull<ImageViewObject> {
         let views = self.image_views.lock();
         let view = views.alloc(ImageViewObject {
             handle: view,

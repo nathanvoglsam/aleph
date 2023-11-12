@@ -64,10 +64,15 @@ impl Buffer {
     /// debug builds.
     pub(crate) fn clamp_max_size_for_view(&self, size: u32) -> u32 {
         if size == u32::MAX {
-            self.desc.size.try_into()
+            self.desc
+                .size
+                .try_into()
                 .expect("The buffer is too large to create a full range view")
         } else {
-            debug_assert!((size as u64) <= self.desc.size, "The requested view range is larger than the buffer");
+            debug_assert!(
+                (size as u64) <= self.desc.size,
+                "The requested view range is larger than the buffer"
+            );
             size
         }
     }
