@@ -460,12 +460,6 @@ pub fn barrier_access_to_vk2(access: BarrierAccess) -> vk::AccessFlags2 {
     translate_flag_onto!(
         access,
         out,
-        BarrierAccess::SHADER_SAMPLED_READ,
-        vk::AccessFlags2::SHADER_SAMPLED_READ
-    );
-    translate_flag_onto!(
-        access,
-        out,
         BarrierAccess::RENDER_TARGET_READ,
         vk::AccessFlags2::COLOR_ATTACHMENT_READ
     );
@@ -552,12 +546,6 @@ pub fn barrier_access_to_vk(access: BarrierAccess) -> vk::AccessFlags {
         out,
         BarrierAccess::INDIRECT_COMMAND_READ,
         vk::AccessFlags::INDIRECT_COMMAND_READ
-    );
-    translate_flag_onto!(
-        access,
-        out,
-        BarrierAccess::SHADER_SAMPLED_READ,
-        vk::AccessFlags::SHADER_READ
     );
     translate_flag_onto!(
         access,
