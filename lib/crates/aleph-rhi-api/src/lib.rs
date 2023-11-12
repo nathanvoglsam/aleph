@@ -1446,18 +1446,18 @@ pub enum ImageLayout {
 
     /// Layout suitable for use as a color attachment render target, for either read-only or
     /// read/write access.
-    ColorAttachmentOptimal,
+    ColorAttachment,
 
     /// Layout suitable for use as a depth stencil attachment render target, for either read-only
     /// or read/write access.
-    DepthStencilAttachmentOptimal,
+    DepthStencilAttachment,
 
-    /// Similar to [ImageLayout::ShaderReadOnlyOptimal]. Allow usage as a read-only shader resource
+    /// Similar to [ImageLayout::ShaderReadOnly]. Allow usage as a read-only shader resource
     /// as well as a read-only depth/stencil attachment.
-    DepthStencilReadOnlyOptimal,
+    DepthStencilReadOnly,
 
     /// Specifies a layout allowing read-only access in a shader.
-    ShaderReadOnlyOptimal,
+    ShaderReadOnly,
 
     /// Must only be used as a source image of a copy command.
     CopySrc,
@@ -1478,7 +1478,7 @@ pub enum ImageLayout {
     ResolveDest,
 
     /// Must only be used as a fragment shading rate attachment or shading rate image.
-    ShadingRateAttachmentOptimal,
+    ShadingRateAttachment,
 }
 
 impl Default for ImageLayout {
