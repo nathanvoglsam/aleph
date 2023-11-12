@@ -311,6 +311,7 @@ pub const fn image_layout_to_dx12(
             ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_UNORDERED_ACCESS,
             ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE,
             ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT_RESOLVE_DEST,
+            ImageLayout::ShadingRateAttachmentOptimal => D3D12_BARRIER_LAYOUT_SHADING_RATE_SOURCE,
         },
         Some(QueueType::Compute) => match layout {
             ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
@@ -327,6 +328,7 @@ pub const fn image_layout_to_dx12(
             ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT_COMPUTE_QUEUE_UNORDERED_ACCESS,
             ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE,
             ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT_RESOLVE_DEST,
+            ImageLayout::ShadingRateAttachmentOptimal => D3D12_BARRIER_LAYOUT_SHADING_RATE_SOURCE,
         },
         Some(QueueType::Transfer) | None => match layout {
             ImageLayout::Undefined => D3D12_BARRIER_LAYOUT_UNDEFINED,
@@ -341,6 +343,7 @@ pub const fn image_layout_to_dx12(
             ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT_UNORDERED_ACCESS,
             ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE,
             ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT_RESOLVE_DEST,
+            ImageLayout::ShadingRateAttachmentOptimal => D3D12_BARRIER_LAYOUT_SHADING_RATE_SOURCE,
         },
     }
 }
