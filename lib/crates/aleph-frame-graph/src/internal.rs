@@ -33,7 +33,7 @@
 //!
 
 use crate::resource::ResourceId;
-use crate::IRenderPass;
+use crate::{IRenderPass, ResourceAccessFlags};
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
@@ -52,19 +52,53 @@ pub struct ResourceRoot {
 
     /// The accumulated access flags for a resource. This is the union of all the ways a
     /// resource is used as within the frame graph.
-    pub access_flags: BarrierAccess,
+    pub access_flags: ResourceAccessFlags,
+}
+
+pub struct ResourceTypeBuffer {
+    pub import_info: Option<ImportedBuffer>,
+    pub create_desc: BufferCreate,
+}
+
+impl Into<ResourceType> for ResourceTypeBuffer {
+    fn into(self) -> ResourceType {
+        ResourceType::Buffer(self)
+    }
+}
+
+pub struct ResourceTypeTexture {
+    pub import_info: Option<ImportedTexture>,
+    pub create_desc: TextureCreate,
+}
+
+impl Into<ResourceType> for ResourceTypeTexture {
+    fn into(self) -> ResourceType {
+        ResourceType::Texture(self)
+    }
 }
 
 pub enum ResourceType {
     Uninitialized,
-    Buffer {
-        import_info: Option<ImportedBuffer>,
-        create_desc: BufferCreate,
-    },
-    Texture {
-        import_info: Option<ImportedTexture>,
-        create_desc: TextureCreate,
-    },
+    Buffer(ResourceTypeBuffer),
+    Texture(ResourceTypeTexture),
+}
+
+impl ResourceType {
+    #[allow(unused)]
+    pub(crate) fn unwrap_buffer(&self) -> &ResourceTypeBuffer {
+        match self {
+            Self::Buffer(v) => v,
+            _ => panic!("self is not a ResourceType::Buffer"),
+        }
+    }
+
+    #[allow(unused)]
+    pub(crate) fn unwrap_texture(&self) -> &ResourceTypeTexture {
+        match self {
+            Self::Texture(v) => v,
+            _ => panic!("self is not a ResourceType::Texture"),
+        }
+    }
 }
 
 impl Default for ResourceType {
@@ -101,27 +135,19 @@ pub struct BufferCreate {
     /// The sync flags that the resource will be used with in the creating pass.
     pub sync: BarrierSync,
 
-    /// The name of the resource. This is a pointer to a region within the main frame graph arena
-    /// that the passes are stored in. It is only sound to access this string immutably, and the
-    /// caller must ensure the relevant arena is still live.
-    pub name: Option<NonNull<str>>,
-
-    /// The immediate access flags that the resource is requested to be used with _within the
-    /// creating pass_.
-    ///
-    /// The [BufferUsageFlags] will be computed by the frame graph _from_ the access flags. A
-    /// resource creation site will not specify the full set of access flags for the resource but
-    /// instead only specifies the set of flags needed for the creating pass to use the resource.
-    /// The frame graph will accumulate all the access flags on the resource across the entire frame
-    /// graph and use that full set of access flags to calculate the usage flags to create the
-    /// resource with.
-    pub access: BarrierAccess,
-
     /// Will eventually contain the full set of usage flags for the resource as calculated by the
     /// frame graph as the union of all the unique ways the resource is used within the graph.
     ///
     /// This is not specified by the graph user.
     pub usage: BufferUsageFlags,
+
+    /// The name of the resource. This is a pointer to a region within the main frame graph arena
+    /// that the passes are stored in. It is only sound to access this string immutably, and the
+    /// caller must ensure the relevant arena is still live.
+    pub name: Option<NonNull<str>>,
+
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceAccessFlags,
 }
 
 #[derive(Default)]
@@ -148,22 +174,8 @@ pub struct TextureCreate {
     /// caller must ensure the relevant arena is still live.
     pub name: Option<NonNull<str>>,
 
-    /// The sync flags that the resource will be used with in the creating pass
-    pub sync: BarrierSync,
-
-    /// The immediate access flags that the resource is requested to be used with _within the
-    /// creating pass_.
-    ///
-    /// The [TextureUsageFlags] will be computed by the frame graph _from_ the access flags. A
-    /// resource creation site will not specify the full set of access flags for the resource but
-    /// instead only specifies the set of flags needed for the creating pass to use the resource.
-    /// The frame graph will accumulate all the access flags on the resource across the entire frame
-    /// graph and use that full set of access flags to calculate the usage flags to create the
-    /// resource with.
-    pub access: BarrierAccess,
-
-    /// The layout of the image as it will be used in the creating pass
-    pub layout: ImageLayout,
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceAccessFlags,
 }
 
 #[derive(Default)]
@@ -196,8 +208,8 @@ pub struct BufferAccess {
     /// Pipeline stage/stages the buffer will be used in
     pub sync: BarrierSync,
 
-    /// The ways the buffer will be accessed
-    pub access: BarrierAccess,
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceAccessFlags,
 }
 
 /// Stores the requested access for a single texture access edge. Could be a read or a write,
@@ -210,11 +222,8 @@ pub struct TextureAccess {
     /// Pipeline stage/stages the texture will be used in
     pub sync: BarrierSync,
 
-    /// The ways the texture will be accessed
-    pub access: BarrierAccess,
-
-    /// The image layout the texture needs to be in for the registering pass
-    pub layout: ImageLayout,
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceAccessFlags,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
@@ -255,7 +264,7 @@ pub struct ResourceVersion {
     /// The union of all the ways this particular version of the resource is used. This is the OR of
     /// all the flags declared by the write that creates this version and all the reads of this
     /// version of the resource.
-    pub access: BarrierAccess,
+    pub access: ResourceAccessFlags,
 
     /// The index of the render pass that caused the new resource version to be created. This could
     /// be through creating a new transient resource or through writing an existing resource.
@@ -279,61 +288,4 @@ impl ResourceHandleInfo {
     pub fn is_written(&self) -> bool {
         self.written
     }
-}
-
-pub fn barrier_access_to_texture_usage_flags(access: BarrierAccess) -> TextureUsageFlags {
-    let mut out = TextureUsageFlags::empty();
-    if access.contains(BarrierAccess::SHADER_SAMPLED_READ) {
-        out |= TextureUsageFlags::SAMPLED_ACCESS;
-    }
-    if access.contains(BarrierAccess::RENDER_TARGET_READ) {
-        out |= TextureUsageFlags::RENDER_TARGET;
-    }
-    if access.contains(BarrierAccess::RENDER_TARGET_WRITE) {
-        out |= TextureUsageFlags::RENDER_TARGET;
-    }
-    if access.contains(BarrierAccess::DEPTH_STENCIL_READ) {
-        out |= TextureUsageFlags::RENDER_TARGET;
-    }
-    if access.contains(BarrierAccess::DEPTH_STENCIL_WRITE) {
-        out |= TextureUsageFlags::RENDER_TARGET;
-    }
-    if access.contains(BarrierAccess::COPY_READ) {
-        out |= TextureUsageFlags::COPY_SOURCE;
-    }
-    if access.contains(BarrierAccess::COPY_WRITE) {
-        out |= TextureUsageFlags::COPY_DEST;
-    }
-    // TODO: unordered access
-    out
-}
-
-pub fn barrier_access_to_buffer_usage_flags(access: BarrierAccess) -> BufferUsageFlags {
-    let mut out = BufferUsageFlags::empty();
-    if access.contains(BarrierAccess::VERTEX_BUFFER_READ) {
-        out |= BufferUsageFlags::VERTEX_BUFFER;
-    }
-    if access.contains(BarrierAccess::INDEX_BUFFER_READ) {
-        out |= BufferUsageFlags::INDEX_BUFFER;
-    }
-    if access.contains(BarrierAccess::CONSTANT_BUFFER_READ) {
-        out |= BufferUsageFlags::CONSTANT_BUFFER;
-    }
-    if access.contains(BarrierAccess::INDIRECT_COMMAND_READ) {
-        out |= BufferUsageFlags::INDIRECT_DRAW_ARGS;
-    }
-    if access.contains(BarrierAccess::COPY_READ) {
-        out |= BufferUsageFlags::COPY_SOURCE;
-    }
-    if access.contains(BarrierAccess::COPY_WRITE) {
-        out |= BufferUsageFlags::COPY_DEST;
-    }
-    if access.contains(BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ) {
-        out |= BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE;
-    }
-    if access.contains(BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE) {
-        out |= BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE;
-    }
-    // TODO: unordered access
-    out
 }

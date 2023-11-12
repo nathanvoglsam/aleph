@@ -46,5 +46,6 @@ aleph-any = { workspace = true }
 aleph-arena-drop-list = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-type-id-hasher = { workspace = true }
+bitflags = { workspace = true }
 parking_lot = { workspace = true }
 bumpalo = { workspace = true }

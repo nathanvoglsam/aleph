@@ -52,7 +52,7 @@
 use crate::internal::*;
 use crate::render_pass::CallbackRenderPass;
 use crate::resource::ResourceId;
-use crate::{FrameGraph, IRenderPass, ResourceMut, ResourceRef};
+use crate::{FrameGraph, IRenderPass, ResourceAccessFlags, ResourceMut, ResourceRef};
 use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
 use bumpalo::Bump;
@@ -67,7 +67,6 @@ pub struct FrameGraphBuilder {
     // /// [FrameGraphBuilder] instance. This can be used to allocate anything that only needs to exist
     // /// as long as the graph is being built.
     // pub(crate) build_arena: Bump,
-
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
     pub(crate) render_passes: Vec<RenderPass>,
@@ -221,7 +220,7 @@ impl FrameGraphBuilder {
             after_access: desc.after_access,
             after_layout: desc.after_layout,
         };
-        let r_type = ResourceType::Texture {
+        let r_type = ResourceTypeTexture {
             create_desc: TextureCreate::default(),
             import_info: Some(imported),
         };
@@ -229,7 +228,7 @@ impl FrameGraphBuilder {
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
         let r = self.create_new_handle(usize::MAX);
-        self.set_resource_type_for(r, r_type);
+        self.set_resource_type_for(r, r_type.into());
         self.add_imported_resource_to_list(r);
 
         r
@@ -243,7 +242,7 @@ impl FrameGraphBuilder {
             after_sync: desc.after_sync,
             after_access: desc.after_access,
         };
-        let r_type = ResourceType::Buffer {
+        let r_type = ResourceTypeBuffer {
             create_desc: BufferCreate::default(),
             import_info: Some(imported),
         };
@@ -251,7 +250,7 @@ impl FrameGraphBuilder {
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
         let r = self.create_new_handle(usize::MAX);
-        self.set_resource_type_for(r, r_type);
+        self.set_resource_type_for(r, r_type.into());
         self.add_imported_resource_to_list(r);
 
         r
@@ -261,8 +260,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
-        layout: ImageLayout,
+        access: ResourceAccessFlags,
     ) -> ResourceRef {
         let r = resource.into();
 
@@ -273,7 +271,6 @@ impl FrameGraphBuilder {
             texture: r.0,
             sync,
             access,
-            layout,
         };
         self.pass_access_info
             .reads
@@ -285,7 +282,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) -> ResourceRef {
         let r = resource.into();
 
@@ -307,8 +304,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
-        layout: ImageLayout,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
         let r = resource.into();
 
@@ -326,7 +322,6 @@ impl FrameGraphBuilder {
             texture: r.0,
             sync,
             access,
-            layout,
         };
         self.pass_access_info
             .writes
@@ -339,7 +334,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
         let r = resource.into();
 
@@ -386,8 +381,7 @@ impl FrameGraphBuilder {
         &mut self,
         desc: &TextureDesc,
         sync: BarrierSync,
-        access: BarrierAccess,
-        layout: ImageLayout,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
         debug_assert!(
             desc.usage.is_empty(),
@@ -407,9 +401,7 @@ impl FrameGraphBuilder {
             mip_levels: desc.mip_levels,
             sample_count: desc.sample_count,
             sample_quality: desc.sample_quality,
-            sync,
             access,
-            layout,
             usage: Default::default(),
             name,
         };
@@ -417,10 +409,11 @@ impl FrameGraphBuilder {
         let r = self.create_new_handle(self.render_passes.len());
         self.set_resource_type_for(
             r,
-            ResourceType::Texture {
+            ResourceTypeTexture {
                 create_desc,
                 import_info: None,
-            },
+            }
+            .into(),
         );
         self.add_texture_flags_to_version_for(r, access);
 
@@ -431,7 +424,7 @@ impl FrameGraphBuilder {
         &mut self,
         desc: &BufferDesc,
         sync: BarrierSync,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
         debug_assert!(
             desc.usage.is_empty(),
@@ -443,18 +436,19 @@ impl FrameGraphBuilder {
         let create_desc = BufferCreate {
             size: desc.size,
             sync,
-            access,
             usage: Default::default(),
+            access,
             name,
         };
 
         let r = self.create_new_handle(self.render_passes.len());
         self.set_resource_type_for(
             r,
-            ResourceType::Buffer {
+            ResourceTypeBuffer {
                 create_desc,
                 import_info: None,
-            },
+            }
+            .into(),
         );
         self.add_buffer_flags_to_version_for(r, access);
 
@@ -480,7 +474,7 @@ impl FrameGraphBuilder {
     pub(crate) fn add_buffer_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) {
         let r = r.into();
 
@@ -492,7 +486,7 @@ impl FrameGraphBuilder {
     pub(crate) fn add_texture_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) {
         let r = r.into();
 
@@ -597,19 +591,12 @@ impl FrameGraphBuilder {
         for root in self.root_resources.iter_mut() {
             match &mut root.resource_type {
                 ResourceType::Uninitialized => {}
-                ResourceType::Buffer {
-                    import_info: None,
-                    create_desc,
-                } => {
-                    create_desc.usage = barrier_access_to_buffer_usage_flags(root.access_flags);
+                ResourceType::Buffer(ResourceTypeBuffer { create_desc, .. }) => {
+                    create_desc.usage = root.access_flags.buffer_usage_flags();
                 }
-                ResourceType::Texture {
-                    import_info: None,
-                    create_desc,
-                } => {
-                    create_desc.usage = barrier_access_to_texture_usage_flags(root.access_flags);
+                ResourceType::Texture(ResourceTypeTexture { create_desc, .. }) => {
+                    create_desc.usage = root.access_flags.texture_usage_flags();
                 }
-                _ => {} // Do nothing for imported resources
             }
         }
     }
@@ -623,13 +610,13 @@ impl FrameGraphBuilder {
         for root in self.root_resources.iter() {
             match &root.resource_type {
                 ResourceType::Uninitialized => unreachable!(),
-                ResourceType::Buffer {
+                ResourceType::Buffer(ResourceTypeBuffer {
                     import_info: Some(import),
-                    ..
-                } => {
+                    create_desc,
+                }) => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
-                    let root_usage = barrier_access_to_buffer_usage_flags(root.access_flags);
+                    let root_usage = create_desc.usage;
                     assert!(
                         desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
@@ -638,13 +625,13 @@ impl FrameGraphBuilder {
                         root_usage
                     );
                 }
-                ResourceType::Texture {
+                ResourceType::Texture(ResourceTypeTexture {
                     import_info: Some(import),
-                    ..
-                } => {
+                    create_desc,
+                }) => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
-                    let root_usage = barrier_access_to_texture_usage_flags(root.access_flags);
+                    let root_usage = create_desc.usage;
                     assert!(
                         desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
@@ -699,10 +686,9 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
-        layout: ImageLayout,
+        access: ResourceAccessFlags,
     ) -> ResourceRef {
-        self.0.read_texture(resource, sync, access, layout)
+        self.0.read_texture(resource, sync, access)
     }
 
     /// Declares a read access to the given buffer, with the given sync parameters.
@@ -713,7 +699,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) -> ResourceRef {
         self.0.read_buffer(resource, sync, access)
     }
@@ -731,10 +717,9 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
-        layout: ImageLayout,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
-        self.0.write_texture(resource, sync, access, layout)
+        self.0.write_texture(resource, sync, access)
     }
 
     /// Declares a write access to the given buffer, with the given sync parameters.
@@ -750,7 +735,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
         self.0.write_buffer(resource, sync, access)
     }
@@ -773,10 +758,9 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         desc: &TextureDesc,
         sync: BarrierSync,
-        access: BarrierAccess,
-        layout: ImageLayout,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
-        self.0.create_texture(desc, sync, access, layout)
+        self.0.create_texture(desc, sync, access)
     }
 
     /// Declares that a new, transient buffer will be created and used by the pass. Use 'access' to
@@ -797,7 +781,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         desc: &BufferDesc,
         sync: BarrierSync,
-        access: BarrierAccess,
+        access: ResourceAccessFlags,
     ) -> ResourceMut {
         self.0.create_buffer(desc, sync, access)
     }

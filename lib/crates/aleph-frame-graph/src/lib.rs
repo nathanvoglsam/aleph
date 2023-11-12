@@ -128,12 +128,14 @@
 //! This is 100% just a stream of thinking and not a concrete plan. I need some _deep_ thought time
 //! on this to work out a concrete implementation.
 
+mod access;
 mod frame_graph;
 mod frame_graph_builder;
 mod internal;
 mod render_pass;
 mod resource;
 
+pub use access::ResourceAccessFlags;
 pub use frame_graph::FrameGraph;
 pub use frame_graph_builder::{FrameGraphBuilder, ResourceRegistry};
 pub use render_pass::IRenderPass;
