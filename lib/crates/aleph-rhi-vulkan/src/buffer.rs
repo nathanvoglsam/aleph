@@ -67,7 +67,10 @@ impl Buffer {
             self.desc.size
         } else {
             let size = size as u64;
-            debug_assert!(size <= self.desc.size, "The requested view range is larger than the buffer");
+            debug_assert!(
+                size <= self.desc.size,
+                "The requested view range is larger than the buffer"
+            );
             size
         }
     }
