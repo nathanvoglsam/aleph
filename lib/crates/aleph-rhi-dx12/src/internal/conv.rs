@@ -465,12 +465,6 @@ pub fn barrier_access_to_dx12(access: BarrierAccess) -> D3D12_BARRIER_ACCESS {
     translate_flag_onto!(
         access,
         out,
-        BarrierAccess::SHADER_SAMPLED_READ,
-        D3D12_BARRIER_ACCESS_SHADER_RESOURCE
-    );
-    translate_flag_onto!(
-        access,
-        out,
         BarrierAccess::RENDER_TARGET_READ,
         D3D12_BARRIER_ACCESS_RENDER_TARGET
     );
