@@ -203,7 +203,7 @@ impl PerFrameObjects {
                 before_access: BarrierAccess::COPY_WRITE,
                 after_access: BarrierAccess::SHADER_SAMPLED_READ,
                 before_layout: ImageLayout::CopyDst,
-                after_layout: ImageLayout::ShaderReadOnlyOptimal,
+                after_layout: ImageLayout::ShaderReadOnly,
                 queue_transition: None,
             }],
         );
@@ -258,7 +258,7 @@ impl PerFrameObjects {
                 array_element: 0,
                 writes: DescriptorWrites::TextureRW(&[ImageDescriptorWrite {
                     image_view: view,
-                    image_layout: ImageLayout::ShaderReadOnlyOptimal,
+                    image_layout: ImageLayout::ShaderReadOnly,
                 }]),
             },
             DescriptorWriteDesc {

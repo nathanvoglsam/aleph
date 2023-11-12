@@ -139,7 +139,7 @@ impl EguiRenderer {
                     before_access: BarrierAccess::NONE,
                     after_access: BarrierAccess::RENDER_TARGET_WRITE,
                     before_layout: ImageLayout::Undefined,
-                    after_layout: ImageLayout::ColorAttachmentOptimal,
+                    after_layout: ImageLayout::ColorAttachment,
                     queue_transition: None,
                 }],
             );
@@ -167,7 +167,7 @@ impl EguiRenderer {
                 },
                 color_attachments: &[RenderingColorAttachmentInfo {
                     image_view,
-                    image_layout: ImageLayout::ColorAttachmentOptimal,
+                    image_layout: ImageLayout::ColorAttachment,
                     load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
                     store_op: AttachmentStoreOp::Store,
                 }],
@@ -237,7 +237,7 @@ impl EguiRenderer {
                     after_sync: BarrierSync::NONE,
                     before_access: BarrierAccess::RENDER_TARGET_WRITE,
                     after_access: BarrierAccess::NONE,
-                    before_layout: ImageLayout::ColorAttachmentOptimal,
+                    before_layout: ImageLayout::ColorAttachment,
                     after_layout: ImageLayout::PresentSrc,
                     queue_transition: None,
                 }],
