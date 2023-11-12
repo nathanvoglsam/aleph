@@ -182,7 +182,7 @@ pub const fn blend_op_to_vk(op: BlendOp) -> vk::BlendOp {
     }
 }
 
-pub fn image_layout_to_vk(layout: ImageLayout) -> vk::ImageLayout {
+pub const fn image_layout_to_vk(layout: ImageLayout) -> vk::ImageLayout {
     match layout {
         ImageLayout::Undefined => vk::ImageLayout::UNDEFINED,
         ImageLayout::Common => vk::ImageLayout::GENERAL,
