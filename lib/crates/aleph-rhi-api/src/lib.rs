@@ -1439,22 +1439,24 @@ pub enum ImageLayout {
 
     /// Supports all types of read device access. Writable access is not possible through this
     /// layout.
-    /// TODO: The above might be wrong about write access
     Common,
 
     /// Must only be used for presenting a presentable image for display.
     PresentSrc,
 
-    ///
+    /// Layout suitable for use as a color attachment render target, for either read-only or
+    /// read/write access.
     ColorAttachmentOptimal,
 
-    ///
+    /// Layout suitable for use as a depth stencil attachment render target, for either read-only
+    /// or read/write access.
     DepthStencilAttachmentOptimal,
 
-    ///
+    /// Similar to [ImageLayout::ShaderReadOnlyOptimal]. Allow usage as a read-only shader resource
+    /// as well as a read-only depth/stencil attachment.
     DepthStencilReadOnlyOptimal,
 
-    /// Specifies a layout allowing read-only access in a shader as a sampled image.
+    /// Specifies a layout allowing read-only access in a shader.
     ShaderReadOnlyOptimal,
 
     /// Must only be used as a source image of a copy command.
@@ -1463,18 +1465,20 @@ pub enum ImageLayout {
     /// Must only be used as a destination image of a copy command.
     CopyDst,
 
-    /// Supports all types of access, potentially including unordered access.
-    /// TODO: This might not be needed, D3D12_BARRIER_LAYOUT_COMMON might cover us like Vulkan as
-    ///       this layout appears to only exist for backwards compatibility with old barriers.
+    /// Layout suitable for access as a UAV (read/write shader resource). May not be used as a
+    /// render target or any other usage.
     UnorderedAccess,
 
-    /// TODO: Might not be needed like UnorderedAccess
+    /// The layout an image is required to be in for multi-sample resolve operations as the source
+    /// of a resolve.
     ResolveSource,
 
-    /// TODO: Might not be needed like UnorderedAccess
+    /// The layout an image is required to be in for multi-sample resolve operations as the
+    /// destinations of a resolve.
     ResolveDest,
-    // /// Must only be used as a fragment shading rate attachment or shading rate image.
-    // ShadingRateAttachmentOptimal,
+
+    /// Must only be used as a fragment shading rate attachment or shading rate image.
+    ShadingRateAttachmentOptimal,
 }
 
 impl Default for ImageLayout {
