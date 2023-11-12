@@ -2306,8 +2306,8 @@ bitflags! {
         /// Specifies usage as the destination of a texture copy operation
         const COPY_DEST = 0x2;
 
-        /// Specifies usage as a sampled image
-        const SAMPLED_ACCESS = 0x4;
+        /// Specifies usage as a read-only shader resource
+        const SHADER_RESOURCE = 0x4;
 
         /// Specifies usage through an unordered access view (storage image)
         const UNORDERED_ACCESS = 0x8;
