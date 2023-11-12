@@ -1749,24 +1749,13 @@ bitflags! {
         ///
         /// ## Vulkan
         ///
-        /// - `SHADER_SAMPLED_READ_BIT`
-        ///
-        /// ## D3D12
-        ///
-        /// - `SHADER_RESOURCE`
-        ///
-        const SHADER_SAMPLED_READ = 0x10;
-
-        ///
-        /// ## Vulkan
-        ///
         /// - `COLOR_ATTACHMENT_READ_BIT`
         ///
         /// ## D3D12
         ///
         /// - `RENDER_TARGET`
         ///
-        const RENDER_TARGET_READ = 0x20;
+        const RENDER_TARGET_READ = 0x10;
 
         ///
         /// ## Vulkan
@@ -1777,7 +1766,7 @@ bitflags! {
         ///
         /// - `RENDER_TARGET`
         ///
-        const RENDER_TARGET_WRITE = 0x40;
+        const RENDER_TARGET_WRITE = 0x20;
 
         ///
         /// ## Vulkan
@@ -1788,7 +1777,7 @@ bitflags! {
         ///
         /// - `DEPTH_STENCIL_READ`
         ///
-        const DEPTH_STENCIL_READ = 0x80;
+        const DEPTH_STENCIL_READ = 0x40;
 
         ///
         /// ## Vulkan
@@ -1799,7 +1788,7 @@ bitflags! {
         ///
         /// - `DEPTH_STENCIL_WRITE`
         ///
-        const DEPTH_STENCIL_WRITE = 0x100;
+        const DEPTH_STENCIL_WRITE = 0x80;
 
         ///
         /// ## Vulkan
@@ -1810,7 +1799,7 @@ bitflags! {
         ///
         /// - `COPY_SOURCE`
         ///
-        const COPY_READ = 0x200;
+        const COPY_READ = 0x100;
 
         ///
         /// ## Vulkan
@@ -1821,7 +1810,7 @@ bitflags! {
         ///
         /// - `COPY_DEST`
         ///
-        const COPY_WRITE = 0x400;
+        const COPY_WRITE = 0x200;
 
         ///
         /// ## Vulkan
@@ -1832,7 +1821,7 @@ bitflags! {
         ///
         /// - `RAYTRACING_ACCELERATION_STRUCTURE_READ`
         ///
-        const RAYTRACING_ACCELERATION_STRUCTURE_READ = 0x800;
+        const RAYTRACING_ACCELERATION_STRUCTURE_READ = 0x400;
 
         ///
         /// ## Vulkan
@@ -1843,7 +1832,7 @@ bitflags! {
         ///
         /// - `RAYTRACING_ACCELERATION_STRUCTURE_WRITE`
         ///
-        const RAYTRACING_ACCELERATION_STRUCTURE_WRITE = 0x1000;
+        const RAYTRACING_ACCELERATION_STRUCTURE_WRITE = 0x800;
 
         ///
         /// ## Vulkan
@@ -1852,9 +1841,9 @@ bitflags! {
         ///
         /// ## D3D12
         ///
-        /// - `UNORDERED_ACCESS`
+        /// - `SHADER_RESOURCE`
         ///
-        const SHADER_READ = 0x2000;
+        const SHADER_READ = 0x1000;
 
         ///
         /// ## Vulkan
@@ -1865,7 +1854,7 @@ bitflags! {
         ///
         /// - `UNORDERED_ACCESS`
         ///
-        const SHADER_WRITE = 0x4000;
+        const SHADER_WRITE = 0x2000;
     }
 }
 
