@@ -2186,8 +2186,8 @@ bitflags! {
         const VERTEX_BUFFER = 0x4;
         const INDEX_BUFFER = 0x8;
         const CONSTANT_BUFFER = 0x10;
-        const UNORDERED_ACCESS = 0x20;
-        const TEXEL_BUFFER = 0x40;
+        const SHADER_RESOURCE = 0x20;
+        const UNORDERED_ACCESS = 0x40;
         const INDIRECT_DRAW_ARGS = 0x80;
         const ACCELERATION_STRUCTURE_BUILD_INPUT = 0x100;
         const ACCELERATION_STRUCTURE_STORAGE = 0x200;
