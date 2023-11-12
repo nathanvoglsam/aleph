@@ -548,12 +548,9 @@ impl IDevice for Device {
             usage |= vk::BufferUsageFlags::TRANSFER_DST
         }
         if desc.usage.contains(BufferUsageFlags::TEXEL_BUFFER) {
-            // TODO: consider just always enabling storage texel buffer to simplify
+            usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER;
             if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
-                usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER
-                    | vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
-            } else {
-                usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER;
+                usage |= vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
             }
         }
         if desc.usage.contains(BufferUsageFlags::VERTEX_BUFFER) {
