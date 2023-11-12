@@ -256,7 +256,7 @@ impl PerFrameObjects {
                 set: self.descriptor_set.clone(),
                 binding: 0,
                 array_element: 0,
-                writes: DescriptorWrites::TextureRW(&[ImageDescriptorWrite {
+                writes: DescriptorWrites::Texture(&[ImageDescriptorWrite {
                     image_view: view,
                     image_layout: ImageLayout::ShaderReadOnly,
                 }]),
