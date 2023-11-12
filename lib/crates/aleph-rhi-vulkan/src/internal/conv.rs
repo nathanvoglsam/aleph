@@ -198,8 +198,11 @@ pub fn image_layout_to_vk(layout: ImageLayout) -> vk::ImageLayout {
         ImageLayout::CopySrc => vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
         ImageLayout::CopyDst => vk::ImageLayout::TRANSFER_DST_OPTIMAL,
         ImageLayout::UnorderedAccess => vk::ImageLayout::GENERAL,
-        ImageLayout::ResolveSource => todo!(),
-        ImageLayout::ResolveDest => todo!(),
+        ImageLayout::ResolveSource => vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+        ImageLayout::ResolveDest => vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+        ImageLayout::ShadingRateAttachmentOptimal => {
+            vk::ImageLayout::FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR
+        }
     }
 }
 
