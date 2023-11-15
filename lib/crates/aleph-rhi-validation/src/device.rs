@@ -354,7 +354,7 @@ impl IDevice for ValidationDevice {
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
         assert!(
-            ResourceUsageFlags::BUFFER_ACCESS_MASK.contains(desc.usage),
+            ResourceUsageFlags::BUFFER_USAGE_MASK.contains(desc.usage),
             "Attempted to create a buffer with usage flags meant only for textures!"
         );
         let inner = self.inner.create_buffer(desc)?;
@@ -375,7 +375,7 @@ impl IDevice for ValidationDevice {
         desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
         assert!(
-            ResourceUsageFlags::TEXTURE_ACCESS_MASK.contains(desc.usage),
+            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(desc.usage),
             "Attempted to create a texture with usage flags meant only for buffers!"
         );
         let inner = self.inner.create_texture(desc)?;
