@@ -353,6 +353,10 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
+        assert!(
+            ResourceUsageFlags::BUFFER_ACCESS_MASK.contains(desc.usage),
+            "Attempted to create a buffer with usage flags meant only for textures!"
+        );
         let inner = self.inner.create_buffer(desc)?;
         let layout = AnyArc::new_cyclic(move |v| ValidationBuffer {
             _this: v.clone(),
@@ -370,6 +374,10 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
+        assert!(
+            ResourceUsageFlags::TEXTURE_ACCESS_MASK.contains(desc.usage),
+            "Attempted to create a texture with usage flags meant only for buffers!"
+        );
         let inner = self.inner.create_texture(desc)?;
         let texture = AnyArc::new_cyclic(move |v| ValidationTexture {
             _this: v.clone(),
