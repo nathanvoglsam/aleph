@@ -474,7 +474,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
                 image
                     .desc()
                     .usage
-                    .contains(TextureUsageFlags::RENDER_TARGET),
+                    .contains(ResourceUsageFlags::RENDER_TARGET),
                 "Used texture as render target when created without RENDER_TARGET usage"
             );
             assert!(
@@ -526,7 +526,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
                 image
                     .desc()
                     .usage
-                    .contains(TextureUsageFlags::RENDER_TARGET),
+                    .contains(ResourceUsageFlags::RENDER_TARGET),
                 "Used texture as depth/stencil target when created without RENDER_TARGET usage"
             );
 
