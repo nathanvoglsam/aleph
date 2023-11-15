@@ -77,7 +77,7 @@ impl SwapChain {
         state: &mut SwapChainState,
         count: u32,
     ) -> windows::core::Result<()> {
-        use TextureUsageFlags as F;
+        use ResourceUsageFlags as F;
         state.textures.clear();
         for i in 0..count {
             let resource = self.swap_chain.GetBuffer::<ID3D12Resource>(i)?;

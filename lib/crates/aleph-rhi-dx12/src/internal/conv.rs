@@ -562,7 +562,7 @@ pub fn texture_create_desc_to_dx12(
     }
 
     let mut flags = D3D12_RESOURCE_FLAGS::default();
-    if desc.usage.contains(TextureUsageFlags::RENDER_TARGET) {
+    if desc.usage.contains(ResourceUsageFlags::RENDER_TARGET) {
         if desc.format.is_depth_stencil() {
             flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
         } else {
@@ -570,7 +570,7 @@ pub fn texture_create_desc_to_dx12(
         }
     }
 
-    if desc.usage.contains(TextureUsageFlags::UNORDERED_ACCESS) {
+    if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
