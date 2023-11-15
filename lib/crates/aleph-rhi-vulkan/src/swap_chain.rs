@@ -242,7 +242,7 @@ impl SwapChain {
         let images: Vec<_> = images
             .iter()
             .map(|image| {
-                use TextureUsageFlags as F;
+                use ResourceUsageFlags as F;
 
                 // This shadows swap_create_info to a reference to itself so the new_cyclic move
                 // closure moves the reference and not the object itself

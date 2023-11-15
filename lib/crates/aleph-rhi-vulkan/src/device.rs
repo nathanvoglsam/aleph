@@ -541,41 +541,41 @@ impl IDevice for Device {
         // "bag of bytes".
         let mut usage = vk::BufferUsageFlags::empty();
 
-        if desc.usage.contains(BufferUsageFlags::COPY_SOURCE) {
+        if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
             usage |= vk::BufferUsageFlags::TRANSFER_SRC
         }
-        if desc.usage.contains(BufferUsageFlags::COPY_DEST) {
+        if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
             usage |= vk::BufferUsageFlags::TRANSFER_DST
         }
-        if desc.usage.contains(BufferUsageFlags::SHADER_RESOURCE) {
+        if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
             usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
             usage |= vk::BufferUsageFlags::UNIFORM_TEXEL_BUFFER;
         }
-        if desc.usage.contains(BufferUsageFlags::UNORDERED_ACCESS) {
+        if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
             usage |= vk::BufferUsageFlags::STORAGE_BUFFER;
             usage |= vk::BufferUsageFlags::STORAGE_TEXEL_BUFFER;
         }
-        if desc.usage.contains(BufferUsageFlags::VERTEX_BUFFER) {
+        if desc.usage.contains(ResourceUsageFlags::VERTEX_BUFFER) {
             usage |= vk::BufferUsageFlags::VERTEX_BUFFER;
         }
-        if desc.usage.contains(BufferUsageFlags::INDEX_BUFFER) {
+        if desc.usage.contains(ResourceUsageFlags::INDEX_BUFFER) {
             usage |= vk::BufferUsageFlags::INDEX_BUFFER;
         }
-        if desc.usage.contains(BufferUsageFlags::CONSTANT_BUFFER) {
+        if desc.usage.contains(ResourceUsageFlags::CONSTANT_BUFFER) {
             usage |= vk::BufferUsageFlags::UNIFORM_BUFFER;
         }
-        if desc.usage.contains(BufferUsageFlags::INDIRECT_DRAW_ARGS) {
+        if desc.usage.contains(ResourceUsageFlags::INDIRECT_DRAW_ARGS) {
             usage |= vk::BufferUsageFlags::INDIRECT_BUFFER;
         }
         if desc
             .usage
-            .contains(BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT)
+            .contains(ResourceUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT)
         {
             usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
         }
         if desc
             .usage
-            .contains(BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE)
+            .contains(ResourceUsageFlags::ACCELERATION_STRUCTURE_STORAGE)
         {
             usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE_KHR;
         }
@@ -639,19 +639,19 @@ impl IDevice for Device {
         };
 
         let mut usage = vk::ImageUsageFlags::empty();
-        if desc.usage.contains(TextureUsageFlags::SHADER_RESOURCE) {
+        if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
             usage |= vk::ImageUsageFlags::SAMPLED
         }
-        if desc.usage.contains(TextureUsageFlags::COPY_DEST) {
+        if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
             usage |= vk::ImageUsageFlags::TRANSFER_DST
         }
-        if desc.usage.contains(TextureUsageFlags::COPY_SOURCE) {
+        if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
             usage |= vk::ImageUsageFlags::TRANSFER_SRC
         }
-        if desc.usage.contains(TextureUsageFlags::UNORDERED_ACCESS) {
+        if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
             usage |= vk::ImageUsageFlags::STORAGE
         }
-        if desc.usage.contains(TextureUsageFlags::RENDER_TARGET) {
+        if desc.usage.contains(ResourceUsageFlags::RENDER_TARGET) {
             if desc.format.is_depth_stencil() {
                 usage |= vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
             } else {
@@ -660,7 +660,7 @@ impl IDevice for Device {
         }
 
         let mut flags = vk::ImageCreateFlags::empty();
-        if desc.usage.contains(TextureUsageFlags::CUBE_FACE) {
+        if desc.usage.contains(ResourceUsageFlags::CUBE_FACE) {
             flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
         }
 
