@@ -28,7 +28,6 @@
 //
 
 use crate::frame_graph_builder::BufferImportDesc;
-use crate::ResourceAccessFlags;
 use crate::{FrameGraph, ResourceMut, ResourceRef, ResourceRegistry};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -132,7 +131,7 @@ pub fn test_builder() {
                     ..Default::default()
                 },
                 BarrierSync::COMPUTE_SHADING,
-                ResourceAccessFlags::UNORDERED_ACCESS,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             ));
             out_create = data.resource;
         },
@@ -153,7 +152,7 @@ pub fn test_builder() {
             data.resource = Some(resources.write_buffer(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
-                ResourceAccessFlags::UNORDERED_ACCESS,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             ));
             out_write = data.resource;
         },
@@ -174,7 +173,7 @@ pub fn test_builder() {
             data.resource = Some(resources.read_buffer(
                 out_write.unwrap(),
                 BarrierSync::PIXEL_SHADING,
-                ResourceAccessFlags::CONSTANT_BUFFER,
+                ResourceUsageFlags::CONSTANT_BUFFER,
             ));
             out_read = data.resource;
         },
@@ -196,7 +195,7 @@ pub fn test_handle_equality() {
     let mock_buffer = MockBuffer::new(&BufferDesc {
         size: 512,
         cpu_access: CpuAccessMode::None,
-        usage: BufferUsageFlags::UNORDERED_ACCESS | BufferUsageFlags::CONSTANT_BUFFER,
+        usage: ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::CONSTANT_BUFFER,
         name: Some("imported-mock-resource"),
     });
     let mut out_create = None;
@@ -221,7 +220,7 @@ pub fn test_handle_equality() {
             out_read_import = Some(resources.read_buffer(
                 imported_resource,
                 BarrierSync::PIXEL_SHADING,
-                ResourceAccessFlags::CONSTANT_BUFFER,
+                ResourceUsageFlags::CONSTANT_BUFFER,
             ));
             out_create = Some(resources.create_buffer(
                 &BufferDesc {
@@ -230,7 +229,7 @@ pub fn test_handle_equality() {
                     ..Default::default()
                 },
                 BarrierSync::COMPUTE_SHADING,
-                ResourceAccessFlags::UNORDERED_ACCESS,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
         |_data: &()| {},
@@ -242,12 +241,12 @@ pub fn test_handle_equality() {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
-                ResourceAccessFlags::UNORDERED_ACCESS,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             ));
             out_write_transient = Some(resources.write_buffer(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
-                ResourceAccessFlags::UNORDERED_ACCESS,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
         |_data: &()| {},
@@ -259,7 +258,7 @@ pub fn test_handle_equality() {
             out_read_transient = Some(resources.read_buffer(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
-                ResourceAccessFlags::CONSTANT_BUFFER,
+                ResourceUsageFlags::CONSTANT_BUFFER,
             ));
         },
         |_data: &()| {},
@@ -294,9 +293,9 @@ pub fn test_usage_collection() {
     let mock_buffer = MockBuffer::new(&BufferDesc {
         size: 512,
         cpu_access: CpuAccessMode::None,
-        usage: BufferUsageFlags::UNORDERED_ACCESS
-            | BufferUsageFlags::CONSTANT_BUFFER
-            | BufferUsageFlags::VERTEX_BUFFER,
+        usage: ResourceUsageFlags::UNORDERED_ACCESS
+            | ResourceUsageFlags::CONSTANT_BUFFER
+            | ResourceUsageFlags::VERTEX_BUFFER,
         name: Some("imported-mock-resource"),
     });
     let mut out_create = None;
@@ -319,7 +318,7 @@ pub fn test_usage_collection() {
             resources.read_buffer(
                 imported_resource,
                 BarrierSync::VERTEX_SHADING,
-                ResourceAccessFlags::VERTEX_BUFFER,
+                ResourceUsageFlags::VERTEX_BUFFER,
             );
             out_create = Some(resources.create_buffer(
                 &BufferDesc {
@@ -328,7 +327,7 @@ pub fn test_usage_collection() {
                     ..Default::default()
                 },
                 BarrierSync::VERTEX_SHADING,
-                ResourceAccessFlags::INDEX_BUFFER,
+                ResourceUsageFlags::INDEX_BUFFER,
             ));
         },
         |_data: &()| {},
@@ -340,12 +339,12 @@ pub fn test_usage_collection() {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
-                ResourceAccessFlags::UNORDERED_ACCESS,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             ));
             out_write_transient = Some(resources.write_buffer(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
-                ResourceAccessFlags::UNORDERED_ACCESS,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
         |_data: &()| {},
@@ -357,7 +356,7 @@ pub fn test_usage_collection() {
             resources.read_buffer(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
-                ResourceAccessFlags::CONSTANT_BUFFER,
+                ResourceUsageFlags::CONSTANT_BUFFER,
             );
         },
         |_data: &()| {},
@@ -376,11 +375,11 @@ pub fn test_usage_collection() {
     let imported_access = graph.root_resources[imported_r as usize].access_flags;
     assert_eq!(
         imported_usage,
-        BufferUsageFlags::UNORDERED_ACCESS | BufferUsageFlags::VERTEX_BUFFER
+        ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::VERTEX_BUFFER
     );
     assert_eq!(
         imported_access,
-        ResourceAccessFlags::UNORDERED_ACCESS | ResourceAccessFlags::VERTEX_BUFFER
+        ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::VERTEX_BUFFER
     );
 
     let out_create_r = out_create.0.root_id();
@@ -392,15 +391,15 @@ pub fn test_usage_collection() {
     let out_create_access = graph.root_resources[out_create_r as usize].access_flags;
     assert_eq!(
         out_create_usage,
-        BufferUsageFlags::UNORDERED_ACCESS
-            | BufferUsageFlags::CONSTANT_BUFFER
-            | BufferUsageFlags::INDEX_BUFFER
+        ResourceUsageFlags::UNORDERED_ACCESS
+            | ResourceUsageFlags::CONSTANT_BUFFER
+            | ResourceUsageFlags::INDEX_BUFFER
     );
     assert_eq!(
         out_create_access,
-        ResourceAccessFlags::UNORDERED_ACCESS
-            | ResourceAccessFlags::CONSTANT_BUFFER
-            | ResourceAccessFlags::INDEX_BUFFER
+        ResourceUsageFlags::UNORDERED_ACCESS
+            | ResourceUsageFlags::CONSTANT_BUFFER
+            | ResourceUsageFlags::INDEX_BUFFER
     );
 
     unsafe {

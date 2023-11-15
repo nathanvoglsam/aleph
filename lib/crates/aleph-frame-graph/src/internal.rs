@@ -33,7 +33,7 @@
 //!
 
 use crate::resource::ResourceId;
-use crate::{IRenderPass, ResourceAccessFlags};
+use crate::IRenderPass;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
@@ -52,7 +52,7 @@ pub struct ResourceRoot {
 
     /// The accumulated access flags for a resource. This is the union of all the ways a
     /// resource is used as within the frame graph.
-    pub access_flags: ResourceAccessFlags,
+    pub access_flags: ResourceUsageFlags,
 }
 
 pub struct ResourceTypeBuffer {
@@ -139,7 +139,7 @@ pub struct BufferCreate {
     /// frame graph as the union of all the unique ways the resource is used within the graph.
     ///
     /// This is not specified by the graph user.
-    pub usage: BufferUsageFlags,
+    pub usage: ResourceUsageFlags,
 
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
     /// that the passes are stored in. It is only sound to access this string immutably, and the
@@ -147,7 +147,7 @@ pub struct BufferCreate {
     pub name: Option<NonNull<str>>,
 
     /// How the resource will be accessed within the render pass
-    pub access: ResourceAccessFlags,
+    pub access: ResourceUsageFlags,
 }
 
 #[derive(Default)]
@@ -167,7 +167,7 @@ pub struct TextureCreate {
     /// frame graph as the union of all the unique ways the resource is used within the graph.
     ///
     /// This is not specified by the graph user.
-    pub usage: TextureUsageFlags,
+    pub usage: ResourceUsageFlags,
 
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
     /// that the passes are stored in. It is only sound to access this string immutably, and the
@@ -175,7 +175,7 @@ pub struct TextureCreate {
     pub name: Option<NonNull<str>>,
 
     /// How the resource will be accessed within the render pass
-    pub access: ResourceAccessFlags,
+    pub access: ResourceUsageFlags,
 }
 
 #[derive(Default)]
@@ -209,7 +209,7 @@ pub struct BufferAccess {
     pub sync: BarrierSync,
 
     /// How the resource will be accessed within the render pass
-    pub access: ResourceAccessFlags,
+    pub access: ResourceUsageFlags,
 }
 
 /// Stores the requested access for a single texture access edge. Could be a read or a write,
@@ -223,7 +223,7 @@ pub struct TextureAccess {
     pub sync: BarrierSync,
 
     /// How the resource will be accessed within the render pass
-    pub access: ResourceAccessFlags,
+    pub access: ResourceUsageFlags,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
@@ -264,7 +264,7 @@ pub struct ResourceVersion {
     /// The union of all the ways this particular version of the resource is used. This is the OR of
     /// all the flags declared by the write that creates this version and all the reads of this
     /// version of the resource.
-    pub access: ResourceAccessFlags,
+    pub access: ResourceUsageFlags,
 
     /// The index of the render pass that caused the new resource version to be created. This could
     /// be through creating a new transient resource or through writing an existing resource.

@@ -135,7 +135,6 @@ mod internal;
 mod render_pass;
 mod resource;
 
-pub use access::ResourceAccessFlags;
 pub use frame_graph::FrameGraph;
 pub use frame_graph_builder::{FrameGraphBuilder, ResourceRegistry};
 pub use render_pass::IRenderPass;

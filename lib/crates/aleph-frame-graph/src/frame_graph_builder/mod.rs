@@ -52,7 +52,7 @@
 use crate::internal::*;
 use crate::render_pass::CallbackRenderPass;
 use crate::resource::ResourceId;
-use crate::{FrameGraph, IRenderPass, ResourceAccessFlags, ResourceMut, ResourceRef};
+use crate::{FrameGraph, IRenderPass, ResourceMut, ResourceRef};
 use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
 use bumpalo::Bump;
@@ -260,7 +260,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceRef {
         let r = resource.into();
 
@@ -282,7 +282,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceRef {
         let r = resource.into();
 
@@ -304,7 +304,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         let r = resource.into();
 
@@ -334,7 +334,7 @@ impl FrameGraphBuilder {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         let r = resource.into();
 
@@ -381,7 +381,7 @@ impl FrameGraphBuilder {
         &mut self,
         desc: &TextureDesc,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         debug_assert!(
             desc.usage.is_empty(),
@@ -424,7 +424,7 @@ impl FrameGraphBuilder {
         &mut self,
         desc: &BufferDesc,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         debug_assert!(
             desc.usage.is_empty(),
@@ -474,7 +474,7 @@ impl FrameGraphBuilder {
     pub(crate) fn add_buffer_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) {
         let r = r.into();
 
@@ -486,7 +486,7 @@ impl FrameGraphBuilder {
     pub(crate) fn add_texture_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) {
         let r = r.into();
 
@@ -592,10 +592,10 @@ impl FrameGraphBuilder {
             match &mut root.resource_type {
                 ResourceType::Uninitialized => {}
                 ResourceType::Buffer(ResourceTypeBuffer { create_desc, .. }) => {
-                    create_desc.usage = root.access_flags.buffer_usage_flags();
+                    create_desc.usage = root.access_flags;
                 }
                 ResourceType::Texture(ResourceTypeTexture { create_desc, .. }) => {
-                    create_desc.usage = root.access_flags.texture_usage_flags();
+                    create_desc.usage = root.access_flags;
                 }
             }
         }
@@ -686,7 +686,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceRef {
         self.0.read_texture(resource, sync, access)
     }
@@ -699,7 +699,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceRef {
         self.0.read_buffer(resource, sync, access)
     }
@@ -717,7 +717,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         self.0.write_texture(resource, sync, access)
     }
@@ -735,7 +735,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         resource: R,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         self.0.write_buffer(resource, sync, access)
     }
@@ -758,7 +758,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         desc: &TextureDesc,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         self.0.create_texture(desc, sync, access)
     }
@@ -781,7 +781,7 @@ impl<'a> ResourceRegistry<'a> {
         &mut self,
         desc: &BufferDesc,
         sync: BarrierSync,
-        access: ResourceAccessFlags,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         self.0.create_buffer(desc, sync, access)
     }
