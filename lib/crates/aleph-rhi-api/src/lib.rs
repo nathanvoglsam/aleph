@@ -2216,7 +2216,7 @@ bitflags! {
         const CUBE_FACE = 0x800;
 
         /// A mask of all the usage flags valid to use on buffers
-        const BUFFER_ACCESS_MASK =
+        const BUFFER_USAGE_MASK =
             Self::COPY_SOURCE.bits()
             | Self::COPY_DEST.bits()
             | Self::VERTEX_BUFFER.bits()
@@ -2229,7 +2229,7 @@ bitflags! {
             | Self::UNORDERED_ACCESS.bits();
 
         /// A mask of all the usage flags valid to use on textures
-        const TEXTURE_ACCESS_MASK =
+        const TEXTURE_USAGE_MASK =
             Self::COPY_SOURCE.bits()
             | Self::COPY_DEST.bits()
             | Self::SHADER_RESOURCE.bits()
@@ -2238,7 +2238,7 @@ bitflags! {
             | Self::CUBE_FACE.bits();
 
         /// Mask that represents all read usage flags.
-        const READ_ACCESS_MASK =
+        const READ_USAGE_MASK =
             Self::COPY_SOURCE.bits()
             | Self::VERTEX_BUFFER.bits()
             | Self::INDEX_BUFFER.bits()
@@ -2250,7 +2250,7 @@ bitflags! {
             | Self::RENDER_TARGET.bits();
 
         /// Mask that represents all write usage flags.
-        const WRITE_ACCESS_MASK =
+        const WRITE_USAGE_MASK =
             Self::COPY_DEST.bits()
             | Self::ACCELERATION_STRUCTURE_STORAGE.bits()
             | Self::UNORDERED_ACCESS.bits()
