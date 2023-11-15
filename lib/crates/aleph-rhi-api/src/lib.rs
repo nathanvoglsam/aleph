@@ -2172,34 +2172,103 @@ impl Display for Format {
     }
 }
 
-//
-//
-// _________________________________________________________________________________________________
-// Resources - Buffer
-
 bitflags! {
     #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
-    pub struct BufferUsageFlags: u32 {
+    pub struct ResourceUsageFlags: u32 {
+        /// Specifies no usage flags
         const NONE = 0x0;
+
+        /// Specifies usage as the source of a copy operation
         const COPY_SOURCE = 0x1;
+
+        /// Specifies usage as the destination of a copy operation
         const COPY_DEST = 0x2;
+
+        /// Specifies usage as a vertex buffer
         const VERTEX_BUFFER = 0x4;
+
+        /// Specifies usage as an index buffer
         const INDEX_BUFFER = 0x8;
+
+        /// Specifies usage as a constant buffer through a constant buffer view
         const CONSTANT_BUFFER = 0x10;
+
+        /// Specifies usage as a read-only shader resource
         const SHADER_RESOURCE = 0x20;
+
+        /// Specifies usage through an unordered access view, implying writable access
         const UNORDERED_ACCESS = 0x40;
+
+        /// Specifies read usage as the source buffer for indirect draw arguments
         const INDIRECT_DRAW_ARGS = 0x80;
+
+        /// Specifies usage as the input for a raytracing acceleration structure build operation
         const ACCELERATION_STRUCTURE_BUILD_INPUT = 0x100;
+
+        /// Specifies usage as a raytracing acceleration structure. This implys both read usage when
+        /// tracing rays as well as being the target of an acceleration structure build operation.
         const ACCELERATION_STRUCTURE_STORAGE = 0x200;
+
+        /// Specifies usage as a render target
+        const RENDER_TARGET = 0x400;
+
+        /// Specifies the texture can be used as a cubemap face
+        const CUBE_FACE = 0x800;
+
+        /// A mask of all the usage flags valid to use on buffers
+        const BUFFER_ACCESS_MASK =
+            Self::COPY_SOURCE.bits()
+            | Self::COPY_DEST.bits()
+            | Self::VERTEX_BUFFER.bits()
+            | Self::INDEX_BUFFER.bits()
+            | Self::CONSTANT_BUFFER.bits()
+            | Self::INDIRECT_DRAW_ARGS.bits()
+            | Self::ACCELERATION_STRUCTURE_BUILD_INPUT.bits()
+            | Self::ACCELERATION_STRUCTURE_STORAGE.bits()
+            | Self::SHADER_RESOURCE.bits()
+            | Self::UNORDERED_ACCESS.bits();
+
+        /// A mask of all the usage flags valid to use on textures
+        const TEXTURE_ACCESS_MASK =
+            Self::COPY_SOURCE.bits()
+            | Self::COPY_DEST.bits()
+            | Self::SHADER_RESOURCE.bits()
+            | Self::UNORDERED_ACCESS.bits()
+            | Self::RENDER_TARGET.bits()
+            | Self::CUBE_FACE.bits();
+
+        /// Mask that represents all read usage flags.
+        const READ_ACCESS_MASK =
+            Self::COPY_SOURCE.bits()
+            | Self::VERTEX_BUFFER.bits()
+            | Self::INDEX_BUFFER.bits()
+            | Self::CONSTANT_BUFFER.bits()
+            | Self::INDIRECT_DRAW_ARGS.bits()
+            | Self::ACCELERATION_STRUCTURE_BUILD_INPUT.bits()
+            | Self::ACCELERATION_STRUCTURE_STORAGE.bits()
+            | Self::SHADER_RESOURCE.bits()
+            | Self::RENDER_TARGET.bits();
+
+        /// Mask that represents all write usage flags.
+        const WRITE_ACCESS_MASK =
+            Self::COPY_DEST.bits()
+            | Self::ACCELERATION_STRUCTURE_STORAGE.bits()
+            | Self::UNORDERED_ACCESS.bits()
+            | Self::RENDER_TARGET.bits();
     }
 }
 
-impl Default for BufferUsageFlags {
+impl Default for ResourceUsageFlags {
     #[inline(always)]
     fn default() -> Self {
         Self::NONE
     }
 }
+
+//
+//
+// _________________________________________________________________________________________________
+// Resources - Buffer
 
 /// Description object used for creating a new buffer.
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
@@ -2214,7 +2283,7 @@ pub struct BufferDesc<'a> {
     pub cpu_access: CpuAccessMode,
 
     /// Specifies in what ways the buffer can be used
-    pub usage: BufferUsageFlags,
+    pub usage: ResourceUsageFlags,
 
     /// The name of the object
     pub name: Option<&'a str>,
@@ -2295,38 +2364,6 @@ impl Display for OptimalClearValue {
     }
 }
 
-bitflags! {
-    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
-    pub struct TextureUsageFlags: u32 {
-        const NONE = 0x0;
-
-        /// Specifies usage as the source of a texture copy operation
-        const COPY_SOURCE = 0x1;
-
-        /// Specifies usage as the destination of a texture copy operation
-        const COPY_DEST = 0x2;
-
-        /// Specifies usage as a read-only shader resource
-        const SHADER_RESOURCE = 0x4;
-
-        /// Specifies usage through an unordered access view (storage image)
-        const UNORDERED_ACCESS = 0x8;
-
-        /// Specifies usage as a render target
-        const RENDER_TARGET = 0x10;
-
-        /// Specifies the texture can be used as a cubemap face
-        const CUBE_FACE = 0x20;
-    }
-}
-
-impl Default for TextureUsageFlags {
-    #[inline(always)]
-    fn default() -> Self {
-        Self::NONE
-    }
-}
-
 /// Description object used for creating a new texture.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct TextureDesc<'a> {
@@ -2369,7 +2406,7 @@ pub struct TextureDesc<'a> {
     pub sample_quality: u32,
 
     /// Specifies in what ways the texture can be used
-    pub usage: TextureUsageFlags,
+    pub usage: ResourceUsageFlags,
 
     /// The name of the object
     pub name: Option<&'a str>,
