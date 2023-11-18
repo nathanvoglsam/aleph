@@ -172,6 +172,7 @@ impl EguiRenderer {
                     store_op: AttachmentStoreOp::Store,
                 }],
                 depth_stencil_attachment: None,
+                allow_uav_writes: false,
             });
 
             self.bind_resources(index, encoder.deref_mut());
