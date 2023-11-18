@@ -367,36 +367,16 @@ pub fn test_usage_collection() {
     let out_create = out_create.unwrap();
 
     let imported_r = imported_resource.0.root_id();
-    let imported_usage = graph.root_resources[imported_r as usize]
-        .resource_type
-        .unwrap_buffer()
-        .create_desc
-        .usage;
-    let imported_access = graph.root_resources[imported_r as usize].access_flags;
+    let imported_usage = graph.root_resources[imported_r as usize].access_flags;
     assert_eq!(
         imported_usage,
         ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::VERTEX_BUFFER
     );
-    assert_eq!(
-        imported_access,
-        ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::VERTEX_BUFFER
-    );
 
     let out_create_r = out_create.0.root_id();
-    let out_create_usage = graph.root_resources[out_create_r as usize]
-        .resource_type
-        .unwrap_buffer()
-        .create_desc
-        .usage;
-    let out_create_access = graph.root_resources[out_create_r as usize].access_flags;
+    let out_create_usage = graph.root_resources[out_create_r as usize].access_flags;
     assert_eq!(
         out_create_usage,
-        ResourceUsageFlags::UNORDERED_ACCESS
-            | ResourceUsageFlags::CONSTANT_BUFFER
-            | ResourceUsageFlags::INDEX_BUFFER
-    );
-    assert_eq!(
-        out_create_access,
         ResourceUsageFlags::UNORDERED_ACCESS
             | ResourceUsageFlags::CONSTANT_BUFFER
             | ResourceUsageFlags::INDEX_BUFFER

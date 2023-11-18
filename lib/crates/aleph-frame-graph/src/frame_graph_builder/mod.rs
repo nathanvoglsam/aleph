@@ -153,7 +153,6 @@ impl FrameGraphBuilder {
         // With the graph finalized we can now iterate all our resource versions and collect the
         // full set of usage flags the resources have been declared to be used with.
         self.collect_resource_usages();
-        self.resolve_usage_flags();
         self.validate_imported_resource_usages();
 
         let arena = std::mem::take(&mut self.graph_arena);
@@ -401,8 +400,8 @@ impl FrameGraphBuilder {
             mip_levels: desc.mip_levels,
             sample_count: desc.sample_count,
             sample_quality: desc.sample_quality,
+            sync,
             access,
-            usage: Default::default(),
             name,
         };
 
@@ -436,7 +435,6 @@ impl FrameGraphBuilder {
         let create_desc = BufferCreate {
             size: desc.size,
             sync,
-            usage: Default::default(),
             access,
             name,
         };
@@ -585,22 +583,6 @@ impl FrameGraphBuilder {
         }
     }
 
-    /// Iterates all root resources and converts the accumulated access flags into the usage flags
-    /// needed to satisfy all the specified usages.
-    pub(crate) fn resolve_usage_flags(&mut self) {
-        for root in self.root_resources.iter_mut() {
-            match &mut root.resource_type {
-                ResourceType::Uninitialized => {}
-                ResourceType::Buffer(ResourceTypeBuffer { create_desc, .. }) => {
-                    create_desc.usage = root.access_flags;
-                }
-                ResourceType::Texture(ResourceTypeTexture { create_desc, .. }) => {
-                    create_desc.usage = root.access_flags;
-                }
-            }
-        }
-    }
-
     /// Checks against imported resource's usage flags to ensure that no pass within the graph is
     /// using an imported resource in a usage it wasn't created to support.
     ///
@@ -612,11 +594,11 @@ impl FrameGraphBuilder {
                 ResourceType::Uninitialized => unreachable!(),
                 ResourceType::Buffer(ResourceTypeBuffer {
                     import_info: Some(import),
-                    create_desc,
+                    ..
                 }) => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
-                    let root_usage = create_desc.usage;
+                    let root_usage = root.access_flags;
                     assert!(
                         desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
@@ -627,11 +609,11 @@ impl FrameGraphBuilder {
                 }
                 ResourceType::Texture(ResourceTypeTexture {
                     import_info: Some(import),
-                    create_desc,
+                    ..
                 }) => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
-                    let root_usage = create_desc.usage;
+                    let root_usage = root.access_flags;
                     assert!(
                         desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",

@@ -135,19 +135,13 @@ pub struct BufferCreate {
     /// The sync flags that the resource will be used with in the creating pass.
     pub sync: BarrierSync,
 
-    /// Will eventually contain the full set of usage flags for the resource as calculated by the
-    /// frame graph as the union of all the unique ways the resource is used within the graph.
-    ///
-    /// This is not specified by the graph user.
-    pub usage: ResourceUsageFlags,
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceUsageFlags,
 
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
     /// that the passes are stored in. It is only sound to access this string immutably, and the
     /// caller must ensure the relevant arena is still live.
     pub name: Option<NonNull<str>>,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
 }
 
 #[derive(Default)]
@@ -163,19 +157,16 @@ pub struct TextureCreate {
     pub sample_count: u32,
     pub sample_quality: u32,
 
-    /// Will eventually contain the full set of usage flags for the resource as calculated by the
-    /// frame graph as the union of all the unique ways the resource is used within the graph.
-    ///
-    /// This is not specified by the graph user.
-    pub usage: ResourceUsageFlags,
+    /// The sync flags that the resource will be used with in the creating pass.
+    pub sync: BarrierSync,
+
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceUsageFlags,
 
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
     /// that the passes are stored in. It is only sound to access this string immutably, and the
     /// caller must ensure the relevant arena is still live.
     pub name: Option<NonNull<str>>,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
 }
 
 #[derive(Default)]
