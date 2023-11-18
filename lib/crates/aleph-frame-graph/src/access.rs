@@ -43,8 +43,7 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
             // We need to filter out any non-synchronizing access flags to allow this debug check
             // to make sense. We need to check that only a single usage has been specified as an
             // image within a pass can only be in a single image layout.
-            let no_cube_face = Self::CUBE_FACE.complement();
-            let access_flags = self.intersection(no_cube_face);
+            let access_flags = *self & (!Self::CUBE_FACE);
             debug_assert!(
                 access_flags.bits().count_ones() <= 1,
                 "Only a single synchronizing access flag can be specified for images"
