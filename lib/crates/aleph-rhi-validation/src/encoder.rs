@@ -160,6 +160,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             extent: info.extent.clone(),
             color_attachments: &color_attachments,
             depth_stencil_attachment: depth_stencil_attachment.as_ref(),
+            allow_uav_writes: false,
         };
 
         self.render_pass_open = true;
