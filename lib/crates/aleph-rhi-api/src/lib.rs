@@ -3765,6 +3765,7 @@ pub struct BeginRenderingInfo<'a> {
     pub extent: Extent2D,
     pub color_attachments: &'a [RenderingColorAttachmentInfo],
     pub depth_stencil_attachment: Option<&'a RenderingDepthStencilAttachmentInfo>,
+    pub allow_uav_writes: bool,
 }
 
 /// A simple description of a buffer -> buffer copy
