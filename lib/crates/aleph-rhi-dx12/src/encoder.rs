@@ -230,10 +230,16 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             .map(|v| v as *const _)
             .unwrap_or(std::ptr::null());
 
+        let flags = if info.allow_uav_writes {
+            D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES
+        } else {
+            D3D12_RENDER_PASS_FLAG_NONE
+        };
+
         self._list.BeginRenderPass(
             Some(&color_attachments),
             Some(depth_stencil_ref),
-            D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES, // TODO: This *could* be suboptimal
+            flags,
         );
     }
 
