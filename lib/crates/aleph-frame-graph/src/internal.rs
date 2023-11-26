@@ -171,7 +171,6 @@ pub struct TextureCreate {
 
 #[derive(Default)]
 pub struct PassAccessInfo {
-    pub current_pass_index: usize,
     pub reads: Vec<ResourceAccess>,
     pub writes: Vec<ResourceAccess>,
 }

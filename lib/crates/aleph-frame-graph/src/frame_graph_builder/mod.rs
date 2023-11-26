@@ -129,8 +129,11 @@ impl FrameGraphBuilder {
             // though as we don't _use_ the payload anywhere until we give it to the setup fn, or
             // if the builder gets dropped.
             {
-                self.pass_access_info.current_pass_index = self.render_passes.len();
-                let mut resources = ResourceRegistry(self);
+                let current_pass_index = self.render_passes.len();
+                let mut resources = ResourceRegistry {
+                    builder: self,
+                    render_pass: current_pass_index,
+                };
                 setup_fn(payload.as_mut(), &mut resources);
             }
 
@@ -729,7 +732,10 @@ impl Drop for FrameGraphBuilder {
 
 /// An interface constrained way to access the frame graph builder for collecting information from
 /// render pass setup callbacks.
-pub struct ResourceRegistry<'a>(&'a mut FrameGraphBuilder);
+pub struct ResourceRegistry<'a> {
+    builder: &'a mut FrameGraphBuilder,
+    render_pass: usize,
+}
 
 impl<'a> ResourceRegistry<'a> {
     /// Declares that this pass would like to import the given resource into the frame graph with
@@ -742,8 +748,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.import_texture(render_pass, desc, sync, access)
+        self.builder
+            .import_texture(self.render_pass, desc, sync, access)
     }
 
     /// Declares that this pass would like to import the given resource into the frame graph with
@@ -756,8 +762,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.import_buffer(render_pass, desc, sync, access)
+        self.builder
+            .import_buffer(self.render_pass, desc, sync, access)
     }
 
     /// Declares a read access to the given texture, with the given sync parameters.
@@ -774,8 +780,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.read_texture(render_pass, resource, sync, access)
+        self.builder
+            .read_texture(self.render_pass, resource, sync, access)
     }
 
     /// Declares a read access to the given buffer, with the given sync parameters.
@@ -792,8 +798,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.read_buffer(render_pass, resource, sync, access)
+        self.builder
+            .read_buffer(self.render_pass, resource, sync, access)
     }
 
     /// Declares a write access to the given texture, with the given sync parameters.
@@ -815,8 +821,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.write_texture(render_pass, resource, sync, access)
+        self.builder
+            .write_texture(self.render_pass, resource, sync, access)
     }
 
     /// Declares a write access to the given buffer, with the given sync parameters.
@@ -838,8 +844,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.write_buffer(render_pass, resource, sync, access)
+        self.builder
+            .write_buffer(self.render_pass, resource, sync, access)
     }
 
     /// Declares that a new, transient texture will be created and used by the pass. Use 'access' to
@@ -866,8 +872,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.create_texture(render_pass, desc, sync, access)
+        self.builder
+            .create_texture(self.render_pass, desc, sync, access)
     }
 
     /// Declares that a new, transient buffer will be created and used by the pass. Use 'access' to
@@ -894,8 +900,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let render_pass = self.0.pass_access_info.current_pass_index;
-        self.0.create_buffer(render_pass, desc, sync, access)
+        self.builder
+            .create_buffer(self.render_pass, desc, sync, access)
     }
 }
 
