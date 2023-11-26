@@ -227,7 +227,7 @@ impl FrameGraphBuilder {
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(usize::MAX);
+        let r = self.create_new_handle(self.render_passes.len(), access);
         self.set_resource_type_for(r, r_type.into());
         self.add_imported_resource_to_list(r);
 
@@ -249,7 +249,7 @@ impl FrameGraphBuilder {
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(usize::MAX);
+        let r = self.create_new_handle(self.render_passes.len(), access);
         self.set_resource_type_for(r, r_type.into());
         self.add_imported_resource_to_list(r);
 
@@ -332,13 +332,7 @@ impl FrameGraphBuilder {
         let r = resource.into();
 
         self.validate_and_update_for_handle_write(r);
-        let renamed_r = self.increment_handle_for_write(r, self.render_passes.len());
-
-        // Add the requested usage flags to the resource version's usage set
-        //
-        // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
-        // matching entry in resource_versions to write our usage flags into.
-        self.add_flags_to_version_for(renamed_r, access);
+        let renamed_r = self.increment_handle_for_write(r, self.render_passes.len(), access);
 
         let root_resource = self.assert_resource_handle_is_texture(r);
         let sync = if sync.is_empty() {
@@ -375,13 +369,7 @@ impl FrameGraphBuilder {
 
         self.assert_resource_handle_is_buffer(r);
         self.validate_and_update_for_handle_write(r);
-        let renamed_r = self.increment_handle_for_write(r, self.render_passes.len());
-
-        // Add the requested usage flags to the resource version's usage set
-        //
-        // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
-        // matching entry in resource_versions to write our usage flags into.
-        self.add_flags_to_version_for(renamed_r, access);
+        let renamed_r = self.increment_handle_for_write(r, self.render_passes.len(), access);
 
         let sync = if sync.is_empty() {
             access.default_barrier_sync(false, Default::default())
@@ -463,7 +451,7 @@ impl FrameGraphBuilder {
             name,
         };
 
-        let r = self.create_new_handle(self.render_passes.len());
+        let r = self.create_new_handle(self.render_passes.len(), access);
         self.set_resource_type_for(
             r,
             ResourceTypeTexture {
@@ -472,7 +460,6 @@ impl FrameGraphBuilder {
             }
             .into(),
         );
-        self.add_flags_to_version_for(r, access);
 
         r
     }
@@ -508,7 +495,7 @@ impl FrameGraphBuilder {
             name,
         };
 
-        let r = self.create_new_handle(self.render_passes.len());
+        let r = self.create_new_handle(self.render_passes.len(), access);
         self.set_resource_type_for(
             r,
             ResourceTypeBuffer {
@@ -517,7 +504,6 @@ impl FrameGraphBuilder {
             }
             .into(),
         );
-        self.add_flags_to_version_for(r, access);
 
         r
     }
@@ -554,6 +540,7 @@ impl FrameGraphBuilder {
         &mut self,
         r: ResourceMut,
         render_pass: usize,
+        access: ResourceUsageFlags,
     ) -> ResourceMut {
         let base = r.0.root_id();
         let version = u16::try_from(self.resource_versions.len()).unwrap();
@@ -568,9 +555,7 @@ impl FrameGraphBuilder {
             // we were given.
             previous: VersionIndex::new(r.0.version_id()).unwrap(),
 
-            // Defaults to empty, this will be initialized elsewhere
-            access: Default::default(),
-
+            access,
             render_pass,
         });
         self.resource_handles.push(ResourceHandleInfo::default());
@@ -584,7 +569,11 @@ impl FrameGraphBuilder {
         ResourceMut(id)
     }
 
-    pub(crate) fn create_new_handle(&mut self, render_pass: usize) -> ResourceMut {
+    pub(crate) fn create_new_handle(
+        &mut self,
+        render_pass: usize,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
         let base = u16::try_from(self.root_resources.len()).unwrap();
         let version = u16::try_from(self.resource_versions.len()).unwrap();
         let handle = u16::try_from(self.resource_handles.len()).unwrap();
@@ -599,9 +588,7 @@ impl FrameGraphBuilder {
             // initialized as an invalid id. This encodes the 'end' of the list
             previous: VersionIndex::INVALID,
 
-            // Defaults to empty, this will be initialized elsewhere
-            access: Default::default(),
-
+            access,
             render_pass,
         });
         self.resource_handles.push(ResourceHandleInfo::default());
