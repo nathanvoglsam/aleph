@@ -236,11 +236,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             D3D12_RENDER_PASS_FLAG_NONE
         };
 
-        self._list.BeginRenderPass(
-            Some(&color_attachments),
-            Some(depth_stencil_ref),
-            flags,
-        );
+        self._list
+            .BeginRenderPass(Some(&color_attachments), Some(depth_stencil_ref), flags);
     }
 
     unsafe fn end_rendering(&mut self) {
