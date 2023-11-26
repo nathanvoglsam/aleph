@@ -31,6 +31,7 @@ use aleph_rhi_api::*;
 
 pub trait ResourceUsageFlagsExt {
     fn image_layout(&self, read_only: bool, format: Format) -> ImageLayout;
+    fn default_barrier_sync(&self, read_only: bool, format: Format) -> BarrierSync;
     fn barrier_access_for_read(&self) -> BarrierAccess;
     fn barrier_access_for_write(&self) -> BarrierAccess;
 }
@@ -73,6 +74,60 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
             };
         }
         ImageLayout::Undefined
+    }
+
+    fn default_barrier_sync(&self, read_only: bool, format: Format) -> BarrierSync {
+        let mut sync = BarrierSync::NONE;
+        if self.contains(Self::COPY_SOURCE) {
+            sync |= BarrierSync::COPY;
+        }
+        if self.contains(Self::COPY_DEST) {
+            sync |= BarrierSync::COPY;
+        }
+        if self.contains(Self::VERTEX_BUFFER) {
+            sync |= BarrierSync::VERTEX_SHADING;
+        }
+        if self.contains(Self::INDEX_BUFFER) {
+            sync |= BarrierSync::INDEX_INPUT;
+        }
+        if self.contains(Self::CONSTANT_BUFFER) {
+            sync |= BarrierSync::PIXEL_SHADING
+                | BarrierSync::VERTEX_SHADING
+                | BarrierSync::RAYTRACING
+                | BarrierSync::COMPUTE_SHADING;
+        }
+        if self.contains(Self::SHADER_RESOURCE) {
+            sync |= BarrierSync::PIXEL_SHADING
+                | BarrierSync::VERTEX_SHADING
+                | BarrierSync::RAYTRACING
+                | BarrierSync::COMPUTE_SHADING;
+        }
+        if self.contains(Self::UNORDERED_ACCESS) {
+            sync |= BarrierSync::PIXEL_SHADING
+                | BarrierSync::VERTEX_SHADING
+                | BarrierSync::RAYTRACING
+                | BarrierSync::COMPUTE_SHADING;
+        }
+        if self.contains(Self::INDIRECT_DRAW_ARGS) {
+            sync |= BarrierSync::EXECUTE_INDIRECT;
+        }
+        if self.contains(Self::ACCELERATION_STRUCTURE_BUILD_INPUT) {
+            sync |= BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+        }
+        if self.contains(Self::ACCELERATION_STRUCTURE_STORAGE) {
+            sync |= BarrierSync::RAYTRACING;
+            if !read_only {
+                sync |= BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+            }
+        }
+        if self.contains(Self::RENDER_TARGET) {
+            if format.is_depth_stencil() {
+                sync |= BarrierSync::DEPTH_STENCIL;
+            } else {
+                sync |= BarrierSync::RENDER_TARGET;
+            }
+        }
+        sync
     }
 
     fn barrier_access_for_read(&self) -> BarrierAccess {
