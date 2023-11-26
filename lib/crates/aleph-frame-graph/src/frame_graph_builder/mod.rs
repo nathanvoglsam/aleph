@@ -212,6 +212,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn import_texture(
         &mut self,
+        render_pass: usize,
         desc: &TextureImportDesc,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -248,7 +249,7 @@ impl FrameGraphBuilder {
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(self.render_passes.len(), access);
+        let r = self.create_new_handle(render_pass, access);
         self.set_resource_type_for(r, r_type.into());
         self.add_imported_resource_to_list(r);
 
@@ -257,6 +258,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn import_buffer(
         &mut self,
+        render_pass: usize,
         desc: &BufferImportDesc,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -290,7 +292,7 @@ impl FrameGraphBuilder {
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(self.render_passes.len(), access);
+        let r = self.create_new_handle(render_pass, access);
         self.set_resource_type_for(r, r_type.into());
         self.add_imported_resource_to_list(r);
 
@@ -299,6 +301,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn read_texture<R: Into<ResourceRef>>(
         &mut self,
+        render_pass: usize,
         resource: R,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -333,6 +336,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn read_buffer<R: Into<ResourceRef>>(
         &mut self,
+        render_pass: usize,
         resource: R,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -366,6 +370,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn write_texture<R: Into<ResourceMut>>(
         &mut self,
+        render_pass: usize,
         resource: R,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -373,7 +378,7 @@ impl FrameGraphBuilder {
         let r = resource.into();
 
         self.validate_and_update_for_handle_write(r);
-        let renamed_r = self.increment_handle_for_write(r, self.render_passes.len(), access);
+        let renamed_r = self.increment_handle_for_write(r, render_pass, access);
 
         let root_resource = self.assert_resource_handle_is_texture(r);
         let sync = if sync.is_empty() {
@@ -402,6 +407,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn write_buffer<R: Into<ResourceMut>>(
         &mut self,
+        render_pass: usize,
         resource: R,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -410,7 +416,7 @@ impl FrameGraphBuilder {
 
         self.assert_resource_handle_is_buffer(r);
         self.validate_and_update_for_handle_write(r);
-        let renamed_r = self.increment_handle_for_write(r, self.render_passes.len(), access);
+        let renamed_r = self.increment_handle_for_write(r, render_pass, access);
 
         let sync = if sync.is_empty() {
             access.default_barrier_sync(false, Default::default())
@@ -454,6 +460,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn create_texture(
         &mut self,
+        render_pass: usize,
         desc: &TextureDesc,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -492,7 +499,7 @@ impl FrameGraphBuilder {
             name,
         };
 
-        let r = self.create_new_handle(self.render_passes.len(), access);
+        let r = self.create_new_handle(render_pass, access);
         self.set_resource_type_for(
             r,
             ResourceTypeTexture {
@@ -507,6 +514,7 @@ impl FrameGraphBuilder {
 
     pub(crate) fn create_buffer(
         &mut self,
+        render_pass: usize,
         desc: &BufferDesc,
         sync: BarrierSync,
         access: ResourceUsageFlags,
@@ -536,7 +544,7 @@ impl FrameGraphBuilder {
             name,
         };
 
-        let r = self.create_new_handle(self.render_passes.len(), access);
+        let r = self.create_new_handle(render_pass, access);
         self.set_resource_type_for(
             r,
             ResourceTypeBuffer {
@@ -747,7 +755,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.import_texture(desc, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.import_texture(render_pass, desc, sync, access)
     }
 
     /// Declares that this pass would like to import the given resource into the frame graph with
@@ -760,7 +769,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.import_buffer(desc, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.import_buffer(render_pass, desc, sync, access)
     }
 
     /// Declares a read access to the given texture, with the given sync parameters.
@@ -777,7 +787,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
-        self.0.read_texture(resource, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.read_texture(render_pass, resource, sync, access)
     }
 
     /// Declares a read access to the given buffer, with the given sync parameters.
@@ -794,7 +805,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
-        self.0.read_buffer(resource, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.read_buffer(render_pass, resource, sync, access)
     }
 
     /// Declares a write access to the given texture, with the given sync parameters.
@@ -816,7 +828,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.write_texture(resource, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.write_texture(render_pass, resource, sync, access)
     }
 
     /// Declares a write access to the given buffer, with the given sync parameters.
@@ -838,7 +851,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.write_buffer(resource, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.write_buffer(render_pass, resource, sync, access)
     }
 
     /// Declares that a new, transient texture will be created and used by the pass. Use 'access' to
@@ -865,7 +879,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.create_texture(desc, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.create_texture(render_pass, desc, sync, access)
     }
 
     /// Declares that a new, transient buffer will be created and used by the pass. Use 'access' to
@@ -892,7 +907,8 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.create_buffer(desc, sync, access)
+        let render_pass = self.0.pass_access_info.current_pass_index;
+        self.0.create_buffer(render_pass, desc, sync, access)
     }
 }
 

@@ -206,16 +206,29 @@ pub fn test_handle_equality() {
 
     let mut builder = FrameGraph::builder();
 
-    let imported_resource = builder.import_buffer(&BufferImportDesc {
-        resource: mock_buffer.as_ref(),
-        before_sync: BarrierSync::COMPUTE_SHADING,
-        before_access: BarrierAccess::SHADER_WRITE,
-        after_sync: BarrierSync::COPY,
-        after_access: BarrierAccess::COPY_READ,
-    });
-
+    let mut imported_resource = None;
     builder.add_pass(
         "test-pass-0",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let r = resources.import_buffer(
+                &BufferImportDesc {
+                    resource: mock_buffer.as_ref(),
+                    before_sync: BarrierSync::COMPUTE_SHADING,
+                    before_access: BarrierAccess::SHADER_WRITE,
+                    after_sync: BarrierSync::COPY,
+                    after_access: BarrierAccess::COPY_READ,
+                },
+                BarrierSync::NONE,
+                ResourceUsageFlags::NONE,
+            );
+            imported_resource = Some(r);
+        },
+        |_data: &()| {},
+    );
+    let imported_resource = imported_resource.unwrap();
+
+    builder.add_pass(
+        "test-pass-1",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_read_import = Some(resources.read_buffer(
                 imported_resource,
@@ -225,7 +238,7 @@ pub fn test_handle_equality() {
             out_create = Some(resources.create_buffer(
                 &BufferDesc {
                     size: 256,
-                    name: Some("test-pass-0-transient-resource"),
+                    name: Some("test-pass-1-transient-resource"),
                     ..Default::default()
                 },
                 BarrierSync::COMPUTE_SHADING,
@@ -236,7 +249,7 @@ pub fn test_handle_equality() {
     );
 
     builder.add_pass(
-        "test-pass-1",
+        "test-pass-2",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
@@ -253,7 +266,7 @@ pub fn test_handle_equality() {
     );
 
     builder.add_pass(
-        "test-pass-2",
+        "test-pass-3",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_read_transient = Some(resources.read_buffer(
                 out_write_transient.unwrap(),
@@ -304,16 +317,29 @@ pub fn test_usage_collection() {
 
     let mut builder = FrameGraph::builder();
 
-    let imported_resource = builder.import_buffer(&BufferImportDesc {
-        resource: mock_buffer.as_ref(),
-        before_sync: BarrierSync::COMPUTE_SHADING,
-        before_access: BarrierAccess::SHADER_WRITE,
-        after_sync: BarrierSync::COPY,
-        after_access: BarrierAccess::COPY_READ,
-    });
-
+    let mut imported_resource = None;
     builder.add_pass(
         "test-pass-0",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let r = resources.import_buffer(
+                &BufferImportDesc {
+                    resource: mock_buffer.as_ref(),
+                    before_sync: BarrierSync::COMPUTE_SHADING,
+                    before_access: BarrierAccess::SHADER_WRITE,
+                    after_sync: BarrierSync::COPY,
+                    after_access: BarrierAccess::COPY_READ,
+                },
+                BarrierSync::NONE,
+                ResourceUsageFlags::NONE,
+            );
+            imported_resource = Some(r);
+        },
+        |_data: &()| {},
+    );
+    let imported_resource = imported_resource.unwrap();
+
+    builder.add_pass(
+        "test-pass-1",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             resources.read_buffer(
                 imported_resource,
@@ -323,7 +349,7 @@ pub fn test_usage_collection() {
             out_create = Some(resources.create_buffer(
                 &BufferDesc {
                     size: 256,
-                    name: Some("test-pass-0-transient-resource"),
+                    name: Some("test-pass-1-transient-resource"),
                     ..Default::default()
                 },
                 BarrierSync::VERTEX_SHADING,
@@ -334,7 +360,7 @@ pub fn test_usage_collection() {
     );
 
     builder.add_pass(
-        "test-pass-1",
+        "test-pass-2",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
@@ -351,7 +377,7 @@ pub fn test_usage_collection() {
     );
 
     builder.add_pass(
-        "test-pass-2",
+        "test-pass-3",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             resources.read_buffer(
                 out_write_transient.unwrap(),
