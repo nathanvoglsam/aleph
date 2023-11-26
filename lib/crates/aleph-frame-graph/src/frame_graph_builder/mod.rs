@@ -68,7 +68,22 @@ pub struct FrameGraphBuilder {
     /// identity of the pass and is used to key to a number of different names
     pub(crate) render_passes: Vec<RenderPass>,
 
+    /// The backing storage used for all of the root resourcs objects. A root resource represents
+    /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
+    /// transient resources as well as imported resources. Imported resources are identified by
+    /// having their index in the 'imported_resources' set.
     pub(crate) root_resources: Vec<ResourceRoot>,
+
+    /// The backing storage used for all the resource version objects. A resource version is an
+    /// indexed set that is used to identify a particular version of a root resource.
+    ///
+    /// A 'ResourceVersion' contains the accumulated usages of the resource as well as a link to
+    /// the previous version to form a linked-list of resource versions back to the first version
+    /// when the resource was created or imported.
+    ///
+    /// These entries are critical as resource versions are what form the core of the graph. They
+    /// are what allows the graph to construct a stable program order via an SSA form graph
+    /// construction.
     pub(crate) resource_versions: Vec<ResourceVersion>,
 
     /// Stores debug information for each resource handle generated at a resource rename event. This
