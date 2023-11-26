@@ -210,7 +210,24 @@ impl FrameGraphBuilder {
         self.pass_access_info.clear();
     }
 
-    pub(crate) fn import_texture(&mut self, desc: &TextureImportDesc) -> ResourceMut {
+    pub(crate) fn import_texture(
+        &mut self,
+        desc: &TextureImportDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        let sync = if sync.is_empty() {
+            let format = desc.resource.desc().format;
+            access.default_barrier_sync(false, format)
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+                "Attempting to declare non-texture compatible access flags {:?}",
+                access
+            );
+            sync
+        };
+
         let imported = ImportedTexture {
             resource: desc.resource.upgrade(),
             before_sync: desc.before_sync,
@@ -221,7 +238,11 @@ impl FrameGraphBuilder {
             after_layout: desc.after_layout,
         };
         let r_type = ResourceTypeTexture {
-            create_desc: TextureCreate::default(),
+            create_desc: TextureCreate {
+                sync,
+                access,
+                ..Default::default()
+            },
             import_info: Some(imported),
         };
 
@@ -234,7 +255,23 @@ impl FrameGraphBuilder {
         r
     }
 
-    pub(crate) fn import_buffer(&mut self, desc: &BufferImportDesc) -> ResourceMut {
+    pub(crate) fn import_buffer(
+        &mut self,
+        desc: &BufferImportDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        let sync = if sync.is_empty() {
+            access.default_barrier_sync(false, Default::default())
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+                "Attempting to declare non-buffer compatible access flags {:?}",
+                access
+            );
+            sync
+        };
+
         let imported = ImportedBuffer {
             resource: desc.resource.upgrade(),
             before_sync: desc.before_sync,
@@ -243,7 +280,11 @@ impl FrameGraphBuilder {
             after_access: desc.after_access,
         };
         let r_type = ResourceTypeBuffer {
-            create_desc: BufferCreate::default(),
+            create_desc: BufferCreate {
+                sync,
+                access,
+                ..Default::default()
+            },
             import_info: Some(imported),
         };
 
@@ -706,7 +747,7 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.import_texture(desc)
+        self.0.import_texture(desc, sync, access)
     }
 
     /// Declares that this pass would like to import the given resource into the frame graph with
@@ -719,7 +760,7 @@ impl<'a> ResourceRegistry<'a> {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        self.0.import_buffer(desc)
+        self.0.import_buffer(desc, sync, access)
     }
 
     /// Declares a read access to the given texture, with the given sync parameters.
