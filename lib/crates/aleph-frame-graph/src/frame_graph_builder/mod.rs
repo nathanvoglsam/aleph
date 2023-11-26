@@ -64,10 +64,6 @@ pub struct FrameGraphBuilder {
     /// used to store anything that persists to the fully constructed graph.
     pub(crate) graph_arena: Bump,
 
-    // /// An arena used temporarily while constructing the frame graph. Will be freed with the
-    // /// [FrameGraphBuilder] instance. This can be used to allocate anything that only needs to exist
-    // /// as long as the graph is being built.
-    // pub(crate) build_arena: Bump,
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
     pub(crate) render_passes: Vec<RenderPass>,
@@ -89,27 +85,22 @@ pub struct FrameGraphBuilder {
     /// setup callback.
     pub(crate) pass_access_info: PassAccessInfo,
 
-    /// The head of the dropper linked-list that contains all the drop functions for the render
-    /// passes.
-    pub(crate) pass_dropper_head: Option<NonNull<DropLink>>,
-
-    /// The head of the dropper linked-list that contains droppers for the callback pass payloads.
-    pub(crate) payload_dropper_head: Option<NonNull<DropLink>>,
+    /// The head of the dropper linked-list that contains all the drop functions for objects
+    /// allocated from the graph arena
+    pub(crate) drop_head: Option<NonNull<DropLink>>,
 }
 
 impl FrameGraphBuilder {
     pub fn new() -> Self {
         Self {
             graph_arena: Default::default(),
-            // build_arena: Default::default(),
             render_passes: Default::default(),
             root_resources: Default::default(),
             resource_versions: Default::default(),
             resource_handles: Default::default(),
             imported_resources: Default::default(),
             pass_access_info: Default::default(),
-            pass_dropper_head: Default::default(),
-            payload_dropper_head: Default::default(),
+            drop_head: Default::default(),
         }
     }
 
@@ -131,7 +122,7 @@ impl FrameGraphBuilder {
             // Default initialize the payload and allocate the payload into the arena
             let payload = self.graph_arena.alloc(T::default());
             let mut payload = NonNull::from(payload);
-            DropLink::append_drop_list(&self.graph_arena, &mut self.payload_dropper_head, payload);
+            DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, payload);
 
             // We need to use the pointer here as the mutable ref created by arena.alloc will get
             // moved into the NonNull instance created as &mut doesn't impl Copy. This is still safe
@@ -144,7 +135,6 @@ impl FrameGraphBuilder {
             }
 
             // Construct the CallbackRenderPass instance and handoff to add_pass
-            let payload = NonNull::from(payload);
             let callback_pass = CallbackRenderPass::new(payload, exec_fn);
             self.add_pass_internal(name, callback_pass);
         }
@@ -161,17 +151,15 @@ impl FrameGraphBuilder {
         let root_resources = std::mem::take(&mut self.root_resources);
         let resource_versions = std::mem::take(&mut self.resource_versions);
         let resource_handles = std::mem::take(&mut self.resource_handles);
-        let pass_dropper_head = std::mem::take(&mut self.pass_dropper_head);
-        let payload_dropper_head = std::mem::take(&mut self.payload_dropper_head);
+        let drop_head = std::mem::take(&mut self.drop_head);
 
         FrameGraph {
-            arena,
+            _arena: arena,
             render_passes,
             root_resources,
             resource_versions,
             resource_handles,
-            pass_dropper_head,
-            payload_dropper_head,
+            drop_head,
         }
     }
 }
@@ -183,7 +171,7 @@ impl FrameGraphBuilder {
         let name = NonNull::from(name);
         let pass = self.graph_arena.alloc(pass);
         let mut pass = NonNull::from(pass);
-        DropLink::append_drop_list(&self.graph_arena, &mut self.pass_dropper_head, pass);
+        DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, pass);
 
         unsafe {
             let reads = self
@@ -734,8 +722,7 @@ impl Drop for FrameGraphBuilder {
         // Safety: implementation and API guarantees that dropper only gets called once per
         //         object, and always on the correct type.
         unsafe {
-            DropLink::drop_and_null(&mut self.pass_dropper_head);
-            DropLink::drop_and_null(&mut self.payload_dropper_head);
+            DropLink::drop_and_null(&mut self.drop_head);
         }
     }
 }

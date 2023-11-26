@@ -39,7 +39,10 @@ pub struct FrameGraph {
     ///
     /// This typically includes the IRenderPass objects themselves, their name strings and the
     /// payload objects for callback passes.
-    pub(crate) arena: Bump,
+    /// 
+    /// This won't be directly used by a constructed graph but must be stored inside the graph in
+    /// order to keep the allocations for all the render passes alive.
+    pub(crate) _arena: Bump,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
@@ -52,12 +55,9 @@ pub struct FrameGraph {
     /// is used to help validate resources are accessed in a valid way.
     pub(crate) resource_handles: Vec<ResourceHandleInfo>,
 
-    /// The head of the dropper linked-list that contains all the drop functions for the render
-    /// passes.
-    pub(crate) pass_dropper_head: Option<NonNull<DropLink>>,
-
-    /// The head of the dropper linked-list that contains droppers for the callback pass payloads.
-    pub(crate) payload_dropper_head: Option<NonNull<DropLink>>,
+    /// The head of the dropper linked-list that contains all the drop functions for objects
+    /// allocated from the graph arena
+    pub(crate) drop_head: Option<NonNull<DropLink>>,
 }
 
 impl FrameGraph {
@@ -73,8 +73,7 @@ impl Drop for FrameGraph {
         // Safety: implementation and API guarantees that dropper only gets called once per
         //         object, and always on the correct type.
         unsafe {
-            DropLink::drop_and_null(&mut self.pass_dropper_head);
-            DropLink::drop_and_null(&mut self.payload_dropper_head);
+            DropLink::drop_and_null(&mut self.drop_head);
         }
     }
 }
