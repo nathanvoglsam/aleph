@@ -558,16 +558,24 @@ impl FrameGraphBuilder {
         ResourceMut(id)
     }
 
-    pub(crate) fn assert_resource_handle_is_texture(&self, r: impl Into<ResourceRef>) {
+    pub(crate) fn assert_resource_handle_is_texture(
+        &self,
+        r: impl Into<ResourceRef>,
+    ) -> &ResourceTypeTexture {
         let r = r.into();
         let root_type = &self.root_resources[r.0.root_id() as usize].resource_type;
-        assert!(matches!(root_type, ResourceType::Texture { .. }));
+        assert!(matches!(root_type, ResourceType::Texture(_)));
+        root_type.unwrap_texture()
     }
 
-    pub(crate) fn assert_resource_handle_is_buffer(&self, r: impl Into<ResourceRef>) {
+    pub(crate) fn assert_resource_handle_is_buffer(
+        &self,
+        r: impl Into<ResourceRef>,
+    ) -> &ResourceTypeBuffer {
         let r = r.into();
         let root_type = &self.root_resources[r.0.root_id() as usize].resource_type;
-        assert!(matches!(root_type, ResourceType::Buffer { .. }));
+        assert!(matches!(root_type, ResourceType::Buffer(_)));
+        root_type.unwrap_buffer()
     }
 
     /// Iterates all resource versions and accumulates their usage flags into the root resource.
