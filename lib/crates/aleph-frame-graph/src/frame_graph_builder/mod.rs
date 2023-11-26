@@ -49,6 +49,7 @@
 //!   problem to be solved when it matters.
 //!
 
+use crate::access::ResourceUsageFlagsExt;
 use crate::internal::*;
 use crate::render_pass::CallbackRenderPass;
 use crate::resource::ResourceId;
@@ -263,8 +264,20 @@ impl FrameGraphBuilder {
     ) -> ResourceRef {
         let r = resource.into();
 
-        self.assert_resource_handle_is_texture(r);
         self.add_flags_to_version_for(r, access);
+
+        let root_resource = self.assert_resource_handle_is_texture(r);
+        let sync = if sync.is_empty() {
+            let format = root_resource.create_desc.format;
+            access.default_barrier_sync(true, format)
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+                "Attempting to declare non-texture compatible access flags {:?}",
+                access
+            );
+            sync
+        };
 
         let desc = TextureAccess {
             texture: r.0,
@@ -288,6 +301,17 @@ impl FrameGraphBuilder {
         self.assert_resource_handle_is_buffer(r);
         self.add_flags_to_version_for(r, access);
 
+        let sync = if sync.is_empty() {
+            access.default_barrier_sync(true, Default::default())
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+                "Attempting to declare non-buffer compatible access flags {:?}",
+                access
+            );
+            sync
+        };
+
         let desc = BufferAccess {
             buffer: r.0,
             sync,
@@ -307,7 +331,6 @@ impl FrameGraphBuilder {
     ) -> ResourceMut {
         let r = resource.into();
 
-        self.assert_resource_handle_is_texture(r);
         self.validate_and_update_for_handle_write(r);
         let renamed_r = self.increment_handle_for_write(r, self.render_passes.len());
 
@@ -316,6 +339,19 @@ impl FrameGraphBuilder {
         // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
         // matching entry in resource_versions to write our usage flags into.
         self.add_flags_to_version_for(renamed_r, access);
+
+        let root_resource = self.assert_resource_handle_is_texture(r);
+        let sync = if sync.is_empty() {
+            let format = root_resource.create_desc.format;
+            access.default_barrier_sync(false, format)
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+                "Attempting to declare non-texture compatible access flags {:?}",
+                access
+            );
+            sync
+        };
 
         let desc = TextureAccess {
             texture: r.0,
@@ -346,6 +382,17 @@ impl FrameGraphBuilder {
         // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
         // matching entry in resource_versions to write our usage flags into.
         self.add_flags_to_version_for(renamed_r, access);
+
+        let sync = if sync.is_empty() {
+            access.default_barrier_sync(false, Default::default())
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+                "Attempting to declare non-buffer compatible access flags {:?}",
+                access
+            );
+            sync
+        };
 
         let desc = BufferAccess {
             buffer: r.0,
@@ -386,6 +433,17 @@ impl FrameGraphBuilder {
             desc.usage.is_empty(),
             "The value of desc.usage is ignored, do not use it!"
         );
+
+        let sync = if sync.is_empty() {
+            access.default_barrier_sync(false, desc.format)
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+                "Attempting to declare non-texture compatible access flags {:?}",
+                access
+            );
+            sync
+        };
 
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
@@ -429,6 +487,17 @@ impl FrameGraphBuilder {
             desc.usage.is_empty(),
             "The value of desc.usage is ignored, do not use it!"
         );
+
+        let sync = if sync.is_empty() {
+            access.default_barrier_sync(false, Default::default())
+        } else {
+            debug_assert!(
+                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+                "Attempting to declare non-buffer compatible access flags {:?}",
+                access
+            );
+            sync
+        };
 
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
@@ -644,7 +713,12 @@ impl<'a> ResourceRegistry<'a> {
     /// the given parameters.
     ///
     /// This is a wrapper over [FrameGraphBuilder::import_texture].
-    pub fn import_texture(&mut self, desc: &TextureImportDesc) -> ResourceMut {
+    pub fn import_texture(
+        &mut self,
+        desc: &TextureImportDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
         self.0.import_texture(desc)
     }
 
@@ -652,7 +726,12 @@ impl<'a> ResourceRegistry<'a> {
     /// the given parameters.
     ///
     /// This is a wrapper over [FrameGraphBuilder::import_buffer].
-    pub fn import_buffer(&mut self, desc: &BufferImportDesc) -> ResourceMut {
+    pub fn import_buffer(
+        &mut self,
+        desc: &BufferImportDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
         self.0.import_buffer(desc)
     }
 
@@ -660,6 +739,10 @@ impl<'a> ResourceRegistry<'a> {
     ///
     /// The returned resource handle is equal to the handle given in 'r'. It is returned simply as
     /// a utility to mirror the write declaration functions.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
     pub fn read_texture<R: Into<ResourceRef>>(
         &mut self,
         resource: R,
@@ -673,6 +756,10 @@ impl<'a> ResourceRegistry<'a> {
     ///
     /// The returned resource handle is equal to the handle given in 'r'. It is returned simply as
     /// a utility to mirror the write declaration functions.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
     pub fn read_buffer<R: Into<ResourceRef>>(
         &mut self,
         resource: R,
@@ -691,6 +778,10 @@ impl<'a> ResourceRegistry<'a> {
     /// It is invalid to write to a resource through the same handle more than once. Any future
     /// writes must use the handle returned by this function. This constraint is to allow a total
     /// program order to be derived unambiguously from the set of passes submitted to the graph.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
     pub fn write_texture<R: Into<ResourceMut>>(
         &mut self,
         resource: R,
@@ -709,6 +800,10 @@ impl<'a> ResourceRegistry<'a> {
     /// It is invalid to write to a resource through the same handle more than once. Any future
     /// writes must use the handle returned by this function. This constraint is to allow a total
     /// program order to be derived unambiguously from the set of passes submitted to the graph.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
     pub fn write_buffer<R: Into<ResourceMut>>(
         &mut self,
         resource: R,
@@ -732,6 +827,10 @@ impl<'a> ResourceRegistry<'a> {
     /// function as it is impossible for a frame graph pass to know all the ways the resource will
     /// be used in the graph. Requiring a graph pass to know this would either have passes
     /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
     pub fn create_texture(
         &mut self,
         desc: &TextureDesc,
@@ -755,6 +854,10 @@ impl<'a> ResourceRegistry<'a> {
     /// function as it is impossible for a frame graph pass to know all the ways the resource will
     /// be used in the graph. Requiring a graph pass to know this would either have passes
     /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
     pub fn create_buffer(
         &mut self,
         desc: &BufferDesc,
