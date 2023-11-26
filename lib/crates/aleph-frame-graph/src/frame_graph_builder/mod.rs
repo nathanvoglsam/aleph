@@ -264,7 +264,7 @@ impl FrameGraphBuilder {
         let r = resource.into();
 
         self.assert_resource_handle_is_texture(r);
-        self.add_texture_flags_to_version_for(r, access);
+        self.add_flags_to_version_for(r, access);
 
         let desc = TextureAccess {
             texture: r.0,
@@ -286,7 +286,7 @@ impl FrameGraphBuilder {
         let r = resource.into();
 
         self.assert_resource_handle_is_buffer(r);
-        self.add_buffer_flags_to_version_for(r, access);
+        self.add_flags_to_version_for(r, access);
 
         let desc = BufferAccess {
             buffer: r.0,
@@ -315,7 +315,7 @@ impl FrameGraphBuilder {
         //
         // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
         // matching entry in resource_versions to write our usage flags into.
-        self.add_texture_flags_to_version_for(renamed_r, access);
+        self.add_flags_to_version_for(renamed_r, access);
 
         let desc = TextureAccess {
             texture: r.0,
@@ -345,7 +345,7 @@ impl FrameGraphBuilder {
         //
         // This _MUST_ happen after increment_handle_for_write, as otherwise there will be no
         // matching entry in resource_versions to write our usage flags into.
-        self.add_buffer_flags_to_version_for(renamed_r, access);
+        self.add_flags_to_version_for(renamed_r, access);
 
         let desc = BufferAccess {
             buffer: r.0,
@@ -414,7 +414,7 @@ impl FrameGraphBuilder {
             }
             .into(),
         );
-        self.add_texture_flags_to_version_for(r, access);
+        self.add_flags_to_version_for(r, access);
 
         r
     }
@@ -448,7 +448,7 @@ impl FrameGraphBuilder {
             }
             .into(),
         );
-        self.add_buffer_flags_to_version_for(r, access);
+        self.add_flags_to_version_for(r, access);
 
         r
     }
@@ -469,19 +469,7 @@ impl FrameGraphBuilder {
         root.resource_type = r_type;
     }
 
-    pub(crate) fn add_buffer_flags_to_version_for(
-        &mut self,
-        r: impl Into<ResourceRef>,
-        access: ResourceUsageFlags,
-    ) {
-        let r = r.into();
-
-        // Add the requested usage flags to the resource version's usage set
-        let version_id = r.0.version_id();
-        self.resource_versions[version_id as usize].access |= access;
-    }
-
-    pub(crate) fn add_texture_flags_to_version_for(
+    pub(crate) fn add_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
         access: ResourceUsageFlags,
