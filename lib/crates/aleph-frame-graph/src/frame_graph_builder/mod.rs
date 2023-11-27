@@ -244,13 +244,27 @@ impl FrameGraphBuilder {
             after_access: desc.after_access,
             after_layout: desc.after_layout,
         };
+        let resource_desc = desc.resource.desc();
+        let name = resource_desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = name.map(|v| NonNull::from(v));
         let r_type = ResourceTypeTexture {
-            create_desc: TextureCreate {
-                sync,
-                access,
+            import: Some(imported),
+            desc: FrameGraphTextureDesc {
+                width: resource_desc.width,
+                height: resource_desc.height,
+                depth: resource_desc.depth,
+                format: resource_desc.format,
+                dimension: resource_desc.dimension,
+                clear_value: resource_desc.clear_value,
+                array_size: resource_desc.array_size,
+                mip_levels: resource_desc.mip_levels,
+                sample_count: resource_desc.sample_count,
+                sample_quality: resource_desc.sample_quality,
+                name,
                 ..Default::default()
             },
-            import_info: Some(imported),
+            sync,
+            access,
         };
 
         // render pass index doesn't matter here as imported resources aren't created by a render
@@ -287,13 +301,18 @@ impl FrameGraphBuilder {
             after_sync: desc.after_sync,
             after_access: desc.after_access,
         };
+        let resource_desc = desc.resource.desc();
+        let name = resource_desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = name.map(|v| NonNull::from(v));
         let r_type = ResourceTypeBuffer {
-            create_desc: BufferCreate {
-                sync,
-                access,
+            import: Some(imported),
+            desc: FrameGraphBufferDesc {
+                size: resource_desc.size,
+                name,
                 ..Default::default()
             },
-            import_info: Some(imported),
+            sync,
+            access,
         };
 
         // render pass index doesn't matter here as imported resources aren't created by a render
@@ -318,7 +337,7 @@ impl FrameGraphBuilder {
 
         let root_resource = self.assert_resource_handle_is_texture(r);
         let sync = if sync.is_empty() {
-            let format = root_resource.create_desc.format;
+            let format = root_resource.desc.format;
             access.default_barrier_sync(true, format)
         } else {
             debug_assert!(
@@ -388,7 +407,7 @@ impl FrameGraphBuilder {
 
         let root_resource = self.assert_resource_handle_is_texture(r);
         let sync = if sync.is_empty() {
-            let format = root_resource.create_desc.format;
+            let format = root_resource.desc.format;
             access.default_barrier_sync(false, format)
         } else {
             debug_assert!(
@@ -489,7 +508,7 @@ impl FrameGraphBuilder {
 
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
-        let create_desc = TextureCreate {
+        let create_desc = FrameGraphTextureDesc {
             width: desc.width,
             height: desc.height,
             depth: desc.depth,
@@ -500,8 +519,6 @@ impl FrameGraphBuilder {
             mip_levels: desc.mip_levels,
             sample_count: desc.sample_count,
             sample_quality: desc.sample_quality,
-            sync,
-            access,
             name,
         };
 
@@ -509,8 +526,10 @@ impl FrameGraphBuilder {
         self.set_resource_type_for(
             r,
             ResourceTypeTexture {
-                create_desc,
-                import_info: None,
+                import: None,
+                desc: create_desc,
+                sync,
+                access,
             }
             .into(),
         );
@@ -543,10 +562,8 @@ impl FrameGraphBuilder {
 
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
-        let create_desc = BufferCreate {
+        let create_desc = FrameGraphBufferDesc {
             size: desc.size,
-            sync,
-            access,
             name,
         };
 
@@ -554,8 +571,10 @@ impl FrameGraphBuilder {
         self.set_resource_type_for(
             r,
             ResourceTypeBuffer {
-                create_desc,
-                import_info: None,
+                import: None,
+                desc: create_desc,
+                sync,
+                access,
             }
             .into(),
         );
@@ -700,7 +719,7 @@ impl FrameGraphBuilder {
             match &root.resource_type {
                 ResourceType::Uninitialized => unreachable!(),
                 ResourceType::Buffer(ResourceTypeBuffer {
-                    import_info: Some(import),
+                    import: Some(import),
                     ..
                 }) => {
                     let desc = import.resource.desc();
@@ -715,7 +734,7 @@ impl FrameGraphBuilder {
                     );
                 }
                 ResourceType::Texture(ResourceTypeTexture {
-                    import_info: Some(import),
+                    import: Some(import),
                     ..
                 }) => {
                     let desc = import.resource.desc();

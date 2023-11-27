@@ -39,7 +39,7 @@ pub struct FrameGraph {
     ///
     /// This typically includes the IRenderPass objects themselves, their name strings and the
     /// payload objects for callback passes.
-    /// 
+    ///
     /// This won't be directly used by a constructed graph but must be stored inside the graph in
     /// order to keep the allocations for all the render passes alive.
     pub(crate) _arena: Bump,

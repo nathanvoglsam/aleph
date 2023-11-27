@@ -56,8 +56,14 @@ pub struct ResourceRoot {
 }
 
 pub struct ResourceTypeBuffer {
-    pub import_info: Option<ImportedBuffer>,
-    pub create_desc: BufferCreate,
+    pub import: Option<ImportedBuffer>,
+    pub desc: FrameGraphBufferDesc,
+
+    /// The sync flags that the resource will be used with in the creating pass.
+    pub sync: BarrierSync,
+
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceUsageFlags,
 }
 
 impl Into<ResourceType> for ResourceTypeBuffer {
@@ -67,8 +73,14 @@ impl Into<ResourceType> for ResourceTypeBuffer {
 }
 
 pub struct ResourceTypeTexture {
-    pub import_info: Option<ImportedTexture>,
-    pub create_desc: TextureCreate,
+    pub import: Option<ImportedTexture>,
+    pub desc: FrameGraphTextureDesc,
+
+    /// The sync flags that the resource will be used with in the creating pass.
+    pub sync: BarrierSync,
+
+    /// How the resource will be accessed within the render pass
+    pub access: ResourceUsageFlags,
 }
 
 impl Into<ResourceType> for ResourceTypeTexture {
@@ -125,18 +137,13 @@ pub struct ImportedTexture {
     pub after_layout: ImageLayout,
 }
 
+/// An internal mirror of [BufferDesc] that removes the 'usage' field (it's automatically deduced)
+/// and replaces the name reference with a pointer so that it can store a pointer into an internal
+/// arena
 #[derive(Default)]
-pub struct BufferCreate {
+pub struct FrameGraphBufferDesc {
     /// The size of the buffer to be created
     pub size: u64,
-
-    // Implicitly GPU only
-    // pub cpu_access: CpuAccessMode,
-    /// The sync flags that the resource will be used with in the creating pass.
-    pub sync: BarrierSync,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
 
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
     /// that the passes are stored in. It is only sound to access this string immutably, and the
@@ -144,8 +151,11 @@ pub struct BufferCreate {
     pub name: Option<NonNull<str>>,
 }
 
+/// An internal mirror of [TextureDesc] that removes the 'usage' field (it's automatically deduced)
+/// and replaces the name reference with a pointer so that it can store a pointer into an internal
+/// arena
 #[derive(Default)]
-pub struct TextureCreate {
+pub struct FrameGraphTextureDesc {
     pub width: u32,
     pub height: u32,
     pub depth: u32,
@@ -156,12 +166,6 @@ pub struct TextureCreate {
     pub mip_levels: u32,
     pub sample_count: u32,
     pub sample_quality: u32,
-
-    /// The sync flags that the resource will be used with in the creating pass.
-    pub sync: BarrierSync,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
 
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
     /// that the passes are stored in. It is only sound to access this string immutably, and the
