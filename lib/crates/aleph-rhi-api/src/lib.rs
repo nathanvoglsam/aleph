@@ -2653,10 +2653,12 @@ pub enum DescriptorType {
     /// Vulkan but D3D12 needs UAV again because of write access.
     ByteAddressBufferRW,
 
+    /// An acceleration structure descriptor, which is a special kind of buffer descriptor that is
+    /// used for raytracing acceleration structures.
+    AccelerationStructure,
+
     /// UNIMPLEMENTED
     InputAttachment,
-    // TODO: Can we do something with VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK?
-    // TODO: VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR
 }
 
 impl Default for DescriptorType {
