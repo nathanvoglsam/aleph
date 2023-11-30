@@ -59,6 +59,7 @@ use aleph_rhi_api::*;
 use bumpalo::Bump;
 use std::ptr::NonNull;
 
+#[derive(Default)]
 pub struct FrameGraphBuilder {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
     /// used to store anything that persists to the fully constructed graph.
@@ -107,16 +108,7 @@ pub struct FrameGraphBuilder {
 
 impl FrameGraphBuilder {
     pub fn new() -> Self {
-        Self {
-            graph_arena: Default::default(),
-            render_passes: Default::default(),
-            root_resources: Default::default(),
-            resource_versions: Default::default(),
-            resource_handles: Default::default(),
-            imported_resources: Default::default(),
-            pass_access_info: Default::default(),
-            drop_head: Default::default(),
-        }
+        Self::default()
     }
 
     pub fn add_pass<
