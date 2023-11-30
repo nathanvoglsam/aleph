@@ -215,17 +215,14 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let sync = if sync.is_empty() {
-            let format = desc.resource.desc().format;
-            access.default_barrier_sync(false, format)
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-                "Attempting to declare non-texture compatible access flags {:?}",
-                access
-            );
-            sync
-        };
+        debug_assert!(
+            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+            "Attempting to declare non-texture compatible access flags {:?}",
+            access
+        );
+
+        let format = desc.resource.desc().format;
+        let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
 
         let imported = ImportedTexture {
             resource: desc.resource.upgrade(),
@@ -253,7 +250,6 @@ impl FrameGraphBuilder {
                 sample_count: resource_desc.sample_count,
                 sample_quality: resource_desc.sample_quality,
                 name,
-                ..Default::default()
             },
             sync,
             access,
@@ -275,17 +271,13 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        let sync = if sync.is_empty() {
-            access.default_barrier_sync(false, Default::default())
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
-                "Attempting to declare non-buffer compatible access flags {:?}",
-                access
-            );
-            sync
-        };
+        debug_assert!(
+            ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+            "Attempting to declare non-buffer compatible access flags {:?}",
+            access
+        );
 
+        let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let imported = ImportedBuffer {
             resource: desc.resource.upgrade(),
             before_sync: desc.before_sync,
@@ -301,7 +293,6 @@ impl FrameGraphBuilder {
             desc: FrameGraphBufferDesc {
                 size: resource_desc.size,
                 name,
-                ..Default::default()
             },
             sync,
             access,
@@ -323,23 +314,19 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
+        debug_assert!(
+            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+            "Attempting to declare non-texture compatible access flags {:?}",
+            access
+        );
+
         let r = resource.into();
 
         self.add_flags_to_version_for(r, access);
 
         let root_resource = self.assert_resource_handle_is_texture(r);
-        let sync = if sync.is_empty() {
-            let format = root_resource.desc.format;
-            access.default_barrier_sync(true, format)
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-                "Attempting to declare non-texture compatible access flags {:?}",
-                access
-            );
-            sync
-        };
-
+        let format = root_resource.desc.format;
+        let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
         let desc = TextureAccess {
             texture: r.0,
             sync,
@@ -358,22 +345,18 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
+        debug_assert!(
+            ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+            "Attempting to declare non-buffer compatible access flags {:?}",
+            access
+        );
+
         let r = resource.into();
 
         self.assert_resource_handle_is_buffer(r);
         self.add_flags_to_version_for(r, access);
 
-        let sync = if sync.is_empty() {
-            access.default_barrier_sync(true, Default::default())
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
-                "Attempting to declare non-buffer compatible access flags {:?}",
-                access
-            );
-            sync
-        };
-
+        let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
         let desc = BufferAccess {
             buffer: r.0,
             sync,
@@ -392,24 +375,21 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
+        debug_assert!(
+            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+            "Attempting to declare non-texture compatible access flags {:?}",
+            access
+        );
+
         let r = resource.into();
 
         self.validate_and_update_for_handle_write(r);
+        self.add_flags_to_root_for(r, access);
         let renamed_r = self.increment_handle_for_write(r, render_pass, access);
 
         let root_resource = self.assert_resource_handle_is_texture(r);
-        let sync = if sync.is_empty() {
-            let format = root_resource.desc.format;
-            access.default_barrier_sync(false, format)
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-                "Attempting to declare non-texture compatible access flags {:?}",
-                access
-            );
-            sync
-        };
-
+        let format = root_resource.desc.format;
+        let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
         let desc = TextureAccess {
             texture: r.0,
             sync,
@@ -429,23 +409,19 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
+        debug_assert!(
+            ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+            "Attempting to declare non-buffer compatible access flags {:?}",
+            access
+        );
+
         let r = resource.into();
 
         self.assert_resource_handle_is_buffer(r);
         self.validate_and_update_for_handle_write(r);
         let renamed_r = self.increment_handle_for_write(r, render_pass, access);
 
-        let sync = if sync.is_empty() {
-            access.default_barrier_sync(false, Default::default())
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
-                "Attempting to declare non-buffer compatible access flags {:?}",
-                access
-            );
-            sync
-        };
-
+        let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let desc = BufferAccess {
             buffer: r.0,
             sync,
@@ -456,23 +432,6 @@ impl FrameGraphBuilder {
             .push(ResourceAccess::Buffer(desc));
 
         renamed_r
-    }
-
-    pub(crate) fn validate_and_update_for_handle_write(&mut self, r: ResourceMut) {
-        // Validate the write status for the resource handle and update it if it's valid to write
-        // to this handle.
-        //
-        // A ResourceMut can only be used for a single write_<resource> call as otherwise it would
-        // not be possible to extract a single program order. If two passes tried to write to the
-        // same resource with the same handle, which write should execute first? The only real
-        // solution would be to choose whichever pass was registered first, but then the graph order
-        // is dependent on pass submission order which is something we really _don't_ want.
-        let handle_id = r.0.handle_id() as usize;
-        let handle_info = &mut self.resource_handles[handle_id];
-        if handle_info.is_written() {
-            panic!("Attempted to write a resource through the same handle more than once!");
-        }
-        handle_info.mark_written();
     }
 
     pub(crate) fn create_texture(
@@ -486,18 +445,14 @@ impl FrameGraphBuilder {
             desc.usage.is_empty(),
             "The value of desc.usage is ignored, do not use it!"
         );
+        debug_assert!(
+            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
+            "Attempting to declare non-texture compatible access flags {:?}",
+            access
+        );
 
-        let sync = if sync.is_empty() {
-            access.default_barrier_sync(false, desc.format)
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-                "Attempting to declare non-texture compatible access flags {:?}",
-                access
-            );
-            sync
-        };
-
+        let format = desc.format;
+        let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let create_desc = FrameGraphTextureDesc {
@@ -540,18 +495,13 @@ impl FrameGraphBuilder {
             desc.usage.is_empty(),
             "The value of desc.usage is ignored, do not use it!"
         );
+        debug_assert!(
+            ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
+            "Attempting to declare non-buffer compatible access flags {:?}",
+            access
+        );
 
-        let sync = if sync.is_empty() {
-            access.default_barrier_sync(false, Default::default())
-        } else {
-            debug_assert!(
-                ResourceUsageFlags::BUFFER_USAGE_MASK.contains(access),
-                "Attempting to declare non-buffer compatible access flags {:?}",
-                access
-            );
-            sync
-        };
-
+        let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let create_desc = FrameGraphBufferDesc {
@@ -572,6 +522,23 @@ impl FrameGraphBuilder {
         );
 
         r
+    }
+
+    pub(crate) fn validate_and_update_for_handle_write(&mut self, r: ResourceMut) {
+        // Validate the write status for the resource handle and update it if it's valid to write
+        // to this handle.
+        //
+        // A ResourceMut can only be used for a single write_<resource> call as otherwise it would
+        // not be possible to extract a single program order. If two passes tried to write to the
+        // same resource with the same handle, which write should execute first? The only real
+        // solution would be to choose whichever pass was registered first, but then the graph order
+        // is dependent on pass submission order which is something we really _don't_ want.
+        let handle_id = r.0.handle_id() as usize;
+        let handle_info = &mut self.resource_handles[handle_id];
+        if handle_info.is_written() {
+            panic!("Attempted to write a resource through the same handle more than once!");
+        }
+        handle_info.mark_written();
     }
 
     pub(crate) fn add_imported_resource_to_list(&mut self, r: impl Into<ResourceRef>) {
@@ -978,3 +945,19 @@ pub struct BufferImportDesc<'a> {
 
 #[cfg(test)]
 mod tests;
+
+/// A utility function that wraps around 'default_barrier_sync' that will either return the given
+/// [BarrierSync] flags, or the default sync flags for the provided [ResourceUsageFlags] if the
+/// given sync flags are not set (all 0).
+fn get_given_or_default_sync_flags_for(
+    access: ResourceUsageFlags,
+    sync: BarrierSync,
+    read_only: bool,
+    format: Format,
+) -> BarrierSync {
+    if sync.is_empty() {
+        access.default_barrier_sync(read_only, format)
+    } else {
+        sync
+    }
+}
