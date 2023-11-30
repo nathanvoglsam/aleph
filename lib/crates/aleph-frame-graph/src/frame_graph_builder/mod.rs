@@ -153,7 +153,6 @@ impl FrameGraphBuilder {
     pub fn build(mut self) -> FrameGraph {
         // With the graph finalized we can now iterate all our resource versions and collect the
         // full set of usage flags the resources have been declared to be used with.
-        self.collect_resource_usages();
         self.validate_imported_resource_usages();
 
         let arena = std::mem::take(&mut self.graph_arena);
@@ -257,8 +256,7 @@ impl FrameGraphBuilder {
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(render_pass, access);
-        self.set_resource_type_for(r, r_type.into());
+        let r = self.create_new_handle(render_pass, access, r_type);
         self.add_imported_resource_to_list(r);
 
         r
@@ -300,8 +298,7 @@ impl FrameGraphBuilder {
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(render_pass, access);
-        self.set_resource_type_for(r, r_type.into());
+        let r = self.create_new_handle(render_pass, access, r_type);
         self.add_imported_resource_to_list(r);
 
         r
@@ -323,6 +320,7 @@ impl FrameGraphBuilder {
         let r = resource.into();
 
         self.add_flags_to_version_for(r, access);
+        self.add_flags_to_root_for(r, access);
 
         let root_resource = self.assert_resource_handle_is_texture(r);
         let format = root_resource.desc.format;
@@ -355,6 +353,7 @@ impl FrameGraphBuilder {
 
         self.assert_resource_handle_is_buffer(r);
         self.add_flags_to_version_for(r, access);
+        self.add_flags_to_root_for(r, access);
 
         let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
         let desc = BufferAccess {
@@ -419,6 +418,7 @@ impl FrameGraphBuilder {
 
         self.assert_resource_handle_is_buffer(r);
         self.validate_and_update_for_handle_write(r);
+        self.add_flags_to_root_for(r, access);
         let renamed_r = self.increment_handle_for_write(r, render_pass, access);
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
@@ -468,17 +468,15 @@ impl FrameGraphBuilder {
             sample_quality: desc.sample_quality,
             name,
         };
-
-        let r = self.create_new_handle(render_pass, access);
-        self.set_resource_type_for(
-            r,
+        let r = self.create_new_handle(
+            render_pass,
+            access,
             ResourceTypeTexture {
                 import: None,
                 desc: create_desc,
                 sync,
                 access,
-            }
-            .into(),
+            },
         );
 
         r
@@ -508,17 +506,15 @@ impl FrameGraphBuilder {
             size: desc.size,
             name,
         };
-
-        let r = self.create_new_handle(render_pass, access);
-        self.set_resource_type_for(
-            r,
+        let r = self.create_new_handle(
+            render_pass,
+            access,
             ResourceTypeBuffer {
                 import: None,
                 desc: create_desc,
                 sync,
                 access,
-            }
-            .into(),
+            },
         );
 
         r
@@ -546,17 +542,6 @@ impl FrameGraphBuilder {
         self.imported_resources.push(r.0.root_id());
     }
 
-    pub(crate) fn set_resource_type_for(
-        &mut self,
-        r: impl Into<ResourceRef>,
-        r_type: ResourceType,
-    ) {
-        let r = r.into();
-
-        let root = &mut self.root_resources[r.0.root_id() as usize];
-        root.resource_type = r_type;
-    }
-
     pub(crate) fn add_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
@@ -567,6 +552,18 @@ impl FrameGraphBuilder {
         // Add the requested usage flags to the resource version's usage set
         let version_id = r.0.version_id();
         self.resource_versions[version_id as usize].access |= access;
+    }
+
+    pub(crate) fn add_flags_to_root_for(
+        &mut self,
+        r: impl Into<ResourceRef>,
+        access: ResourceUsageFlags,
+    ) {
+        let r = r.into();
+
+        // Add the requested usage flags to the resource version's usage set
+        let root_id = r.0.root_id();
+        self.root_resources[root_id as usize].access_flags |= access;
     }
 
     pub(crate) fn increment_handle_for_write(
@@ -606,12 +603,16 @@ impl FrameGraphBuilder {
         &mut self,
         render_pass: usize,
         access: ResourceUsageFlags,
+        r_type: impl Into<ResourceType>,
     ) -> ResourceMut {
         let base = u16::try_from(self.root_resources.len()).unwrap();
         let version = u16::try_from(self.resource_versions.len()).unwrap();
         let handle = u16::try_from(self.resource_handles.len()).unwrap();
         let id = ResourceId::new(base, version, handle);
-        self.root_resources.push(ResourceRoot::default());
+        self.root_resources.push(ResourceRoot {
+            resource_type: r_type.into(),
+            access_flags: access,
+        });
         self.resource_versions.push(ResourceVersion {
             // We need the root resource here to allow iterations over the version array to easily
             // link back to their roots
@@ -653,19 +654,6 @@ impl FrameGraphBuilder {
         let root_type = &self.root_resources[r.0.root_id() as usize].resource_type;
         assert!(matches!(root_type, ResourceType::Buffer(_)));
         root_type.unwrap_buffer()
-    }
-
-    /// Iterates all resource versions and accumulates their usage flags into the root resource.
-    ///
-    /// This is the final step in determining the full set of usage flags for how a resource is used
-    /// by all the passes within the graph.
-    ///
-    /// This requires that each version has had its usages fully collected before hand.
-    pub(crate) fn collect_resource_usages(&mut self) {
-        for version in self.resource_versions.iter() {
-            let root = &mut self.root_resources[version.root_resource as usize];
-            root.access_flags |= version.access;
-        }
     }
 
     /// Checks against imported resource's usage flags to ensure that no pass within the graph is
