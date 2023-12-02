@@ -59,6 +59,9 @@ pub struct ResourceRoot {
     /// The accumulated access flags for a resource. This is the union of all the ways a
     /// resource is used as within the frame graph.
     pub total_access_flags: ResourceUsageFlags,
+
+    /// An index to the first version of this resource
+    pub initial_version: VersionIndex,
 }
 
 pub struct ResourceTypeBuffer {

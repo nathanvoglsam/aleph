@@ -683,6 +683,7 @@ impl FrameGraphBuilder {
         self.root_resources.push(ResourceRoot {
             resource_type: r_type.into(),
             total_access_flags: access,
+            initial_version: VersionIndex::new(version).unwrap(),
             creator_sync: sync,
             creator_access: access,
         });
