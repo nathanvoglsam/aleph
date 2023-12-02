@@ -230,9 +230,125 @@ impl FrameGraphBuilder {
     /// graphs often. It is intended for a graph to be built once and run many times and invalidated
     /// rarely for extenuating circum stances like the size of the backbuffer changing.
     pub fn build(mut self) -> FrameGraph {
-        // With the graph finalized we can now iterate all our resource versions and collect the
-        // full set of usage flags the resources have been declared to be used with.
         self.validate_imported_resource_usages();
+
+        // We need some extra state per resource version that allows us to track what resources are
+        // ready to be written, ready to be read and which are completely retired.
+        let mut resource_version_states = Vec::new();
+        resource_version_states.resize(
+            self.resource_versions.len(),
+            ResourceVersionState::default(),
+        );
+
+        // We need some more per version state that holds the number of reads to a resource that
+        // have _not_ been scheduled. This is seeded from the version itself as the number of
+        // readers as stored in the 'resource_versions' array.
+        let mut resource_version_pending_reads: Vec<_> = self
+            .resource_versions
+            .iter()
+            .map(|v| {
+                let mut read_count = 0usize;
+                let mut current = v.reads;
+                while let Some(v) = current {
+                    unsafe {
+                        read_count += 1;
+                        current = v.as_ref().next;
+                    }
+                }
+                read_count
+            })
+            .collect();
+
+        let mut render_pass_order = Vec::with_capacity(self.render_passes.len());
+        loop {
+            let previous_scheduled_pass_count = render_pass_order.len();
+
+            for (i, pass) in self.render_passes.iter().enumerate() {
+                let (reads, writes) = unsafe { (pass.reads.as_ref(), pass.writes.as_ref()) };
+
+                let all_reads_ready = reads.iter().all(|v| {
+                    let version_index = v.resource.version_id() as usize;
+                    let version_state = resource_version_states[version_index];
+
+                    // If this resource is written then it is ready to be read, and only if it is
+                    // written. Once retired it is no longer safer to be read
+                    version_state == ResourceVersionState::Written
+                });
+
+                let all_writes_ready = writes.iter().all(|v| {
+                    let version_index = v.resource.version_id() as usize;
+                    let version = &self.resource_versions[version_index];
+                    let version_state = resource_version_states[version_index];
+
+                    // If the previous version is retired and the current version is still waiting
+                    // then this version is ready to be written to
+                    let is_previous_retired = {
+                        // We should only lookup previous state information if there is a previous
+                        // resource.
+                        if version.previous_version.is_valid() {
+                            let previous_version = version.previous_version.0 as usize;
+                            let previous_state = resource_version_states[previous_version];
+                            previous_state == ResourceVersionState::Retired
+                        } else {
+                            // An invalid ID means our current resource is the first version of the
+                            // resource. In this case the 'previous resource' is always retired by
+                            // definition as there is not previous resource to wait on.
+                            true
+                        }
+                    };
+                    is_previous_retired && version_state == ResourceVersionState::Waiting
+                });
+
+                // If all the dependent resources are ready then the pass is ready to be scheduled.
+                // This means we can add the pass to our pass order and then update the read/written
+                // resource
+                if all_reads_ready && all_writes_ready {
+                    render_pass_order.push(i);
+
+                    // Walk through all the writes declared on this pass and mark the resource
+                    // versions that are written with the 'Written' state.
+                    for v in writes {
+                        let version_index = v.resource.version_id() as usize;
+                        // Sometimes we may have resources that are only every used with a write
+                        // declaration so we need to handle directly retiring these resources. If
+                        // there are no pending reads on the resource we can skip directly to
+                        // retiring the resource.
+                        if resource_version_pending_reads[version_index] == 0 {
+                            resource_version_states[version_index] = ResourceVersionState::Retired;
+                        } else {
+                            resource_version_states[version_index] = ResourceVersionState::Written;
+                        }
+                    }
+
+                    // Walk through all the reads declared on this pass and decrement the pending
+                    // read count for the version that was read. If the
+                    for v in reads {
+                        let version_index = v.resource.version_id() as usize;
+                        let pending_reads = &mut resource_version_pending_reads[version_index];
+                        *pending_reads -= 1;
+                        if *pending_reads == 0 {
+                            resource_version_states[version_index] = ResourceVersionState::Retired;
+                        }
+                    }
+                }
+            }
+
+            // If we've failed to schedule any passes in this cycle then we have created a deadlock
+            // where it's impossible for the scheduler to schedule any passes. We can detect this
+            // case and panic as otherwise we would be stuck in an endless loop.
+            if render_pass_order.len() == previous_scheduled_pass_count {
+                panic!("FrameGraph deadlock detected!");
+            }
+
+            // All passes are scheduled then we can break from the loop, our work here is done.
+            if render_pass_order.len() == self.render_passes.len() {
+                break;
+            }
+        }
+
+        debug_assert!(resource_version_states
+            .drain(..)
+            .all(|v| v == ResourceVersionState::Retired));
 
         let arena = std::mem::take(&mut self.graph_arena);
         let render_passes = std::mem::take(&mut self.render_passes);
@@ -243,6 +359,7 @@ impl FrameGraphBuilder {
 
         FrameGraph {
             _arena: arena,
+            render_pass_order,
             render_passes,
             root_resources,
             resource_versions,

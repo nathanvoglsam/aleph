@@ -185,6 +185,9 @@ pub fn test_builder() {
 
     let mut graph = builder.build();
 
+    let expected_pass_order: [usize; 3] = [0, 1, 2];
+    assert_eq!(&graph.render_pass_order, &expected_pass_order);
+
     unsafe {
         graph.execute();
     }
@@ -296,6 +299,9 @@ pub fn test_handle_equality() {
 
     let mut graph = builder.build();
 
+    let expected_pass_order: [usize; 4] = [0, 1, 2, 3];
+    assert_eq!(&graph.render_pass_order, &expected_pass_order);
+
     unsafe {
         graph.execute();
     }
@@ -389,6 +395,9 @@ pub fn test_usage_collection() {
     );
 
     let mut graph = builder.build();
+
+    let expected_pass_order: [usize; 4] = [0, 1, 2, 3];
+    assert_eq!(&graph.render_pass_order, &expected_pass_order);
 
     let out_create = out_create.unwrap();
 

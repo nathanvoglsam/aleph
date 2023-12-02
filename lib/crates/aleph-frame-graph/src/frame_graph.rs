@@ -44,6 +44,9 @@ pub struct FrameGraph {
     /// order to keep the allocations for all the render passes alive.
     pub(crate) _arena: Bump,
 
+    /// List of render pass indices in order from first to run to last to run
+    pub(crate) render_pass_order: Vec<usize>,
+
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
     pub(crate) render_passes: Vec<RenderPass>,

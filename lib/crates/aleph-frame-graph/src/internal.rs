@@ -296,3 +296,26 @@ impl ResourceHandleInfo {
         self.written
     }
 }
+
+/// An internal enum used for tracking the state machine of a resource version through the pass
+/// scheduler.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ResourceVersionState {
+    /// A resource version in this state has yet to be written to, and can not be read from.
+    Waiting,
+
+    /// A resource version in this state has been written to, and can now be read from.
+    Written,
+
+    /// A resource version in this state has now had all its readers scheduled and can be considered
+    /// 'retired'. It is safe for the following version of a resource to be written in this state.
+    ///
+    /// It is not valid for a resource in this state to be accessed in any way.
+    Retired,
+}
+
+impl Default for ResourceVersionState {
+    fn default() -> Self {
+        Self::Waiting
+    }
+}
