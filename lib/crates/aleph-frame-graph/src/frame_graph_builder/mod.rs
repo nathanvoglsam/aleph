@@ -149,10 +149,6 @@ pub struct FrameGraphBuilder {
     /// construction.
     pub(crate) resource_versions: Vec<ResourceVersion>,
 
-    /// Stores debug information for each resource handle generated at a resource rename event. This
-    /// is used to help validate resources are accessed in a valid way.
-    pub(crate) resource_handles: Vec<ResourceHandleInfo>,
-
     /// The set of resources within the graph that were imported, stored as indices into the
     /// root_resources array.
     pub(crate) imported_resources: Vec<u16>,
@@ -916,12 +912,12 @@ impl FrameGraphBuilder {
     /// solution would be to choose whichever pass was registered first, but then the graph order
     /// is dependent on pass submission order which is something we really _don't_ want.
     pub(crate) fn validate_and_update_for_handle_write(&mut self, r: ResourceMut) {
-        let handle_id = r.0.handle_id() as usize;
-        let handle_info = &mut self.resource_handles[handle_id];
-        if handle_info.is_written() {
+        let version_id = r.0.version_id() as usize;
+        let version_info = &mut self.resource_versions[version_id];
+        if version_info.is_written() {
             panic!("Attempted to write a resource through the same handle more than once!");
         }
-        handle_info.mark_written();
+        version_info.mark_written();
     }
 
     pub(crate) fn add_imported_resource_to_list(&mut self, r: impl Into<ResourceRef>) {
@@ -980,9 +976,8 @@ impl FrameGraphBuilder {
         access: ResourceUsageFlags,
     ) -> ResourceMut {
         let base = r.0.root_id();
-        let version = u16::try_from(self.resource_versions.len()).unwrap();
-        let handle = u16::try_from(self.resource_handles.len()).unwrap();
-        let id = ResourceId::new(base, version, handle);
+        let version = u32::try_from(self.resource_versions.len()).unwrap();
+        let id = ResourceId::new(base, version);
         self.resource_versions.push(ResourceVersion {
             // We need the root resource here to allow iterations over the version array to easily
             // link back to their roots
@@ -995,14 +990,14 @@ impl FrameGraphBuilder {
             version_total_access: access,
             creator_render_pass: render_pass,
             reads: None,
+            debug_written: false,
         });
-        self.resource_handles.push(ResourceHandleInfo::default());
 
-        // Assert we never create u16::MAX versions. This is _critical_ as 65535 is a niche
-        // value to encode a 'null' version. By guaranteeing 65535 is never a valid index into this
-        // array we can rely on rust's bounds checking to assert that we never access the 65535th
+        // Assert we never create u32::MAX versions. This is _critical_ as u32::MAX is a niche
+        // value to encode a 'null' version. By guaranteeing u32::MAX is never a valid index into this
+        // array we can rely on rust's bounds checking to assert that we never access the u32::MAXth
         // version by construction (we never make it).
-        assert!(self.resource_versions.len() < ((u16::MAX) as usize));
+        assert!(self.resource_versions.len() < ((u32::MAX) as usize));
 
         ResourceMut(id)
     }
@@ -1015,9 +1010,8 @@ impl FrameGraphBuilder {
         r_type: impl Into<ResourceType>,
     ) -> ResourceMut {
         let base = u16::try_from(self.root_resources.len()).unwrap();
-        let version = u16::try_from(self.resource_versions.len()).unwrap();
-        let handle = u16::try_from(self.resource_handles.len()).unwrap();
-        let id = ResourceId::new(base, version, handle);
+        let version = u32::try_from(self.resource_versions.len()).unwrap();
+        let id = ResourceId::new(base, version);
         self.root_resources.push(ResourceRoot {
             resource_type: r_type.into(),
             total_access_flags: access,
@@ -1037,12 +1031,12 @@ impl FrameGraphBuilder {
             version_total_access: access,
             creator_render_pass: render_pass,
             reads: None,
+            debug_written: false,
         });
-        self.resource_handles.push(ResourceHandleInfo::default());
 
-        // Assert we never create u16::MAX versions. This is _critical_ as 65535 is a niche
-        // value to encode a 'null' version. By guaranteeing 65535 is never a valid index into this
-        // array we can rely on rust's bounds checking to assert that we never access the 65535th
+        // Assert we never create u16::MAX versions. This is _critical_ as u32::MAX is a niche
+        // value to encode a 'null' version. By guaranteeing u32::MAX is never a valid index into this
+        // array we can rely on rust's bounds checking to assert that we never access the u32::MAXth
         // version by construction (we never make it).
         assert!(self.resource_versions.len() < ((u16::MAX) as usize));
 

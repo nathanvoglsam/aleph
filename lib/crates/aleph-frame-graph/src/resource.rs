@@ -32,53 +32,20 @@ use std::num::NonZeroU16;
 use std::ptr::NonNull;
 
 /// The underlying, binary representation of a Resource ID handle.
-///
-/// The ID is bit-packed to contain a number of different indices within a single 64-bit handle. The
-/// data is laid out like so, in hexadecimal:
-///
-/// `0xOOHHVVBB` where:
-/// - H = 'handle id'
-/// - V = 'version index'
-/// - B = 'base id'
-/// - O = valid flag, used for dealing with NonZeroU64
-///
-/// # Root ID
-///
-/// Identifies the root resource that the handle points to. This allows easily mapping the handle
-/// to the underlying resource handle.
-///
-/// Base ID is 16-bits, so we can have up to 2^16 concrete resources (plenty)
-///
-/// # Version Index
-///
-/// Encodes an index into the version table. A version encodes a link in the version linked list
-/// used to chain together write accesses.
-///
-/// Version index is 16-bits, so we can have up to 2^16 resource versions.
-///
-/// # Handle ID
-///
-/// The handle ID uniquely identifies the specific handle from when it was generated. This allows
-/// for associating information with the handle itself from when it's created by an import or
-/// declared resource write.
-///
-/// # Valid Flag
-///
-/// This uses the remaining bits not used by the other actual ID values as a "null" flag. An ID that
-/// contains all zeroes is considered a 'null' ID that points to nothing. Problem is that base = 0,
-/// version = 0, handle = 0 is actually a valid resource handle. To allow all zeroes to be used for
-/// niche-value-optimization we always set the high bits not used by any of the IDs. This steals
-/// some bits from the actual IDs but in return we a get rust friendly niche value for the null ID.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct ResourceId {
+    /// A special niche value used to enable Option<ResourceId> to have the same size as ResourceId
     pub niche_value: NonZeroU16,
+
+    /// The index of the root resource this handle refers to
     pub root: u16,
-    pub version: u16,
-    pub handle: u16,
+
+    /// The index of the resource version this handle refers to
+    pub version: u32,
 }
 
 impl ResourceId {
-    pub fn new(root: u16, version: u16, handle: u16) -> ResourceId {
+    pub fn new(root: u16, version: u32) -> ResourceId {
         debug_assert_ne!(version, VersionIndex::INVALID.0);
 
         // We assert this here as it's the most likely code to execute to catch this case. The
@@ -90,7 +57,6 @@ impl ResourceId {
             niche_value: NonZeroU16::new(0xFF).unwrap(),
             root,
             version,
-            handle,
         }
     }
 
@@ -98,12 +64,8 @@ impl ResourceId {
         self.root
     }
 
-    pub const fn version_id(&self) -> u16 {
+    pub const fn version_id(&self) -> u32 {
         self.version
-    }
-
-    pub const fn handle_id(&self) -> u16 {
-        self.handle
     }
 }
 
@@ -178,12 +140,12 @@ mod tests {
     use crate::{ResourceMut, ResourceRef};
 
     fn create_dummy_resource_ref() -> ResourceRef {
-        let id = ResourceId::new(1,2,3);
+        let id = ResourceId::new(1,2);
         ResourceRef(id)
     }
 
     fn create_dummy_resource_mut() -> ResourceMut {
-        let id = ResourceId::new(3,2,1);
+        let id = ResourceId::new(3,2);
         ResourceMut(id)
     }
 

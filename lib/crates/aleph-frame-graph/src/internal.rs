@@ -90,24 +90,19 @@ pub struct ResourceVersion {
     /// The head of a linked list that contains entries for every read of this resource version by
     /// a render pass
     pub reads: Option<NonNull<VersionReaderLink>>,
+
+    /// Boolean flag that stores whether this resource version has been written to once. Used to
+    /// detect when multiple passes try and write to the same resource version.
+    pub debug_written: bool,
 }
 
-/// An internal struct used for debug information about individual generated resource handles.
-///
-/// This information is vestigial once the graph is constructed so it can be discarded.
-#[derive(Default)]
-pub struct ResourceHandleInfo {
-    /// Flags whether the resource has been written
-    pub written: bool,
-}
-
-impl ResourceHandleInfo {
+impl ResourceVersion {
     pub fn mark_written(&mut self) {
-        self.written = true;
+        self.debug_written = true;
     }
 
     pub fn is_written(&self) -> bool {
-        self.written
+        self.debug_written
     }
 }
 
@@ -256,12 +251,12 @@ pub struct ResourceAccess {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
-pub struct VersionIndex(pub u16);
+pub struct VersionIndex(pub u32);
 
 impl VersionIndex {
-    pub const INVALID: Self = Self(u16::MAX);
+    pub const INVALID: Self = Self(u32::MAX);
 
-    pub const fn new(v: u16) -> Option<VersionIndex> {
+    pub const fn new(v: u32) -> Option<VersionIndex> {
         let v = Self(v);
         if v.is_valid() {
             Some(v)
