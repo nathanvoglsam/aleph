@@ -59,6 +59,65 @@ use aleph_rhi_api::*;
 use bumpalo::Bump;
 use std::ptr::NonNull;
 
+/// Provides a description for importing a resource into the frame graph.
+/// 
+/// This encodes the full set of sync flags that covers what usages that the resource must be
+/// synchronized with from outside of the graph. The 'before_*' flags cover the 'before' scope of
+/// a barrier that will be used for the graph to take ownership of the resource. The 'after_*'
+/// flags cover the 'after' scope of a barrier that will be executed once the graph completes to
+/// release ownership of the resource to other users outside the graph.
+pub struct TextureImportDesc<'a> {
+    /// The texture resource to import into the frame graph
+    pub resource: &'a dyn ITexture,
+
+    /// The pipeline stage to synchronize with on first use within the frame graph
+    pub before_sync: BarrierSync,
+
+    /// The access flags to synchronize with before the first use of the resource within the frame
+    /// graph
+    pub before_access: BarrierAccess,
+
+    /// The image layout the resource is expected to be in prior to the frame graph executing
+    pub before_layout: ImageLayout,
+
+    /// The pipeline stage to synchronize with as the immediate use after the frame graph is
+    /// completed
+    pub after_sync: BarrierSync,
+
+    /// The access flags to synchronize with as the immediate use after the frame graph is completed
+    pub after_access: BarrierAccess,
+
+    /// The image layout the resource is expected to be transitioned to when completing the frame
+    /// graph
+    pub after_layout: ImageLayout,
+}
+
+/// Provides a description for importing a resource into the frame graph.
+/// 
+/// This encodes the full set of sync flags that covers what usages that the resource must be
+/// synchronized with from outside of the graph. The 'before_*' flags cover the 'before' scope of
+/// a barrier that will be used for the graph to take ownership of the resource. The 'after_*'
+/// flags cover the 'after' scope of a barrier that will be executed once the graph completes to
+/// release ownership of the resource to other users outside the graph.
+pub struct BufferImportDesc<'a> {
+    /// The buffer resource to import into the frame graph
+    pub resource: &'a dyn IBuffer,
+
+    /// The pipeline stage to synchronize with on first use within the frame graph
+    pub before_sync: BarrierSync,
+
+    /// The access flags to synchronize with before the first use of the resource within the frame
+    /// graph
+    pub before_access: BarrierAccess,
+
+    /// The pipeline stage to synchronize with as the immediate use after the frame graph is
+    /// completed
+    pub after_sync: BarrierSync,
+
+    /// The access flags to synchronize with as the immediate use after the frame graph is completed
+    pub after_access: BarrierAccess,
+}
+
 #[derive(Default)]
 pub struct FrameGraphBuilder {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
@@ -107,10 +166,19 @@ pub struct FrameGraphBuilder {
 }
 
 impl FrameGraphBuilder {
+    /// Creates a new, empty [FrameGraphBuilder]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Adds a new pass to the frame graph with the given name.
+    /// 
+    /// - `setup_fn` is a closure that will be called only once immediately inside
+    ///   [FrameGraphBuilder::add_pass] that is used to declare the reads, writes, creates and
+    ///   imports of the pass.
+    /// - `exec_fn` is the pass closure. This will be called once during an execution run of the
+    ///   graph when it is time for the pass to record commands into a command buffer. This closure
+    ///   is persistent and will remain alive for the full lifetime of the [FrameGraph] object.
     pub fn add_pass<
         T: Send + Default + 'static,
         SetupFn: FnOnce(&mut T, &mut ResourceRegistry),
@@ -150,6 +218,14 @@ impl FrameGraphBuilder {
         }
     }
 
+    /// Finalize the graph and fully resolve all the declared passes into a [FrameGraph]. Once the
+    /// graph has been built passes can no longer be added or removed, nor can resources be added
+    /// or removed.
+    /// 
+    /// This will run a suite of passes that will extract a total program order from the graph of
+    /// passes constructed earlier. This function is expected to be expensive, so don't build new
+    /// graphs often. It is intended for a graph to be built once and run many times and invalidated
+    /// rarely for extenuating circum stances like the size of the backbuffer changing.
     pub fn build(mut self) -> FrameGraph {
         // With the graph finalized we can now iterate all our resource versions and collect the
         // full set of usage flags the resources have been declared to be used with.
@@ -884,51 +960,6 @@ impl<'a> ResourceRegistry<'a> {
         self.builder
             .create_buffer(self.render_pass, desc, sync, access)
     }
-}
-
-pub struct TextureImportDesc<'a> {
-    /// The texture resource to import into the frame graph
-    pub resource: &'a dyn ITexture,
-
-    /// The pipeline stage to synchronize with on first use within the frame graph
-    pub before_sync: BarrierSync,
-
-    /// The access flags to synchronize with before the first use of the resource within the frame
-    /// graph
-    pub before_access: BarrierAccess,
-
-    /// The image layout the resource is expected to be in prior to the frame graph executing
-    pub before_layout: ImageLayout,
-
-    /// The pipeline stage to synchronize with as the immediate use after the frame graph is
-    /// completed
-    pub after_sync: BarrierSync,
-
-    /// The access flags to synchronize with as the immediate use after the frame graph is completed
-    pub after_access: BarrierAccess,
-
-    /// The image layout the resource is expected to be transitioned to when completing the frame
-    /// graph
-    pub after_layout: ImageLayout,
-}
-
-pub struct BufferImportDesc<'a> {
-    /// The buffer resource to import into the frame graph
-    pub resource: &'a dyn IBuffer,
-
-    /// The pipeline stage to synchronize with on first use within the frame graph
-    pub before_sync: BarrierSync,
-
-    /// The access flags to synchronize with before the first use of the resource within the frame
-    /// graph
-    pub before_access: BarrierAccess,
-
-    /// The pipeline stage to synchronize with as the immediate use after the frame graph is
-    /// completed
-    pub after_sync: BarrierSync,
-
-    /// The access flags to synchronize with as the immediate use after the frame graph is completed
-    pub after_access: BarrierAccess,
 }
 
 #[cfg(test)]
