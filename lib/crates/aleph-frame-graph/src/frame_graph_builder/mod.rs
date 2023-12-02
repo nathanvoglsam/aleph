@@ -59,6 +59,9 @@ use aleph_rhi_api::*;
 use bumpalo::Bump;
 use std::ptr::NonNull;
 
+#[cfg(test)]
+mod tests;
+
 /// Provides a description for importing a resource into the frame graph.
 /// 
 /// This encodes the full set of sync flags that covers what usages that the resource must be
@@ -249,6 +252,185 @@ impl FrameGraphBuilder {
     }
 }
 
+/// An interface constrained way to access the frame graph builder for collecting information from
+/// render pass setup callbacks.
+pub struct ResourceRegistry<'a> {
+    builder: &'a mut FrameGraphBuilder,
+    render_pass: usize,
+}
+
+impl<'a> ResourceRegistry<'a> {
+    /// Declares that this pass would like to import the given resource into the frame graph with
+    /// the given parameters.
+    ///
+    /// This is a wrapper over [FrameGraphBuilder::import_texture].
+    pub fn import_texture(
+        &mut self,
+        desc: &TextureImportDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        self.builder
+            .import_texture_internal(self.render_pass, desc, sync, access)
+    }
+
+    /// Declares that this pass would like to import the given resource into the frame graph with
+    /// the given parameters.
+    ///
+    /// This is a wrapper over [FrameGraphBuilder::import_buffer].
+    pub fn import_buffer(
+        &mut self,
+        desc: &BufferImportDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        self.builder
+            .import_buffer_internal(self.render_pass, desc, sync, access)
+    }
+
+    /// Declares a read access to the given texture, with the given sync parameters.
+    ///
+    /// The returned resource handle is equal to the handle given in 'r'. It is returned simply as
+    /// a utility to mirror the write declaration functions.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
+    pub fn read_texture<R: Into<ResourceRef>>(
+        &mut self,
+        resource: R,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceRef {
+        self.builder
+            .read_texture(self.render_pass, resource, sync, access)
+    }
+
+    /// Declares a read access to the given buffer, with the given sync parameters.
+    ///
+    /// The returned resource handle is equal to the handle given in 'r'. It is returned simply as
+    /// a utility to mirror the write declaration functions.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
+    pub fn read_buffer<R: Into<ResourceRef>>(
+        &mut self,
+        resource: R,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceRef {
+        self.builder
+            .read_buffer_internal(self.render_pass, resource, sync, access)
+    }
+
+    /// Declares a write access to the given texture, with the given sync parameters.
+    ///
+    /// Any write access to a resource will produce a new unique resource handle, which this
+    /// function will return. This resource handle is a reference to the resource in the state that
+    /// this render pass will leave it in after whatever write operations are performed.
+    ///
+    /// It is invalid to write to a resource through the same handle more than once. Any future
+    /// writes must use the handle returned by this function. This constraint is to allow a total
+    /// program order to be derived unambiguously from the set of passes submitted to the graph.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
+    pub fn write_texture<R: Into<ResourceMut>>(
+        &mut self,
+        resource: R,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        self.builder
+            .write_texture_internal(self.render_pass, resource, sync, access)
+    }
+
+    /// Declares a write access to the given buffer, with the given sync parameters.
+    ///
+    /// Any write access to a resource will produce a new unique resource handle, which this
+    /// function will return. This resource handle is a reference to the resource in the state that
+    /// this render pass will leave it in after whatever write operations are performed.
+    ///
+    /// It is invalid to write to a resource through the same handle more than once. Any future
+    /// writes must use the handle returned by this function. This constraint is to allow a total
+    /// program order to be derived unambiguously from the set of passes submitted to the graph.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
+    pub fn write_buffer<R: Into<ResourceMut>>(
+        &mut self,
+        resource: R,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        self.builder
+            .write_buffer_internal(self.render_pass, resource, sync, access)
+    }
+
+    /// Declares that a new, transient texture will be created and used by the pass. Use 'access' to
+    /// specify how the creating pass will use the resource.
+    ///
+    /// The resource will be created with the given parameters with only a single exception. The
+    /// resource usage flags in the [TextureDesc] will be ignored. The frame graph implementation
+    /// will not use the given flags, and instead will collect all the unique ways the resource was
+    /// used within the frame graph and initialize the resource with the usage flag it calculates
+    /// itself. This is a noteworthy difference compared to the documentation on the [TextureDesc],
+    /// which _will_ say otherwise, as it is intended for creating new resources at the RHI level.
+    ///
+    /// It would be intractable to require specifying all the usage flags up front with this
+    /// function as it is impossible for a frame graph pass to know all the ways the resource will
+    /// be used in the graph. Requiring a graph pass to know this would either have passes
+    /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
+    pub fn create_texture(
+        &mut self,
+        desc: &TextureDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        self.builder
+            .create_texture_internal(self.render_pass, desc, sync, access)
+    }
+
+    /// Declares that a new, transient buffer will be created and used by the pass. Use 'access' to
+    /// specify how the creating pass will use the resource.
+    ///
+    /// The resource will be created with the given parameters with only a single exception. The
+    /// resource usage flags in the [BufferDesc] will be ignored. The frame graph implementation
+    /// will not use the given flags, and instead will collect all the unique ways the resource was
+    /// used within the frame graph and initialize the resource with the usage flag it calculates
+    /// itself. This is a noteworthy difference compared to the documentation on the [BufferDesc],
+    /// which _will_ say otherwise, as it is intended for creating new resources at the RHI level.
+    ///
+    /// It would be intractable to require specifying all the usage flags up front with this
+    /// function as it is impossible for a frame graph pass to know all the ways the resource will
+    /// be used in the graph. Requiring a graph pass to know this would either have passes
+    /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
+    ///
+    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
+    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
+    /// declared as 'access'.
+    pub fn create_buffer(
+        &mut self,
+        desc: &BufferDesc,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
+    ) -> ResourceMut {
+        self.builder
+            .create_buffer_internal(self.render_pass, desc, sync, access)
+    }
+}
+
+// =================================================================================================
+// INTERNAL IMPLEMENTATION
+// =================================================================================================
+
 // Internal functions exposed through ResourceRegistry
 impl FrameGraphBuilder {
     pub(crate) fn add_pass_internal<T: IRenderPass>(&mut self, name: &str, pass: T) {
@@ -283,7 +465,7 @@ impl FrameGraphBuilder {
         self.pass_access_info.clear();
     }
 
-    pub(crate) fn import_texture(
+    pub(crate) fn import_texture_internal(
         &mut self,
         render_pass: usize,
         desc: &TextureImportDesc,
@@ -336,7 +518,7 @@ impl FrameGraphBuilder {
         r
     }
 
-    pub(crate) fn import_buffer(
+    pub(crate) fn import_buffer_internal(
         &mut self,
         render_pass: usize,
         desc: &BufferImportDesc,
@@ -408,7 +590,7 @@ impl FrameGraphBuilder {
         r
     }
 
-    pub(crate) fn read_buffer<R: Into<ResourceRef>>(
+    pub(crate) fn read_buffer_internal<R: Into<ResourceRef>>(
         &mut self,
         render_pass: usize,
         resource: R,
@@ -439,7 +621,7 @@ impl FrameGraphBuilder {
         r
     }
 
-    pub(crate) fn write_texture<R: Into<ResourceMut>>(
+    pub(crate) fn write_texture_internal<R: Into<ResourceMut>>(
         &mut self,
         render_pass: usize,
         resource: R,
@@ -473,7 +655,7 @@ impl FrameGraphBuilder {
         renamed_r
     }
 
-    pub(crate) fn write_buffer<R: Into<ResourceMut>>(
+    pub(crate) fn write_buffer_internal<R: Into<ResourceMut>>(
         &mut self,
         render_pass: usize,
         resource: R,
@@ -506,7 +688,7 @@ impl FrameGraphBuilder {
         renamed_r
     }
 
-    pub(crate) fn create_texture(
+    pub(crate) fn create_texture_internal(
         &mut self,
         render_pass: usize,
         desc: &TextureDesc,
@@ -553,7 +735,7 @@ impl FrameGraphBuilder {
         r
     }
 
-    pub(crate) fn create_buffer(
+    pub(crate) fn create_buffer_internal(
         &mut self,
         render_pass: usize,
         desc: &BufferDesc,
@@ -590,15 +772,15 @@ impl FrameGraphBuilder {
         r
     }
 
+    /// Validate the write status for the resource handle and update it if it's valid to write
+    /// to this handle.
+    ///
+    /// A ResourceMut can only be used for a single write_<resource> call as otherwise it would
+    /// not be possible to extract a single program order. If two passes tried to write to the
+    /// same resource with the same handle, which write should execute first? The only real
+    /// solution would be to choose whichever pass was registered first, but then the graph order
+    /// is dependent on pass submission order which is something we really _don't_ want.
     pub(crate) fn validate_and_update_for_handle_write(&mut self, r: ResourceMut) {
-        // Validate the write status for the resource handle and update it if it's valid to write
-        // to this handle.
-        //
-        // A ResourceMut can only be used for a single write_<resource> call as otherwise it would
-        // not be possible to extract a single program order. If two passes tried to write to the
-        // same resource with the same handle, which write should execute first? The only real
-        // solution would be to choose whichever pass was registered first, but then the graph order
-        // is dependent on pass submission order which is something we really _don't_ want.
         let handle_id = r.0.handle_id() as usize;
         let handle_info = &mut self.resource_handles[handle_id];
         if handle_info.is_written() {
@@ -612,30 +794,50 @@ impl FrameGraphBuilder {
         self.imported_resources.push(r.0.root_id());
     }
 
+    /// Add the requested usage flags to the resource version's usage set
     pub(crate) fn add_flags_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
         access: ResourceUsageFlags,
     ) {
         let r = r.into();
-
-        // Add the requested usage flags to the resource version's usage set
         let version_id = r.0.version_id();
-        self.resource_versions[version_id as usize].access |= access;
+        self.resource_versions[version_id as usize].version_total_access |= access;
     }
 
+    /// Pull the version index from the resource ref and append a new read to the read list.
+    pub(crate) fn append_read_to_version_for(
+        &mut self,
+        r: impl Into<ResourceRef>,
+        access: ResourceUsageFlags,
+        render_pass: usize,
+    ) {
+        let r = r.into();
+        let version_id = r.0.version_id();
+        let previous_read = self.resource_versions[version_id as usize].reads;
+        let read = self.graph_arena.alloc(VersionReaderLink {
+            next: previous_read,
+            render_pass,
+            access,
+        });
+        let read = NonNull::from(read);
+        DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, read);
+        self.resource_versions[version_id as usize].reads = Some(read);
+    }
+
+    /// Add the requested usage flags to the resource root's  total usage set
     pub(crate) fn add_flags_to_root_for(
         &mut self,
         r: impl Into<ResourceRef>,
         access: ResourceUsageFlags,
     ) {
         let r = r.into();
-
-        // Add the requested usage flags to the resource version's usage set
         let root_id = r.0.root_id();
         self.root_resources[root_id as usize].total_access_flags |= access;
     }
 
+    /// Constructs a new handle to describe the new version of a resource created by declaring a
+    /// write within a render pass.
     pub(crate) fn increment_handle_for_write(
         &mut self,
         r: ResourceMut,
@@ -653,10 +855,10 @@ impl FrameGraphBuilder {
 
             // A write will set the previous version to whatever was stored in the resource handle
             // we were given.
-            previous: VersionIndex::new(r.0.version_id()).unwrap(),
+            previous_version: VersionIndex::new(r.0.version_id()).unwrap(),
 
-            access,
-            render_pass,
+            version_total_access: access,
+            creator_render_pass: render_pass,
         });
         self.resource_handles.push(ResourceHandleInfo::default());
 
@@ -694,10 +896,10 @@ impl FrameGraphBuilder {
 
             // A create is by definition the first version of a resource so the 'previous' link is
             // initialized as an invalid id. This encodes the 'end' of the list
-            previous: VersionIndex::INVALID,
+            previous_version: VersionIndex::INVALID,
 
-            access,
-            render_pass,
+            version_total_access: access,
+            creator_render_pass: render_pass,
         });
         self.resource_handles.push(ResourceHandleInfo::default());
 
@@ -784,184 +986,6 @@ impl Drop for FrameGraphBuilder {
         }
     }
 }
-
-/// An interface constrained way to access the frame graph builder for collecting information from
-/// render pass setup callbacks.
-pub struct ResourceRegistry<'a> {
-    builder: &'a mut FrameGraphBuilder,
-    render_pass: usize,
-}
-
-impl<'a> ResourceRegistry<'a> {
-    /// Declares that this pass would like to import the given resource into the frame graph with
-    /// the given parameters.
-    ///
-    /// This is a wrapper over [FrameGraphBuilder::import_texture].
-    pub fn import_texture(
-        &mut self,
-        desc: &TextureImportDesc,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceMut {
-        self.builder
-            .import_texture(self.render_pass, desc, sync, access)
-    }
-
-    /// Declares that this pass would like to import the given resource into the frame graph with
-    /// the given parameters.
-    ///
-    /// This is a wrapper over [FrameGraphBuilder::import_buffer].
-    pub fn import_buffer(
-        &mut self,
-        desc: &BufferImportDesc,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceMut {
-        self.builder
-            .import_buffer(self.render_pass, desc, sync, access)
-    }
-
-    /// Declares a read access to the given texture, with the given sync parameters.
-    ///
-    /// The returned resource handle is equal to the handle given in 'r'. It is returned simply as
-    /// a utility to mirror the write declaration functions.
-    ///
-    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
-    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
-    /// declared as 'access'.
-    pub fn read_texture<R: Into<ResourceRef>>(
-        &mut self,
-        resource: R,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceRef {
-        self.builder
-            .read_texture(self.render_pass, resource, sync, access)
-    }
-
-    /// Declares a read access to the given buffer, with the given sync parameters.
-    ///
-    /// The returned resource handle is equal to the handle given in 'r'. It is returned simply as
-    /// a utility to mirror the write declaration functions.
-    ///
-    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
-    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
-    /// declared as 'access'.
-    pub fn read_buffer<R: Into<ResourceRef>>(
-        &mut self,
-        resource: R,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceRef {
-        self.builder
-            .read_buffer(self.render_pass, resource, sync, access)
-    }
-
-    /// Declares a write access to the given texture, with the given sync parameters.
-    ///
-    /// Any write access to a resource will produce a new unique resource handle, which this
-    /// function will return. This resource handle is a reference to the resource in the state that
-    /// this render pass will leave it in after whatever write operations are performed.
-    ///
-    /// It is invalid to write to a resource through the same handle more than once. Any future
-    /// writes must use the handle returned by this function. This constraint is to allow a total
-    /// program order to be derived unambiguously from the set of passes submitted to the graph.
-    ///
-    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
-    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
-    /// declared as 'access'.
-    pub fn write_texture<R: Into<ResourceMut>>(
-        &mut self,
-        resource: R,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceMut {
-        self.builder
-            .write_texture(self.render_pass, resource, sync, access)
-    }
-
-    /// Declares a write access to the given buffer, with the given sync parameters.
-    ///
-    /// Any write access to a resource will produce a new unique resource handle, which this
-    /// function will return. This resource handle is a reference to the resource in the state that
-    /// this render pass will leave it in after whatever write operations are performed.
-    ///
-    /// It is invalid to write to a resource through the same handle more than once. Any future
-    /// writes must use the handle returned by this function. This constraint is to allow a total
-    /// program order to be derived unambiguously from the set of passes submitted to the graph.
-    ///
-    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
-    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
-    /// declared as 'access'.
-    pub fn write_buffer<R: Into<ResourceMut>>(
-        &mut self,
-        resource: R,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceMut {
-        self.builder
-            .write_buffer(self.render_pass, resource, sync, access)
-    }
-
-    /// Declares that a new, transient texture will be created and used by the pass. Use 'access' to
-    /// specify how the creating pass will use the resource.
-    ///
-    /// The resource will be created with the given parameters with only a single exception. The
-    /// resource usage flags in the [TextureDesc] will be ignored. The frame graph implementation
-    /// will not use the given flags, and instead will collect all the unique ways the resource was
-    /// used within the frame graph and initialize the resource with the usage flag it calculates
-    /// itself. This is a noteworthy difference compared to the documentation on the [TextureDesc],
-    /// which _will_ say otherwise, as it is intended for creating new resources at the RHI level.
-    ///
-    /// It would be intractable to require specifying all the usage flags up front with this
-    /// function as it is impossible for a frame graph pass to know all the ways the resource will
-    /// be used in the graph. Requiring a graph pass to know this would either have passes
-    /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
-    ///
-    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
-    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
-    /// declared as 'access'.
-    pub fn create_texture(
-        &mut self,
-        desc: &TextureDesc,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceMut {
-        self.builder
-            .create_texture(self.render_pass, desc, sync, access)
-    }
-
-    /// Declares that a new, transient buffer will be created and used by the pass. Use 'access' to
-    /// specify how the creating pass will use the resource.
-    ///
-    /// The resource will be created with the given parameters with only a single exception. The
-    /// resource usage flags in the [BufferDesc] will be ignored. The frame graph implementation
-    /// will not use the given flags, and instead will collect all the unique ways the resource was
-    /// used within the frame graph and initialize the resource with the usage flag it calculates
-    /// itself. This is a noteworthy difference compared to the documentation on the [BufferDesc],
-    /// which _will_ say otherwise, as it is intended for creating new resources at the RHI level.
-    ///
-    /// It would be intractable to require specifying all the usage flags up front with this
-    /// function as it is impossible for a frame graph pass to know all the ways the resource will
-    /// be used in the graph. Requiring a graph pass to know this would either have passes
-    /// specifying overly broad usage flags or would cause the passes to be very poorly composable.
-    ///
-    /// When 'sync' is equal to `BarrierSync::default()` (empty) default sync flags are chosen that
-    /// covers all possible [BarrierSync] values that are applicable to the [ResourceUsageFlags]
-    /// declared as 'access'.
-    pub fn create_buffer(
-        &mut self,
-        desc: &BufferDesc,
-        sync: BarrierSync,
-        access: ResourceUsageFlags,
-    ) -> ResourceMut {
-        self.builder
-            .create_buffer(self.render_pass, desc, sync, access)
-    }
-}
-
-#[cfg(test)]
-mod tests;
 
 /// A utility function that wraps around 'default_barrier_sync' that will either return the given
 /// [BarrierSync] flags, or the default sync flags for the provided [ResourceUsageFlags] if the

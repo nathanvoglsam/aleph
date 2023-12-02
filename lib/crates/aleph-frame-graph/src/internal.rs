@@ -250,16 +250,16 @@ pub struct ResourceVersion {
     ///
     /// Starting from the final state of a resource this encodes a linked list of all the versions
     /// of a resource within the graph.
-    pub previous: VersionIndex,
+    pub previous_version: VersionIndex,
 
     /// The union of all the ways this particular version of the resource is used. This is the OR of
     /// all the flags declared by the write that creates this version and all the reads of this
     /// version of the resource.
-    pub access: ResourceUsageFlags,
+    pub version_total_access: ResourceUsageFlags,
 
     /// The index of the render pass that caused the new resource version to be created. This could
     /// be through creating a new transient resource or through writing an existing resource.
-    pub render_pass: usize,
+    pub creator_render_pass: usize,
 }
 
 /// An internal struct used for debug information about individual generated resource handles.
