@@ -303,7 +303,7 @@ impl<'a> ResourceRegistry<'a> {
         access: ResourceUsageFlags,
     ) -> ResourceRef {
         self.builder
-            .read_texture(self.render_pass, resource, sync, access)
+            .read_texture_internal(self.render_pass, resource, sync, access)
     }
 
     /// Declares a read access to the given buffer, with the given sync parameters.
@@ -558,7 +558,7 @@ impl FrameGraphBuilder {
         r
     }
 
-    pub(crate) fn read_texture<R: Into<ResourceRef>>(
+    pub(crate) fn read_texture_internal<R: Into<ResourceRef>>(
         &mut self,
         render_pass: usize,
         resource: R,
