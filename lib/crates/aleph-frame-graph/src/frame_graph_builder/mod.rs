@@ -354,7 +354,6 @@ impl FrameGraphBuilder {
         let render_passes = std::mem::take(&mut self.render_passes);
         let root_resources = std::mem::take(&mut self.root_resources);
         let resource_versions = std::mem::take(&mut self.resource_versions);
-        let resource_handles = std::mem::take(&mut self.resource_handles);
         let drop_head = std::mem::take(&mut self.drop_head);
 
         FrameGraph {
@@ -363,7 +362,6 @@ impl FrameGraphBuilder {
             render_passes,
             root_resources,
             resource_versions,
-            resource_handles,
             drop_head,
         }
     }

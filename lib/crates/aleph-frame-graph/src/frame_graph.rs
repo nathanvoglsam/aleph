@@ -69,10 +69,6 @@ pub struct FrameGraph {
     /// construction.
     pub(crate) resource_versions: Vec<ResourceVersion>,
 
-    /// Stores debug information for each resource handle generated at a resource rename event. This
-    /// is used to help validate resources are accessed in a valid way.
-    pub(crate) resource_handles: Vec<ResourceHandleInfo>,
-
     /// The head of the dropper linked-list that contains all the drop functions for objects
     /// allocated from the graph arena
     pub(crate) drop_head: Option<NonNull<DropLink>>,
