@@ -243,6 +243,12 @@ impl VersionIndex {
     }
 }
 
+pub struct VersionReaderLink {
+    pub next: Option<NonNull<VersionReaderLink>>,
+    pub render_pass: usize,
+    pub access: ResourceUsageFlags,
+}
+
 pub struct ResourceVersion {
     /// The index of the root resource this [ResourceVersion] encodes a version of. This allows
     /// easily mapping any version back to the underlying resource it represents a view of.
@@ -266,6 +272,10 @@ pub struct ResourceVersion {
     /// The index of the render pass that caused the new resource version to be created. This could
     /// be through creating a new transient resource or through writing an existing resource.
     pub creator_render_pass: usize,
+
+    /// The head of a linked list that contains entries for every read of this resource version by
+    /// a render pass
+    pub reads: Option<NonNull<VersionReaderLink>>,
 }
 
 /// An internal struct used for debug information about individual generated resource handles.

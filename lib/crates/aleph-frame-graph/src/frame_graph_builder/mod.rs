@@ -574,6 +574,7 @@ impl FrameGraphBuilder {
         let r = resource.into();
 
         self.add_flags_to_version_for(r, access);
+        self.append_read_to_version_for(r, access, render_pass);
         self.add_flags_to_root_for(r, access);
 
         let root_resource = self.assert_resource_handle_is_texture(r);
@@ -605,6 +606,7 @@ impl FrameGraphBuilder {
 
         self.assert_resource_handle_is_buffer(r);
         self.add_flags_to_version_for(r, access);
+        self.append_read_to_version_for(r, access, render_pass);
         self.add_flags_to_root_for(r, access);
 
         let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
@@ -723,6 +725,12 @@ impl FrameGraphBuilder {
                 desc: create_desc,
             },
         );
+        let desc = ResourceAccess {
+            resource: r.0,
+            sync,
+            access,
+        };
+        self.pass_access_info.writes.push(desc);
 
         r
     }
@@ -760,6 +768,12 @@ impl FrameGraphBuilder {
                 desc: create_desc,
             },
         );
+        let desc = ResourceAccess {
+            resource: r.0,
+            sync,
+            access,
+        };
+        self.pass_access_info.writes.push(desc);
 
         r
     }
@@ -851,6 +865,7 @@ impl FrameGraphBuilder {
 
             version_total_access: access,
             creator_render_pass: render_pass,
+            reads: None,
         });
         self.resource_handles.push(ResourceHandleInfo::default());
 
@@ -892,6 +907,7 @@ impl FrameGraphBuilder {
 
             version_total_access: access,
             creator_render_pass: render_pass,
+            reads: None,
         });
         self.resource_handles.push(ResourceHandleInfo::default());
 
