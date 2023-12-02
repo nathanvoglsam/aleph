@@ -514,6 +514,12 @@ impl FrameGraphBuilder {
         // pass
         let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
+        let desc = ResourceAccess {
+            resource: r.0,
+            sync,
+            access,
+        };
+        self.pass_access_info.writes.push(desc);
 
         r
     }
@@ -554,6 +560,12 @@ impl FrameGraphBuilder {
         // pass
         let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
+        let desc = ResourceAccess {
+            resource: r.0,
+            sync,
+            access,
+        };
+        self.pass_access_info.writes.push(desc);
 
         r
     }
@@ -642,7 +654,7 @@ impl FrameGraphBuilder {
         let format = root_resource.desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
         let desc = ResourceAccess {
-            resource: r.0,
+            resource: renamed_r.0,
             sync,
             access,
         };
@@ -673,7 +685,7 @@ impl FrameGraphBuilder {
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let desc = ResourceAccess {
-            resource: r.0,
+            resource: renamed_r.0,
             sync,
             access,
         };
