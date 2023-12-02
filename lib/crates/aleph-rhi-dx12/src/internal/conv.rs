@@ -791,6 +791,7 @@ pub const fn descriptor_type_to_dx12(v: DescriptorType) -> D3D12_DESCRIPTOR_RANG
         DescriptorType::StructuredBufferRW => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
         DescriptorType::ByteAddressBuffer => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
         DescriptorType::ByteAddressBufferRW => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+        DescriptorType::AccelerationStructure => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
         DescriptorType::InputAttachment => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
     }
 }
