@@ -698,6 +698,7 @@ pub const fn descriptor_type_to_vk(v: DescriptorType) -> vk::DescriptorType {
         DescriptorType::StructuredBufferRW => vk::DescriptorType::STORAGE_BUFFER,
         DescriptorType::ByteAddressBuffer => vk::DescriptorType::STORAGE_BUFFER,
         DescriptorType::ByteAddressBufferRW => vk::DescriptorType::STORAGE_BUFFER,
+        DescriptorType::AccelerationStructure => vk::DescriptorType::ACCELERATION_STRUCTURE_KHR,
         DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
     }
 }
