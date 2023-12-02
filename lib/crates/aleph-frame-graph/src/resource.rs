@@ -28,7 +28,7 @@
 //
 
 use crate::internal::VersionIndex;
-use std::num::NonZeroU64;
+use std::num::NonZeroU16;
 use std::ptr::NonNull;
 
 /// The underlying, binary representation of a Resource ID handle.
@@ -69,48 +69,52 @@ use std::ptr::NonNull;
 /// version = 0, handle = 0 is actually a valid resource handle. To allow all zeroes to be used for
 /// niche-value-optimization we always set the high bits not used by any of the IDs. This steals
 /// some bits from the actual IDs but in return we a get rust friendly niche value for the null ID.
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct ResourceId(pub(crate) NonZeroU64);
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct ResourceId {
+    pub niche_value: NonZeroU16,
+    pub root: u16,
+    pub version: u16,
+    pub handle: u16,
+}
 
 impl ResourceId {
     pub fn new(root: u16, version: u16, handle: u16) -> ResourceId {
         debug_assert_ne!(version, VersionIndex::INVALID.0);
 
-        let base = root as u64;
-        let version = version as u64;
-        let handle = handle as u64;
-        let id = base | (version << 16) | (handle << 32) | (0xFFu64 << 48);
+        // We assert this here as it's the most likely code to execute to catch this case. The
+        // condition is constant so it will compile to nothing as long as we get the expected
+        // output.
+        assert_eq!(std::mem::size_of::<ResourceId>(), std::mem::size_of::<Option<ResourceId>>());
 
-        // Safety: It's impossible for ID to be non-zero as it's guaranteed to contain 0xFF in the
-        //         upper two bytes.
-        unsafe {
-            let id = NonZeroU64::new(id).unwrap_unchecked();
-            ResourceId(id)
+        Self {
+            niche_value: NonZeroU16::new(0xFF).unwrap(),
+            root,
+            version,
+            handle,
         }
     }
 
     pub const fn root_id(&self) -> u16 {
-        (self.0.get() & 0xFF) as u16
+        self.root
     }
 
     pub const fn version_id(&self) -> u16 {
-        ((self.0.get() >> 16) & 0xFF) as u16
+        self.version
     }
 
     pub const fn handle_id(&self) -> u16 {
-        ((self.0.get() >> 32) & 0xFF) as u16
+        self.handle
     }
 }
 
 /// A non-mutable, read-only reference to a frame graph resource
 #[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct ResourceRef(pub(crate) ResourceId);
 
 /// A mutable, writable reference to a frame graph resource
 #[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct ResourceMut(pub(crate) ResourceId);
 
 // Allow using a mutable resource as an immutable one
@@ -172,15 +176,14 @@ impl PartialEq<ResourceRef> for ResourceMut {
 mod tests {
     use crate::resource::ResourceId;
     use crate::{ResourceMut, ResourceRef};
-    use std::num::NonZeroU64;
 
     fn create_dummy_resource_ref() -> ResourceRef {
-        let id = ResourceId(NonZeroU64::new(56).unwrap());
+        let id = ResourceId::new(1,2,3);
         ResourceRef(id)
     }
 
     fn create_dummy_resource_mut() -> ResourceMut {
-        let id = ResourceId(NonZeroU64::new(21).unwrap());
+        let id = ResourceId::new(3,2,1);
         ResourceMut(id)
     }
 

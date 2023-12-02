@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::internal::{RenderPass, ResourceHandleInfo, ResourceRoot, ResourceVersion};
+use crate::internal::{RenderPass, ResourceRoot, ResourceVersion};
 use crate::FrameGraphBuilder;
 use aleph_arena_drop_list::DropLink;
 use bumpalo::Bump;
