@@ -153,15 +153,42 @@ pub struct FrameGraphBufferDesc {
 /// arena
 #[derive(Default)]
 pub struct FrameGraphTextureDesc {
+    /// The width of the texture
     pub width: u32,
+
+    /// The height of the texture
     pub height: u32,
+
+    /// The depth of the texture
     pub depth: u32,
+
+    /// The pixel format of the texture
     pub format: Format,
+
+    /// The dimensionality of the texture.
+    ///
+    /// Declares whether the texture should be a 1D, 2D, 3D or cube texture.
     pub dimension: TextureDimension,
+
+    /// An optional clear value that will be 'optimal' for the underlying implementation.
     pub clear_value: Option<OptimalClearValue>,
+
+    /// Number of image array elements.
+    ///
+    /// A value of '1' means to create a regular, non-array texture. Setting this to a value >1
+    /// declares the texture as a texture array.
     pub array_size: u32,
+
+    /// Number of mip levels.
     pub mip_levels: u32,
+
+    /// Sample count, for MSAA texture.
+    ///
+    /// A value of '1' means a regular, non MSAA texture. This value must always be a power of two.
+    /// Setting this to a value >1 declares the texture as an MSAA texture.
     pub sample_count: u32,
+
+    /// Sample quality, for MSAA texture
     pub sample_quality: u32,
 
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
@@ -183,34 +210,13 @@ impl PassAccessInfo {
     }
 }
 
+/// Stores the requested access for a single resource access edge. Could be read or write.
 #[derive(Clone)]
-pub enum ResourceAccess {
-    Buffer(BufferAccess),
-    Texture(TextureAccess),
-}
-
-/// Stores the requested access for a single buffer access edge. Could be read or write, depending
-/// on the flags stored inside.
-#[derive(Clone)]
-pub struct BufferAccess {
+pub struct ResourceAccess {
     /// The destructured resource ID. ResourceRef/ResourceMut is for the external API
-    pub buffer: ResourceId,
+    pub resource: ResourceId,
 
     /// Pipeline stage/stages the buffer will be used in
-    pub sync: BarrierSync,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
-}
-
-/// Stores the requested access for a single texture access edge. Could be a read or a write,
-/// depending on the flags stored inside.
-#[derive(Clone)]
-pub struct TextureAccess {
-    /// The destructured resource ID. ResourceRef/ResourceMut is for the external API
-    pub texture: ResourceId,
-
-    /// Pipeline stage/stages the texture will be used in
     pub sync: BarrierSync,
 
     /// How the resource will be accessed within the render pass

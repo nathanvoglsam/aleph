@@ -63,7 +63,7 @@ use std::ptr::NonNull;
 mod tests;
 
 /// Provides a description for importing a resource into the frame graph.
-/// 
+///
 /// This encodes the full set of sync flags that covers what usages that the resource must be
 /// synchronized with from outside of the graph. The 'before_*' flags cover the 'before' scope of
 /// a barrier that will be used for the graph to take ownership of the resource. The 'after_*'
@@ -96,7 +96,7 @@ pub struct TextureImportDesc<'a> {
 }
 
 /// Provides a description for importing a resource into the frame graph.
-/// 
+///
 /// This encodes the full set of sync flags that covers what usages that the resource must be
 /// synchronized with from outside of the graph. The 'before_*' flags cover the 'before' scope of
 /// a barrier that will be used for the graph to take ownership of the resource. The 'after_*'
@@ -175,7 +175,7 @@ impl FrameGraphBuilder {
     }
 
     /// Adds a new pass to the frame graph with the given name.
-    /// 
+    ///
     /// - `setup_fn` is a closure that will be called only once immediately inside
     ///   [FrameGraphBuilder::add_pass] that is used to declare the reads, writes, creates and
     ///   imports of the pass.
@@ -224,7 +224,7 @@ impl FrameGraphBuilder {
     /// Finalize the graph and fully resolve all the declared passes into a [FrameGraph]. Once the
     /// graph has been built passes can no longer be added or removed, nor can resources be added
     /// or removed.
-    /// 
+    ///
     /// This will run a suite of passes that will extract a total program order from the graph of
     /// passes constructed earlier. This function is expected to be expensive, so don't build new
     /// graphs often. It is intended for a graph to be built once and run many times and invalidated
@@ -579,14 +579,12 @@ impl FrameGraphBuilder {
         let root_resource = self.assert_resource_handle_is_texture(r);
         let format = root_resource.desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
-        let desc = TextureAccess {
-            texture: r.0,
+        let desc = ResourceAccess {
+            resource: r.0,
             sync,
             access,
         };
-        self.pass_access_info
-            .reads
-            .push(ResourceAccess::Texture(desc));
+        self.pass_access_info.reads.push(desc);
         r
     }
 
@@ -610,14 +608,12 @@ impl FrameGraphBuilder {
         self.add_flags_to_root_for(r, access);
 
         let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
-        let desc = BufferAccess {
-            buffer: r.0,
+        let desc = ResourceAccess {
+            resource: r.0,
             sync,
             access,
         };
-        self.pass_access_info
-            .reads
-            .push(ResourceAccess::Buffer(desc));
+        self.pass_access_info.reads.push(desc);
         r
     }
 
@@ -643,14 +639,12 @@ impl FrameGraphBuilder {
         let root_resource = self.assert_resource_handle_is_texture(r);
         let format = root_resource.desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
-        let desc = TextureAccess {
-            texture: r.0,
+        let desc = ResourceAccess {
+            resource: r.0,
             sync,
             access,
         };
-        self.pass_access_info
-            .writes
-            .push(ResourceAccess::Texture(desc));
+        self.pass_access_info.writes.push(desc);
 
         renamed_r
     }
@@ -676,14 +670,12 @@ impl FrameGraphBuilder {
         let renamed_r = self.increment_handle_for_write(r, render_pass, access);
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
-        let desc = BufferAccess {
-            buffer: r.0,
+        let desc = ResourceAccess {
+            resource: r.0,
             sync,
             access,
         };
-        self.pass_access_info
-            .writes
-            .push(ResourceAccess::Buffer(desc));
+        self.pass_access_info.writes.push(desc);
 
         renamed_r
     }
