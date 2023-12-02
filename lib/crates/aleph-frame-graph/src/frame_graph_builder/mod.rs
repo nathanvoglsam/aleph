@@ -596,7 +596,7 @@ impl FrameGraphBuilder {
         let format = desc.resource.desc().format;
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
 
-        let imported = ImportedTexture {
+        let imported = ImportedResource {
             resource: desc.resource.upgrade(),
             before_sync: desc.before_sync,
             before_access: desc.before_access,
@@ -653,12 +653,14 @@ impl FrameGraphBuilder {
         );
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
-        let imported = ImportedBuffer {
+        let imported = ImportedResource {
             resource: desc.resource.upgrade(),
             before_sync: desc.before_sync,
             before_access: desc.before_access,
+            before_layout: Default::default(),
             after_sync: desc.after_sync,
             after_access: desc.after_access,
+            after_layout: Default::default(),
         };
         let resource_desc = desc.resource.desc();
         let name = resource_desc.name.map(|v| self.graph_arena.alloc_str(v));
@@ -1075,7 +1077,6 @@ impl FrameGraphBuilder {
     pub(crate) fn validate_imported_resource_usages(&self) {
         for root in self.root_resources.iter() {
             match &root.resource_type {
-                ResourceType::Uninitialized => unreachable!(),
                 ResourceType::Buffer(ResourceTypeBuffer {
                     import: Some(import),
                     ..

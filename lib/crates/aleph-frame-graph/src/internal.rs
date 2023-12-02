@@ -45,7 +45,6 @@ pub struct RenderPass {
     pub writes: NonNull<[ResourceAccess]>,
 }
 
-#[derive(Default)]
 pub struct ResourceRoot {
     /// The type of this resource
     pub resource_type: ResourceType,
@@ -64,8 +63,56 @@ pub struct ResourceRoot {
     pub initial_version: VersionIndex,
 }
 
+pub struct ResourceVersion {
+    /// The index of the root resource this [ResourceVersion] encodes a version of. This allows
+    /// easily mapping any version back to the underlying resource it represents a view of.
+    ///
+    /// This is critical for allowing iterating the version array to accumulate information about
+    /// the graph.
+    pub root_resource: u16,
+
+    /// The index of the previous version of the resource in the version array. Can be
+    /// VersionIndex::INVALID when there is no previous version.
+    ///
+    /// Starting from the final state of a resource this encodes a linked list of all the versions
+    /// of a resource within the graph.
+    pub previous_version: VersionIndex,
+
+    /// The union of all the ways this particular version of the resource is used. This is the OR of
+    /// all the flags declared by the write that creates this version and all the reads of this
+    /// version of the resource.
+    pub version_total_access: ResourceUsageFlags,
+
+    /// The index of the render pass that caused the new resource version to be created. This could
+    /// be through creating a new transient resource or through writing an existing resource.
+    pub creator_render_pass: usize,
+
+    /// The head of a linked list that contains entries for every read of this resource version by
+    /// a render pass
+    pub reads: Option<NonNull<VersionReaderLink>>,
+}
+
+/// An internal struct used for debug information about individual generated resource handles.
+///
+/// This information is vestigial once the graph is constructed so it can be discarded.
+#[derive(Default)]
+pub struct ResourceHandleInfo {
+    /// Flags whether the resource has been written
+    pub written: bool,
+}
+
+impl ResourceHandleInfo {
+    pub fn mark_written(&mut self) {
+        self.written = true;
+    }
+
+    pub fn is_written(&self) -> bool {
+        self.written
+    }
+}
+
 pub struct ResourceTypeBuffer {
-    pub import: Option<ImportedBuffer>,
+    pub import: Option<ImportedResource<dyn IBuffer>>,
     pub desc: FrameGraphBufferDesc,
 }
 
@@ -76,7 +123,7 @@ impl Into<ResourceType> for ResourceTypeBuffer {
 }
 
 pub struct ResourceTypeTexture {
-    pub import: Option<ImportedTexture>,
+    pub import: Option<ImportedResource<dyn ITexture>>,
     pub desc: FrameGraphTextureDesc,
 }
 
@@ -87,7 +134,6 @@ impl Into<ResourceType> for ResourceTypeTexture {
 }
 
 pub enum ResourceType {
-    Uninitialized,
     Buffer(ResourceTypeBuffer),
     Texture(ResourceTypeTexture),
 }
@@ -110,22 +156,8 @@ impl ResourceType {
     }
 }
 
-impl Default for ResourceType {
-    fn default() -> Self {
-        ResourceType::Uninitialized
-    }
-}
-
-pub struct ImportedBuffer {
-    pub resource: AnyArc<dyn IBuffer>,
-    pub before_sync: BarrierSync,
-    pub before_access: BarrierAccess,
-    pub after_sync: BarrierSync,
-    pub after_access: BarrierAccess,
-}
-
-pub struct ImportedTexture {
-    pub resource: AnyArc<dyn ITexture>,
+pub struct ImportedResource<T: aleph_any::IAny + ?Sized> {
+    pub resource: AnyArc<T>,
     pub before_sync: BarrierSync,
     pub before_access: BarrierAccess,
     pub before_layout: ImageLayout,
@@ -247,54 +279,6 @@ pub struct VersionReaderLink {
     pub next: Option<NonNull<VersionReaderLink>>,
     pub render_pass: usize,
     pub access: ResourceUsageFlags,
-}
-
-pub struct ResourceVersion {
-    /// The index of the root resource this [ResourceVersion] encodes a version of. This allows
-    /// easily mapping any version back to the underlying resource it represents a view of.
-    ///
-    /// This is critical for allowing iterating the version array to accumulate information about
-    /// the graph.
-    pub root_resource: u16,
-
-    /// The index of the previous version of the resource in the version array. Can be
-    /// VersionIndex::INVALID when there is no previous version.
-    ///
-    /// Starting from the final state of a resource this encodes a linked list of all the versions
-    /// of a resource within the graph.
-    pub previous_version: VersionIndex,
-
-    /// The union of all the ways this particular version of the resource is used. This is the OR of
-    /// all the flags declared by the write that creates this version and all the reads of this
-    /// version of the resource.
-    pub version_total_access: ResourceUsageFlags,
-
-    /// The index of the render pass that caused the new resource version to be created. This could
-    /// be through creating a new transient resource or through writing an existing resource.
-    pub creator_render_pass: usize,
-
-    /// The head of a linked list that contains entries for every read of this resource version by
-    /// a render pass
-    pub reads: Option<NonNull<VersionReaderLink>>,
-}
-
-/// An internal struct used for debug information about individual generated resource handles.
-///
-/// This information is vestigial once the graph is constructed so it can be discarded.
-#[derive(Default)]
-pub struct ResourceHandleInfo {
-    /// Flags whether the resource has been written
-    pub written: bool,
-}
-
-impl ResourceHandleInfo {
-    pub fn mark_written(&mut self) {
-        self.written = true;
-    }
-
-    pub fn is_written(&self) -> bool {
-        self.written
-    }
 }
 
 /// An internal enum used for tracking the state machine of a resource version through the pass
