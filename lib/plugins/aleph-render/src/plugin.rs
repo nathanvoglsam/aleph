@@ -166,6 +166,8 @@ impl IPlugin for PluginRender {
                         .update_screen_info(drawable_size.0 as f32 / window_size.0 as f32);
                     data.renderer
                         .recreate_swap_resources((new_config.width, new_config.height));
+
+                    data.should_resize = false;
                 }
 
                 unsafe {
