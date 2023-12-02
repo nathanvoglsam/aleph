@@ -326,13 +326,11 @@ impl FrameGraphBuilder {
                 sample_quality: resource_desc.sample_quality,
                 name,
             },
-            sync,
-            access,
         };
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(render_pass, access, r_type);
+        let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
 
         r
@@ -368,13 +366,11 @@ impl FrameGraphBuilder {
                 size: resource_desc.size,
                 name,
             },
-            sync,
-            access,
         };
 
         // render pass index doesn't matter here as imported resources aren't created by a render
         // pass
-        let r = self.create_new_handle(render_pass, access, r_type);
+        let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
 
         r
@@ -546,12 +542,11 @@ impl FrameGraphBuilder {
         };
         let r = self.create_new_handle(
             render_pass,
+            sync,
             access,
             ResourceTypeTexture {
                 import: None,
                 desc: create_desc,
-                sync,
-                access,
             },
         );
 
@@ -584,12 +579,11 @@ impl FrameGraphBuilder {
         };
         let r = self.create_new_handle(
             render_pass,
+            sync,
             access,
             ResourceTypeBuffer {
                 import: None,
                 desc: create_desc,
-                sync,
-                access,
             },
         );
 
@@ -639,7 +633,7 @@ impl FrameGraphBuilder {
 
         // Add the requested usage flags to the resource version's usage set
         let root_id = r.0.root_id();
-        self.root_resources[root_id as usize].access_flags |= access;
+        self.root_resources[root_id as usize].total_access_flags |= access;
     }
 
     pub(crate) fn increment_handle_for_write(
@@ -678,6 +672,7 @@ impl FrameGraphBuilder {
     pub(crate) fn create_new_handle(
         &mut self,
         render_pass: usize,
+        sync: BarrierSync,
         access: ResourceUsageFlags,
         r_type: impl Into<ResourceType>,
     ) -> ResourceMut {
@@ -687,7 +682,9 @@ impl FrameGraphBuilder {
         let id = ResourceId::new(base, version, handle);
         self.root_resources.push(ResourceRoot {
             resource_type: r_type.into(),
-            access_flags: access,
+            total_access_flags: access,
+            creator_sync: sync,
+            creator_access: access,
         });
         self.resource_versions.push(ResourceVersion {
             // We need the root resource here to allow iterations over the version array to easily
@@ -747,7 +744,7 @@ impl FrameGraphBuilder {
                 }) => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
-                    let root_usage = root.access_flags;
+                    let root_usage = root.total_access_flags;
                     assert!(
                         desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
@@ -762,7 +759,7 @@ impl FrameGraphBuilder {
                 }) => {
                     let desc = import.resource.desc();
                     let r_name = desc.name.unwrap_or("Unnamed resource");
-                    let root_usage = root.access_flags;
+                    let root_usage = root.total_access_flags;
                     assert!(
                         desc.usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",

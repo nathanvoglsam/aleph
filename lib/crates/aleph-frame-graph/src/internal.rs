@@ -50,20 +50,20 @@ pub struct ResourceRoot {
     /// The type of this resource
     pub resource_type: ResourceType,
 
+    /// The sync flags that the resource will be used with in the creating pass.
+    pub creator_sync: BarrierSync,
+
+    /// How the resource will be accessed within the render pass that creates the resource.
+    pub creator_access: ResourceUsageFlags,
+
     /// The accumulated access flags for a resource. This is the union of all the ways a
     /// resource is used as within the frame graph.
-    pub access_flags: ResourceUsageFlags,
+    pub total_access_flags: ResourceUsageFlags,
 }
 
 pub struct ResourceTypeBuffer {
     pub import: Option<ImportedBuffer>,
     pub desc: FrameGraphBufferDesc,
-
-    /// The sync flags that the resource will be used with in the creating pass.
-    pub sync: BarrierSync,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
 }
 
 impl Into<ResourceType> for ResourceTypeBuffer {
@@ -75,12 +75,6 @@ impl Into<ResourceType> for ResourceTypeBuffer {
 pub struct ResourceTypeTexture {
     pub import: Option<ImportedTexture>,
     pub desc: FrameGraphTextureDesc,
-
-    /// The sync flags that the resource will be used with in the creating pass.
-    pub sync: BarrierSync,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
 }
 
 impl Into<ResourceType> for ResourceTypeTexture {
