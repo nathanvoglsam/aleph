@@ -28,6 +28,7 @@
 //
 
 use crate::frame_graph_builder::BufferImportDesc;
+use crate::ImportBundle;
 use crate::{FrameGraph, ResourceMut, ResourceRef, ResourceRegistry};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -188,8 +189,9 @@ pub fn test_builder() {
     let expected_pass_order: [usize; 3] = [0, 1, 2];
     assert_eq!(&graph.render_pass_order, &expected_pass_order);
 
+    let import_bundle = ImportBundle::default();
     unsafe {
-        graph.execute();
+        graph.execute(&import_bundle);
     }
 }
 
@@ -201,6 +203,8 @@ pub fn test_handle_equality() {
         usage: ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::CONSTANT_BUFFER,
         name: Some("imported-mock-resource"),
     });
+    let mock_desc = mock_buffer.desc();
+
     let mut out_create = None;
     let mut out_read_import = None;
     let mut out_write_import = None;
@@ -215,7 +219,7 @@ pub fn test_handle_equality() {
         |_data: &mut (), resources: &mut ResourceRegistry| {
             let r = resources.import_buffer(
                 &BufferImportDesc {
-                    resource: mock_buffer.as_ref(),
+                    desc: &mock_desc,
                     before_sync: BarrierSync::COMPUTE_SHADING,
                     before_access: BarrierAccess::SHADER_WRITE,
                     after_sync: BarrierSync::COPY,
@@ -302,8 +306,10 @@ pub fn test_handle_equality() {
     let expected_pass_order: [usize; 4] = [0, 1, 2, 3];
     assert_eq!(&graph.render_pass_order, &expected_pass_order);
 
+    let mut import_bundle = ImportBundle::default();
+    import_bundle.add_resource(imported_resource, &mock_buffer);
     unsafe {
-        graph.execute();
+        graph.execute(&import_bundle);
     }
 }
 
@@ -317,6 +323,8 @@ pub fn test_usage_collection() {
             | ResourceUsageFlags::VERTEX_BUFFER,
         name: Some("imported-mock-resource"),
     });
+    let mock_desc = mock_buffer.desc();
+
     let mut out_create = None;
     let mut out_write_import = None;
     let mut out_write_transient = None;
@@ -329,7 +337,7 @@ pub fn test_usage_collection() {
         |_data: &mut (), resources: &mut ResourceRegistry| {
             let r = resources.import_buffer(
                 &BufferImportDesc {
-                    resource: mock_buffer.as_ref(),
+                    desc: &mock_desc,
                     before_sync: BarrierSync::COMPUTE_SHADING,
                     before_access: BarrierAccess::SHADER_WRITE,
                     after_sync: BarrierSync::COPY,
@@ -417,7 +425,9 @@ pub fn test_usage_collection() {
             | ResourceUsageFlags::INDEX_BUFFER
     );
 
+    let mut import_bundle = ImportBundle::default();
+    import_bundle.add_resource(imported_resource, &mock_buffer);
     unsafe {
-        graph.execute();
+        graph.execute(&import_bundle);
     }
 }

@@ -71,7 +71,7 @@ mod tests;
 /// release ownership of the resource to other users outside the graph.
 pub struct TextureImportDesc<'a> {
     /// The texture resource to import into the frame graph
-    pub resource: &'a dyn ITexture,
+    pub desc: &'a TextureDesc<'a>,
 
     /// The pipeline stage to synchronize with on first use within the frame graph
     pub before_sync: BarrierSync,
@@ -103,8 +103,8 @@ pub struct TextureImportDesc<'a> {
 /// flags cover the 'after' scope of a barrier that will be executed once the graph completes to
 /// release ownership of the resource to other users outside the graph.
 pub struct BufferImportDesc<'a> {
-    /// The buffer resource to import into the frame graph
-    pub resource: &'a dyn IBuffer,
+    /// The desc of the buffer resource to import into the frame graph
+    pub desc: &'a BufferDesc<'a>,
 
     /// The pipeline stage to synchronize with on first use within the frame graph
     pub before_sync: BarrierSync,
@@ -350,6 +350,7 @@ impl FrameGraphBuilder {
         let render_passes = std::mem::take(&mut self.render_passes);
         let root_resources = std::mem::take(&mut self.root_resources);
         let resource_versions = std::mem::take(&mut self.resource_versions);
+        let imported_resources = std::mem::take(&mut self.imported_resources);
         let drop_head = std::mem::take(&mut self.drop_head);
 
         FrameGraph {
@@ -358,6 +359,7 @@ impl FrameGraphBuilder {
             render_passes,
             root_resources,
             resource_versions,
+            imported_resources,
             drop_head,
         }
     }
@@ -589,11 +591,11 @@ impl FrameGraphBuilder {
             access
         );
 
-        let format = desc.resource.desc().format;
+        let format = desc.desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
 
         let imported = ImportedResource {
-            resource: desc.resource.upgrade(),
+            allowed_usage: desc.desc.usage,
             before_sync: desc.before_sync,
             before_access: desc.before_access,
             before_layout: desc.before_layout,
@@ -601,22 +603,21 @@ impl FrameGraphBuilder {
             after_access: desc.after_access,
             after_layout: desc.after_layout,
         };
-        let resource_desc = desc.resource.desc();
-        let name = resource_desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = desc.desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let r_type = ResourceTypeTexture {
             import: Some(imported),
             desc: FrameGraphTextureDesc {
-                width: resource_desc.width,
-                height: resource_desc.height,
-                depth: resource_desc.depth,
-                format: resource_desc.format,
-                dimension: resource_desc.dimension,
-                clear_value: resource_desc.clear_value,
-                array_size: resource_desc.array_size,
-                mip_levels: resource_desc.mip_levels,
-                sample_count: resource_desc.sample_count,
-                sample_quality: resource_desc.sample_quality,
+                width: desc.desc.width,
+                height: desc.desc.height,
+                depth: desc.desc.depth,
+                format: desc.desc.format,
+                dimension: desc.desc.dimension,
+                clear_value: desc.desc.clear_value.clone(),
+                array_size: desc.desc.array_size,
+                mip_levels: desc.desc.mip_levels,
+                sample_count: desc.desc.sample_count,
+                sample_quality: desc.desc.sample_quality,
                 name,
             },
         };
@@ -650,7 +651,7 @@ impl FrameGraphBuilder {
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let imported = ImportedResource {
-            resource: desc.resource.upgrade(),
+            allowed_usage: desc.desc.usage,
             before_sync: desc.before_sync,
             before_access: desc.before_access,
             before_layout: Default::default(),
@@ -658,13 +659,12 @@ impl FrameGraphBuilder {
             after_access: desc.after_access,
             after_layout: Default::default(),
         };
-        let resource_desc = desc.resource.desc();
-        let name = resource_desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = desc.desc.name.map(|v| self.graph_arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let r_type = ResourceTypeBuffer {
             import: Some(imported),
             desc: FrameGraphBufferDesc {
-                size: resource_desc.size,
+                size: desc.desc.size,
                 name,
             },
         };
@@ -1073,31 +1073,31 @@ impl FrameGraphBuilder {
             match &root.resource_type {
                 ResourceType::Buffer(ResourceTypeBuffer {
                     import: Some(import),
-                    ..
+                    desc,
                 }) => {
-                    let desc = import.resource.desc();
-                    let r_name = desc.name.unwrap_or("Unnamed resource");
+                    let r_name =
+                        unsafe { desc.name.map(|v| v.as_ref()).unwrap_or("Unnamed resource") };
                     let root_usage = root.total_access_flags;
                     assert!(
-                        desc.usage.contains(root_usage),
+                        import.allowed_usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
                         r_name,
-                        desc.usage,
+                        import.allowed_usage,
                         root_usage
                     );
                 }
                 ResourceType::Texture(ResourceTypeTexture {
                     import: Some(import),
-                    ..
+                    desc,
                 }) => {
-                    let desc = import.resource.desc();
-                    let r_name = desc.name.unwrap_or("Unnamed resource");
+                    let r_name =
+                        unsafe { desc.name.map(|v| v.as_ref()).unwrap_or("Unnamed resource") };
                     let root_usage = root.total_access_flags;
                     assert!(
-                        desc.usage.contains(root_usage),
+                        import.allowed_usage.contains(root_usage),
                         "Resource '{}' used in unsupported usage. Allowed: {:?}. Attempted: {:?}",
                         r_name,
-                        desc.usage,
+                        import.allowed_usage,
                         root_usage
                     );
                 }

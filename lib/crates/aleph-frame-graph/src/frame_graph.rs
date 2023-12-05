@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::import_bundle::ImportBundle;
 use crate::internal::{RenderPass, ResourceRoot, ResourceVersion};
 use crate::FrameGraphBuilder;
 use aleph_arena_drop_list::DropLink;
@@ -69,6 +70,10 @@ pub struct FrameGraph {
     /// construction.
     pub(crate) resource_versions: Vec<ResourceVersion>,
 
+    /// The set of resources within the graph that were imported, stored as indices into the
+    /// root_resources array.
+    pub(crate) imported_resources: Vec<u16>,
+
     /// The head of the dropper linked-list that contains all the drop functions for objects
     /// allocated from the graph arena
     pub(crate) drop_head: Option<NonNull<DropLink>>,
@@ -79,7 +84,33 @@ impl FrameGraph {
         FrameGraphBuilder::new()
     }
 
-    pub unsafe fn execute(&mut self) {}
+    pub unsafe fn execute(&mut self, import_bundle: &ImportBundle) {
+        if cfg!(debug_assertions) {
+            for v in self.imported_resources.iter() {
+                let name = self.root_resources[*v as usize]
+                    .resource_type
+                    .name()
+                    .unwrap_or("Unnamed resource");
+                let is_import = self.root_resources[*v as usize].resource_type.is_import();
+                let contains_import = import_bundle.imports.contains_key(v);
+                assert!(
+                    is_import,
+                    "INTERNAL ERROR: Resource '{}' import status internal mismatch",
+                    name
+                );
+                assert!(
+                    contains_import,
+                    "The ImportBundle does not contain handle for imported graph resource '{}'",
+                    name
+                );
+            }
+        }
+
+        for v in self.render_pass_order.iter().copied() {
+            let pass = &mut self.render_passes[v];
+            unsafe { pass.pass.as_mut().execute() }
+        }
+    }
 }
 
 impl Drop for FrameGraph {

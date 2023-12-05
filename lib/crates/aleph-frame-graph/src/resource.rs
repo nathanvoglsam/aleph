@@ -51,7 +51,10 @@ impl ResourceId {
         // We assert this here as it's the most likely code to execute to catch this case. The
         // condition is constant so it will compile to nothing as long as we get the expected
         // output.
-        assert_eq!(std::mem::size_of::<ResourceId>(), std::mem::size_of::<Option<ResourceId>>());
+        assert_eq!(
+            std::mem::size_of::<ResourceId>(),
+            std::mem::size_of::<Option<ResourceId>>()
+        );
 
         Self {
             niche_value: NonZeroU16::new(0xFF).unwrap(),
@@ -140,12 +143,12 @@ mod tests {
     use crate::{ResourceMut, ResourceRef};
 
     fn create_dummy_resource_ref() -> ResourceRef {
-        let id = ResourceId::new(1,2);
+        let id = ResourceId::new(1, 2);
         ResourceRef(id)
     }
 
     fn create_dummy_resource_mut() -> ResourceMut {
-        let id = ResourceId::new(3,2);
+        let id = ResourceId::new(3, 2);
         ResourceMut(id)
     }
 

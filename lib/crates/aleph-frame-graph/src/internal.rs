@@ -34,7 +34,6 @@
 
 use crate::resource::ResourceId;
 use crate::IRenderPass;
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
 
@@ -107,7 +106,7 @@ impl ResourceVersion {
 }
 
 pub struct ResourceTypeBuffer {
-    pub import: Option<ImportedResource<dyn IBuffer>>,
+    pub import: Option<ImportedResource>,
     pub desc: FrameGraphBufferDesc,
 }
 
@@ -118,7 +117,7 @@ impl Into<ResourceType> for ResourceTypeBuffer {
 }
 
 pub struct ResourceTypeTexture {
-    pub import: Option<ImportedResource<dyn ITexture>>,
+    pub import: Option<ImportedResource>,
     pub desc: FrameGraphTextureDesc,
 }
 
@@ -134,7 +133,6 @@ pub enum ResourceType {
 }
 
 impl ResourceType {
-    #[allow(unused)]
     pub(crate) fn unwrap_buffer(&self) -> &ResourceTypeBuffer {
         match self {
             Self::Buffer(v) => v,
@@ -142,17 +140,37 @@ impl ResourceType {
         }
     }
 
-    #[allow(unused)]
     pub(crate) fn unwrap_texture(&self) -> &ResourceTypeTexture {
         match self {
             Self::Texture(v) => v,
             _ => panic!("self is not a ResourceType::Texture"),
         }
     }
+
+    pub(crate) fn is_import(&self) -> bool {
+        match self {
+            ResourceType::Buffer(v) => v.import.is_some(),
+            ResourceType::Texture(v) => v.import.is_some(),
+        }
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the name pointer inside the resource desc
+    /// is valid.
+    ///
+    /// In our case these are allocated into the frame graph's bump arena so they remain valid as
+    /// long as the arena is valid. Assuming you only ever access the string immutably.
+    pub(crate) unsafe fn name(&self) -> Option<&str> {
+        match self {
+            ResourceType::Buffer(v) => v.desc.name.map(|v| v.as_ref()),
+            ResourceType::Texture(v) => v.desc.name.map(|v| v.as_ref()),
+        }
+    }
 }
 
-pub struct ImportedResource<T: aleph_any::IAny + ?Sized> {
-    pub resource: AnyArc<T>,
+pub struct ImportedResource {
+    pub allowed_usage: ResourceUsageFlags,
     pub before_sync: BarrierSync,
     pub before_access: BarrierAccess,
     pub before_layout: ImageLayout,

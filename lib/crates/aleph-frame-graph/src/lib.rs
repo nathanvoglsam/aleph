@@ -131,11 +131,13 @@
 mod access;
 mod frame_graph;
 mod frame_graph_builder;
+mod import_bundle;
 mod internal;
 mod render_pass;
 mod resource;
 
 pub use frame_graph::FrameGraph;
 pub use frame_graph_builder::{FrameGraphBuilder, ResourceRegistry};
+pub use import_bundle::ImportBundle;
 pub use render_pass::IRenderPass;
 pub use resource::{ResourceMut, ResourceRef};
