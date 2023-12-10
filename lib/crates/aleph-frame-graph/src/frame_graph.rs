@@ -85,30 +85,124 @@ impl FrameGraph {
     }
 
     pub unsafe fn execute(&mut self, import_bundle: &ImportBundle) {
+        self.execute_pre_assertions(import_bundle);
+
+        for v in self.render_pass_order.iter().copied() {
+            let pass = &mut self.render_passes[v];
+            unsafe { pass.pass.as_mut().execute() }
+        }
+    }
+}
+
+impl FrameGraph {
+    /// Internal function that implements the debug assertions that run prior to the main execute
+    /// pass in the frame graph.
+    unsafe fn execute_pre_assertions(&mut self, import_bundle: &ImportBundle) {
         if cfg!(debug_assertions) {
             for v in self.imported_resources.iter() {
-                let name = self.root_resources[*v as usize]
+                let root_resource = &self.root_resources[*v as usize];
+                let imported_resource = import_bundle.imports.get(v);
+
+                let name = root_resource
                     .resource_type
                     .name()
                     .unwrap_or("Unnamed resource");
-                let is_import = self.root_resources[*v as usize].resource_type.is_import();
-                let contains_import = import_bundle.imports.contains_key(v);
+
+                let is_import = root_resource.resource_type.is_import();
                 assert!(
                     is_import,
                     "INTERNAL ERROR: Resource '{}' import status internal mismatch",
                     name
                 );
+
+                let contains_import = imported_resource.is_some();
                 assert!(
                     contains_import,
                     "The ImportBundle does not contain handle for imported graph resource '{}'",
                     name
                 );
-            }
-        }
+                let imported_resource = imported_resource.unwrap();
 
-        for v in self.render_pass_order.iter().copied() {
-            let pass = &mut self.render_passes[v];
-            unsafe { pass.pass.as_mut().execute() }
+                match imported_resource {
+                    crate::import_bundle::ResourceVariant::Buffer(i) => {
+                        match &root_resource.resource_type {
+                            crate::internal::ResourceType::Buffer(r) => {
+                                assert_eq!(
+                                    r.desc.size,
+                                    i.desc().size,
+                                    "Buffer '{}' not expected size",
+                                    name
+                                );
+                            }
+                            crate::internal::ResourceType::Texture(_r) => panic!(
+                                "Imported buffer '{}' was provided a texture in the ImportBundle",
+                                name
+                            ),
+                        }
+                    }
+                    crate::import_bundle::ResourceVariant::Texture(i) => {
+                        match &root_resource.resource_type {
+                            crate::internal::ResourceType::Buffer(_r) => panic!(
+                                "Imported texture '{}' was provided a buffer in the ImportBundle",
+                                name
+                            ),
+                            crate::internal::ResourceType::Texture(r) => {
+                                let i_desc = i.desc();
+                                assert_eq!(
+                                    r.desc.width, i_desc.width,
+                                    "Texture '{}' not expected width",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.height, i_desc.height,
+                                    "Texture '{}' not expected height",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.depth, i_desc.depth,
+                                    "Texture '{}' not expected depth",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.format, i_desc.format,
+                                    "Texture '{}' not expected format",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.dimension, i_desc.dimension,
+                                    "Texture '{}' not expected dimension",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.clear_value, i_desc.clear_value,
+                                    "Texture '{}' not expected clear_value",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.array_size, i_desc.array_size,
+                                    "Texture '{}' not expected array_size",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.mip_levels, i_desc.mip_levels,
+                                    "Texture '{}' not expected mip_levels",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.sample_count, i_desc.sample_count,
+                                    "Texture '{}' not expected sample_count",
+                                    name
+                                );
+                                assert_eq!(
+                                    r.desc.sample_quality, i_desc.sample_quality,
+                                    "Texture '{}' not expected sample_quality",
+                                    name
+                                );
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
