@@ -37,14 +37,14 @@ use crate::IRenderPass;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
 
-pub struct RenderPass {
+pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
     pub name: NonNull<str>,
     pub reads: NonNull<[ResourceAccess]>,
     pub writes: NonNull<[ResourceAccess]>,
 }
 
-pub struct ResourceRoot {
+pub(crate) struct ResourceRoot {
     /// The type of this resource
     pub resource_type: ResourceType,
 
@@ -62,7 +62,7 @@ pub struct ResourceRoot {
     pub initial_version: VersionIndex,
 }
 
-pub struct ResourceVersion {
+pub(crate) struct ResourceVersion {
     /// The index of the root resource this [ResourceVersion] encodes a version of. This allows
     /// easily mapping any version back to the underlying resource it represents a view of.
     ///
@@ -105,7 +105,7 @@ impl ResourceVersion {
     }
 }
 
-pub struct ResourceTypeBuffer {
+pub(crate) struct ResourceTypeBuffer {
     pub import: Option<ImportedResource>,
     pub desc: FrameGraphBufferDesc,
 }
@@ -116,7 +116,7 @@ impl Into<ResourceType> for ResourceTypeBuffer {
     }
 }
 
-pub struct ResourceTypeTexture {
+pub(crate) struct ResourceTypeTexture {
     pub import: Option<ImportedResource>,
     pub desc: FrameGraphTextureDesc,
 }
@@ -127,7 +127,7 @@ impl Into<ResourceType> for ResourceTypeTexture {
     }
 }
 
-pub enum ResourceType {
+pub(crate) enum ResourceType {
     Buffer(ResourceTypeBuffer),
     Texture(ResourceTypeTexture),
 }
@@ -169,7 +169,7 @@ impl ResourceType {
     }
 }
 
-pub struct ImportedResource {
+pub(crate) struct ImportedResource {
     pub allowed_usage: ResourceUsageFlags,
     pub before_sync: BarrierSync,
     pub before_access: BarrierAccess,
@@ -183,7 +183,7 @@ pub struct ImportedResource {
 /// and replaces the name reference with a pointer so that it can store a pointer into an internal
 /// arena
 #[derive(Default)]
-pub struct FrameGraphBufferDesc {
+pub(crate) struct FrameGraphBufferDesc {
     /// The size of the buffer to be created
     pub size: u64,
 
@@ -197,7 +197,7 @@ pub struct FrameGraphBufferDesc {
 /// and replaces the name reference with a pointer so that it can store a pointer into an internal
 /// arena
 #[derive(Default)]
-pub struct FrameGraphTextureDesc {
+pub(crate) struct FrameGraphTextureDesc {
     /// The width of the texture
     pub width: u32,
 
@@ -243,7 +243,7 @@ pub struct FrameGraphTextureDesc {
 }
 
 #[derive(Default)]
-pub struct PassAccessInfo {
+pub(crate) struct PassAccessInfo {
     pub reads: Vec<ResourceAccess>,
     pub writes: Vec<ResourceAccess>,
 }
@@ -257,7 +257,7 @@ impl PassAccessInfo {
 
 /// Stores the requested access for a single resource access edge. Could be read or write.
 #[derive(Clone)]
-pub struct ResourceAccess {
+pub(crate) struct ResourceAccess {
     /// The destructured resource ID. ResourceRef/ResourceMut is for the external API
     pub resource: ResourceId,
 
@@ -269,7 +269,7 @@ pub struct ResourceAccess {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
-pub struct VersionIndex(pub u32);
+pub(crate) struct VersionIndex(pub u32);
 
 impl VersionIndex {
     pub const INVALID: Self = Self(u32::MAX);
@@ -288,7 +288,7 @@ impl VersionIndex {
     }
 }
 
-pub struct VersionReaderLink {
+pub(crate) struct VersionReaderLink {
     pub next: Option<NonNull<VersionReaderLink>>,
     pub render_pass: usize,
     pub access: ResourceUsageFlags,
@@ -297,7 +297,7 @@ pub struct VersionReaderLink {
 /// An internal enum used for tracking the state machine of a resource version through the pass
 /// scheduler.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub enum ResourceVersionState {
+pub(crate) enum ResourceVersionState {
     /// A resource version in this state has yet to be written to, and can not be read from.
     Waiting,
 
