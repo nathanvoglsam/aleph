@@ -92,6 +92,41 @@ impl FrameGraph {
             unsafe { pass.pass.as_mut().execute() }
         }
     }
+
+    pub fn graph_viz_for_pass_order(
+        &self,
+        graph_name: &str,
+        writer: &mut impl std::io::Write,
+    ) -> std::io::Result<()> {
+        writeln!(writer, "digraph {graph_name} {{")?;
+
+        if self.render_pass_order.len() > 0 {
+            let mut iter = self.render_pass_order.iter();
+
+            // Grab the first pass index
+            let mut prev = *iter.next().unwrap();
+
+            if self.render_pass_order.len() == 1 {
+                // If there's only a single pass then we output just the pass on it's own
+                let prev_name = unsafe { self.render_passes[prev].name.as_ref() };
+                writeln!(writer, "\"{prev_name}\"")?;
+            } else {
+                // Otherwise we walk through the list and output a pair for each pass
+                while let Some(&next) = iter.next() {
+                    let prev_name = unsafe { self.render_passes[prev].name.as_ref() };
+                    let next_name = unsafe { self.render_passes[next].name.as_ref() };
+                    writeln!(writer, "\"{prev_name}\" -> \"{next_name}\"")?;
+
+                    // Store 'next' as the previous before moving to the next node
+                    prev = next;
+                }
+            }
+        }
+
+        writeln!(writer, "}}")?;
+
+        Ok(())
+    }
 }
 
 impl FrameGraph {

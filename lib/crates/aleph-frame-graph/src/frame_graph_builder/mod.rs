@@ -225,7 +225,32 @@ impl FrameGraphBuilder {
     /// passes constructed earlier. This function is expected to be expensive, so don't build new
     /// graphs often. It is intended for a graph to be built once and run many times and invalidated
     /// rarely for extenuating circum stances like the size of the backbuffer changing.
-    pub fn build(mut self) -> FrameGraph {
+    pub fn build(self) -> FrameGraph {
+        // We have to constrain the type of the writer even though we don't use it here, so we just
+        // use Sink.
+        //
+        // This can't error unless we pass a writer, so we _could_ use unwrap_unchecked. The cost
+        // is miniscule so just check anyway so we don't have unsafe code here.
+        self.build_internal::<std::io::Sink>("", None).unwrap()
+    }
+
+    /// This is an alternate form of [FrameGraphBuilder::build] that accepts a writer for the graph
+    /// builder to output a DOT format graph into while constructing the graph. This graph will
+    /// represent the computed execution dependencies of the graph (i.e. what pass depends on what
+    /// other passes).
+    pub fn build_with_graph_viz(
+        self,
+        graph_name: &str,
+        writer: &mut impl std::io::Write,
+    ) -> std::io::Result<FrameGraph> {
+        self.build_internal(graph_name, Some(writer))
+    }
+
+    fn build_internal<T: std::io::Write>(
+        mut self,
+        graph_name: &str,
+        mut writer: Option<&mut T>,
+    ) -> std::io::Result<FrameGraph> {
         self.validate_imported_resource_usages();
 
         // We need some extra state per resource version that allows us to track what resources are
@@ -254,6 +279,22 @@ impl FrameGraphBuilder {
                 read_count
             })
             .collect();
+
+        // Output the start of the DOT graph if we have a writer
+        if let Some(v) = writer.as_mut() {
+            writeln!(v, "digraph {graph_name} {{")?;
+
+            let external_pass_sentinel = usize::MAX;
+            writeln!(
+                v,
+                "pass{external_pass_sentinel} [label=\"EXTERNAL TO FRAME GRAPH\"];"
+            )?;
+
+            for (i, pass) in self.render_passes.iter().enumerate() {
+                let pass_name = unsafe { pass.name.as_ref() };
+                writeln!(v, "    pass{i} [shape=box,label=\"{pass_name}\"];")?;
+            }
+        }
 
         let mut render_pass_order = Vec::with_capacity(self.render_passes.len());
         loop {
@@ -303,8 +344,8 @@ impl FrameGraphBuilder {
 
                     // Walk through all the writes declared on this pass and mark the resource
                     // versions that are written with the 'Written' state.
-                    for v in writes {
-                        let version_index = v.resource.version_id() as usize;
+                    for written_resource in writes {
+                        let version_index = written_resource.resource.version_id() as usize;
                         // Sometimes we may have resources that are only every used with a write
                         // declaration so we need to handle directly retiring these resources. If
                         // there are no pending reads on the resource we can skip directly to
@@ -313,6 +354,28 @@ impl FrameGraphBuilder {
                             resource_version_states[version_index] = ResourceVersionState::Retired;
                         } else {
                             resource_version_states[version_index] = ResourceVersionState::Written;
+                        }
+
+                        // If the writer is present we output a graph edge when we schedule a pass
+                        if let Some(v) = writer.as_mut() {
+                            let previous_version =
+                                self.resource_versions[version_index].previous_version;
+
+                            let creator = if previous_version.is_valid() {
+                                let version = &self.resource_versions[previous_version.0 as usize];
+                                Some(version.creator_render_pass)
+                            } else {
+                                let root_id = written_resource.resource.root_id();
+                                if self.imported_resources.contains(&root_id) {
+                                    Some(usize::MAX)
+                                } else {
+                                    None
+                                }
+                            };
+
+                            if let Some(creator) = creator {
+                                writeln!(v, "    pass{creator} -> pass{i};")?;
+                            }
                         }
                     }
 
@@ -324,6 +387,12 @@ impl FrameGraphBuilder {
                         *pending_reads -= 1;
                         if *pending_reads == 0 {
                             resource_version_states[version_index] = ResourceVersionState::Retired;
+                        }
+
+                        if let Some(v) = writer.as_mut() {
+                            let version = &self.resource_versions[version_index as usize];
+                            let creator = version.creator_render_pass;
+                            writeln!(v, "    pass{creator} -> pass{i};")?;
                         }
                     }
                 }
@@ -346,6 +415,11 @@ impl FrameGraphBuilder {
             .drain(..)
             .all(|v| v == ResourceVersionState::Retired));
 
+        // Output the end of the DOT graph if we have a writer
+        if let Some(v) = writer.as_mut() {
+            writeln!(v, "}}")?;
+        }
+
         let arena = std::mem::take(&mut self.graph_arena);
         let render_passes = std::mem::take(&mut self.render_passes);
         let root_resources = std::mem::take(&mut self.root_resources);
@@ -353,7 +427,7 @@ impl FrameGraphBuilder {
         let imported_resources = std::mem::take(&mut self.imported_resources);
         let drop_head = std::mem::take(&mut self.drop_head);
 
-        FrameGraph {
+        Ok(FrameGraph {
             _arena: arena,
             render_pass_order,
             render_passes,
@@ -361,7 +435,7 @@ impl FrameGraphBuilder {
             resource_versions,
             imported_resources,
             drop_head,
-        }
+        })
     }
 }
 
