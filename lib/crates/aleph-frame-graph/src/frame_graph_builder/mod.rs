@@ -280,21 +280,7 @@ impl FrameGraphBuilder {
             })
             .collect();
 
-        // Output the start of the DOT graph if we have a writer
-        if let Some(v) = writer.as_mut() {
-            writeln!(v, "digraph {graph_name} {{")?;
-
-            let external_pass_sentinel = usize::MAX;
-            writeln!(
-                v,
-                "pass{external_pass_sentinel} [label=\"EXTERNAL TO FRAME GRAPH\"];"
-            )?;
-
-            for (i, pass) in self.render_passes.iter().enumerate() {
-                let pass_name = unsafe { pass.name.as_ref() };
-                writeln!(v, "    pass{i} [shape=box,label=\"{pass_name}\"];")?;
-            }
-        }
+        self.emit_graph_viz_start(graph_name, &mut writer)?;
 
         let mut render_pass_order = Vec::with_capacity(self.render_passes.len());
         loop {
@@ -415,10 +401,7 @@ impl FrameGraphBuilder {
             .drain(..)
             .all(|v| v == ResourceVersionState::Retired));
 
-        // Output the end of the DOT graph if we have a writer
-        if let Some(v) = writer.as_mut() {
-            writeln!(v, "}}")?;
-        }
+        self.emit_graph_viz_end(&mut writer)?;
 
         let arena = std::mem::take(&mut self.graph_arena);
         let render_passes = std::mem::take(&mut self.render_passes);
@@ -436,6 +419,42 @@ impl FrameGraphBuilder {
             imported_resources,
             drop_head,
         })
+    }
+
+    /// Output the start of the DOT graph if we have a writer
+    fn emit_graph_viz_start<T: std::io::Write>(
+        &self,
+        graph_name: &str,
+        writer: &mut Option<&mut T>,
+    ) -> std::io::Result<()> {
+        if let Some(v) = writer {
+            writeln!(v, "digraph {graph_name} {{")?;
+
+            let external_pass_sentinel = usize::MAX;
+            writeln!(
+                v,
+                "pass{external_pass_sentinel} [label=\"EXTERNAL TO FRAME GRAPH\"];"
+            )?;
+
+            for (i, pass) in self.render_passes.iter().enumerate() {
+                let pass_name = unsafe { pass.name.as_ref() };
+                writeln!(v, "    pass{i} [shape=box,label=\"{pass_name}\"];")?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Output the end of the DOT graph if we have a writer
+    fn emit_graph_viz_end<T: std::io::Write>(
+        &self,
+        writer: &mut Option<&mut T>,
+    ) -> std::io::Result<()> {
+        if let Some(v) = writer {
+            writeln!(v, "}}")?;
+        }
+
+        Ok(())
     }
 }
 
