@@ -291,6 +291,7 @@ impl VersionIndex {
 pub(crate) struct VersionReaderLink {
     pub next: Option<NonNull<VersionReaderLink>>,
     pub render_pass: usize,
+    pub sync: BarrierSync,
     pub access: ResourceUsageFlags,
 }
 

@@ -782,14 +782,14 @@ impl FrameGraphBuilder {
         debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
 
         let r = resource.into();
+        let root_resource = self.assert_resource_handle_is_texture(r);
+        let sync =
+            get_given_or_default_sync_flags_for(access, sync, true, root_resource.desc.format);
 
         self.add_flags_to_version_for(r, access);
-        self.append_read_to_version_for(r, access, render_pass);
+        self.append_read_to_version_for(r, render_pass, sync, access);
         self.add_flags_to_root_for(r, access);
 
-        let root_resource = self.assert_resource_handle_is_texture(r);
-        let format = root_resource.desc.format;
-        let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
         let desc = ResourceAccess {
             resource: r.0,
             sync,
@@ -813,13 +813,13 @@ impl FrameGraphBuilder {
         );
 
         let r = resource.into();
-
         self.assert_resource_handle_is_buffer(r);
+        let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
+
         self.add_flags_to_version_for(r, access);
-        self.append_read_to_version_for(r, access, render_pass);
+        self.append_read_to_version_for(r, render_pass, sync, access);
         self.add_flags_to_root_for(r, access);
 
-        let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
         let desc = ResourceAccess {
             resource: r.0,
             sync,
@@ -1017,8 +1017,9 @@ impl FrameGraphBuilder {
     pub(crate) fn append_read_to_version_for(
         &mut self,
         r: impl Into<ResourceRef>,
-        access: ResourceUsageFlags,
         render_pass: usize,
+        sync: BarrierSync,
+        access: ResourceUsageFlags,
     ) {
         let r = r.into();
         let version_id = r.0.version_id();
@@ -1026,6 +1027,7 @@ impl FrameGraphBuilder {
         let read = self.graph_arena.alloc(VersionReaderLink {
             next: previous_read,
             render_pass,
+            sync,
             access,
         });
         let read = NonNull::from(read);
