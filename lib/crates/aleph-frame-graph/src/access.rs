@@ -34,22 +34,14 @@ pub trait ResourceUsageFlagsExt {
     fn default_barrier_sync(&self, read_only: bool, format: Format) -> BarrierSync;
     fn barrier_access_for_read(&self) -> BarrierAccess;
     fn barrier_access_for_write(&self) -> BarrierAccess;
+    fn is_valid_texture_usage(&self) -> bool;
 }
 
 impl ResourceUsageFlagsExt for ResourceUsageFlags {
     /// Gets the image layout that is compatible with the specified access flags
     fn image_layout(&self, read_only: bool, format: Format) -> ImageLayout {
-        debug_assert!(ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(*self));
-        if cfg!(debug_assertions) {
-            // We need to filter out any non-synchronizing access flags to allow this debug check
-            // to make sense. We need to check that only a single usage has been specified as an
-            // image within a pass can only be in a single image layout.
-            let access_flags = *self & (!Self::CUBE_FACE);
-            debug_assert!(
-                access_flags.bits().count_ones() <= 1,
-                "Only a single synchronizing access flag can be specified for images"
-            );
-        }
+        debug_assert!(self.is_valid_texture_usage(), "{:?} is not valid texture usage", *self);
+
         if self.contains(Self::COPY_SOURCE) {
             return ImageLayout::CopySrc;
         }
@@ -181,5 +173,21 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
             out |= BarrierAccess::RENDER_TARGET_WRITE
         }
         out
+    }
+
+    fn is_valid_texture_usage(&self) -> bool {
+        if !ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(*self) {
+            return false;
+        }
+
+        // We need to filter out any non-synchronizing access flags to allow this debug check
+        // to make sense. We need to check that only a single usage has been specified as an
+        // image within a pass can only be in a single image layout.
+        let access_flags = *self & (!Self::CUBE_FACE);
+        if access_flags.bits().count_ones() > 1 {
+            return false;
+        }
+
+        true
     }
 }

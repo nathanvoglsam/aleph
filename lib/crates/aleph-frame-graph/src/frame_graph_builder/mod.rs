@@ -678,11 +678,7 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        debug_assert!(
-            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-            "Attempting to declare non-texture compatible access flags {:?}",
-            access
-        );
+        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
 
         let format = desc.desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
@@ -783,11 +779,7 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
-        debug_assert!(
-            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-            "Attempting to declare non-texture compatible access flags {:?}",
-            access
-        );
+        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
 
         let r = resource.into();
 
@@ -844,11 +836,7 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        debug_assert!(
-            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-            "Attempting to declare non-texture compatible access flags {:?}",
-            access
-        );
+        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
 
         let r = resource.into();
 
@@ -911,11 +899,7 @@ impl FrameGraphBuilder {
             desc.usage.is_empty(),
             "The value of desc.usage is ignored, do not use it!"
         );
-        debug_assert!(
-            ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(access),
-            "Attempting to declare non-texture compatible access flags {:?}",
-            access
-        );
+        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
 
         let format = desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
