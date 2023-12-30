@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use std::ops::Deref;
-
 use crate::ResourceRef;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;

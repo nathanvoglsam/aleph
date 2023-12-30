@@ -246,6 +246,23 @@ impl FrameGraphBuilder {
         self.build_internal(graph_name, Some(writer))
     }
 
+    pub fn build2(self) -> FrameGraph {
+        // We have to constrain the type of the writer even though we don't use it here, so we just
+        // use Sink.
+        //
+        // This can't error unless we pass a writer, so we _could_ use unwrap_unchecked. The cost
+        // is miniscule so just check anyway so we don't have unsafe code here.
+        self.build_internal2::<std::io::Sink>("", None).unwrap()
+    }
+
+    pub fn build2_with_graph_viz(
+        self,
+        graph_name: &str,
+        writer: &mut impl std::io::Write,
+    ) -> std::io::Result<FrameGraph> {
+        self.build_internal2(graph_name, Some(writer))
+    }
+
     fn build_internal<T: std::io::Write>(
         mut self,
         graph_name: &str,
@@ -267,17 +284,7 @@ impl FrameGraphBuilder {
         let mut resource_version_pending_reads: Vec<_> = self
             .resource_versions
             .iter()
-            .map(|v| {
-                let mut read_count = 0usize;
-                let mut current = v.reads;
-                while let Some(v) = current {
-                    unsafe {
-                        read_count += 1;
-                        current = v.as_ref().next;
-                    }
-                }
-                read_count
-            })
+            .map(|v| v.read_count)
             .collect();
 
         self.emit_graph_viz_start(graph_name, &mut writer)?;
@@ -360,7 +367,7 @@ impl FrameGraphBuilder {
                             };
 
                             if let Some(creator) = creator {
-                                writeln!(v, "    pass{creator} -> pass{i};")?;
+                                writeln!(v, "    node{creator} -> node{i};")?;
                             }
                         }
                     }
@@ -378,7 +385,7 @@ impl FrameGraphBuilder {
                         if let Some(v) = writer.as_mut() {
                             let version = &self.resource_versions[version_index as usize];
                             let creator = version.creator_render_pass;
-                            writeln!(v, "    pass{creator} -> pass{i};")?;
+                            writeln!(v, "    node{creator} -> node{i};")?;
                         }
                     }
                 }
@@ -421,6 +428,290 @@ impl FrameGraphBuilder {
         })
     }
 
+    fn build_internal2<T: std::io::Write>(
+        mut self,
+        graph_name: &str,
+        mut writer: Option<&mut T>,
+    ) -> std::io::Result<FrameGraph> {
+        use bumpalo::collections::Vec as BVec;
+
+        // An arena allocator used for allocating resources that only live as long as the graph is
+        // being built
+        let build_arena = Bump::new();
+
+        self.validate_imported_resource_usages();
+
+        self.emit_graph_viz_start(graph_name, &mut writer)?;
+
+        let num_passes = self.render_passes.len();
+
+        let mut ir_nodes: Vec<IRNode> = Vec::with_capacity(num_passes);
+        let pass_prevs: &mut [BVec<usize>] =
+            build_arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&build_arena));
+        let pass_nexts: &mut [BVec<usize>] =
+            build_arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&build_arena));
+
+        for (i, _pass) in self.render_passes.iter().enumerate() {
+            let ir_node = RenderPassIRNode {
+                prev: NonNull::from(&[]),
+                next: NonNull::from(&[]),
+                render_pass: i,
+            };
+            ir_nodes.push(ir_node.into());
+        }
+
+        for (version_i, version) in self.resource_versions.iter().enumerate() {
+            let root = &self.root_resources[version.root_resource as usize];
+            match &root.resource_type {
+                // Buffers are much simpler to handle as we don't need to care about image layout
+                // transitions that promote read-after-read accesses to writes because of required
+                // layout changes.
+                ResourceType::Buffer(root_variant) => {
+                    if version.read_count > 0 {
+                        let read_barrier_node_index = ir_nodes.len();
+
+                        let mut all_read_sync = BarrierSync::default();
+                        let mut all_read_usage = ResourceUsageFlags::default();
+                        let barrier_next = build_arena.alloc_slice_fill_copy(version.read_count, 0);
+
+                        let mut read_i = 0;
+                        let mut next_read = version.reads;
+                        while let Some(read) = next_read {
+                            let read = unsafe { read.as_ref() };
+
+                            all_read_sync |= read.sync;
+                            all_read_usage |= read.access;
+
+                            barrier_next[read_i] = read.render_pass;
+                            pass_prevs[read.render_pass].push(read_barrier_node_index);
+
+                            next_read = read.next;
+                            read_i += 1;
+                        }
+
+                        let barrier_prev = build_arena.alloc_slice_fill_copy(1, 0);
+                        barrier_prev[0] = version.creator_render_pass;
+                        pass_nexts[version.creator_render_pass].push(read_barrier_node_index);
+                        let ir_node = BarrierIRNode {
+                            prev: NonNull::from(barrier_prev),
+                            next: NonNull::from(barrier_next),
+                            version: VersionIndex(version_i as u32),
+                            before_sync: version.creator_sync,
+                            before_access: version.creator_access.barrier_access_for_write(),
+                            after_sync: all_read_sync,
+                            after_access: all_read_usage.barrier_access_for_read(),
+                        };
+
+                        if let Some(v) = writer.as_mut() {
+                            let resource_name = root_variant
+                                .desc
+                                .name
+                                .map(|v| unsafe { v.as_ref() })
+                                .unwrap_or("Unnamed Resource");
+                            writeln!(
+                            v,
+                            "    node{} [label=\"Read Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
+                            read_barrier_node_index,
+                            resource_name,
+                            version_i,
+                            ir_node.before_sync,
+                            ir_node.before_access,
+                            ir_node.after_sync,
+                            ir_node.after_access
+                        )?;
+                        }
+
+                        ir_nodes.push(ir_node.into());
+                    }
+
+                    if version.previous_version.is_valid() {
+                        let previous_version_index = version.previous_version.0 as usize;
+                        let previous_version = &self.resource_versions[previous_version_index];
+
+                        if previous_version.read_count > 0 {
+                            let write_barrier_node_index = ir_nodes.len();
+
+                            let mut all_read_sync = BarrierSync::default();
+                            let mut all_read_usage = ResourceUsageFlags::default();
+                            let barrier_prev =
+                                build_arena.alloc_slice_fill_copy(previous_version.read_count, 0);
+
+                            let mut read_i = 0;
+                            let mut next_read = previous_version.reads;
+                            while let Some(read) = next_read {
+                                let read = unsafe { read.as_ref() };
+
+                                all_read_sync |= read.sync;
+                                all_read_usage |= read.access;
+
+                                barrier_prev[read_i] = read.render_pass;
+                                pass_nexts[read.render_pass].push(write_barrier_node_index);
+
+                                next_read = read.next;
+                                read_i += 1;
+                            }
+
+                            let barrier_next = build_arena.alloc_slice_fill_copy(1, 0);
+                            barrier_next[0] = version.creator_render_pass;
+                            pass_prevs[version.creator_render_pass].push(write_barrier_node_index);
+                            let ir_node = BarrierIRNode {
+                                prev: NonNull::from(barrier_prev),
+                                next: NonNull::from(barrier_next),
+                                version: version.previous_version,
+                                before_sync: all_read_sync,
+                                before_access: all_read_usage.barrier_access_for_read(),
+                                after_sync: version.creator_sync,
+                                after_access: version.creator_access.barrier_access_for_write(),
+                            };
+
+                            if let Some(v) = writer.as_mut() {
+                                let resource_name = root_variant
+                                    .desc
+                                    .name
+                                    .map(|v| unsafe { v.as_ref() })
+                                    .unwrap_or("Unnamed Resource");
+                                writeln!(
+                                v,
+                                "    node{} [label=\"Write Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
+                                write_barrier_node_index,
+                                resource_name,
+                                previous_version_index,
+                                ir_node.before_sync,
+                                ir_node.before_access,
+                                ir_node.after_sync,
+                                ir_node.after_access
+                            )?;
+                            }
+
+                            ir_nodes.push(ir_node.into());
+                        } else {
+                            let write_barrier_node_index = ir_nodes.len();
+
+                            let barrier_prev = build_arena.alloc_slice_fill_copy(1, 0);
+                            barrier_prev[0] = previous_version.creator_render_pass;
+                            pass_nexts[previous_version.creator_render_pass]
+                                .push(write_barrier_node_index);
+
+                            let barrier_next = build_arena.alloc_slice_fill_copy(1, 0);
+                            barrier_next[0] = version.creator_render_pass;
+                            pass_prevs[version.creator_render_pass].push(write_barrier_node_index);
+
+                            let ir_node = BarrierIRNode {
+                                prev: NonNull::from(barrier_prev),
+                                next: NonNull::from(barrier_next),
+                                version: version.previous_version,
+                                before_sync: previous_version.creator_sync,
+                                before_access: previous_version
+                                    .creator_access
+                                    .barrier_access_for_write(),
+                                after_sync: version.creator_sync,
+                                after_access: version.creator_access.barrier_access_for_write(),
+                            };
+
+                            if let Some(v) = writer.as_mut() {
+                                let resource_name = root_variant
+                                    .desc
+                                    .name
+                                    .map(|v| unsafe { v.as_ref() })
+                                    .unwrap_or("Unnamed Resource");
+                                writeln!(
+                                    v,
+                                    "    node{} [label=\"Write Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
+                                    write_barrier_node_index,
+                                    resource_name,
+                                    previous_version_index,
+                                    ir_node.before_sync,
+                                    ir_node.before_access,
+                                    ir_node.after_sync,
+                                    ir_node.after_access
+                                )?;
+                            }
+
+                            ir_nodes.push(ir_node.into());
+                        }
+                    } else if let Some(import_desc) = &root_variant.import.as_ref() {
+                        let import_barrier_node_index = ir_nodes.len();
+
+                        let barrier_next = build_arena.alloc_slice_fill_copy(1, 0);
+                        barrier_next[0] = version.creator_render_pass;
+                        pass_prevs[version.creator_render_pass].push(import_barrier_node_index);
+                        let ir_node = BarrierIRNode {
+                            prev: NonNull::from(&[]),
+                            next: NonNull::from(barrier_next),
+                            version: VersionIndex(version_i as u32),
+                            before_sync: import_desc.before_sync,
+                            before_access: import_desc.before_access,
+                            after_sync: version.creator_sync,
+                            after_access: version.creator_access.barrier_access_for_write(),
+                        };
+
+                        if let Some(v) = writer.as_mut() {
+                            let resource_name = root_variant
+                                .desc
+                                .name
+                                .map(|v| unsafe { v.as_ref() })
+                                .unwrap_or("Unnamed Resource");
+                            writeln!(
+                                v,
+                                "    node{} [label=\"Import Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\",group=imports]",
+                                import_barrier_node_index,
+                                resource_name,
+                                version_i,
+                                ir_node.before_sync,
+                                ir_node.before_access,
+                                ir_node.after_sync,
+                                ir_node.after_access
+                            )?;
+                            writeln!(v, "node{} -> node{}", usize::MAX, import_barrier_node_index)?;
+                        }
+
+                        ir_nodes.push(ir_node.into());
+                    }
+                }
+                ResourceType::Texture(_) => {}
+            }
+        }
+
+        for (i, _pass) in self.render_passes.iter().enumerate() {
+            let pass_node = &mut ir_nodes[i];
+            pass_node.set_prev(NonNull::from(pass_prevs[i].as_slice()));
+            pass_node.set_next(NonNull::from(pass_nexts[i].as_slice()));
+        }
+
+        if let Some(v) = writer.as_mut() {
+            for (i, ir_node) in ir_nodes.iter().enumerate() {
+                let prevs = unsafe { ir_node.prev().as_ref() };
+                let nexts = unsafe { ir_node.next().as_ref() };
+
+                for prev in prevs {
+                    writeln!(v, "    node{i} -> node{prev}")?;
+                }
+                for next in nexts {
+                    writeln!(v, "    node{i} -> node{next}")?;
+                }
+            }
+        }
+
+        self.emit_graph_viz_end(&mut writer)?;
+
+        let arena = std::mem::take(&mut self.graph_arena);
+        let render_passes = std::mem::take(&mut self.render_passes);
+        let root_resources = std::mem::take(&mut self.root_resources);
+        let resource_versions = std::mem::take(&mut self.resource_versions);
+        let imported_resources = std::mem::take(&mut self.imported_resources);
+        let drop_head = std::mem::take(&mut self.drop_head);
+
+        Ok(FrameGraph {
+            _arena: arena,
+            render_pass_order: Default::default(),
+            render_passes,
+            root_resources,
+            resource_versions,
+            imported_resources,
+            drop_head,
+        })
+    }
+
     /// Output the start of the DOT graph if we have a writer
     fn emit_graph_viz_start<T: std::io::Write>(
         &self,
@@ -433,12 +724,15 @@ impl FrameGraphBuilder {
             let external_pass_sentinel = usize::MAX;
             writeln!(
                 v,
-                "pass{external_pass_sentinel} [label=\"EXTERNAL TO FRAME GRAPH\"];"
+                "node{external_pass_sentinel} [label=\"EXTERNAL TO FRAME GRAPH\"];"
             )?;
 
             for (i, pass) in self.render_passes.iter().enumerate() {
                 let pass_name = unsafe { pass.name.as_ref() };
-                writeln!(v, "    pass{i} [shape=box,label=\"{pass_name}\"];")?;
+                writeln!(
+                    v,
+                    "    node{i} [shape=box,label=\"Render Pass: \\\"{pass_name}\\\"\"];"
+                )?;
             }
         }
 
@@ -678,7 +972,11 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
+        debug_assert!(
+            access.is_valid_texture_usage(),
+            "{:?} is not valid texture usage",
+            access
+        );
 
         let format = desc.desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
@@ -779,16 +1077,19 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceRef {
-        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
+        debug_assert!(
+            access.is_valid_texture_usage(),
+            "{:?} is not valid texture usage",
+            access
+        );
 
         let r = resource.into();
         let root_resource = self.assert_resource_handle_is_texture(r);
-        let sync =
-            get_given_or_default_sync_flags_for(access, sync, true, root_resource.desc.format);
-
+        let format = root_resource.desc.format;
         self.add_flags_to_version_for(r, access);
-        self.append_read_to_version_for(r, render_pass, sync, access);
         self.add_flags_to_root_for(r, access);
+        let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
+        self.append_read_to_version_for(r, render_pass, sync, access);
 
         let desc = ResourceAccess {
             resource: r.0,
@@ -814,11 +1115,10 @@ impl FrameGraphBuilder {
 
         let r = resource.into();
         self.assert_resource_handle_is_buffer(r);
-        let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
-
         self.add_flags_to_version_for(r, access);
-        self.append_read_to_version_for(r, render_pass, sync, access);
         self.add_flags_to_root_for(r, access);
+        let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
+        self.append_read_to_version_for(r, render_pass, sync, access);
 
         let desc = ResourceAccess {
             resource: r.0,
@@ -836,17 +1136,20 @@ impl FrameGraphBuilder {
         sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
-        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
+        debug_assert!(
+            access.is_valid_texture_usage(),
+            "{:?} is not valid texture usage",
+            access
+        );
 
         let r = resource.into();
-
-        self.validate_and_update_for_handle_write(r);
-        self.add_flags_to_root_for(r, access);
-        let renamed_r = self.increment_handle_for_write(r, render_pass, access);
-
         let root_resource = self.assert_resource_handle_is_texture(r);
         let format = root_resource.desc.format;
+        self.validate_and_update_for_handle_write(r);
+        self.add_flags_to_root_for(r, access);
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
+        let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
+
         let desc = ResourceAccess {
             resource: renamed_r.0,
             sync,
@@ -871,13 +1174,12 @@ impl FrameGraphBuilder {
         );
 
         let r = resource.into();
-
         self.assert_resource_handle_is_buffer(r);
         self.validate_and_update_for_handle_write(r);
         self.add_flags_to_root_for(r, access);
-        let renamed_r = self.increment_handle_for_write(r, render_pass, access);
-
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
+        let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
+
         let desc = ResourceAccess {
             resource: renamed_r.0,
             sync,
@@ -899,7 +1201,11 @@ impl FrameGraphBuilder {
             desc.usage.is_empty(),
             "The value of desc.usage is ignored, do not use it!"
         );
-        debug_assert!(access.is_valid_texture_usage(), "{:?} is not valid texture usage", access);
+        debug_assert!(
+            access.is_valid_texture_usage(),
+            "{:?} is not valid texture usage",
+            access
+        );
 
         let format = desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
@@ -1033,6 +1339,7 @@ impl FrameGraphBuilder {
         let read = NonNull::from(read);
         DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, read);
         self.resource_versions[version_id as usize].reads = Some(read);
+        self.resource_versions[version_id as usize].read_count += 1;
     }
 
     /// Add the requested usage flags to the resource root's  total usage set
@@ -1052,6 +1359,7 @@ impl FrameGraphBuilder {
         &mut self,
         r: ResourceMut,
         render_pass: usize,
+        sync: BarrierSync,
         access: ResourceUsageFlags,
     ) -> ResourceMut {
         let base = r.0.root_id();
@@ -1067,7 +1375,10 @@ impl FrameGraphBuilder {
             previous_version: VersionIndex::new(r.0.version_id()).unwrap(),
 
             version_total_access: access,
+            creator_sync: sync,
+            creator_access: access,
             creator_render_pass: render_pass,
+            read_count: 0,
             reads: None,
             debug_written: false,
         });
@@ -1108,7 +1419,10 @@ impl FrameGraphBuilder {
             previous_version: VersionIndex::INVALID,
 
             version_total_access: access,
+            creator_sync: sync,
+            creator_access: access,
             creator_render_pass: render_pass,
+            read_count: 0,
             reads: None,
             debug_written: false,
         });

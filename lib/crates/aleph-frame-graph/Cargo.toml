@@ -49,3 +49,6 @@ aleph-type-id-hasher = { workspace = true }
 bitflags = { workspace = true }
 parking_lot = { workspace = true }
 bumpalo = { workspace = true }
+
+[dev-dependencies]
+aleph-pin-board = { workspace = true }

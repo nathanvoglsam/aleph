@@ -31,8 +31,10 @@ use crate::frame_graph_builder::BufferImportDesc;
 use crate::ImportBundle;
 use crate::{FrameGraph, ResourceMut, ResourceRef, ResourceRegistry};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use std::any::TypeId;
+use std::io::Write;
 use std::ptr::NonNull;
 
 pub struct MockBuffer {
@@ -427,6 +429,132 @@ pub fn test_usage_collection() {
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
+    unsafe {
+        graph.execute(&import_bundle);
+    }
+}
+
+#[test]
+pub fn test_usage_schedule() {
+    let mock_buffer = MockBuffer::new(&BufferDesc {
+        size: 512,
+        cpu_access: CpuAccessMode::None,
+        usage: ResourceUsageFlags::UNORDERED_ACCESS
+            | ResourceUsageFlags::CONSTANT_BUFFER
+            | ResourceUsageFlags::VERTEX_BUFFER,
+        name: Some("imported-mock-resource"),
+    });
+    let mock_desc = mock_buffer.desc();
+
+    let mut pin_board = PinBoard::new();
+    let mut builder = FrameGraph::builder();
+
+    struct Pass0 {
+        import: ResourceMut,
+    }
+    builder.add_pass(
+        "test-pass-0",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let r = resources.import_buffer(
+                &BufferImportDesc {
+                    desc: &mock_desc,
+                    before_sync: BarrierSync::COMPUTE_SHADING,
+                    before_access: BarrierAccess::SHADER_WRITE,
+                    after_sync: BarrierSync::COPY,
+                    after_access: BarrierAccess::COPY_READ,
+                },
+                BarrierSync::NONE,
+                ResourceUsageFlags::NONE,
+            );
+            pin_board.publish(Pass0 { import: r })
+        },
+        |_data: &()| {},
+    );
+
+    struct Pass1 {
+        create: ResourceMut,
+    }
+    builder.add_pass(
+        "test-pass-1",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let import = pin_board.get::<Pass0>().unwrap().import;
+            resources.read_buffer(
+                import,
+                BarrierSync::VERTEX_SHADING,
+                ResourceUsageFlags::VERTEX_BUFFER,
+            );
+            let create = resources.create_buffer(
+                &BufferDesc {
+                    size: 256,
+                    name: Some("test-pass-1-transient-resource"),
+                    ..Default::default()
+                },
+                BarrierSync::VERTEX_SHADING,
+                ResourceUsageFlags::INDEX_BUFFER,
+            );
+
+            pin_board.publish(Pass1 { create });
+        },
+        |_data: &()| {},
+    );
+
+    struct Pass2 {
+        import_write: ResourceMut,
+        transient_write: ResourceMut,
+    }
+    builder.add_pass(
+        "test-pass-2",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let import = pin_board.get::<Pass0>().unwrap().import;
+            let create = pin_board.get::<Pass1>().unwrap().create;
+
+            let import_write = resources.write_buffer(
+                import,
+                BarrierSync::COMPUTE_SHADING,
+                ResourceUsageFlags::UNORDERED_ACCESS,
+            );
+
+            let transient_write = resources.write_buffer(
+                create,
+                BarrierSync::COMPUTE_SHADING,
+                ResourceUsageFlags::UNORDERED_ACCESS,
+            );
+
+            pin_board.publish(Pass2 {
+                import_write,
+                transient_write,
+            });
+        },
+        |_data: &()| {},
+    );
+
+    builder.add_pass(
+        "test-pass-3",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let transient = pin_board.get::<Pass2>().unwrap().transient_write;
+            resources.read_buffer(
+                transient,
+                BarrierSync::PIXEL_SHADING,
+                ResourceUsageFlags::CONSTANT_BUFFER,
+            );
+        },
+        |_data: &()| {},
+    );
+
+    let mut dot_text = Vec::<u8>::new();
+    let mut graph = builder
+        .build2_with_graph_viz("TestGraph", &mut dot_text)
+        .unwrap();
+
+    {
+        let stderr = std::io::stderr();
+        let mut stderr = stderr.lock();
+        stderr.write_all(&dot_text).unwrap();
+    }
+
+    let import = pin_board.get::<Pass0>().unwrap().import;
+    let mut import_bundle = ImportBundle::default();
+    import_bundle.add_resource(import, &mock_buffer);
     unsafe {
         graph.execute(&import_bundle);
     }

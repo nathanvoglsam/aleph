@@ -40,7 +40,11 @@ pub trait ResourceUsageFlagsExt {
 impl ResourceUsageFlagsExt for ResourceUsageFlags {
     /// Gets the image layout that is compatible with the specified access flags
     fn image_layout(&self, read_only: bool, format: Format) -> ImageLayout {
-        debug_assert!(self.is_valid_texture_usage(), "{:?} is not valid texture usage", *self);
+        debug_assert!(
+            self.is_valid_texture_usage(),
+            "{:?} is not valid texture usage",
+            *self
+        );
 
         if self.contains(Self::COPY_SOURCE) {
             return ImageLayout::CopySrc;
@@ -123,8 +127,6 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
     }
 
     fn barrier_access_for_read(&self) -> BarrierAccess {
-        debug_assert!(ResourceUsageFlags::READ_USAGE_MASK.contains(*self));
-
         let mut out = BarrierAccess::NONE;
         if self.contains(Self::COPY_SOURCE) {
             out |= BarrierAccess::COPY_READ
@@ -157,9 +159,7 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
     }
 
     fn barrier_access_for_write(&self) -> BarrierAccess {
-        debug_assert!(ResourceUsageFlags::WRITE_USAGE_MASK.contains(*self));
-
-        let mut out = BarrierAccess::NONE;
+        let mut out = self.barrier_access_for_read();
         if self.contains(Self::COPY_DEST) {
             out |= BarrierAccess::COPY_WRITE
         }

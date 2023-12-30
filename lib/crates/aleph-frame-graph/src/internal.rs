@@ -82,9 +82,18 @@ pub(crate) struct ResourceVersion {
     /// version of the resource.
     pub version_total_access: ResourceUsageFlags,
 
+    /// The sync flags that the resource version will be used with in the creating pass.
+    pub creator_sync: BarrierSync,
+
+    /// How the resource will be accessed within the render pass that creates the resource version.
+    pub creator_access: ResourceUsageFlags,
+
     /// The index of the render pass that caused the new resource version to be created. This could
     /// be through creating a new transient resource or through writing an existing resource.
     pub creator_render_pass: usize,
+
+    /// The number of read entries in the 'reads' linked list
+    pub read_count: usize,
 
     /// The head of a linked list that contains entries for every read of this resource version by
     /// a render pass
@@ -316,4 +325,140 @@ impl Default for ResourceVersionState {
     fn default() -> Self {
         Self::Waiting
     }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum IRNode {
+    /// This [IRNode] is used to represent a render-pass in the intermediate node graph.
+    RenderPass(RenderPassIRNode),
+
+    /// This [IRNode] is used to represent a plain barrier within the graph for some resource. No
+    /// layout change is performed.
+    ///
+    /// This simply represents a cache flush/invalidation event and is distinct from
+    /// [IRNode::LayoutChange] because this operation does not 'write' the resource with a layout
+    /// change. All buffer read/write edges can be handled by this node, images may require layout
+    /// changes (even for read-after-read).
+    Barrier(BarrierIRNode),
+
+    /// This [IRNode] is used to represent a layout-change operation within the intermediate node
+    /// graph.
+    ///
+    /// This is logically an exclusive write operation, and will be emitted to represent barriers
+    /// that must be executed within the graph.
+    LayoutChange(LayoutChangeIRNode),
+}
+
+impl IRNode {
+    pub fn unwrap_render_pass(&self) -> &RenderPassIRNode {
+        if let IRNode::RenderPass(v) = self {
+            v
+        } else {
+            panic!("{:?} is not a RenderPass IRNode!", self);
+        }
+    }
+
+    pub fn unwrap_barrier(&self) -> &BarrierIRNode {
+        if let IRNode::Barrier(v) = self {
+            v
+        } else {
+            panic!("{:?} is not a Barrier IRNode!", self);
+        }
+    }
+
+    pub fn unwrap_layout_change(&self) -> &LayoutChangeIRNode {
+        if let IRNode::LayoutChange(v) = self {
+            v
+        } else {
+            panic!("{:?} is not a LayoutChange IRNode!", self);
+        }
+    }
+
+    pub fn prev(&self) -> NonNull<[usize]> {
+        match self {
+            IRNode::RenderPass(v) => v.prev,
+            IRNode::Barrier(v) => v.prev,
+            IRNode::LayoutChange(v) => v.prev,
+        }
+    }
+
+    pub fn next(&self) -> NonNull<[usize]> {
+        match self {
+            IRNode::RenderPass(v) => v.next,
+            IRNode::Barrier(v) => v.next,
+            IRNode::LayoutChange(v) => v.next,
+        }
+    }
+
+    pub fn set_prev(&mut self, v: NonNull<[usize]>) {
+        match self {
+            IRNode::RenderPass(n) => n.prev = v,
+            IRNode::Barrier(n) => n.prev = v,
+            IRNode::LayoutChange(n) => n.prev = v,
+        }
+    }
+
+    pub fn set_next(&mut self, v: NonNull<[usize]>) {
+        match self {
+            IRNode::RenderPass(n) => n.next = v,
+            IRNode::Barrier(n) => n.next = v,
+            IRNode::LayoutChange(n) => n.next = v,
+        }
+    }
+}
+
+impl From<RenderPassIRNode> for IRNode {
+    fn from(value: RenderPassIRNode) -> Self {
+        IRNode::RenderPass(value)
+    }
+}
+
+impl From<BarrierIRNode> for IRNode {
+    fn from(value: BarrierIRNode) -> Self {
+        IRNode::Barrier(value)
+    }
+}
+
+impl From<LayoutChangeIRNode> for IRNode {
+    fn from(value: LayoutChangeIRNode) -> Self {
+        IRNode::LayoutChange(value)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct RenderPassIRNode {
+    pub prev: NonNull<[usize]>,
+    pub next: NonNull<[usize]>,
+
+    /// The index of the render pass, uniquely identifying the pass in the graph
+    pub render_pass: usize,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct BarrierIRNode {
+    pub prev: NonNull<[usize]>,
+    pub next: NonNull<[usize]>,
+
+    /// The version of the resource we are encoding a barrier for
+    pub version: VersionIndex,
+
+    pub before_sync: BarrierSync,
+    pub before_access: BarrierAccess,
+    pub after_sync: BarrierSync,
+    pub after_access: BarrierAccess,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct LayoutChangeIRNode {
+    pub prev: NonNull<[usize]>,
+    pub next: NonNull<[usize]>,
+
+    /// The version of the resource we are forcing a layout change for
+    pub version: VersionIndex,
+    pub before_sync: BarrierSync,
+    pub before_access: BarrierAccess,
+    pub before_layout: ImageLayout,
+    pub after_sync: BarrierSync,
+    pub after_access: BarrierAccess,
+    pub after_layout: ImageLayout,
 }
