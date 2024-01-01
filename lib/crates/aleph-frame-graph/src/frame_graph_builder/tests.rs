@@ -446,7 +446,7 @@ pub fn test_usage_schedule() {
     });
     let mock_desc = mock_buffer.desc();
 
-    let mut pin_board = PinBoard::new();
+    let pin_board = PinBoard::new();
     let mut builder = FrameGraph::builder();
 
     struct Pass0 {
@@ -455,7 +455,7 @@ pub fn test_usage_schedule() {
     builder.add_pass(
         "test-pass-0",
         |_data: &mut (), resources: &mut ResourceRegistry| {
-            let r = resources.import_buffer(
+            let import = resources.import_buffer(
                 &BufferImportDesc {
                     desc: &mock_desc,
                     before_sync: BarrierSync::COMPUTE_SHADING,
@@ -466,7 +466,7 @@ pub fn test_usage_schedule() {
                 BarrierSync::NONE,
                 ResourceUsageFlags::NONE,
             );
-            pin_board.publish(Pass0 { import: r })
+            pin_board.publish(Pass0 { import })
         },
         |_data: &()| {},
     );
