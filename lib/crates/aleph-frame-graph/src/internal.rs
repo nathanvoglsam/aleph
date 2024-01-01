@@ -112,6 +112,12 @@ impl ResourceVersion {
     pub fn is_written(&self) -> bool {
         self.debug_written
     }
+
+    pub fn reads_iter(&self) -> VersionReaderLinkIter {
+        VersionReaderLinkIter {
+            current: self.reads.map(|v| unsafe { v.as_ref() }),
+        }
+    }
 }
 
 pub(crate) struct ResourceTypeBuffer {
@@ -297,11 +303,50 @@ impl VersionIndex {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct VersionReaderLink {
     pub next: Option<NonNull<VersionReaderLink>>,
     pub render_pass: usize,
     pub sync: BarrierSync,
     pub access: ResourceUsageFlags,
+}
+
+impl VersionReaderLink {
+    pub fn iter(&self) -> VersionReaderLinkIter {
+        VersionReaderLinkIter {
+            current: Some(self),
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a VersionReaderLink {
+    type Item = &'a VersionReaderLink;
+
+    type IntoIter = VersionReaderLinkIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        VersionReaderLinkIter {
+            current: Some(self),
+        }
+    }
+}
+
+#[repr(transparent)]
+pub(crate) struct VersionReaderLinkIter<'a> {
+    pub current: Option<&'a VersionReaderLink>,
+}
+
+impl<'a> Iterator for VersionReaderLinkIter<'a> {
+    type Item = &'a VersionReaderLink;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let out = self.current;
+        self.current = self
+            .current
+            .map(|v| v.next.map(|v| unsafe { v.as_ref() }))
+            .flatten();
+        out
+    }
 }
 
 /// An internal enum used for tracking the state machine of a resource version through the pass

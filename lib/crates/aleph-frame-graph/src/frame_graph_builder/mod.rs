@@ -472,20 +472,12 @@ impl FrameGraphBuilder {
                         let mut all_read_sync = BarrierSync::default();
                         let mut all_read_usage = ResourceUsageFlags::default();
                         let barrier_next = build_arena.alloc_slice_fill_copy(version.read_count, 0);
-
-                        let mut read_i = 0;
-                        let mut next_read = version.reads;
-                        while let Some(read) = next_read {
-                            let read = unsafe { read.as_ref() };
-
+                        for (i, read) in version.reads_iter().enumerate() {
                             all_read_sync |= read.sync;
                             all_read_usage |= read.access;
 
-                            barrier_next[read_i] = read.render_pass;
                             pass_prevs[read.render_pass].push(read_barrier_node_index);
-
-                            next_read = read.next;
-                            read_i += 1;
+                            barrier_next[i] = read.render_pass;
                         }
 
                         let barrier_prev = build_arena.alloc_slice_fill_copy(1, 0);
@@ -534,20 +526,12 @@ impl FrameGraphBuilder {
                             let mut all_read_usage = ResourceUsageFlags::default();
                             let barrier_prev =
                                 build_arena.alloc_slice_fill_copy(previous_version.read_count, 0);
-
-                            let mut read_i = 0;
-                            let mut next_read = previous_version.reads;
-                            while let Some(read) = next_read {
-                                let read = unsafe { read.as_ref() };
-
+                            for (i, read) in version.reads_iter().enumerate() {
                                 all_read_sync |= read.sync;
                                 all_read_usage |= read.access;
 
-                                barrier_prev[read_i] = read.render_pass;
                                 pass_nexts[read.render_pass].push(write_barrier_node_index);
-
-                                next_read = read.next;
-                                read_i += 1;
+                                barrier_prev[i] = read.render_pass;
                             }
 
                             let barrier_next = build_arena.alloc_slice_fill_copy(1, 0);
