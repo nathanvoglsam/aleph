@@ -467,52 +467,31 @@ impl FrameGraphBuilder {
                 // layout changes.
                 ResourceType::Buffer(root_variant) => {
                     if version.read_count > 0 {
-                        let read_barrier_node_index = ir_nodes.len();
-
                         let mut all_read_sync = BarrierSync::default();
                         let mut all_read_usage = ResourceUsageFlags::default();
                         let barrier_next = build_arena.alloc_slice_fill_copy(version.read_count, 0);
                         for (i, read) in version.reads_iter().enumerate() {
                             all_read_sync |= read.sync;
                             all_read_usage |= read.access;
-
-                            pass_prevs[read.render_pass].push(read_barrier_node_index);
                             barrier_next[i] = read.render_pass;
                         }
 
-                        let barrier_prev = build_arena.alloc_slice_fill_copy(1, 0);
-                        barrier_prev[0] = version.creator_render_pass;
-                        pass_nexts[version.creator_render_pass].push(read_barrier_node_index);
-                        let ir_node = BarrierIRNode {
-                            prev: NonNull::from(barrier_prev),
-                            next: NonNull::from(barrier_next),
-                            version: VersionIndex(version_i as u32),
-                            before_sync: version.creator_sync,
-                            before_access: version.creator_access.barrier_access_for_write(),
-                            after_sync: all_read_sync,
-                            after_access: all_read_usage.barrier_access_for_read(),
-                        };
-
-                        if let Some(v) = writer.as_mut() {
-                            let resource_name = root_variant
-                                .desc
-                                .name
-                                .map(|v| unsafe { v.as_ref() })
-                                .unwrap_or("Unnamed Resource");
-                            writeln!(
-                            v,
-                            "    node{} [label=\"Read Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
-                            read_barrier_node_index,
-                            resource_name,
-                            version_i,
-                            ir_node.before_sync,
-                            ir_node.before_access,
-                            ir_node.after_sync,
-                            ir_node.after_access
+                        let barrier_prev =
+                            build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                        self.emit_barrier_ir_node(
+                            &mut writer,
+                            &mut ir_nodes,
+                            pass_prevs,
+                            pass_nexts,
+                            "Read",
+                            barrier_prev,
+                            barrier_next,
+                            VersionIndex(version_i as u32),
+                            version.creator_sync,
+                            version.creator_access.barrier_access_for_write(),
+                            all_read_sync,
+                            all_read_usage.barrier_access_for_read(),
                         )?;
-                        }
-
-                        ir_nodes.push(ir_node.into());
                     }
 
                     if version.previous_version.is_valid() {
@@ -520,135 +499,72 @@ impl FrameGraphBuilder {
                         let previous_version = &self.resource_versions[previous_version_index];
 
                         if previous_version.read_count > 0 {
-                            let write_barrier_node_index = ir_nodes.len();
-
                             let mut all_read_sync = BarrierSync::default();
                             let mut all_read_usage = ResourceUsageFlags::default();
                             let barrier_prev =
                                 build_arena.alloc_slice_fill_copy(previous_version.read_count, 0);
-                            for (i, read) in version.reads_iter().enumerate() {
+                            for (i, read) in previous_version.reads_iter().enumerate() {
                                 all_read_sync |= read.sync;
                                 all_read_usage |= read.access;
-
-                                pass_nexts[read.render_pass].push(write_barrier_node_index);
                                 barrier_prev[i] = read.render_pass;
                             }
 
-                            let barrier_next = build_arena.alloc_slice_fill_copy(1, 0);
-                            barrier_next[0] = version.creator_render_pass;
-                            pass_prevs[version.creator_render_pass].push(write_barrier_node_index);
-                            let ir_node = BarrierIRNode {
-                                prev: NonNull::from(barrier_prev),
-                                next: NonNull::from(barrier_next),
-                                version: version.previous_version,
-                                before_sync: all_read_sync,
-                                before_access: all_read_usage.barrier_access_for_read(),
-                                after_sync: version.creator_sync,
-                                after_access: version.creator_access.barrier_access_for_write(),
-                            };
-
-                            if let Some(v) = writer.as_mut() {
-                                let resource_name = root_variant
-                                    .desc
-                                    .name
-                                    .map(|v| unsafe { v.as_ref() })
-                                    .unwrap_or("Unnamed Resource");
-                                writeln!(
-                                v,
-                                "    node{} [label=\"Write Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
-                                write_barrier_node_index,
-                                resource_name,
-                                previous_version_index,
-                                ir_node.before_sync,
-                                ir_node.before_access,
-                                ir_node.after_sync,
-                                ir_node.after_access
+                            let barrier_next =
+                                build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                            self.emit_barrier_ir_node(
+                                &mut writer,
+                                &mut ir_nodes,
+                                pass_prevs,
+                                pass_nexts,
+                                "Write A",
+                                barrier_prev,
+                                barrier_next,
+                                version.previous_version,
+                                all_read_sync,
+                                all_read_usage.barrier_access_for_read(),
+                                version.creator_sync,
+                                version.creator_access.barrier_access_for_write(),
                             )?;
-                            }
-
-                            ir_nodes.push(ir_node.into());
                         } else {
-                            let write_barrier_node_index = ir_nodes.len();
-
-                            let barrier_prev = build_arena.alloc_slice_fill_copy(1, 0);
-                            barrier_prev[0] = previous_version.creator_render_pass;
-                            pass_nexts[previous_version.creator_render_pass]
-                                .push(write_barrier_node_index);
-
-                            let barrier_next = build_arena.alloc_slice_fill_copy(1, 0);
-                            barrier_next[0] = version.creator_render_pass;
-                            pass_prevs[version.creator_render_pass].push(write_barrier_node_index);
-
-                            let ir_node = BarrierIRNode {
-                                prev: NonNull::from(barrier_prev),
-                                next: NonNull::from(barrier_next),
-                                version: version.previous_version,
-                                before_sync: previous_version.creator_sync,
-                                before_access: previous_version
-                                    .creator_access
-                                    .barrier_access_for_write(),
-                                after_sync: version.creator_sync,
-                                after_access: version.creator_access.barrier_access_for_write(),
-                            };
-
-                            if let Some(v) = writer.as_mut() {
-                                let resource_name = root_variant
-                                    .desc
-                                    .name
-                                    .map(|v| unsafe { v.as_ref() })
-                                    .unwrap_or("Unnamed Resource");
-                                writeln!(
-                                    v,
-                                    "    node{} [label=\"Write Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
-                                    write_barrier_node_index,
-                                    resource_name,
-                                    previous_version_index,
-                                    ir_node.before_sync,
-                                    ir_node.before_access,
-                                    ir_node.after_sync,
-                                    ir_node.after_access
-                                )?;
-                            }
-
-                            ir_nodes.push(ir_node.into());
+                            let barrier_prev = build_arena
+                                .alloc_slice_fill_copy(1, previous_version.creator_render_pass);
+                            let barrier_next =
+                                build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                            self.emit_barrier_ir_node(
+                                &mut writer,
+                                &mut ir_nodes,
+                                pass_prevs,
+                                pass_nexts,
+                                "Write B",
+                                barrier_prev,
+                                barrier_next,
+                                version.previous_version,
+                                previous_version.creator_sync,
+                                previous_version.creator_access.barrier_access_for_write(),
+                                version.creator_sync,
+                                version.creator_access.barrier_access_for_write(),
+                            )?;
                         }
                     } else if let Some(import_desc) = &root_variant.import.as_ref() {
-                        let import_barrier_node_index = ir_nodes.len();
-
-                        let barrier_next = build_arena.alloc_slice_fill_copy(1, 0);
-                        barrier_next[0] = version.creator_render_pass;
-                        pass_prevs[version.creator_render_pass].push(import_barrier_node_index);
-                        let ir_node = BarrierIRNode {
-                            prev: NonNull::from(&[]),
-                            next: NonNull::from(barrier_next),
-                            version: VersionIndex(version_i as u32),
-                            before_sync: import_desc.before_sync,
-                            before_access: import_desc.before_access,
-                            after_sync: version.creator_sync,
-                            after_access: version.creator_access.barrier_access_for_write(),
-                        };
-
+                        let barrier_next =
+                            build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                        let import_barrier_node_index = self.emit_barrier_ir_node(
+                            &mut writer,
+                            &mut ir_nodes,
+                            pass_prevs,
+                            pass_nexts,
+                            "Import",
+                            &[],
+                            barrier_next,
+                            VersionIndex(version_i as u32),
+                            import_desc.before_sync,
+                            import_desc.before_access,
+                            version.creator_sync,
+                            version.creator_access.barrier_access_for_write(),
+                        )?;
                         if let Some(v) = writer.as_mut() {
-                            let resource_name = root_variant
-                                .desc
-                                .name
-                                .map(|v| unsafe { v.as_ref() })
-                                .unwrap_or("Unnamed Resource");
-                            writeln!(
-                                v,
-                                "    node{} [label=\"Import Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\",group=imports]",
-                                import_barrier_node_index,
-                                resource_name,
-                                version_i,
-                                ir_node.before_sync,
-                                ir_node.before_access,
-                                ir_node.after_sync,
-                                ir_node.after_access
-                            )?;
                             writeln!(v, "node{} -> node{}", usize::MAX, import_barrier_node_index)?;
                         }
-
-                        ir_nodes.push(ir_node.into());
                     }
                 }
                 ResourceType::Texture(_) => {}
@@ -672,6 +588,24 @@ impl FrameGraphBuilder {
                 for next in nexts {
                     writeln!(v, "    node{i} -> node{next}")?;
                 }
+            }
+        }
+
+        // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
+        // into the apropriate category based on whether they have an previous or next nodes.
+        //
+        // Nodes with no 'previous' are considered roots and nodes with no 'next' are considered
+        // leaves.
+        let mut roots = BVec::with_capacity_in(ir_nodes.len() / 2, &build_arena);
+        let mut leafs = BVec::with_capacity_in(ir_nodes.len() / 2, &build_arena);
+        for (i, v) in ir_nodes.iter().enumerate() {
+            let prev = unsafe { v.prev().as_ref() };
+            let next = unsafe { v.next().as_ref() };
+            if prev.is_empty() {
+                roots.push(i);
+            }
+            if next.is_empty() {
+                leafs.push(i);
             }
         }
 
@@ -732,6 +666,115 @@ impl FrameGraphBuilder {
         }
 
         Ok(())
+    }
+
+    fn emit_graph_viz_barrier_node<T: std::io::Write>(
+        &self,
+        writer: &mut Option<&mut T>,
+        barrier_type: &str,
+        barrier_ir_node_index: usize,
+        barrier_version_index: usize,
+        ir_node: &BarrierIRNode,
+    ) -> std::io::Result<()> {
+        if let Some(v) = writer.as_mut() {
+            let version = &self.resource_versions[barrier_version_index];
+            let root_index = version.root_resource as usize;
+            let root_resource = &self.root_resources[root_index];
+            let resource_name = match &root_resource.resource_type {
+                ResourceType::Buffer(v) => v
+                    .desc
+                    .name
+                    .map(|v| unsafe { v.as_ref() })
+                    .unwrap_or("Unnamed Resource"),
+                ResourceType::Texture(v) => v
+                    .desc
+                    .name
+                    .map(|v| unsafe { v.as_ref() })
+                    .unwrap_or("Unnamed Resource"),
+            };
+
+            writeln!(
+                v,
+                "    node{} [label=\"{} Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
+                barrier_ir_node_index,
+                barrier_type,
+                resource_name,
+                barrier_version_index,
+                ir_node.before_sync,
+                ir_node.before_access,
+                ir_node.after_sync,
+                ir_node.after_access
+            )?;
+        }
+
+        Ok(())
+    }
+
+    /// Internal function used for inserting new barrier IR nodes into the frame graph.
+    ///
+    /// # Safety
+    ///
+    /// This function itself is not unsafe to call, but the caller _must_ ensure that the
+    /// barrier_prev and barrier_next arrays are backed by allocations that outlive the graph. They
+    /// are cast to raw pointers inside [BarrierIRNode], so to safely dereference those pointers the
+    /// allocations have to life long enough.
+    ///
+    /// Use an arena, or just leak memory. Absoultely do _not_ store these on the stack.
+    ///
+    /// There is a _single_ exception, the empty array. The empty array will not dereference the
+    /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
+    fn emit_barrier_ir_node<T: std::io::Write>(
+        &self,
+        writer: &mut Option<&mut T>,
+        ir_nodes: &mut Vec<IRNode>,
+        pass_prevs: &mut [BVec<usize>],
+        pass_nexts: &mut [BVec<usize>],
+        barrier_type: &str,
+        barrier_prev: &[usize],
+        barrier_next: &[usize],
+        version: VersionIndex,
+        before_sync: BarrierSync,
+        before_access: BarrierAccess,
+        after_sync: BarrierSync,
+        after_access: BarrierAccess,
+    ) -> std::io::Result<usize> {
+        // Current length of the ir_node buffer will become the index of the node we insert
+        let ir_node_index = ir_nodes.len();
+
+        // Add the second half of our double linked graph. We only defined the links out of the new
+        // IR node, we need to patch the new links into the new node's linked nodes.
+        //
+        // We assume that a barrier node will only link to render pass nodes. This means we can
+        // just insert the ir_node_index into the vec stored in the pass_nexts/pass_prevs arrays by
+        // indexing with the new ir node's outward link indices.
+        for prev in barrier_prev.iter().copied() {
+            pass_nexts[prev].push(ir_node_index);
+        }
+        for next in barrier_next.iter().copied() {
+            pass_prevs[next].push(ir_node_index);
+        }
+
+        let ir_node = BarrierIRNode {
+            prev: NonNull::from(barrier_prev),
+            next: NonNull::from(barrier_next),
+            version,
+            before_sync,
+            before_access,
+            after_sync,
+            after_access,
+        };
+
+        self.emit_graph_viz_barrier_node(
+            writer,
+            barrier_type,
+            ir_node_index,
+            version.0 as usize,
+            &ir_node,
+        )?;
+
+        ir_nodes.push(ir_node.into());
+
+        Ok(ir_node_index)
     }
 }
 
