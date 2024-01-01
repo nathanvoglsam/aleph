@@ -56,6 +56,7 @@ use crate::resource::ResourceId;
 use crate::{FrameGraph, IRenderPass, ResourceMut, ResourceRef};
 use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
+use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
 use std::ptr::NonNull;
 
@@ -433,8 +434,6 @@ impl FrameGraphBuilder {
         graph_name: &str,
         mut writer: Option<&mut T>,
     ) -> std::io::Result<FrameGraph> {
-        use bumpalo::collections::Vec as BVec;
-
         // An arena allocator used for allocating resources that only live as long as the graph is
         // being built
         let build_arena = Bump::new();
@@ -446,12 +445,7 @@ impl FrameGraphBuilder {
         let num_passes = self.render_passes.len();
 
         let mut ir_nodes: Vec<IRNode> = Vec::with_capacity(num_passes);
-        let pass_prevs: &mut [BVec<usize>] =
-            build_arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&build_arena));
-        let pass_nexts: &mut [BVec<usize>] =
-            build_arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&build_arena));
-
-        for (i, _pass) in self.render_passes.iter().enumerate() {
+        for i in 0..num_passes {
             let ir_node = RenderPassIRNode {
                 prev: NonNull::from(&[]),
                 next: NonNull::from(&[]),
@@ -459,6 +453,11 @@ impl FrameGraphBuilder {
             };
             ir_nodes.push(ir_node.into());
         }
+
+        let pass_prevs =
+            build_arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&build_arena));
+        let pass_nexts =
+            build_arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&build_arena));
 
         for (version_i, version) in self.resource_versions.iter().enumerate() {
             let root = &self.root_resources[version.root_resource as usize];
