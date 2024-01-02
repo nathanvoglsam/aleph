@@ -471,6 +471,7 @@ impl FrameGraphBuilder {
             build_arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&build_arena));
 
         for (version_i, version) in self.resource_versions.iter().enumerate() {
+            let version_i = VersionIndex(version_i as u32);
             let root = &self.root_resources[version.root_resource as usize];
             match &root.resource_type {
                 // Buffers are much simpler to handle as we don't need to care about image layout
@@ -497,7 +498,7 @@ impl FrameGraphBuilder {
                             "Read",
                             barrier_prev,
                             barrier_next,
-                            VersionIndex(version_i as u32),
+                            version_i,
                             version.creator_sync,
                             version.creator_access.barrier_access_for_write(),
                             all_read_sync,
@@ -567,7 +568,7 @@ impl FrameGraphBuilder {
                             "Import",
                             &[],
                             barrier_next,
-                            VersionIndex(version_i as u32),
+                            version_i,
                             import_desc.before_sync,
                             import_desc.before_access,
                             version.creator_sync,
