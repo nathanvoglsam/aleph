@@ -125,7 +125,7 @@ pub struct BufferImportDesc<'a> {
 #[derive(Default)]
 pub struct GraphVizOutputOptions {
     /// Enables the option for outputting nodes 'previous' edges instead of only the 'next' edges.
-    /// 
+    ///
     /// This option is intended for debugging to ensure that the graph is doubly linked correctly.
     /// The output quality goes down so it is not recommended to use this in the general case.
     pub output_previous_links: bool,

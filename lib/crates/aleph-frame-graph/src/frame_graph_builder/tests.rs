@@ -28,6 +28,7 @@
 //
 
 use crate::frame_graph_builder::BufferImportDesc;
+use crate::frame_graph_builder::TextureImportDesc;
 use crate::ImportBundle;
 use crate::{FrameGraph, ResourceMut, ResourceRef, ResourceRegistry};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -502,9 +503,27 @@ pub fn test_usage_schedule() {
         usage: ResourceUsageFlags::UNORDERED_ACCESS
             | ResourceUsageFlags::CONSTANT_BUFFER
             | ResourceUsageFlags::VERTEX_BUFFER,
-        name: Some("imported-mock-resource"),
+        name: Some("imported-mock-buffer"),
     });
-    let mock_desc = mock_buffer.desc();
+    let mock_buffer_desc = mock_buffer.desc();
+
+    let mock_texture = MockTexture::new(&TextureDesc {
+        width: 1024,
+        height: 1024,
+        depth: 1,
+        format: Format::Depth24Stencil8,
+        dimension: TextureDimension::Texture2D,
+        clear_value: None,
+        array_size: 1,
+        mip_levels: 1,
+        sample_count: 1,
+        sample_quality: 0,
+        usage: ResourceUsageFlags::RENDER_TARGET
+            | ResourceUsageFlags::UNORDERED_ACCESS
+            | ResourceUsageFlags::SHADER_RESOURCE,
+        name: Some("imported-mock-texture"),
+    });
+    let mock_texture_desc = mock_texture.desc();
 
     let pin_board = PinBoard::new();
     let mut builder = FrameGraph::builder();
@@ -517,7 +536,7 @@ pub fn test_usage_schedule() {
         |_data: &mut (), resources: &mut ResourceRegistry| {
             let import = resources.import_buffer(
                 &BufferImportDesc {
-                    desc: &mock_desc,
+                    desc: &mock_buffer_desc,
                     before_sync: BarrierSync::COMPUTE_SHADING,
                     before_access: BarrierAccess::SHADER_WRITE,
                     after_sync: BarrierSync::COPY,
@@ -533,6 +552,7 @@ pub fn test_usage_schedule() {
 
     struct Pass1 {
         create: ResourceMut,
+        import: ResourceMut,
     }
     builder.add_pass(
         "test-pass-1",
@@ -552,24 +572,46 @@ pub fn test_usage_schedule() {
                 BarrierSync::VERTEX_SHADING,
                 ResourceUsageFlags::INDEX_BUFFER,
             );
+            let import = resources.import_texture(
+                &TextureImportDesc {
+                    desc: &mock_texture_desc,
+                    before_sync: BarrierSync::ALL,
+                    before_access: BarrierAccess::NONE,
+                    before_layout: ImageLayout::Undefined,
+                    after_sync: BarrierSync::DEPTH_STENCIL,
+                    after_access: BarrierAccess::DEPTH_STENCIL_READ,
+                    after_layout: ImageLayout::DepthStencilReadOnly,
+                },
+                BarrierSync::empty(),
+                ResourceUsageFlags::RENDER_TARGET,
+            );
 
-            pin_board.publish(Pass1 { create });
+            pin_board.publish(Pass1 { create, import });
         },
         |_data: &()| {},
     );
 
     struct Pass2 {
-        import_write: ResourceMut,
+        import_buffer_write: ResourceMut,
+        import_texture_write: ResourceMut,
         transient_write: ResourceMut,
     }
     builder.add_pass(
         "test-pass-2",
         |_data: &mut (), resources: &mut ResourceRegistry| {
-            let import = pin_board.get::<Pass0>().unwrap().import;
-            let create = pin_board.get::<Pass1>().unwrap().create;
+            let import_buffer = pin_board.get::<Pass0>().unwrap().import;
+            let pass1 = pin_board.get::<Pass1>().unwrap();
+            let create = pass1.create;
+            let import_texture = pass1.import;
 
-            let import_write = resources.write_buffer(
-                import,
+            let import_buffer_write = resources.write_buffer(
+                import_buffer,
+                BarrierSync::COMPUTE_SHADING,
+                ResourceUsageFlags::UNORDERED_ACCESS,
+            );
+
+            let import_texture_write = resources.write_texture(
+                import_texture,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
@@ -581,7 +623,8 @@ pub fn test_usage_schedule() {
             );
 
             pin_board.publish(Pass2 {
-                import_write,
+                import_buffer_write,
+                import_texture_write,
                 transient_write,
             });
         },
@@ -597,6 +640,90 @@ pub fn test_usage_schedule() {
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
+        },
+        |_data: &()| {},
+    );
+
+    builder.add_pass(
+        "test-pass-4",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+            resources.read_texture(
+                resource,
+                BarrierSync::PIXEL_SHADING,
+                ResourceUsageFlags::SHADER_RESOURCE,
+            );
+        },
+        |_data: &()| {},
+    );
+
+    builder.add_pass(
+        "test-pass-5",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+            resources.read_texture(
+                resource,
+                BarrierSync::PIXEL_SHADING,
+                ResourceUsageFlags::SHADER_RESOURCE,
+            );
+        },
+        |_data: &()| {},
+    );
+
+    builder.add_pass(
+        "test-pass-6",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+            resources.read_texture(
+                resource,
+                BarrierSync::PIXEL_SHADING,
+                ResourceUsageFlags::SHADER_RESOURCE,
+            );
+        },
+        |_data: &()| {},
+    );
+
+    builder.add_pass(
+        "test-pass-7",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+            resources.read_texture(
+                resource,
+                BarrierSync::DEPTH_STENCIL,
+                ResourceUsageFlags::RENDER_TARGET,
+            );
+        },
+        |_data: &()| {},
+    );
+
+    builder.add_pass(
+        "test-pass-8",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+            resources.read_texture(
+                resource,
+                BarrierSync::DEPTH_STENCIL,
+                ResourceUsageFlags::RENDER_TARGET,
+            );
+        },
+        |_data: &()| {},
+    );
+
+    struct Pass8 {
+        pub import_texture_write: ResourceMut,
+    }
+    builder.add_pass(
+        "test-pass-8",
+        |_data: &mut (), resources: &mut ResourceRegistry| {
+            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+            let import_texture_write = resources.write_texture(
+                resource,
+                BarrierSync::DEPTH_STENCIL,
+                ResourceUsageFlags::RENDER_TARGET,
+            );
+            pin_board.publish(Pass8 {
+                import_texture_write,
+            });
         },
         |_data: &()| {},
     );
