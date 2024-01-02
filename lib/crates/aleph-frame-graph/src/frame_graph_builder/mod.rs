@@ -512,6 +512,47 @@ impl FrameGraphBuilder {
                             all_read_sync,
                             all_read_usage.barrier_access_for_read(),
                         )?;
+
+                        if let Some(import_desc) = root_variant.import.as_ref() {
+                            if root.final_version == version_i {
+                                // The 'next' for the previous barrier becomes the 'prev' for the export
+                                // barrier.
+                                let barrier_prev = barrier_next;
+                                self.emit_barrier_ir_node(
+                                    &mut writer,
+                                    &mut ir_nodes,
+                                    pass_prevs,
+                                    pass_nexts,
+                                    "Export after Read",
+                                    barrier_prev,
+                                    &[],
+                                    version_i,
+                                    all_read_sync,
+                                    all_read_usage.barrier_access_for_read(),
+                                    import_desc.after_sync,
+                                    import_desc.after_access,
+                                )?;
+                            }
+                        }
+                    } else if let Some(import_desc) = root_variant.import.as_ref() {
+                        if root.final_version == version_i {
+                            let barrier_prev =
+                                build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                            self.emit_barrier_ir_node(
+                                &mut writer,
+                                &mut ir_nodes,
+                                pass_prevs,
+                                pass_nexts,
+                                "Export after Write",
+                                barrier_prev,
+                                &[],
+                                version_i,
+                                version.creator_sync,
+                                version.creator_access.barrier_access_for_write(),
+                                import_desc.after_sync,
+                                import_desc.after_access,
+                            )?;
+                        }
                     }
 
                     // The next class of barrier is 'write-after-x' barriers. These barriers are
@@ -613,7 +654,7 @@ impl FrameGraphBuilder {
                         // declaration.
                         let barrier_next =
                             build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
-                        let import_barrier_node_index = self.emit_barrier_ir_node(
+                        self.emit_barrier_ir_node(
                             &mut writer,
                             &mut ir_nodes,
                             pass_prevs,
@@ -627,9 +668,6 @@ impl FrameGraphBuilder {
                             version.creator_sync,
                             version.creator_access.barrier_access_for_write(),
                         )?;
-                        if let Some((v, _options)) = writer.as_mut() {
-                            writeln!(v, "node{} -> node{}", usize::MAX, import_barrier_node_index)?;
-                        }
                     }
                 }
                 ResourceType::Texture(root_variant) => {
@@ -726,7 +764,8 @@ impl FrameGraphBuilder {
                                 let mut pending_read_access = ResourceUsageFlags::NONE;
                                 let barrier_next =
                                     build_arena.alloc_slice_fill_copy(pending_reads.len(), 0);
-                                for (pending_read_i, next) in pending_reads.iter().copied().zip(barrier_next.iter_mut())
+                                for (pending_read_i, next) in
+                                    pending_reads.iter().copied().zip(barrier_next.iter_mut())
                                 {
                                     let (read, _) = reads[pending_read_i];
                                     pending_read_sync |= read.sync;
@@ -799,6 +838,54 @@ impl FrameGraphBuilder {
                             // observable as far as this loop is concerned so it doesn't matter if
                             // we push read_i again even if we just handled it above.
                             pending_reads.push(read_i);
+                        }
+
+                        if let Some(import_desc) = root_variant.import.as_ref() {
+                            if root.final_version == version_i {
+                                // The 'next' for the previous barrier becomes the 'prev' for the export
+                                // barrier.
+                                let barrier_prev =
+                                    build_arena.alloc_slice_fill_iter(previous_reads.drain(..));
+                                self.emit_layout_change_ir_node(
+                                    &mut writer,
+                                    &mut ir_nodes,
+                                    pass_prevs,
+                                    pass_nexts,
+                                    "Export after Read",
+                                    barrier_prev,
+                                    &[],
+                                    version_i,
+                                    before_sync,
+                                    before_access,
+                                    before_layout,
+                                    import_desc.after_sync,
+                                    import_desc.after_access,
+                                    import_desc.after_layout,
+                                )?;
+                            }
+                        }
+                    } else if let Some(import_desc) = root_variant.import.as_ref() {
+                        if root.final_version == version_i {
+                            let barrier_prev =
+                                build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                            self.emit_layout_change_ir_node(
+                                &mut writer,
+                                &mut ir_nodes,
+                                pass_prevs,
+                                pass_nexts,
+                                "Export after Write",
+                                barrier_prev,
+                                &[],
+                                version_i,
+                                version.creator_sync,
+                                version.creator_access.barrier_access_for_write(),
+                                version
+                                    .creator_access
+                                    .image_layout(false, root_variant.desc.format),
+                                import_desc.after_sync,
+                                import_desc.after_access,
+                                import_desc.after_layout,
+                            )?;
                         }
                     }
 
@@ -949,7 +1036,7 @@ impl FrameGraphBuilder {
                         // declaration.
                         let barrier_next =
                             build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
-                        let import_barrier_node_index = self.emit_layout_change_ir_node(
+                        self.emit_layout_change_ir_node(
                             &mut writer,
                             &mut ir_nodes,
                             pass_prevs,
@@ -967,12 +1054,6 @@ impl FrameGraphBuilder {
                                 .creator_access
                                 .image_layout(false, root_variant.desc.format),
                         )?;
-
-                        // This is a special case to emit a link to 'EXTERNAL TO FRAMEGRAPH' in the
-                        // graph viz output. This makes it easier to find import barriers.
-                        if let Some((v, _options)) = writer.as_mut() {
-                            writeln!(v, "node{} -> node{}", usize::MAX, import_barrier_node_index)?;
-                        }
                     }
                 }
             }
@@ -1046,13 +1127,6 @@ impl FrameGraphBuilder {
     ) -> std::io::Result<()> {
         if let Some((v, _options)) = writer {
             writeln!(v, "digraph {graph_name} {{")?;
-
-            let external_pass_sentinel = usize::MAX;
-            writeln!(
-                v,
-                "node{external_pass_sentinel} [label=\"EXTERNAL TO FRAME GRAPH\"];"
-            )?;
-
             for (i, pass) in self.render_passes.iter().enumerate() {
                 let pass_name = unsafe { pass.name.as_ref() };
                 writeln!(
@@ -1906,6 +1980,7 @@ impl FrameGraphBuilder {
             reads: None,
             debug_written: false,
         });
+        self.root_resources[base as usize].final_version = VersionIndex(version);
 
         // Assert we never create u32::MAX versions. This is _critical_ as u32::MAX is a niche
         // value to encode a 'null' version. By guaranteeing u32::MAX is never a valid index into this
@@ -1926,10 +2001,12 @@ impl FrameGraphBuilder {
         let base = u16::try_from(self.root_resources.len()).unwrap();
         let version = u32::try_from(self.resource_versions.len()).unwrap();
         let id = ResourceId::new(base, version);
+        let version = VersionIndex::new(version).unwrap();
         self.root_resources.push(ResourceRoot {
             resource_type: r_type.into(),
             total_access_flags: access,
-            initial_version: VersionIndex::new(version).unwrap(),
+            initial_version: version,
+            final_version: version,
         });
         self.resource_versions.push(ResourceVersion {
             // We need the root resource here to allow iterations over the version array to easily
