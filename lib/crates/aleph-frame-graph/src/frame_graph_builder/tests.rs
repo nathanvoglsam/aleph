@@ -730,7 +730,7 @@ pub fn test_usage_schedule() {
 
     let mut dot_text = Vec::<u8>::new();
     let mut graph = builder
-        .build2_with_graph_viz("TestGraph", &mut dot_text, &Default::default())
+        .build_with_graph_viz("TestGraph", &mut dot_text, &Default::default())
         .unwrap();
 
     {
