@@ -41,8 +41,8 @@ use std::ptr::NonNull;
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
     pub name: NonNull<str>,
-    pub reads: NonNull<[ResourceAccess]>,
-    pub writes: NonNull<[ResourceAccess]>,
+    pub reads: NonNull<[ResourceId]>,
+    pub writes: NonNull<[ResourceId]>,
 }
 
 pub(crate) struct ResourceRoot {
@@ -279,8 +279,8 @@ pub(crate) struct FrameGraphTextureDesc {
 
 #[derive(Default)]
 pub(crate) struct PassAccessInfo {
-    pub reads: Vec<ResourceAccess>,
-    pub writes: Vec<ResourceAccess>,
+    pub reads: Vec<ResourceId>,
+    pub writes: Vec<ResourceId>,
 }
 
 impl PassAccessInfo {
@@ -288,19 +288,6 @@ impl PassAccessInfo {
         self.reads.clear();
         self.writes.clear();
     }
-}
-
-/// Stores the requested access for a single resource access edge. Could be read or write.
-#[derive(Clone)]
-pub(crate) struct ResourceAccess {
-    /// The destructured resource ID. ResourceRef/ResourceMut is for the external API
-    pub resource: ResourceId,
-
-    /// Pipeline stage/stages the buffer will be used in
-    pub sync: BarrierSync,
-
-    /// How the resource will be accessed within the render pass
-    pub access: ResourceUsageFlags,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]

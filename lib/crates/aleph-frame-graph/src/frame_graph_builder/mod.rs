@@ -309,7 +309,7 @@ impl FrameGraphBuilder {
                 let (reads, writes) = unsafe { (pass.reads.as_ref(), pass.writes.as_ref()) };
 
                 let all_reads_ready = reads.iter().all(|v| {
-                    let version_index = v.resource.version_id() as usize;
+                    let version_index = v.version_id() as usize;
                     let version_state = resource_version_states[version_index];
 
                     // If this resource is written then it is ready to be read, and only if it is
@@ -318,7 +318,7 @@ impl FrameGraphBuilder {
                 });
 
                 let all_writes_ready = writes.iter().all(|v| {
-                    let version_index = v.resource.version_id() as usize;
+                    let version_index = v.version_id() as usize;
                     let version = &self.resource_versions[version_index];
                     let version_state = resource_version_states[version_index];
 
@@ -350,7 +350,7 @@ impl FrameGraphBuilder {
                     // Walk through all the writes declared on this pass and mark the resource
                     // versions that are written with the 'Written' state.
                     for written_resource in writes {
-                        let version_index = written_resource.resource.version_id() as usize;
+                        let version_index = written_resource.version_id() as usize;
                         // Sometimes we may have resources that are only every used with a write
                         // declaration so we need to handle directly retiring these resources. If
                         // there are no pending reads on the resource we can skip directly to
@@ -370,7 +370,7 @@ impl FrameGraphBuilder {
                                 let version = &self.resource_versions[previous_version.0 as usize];
                                 Some(version.creator_render_pass)
                             } else {
-                                let root_id = written_resource.resource.root_id();
+                                let root_id = written_resource.root_id();
                                 if self.imported_resources.contains(&root_id) {
                                     Some(usize::MAX)
                                 } else {
@@ -387,7 +387,7 @@ impl FrameGraphBuilder {
                     // Walk through all the reads declared on this pass and decrement the pending
                     // read count for the version that was read. If the
                     for v in reads {
-                        let version_index = v.resource.version_id() as usize;
+                        let version_index = v.version_id() as usize;
                         let pending_reads = &mut resource_version_pending_reads[version_index];
                         *pending_reads -= 1;
                         if *pending_reads == 0 {
@@ -1611,12 +1611,7 @@ impl FrameGraphBuilder {
         // pass
         let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
-        let desc = ResourceAccess {
-            resource: r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.writes.push(desc);
+        self.pass_access_info.writes.push(r.0);
 
         r
     }
@@ -1658,12 +1653,7 @@ impl FrameGraphBuilder {
         // pass
         let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
-        let desc = ResourceAccess {
-            resource: r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.writes.push(desc);
+        self.pass_access_info.writes.push(r.0);
 
         r
     }
@@ -1689,12 +1679,7 @@ impl FrameGraphBuilder {
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
         self.append_read_to_version_for(r, render_pass, sync, access);
 
-        let desc = ResourceAccess {
-            resource: r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.reads.push(desc);
+        self.pass_access_info.reads.push(r.0);
         r
     }
 
@@ -1718,12 +1703,7 @@ impl FrameGraphBuilder {
         let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
         self.append_read_to_version_for(r, render_pass, sync, access);
 
-        let desc = ResourceAccess {
-            resource: r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.reads.push(desc);
+        self.pass_access_info.reads.push(r.0);
         r
     }
 
@@ -1748,12 +1728,7 @@ impl FrameGraphBuilder {
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
         let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
 
-        let desc = ResourceAccess {
-            resource: renamed_r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.writes.push(desc);
+        self.pass_access_info.writes.push(renamed_r.0);
 
         renamed_r
     }
@@ -1778,12 +1753,7 @@ impl FrameGraphBuilder {
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
 
-        let desc = ResourceAccess {
-            resource: renamed_r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.writes.push(desc);
+        self.pass_access_info.writes.push(renamed_r.0);
 
         renamed_r
     }
@@ -1831,12 +1801,8 @@ impl FrameGraphBuilder {
                 desc: create_desc,
             },
         );
-        let desc = ResourceAccess {
-            resource: r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.writes.push(desc);
+    
+        self.pass_access_info.writes.push(r.0);
 
         r
     }
@@ -1874,12 +1840,7 @@ impl FrameGraphBuilder {
                 desc: create_desc,
             },
         );
-        let desc = ResourceAccess {
-            resource: r.0,
-            sync,
-            access,
-        };
-        self.pass_access_info.writes.push(desc);
+        self.pass_access_info.writes.push(r.0);
 
         r
     }
