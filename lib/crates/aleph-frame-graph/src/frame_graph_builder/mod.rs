@@ -681,38 +681,40 @@ impl FrameGraphBuilder {
         Ok(())
     }
 
+    fn get_resource_name_for_version_index(&self, version: VersionIndex) -> &str {
+        let version = &self.resource_versions[version.0 as usize];
+        let root_index = version.root_resource as usize;
+        let root_resource = &self.root_resources[root_index];
+        match &root_resource.resource_type {
+            ResourceType::Buffer(v) => v
+                .desc
+                .name
+                .map(|v| unsafe { v.as_ref() })
+                .unwrap_or("Unnamed Resource"),
+            ResourceType::Texture(v) => v
+                .desc
+                .name
+                .map(|v| unsafe { v.as_ref() })
+                .unwrap_or("Unnamed Resource"),
+        }
+    }
+
     fn emit_graph_viz_barrier_node<T: std::io::Write>(
         &self,
         writer: &mut Option<(&mut T, &GraphVizOutputOptions)>,
         barrier_type: &str,
         barrier_ir_node_index: usize,
-        barrier_version_index: usize,
         ir_node: &BarrierIRNode,
     ) -> std::io::Result<()> {
-            let version = &self.resource_versions[barrier_version_index];
-            let root_index = version.root_resource as usize;
-            let root_resource = &self.root_resources[root_index];
-            let resource_name = match &root_resource.resource_type {
-                ResourceType::Buffer(v) => v
-                    .desc
-                    .name
-                    .map(|v| unsafe { v.as_ref() })
-                    .unwrap_or("Unnamed Resource"),
-                ResourceType::Texture(v) => v
-                    .desc
-                    .name
-                    .map(|v| unsafe { v.as_ref() })
-                    .unwrap_or("Unnamed Resource"),
-            };
-
         if let Some((v, _options)) = writer.as_mut() {
+            let resource_name = self.get_resource_name_for_version_index(ir_node.version);
             writeln!(
                 v,
                 "    node{} [label=\"{} Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
                 barrier_ir_node_index,
                 barrier_type,
                 resource_name,
-                barrier_version_index,
+                ir_node.version.0,
                 ir_node.before_sync,
                 ir_node.before_access,
                 ir_node.after_sync,
@@ -777,13 +779,8 @@ impl FrameGraphBuilder {
             after_access,
         };
 
-        self.emit_graph_viz_barrier_node(
-            writer,
-            barrier_type,
-            ir_node_index,
-            version.0 as usize,
-            &ir_node,
-        )?;
+
+        self.emit_graph_viz_layout_change_node(writer, barrier_type, ir_node_index, &ir_node)?;
 
         ir_nodes.push(ir_node.into());
 
