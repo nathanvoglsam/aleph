@@ -123,6 +123,15 @@ pub struct BufferImportDesc<'a> {
 }
 
 #[derive(Default)]
+pub struct GraphVizOutputOptions {
+    /// Enables the option for outputting nodes 'previous' edges instead of only the 'next' edges.
+    /// 
+    /// This option is intended for debugging to ensure that the graph is doubly linked correctly.
+    /// The output quality goes down so it is not recommended to use this in the general case.
+    pub output_previous_links: bool,
+}
+
+#[derive(Default)]
 pub struct FrameGraphBuilder {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
     /// used to store anything that persists to the fully constructed graph.
@@ -243,8 +252,9 @@ impl FrameGraphBuilder {
         self,
         graph_name: &str,
         writer: &mut impl std::io::Write,
+        options: &GraphVizOutputOptions,
     ) -> std::io::Result<FrameGraph> {
-        self.build_internal(graph_name, Some(writer))
+        self.build_internal(graph_name, Some((writer, options)))
     }
 
     pub fn build2(self) -> FrameGraph {
@@ -260,14 +270,15 @@ impl FrameGraphBuilder {
         self,
         graph_name: &str,
         writer: &mut impl std::io::Write,
+        options: &GraphVizOutputOptions,
     ) -> std::io::Result<FrameGraph> {
-        self.build_internal2(graph_name, Some(writer))
+        self.build_internal2(graph_name, Some((writer, options)))
     }
 
     fn build_internal<T: std::io::Write>(
         mut self,
         graph_name: &str,
-        mut writer: Option<&mut T>,
+        mut writer: Option<(&mut T, &GraphVizOutputOptions)>,
     ) -> std::io::Result<FrameGraph> {
         self.validate_imported_resource_usages();
 
@@ -351,7 +362,7 @@ impl FrameGraphBuilder {
                         }
 
                         // If the writer is present we output a graph edge when we schedule a pass
-                        if let Some(v) = writer.as_mut() {
+                        if let Some((v, _options)) = writer.as_mut() {
                             let previous_version =
                                 self.resource_versions[version_index].previous_version;
 
@@ -383,7 +394,7 @@ impl FrameGraphBuilder {
                             resource_version_states[version_index] = ResourceVersionState::Retired;
                         }
 
-                        if let Some(v) = writer.as_mut() {
+                        if let Some((v, _options)) = writer.as_mut() {
                             let version = &self.resource_versions[version_index as usize];
                             let creator = version.creator_render_pass;
                             writeln!(v, "    node{creator} -> node{i};")?;
@@ -432,7 +443,7 @@ impl FrameGraphBuilder {
     fn build_internal2<T: std::io::Write>(
         mut self,
         graph_name: &str,
-        mut writer: Option<&mut T>,
+        mut writer: Option<(&mut T, &GraphVizOutputOptions)>,
     ) -> std::io::Result<FrameGraph> {
         // An arena allocator used for allocating resources that only live as long as the graph is
         // being built
@@ -562,7 +573,7 @@ impl FrameGraphBuilder {
                             version.creator_sync,
                             version.creator_access.barrier_access_for_write(),
                         )?;
-                        if let Some(v) = writer.as_mut() {
+                        if let Some((v, _options)) = writer.as_mut() {
                             writeln!(v, "node{} -> node{}", usize::MAX, import_barrier_node_index)?;
                         }
                     }
@@ -577,13 +588,15 @@ impl FrameGraphBuilder {
             pass_node.set_next(NonNull::from(pass_nexts[i].as_slice()));
         }
 
-        if let Some(v) = writer.as_mut() {
+        if let Some((v, options)) = writer.as_mut() {
             for (i, ir_node) in ir_nodes.iter().enumerate() {
                 let prevs = unsafe { ir_node.prev().as_ref() };
                 let nexts = unsafe { ir_node.next().as_ref() };
 
-                for prev in prevs {
-                    writeln!(v, "    node{i} -> node{prev}")?;
+                if options.output_previous_links {
+                    for prev in prevs {
+                        writeln!(v, "    node{i} -> node{prev}")?;
+                    }
                 }
                 for next in nexts {
                     writeln!(v, "    node{i} -> node{next}")?;
@@ -633,9 +646,9 @@ impl FrameGraphBuilder {
     fn emit_graph_viz_start<T: std::io::Write>(
         &self,
         graph_name: &str,
-        writer: &mut Option<&mut T>,
+        writer: &mut Option<(&mut T, &GraphVizOutputOptions)>,
     ) -> std::io::Result<()> {
-        if let Some(v) = writer {
+        if let Some((v, _options)) = writer {
             writeln!(v, "digraph {graph_name} {{")?;
 
             let external_pass_sentinel = usize::MAX;
@@ -659,9 +672,9 @@ impl FrameGraphBuilder {
     /// Output the end of the DOT graph if we have a writer
     fn emit_graph_viz_end<T: std::io::Write>(
         &self,
-        writer: &mut Option<&mut T>,
+        writer: &mut Option<(&mut T, &GraphVizOutputOptions)>,
     ) -> std::io::Result<()> {
-        if let Some(v) = writer {
+        if let Some((v, _options)) = writer {
             writeln!(v, "}}")?;
         }
 
@@ -670,13 +683,12 @@ impl FrameGraphBuilder {
 
     fn emit_graph_viz_barrier_node<T: std::io::Write>(
         &self,
-        writer: &mut Option<&mut T>,
+        writer: &mut Option<(&mut T, &GraphVizOutputOptions)>,
         barrier_type: &str,
         barrier_ir_node_index: usize,
         barrier_version_index: usize,
         ir_node: &BarrierIRNode,
     ) -> std::io::Result<()> {
-        if let Some(v) = writer.as_mut() {
             let version = &self.resource_versions[barrier_version_index];
             let root_index = version.root_resource as usize;
             let root_resource = &self.root_resources[root_index];
@@ -693,6 +705,7 @@ impl FrameGraphBuilder {
                     .unwrap_or("Unnamed Resource"),
             };
 
+        if let Some((v, _options)) = writer.as_mut() {
             writeln!(
                 v,
                 "    node{} [label=\"{} Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
@@ -725,7 +738,7 @@ impl FrameGraphBuilder {
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
     fn emit_barrier_ir_node<T: std::io::Write>(
         &self,
-        writer: &mut Option<&mut T>,
+        writer: &mut Option<(&mut T, &GraphVizOutputOptions)>,
         ir_nodes: &mut Vec<IRNode>,
         pass_prevs: &mut [BVec<usize>],
         pass_nexts: &mut [BVec<usize>],
