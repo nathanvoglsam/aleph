@@ -49,12 +49,6 @@ pub(crate) struct ResourceRoot {
     /// The type of this resource
     pub resource_type: ResourceType,
 
-    /// The sync flags that the resource will be used with in the creating pass.
-    pub creator_sync: BarrierSync,
-
-    /// How the resource will be accessed within the render pass that creates the resource.
-    pub creator_access: ResourceUsageFlags,
-
     /// The accumulated access flags for a resource. This is the union of all the ways a
     /// resource is used as within the frame graph.
     pub total_access_flags: ResourceUsageFlags,
@@ -332,26 +326,6 @@ pub(crate) struct VersionReaderLink {
     pub render_pass: usize,
     pub sync: BarrierSync,
     pub access: ResourceUsageFlags,
-}
-
-impl VersionReaderLink {
-    pub fn iter(&self) -> VersionReaderLinkIter {
-        VersionReaderLinkIter {
-            current: Some(self),
-        }
-    }
-}
-
-impl<'a> IntoIterator for &'a VersionReaderLink {
-    type Item = &'a VersionReaderLink;
-
-    type IntoIter = VersionReaderLinkIter<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        VersionReaderLinkIter {
-            current: Some(self),
-        }
-    }
 }
 
 #[repr(transparent)]

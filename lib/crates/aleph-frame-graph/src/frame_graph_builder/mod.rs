@@ -1930,8 +1930,6 @@ impl FrameGraphBuilder {
             resource_type: r_type.into(),
             total_access_flags: access,
             initial_version: VersionIndex::new(version).unwrap(),
-            creator_sync: sync,
-            creator_access: access,
         });
         self.resource_versions.push(ResourceVersion {
             // We need the root resource here to allow iterations over the version array to easily
