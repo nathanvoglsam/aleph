@@ -101,6 +101,66 @@ impl IBuffer for MockBuffer {
     }
 }
 
+pub struct MockTexture {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) desc: TextureDesc<'static>,
+    pub(crate) name: Option<String>,
+}
+
+impl MockTexture {
+    pub fn new(desc: &TextureDesc) -> AnyArc<dyn ITexture> {
+        let name = desc.name.map(str::to_string);
+        let desc = desc.clone().strip_name();
+
+        let texture = AnyArc::new_cyclic(move |v| MockTexture {
+            this: v.clone(),
+            desc,
+            name,
+        });
+        AnyArc::map::<dyn ITexture, _>(texture, |v| v)
+    }
+}
+
+declare_interfaces!(MockTexture, [ITexture]);
+
+impl IGetPlatformInterface for MockTexture {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
+impl ITexture for MockTexture {
+    fn upgrade(&self) -> AnyArc<dyn ITexture> {
+        AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn desc(&self) -> TextureDesc {
+        let mut desc = self.desc.clone();
+        desc.name = self.name.as_deref();
+        desc
+    }
+
+    fn get_view(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        unimplemented!()
+    }
+
+    fn get_rtv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        unimplemented!()
+    }
+
+    fn get_dsv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        unimplemented!()
+    }
+}
+
 #[test]
 pub fn test_builder() {
     #[derive(Default)]
