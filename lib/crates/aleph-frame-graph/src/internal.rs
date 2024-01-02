@@ -32,6 +32,7 @@
 //! API. These are collected inside this 'internal' module
 //!
 
+use crate::access::ResourceUsageFlagsExt;
 use crate::resource::ResourceId;
 use crate::IRenderPass;
 use aleph_rhi_api::*;
@@ -117,6 +118,28 @@ impl ResourceVersion {
         VersionReaderLinkIter {
             current: self.reads.map(|v| unsafe { v.as_ref() }),
         }
+    }
+
+    /// collect all the reads into an array and sort them by the image layout the resource should be
+    /// in for that read.
+    ///
+    /// This is done by first creating a vector of correct size, filling it from
+    /// an iterator and then sorting by the computed image layout.
+    pub fn reads_sorted_by_image_layout_in<'a, 'b>(
+        &'a self,
+        format: Format,
+        bump: &'b bumpalo::Bump,
+    ) -> bumpalo::collections::Vec<'b, (&'a VersionReaderLink, ImageLayout)> {
+        use bumpalo::collections::Vec as BVec;
+
+        let mut reads = BVec::with_capacity_in(self.read_count, bump);
+        reads.extend(
+            self.reads_iter()
+                .map(|v| (v, v.access.image_layout(true, format))),
+        );
+        reads.sort_by_key(|v| v.1);
+
+        reads
     }
 }
 

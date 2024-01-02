@@ -478,7 +478,15 @@ impl FrameGraphBuilder {
                 // transitions that promote read-after-read accesses to writes because of required
                 // layout changes.
                 ResourceType::Buffer(root_variant) => {
+                    // The first thing to check for are read-after-write (and for images
+                    // read-after-read) barriers. If a version has at least a single read then we
+                    // must emit a read-after-write barrier and schedule the reader pass.
                     if version.read_count > 0 {
+                        // We form a 'next' edge will all the reads to this buffer, collecting
+                        // the full set of usage/sync flags as the 'after' scope of the barrier.
+                        //
+                        // The before scope is defined by the access declared on the creator pass,
+                        // with that creator pass being the sole 'previous' edge for this barrier.
                         let mut all_read_sync = BarrierSync::default();
                         let mut all_read_usage = ResourceUsageFlags::default();
                         let barrier_next = build_arena.alloc_slice_fill_copy(version.read_count, 0);
@@ -506,11 +514,29 @@ impl FrameGraphBuilder {
                         )?;
                     }
 
+                    // The next class of barrier is 'write-after-x' barriers. These barriers are
+                    // emitted between a previous usage and a write access to a resource. This could
+                    // either be a direct write-after-write barrier with no intervening reads or it
+                    // could be a write-after-read barrier between the reads of the previous
+                    // resource version and the pass that writes out the new version of the
+                    // resource.
+                    //
+                    // These are needed when the resource we're handling has a previous version.
+                    //
+                    // The two classes of barrier are detected based on the number of reads declared
+                    // on the previous version
                     if version.previous_version.is_valid() {
                         let previous_version_index = version.previous_version.0 as usize;
                         let previous_version = &self.resource_versions[previous_version_index];
 
+                        // If there are any reads on the previous resource version then we must emit
+                        // a write-after-read barrier between those reads and the subsequent write
+                        // that creates the new resource version.
                         if previous_version.read_count > 0 {
+                            // We form a 'previous' edge for this barrier with all the reads to the
+                            // previous version of the resource. This also has us collect all the
+                            // sync/usage flags so we can define our 'before' sync scope of our
+                            // barrier.
                             let mut all_read_sync = BarrierSync::default();
                             let mut all_read_usage = ResourceUsageFlags::default();
                             let barrier_prev =
@@ -521,6 +547,12 @@ impl FrameGraphBuilder {
                                 barrier_prev[i] = read.render_pass;
                             }
 
+                            // The sole 'next' edge of the barrier is the creator of _this_ version
+                            // of the resource.
+                            //
+                            // We're creating a barrier between the previous reads and the pass that
+                            // writes out this new version of the resource. The 'after' sync scope
+                            // is easily derived from the pass's declared access flags.
                             let barrier_next =
                                 build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
                             self.emit_barrier_ir_node(
@@ -538,6 +570,11 @@ impl FrameGraphBuilder {
                                 version.creator_access.barrier_access_for_write(),
                             )?;
                         } else {
+                            // This is one of the simplest barriers to emit, write-after-write.
+                            //
+                            // We have a simple 1:1 mapping from previous pass to next pass, with
+                            // the sync scopes trivially pulled from each pass's respective access
+                            // declarations.
                             let barrier_prev = build_arena
                                 .alloc_slice_fill_copy(1, previous_version.creator_render_pass);
                             let barrier_next =
@@ -558,6 +595,22 @@ impl FrameGraphBuilder {
                             )?;
                         }
                     } else if let Some(import_desc) = &root_variant.import.as_ref() {
+                        // The final class of barrier, which is quite special, is an import barrier.
+                        // These are quite simple to implement and are emitted as a link between
+                        // usage outside of the graph and the first usage of the resource in the
+                        // graph.
+                        //
+                        // These are only needed for imported resources, and are simple to implement
+                        // as they always map 1:1 between 'external' and 'first-usage-pass'.
+
+                        // Only link is the 'next' link to the pass that imported the resource.
+                        //
+                        // An edge to 'external' is implicitly formed by having no previous links,
+                        // which also makes this a root node.
+                        //
+                        // Otherwise the 'before' scope is scooped directly from import desc and the
+                        // after scope is directly pulled from the importing pass's access
+                        // declaration.
                         let barrier_next =
                             build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
                         let import_barrier_node_index = self.emit_barrier_ir_node(
@@ -579,7 +632,349 @@ impl FrameGraphBuilder {
                         }
                     }
                 }
-                ResourceType::Texture(_) => {}
+                ResourceType::Texture(root_variant) => {
+                    // The first thing to check for are read-after-write (and for images
+                    // read-after-read) barriers. If a version has at least a single read then we
+                    // must emit a read-after-write barrier and schedule the reader pass.
+                    //
+                    // Images are special too, as we may need to emit read-after-read barriers as
+                    // well if the set of reads require different image layouts.
+                    //
+                    // This is the single most complicated case to handle in our graph construction.
+                    if version.read_count > 0 {
+                        // First we need all the reads of this resource version in an array, sorted
+                        // by the required image layout.
+                        //
+                        // This forms the core of how we detect read-after-read image layout
+                        // transitions.
+                        let reads = version.reads_sorted_by_image_layout_in(
+                            root_variant.desc.format,
+                            &build_arena,
+                        );
+
+                        //
+                        // The next stage of the algorithm will iterate over the list of reads and
+                        // emit barriers for every layout change. This requires a bunch of state
+                        // to implement.
+                        //
+
+                        // This block is used to store the previous sync scope parameters that will
+                        // encompass the synchronization needed for the before scope of the next
+                        // barrier to be emitted.
+                        //
+                        // This is seeded from the render pass that created the resource version and
+                        // servers as the first edge in our chain of barriers.
+                        //
+                        // These values will be updated in our walk over the sorted reads list.
+                        let mut before_sync = version.creator_sync;
+                        let mut before_access = version.creator_access.barrier_access_for_write();
+                        let mut before_layout = version
+                            .creator_access
+                            .image_layout(false, root_variant.desc.format);
+
+                        // This stores the current layout we're expecting to see. This is used to
+                        // detect a layout change in our reads list.
+                        let mut current_layout = reads[0].1;
+
+                        // This list is used to store which reads are in the previous read batch. It
+                        // is used when handling all read batches after the first and is used for
+                        // determining the 'previous' edges for a barrier. This list stores indices
+                        // into the 'reads' array.
+                        //
+                        // Every time a barrier is emitted we drain 'pending_reads' into
+                        // 'previous_reads' as, obviously, what was the 'pending_reads' are now the
+                        // 'previous_reads'.
+                        let mut previous_reads: BVec<usize> =
+                            BVec::with_capacity_in(reads.len(), &build_arena);
+
+                        // This list is used to accumulate the pending reads when we're still
+                        // searching for layout edges. Once a layout edge is found this will contain
+                        // the set of reads that form a read batch to emit a barrier for.
+                        //
+                        // Once a barrier is emitted we flush this into 'previous_reads'
+                        let mut pending_reads: BVec<usize> =
+                            BVec::with_capacity_in(reads.len(), &build_arena);
+
+                        let mut iter = reads.iter().enumerate().peekable();
+                        while let Some((read_i, (_, layout))) = iter.next() {
+                            // We detect a layout change by comparing the expected layout
+                            // 'current_layout' with the image layout on the current read. If they
+                            // differ then we have found a layout edge and we need to emit a barrier
+                            let layout_changed = *layout != current_layout;
+
+                            // We also have a special edge to handle, when we've reached the end of
+                            // the read set. We won't detect the final set of reads naively, as
+                            // we'll just walk off the end of the read set instead of detecting a
+                            // layout change. To handle this edge case we also detect when we've hit
+                            // the end of the read set and emit a barrier too.
+                            let last_batch = iter.peek().is_none();
+                            if layout_changed || last_batch {
+                                // The 'pending_reads' list will not contain the current read as we
+                                // rely on the previous loop iteration to insert the indices in all
+                                // other cases. To handle this edge case we insert it early so the
+                                // rest of the code doesn't need to know if we're in the final read
+                                // batch.
+                                if last_batch {
+                                    pending_reads.push(read_i);
+                                }
+
+                                // Walk our list of pending reads that we're about to issue a
+                                // barrier for to allow them to execute. Here we accumulate the sync
+                                // flags and access flags so we know our 'after' sync scope. We also
+                                // add 'next' edges for the reading passes to our barrier.
+                                let mut pending_read_sync = BarrierSync::NONE;
+                                let mut pending_read_access = ResourceUsageFlags::NONE;
+                                let barrier_next =
+                                    build_arena.alloc_slice_fill_copy(pending_reads.len(), 0);
+                                for (pending_read_i, next) in pending_reads.iter().copied().zip(barrier_next.iter_mut())
+                                {
+                                    let (read, _) = reads[pending_read_i];
+                                    pending_read_sync |= read.sync;
+                                    pending_read_access |= read.access;
+                                    *next = read.render_pass;
+                                }
+
+                                // Next we collect our 'previous' links for the barrier. If we're
+                                // emitting a barrier for the first read batch then our 'before'
+                                // sync scope is actually a write access from the pass that created
+                                // the resource, otherwise the 'before' scope is equal to the
+                                // 'after' scope of the previous read batch.
+                                //
+                                // We can detect this 'first batch' by checking if 'previous_reads'
+                                // is empty, as previous_reads can only be empty when processing the
+                                // first batch.
+                                let barrier_prev = if previous_reads.is_empty() {
+                                    // Single link to creator render pass
+                                    build_arena
+                                        .alloc_slice_fill_copy(1, version.creator_render_pass)
+                                } else {
+                                    // Link to every read access scheduled in the previous read
+                                    // batch
+                                    build_arena.alloc_slice_fill_iter(
+                                        previous_reads.drain(..).map(|v| reads[v].0.render_pass),
+                                    )
+                                };
+
+                                // We now emit the barrier
+                                self.emit_layout_change_ir_node(
+                                    &mut writer,
+                                    &mut ir_nodes,
+                                    pass_prevs,
+                                    pass_nexts,
+                                    "Read",
+                                    barrier_prev,
+                                    barrier_next,
+                                    version_i,
+                                    before_sync,
+                                    before_access,
+                                    before_layout,
+                                    pending_read_sync,
+                                    pending_read_access.barrier_access_for_read(),
+                                    current_layout,
+                                )?;
+
+                                // What _was_ our pending reads in this batch becomes the previous
+                                // reads for the next batch
+                                previous_reads.clear();
+                                previous_reads.extend(pending_reads.drain(..));
+
+                                // And following on, what _was_ our 'after' sync scope for this
+                                // barrier becomes our 'before' sync scope for the next barrier.
+                                before_sync = pending_read_sync;
+                                before_access = pending_read_access.barrier_access_for_read();
+                                before_layout = current_layout;
+
+                                // Lastly we change what the expected layout is so we can keep
+                                // walking until we find the next layout edge.
+                                current_layout = *layout;
+                            }
+                            // And finally, we add the current read to the pending reads set. If we
+                            // handled a layout transition above then nothing that affects the read
+                            // identified by 'read_i' will have been done. That read will still be
+                            // pending processing which will be handled when we hit the next layout
+                            // transition.
+                            //
+                            // The one exception is when we hit the end of the iterator. That is
+                            // handled specially in the code above us and this push here is not
+                            // observable as far as this loop is concerned so it doesn't matter if
+                            // we push read_i again even if we just handled it above.
+                            pending_reads.push(read_i);
+                        }
+                    }
+
+                    // The next class of barrier is 'write-after-x' barriers. These barriers are
+                    // emitted between a previous usage and a write access to a resource. This could
+                    // either be a direct write-after-write barrier with no intervening reads or it
+                    // could be a write-after-read barrier between the reads of the previous
+                    // resource version and the pass that writes out the new version of the
+                    // resource.
+                    //
+                    // These are needed when the resource we're handling has a previous version.
+                    //
+                    // The two classes of barrier are detected based on the number of reads declared
+                    // on the previous version
+                    if version.previous_version.is_valid() {
+                        let previous_version_index = version.previous_version.0 as usize;
+                        let previous_version = &self.resource_versions[previous_version_index];
+
+                        // If there are any reads on the previous resource version then we must emit
+                        // a write-after-read barrier between those reads and the subsequent write
+                        // that creates the new resource version.
+                        //
+                        // Images are special in this case where we only need a write-after-read
+                        // edge to the last 'read batch'. See the read-after-read barrier for more
+                        // indepth discussion on 'read batches', but this forms the last part of
+                        // handling read barriers. In short we handle layout transitions on image
+                        // resources by making chains of read-after-read barriers to perform layout
+                        // changes. We only link the write-after-read barrier to the final read
+                        // batch.
+                        if previous_version.read_count > 0 {
+                            // First we need all the reads of this resource version in an array,
+                            // sorted by the required image layout.
+                            //
+                            // This forms the core of how we determine which read batch is the last
+                            // one to be scheduled.
+                            //
+                            // It is _absolutely_ critical that this produces the exact same
+                            // ordering as what is produced when handling read-after-read barriers
+                            // so we can correctly determine the previous passes to form 'previous'
+                            // edges to.
+                            let reads = previous_version.reads_sorted_by_image_layout_in(
+                                root_variant.desc.format,
+                                &build_arena,
+                            );
+
+                            // First we need to get the image layout of the last read batch and
+                            // find out how many reads are in that read batch. This is trivially
+                            // done by first grabbing the layout of the last element and walking
+                            // backwards over the array until we find a layout change. The number
+                            // of steps we take is the number of reads in the final read batch.
+                            let mut num_reads_for_prev = 0;
+                            let last_read_layout = reads.last().unwrap().1;
+                            for (_, l) in reads.iter().rev() {
+                                if *l != last_read_layout {
+                                    break;
+                                }
+                                num_reads_for_prev += 1;
+                            }
+
+                            // With the number of reads known we can allocate the barrier_prev array
+                            // and fill out the 'prev' links and accumulate the sync flags.
+                            let barrier_prev =
+                                build_arena.alloc_slice_fill_copy(num_reads_for_prev, 0);
+                            let mut all_read_sync = BarrierSync::default();
+                            let mut all_read_usage = ResourceUsageFlags::default();
+                            for ((v, _), prev) in reads
+                                .iter()
+                                .rev()
+                                .take(num_reads_for_prev)
+                                .zip(barrier_prev.iter_mut())
+                            {
+                                all_read_sync |= v.sync;
+                                all_read_usage |= v.access;
+                                *prev = v.render_pass;
+                            }
+
+                            // The 'next' link is always to this resource version's creator. The
+                            // before sync scope is defined by the read accesses from the last read
+                            // batch, and the after scope is pulled from the destination render
+                            // pass's declared access.
+                            let barrier_next =
+                                build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                            self.emit_layout_change_ir_node(
+                                &mut writer,
+                                &mut ir_nodes,
+                                pass_prevs,
+                                pass_nexts,
+                                "Write after Read",
+                                barrier_prev,
+                                barrier_next,
+                                version.previous_version,
+                                all_read_sync,
+                                all_read_usage.barrier_access_for_read(),
+                                last_read_layout,
+                                version.creator_sync,
+                                version.creator_access.barrier_access_for_write(),
+                                version
+                                    .creator_access
+                                    .image_layout(false, root_variant.desc.format),
+                            )?;
+                        } else {
+                            // This is one of the simplest barriers to emit, write-after-write.
+                            //
+                            // We have a simple 1:1 mapping from previous pass to next pass, with
+                            // the sync scopes trivially pulled from each pass's respective access
+                            // declarations.
+                            let barrier_prev = build_arena
+                                .alloc_slice_fill_copy(1, previous_version.creator_render_pass);
+                            let barrier_next =
+                                build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                            self.emit_layout_change_ir_node(
+                                &mut writer,
+                                &mut ir_nodes,
+                                pass_prevs,
+                                pass_nexts,
+                                "Write after Write",
+                                barrier_prev,
+                                barrier_next,
+                                version.previous_version,
+                                previous_version.creator_sync,
+                                previous_version.creator_access.barrier_access_for_write(),
+                                previous_version
+                                    .creator_access
+                                    .image_layout(false, root_variant.desc.format),
+                                version.creator_sync,
+                                version.creator_access.barrier_access_for_write(),
+                                version
+                                    .creator_access
+                                    .image_layout(false, root_variant.desc.format),
+                            )?;
+                        }
+                    } else if let Some(import_desc) = &root_variant.import.as_ref() {
+                        // The final class of barrier, which is quite special, is an import barrier.
+                        // These are quite simple to implement and are emitted as a link between
+                        // usage outside of the graph and the first usage of the resource in the
+                        // graph.
+                        //
+                        // These are only needed for imported resources, and are simple to implement
+                        // as they always map 1:1 between 'external' and 'first-usage-pass'.
+
+                        // Only link is the 'next' link to the pass that imported the resource.
+                        //
+                        // An edge to 'external' is implicitly formed by having no previous links,
+                        // which also makes this a root node.
+                        //
+                        // Otherwise the 'before' scope is scooped directly from import desc and the
+                        // after scope is directly pulled from the importing pass's access
+                        // declaration.
+                        let barrier_next =
+                            build_arena.alloc_slice_fill_copy(1, version.creator_render_pass);
+                        let import_barrier_node_index = self.emit_layout_change_ir_node(
+                            &mut writer,
+                            &mut ir_nodes,
+                            pass_prevs,
+                            pass_nexts,
+                            "Import",
+                            &[],
+                            barrier_next,
+                            version_i,
+                            import_desc.before_sync,
+                            import_desc.before_access,
+                            import_desc.before_layout,
+                            version.creator_sync,
+                            version.creator_access.barrier_access_for_write(),
+                            version
+                                .creator_access
+                                .image_layout(false, root_variant.desc.format),
+                        )?;
+
+                        // This is a special case to emit a link to 'EXTERNAL TO FRAMEGRAPH' in the
+                        // graph viz output. This makes it easier to find import barriers.
+                        if let Some((v, _options)) = writer.as_mut() {
+                            writeln!(v, "node{} -> node{}", usize::MAX, import_barrier_node_index)?;
+                        }
+                    }
+                }
             }
         }
 
@@ -726,6 +1121,34 @@ impl FrameGraphBuilder {
         Ok(())
     }
 
+    fn emit_graph_viz_layout_change_node<T: std::io::Write>(
+        &self,
+        writer: &mut Option<(&mut T, &GraphVizOutputOptions)>,
+        barrier_type: &str,
+        barrier_ir_node_index: usize,
+        ir_node: &LayoutChangeIRNode,
+    ) -> std::io::Result<()> {
+        if let Some((v, _options)) = writer.as_mut() {
+            let resource_name = self.get_resource_name_for_version_index(ir_node.version);
+            writeln!(
+                v,
+                "    node{} [label=\"{} Layout Change Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"]",
+                barrier_ir_node_index,
+                barrier_type,
+                resource_name,
+                ir_node.version.0,
+                ir_node.before_sync,
+                ir_node.before_access,
+                ir_node.before_layout,
+                ir_node.after_sync,
+                ir_node.after_access,
+                ir_node.after_layout,
+            )?;
+        }
+
+        Ok(())
+    }
+
     /// Internal function used for inserting new barrier IR nodes into the frame graph.
     ///
     /// # Safety
@@ -780,6 +1203,70 @@ impl FrameGraphBuilder {
             after_access,
         };
 
+        self.emit_graph_viz_barrier_node(writer, barrier_type, ir_node_index, &ir_node)?;
+
+        ir_nodes.push(ir_node.into());
+
+        Ok(ir_node_index)
+    }
+
+    /// Internal function used for inserting new barrier IR nodes into the frame graph.
+    ///
+    /// # Safety
+    ///
+    /// This function itself is not unsafe to call, but the caller _must_ ensure that the
+    /// barrier_prev and barrier_next arrays are backed by allocations that outlive the graph. They
+    /// are cast to raw pointers inside [BarrierIRNode], so to safely dereference those pointers the
+    /// allocations have to life long enough.
+    ///
+    /// Use an arena, or just leak memory. Absoultely do _not_ store these on the stack.
+    ///
+    /// There is a _single_ exception, the empty array. The empty array will not dereference the
+    /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
+    fn emit_layout_change_ir_node<T: std::io::Write>(
+        &self,
+        writer: &mut Option<(&mut T, &GraphVizOutputOptions)>,
+        ir_nodes: &mut Vec<IRNode>,
+        pass_prevs: &mut [BVec<usize>],
+        pass_nexts: &mut [BVec<usize>],
+        barrier_type: &str,
+        barrier_prev: &[usize],
+        barrier_next: &[usize],
+        version: VersionIndex,
+        before_sync: BarrierSync,
+        before_access: BarrierAccess,
+        before_layout: ImageLayout,
+        after_sync: BarrierSync,
+        after_access: BarrierAccess,
+        after_layout: ImageLayout,
+    ) -> std::io::Result<usize> {
+        // Current length of the ir_node buffer will become the index of the node we insert
+        let ir_node_index = ir_nodes.len();
+
+        // Add the second half of our double linked graph. We only defined the links out of the new
+        // IR node, we need to patch the new links into the new node's linked nodes.
+        //
+        // We assume that a barrier node will only link to render pass nodes. This means we can
+        // just insert the ir_node_index into the vec stored in the pass_nexts/pass_prevs arrays by
+        // indexing with the new ir node's outward link indices.
+        for prev in barrier_prev.iter().copied() {
+            pass_nexts[prev].push(ir_node_index);
+        }
+        for next in barrier_next.iter().copied() {
+            pass_prevs[next].push(ir_node_index);
+        }
+
+        let ir_node = LayoutChangeIRNode {
+            prev: NonNull::from(barrier_prev),
+            next: NonNull::from(barrier_next),
+            version,
+            before_sync,
+            before_access,
+            before_layout,
+            after_sync,
+            after_access,
+            after_layout,
+        };
 
         self.emit_graph_viz_layout_change_node(writer, barrier_type, ir_node_index, &ir_node)?;
 
