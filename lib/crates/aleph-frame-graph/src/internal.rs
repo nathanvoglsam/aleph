@@ -33,7 +33,6 @@
 //!
 
 use crate::access::ResourceUsageFlagsExt;
-use crate::resource::ResourceId;
 use crate::IRenderPass;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
@@ -41,8 +40,6 @@ use std::ptr::NonNull;
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
     pub name: NonNull<str>,
-    pub reads: NonNull<[ResourceId]>,
-    pub writes: NonNull<[ResourceId]>,
 }
 
 pub(crate) struct ResourceRoot {
@@ -275,19 +272,6 @@ pub(crate) struct FrameGraphTextureDesc {
     /// that the passes are stored in. It is only sound to access this string immutably, and the
     /// caller must ensure the relevant arena is still live.
     pub name: Option<NonNull<str>>,
-}
-
-#[derive(Default)]
-pub(crate) struct PassAccessInfo {
-    pub reads: Vec<ResourceId>,
-    pub writes: Vec<ResourceId>,
-}
-
-impl PassAccessInfo {
-    pub fn clear(&mut self) {
-        self.reads.clear();
-        self.writes.clear();
-    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]

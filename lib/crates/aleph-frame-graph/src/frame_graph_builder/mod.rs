@@ -163,12 +163,6 @@ pub struct FrameGraphBuilder {
     /// root_resources array.
     pub(crate) imported_resources: Vec<u16>,
 
-    /// This will hold the collected pass information, such as reads/writes/creates for whatever
-    /// pass is being setup current. The data stored in here is ephemeral and will be cleared
-    /// between each 'add pass' call. It simply serves to accumulate the information from a pass
-    /// setup callback.
-    pub(crate) pass_access_info: PassAccessInfo,
-
     /// The head of the dropper linked-list that contains all the drop functions for objects
     /// allocated from the graph arena
     pub(crate) drop_head: Option<NonNull<DropLink>>,
@@ -483,28 +477,10 @@ impl FrameGraphBuilder {
         DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, pass);
 
         unsafe {
-            let reads = self
-                .graph_arena
-                .alloc_slice_clone(&self.pass_access_info.reads);
-            let reads = NonNull::from(reads);
-            let writes = self
-                .graph_arena
-                .alloc_slice_clone(&self.pass_access_info.writes);
-            let writes = NonNull::from(writes);
-
             let pass = NonNull::from(pass.as_mut() as &mut dyn IRenderPass);
-            let pass = RenderPass {
-                pass,
-                name,
-                reads,
-                writes,
-            };
+            let pass = RenderPass { pass, name };
             self.render_passes.push(pass);
         }
-
-        // Reset the pass info accumulator. This still holds onto allocated memory so we should stop
-        // allocating once we've grown to the size of our biggest pass
-        self.pass_access_info.clear();
     }
 
     pub(crate) fn import_texture_internal(
@@ -555,7 +531,6 @@ impl FrameGraphBuilder {
         // pass
         let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
-        self.pass_access_info.writes.push(r.0);
 
         r
     }
@@ -597,7 +572,6 @@ impl FrameGraphBuilder {
         // pass
         let r = self.create_new_handle(render_pass, sync, access, r_type);
         self.add_imported_resource_to_list(r);
-        self.pass_access_info.writes.push(r.0);
 
         r
     }
@@ -623,7 +597,6 @@ impl FrameGraphBuilder {
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
         self.append_read_to_version_for(r, render_pass, sync, access);
 
-        self.pass_access_info.reads.push(r.0);
         r
     }
 
@@ -647,7 +620,6 @@ impl FrameGraphBuilder {
         let sync = get_given_or_default_sync_flags_for(access, sync, true, Default::default());
         self.append_read_to_version_for(r, render_pass, sync, access);
 
-        self.pass_access_info.reads.push(r.0);
         r
     }
 
@@ -672,8 +644,6 @@ impl FrameGraphBuilder {
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
         let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
 
-        self.pass_access_info.writes.push(renamed_r.0);
-
         renamed_r
     }
 
@@ -696,8 +666,6 @@ impl FrameGraphBuilder {
         self.add_flags_to_root_for(r, access);
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
-
-        self.pass_access_info.writes.push(renamed_r.0);
 
         renamed_r
     }
@@ -746,8 +714,6 @@ impl FrameGraphBuilder {
             },
         );
 
-        self.pass_access_info.writes.push(r.0);
-
         r
     }
 
@@ -784,7 +750,6 @@ impl FrameGraphBuilder {
                 desc: create_desc,
             },
         );
-        self.pass_access_info.writes.push(r.0);
 
         r
     }
