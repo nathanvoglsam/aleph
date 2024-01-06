@@ -85,7 +85,7 @@ pub(crate) struct ResourceVersion {
 
     /// The index of the render pass that caused the new resource version to be created. This could
     /// be through creating a new transient resource or through writing an existing resource.
-    pub creator_render_pass: usize,
+    pub creator_pass: usize,
 
     /// The number of read entries in the 'reads' linked list
     pub read_count: usize,

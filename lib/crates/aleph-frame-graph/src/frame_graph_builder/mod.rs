@@ -845,7 +845,7 @@ impl FrameGraphBuilder {
             version_total_access: access,
             creator_sync: sync,
             creator_access: access,
-            creator_render_pass: render_pass,
+            creator_pass: render_pass,
             read_count: 0,
             reads: None,
             debug_written: false,
@@ -890,7 +890,7 @@ impl FrameGraphBuilder {
             version_total_access: access,
             creator_sync: sync,
             creator_access: access,
-            creator_render_pass: render_pass,
+            creator_pass: render_pass,
             read_count: 0,
             reads: None,
             debug_written: false,
@@ -979,17 +979,17 @@ impl Drop for FrameGraphBuilder {
     }
 }
 
-struct IRBuilder<'a, 'b, 'c, T: std::io::Write> {
-    arena: &'a Bump,
+struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
+    arena: &'arena Bump,
     writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
     ir_nodes: Vec<IRNode>,
-    pass_prevs: &'a mut [BVec<'a, usize>],
-    pass_nexts: &'a mut [BVec<'a, usize>],
+    pass_prevs: &'arena mut [BVec<'arena, usize>],
+    pass_nexts: &'arena mut [BVec<'arena, usize>],
 }
 
-impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
+impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     pub fn new(
-        arena: &'a Bump,
+        arena: &'arena Bump,
         writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
         num_passes: usize,
     ) -> Self {
@@ -1155,18 +1155,10 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
             //
             // The before scope is defined by the access declared on the creator pass,
             // with that creator pass being the sole 'previous' edge for this barrier.
-            let mut all_read_sync = BarrierSync::default();
-            let mut all_read_usage = ResourceUsageFlags::default();
-            let barrier_next = self.arena.alloc_slice_fill_copy(version.read_count, 0);
-            for (i, read) in version.reads_iter().enumerate() {
-                all_read_sync |= read.sync;
-                all_read_usage |= read.access;
-                barrier_next[i] = read.render_pass;
-            }
+            let (barrier_next, all_read_sync, all_read_usage) =
+                self.collect_read_flags_for_version(version);
 
-            let barrier_prev = self
-                .arena
-                .alloc_slice_fill_copy(1, version.creator_render_pass);
+            let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
             self.emit_barrier_ir_node(
                 builder,
                 "Read",
@@ -1183,7 +1175,9 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
                 if root.final_version == version_index {
                     // The 'next' for the previous barrier becomes the 'prev' for the export
                     // barrier.
-                    let barrier_prev = barrier_next;
+                    // We take a copy of the slice to avoid any potential surprises with two nodes
+                    // sharing the same edge array.
+                    let barrier_prev = self.arena.alloc_slice_copy(barrier_next);
                     self.emit_barrier_ir_node(
                         builder,
                         "Export after Read",
@@ -1199,9 +1193,7 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
             }
         } else if let Some(import_desc) = root_variant.import.as_ref() {
             if root.final_version == version_index {
-                let barrier_prev = self
-                    .arena
-                    .alloc_slice_fill_copy(1, version.creator_render_pass);
+                let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_barrier_ir_node(
                     builder,
                     "Export after Write",
@@ -1227,16 +1219,8 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
                 // previous version of the resource. This also has us collect all the
                 // sync/usage flags so we can define our 'before' sync scope of our
                 // barrier.
-                let mut all_read_sync = BarrierSync::default();
-                let mut all_read_usage = ResourceUsageFlags::default();
-                let barrier_prev = self
-                    .arena
-                    .alloc_slice_fill_copy(previous_version.read_count, 0);
-                for (i, read) in previous_version.reads_iter().enumerate() {
-                    all_read_sync |= read.sync;
-                    all_read_usage |= read.access;
-                    barrier_prev[i] = read.render_pass;
-                }
+                let (barrier_prev, all_read_sync, all_read_usage) =
+                    self.collect_read_flags_for_version(previous_version);
 
                 // The sole 'next' edge of the barrier is the creator of _this_ version
                 // of the resource.
@@ -1244,9 +1228,7 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
                 // We're creating a barrier between the previous reads and the pass that
                 // writes out this new version of the resource. The 'after' sync scope
                 // is easily derived from the pass's declared access flags.
-                let barrier_next = self
-                    .arena
-                    .alloc_slice_fill_copy(1, version.creator_render_pass);
+                let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_barrier_ir_node(
                     builder,
                     "Write after Read",
@@ -1264,12 +1246,8 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
                 // We have a simple 1:1 mapping from previous pass to next pass, with
                 // the sync scopes trivially pulled from each pass's respective access
                 // declarations.
-                let barrier_prev = self
-                    .arena
-                    .alloc_slice_fill_copy(1, previous_version.creator_render_pass);
-                let barrier_next = self
-                    .arena
-                    .alloc_slice_fill_copy(1, version.creator_render_pass);
+                let barrier_prev = self.alloc_single_edge_list(previous_version.creator_pass);
+                let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_barrier_ir_node(
                     builder,
                     "Write after Write",
@@ -1299,9 +1277,7 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
             // Otherwise the 'before' scope is scooped directly from import desc and the
             // after scope is directly pulled from the importing pass's access
             // declaration.
-            let barrier_next = self
-                .arena
-                .alloc_slice_fill_copy(1, version.creator_render_pass);
+            let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_barrier_ir_node(
                 builder,
                 "Import",
@@ -1425,8 +1401,7 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
                     // first batch.
                     let barrier_prev = if previous_reads.is_empty() {
                         // Single link to creator render pass
-                        self.arena
-                            .alloc_slice_fill_copy(1, version.creator_render_pass)
+                        self.arena.alloc_slice_copy(&[version.creator_pass])
                     } else {
                         // Link to every read access scheduled in the previous read
                         // batch
@@ -1500,9 +1475,7 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
             }
         } else if let Some(import_desc) = root_variant.import.as_ref() {
             if root.final_version == version_index {
-                let barrier_prev = self
-                    .arena
-                    .alloc_slice_fill_copy(1, version.creator_render_pass);
+                let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
                     builder,
                     "Export after Write",
@@ -1583,9 +1556,7 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
                 // before sync scope is defined by the read accesses from the last read
                 // batch, and the after scope is pulled from the destination render
                 // pass's declared access.
-                let barrier_next = self
-                    .arena
-                    .alloc_slice_fill_copy(1, version.creator_render_pass);
+                let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
                     builder,
                     "Write after Read",
@@ -1607,12 +1578,8 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
                 // We have a simple 1:1 mapping from previous pass to next pass, with
                 // the sync scopes trivially pulled from each pass's respective access
                 // declarations.
-                let barrier_prev = self
-                    .arena
-                    .alloc_slice_fill_copy(1, previous_version.creator_render_pass);
-                let barrier_next = self
-                    .arena
-                    .alloc_slice_fill_copy(1, version.creator_render_pass);
+                let barrier_prev = self.alloc_single_edge_list(previous_version.creator_pass);
+                let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
                     builder,
                     "Write after Write",
@@ -1648,9 +1615,7 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
             // Otherwise the 'before' scope is scooped directly from import desc and the
             // after scope is directly pulled from the importing pass's access
             // declaration.
-            let barrier_next = self
-                .arena
-                .alloc_slice_fill_copy(1, version.creator_render_pass);
+            let barrier_next = self.arena.alloc_slice_copy(&[version.creator_pass]);
             self.emit_layout_change_ir_node(
                 builder,
                 "Import",
@@ -1668,6 +1633,26 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
             )?;
         }
         Ok(())
+    }
+
+    fn alloc_single_edge_list(&self, v: usize) -> &'arena mut [usize] {
+        self.arena.alloc_slice_copy(&[v])
+    }
+
+    fn collect_read_flags_for_version(
+        &self,
+        v: &ResourceVersion,
+    ) -> (&'arena mut [usize], BarrierSync, ResourceUsageFlags) {
+        let mut sync = BarrierSync::default();
+        let mut usage = ResourceUsageFlags::default();
+        let edges = self.arena.alloc_slice_fill_copy(v.read_count, 0);
+        for (i, read) in v.reads_iter().enumerate() {
+            sync |= read.sync;
+            usage |= read.access;
+            edges[i] = read.render_pass;
+        }
+
+        (edges, sync, usage)
     }
 
     /// Output the start of the DOT graph if we have a writer
@@ -1798,8 +1783,8 @@ impl<'a, 'b, 'c, T: std::io::Write> IRBuilder<'a, 'b, 'c, T> {
         &mut self,
         builder: &FrameGraphBuilder,
         barrier_type: &str,
-        barrier_prev: &[usize],
-        barrier_next: &[usize],
+        barrier_prev: &'arena [usize],
+        barrier_next: &'arena [usize],
         version: VersionIndex,
         before_sync: BarrierSync,
         before_access: BarrierAccess,
