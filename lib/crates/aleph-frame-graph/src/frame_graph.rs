@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use crate::internal::FrameGraphBufferDesc;
+use crate::internal::FrameGraphTextureDesc;
 use crate::internal::{RenderPass, ResourceRoot, ResourceVersion};
 use crate::{FrameGraphBuilder, ImportBundle, TransientResourceBundle};
 use aleph_arena_drop_list::DropLink;
@@ -85,7 +87,11 @@ impl FrameGraph {
         FrameGraphBuilder::new()
     }
 
-    pub unsafe fn execute(&mut self, import_bundle: &ImportBundle) {
+    pub unsafe fn execute(
+        &mut self,
+        // transient_bundle: &TransientResourceBundle,
+        import_bundle: &ImportBundle,
+    ) {
         self.execute_pre_assertions(import_bundle);
 
         for v in self.render_pass_order.iter().copied() {
@@ -183,7 +189,11 @@ impl FrameGraph {
 impl FrameGraph {
     /// Internal function that implements the debug assertions that run prior to the main execute
     /// pass in the frame graph.
-    unsafe fn execute_pre_assertions(&mut self, import_bundle: &ImportBundle) {
+    unsafe fn execute_pre_assertions(
+        &mut self,
+        // transient_bundle: &TransientResourceBundle,
+        import_bundle: &ImportBundle,
+    ) {
         if cfg!(debug_assertions) {
             for v in self.imported_resources.iter() {
                 let root_resource = &self.root_resources[*v as usize];
@@ -212,12 +222,8 @@ impl FrameGraph {
                 match imported_resource {
                     crate::ResourceVariant::Buffer(i) => match &root_resource.resource_type {
                         crate::internal::ResourceType::Buffer(r) => {
-                            assert_eq!(
-                                r.desc.size,
-                                i.desc().size,
-                                "Buffer '{}' not expected size",
-                                name
-                            );
+                            let i_desc = i.desc();
+                            self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
                         }
                         crate::internal::ResourceType::Texture(_r) => panic!(
                             "Imported buffer '{}' was provided a texture in the ImportBundle",
@@ -231,61 +237,101 @@ impl FrameGraph {
                         ),
                         crate::internal::ResourceType::Texture(r) => {
                             let i_desc = i.desc();
-                            assert_eq!(
-                                r.desc.width, i_desc.width,
-                                "Texture '{}' not expected width",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.height, i_desc.height,
-                                "Texture '{}' not expected height",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.depth, i_desc.depth,
-                                "Texture '{}' not expected depth",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.format, i_desc.format,
-                                "Texture '{}' not expected format",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.dimension, i_desc.dimension,
-                                "Texture '{}' not expected dimension",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.clear_value, i_desc.clear_value,
-                                "Texture '{}' not expected clear_value",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.array_size, i_desc.array_size,
-                                "Texture '{}' not expected array_size",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.mip_levels, i_desc.mip_levels,
-                                "Texture '{}' not expected mip_levels",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.sample_count, i_desc.sample_count,
-                                "Texture '{}' not expected sample_count",
-                                name
-                            );
-                            assert_eq!(
-                                r.desc.sample_quality, i_desc.sample_quality,
-                                "Texture '{}' not expected sample_quality",
-                                name
-                            );
+                            self.assert_matching_texture_desc(&r.desc, &i_desc, name);
                         }
                     },
                 }
             }
+
+            // for (v, root_resource) in self.root_resources.iter().enumerate() {
+            //     let v = u16::try_from(v).unwrap();
+            //     let transient_resource = transient_bundle.transients.get(&v);
+            //
+            //     let name = root_resource
+            //         .resource_type
+            //         .name()
+            //         .unwrap_or("Unnamed resource");
+            //
+            //     let is_import = root_resource.resource_type.is_import();
+            //     assert!(
+            //         !is_import,
+            //         "INTERNAL ERROR: Resource '{}' import status internal mismatch",
+            //         name
+            //     );
+            //
+            //     let contains_resource = transient_resource.is_some();
+            //     assert!(
+            //         contains_resource,
+            //         "The TransientResourceBundle does not contain handle for graph resource '{}'",
+            //         name
+            //     );
+            //     let transient_resource = transient_resource.unwrap();
+            //
+            //     match transient_resource {
+            //         crate::ResourceVariant::Buffer(i) => match &root_resource.resource_type {
+            //             crate::internal::ResourceType::Buffer(r) => {
+            //                 let i_desc = i.desc();
+            //                 self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
+            //             }
+            //             crate::internal::ResourceType::Texture(_r) => panic!(
+            //                 "Imported buffer '{}' was provided a texture in the TransientResourceBundle",
+            //                 name
+            //             ),
+            //         },
+            //         crate::ResourceVariant::Texture(i) => match &root_resource.resource_type {
+            //             crate::internal::ResourceType::Buffer(_r) => panic!(
+            //                 "Imported texture '{}' was provided a buffer in the TransientResourceBundle",
+            //                 name
+            //             ),
+            //             crate::internal::ResourceType::Texture(r) => {
+            //                 let i_desc = i.desc();
+            //                 self.assert_matching_texture_desc(&r.desc, &i_desc, name);
+            //             }
+            //         },
+            //     }
+            // }
         }
+    }
+
+    fn assert_matching_buffer_desc(&self, l: &FrameGraphBufferDesc, r: &BufferDesc, name: &str) {
+        assert_eq!(l.size, r.size, "Buffer '{}' not expected size", name);
+    }
+
+    fn assert_matching_texture_desc(&self, l: &FrameGraphTextureDesc, r: &TextureDesc, name: &str) {
+        assert_eq!(l.width, r.width, "Texture '{}' not expected width", name);
+        assert_eq!(l.height, r.height, "Texture '{}' not expected height", name);
+        assert_eq!(l.depth, r.depth, "Texture '{}' not expected depth", name);
+        assert_eq!(l.format, r.format, "Texture '{}' not expected format", name);
+        assert_eq!(
+            l.dimension, r.dimension,
+            "Texture '{}' not expected dimension",
+            name
+        );
+        assert_eq!(
+            l.clear_value, r.clear_value,
+            "Texture '{}' not expected clear_value",
+            name
+        );
+        assert_eq!(
+            l.array_size, r.array_size,
+            "Texture '{}' not expected array_size",
+            name
+        );
+        assert_eq!(
+            l.mip_levels, r.mip_levels,
+            "Texture '{}' not expected mip_levels",
+            name
+        );
+        assert_eq!(
+            l.sample_count, r.sample_count,
+            "Texture '{}' not expected sample_count",
+            name
+        );
+        assert_eq!(
+            l.sample_quality, r.sample_quality,
+            "Texture '{}' not expected sample_quality",
+            name
+        );
     }
 }
 
