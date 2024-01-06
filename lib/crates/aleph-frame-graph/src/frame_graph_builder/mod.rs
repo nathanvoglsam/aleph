@@ -267,6 +267,9 @@ impl FrameGraphBuilder {
         let mut ir_builder = IRBuilder::new(&build_arena, writer, num_passes);
         ir_builder.build(&self, graph_name)?;
 
+        let mut pass_order_builder = PassOrderBuilder::new(&build_arena);
+        pass_order_builder.build(&self, &ir_builder);
+
         drop(ir_builder);
 
         let arena = std::mem::take(&mut self.graph_arena);
@@ -1000,7 +1003,7 @@ struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
     ///
     /// That is, given an index 'i': `ir_builder.ir_nodes[i]` will hold a [RenderPassIRNode] that
     /// points to `frame_graph_build.render_passes[i]`.
-    ir_nodes: Vec<IRNode>,
+    nodes: Vec<IRNode>,
 
     /// A temporary list used as part of the build algorithm. This list is SoA mapped to each render
     /// pass node in the IR graph. Each entry in this list is another Vec (arena allocated) that
@@ -1035,7 +1038,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         Self {
             arena,
             writer,
-            ir_nodes,
+            nodes: ir_nodes,
             pass_prevs,
             pass_nexts,
         }
@@ -1133,7 +1136,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         // we don't free the vectors at all, instead just relying on the bump allocator being freed
         // to do it for us. If this changes this code must be re-evaluated for correctness.
         for (i, _pass) in builder.render_passes.iter().enumerate() {
-            let pass_node = &mut self.ir_nodes[i];
+            let pass_node = &mut self.nodes[i];
             pass_node.set_prev(NonNull::from(self.pass_prevs[i].as_slice()));
             pass_node.set_next(NonNull::from(self.pass_nexts[i].as_slice()));
         }
@@ -1141,7 +1144,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         // The IR graph is now fully formed. If we're outputting a graphviz graph then we need to
         // emit the edges.
         if let Some((v, options)) = self.writer.as_mut() {
-            for (i, ir_node) in self.ir_nodes.iter().enumerate() {
+            for (i, ir_node) in self.nodes.iter().enumerate() {
                 let prevs = unsafe { ir_node.prev().as_ref() };
                 let nexts = unsafe { ir_node.next().as_ref() };
 
@@ -1153,24 +1156,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 for next in nexts {
                     writeln!(v, "    node{i} -> node{next}")?;
                 }
-            }
-        }
-
-        // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
-        // into the apropriate category based on whether they have an previous or next nodes.
-        //
-        // Nodes with no 'previous' are considered roots and nodes with no 'next' are considered
-        // leaves.
-        let mut roots = BVec::with_capacity_in(self.ir_nodes.len() / 2, self.arena);
-        let mut leafs = BVec::with_capacity_in(self.ir_nodes.len() / 2, self.arena);
-        for (i, v) in self.ir_nodes.iter().enumerate() {
-            let prev = unsafe { v.prev().as_ref() };
-            let next = unsafe { v.next().as_ref() };
-            if prev.is_empty() {
-                roots.push(i);
-            }
-            if next.is_empty() {
-                leafs.push(i);
             }
         }
 
@@ -1830,7 +1815,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         after_access: BarrierAccess,
     ) -> std::io::Result<usize> {
         // Current length of the ir_node buffer will become the index of the node we insert
-        let ir_node_index = self.ir_nodes.len();
+        let ir_node_index = self.nodes.len();
 
         // Add the second half of our double linked graph. We only defined the links out of the new
         // IR node, we need to patch the new links into the new node's linked nodes.
@@ -1857,7 +1842,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
         self.emit_graph_viz_barrier_node(builder, barrier_type, ir_node_index, &ir_node)?;
 
-        self.ir_nodes.push(ir_node.into());
+        self.nodes.push(ir_node.into());
 
         Ok(ir_node_index)
     }
@@ -1890,7 +1875,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         after_layout: ImageLayout,
     ) -> std::io::Result<usize> {
         // Current length of the ir_node buffer will become the index of the node we insert
-        let ir_node_index = self.ir_nodes.len();
+        let ir_node_index = self.nodes.len();
 
         // Add the second half of our double linked graph. We only defined the links out of the new
         // IR node, we need to patch the new links into the new node's linked nodes.
@@ -1919,9 +1904,64 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
         self.emit_graph_viz_layout_change_node(builder, barrier_type, ir_node_index, &ir_node)?;
 
-        self.ir_nodes.push(ir_node.into());
+        self.nodes.push(ir_node.into());
 
         Ok(ir_node_index)
+    }
+}
+
+struct PassOrderBuilder<'arena> {
+    /// A reference to a temporary bump allocated arena that should be used to store all temporary
+    /// allocations that will not outlive the full frame graph build operation.
+    ///
+    /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
+    arena: &'arena Bump,
+}
+
+impl<'arena> PassOrderBuilder<'arena> {
+    pub fn new(arena: &'arena Bump) -> Self {
+        Self { arena }
+    }
+
+    pub fn build<T: std::io::Write>(
+        &mut self,
+        graph_builder: &FrameGraphBuilder,
+        ir: &IRBuilder<'arena, '_, '_, T>,
+    ) {
+        // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
+        // into the apropriate category based on whether they have an previous or next nodes.
+        //
+        // Nodes with no 'previous' are considered roots and nodes with no 'next' are considered
+        // leaves.
+        //
+        // The worst case for the number of root nodes is the number of imported resources, as that
+        // would be every imported resource being imported by a unique pass.
+        //
+        // The worst case for leaf nodes is unbounded, so we pick a guess of half the total number
+        // of nodes.
+        let num_imports = graph_builder.imported_resources.len();
+        let mut roots = BVec::with_capacity_in(num_imports, self.arena);
+        let mut leafs = BVec::with_capacity_in(ir.nodes.len() / 2, self.arena);
+        for (i, v) in ir.nodes.iter().enumerate() {
+            let prev = unsafe { v.prev().as_ref() };
+            let next = unsafe { v.next().as_ref() };
+            if prev.is_empty() {
+                roots.push(i);
+            }
+            if next.is_empty() {
+                leafs.push(i);
+            }
+        }
+
+        if cfg!(debug_assertions) {
+            for node_index in roots.iter().copied() {
+                let root_node = &ir.nodes[node_index];
+                debug_assert!(
+                    matches!(root_node, IRNode::Barrier(_) | IRNode::LayoutChange(_)),
+                    "All root nodes must be barriers!"
+                );
+            }
+        }
     }
 }
 
