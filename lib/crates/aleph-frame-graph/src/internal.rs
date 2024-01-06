@@ -435,6 +435,9 @@ pub(crate) struct BarrierIRNode {
     /// The version of the resource we are encoding a barrier for
     pub version: VersionIndex,
 
+    /// The type of barrier is node represents
+    pub barrier_type: IRBarrierType,
+
     pub before_sync: BarrierSync,
     pub before_access: BarrierAccess,
     pub after_sync: BarrierSync,
@@ -448,10 +451,62 @@ pub(crate) struct LayoutChangeIRNode {
 
     /// The version of the resource we are forcing a layout change for
     pub version: VersionIndex,
+
+    /// The type of barrier is node represents
+    pub barrier_type: IRBarrierType,
+
     pub before_sync: BarrierSync,
     pub before_access: BarrierAccess,
     pub before_layout: ImageLayout,
     pub after_sync: BarrierSync,
     pub after_access: BarrierAccess,
     pub after_layout: ImageLayout,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub(crate) enum IRBarrierType {
+    /// A barrier used to initialize what would be an uninitialized transient resource.
+    Initialization,
+
+    /// A barrier used to import an external resource.
+    Import,
+
+    /// A barrier used to export an external resource from the graph after its final usage within
+    /// the frame graph. Specifically this barrier is exporting after a preceeding read access.
+    ExportAfterRead,
+
+    /// A barrier used to export an external resource from the graph after its final usage within
+    /// the frame graph. Specifically this barrier is exporting after a preceeding write access.
+    ExportAfterWrite,
+
+    /// A regular internal barrier, specifically a barrier for read access after a preceeding read
+    /// access.
+    ReadAfterRead,
+
+    /// A regular internal barrier, specifically a barrier for read access after a preceeding write
+    /// access.
+    ReadAfterWrite,
+
+    /// A regular internal barrier, specifically a barrier for write access after a preceeding read
+    /// access.
+    WriteAfterRead,
+
+    /// A regular internal barrier, specifically a barrier for write access after a preceeding write
+    /// access.
+    WriteAfterWrite,
+}
+
+impl IRBarrierType {
+    pub fn graphviz_text(&self) -> &'static str {
+        match self {
+            IRBarrierType::Initialization => "Initialization",
+            IRBarrierType::Import => "Import",
+            IRBarrierType::ExportAfterRead => "Export after Read",
+            IRBarrierType::ExportAfterWrite => "Export after Write",
+            IRBarrierType::ReadAfterRead => "Read after Read",
+            IRBarrierType::ReadAfterWrite => "Read after Write",
+            IRBarrierType::WriteAfterRead => "Write after Read",
+            IRBarrierType::WriteAfterWrite => "Write after Write",
+        }
+    }
 }
