@@ -980,10 +980,36 @@ impl Drop for FrameGraphBuilder {
 }
 
 struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
+    /// A reference to a temporary bump allocated arena that should be used to store all temporary
+    /// allocations that will not outlive the full frame graph build operation.
+    ///
+    /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
     arena: &'arena Bump,
+
+    /// Our target writter for our graphviz output, if we have one.
     writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
+
+    /// Backing storage for the IR nodes that forms part of the output of this builder utility.
+    ///
+    /// After [IRBuilder::build] this will contain all the IR nodes that form the graph.
+    ///
+    /// There are some implicit rules for this list that can be exploited. It is guaranteed that,
+    /// given 'n' render passes in a [FrameGraphBuilder], the first 'n' nodes in 'ir_nodes' will
+    /// be [RenderPassIRNode] objects and the indices for those first 'n' nodes will be associative
+    /// between [IRBuilder::ir_nodes] and [FrameGraphBuilder::render_passes].
+    ///
+    /// That is, given an index 'i': `ir_builder.ir_nodes[i]` will hold a [RenderPassIRNode] that
+    /// points to `frame_graph_build.render_passes[i]`.
     ir_nodes: Vec<IRNode>,
+
+    /// A temporary list used as part of the build algorithm. This list is SoA mapped to each render
+    /// pass node in the IR graph. Each entry in this list is another Vec (arena allocated) that
+    /// will be used to accumulate the 'prev' edges of the render pass IR nodes before they get
+    /// patched onto their IR nodes at the end of the build phase.
     pass_prevs: &'arena mut [BVec<'arena, usize>],
+
+    /// See [IRBuilder::pass_prevs]. This is logically the same list, but instead used for storing
+    /// the 'next' edges.
     pass_nexts: &'arena mut [BVec<'arena, usize>],
 }
 
@@ -1096,12 +1122,24 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             }
         }
 
+        // Render pass nodes need to have their edges patched in after we've emitted all our
+        // barriers. We don't know the full number of edges each pass will need until we've fully
+        // generated all our barriers so we need to use a dynamic array for these edge arrays. Only
+        // once we've fully built the IR graph do we patch these arrays (once their size is static)
+        // into the IR graph to get our fully formed graph.
+        //
+        // It is required for correctness that the vectors backing these lists to live as long as
+        // the IR nodes. This is currently being guaranteed by how we store the vectors. Currently
+        // we don't free the vectors at all, instead just relying on the bump allocator being freed
+        // to do it for us. If this changes this code must be re-evaluated for correctness.
         for (i, _pass) in builder.render_passes.iter().enumerate() {
             let pass_node = &mut self.ir_nodes[i];
             pass_node.set_prev(NonNull::from(self.pass_prevs[i].as_slice()));
             pass_node.set_next(NonNull::from(self.pass_nexts[i].as_slice()));
         }
 
+        // The IR graph is now fully formed. If we're outputting a graphviz graph then we need to
+        // emit the edges.
         if let Some((v, options)) = self.writer.as_mut() {
             for (i, ir_node) in self.ir_nodes.iter().enumerate() {
                 let prevs = unsafe { ir_node.prev().as_ref() };
