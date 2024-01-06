@@ -1312,6 +1312,19 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 version.creator_sync,
                 version.creator_access.barrier_access_for_write(),
             )?;
+        } else {
+            let barrier_next = self.alloc_single_edge_list(version.creator_pass);
+            self.emit_barrier_ir_node(
+                builder,
+                IRBarrierType::Initialization,
+                &[],
+                barrier_next,
+                version_index,
+                BarrierSync::NONE,
+                BarrierAccess::NONE,
+                version.creator_sync,
+                version.creator_access.barrier_access_for_write(),
+            )?;
         }
         Ok(())
     }
@@ -1650,6 +1663,23 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 import_desc.before_sync,
                 import_desc.before_access,
                 import_desc.before_layout,
+                version.creator_sync,
+                version.creator_access.barrier_access_for_write(),
+                version
+                    .creator_access
+                    .image_layout(false, root_variant.desc.format),
+            )?;
+        } else {
+            let barrier_next = self.alloc_single_edge_list(version.creator_pass);
+            self.emit_layout_change_ir_node(
+                builder,
+                IRBarrierType::Initialization,
+                &[],
+                barrier_next,
+                version_index,
+                BarrierSync::NONE,
+                BarrierAccess::NONE,
+                ImageLayout::Undefined,
                 version.creator_sync,
                 version.creator_access.barrier_access_for_write(),
                 version
