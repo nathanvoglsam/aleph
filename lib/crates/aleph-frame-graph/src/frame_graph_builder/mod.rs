@@ -1143,20 +1143,41 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
         // The IR graph is now fully formed. If we're outputting a graphviz graph then we need to
         // emit the edges.
-        if let Some((v, options)) = self.writer.as_mut() {
+        if let Some((writer, options)) = self.writer.take() {
+            for (i, ir_node) in self.nodes.iter().enumerate() {
+                match ir_node {
+                    IRNode::RenderPass(node) => {
+                        let pass = &builder.render_passes[node.render_pass];
+                        let pass_name = unsafe { pass.name.as_ref() };
+                        writeln!(
+                            writer,
+                            "    node{i} [shape=box,label=\"Render Pass: \\\"{pass_name}\\\"\"];"
+                        )?;
+                    }
+                    IRNode::Barrier(v) => {
+                        self.emit_graph_viz_barrier_node(writer, builder, i, v)?
+                    }
+                    IRNode::LayoutChange(v) => {
+                        self.emit_graph_viz_layout_change_node(writer, builder, i, v)?
+                    }
+                }
+            }
+
             for (i, ir_node) in self.nodes.iter().enumerate() {
                 let prevs = unsafe { ir_node.prev().as_ref() };
                 let nexts = unsafe { ir_node.next().as_ref() };
 
                 if options.output_previous_links {
                     for prev in prevs {
-                        writeln!(v, "    node{i} -> node{prev}")?;
+                        writeln!(writer, "    node{i} -> node{prev}")?;
                     }
                 }
                 for next in nexts {
-                    writeln!(v, "    node{i} -> node{next}")?;
+                    writeln!(writer, "    node{i} -> node{next}")?;
                 }
             }
+
+            self.writer = Some((writer, options));
         }
 
         self.emit_graph_viz_end()?;
@@ -1718,15 +1739,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     ) -> std::io::Result<()> {
         if let Some((v, _options)) = self.writer.as_mut() {
             writeln!(v, "digraph {graph_name} {{")?;
-            for (i, pass) in builder.render_passes.iter().enumerate() {
-                let pass_name = unsafe { pass.name.as_ref() };
-                writeln!(
-                    v,
-                    "    node{i} [shape=box,label=\"Render Pass: \\\"{pass_name}\\\"\"];"
-                )?;
-            }
         }
-
         Ok(())
     }
 
@@ -1735,7 +1748,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         if let Some((v, _options)) = self.writer.as_mut() {
             writeln!(v, "}}")?;
         }
-
         Ok(())
     }
 
@@ -1762,62 +1774,51 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     }
 
     fn emit_graph_viz_barrier_node(
-        &mut self,
+        &self,
+        writer: &'b mut T,
         builder: &FrameGraphBuilder,
-        barrier_type: &str,
         barrier_ir_node_index: usize,
         ir_node: &BarrierIRNode,
     ) -> std::io::Result<()> {
-        let mut writer = self.writer.take();
+        let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
+        writeln!(
+            writer,
+            "    node{} [label=\"{} Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
+            barrier_ir_node_index,
+            ir_node.barrier_type.graphviz_text(),
+            resource_name,
+            ir_node.version.0,
+            ir_node.before_sync,
+            ir_node.before_access,
+            ir_node.after_sync,
+            ir_node.after_access
+        )?;
 
-        if let Some((v, _options)) = writer.as_mut() {
-            let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
-            writeln!(
-        v,
-        "    node{} [label=\"{} Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
-        barrier_ir_node_index,
-        barrier_type,
-        resource_name,
-        ir_node.version.0,
-        ir_node.before_sync,
-        ir_node.before_access,
-        ir_node.after_sync,
-        ir_node.after_access
-    )?;
-        }
-
-        self.writer = writer;
         Ok(())
     }
 
     fn emit_graph_viz_layout_change_node(
-        &mut self,
+        &self,
+        writer: &'b mut T,
         builder: &FrameGraphBuilder,
-        barrier_type: &str,
         barrier_ir_node_index: usize,
         ir_node: &LayoutChangeIRNode,
     ) -> std::io::Result<()> {
-        let mut writer = self.writer.take();
-
-        if let Some((v, _options)) = writer.as_mut() {
-            let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
-            writeln!(
-        v,
-        "    node{} [label=\"{} Layout Change Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"]",
-        barrier_ir_node_index,
-        barrier_type,
-        resource_name,
-        ir_node.version.0,
-        ir_node.before_sync,
-        ir_node.before_access,
-        ir_node.before_layout,
-        ir_node.after_sync,
-        ir_node.after_access,
-        ir_node.after_layout,
-    )?;
-        }
-
-        self.writer = writer;
+        let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
+        writeln!(
+            writer,
+            "    node{} [label=\"{} Layout Change Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"]",
+            barrier_ir_node_index,
+            ir_node.barrier_type.graphviz_text(),
+            resource_name,
+            ir_node.version.0,
+            ir_node.before_sync,
+            ir_node.before_access,
+            ir_node.before_layout,
+            ir_node.after_sync,
+            ir_node.after_access,
+            ir_node.after_layout,
+        )?;
         Ok(())
     }
 
@@ -1872,13 +1873,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             after_sync,
             after_access,
         };
-
-        self.emit_graph_viz_barrier_node(
-            builder,
-            barrier_type.graphviz_text(),
-            ir_node_index,
-            &ir_node,
-        )?;
 
         self.nodes.push(ir_node.into());
 
@@ -1940,13 +1934,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             after_access,
             after_layout,
         };
-
-        self.emit_graph_viz_layout_change_node(
-            builder,
-            barrier_type.graphviz_text(),
-            ir_node_index,
-            &ir_node,
-        )?;
 
         self.nodes.push(ir_node.into());
 
