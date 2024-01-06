@@ -135,9 +135,13 @@ mod import_bundle;
 mod internal;
 mod render_pass;
 mod resource;
+mod resource_variant;
+mod transient_bundle;
 
 pub use frame_graph::FrameGraph;
 pub use frame_graph_builder::{FrameGraphBuilder, ResourceRegistry};
 pub use import_bundle::ImportBundle;
 pub use render_pass::IRenderPass;
 pub use resource::{ResourceMut, ResourceRef};
+pub use resource_variant::ResourceVariant;
+pub use transient_bundle::TransientResourceBundle;

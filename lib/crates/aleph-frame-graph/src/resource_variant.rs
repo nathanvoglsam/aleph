@@ -27,34 +27,50 @@
 // SOFTWARE.
 //
 
-use crate::{ResourceRef, ResourceVariant};
+use aleph_any::AnyArc;
+use aleph_rhi_api::*;
 
-#[derive(Default)]
-pub struct ImportBundle {
-    pub(crate) imports: std::collections::HashMap<u16, ResourceVariant>,
+pub enum ResourceVariant {
+    Buffer(AnyArc<dyn IBuffer>),
+    Texture(AnyArc<dyn ITexture>),
 }
 
-impl ImportBundle {
-    pub fn add_resource(
-        &mut self,
-        id: impl Into<ResourceRef>,
-        r: impl Into<ResourceVariant>,
-    ) -> &mut Self {
-        let id = id.into();
-        let r = r.into();
-
-        let existed = self.imports.insert(id.0.root_id(), r).is_some();
-        assert!(
-            !existed,
-            "It is invalid to insert a handle for the same resource ID twice"
-        );
-
-        self
+impl From<AnyArc<dyn IBuffer>> for ResourceVariant {
+    fn from(value: AnyArc<dyn IBuffer>) -> Self {
+        Self::Buffer(value)
     }
+}
 
-    pub fn get_resource(&self, root_id: u16) -> &ResourceVariant {
-        self.imports
-            .get(&root_id)
-            .expect("Declared imported resource not present in provided ImportBundle")
+impl From<AnyArc<dyn ITexture>> for ResourceVariant {
+    fn from(value: AnyArc<dyn ITexture>) -> Self {
+        Self::Texture(value)
+    }
+}
+
+impl<'a> From<&'a dyn IBuffer> for ResourceVariant {
+    fn from(value: &'a dyn IBuffer) -> Self {
+        let value = value.upgrade();
+        Self::Buffer(value)
+    }
+}
+
+impl<'a> From<&'a dyn ITexture> for ResourceVariant {
+    fn from(value: &'a dyn ITexture) -> Self {
+        let value = value.upgrade();
+        Self::Texture(value)
+    }
+}
+
+impl<'a> From<&'a AnyArc<dyn IBuffer>> for ResourceVariant {
+    fn from(value: &'a AnyArc<dyn IBuffer>) -> Self {
+        let value = value.upgrade();
+        Self::Buffer(value)
+    }
+}
+
+impl<'a> From<&'a AnyArc<dyn ITexture>> for ResourceVariant {
+    fn from(value: &'a AnyArc<dyn ITexture>) -> Self {
+        let value = value.upgrade();
+        Self::Texture(value)
     }
 }

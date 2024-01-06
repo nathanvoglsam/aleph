@@ -27,23 +27,18 @@
 // SOFTWARE.
 //
 
-use crate::{ResourceRef, ResourceVariant};
+use crate::ResourceVariant;
 
 #[derive(Default)]
-pub struct ImportBundle {
-    pub(crate) imports: std::collections::HashMap<u16, ResourceVariant>,
+pub struct TransientResourceBundle {
+    pub(crate) transients: std::collections::HashMap<u16, ResourceVariant>,
 }
 
-impl ImportBundle {
-    pub fn add_resource(
-        &mut self,
-        id: impl Into<ResourceRef>,
-        r: impl Into<ResourceVariant>,
-    ) -> &mut Self {
-        let id = id.into();
+impl TransientResourceBundle {
+    pub(crate) fn add_resource(&mut self, i: u16, r: impl Into<ResourceVariant>) -> &mut Self {
         let r = r.into();
 
-        let existed = self.imports.insert(id.0.root_id(), r).is_some();
+        let existed = self.transients.insert(i, r).is_some();
         assert!(
             !existed,
             "It is invalid to insert a handle for the same resource ID twice"
@@ -52,9 +47,9 @@ impl ImportBundle {
         self
     }
 
-    pub fn get_resource(&self, root_id: u16) -> &ResourceVariant {
-        self.imports
-            .get(&root_id)
+    pub(crate) fn get_resource(&self, i: u16) -> &ResourceVariant {
+        self.transients
+            .get(&i)
             .expect("Declared imported resource not present in provided ImportBundle")
     }
 }

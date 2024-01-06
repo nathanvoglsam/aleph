@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::import_bundle::ImportBundle;
 use crate::internal::{RenderPass, ResourceRoot, ResourceVersion};
-use crate::FrameGraphBuilder;
+use crate::{FrameGraphBuilder, ImportBundle, TransientResourceBundle};
 use aleph_arena_drop_list::DropLink;
+use aleph_rhi_api::*;
 use bumpalo::Bump;
+use std::collections::HashMap;
 use std::ptr::NonNull;
 
 pub struct FrameGraph {
@@ -91,6 +92,56 @@ impl FrameGraph {
             let pass = &mut self.render_passes[v];
             unsafe { pass.pass.as_mut().execute() }
         }
+    }
+
+    pub fn allocate_transient_resource_bundle(
+        &self,
+        device: &dyn IDevice,
+    ) -> TransientResourceBundle {
+        let num_transients = self.root_resources.len() - self.imported_resources.len();
+        let mut bundle = TransientResourceBundle {
+            transients: HashMap::with_capacity(num_transients),
+        };
+        for (i, transient) in self
+            .root_resources
+            .iter()
+            .enumerate()
+            .filter(|(_, v)| !v.resource_type.is_import())
+        {
+            let i = u16::try_from(i).unwrap();
+            match &transient.resource_type {
+                crate::internal::ResourceType::Buffer(v) => {
+                    let desc = BufferDesc {
+                        size: v.desc.size,
+                        cpu_access: CpuAccessMode::None,
+                        usage: transient.total_access_flags,
+                        name: v.desc.name.map(|v| unsafe { v.as_ref() }),
+                    };
+                    let buffer = device.create_buffer(&desc).unwrap();
+                    bundle.add_resource(i, buffer);
+                }
+                crate::internal::ResourceType::Texture(v) => {
+                    let desc = TextureDesc {
+                        width: v.desc.width,
+                        height: v.desc.height,
+                        depth: v.desc.depth,
+                        format: v.desc.format,
+                        dimension: v.desc.dimension,
+                        clear_value: v.desc.clear_value.clone(),
+                        array_size: v.desc.array_size,
+                        mip_levels: v.desc.mip_levels,
+                        sample_count: v.desc.sample_count,
+                        sample_quality: v.desc.sample_quality,
+                        usage: transient.total_access_flags,
+                        name: v.desc.name.map(|v| unsafe { v.as_ref() }),
+                    };
+                    let texture = device.create_texture(&desc).unwrap();
+                    bundle.add_resource(i, texture);
+                }
+            }
+        }
+
+        bundle
     }
 
     pub fn graph_viz_for_pass_order(
@@ -159,83 +210,79 @@ impl FrameGraph {
                 let imported_resource = imported_resource.unwrap();
 
                 match imported_resource {
-                    crate::import_bundle::ResourceVariant::Buffer(i) => {
-                        match &root_resource.resource_type {
-                            crate::internal::ResourceType::Buffer(r) => {
-                                assert_eq!(
-                                    r.desc.size,
-                                    i.desc().size,
-                                    "Buffer '{}' not expected size",
-                                    name
-                                );
-                            }
-                            crate::internal::ResourceType::Texture(_r) => panic!(
-                                "Imported buffer '{}' was provided a texture in the ImportBundle",
+                    crate::ResourceVariant::Buffer(i) => match &root_resource.resource_type {
+                        crate::internal::ResourceType::Buffer(r) => {
+                            assert_eq!(
+                                r.desc.size,
+                                i.desc().size,
+                                "Buffer '{}' not expected size",
                                 name
-                            ),
+                            );
                         }
-                    }
-                    crate::import_bundle::ResourceVariant::Texture(i) => {
-                        match &root_resource.resource_type {
-                            crate::internal::ResourceType::Buffer(_r) => panic!(
-                                "Imported texture '{}' was provided a buffer in the ImportBundle",
+                        crate::internal::ResourceType::Texture(_r) => panic!(
+                            "Imported buffer '{}' was provided a texture in the ImportBundle",
+                            name
+                        ),
+                    },
+                    crate::ResourceVariant::Texture(i) => match &root_resource.resource_type {
+                        crate::internal::ResourceType::Buffer(_r) => panic!(
+                            "Imported texture '{}' was provided a buffer in the ImportBundle",
+                            name
+                        ),
+                        crate::internal::ResourceType::Texture(r) => {
+                            let i_desc = i.desc();
+                            assert_eq!(
+                                r.desc.width, i_desc.width,
+                                "Texture '{}' not expected width",
                                 name
-                            ),
-                            crate::internal::ResourceType::Texture(r) => {
-                                let i_desc = i.desc();
-                                assert_eq!(
-                                    r.desc.width, i_desc.width,
-                                    "Texture '{}' not expected width",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.height, i_desc.height,
-                                    "Texture '{}' not expected height",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.depth, i_desc.depth,
-                                    "Texture '{}' not expected depth",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.format, i_desc.format,
-                                    "Texture '{}' not expected format",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.dimension, i_desc.dimension,
-                                    "Texture '{}' not expected dimension",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.clear_value, i_desc.clear_value,
-                                    "Texture '{}' not expected clear_value",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.array_size, i_desc.array_size,
-                                    "Texture '{}' not expected array_size",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.mip_levels, i_desc.mip_levels,
-                                    "Texture '{}' not expected mip_levels",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.sample_count, i_desc.sample_count,
-                                    "Texture '{}' not expected sample_count",
-                                    name
-                                );
-                                assert_eq!(
-                                    r.desc.sample_quality, i_desc.sample_quality,
-                                    "Texture '{}' not expected sample_quality",
-                                    name
-                                );
-                            }
+                            );
+                            assert_eq!(
+                                r.desc.height, i_desc.height,
+                                "Texture '{}' not expected height",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.depth, i_desc.depth,
+                                "Texture '{}' not expected depth",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.format, i_desc.format,
+                                "Texture '{}' not expected format",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.dimension, i_desc.dimension,
+                                "Texture '{}' not expected dimension",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.clear_value, i_desc.clear_value,
+                                "Texture '{}' not expected clear_value",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.array_size, i_desc.array_size,
+                                "Texture '{}' not expected array_size",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.mip_levels, i_desc.mip_levels,
+                                "Texture '{}' not expected mip_levels",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.sample_count, i_desc.sample_count,
+                                "Texture '{}' not expected sample_count",
+                                name
+                            );
+                            assert_eq!(
+                                r.desc.sample_quality, i_desc.sample_quality,
+                                "Texture '{}' not expected sample_quality",
+                                name
+                            );
                         }
-                    }
+                    },
                 }
             }
         }
