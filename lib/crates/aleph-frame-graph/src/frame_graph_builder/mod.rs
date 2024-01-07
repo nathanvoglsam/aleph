@@ -1080,6 +1080,10 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         //   - Very similar to the 'Export after Read' case, but only used when the final version of
         //     a resource has no readers meaning the last pass to synchronize with is the final
         //     writer pass.
+        // - Initialization
+        //   - These barriers are emitted for the first usage of a transient resource. They are used
+        //     to initialize resource metadata, namely for images, and are logically similar to
+        //     import barriers but with a very vague 'before' scope for execution synchronization.
         //
         // All these conditions can be detected and correctly handled by considering only the
         // following:
