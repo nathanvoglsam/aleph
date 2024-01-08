@@ -1045,7 +1045,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     }
 
     pub fn build(&mut self, builder: &FrameGraphBuilder, graph_name: &str) -> std::io::Result<()> {
-        self.emit_graph_viz_start(builder, graph_name)?;
+        self.emit_graph_viz_start(graph_name)?;
 
         // The first step is to emit all the barriers and graph edges by iterating through our
         // resource versions. We collect enough information that we can emit all our needed barriers
@@ -1208,7 +1208,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
             let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
             self.emit_barrier_ir_node(
-                builder,
                 IRBarrierType::ReadAfterWrite,
                 barrier_prev,
                 barrier_next,
@@ -1227,7 +1226,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     // sharing the same edge array.
                     let barrier_prev = self.arena.alloc_slice_copy(barrier_next);
                     self.emit_barrier_ir_node(
-                        builder,
                         IRBarrierType::ExportAfterRead,
                         barrier_prev,
                         &[],
@@ -1243,7 +1241,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             if root.final_version == version_index {
                 let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_barrier_ir_node(
-                    builder,
                     IRBarrierType::ExportAfterWrite,
                     barrier_prev,
                     &[],
@@ -1278,7 +1275,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 // is easily derived from the pass's declared access flags.
                 let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_barrier_ir_node(
-                    builder,
                     IRBarrierType::WriteAfterRead,
                     barrier_prev,
                     barrier_next,
@@ -1297,7 +1293,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 let barrier_prev = self.alloc_single_edge_list(previous_version.creator_pass);
                 let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_barrier_ir_node(
-                    builder,
                     IRBarrierType::WriteAfterWrite,
                     barrier_prev,
                     barrier_next,
@@ -1327,7 +1322,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             // declaration.
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_barrier_ir_node(
-                builder,
                 IRBarrierType::Import,
                 &[],
                 barrier_next,
@@ -1340,7 +1334,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         } else {
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_barrier_ir_node(
-                builder,
                 IRBarrierType::Initialization,
                 &[],
                 barrier_next,
@@ -1474,7 +1467,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
                     // We now emit the barrier
                     self.emit_layout_change_ir_node(
-                        builder,
                         barrier_type,
                         barrier_prev,
                         barrier_next,
@@ -1522,7 +1514,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     // barrier.
                     let barrier_prev = self.arena.alloc_slice_fill_iter(previous_reads.drain(..));
                     self.emit_layout_change_ir_node(
-                        builder,
                         IRBarrierType::ExportAfterRead,
                         barrier_prev,
                         &[],
@@ -1540,7 +1531,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             if root.final_version == version_index {
                 let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
-                    builder,
                     IRBarrierType::ExportAfterWrite,
                     barrier_prev,
                     &[],
@@ -1621,7 +1611,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 // pass's declared access.
                 let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
-                    builder,
                     IRBarrierType::WriteAfterRead,
                     barrier_prev,
                     barrier_next,
@@ -1644,7 +1633,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 let barrier_prev = self.alloc_single_edge_list(previous_version.creator_pass);
                 let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
-                    builder,
                     IRBarrierType::WriteAfterWrite,
                     barrier_prev,
                     barrier_next,
@@ -1680,7 +1668,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             // declaration.
             let barrier_next = self.arena.alloc_slice_copy(&[version.creator_pass]);
             self.emit_layout_change_ir_node(
-                builder,
                 IRBarrierType::Import,
                 &[],
                 barrier_next,
@@ -1697,7 +1684,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         } else {
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_layout_change_ir_node(
-                builder,
                 IRBarrierType::Initialization,
                 &[],
                 barrier_next,
@@ -1736,11 +1722,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     }
 
     /// Output the start of the DOT graph if we have a writer
-    fn emit_graph_viz_start(
-        &mut self,
-        builder: &FrameGraphBuilder,
-        graph_name: &str,
-    ) -> std::io::Result<()> {
+    fn emit_graph_viz_start(&mut self, graph_name: &str) -> std::io::Result<()> {
         if let Some((v, _options)) = self.writer.as_mut() {
             writeln!(v, "digraph {graph_name} {{")?;
         }
@@ -1841,7 +1823,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
     fn emit_barrier_ir_node(
         &mut self,
-        builder: &FrameGraphBuilder,
         barrier_type: IRBarrierType,
         barrier_prev: &'arena [usize],
         barrier_next: &'arena [usize],
@@ -1898,7 +1879,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
     fn emit_layout_change_ir_node(
         &mut self,
-        builder: &FrameGraphBuilder,
         barrier_type: IRBarrierType,
         barrier_prev: &[usize],
         barrier_next: &[usize],
