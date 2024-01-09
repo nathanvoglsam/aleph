@@ -1184,6 +1184,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             self.writer = Some((writer, options));
         }
 
+        self.debug_graph_validation();
+
         self.emit_graph_viz_end()?;
 
         Ok(())
@@ -1922,6 +1924,54 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         self.nodes.push(ir_node.into());
 
         Ok(ir_node_index)
+    }
+
+    fn debug_graph_validation(&mut self) {
+        if !cfg!(debug_assertions) {
+            return;
+        }
+
+        for node in self.nodes.iter() {
+            match node {
+                IRNode::RenderPass(v) => {
+                    self.assert_edges_link_to_barriers(v);
+                }
+                IRNode::Barrier(v) => {
+                    self.assert_edges_link_to_render_passes(v);
+                }
+                IRNode::LayoutChange(v) => {
+                    self.assert_edges_link_to_render_passes(v);
+                }
+            }
+        }
+    }
+
+    fn assert_edges_link_to_barriers(&self, v: &impl IIRNode) {
+        debug_assert!(v.is_render_pass());
+
+        let next = unsafe { v.next().as_ref() };
+        for next in next.iter().copied() {
+            assert!(self.nodes[next].is_barrier());
+        }
+
+        let prev = unsafe { v.prev().as_ref() };
+        for prev in prev.iter().copied() {
+            assert!(self.nodes[prev].is_barrier());
+        }
+    }
+
+    fn assert_edges_link_to_render_passes(&self, v: &impl IIRNode) {
+        debug_assert!(v.is_barrier());
+
+        let next = unsafe { v.next().as_ref() };
+        for next in next.iter().copied() {
+            assert!(self.nodes[next].is_render_pass());
+        }
+
+        let prev = unsafe { v.prev().as_ref() };
+        for prev in prev.iter().copied() {
+            assert!(self.nodes[prev].is_render_pass());
+        }
     }
 }
 
