@@ -1769,7 +1769,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
         writeln!(
             writer,
-            "    node{} [label=\"{} Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
+            "    node{} [label=\"{} Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
             barrier_ir_node_index,
             ir_node.barrier_type.graphviz_text(),
             resource_name,
@@ -1793,7 +1793,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
         writeln!(
             writer,
-            "    node{} [label=\"{} Layout Change Barrier: \\Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"]",
+            "    node{} [label=\"{} Layout Change Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"]",
             barrier_ir_node_index,
             ir_node.barrier_type.graphviz_text(),
             resource_name,
