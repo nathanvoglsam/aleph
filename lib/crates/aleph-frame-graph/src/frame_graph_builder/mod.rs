@@ -135,7 +135,7 @@ pub struct GraphVizOutputOptions {
 pub struct FrameGraphBuilder {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
     /// used to store anything that persists to the fully constructed graph.
-    pub(crate) graph_arena: Bump,
+    pub(crate) arena: Bump,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
@@ -198,9 +198,9 @@ impl FrameGraphBuilder {
         //         the arena.
         unsafe {
             // Default initialize the payload and allocate the payload into the arena
-            let payload = self.graph_arena.alloc(T::default());
+            let payload = self.arena.alloc(T::default());
             let mut payload = NonNull::from(payload);
-            DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, payload);
+            DropLink::append_drop_list(&self.arena, &mut self.drop_head, payload);
 
             // We need to use the pointer here as the mutable ref created by arena.alloc will get
             // moved into the NonNull instance created as &mut doesn't impl Copy. This is still safe
@@ -272,7 +272,7 @@ impl FrameGraphBuilder {
 
         drop(ir_builder);
 
-        let arena = std::mem::take(&mut self.graph_arena);
+        let arena = std::mem::take(&mut self.arena);
         let render_passes = std::mem::take(&mut self.render_passes);
         let root_resources = std::mem::take(&mut self.root_resources);
         let resource_versions = std::mem::take(&mut self.resource_versions);
@@ -473,11 +473,11 @@ impl<'a> ResourceRegistry<'a> {
 // Internal functions exposed through ResourceRegistry
 impl FrameGraphBuilder {
     pub(crate) fn add_pass_internal<T: IRenderPass>(&mut self, name: &str, pass: T) {
-        let name = self.graph_arena.alloc_str(name);
+        let name = self.arena.alloc_str(name);
         let name = NonNull::from(name);
-        let pass = self.graph_arena.alloc(pass);
+        let pass = self.arena.alloc(pass);
         let mut pass = NonNull::from(pass);
-        DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, pass);
+        DropLink::append_drop_list(&self.arena, &mut self.drop_head, pass);
 
         unsafe {
             let pass = NonNull::from(pass.as_mut() as &mut dyn IRenderPass);
@@ -511,7 +511,7 @@ impl FrameGraphBuilder {
             after_access: desc.after_access,
             after_layout: desc.after_layout,
         };
-        let name = desc.desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = desc.desc.name.map(|v| self.arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let r_type = ResourceTypeTexture {
             import: Some(imported),
@@ -561,7 +561,7 @@ impl FrameGraphBuilder {
             after_access: desc.after_access,
             after_layout: Default::default(),
         };
-        let name = desc.desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = desc.desc.name.map(|v| self.arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let r_type = ResourceTypeBuffer {
             import: Some(imported),
@@ -692,7 +692,7 @@ impl FrameGraphBuilder {
 
         let format = desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
-        let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = desc.name.map(|v| self.arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let create_desc = FrameGraphTextureDesc {
             width: desc.width,
@@ -738,7 +738,7 @@ impl FrameGraphBuilder {
         );
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
-        let name = desc.name.map(|v| self.graph_arena.alloc_str(v));
+        let name = desc.name.map(|v| self.arena.alloc_str(v));
         let name = name.map(|v| NonNull::from(v));
         let create_desc = FrameGraphBufferDesc {
             size: desc.size,
@@ -801,14 +801,14 @@ impl FrameGraphBuilder {
         let r = r.into();
         let version_id = r.0.version_id();
         let previous_read = self.resource_versions[version_id as usize].reads;
-        let read = self.graph_arena.alloc(VersionReaderLink {
+        let read = self.arena.alloc(VersionReaderLink {
             next: previous_read,
             render_pass,
             sync,
             access,
         });
         let read = NonNull::from(read);
-        DropLink::append_drop_list(&self.graph_arena, &mut self.drop_head, read);
+        DropLink::append_drop_list(&self.arena, &mut self.drop_head, read);
         self.resource_versions[version_id as usize].reads = Some(read);
         self.resource_versions[version_id as usize].read_count += 1;
     }
