@@ -320,6 +320,32 @@ impl<'a> Iterator for VersionReaderLinkIter<'a> {
     }
 }
 
+pub trait IIRNode: Clone + core::fmt::Debug {
+    fn prev(&self) -> NonNull<[usize]>;
+    fn next(&self) -> NonNull<[usize]>;
+    fn set_prev(&mut self, v: NonNull<[usize]>);
+    fn set_next(&mut self, v: NonNull<[usize]>);
+    fn is_render_pass(&self) -> bool;
+    fn is_barrier(&self) -> bool;
+    fn is_layout_transition(&self) -> bool;
+
+    fn render_pass(&self) -> usize {
+        Default::default()
+    }
+
+    fn barrier_type(&self) -> IRBarrierType {
+        Default::default()
+    }
+
+    fn before_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        (Default::default(), Default::default(), Default::default())
+    }
+
+    fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        (Default::default(), Default::default(), Default::default())
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum IRNode {
     /// This [IRNode] is used to represent a render-pass in the intermediate node graph.
@@ -342,60 +368,92 @@ pub(crate) enum IRNode {
     LayoutChange(LayoutChangeIRNode),
 }
 
-impl IRNode {
-    pub fn unwrap_render_pass(&self) -> &RenderPassIRNode {
-        if let IRNode::RenderPass(v) = self {
-            v
-        } else {
-            panic!("{:?} is not a RenderPass IRNode!", self);
-        }
-    }
-
-    pub fn unwrap_barrier(&self) -> &BarrierIRNode {
-        if let IRNode::Barrier(v) = self {
-            v
-        } else {
-            panic!("{:?} is not a Barrier IRNode!", self);
-        }
-    }
-
-    pub fn unwrap_layout_change(&self) -> &LayoutChangeIRNode {
-        if let IRNode::LayoutChange(v) = self {
-            v
-        } else {
-            panic!("{:?} is not a LayoutChange IRNode!", self);
-        }
-    }
-
-    pub fn prev(&self) -> NonNull<[usize]> {
+impl IIRNode for IRNode {
+    fn prev(&self) -> NonNull<[usize]> {
         match self {
-            IRNode::RenderPass(v) => v.prev,
-            IRNode::Barrier(v) => v.prev,
-            IRNode::LayoutChange(v) => v.prev,
+            IRNode::RenderPass(v) => v.prev(),
+            IRNode::Barrier(v) => v.prev(),
+            IRNode::LayoutChange(v) => v.prev(),
         }
     }
 
-    pub fn next(&self) -> NonNull<[usize]> {
+    fn next(&self) -> NonNull<[usize]> {
         match self {
-            IRNode::RenderPass(v) => v.next,
-            IRNode::Barrier(v) => v.next,
-            IRNode::LayoutChange(v) => v.next,
+            IRNode::RenderPass(v) => v.next(),
+            IRNode::Barrier(v) => v.next(),
+            IRNode::LayoutChange(v) => v.next(),
         }
     }
 
-    pub fn set_prev(&mut self, v: NonNull<[usize]>) {
+    fn set_prev(&mut self, v: NonNull<[usize]>) {
         match self {
-            IRNode::RenderPass(n) => n.prev = v,
-            IRNode::Barrier(n) => n.prev = v,
-            IRNode::LayoutChange(n) => n.prev = v,
+            IRNode::RenderPass(x) => x.set_prev(v),
+            IRNode::Barrier(x) => x.set_prev(v),
+            IRNode::LayoutChange(x) => x.set_prev(v),
         }
     }
 
-    pub fn set_next(&mut self, v: NonNull<[usize]>) {
+    fn set_next(&mut self, v: NonNull<[usize]>) {
         match self {
-            IRNode::RenderPass(n) => n.next = v,
-            IRNode::Barrier(n) => n.next = v,
-            IRNode::LayoutChange(n) => n.next = v,
+            IRNode::RenderPass(x) => x.set_next(v),
+            IRNode::Barrier(x) => x.set_next(v),
+            IRNode::LayoutChange(x) => x.set_next(v),
+        }
+    }
+
+    fn is_render_pass(&self) -> bool {
+        match self {
+            IRNode::RenderPass(v) => v.is_render_pass(),
+            IRNode::Barrier(v) => v.is_render_pass(),
+            IRNode::LayoutChange(v) => v.is_render_pass(),
+        }
+    }
+
+    fn is_barrier(&self) -> bool {
+        match self {
+            IRNode::RenderPass(v) => v.is_barrier(),
+            IRNode::Barrier(v) => v.is_barrier(),
+            IRNode::LayoutChange(v) => v.is_barrier(),
+        }
+    }
+
+    fn is_layout_transition(&self) -> bool {
+        match self {
+            IRNode::RenderPass(v) => v.is_layout_transition(),
+            IRNode::Barrier(v) => v.is_layout_transition(),
+            IRNode::LayoutChange(v) => v.is_layout_transition(),
+        }
+    }
+
+    fn render_pass(&self) -> usize {
+        match self {
+            IRNode::RenderPass(v) => v.render_pass(),
+            IRNode::Barrier(v) => v.render_pass(),
+            IRNode::LayoutChange(v) => v.render_pass(),
+        }
+    }
+
+    fn barrier_type(&self) -> IRBarrierType {
+        match self {
+            IRNode::RenderPass(v) => v.barrier_type(),
+            IRNode::Barrier(v) => v.barrier_type(),
+            IRNode::LayoutChange(v) => v.barrier_type(),
+        }
+    }
+
+    fn before_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        match self {
+            IRNode::RenderPass(v) => v.before_scope(),
+            IRNode::Barrier(v) => v.before_scope(),
+            IRNode::LayoutChange(v) => v.before_scope(),
+        }
+    }
+
+    fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        match self {
+            IRNode::RenderPass(v) => v.after_scope(),
+            IRNode::Barrier(v) => v.after_scope(),
+            IRNode::LayoutChange(v) => v.after_scope(),
         }
     }
 }
@@ -463,7 +521,152 @@ pub(crate) struct LayoutChangeIRNode {
     pub after_layout: ImageLayout,
 }
 
-#[derive(Copy, Clone, Debug)]
+impl IIRNode for RenderPassIRNode {
+    #[inline(always)]
+    fn prev(&self) -> NonNull<[usize]> {
+        self.prev
+    }
+
+    #[inline(always)]
+    fn next(&self) -> NonNull<[usize]> {
+        self.next
+    }
+
+    #[inline(always)]
+    fn set_prev(&mut self, v: NonNull<[usize]>) {
+        self.prev = v;
+    }
+
+    #[inline(always)]
+    fn set_next(&mut self, v: NonNull<[usize]>) {
+        self.next = v;
+    }
+
+    #[inline(always)]
+    fn is_render_pass(&self) -> bool {
+        true
+    }
+
+    #[inline(always)]
+    fn is_barrier(&self) -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn is_layout_transition(&self) -> bool {
+        false
+    }
+
+    fn render_pass(&self) -> usize {
+        self.render_pass
+    }
+}
+
+impl IIRNode for BarrierIRNode {
+    #[inline(always)]
+    fn prev(&self) -> NonNull<[usize]> {
+        self.prev
+    }
+
+    #[inline(always)]
+    fn next(&self) -> NonNull<[usize]> {
+        self.next
+    }
+
+    #[inline(always)]
+    fn set_prev(&mut self, v: NonNull<[usize]>) {
+        self.prev = v;
+    }
+
+    #[inline(always)]
+    fn set_next(&mut self, v: NonNull<[usize]>) {
+        self.next = v;
+    }
+
+    #[inline(always)]
+    fn is_render_pass(&self) -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn is_barrier(&self) -> bool {
+        true
+    }
+
+    #[inline(always)]
+    fn is_layout_transition(&self) -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn barrier_type(&self) -> IRBarrierType {
+        self.barrier_type
+    }
+
+    #[inline(always)]
+    fn before_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        (self.before_sync, self.before_access, Default::default())
+    }
+
+    #[inline(always)]
+    fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        (self.after_sync, self.after_access, Default::default())
+    }
+}
+
+impl IIRNode for LayoutChangeIRNode {
+    #[inline(always)]
+    fn prev(&self) -> NonNull<[usize]> {
+        self.prev
+    }
+
+    #[inline(always)]
+    fn next(&self) -> NonNull<[usize]> {
+        self.next
+    }
+
+    #[inline(always)]
+    fn set_prev(&mut self, v: NonNull<[usize]>) {
+        self.prev = v;
+    }
+
+    #[inline(always)]
+    fn set_next(&mut self, v: NonNull<[usize]>) {
+        self.next = v;
+    }
+
+    #[inline(always)]
+    fn is_render_pass(&self) -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn is_barrier(&self) -> bool {
+        true
+    }
+
+    #[inline(always)]
+    fn is_layout_transition(&self) -> bool {
+        true
+    }
+
+    #[inline(always)]
+    fn barrier_type(&self) -> IRBarrierType {
+        self.barrier_type
+    }
+
+    #[inline(always)]
+    fn before_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        (self.before_sync, self.before_access, self.before_layout)
+    }
+
+    #[inline(always)]
+    fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
+        (self.after_sync, self.after_access, self.after_layout)
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub(crate) enum IRBarrierType {
     /// A barrier used to initialize what would be an uninitialized transient resource.
     Initialization,
@@ -496,7 +699,16 @@ pub(crate) enum IRBarrierType {
     WriteAfterWrite,
 }
 
+impl Default for IRBarrierType {
+    fn default() -> Self {
+        Self::Initialization
+    }
+}
+
 impl IRBarrierType {
+    /// The number of variants of the [IRBarrierType] enum.
+    pub const NUM_VARIANTS: usize = 8;
+
     pub fn graphviz_text(&self) -> &'static str {
         match self {
             IRBarrierType::Initialization => "Initialization",
@@ -508,5 +720,21 @@ impl IRBarrierType {
             IRBarrierType::WriteAfterRead => "Write after Read",
             IRBarrierType::WriteAfterWrite => "Write after Write",
         }
+    }
+}
+
+pub(crate) struct PassOrderBundle {
+    pub barriers: NonNull<[usize]>,
+    pub passes: NonNull<[usize]>,
+}
+
+impl core::fmt::Debug for PassOrderBundle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let barriers = unsafe { self.barriers.as_ref() };
+        let passes = unsafe { self.passes.as_ref() };
+        f.debug_struct("PassOrderBundle")
+            .field("barriers", &barriers)
+            .field("passes", &passes)
+            .finish()
     }
 }
