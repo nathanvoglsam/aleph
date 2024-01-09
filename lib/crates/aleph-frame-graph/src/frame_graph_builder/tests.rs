@@ -713,7 +713,7 @@ pub fn test_usage_schedule() {
         pub import_texture_write: ResourceMut,
     }
     builder.add_pass(
-        "test-pass-8",
+        "test-pass-9",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
             let import_texture_write = resources.write_texture(
@@ -739,9 +739,11 @@ pub fn test_usage_schedule() {
         stderr.write_all(&dot_text).unwrap();
     }
 
-    let import = pin_board.get::<Pass0>().unwrap().import;
+    let import_buffer = pin_board.get::<Pass0>().unwrap().import;
+    let import_texture = pin_board.get::<Pass1>().unwrap().import;
     let mut import_bundle = ImportBundle::default();
-    import_bundle.add_resource(import, &mock_buffer);
+    import_bundle.add_resource(import_buffer, &mock_buffer);
+    import_bundle.add_resource(import_texture, &mock_texture);
     unsafe {
         graph.execute(&import_bundle);
     }
