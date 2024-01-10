@@ -271,7 +271,8 @@ impl FrameGraphBuilder {
         let mut pass_order_builder = PassOrderBuilder::new(&build_arena);
         pass_order_builder.build(&self, &ir_builder);
 
-        drop(ir_builder);
+        let execution_bundles = pass_order_builder.bundles;
+        let ir_nodes = ir_builder.nodes;
 
         let arena = std::mem::take(&mut self.arena);
         let render_passes = std::mem::take(&mut self.render_passes);
@@ -282,7 +283,8 @@ impl FrameGraphBuilder {
 
         Ok(FrameGraph {
             _arena: arena,
-            render_pass_order: Default::default(),
+            execution_bundles,
+            ir_nodes,
             render_passes,
             root_resources,
             resource_versions,
@@ -1956,6 +1958,8 @@ struct PassOrderBuilder<'arena> {
     ///
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
     arena: &'arena Bump,
+
+    bundles: Vec<PassOrderBundle>,
 }
 
 impl<'arena> PassOrderBuilder<'arena> {

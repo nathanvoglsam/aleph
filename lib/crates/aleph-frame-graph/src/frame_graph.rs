@@ -27,10 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::internal::FrameGraphBufferDesc;
-use crate::internal::FrameGraphTextureDesc;
-use crate::internal::{RenderPass, ResourceRoot, ResourceVersion};
-use crate::{FrameGraphBuilder, ImportBundle, TransientResourceBundle};
+use crate::internal::{
+    FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle, RenderPass,
+    ResourceRoot, ResourceVersion,
+};
+use crate::{
+    FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, TransientResourceBundle,
+};
 use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
 use bumpalo::Bump;
@@ -48,8 +51,9 @@ pub struct FrameGraph {
     /// order to keep the allocations for all the render passes alive.
     pub(crate) _arena: Bump,
 
-    /// List of render pass indices in order from first to run to last to run
-    pub(crate) render_pass_order: Vec<usize>,
+    pub(crate) execution_bundles: Vec<PassOrderBundle>,
+
+    pub(crate) ir_nodes: Vec<IRNode>,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
@@ -89,20 +93,69 @@ impl FrameGraph {
 
     pub unsafe fn execute(
         &mut self,
-        // transient_bundle: &TransientResourceBundle,
+        transient_bundle: &TransientResourceBundle,
         import_bundle: &ImportBundle,
     ) {
         self.execute_pre_assertions(import_bundle);
 
-        for v in self.render_pass_order.iter().copied() {
-            let pass = &mut self.render_passes[v];
-            unsafe { pass.pass.as_mut().execute() }
+        let resources = FrameGraphResources {
+            import_bundle,
+            transient_bundle,
+        };
+
+        for bundle in self.execution_bundles.iter() {
+            let mut memory_barrier = GlobalBarrier {
+                before_sync: BarrierSync::NONE,
+                after_sync: BarrierSync::NONE,
+                before_access: BarrierAccess::NONE,
+                after_access: BarrierAccess::NONE,
+            };
+
+            let mut image_barriers = Vec::new();
+            let barriers = unsafe { bundle.barriers.as_ref() };
+            for &barrier in barriers {
+                let node = &self.ir_nodes[barrier];
+                match node {
+                    IRNode::RenderPass(_) => unreachable!(),
+                    IRNode::Barrier(v) => {
+                        memory_barrier.before_sync |= v.before_sync;
+                        memory_barrier.before_access |= v.before_access;
+                        memory_barrier.after_sync |= v.after_sync;
+                        memory_barrier.after_access |= v.after_access;
+                    },
+                    IRNode::LayoutChange(v) => {
+                        let root_id = self.resource_versions[v.version.0 as usize].root_resource;
+                        let texture = transient_bundle.get_resource(root_id).or_else(|| import_bundle.get_resource(root_id)).map(|v| v.unwrap_texture()).unwrap();
+                        image_barriers.push(TextureBarrier {
+                            texture,
+                            subresource_range: TextureSubResourceSet::default(), // TODO: this
+                            before_sync: v.before_sync,
+                            after_sync: v.after_sync,
+                            before_access: v.before_access,
+                            after_access: v.after_access,
+                            before_layout: v.before_layout,
+                            after_layout: v.after_layout,
+                            queue_transition: None,
+                        });
+                    },
+                }
+            }
+
+            let passes = unsafe { bundle.passes.as_ref() };
+            for &pass in passes {
+                let node = &self.ir_nodes[pass];
+                debug_assert!(node.is_render_pass());
+
+                let render_pass = node.render_pass();
+                let render_pass = &mut self.render_passes[render_pass];
+                unsafe { render_pass.pass.as_mut().execute(&resources) }
+            }
         }
     }
 
     pub fn allocate_transient_resource_bundle(
         &self,
-        device: &dyn IDevice,
+        // device: &dyn IDevice,
     ) -> TransientResourceBundle {
         let num_transients = self.root_resources.len() - self.imported_resources.len();
         let mut bundle = TransientResourceBundle {
@@ -123,8 +176,8 @@ impl FrameGraph {
                         usage: transient.total_access_flags,
                         name: v.desc.name.map(|v| unsafe { v.as_ref() }),
                     };
-                    let buffer = device.create_buffer(&desc).unwrap();
-                    bundle.add_resource(i, buffer);
+                    // let buffer = device.create_buffer(&desc).unwrap();
+                    // bundle.add_resource(i, buffer);
                 }
                 crate::internal::ResourceType::Texture(v) => {
                     let desc = TextureDesc {
@@ -141,8 +194,8 @@ impl FrameGraph {
                         usage: transient.total_access_flags,
                         name: v.desc.name.map(|v| unsafe { v.as_ref() }),
                     };
-                    let texture = device.create_texture(&desc).unwrap();
-                    bundle.add_resource(i, texture);
+                    // let texture = device.create_texture(&desc).unwrap();
+                    // bundle.add_resource(i, texture);
                 }
             }
         }
@@ -150,33 +203,71 @@ impl FrameGraph {
         bundle
     }
 
+    #[rustfmt::skip]
     pub fn graph_viz_for_pass_order(
         &self,
         graph_name: &str,
         writer: &mut impl std::io::Write,
     ) -> std::io::Result<()> {
         writeln!(writer, "digraph {graph_name} {{")?;
+        writeln!(writer, "    compound=true;")?;
 
-        if self.render_pass_order.len() > 0 {
-            let mut iter = self.render_pass_order.iter();
+        for (i, bundle) in self.execution_bundles.iter().enumerate() {
+            writeln!(writer, "    subgraph cluster{i} {{")?;
+            writeln!(writer, "        label=\"Bundle {i}\";")?;
+            writeln!(writer, "        fontsize=30;")?;
+            writeln!(writer, "        cluster{i}entrynode [label=\"\",style=invis,width=0.01,height=0.01];")?;
+            writeln!(writer, "        subgraph cluster{i}barriers {{")?;
+            writeln!(writer, "            label=\"Barriers\";")?;
+            writeln!(writer, "            fontsize=20;")?;
+            writeln!(writer, "            style=filled;")?;
+            let barriers = unsafe { bundle.barriers.as_ref() };
+            for &barrier_index in barriers {
+                let node = &self.ir_nodes[barrier_index];
+                let target_version = node.resource_version();
+                let target_root = self.resource_versions[target_version.0 as usize].root_resource;
+                let target_root = &self.root_resources[target_root as usize];
+                let target_name = unsafe {
+                    target_root
+                        .resource_type
+                        .name()
+                        .unwrap_or("Unnamed Resource")
+                };
+                write!(writer, "            ")?;
+                node.write_graph_viz(writer, target_name, barrier_index)?;
+            }
+            writeln!(writer, "            cluster{i}barriernode [label=\"\",style=invis,width=0.01,height=0.01];")?;
+            writeln!(writer, "        }}")?;
+            writeln!(writer, "        subgraph cluster{i}passes {{")?;
+            writeln!(writer, "            label=\"Passes\";")?;
+            writeln!(writer, "            fontsize=20;")?;
+            writeln!(writer, "            style=filled;")?;
+            let passes = unsafe { bundle.passes.as_ref() };
+            for &pass_index in passes {
+                let node = &self.ir_nodes[pass_index];
+                let pass = &self.render_passes[node.render_pass()];
+                let pass_name = unsafe { pass.name.as_ref() };
+                write!(writer, "            ")?;
+                node.write_graph_viz(writer, pass_name, pass_index)?;
 
-            // Grab the first pass index
-            let mut prev = *iter.next().unwrap();
-
-            if self.render_pass_order.len() == 1 {
-                // If there's only a single pass then we output just the pass on it's own
-                let prev_name = unsafe { self.render_passes[prev].name.as_ref() };
-                writeln!(writer, "\"{prev_name}\"")?;
-            } else {
-                // Otherwise we walk through the list and output a pair for each pass
-                while let Some(&next) = iter.next() {
-                    let prev_name = unsafe { self.render_passes[prev].name.as_ref() };
-                    let next_name = unsafe { self.render_passes[next].name.as_ref() };
-                    writeln!(writer, "\"{prev_name}\" -> \"{next_name}\"")?;
-
-                    // Store 'next' as the previous before moving to the next node
-                    prev = next;
+                let prevs = unsafe { node.prev().as_ref() };
+                for &prev in prevs {
+                    if barriers.contains(&prev) {
+                        writeln!(writer, "            node{prev} -> node{pass_index};")?;
+                    }
                 }
+            }
+            writeln!(writer, "            cluster{i}passesnode [label=\"\",style=invis,width=0.01,height=0.01];")?;
+            writeln!(writer, "        }}")?;
+            writeln!(writer, "        cluster{i}barriernode -> cluster{i}passesnode [style=invis];")?;
+            writeln!(writer, "        cluster{i}exitnode [label=\"\",style=invis,width=0.01,height=0.01];")?;
+            writeln!(writer, "        cluster{i}entrynode -> cluster{i}barriernode [style=invis];")?;
+            writeln!(writer, "        cluster{i}passesnode -> cluster{i}exitnode [style=invis];")?;
+            writeln!(writer, "    }}")?;
+
+            if i > 0 {
+                let prev = i - 1;
+                writeln!(writer, "    cluster{prev}exitnode -> cluster{i}entrynode [ltail=cluster{prev},lhead=cluster{i},minlen=2];")?;
             }
         }
 
@@ -342,5 +433,24 @@ impl Drop for FrameGraph {
         unsafe {
             DropLink::drop_and_null(&mut self.drop_head);
         }
+    }
+}
+
+pub struct FrameGraphResources<'a> {
+    import_bundle: &'a ImportBundle,
+    transient_bundle: &'a TransientResourceBundle,
+}
+
+impl<'a> FrameGraphResources<'a> {
+    pub fn get<T: Into<ResourceRef>>(&self, r: T) -> Option<&ResourceVariant> {
+        let r: ResourceRef = r.into();
+        let i = r.0.root_id();
+
+        let resource = self
+            .transient_bundle
+            .get_resource(i)
+            .or_else(|| self.import_bundle.get_resource(i));
+
+        resource
     }
 }

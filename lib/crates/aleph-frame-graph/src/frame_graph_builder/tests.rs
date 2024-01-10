@@ -36,7 +36,6 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use std::any::TypeId;
-use std::io::Write;
 use std::ptr::NonNull;
 
 pub struct MockBuffer {
@@ -251,8 +250,9 @@ pub fn test_builder() {
     let mut graph = builder.build();
 
     let import_bundle = ImportBundle::default();
+    let transient_bundle = graph.allocate_transient_resource_bundle();
     unsafe {
-        graph.execute(&import_bundle);
+        graph.execute(&transient_bundle, &import_bundle);
     }
 }
 
@@ -366,8 +366,9 @@ pub fn test_handle_equality() {
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
+    let transient_bundle = graph.allocate_transient_resource_bundle();
     unsafe {
-        graph.execute(&import_bundle);
+        graph.execute(&transient_bundle, &import_bundle);
     }
 }
 
@@ -482,8 +483,9 @@ pub fn test_usage_collection() {
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
+    let transient_bundle = graph.allocate_transient_resource_bundle();
     unsafe {
-        graph.execute(&import_bundle);
+        graph.execute(&transient_bundle, &import_bundle);
     }
 }
 
@@ -724,12 +726,10 @@ pub fn test_usage_schedule() {
     let mut graph = builder
         .build_with_graph_viz("TestGraph", &mut dot_text, &Default::default())
         .unwrap();
+    graph
+        .graph_viz_for_pass_order("PassOrder", &mut dot_text)
+        .unwrap();
 
-    {
-        let stderr = std::io::stderr();
-        let mut stderr = stderr.lock();
-        stderr.write_all(&dot_text).unwrap();
-    }
     std::fs::write("./graphviz.dot", dot_text).unwrap();
 
     let import_buffer = pin_board.get::<Pass0>().unwrap().import;
