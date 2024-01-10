@@ -50,9 +50,6 @@ pub(crate) struct ResourceRoot {
     /// resource is used as within the frame graph.
     pub total_access_flags: ResourceUsageFlags,
 
-    /// An index to the first version of this resource
-    pub initial_version: VersionIndex,
-
     /// An index to the final version of this resource
     pub final_version: VersionIndex,
 }
