@@ -138,7 +138,7 @@ mod resource;
 mod resource_variant;
 mod transient_bundle;
 
-pub use frame_graph::FrameGraph;
+pub use frame_graph::{FrameGraph, FrameGraphResources};
 pub use frame_graph_builder::{FrameGraphBuilder, ResourceRegistry};
 pub use import_bundle::ImportBundle;
 pub use render_pass::IRenderPass;

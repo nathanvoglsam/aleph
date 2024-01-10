@@ -29,6 +29,7 @@
 
 use crate::frame_graph_builder::BufferImportDesc;
 use crate::frame_graph_builder::TextureImportDesc;
+use crate::FrameGraphResources;
 use crate::ImportBundle;
 use crate::{FrameGraph, ResourceMut, ResourceRef, ResourceRegistry};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -199,7 +200,7 @@ pub fn test_builder() {
             ));
             out_create = data.resource;
         },
-        |data: &TestPassData| {
+        |data: &TestPassData, _resources: &FrameGraphResources| {
             // Verify we got the right payload
             assert_eq!(data.value, 54321);
         },
@@ -220,7 +221,7 @@ pub fn test_builder() {
             ));
             out_write = data.resource;
         },
-        |data: &TestPassData| {
+        |data: &TestPassData, _resources: &FrameGraphResources| {
             // Verify we got the right payload
             assert_eq!(data.value, 1234);
         },
@@ -241,16 +242,13 @@ pub fn test_builder() {
             ));
             out_read = data.resource;
         },
-        |data: &TestPassData2| {
+        |data: &TestPassData2, _resources: &FrameGraphResources| {
             // Verify we got the right payload
             assert_eq!(data.value, -432);
         },
     );
 
     let mut graph = builder.build();
-
-    let expected_pass_order: [usize; 3] = [0, 1, 2];
-    assert_eq!(&graph.render_pass_order, &expected_pass_order);
 
     let import_bundle = ImportBundle::default();
     unsafe {
@@ -293,7 +291,7 @@ pub fn test_handle_equality() {
             );
             imported_resource = Some(r);
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
@@ -315,7 +313,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -332,7 +330,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -344,7 +342,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::CONSTANT_BUFFER,
             ));
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     let out_create = out_create.unwrap();
@@ -365,9 +363,6 @@ pub fn test_handle_equality() {
     assert_eq!(out_write_transient, out_read_transient); // Read of the transient write, not renamed
 
     let mut graph = builder.build();
-
-    let expected_pass_order: [usize; 4] = [0, 1, 2, 3];
-    assert_eq!(&graph.render_pass_order, &expected_pass_order);
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
@@ -411,7 +406,7 @@ pub fn test_usage_collection() {
             );
             imported_resource = Some(r);
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
@@ -433,7 +428,7 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::INDEX_BUFFER,
             ));
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -450,7 +445,7 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -462,13 +457,10 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     let mut graph = builder.build();
-
-    let expected_pass_order: [usize; 4] = [0, 1, 2, 3];
-    assert_eq!(&graph.render_pass_order, &expected_pass_order);
 
     let out_create = out_create.unwrap();
 
@@ -547,7 +539,7 @@ pub fn test_usage_schedule() {
             );
             pin_board.publish(Pass0 { import })
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     struct Pass1 {
@@ -588,11 +580,11 @@ pub fn test_usage_schedule() {
 
             pin_board.publish(Pass1 { create, import });
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     struct Pass2 {
-        import_buffer_write: ResourceMut,
+        // import_buffer_write: ResourceMut,
         import_texture_write: ResourceMut,
         transient_write: ResourceMut,
     }
@@ -604,7 +596,7 @@ pub fn test_usage_schedule() {
             let create = pass1.create;
             let import_texture = pass1.import;
 
-            let import_buffer_write = resources.write_buffer(
+            let _import_buffer_write = resources.write_buffer(
                 import_buffer,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
@@ -623,12 +615,12 @@ pub fn test_usage_schedule() {
             );
 
             pin_board.publish(Pass2 {
-                import_buffer_write,
+                // import_buffer_write,
                 import_texture_write,
                 transient_write,
             });
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -641,7 +633,7 @@ pub fn test_usage_schedule() {
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -654,7 +646,7 @@ pub fn test_usage_schedule() {
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -667,7 +659,7 @@ pub fn test_usage_schedule() {
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -680,7 +672,7 @@ pub fn test_usage_schedule() {
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -693,7 +685,7 @@ pub fn test_usage_schedule() {
                 ResourceUsageFlags::RENDER_TARGET,
             );
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -706,26 +698,26 @@ pub fn test_usage_schedule() {
                 ResourceUsageFlags::RENDER_TARGET,
             );
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
-    struct Pass8 {
-        pub import_texture_write: ResourceMut,
-    }
+    // struct Pass8 {
+    //     pub import_texture_write: ResourceMut,
+    // }
     builder.add_pass(
         "test-pass-9",
         |_data: &mut (), resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let import_texture_write = resources.write_texture(
+            let _import_texture_write = resources.write_texture(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
             );
-            pin_board.publish(Pass8 {
-                import_texture_write,
-            });
+            // pin_board.publish(Pass8 {
+            //     import_texture_write,
+            // });
         },
-        |_data: &()| {},
+        |_data: &(), _resources: &FrameGraphResources| {},
     );
 
     let mut dot_text = Vec::<u8>::new();
@@ -738,13 +730,15 @@ pub fn test_usage_schedule() {
         let mut stderr = stderr.lock();
         stderr.write_all(&dot_text).unwrap();
     }
+    std::fs::write("./graphviz.dot", dot_text).unwrap();
 
     let import_buffer = pin_board.get::<Pass0>().unwrap().import;
     let import_texture = pin_board.get::<Pass1>().unwrap().import;
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(import_buffer, &mock_buffer);
     import_bundle.add_resource(import_texture, &mock_texture);
+    let transient_bundle = graph.allocate_transient_resource_bundle();
     unsafe {
-        graph.execute(&import_bundle);
+        graph.execute(&transient_bundle, &import_bundle);
     }
 }

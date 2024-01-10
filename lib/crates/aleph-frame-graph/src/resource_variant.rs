@@ -35,6 +35,24 @@ pub enum ResourceVariant {
     Texture(AnyArc<dyn ITexture>),
 }
 
+impl ResourceVariant {
+    pub fn unwrap_buffer(&self) -> &dyn IBuffer {
+        if let Self::Buffer(v) = self {
+            v.as_ref()
+        } else {
+            panic!("ResourceVariant is not a 'Buffer'");
+        }
+    }
+
+    pub fn unwrap_texture(&self) -> &dyn ITexture {
+        if let Self::Texture(v) = self {
+            v.as_ref()
+        } else {
+            panic!("ResourceVariant is not a 'Texture'");
+        }
+    }
+}
+
 impl From<AnyArc<dyn IBuffer>> for ResourceVariant {
     fn from(value: AnyArc<dyn IBuffer>) -> Self {
         Self::Buffer(value)

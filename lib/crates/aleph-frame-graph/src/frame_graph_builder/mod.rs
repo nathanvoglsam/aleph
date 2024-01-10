@@ -53,6 +53,7 @@ use crate::access::ResourceUsageFlagsExt;
 use crate::internal::*;
 use crate::render_pass::CallbackRenderPass;
 use crate::resource::ResourceId;
+use crate::FrameGraphResources;
 use crate::{FrameGraph, IRenderPass, ResourceMut, ResourceRef};
 use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
@@ -185,7 +186,7 @@ impl FrameGraphBuilder {
     pub fn add_pass<
         T: Send + Default + 'static,
         SetupFn: FnOnce(&mut T, &mut ResourceRegistry),
-        ExecFn: FnMut(&T) + Send + 'static,
+        ExecFn: FnMut(&T, &FrameGraphResources) + Send + 'static,
     >(
         &mut self,
         name: &str,
