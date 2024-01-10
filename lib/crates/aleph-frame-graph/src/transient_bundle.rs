@@ -47,9 +47,7 @@ impl TransientResourceBundle {
         self
     }
 
-    pub(crate) fn get_resource(&self, i: u16) -> &ResourceVariant {
-        self.transients
-            .get(&i)
-            .expect("Declared imported resource not present in provided ImportBundle")
+    pub(crate) fn get_resource(&self, i: u16) -> Option<&ResourceVariant> {
+        self.transients.get(&i)
     }
 }

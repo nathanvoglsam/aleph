@@ -52,9 +52,7 @@ impl ImportBundle {
         self
     }
 
-    pub fn get_resource(&self, root_id: u16) -> &ResourceVariant {
-        self.imports
-            .get(&root_id)
-            .expect("Declared imported resource not present in provided ImportBundle")
+    pub fn get_resource(&self, root_id: u16) -> Option<&ResourceVariant> {
+        self.imports.get(&root_id)
     }
 }
