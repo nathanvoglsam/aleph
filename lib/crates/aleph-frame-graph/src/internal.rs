@@ -329,6 +329,10 @@ pub trait IIRNode: Clone + core::fmt::Debug {
     fn is_barrier(&self) -> bool;
     fn is_layout_transition(&self) -> bool;
 
+    fn resource_version(&self) -> VersionIndex {
+        VersionIndex::INVALID
+    }
+
     fn render_pass(&self) -> usize {
         Default::default()
     }
@@ -344,6 +348,13 @@ pub trait IIRNode: Clone + core::fmt::Debug {
     fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
         (Default::default(), Default::default(), Default::default())
     }
+
+    fn write_graph_viz<T: std::io::Write>(
+        &self,
+        writer: &mut T,
+        name: &str,
+        node_index: usize,
+    ) -> std::io::Result<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -425,6 +436,14 @@ impl IIRNode for IRNode {
         }
     }
 
+    fn resource_version(&self) -> VersionIndex {
+        match self {
+            IRNode::RenderPass(v) => v.resource_version(),
+            IRNode::Barrier(v) => v.resource_version(),
+            IRNode::LayoutChange(v) => v.resource_version(),
+        }
+    }
+
     fn render_pass(&self) -> usize {
         match self {
             IRNode::RenderPass(v) => v.render_pass(),
@@ -454,6 +473,19 @@ impl IIRNode for IRNode {
             IRNode::RenderPass(v) => v.after_scope(),
             IRNode::Barrier(v) => v.after_scope(),
             IRNode::LayoutChange(v) => v.after_scope(),
+        }
+    }
+
+    fn write_graph_viz<T: std::io::Write>(
+        &self,
+        writer: &mut T,
+        name: &str,
+        node_index: usize,
+    ) -> std::io::Result<()> {
+        match self {
+            IRNode::RenderPass(v) => v.write_graph_viz(writer, name, node_index),
+            IRNode::Barrier(v) => v.write_graph_viz(writer, name, node_index),
+            IRNode::LayoutChange(v) => v.write_graph_viz(writer, name, node_index),
         }
     }
 }
@@ -560,6 +592,18 @@ impl IIRNode for RenderPassIRNode {
     fn render_pass(&self) -> usize {
         self.render_pass
     }
+
+    fn write_graph_viz<T: std::io::Write>(
+        &self,
+        writer: &mut T,
+        name: &str,
+        node_index: usize,
+    ) -> std::io::Result<()> {
+        writeln!(
+            writer,
+            "node{node_index} [shape=box,label=\"Render Pass: \\\"{name}\\\"\"];"
+        )
+    }
 }
 
 impl IIRNode for BarrierIRNode {
@@ -599,6 +643,11 @@ impl IIRNode for BarrierIRNode {
     }
 
     #[inline(always)]
+    fn resource_version(&self) -> VersionIndex {
+        self.version
+    }
+
+    #[inline(always)]
     fn barrier_type(&self) -> IRBarrierType {
         self.barrier_type
     }
@@ -611,6 +660,26 @@ impl IIRNode for BarrierIRNode {
     #[inline(always)]
     fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
         (self.after_sync, self.after_access, Default::default())
+    }
+
+    fn write_graph_viz<T: std::io::Write>(
+        &self,
+        writer: &mut T,
+        name: &str,
+        node_index: usize,
+    ) -> std::io::Result<()> {
+        writeln!(
+            writer,
+            "node{} [label=\"{} Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"];",
+            node_index,
+            self.barrier_type.graphviz_text(),
+            name,
+            self.version.0,
+            self.before_sync,
+            self.before_access,
+            self.after_sync,
+            self.after_access
+        )
     }
 }
 
@@ -651,6 +720,11 @@ impl IIRNode for LayoutChangeIRNode {
     }
 
     #[inline(always)]
+    fn resource_version(&self) -> VersionIndex {
+        self.version
+    }
+
+    #[inline(always)]
     fn barrier_type(&self) -> IRBarrierType {
         self.barrier_type
     }
@@ -663,6 +737,28 @@ impl IIRNode for LayoutChangeIRNode {
     #[inline(always)]
     fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
         (self.after_sync, self.after_access, self.after_layout)
+    }
+
+    fn write_graph_viz<T: std::io::Write>(
+        &self,
+        writer: &mut T,
+        name: &str,
+        node_index: usize,
+    ) -> std::io::Result<()> {
+        writeln!(
+            writer,
+            "node{} [label=\"{} Layout Change Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"];",
+            node_index,
+            self.barrier_type.graphviz_text(),
+            name,
+            self.version.0,
+            self.before_sync,
+            self.before_access,
+            self.before_layout,
+            self.after_sync,
+            self.after_access,
+            self.after_layout,
+        )
     }
 }
 
