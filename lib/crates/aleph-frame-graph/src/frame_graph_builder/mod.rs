@@ -1769,20 +1769,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         ir_node: &BarrierIRNode,
     ) -> std::io::Result<()> {
         let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
-        writeln!(
-            writer,
-            "    node{} [label=\"{} Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"]",
-            barrier_ir_node_index,
-            ir_node.barrier_type.graphviz_text(),
-            resource_name,
-            ir_node.version.0,
-            ir_node.before_sync,
-            ir_node.before_access,
-            ir_node.after_sync,
-            ir_node.after_access
-        )?;
-
-        Ok(())
+        write!(writer, "    ")?;
+        ir_node.write_graph_viz(writer, resource_name, barrier_ir_node_index)
     }
 
     fn emit_graph_viz_layout_change_node(
@@ -1793,21 +1781,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         ir_node: &LayoutChangeIRNode,
     ) -> std::io::Result<()> {
         let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
-        writeln!(
-            writer,
-            "    node{} [label=\"{} Layout Change Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"]",
-            barrier_ir_node_index,
-            ir_node.barrier_type.graphviz_text(),
-            resource_name,
-            ir_node.version.0,
-            ir_node.before_sync,
-            ir_node.before_access,
-            ir_node.before_layout,
-            ir_node.after_sync,
-            ir_node.after_access,
-            ir_node.after_layout,
-        )?;
-        Ok(())
+        write!(writer, "    ")?;
+        ir_node.write_graph_viz(writer, resource_name, barrier_ir_node_index)
     }
 
     /// Internal function used for inserting new barrier IR nodes into the frame graph.
