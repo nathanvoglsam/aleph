@@ -135,6 +135,7 @@ aleph-dx12-alloc = { path = "./lib/crates/aleph-dx12-alloc", version = "0.1" }
 aleph-ecs = { path = "./lib/crates/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./lib/crates/aleph-engine", version = "0.1" }
 aleph-engine-build = { path = "./lib/crates/aleph-engine-build", version = "0.1" }
+aleph-frame-graph = { path = "./lib/crates/aleph-frame-graph", version = "0.1" }
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./lib/crates/aleph-label", version = "1" }
 aleph-pin-board = { path = "./lib/crates/aleph-pin-board", version = "0.1" }

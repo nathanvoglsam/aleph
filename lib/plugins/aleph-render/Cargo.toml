@@ -46,7 +46,10 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-egui = { workspace = true }
 aleph-interfaces = { workspace = true }
+aleph-frame-graph = { workspace = true }
+aleph-pin-board = { workspace = true }
 aleph-rhi-api = { workspace = true }
+crossbeam = { workspace = true }
 log = { workspace = true }
 once_cell = { workspace = true }
 ultraviolet = { workspace = true }

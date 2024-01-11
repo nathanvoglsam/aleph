@@ -41,12 +41,10 @@ pub struct GlobalObjects {
     pub fragment_shader: AnyArc<dyn IShader>,
     pub graphics_pipeline: AnyArc<dyn IGraphicsPipeline>,
     pub font_texture: FontTexture,
-    pub swap_width: u32,
-    pub swap_height: u32,
 }
 
 impl GlobalObjects {
-    pub fn new(device: &dyn IDevice, dimensions: (u32, u32)) -> Self {
+    pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
         let descriptor_set_layout = Self::create_descriptor_set_layout(device);
         let pipeline_layout = Self::create_root_signature(device, descriptor_set_layout.deref());
@@ -99,8 +97,6 @@ impl GlobalObjects {
                 bytes: vec![255; 256],
                 version: 1,
             },
-            swap_width: dimensions.0,
-            swap_height: dimensions.1,
         }
     }
 

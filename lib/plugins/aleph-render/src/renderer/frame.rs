@@ -29,16 +29,17 @@
 
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
+use aleph_frame_graph::FrameGraph;
+use aleph_frame_graph::TransientResourceBundle;
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 use std::ops::Deref;
 
 pub struct PerFrameObjects {
-    pub vtx_buffer: AnyArc<dyn IBuffer>,
-    pub idx_buffer: AnyArc<dyn IBuffer>,
-
     pub acquire_semaphore: AnyArc<dyn ISemaphore>,
     pub present_semaphore: AnyArc<dyn ISemaphore>,
+
+    pub transient_bundle: TransientResourceBundle,
 
     pub font_version: usize,
     pub font_staging_buffer: AnyArc<dyn IBuffer>,
@@ -53,27 +54,7 @@ pub struct PerFrameObjects {
 }
 
 impl PerFrameObjects {
-    pub fn new(device: &dyn IDevice, global: &GlobalObjects) -> Self {
-        let vtx_buffer = {
-            let desc = BufferDesc {
-                size: Self::vertex_buffer_size() as _,
-                cpu_access: CpuAccessMode::Write,
-                usage: ResourceUsageFlags::VERTEX_BUFFER | ResourceUsageFlags::COPY_DEST,
-                ..Default::default()
-            };
-            device.create_buffer(&desc).unwrap()
-        };
-
-        let idx_buffer = {
-            let desc = BufferDesc {
-                size: Self::index_buffer_size() as _,
-                cpu_access: CpuAccessMode::Write,
-                usage: ResourceUsageFlags::INDEX_BUFFER | ResourceUsageFlags::COPY_DEST,
-                ..Default::default()
-            };
-            device.create_buffer(&desc).unwrap()
-        };
-
+    pub fn new(device: &dyn IDevice, global: &GlobalObjects, frame_graph: &FrameGraph) -> Self {
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
         let desc = DescriptorPoolDesc {
@@ -84,11 +65,12 @@ impl PerFrameObjects {
         let mut descriptor_pool = device.create_descriptor_pool(&desc).unwrap();
         let descriptor_set = descriptor_pool.allocate_set().unwrap();
 
+        let transient_bundle = frame_graph.allocate_transient_resource_bundle(device);
+
         Self {
-            vtx_buffer,
-            idx_buffer,
             acquire_semaphore: device.create_semaphore().unwrap(),
             present_semaphore: device.create_semaphore().unwrap(),
+            transient_bundle,
             font_version: 0,
             font_staging_buffer,
             font_staged: None,

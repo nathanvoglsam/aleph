@@ -30,17 +30,25 @@
 mod frame;
 mod global;
 
+use aleph_frame_graph::*;
 use aleph_rhi_api::*;
+use crossbeam::channel::Receiver;
+use crossbeam::channel::Sender;
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::AnyArc;
 use std::ops::{Deref, DerefMut};
-use std::ptr::NonNull;
 
 pub struct EguiRenderer {
     pub frames: Vec<PerFrameObjects>,
     pub global: GlobalObjects,
+
+    pub frame_graph: FrameGraph,
+
+    pub sender: Sender<(DescriptorSetHandle, RenderData)>,
+
+    pub back_buffer_id: ResourceMut,
 
     /// Rendering device
     pub device: AnyArc<dyn IDevice>,
@@ -50,31 +58,285 @@ pub struct EguiRenderer {
 }
 
 impl EguiRenderer {
-    pub fn new(device: AnyArc<dyn IDevice>, dimensions: (u32, u32), pixels_per_point: f32) -> Self {
+    pub fn new(
+        device: AnyArc<dyn IDevice>,
+        back_buffer_desc: &TextureDesc,
+        pixels_per_point: f32,
+    ) -> Self {
         log::trace!("Initializing Egui Renderer");
 
-        let global = GlobalObjects::new(device.deref(), dimensions);
+        let global = GlobalObjects::new(device.deref());
+
+        let (frame_graph, sender, back_buffer_id) =
+            Self::create_frame_graph(&global, pixels_per_point, back_buffer_desc);
 
         let frames = (0..2)
             .into_iter()
-            .map(|_| PerFrameObjects::new(device.deref(), &global))
+            .map(|_| PerFrameObjects::new(device.deref(), &global, &frame_graph))
             .collect();
 
         Self {
-            device,
             frames,
             global,
+            frame_graph,
+            sender,
+            back_buffer_id,
+            device,
             pixels_per_point,
         }
     }
 
-    pub fn update_screen_info(&mut self, pixels_per_point: f32) {
+    pub fn rebuild_after_resize(&mut self, back_buffer_desc: &TextureDesc, pixels_per_point: f32) {
+        let (frame_graph, sender, back_buffer_id) =
+            Self::create_frame_graph(&self.global, pixels_per_point, back_buffer_desc);
+
+        let frames: Vec<_> = (0..2)
+            .into_iter()
+            .map(|_| PerFrameObjects::new(self.device.as_ref(), &self.global, &frame_graph))
+            .collect();
+
+        self.frames = frames;
+        self.frame_graph = frame_graph;
+        self.sender = sender;
+        self.back_buffer_id = back_buffer_id;
         self.pixels_per_point = pixels_per_point;
     }
 
-    pub fn recreate_swap_resources(&mut self, new_dimensions: (u32, u32)) {
-        self.global.swap_width = new_dimensions.0;
-        self.global.swap_height = new_dimensions.1;
+    pub fn create_frame_graph(
+        global: &GlobalObjects,
+        pixels_per_point: f32,
+        back_buffer_desc: &TextureDesc,
+    ) -> (
+        FrameGraph,
+        Sender<(DescriptorSetHandle, RenderData)>,
+        ResourceMut,
+    ) {
+        let mut frame_graph = FrameGraph::builder();
+
+        let (send, recv) = crossbeam::channel::bounded(2);
+
+        let mut back_buffer_id = None;
+        struct Payload {
+            recv: Receiver<(DescriptorSetHandle, RenderData)>,
+            pipeline_layout: AnyArc<dyn IPipelineLayout>,
+            pipeline: AnyArc<dyn IGraphicsPipeline>,
+            swap_extent: Extent2D,
+            pixels_per_point: f32,
+            back_buffer: ResourceMut,
+            vtx_buffer: ResourceMut,
+            idx_buffer: ResourceMut,
+        }
+        frame_graph.add_pass(
+            "EguiPass",
+            |data: &mut Option<Payload>, resources: &mut ResourceRegistry| {
+                let back_buffer_desc = back_buffer_desc.clone().with_name("Swap Chain Image");
+                let back_buffer = resources.import_texture(
+                    &TextureImportDesc {
+                        desc: &back_buffer_desc,
+                        before_sync: BarrierSync::ALL,
+                        before_access: BarrierAccess::NONE,
+                        before_layout: ImageLayout::Undefined,
+                        after_sync: BarrierSync::NONE,
+                        after_access: BarrierAccess::NONE,
+                        after_layout: ImageLayout::PresentSrc,
+                    },
+                    BarrierSync::NONE,
+                    ResourceUsageFlags::RENDER_TARGET,
+                );
+                back_buffer_id = Some(back_buffer);
+
+                let vtx_buffer = resources.create_buffer(
+                    &BufferDesc {
+                        size: PerFrameObjects::vertex_buffer_size() as u64,
+                        cpu_access: CpuAccessMode::Write,
+                        name: Some("Egui Vertex Buffer"),
+                        ..Default::default()
+                    },
+                    BarrierSync::NONE,
+                    ResourceUsageFlags::VERTEX_BUFFER | ResourceUsageFlags::COPY_DEST,
+                );
+
+                let idx_buffer = resources.create_buffer(
+                    &BufferDesc {
+                        size: PerFrameObjects::index_buffer_size() as u64,
+                        cpu_access: CpuAccessMode::Write,
+                        name: Some("Egui Index Buffer"),
+                        ..Default::default()
+                    },
+                    BarrierSync::NONE,
+                    ResourceUsageFlags::INDEX_BUFFER | ResourceUsageFlags::COPY_DEST,
+                );
+
+                *data = Some(Payload {
+                    recv,
+                    pipeline_layout: global.pipeline_layout.clone(),
+                    pipeline: global.graphics_pipeline.clone(),
+                    swap_extent: Extent2D::new(back_buffer_desc.width, back_buffer_desc.height),
+                    pixels_per_point,
+                    back_buffer,
+                    vtx_buffer,
+                    idx_buffer,
+                });
+            },
+            |data: &Option<Payload>,
+             encoder: &mut dyn IGeneralEncoder,
+             resources: &FrameGraphResources| unsafe {
+                // Unwrap all our fg resources from our setup payload
+                let data = data.as_ref().unwrap();
+                let back_buffer = resources.get_texture(data.back_buffer).unwrap();
+                let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
+                let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
+
+                let (descriptor_set, render_data) = data.recv.recv().unwrap();
+
+                // Map and calculate our begin/end pointers for the mapped vertex and index buffer
+                // regions
+                let mut v_ptr = vtx_buffer.map().unwrap().as_ptr();
+                let v_ptr_end = v_ptr.add(PerFrameObjects::vertex_buffer_size());
+                let mut i_ptr = idx_buffer.map().unwrap().as_ptr();
+                let i_ptr_end = i_ptr.add(PerFrameObjects::index_buffer_size());
+
+                // Get an RTV from our imported back buffer
+                let desc = back_buffer.desc();
+                let image_view = back_buffer
+                    .get_rtv(&ImageViewDesc {
+                        format: desc.format,
+                        view_type: ImageViewType::Tex2D,
+                        sub_resources: TextureSubResourceSet {
+                            aspect: TextureAspect::COLOR,
+                            base_mip_level: 0,
+                            num_mip_levels: 1,
+                            base_array_slice: 0,
+                            num_array_slices: 1,
+                        },
+                        writable: true,
+                    })
+                    .unwrap();
+
+                // Begin a render pass targeting our back buffer
+                encoder.begin_rendering(&BeginRenderingInfo {
+                    layer_count: 1,
+                    extent: Extent2D {
+                        width: desc.width,
+                        height: desc.height,
+                    },
+                    color_attachments: &[RenderingColorAttachmentInfo {
+                        image_view,
+                        image_layout: ImageLayout::ColorAttachment,
+                        load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
+                        store_op: AttachmentStoreOp::Store,
+                    }],
+                    depth_stencil_attachment: None,
+                    allow_uav_writes: false,
+                });
+
+                encoder.bind_graphics_pipeline(data.pipeline.as_ref());
+
+                encoder.bind_descriptor_sets(
+                    data.pipeline_layout.as_ref(),
+                    PipelineBindPoint::Graphics,
+                    0,
+                    &[descriptor_set],
+                );
+
+                //
+                // Push screen size via root constants
+                //
+                let width_pixels = data.swap_extent.width as f32;
+                let height_pixels = data.swap_extent.height as f32;
+                let width_points = width_pixels / data.pixels_per_point;
+                let height_points = height_pixels / data.pixels_per_point;
+                let values_data = [width_points, height_points];
+                encoder.set_push_constant_block(0, bytemuck::cast_slice(&values_data));
+
+                //
+                // Bind the vertex and index buffers to render with
+                //
+                encoder.bind_vertex_buffers(
+                    0,
+                    &[InputAssemblyBufferBinding {
+                        buffer: vtx_buffer,
+                        offset: 0,
+                    }],
+                );
+                encoder.bind_index_buffer(
+                    IndexType::U32,
+                    &InputAssemblyBufferBinding {
+                        buffer: idx_buffer,
+                        offset: 0,
+                    },
+                );
+
+                //
+                // Set the viewport state, we're going to be rendering to the whole frame
+                //
+                encoder.set_viewports(&[Viewport {
+                    x: 0.0,
+                    y: 0.0,
+                    width: data.swap_extent.width as _,
+                    height: data.swap_extent.height as _,
+                    min_depth: 0.0,
+                    max_depth: 1.0,
+                }]);
+
+                let mut vtx_base = 0;
+                let mut idx_base = 0;
+                for job in render_data.primitives {
+                    if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
+                        // Skip doing anything for the job if there's nothing to render
+                        if triangles.vertices.is_empty() || triangles.indices.is_empty() {
+                            continue;
+                        }
+
+                        // Get the slice to copy from and various byte counts
+                        let v_slice = &triangles.vertices;
+                        let v_size = core::mem::size_of_val(&v_slice[0]);
+                        let v_copy_size = v_slice.len() * v_size;
+
+                        // Get the slice to copy from and various byte counts
+                        let i_slice = &triangles.indices;
+                        let i_size = core::mem::size_of_val(&i_slice[0]);
+                        let i_copy_size = i_slice.len() * i_size;
+
+                        // Calculate where the pointers will be after writing the current set of data
+                        let v_ptr_next = v_ptr.add(v_copy_size);
+                        let i_ptr_next = i_ptr.add(i_copy_size);
+
+                        // Check if we're going to over-run the buffers, and panic if we will
+                        if v_ptr_next >= v_ptr_end || i_ptr_next >= i_ptr_end {
+                            panic!("Out of memory");
+                        }
+
+                        // Perform the actual copies
+                        v_ptr.copy_from(v_slice.as_ptr() as *const _, v_copy_size);
+                        i_ptr.copy_from(i_slice.as_ptr() as *const _, i_copy_size);
+
+                        // Setup the pointers for the next iteration
+                        v_ptr = v_ptr_next;
+                        i_ptr = i_ptr_next;
+
+                        Self::record_job_commands(
+                            encoder,
+                            &job,
+                            data.swap_extent.clone(),
+                            data.pixels_per_point,
+                            vtx_base,
+                            idx_base,
+                        );
+
+                        vtx_base += triangles.vertices.len();
+                        idx_base += triangles.indices.len();
+                    }
+                }
+
+                encoder.end_rendering();
+
+                vtx_buffer.unmap();
+                idx_buffer.unmap();
+            },
+        );
+
+        (frame_graph.build(), send, back_buffer_id.unwrap())
     }
 
     pub unsafe fn record_frame(
@@ -97,9 +359,9 @@ impl EguiRenderer {
 
             // If the font texture has changed then we need to update our copy and increment the
             // version to invalidate the per-frame font textures
-            for (_, delta) in render_data.textures_delta.set {
+            for (_, delta) in render_data.textures_delta.set.iter() {
                 if let egui::epaint::ImageData::Font(_) = &delta.image {
-                    self.global.update_font_texture(&delta);
+                    self.global.update_font_texture(delta);
                 }
             }
 
@@ -113,153 +375,32 @@ impl EguiRenderer {
                 self.frames[index].record_texture_upload(encoder.deref_mut());
             }
 
-            // Map the buffers for copying into them
-            let (v_ptr, v_ptr_end, i_ptr, i_ptr_end) = self.map_buffers(index);
-            let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = (
-                v_ptr.as_ptr(),
-                v_ptr_end.as_ptr(),
-                i_ptr.as_ptr(),
-                i_ptr_end.as_ptr(),
-            );
+            let mut import_bundle = ImportBundle::default();
+            import_bundle.add_resource(self.back_buffer_id, texture);
 
-            encoder.resource_barrier(
-                &[],
-                &[],
-                &[TextureBarrier {
-                    texture,
-                    subresource_range: TextureSubResourceSet {
-                        aspect: TextureAspect::COLOR,
-                        base_mip_level: 0,
-                        num_mip_levels: 1,
-                        base_array_slice: 0,
-                        num_array_slices: 1,
-                    },
-                    before_sync: BarrierSync::ALL,
-                    after_sync: BarrierSync::RENDER_TARGET,
-                    before_access: BarrierAccess::NONE,
-                    after_access: BarrierAccess::RENDER_TARGET_WRITE,
-                    before_layout: ImageLayout::Undefined,
-                    after_layout: ImageLayout::ColorAttachment,
-                    queue_transition: None,
-                }],
-            );
-
-            let desc = texture.desc();
-            let image_view = texture
-                .get_rtv(&ImageViewDesc {
-                    format: desc.format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet {
-                        aspect: TextureAspect::COLOR,
-                        base_mip_level: 0,
-                        num_mip_levels: 1,
-                        base_array_slice: 0,
-                        num_array_slices: 1,
-                    },
-                    writable: false,
-                })
+            self.sender
+                .send((self.frames[index].descriptor_set.clone(), render_data))
                 .unwrap();
-            encoder.begin_rendering(&BeginRenderingInfo {
-                layer_count: 1,
-                extent: Extent2D {
-                    width: desc.width,
-                    height: desc.height,
-                },
-                color_attachments: &[RenderingColorAttachmentInfo {
-                    image_view,
-                    image_layout: ImageLayout::ColorAttachment,
-                    load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
-                    store_op: AttachmentStoreOp::Store,
-                }],
-                depth_stencil_attachment: None,
-                allow_uav_writes: false,
-            });
-
-            self.bind_resources(index, encoder.deref_mut());
-
-            let mut vtx_base = 0;
-            let mut idx_base = 0;
-            for job in render_data.primitives {
-                if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
-                    // Skip doing anything for the job if there's nothing to render
-                    if triangles.vertices.is_empty() || triangles.indices.is_empty() {
-                        continue;
-                    }
-
-                    // Get the slice to copy from and various byte counts
-                    let v_slice = &triangles.vertices;
-                    let v_size = core::mem::size_of_val(&v_slice[0]);
-                    let v_copy_size = v_slice.len() * v_size;
-
-                    // Get the slice to copy from and various byte counts
-                    let i_slice = &triangles.indices;
-                    let i_size = core::mem::size_of_val(&i_slice[0]);
-                    let i_copy_size = i_slice.len() * i_size;
-
-                    // Calculate where the pointers will be after writing the current set of data
-                    let v_ptr_next = v_ptr.add(v_copy_size);
-                    let i_ptr_next = i_ptr.add(i_copy_size);
-
-                    // Check if we're going to over-run the buffers, and panic if we will
-                    if v_ptr_next >= v_ptr_end || i_ptr_next >= i_ptr_end {
-                        panic!("Out of memory");
-                    }
-
-                    // Perform the actual copies
-                    v_ptr.copy_from(v_slice.as_ptr() as *const _, v_copy_size);
-                    i_ptr.copy_from(i_slice.as_ptr() as *const _, i_copy_size);
-
-                    // Setup the pointers for the next iteration
-                    v_ptr = v_ptr_next;
-                    i_ptr = i_ptr_next;
-
-                    self.record_job_commands(encoder.as_mut(), &job, vtx_base, idx_base);
-
-                    vtx_base += triangles.vertices.len();
-                    idx_base += triangles.indices.len();
-                }
-            }
-
-            encoder.end_rendering();
-
-            encoder.resource_barrier(
-                &[],
-                &[],
-                &[TextureBarrier {
-                    texture,
-                    subresource_range: TextureSubResourceSet {
-                        aspect: TextureAspect::COLOR,
-                        base_mip_level: 0,
-                        num_mip_levels: 1,
-                        base_array_slice: 0,
-                        num_array_slices: 1,
-                    },
-                    before_sync: BarrierSync::RENDER_TARGET,
-                    after_sync: BarrierSync::NONE,
-                    before_access: BarrierAccess::RENDER_TARGET_WRITE,
-                    after_access: BarrierAccess::NONE,
-                    before_layout: ImageLayout::ColorAttachment,
-                    after_layout: ImageLayout::PresentSrc,
-                    queue_transition: None,
-                }],
+            self.frame_graph.execute(
+                &self.frames[index].transient_bundle,
+                &import_bundle,
+                encoder.as_mut(),
             );
-
-            // Unmap the buffers
-            self.unmap_buffers(index);
         }
 
         list
     }
 
     unsafe fn record_job_commands(
-        &mut self,
         encoder: &mut dyn IGeneralEncoder,
         job: &aleph_egui::ClippedPrimitive,
+        swap_extent: Extent2D,
+        pixels_per_point: f32,
         vtx_base: usize,
         idx_base: usize,
     ) {
         if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
-            let scissor_rect = self.calculate_clip_rect(job);
+            let scissor_rect = Self::calculate_clip_rect(job, swap_extent, pixels_per_point);
 
             // Reject the command if the scissor rect is 0 as we'll never actually draw anything
             if (scissor_rect.w * scissor_rect.h) == 0 {
@@ -277,92 +418,19 @@ impl EguiRenderer {
         }
     }
 
-    unsafe fn bind_resources(&self, index: usize, encoder: &mut dyn IGeneralEncoder) {
-        encoder.bind_graphics_pipeline(self.global.graphics_pipeline.deref());
-
-        encoder.bind_descriptor_sets(
-            self.global.pipeline_layout.deref(),
-            PipelineBindPoint::Graphics,
-            0,
-            &[self.frames[index].descriptor_set.clone()],
-        );
-
-        //
-        // Push screen size via root constants
-        //
-        let width_pixels = self.global.swap_width as f32;
-        let height_pixels = self.global.swap_height as f32;
-        let width_points = width_pixels / self.pixels_per_point;
-        let height_points = height_pixels / self.pixels_per_point;
-        let values_data = [width_points, height_points];
-        encoder.set_push_constant_block(0, bytemuck::cast_slice(&values_data));
-
-        //
-        // Bind the vertex and index buffers to render with
-        //
-        encoder.bind_vertex_buffers(
-            0,
-            &[InputAssemblyBufferBinding {
-                buffer: self.frames[index].vtx_buffer.deref(),
-                offset: 0,
-            }],
-        );
-        encoder.bind_index_buffer(
-            IndexType::U32,
-            &InputAssemblyBufferBinding {
-                buffer: self.frames[index].idx_buffer.deref(),
-                offset: 0,
-            },
-        );
-
-        //
-        // Set the viewport state, we're going to be rendering to the whole frame
-        //
-        encoder.set_viewports(&[Viewport {
-            x: 0.0,
-            y: 0.0,
-            width: self.global.swap_width as _,
-            height: self.global.swap_height as _,
-            min_depth: 0.0,
-            max_depth: 1.0,
-        }]);
-    }
-
-    unsafe fn map_buffers(
-        &self,
-        index: usize,
-    ) -> (NonNull<u8>, NonNull<u8>, NonNull<u8>, NonNull<u8>) {
-        let v_ptr = self.frames[index]
-            .vtx_buffer
-            .map()
-            .expect("Failed to map vertex buffer");
-        let v_ptr_end = v_ptr.as_ptr().add(PerFrameObjects::vertex_buffer_size());
-        let v_ptr_end = NonNull::new(v_ptr_end).unwrap();
-
-        let i_ptr = self.frames[index]
-            .idx_buffer
-            .map()
-            .expect("Failed to map index buffer");
-        let i_ptr_end = i_ptr.as_ptr().add(PerFrameObjects::index_buffer_size());
-        let i_ptr_end = NonNull::new(i_ptr_end).unwrap();
-
-        (v_ptr, v_ptr_end, i_ptr, i_ptr_end)
-    }
-
-    unsafe fn unmap_buffers(&self, index: usize) {
-        self.frames[index].vtx_buffer.unmap();
-        self.frames[index].idx_buffer.unmap();
-    }
-
-    fn calculate_clip_rect(&self, job: &aleph_egui::ClippedPrimitive) -> Rect {
-        let width_pixels = self.global.swap_width as f32;
-        let height_pixels = self.global.swap_height as f32;
+    fn calculate_clip_rect(
+        job: &aleph_egui::ClippedPrimitive,
+        swap_extent: Extent2D,
+        pixels_per_point: f32,
+    ) -> Rect {
+        let width_pixels = swap_extent.width as f32;
+        let height_pixels = swap_extent.height as f32;
 
         // Calculate clip offset
         let min = job.clip_rect.min;
         let min = egui::Pos2 {
-            x: min.x * self.pixels_per_point,
-            y: min.y * self.pixels_per_point,
+            x: min.x * pixels_per_point,
+            y: min.y * pixels_per_point,
         };
         let min = egui::Pos2 {
             x: min.x.clamp(0.0, width_pixels),
@@ -372,8 +440,8 @@ impl EguiRenderer {
         // Calculate clip extent
         let max = job.clip_rect.max;
         let max = egui::Pos2 {
-            x: max.x * self.pixels_per_point,
-            y: max.y * self.pixels_per_point,
+            x: max.x * pixels_per_point,
+            y: max.y * pixels_per_point,
         };
         let max = egui::Pos2 {
             x: max.x.clamp(min.x, width_pixels),

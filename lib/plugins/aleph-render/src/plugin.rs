@@ -118,12 +118,13 @@ impl IPlugin for PluginRender {
         let config = swap_chain.get_config();
         let mut swap_images: Vec<_> = (0..config.buffer_count).map(|_| None).collect();
         swap_chain.get_images(&mut swap_images);
-        let swap_images = swap_images.into_iter().map(|v| v.unwrap()).collect();
+        let swap_images: Vec<_> = swap_images.into_iter().map(|v| v.unwrap()).collect();
+        let back_buffer_desc = swap_images[0].desc();
 
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
         let pixels_per_point = drawable_size.0 as f32 / window_size.0 as f32;
-        let renderer = EguiRenderer::new(device.clone(), drawable_size, pixels_per_point);
+        let renderer = EguiRenderer::new(device.clone(), &back_buffer_desc, pixels_per_point);
 
         let schedule_cell = registry
             .get_interface::<dyn IScheduleProvider>()
@@ -162,10 +163,10 @@ impl IPlugin for PluginRender {
                     data.swap_chain.get_images(&mut swap_images);
                     data.swap_images = swap_images.into_iter().map(|v| v.unwrap()).collect();
 
+                    let back_buffer_desc = data.swap_images[0].desc();
+                    let pixels_per_point = drawable_size.0 as f32 / window_size.0 as f32;
                     data.renderer
-                        .update_screen_info(drawable_size.0 as f32 / window_size.0 as f32);
-                    data.renderer
-                        .recreate_swap_resources((new_config.width, new_config.height));
+                        .rebuild_after_resize(&back_buffer_desc, pixels_per_point);
 
                     data.should_resize = false;
                 }
