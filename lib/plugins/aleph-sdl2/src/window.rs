@@ -483,12 +483,8 @@ impl IWindow for WindowImpl {
     }
 
     fn current_display_scale(&self) -> f32 {
-        let current_dpi = self.current_dpi();
-        if cfg!(target_vendor="apple") {
-            current_dpi / 72.0
-        } else {
-            current_dpi / 96.0
-        }
+        let state = self.state.read();
+        state.drawable_width as f32 / state.current_width as f32
     }
 
     fn events<'a>(&'a self) -> Box<dyn IWindowEventsLock + 'a> {
