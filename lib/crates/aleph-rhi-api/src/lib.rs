@@ -2300,6 +2300,17 @@ impl<'a> BufferDesc<'a> {
             name: None,
         }
     }
+
+    /// A utility function that replaces any existing name with the given name, yielding a new desc
+    /// identical to the source desc differeing only in name.
+    pub const fn with_name<'b>(self, name: &'b str) -> BufferDesc<'b> {
+        BufferDesc::<'b> {
+            size: self.size,
+            cpu_access: self.cpu_access,
+            usage: self.usage,
+            name: Some(name),
+        }
+    }
 }
 
 //
@@ -2429,6 +2440,25 @@ impl<'a> TextureDesc<'a> {
             sample_quality: self.sample_quality,
             usage: self.usage,
             name: None,
+        }
+    }
+
+    /// A utility function that replaces any existing name with the given name, yielding a new desc
+    /// identical to the source desc differeing only in name.
+    pub const fn with_name<'b>(self, name: &'b str) -> TextureDesc<'b> {
+        TextureDesc::<'b> {
+            width: self.width,
+            height: self.height,
+            depth: self.depth,
+            format: self.format,
+            dimension: self.dimension,
+            clear_value: self.clear_value,
+            array_size: self.array_size,
+            mip_levels: self.mip_levels,
+            sample_count: self.sample_count,
+            sample_quality: self.sample_quality,
+            usage: self.usage,
+            name: Some(name),
         }
     }
 }
