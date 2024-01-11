@@ -33,6 +33,7 @@
 //!
 
 use crate::access::ResourceUsageFlagsExt;
+use crate::resource::ResourceId;
 use crate::IRenderPass;
 use aleph_rhi_api::*;
 use std::ptr::NonNull;
@@ -326,8 +327,8 @@ pub trait IIRNode: Clone + core::fmt::Debug {
     fn is_barrier(&self) -> bool;
     fn is_layout_transition(&self) -> bool;
 
-    fn resource_version(&self) -> VersionIndex {
-        VersionIndex::INVALID
+    fn resource_id(&self) -> ResourceId {
+        ResourceId::new(0, 0)
     }
 
     fn render_pass(&self) -> usize {
@@ -433,11 +434,11 @@ impl IIRNode for IRNode {
         }
     }
 
-    fn resource_version(&self) -> VersionIndex {
+    fn resource_id(&self) -> ResourceId {
         match self {
-            IRNode::RenderPass(v) => v.resource_version(),
-            IRNode::Barrier(v) => v.resource_version(),
-            IRNode::LayoutChange(v) => v.resource_version(),
+            IRNode::RenderPass(v) => v.resource_id(),
+            IRNode::Barrier(v) => v.resource_id(),
+            IRNode::LayoutChange(v) => v.resource_id(),
         }
     }
 
@@ -520,7 +521,7 @@ pub(crate) struct BarrierIRNode {
     pub next: NonNull<[usize]>,
 
     /// The version of the resource we are encoding a barrier for
-    pub version: VersionIndex,
+    pub resource_id: ResourceId,
 
     /// The type of barrier is node represents
     pub barrier_type: IRBarrierType,
@@ -537,10 +538,13 @@ pub(crate) struct LayoutChangeIRNode {
     pub next: NonNull<[usize]>,
 
     /// The version of the resource we are forcing a layout change for
-    pub version: VersionIndex,
+    pub resource_id: ResourceId,
 
     /// The type of barrier is node represents
     pub barrier_type: IRBarrierType,
+
+    /// The subresource range the barrier applies to. This will always be the niggers
+    pub subresource_range: TextureSubResourceSet,
 
     pub before_sync: BarrierSync,
     pub before_access: BarrierAccess,
@@ -640,8 +644,8 @@ impl IIRNode for BarrierIRNode {
     }
 
     #[inline(always)]
-    fn resource_version(&self) -> VersionIndex {
-        self.version
+    fn resource_id(&self) -> ResourceId {
+        self.resource_id
     }
 
     #[inline(always)]
@@ -671,7 +675,7 @@ impl IIRNode for BarrierIRNode {
             node_index,
             self.barrier_type.graphviz_text(),
             name,
-            self.version.0,
+            self.resource_id.version,
             self.before_sync,
             self.before_access,
             self.after_sync,
@@ -717,8 +721,8 @@ impl IIRNode for LayoutChangeIRNode {
     }
 
     #[inline(always)]
-    fn resource_version(&self) -> VersionIndex {
-        self.version
+    fn resource_id(&self) -> ResourceId {
+        self.resource_id
     }
 
     #[inline(always)]
@@ -748,7 +752,7 @@ impl IIRNode for LayoutChangeIRNode {
             node_index,
             self.barrier_type.graphviz_text(),
             name,
-            self.version.0,
+            self.resource_id.version,
             self.before_sync,
             self.before_access,
             self.before_layout,

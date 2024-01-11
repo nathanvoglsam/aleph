@@ -1105,6 +1105,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         // created resource.
         for (version_index, version) in builder.resource_versions.iter().enumerate() {
             let version_index = VersionIndex(version_index as u32);
+            let root_index = version.root_resource;
+            let resource_id = ResourceId::new(root_index, version_index.0);
             let root = &builder.root_resources[version.root_resource as usize];
             match &root.resource_type {
                 // Buffers are much simpler to handle as we don't need to care about image layout
@@ -1114,7 +1116,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     self.build_emit_barriers_for_buffer_version(
                         builder,
                         version,
-                        version_index,
+                        resource_id,
                         root,
                         root_variant,
                     )?;
@@ -1123,7 +1125,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     self.build_emit_barriers_for_texture_version(
                         builder,
                         version,
-                        version_index,
+                        resource_id,
                         root,
                         root_variant,
                     )?;
@@ -1160,11 +1162,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                             "    node{i} [shape=box,label=\"Render Pass: \\\"{pass_name}\\\"\"];"
                         )?;
                     }
-                    IRNode::Barrier(v) => {
-                        self.emit_graph_viz_barrier_node(writer, builder, i, v)?
-                    }
+                    IRNode::Barrier(v) => self.emit_graph_viz_for_node(writer, builder, i, v)?,
                     IRNode::LayoutChange(v) => {
-                        self.emit_graph_viz_layout_change_node(writer, builder, i, v)?
+                        self.emit_graph_viz_for_node(writer, builder, i, v)?
                     }
                 }
             }
@@ -1197,7 +1197,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         &mut self,
         builder: &FrameGraphBuilder,
         version: &ResourceVersion,
-        version_index: VersionIndex,
+        resource_id: ResourceId,
         root: &ResourceRoot,
         root_variant: &ResourceTypeBuffer,
     ) -> Result<(), std::io::Error> {
@@ -1215,7 +1215,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 IRBarrierType::ReadAfterWrite,
                 barrier_prev,
                 barrier_next,
-                version_index,
+                resource_id,
                 version.creator_sync,
                 version.creator_access.barrier_access_for_write(),
                 all_read_sync,
@@ -1223,7 +1223,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             )?;
 
             if let Some(import_desc) = root_variant.import.as_ref() {
-                if root.final_version == version_index {
+                if root.final_version.0 == resource_id.version {
                     // The 'next' for the previous barrier becomes the 'prev' for the export
                     // barrier.
                     // We take a copy of the slice to avoid any potential surprises with two nodes
@@ -1233,7 +1233,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                         IRBarrierType::ExportAfterRead,
                         barrier_prev,
                         &[],
-                        version_index,
+                        resource_id,
                         all_read_sync,
                         all_read_usage.barrier_access_for_read(),
                         import_desc.after_sync,
@@ -1242,13 +1242,13 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 }
             }
         } else if let Some(import_desc) = root_variant.import.as_ref() {
-            if root.final_version == version_index {
+            if root.final_version.0 == resource_id.version {
                 let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_barrier_ir_node(
                     IRBarrierType::ExportAfterWrite,
                     barrier_prev,
                     &[],
-                    version_index,
+                    resource_id,
                     version.creator_sync,
                     version.creator_access.barrier_access_for_write(),
                     import_desc.after_sync,
@@ -1259,6 +1259,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         if version.previous_version.is_valid() {
             let previous_version_index = version.previous_version.0 as usize;
             let previous_version = &builder.resource_versions[previous_version_index];
+            let previous_id =
+                ResourceId::new(previous_version.root_resource, version.previous_version.0);
 
             // If there are any reads on the previous resource version then we must emit
             // a write-after-read barrier between those reads and the subsequent write
@@ -1278,11 +1280,12 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 // writes out this new version of the resource. The 'after' sync scope
                 // is easily derived from the pass's declared access flags.
                 let barrier_next = self.alloc_single_edge_list(version.creator_pass);
+
                 self.emit_barrier_ir_node(
                     IRBarrierType::WriteAfterRead,
                     barrier_prev,
                     barrier_next,
-                    version.previous_version,
+                    previous_id,
                     all_read_sync,
                     all_read_usage.barrier_access_for_read(),
                     version.creator_sync,
@@ -1300,7 +1303,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     IRBarrierType::WriteAfterWrite,
                     barrier_prev,
                     barrier_next,
-                    version.previous_version,
+                    previous_id,
                     previous_version.creator_sync,
                     previous_version.creator_access.barrier_access_for_write(),
                     version.creator_sync,
@@ -1329,7 +1332,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 IRBarrierType::Import,
                 &[],
                 barrier_next,
-                version_index,
+                resource_id,
                 import_desc.before_sync,
                 import_desc.before_access,
                 version.creator_sync,
@@ -1341,7 +1344,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 IRBarrierType::Initialization,
                 &[],
                 barrier_next,
-                version_index,
+                resource_id,
                 BarrierSync::NONE,
                 BarrierAccess::NONE,
                 version.creator_sync,
@@ -1355,7 +1358,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         &mut self,
         builder: &FrameGraphBuilder,
         version: &ResourceVersion,
-        version_index: VersionIndex,
+        resource_id: ResourceId,
         root: &ResourceRoot,
         root_variant: &ResourceTypeTexture,
     ) -> Result<(), std::io::Error> {
@@ -1471,10 +1474,11 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
                     // We now emit the barrier
                     self.emit_layout_change_ir_node(
+                        builder,
                         barrier_type,
                         barrier_prev,
                         barrier_next,
-                        version_index,
+                        resource_id,
                         before_sync,
                         before_access,
                         before_layout,
@@ -1513,15 +1517,16 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             }
 
             if let Some(import_desc) = root_variant.import.as_ref() {
-                if root.final_version == version_index {
+                if root.final_version.0 == resource_id.version {
                     // The 'next' for the previous barrier becomes the 'prev' for the export
                     // barrier.
                     let barrier_prev = self.arena.alloc_slice_fill_iter(previous_reads.drain(..));
                     self.emit_layout_change_ir_node(
+                        builder,
                         IRBarrierType::ExportAfterRead,
                         barrier_prev,
                         &[],
-                        version_index,
+                        resource_id,
                         before_sync,
                         before_access,
                         before_layout,
@@ -1532,13 +1537,14 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 }
             }
         } else if let Some(import_desc) = root_variant.import.as_ref() {
-            if root.final_version == version_index {
+            if root.final_version.0 == resource_id.version {
                 let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
+                    builder,
                     IRBarrierType::ExportAfterWrite,
                     barrier_prev,
                     &[],
-                    version_index,
+                    resource_id,
                     version.creator_sync,
                     version.creator_access.barrier_access_for_write(),
                     version
@@ -1553,6 +1559,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         if version.previous_version.is_valid() {
             let previous_version_index = version.previous_version.0 as usize;
             let previous_version = &builder.resource_versions[previous_version_index];
+            let previous_id =
+                ResourceId::new(previous_version.root_resource, version.previous_version.0);
 
             // If there are any reads on the previous resource version then we must emit
             // a write-after-read barrier between those reads and the subsequent write
@@ -1615,10 +1623,11 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 // pass's declared access.
                 let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
+                    builder,
                     IRBarrierType::WriteAfterRead,
                     barrier_prev,
                     barrier_next,
-                    version.previous_version,
+                    previous_id,
                     all_read_sync,
                     all_read_usage.barrier_access_for_read(),
                     last_read_layout,
@@ -1637,10 +1646,11 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 let barrier_prev = self.alloc_single_edge_list(previous_version.creator_pass);
                 let barrier_next = self.alloc_single_edge_list(version.creator_pass);
                 self.emit_layout_change_ir_node(
+                    builder,
                     IRBarrierType::WriteAfterWrite,
                     barrier_prev,
                     barrier_next,
-                    version.previous_version,
+                    previous_id,
                     previous_version.creator_sync,
                     previous_version.creator_access.barrier_access_for_write(),
                     previous_version
@@ -1672,10 +1682,11 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             // declaration.
             let barrier_next = self.arena.alloc_slice_copy(&[version.creator_pass]);
             self.emit_layout_change_ir_node(
+                builder,
                 IRBarrierType::Import,
                 &[],
                 barrier_next,
-                version_index,
+                resource_id,
                 import_desc.before_sync,
                 import_desc.before_access,
                 import_desc.before_layout,
@@ -1688,10 +1699,11 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         } else {
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_layout_change_ir_node(
+                builder,
                 IRBarrierType::Initialization,
                 &[],
                 barrier_next,
-                version_index,
+                resource_id,
                 BarrierSync::NONE,
                 BarrierAccess::NONE,
                 ImageLayout::Undefined,
@@ -1741,13 +1753,12 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         Ok(())
     }
 
-    fn get_resource_name_for_version_index(
+    fn get_resource_name_for_resource_id(
         &self,
         builder: &FrameGraphBuilder,
-        version: VersionIndex,
+        resource_id: ResourceId,
     ) -> &str {
-        let version = &builder.resource_versions[version.0 as usize];
-        let root_index = version.root_resource as usize;
+        let root_index = resource_id.root as usize;
         let root_resource = &builder.root_resources[root_index];
         match &root_resource.resource_type {
             ResourceType::Buffer(v) => v
@@ -1763,28 +1774,16 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         }
     }
 
-    fn emit_graph_viz_barrier_node(
+    fn emit_graph_viz_for_node(
         &self,
         writer: &'b mut T,
         builder: &FrameGraphBuilder,
-        barrier_ir_node_index: usize,
-        ir_node: &BarrierIRNode,
+        node_index: usize,
+        ir_node: &impl IIRNode,
     ) -> std::io::Result<()> {
-        let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
+        let resource_name = self.get_resource_name_for_resource_id(builder, ir_node.resource_id());
         write!(writer, "    ")?;
-        ir_node.write_graph_viz(writer, resource_name, barrier_ir_node_index)
-    }
-
-    fn emit_graph_viz_layout_change_node(
-        &self,
-        writer: &'b mut T,
-        builder: &FrameGraphBuilder,
-        barrier_ir_node_index: usize,
-        ir_node: &LayoutChangeIRNode,
-    ) -> std::io::Result<()> {
-        let resource_name = self.get_resource_name_for_version_index(builder, ir_node.version);
-        write!(writer, "    ")?;
-        ir_node.write_graph_viz(writer, resource_name, barrier_ir_node_index)
+        ir_node.write_graph_viz(writer, resource_name, node_index)
     }
 
     /// Internal function used for inserting new barrier IR nodes into the frame graph.
@@ -1805,7 +1804,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         barrier_type: IRBarrierType,
         barrier_prev: &'arena [usize],
         barrier_next: &'arena [usize],
-        version: VersionIndex,
+        resource_id: ResourceId,
         before_sync: BarrierSync,
         before_access: BarrierAccess,
         after_sync: BarrierSync,
@@ -1830,7 +1829,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         let ir_node = BarrierIRNode {
             prev: NonNull::from(barrier_prev),
             next: NonNull::from(barrier_next),
-            version,
+            resource_id,
             barrier_type,
             before_sync,
             before_access,
@@ -1858,10 +1857,11 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
     fn emit_layout_change_ir_node(
         &mut self,
+        builder: &FrameGraphBuilder,
         barrier_type: IRBarrierType,
         barrier_prev: &[usize],
         barrier_next: &[usize],
-        version: VersionIndex,
+        resource_id: ResourceId,
         before_sync: BarrierSync,
         before_access: BarrierAccess,
         before_layout: ImageLayout,
@@ -1885,11 +1885,23 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             self.pass_prevs[next].push(ir_node_index);
         }
 
+        let resource = builder.root_resources[resource_id.root as usize]
+            .resource_type
+            .unwrap_texture();
+        let subresource_range = TextureSubResourceSet {
+            aspect: resource.desc.format.aspect_mask(),
+            base_mip_level: 0,
+            num_mip_levels: resource.desc.mip_levels,
+            base_array_slice: 0,
+            num_array_slices: resource.desc.array_size,
+        };
+
         let ir_node = LayoutChangeIRNode {
             prev: NonNull::from(barrier_prev),
             next: NonNull::from(barrier_next),
-            version,
+            resource_id,
             barrier_type,
+            subresource_range,
             before_sync,
             before_access,
             before_layout,

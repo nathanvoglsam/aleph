@@ -48,7 +48,7 @@ impl IGetPlatformInterface for MockEncoder {
 
 impl IGeneralEncoder for MockEncoder {
     unsafe fn bind_graphics_pipeline(&mut self, _pipeline: &dyn IGraphicsPipeline) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn bind_vertex_buffers(
@@ -56,7 +56,7 @@ impl IGeneralEncoder for MockEncoder {
         _first_binding: u32,
         _bindings: &[InputAssemblyBufferBinding],
     ) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn bind_index_buffer(
@@ -64,27 +64,27 @@ impl IGeneralEncoder for MockEncoder {
         _index_type: IndexType,
         _binding: &InputAssemblyBufferBinding,
     ) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn set_viewports(&mut self, _viewports: &[Viewport]) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn set_scissor_rects(&mut self, _rects: &[Rect]) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn set_push_constant_block(&mut self, _block_index: usize, _data: &[u8]) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn begin_rendering(&mut self, _info: &BeginRenderingInfo) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn end_rendering(&mut self) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn draw(
@@ -94,7 +94,7 @@ impl IGeneralEncoder for MockEncoder {
         _first_vertex: u32,
         _first_instance: u32,
     ) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn draw_indexed(
@@ -105,7 +105,7 @@ impl IGeneralEncoder for MockEncoder {
         _first_instance: u32,
         _vertex_offset: i32,
     ) {
-        todo!()
+        unimplemented!()
     }
 }
 
@@ -117,11 +117,11 @@ impl IComputeEncoder for MockEncoder {
         _first_set: u32,
         _sets: &[DescriptorSetHandle],
     ) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn dispatch(&mut self, _group_count_x: u32, _group_count_y: u32, _group_count_z: u32) {
-        todo!()
+        unimplemented!()
     }
 }
 
@@ -141,7 +141,7 @@ impl ITransferEncoder for MockEncoder {
         _dst: &dyn IBuffer,
         _regions: &[BufferCopyRegion],
     ) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn copy_buffer_to_texture(
@@ -151,19 +151,19 @@ impl ITransferEncoder for MockEncoder {
         _dst_layout: ImageLayout,
         _regions: &[BufferToTextureCopyRegion],
     ) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn set_marker(&mut self, _color: Color, _message: &str) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn begin_event(&mut self, _color: Color, _message: &str) {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn end_event(&mut self) {
-        todo!()
+        unimplemented!()
     }
 }
 
@@ -200,53 +200,53 @@ impl IDevice for MockDevice {
     }
 
     fn garbage_collect(&self) {
-        todo!()
+        unimplemented!()
     }
 
     fn wait_idle(&self) {
-        todo!()
+        unimplemented!()
     }
 
     fn create_graphics_pipeline(
         &self,
         _desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_compute_pipeline(
         &self,
         _desc: &ComputePipelineDesc,
     ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_shader(
         &self,
         _options: &ShaderOptions,
     ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_descriptor_set_layout(
         &self,
         _desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_descriptor_pool(
         &self,
         _desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_pipeline_layout(
         &self,
         _desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
@@ -264,30 +264,30 @@ impl IDevice for MockDevice {
         &self,
         _desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_command_list(
         &self,
         _desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn get_queue(&self, _queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        todo!()
+        unimplemented!()
     }
 
     unsafe fn update_descriptor_sets(&self, _writes: &[DescriptorWriteDesc]) {
-        todo!()
+        unimplemented!()
     }
 
     fn create_fence(&self, _signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
-        todo!()
+        unimplemented!()
     }
 
     fn wait_fences(
@@ -296,19 +296,19 @@ impl IDevice for MockDevice {
         _wait_all: bool,
         _timeout: u32,
     ) -> FenceWaitResult {
-        todo!()
+        unimplemented!()
     }
 
     fn poll_fence(&self, _fence: &dyn IFence) -> bool {
-        todo!()
+        unimplemented!()
     }
 
     fn reset_fences(&self, _fences: &[&dyn IFence]) {
-        todo!()
+        unimplemented!()
     }
 
     fn get_backend_api(&self) -> BackendAPI {
-        todo!()
+        unimplemented!()
     }
 }
 

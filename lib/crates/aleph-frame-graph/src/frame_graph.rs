@@ -140,7 +140,7 @@ impl FrameGraph {
                         has_memory_barrier = true;
                     }
                     IRNode::LayoutChange(v) => {
-                        let root_id = self.resource_versions[v.version.0 as usize].root_resource;
+                        let root_id = v.resource_id.root;
                         let texture = transient_bundle
                             .get_resource(root_id)
                             .or_else(|| import_bundle.get_resource(root_id))
@@ -148,7 +148,7 @@ impl FrameGraph {
                             .unwrap();
                         texture_barriers.push(TextureBarrier {
                             texture,
-                            subresource_range: TextureSubResourceSet::default(), // TODO: this
+                            subresource_range: v.subresource_range.clone(),
                             before_sync: v.before_sync,
                             after_sync: v.after_sync,
                             before_access: v.before_access,
@@ -253,8 +253,8 @@ impl FrameGraph {
             let barriers = unsafe { bundle.barriers.as_ref() };
             for &barrier_index in barriers {
                 let node = &self.ir_nodes[barrier_index];
-                let target_version = node.resource_version();
-                let target_root = self.resource_versions[target_version.0 as usize].root_resource;
+                let target_id = node.resource_id();
+                let target_root = self.resource_versions[target_id.version as usize].root_resource;
                 let target_root = &self.root_resources[target_root as usize];
                 let target_name = unsafe {
                     target_root
