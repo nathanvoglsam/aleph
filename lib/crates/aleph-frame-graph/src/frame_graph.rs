@@ -51,8 +51,16 @@ pub struct FrameGraph {
     /// order to keep the allocations for all the render passes alive.
     pub(crate) _arena: Bump,
 
+    /// Our final pass + barrier execution order that is the final output of our graph building
+    /// operations. The passes and barriers are executed by iterating this list and executing the
+    /// barriers and passes referenced within in order.
     pub(crate) execution_bundles: Vec<PassOrderBundle>,
 
+    /// Backing storage for our IR nodes.
+    /// 
+    /// This array is indexed by the [PassOrderBundle] objects in the
+    /// [FrameGraph::execution_bundles] array. Each bundle contains a set of barriers and passes to
+    /// execute in order, with each barrier and pass identified as an index into this array.
     pub(crate) ir_nodes: Vec<IRNode>,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the

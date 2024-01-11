@@ -817,7 +817,12 @@ impl IRBarrierType {
 }
 
 pub(crate) struct PassOrderBundle {
+    /// The ordered list of barriers that must be executed before executing the passes in
+    /// [PassOrderBundle::passes]. These store indices into the ir.nodes array.
     pub barriers: NonNull<[usize]>,
+
+    /// The ordered list of render passes that must be executed after the barriers in
+    /// [PassOrderBundle::barriers]. These store indices into the ir.nodes array.
     pub passes: NonNull<[usize]>,
 }
 
