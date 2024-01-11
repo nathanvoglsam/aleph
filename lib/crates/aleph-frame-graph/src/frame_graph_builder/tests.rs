@@ -913,7 +913,7 @@ pub fn test_usage_schedule() {
         .graph_viz_for_pass_order("PassOrder", &mut dot_text)
         .unwrap();
 
-    std::fs::write("./graphviz.dot", dot_text).unwrap();
+    // std::fs::write("./graphviz.dot", dot_text).unwrap();
 
     let import_buffer = pin_board.get::<Pass0>().unwrap().import;
     let import_texture = pin_board.get::<Pass1>().unwrap().import;
