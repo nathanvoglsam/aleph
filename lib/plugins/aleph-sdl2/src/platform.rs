@@ -63,7 +63,7 @@ impl PluginPlatformSDL2 {
 
         let sdl = SdlObjects {
             _ctx: None,
-            _video: None,
+            video: None,
             _event: None,
             event_pump: None,
             mouse_util: None,
@@ -158,7 +158,7 @@ impl IPlugin for PluginPlatformSDL2 {
         // Update our SDL2 handle storages with the created handles
         let mut sdl_o = self.sdl.take().unwrap();
         sdl_o._ctx = Some(sdl);
-        sdl_o._video = Some(sdl_video);
+        sdl_o.video = Some(sdl_video);
         sdl_o._event = Some(sdl_event);
         sdl_o.event_pump = Some(sdl_event_pump);
         sdl_o.mouse_util = Some(sdl_mouse_util);
@@ -239,7 +239,7 @@ impl IPlugin for PluginPlatformSDL2 {
         let mut sdl = self.sdl.take().unwrap();
 
         sdl._ctx = None;
-        sdl._video = None;
+        sdl.video = None;
         sdl._event = None;
         sdl.event_pump = None;
         sdl.mouse_util = None;
@@ -273,6 +273,7 @@ impl PluginPlatformSDL2 {
     }
 
     fn handle_events(sdl: &mut SdlObjects, provider: &ProviderImpl, quit_handle: &dyn IQuitHandle) {
+        let video_ctx = sdl.video.take().unwrap();
         let mut event_pump = sdl.event_pump.take().unwrap();
         let mut sdl_window = sdl.window.take().unwrap();
 
@@ -302,6 +303,7 @@ impl PluginPlatformSDL2 {
                 }
                 sdl2::event::Event::Window { win_event, .. } => {
                     window.process_window_event(
+                        &video_ctx,
                         &mut window_state,
                         &mut window_events,
                         &mut all_events,
@@ -360,6 +362,7 @@ impl PluginPlatformSDL2 {
         drop(mouse_events);
         drop(all_events);
 
+        sdl.video = Some(video_ctx);
         sdl.event_pump = Some(event_pump);
         sdl.window = Some(sdl_window);
     }
@@ -452,7 +455,7 @@ fn init_cursor_map() -> HashMap<Cursor, sdl2::mouse::Cursor> {
 
 struct SdlObjects {
     _ctx: Option<sdl2::Sdl>,
-    _video: Option<sdl2::VideoSubsystem>,
+    video: Option<sdl2::VideoSubsystem>,
     _event: Option<sdl2::EventSubsystem>,
     event_pump: Option<sdl2::EventPump>,
     mouse_util: Option<sdl2::mouse::MouseUtil>,

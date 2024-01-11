@@ -66,6 +66,9 @@ pub struct WindowState {
     /// Is the window currently focused
     pub focused: bool,
 
+    /// Is the DPI of the window based on the display it is currently on
+    pub current_dpi: f32,
+
     /// The window's window handle
     pub handle: RawWindowHandle,
 }
@@ -153,6 +156,9 @@ impl WindowImpl {
 
         let mut window = window.build().expect("Failed to create window");
 
+        let display_index = window.display_index().unwrap();
+        let (_ddpi, hdpi, _vdpi) = video_ctx.display_dpi(display_index).unwrap();
+
         let drawable_size = window.drawable_size();
 
         let raw_window_handle = {
@@ -185,6 +191,7 @@ impl WindowImpl {
             windowed_height: DEFAULT_HEIGHT,
             fullscreen: false,
             focused: false,
+            current_dpi: hdpi,
             handle: raw_window_handle,
         };
 
@@ -206,6 +213,7 @@ impl WindowImpl {
     ///
     pub fn process_window_event(
         &self,
+        video_ctx: &sdl2::VideoSubsystem,
         window_state: &mut WindowState,
         window_events: &mut Vec<WindowEvent>,
         all_events: &mut Vec<Event>,
@@ -232,6 +240,12 @@ impl WindowImpl {
                 log::trace!("Window size changed");
                 log::trace!("Window Size: {}x{}", width, height);
             }
+            sdl2::event::WindowEvent::DisplayChanged(i) => {
+                let (_ddpi, hdpi, _vdpi) = video_ctx.display_dpi(*i).unwrap();
+                window_state.current_dpi = hdpi;
+                log::trace!("Window display changed");
+                log::trace!("Window Display: {} at {}dpi", i, hdpi);
+            }
             sdl2::event::WindowEvent::Moved(_, _)
             | sdl2::event::WindowEvent::Minimized
             | sdl2::event::WindowEvent::Maximized
@@ -245,8 +259,7 @@ impl WindowImpl {
             | sdl2::event::WindowEvent::Shown
             | sdl2::event::WindowEvent::Hidden
             | sdl2::event::WindowEvent::Exposed
-            | sdl2::event::WindowEvent::ICCProfChanged
-            | sdl2::event::WindowEvent::DisplayChanged(_) => {},
+            | sdl2::event::WindowEvent::ICCProfChanged => {},
         }
 
         let converted_event = match event {
@@ -463,6 +476,19 @@ impl IWindow for WindowImpl {
 
     fn toggle_fullscreen(&self) {
         self.requests.lock().push(WindowRequest::ToggleFullscreen);
+    }
+
+    fn current_dpi(&self) -> f32 {
+        self.state.read().current_dpi
+    }
+
+    fn current_display_scale(&self) -> f32 {
+        let current_dpi = self.current_dpi();
+        if cfg!(target_vendor="apple") {
+            current_dpi / 72.0
+        } else {
+            current_dpi / 96.0
+        }
     }
 
     fn events<'a>(&'a self) -> Box<dyn IWindowEventsLock + 'a> {
