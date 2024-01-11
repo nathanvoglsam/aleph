@@ -244,7 +244,9 @@ impl WindowImpl {
             | sdl2::event::WindowEvent::None
             | sdl2::event::WindowEvent::Shown
             | sdl2::event::WindowEvent::Hidden
-            | sdl2::event::WindowEvent::Exposed => {}
+            | sdl2::event::WindowEvent::Exposed
+            | sdl2::event::WindowEvent::ICCProfChanged
+            | sdl2::event::WindowEvent::DisplayChanged(_) => {},
         }
 
         let converted_event = match event {
@@ -265,6 +267,8 @@ impl WindowImpl {
             sdl2::event::WindowEvent::TakeFocus => WindowEvent::TakeFocus,
             sdl2::event::WindowEvent::HitTest => WindowEvent::HitTest,
             sdl2::event::WindowEvent::None => return,
+            sdl2::event::WindowEvent::ICCProfChanged => return,
+            sdl2::event::WindowEvent::DisplayChanged(_) => return,
         };
         window_events.push(converted_event.clone());
         all_events.push(Event::WindowEvent(converted_event));
