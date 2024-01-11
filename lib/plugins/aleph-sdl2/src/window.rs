@@ -257,7 +257,7 @@ impl WindowImpl {
             | sdl2::event::WindowEvent::Shown
             | sdl2::event::WindowEvent::Hidden
             | sdl2::event::WindowEvent::Exposed
-            | sdl2::event::WindowEvent::ICCProfChanged => {},
+            | sdl2::event::WindowEvent::ICCProfChanged => {}
         }
 
         let converted_event = match event {
