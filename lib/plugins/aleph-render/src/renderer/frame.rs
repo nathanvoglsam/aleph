@@ -265,12 +265,4 @@ impl PerFrameObjects {
             })
             .unwrap()
     }
-
-    pub fn vertex_buffer_size() -> usize {
-        1024 * 1024 * 4
-    }
-
-    pub fn index_buffer_size() -> usize {
-        1024 * 1024 * 2
-    }
 }
