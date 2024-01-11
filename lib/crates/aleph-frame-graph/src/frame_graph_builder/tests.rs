@@ -38,6 +38,151 @@ use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::ptr::NonNull;
 
+pub struct MockDevice {
+    pub(crate) this: AnyWeak<Self>,
+}
+
+impl MockDevice {
+    pub fn new() -> AnyArc<dyn IDevice> {
+        let device = AnyArc::new_cyclic(move |v| MockDevice { this: v.clone() });
+        AnyArc::map::<dyn IDevice, _>(device, |v| v)
+    }
+}
+
+declare_interfaces!(MockDevice, [IDevice]);
+
+impl IGetPlatformInterface for MockDevice {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
+impl IDevice for MockDevice {
+    fn upgrade(&self) -> AnyArc<dyn IDevice> {
+        AnyArc::map::<dyn IDevice, _>(self.this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn garbage_collect(&self) {
+        todo!()
+    }
+
+    fn wait_idle(&self) {
+        todo!()
+    }
+
+    fn create_graphics_pipeline(
+        &self,
+        _desc: &GraphicsPipelineDesc,
+    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
+        todo!()
+    }
+
+    fn create_compute_pipeline(
+        &self,
+        _desc: &ComputePipelineDesc,
+    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
+        todo!()
+    }
+
+    fn create_shader(
+        &self,
+        _options: &ShaderOptions,
+    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
+        todo!()
+    }
+
+    fn create_descriptor_set_layout(
+        &self,
+        _desc: &DescriptorSetLayoutDesc,
+    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
+        todo!()
+    }
+
+    fn create_descriptor_pool(
+        &self,
+        _desc: &DescriptorPoolDesc,
+    ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
+        todo!()
+    }
+
+    fn create_pipeline_layout(
+        &self,
+        _desc: &PipelineLayoutDesc,
+    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
+        todo!()
+    }
+
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
+        Ok(MockBuffer::new(desc))
+    }
+
+    fn create_texture(
+        &self,
+        desc: &TextureDesc,
+    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
+        Ok(MockTexture::new(desc))
+    }
+
+    fn create_sampler(
+        &self,
+        _desc: &SamplerDesc,
+    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
+        todo!()
+    }
+
+    fn create_command_list(
+        &self,
+        _desc: &CommandListDesc,
+    ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
+        todo!()
+    }
+
+    fn get_queue(&self, _queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
+        todo!()
+    }
+
+    unsafe fn update_descriptor_sets(&self, _writes: &[DescriptorWriteDesc]) {
+        todo!()
+    }
+
+    fn create_fence(&self, _signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+        todo!()
+    }
+
+    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
+        todo!()
+    }
+
+    fn wait_fences(
+        &self,
+        _fences: &[&dyn IFence],
+        _wait_all: bool,
+        _timeout: u32,
+    ) -> FenceWaitResult {
+        todo!()
+    }
+
+    fn poll_fence(&self, _fence: &dyn IFence) -> bool {
+        todo!()
+    }
+
+    fn reset_fences(&self, _fences: &[&dyn IFence]) {
+        todo!()
+    }
+
+    fn get_backend_api(&self) -> BackendAPI {
+        todo!()
+    }
+}
+
 pub struct MockBuffer {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) desc: BufferDesc<'static>,
@@ -175,6 +320,8 @@ pub fn test_builder() {
         resource: Option<ResourceRef>,
     }
 
+    let device = MockDevice::new();
+
     let mut out_create = None;
     let mut out_write = None;
     let mut out_read = None;
@@ -250,7 +397,7 @@ pub fn test_builder() {
     let mut graph = builder.build();
 
     let import_bundle = ImportBundle::default();
-    let transient_bundle = graph.allocate_transient_resource_bundle();
+    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
         graph.execute(&transient_bundle, &import_bundle);
     }
@@ -258,12 +405,15 @@ pub fn test_builder() {
 
 #[test]
 pub fn test_handle_equality() {
-    let mock_buffer = MockBuffer::new(&BufferDesc {
-        size: 512,
-        cpu_access: CpuAccessMode::None,
-        usage: ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::CONSTANT_BUFFER,
-        name: Some("imported-mock-resource"),
-    });
+    let device = MockDevice::new();
+    let mock_buffer = device
+        .create_buffer(&BufferDesc {
+            size: 512,
+            cpu_access: CpuAccessMode::None,
+            usage: ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::CONSTANT_BUFFER,
+            name: Some("imported-mock-resource"),
+        })
+        .unwrap();
     let mock_desc = mock_buffer.desc();
 
     let mut out_create = None;
@@ -366,7 +516,7 @@ pub fn test_handle_equality() {
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
-    let transient_bundle = graph.allocate_transient_resource_bundle();
+    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
         graph.execute(&transient_bundle, &import_bundle);
     }
@@ -374,14 +524,17 @@ pub fn test_handle_equality() {
 
 #[test]
 pub fn test_usage_collection() {
-    let mock_buffer = MockBuffer::new(&BufferDesc {
-        size: 512,
-        cpu_access: CpuAccessMode::None,
-        usage: ResourceUsageFlags::UNORDERED_ACCESS
-            | ResourceUsageFlags::CONSTANT_BUFFER
-            | ResourceUsageFlags::VERTEX_BUFFER,
-        name: Some("imported-mock-resource"),
-    });
+    let device = MockDevice::new();
+    let mock_buffer = device
+        .create_buffer(&BufferDesc {
+            size: 512,
+            cpu_access: CpuAccessMode::None,
+            usage: ResourceUsageFlags::UNORDERED_ACCESS
+                | ResourceUsageFlags::CONSTANT_BUFFER
+                | ResourceUsageFlags::VERTEX_BUFFER,
+            name: Some("imported-mock-resource"),
+        })
+        .unwrap();
     let mock_desc = mock_buffer.desc();
 
     let mut out_create = None;
@@ -483,7 +636,7 @@ pub fn test_usage_collection() {
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
-    let transient_bundle = graph.allocate_transient_resource_bundle();
+    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
         graph.execute(&transient_bundle, &import_bundle);
     }
@@ -491,32 +644,38 @@ pub fn test_usage_collection() {
 
 #[test]
 pub fn test_usage_schedule() {
-    let mock_buffer = MockBuffer::new(&BufferDesc {
-        size: 512,
-        cpu_access: CpuAccessMode::None,
-        usage: ResourceUsageFlags::UNORDERED_ACCESS
-            | ResourceUsageFlags::CONSTANT_BUFFER
-            | ResourceUsageFlags::VERTEX_BUFFER,
-        name: Some("imported-mock-buffer"),
-    });
+    let device = MockDevice::new();
+
+    let mock_buffer = device
+        .create_buffer(&BufferDesc {
+            size: 512,
+            cpu_access: CpuAccessMode::None,
+            usage: ResourceUsageFlags::UNORDERED_ACCESS
+                | ResourceUsageFlags::CONSTANT_BUFFER
+                | ResourceUsageFlags::VERTEX_BUFFER,
+            name: Some("imported-mock-buffer"),
+        })
+        .unwrap();
     let mock_buffer_desc = mock_buffer.desc();
 
-    let mock_texture = MockTexture::new(&TextureDesc {
-        width: 1024,
-        height: 1024,
-        depth: 1,
-        format: Format::Depth24Stencil8,
-        dimension: TextureDimension::Texture2D,
-        clear_value: None,
-        array_size: 1,
-        mip_levels: 1,
-        sample_count: 1,
-        sample_quality: 0,
-        usage: ResourceUsageFlags::RENDER_TARGET
-            | ResourceUsageFlags::UNORDERED_ACCESS
-            | ResourceUsageFlags::SHADER_RESOURCE,
-        name: Some("imported-mock-texture"),
-    });
+    let mock_texture = device
+        .create_texture(&TextureDesc {
+            width: 1024,
+            height: 1024,
+            depth: 1,
+            format: Format::Depth24Stencil8,
+            dimension: TextureDimension::Texture2D,
+            clear_value: None,
+            array_size: 1,
+            mip_levels: 1,
+            sample_count: 1,
+            sample_quality: 0,
+            usage: ResourceUsageFlags::RENDER_TARGET
+                | ResourceUsageFlags::UNORDERED_ACCESS
+                | ResourceUsageFlags::SHADER_RESOURCE,
+            name: Some("imported-mock-texture"),
+        })
+        .unwrap();
     let mock_texture_desc = mock_texture.desc();
 
     let pin_board = PinBoard::new();
@@ -737,7 +896,7 @@ pub fn test_usage_schedule() {
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(import_buffer, &mock_buffer);
     import_bundle.add_resource(import_texture, &mock_texture);
-    let transient_bundle = graph.allocate_transient_resource_bundle();
+    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
         graph.execute(&transient_bundle, &import_bundle);
     }

@@ -268,7 +268,7 @@ impl FrameGraphBuilder {
         let mut ir_builder = IRBuilder::new(&build_arena, writer, num_passes);
         ir_builder.build(&self, graph_name)?;
 
-        let mut pass_order_builder = PassOrderBuilder::new(&build_arena);
+        let mut pass_order_builder = PassOrderBuilder::new(&build_arena, &ir_builder);
         pass_order_builder.build(&self, &ir_builder);
 
         let execution_bundles = pass_order_builder.bundles;
@@ -1959,12 +1959,40 @@ struct PassOrderBuilder<'arena> {
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
     arena: &'arena Bump,
 
+    /// A temporary buffer that associates with ir.nodes that flags whether the matching node has
+    /// been scheduled or not.
+    node_scheduled: &'arena mut [bool],
+
+    /// A temporary buffer that associates with ir.nodes that counts the number of 'prev' links
+    /// for each node have yet to be scheduled. This helps know when we can schedule an ir pass
+    /// when building our pass order.
+    waiting_on_nums: &'arena mut [usize],
+
+    /// A temporary buffer used in the scheduling loop that is associatively mapped to ir.nodes. It
+    /// is expected to contain the number of 'prev' nodes for the associated ir node that are
+    /// immediately ready to execute in a given scheduler loop iteration.
+    runnable_prev_nums: &'arena mut [usize],
+
+    /// This list is our primary output, and contains the ordered list of execution bundles.
     bundles: Vec<PassOrderBundle>,
 }
 
 impl<'arena> PassOrderBuilder<'arena> {
-    pub fn new(arena: &'arena Bump) -> Self {
-        Self { arena }
+    pub fn new<T: std::io::Write>(arena: &'arena Bump, ir: &IRBuilder<'_, '_, '_, T>) -> Self {
+        let node_scheduled: &mut [bool] = arena.alloc_slice_fill_default(ir.nodes.len());
+
+        let waiting_on_nums = arena
+            .alloc_slice_fill_iter(ir.nodes.iter().map(|v| unsafe { v.prev().as_ref().len() }));
+
+        let runnable_prev_nums: &mut [usize] = arena.alloc_slice_fill_default(ir.nodes.len());
+
+        Self {
+            arena,
+            node_scheduled,
+            waiting_on_nums,
+            runnable_prev_nums,
+            bundles: Vec::new(),
+        }
     }
 
     pub fn build<T: std::io::Write>(
@@ -1972,6 +2000,330 @@ impl<'arena> PassOrderBuilder<'arena> {
         graph_builder: &FrameGraphBuilder,
         ir: &IRBuilder<'arena, '_, '_, T>,
     ) {
+        let (roots, leafs) = self.find_root_and_leaf_nodes(graph_builder, ir);
+        let barrier_type_counts = Self::sum_barrier_type_counts(ir);
+
+        let (import_barriers, export_barriers) = self.schedule_import_and_export_barriers(
+            graph_builder,
+            ir,
+            &barrier_type_counts,
+            &roots,
+            &leafs,
+        );
+
+        self.bundles.push(PassOrderBundle {
+            barriers: NonNull::from(import_barriers.as_slice()),
+            passes: NonNull::from(&[]),
+        });
+
+        self.schedule_passes(graph_builder, ir);
+
+        self.bundles.push(PassOrderBundle {
+            barriers: NonNull::from(export_barriers.as_slice()),
+            passes: NonNull::from(&[]),
+        });
+
+        self.validate_bundles(graph_builder, ir);
+    }
+
+    fn schedule_passes<T: std::io::Write>(
+        &mut self,
+        graph_builder: &FrameGraphBuilder,
+        ir: &IRBuilder<'_, '_, '_, T>,
+    ) {
+        // List that stores the candidates we should consider in a loop iteration. This is
+        // initialized to contain all the remaining unscheduled nodes in the graph. The algorithm
+        // works by looping over the candidates and progressively scheduling them as they become
+        // executable. We keep looping until the candidates list is empty.
+        let mut candidates = BVec::with_capacity_in(ir.nodes.len(), self.arena);
+
+        // This list is used to while looping. Instead of erasing from 'candidates' in the loop
+        // (slow) we drain from 'candidates' and move into 'next_candidates' selectively. Scheduled
+        // nodes aren't added to 'next_candidates' which functionally removes them from the
+        // candidate set when we drain back from 'next_candidates' into 'candidates'
+        let mut next_candidates = BVec::with_capacity_in(ir.nodes.len(), self.arena);
+
+        // Temporary buffer we accumulate barriers scheduled in a single loop iteration into. This
+        // is drained at the end of the iteration into a execution bundle, forming the barrier half
+        // of the execution bundle.
+        let mut barriers = BVec::with_capacity_in(16, self.arena);
+
+        // Logically the same as 'barriers', but for
+        let mut passes = BVec::with_capacity_in(8, self.arena);
+
+        // Add any unscheduled nodes to the candidate set
+        for (i, _) in ir.nodes.iter().enumerate() {
+            if !self.node_scheduled[i] {
+                candidates.push(i);
+            }
+        }
+        debug_assert!(is_sorted(candidates.as_slice()));
+        loop {
+            // We want to ensure that no scheduled nodes are in the candidate set
+            for &candidate in candidates.iter() {
+                debug_assert!(!self.node_scheduled[candidate]);
+            }
+
+            // We also require that the candidate stays sorted so that we always process the render
+            // pass IR nodes first whenever we iterate. More on that later...
+            debug_assert!(is_sorted(candidates.as_slice()));
+
+            // Clear the 'runnable_prev_nums' entries so we can re-accumulate the number of
+            // runnable dependencies for each node.
+            //
+            // Next we iterate over all the barriers that are still run candidates and update the
+            // 'runnable_prev_nums' slot for their next links if they can be executed. This is
+            // important because we only scheduled barriers if they allow a render pass to be
+            // executed in the same bundle as the barrier.
+            //
+            // Doing this keeps resource lifetimes constrained as otherwise initialization barriers
+            // would execute long before the first usage of a resource, extending the lifetime of
+            // the resources signifcantly which would massively reduce opporunities for resource
+            // aliasing.
+            self.runnable_prev_nums.fill(0);
+            for &candidate in candidates.iter() {
+                match &ir.nodes[candidate] {
+                    IRNode::RenderPass(_) => {}
+                    IRNode::Barrier(node_variant) => {
+                        self.check_node_can_run_and_update_runnable_counts(node_variant, candidate);
+                    }
+                    IRNode::LayoutChange(node_variant) => {
+                        self.check_node_can_run_and_update_runnable_counts(node_variant, candidate);
+                    }
+                }
+            }
+
+            // The second phase of the algorithm has us now checking our renderpass nodes. In the
+            // previous phase we summed up which barriers are immediately ready to execute. In this
+            // next phase we use this information to determine which render passes are ready to be
+            // run given we schedule the barriers they're still waiting on in this execution bundle.
+            //
+            // This is determined by comparing the 'runnable_prev_num' with the 'waiting_on_num'.
+            // When these two values for a pass are equal it means that all oustanding prev nodes
+            // for a pass are ready, so we schedule the pass into the 'passes' set and the barriers
+            // into the 'barriers' set. The barriers in the same bundle always run first so
+            // execution order is maintained.
+            for candidate in candidates.drain(..) {
+                let should_keep = match &ir.nodes[candidate] {
+                    IRNode::RenderPass(node_variant) => {
+                        // We can tell if the render pass is ready to be run by subtracting the
+                        // number of runnable dependencies (barriers) from the number of
+                        // dependencies the pass is still waiting on.
+                        //
+                        // Once that reaches zero then the pass is ready to be run. We then proceed
+                        // to schedule the pass and schedule the remaining runnable dependencies.
+                        //
+                        // This works because we guarantee that all prev links for a pass node point
+                        // to barriers. Any prevs are scheduled into the barriers pool of the
+                        // current execuction bundle.
+                        let runnable_prev_num = self.runnable_prev_nums[candidate];
+                        let waiting_on_num = self.waiting_on_nums[candidate];
+                        if runnable_prev_num >= waiting_on_num {
+                            self.schedule_pass_barriers(&mut barriers, ir, node_variant);
+
+                            passes.push(candidate);
+                            self.mark_node_as_scheduled(node_variant, candidate);
+
+                            false
+                        } else {
+                            true
+                        }
+                    }
+                    IRNode::Barrier(_) | IRNode::LayoutChange(_) => {
+                        // It is important to talk about how this works. The above code for
+                        // RenderPass may schedule some barriers to execute in this bundle. We must
+                        // filter these barriers out of the candidate set, but the only mechanism
+                        // we have for doing this is the 'should_keep' flag. Naively this would mean
+                        // we would need an extra iteration over candidates to fully drain the set
+                        // of all scheduled nodes. This is not the case for us though.
+                        //
+                        // We carefully exploit some implicit properties of the layout of ir.nodes
+                        // and the candidate list. Firstly, the candidate list must always remain
+                        // sorted. This guarantees when iterating it we always handle lower node
+                        // indices first in this loop. Secondly, we rely on the fact that the first
+                        // 'n' nodes in ir.nodes will always be the 'n' render pass nodes. What
+                        // this means is that given a sorted list of indices we are guaranteed to
+                        // always process the render pass nodes first. Exactly what happens in this
+                        // loop.
+                        //
+                        // The result is that we always process the passes first, meaning by the
+                        // time we're hitting this branch of the match expression we're guaranteed
+                        // to have processed all the remaining candidate render pass nodes. This
+                        // means that all the scheduled _barriers_ will be flagged now, so this
+                        // match branch will correctly filter all the scheduled barriers from the
+                        // candidate set.
+                        //
+                        // It is critical we retain these two properties, otherwise we would need
+                        // another iteration to do the final filter on the 'node_scheduled' flag.
+                        !self.node_scheduled[candidate]
+                    }
+                };
+
+                if should_keep {
+                    next_candidates.push(candidate);
+                }
+            }
+
+            // next_candidates becomes the candidates array for the next loop iteration.
+            std::mem::swap(&mut candidates, &mut next_candidates);
+
+            // We now take the list of barriers and passes for this iteration and copy them into
+            // arrays that are allocated from the frame graph's arena so they're safe to outlive
+            // the graph builder.
+            let bundle_barriers = graph_builder.arena.alloc_slice_copy(&barriers);
+            let bundle_passes = graph_builder.arena.alloc_slice_copy(&passes);
+            self.bundles.push(PassOrderBundle {
+                barriers: NonNull::from(bundle_barriers),
+                passes: NonNull::from(bundle_passes),
+            });
+            barriers.clear();
+            passes.clear();
+
+            // We keep looping until all nodes have been scheduled, which is known when candidates
+            // is empty after a loop iteration.
+            if candidates.is_empty() {
+                break;
+            }
+        }
+    }
+
+    fn schedule_pass_barriers<T: std::io::Write>(
+        &mut self,
+        barriers: &mut BVec<'_, usize>,
+        ir: &IRBuilder<'_, '_, '_, T>,
+        node_variant: &RenderPassIRNode,
+    ) {
+        let prevs = unsafe { node_variant.prev.as_ref() };
+        for &prev in prevs {
+            let prev_can_run = self.waiting_on_nums[prev] == 0;
+            let prev_already_run = self.node_scheduled[prev];
+            if prev_can_run && !prev_already_run {
+                barriers.push(prev);
+                self.mark_node_as_scheduled(&ir.nodes[prev], prev);
+            }
+        }
+    }
+
+    fn schedule_import_and_export_barriers<'graph, T: std::io::Write>(
+        &mut self,
+        graph_builder: &'graph FrameGraphBuilder,
+        ir: &IRBuilder<'arena, '_, '_, T>,
+        barrier_type_counts: &[usize; 8],
+        roots: &[usize],
+        leafs: &[usize],
+    ) -> (BVec<'graph, usize>, BVec<'graph, usize>) {
+        let num_export_barriers = barrier_type_counts[IRBarrierType::ExportAfterRead as usize]
+            + barrier_type_counts[IRBarrierType::ExportAfterWrite as usize];
+
+        let mut import_barriers: BVec<usize> = BVec::with_capacity_in(
+            barrier_type_counts[IRBarrierType::Import as usize],
+            &graph_builder.arena,
+        );
+        let mut export_barriers: BVec<usize> =
+            BVec::with_capacity_in(num_export_barriers, &graph_builder.arena);
+        for node_index in roots.iter().copied() {
+            let root_node = &ir.nodes[node_index];
+            match root_node {
+                IRNode::RenderPass(_) => {}
+                IRNode::Barrier(node_variant) => match node_variant.barrier_type {
+                    IRBarrierType::Import => {
+                        import_barriers.push(node_index);
+                        self.mark_node_as_scheduled(node_variant, node_index);
+                    }
+                    _ => {}
+                },
+                IRNode::LayoutChange(node_variant) => match node_variant.barrier_type {
+                    IRBarrierType::Import => {
+                        import_barriers.push(node_index);
+                        self.mark_node_as_scheduled(node_variant, node_index);
+                    }
+                    _ => {}
+                },
+            }
+        }
+        for node_index in leafs.iter().copied() {
+            let root_node = &ir.nodes[node_index];
+            match root_node {
+                IRNode::RenderPass(_) => {}
+                IRNode::Barrier(node_variant) => match node_variant.barrier_type {
+                    IRBarrierType::ExportAfterRead | IRBarrierType::ExportAfterWrite => {
+                        export_barriers.push(node_index);
+                        self.mark_node_as_scheduled(node_variant, node_index);
+                    }
+                    _ => {}
+                },
+                IRNode::LayoutChange(node_variant) => match node_variant.barrier_type {
+                    IRBarrierType::ExportAfterRead | IRBarrierType::ExportAfterWrite => {
+                        export_barriers.push(node_index);
+                        self.mark_node_as_scheduled(node_variant, node_index);
+                    }
+                    _ => {}
+                },
+            }
+        }
+        (import_barriers, export_barriers)
+    }
+
+    fn mark_node_as_scheduled(&mut self, node: &impl IIRNode, node_index: usize) {
+        // Sets the scheduled flag to true for this node, followed by decrementing the wait num for
+        // all the 'next' edges of this node.
+        self.node_scheduled[node_index] = true;
+        unsafe {
+            let node_nexts = node.next().as_ref();
+            for &next in node_nexts {
+                self.waiting_on_nums[next] -= 1;
+
+                // We also decrement the 'runnable_prev_nums' count so that all the 'next' edges we
+                // process this for don't think that there are more runnable nodes than there really
+                // are.
+                //
+                // Saturating arithmetic is critical here as it's possible for us to call this on a
+                // 0 value. Rust's plain arithmetic would underflow (or assert on debug) which would
+                // be a big problem as it would affectively mean any pass that underflowed would
+                // look ready to run. To save future pain we use saturating arithmetic so it just
+                // clamps to zero.
+                self.runnable_prev_nums[next] = self.runnable_prev_nums[next].saturating_sub(1);
+            }
+        }
+    }
+
+    fn check_node_can_run_and_update_runnable_counts(
+        &mut self,
+        node: &impl IIRNode,
+        node_index: usize,
+    ) {
+        let can_execute = self.waiting_on_nums[node_index] == 0;
+        if can_execute {
+            let node_nexts = unsafe { node.next().as_ref() };
+            for &next in node_nexts {
+                self.runnable_prev_nums[next] += 1;
+            }
+        }
+    }
+
+    fn sum_barrier_type_counts<T: std::io::Write>(ir: &IRBuilder<'_, '_, '_, T>) -> [usize; 8] {
+        // This loop will sum the total number of each barrier type into the 'barrier_type_counts'
+        // array, where that array is indexed by the IRBarrierType enum.
+        let mut barrier_type_counts = [0usize; IRBarrierType::NUM_VARIANTS];
+        for node in ir.nodes.iter() {
+            match node {
+                IRNode::RenderPass(_) => {}
+                IRNode::Barrier(v) => {
+                    barrier_type_counts[v.barrier_type as usize] += 1;
+                }
+                IRNode::LayoutChange(v) => {
+                    barrier_type_counts[v.barrier_type as usize] += 1;
+                }
+            }
+        }
+        barrier_type_counts
+    }
+
+    fn find_root_and_leaf_nodes<T: std::io::Write>(
+        &mut self,
+        graph_builder: &FrameGraphBuilder,
+        ir: &IRBuilder<'arena, '_, '_, T>,
+    ) -> (BVec<'arena, usize>, BVec<'arena, usize>) {
         // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
         // into the apropriate category based on whether they have an previous or next nodes.
         //
@@ -2006,6 +2358,46 @@ impl<'arena> PassOrderBuilder<'arena> {
                 );
             }
         }
+
+        (roots, leafs)
+    }
+
+    fn validate_bundles<T: std::io::Write>(
+        &mut self,
+        _graph_builder: &FrameGraphBuilder,
+        ir: &IRBuilder<'arena, '_, '_, T>,
+    ) {
+        if !cfg!(debug_assertions) {
+            return;
+        }
+
+        // Validate that the computed bundle order will never execute an IR node before all of its
+        // predecessors have been executed.
+        //
+        // This is critical for correct synchronization.
+        let node_executed: &mut [bool] = self.arena.alloc_slice_fill_default(ir.nodes.len());
+        for bundle in self.bundles.iter() {
+            let barriers = unsafe { bundle.barriers.as_ref() };
+            let passes = unsafe { bundle.passes.as_ref() };
+
+            for &barrier in barriers {
+                let barrier_node = &ir.nodes[barrier];
+                let prevs = unsafe { barrier_node.prev().as_ref() };
+                for &prev in prevs {
+                    debug_assert!(node_executed[prev]);
+                }
+                node_executed[barrier] = true;
+            }
+
+            for &pass in passes {
+                let pass_node = &ir.nodes[pass];
+                let prevs = unsafe { pass_node.prev().as_ref() };
+                for &prev in prevs {
+                    debug_assert!(node_executed[prev]);
+                }
+                node_executed[pass] = true;
+            }
+        }
     }
 }
 
@@ -2023,4 +2415,11 @@ fn get_given_or_default_sync_flags_for(
     } else {
         sync
     }
+}
+
+fn is_sorted<T>(data: &[T]) -> bool
+where
+    T: Ord,
+{
+    data.windows(2).all(|w| w[0] <= w[1])
 }

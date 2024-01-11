@@ -122,10 +122,14 @@ impl FrameGraph {
                         memory_barrier.before_access |= v.before_access;
                         memory_barrier.after_sync |= v.after_sync;
                         memory_barrier.after_access |= v.after_access;
-                    },
+                    }
                     IRNode::LayoutChange(v) => {
                         let root_id = self.resource_versions[v.version.0 as usize].root_resource;
-                        let texture = transient_bundle.get_resource(root_id).or_else(|| import_bundle.get_resource(root_id)).map(|v| v.unwrap_texture()).unwrap();
+                        let texture = transient_bundle
+                            .get_resource(root_id)
+                            .or_else(|| import_bundle.get_resource(root_id))
+                            .map(|v| v.unwrap_texture())
+                            .unwrap();
                         image_barriers.push(TextureBarrier {
                             texture,
                             subresource_range: TextureSubResourceSet::default(), // TODO: this
@@ -137,7 +141,7 @@ impl FrameGraph {
                             after_layout: v.after_layout,
                             queue_transition: None,
                         });
-                    },
+                    }
                 }
             }
 
@@ -155,7 +159,7 @@ impl FrameGraph {
 
     pub fn allocate_transient_resource_bundle(
         &self,
-        // device: &dyn IDevice,
+        device: &dyn IDevice,
     ) -> TransientResourceBundle {
         let num_transients = self.root_resources.len() - self.imported_resources.len();
         let mut bundle = TransientResourceBundle {
@@ -176,8 +180,8 @@ impl FrameGraph {
                         usage: transient.total_access_flags,
                         name: v.desc.name.map(|v| unsafe { v.as_ref() }),
                     };
-                    // let buffer = device.create_buffer(&desc).unwrap();
-                    // bundle.add_resource(i, buffer);
+                    let buffer = device.create_buffer(&desc).unwrap();
+                    bundle.add_resource(i, buffer);
                 }
                 crate::internal::ResourceType::Texture(v) => {
                     let desc = TextureDesc {
@@ -194,8 +198,8 @@ impl FrameGraph {
                         usage: transient.total_access_flags,
                         name: v.desc.name.map(|v| unsafe { v.as_ref() }),
                     };
-                    // let texture = device.create_texture(&desc).unwrap();
-                    // bundle.add_resource(i, texture);
+                    let texture = device.create_texture(&desc).unwrap();
+                    bundle.add_resource(i, texture);
                 }
             }
         }
