@@ -62,7 +62,6 @@ pub fn cpu_vendor() -> &'static str {
 
     #[cfg(target_arch = "aarch64")]
     {
-        use sysinfo::{CpuExt, SystemExt};
         return sys_info::SYSTEM_INFO.global_cpu_info().vendor_id();
     }
 
@@ -86,7 +85,6 @@ pub fn cpu_brand() -> &'static str {
 
     #[cfg(target_arch = "aarch64")]
     {
-        use sysinfo::{CpuExt, SystemExt};
         return sys_info::SYSTEM_INFO.global_cpu_info().brand();
     }
 

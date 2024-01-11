@@ -28,7 +28,7 @@
 //
 
 use once_cell::sync::Lazy;
-use sysinfo::{CpuRefreshKind, RefreshKind, System, SystemExt};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 
 ///
 /// Only need to look this up once so wrap it in a lazy static
@@ -37,6 +37,6 @@ use sysinfo::{CpuRefreshKind, RefreshKind, System, SystemExt};
 pub static SYSTEM_INFO: Lazy<System> = Lazy::new(|| {
     let refreshes = RefreshKind::new()
         .with_cpu(CpuRefreshKind::new())
-        .with_memory();
+        .with_memory(MemoryRefreshKind::new().with_ram());
     System::new_with_specifics(refreshes)
 });
