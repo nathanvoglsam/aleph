@@ -104,7 +104,6 @@ impl IPlugin for PluginRender {
         );
 
         let drawable_size = window.drawable_size();
-        let window_size = window.size();
         let config = SwapChainConfiguration {
             format: Format::Bgra8UnormSrgb,
             width: drawable_size.0,
@@ -123,7 +122,7 @@ impl IPlugin for PluginRender {
 
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
-        let pixels_per_point = drawable_size.0 as f32 / window_size.0 as f32;
+        let pixels_per_point = window.current_display_scale();
         let renderer = EguiRenderer::new(device.clone(), &back_buffer_desc, pixels_per_point);
 
         let schedule_cell = registry
@@ -151,7 +150,6 @@ impl IPlugin for PluginRender {
 
                 if data.window.resized() || data.should_resize {
                     data.swap_images.clear();
-                    let window_size = data.window.size();
                     let drawable_size = data.window.drawable_size();
                     let new_config = data
                         .swap_chain
@@ -164,7 +162,7 @@ impl IPlugin for PluginRender {
                     data.swap_images = swap_images.into_iter().map(|v| v.unwrap()).collect();
 
                     let back_buffer_desc = data.swap_images[0].desc();
-                    let pixels_per_point = drawable_size.0 as f32 / window_size.0 as f32;
+                    let pixels_per_point = data.window.current_display_scale();
                     data.renderer
                         .rebuild_after_resize(&back_buffer_desc, pixels_per_point);
 
