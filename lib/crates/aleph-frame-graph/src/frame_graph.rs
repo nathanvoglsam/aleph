@@ -457,4 +457,14 @@ impl<'a> FrameGraphResources<'a> {
 
         resource
     }
+
+    pub fn get_buffer<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn IBuffer> {
+        let r = self.get(r);
+        r.map(|v| v.unwrap_buffer())
+    }
+
+    pub fn get_texture<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn ITexture> {
+        let r = self.get(r);
+        r.map(|v| v.unwrap_texture())
+    }
 }

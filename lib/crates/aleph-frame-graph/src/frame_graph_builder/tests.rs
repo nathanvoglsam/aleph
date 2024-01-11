@@ -644,6 +644,7 @@ pub fn test_usage_collection() {
 
 #[test]
 pub fn test_usage_schedule() {
+    let pin_board = PinBoard::new();
     let device = MockDevice::new();
 
     let mock_buffer = device
@@ -678,7 +679,6 @@ pub fn test_usage_schedule() {
         .unwrap();
     let mock_texture_desc = mock_texture.desc();
 
-    let pin_board = PinBoard::new();
     let mut builder = FrameGraph::builder();
 
     struct Pass0 {
@@ -786,83 +786,107 @@ pub fn test_usage_schedule() {
 
     builder.add_pass(
         "test-pass-3",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
             let transient = pin_board.get::<Pass2>().unwrap().transient_write;
-            resources.read_buffer(
+            let read = resources.read_buffer(
                 transient,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
+            *data = Some(read);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+            let read = data.clone().unwrap();
+            let _resource = resources.get_buffer(read).unwrap();
+        },
     );
 
     builder.add_pass(
         "test-pass-4",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            resources.read_texture(
+            let read = resources.read_texture(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
+            *data = Some(read);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+            let read = data.clone().unwrap();
+            let _resource = resources.get_texture(read).unwrap();
+        },
     );
 
     builder.add_pass(
         "test-pass-5",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            resources.read_texture(
+            let read = resources.read_texture(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
+            *data = Some(read);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+            let read = data.clone().unwrap();
+            let _resource = resources.get_texture(read).unwrap();
+        },
     );
 
     builder.add_pass(
         "test-pass-6",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            resources.read_texture(
+            let read = resources.read_texture(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
+            *data = Some(read);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+            let read = data.clone().unwrap();
+            let _resource = resources.get_texture(read).unwrap();
+        },
     );
 
     builder.add_pass(
         "test-pass-7",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            resources.read_texture(
+            let read = resources.read_texture(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
             );
+            *data = Some(read);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+            let read = data.clone().unwrap();
+            let _resource = resources.get_texture(read).unwrap();
+        },
     );
 
     builder.add_pass(
         "test-pass-8",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            resources.read_texture(
+            let read = resources.read_texture(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
             );
+            *data = Some(read)
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+            let read = data.clone().unwrap();
+            let _resource = resources.get_texture(read).unwrap();
+        },
     );
 
-    // struct Pass8 {
+    // struct Pass9 {
     //     pub import_texture_write: ResourceMut,
     // }
     builder.add_pass(
@@ -874,7 +898,7 @@ pub fn test_usage_schedule() {
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
             );
-            // pin_board.publish(Pass8 {
+            // pin_board.publish(Pass9 {
             //     import_texture_write,
             // });
         },

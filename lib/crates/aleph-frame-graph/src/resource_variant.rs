@@ -37,18 +37,38 @@ pub enum ResourceVariant {
 
 impl ResourceVariant {
     pub fn unwrap_buffer(&self) -> &dyn IBuffer {
-        if let Self::Buffer(v) = self {
-            v.as_ref()
-        } else {
-            panic!("ResourceVariant is not a 'Buffer'");
+        match self {
+            ResourceVariant::Buffer(v) => v.as_ref(),
+            ResourceVariant::Texture(v) => {
+                let desc = v.desc();
+                let name = desc.name.unwrap_or("Unnamed Texture");
+                panic!("ResourceVariant for resource '{name}' is not a 'Buffer'");
+            }
         }
     }
 
     pub fn unwrap_texture(&self) -> &dyn ITexture {
-        if let Self::Texture(v) = self {
-            v.as_ref()
-        } else {
-            panic!("ResourceVariant is not a 'Texture'");
+        match self {
+            ResourceVariant::Texture(v) => v.as_ref(),
+            ResourceVariant::Buffer(v) => {
+                let desc = v.desc();
+                let name = desc.name.unwrap_or("Unnamed Buffer");
+                panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
+            }
+        }
+    }
+
+    pub const fn is_buffer(&self) -> bool {
+        match self {
+            ResourceVariant::Buffer(_) => true,
+            ResourceVariant::Texture(_) => false,
+        }
+    }
+
+    pub const fn is_texture(&self) -> bool {
+        match self {
+            ResourceVariant::Buffer(_) => false,
+            ResourceVariant::Texture(_) => true,
         }
     }
 }
