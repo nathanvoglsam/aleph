@@ -28,16 +28,17 @@
 //
 
 use crate::FrameGraphResources;
+use aleph_rhi_api::*;
 use std::mem::size_of_val;
 use std::ptr::NonNull;
 
 pub trait IRenderPass: Send + 'static {
-    fn execute(&mut self, resources: &FrameGraphResources);
+    fn execute(&mut self, encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources);
 }
 
 pub(crate) struct CallbackRenderPass<
     T: Send + 'static,
-    ExecFn: FnMut(&T, &FrameGraphResources) + Send + 'static,
+    ExecFn: FnMut(&T, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 > {
     /// A type-erased pointer to the payload object of type 'T'.
     payload: NonNull<T>,
@@ -49,7 +50,7 @@ pub(crate) struct CallbackRenderPass<
 impl<T, ExecFn> CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(&T, &FrameGraphResources) + Send + 'static,
+    ExecFn: FnMut(&T, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 {
     pub fn new(payload: NonNull<T>, exec_fn: ExecFn) -> Self {
         assert!(
@@ -66,9 +67,9 @@ where
 impl<T, ExecFn> IRenderPass for CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(&T, &FrameGraphResources) + Send + 'static,
+    ExecFn: FnMut(&T, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 {
-    fn execute(&mut self, resources: &FrameGraphResources) {
+    fn execute(&mut self, encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources) {
         // Safety: It is the responsibility of the frame graph implementation to ensure that this
         //         is safe to do. So, it's the responsibility of whoever constructs the callback
         //         pass.
@@ -77,13 +78,13 @@ where
         //         can simply store it in the arena and give the callback pass the only pointer
         //         to it, making it safe to access here.
         let payload = unsafe { self.payload.as_ref() };
-        (self.exec_fn)(payload, resources)
+        (self.exec_fn)(payload, encoder, resources)
     }
 }
 
 unsafe impl<T, ExecFn> Send for CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(&T, &FrameGraphResources) + Send + 'static,
+    ExecFn: FnMut(&T, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 {
 }

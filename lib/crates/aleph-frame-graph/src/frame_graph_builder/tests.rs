@@ -38,6 +38,135 @@ use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::ptr::NonNull;
 
+pub struct MockEncoder {}
+
+impl IGetPlatformInterface for MockEncoder {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
+impl IGeneralEncoder for MockEncoder {
+    unsafe fn bind_graphics_pipeline(&mut self, _pipeline: &dyn IGraphicsPipeline) {
+        todo!()
+    }
+
+    unsafe fn bind_vertex_buffers(
+        &mut self,
+        _first_binding: u32,
+        _bindings: &[InputAssemblyBufferBinding],
+    ) {
+        todo!()
+    }
+
+    unsafe fn bind_index_buffer(
+        &mut self,
+        _index_type: IndexType,
+        _binding: &InputAssemblyBufferBinding,
+    ) {
+        todo!()
+    }
+
+    unsafe fn set_viewports(&mut self, _viewports: &[Viewport]) {
+        todo!()
+    }
+
+    unsafe fn set_scissor_rects(&mut self, _rects: &[Rect]) {
+        todo!()
+    }
+
+    unsafe fn set_push_constant_block(&mut self, _block_index: usize, _data: &[u8]) {
+        todo!()
+    }
+
+    unsafe fn begin_rendering(&mut self, _info: &BeginRenderingInfo) {
+        todo!()
+    }
+
+    unsafe fn end_rendering(&mut self) {
+        todo!()
+    }
+
+    unsafe fn draw(
+        &mut self,
+        _vertex_count: u32,
+        _instance_count: u32,
+        _first_vertex: u32,
+        _first_instance: u32,
+    ) {
+        todo!()
+    }
+
+    unsafe fn draw_indexed(
+        &mut self,
+        _index_count: u32,
+        _instance_count: u32,
+        _first_index: u32,
+        _first_instance: u32,
+        _vertex_offset: i32,
+    ) {
+        todo!()
+    }
+}
+
+impl IComputeEncoder for MockEncoder {
+    unsafe fn bind_descriptor_sets(
+        &mut self,
+        _pipeline_layout: &dyn IPipelineLayout,
+        _bind_point: PipelineBindPoint,
+        _first_set: u32,
+        _sets: &[DescriptorSetHandle],
+    ) {
+        todo!()
+    }
+
+    unsafe fn dispatch(&mut self, _group_count_x: u32, _group_count_y: u32, _group_count_z: u32) {
+        todo!()
+    }
+}
+
+impl ITransferEncoder for MockEncoder {
+    unsafe fn resource_barrier(
+        &mut self,
+        _memory_barriers: &[GlobalBarrier],
+        _buffer_barriers: &[BufferBarrier],
+        _texture_barriers: &[TextureBarrier],
+    ) {
+        // intentionally empty
+    }
+
+    unsafe fn copy_buffer_regions(
+        &mut self,
+        _src: &dyn IBuffer,
+        _dst: &dyn IBuffer,
+        _regions: &[BufferCopyRegion],
+    ) {
+        todo!()
+    }
+
+    unsafe fn copy_buffer_to_texture(
+        &mut self,
+        _src: &dyn IBuffer,
+        _dst: &dyn ITexture,
+        _dst_layout: ImageLayout,
+        _regions: &[BufferToTextureCopyRegion],
+    ) {
+        todo!()
+    }
+
+    unsafe fn set_marker(&mut self, _color: Color, _message: &str) {
+        todo!()
+    }
+
+    unsafe fn begin_event(&mut self, _color: Color, _message: &str) {
+        todo!()
+    }
+
+    unsafe fn end_event(&mut self) {
+        todo!()
+    }
+}
+
 pub struct MockDevice {
     pub(crate) this: AnyWeak<Self>,
 }
@@ -321,6 +450,7 @@ pub fn test_builder() {
     }
 
     let device = MockDevice::new();
+    let mut encoder = MockEncoder {};
 
     let mut out_create = None;
     let mut out_write = None;
@@ -346,7 +476,9 @@ pub fn test_builder() {
             ));
             out_create = data.resource;
         },
-        |data: &TestPassData, _resources: &FrameGraphResources| {
+        |data: &TestPassData,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {
             // Verify we got the right payload
             assert_eq!(data.value, 54321);
         },
@@ -367,7 +499,9 @@ pub fn test_builder() {
             ));
             out_write = data.resource;
         },
-        |data: &TestPassData, _resources: &FrameGraphResources| {
+        |data: &TestPassData,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {
             // Verify we got the right payload
             assert_eq!(data.value, 1234);
         },
@@ -388,7 +522,9 @@ pub fn test_builder() {
             ));
             out_read = data.resource;
         },
-        |data: &TestPassData2, _resources: &FrameGraphResources| {
+        |data: &TestPassData2,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {
             // Verify we got the right payload
             assert_eq!(data.value, -432);
         },
@@ -399,13 +535,15 @@ pub fn test_builder() {
     let import_bundle = ImportBundle::default();
     let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
-        graph.execute(&transient_bundle, &import_bundle);
+        graph.execute(&transient_bundle, &import_bundle, &mut encoder);
     }
 }
 
 #[test]
 pub fn test_handle_equality() {
     let device = MockDevice::new();
+    let mut encoder = MockEncoder {};
+
     let mock_buffer = device
         .create_buffer(&BufferDesc {
             size: 512,
@@ -441,7 +579,7 @@ pub fn test_handle_equality() {
             );
             imported_resource = Some(r);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
@@ -463,7 +601,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -480,7 +618,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -492,7 +630,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::CONSTANT_BUFFER,
             ));
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     let out_create = out_create.unwrap();
@@ -518,13 +656,15 @@ pub fn test_handle_equality() {
     import_bundle.add_resource(imported_resource, &mock_buffer);
     let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
-        graph.execute(&transient_bundle, &import_bundle);
+        graph.execute(&transient_bundle, &import_bundle, &mut encoder);
     }
 }
 
 #[test]
 pub fn test_usage_collection() {
     let device = MockDevice::new();
+    let mut encoder = MockEncoder {};
+
     let mock_buffer = device
         .create_buffer(&BufferDesc {
             size: 512,
@@ -560,7 +700,7 @@ pub fn test_usage_collection() {
             );
             imported_resource = Some(r);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
@@ -582,7 +722,7 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::INDEX_BUFFER,
             ));
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -599,7 +739,7 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
@@ -611,7 +751,7 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     let mut graph = builder.build();
@@ -638,7 +778,7 @@ pub fn test_usage_collection() {
     import_bundle.add_resource(imported_resource, &mock_buffer);
     let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
-        graph.execute(&transient_bundle, &import_bundle);
+        graph.execute(&transient_bundle, &import_bundle, &mut encoder);
     }
 }
 
@@ -646,6 +786,7 @@ pub fn test_usage_collection() {
 pub fn test_usage_schedule() {
     let pin_board = PinBoard::new();
     let device = MockDevice::new();
+    let mut encoder = MockEncoder {};
 
     let mock_buffer = device
         .create_buffer(&BufferDesc {
@@ -700,7 +841,7 @@ pub fn test_usage_schedule() {
             );
             pin_board.publish(Pass0 { import })
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     struct Pass1 {
@@ -741,7 +882,7 @@ pub fn test_usage_schedule() {
 
             pin_board.publish(Pass1 { create, import });
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
     );
 
     #[derive(Clone)]
@@ -784,7 +925,9 @@ pub fn test_usage_schedule() {
             pin_board.publish(payload.clone());
             *data = Some(payload);
         },
-        |data: &Option<Pass2>, resources: &FrameGraphResources| {
+        |data: &Option<Pass2>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let data = data.as_ref().unwrap();
             let _resource = resources.get_buffer(data.import_buffer_write).unwrap();
             let _resource = resources.get_texture(data.import_texture_write).unwrap();
@@ -802,7 +945,9 @@ pub fn test_usage_schedule() {
             );
             *data = Some(read);
         },
-        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+        |data: &Option<ResourceRef>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let read = data.clone().unwrap();
             let _resource = resources.get_buffer(read).unwrap();
         },
@@ -819,7 +964,9 @@ pub fn test_usage_schedule() {
             );
             *data = Some(read);
         },
-        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+        |data: &Option<ResourceRef>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let read = data.clone().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -836,7 +983,9 @@ pub fn test_usage_schedule() {
             );
             *data = Some(read);
         },
-        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+        |data: &Option<ResourceRef>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let read = data.clone().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -853,7 +1002,9 @@ pub fn test_usage_schedule() {
             );
             *data = Some(read);
         },
-        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+        |data: &Option<ResourceRef>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let read = data.clone().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -870,7 +1021,9 @@ pub fn test_usage_schedule() {
             );
             *data = Some(read);
         },
-        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+        |data: &Option<ResourceRef>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let read = data.clone().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -887,7 +1040,9 @@ pub fn test_usage_schedule() {
             );
             *data = Some(read)
         },
-        |data: &Option<ResourceRef>, resources: &FrameGraphResources| {
+        |data: &Option<ResourceRef>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let read = data.clone().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -913,7 +1068,9 @@ pub fn test_usage_schedule() {
             pin_board.publish(payload.clone());
             *data = Some(payload);
         },
-        |data: &Option<Pass9>, resources: &FrameGraphResources| {
+        |data: &Option<Pass9>,
+         _encoder: &mut dyn IGeneralEncoder,
+         resources: &FrameGraphResources| {
             let data = data.as_ref().unwrap();
             let _resource = resources.get_texture(data.import_texture_write).unwrap();
         },
@@ -936,6 +1093,6 @@ pub fn test_usage_schedule() {
     import_bundle.add_resource(import_texture, &mock_texture);
     let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
-        graph.execute(&transient_bundle, &import_bundle);
+        graph.execute(&transient_bundle, &import_bundle, &mut encoder);
     }
 }

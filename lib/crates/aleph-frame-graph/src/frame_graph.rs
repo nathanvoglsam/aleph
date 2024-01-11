@@ -57,7 +57,7 @@ pub struct FrameGraph {
     pub(crate) execution_bundles: Vec<PassOrderBundle>,
 
     /// Backing storage for our IR nodes.
-    /// 
+    ///
     /// This array is indexed by the [PassOrderBundle] objects in the
     /// [FrameGraph::execution_bundles] array. Each bundle contains a set of barriers and passes to
     /// execute in order, with each barrier and pass identified as an index into this array.
@@ -103,7 +103,13 @@ impl FrameGraph {
         &mut self,
         transient_bundle: &TransientResourceBundle,
         import_bundle: &ImportBundle,
+        encoder: &mut dyn IGeneralEncoder,
     ) {
+        // TODO: parallel encode
+        //
+        // We could record in parallel by allocating command buffers ourselves and doing a parallel
+        // iteration over the execution bundles list.
+
         self.execute_pre_assertions(transient_bundle, import_bundle);
 
         let resources = FrameGraphResources {
@@ -112,6 +118,7 @@ impl FrameGraph {
         };
 
         for bundle in self.execution_bundles.iter() {
+            let mut has_memory_barrier = false;
             let mut memory_barrier = GlobalBarrier {
                 before_sync: BarrierSync::NONE,
                 after_sync: BarrierSync::NONE,
@@ -119,7 +126,7 @@ impl FrameGraph {
                 after_access: BarrierAccess::NONE,
             };
 
-            let mut image_barriers = Vec::new();
+            let mut texture_barriers = Vec::new();
             let barriers = unsafe { bundle.barriers.as_ref() };
             for &barrier in barriers {
                 let node = &self.ir_nodes[barrier];
@@ -130,6 +137,7 @@ impl FrameGraph {
                         memory_barrier.before_access |= v.before_access;
                         memory_barrier.after_sync |= v.after_sync;
                         memory_barrier.after_access |= v.after_access;
+                        has_memory_barrier = true;
                     }
                     IRNode::LayoutChange(v) => {
                         let root_id = self.resource_versions[v.version.0 as usize].root_resource;
@@ -138,7 +146,7 @@ impl FrameGraph {
                             .or_else(|| import_bundle.get_resource(root_id))
                             .map(|v| v.unwrap_texture())
                             .unwrap();
-                        image_barriers.push(TextureBarrier {
+                        texture_barriers.push(TextureBarrier {
                             texture,
                             subresource_range: TextureSubResourceSet::default(), // TODO: this
                             before_sync: v.before_sync,
@@ -153,6 +161,15 @@ impl FrameGraph {
                 }
             }
 
+            if !barriers.is_empty() {
+                let memory_barrier = if has_memory_barrier {
+                    std::slice::from_ref(&memory_barrier)
+                } else {
+                    &[]
+                };
+                encoder.resource_barrier(&memory_barrier, &[], &texture_barriers);
+            }
+
             let passes = unsafe { bundle.passes.as_ref() };
             for &pass in passes {
                 let node = &self.ir_nodes[pass];
@@ -160,7 +177,7 @@ impl FrameGraph {
 
                 let render_pass = node.render_pass();
                 let render_pass = &mut self.render_passes[render_pass];
-                unsafe { render_pass.pass.as_mut().execute(&resources) }
+                unsafe { render_pass.pass.as_mut().execute(encoder, &resources) }
             }
         }
     }

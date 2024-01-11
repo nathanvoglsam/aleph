@@ -186,7 +186,7 @@ impl FrameGraphBuilder {
     pub fn add_pass<
         T: Send + Default + 'static,
         SetupFn: FnOnce(&mut T, &mut ResourceRegistry),
-        ExecFn: FnMut(&T, &FrameGraphResources) + Send + 'static,
+        ExecFn: FnMut(&T, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
     >(
         &mut self,
         name: &str,
