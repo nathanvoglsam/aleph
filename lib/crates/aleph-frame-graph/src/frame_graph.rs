@@ -201,7 +201,7 @@ impl FrameGraph {
                 crate::internal::ResourceType::Buffer(v) => {
                     let desc = BufferDesc {
                         size: v.desc.size,
-                        cpu_access: CpuAccessMode::None,
+                        cpu_access: v.desc.cpu_access,
                         usage: transient.total_access_flags,
                         name: v.desc.name.map(|v| unsafe { v.as_ref() }),
                     };
@@ -428,6 +428,11 @@ impl FrameGraph {
 
     fn assert_matching_buffer_desc(&self, l: &FrameGraphBufferDesc, r: &BufferDesc, name: &str) {
         assert_eq!(l.size, r.size, "Buffer '{}' not expected size", name);
+        assert_eq!(
+            l.cpu_access, r.cpu_access,
+            "Buffer '{}' not expected cpu_access",
+            name
+        );
     }
 
     fn assert_matching_texture_desc(&self, l: &FrameGraphTextureDesc, r: &TextureDesc, name: &str) {

@@ -570,6 +570,7 @@ impl FrameGraphBuilder {
             import: Some(imported),
             desc: FrameGraphBufferDesc {
                 size: desc.desc.size,
+                cpu_access: desc.desc.cpu_access,
                 name,
             },
         };
@@ -745,6 +746,7 @@ impl FrameGraphBuilder {
         let name = name.map(|v| NonNull::from(v));
         let create_desc = FrameGraphBufferDesc {
             size: desc.size,
+            cpu_access: desc.cpu_access,
             name,
         };
         let r = self.create_new_handle(

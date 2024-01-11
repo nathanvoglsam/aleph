@@ -217,6 +217,12 @@ pub(crate) struct FrameGraphBufferDesc {
     /// The size of the buffer to be created
     pub size: u64,
 
+    /// What kind of CPU access is allowed.
+    /// - None -> device local
+    /// - Read -> read back
+    /// - Write -> upload
+    pub cpu_access: CpuAccessMode,
+
     /// The name of the resource. This is a pointer to a region within the main frame graph arena
     /// that the passes are stored in. It is only sound to access this string immutably, and the
     /// caller must ensure the relevant arena is still live.
