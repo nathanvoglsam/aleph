@@ -744,20 +744,21 @@ pub fn test_usage_schedule() {
         |_data: &(), _resources: &FrameGraphResources| {},
     );
 
+    #[derive(Clone)]
     struct Pass2 {
-        // import_buffer_write: ResourceMut,
+        import_buffer_write: ResourceMut,
         import_texture_write: ResourceMut,
         transient_write: ResourceMut,
     }
     builder.add_pass(
         "test-pass-2",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<Pass2>, resources: &mut ResourceRegistry| {
             let import_buffer = pin_board.get::<Pass0>().unwrap().import;
             let pass1 = pin_board.get::<Pass1>().unwrap();
             let create = pass1.create;
             let import_texture = pass1.import;
 
-            let _import_buffer_write = resources.write_buffer(
+            let import_buffer_write = resources.write_buffer(
                 import_buffer,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
@@ -775,13 +776,19 @@ pub fn test_usage_schedule() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
 
-            pin_board.publish(Pass2 {
-                // import_buffer_write,
+            let payload = Pass2 {
+                import_buffer_write,
                 import_texture_write,
                 transient_write,
-            });
+            };
+            pin_board.publish(payload.clone());
+            *data = Some(payload);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<Pass2>, resources: &FrameGraphResources| {
+            let data = data.as_ref().unwrap();
+            let _resource = resources.get_buffer(data.import_buffer_write).unwrap();
+            let _resource = resources.get_texture(data.import_texture_write).unwrap();
+        },
     );
 
     builder.add_pass(
@@ -886,23 +893,30 @@ pub fn test_usage_schedule() {
         },
     );
 
-    // struct Pass9 {
-    //     pub import_texture_write: ResourceMut,
-    // }
+    #[derive(Clone)]
+    struct Pass9 {
+        pub import_texture_write: ResourceMut,
+    }
     builder.add_pass(
         "test-pass-9",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |data: &mut Option<Pass9>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let _import_texture_write = resources.write_texture(
+            let import_texture_write = resources.write_texture(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
             );
-            // pin_board.publish(Pass9 {
-            //     import_texture_write,
-            // });
+
+            let payload = Pass9 {
+                import_texture_write,
+            };
+            pin_board.publish(payload.clone());
+            *data = Some(payload);
         },
-        |_data: &(), _resources: &FrameGraphResources| {},
+        |data: &Option<Pass9>, resources: &FrameGraphResources| {
+            let data = data.as_ref().unwrap();
+            let _resource = resources.get_texture(data.import_texture_write).unwrap();
+        },
     );
 
     let mut dot_text = Vec::<u8>::new();
