@@ -198,6 +198,17 @@ pub trait IWindow: IAny + HasRawWindowHandle + Send + Sync + 'static {
     fn toggle_fullscreen(&self);
 
     ///
+    /// Returns what the current horizontal DPI of the display the window is on.
+    /// 
+    fn current_dpi(&self) -> f32;
+
+    ///
+    /// Returns the display scaling factor of the display the window is on. This is derived from
+    /// [IWindow::current_dpi].
+    /// 
+    fn current_display_scale(&self) -> f32;
+
+    ///
     /// Get read only access to this frame's list of window events.
     ///
     /// # Warning
