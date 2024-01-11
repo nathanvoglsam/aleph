@@ -96,7 +96,7 @@ impl FrameGraph {
         transient_bundle: &TransientResourceBundle,
         import_bundle: &ImportBundle,
     ) {
-        self.execute_pre_assertions(import_bundle);
+        self.execute_pre_assertions(transient_bundle, import_bundle);
 
         let resources = FrameGraphResources {
             import_bundle,
@@ -286,13 +286,14 @@ impl FrameGraph {
     /// pass in the frame graph.
     unsafe fn execute_pre_assertions(
         &mut self,
-        // transient_bundle: &TransientResourceBundle,
+        transient_bundle: &TransientResourceBundle,
         import_bundle: &ImportBundle,
     ) {
         if cfg!(debug_assertions) {
             for v in self.imported_resources.iter() {
                 let root_resource = &self.root_resources[*v as usize];
                 let imported_resource = import_bundle.imports.get(v);
+                let transient_resource = transient_bundle.transients.get(v);
 
                 let name = root_resource
                     .resource_type
@@ -306,85 +307,97 @@ impl FrameGraph {
                     name
                 );
 
-                let contains_import = imported_resource.is_some();
+                let has_import = imported_resource.is_some();
                 assert!(
-                    contains_import,
+                    has_import,
                     "The ImportBundle does not contain handle for imported graph resource '{}'",
                     name
                 );
-                let imported_resource = imported_resource.unwrap();
 
-                match imported_resource {
-                    crate::ResourceVariant::Buffer(i) => match &root_resource.resource_type {
-                        crate::internal::ResourceType::Buffer(r) => {
-                            let i_desc = i.desc();
-                            self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
-                        }
-                        crate::internal::ResourceType::Texture(_r) => panic!(
-                            "Imported buffer '{}' was provided a texture in the ImportBundle",
-                            name
-                        ),
-                    },
-                    crate::ResourceVariant::Texture(i) => match &root_resource.resource_type {
-                        crate::internal::ResourceType::Buffer(_r) => panic!(
-                            "Imported texture '{}' was provided a buffer in the ImportBundle",
-                            name
-                        ),
-                        crate::internal::ResourceType::Texture(r) => {
-                            let i_desc = i.desc();
-                            self.assert_matching_texture_desc(&r.desc, &i_desc, name);
-                        }
-                    },
-                }
+                let no_transient_for_import = transient_resource.is_none();
+                assert!(
+                    no_transient_for_import,
+                    "The TransientResourceBundle contains a resource for imported resource '{}'",
+                    name
+                );
+
+                let imported_resource = imported_resource.unwrap();
+                self.validate_import_or_transient_desc(
+                    root_resource,
+                    imported_resource,
+                    "Imported",
+                    name,
+                );
             }
 
-            // for (v, root_resource) in self.root_resources.iter().enumerate() {
-            //     let v = u16::try_from(v).unwrap();
-            //     let transient_resource = transient_bundle.transients.get(&v);
-            //
-            //     let name = root_resource
-            //         .resource_type
-            //         .name()
-            //         .unwrap_or("Unnamed resource");
-            //
-            //     let is_import = root_resource.resource_type.is_import();
-            //     assert!(
-            //         !is_import,
-            //         "INTERNAL ERROR: Resource '{}' import status internal mismatch",
-            //         name
-            //     );
-            //
-            //     let contains_resource = transient_resource.is_some();
-            //     assert!(
-            //         contains_resource,
-            //         "The TransientResourceBundle does not contain handle for graph resource '{}'",
-            //         name
-            //     );
-            //     let transient_resource = transient_resource.unwrap();
-            //
-            //     match transient_resource {
-            //         crate::ResourceVariant::Buffer(i) => match &root_resource.resource_type {
-            //             crate::internal::ResourceType::Buffer(r) => {
-            //                 let i_desc = i.desc();
-            //                 self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
-            //             }
-            //             crate::internal::ResourceType::Texture(_r) => panic!(
-            //                 "Imported buffer '{}' was provided a texture in the TransientResourceBundle",
-            //                 name
-            //             ),
-            //         },
-            //         crate::ResourceVariant::Texture(i) => match &root_resource.resource_type {
-            //             crate::internal::ResourceType::Buffer(_r) => panic!(
-            //                 "Imported texture '{}' was provided a buffer in the TransientResourceBundle",
-            //                 name
-            //             ),
-            //             crate::internal::ResourceType::Texture(r) => {
-            //                 let i_desc = i.desc();
-            //                 self.assert_matching_texture_desc(&r.desc, &i_desc, name);
-            //             }
-            //         },
-            //     }
-            // }
+            for (v, root_resource) in self.root_resources.iter().enumerate() {
+                let is_import = root_resource.resource_type.is_import();
+                if is_import {
+                    // We've already processed the imported resources, skip any imported resources
+                    // we find.
+                    continue;
+                }
+
+                let v = u16::try_from(v).unwrap();
+                let imported_resource = import_bundle.imports.get(&v);
+                let transient_resource = transient_bundle.transients.get(&v);
+
+                let name = root_resource
+                    .resource_type
+                    .name()
+                    .unwrap_or("Unnamed resource");
+
+                let has_transient = transient_resource.is_some();
+                assert!(
+                    has_transient,
+                    "The TransientResourceBundle does not contain handle for graph resource '{}'",
+                    name
+                );
+
+                let no_import_for_transient = imported_resource.is_none();
+                assert!(
+                    no_import_for_transient,
+                    "The ImportBundle contains a resource for transient resource '{}'",
+                    name
+                );
+
+                let transient_resource = transient_resource.unwrap();
+                self.validate_import_or_transient_desc(
+                    root_resource,
+                    transient_resource,
+                    "Transient",
+                    name,
+                );
+            }
+        }
+    }
+
+    fn validate_import_or_transient_desc(
+        &self,
+        root: &ResourceRoot,
+        given: &ResourceVariant,
+        resource_type: &str,
+        name: &str,
+    ) {
+        match given {
+            crate::ResourceVariant::Buffer(i) => match &root.resource_type {
+                crate::internal::ResourceType::Buffer(r) => {
+                    let i_desc = i.desc();
+                    self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
+                }
+                crate::internal::ResourceType::Texture(_r) => {
+                    panic!("{} buffer '{}' was provided a texture", resource_type, name)
+                }
+            },
+            crate::ResourceVariant::Texture(i) => match &root.resource_type {
+                crate::internal::ResourceType::Buffer(_r) => {
+                    panic!("{} texture '{}' was provided a buffer", resource_type, name)
+                }
+                crate::internal::ResourceType::Texture(r) => {
+                    let i_desc = i.desc();
+                    self.assert_matching_texture_desc(&r.desc, &i_desc, name);
+                }
+            },
         }
     }
 
