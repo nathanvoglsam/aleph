@@ -203,8 +203,7 @@ pub trait IWindow: IAny + HasRawWindowHandle + Send + Sync + 'static {
     fn current_dpi(&self) -> f32;
 
     ///
-    /// Returns the display scaling factor of the display the window is on. This is derived from
-    /// [IWindow::current_dpi].
+    /// Returns the display scaling factor of the display the window is on.
     /// 
     fn current_display_scale(&self) -> f32;
 
