@@ -811,6 +811,7 @@ impl From<DescriptorSetHandle> for NonNull<()> {
 }
 
 unsafe impl Send for DescriptorSetHandle {}
+unsafe impl Sync for DescriptorSetHandle {}
 
 pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
     /// Allocates a new individual descriptor set from the pool.
