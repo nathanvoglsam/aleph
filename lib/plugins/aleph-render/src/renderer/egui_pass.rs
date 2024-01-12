@@ -31,13 +31,11 @@ use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use crossbeam::channel::{Receiver, Sender};
 use egui::RenderData;
 
 use crate::renderer::GlobalObjects;
 
 pub struct EguiPassPayload {
-    recv: Receiver<(DescriptorSetHandle, RenderData)>,
     pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pipeline: AnyArc<dyn IGraphicsPipeline>,
     swap_extent: Extent2D,
@@ -56,15 +54,18 @@ pub struct EguiPassOutput {
     pub id: ResourceMut,
 }
 
+pub struct EguiPassContext {
+    pub descriptor_set: DescriptorSetHandle,
+    pub render_data: RenderData,
+}
+
 pub fn egui_pass(
     frame_graph: &mut FrameGraphBuilder,
     pin_board: &PinBoard,
     global: &GlobalObjects,
-) -> Sender<(DescriptorSetHandle, RenderData)> {
+) {
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
     const INDEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
-
-    let (send, recv) = crossbeam::channel::bounded(2);
 
     frame_graph.add_pass(
         "EguiPass",
@@ -112,7 +113,6 @@ pub fn egui_pass(
 
             let pixels_per_point = back_buffer_info.pixels_per_point;
             data.write(EguiPassPayload {
-                recv,
                 pipeline_layout: global.pipeline_layout.clone(),
                 pipeline: global.graphics_pipeline.clone(),
                 swap_extent: Extent2D::new(back_buffer_desc.width, back_buffer_desc.height),
@@ -122,14 +122,17 @@ pub fn egui_pass(
                 idx_buffer,
             });
         },
-        |data, encoder, resources, _| unsafe {
+        |data, encoder, resources, context| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
             let back_buffer = resources.get_texture(data.back_buffer).unwrap();
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
 
-            let (descriptor_set, render_data) = data.recv.recv().unwrap();
+            let EguiPassContext {
+                descriptor_set,
+                render_data,
+            } = context.get().unwrap();
 
             // Map and calculate our begin/end pointers for the mapped vertex and index buffer
             // regions
@@ -178,7 +181,7 @@ pub fn egui_pass(
                 data.pipeline_layout.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
-                &[descriptor_set],
+                &[descriptor_set.clone()],
             );
 
             //
@@ -223,7 +226,7 @@ pub fn egui_pass(
 
             let mut vtx_base = 0;
             let mut idx_base = 0;
-            for job in render_data.primitives {
+            for job in render_data.primitives.iter() {
                 if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
                     // Skip doing anything for the job if there's nothing to render
                     if triangles.vertices.is_empty() || triangles.indices.is_empty() {
@@ -277,8 +280,6 @@ pub fn egui_pass(
             idx_buffer.unmap();
         },
     );
-
-    send
 }
 
 unsafe fn record_job_commands(

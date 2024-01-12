@@ -31,10 +31,10 @@ mod egui_pass;
 mod frame;
 mod global;
 
+use crate::renderer::egui_pass::EguiPassContext;
 use aleph_frame_graph::*;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use crossbeam::channel::Sender;
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
@@ -46,7 +46,6 @@ pub struct EguiRenderer {
     pub frames: Vec<PerFrameObjects>,
     pub global: GlobalObjects,
     pub frame_graph: FrameGraph,
-    pub sender: Sender<(DescriptorSetHandle, RenderData)>,
     pub back_buffer_id: ResourceMut,
     pub execute_context: PinBoard,
 }
@@ -67,7 +66,7 @@ impl EguiRenderer {
             pixels_per_point,
         });
 
-        let (frame_graph, sender) = Self::create_frame_graph(&global, &pin_board);
+        let frame_graph = Self::create_frame_graph(&global, &pin_board);
 
         let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
         let back_buffer_id = output.id;
@@ -82,7 +81,6 @@ impl EguiRenderer {
             frames,
             global,
             frame_graph,
-            sender,
             back_buffer_id,
             execute_context: PinBoard::new(),
         }
@@ -96,7 +94,7 @@ impl EguiRenderer {
             pixels_per_point,
         });
 
-        let (frame_graph, sender) = Self::create_frame_graph(&self.global, &pin_board);
+        let frame_graph = Self::create_frame_graph(&self.global, &pin_board);
 
         let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
         let back_buffer_id = output.id;
@@ -108,19 +106,13 @@ impl EguiRenderer {
 
         self.frames = frames;
         self.frame_graph = frame_graph;
-        self.sender = sender;
         self.back_buffer_id = back_buffer_id;
     }
 
-    pub fn create_frame_graph(
-        global: &GlobalObjects,
-        pin_board: &PinBoard,
-    ) -> (FrameGraph, Sender<(DescriptorSetHandle, RenderData)>) {
+    pub fn create_frame_graph(global: &GlobalObjects, pin_board: &PinBoard) -> FrameGraph {
         let mut frame_graph = FrameGraph::builder();
-
-        let send = egui_pass::egui_pass(&mut frame_graph, &pin_board, global);
-
-        (frame_graph.build(), send)
+        egui_pass::egui_pass(&mut frame_graph, &pin_board, global);
+        frame_graph.build()
     }
 
     pub unsafe fn record_frame(
@@ -162,9 +154,12 @@ impl EguiRenderer {
             let mut import_bundle = ImportBundle::default();
             import_bundle.add_resource(self.back_buffer_id, texture);
 
-            self.sender
-                .send((self.frames[index].descriptor_set.clone(), render_data))
-                .unwrap();
+            self.execute_context.clear();
+            self.execute_context.publish(EguiPassContext {
+                descriptor_set: self.frames[index].descriptor_set.clone(),
+                render_data,
+            });
+
             self.frame_graph.execute(
                 &self.frames[index].transient_bundle,
                 &import_bundle,
