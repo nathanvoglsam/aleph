@@ -68,7 +68,7 @@ pub fn egui_pass(
 
     frame_graph.add_pass(
         "EguiPass",
-        |data: &mut Option<EguiPassPayload>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<EguiPassPayload>, resources: &mut ResourceRegistry| {
             let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
 
             let back_buffer_desc = back_buffer_info.desc.clone().with_name("Swap Chain Image");
@@ -111,7 +111,7 @@ pub fn egui_pass(
             );
 
             let pixels_per_point = back_buffer_info.pixels_per_point;
-            *data = Some(EguiPassPayload {
+            data.write(EguiPassPayload {
                 recv,
                 pipeline_layout: global.pipeline_layout.clone(),
                 pipeline: global.graphics_pipeline.clone(),
@@ -122,11 +122,11 @@ pub fn egui_pass(
                 idx_buffer,
             });
         },
-        |data: &Option<EguiPassPayload>,
+        |data: Option<&EguiPassPayload>,
          encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| unsafe {
             // Unwrap all our fg resources from our setup payload
-            let data = data.as_ref().unwrap();
+            let data = data.unwrap();
             let back_buffer = resources.get_texture(data.back_buffer).unwrap();
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
