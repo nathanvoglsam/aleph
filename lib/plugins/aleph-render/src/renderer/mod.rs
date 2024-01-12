@@ -48,6 +48,7 @@ pub struct EguiRenderer {
     pub frame_graph: FrameGraph,
     pub sender: Sender<(DescriptorSetHandle, RenderData)>,
     pub back_buffer_id: ResourceMut,
+    pub execute_context: PinBoard,
 }
 
 impl EguiRenderer {
@@ -83,6 +84,7 @@ impl EguiRenderer {
             frame_graph,
             sender,
             back_buffer_id,
+            execute_context: PinBoard::new(),
         }
     }
 
@@ -167,6 +169,7 @@ impl EguiRenderer {
                 &self.frames[index].transient_bundle,
                 &import_bundle,
                 encoder.as_mut(),
+                &self.execute_context,
             );
         }
 
