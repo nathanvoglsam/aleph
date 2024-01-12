@@ -186,6 +186,31 @@ impl Drop for PinBoard {
     }
 }
 
+/// Utility wrapper over a [PinBoard] that doesn't allow publishing new entries into the pin board.
+/// 
+/// Useful for exposing a pin board that you don't want to be published into.
+pub struct ImmutablePinBoardRef<'a> {
+    pin_board: &'a PinBoard,
+}
+
+impl<'a> ImmutablePinBoardRef<'a> {
+    /// Creates a new [ImmutablePinBoardRef] from the given reference
+    pub fn new(pin_board: &'a PinBoard) -> Self {
+        Self { pin_board }
+    }
+
+    /// Look up a published item by its type. May return None if no value has been published yet.
+    pub fn get<T: Send + Sync + Any>(&self) -> Option<&T> {
+        self.pin_board.get::<T>()
+    }
+}
+
+impl<'a> From<&'a PinBoard> for ImmutablePinBoardRef<'a> {
+    fn from(value: &'a PinBoard) -> Self {
+        Self::new(value)
+    }
+}
+
 struct Table {
     /// The bump allocator arena used to allocate any newly inserted object
     pub arena: Bump,
