@@ -56,6 +56,7 @@ use crate::resource::ResourceId;
 use crate::FrameGraphResources;
 use crate::{FrameGraph, IRenderPass, ResourceMut, ResourceRef};
 use aleph_arena_drop_list::DropLink;
+use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
@@ -230,7 +231,9 @@ impl FrameGraphBuilder {
     pub fn add_pass<
         T: Send + 'static,
         SetupFn: FnOnce(&mut Payload<T>, &mut ResourceRegistry),
-        ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
+        ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources, &PinBoard)
+            + Send
+            + 'static,
     >(
         &mut self,
         name: &str,

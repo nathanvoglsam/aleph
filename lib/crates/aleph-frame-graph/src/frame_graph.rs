@@ -35,6 +35,7 @@ use crate::{
     FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, TransientResourceBundle,
 };
 use aleph_arena_drop_list::DropLink;
+use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use bumpalo::Bump;
 use std::collections::HashMap;
@@ -104,6 +105,7 @@ impl FrameGraph {
         transient_bundle: &TransientResourceBundle,
         import_bundle: &ImportBundle,
         encoder: &mut dyn IGeneralEncoder,
+        context: &PinBoard,
     ) {
         // TODO: parallel encode
         //
@@ -177,7 +179,12 @@ impl FrameGraph {
 
                 let render_pass = node.render_pass();
                 let render_pass = &mut self.render_passes[render_pass];
-                unsafe { render_pass.pass.as_mut().execute(encoder, &resources) }
+                unsafe {
+                    render_pass
+                        .pass
+                        .as_mut()
+                        .execute(encoder, &resources, context)
+                }
             }
         }
     }
