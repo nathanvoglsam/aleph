@@ -59,10 +59,57 @@ use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 #[cfg(test)]
 mod tests;
+
+/// A wrapper object around a [MaybeUninit] that allows specifying payloads for render passes
+/// without requiring that they all implement [Default].
+pub struct Payload<T> {
+    pub(crate) payload: MaybeUninit<T>,
+    pub(crate) written: bool,
+}
+
+impl<T> Payload<T> {
+    pub const fn new() -> Self {
+        Self {
+            payload: MaybeUninit::uninit(),
+            written: false,
+        }
+    }
+
+    /// Write a payload into the slot, returning a mutable reference to that payload. If a payload
+    /// has already been written then the old one will be dropped before writing the new one into
+    /// the slot.
+    pub fn write(&mut self, v: T) -> &mut T {
+        // If we've already written the payload we need to drop the old one before we replace it.
+        // A plain MaybeUninit will overwrite without dropping as it has no way of knowing if the
+        // existing item is initialized or not, but we have a 'written' flag to know!
+        if self.written {
+            unsafe { self.payload.assume_init_drop() }
+        }
+
+        // Mark as written and write out the payload
+        self.written = true;
+        self.payload.write(v)
+    }
+}
+
+impl<T: Default> Payload<T> {
+    /// A variant of [Payload::write] available for payloads with a [Default] implementation that
+    /// simply defaults the payload and yields a reference to it.
+    pub fn defaulted(&mut self) -> &mut T {
+        self.write(T::default())
+    }
+}
+
+impl<T> Default for Payload<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Provides a description for importing a resource into the frame graph.
 ///
@@ -184,9 +231,9 @@ impl FrameGraphBuilder {
     ///   graph when it is time for the pass to record commands into a command buffer. This closure
     ///   is persistent and will remain alive for the full lifetime of the [FrameGraph] object.
     pub fn add_pass<
-        T: Send + Default + 'static,
-        SetupFn: FnOnce(&mut T, &mut ResourceRegistry),
-        ExecFn: FnMut(&T, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
+        T: Send + 'static,
+        SetupFn: FnOnce(&mut Payload<T>, &mut ResourceRegistry),
+        ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
     >(
         &mut self,
         name: &str,
@@ -199,7 +246,7 @@ impl FrameGraphBuilder {
         //         the arena.
         unsafe {
             // Default initialize the payload and allocate the payload into the arena
-            let payload = self.arena.alloc(T::default());
+            let payload = self.arena.alloc(Payload::<T>::new());
             let mut payload = NonNull::from(payload);
             DropLink::append_drop_list(&self.arena, &mut self.drop_head, payload);
 

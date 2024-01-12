@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::frame_graph_builder::BufferImportDesc;
-use crate::frame_graph_builder::TextureImportDesc;
-use crate::FrameGraphResources;
-use crate::ImportBundle;
-use crate::{FrameGraph, ResourceMut, ResourceRef, ResourceRegistry};
+use crate::{
+    BufferImportDesc, FrameGraph, FrameGraphResources, ImportBundle, Payload, ResourceMut,
+    ResourceRef, ResourceRegistry, TextureImportDesc,
+};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
@@ -460,7 +459,9 @@ pub fn test_builder() {
 
     builder.add_pass(
         "test-pass-0",
-        |data: &mut TestPassData, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<TestPassData>, resources: &mut ResourceRegistry| {
+            let data = data.defaulted();
+
             // Payload init
             data.value = 54321;
 
@@ -476,9 +477,10 @@ pub fn test_builder() {
             ));
             out_create = data.resource;
         },
-        |data: &TestPassData,
+        |data: Option<&TestPassData>,
          _encoder: &mut dyn IGeneralEncoder,
          _resources: &FrameGraphResources| {
+            let data = data.unwrap();
             // Verify we got the right payload
             assert_eq!(data.value, 54321);
         },
@@ -486,7 +488,9 @@ pub fn test_builder() {
 
     builder.add_pass(
         "test-pass-1",
-        |data: &mut TestPassData, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<TestPassData>, resources: &mut ResourceRegistry| {
+            let data = data.defaulted();
+
             // Payload init
             data.value = 1234;
 
@@ -499,9 +503,10 @@ pub fn test_builder() {
             ));
             out_write = data.resource;
         },
-        |data: &TestPassData,
+        |data: Option<&TestPassData>,
          _encoder: &mut dyn IGeneralEncoder,
          _resources: &FrameGraphResources| {
+            let data = data.unwrap();
             // Verify we got the right payload
             assert_eq!(data.value, 1234);
         },
@@ -509,7 +514,9 @@ pub fn test_builder() {
 
     builder.add_pass(
         "test-pass-2",
-        |data: &mut TestPassData2, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<TestPassData2>, resources: &mut ResourceRegistry| {
+            let data = data.defaulted();
+
             // Payload init
             data.value = -432;
 
@@ -522,9 +529,10 @@ pub fn test_builder() {
             ));
             out_read = data.resource;
         },
-        |data: &TestPassData2,
+        |data: Option<&TestPassData2>,
          _encoder: &mut dyn IGeneralEncoder,
          _resources: &FrameGraphResources| {
+            let data = data.unwrap();
             // Verify we got the right payload
             assert_eq!(data.value, -432);
         },
@@ -565,7 +573,7 @@ pub fn test_handle_equality() {
     let mut imported_resource = None;
     builder.add_pass(
         "test-pass-0",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             let r = resources.import_buffer(
                 &BufferImportDesc {
                     desc: &mock_desc,
@@ -579,13 +587,15 @@ pub fn test_handle_equality() {
             );
             imported_resource = Some(r);
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
     builder.add_pass(
         "test-pass-1",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             out_read_import = Some(resources.read_buffer(
                 imported_resource,
                 BarrierSync::PIXEL_SHADING,
@@ -601,12 +611,14 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
         "test-pass-2",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
@@ -618,19 +630,23 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
         "test-pass-3",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             out_read_transient = Some(resources.read_buffer(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
             ));
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     let out_create = out_create.unwrap();
@@ -686,7 +702,7 @@ pub fn test_usage_collection() {
     let mut imported_resource = None;
     builder.add_pass(
         "test-pass-0",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             let r = resources.import_buffer(
                 &BufferImportDesc {
                     desc: &mock_desc,
@@ -700,13 +716,15 @@ pub fn test_usage_collection() {
             );
             imported_resource = Some(r);
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
     builder.add_pass(
         "test-pass-1",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             resources.read_buffer(
                 imported_resource,
                 BarrierSync::VERTEX_SHADING,
@@ -722,12 +740,14 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::INDEX_BUFFER,
             ));
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
         "test-pass-2",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             out_write_import = Some(resources.write_buffer(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
@@ -739,19 +759,23 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     builder.add_pass(
         "test-pass-3",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             resources.read_buffer(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     let mut graph = builder.build();
@@ -827,7 +851,7 @@ pub fn test_usage_schedule() {
     }
     builder.add_pass(
         "test-pass-0",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             let import = resources.import_buffer(
                 &BufferImportDesc {
                     desc: &mock_buffer_desc,
@@ -841,7 +865,9 @@ pub fn test_usage_schedule() {
             );
             pin_board.publish(Pass0 { import })
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     struct Pass1 {
@@ -850,7 +876,7 @@ pub fn test_usage_schedule() {
     }
     builder.add_pass(
         "test-pass-1",
-        |_data: &mut (), resources: &mut ResourceRegistry| {
+        |_data: &mut Payload<()>, resources: &mut ResourceRegistry| {
             let import = pin_board.get::<Pass0>().unwrap().import;
             resources.read_buffer(
                 import,
@@ -882,7 +908,9 @@ pub fn test_usage_schedule() {
 
             pin_board.publish(Pass1 { create, import });
         },
-        |_data: &(), _encoder: &mut dyn IGeneralEncoder, _resources: &FrameGraphResources| {},
+        |_data: Option<&()>,
+         _encoder: &mut dyn IGeneralEncoder,
+         _resources: &FrameGraphResources| {},
     );
 
     #[derive(Clone)]
@@ -893,7 +921,7 @@ pub fn test_usage_schedule() {
     }
     builder.add_pass(
         "test-pass-2",
-        |data: &mut Option<Pass2>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<Pass2>, resources: &mut ResourceRegistry| {
             let import_buffer = pin_board.get::<Pass0>().unwrap().import;
             let pass1 = pin_board.get::<Pass1>().unwrap();
             let create = pass1.create;
@@ -923,9 +951,9 @@ pub fn test_usage_schedule() {
                 transient_write,
             };
             pin_board.publish(payload.clone());
-            *data = Some(payload);
+            data.write(payload);
         },
-        |data: &Option<Pass2>,
+        |data: Option<&Pass2>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
             let data = data.as_ref().unwrap();
@@ -936,114 +964,114 @@ pub fn test_usage_schedule() {
 
     builder.add_pass(
         "test-pass-3",
-        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<ResourceRef>, resources: &mut ResourceRegistry| {
             let transient = pin_board.get::<Pass2>().unwrap().transient_write;
             let read = resources.read_buffer(
                 transient,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
-            *data = Some(read);
+            data.write(read);
         },
-        |data: &Option<ResourceRef>,
+        |data: Option<&ResourceRef>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
-            let read = data.clone().unwrap();
+            let read = data.copied().unwrap();
             let _resource = resources.get_buffer(read).unwrap();
         },
     );
 
     builder.add_pass(
         "test-pass-4",
-        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
             let read = resources.read_texture(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
-            *data = Some(read);
+            data.write(read);
         },
-        |data: &Option<ResourceRef>,
+        |data: Option<&ResourceRef>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
-            let read = data.clone().unwrap();
+            let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
     );
 
     builder.add_pass(
         "test-pass-5",
-        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
             let read = resources.read_texture(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
-            *data = Some(read);
+            data.write(read);
         },
-        |data: &Option<ResourceRef>,
+        |data: Option<&ResourceRef>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
-            let read = data.clone().unwrap();
+            let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
     );
 
     builder.add_pass(
         "test-pass-6",
-        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
             let read = resources.read_texture(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
-            *data = Some(read);
+            data.write(read);
         },
-        |data: &Option<ResourceRef>,
+        |data: Option<&ResourceRef>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
-            let read = data.clone().unwrap();
+            let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
     );
 
     builder.add_pass(
         "test-pass-7",
-        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
             let read = resources.read_texture(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
             );
-            *data = Some(read);
+            data.write(read);
         },
-        |data: &Option<ResourceRef>,
+        |data: Option<&ResourceRef>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
-            let read = data.clone().unwrap();
+            let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
     );
 
     builder.add_pass(
         "test-pass-8",
-        |data: &mut Option<ResourceRef>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<ResourceRef>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
             let read = resources.read_texture(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
             );
-            *data = Some(read)
+            data.write(read);
         },
-        |data: &Option<ResourceRef>,
+        |data: Option<&ResourceRef>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
-            let read = data.clone().unwrap();
+            let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
     );
@@ -1054,7 +1082,7 @@ pub fn test_usage_schedule() {
     }
     builder.add_pass(
         "test-pass-9",
-        |data: &mut Option<Pass9>, resources: &mut ResourceRegistry| {
+        |data: &mut Payload<Pass9>, resources: &mut ResourceRegistry| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
             let import_texture_write = resources.write_texture(
                 resource,
@@ -1066,9 +1094,9 @@ pub fn test_usage_schedule() {
                 import_texture_write,
             };
             pin_board.publish(payload.clone());
-            *data = Some(payload);
+            data.write(payload);
         },
-        |data: &Option<Pass9>,
+        |data: Option<&Pass9>,
          _encoder: &mut dyn IGeneralEncoder,
          resources: &FrameGraphResources| {
             let data = data.as_ref().unwrap();
