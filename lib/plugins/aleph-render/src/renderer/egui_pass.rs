@@ -35,7 +35,7 @@ use egui::RenderData;
 
 use crate::renderer::GlobalObjects;
 
-pub struct EguiPassPayload {
+struct EguiPassPayload {
     pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pipeline: AnyArc<dyn IGraphicsPipeline>,
     swap_extent: Extent2D,
@@ -50,10 +50,12 @@ pub struct BackBufferInfo {
     pub pixels_per_point: f32,
 }
 
+/// The output of the setup phase
 pub struct EguiPassOutput {
     pub id: ResourceMut,
 }
 
+/// The input the pass expects in the execute phase, to be pulled from the context pin board.
 pub struct EguiPassContext {
     pub descriptor_set: DescriptorSetHandle,
     pub render_data: RenderData,
