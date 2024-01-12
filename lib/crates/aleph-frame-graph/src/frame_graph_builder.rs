@@ -62,9 +62,6 @@ use bumpalo::Bump;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
-#[cfg(test)]
-mod tests;
-
 /// A wrapper object around a [MaybeUninit] that allows specifying payloads for render passes
 /// without requiring that they all implement [Default].
 pub struct Payload<T> {

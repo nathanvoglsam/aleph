@@ -138,6 +138,9 @@ mod resource;
 mod resource_variant;
 mod transient_bundle;
 
+#[cfg(test)]
+mod tests;
+
 pub use frame_graph::{FrameGraph, FrameGraphResources};
 pub use frame_graph_builder::{
     BufferImportDesc, FrameGraphBuilder, Payload, ResourceRegistry, TextureImportDesc,
