@@ -3641,10 +3641,20 @@ impl Display for ColorClearValue {
 }
 
 /// An enumeration of all possible input types to a depth/stencil texture clear operation
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct DepthStencilClearValue {
     pub depth: f32,
     pub stencil: u8,
+}
+
+impl DepthStencilClearValue {
+    pub const fn new(depth: f32, stencil: u8) -> Self {
+        Self { depth, stencil }
+    }
+
+    pub const fn depth(depth: f32) -> Self {
+        Self::new(depth, 0)
+    }
 }
 
 /// Enum flags for barrier commands for specifying queue ownership transition behavior.
