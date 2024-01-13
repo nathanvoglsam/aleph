@@ -31,19 +31,19 @@
 
 #include "common.hlsl"
 
-/*
- * Struct that describes a box for use with the TraceRayAgainstBox function family.
- *
- * Not all the members may be used by the tracing function, depending on the settings for the
- * function. Check the documentation for the tracing functions so you can avoid calculating them.
- *
- * Members:
- *
- * - center: The center point of the box in some coordinate space (e.g world space or view space).
- * - radius: The half side lengths of the box on each axis.
- * - inv_radius: The inverse of 'radius'. Not always used, check the TraceRayAgainstBox docs.
- * - rotation: Rotation matrix defining the orientation of the box. Not always used.
- */
+// 
+// Struct that describes a box for use with the TraceRayAgainstBox function family.
+// 
+// Not all the members may be used by the tracing function, depending on the settings for the
+// function. Check the documentation for the tracing functions so you can avoid calculating them.
+// 
+// Members:
+// 
+// - center: The center point of the box in some coordinate space (e.g world space or view space).
+// - radius: The half side lengths of the box on each axis.
+// - inv_radius: The inverse of 'radius'. Not always used, check the TraceRayAgainstBox docs.
+// - rotation: Rotation matrix defining the orientation of the box. Not always used.
+// 
 struct TracingBox {
     float3 center;
     float3 radius;
@@ -51,31 +51,31 @@ struct TracingBox {
     float3x3 rotation;
 };
 
-/*
- * A function that traces a ray against a single box, returning whether an intersection occurred,
- * the distance to the intersection and the normal of the intersection.
- *
- * Arguments:
- * - box: The box to trace against
- * - ray: The ray to trace
- * - out distance: Filled with the distance to the intersection, if there was one.
- * - out normal: Filled with the normal of the intersection, if there was one.
- * - can_start_in_box: Whether the ray can start inside the box. Recommended use for this is as a
- *                     compile time constant to switch between different implementations. If
- *                     this is false then Box.inv_radius won't be used so initialization of it can
- *                     be skipped.
- * - is_oriented: Whether the box can be rotated or not. Recommended use for this is as a compile
- *                time constant to switch between different implementations. If this is false then
- *                the function will assume the box is axis aligned and will ignore the Box.rotation
- *                member meaning initializing it can be skipped.
- * - inv_ray_direction: The inverse of Ray.direction. Needed when is_oriented is false. We leave
- *                      creating this to the caller as they could precalculate this to skip doing
- *                      the divide in the shader.
- *
- * This is based on the implementation described in this paper:
- * A Ray-Box Intersection Algorithm and Efficient Dynamic Voxel Rendering by Alexander Majercik,
- * Cyril Crassin, Peter Shirley, and Morgan McGuire
- */
+// 
+// A function that traces a ray against a single box, returning whether an intersection occurred,
+// the distance to the intersection and the normal of the intersection.
+// 
+// Arguments:
+// - box: The box to trace against
+// - ray: The ray to trace
+// - out distance: Filled with the distance to the intersection, if there was one.
+// - out normal: Filled with the normal of the intersection, if there was one.
+// - can_start_in_box: Whether the ray can start inside the box. Recommended use for this is as a
+//                     compile time constant to switch between different implementations. If
+//                     this is false then Box.inv_radius won't be used so initialization of it can
+//                     be skipped.
+// - is_oriented: Whether the box can be rotated or not. Recommended use for this is as a compile
+//                time constant to switch between different implementations. If this is false then
+//                the function will assume the box is axis aligned and will ignore the Box.rotation
+//                member meaning initializing it can be skipped.
+// - inv_ray_direction: The inverse of Ray.direction. Needed when is_oriented is false. We leave
+//                      creating this to the caller as they could precalculate this to skip doing
+//                      the divide in the shader.
+// 
+// This is based on the implementation described in this paper:
+// A Ray-Box Intersection Algorithm and Efficient Dynamic Voxel Rendering by Alexander Majercik,
+// Cyril Crassin, Peter Shirley, and Morgan McGuire
+// 
 bool TraceRayAgainstBox(
     const TracingBox box,
     const Ray ray,
@@ -91,8 +91,8 @@ bool TraceRayAgainstBox(
 
     const float3 ray_origin = mul(box.rotation, (ray.origin - box.center));
 
-    const float3 ray_direction;
-    if (oriented) {
+    float3 ray_direction;
+    if (is_oriented) {
         ray_direction = mul(box.rotation,ray.direction);
     } else {
         ray_direction = ray.direction;
@@ -109,7 +109,7 @@ bool TraceRayAgainstBox(
     float3 sgn = -sign(ray_direction);
 
     float3 distance_to_plane = box.radius * winding * sgn - ray_origin;
-    if (oriented) {
+    if (is_oriented) {
         distance_to_plane /= ray_direction;
     }
     else {
@@ -126,7 +126,7 @@ bool TraceRayAgainstBox(
 
     distance = (sgn.x != 0.0) ? distance_to_plane.x : ((sgn.y != 0.0) ? distance_to_plane.y : distance_to_plane.z);
 
-    if (oriented) {
+    if (is_oriented) {
         normal = mul(sgn, box.rotation);
     }
     else {
@@ -136,10 +136,10 @@ bool TraceRayAgainstBox(
     return (sgn.x != 0) || (sgn.y != 0) || (sgn.z != 0);
 }
 
-/*
- * A wrapper around TraceRayAgainstBox. This function can be used for tracing against axis-aligned
- * boxes where the ray will always originate from outside the box
- */
+// 
+// A wrapper around TraceRayAgainstBox. This function can be used for tracing against axis-aligned
+// boxes where the ray will always originate from outside the box
+// 
 bool TraceOutsideRayAgainstAABox(
     const TracingBox box,
     const Ray ray,
@@ -150,10 +150,10 @@ bool TraceOutsideRayAgainstAABox(
     return TraceRayAgainstBox(box, ray, distance, normal, false, false, inv_ray_direction);
 }
 
-/*
- * A wrapper around TraceRayAgainstBox. This function can be used for tracing against axis-aligned
- * boxes where the ray may originate from inside the box
- */
+// 
+// A wrapper around TraceRayAgainstBox. This function can be used for tracing against axis-aligned
+// boxes where the ray may originate from inside the box
+// 
 bool TraceRayAgainstAABox(
         const TracingBox box,
         const Ray ray,
@@ -164,10 +164,10 @@ bool TraceRayAgainstAABox(
     return TraceRayAgainstBox(box, ray, distance, normal, true, false, inv_ray_direction);
 }
 
-/*
- * A wrapper around TraceRayAgainstBox. This function can be used for tracing against oriented
- * boxes where the ray will always originate from outside the box
- */
+// 
+// A wrapper around TraceRayAgainstBox. This function can be used for tracing against oriented
+// boxes where the ray will always originate from outside the box
+// 
 bool TraceOutsideRayAgainstOrientedBox(
         const TracingBox box,
         const Ray ray,
@@ -178,10 +178,10 @@ bool TraceOutsideRayAgainstOrientedBox(
     return TraceRayAgainstBox(box, ray, distance, normal, false, true, inv_ray_direction);
 }
 
-/*
- * A wrapper around TraceRayAgainstBox. This function can be used for tracing against oriented
- * boxes where the ray may originate from inside the box
- */
+// 
+// A wrapper around TraceRayAgainstBox. This function can be used for tracing against oriented
+// boxes where the ray may originate from inside the box
+// 
 bool TraceRayAgainstOrientedBox(
         const TracingBox box,
         const Ray ray,

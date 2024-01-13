@@ -29,49 +29,49 @@
 
 #pragma once
 
-/*
- * Approximate SRGB to linear (linear from srgb) based on the gamma 2.2 curve
- *
- * Faster, and simpler, but less correct
- */
+// 
+// Approximate SRGB to linear (linear from srgb) based on the gamma 2.2 curve
+// 
+// Faster, and simpler, but less correct
+// 
 inline float3 ApproxLinearFromSRGB(float3 srgb) {
     return pow(srgb, 2.2);
 }
 
-/*
- * Approximate linear to SRGB (srgb from linear) based on the gamma 2.2 curve
- *
- * Faster, and simpler, but less correct
- */
+// 
+// Approximate linear to SRGB (srgb from linear) based on the gamma 2.2 curve
+// 
+// Faster, and simpler, but less correct
+// 
 inline float3 ApproxLinearToSRGB(float3 colour) {
     return pow(colour, 1 / 2.2);
 }
 
-/*
- * Approximate SRGB to linear (linear from srgb) based on the gamma 2.2 curve
- *
- * Faster, and simpler, but less correct
- *
- * The 4th alpha channel is unchanged (presumed linear in most cases)
- */
+// 
+// Approximate SRGB to linear (linear from srgb) based on the gamma 2.2 curve
+// 
+// Faster, and simpler, but less correct
+// 
+// The 4th alpha channel is unchanged (presumed linear in most cases)
+// 
 inline float4 ApproxLinearFromSRGBA(float4 srgba) {
     return float4(ApproxLinearFromSRGB(srgba.xyz), srgba.w);
 }
 
-/*
- * Approximate linear to SRGB (srgb from linear) based on the gamma 2.2 curve
- *
- * Faster, and simpler, but less correct
- *
- * The 4th alpha channel is unchanged (presumed linear in most cases)
- */
+// 
+// Approximate linear to SRGB (srgb from linear) based on the gamma 2.2 curve
+// 
+// Faster, and simpler, but less correct
+// 
+// The 4th alpha channel is unchanged (presumed linear in most cases)
+// 
 inline float4 ApproxLinearToSRGBA(float4 colour) {
     return float4(ApproxLinearToSRGB(colour.xyz), colour.w);
 }
 
-/*
- * Single component implementation for correct linear to SRGB
- */
+// 
+// Single component implementation for correct linear to SRGB
+// 
 inline float LinearComponentToSRGB(float val)
 {
     if( val < 0.0031308 ) {
@@ -82,9 +82,9 @@ inline float LinearComponentToSRGB(float val)
     return val;
 }
 
-/*
- * Single component implementation for correct SRGB to linear
- */
+// 
+// Single component implementation for correct SRGB to linear
+// 
 inline float LinearComponentFromSRGB(float val)
 {
     if( val < 0.04045f ) {
@@ -95,9 +95,9 @@ inline float LinearComponentFromSRGB(float val)
     return val;
 }
 
-/*
- * SRGB to linear (linear from srgb)
- */
+// 
+// SRGB to linear (linear from srgb)
+// 
 inline float3 LinearFromSRGB(float3 srgb) {
     const float x = LinearComponentFromSRGB(srgb.x);
     const float y = LinearComponentFromSRGB(srgb.y);
@@ -105,9 +105,9 @@ inline float3 LinearFromSRGB(float3 srgb) {
     return float3(x,y,z);
 }
 
-/*
- * Linear to SRGB (srgb from linear)
- */
+// 
+// Linear to SRGB (srgb from linear)
+// 
 inline float3 LinearToSRGB(float3 colour) {
     const float x = LinearComponentToSRGB(colour.x);
     const float y = LinearComponentToSRGB(colour.y);
@@ -115,20 +115,20 @@ inline float3 LinearToSRGB(float3 colour) {
     return float3(x,y,z);
 }
 
-/*
- * SRGB to linear (linear from srgb)
- *
- * The 4th alpha channel is unchanged (presumed linear in most cases)
- */
+// 
+// SRGB to linear (linear from srgb)
+// 
+// The 4th alpha channel is unchanged (presumed linear in most cases)
+// 
 inline float4 LinearFromSRGBA(float4 srgba) {
     return float4(LinearFromSRGB(srgba.xyz), srgba.w);
 }
 
-/*
- * Linear to SRGB (srgb from linear)
- *
- * The 4th alpha channel is unchanged (presumed linear in most cases)
- */
+// 
+// Linear to SRGB (srgb from linear)
+// 
+// The 4th alpha channel is unchanged (presumed linear in most cases)
+// 
 inline float4 LinearToSRGBA(float4 colour) {
     return float4(LinearToSRGB(colour.xyz), colour.w);
 }

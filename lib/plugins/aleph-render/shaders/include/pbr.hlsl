@@ -37,17 +37,17 @@
 
 
 
-/*
- * Calculates the attenuation factor for a point light that should be applied to 
- */
+// 
+// Calculates the attenuation factor for a point light that should be applied to 
+// 
 inline float PointLightAttenuation(const float distance_squared) {
     return 1 / (4 * PI * distance_squared);
 }
 
-/*
- * Given the output of a brdf, and a set of point light parameters, calculate the final light
- * contribution.
- */
+// 
+// Given the output of a brdf, and a set of point light parameters, calculate the final light
+// contribution.
+// 
 inline float3 EvaluatePointLight(
     const float3 brdf,
     const float lumens,
@@ -58,53 +58,53 @@ inline float3 EvaluatePointLight(
     return brdf * (lumens * attenuation * NoL);
 }
 
-/*
- * Performs a remapping of the roughness parameter. It makes the roughness parameter seem more
- * linear when being tweaked so it's a bit more intuitive to work with.
- */
+// 
+// Performs a remapping of the roughness parameter. It makes the roughness parameter seem more
+// linear when being tweaked so it's a bit more intuitive to work with.
+// 
 inline float RemapRoughness(const float perceptual_roughness) {
     return SaturateFP32(perceptual_roughness * perceptual_roughness);
 }
 
-/*
- * Calculates the 'at' term for use in the anisotropic material model
- */
+// 
+// Calculates the 'at' term for use in the anisotropic material model
+// 
 inline float CalculateAT(const float roughness, const float anisotropy) {
     return max(roughness * (1.0 + anisotropy), 0.001);
 }
 
-/*
- * Calculates the 'ab' term for use in the anisotropic material model
- */
+// 
+// Calculates the 'ab' term for use in the anisotropic material model
+// 
 inline float CalculateAB(const float roughness, const float anisotropy) {
     return max(roughness * (1.0 - anisotropy), 0.001);
 }
 
-/*
- * Calculates the F0 value from the base colour, metallic and reflectance
- *
- * Arguments:
- *
- * - base_colour: The base colour parameter of the material
- * - metallic: The metallic parameter of the material
- * - reflectance: The reflectance parameter of the material
- */
+// 
+// Calculates the F0 value from the base colour, metallic and reflectance
+// 
+// Arguments:
+// 
+// - base_colour: The base colour parameter of the material
+// - metallic: The metallic parameter of the material
+// - reflectance: The reflectance parameter of the material
+// 
 inline float3 CalculateF0(const float3 base_colour, const float metallic, const float reflectance) {
     return 0.16 * reflectance * reflectance * (1.0 - metallic) + base_colour * metallic;
 }
 
-/*
- * The GGX D term
- */
+// 
+// The GGX D term
+// 
 inline float D_GGX(const float NoH, const float roughness) {
     const float a = NoH * roughness;
     const float k = roughness / (1.0 - NoH * NoH + a * a);
     return k * k * (1.0 / PI);
 }
 
-/*
- * The GGX D term with support for anisotropic materials
- */
+// 
+// The GGX D term with support for anisotropic materials
+// 
 inline float D_GGX_Anisotropic(
     const float NoH,
     const float3 h,
@@ -122,9 +122,9 @@ inline float D_GGX_Anisotropic(
     return a2 * w2 * w2 * (1.0 / PI);
 }
 
-/*
- * The SmithGGXCorrelated V term
- */
+// 
+// The SmithGGXCorrelated V term
+// 
 inline float V_SmithGGXCorrelated(const float NoV, const float NoL, const float roughness) {
     const float a2 = roughness * roughness;
     const float GGXV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
@@ -132,9 +132,9 @@ inline float V_SmithGGXCorrelated(const float NoV, const float NoL, const float 
     return 0.5 / (GGXV + GGXL);
 }
 
-/*
- * The SmithGGXCorrelated V term with support for anisotropic materials
- */
+// 
+// The SmithGGXCorrelated V term with support for anisotropic materials
+// 
 inline float V_SmithGGXCorrelated_Anisotropic(
     const float at,
     const float ab,
@@ -151,11 +151,11 @@ inline float V_SmithGGXCorrelated_Anisotropic(
     return SaturateFP32(v);
 }
 
-/*
- * The SmithGGXCorrelated V term. Optimized for speed by trading accuracy after noting that all
- * terms under the square roots are in the 0..1 range. This approximation is wrong but faster so
- * pick your poison.
- */
+// 
+// The SmithGGXCorrelated V term. Optimized for speed by trading accuracy after noting that all
+// terms under the square roots are in the 0..1 range. This approximation is wrong but faster so
+// pick your poison.
+// 
 inline float V_SmithGGXCorrelatedFast(const float NoV, const float NoL, const float roughness) {
     const float a = roughness;
     const float GGXV = NoL * (NoV * (1.0 - a) + a);
@@ -163,30 +163,30 @@ inline float V_SmithGGXCorrelatedFast(const float NoV, const float NoL, const fl
     return 0.5 / (GGXV + GGXL);
 }
 
-/*
- * The Schlick F term, using a float3 f0 arg
- */
+// 
+// The Schlick F term, using a float3 f0 arg
+// 
 inline float3 F_SchlickVec(const float u, const float3 f0, const float f90) {
     return f0 + (float3(f90,f90,f90) - f0) * pow(1.0 - u, 5.0);
 }
 
-/*
- * The Schlick F term, using a scalar f0 arg
- */
+// 
+// The Schlick F term, using a scalar f0 arg
+// 
 inline float F_Schlick(const float u, const float f0, const float f90) {
     return f0 + (f90 - f0) * pow(1.0 - u, 5.0);
 }
 
-/*
- * Lambertian diffuse Fd term. Faster and easier but not as accurate
- */
+// 
+// Lambertian diffuse Fd term. Faster and easier but not as accurate
+// 
 inline float Fd_Lambert() {
     return 1.0 / PI;
 }
 
-/*
- * Disney's Burley diffuse Fd term. Looks good but slower and harder to work with
- */
+// 
+// Disney's Burley diffuse Fd term. Looks good but slower and harder to work with
+// 
 inline float Fd_Burley(const float NoV, const float NoL, const float LoH, const float roughness) {
     const float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
     const float light_scatter = F_Schlick(NoL, 1.0, f90);
@@ -194,21 +194,21 @@ inline float Fd_Burley(const float NoV, const float NoL, const float LoH, const 
     return light_scatter * view_scatter * (1.0 / PI);
 }
 
-/*
- * A standard hard surface PBR BRDF. This does not account for light attenuation and intensity.
- *
- * Returns the combined output of the diffuse and specular term prior to lighting
- *
- * Arguments:
- *
- * - v: The view unit vector
- * - l: The incident light unit vector
- * - n: The surface normal vector
- * - base_colour: The base colour of the material
- * - metallic: The metallic parameter of the material
- * - roughness: The roughness value after being mapped from a perceptual roughness value
- * - f0: Reflectance at normal incidence
- */
+// 
+// A standard hard surface PBR BRDF. This does not account for light attenuation and intensity.
+// 
+// Returns the combined output of the diffuse and specular term prior to lighting
+// 
+// Arguments:
+// 
+// - v: The view unit vector
+// - l: The incident light unit vector
+// - n: The surface normal vector
+// - base_colour: The base colour of the material
+// - metallic: The metallic parameter of the material
+// - roughness: The roughness value after being mapped from a perceptual roughness value
+// - f0: Reflectance at normal incidence
+// 
 inline float3 StandardBRDF(
     const float3 v,
     const float3 l,
@@ -251,23 +251,23 @@ inline float V_Kelemen(float LoH) {
     return 0.25 / (LoH * LoH);
 }
 
-/*
- * A standard hard surface PBR BRDF with an extra clear coat term.
- *
- * Returns the combined output of the diffuse and specular term prior to lighting
- *
- * Arguments:
- *
- * - v: The view unit vector
- * - l: The incident light unit vector
- * - n: The surface normal vector
- * - base_colour: The base colour of the material
- * - metallic: The metallic parameter of the material
- * - roughness: The roughness value after being mapped
- * - f0: Reflectance at normal incidence
- * - clear_coat: The strength of the clear coat effect
- * - clear_coat_roughness: The roughness value for the clearcoat after being mapped
- */
+// 
+// A standard hard surface PBR BRDF with an extra clear coat term.
+// 
+// Returns the combined output of the diffuse and specular term prior to lighting
+// 
+// Arguments:
+// 
+// - v: The view unit vector
+// - l: The incident light unit vector
+// - n: The surface normal vector
+// - base_colour: The base colour of the material
+// - metallic: The metallic parameter of the material
+// - roughness: The roughness value after being mapped
+// - f0: Reflectance at normal incidence
+// - clear_coat: The strength of the clear coat effect
+// - clear_coat_roughness: The roughness value for the clearcoat after being mapped
+// 
 inline float3 ClearCoatBRDF(
     const float3 v,
     const float3 l,
