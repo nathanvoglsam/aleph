@@ -33,7 +33,7 @@ use crate::device::Device;
 use crate::internal::conv::*;
 use crate::internal::framebuffer_cache_key::{FramebufferCacheKey, FramebufferCacheKeyItem};
 use crate::internal::unwrap;
-use crate::pipeline::GraphicsPipeline;
+use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::RenderTargetView;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
@@ -52,6 +52,7 @@ pub struct Encoder<'a> {
     pub(crate) _context: AnyArc<Context>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
+    pub(crate) bound_compute_pipeline: Option<AnyArc<ComputePipeline>>,
     pub(crate) arena: Bump,
     pub(crate) enabled_shader_features: SyncShaderFeatures,
     pub(crate) phantom_data: PhantomData<&'a mut CommandList>,
@@ -252,6 +253,21 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 }
 
 impl<'a> IComputeEncoder for Encoder<'a> {
+    unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline) {
+        let concrete = unwrap::compute_pipeline(pipeline);
+
+        // Binds the pipeline
+        self._device.device.cmd_bind_pipeline(
+            self._buffer,
+            vk::PipelineBindPoint::COMPUTE,
+            concrete.pipeline,
+        );
+
+        // We need the currently bound pipeline while recording commands to access things like
+        // the pipeline layout for handling binding descriptors.
+        self.bound_compute_pipeline = Some(concrete._this.upgrade().unwrap());
+    }
+
     unsafe fn bind_descriptor_sets(
         &mut self,
         pipeline_layout: &dyn IPipelineLayout,

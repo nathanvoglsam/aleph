@@ -93,6 +93,7 @@ impl ICommandList for CommandList {
                 _context: self._device.context.clone(),
                 _device: self._device.clone(),
                 bound_graphics_pipeline: None,
+                bound_compute_pipeline: None,
                 arena: Bump::with_capacity(1024 * 16),
                 enabled_shader_features,
                 phantom_data: Default::default(),

@@ -32,7 +32,7 @@ use crate::command_list::CommandList;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
 use crate::fence::Fence;
-use crate::pipeline::GraphicsPipeline;
+use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
@@ -66,6 +66,13 @@ conversion_function!(
     graphics_pipeline,
     graphics_pipeline_d,
     graphics_pipeline_iter
+);
+conversion_function!(
+    IComputePipeline,
+    ComputePipeline,
+    compute_pipeline,
+    compute_pipeline_d,
+    compute_pipeline_iter
 );
 conversion_function!(
     IPipelineLayout,
