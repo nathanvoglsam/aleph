@@ -109,6 +109,10 @@ impl IGeneralEncoder for MockEncoder {
 }
 
 impl IComputeEncoder for MockEncoder {
+    unsafe fn bind_compute_pipeline(&mut self, _pipeline: &dyn IComputePipeline) {
+        unimplemented!()
+    }
+
     unsafe fn bind_descriptor_sets(
         &mut self,
         _pipeline_layout: &dyn IPipelineLayout,
