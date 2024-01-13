@@ -187,7 +187,7 @@ impl Drop for PinBoard {
 }
 
 /// Utility wrapper over a [PinBoard] that doesn't allow publishing new entries into the pin board.
-/// 
+///
 /// Useful for exposing a pin board that you don't want to be published into.
 pub struct ImmutablePinBoardRef<'a> {
     pin_board: &'a PinBoard,
