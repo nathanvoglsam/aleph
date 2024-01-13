@@ -679,6 +679,8 @@ pub trait IGeneralEncoder: IComputeEncoder {
 }
 
 pub trait IComputeEncoder: ITransferEncoder {
+    unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline);
+
     unsafe fn bind_descriptor_sets(
         &mut self,
         pipeline_layout: &dyn IPipelineLayout,
