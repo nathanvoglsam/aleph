@@ -51,6 +51,7 @@ impl ICommandList for ValidationCommandList {
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
+            bound_compute_pipeline: None,
             list_type: QueueType::General,
             render_pass_open: false,
         });
@@ -65,6 +66,7 @@ impl ICommandList for ValidationCommandList {
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
+            bound_compute_pipeline: None,
             list_type: QueueType::Compute,
             render_pass_open: false,
         });
@@ -79,6 +81,7 @@ impl ICommandList for ValidationCommandList {
         let encoder = Box::new(ValidationEncoder {
             inner,
             bound_graphics_pipeline: None,
+            bound_compute_pipeline: None,
             list_type: QueueType::Transfer,
             render_pass_open: false,
         });

@@ -29,6 +29,7 @@
 
 use crate::internal::get_as_unwrapped;
 use crate::texture::{ValidationImageView, ValidationViewType};
+use crate::ValidationComputePipeline;
 use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationTexture};
 use aleph_any::{AnyArc, QueryInterface};
 use aleph_rhi_api::*;
@@ -37,6 +38,7 @@ use std::ops::Deref;
 
 pub struct ValidationEncoder<T: ?Sized> {
     pub(crate) bound_graphics_pipeline: Option<AnyArc<ValidationGraphicsPipeline>>,
+    pub(crate) bound_compute_pipeline: Option<AnyArc<ValidationComputePipeline>>,
     pub(crate) inner: Box<T>,
     pub(crate) list_type: QueueType,
     pub(crate) render_pass_open: bool,
@@ -223,6 +225,23 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 }
 
 impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder<T> {
+    unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline) {
+        assert!(
+            matches!(self.list_type, QueueType::General | QueueType::Compute),
+            "Called a compute command on a non-compute capable command list"
+        );
+
+        let pipeline = pipeline
+            .query_interface::<ValidationComputePipeline>()
+            .expect("Unknown IComputePipeline implementation");
+
+        self.inner.bind_compute_pipeline(pipeline.inner.deref());
+
+        // We need to know if/what pipeline is bound for validation purposes
+        let pipeline = pipeline._this.upgrade().unwrap();
+        self.bound_compute_pipeline = Some(pipeline);
+    }
+
     unsafe fn bind_descriptor_sets(
         &mut self,
         pipeline_layout: &dyn IPipelineLayout,
