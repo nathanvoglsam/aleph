@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
+use crate::renderer::params::BackBufferInfo;
+use crate::renderer::GlobalObjects;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use egui::RenderData;
-
-use crate::renderer::GlobalObjects;
 
 struct EguiPassPayload {
     pipeline_layout: AnyArc<dyn IPipelineLayout>,
@@ -43,11 +43,6 @@ struct EguiPassPayload {
     back_buffer: ResourceMut,
     vtx_buffer: ResourceMut,
     idx_buffer: ResourceMut,
-}
-
-pub struct BackBufferInfo {
-    pub desc: TextureDesc<'static>,
-    pub pixels_per_point: f32,
 }
 
 /// The output of the setup phase

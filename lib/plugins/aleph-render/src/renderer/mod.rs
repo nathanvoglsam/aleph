@@ -30,8 +30,10 @@
 mod egui_pass;
 mod frame;
 mod global;
+mod params;
 
 use crate::renderer::egui_pass::EguiPassContext;
+use crate::renderer::params::BackBufferInfo;
 use aleph_frame_graph::*;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
@@ -47,6 +49,7 @@ pub struct EguiRenderer {
     pub global: GlobalObjects,
     pub frame_graph: FrameGraph,
     pub back_buffer_id: ResourceMut,
+    pub graph_build_pin_board: PinBoard,
     pub execute_context: PinBoard,
 }
 
@@ -61,7 +64,7 @@ impl EguiRenderer {
         let global = GlobalObjects::new(device.deref());
 
         let pin_board = PinBoard::new();
-        pin_board.publish(egui_pass::BackBufferInfo {
+        pin_board.publish(BackBufferInfo {
             desc: back_buffer_desc.clone().strip_name(),
             pixels_per_point,
         });
@@ -82,14 +85,16 @@ impl EguiRenderer {
             global,
             frame_graph,
             back_buffer_id,
+            graph_build_pin_board: pin_board,
             execute_context: PinBoard::new(),
         }
     }
 
     pub fn rebuild_after_resize(&mut self, back_buffer_desc: &TextureDesc, pixels_per_point: f32) {
-        let pin_board = PinBoard::new();
+        self.graph_build_pin_board.clear();
+        let pin_board = &self.graph_build_pin_board;
 
-        pin_board.publish(egui_pass::BackBufferInfo {
+        pin_board.publish(BackBufferInfo {
             desc: back_buffer_desc.clone().strip_name(),
             pixels_per_point,
         });
