@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::renderer::global::FontTexture;
-use crate::renderer::GlobalObjects;
+use crate::renderer::FontTexture;
 use aleph_frame_graph::FrameGraph;
 use aleph_frame_graph::TransientResourceBundle;
 use aleph_rhi_api::*;
@@ -54,11 +53,15 @@ pub struct PerFrameObjects {
 }
 
 impl PerFrameObjects {
-    pub fn new(device: &dyn IDevice, global: &GlobalObjects, frame_graph: &FrameGraph) -> Self {
+    pub fn new(
+        device: &dyn IDevice,
+        set_layout: &dyn IDescriptorSetLayout,
+        frame_graph: &FrameGraph,
+    ) -> Self {
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
         let desc = DescriptorPoolDesc {
-            layout: global.descriptor_set_layout.deref(),
+            layout: set_layout,
             num_sets: 2,
             name: Some("egui::DescriptorPool"),
         };

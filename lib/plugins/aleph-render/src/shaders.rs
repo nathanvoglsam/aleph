@@ -51,6 +51,16 @@ pub fn egui_vert_shader_vk() -> ShaderBinary<'static> {
     ShaderBinary::Spirv(bytes)
 }
 
+pub fn deferred_lighting_dx() -> ShaderBinary<'static> {
+    let bytes = include_bytes!("../shaders/compiled/deferred/deferred_lighting.cs.dxil");
+    ShaderBinary::Dxil(bytes)
+}
+
+pub fn deferred_lighting_vk() -> ShaderBinary<'static> {
+    let bytes = include_bytes!("../shaders/compiled/deferred/deferred_lighting.cs.spirv");
+    ShaderBinary::Spirv(bytes)
+}
+
 pub fn standard_frag_shader() -> ShaderBinary<'static> {
     let bytes = include_bytes!("../shaders/compiled/standard/standard.frag.dxil");
     ShaderBinary::Dxil(bytes)
