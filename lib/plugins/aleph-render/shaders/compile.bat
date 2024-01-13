@@ -10,3 +10,6 @@ dxc /T vs_6_0 -Fo .\compiled\fullscreen_quad\fullscreen_quad.vert.dxil .\source\
 
 dxc /T ps_6_0 -Fo .\compiled\egui\egui.frag.spirv .\source\egui\egui.frag.hlsl -spirv -O3 -I .\include -I .\source -Wno-ignored-attributes
 dxc /T vs_6_0 -Fo .\compiled\egui\egui.vert.spirv .\source\egui\egui.vert.hlsl -spirv -O3 -I .\include -I .\source -Wno-ignored-attributes
+
+dxc /T cs_6_0 -Fo .\compiled\deferred\deferred_lighting.cs.spirv .\source\deferred\deferred_lighting.cs.hlsl -spirv -O3 -I .\include -I .\source -Wno-ignored-attributes
+dxc /T cs_6_0 -Fo .\compiled\deferred\deferred_lighting.cs.dxil .\source\deferred\deferred_lighting.cs.hlsl -O3 -I .\include -I .\source -Wno-ignored-attributes
