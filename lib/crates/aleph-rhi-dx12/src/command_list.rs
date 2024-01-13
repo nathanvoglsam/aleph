@@ -79,6 +79,7 @@ impl ICommandList for CommandList {
                 _list: self.list.clone(),
                 _queue_type: self.list_type,
                 bound_graphics_pipeline: None,
+                bound_compute_pipeline: None,
                 input_binding_strides: [0; 16],
                 arena: Bump::with_capacity(1024 * 16),
                 phantom_data: Default::default(),

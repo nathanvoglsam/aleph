@@ -286,7 +286,7 @@ impl IDevice for Device {
         let pipeline = AnyArc::new_cyclic(move |v| ComputePipeline {
             this: v.clone(),
             pipeline,
-            _pipeline_layout: pipeline_layout,
+            pipeline_layout,
         });
         Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
     }

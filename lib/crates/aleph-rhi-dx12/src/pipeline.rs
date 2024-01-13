@@ -80,7 +80,7 @@ impl IGraphicsPipeline for GraphicsPipeline {
 
 pub struct ComputePipeline {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
     pub(crate) pipeline: ID3D12PipelineState,
 }
 

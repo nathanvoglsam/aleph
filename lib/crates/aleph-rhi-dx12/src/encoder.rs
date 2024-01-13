@@ -35,6 +35,7 @@ use crate::internal::conv::{
 };
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::unwrap;
+use crate::pipeline::ComputePipeline;
 use crate::pipeline::GraphicsPipeline;
 use crate::texture::ImageViewObject;
 use aleph_any::AnyArc;
@@ -55,6 +56,7 @@ pub struct Encoder<'a> {
     pub(crate) _list: ID3D12GraphicsCommandList7,
     pub(crate) _queue_type: QueueType,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
+    pub(crate) bound_compute_pipeline: Option<AnyArc<ComputePipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
     pub(crate) arena: Bump,
     pub(crate) phantom_data: PhantomData<&'a mut CommandList>,
@@ -274,6 +276,21 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 }
 
 impl<'a> IComputeEncoder for Encoder<'a> {
+    unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline) {
+        let concrete = unwrap::compute_pipeline(pipeline);
+
+        // Binds the pipeline
+        self._list.SetPipelineState(&concrete.pipeline);
+
+        // A pipeline is inseparable from its' root signature so we need to bind it here too
+        self._list
+            .SetComputeRootSignature(&concrete.pipeline_layout.root_signature);
+
+        // We need the currently bound pipeline while recording commands to access things like
+        // the pipeline layout for handling binding descriptors.
+        self.bound_compute_pipeline = Some(concrete.this.upgrade().unwrap());
+    }
+
     unsafe fn bind_descriptor_sets(
         &mut self,
         pipeline_layout: &dyn IPipelineLayout,
