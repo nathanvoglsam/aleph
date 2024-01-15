@@ -3678,6 +3678,68 @@ pub struct TextureSubResourceSet {
     pub num_array_slices: u32,
 }
 
+impl TextureSubResourceSet {
+    /// A specialization of [TextureSubResourceSet::with_aspect] for [TextureAspect::COLOR].
+    ///
+    /// Returns a [TextureSubResourceSet] configured for a single mip/array level and access to the
+    /// color aspect
+    pub const fn with_color() -> Self {
+        Self::with_aspect(TextureAspect::COLOR)
+    }
+
+    /// A specialization of [TextureSubResourceSet::with_aspect] for [TextureAspect::DEPTH].
+    ///
+    /// Returns a [TextureSubResourceSet] configured for a single mip/array level and access to the
+    /// depth aspect
+    pub const fn with_depth() -> Self {
+        Self::with_aspect(TextureAspect::DEPTH)
+    }
+
+    /// A specialization of [TextureSubResourceSet::with_aspect] for [TextureAspect::STENCIL].
+    ///
+    /// Returns a [TextureSubResourceSet] configured for a single mip/array level and access to the
+    /// stencil aspect
+    pub const fn with_stencil() -> Self {
+        Self::with_aspect(TextureAspect::STENCIL)
+    }
+
+    /// A specialization of [TextureSubResourceSet::with_aspect] for [TextureAspect::DEPTH_STENCIL].
+    ///
+    /// Returns a [TextureSubResourceSet] configured for a single mip/array level and access to the
+    /// depth-stencil aspect
+    pub const fn with_depth_stencil() -> Self {
+        Self::with_aspect(TextureAspect::DEPTH_STENCIL)
+    }
+
+    /// A utility that configures the given subresource set with the given base mip level and number
+    /// of mip levels.
+    pub const fn with_mips(mut self, base: u32, num: u32) -> Self {
+        self.base_mip_level = base;
+        self.num_mip_levels = num;
+        self
+    }
+
+    /// A utility that configures the given subresource set with the given base array slice and
+    /// number of array slices.
+    pub const fn with_levels(mut self, base: u32, num: u32) -> Self {
+        self.base_array_slice = base;
+        self.num_array_slices = num;
+        self
+    }
+
+    /// A [TextureSubResourceSet] initialized for a single mip level and array slice with the given
+    /// aspect flags.
+    pub const fn with_aspect(aspect: TextureAspect) -> Self {
+        Self {
+            aspect,
+            base_mip_level: 0,
+            num_mip_levels: 1,
+            base_array_slice: 0,
+            num_array_slices: 1,
+        }
+    }
+}
+
 /// Describes a global memory barrier
 #[derive(Clone, Debug)]
 pub struct GlobalBarrier {
