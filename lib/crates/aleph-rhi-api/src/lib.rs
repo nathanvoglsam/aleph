@@ -1899,18 +1899,24 @@ pub enum Format {
     R16Unorm,
     R16Snorm,
     R16Float,
+    R32Uint,
+    R32Sint,
+    R32Float,
     Rg8Unorm,
     Rg8Snorm,
     Rg8Uint,
     Rg8Sint,
-    R32Uint,
-    R32Sint,
-    R32Float,
     Rg16Uint,
     Rg16Sint,
     Rg16Unorm,
     Rg16Snorm,
     Rg16Float,
+    Rg32Uint,
+    Rg32Sint,
+    Rg32Float,
+    Rgb32Uint,
+    Rgb32Sint,
+    Rgb32Float,
     Rgba8Unorm,
     Rgba8UnormSrgb,
     Rgba8Snorm,
@@ -1920,9 +1926,6 @@ pub enum Format {
     Bgra8UnormSrgb,
     Rgb10a2Unorm,
     Rg11b10Float,
-    Rg32Uint,
-    Rg32Sint,
-    Rg32Float,
     Rgba16Uint,
     Rgba16Sint,
     Rgba16Unorm,
@@ -1967,6 +1970,7 @@ impl Format {
                 | Self::Rg16Float
                 | Self::Rg11b10Float
                 | Self::Rg32Float
+                | Self::Rgb32Float
                 | Self::Rgba16Float
                 | Self::Rgba32Float
                 | Self::Depth32Float
@@ -1984,6 +1988,7 @@ impl Format {
                 | Self::Rg16Sint
                 | Self::Rgba8Sint
                 | Self::Rg32Sint
+                | Self::Rgb32Sint
                 | Self::Rgba16Sint
                 | Self::Rgba32Sint
         )
@@ -2000,6 +2005,7 @@ impl Format {
                 | Self::Rg16Uint
                 | Self::Rgba8Uint
                 | Self::Rg32Uint
+                | Self::Rgb32Uint
                 | Self::Rgba16Uint
                 | Self::Rgba32Uint
         )
@@ -2075,6 +2081,9 @@ impl Format {
             Format::Rg32Uint => 8,
             Format::Rg32Sint => 8,
             Format::Rg32Float => 8,
+            Format::Rgb32Uint => 8,
+            Format::Rgb32Sint => 8,
+            Format::Rgb32Float => 8,
             Format::Rgba16Uint => 8,
             Format::Rgba16Sint => 8,
             Format::Rgba16Unorm => 8,
@@ -2131,6 +2140,9 @@ impl Format {
             | Format::Rg32Uint
             | Format::Rg32Sint
             | Format::Rg32Float
+            | Format::Rgb32Uint
+            | Format::Rgb32Sint
+            | Format::Rgb32Float
             | Format::Rgba16Uint
             | Format::Rgba16Sint
             | Format::Rgba16Unorm
@@ -2181,6 +2193,9 @@ impl Display for Format {
             Format::Rg32Uint => f.write_str("Rg32Uint"),
             Format::Rg32Sint => f.write_str("Rg32Sint"),
             Format::Rg32Float => f.write_str("Rg32Float"),
+            Format::Rgb32Uint => f.write_str("Rgb32Uint"),
+            Format::Rgb32Sint => f.write_str("Rgb32Sint"),
+            Format::Rgb32Float => f.write_str("Rgb32Float"),
             Format::Rgba16Uint => f.write_str("Rgba16Uint"),
             Format::Rgba16Sint => f.write_str("Rgba16Sint"),
             Format::Rgba16Unorm => f.write_str("Rgba16Unorm"),
