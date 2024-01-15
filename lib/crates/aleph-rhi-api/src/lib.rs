@@ -1337,9 +1337,9 @@ impl Default for PresentationMode {
 impl Display for PresentationMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            PresentationMode::Immediate => f.write_str("PresentationMode::Immediate"),
-            PresentationMode::Mailbox => f.write_str("PresentationMode::Mailbox"),
-            PresentationMode::Fifo => f.write_str("PresentationMode::Fifo"),
+            PresentationMode::Immediate => f.write_str("Immediate"),
+            PresentationMode::Mailbox => f.write_str("Mailbox"),
+            PresentationMode::Fifo => f.write_str("Fifo"),
         }
     }
 }
@@ -1482,6 +1482,26 @@ pub enum ImageLayout {
 
     /// Must only be used as a fragment shading rate attachment or shading rate image.
     ShadingRateAttachment,
+}
+
+impl Display for ImageLayout {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageLayout::Undefined => f.write_str("Undefined"),
+            ImageLayout::Common => f.write_str("Common"),
+            ImageLayout::PresentSrc => f.write_str("PresentSrc"),
+            ImageLayout::ColorAttachment => f.write_str("ColorAttachment"),
+            ImageLayout::DepthStencilAttachment => f.write_str("DepthStencilAttachment"),
+            ImageLayout::DepthStencilReadOnly => f.write_str("DepthStencilReadOnly"),
+            ImageLayout::ShaderReadOnly => f.write_str("ShaderReadOnly"),
+            ImageLayout::CopySrc => f.write_str("CopySrc"),
+            ImageLayout::CopyDst => f.write_str("CopyDst"),
+            ImageLayout::UnorderedAccess => f.write_str("UnorderedAccess"),
+            ImageLayout::ResolveSource => f.write_str("ResolveSource"),
+            ImageLayout::ResolveDest => f.write_str("ResolveDest"),
+            ImageLayout::ShadingRateAttachment => f.write_str("ShadingRateAttachment"),
+        }
+    }
 }
 
 impl Default for ImageLayout {
@@ -2128,49 +2148,49 @@ impl Format {
 impl Display for Format {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Format::R8Unorm => f.write_str("Format::R8Unorm"),
-            Format::R8Snorm => f.write_str("Format::R8Snorm"),
-            Format::R8Uint => f.write_str("Format::R8Uint"),
-            Format::R8Sint => f.write_str("Format::R8Sint"),
-            Format::R16Uint => f.write_str("Format::R16Uint"),
-            Format::R16Sint => f.write_str("Format::R16Sint"),
-            Format::R16Unorm => f.write_str("Format::R16Unorm"),
-            Format::R16Snorm => f.write_str("Format::R16Snorm"),
-            Format::R16Float => f.write_str("Format::R16Float"),
-            Format::Rg8Unorm => f.write_str("Format::Rg8Unorm"),
-            Format::Rg8Snorm => f.write_str("Format::Rg8Snorm"),
-            Format::Rg8Uint => f.write_str("Format::Rg8Uint"),
-            Format::Rg8Sint => f.write_str("Format::Rg8Sint"),
-            Format::R32Uint => f.write_str("Format::R32Uint"),
-            Format::R32Sint => f.write_str("Format::R32Sint"),
-            Format::R32Float => f.write_str("Format::R32Float"),
-            Format::Rg16Uint => f.write_str("Format::Rg16Uint"),
-            Format::Rg16Sint => f.write_str("Format::Rg16Sint"),
-            Format::Rg16Unorm => f.write_str("Format::Rg16Unorm"),
-            Format::Rg16Snorm => f.write_str("Format::Rg16Snorm"),
-            Format::Rg16Float => f.write_str("Format::Rg16Float"),
-            Format::Rgba8Unorm => f.write_str("Format::Rgba8Unorm"),
-            Format::Rgba8UnormSrgb => f.write_str("Format::Rgba8UnormSrgb"),
-            Format::Rgba8Snorm => f.write_str("Format::Rgba8Snorm"),
-            Format::Rgba8Uint => f.write_str("Format::Rgba8Uint"),
-            Format::Rgba8Sint => f.write_str("Format::Rgba8Sint"),
-            Format::Bgra8Unorm => f.write_str("Format::Bgra8Unorm"),
-            Format::Bgra8UnormSrgb => f.write_str("Format::Bgra8UnormSrgb"),
-            Format::Rgb10a2Unorm => f.write_str("Format::Rgb10a2Unorm"),
-            Format::Rg11b10Float => f.write_str("Format::Rg11b10Float"),
-            Format::Rg32Uint => f.write_str("Format::Rg32Uint"),
-            Format::Rg32Sint => f.write_str("Format::Rg32Sint"),
-            Format::Rg32Float => f.write_str("Format::Rg32Float"),
-            Format::Rgba16Uint => f.write_str("Format::Rgba16Uint"),
-            Format::Rgba16Sint => f.write_str("Format::Rgba16Sint"),
-            Format::Rgba16Unorm => f.write_str("Format::Rgba16Unorm"),
-            Format::Rgba16Snorm => f.write_str("Format::Rgba16Snorm"),
-            Format::Rgba16Float => f.write_str("Format::Rgba16Float"),
-            Format::Rgba32Uint => f.write_str("Format::Rgba32Uint"),
-            Format::Rgba32Sint => f.write_str("Format::Rgba32Sint"),
-            Format::Rgba32Float => f.write_str("Format::Rgba32Float"),
-            Format::Depth32Float => f.write_str("Format::Depth32Float"),
-            Format::Depth24Stencil8 => f.write_str("Format::Depth24Stencil8"),
+            Format::R8Unorm => f.write_str("R8Unorm"),
+            Format::R8Snorm => f.write_str("R8Snorm"),
+            Format::R8Uint => f.write_str("R8Uint"),
+            Format::R8Sint => f.write_str("R8Sint"),
+            Format::R16Uint => f.write_str("R16Uint"),
+            Format::R16Sint => f.write_str("R16Sint"),
+            Format::R16Unorm => f.write_str("R16Unorm"),
+            Format::R16Snorm => f.write_str("R16Snorm"),
+            Format::R16Float => f.write_str("R16Float"),
+            Format::Rg8Unorm => f.write_str("Rg8Unorm"),
+            Format::Rg8Snorm => f.write_str("Rg8Snorm"),
+            Format::Rg8Uint => f.write_str("Rg8Uint"),
+            Format::Rg8Sint => f.write_str("Rg8Sint"),
+            Format::R32Uint => f.write_str("R32Uint"),
+            Format::R32Sint => f.write_str("R32Sint"),
+            Format::R32Float => f.write_str("R32Float"),
+            Format::Rg16Uint => f.write_str("Rg16Uint"),
+            Format::Rg16Sint => f.write_str("Rg16Sint"),
+            Format::Rg16Unorm => f.write_str("Rg16Unorm"),
+            Format::Rg16Snorm => f.write_str("Rg16Snorm"),
+            Format::Rg16Float => f.write_str("Rg16Float"),
+            Format::Rgba8Unorm => f.write_str("Rgba8Unorm"),
+            Format::Rgba8UnormSrgb => f.write_str("Rgba8UnormSrgb"),
+            Format::Rgba8Snorm => f.write_str("Rgba8Snorm"),
+            Format::Rgba8Uint => f.write_str("Rgba8Uint"),
+            Format::Rgba8Sint => f.write_str("Rgba8Sint"),
+            Format::Bgra8Unorm => f.write_str("Bgra8Unorm"),
+            Format::Bgra8UnormSrgb => f.write_str("Bgra8UnormSrgb"),
+            Format::Rgb10a2Unorm => f.write_str("Rgb10a2Unorm"),
+            Format::Rg11b10Float => f.write_str("Rg11b10Float"),
+            Format::Rg32Uint => f.write_str("Rg32Uint"),
+            Format::Rg32Sint => f.write_str("Rg32Sint"),
+            Format::Rg32Float => f.write_str("Rg32Float"),
+            Format::Rgba16Uint => f.write_str("Rgba16Uint"),
+            Format::Rgba16Sint => f.write_str("Rgba16Sint"),
+            Format::Rgba16Unorm => f.write_str("Rgba16Unorm"),
+            Format::Rgba16Snorm => f.write_str("Rgba16Snorm"),
+            Format::Rgba16Float => f.write_str("Rgba16Float"),
+            Format::Rgba32Uint => f.write_str("Rgba32Uint"),
+            Format::Rgba32Sint => f.write_str("Rgba32Sint"),
+            Format::Rgba32Float => f.write_str("Rgba32Float"),
+            Format::Depth32Float => f.write_str("Depth32Float"),
+            Format::Depth24Stencil8 => f.write_str("Depth24Stencil8"),
         }
     }
 }
@@ -2334,6 +2354,16 @@ pub enum TextureDimension {
     Texture3D,
 }
 
+impl Display for TextureDimension {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TextureDimension::Texture1D => f.write_str("Texture1D"),
+            TextureDimension::Texture2D => f.write_str("Texture2D"),
+            TextureDimension::Texture3D => f.write_str("Texture3D"),
+        }
+    }
+}
+
 impl Default for TextureDimension {
     #[inline(always)]
     fn default() -> Self {
@@ -2480,6 +2510,18 @@ pub enum SamplerAddressMode {
     MirrorOnce,
 }
 
+impl Display for SamplerAddressMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SamplerAddressMode::Wrap => f.write_str("Wrap"),
+            SamplerAddressMode::Mirror => f.write_str("Mirror"),
+            SamplerAddressMode::Clamp => f.write_str("Clamp"),
+            SamplerAddressMode::Border => f.write_str("Border"),
+            SamplerAddressMode::MirrorOnce => f.write_str("MirrorOnce"),
+        }
+    }
+}
+
 impl Default for SamplerAddressMode {
     #[inline(always)]
     fn default() -> Self {
@@ -2491,6 +2533,15 @@ impl Default for SamplerAddressMode {
 pub enum SamplerFilter {
     Nearest,
     Linear,
+}
+
+impl Display for SamplerFilter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SamplerFilter::Nearest => f.write_str("Nearest"),
+            SamplerFilter::Linear => f.write_str("Linear"),
+        }
+    }
 }
 
 impl Default for SamplerFilter {
@@ -2506,6 +2557,15 @@ pub enum SamplerMipFilter {
     Linear,
 }
 
+impl Display for SamplerMipFilter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SamplerMipFilter::Nearest => f.write_str("Nearest"),
+            SamplerMipFilter::Linear => f.write_str("Linear"),
+        }
+    }
+}
+
 impl Default for SamplerMipFilter {
     #[inline(always)]
     fn default() -> Self {
@@ -2518,6 +2578,16 @@ pub enum SamplerBorderColor {
     BlackTransparent,
     BlackOpaque,
     WhiteOpaque,
+}
+
+impl Display for SamplerBorderColor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SamplerBorderColor::BlackTransparent => f.write_str("BlackTransparent"),
+            SamplerBorderColor::BlackOpaque => f.write_str("BlackOpaque"),
+            SamplerBorderColor::WhiteOpaque => f.write_str("WhiteOpaque"),
+        }
+    }
 }
 
 impl Default for SamplerBorderColor {
@@ -2620,6 +2690,21 @@ pub enum ShaderType {
     Mesh,
 }
 
+impl Display for ShaderType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ShaderType::Compute => f.write_str("Compute"),
+            ShaderType::Vertex => f.write_str("Vertex"),
+            ShaderType::Hull => f.write_str("Hull"),
+            ShaderType::Domain => f.write_str("Domain"),
+            ShaderType::Geometry => f.write_str("Geometry"),
+            ShaderType::Fragment => f.write_str("Fragment"),
+            ShaderType::Amplification => f.write_str("Amplification"),
+            ShaderType::Mesh => f.write_str("Mesh"),
+        }
+    }
+}
+
 impl Default for ShaderType {
     #[inline(always)]
     fn default() -> Self {
@@ -2694,6 +2779,25 @@ pub enum DescriptorType {
     InputAttachment,
 }
 
+impl Display for DescriptorType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DescriptorType::Sampler => f.write_str("Sampler"),
+            DescriptorType::TexelBuffer => f.write_str("TexelBuffer"),
+            DescriptorType::TexelBufferRW => f.write_str("TexelBufferRW"),
+            DescriptorType::Texture => f.write_str("Texture"),
+            DescriptorType::TextureRW => f.write_str("TextureRW"),
+            DescriptorType::UniformBuffer => f.write_str("UniformBuffer"),
+            DescriptorType::StructuredBuffer => f.write_str("StructuredBuffer"),
+            DescriptorType::StructuredBufferRW => f.write_str("StructuredBufferRW"),
+            DescriptorType::ByteAddressBuffer => f.write_str("ByteAddressBuffer"),
+            DescriptorType::ByteAddressBufferRW => f.write_str("ByteAddressBufferRW"),
+            DescriptorType::AccelerationStructure => f.write_str("AccelerationStructure"),
+            DescriptorType::InputAttachment => f.write_str("InputAttachment"),
+        }
+    }
+}
+
 impl Default for DescriptorType {
     #[inline(always)]
     fn default() -> Self {
@@ -2712,6 +2816,22 @@ pub enum DescriptorShaderVisibility {
     Fragment,
     Amplification,
     Mesh,
+}
+
+impl Display for DescriptorShaderVisibility {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DescriptorShaderVisibility::All => f.write_str("All"),
+            DescriptorShaderVisibility::Compute => f.write_str("Compute"),
+            DescriptorShaderVisibility::Vertex => f.write_str("Vertex"),
+            DescriptorShaderVisibility::Hull => f.write_str("Hull"),
+            DescriptorShaderVisibility::Domain => f.write_str("Domain"),
+            DescriptorShaderVisibility::Geometry => f.write_str("Geometry"),
+            DescriptorShaderVisibility::Fragment => f.write_str("Fragment"),
+            DescriptorShaderVisibility::Amplification => f.write_str("Amplification"),
+            DescriptorShaderVisibility::Mesh => f.write_str("Mesh"),
+        }
+    }
 }
 
 impl Default for DescriptorShaderVisibility {
@@ -2754,6 +2874,39 @@ pub struct DescriptorSetLayoutBinding<'a> {
     /// descriptors. If `binding_type` is `Sampler` but `static_samplers` is `None` then the
     /// samplers are dynamic.
     pub static_samplers: Option<&'a [&'a dyn ISampler]>,
+}
+
+impl<'a> DescriptorSetLayoutBinding<'a> {
+    /// Constructs a new, defaulted [DescriptorSetLayoutBinding] with the given descriptor type.
+    pub const fn with_type(descriptor_type: DescriptorType) -> Self {
+        Self {
+            binding_num: 0,
+            binding_type: descriptor_type,
+            binding_count: None,
+            static_samplers: None,
+        }
+    }
+
+    /// Takes the given desc and returns a new desc with [DescriptorSetLayoutBinding::binding_num]
+    /// set to the given value
+    pub const fn with_binding_num(mut self, binding_num: u32) -> Self {
+        self.binding_num = binding_num;
+        self
+    }
+
+    /// Takes the given desc and returns a new desc with [DescriptorSetLayoutBinding::binding_count]
+    /// set to the given value
+    pub const fn with_binding_count(mut self, binding_count: NonZeroU32) -> Self {
+        self.binding_count = Some(binding_count);
+        self
+    }
+
+    /// Takes the given desc and returns a new desc with
+    /// [DescriptorSetLayoutBinding::static_samplers] set to the given value.
+    pub const fn with_static_samplers(mut self, static_samplers: &'a [&'a dyn ISampler]) -> Self {
+        self.static_samplers = Some(static_samplers);
+        self
+    }
 }
 
 #[derive(Clone, Default)]
@@ -2879,6 +3032,20 @@ pub enum ImageViewType {
     TexCubeArray,
 }
 
+impl Display for ImageViewType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageViewType::Tex1D => f.write_str("Tex1D"),
+            ImageViewType::Tex2D => f.write_str("Tex2D"),
+            ImageViewType::Tex3D => f.write_str("Tex3D"),
+            ImageViewType::TexCube => f.write_str("TexCube"),
+            ImageViewType::TexArray1D => f.write_str("TexArray1D"),
+            ImageViewType::TexArray2D => f.write_str("TexArray2D"),
+            ImageViewType::TexCubeArray => f.write_str("TexCubeArray"),
+        }
+    }
+}
+
 /// Describes the parameters of a descriptor to write when writing into a texture binding.
 #[derive(Clone, Hash, Debug)]
 pub struct ImageDescriptorWrite {
@@ -2987,6 +3154,44 @@ pub struct PipelineLayoutDesc<'a> {
     pub name: Option<&'a str>,
 }
 
+impl<'a> PipelineLayoutDesc<'a> {
+    /// Returns a new, empty [PipelineLayoutDesc].
+    pub const fn new() -> Self {
+        Self {
+            set_layouts: &[],
+            push_constant_blocks: &[],
+            name: None,
+        }
+    }
+
+    /// Takes the given desc and returns it with [PipelineLayoutDesc::set_layouts] set to the given
+    /// parameter
+    pub const fn with_set_layouts(
+        mut self,
+        set_layouts: &'a [&'a dyn IDescriptorSetLayout],
+    ) -> Self {
+        self.set_layouts = set_layouts;
+        self
+    }
+
+    /// Takes the given desc and returns it with [PipelineLayoutDesc::push_constant_blocks] set to
+    /// the given parameter
+    pub const fn with_push_constant_blocks(
+        mut self,
+        push_constant_blocks: &'a [PushConstantBlock],
+    ) -> Self {
+        self.push_constant_blocks = push_constant_blocks;
+        self
+    }
+
+    /// Takes the given desc and returns it with [PipelineLayoutDesc::name] set to the given
+    /// parameter
+    pub const fn with_name(mut self, name: &'a str) -> Self {
+        self.name = Some(name);
+        self
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum VertexInputRate {
     /// Specifies that vertex attribute addressing is a function of the vertex index
@@ -2994,6 +3199,15 @@ pub enum VertexInputRate {
 
     /// Specifies that vertex attribute addressing is a function of the instance index
     PerInstance,
+}
+
+impl Display for VertexInputRate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VertexInputRate::PerVertex => f.write_str("PerVertex"),
+            VertexInputRate::PerInstance => f.write_str("PerInstance"),
+        }
+    }
 }
 
 impl Default for VertexInputRate {
@@ -3064,6 +3278,18 @@ pub enum PrimitiveTopology {
     TriangleStrip,
 }
 
+impl Display for PrimitiveTopology {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PrimitiveTopology::PointList => f.write_str("PointList"),
+            PrimitiveTopology::LineList => f.write_str("LineList"),
+            PrimitiveTopology::LineStrip => f.write_str("LineStrip"),
+            PrimitiveTopology::TriangleList => f.write_str("TriangleList"),
+            PrimitiveTopology::TriangleStrip => f.write_str("TriangleStrip"),
+        }
+    }
+}
+
 impl Default for PrimitiveTopology {
     #[inline(always)]
     fn default() -> Self {
@@ -3080,6 +3306,15 @@ pub struct InputAssemblyStateDesc {
 pub enum PolygonMode {
     Fill,
     Line,
+}
+
+impl Display for PolygonMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PolygonMode::Fill => f.write_str("Fill"),
+            PolygonMode::Line => f.write_str("Line"),
+        }
+    }
 }
 
 impl Default for PolygonMode {
@@ -3101,6 +3336,16 @@ pub enum CullMode {
     Front,
 }
 
+impl Display for CullMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CullMode::None => f.write_str("None"),
+            CullMode::Back => f.write_str("Back"),
+            CullMode::Front => f.write_str("Front"),
+        }
+    }
+}
+
 impl Default for CullMode {
     #[inline(always)]
     fn default() -> Self {
@@ -3116,6 +3361,15 @@ pub enum FrontFaceOrder {
 
     /// Specifies that a front-facing triangle is defined as one with a clockwise winding order
     Clockwise,
+}
+
+impl Display for FrontFaceOrder {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FrontFaceOrder::CounterClockwise => f.write_str("CounterClockwise"),
+            FrontFaceOrder::Clockwise => f.write_str("Clockwise"),
+        }
+    }
 }
 
 impl Default for FrontFaceOrder {
@@ -3163,6 +3417,26 @@ pub enum BlendFactor {
     OneMinusBlendFactor,
 }
 
+impl Display for BlendFactor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BlendFactor::Zero => f.write_str("Zero"),
+            BlendFactor::One => f.write_str("One"),
+            BlendFactor::SrcColor => f.write_str("SrcColor"),
+            BlendFactor::OneMinusSrcColor => f.write_str("OneMinusSrcColor"),
+            BlendFactor::DstColor => f.write_str("DstColor"),
+            BlendFactor::OneMinusDstColor => f.write_str("OneMinusDstColor"),
+            BlendFactor::SrcAlpha => f.write_str("SrcAlpha"),
+            BlendFactor::OneMinusSrcAlpha => f.write_str("OneMinusSrcAlpha"),
+            BlendFactor::DstAlpha => f.write_str("DstAlpha"),
+            BlendFactor::OneMinusDstAlpha => f.write_str("OneMinusDstAlpha"),
+            BlendFactor::SrcAlphaSaturate => f.write_str("SrcAlphaSaturate"),
+            BlendFactor::BlendFactor => f.write_str("BlendFactor"),
+            BlendFactor::OneMinusBlendFactor => f.write_str("OneMinusBlendFactor"),
+        }
+    }
+}
+
 impl Default for BlendFactor {
     #[inline(always)]
     fn default() -> Self {
@@ -3177,6 +3451,18 @@ pub enum BlendOp {
     ReverseSubtract,
     Min,
     Max,
+}
+
+impl Display for BlendOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BlendOp::Add => f.write_str("Add"),
+            BlendOp::Subtract => f.write_str("Subtract"),
+            BlendOp::ReverseSubtract => f.write_str("ReverseSubtract"),
+            BlendOp::Min => f.write_str("Min"),
+            BlendOp::Max => f.write_str("Max"),
+        }
+    }
 }
 
 impl Default for BlendOp {
@@ -3248,6 +3534,29 @@ pub enum LogicOp {
 
     /// all 1s
     Set,
+}
+
+impl Display for LogicOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LogicOp::Clear => f.write_str("Clear"),
+            LogicOp::And => f.write_str("And"),
+            LogicOp::AndReverse => f.write_str("AndReverse"),
+            LogicOp::Copy => f.write_str("Copy"),
+            LogicOp::AndInverted => f.write_str("AndInverted"),
+            LogicOp::Noop => f.write_str("Noop"),
+            LogicOp::Xor => f.write_str("Xor"),
+            LogicOp::Or => f.write_str("Or"),
+            LogicOp::Nor => f.write_str("Nor"),
+            LogicOp::Equivalent => f.write_str("Equivalent"),
+            LogicOp::Invert => f.write_str("Invert"),
+            LogicOp::OrReverse => f.write_str("OrReverse"),
+            LogicOp::CopyInverted => f.write_str("CopyInverted"),
+            LogicOp::OrInverted => f.write_str("OrInverted"),
+            LogicOp::Nand => f.write_str("Nand"),
+            LogicOp::Set => f.write_str("Set"),
+        }
+    }
 }
 
 impl Default for LogicOp {
@@ -3344,6 +3653,21 @@ pub enum CompareOp {
     GreaterOrEqual,
 }
 
+impl Display for CompareOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompareOp::Never => f.write_str("Never"),
+            CompareOp::Always => f.write_str("Always"),
+            CompareOp::Equal => f.write_str("Equal"),
+            CompareOp::NotEqual => f.write_str("NotEqual"),
+            CompareOp::Less => f.write_str("Less"),
+            CompareOp::LessEqual => f.write_str("LessEqual"),
+            CompareOp::Greater => f.write_str("Greater"),
+            CompareOp::GreaterOrEqual => f.write_str("GreaterOrEqual"),
+        }
+    }
+}
+
 impl Default for CompareOp {
     #[inline(always)]
     fn default() -> Self {
@@ -3377,6 +3701,21 @@ pub enum StencilOp {
     /// Decrements the current value and wraps to the maximum possible value when the value would go
     /// below 0
     DecrementWrap,
+}
+
+impl Display for StencilOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StencilOp::Keep => f.write_str("Keep"),
+            StencilOp::Zero => f.write_str("Zero"),
+            StencilOp::Replace => f.write_str("Replace"),
+            StencilOp::IncrementClamp => f.write_str("IncrementClamp"),
+            StencilOp::DecrementClamp => f.write_str("DecrementClamp"),
+            StencilOp::Invert => f.write_str("Invert"),
+            StencilOp::IncrementWrap => f.write_str("IncrementWrap"),
+            StencilOp::DecrementWrap => f.write_str("DecrementWrap"),
+        }
+    }
 }
 
 impl Default for StencilOp {
@@ -3542,9 +3881,9 @@ impl Default for QueueType {
 impl Display for QueueType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            QueueType::General => f.write_str("QueueType::General"),
-            QueueType::Compute => f.write_str("QueueType::Compute"),
-            QueueType::Transfer => f.write_str("QueueType::Transfer"),
+            QueueType::General => f.write_str("General"),
+            QueueType::Compute => f.write_str("Compute"),
+            QueueType::Transfer => f.write_str("Transfer"),
         }
     }
 }
@@ -3566,6 +3905,58 @@ pub struct QueueSubmitDesc<'a> {
     pub fence: Option<&'a dyn IFence>,
 }
 
+impl<'a> QueueSubmitDesc<'a> {
+    /// Constructs a new, empty [QueueSubmitDesc]
+    pub const fn new() -> Self {
+        Self {
+            command_lists: &[],
+            wait_semaphores: &[],
+            signal_semaphores: &[],
+            fence: None,
+        }
+    }
+
+    /// Takes the given desc and returns it with [QueueSubmitDesc::command_lists] set to the given
+    /// parameter
+    pub const fn with_lists(
+        mut self,
+        command_lists: &'a [Cell<Option<Box<dyn ICommandList>>>],
+    ) -> Self {
+        self.command_lists = command_lists;
+        self
+    }
+
+    /// Takes the given desc and returns it with [QueueSubmitDesc::wait_semaphores] set to the given
+    /// parameter
+    pub const fn with_wait_semaphores(mut self, wait_semaphores: &'a [&'a dyn ISemaphore]) -> Self {
+        self.wait_semaphores = wait_semaphores;
+        self
+    }
+
+    /// Takes the given desc and returns it with [QueueSubmitDesc::signal_semaphores] set to the
+    /// given parameter
+    pub const fn with_signal_semaphores(
+        mut self,
+        signal_semaphores: &'a [&'a dyn ISemaphore],
+    ) -> Self {
+        self.signal_semaphores = signal_semaphores;
+        self
+    }
+
+    /// Takes the given desc and returns it with [QueueSubmitDesc::fence] set to the given parameter
+    pub const fn with_fence(mut self, fence: &'a dyn IFence) -> Self {
+        self.fence = Some(fence);
+        self
+    }
+}
+
+impl<'a> Default for QueueSubmitDesc<'a> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone)]
 pub struct QueuePresentDesc<'a> {
     /// The [ISwapChain] to queue a present operation for.
@@ -3577,6 +3968,31 @@ pub struct QueuePresentDesc<'a> {
     /// A list of semaphores that will block the execution of the batch until all semaphores in the
     /// list are signaled.
     pub wait_semaphores: &'a [&'a dyn ISemaphore],
+}
+
+impl<'a> QueuePresentDesc<'a> {
+    /// Constructs a new [QueuePresentDesc] with the given swap_chain reference
+    pub const fn new(swap_chain: &'a dyn ISwapChain) -> Self {
+        Self {
+            swap_chain,
+            image_index: 0,
+            wait_semaphores: &[],
+        }
+    }
+
+    /// Takes the given desc and returns it with [QueuePresentDesc::image_index] set to the
+    /// given parameter
+    pub const fn with_image_index(mut self, image_index: u32) -> Self {
+        self.image_index = image_index;
+        self
+    }
+
+    /// Takes the given desc and returns it with [QueueSubmitDesc::wait_semaphores] set to the given
+    /// parameter
+    pub const fn with_wait_semaphores(mut self, wait_semaphores: &'a [&'a dyn ISemaphore]) -> Self {
+        self.wait_semaphores = wait_semaphores;
+        self
+    }
 }
 
 //
@@ -3591,6 +4007,15 @@ pub enum FenceWaitResult {
 
     /// The timeout time was reached before the condition was met.
     Timeout,
+}
+
+impl Display for FenceWaitResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FenceWaitResult::Complete => f.write_str("Complete"),
+            FenceWaitResult::Timeout => f.write_str("Timeout"),
+        }
+    }
 }
 
 //
@@ -3837,6 +4262,15 @@ pub enum IndexType {
     U32,
 }
 
+impl Display for IndexType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IndexType::U16 => f.write_str("U16"),
+            IndexType::U32 => f.write_str("U32"),
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct Viewport {
@@ -3929,6 +4363,16 @@ pub enum TextureCopyAspect {
     Stencil,
 }
 
+impl Display for TextureCopyAspect {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TextureCopyAspect::Color => f.write_str("Color"),
+            TextureCopyAspect::Depth => f.write_str("Depth"),
+            TextureCopyAspect::Stencil => f.write_str("Stencil"),
+        }
+    }
+}
+
 impl TextureCopyAspect {
     /// Returns the [TextureAspect] flag for the aspect the variant `self` represents.
     pub const fn as_flag(self) -> TextureAspect {
@@ -3982,6 +4426,15 @@ pub struct BufferToTextureCopyRegion {
 pub enum PipelineBindPoint {
     Compute,
     Graphics,
+}
+
+impl Display for PipelineBindPoint {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PipelineBindPoint::Compute => f.write_str("Compute"),
+            PipelineBindPoint::Graphics => f.write_str("Graphics"),
+        }
+    }
 }
 
 //
