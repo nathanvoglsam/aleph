@@ -378,16 +378,8 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
     let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
         visibility: DescriptorShaderVisibility::All,
         items: &[
-            DescriptorSetLayoutBinding {
-                binding_num: 0,
-                binding_type: DescriptorType::Texture,
-                ..Default::default()
-            },
-            DescriptorSetLayoutBinding {
-                binding_num: 1,
-                binding_type: DescriptorType::Sampler,
-                ..Default::default()
-            },
+            DescriptorSetLayoutBinding::with_type(DescriptorType::Texture).with_binding_num(0),
+            DescriptorSetLayoutBinding::with_type(DescriptorType::Sampler).with_binding_num(1),
         ],
         name: Some("egui::DescriptorSetLayout"),
     };
