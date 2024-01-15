@@ -470,7 +470,7 @@ pub fn test_builder() {
             data.value = 54321;
 
             // Create a transient resource and send it out of the setup closure
-            data.resource = Some(resources.create_buffer(
+            data.resource = Some(resources.create_buffer_with_sync(
                 &BufferDesc {
                     size: 256,
                     name: Some("test-pass-0-transient-resource"),
@@ -500,7 +500,7 @@ pub fn test_builder() {
 
             // Write the transient resource created in the previous pass and send it out of the
             // setup closure
-            data.resource = Some(resources.write_buffer(
+            data.resource = Some(resources.write_buffer_with_sync(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
@@ -526,7 +526,7 @@ pub fn test_builder() {
 
             // Read the transient resource based on the write rename created from the previous
             // pass and send it out of the setup closure
-            data.resource = Some(resources.read_buffer(
+            data.resource = Some(resources.read_buffer_with_sync(
                 out_write.unwrap(),
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
@@ -580,7 +580,7 @@ pub fn test_handle_equality() {
     builder.add_pass(
         "test-pass-0",
         |_data: &mut Payload<()>, resources| {
-            let r = resources.import_buffer(
+            let r = resources.import_buffer_with_sync(
                 &BufferImportDesc {
                     desc: &mock_desc,
                     before_sync: BarrierSync::COMPUTE_SHADING,
@@ -600,12 +600,12 @@ pub fn test_handle_equality() {
     builder.add_pass(
         "test-pass-1",
         |_data: &mut Payload<()>, resources| {
-            out_read_import = Some(resources.read_buffer(
+            out_read_import = Some(resources.read_buffer_with_sync(
                 imported_resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
             ));
-            out_create = Some(resources.create_buffer(
+            out_create = Some(resources.create_buffer_with_sync(
                 &BufferDesc {
                     size: 256,
                     name: Some("test-pass-1-transient-resource"),
@@ -621,12 +621,12 @@ pub fn test_handle_equality() {
     builder.add_pass(
         "test-pass-2",
         |_data: &mut Payload<()>, resources| {
-            out_write_import = Some(resources.write_buffer(
+            out_write_import = Some(resources.write_buffer_with_sync(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
-            out_write_transient = Some(resources.write_buffer(
+            out_write_transient = Some(resources.write_buffer_with_sync(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
@@ -638,7 +638,7 @@ pub fn test_handle_equality() {
     builder.add_pass(
         "test-pass-3",
         |_data: &mut Payload<()>, resources| {
-            out_read_transient = Some(resources.read_buffer(
+            out_read_transient = Some(resources.read_buffer_with_sync(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
@@ -714,7 +714,6 @@ pub fn test_usage_collection() {
                     after_sync: BarrierSync::COPY,
                     after_access: BarrierAccess::COPY_READ,
                 },
-                BarrierSync::NONE,
                 ResourceUsageFlags::NONE,
             );
             imported_resource = Some(r);
@@ -726,12 +725,12 @@ pub fn test_usage_collection() {
     builder.add_pass(
         "test-pass-1",
         |_data: &mut Payload<()>, resources| {
-            resources.read_buffer(
+            resources.read_buffer_with_sync(
                 imported_resource,
                 BarrierSync::VERTEX_SHADING,
                 ResourceUsageFlags::VERTEX_BUFFER,
             );
-            out_create = Some(resources.create_buffer(
+            out_create = Some(resources.create_buffer_with_sync(
                 &BufferDesc {
                     size: 256,
                     name: Some("test-pass-1-transient-resource"),
@@ -747,12 +746,12 @@ pub fn test_usage_collection() {
     builder.add_pass(
         "test-pass-2",
         |_data: &mut Payload<()>, resources| {
-            out_write_import = Some(resources.write_buffer(
+            out_write_import = Some(resources.write_buffer_with_sync(
                 imported_resource,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
-            out_write_transient = Some(resources.write_buffer(
+            out_write_transient = Some(resources.write_buffer_with_sync(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
@@ -764,7 +763,7 @@ pub fn test_usage_collection() {
     builder.add_pass(
         "test-pass-3",
         |_data: &mut Payload<()>, resources| {
-            resources.read_buffer(
+            resources.read_buffer_with_sync(
                 out_write_transient.unwrap(),
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
@@ -860,7 +859,6 @@ pub fn test_usage_schedule() {
                     after_sync: BarrierSync::COPY,
                     after_access: BarrierAccess::COPY_READ,
                 },
-                BarrierSync::NONE,
                 ResourceUsageFlags::NONE,
             );
             pin_board.publish(Pass0 { import })
@@ -876,12 +874,12 @@ pub fn test_usage_schedule() {
         "test-pass-1",
         |_data: &mut Payload<()>, resources| {
             let import = pin_board.get::<Pass0>().unwrap().import;
-            resources.read_buffer(
+            resources.read_buffer_with_sync(
                 import,
                 BarrierSync::VERTEX_SHADING,
                 ResourceUsageFlags::VERTEX_BUFFER,
             );
-            let create = resources.create_buffer(
+            let create = resources.create_buffer_with_sync(
                 &BufferDesc {
                     size: 256,
                     name: Some("test-pass-1-transient-resource"),
@@ -900,7 +898,6 @@ pub fn test_usage_schedule() {
                     after_access: BarrierAccess::DEPTH_STENCIL_READ,
                     after_layout: ImageLayout::DepthStencilReadOnly,
                 },
-                BarrierSync::empty(),
                 ResourceUsageFlags::RENDER_TARGET,
             );
 
@@ -923,19 +920,19 @@ pub fn test_usage_schedule() {
             let create = pass1.create;
             let import_texture = pass1.import;
 
-            let import_buffer_write = resources.write_buffer(
+            let import_buffer_write = resources.write_buffer_with_sync(
                 import_buffer,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
 
-            let import_texture_write = resources.write_texture(
+            let import_texture_write = resources.write_texture_with_sync(
                 import_texture,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
 
-            let transient_write = resources.write_buffer(
+            let transient_write = resources.write_buffer_with_sync(
                 create,
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
@@ -960,7 +957,7 @@ pub fn test_usage_schedule() {
         "test-pass-3",
         |data: &mut Payload<ResourceRef>, resources| {
             let transient = pin_board.get::<Pass2>().unwrap().transient_write;
-            let read = resources.read_buffer(
+            let read = resources.read_buffer_with_sync(
                 transient,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
@@ -977,7 +974,7 @@ pub fn test_usage_schedule() {
         "test-pass-4",
         |data: &mut Payload<ResourceRef>, resources| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture(
+            let read = resources.read_texture_with_sync(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
@@ -994,7 +991,7 @@ pub fn test_usage_schedule() {
         "test-pass-5",
         |data: &mut Payload<ResourceRef>, resources| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture(
+            let read = resources.read_texture_with_sync(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
@@ -1011,7 +1008,7 @@ pub fn test_usage_schedule() {
         "test-pass-6",
         |data: &mut Payload<ResourceRef>, resources| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture(
+            let read = resources.read_texture_with_sync(
                 resource,
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::SHADER_RESOURCE,
@@ -1028,7 +1025,7 @@ pub fn test_usage_schedule() {
         "test-pass-7",
         |data: &mut Payload<ResourceRef>, resources| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture(
+            let read = resources.read_texture_with_sync(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
@@ -1045,7 +1042,7 @@ pub fn test_usage_schedule() {
         "test-pass-8",
         |data: &mut Payload<ResourceRef>, resources| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture(
+            let read = resources.read_texture_with_sync(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
@@ -1066,7 +1063,7 @@ pub fn test_usage_schedule() {
         "test-pass-9",
         |data: &mut Payload<Pass9>, resources| {
             let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let import_texture_write = resources.write_texture(
+            let import_texture_write = resources.write_texture_with_sync(
                 resource,
                 BarrierSync::DEPTH_STENCIL,
                 ResourceUsageFlags::RENDER_TARGET,
