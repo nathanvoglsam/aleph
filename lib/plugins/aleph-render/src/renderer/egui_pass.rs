@@ -180,13 +180,7 @@ pub fn egui_pass(frame_graph: &mut FrameGraphBuilder, device: &dyn IDevice, pin_
                 .get_rtv(&ImageViewDesc {
                     format: desc.format,
                     view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet {
-                        aspect: TextureAspect::COLOR,
-                        base_mip_level: 0,
-                        num_mip_levels: 1,
-                        base_array_slice: 0,
-                        num_array_slices: 1,
-                    },
+                    sub_resources: TextureSubResourceSet::with_color(),
                     writable: true,
                 })
                 .unwrap();

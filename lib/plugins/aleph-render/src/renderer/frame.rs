@@ -130,13 +130,7 @@ impl PerFrameObjects {
             &[],
             &[TextureBarrier {
                 texture: self.font_staged.as_ref().unwrap().deref(),
-                subresource_range: TextureSubResourceSet {
-                    aspect: TextureAspect::COLOR,
-                    base_mip_level: 0,
-                    num_mip_levels: 1,
-                    base_array_slice: 0,
-                    num_array_slices: 1,
-                },
+                subresource_range: TextureSubResourceSet::with_color(),
                 before_sync: BarrierSync::ALL,
                 after_sync: BarrierSync::COPY,
                 before_access: BarrierAccess::NONE,
@@ -176,13 +170,7 @@ impl PerFrameObjects {
             &[],
             &[TextureBarrier {
                 texture: self.font_staged.as_deref().unwrap(),
-                subresource_range: TextureSubResourceSet {
-                    aspect: TextureAspect::COLOR,
-                    base_mip_level: 0,
-                    num_mip_levels: 1,
-                    base_array_slice: 0,
-                    num_array_slices: 1,
-                },
+                subresource_range: TextureSubResourceSet::with_color(),
                 before_sync: BarrierSync::COPY,
                 after_sync: BarrierSync::ALL,
                 before_access: BarrierAccess::COPY_WRITE,
@@ -225,13 +213,7 @@ impl PerFrameObjects {
             .get_view(&ImageViewDesc {
                 format: Format::R8Unorm,
                 view_type: ImageViewType::Tex2D,
-                sub_resources: TextureSubResourceSet {
-                    aspect: TextureAspect::COLOR,
-                    base_mip_level: 0,
-                    num_mip_levels: 1,
-                    base_array_slice: 0,
-                    num_array_slices: 1,
-                },
+                sub_resources: TextureSubResourceSet::with_color(),
                 writable: false,
             })
             .unwrap();
