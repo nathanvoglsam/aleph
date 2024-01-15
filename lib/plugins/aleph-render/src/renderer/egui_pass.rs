@@ -76,7 +76,6 @@ pub fn egui_pass(frame_graph: &mut FrameGraphBuilder, device: &dyn IDevice, pin_
                     after_access: BarrierAccess::NONE,
                     after_layout: ImageLayout::PresentSrc,
                 },
-                BarrierSync::NONE,
                 ResourceUsageFlags::RENDER_TARGET,
             );
 
@@ -87,7 +86,6 @@ pub fn egui_pass(frame_graph: &mut FrameGraphBuilder, device: &dyn IDevice, pin_
                     name: Some("Egui Vertex Buffer"),
                     ..Default::default()
                 },
-                BarrierSync::NONE,
                 ResourceUsageFlags::VERTEX_BUFFER | ResourceUsageFlags::COPY_DEST,
             );
 
@@ -98,7 +96,6 @@ pub fn egui_pass(frame_graph: &mut FrameGraphBuilder, device: &dyn IDevice, pin_
                     name: Some("Egui Index Buffer"),
                     ..Default::default()
                 },
-                BarrierSync::NONE,
                 ResourceUsageFlags::INDEX_BUFFER | ResourceUsageFlags::COPY_DEST,
             );
 
