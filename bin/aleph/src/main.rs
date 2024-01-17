@@ -30,6 +30,7 @@
 use crate::commands::{Build, GenProj, ISubcommand};
 use crate::project::AlephProject;
 use anyhow::Context;
+use bumpalo::Bump;
 use log::LevelFilter;
 use std::collections::HashMap;
 
@@ -68,9 +69,11 @@ fn main() -> anyhow::Result<()> {
                 .filter_level(LevelFilter::Trace)
                 .init();
 
+            let arena = Bump::new();
+
             // Finds the 'aleph-project.toml' and deduces all the project directories against the
             // active project.
-            let project = AlephProject::new().context("Loading project information")?;
+            let project = AlephProject::new(&arena).context("Loading project information")?;
 
             // Now we can run the command
             let result = subcommand.exec(&project, matches.clone());

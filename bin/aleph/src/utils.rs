@@ -29,7 +29,6 @@
 
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
-use anyhow::anyhow;
 use std::fmt::{Display, Formatter};
 use std::io::{Read, Seek};
 use std::path::{Path, PathBuf};
@@ -208,38 +207,6 @@ pub fn extract_zip<R: Seek + Read>(
         }
     }
     Ok(())
-}
-
-pub fn find_crate_and_target<'a>(
-    metadata: &'a cargo_metadata::Metadata,
-    crate_name: &str,
-    target_type: Option<&str>,
-) -> anyhow::Result<(
-    &'a cargo_metadata::Package,
-    Option<&'a cargo_metadata::Target>,
-)> {
-    let package = metadata
-        .packages
-        .iter()
-        .find(|v| v.name.as_str() == crate_name)
-        .ok_or(anyhow!(
-            "Failed to find crate \"{crate_name}\" in the cargo workspace"
-        ))?;
-
-    if let Some(target_type) = target_type {
-        let library_target = package
-            .targets
-            .iter()
-            .find(|v| v.crate_types.iter().any(|v| v.as_str() == "cdylib"))
-            .ok_or(anyhow!(
-                "Package \"{}\"has no \"{}\" target",
-                &package.name,
-                target_type
-            ))?;
-        Ok((package, Some(library_target)))
-    } else {
-        Ok((package, None))
-    }
 }
 
 pub fn resolve_absolute_or_root_relative_path<P: AsRef<Path>>(

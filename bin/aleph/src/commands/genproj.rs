@@ -37,8 +37,8 @@ use crate::templates::{
     LOCAL_PROPERTIES_TEMPLATE,
 };
 use crate::utils::{
-    architecture_from_arg, extract_zip, find_crate_and_target,
-    resolve_absolute_or_root_relative_path, BuildPlatform, Target,
+    architecture_from_arg, extract_zip, resolve_absolute_or_root_relative_path, BuildPlatform,
+    Target,
 };
 use aleph_target::Architecture;
 use anyhow::anyhow;
@@ -305,8 +305,7 @@ fn build_uwp_template_context(project: &AlephProject, target: &Target) -> anyhow
     } = &project_schema.game;
 
     // Fetch the cargo metadata from the current cargo workspace
-    let cargo_metadata = project.get_cargo_metadata()?;
-    let (package, _) = find_crate_and_target(&cargo_metadata, &crate_name, None)?;
+    let (package, _) = project.get_game_crate_and_target()?;
 
     // Produce the uwp version string, leaving the last item as 0. We could in the future make
     // the last value a build number
@@ -356,14 +355,10 @@ fn build_android_template_context(project: &AlephProject) -> anyhow::Result<Cont
     } = project_schema.android.as_ref().ok_or(anyhow!(
         "Trying to generate an android project with missing android table in project.toml"
     ))?;
-    let GameSchema {
-        name, crate_name, ..
-    } = &project_schema.game;
+    let GameSchema { name, .. } = &project_schema.game;
 
     // Fetch the cargo metadata from the current cargo workspace
-    let cargo_metadata = project.get_cargo_metadata()?;
-    let (package, library_target) =
-        find_crate_and_target(&cargo_metadata, &crate_name, Some("cdylib"))?;
+    let (package, library_target) = project.get_game_crate_and_target()?;
     let library_target = library_target.unwrap();
 
     let app_version = format!(

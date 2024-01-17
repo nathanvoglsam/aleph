@@ -30,8 +30,7 @@
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 use crate::utils::{
-    architecture_from_arg, find_crate_and_target, resolve_absolute_or_root_relative_path,
-    BuildPlatform, Target,
+    architecture_from_arg, resolve_absolute_or_root_relative_path, BuildPlatform, Target,
 };
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::Profile;
@@ -285,8 +284,6 @@ impl Build {
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
-        let project_schema = project.get_project_schema()?;
-
         let android_project_root = project.target_project_root(target)?;
         let mut output_dir = android_project_root.join("app");
         output_dir.push("libs");
@@ -294,12 +291,7 @@ impl Build {
         let target_dir = project.cargo_build_dir_for_target(target, profile)?;
 
         if output_dir.exists() {
-            let cargo_metadata = project.get_cargo_metadata()?;
-            let (_, library_target) = find_crate_and_target(
-                &cargo_metadata,
-                &project_schema.game.crate_name,
-                Some("cdylib"),
-            )?;
+            let (_, library_target) = project.get_game_crate_and_target()?;
             let library_target = library_target.unwrap();
 
             let lib_name = format!("lib{}.so", &library_target.name);
@@ -329,18 +321,11 @@ impl Build {
         profile: Profile,
         target: &Target,
     ) -> anyhow::Result<()> {
-        let project_schema = project.get_project_schema()?;
-
         let uwp_project_root = project.target_project_root(target)?;
         let target_dir = project.cargo_build_dir_for_target(target, profile)?;
 
         if uwp_project_root.exists() {
-            let cargo_metadata = project.get_cargo_metadata()?;
-            let (package, _) = find_crate_and_target(
-                &cargo_metadata,
-                &project_schema.game.crate_name,
-                Some("cdylib"),
-            )?;
+            let (package, _) = project.get_game_crate_and_target()?;
             let exe_name = format!("{}.exe", &package.name);
 
             let src_exe = target_dir.join(&exe_name);
