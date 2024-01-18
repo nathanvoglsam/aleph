@@ -393,6 +393,22 @@ impl<'a> AlephProject<'a> {
         name: &str,
         version_spec: &VersionReq,
     ) -> anyhow::Result<Option<&Package>> {
+        let cargo_metadata = self.get_cargo_metadata()?;
+        self.find_matching_crate_index(name, version_spec)
+            .map(|v| v.map(|v| &cargo_metadata.packages[v]))
+    }
+
+    /// Utility function that will return a package index for the given criteria.
+    ///
+    /// The function searches for a crate with the given name and the highest version number that
+    /// matches the provided version spec.
+    ///
+    /// This is useful for looking up the concrete package for a crate's dependency spec.
+    pub fn find_matching_crate_index(
+        &self,
+        name: &str,
+        version_spec: &VersionReq,
+    ) -> anyhow::Result<Option<usize>> {
         let crate_table = self.get_crate_table()?;
 
         if let Some(&versions) = crate_table.get(name) {
@@ -406,8 +422,7 @@ impl<'a> AlephProject<'a> {
 
             let crate_id_map = self.get_crate_id_map()?;
             if let Some(&package_index) = crate_id_map.get(best_match.1) {
-                let cargo_metadata = self.get_cargo_metadata()?;
-                Ok(Some(&cargo_metadata.packages[package_index]))
+                Ok(Some(package_index))
             } else {
                 Ok(None)
             }
@@ -425,7 +440,7 @@ impl<'a> AlephProject<'a> {
                 let project = self.get_project_schema()?;
                 let crate_id_map = self.get_crate_id_map()?;
 
-                let name = project.game.name.as_ref();
+                let name = project.game.crate_name.as_ref();
 
                 let package_index = cargo_metadata
                     .workspace_members
@@ -442,7 +457,7 @@ impl<'a> AlephProject<'a> {
                     .iter()
                     .enumerate()
                     .find(|(_i, v)| v.kind.iter().any(|v| v.as_str() == "lib"))
-                    .map(|(i, v)| i);
+                    .map(|(i, _v)| i);
 
                 Ok((package_index, target_index))
             })
