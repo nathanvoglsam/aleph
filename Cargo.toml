@@ -59,6 +59,7 @@ members = [
     "lib/crates/aleph-rhi-loader-api",
     "lib/crates/aleph-rhi-validation",
     "lib/crates/aleph-rhi-vulkan",
+    "lib/crates/aleph-shader-db",
     "lib/crates/aleph-sys-info",
     "lib/crates/aleph-target",
     "lib/crates/aleph-target-build",
@@ -115,6 +116,7 @@ parking_lot = "0.12"
 raw-cpuid = "11"
 raw-window-handle = "0.5"
 rayon = "1"
+rkyv = "0.7"
 sdl2 = { version = "0.36.0", features = ["raw-window-handle"] }
 sdl2-sys = "^0.36.0"
 serde = { version = "1", features = ["derive"] }
@@ -150,6 +152,7 @@ aleph-rhi-loader = { path = "./lib/crates/aleph-rhi-loader", version = "0.1" }
 aleph-rhi-loader-api = { path = "./lib/crates/aleph-rhi-loader-api", version = "0.1" }
 aleph-rhi-validation = { path = "./lib/crates/aleph-rhi-validation", version = "0.1" }
 aleph-rhi-vulkan = { path = "./lib/crates/aleph-rhi-vulkan", version = "0.1" }
+aleph-shader-db = { path = "./lib/crates/aleph-shader-db", version = "0.1" }
 aleph-sys-info = { path = "./lib/crates/aleph-sys-info", version = "0.1" }
 aleph-target = { path = "./lib/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./lib/crates/aleph-target-build", version = "2" }
