@@ -262,7 +262,7 @@ impl Cook {
         // If we have a bundled ninja exe use that, otherwise just rely on what's in the path
         let ninja = project.ninja_path();
         let ninja = if ninja.exists() {
-            ninja
+            dunce::simplified(ninja)
         } else {
             Path::new("ninja")
         };
@@ -296,16 +296,26 @@ impl Cook {
 
     fn archive_shaders(&self, project: &AlephProject, deps: &[&Package]) -> anyhow::Result<()> {
         let shader_build_dir = Utf8PathBuf::try_from(project.shader_build_path().to_path_buf())?;
+        let out_path = shader_build_dir.join("shaders.shaderdb");
 
+        log::info!(
+            "Compiling ShaderDatabase '{}'",
+            dunce::simplified(out_path.as_std_path()).to_str().unwrap()
+        );
         let mut shader_db = ShaderDatabase::default();
 
         deps.iter().for_each(|&package| {
+            log::info!(
+                "Collecting shaders for package '{}' - {}",
+                &package.name,
+                &package.version
+            );
             archive_shaders_for_package(&mut shader_db, &shader_build_dir, package).unwrap();
         });
 
         let bytes = rkyv::to_bytes::<_, 1_048_576>(&shader_db).unwrap();
-        let out_bundle = shader_build_dir.join("shaders.shaderdb");
-        std::fs::write(out_bundle, bytes)?;
+
+        std::fs::write(out_path, bytes)?;
 
         Ok(())
     }
@@ -318,7 +328,6 @@ fn archive_shaders_for_package(
 ) -> anyhow::Result<()> {
     let package_shader_dir = get_package_shader_output_dir(package, &shader_build_dir);
 
-    log::trace!("{}", &package_shader_dir);
     let read_dir = package_shader_dir.read_dir_utf8()?;
     for file in read_dir {
         let file = file?;
