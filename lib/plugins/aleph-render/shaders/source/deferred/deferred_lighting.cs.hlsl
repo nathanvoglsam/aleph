@@ -31,10 +31,17 @@ struct Params {
     int2 size;
 };
 
+[[vk::binding(0, 0)]]
 ConstantBuffer<Params> g_params : register(b0, space0);
+
+[[vk::binding(1, 0)]]
 Texture2D<float4> g_gbuffer0 : register(t1, space0);
+[[vk::binding(2, 0)]]
 Texture2D<float4> g_gbuffer1 : register(t2, space0);
+[[vk::binding(3, 0)]]
 Texture2D<float4> g_gbuffer2 : register(t3, space0);
+
+[[vk::binding(4, 0)]]
 RWTexture2D<float4> g_output : register(u4, space0);
 
 [numthreads(8, 8, 1)]

@@ -29,7 +29,10 @@
 
 #include "standard.inc.hlsl"
 
+[[vk::binding(0, 0)]]
 ConstantBuffer<CameraLayout> camera_buffer : register(b0);
+
+[[vk::binding(1, 0)]]
 ConstantBuffer<ModelLayout> model_buffer : register(b1);
 
 StaticMeshPixelInput main(in StaticMeshVertexInput input, out float4 out_position : SV_POSITION) {

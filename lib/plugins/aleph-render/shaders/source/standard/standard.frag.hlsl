@@ -30,6 +30,7 @@
 #include "standard.inc.hlsl"
 #include "pbr.hlsl"
 
+[[vk::binding(0, 0)]]
 ConstantBuffer<CameraLayout> camera_buffer : register(b0);
 
 // Light parameters
