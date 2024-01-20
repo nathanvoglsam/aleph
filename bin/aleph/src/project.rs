@@ -86,6 +86,9 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/sdks/dxc' bin folder for this project
     dxc_path: PathBuf,
 
+    /// The path to the '.aleph/sdks/slang' bin folder for this project
+    slang_path: PathBuf,
+
     /// The path to the '.aleph/sdks/ninja' bin folder for this project
     ninja_path: PathBuf,
 
@@ -155,6 +158,24 @@ impl<'a> AlephProject<'a> {
             dxc_path.push("dxc");
         }
 
+        let mut slang_path = dot_aleph_path.clone();
+        slang_path.push("sdks");
+        slang_path.push("slang");
+        slang_path.push("bin");
+        if target_platform().is_windows() {
+            let arch = match target_architecture() {
+                Architecture::X8664 => "windows-x64",
+                Architecture::AARCH64 => "windows-arm64",
+                Architecture::Unknown => unreachable!(),
+            };
+            slang_path.push(arch);
+            slang_path.push("release");
+            slang_path.push("slangc.exe");
+        } else {
+            slang_path.push("release");
+            slang_path.push("slangc");
+        }
+
         let mut ninja_path = dot_aleph_path.clone();
         ninja_path.push("sdks");
         ninja_path.push("ninja");
@@ -175,6 +196,7 @@ impl<'a> AlephProject<'a> {
             uwp_aarch64_proj_path,
             ndk_path,
             dxc_path,
+            slang_path,
             ninja_path,
             cargo_toml_file,
             cargo_target_dir,
@@ -272,6 +294,12 @@ impl<'a> AlephProject<'a> {
     /// so check before using!
     pub fn dxc_path(&self) -> &Path {
         &self.dxc_path
+    }
+
+    /// Returns the path to the project's bundled dxc, in '.aleph/sdks/slang'. This path may not
+    /// exist so check before using!
+    pub fn slang_path(&self) -> &Path {
+        &self.slang_path
     }
 
     /// Returns the path to the project's bundled ninja, in '.aleph/sdks/ninja'. This path may not

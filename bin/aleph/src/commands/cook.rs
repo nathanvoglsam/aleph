@@ -270,18 +270,17 @@ impl Cook {
         let mut command = std::process::Command::new(ninja);
         command.current_dir(project.shader_build_path());
 
+        let mut path_string = String::new();
         let dxc = project.dxc_path();
-        if dxc.exists() {
-            let dxc_directory = dunce::simplified(dxc.parent().unwrap());
-            let path_string = std::env::var("PATH")?;
-            let sep = if target_platform().is_windows() {
-                ";"
-            } else {
-                ":"
-            };
-            let new_path = format!("{}{}{}", dxc_directory.display(), sep, path_string);
-            command.env("PATH", new_path);
-        }
+        let slang = project.slang_path();
+
+        push_path_if_tool_exists(&mut path_string, dxc);
+        push_path_if_tool_exists(&mut path_string, slang);
+
+        let inherit_path = std::env::var("PATH")?;
+        push_path_str(&mut path_string, &inherit_path);
+
+        command.env("PATH", path_string);
 
         log::info!("{:#?}", &command);
         let status = command.status()?;
@@ -319,6 +318,27 @@ impl Cook {
 
         Ok(())
     }
+}
+
+fn push_path_if_tool_exists(v: &mut String, tool: &Path) {
+    if tool.exists() {
+        let dir = dunce::simplified(tool.parent().unwrap());
+        log::trace!("Tool found!: '{}'", tool.display());
+        push_path_str(v, dir.to_str().unwrap());
+    } else {
+        log::trace!("Tool is missing!: '{}'", tool.display());
+    }
+}
+
+fn push_path_str(v: &mut String, s: &str) {
+    let sep = if target_platform().is_windows() {
+        ";"
+    } else {
+        ":"
+    };
+
+    v.push_str(s);
+    v.push_str(sep);
 }
 
 fn archive_shaders_for_package(

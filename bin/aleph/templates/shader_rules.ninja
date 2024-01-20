@@ -2,30 +2,59 @@
 # VULKAN BUILD RULES
 #
 
+cc = slangc
+
+disabled_warnings = -Wno-39013
+
+frag_stage = -stage fragment
+vert_stage = -stage vertex
+geom_stage = -stage geometry
+comp_stage = -stage compute
+dx_target = -target dxil
+vk_target = -target spirv
+sh_model = -profile sm_6_0
+opt = -O3
+
 rule fragment_shader_spirv
-    command = dxc /T ps_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $frag_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
 
 rule vertex_shader_spirv
-    command = dxc /T vs_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $vert_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
 
 rule geometry_shader_spirv
-    command = dxc /T gs_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $geom_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in-I $includes
 
 rule compute_shader_spirv
-    command = dxc /T cs_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $comp_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
 
 #
 # D3D12 BUILD RULES
 #
 
 rule fragment_shader_dxil
-    command = dxc /T ps_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $frag_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
 
 rule vertex_shader_dxil
-    command = dxc /T vs_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $vert_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
 
 rule geometry_shader_dxil
-    command = dxc /T gs_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $geom_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
 
 rule compute_shader_dxil
-    command = dxc /T cs_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes
+    depfile = $out.d
+    deps = gcc
+    command = $cc $comp_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
