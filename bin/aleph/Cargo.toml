@@ -58,5 +58,7 @@ rayon = { workspace = true }
 camino = { workspace = true }
 parking_lot = { workspace = true }
 crossbeam = { workspace = true }
+rkyv = { workspace = true }
 
 aleph-target = { workspace = true }
+aleph-shader-db = { workspace = true }

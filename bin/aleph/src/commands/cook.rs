@@ -34,6 +34,8 @@ use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 use crate::templates;
 use crate::utils::BuildPlatform;
+use aleph_shader_db::ShaderDatabase;
+use aleph_shader_db::ShaderEntry;
 use aleph_target::build::target_platform;
 use aleph_target::Profile;
 use anyhow::anyhow;
@@ -87,7 +89,7 @@ impl ISubcommand for Cook {
 
         let _platform = BuildPlatform::from_arg(&platform_arg)
             .ok_or(anyhow!("Unknown platform \"{}\"", &platform_arg))?;
-        let profile = Profile::from_name(&profile_arg.to_lowercase())
+        let _profile = Profile::from_name(&profile_arg.to_lowercase())
             .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
 
         // We need to compute a full list of all the dependencies of the game crate. This is
@@ -96,26 +98,23 @@ impl ISubcommand for Cook {
         // crate.
         let dependencies = get_game_crate_dependencies(project)?;
         let cargo_metadata = project.get_cargo_metadata()?;
-        let mut deps: Vec<_> = dependencies
+        let deps: Vec<_> = dependencies
             .iter()
             .map(|&v| &cargo_metadata.packages[v])
             .collect();
-        deps.sort_by_key(|v| v.name.as_str());
+        // Filter out any dependencies that _don't_ have any shaders
+        let deps = filter_dependencies_without_shaders(&deps);
 
-        self.cook_shaders(project, profile, &deps)?;
+        self.cook_shaders(project, &deps)?;
         self.run_shader_ninja_build(project)?;
+        self.archive_shaders(project, &deps)?;
 
         Ok(())
     }
 }
 
 impl Cook {
-    fn cook_shaders(
-        &self,
-        project: &AlephProject,
-        _profile: Profile,
-        deps: &[&Package],
-    ) -> anyhow::Result<()> {
+    fn cook_shaders(&self, project: &AlephProject, deps: &[&Package]) -> anyhow::Result<()> {
         // Get our shader build dir and ensure it exists
         let shader_build_dir = Utf8PathBuf::try_from(project.shader_build_path().to_path_buf())?;
         std::fs::create_dir_all(&shader_build_dir)?;
@@ -124,24 +123,10 @@ impl Cook {
         let rules_path = shader_build_dir.join("rules.ninja");
         std::fs::write(rules_path, templates::SHADER_NINJA_RULES)?;
 
-        // Filter out any dependencies that _don't_ have any shaders
-        let deps: Vec<_> = deps
-            .iter()
-            .filter(|&&v| {
-                let aleph_metadata = AlephCrateMetadata::load_for_package(v).unwrap();
-                if let Some(aleph_metadata) = aleph_metadata {
-                    aleph_metadata.has_shaders()
-                } else {
-                    false
-                }
-            })
-            .copied()
-            .collect();
-
         // Walk through all the dependency packages that have shaders and create a build.ninja
         // file for them so we can compile the shaders using ninja
         let ctx = ShaderBuildContext {
-            shader_build_dir: shader_build_dir.clone(),
+            shader_build_dir: shader_build_dir.to_path_buf(),
         };
         deps.par_iter().for_each(|v| {
             log::info!("Generating Ninja File For: {} - {}", v.name, v.version);
@@ -190,7 +175,7 @@ impl Cook {
         ctx: &ShaderBuildContext,
         package: &Package,
     ) -> anyhow::Result<()> {
-        let output_dir = ctx.output_dir_path_for_package(package);
+        let output_dir = get_package_shader_output_dir(package, &ctx.shader_build_dir);
         std::fs::create_dir_all(&output_dir)?;
 
         let output_file_path = output_dir.join("build.ninja");
@@ -250,7 +235,8 @@ impl Cook {
                         _ => continue,
                     };
 
-                    let out_file = output_dir.join(file_name);
+                    let file_name_no_ext = entry_path.file_stem().unwrap();
+                    let out_file = output_dir.join(file_name_no_ext);
                     output_build_statement_for_shader(
                         &mut output_file,
                         &out_file,
@@ -307,6 +293,91 @@ impl Cook {
 
         Ok(())
     }
+
+    fn archive_shaders(&self, project: &AlephProject, deps: &[&Package]) -> anyhow::Result<()> {
+        let shader_build_dir = Utf8PathBuf::try_from(project.shader_build_path().to_path_buf())?;
+
+        let mut shader_db = ShaderDatabase::default();
+
+        deps.iter().for_each(|&package| {
+            archive_shaders_for_package(&mut shader_db, &shader_build_dir, package).unwrap();
+        });
+
+        let bytes = rkyv::to_bytes::<_, 1_048_576>(&shader_db).unwrap();
+        let out_bundle = shader_build_dir.join("shaders.shaderdb");
+        std::fs::write(out_bundle, bytes)?;
+
+        Ok(())
+    }
+}
+
+fn archive_shaders_for_package(
+    shader_db: &mut ShaderDatabase,
+    shader_build_dir: &Utf8Path,
+    package: &Package,
+) -> anyhow::Result<()> {
+    let package_shader_dir = get_package_shader_output_dir(package, &shader_build_dir);
+
+    log::trace!("{}", &package_shader_dir);
+    let read_dir = package_shader_dir.read_dir_utf8()?;
+    for file in read_dir {
+        let file = file?;
+
+        let file_type = file.file_type()?;
+        if !file_type.is_file() {
+            continue;
+        }
+
+        let file_name = Utf8Path::new(file.file_name());
+        let file_stem = file_name.file_stem();
+        match (file_name.extension(), file_stem) {
+            (Some("spirv"), Some(stem)) => {
+                let file_data = std::fs::read(file.path())?;
+                if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
+                    db_entry.spirv = file_data;
+                } else {
+                    shader_db.shaders.insert(
+                        stem.to_string(),
+                        ShaderEntry {
+                            spirv: file_data,
+                            dxil: Vec::new(),
+                        },
+                    );
+                }
+            }
+            (Some("dxil"), Some(stem)) => {
+                let file_data = std::fs::read(file.path())?;
+                if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
+                    db_entry.dxil = file_data;
+                } else {
+                    shader_db.shaders.insert(
+                        stem.to_string(),
+                        ShaderEntry {
+                            spirv: Vec::new(),
+                            dxil: file_data,
+                        },
+                    );
+                }
+            }
+            _ => continue,
+        }
+    }
+
+    Ok(())
+}
+
+fn filter_dependencies_without_shaders<'a>(deps: &[&'a Package]) -> Vec<&'a Package> {
+    deps.iter()
+        .filter(|&&v| {
+            let aleph_metadata = AlephCrateMetadata::load_for_package(v).unwrap();
+            if let Some(aleph_metadata) = aleph_metadata {
+                aleph_metadata.has_shaders()
+            } else {
+                false
+            }
+        })
+        .copied()
+        .collect()
 }
 
 fn output_build_statement_for_shader(
@@ -361,11 +432,9 @@ struct ShaderBuildContext {
     pub shader_build_dir: Utf8PathBuf,
 }
 
-impl ShaderBuildContext {
-    pub fn output_dir_path_for_package(&self, v: &Package) -> Utf8PathBuf {
-        let output_dir = format!("{}-{}", &v.name, &v.version);
-        self.shader_build_dir.join(output_dir)
-    }
+fn get_package_shader_output_dir(v: &Package, base: &Utf8Path) -> Utf8PathBuf {
+    let output_dir = format!("{}-{}", &v.name, &v.version);
+    base.join(output_dir)
 }
 
 #[derive(Default, Serialize, Deserialize)]
