@@ -28,9 +28,11 @@
 //
 
 mod build;
+mod cook;
 mod genproj;
 
 pub use build::Build;
+pub use cook::Cook;
 pub use genproj::GenProj;
 
 use crate::project::AlephProject;

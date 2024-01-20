@@ -77,3 +77,5 @@ pub const LOCAL_PROPERTIES_TEMPLATE: &'static str = r#"
 ## sdk.dir=C\:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk
 ## ndk.dir=C\:\\Users\\Nathan\\Programs\\Loose\\android-ndk-r25c
 "#;
+
+pub const SHADER_NINJA_RULES: &'static str = include_str!("../templates/shader_rules.ninja");

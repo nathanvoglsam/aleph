@@ -1,0 +1,31 @@
+#
+# VULKAN BUILD RULES
+#
+
+rule fragment_shader_spirv
+    command = dxc /T ps_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+
+rule vertex_shader_spirv
+    command = dxc /T vs_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+
+rule geometry_shader_spirv
+    command = dxc /T gs_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+
+rule compute_shader_spirv
+    command = dxc /T cs_6_0 -Fo $out $in -spirv -O3 -I $includes -Wno-ignored-attributes
+
+#
+# D3D12 BUILD RULES
+#
+
+rule fragment_shader_dxil
+    command = dxc /T ps_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes
+
+rule vertex_shader_dxil
+    command = dxc /T vs_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes
+
+rule geometry_shader_dxil
+    command = dxc /T gs_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes
+
+rule compute_shader_dxil
+    command = dxc /T cs_6_0 -Fo $out $in -O3 -I $includes -Wno-ignored-attributes

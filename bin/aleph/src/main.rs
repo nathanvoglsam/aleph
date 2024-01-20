@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::commands::{Build, GenProj, ISubcommand};
+use crate::commands::{Build, Cook, GenProj, ISubcommand};
 use crate::project::AlephProject;
 use anyhow::Context;
 use bumpalo::Bump;
@@ -50,6 +50,7 @@ fn main() -> anyhow::Result<()> {
     let mut subcommands: HashMap<String, Box<dyn ISubcommand>> = HashMap::new();
     register_subcommand(&mut subcommands, GenProj {});
     register_subcommand(&mut subcommands, Build {});
+    register_subcommand(&mut subcommands, Cook {});
 
     for (name, subcommand) in subcommands.iter_mut() {
         let description = subcommand.description();

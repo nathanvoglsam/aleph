@@ -29,6 +29,8 @@
 
 use crate::project_schema::ProjectSchema;
 use crate::utils::{find_project_file, BuildPlatform, Target};
+use aleph_target::build::target_architecture;
+use aleph_target::build::target_platform;
 use aleph_target::{Architecture, Profile};
 use anyhow::{anyhow, Context};
 use bumpalo::Bump;
@@ -66,6 +68,9 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph' folder for this project
     dot_aleph_path: PathBuf,
 
+    /// The path to the '.aleph/.shaders' folder for this project
+    shader_build_path: PathBuf,
+
     /// Path to the android project in the '.aleph/proj' directory
     android_proj_path: PathBuf,
 
@@ -77,6 +82,12 @@ pub struct AlephProject<'a> {
 
     /// The path to the '.aleph/sdks/ndk' folder for this project
     ndk_path: PathBuf,
+
+    /// The path to the '.aleph/sdks/dxc' bin folder for this project
+    dxc_path: PathBuf,
+
+    /// The path to the '.aleph/sdks/ninja' bin folder for this project
+    ninja_path: PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
     cargo_toml_file: PathBuf,
@@ -122,19 +133,49 @@ impl<'a> AlephProject<'a> {
         let target = Target::new(Architecture::AARCH64, BuildPlatform::UWP);
         let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
+        let shader_build_path = dot_aleph_path.join("shaders");
+
         let mut ndk_path = dot_aleph_path.clone();
         ndk_path.push("sdks");
         ndk_path.push("ndk");
+
+        let mut dxc_path = dot_aleph_path.clone();
+        dxc_path.push("sdks");
+        dxc_path.push("dxc");
+        dxc_path.push("bin");
+        if target_platform().is_windows() {
+            let arch = match target_architecture() {
+                Architecture::X8664 => "x64",
+                Architecture::AARCH64 => "arm64",
+                Architecture::Unknown => unreachable!(),
+            };
+            dxc_path.push(arch);
+            dxc_path.push("dxc.exe");
+        } else {
+            dxc_path.push("dxc");
+        }
+
+        let mut ninja_path = dot_aleph_path.clone();
+        ninja_path.push("sdks");
+        ninja_path.push("ninja");
+        if target_platform().is_windows() {
+            ninja_path.push("ninja.exe");
+        } else {
+            ninja_path.push("ninja");
+        }
 
         let out = Self {
             arena,
             project_file,
             project_root,
             dot_aleph_path,
+            shader_build_path,
             android_proj_path,
             uwp_x86_64_proj_path,
             uwp_aarch64_proj_path,
             ndk_path,
+            dxc_path,
+            ninja_path,
             cargo_toml_file,
             cargo_target_dir,
             cargo_metadata: Default::default(),
@@ -165,6 +206,12 @@ impl<'a> AlephProject<'a> {
     // pub fn dot_aleph_path(&self) -> &Path {
     //     &self.dot_aleph_path
     // }
+
+    /// Returns the path to the folder that contains the `aleph-project.toml` file for the project
+    /// we're working with
+    pub fn shader_build_path(&self) -> &Path {
+        &self.shader_build_path
+    }
 
     /// A utility around [Self::target_project_root] that returns also ensures that the project
     /// directory exists and is a directory.
@@ -219,6 +266,18 @@ impl<'a> AlephProject<'a> {
     /// so check before using!
     pub fn ndk_path(&self) -> &Path {
         &self.ndk_path
+    }
+
+    /// Returns the path to the project's bundled dxc, in '.aleph/sdks/dxc'. This path may not exist
+    /// so check before using!
+    pub fn dxc_path(&self) -> &Path {
+        &self.dxc_path
+    }
+
+    /// Returns the path to the project's bundled ninja, in '.aleph/sdks/ninja'. This path may not
+    /// exist so check before using!
+    pub fn ninja_path(&self) -> &Path {
+        &self.ninja_path
     }
 
     /// Returns the './target/{target-triple}/{profile}' path for the request target + profile set.
@@ -382,21 +441,21 @@ impl<'a> AlephProject<'a> {
         })
     }
 
-    /// Utility function that will return a package reference for the given criteria.
-    ///
-    /// The function searches for a crate with the given name and the highest version number that
-    /// matches the provided version spec.
-    ///
-    /// This is useful for looking up the concrete package for a crate's dependency spec.
-    pub fn find_matching_crate(
-        &self,
-        name: &str,
-        version_spec: &VersionReq,
-    ) -> anyhow::Result<Option<&Package>> {
-        let cargo_metadata = self.get_cargo_metadata()?;
-        self.find_matching_crate_index(name, version_spec)
-            .map(|v| v.map(|v| &cargo_metadata.packages[v]))
-    }
+    // /// Utility function that will return a package reference for the given criteria.
+    // ///
+    // /// The function searches for a crate with the given name and the highest version number that
+    // /// matches the provided version spec.
+    // ///
+    // /// This is useful for looking up the concrete package for a crate's dependency spec.
+    // pub fn find_matching_crate(
+    //     &self,
+    //     name: &str,
+    //     version_spec: &VersionReq,
+    // ) -> anyhow::Result<Option<&Package>> {
+    //     let cargo_metadata = self.get_cargo_metadata()?;
+    //     self.find_matching_crate_index(name, version_spec)
+    //         .map(|v| v.map(|v| &cargo_metadata.packages[v]))
+    // }
 
     /// Utility function that will return a package index for the given criteria.
     ///
