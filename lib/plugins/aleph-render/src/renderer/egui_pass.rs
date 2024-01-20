@@ -32,6 +32,7 @@ use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
+use aleph_shader_db::IShaderDatabase;
 use egui::RenderData;
 
 struct EguiPassPayload {
@@ -56,7 +57,12 @@ pub struct EguiPassContext {
     pub render_data: RenderData,
 }
 
-pub fn egui_pass(frame_graph: &mut FrameGraphBuilder, device: &dyn IDevice, pin_board: &PinBoard) {
+pub fn egui_pass(
+    frame_graph: &mut FrameGraphBuilder,
+    device: &dyn IDevice,
+    pin_board: &PinBoard,
+    shader_db: &dyn IShaderDatabase,
+) {
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
     const INDEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
 
@@ -102,14 +108,16 @@ pub fn egui_pass(frame_graph: &mut FrameGraphBuilder, device: &dyn IDevice, pin_
             let descriptor_set_layout = create_descriptor_set_layout(device);
             let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
+            let vertex_shader = shader_db.get("egui.vert").unwrap();
+            let fragment_shader = shader_db.get("egui.frag").unwrap();
             let (vertex_data, fragment_data) = match device.get_backend_api() {
                 BackendAPI::Vulkan => (
-                    crate::shaders::egui_vert_shader_vk(),
-                    crate::shaders::egui_frag_shader_vk(),
+                    ShaderBinary::Spirv(vertex_shader.spirv),
+                    ShaderBinary::Spirv(fragment_shader.spirv),
                 ),
                 BackendAPI::D3D12 => (
-                    crate::shaders::egui_vert_shader_dx(),
-                    crate::shaders::egui_frag_shader_dx(),
+                    ShaderBinary::Dxil(vertex_shader.dxil),
+                    ShaderBinary::Dxil(fragment_shader.dxil),
                 ),
             };
             let vertex_shader = device

@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-#include <aces.hlsl>
-#include <fullscreen_quad/fullscreen_quad.inc.hlsl>
+#include "aces.hlsl"
+#include "../fullscreen_quad/fullscreen_quad.inc.hlsl"
 
 SubpassInput<float4> ColourInput; // TODO: Port this to DX12
 
