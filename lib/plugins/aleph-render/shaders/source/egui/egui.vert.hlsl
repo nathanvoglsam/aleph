@@ -28,7 +28,7 @@
 //
 
 #include "egui.inc.hlsl"
-#include <srgb.hlsl>
+#include "srgb.hlsl"
 
 struct RootConstantLayout {
     float2 ScreenSize;
