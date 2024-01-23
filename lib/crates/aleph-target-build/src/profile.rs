@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::fmt::Display;
+
 /// An enumeration of all the build profiles we support for aleph engine.
 ///
 /// # Profiles
@@ -91,5 +93,11 @@ impl Profile {
             Profile::Release => "Release",
             Profile::Retail => "Retail",
         }
+    }
+}
+
+impl Display for Profile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.pretty_name())
     }
 }

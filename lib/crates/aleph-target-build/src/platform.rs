@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::fmt::Display;
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Platform {
     UniversalWindowsGNU,
@@ -113,6 +115,12 @@ impl Platform {
 
     pub const fn is_unknown(self) -> bool {
         matches!(self, Platform::Unknown)
+    }
+}
+
+impl Display for Platform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.pretty_name())
     }
 }
 

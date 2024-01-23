@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::fmt::Display;
+
 ///
 /// Enumeration of all supported architectures
 ///
@@ -84,6 +86,12 @@ impl Architecture {
     ///
     pub const fn is_aarch64(self) -> bool {
         matches!(self, Architecture::AARCH64)
+    }
+}
+
+impl Display for Architecture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
     }
 }
 

@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::fmt::Display;
+
 ///
 /// Enumeration of all supported build profiles
 ///
@@ -69,5 +71,11 @@ impl BuildType {
             BuildType::Development => "Development",
             BuildType::Retail => "Retail",
         }
+    }
+}
+
+impl Display for BuildType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.pretty_name())
     }
 }

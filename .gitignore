@@ -12,3 +12,6 @@ shader_cache.bin
 
 # Ignore all shaderdb files as they're just binary blobs
 *.shaderdb
+
+# You know what this is :(
+.DS_Store
