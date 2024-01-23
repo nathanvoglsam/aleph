@@ -40,7 +40,8 @@ keywords = ["engine", "graphics", "vulkan", "game"]
 categories = ["game-engines"]
 edition.workspace = true
 
-metadata.aleph = { shaders = true }
+[package.metadata.aleph]
+shaders = { modules = ["aleph-render"] }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
