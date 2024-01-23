@@ -165,9 +165,9 @@ struct LoadedCrateShaderProject<'a> {
     module_contexts: Vec<ShaderModuleContext<'a>>,
 }
 
-fn filter_dependencies_without_aleph_metadata<'a, 'b: 'a>(
-    project_ctx: &'b ProjectShaderContext,
-    deps: &[&'a Package],
+fn filter_dependencies_without_aleph_metadata<'a>(
+    project_ctx: &'a ProjectShaderContext<'a>,
+    deps: &'a [&'a Package],
 ) -> anyhow::Result<Vec<PartiallyLoadedCrateShaderProject<'a>>> {
     let mut new_deps = Vec::with_capacity(deps.len());
     for &package in deps {
