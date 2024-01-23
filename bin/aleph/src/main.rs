@@ -37,6 +37,7 @@ use std::collections::HashMap;
 mod commands;
 mod project;
 mod project_schema;
+mod shader_system;
 mod templates;
 mod utils;
 

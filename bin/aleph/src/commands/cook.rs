@@ -32,7 +32,13 @@ use std::path::Path;
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
-use crate::templates;
+use crate::shader_system::AlephCrateMetadata;
+use crate::shader_system::CompilationParams;
+use crate::shader_system::ProjectShaderContext;
+use crate::shader_system::ShaderCrateContext;
+use crate::shader_system::ShaderModuleContext;
+use crate::shader_system::ShaderModuleDefinition;
+use crate::shader_system::ShaderModuleDefinitionFile;
 use crate::utils::BuildPlatform;
 use aleph_shader_db::ShaderDatabase;
 use aleph_shader_db::ShaderEntry;
@@ -46,8 +52,6 @@ use cargo_metadata::Package;
 use clap::{Arg, ArgMatches};
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
-use serde::Deserialize;
-use serde::Serialize;
 use std::io::Write;
 
 pub struct Cook {}
@@ -87,10 +91,15 @@ impl ISubcommand for Cook {
             .remove_one("profile")
             .expect("profile should have a default");
 
-        let _platform = BuildPlatform::from_arg(&platform_arg)
+        let platform = BuildPlatform::from_arg(&platform_arg)
             .ok_or(anyhow!("Unknown platform \"{}\"", &platform_arg))?;
         let _profile = Profile::from_name(&profile_arg.to_lowercase())
             .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
+
+        // Build the base level project context for our shader build system
+        let project_ctx = ProjectShaderContext::new(project, platform)?;
+        project_ctx.ensure_build_directories()?;
+        project_ctx.ensure_build_files()?;
 
         // We need to compute a full list of all the dependencies of the game crate. This is
         // represented by a list of package indices. This may include several versions of the same
@@ -102,315 +111,296 @@ impl ISubcommand for Cook {
             .iter()
             .map(|&v| &cargo_metadata.packages[v])
             .collect();
-        // Filter out any dependencies that _don't_ have any shaders
-        let deps = filter_dependencies_without_shaders(&deps);
 
-        self.cook_shaders(project, &deps)?;
-        self.run_shader_ninja_build(project)?;
-        self.archive_shaders(project, &deps)?;
+        // Filter out any dependencies that _definitely don't_ have any shaders. Could contain false
+        // positives for crates with aleph metadata but no shaders but eh, this will filter the
+        // _VAST_ majority of crates
+        let deps = filter_dependencies_without_aleph_metadata(&project_ctx, &deps)?;
+        let deps = load_dependencies_module_contexts(&deps)?;
+
+        generate_shader_module_ninja_files(&project_ctx, &deps)?;
+        run_shader_ninja_build(project)?;
+        archive_shaders(&project_ctx, &deps)?;
 
         Ok(())
     }
 }
 
-impl Cook {
-    fn cook_shaders(&self, project: &AlephProject, deps: &[&Package]) -> anyhow::Result<()> {
-        // Get our shader build dir and ensure it exists
-        let shader_build_dir = Utf8PathBuf::try_from(project.shader_build_path().to_path_buf())?;
-        std::fs::create_dir_all(&shader_build_dir)?;
+fn get_game_crate_dependencies(project: &AlephProject) -> anyhow::Result<HashSet<usize>> {
+    let cargo_metadata = project.get_cargo_metadata()?;
+    let (package, _) = project.get_game_crate_and_target()?;
 
-        // Output the rules template
-        let rules_path = shader_build_dir.join("rules.ninja");
-        std::fs::write(rules_path, templates::SHADER_NINJA_RULES)?;
+    let mut package_indices = HashSet::new();
 
-        // Walk through all the dependency packages that have shaders and create a build.ninja
-        // file for them so we can compile the shaders using ninja
-        let ctx = ShaderBuildContext {
-            shader_build_dir: shader_build_dir.to_path_buf(),
+    let mut package_stack = Vec::new();
+    package_stack.push(package);
+    while let Some(next_package) = package_stack.pop() {
+        for dependency in next_package.dependencies.iter() {
+            // We only care about regular dependencies and not any other kind
+            if dependency.kind != DependencyKind::Normal {
+                continue;
+            }
+
+            let name = dependency.name.as_str();
+            let version_spec = &dependency.req;
+            let found_crate = project.find_matching_crate_index(name, version_spec)?;
+            if let Some(found_crate) = found_crate {
+                let not_found = package_indices.insert(found_crate);
+                if not_found {
+                    package_stack.push(&cargo_metadata.packages[found_crate]);
+                }
+            }
+        }
+    }
+    Ok(package_indices)
+}
+
+struct PartiallyLoadedCrateShaderProject<'a> {
+    crate_ctx: ShaderCrateContext<'a>,
+    metadata: AlephCrateMetadata<'a>,
+}
+
+struct LoadedCrateShaderProject<'a> {
+    crate_ctx: ShaderCrateContext<'a>,
+    module_contexts: Vec<ShaderModuleContext<'a>>,
+}
+
+fn filter_dependencies_without_aleph_metadata<'a, 'b: 'a>(
+    project_ctx: &'b ProjectShaderContext,
+    deps: &[&'a Package],
+) -> anyhow::Result<Vec<PartiallyLoadedCrateShaderProject<'a>>> {
+    let mut new_deps = Vec::with_capacity(deps.len());
+    for &package in deps {
+        let metadata = AlephCrateMetadata::load_for_package(package)?;
+        if let Some(metadata) = metadata {
+            let crate_ctx =
+                ShaderCrateContext::new_with_project_ctx(project_ctx.get_borrowed(), package);
+            crate_ctx.ensure_build_directories_no_parents()?;
+
+            let v = PartiallyLoadedCrateShaderProject {
+                crate_ctx,
+                metadata,
+            };
+
+            new_deps.push(v);
+        }
+    }
+    Ok(new_deps)
+}
+
+fn load_dependencies_module_contexts<'a>(
+    deps: &'a [PartiallyLoadedCrateShaderProject<'a>],
+) -> anyhow::Result<Vec<LoadedCrateShaderProject<'a>>> {
+    let mut new_deps = Vec::with_capacity(deps.len());
+    for v in deps.iter() {
+        let module_contexts: Vec<_> = v
+            .metadata
+            .shaders
+            .modules
+            .iter()
+            .map(|module_name| {
+                ShaderModuleContext::new_with_crate_ctx(
+                    v.crate_ctx.get_borrowed(),
+                    module_name.clone(),
+                )
+            })
+            .collect();
+
+        let v = LoadedCrateShaderProject {
+            crate_ctx: v.crate_ctx.get_borrowed(),
+            module_contexts,
         };
-        deps.par_iter().for_each(|v| {
-            log::info!("Generating Ninja File For: {} - {}", v.name, v.version);
-            Self::build_shader_ninja_file_for_package(&ctx, v).unwrap()
-        });
 
-        let build_path = shader_build_dir.join("build.ninja");
-        let mut build_file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(&build_path)?;
-        writeln!(&mut build_file, "include rules.ninja")?;
-        writeln!(&mut build_file)?;
+        new_deps.push(v);
+    }
+    Ok(new_deps)
+}
 
-        write!(&mut build_file, "includes = ")?;
-        for &dep in deps.iter() {
-            let include_dir = dep
-                .manifest_path
-                .parent()
-                .unwrap()
-                .join("shaders")
-                .join("include");
+fn generate_shader_module_ninja_files(
+    project_ctx: &ProjectShaderContext,
+    deps: &[LoadedCrateShaderProject],
+) -> anyhow::Result<()> {
+    // Walk through all the dependency packages that have shaders and create a build.ninja
+    // file for them so we can compile the shaders using ninja
+    deps.par_iter().for_each(|v| {
+        log::info!(
+            "Generating Ninja Files For: {}",
+            v.crate_ctx.crate_output_name.as_ref(),
+        );
+        build_shader_ninja_file_for_package(&v.crate_ctx, &v.module_contexts).unwrap();
+    });
+
+    let mut build_file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(project_ctx.root_ninja_file.as_ref())?;
+    writeln!(&mut build_file, "include rules.ninja")?;
+    writeln!(&mut build_file)?;
+
+    write!(&mut build_file, "includes =")?;
+    for dep in deps.iter() {
+        for module in dep.module_contexts.iter() {
+            let include_dir = module.module_include_dir.as_ref();
             write!(
                 &mut build_file,
-                "{} ",
+                " -I {}",
                 dunce::simplified(include_dir.as_std_path()).display()
             )?;
         }
-        writeln!(&mut build_file)?;
-        writeln!(&mut build_file)?;
+    }
+    writeln!(&mut build_file)?;
+    writeln!(&mut build_file)?;
 
-        for &dep in deps.iter() {
-            writeln!(
-                &mut build_file,
-                "include {}-{}/build.ninja",
-                &dep.name, &dep.version
-            )?;
-            writeln!(&mut build_file)?;
-        }
-
-        Ok(())
+    for v in deps.iter() {
+        writeln!(
+            &mut build_file,
+            "include {}/build.ninja",
+            &v.crate_ctx.crate_output_name,
+        )?;
+        writeln!(&mut build_file)?;
     }
 
-    fn build_shader_ninja_file_for_package(
-        ctx: &ShaderBuildContext,
-        package: &Package,
-    ) -> anyhow::Result<()> {
-        let output_dir = get_package_shader_output_dir(package, &ctx.shader_build_dir);
-        std::fs::create_dir_all(&output_dir)?;
+    Ok(())
+}
 
-        let output_file_path = output_dir.join("build.ninja");
-        let mut output_file = std::fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(&output_file_path)?;
+fn build_shader_ninja_file_for_package(
+    crate_ctx: &ShaderCrateContext,
+    module_contexts: &[ShaderModuleContext],
+) -> anyhow::Result<()> {
+    let output_file_path = crate_ctx.crate_output_dir.join("build.ninja");
+    let mut output_file = std::fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(&output_file_path)?;
 
-        // We use a single-threaded walker as we intend to parallelise at the package level instead
-        let shader_dir = package.manifest_path.parent().unwrap().join("shaders");
-        let source_dir = shader_dir.join("source");
-        let walker = ignore::WalkBuilder::new(source_dir).build();
+    let mut modules = Vec::new();
+    for module_ctx in module_contexts {
+        module_ctx.ensure_build_directories()?;
 
-        for entry in walker {
-            if let Ok(entry) = entry {
-                // We will only process utf-8 paths because we are sane little crewmates. If it's
-                // not utf-8 we're in for sadness
-                let entry_path =
-                    if let Some(v) = Utf8PathBuf::from_path_buf(entry.path().to_path_buf()).ok() {
-                        v
-                    } else {
-                        log::trace!(
-                            "Skipping file '{}' because of non-unicode path",
-                            entry.path().display()
-                        );
+        let module_file = std::fs::read_to_string(module_ctx.module_toml_file.as_ref())?;
+        let module_file: ShaderModuleDefinitionFile = toml::from_str(&module_file)?;
+        modules.push((module_ctx, module_file.module));
+    }
+
+    for (module_ctx, module) in modules {
+        log::info!(
+            "Generating Ninja Files For: {}@{}",
+            module_ctx.crate_ctx.crate_output_name,
+            module_ctx.module_name
+        );
+        build_shader_ninja_file_for_shader_module(&module_ctx, &module)?;
+
+        writeln!(
+            &mut output_file,
+            "include {}/{}/build.ninja",
+            &crate_ctx.crate_output_name, &module_ctx.module_name
+        )?;
+        writeln!(&mut output_file)?;
+    }
+
+    Ok(())
+}
+
+fn build_shader_ninja_file_for_shader_module(
+    module_ctx: &ShaderModuleContext,
+    module: &ShaderModuleDefinition,
+) -> anyhow::Result<()> {
+    let mut ninja_file = std::fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(module_ctx.module_ninja_file.as_ref())?;
+
+    // Compute the compilation params from the module file
+    let compilation_params = CompilationParams::new(module_ctx, module)?;
+
+    // We use a single-threaded walker as we intend to parallelise at the package level instead
+    let walker = ignore::WalkBuilder::new(module_ctx.module_source_dir.as_ref()).build();
+    for entry in walker {
+        if let Ok(entry) = entry {
+            // We will only process utf-8 paths because we are sane little crewmates. If it's
+            // not utf-8 we're in for sadness
+            let entry_path =
+                if let Some(v) = Utf8PathBuf::from_path_buf(entry.path().to_path_buf()).ok() {
+                    v
+                } else {
+                    log::trace!(
+                        "Skipping file '{}' because of non-unicode path",
+                        entry.path().display()
+                    );
+                    continue;
+                };
+
+            let f_type = entry.file_type().unwrap();
+            if f_type.is_file() {
+                let file_name = entry_path.file_name().expect("File with a name");
+
+                // Split out the last two dot segments of the file name. For something like
+                // shader.frag.hlsl we should get a file_ext = hlsl and shader_type = frag with
+                // name_segment = shader.
+                //
+                // We need to know part of the rest of the name so we can reject files like
+                // 'frag.hlsl' as it is effectively a nameless shader.
+                let mut dot_segments = file_name.split('.').rev();
+                let file_ext = dot_segments.next();
+                let shader_type = dot_segments.next();
+                let name_segment = dot_segments.next();
+
+                // Extract our shader type and file extension from the segments of the file
+                // name.
+                //
+                // We want file names like <name>.<stype>.hlsl or <name>.<name>.<stype>.hlsl
+                let (file_ext, shader_type) = match (file_ext, shader_type, name_segment) {
+                    (Some(a), Some(b), Some(_)) => (a, b),
+                    (Some(_), Some(_), None) => {
+                        // If there's no file name then the shader has no name, we should log
+                        // to warn that we're skipping the shader and skip the file.
+                        log::warn!("Skipping nameless shader - '{}'", entry.path().display());
                         continue;
-                    };
+                    }
+                    _ => continue,
+                };
 
-                let f_type = entry.file_type().unwrap();
-                if f_type.is_file() {
-                    let file_name = entry_path.file_name().expect("File with a name");
+                // Skip any file that isn't a HLSL or Slang file.
+                match file_ext {
+                    "slang" | "hlsl" => {}
+                    _ => continue,
+                }
 
-                    // Split out the last two dot segments of the file name. For something like
-                    // shader.frag.hlsl we should get a file_ext = hlsl and shader_type = frag with
-                    // name_segment = shader.
-                    //
-                    // We need to know part of the rest of the name so we can reject files like
-                    // 'frag.hlsl' as it is effectively a nameless shader.
-                    let mut dot_segments = file_name.split('.').rev();
-                    let file_ext = dot_segments.next();
-                    let shader_type = dot_segments.next();
-                    let name_segment = dot_segments.next();
+                let file_name_no_ext = entry_path.file_stem().unwrap();
+                let out_file = module_ctx.module_output_dir.join(file_name_no_ext);
 
-                    // Extract our shader type and file extension from the segments of the file
-                    // name.
-                    //
-                    // We want file names like <name>.<stype>.hlsl or <name>.<name>.<stype>.hlsl
-                    let (_, shader_type) = match (file_ext, shader_type, name_segment) {
-                        (Some(a), Some(b), Some(_)) => (a, b),
-                        (Some(_), Some(_), None) => {
-                            // If there's no file name then the shader has no name, we should log
-                            // to warn that we're skipping the shader and skip the file.
-                            log::warn!("Skipping nameless shader - '{}'", entry.path().display());
-                            continue;
-                        }
-                        _ => continue,
-                    };
-
-                    let file_name_no_ext = entry_path.file_stem().unwrap();
-                    let out_file = output_dir.join(file_name_no_ext);
+                // Only build dxil on windows, where the full dxil pipeline will be available.
+                if module_ctx.platform() == BuildPlatform::Windows {
                     output_build_statement_for_shader(
-                        &mut output_file,
-                        &out_file,
-                        &entry_path,
-                        shader_type,
-                        "spirv",
-                    )?;
-                    output_build_statement_for_shader(
-                        &mut output_file,
+                        &mut ninja_file,
+                        &compilation_params,
                         &out_file,
                         &entry_path,
                         shader_type,
                         "dxil",
                     )?;
                 }
+                output_build_statement_for_shader(
+                    &mut ninja_file,
+                    &compilation_params,
+                    &out_file,
+                    &entry_path,
+                    shader_type,
+                    "spirv",
+                )?;
             }
-        }
-
-        Ok(())
-    }
-
-    fn run_shader_ninja_build(&self, project: &AlephProject) -> anyhow::Result<()> {
-        // If we have a bundled ninja exe use that, otherwise just rely on what's in the path
-        let ninja = project.ninja_path();
-        let ninja = if ninja.exists() {
-            dunce::simplified(ninja)
-        } else {
-            Path::new("ninja")
-        };
-
-        let mut command = std::process::Command::new(ninja);
-        command.current_dir(project.shader_build_path());
-
-        let mut path_string = String::new();
-        let dxc = project.dxc_path();
-        let slang = project.slang_path();
-
-        push_path_if_tool_exists(&mut path_string, dxc);
-        push_path_if_tool_exists(&mut path_string, slang);
-
-        let inherit_path = std::env::var("PATH")?;
-        push_path_str(&mut path_string, &inherit_path);
-
-        command.env("PATH", path_string);
-
-        log::info!("{:#?}", &command);
-        let status = command.status()?;
-
-        if !status.success() {
-            log::error!("Ninja invocation failed! Terminating cook.");
-            return Err(anyhow!("ninja invocation failed!"));
-        }
-
-        Ok(())
-    }
-
-    fn archive_shaders(&self, project: &AlephProject, deps: &[&Package]) -> anyhow::Result<()> {
-        let shader_build_dir = Utf8PathBuf::try_from(project.shader_build_path().to_path_buf())?;
-        let out_path = shader_build_dir.join("shaders.shaderdb");
-
-        log::info!(
-            "Compiling ShaderDatabase '{}'",
-            dunce::simplified(out_path.as_std_path()).to_str().unwrap()
-        );
-        let mut shader_db = ShaderDatabase::default();
-
-        deps.iter().for_each(|&package| {
-            log::info!(
-                "Collecting shaders for package '{}' - {}",
-                &package.name,
-                &package.version
-            );
-            archive_shaders_for_package(&mut shader_db, &shader_build_dir, package).unwrap();
-        });
-
-        let bytes = rkyv::to_bytes::<_, 1_048_576>(&shader_db).unwrap();
-
-        std::fs::write(out_path, bytes)?;
-
-        Ok(())
-    }
-}
-
-fn push_path_if_tool_exists(v: &mut String, tool: &Path) {
-    if tool.exists() {
-        let dir = dunce::simplified(tool.parent().unwrap());
-        log::trace!("Tool found!: '{}'", tool.display());
-        push_path_str(v, dir.to_str().unwrap());
-    } else {
-        log::trace!("Tool is missing!: '{}'", tool.display());
-    }
-}
-
-fn push_path_str(v: &mut String, s: &str) {
-    let sep = if target_platform().is_windows() {
-        ";"
-    } else {
-        ":"
-    };
-
-    v.push_str(s);
-    v.push_str(sep);
-}
-
-fn archive_shaders_for_package(
-    shader_db: &mut ShaderDatabase,
-    shader_build_dir: &Utf8Path,
-    package: &Package,
-) -> anyhow::Result<()> {
-    let package_shader_dir = get_package_shader_output_dir(package, &shader_build_dir);
-
-    let read_dir = package_shader_dir.read_dir_utf8()?;
-    for file in read_dir {
-        let file = file?;
-
-        let file_type = file.file_type()?;
-        if !file_type.is_file() {
-            continue;
-        }
-
-        let file_name = Utf8Path::new(file.file_name());
-        let file_stem = file_name.file_stem();
-        match (file_name.extension(), file_stem) {
-            (Some("spirv"), Some(stem)) => {
-                let file_data = std::fs::read(file.path())?;
-                if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
-                    db_entry.spirv = file_data;
-                } else {
-                    shader_db.shaders.insert(
-                        stem.to_string(),
-                        ShaderEntry {
-                            spirv: file_data,
-                            dxil: Vec::new(),
-                        },
-                    );
-                }
-            }
-            (Some("dxil"), Some(stem)) => {
-                let file_data = std::fs::read(file.path())?;
-                if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
-                    db_entry.dxil = file_data;
-                } else {
-                    shader_db.shaders.insert(
-                        stem.to_string(),
-                        ShaderEntry {
-                            spirv: Vec::new(),
-                            dxil: file_data,
-                        },
-                    );
-                }
-            }
-            _ => continue,
         }
     }
 
     Ok(())
 }
 
-fn filter_dependencies_without_shaders<'a>(deps: &[&'a Package]) -> Vec<&'a Package> {
-    deps.iter()
-        .filter(|&&v| {
-            let aleph_metadata = AlephCrateMetadata::load_for_package(v).unwrap();
-            if let Some(aleph_metadata) = aleph_metadata {
-                aleph_metadata.has_shaders()
-            } else {
-                false
-            }
-        })
-        .copied()
-        .collect()
-}
-
 fn output_build_statement_for_shader(
-    output_file: &mut std::fs::File,
+    ninja_file: &mut std::fs::File,
+    compilation_params: &CompilationParams,
     out_file: &Utf8Path,
     in_file: &Utf8Path,
     shader_type: &str,
@@ -443,80 +433,160 @@ fn output_build_statement_for_shader(
         let in_file = in_file.replace(':', "$:");
 
         writeln!(
-            output_file,
+            ninja_file,
             "build {out_file}.{backend}: {rule}_{backend} {in_file}"
         )?;
     } else {
         writeln!(
-            output_file,
+            ninja_file,
             "build {out_file}.{backend}: {rule}_{backend} {in_file}"
         )?;
     }
-    writeln!(output_file)?;
+    compilation_params.write_ninja_overrides(ninja_file)?;
+    writeln!(ninja_file)?;
     Ok(())
 }
 
-struct ShaderBuildContext {
-    /// Path to shader build directory
-    pub shader_build_dir: Utf8PathBuf,
-}
-
-fn get_package_shader_output_dir(v: &Package, base: &Utf8Path) -> Utf8PathBuf {
-    let output_dir = format!("{}-{}", &v.name, &v.version);
-    base.join(output_dir)
-}
-
-#[derive(Default, Serialize, Deserialize)]
-struct AlephCrateMetadata {
-    /// A flag whether a crate includes shaders that should be cooked for any game including this
-    /// package
-    pub shaders: Option<bool>,
-}
-
-impl AlephCrateMetadata {
-    pub fn load_for_package(package: &Package) -> anyhow::Result<Option<Self>> {
-        if let Some(metadata) = package
-            .metadata
-            .as_object()
-            .map(|v| v.get("aleph"))
-            .flatten()
-        {
-            Ok(serde_json::from_value(metadata.clone())?)
+fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
+    fn push_path_if_tool_exists(v: &mut String, tool: &Path) {
+        if tool.exists() {
+            let dir = dunce::simplified(tool.parent().unwrap());
+            log::trace!("Tool found!: '{}'", tool.display());
+            push_path_str(v, dir.to_str().unwrap());
         } else {
-            Ok(None)
+            log::trace!("Tool is missing!: '{}'", tool.display());
         }
     }
 
-    pub fn has_shaders(&self) -> bool {
-        self.shaders.unwrap_or_default()
+    fn push_path_str(v: &mut String, s: &str) {
+        let sep = if target_platform().is_windows() {
+            ";"
+        } else {
+            ":"
+        };
+
+        v.push_str(s);
+        v.push_str(sep);
     }
+
+    // If we have a bundled ninja exe use that, otherwise just rely on what's in the path
+    let ninja = project.ninja_path();
+    let ninja = if ninja.exists() {
+        dunce::simplified(ninja)
+    } else {
+        Path::new("ninja")
+    };
+
+    let mut command = std::process::Command::new(ninja);
+    command.current_dir(project.shader_build_path());
+
+    let mut path_string = String::new();
+    let dxc = project.dxc_path();
+    let slang = project.slang_path();
+
+    push_path_if_tool_exists(&mut path_string, dxc);
+    push_path_if_tool_exists(&mut path_string, slang);
+
+    let inherit_path = std::env::var("PATH")?;
+    push_path_str(&mut path_string, &inherit_path);
+
+    command.env("PATH", path_string);
+
+    log::info!("{:#?}", &command);
+    let status = command.status()?;
+
+    if !status.success() {
+        log::error!("Ninja invocation failed! Terminating cook.");
+        return Err(anyhow!("ninja invocation failed!"));
+    }
+
+    Ok(())
 }
 
-fn get_game_crate_dependencies(project: &AlephProject) -> anyhow::Result<HashSet<usize>> {
-    let cargo_metadata = project.get_cargo_metadata()?;
-    let (package, _) = project.get_game_crate_and_target()?;
+fn archive_shaders(
+    project_ctx: &ProjectShaderContext,
+    deps: &[LoadedCrateShaderProject],
+) -> anyhow::Result<()> {
+    let shader_db_file = project_ctx.shaders_output_root_dir.join("shaders.shaderdb");
+    log::info!(
+        "Compiling ShaderDatabase '{}'",
+        dunce::simplified(shader_db_file.as_std_path())
+            .to_str()
+            .unwrap()
+    );
 
-    let mut package_indices = HashSet::new();
+    let mut shader_db = ShaderDatabase::default();
 
-    let mut package_stack = Vec::new();
-    package_stack.push(package);
-    while let Some(next_package) = package_stack.pop() {
-        for dependency in next_package.dependencies.iter() {
-            // We only care about regular dependencies and not any other kind
-            if dependency.kind != DependencyKind::Normal {
+    deps.iter().for_each(|loaded| {
+        archive_shaders_for_package(&mut shader_db, loaded).unwrap();
+    });
+
+    let bytes = rkyv::to_bytes::<_, 1_048_576>(&shader_db).unwrap();
+
+    std::fs::write(shader_db_file, bytes)?;
+
+    Ok(())
+}
+
+fn archive_shaders_for_package(
+    shader_db: &mut ShaderDatabase,
+    loaded: &LoadedCrateShaderProject,
+) -> anyhow::Result<()> {
+    log::info!(
+        "Collecting shaders for package {}",
+        loaded.crate_ctx.crate_output_name
+    );
+
+    for module in loaded.module_contexts.iter() {
+        log::info!(
+            "Collecting shaders for package {}@{}",
+            loaded.crate_ctx.crate_output_name,
+            module.module_name,
+        );
+        let read_dir = module.module_output_dir.read_dir_utf8()?;
+        for file in read_dir {
+            let file = file?;
+
+            let file_type = file.file_type()?;
+            if !file_type.is_file() {
                 continue;
             }
 
-            let name = dependency.name.as_str();
-            let version_spec = &dependency.req;
-            let found_crate = project.find_matching_crate_index(name, version_spec)?;
-            if let Some(found_crate) = found_crate {
-                let not_found = package_indices.insert(found_crate);
-                if not_found {
-                    package_stack.push(&cargo_metadata.packages[found_crate]);
+            let file_name = Utf8Path::new(file.file_name());
+            let file_stem = file_name.file_stem();
+            match (file_name.extension(), file_stem) {
+                (Some("spirv"), Some(stem)) => {
+                    let file_data = std::fs::read(file.path())?;
+                    if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
+                        db_entry.spirv = file_data;
+                    } else {
+                        shader_db.shaders.insert(
+                            stem.to_string(),
+                            ShaderEntry {
+                                spirv: file_data,
+                                dxil: Vec::new(),
+                            },
+                        );
+                    }
                 }
+                (Some("dxil"), Some(stem)) => {
+                    let file_data = std::fs::read(file.path())?;
+                    if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
+                        db_entry.dxil = file_data;
+                    } else {
+                        shader_db.shaders.insert(
+                            stem.to_string(),
+                            ShaderEntry {
+                                spirv: Vec::new(),
+                                dxil: file_data,
+                            },
+                        );
+                    }
+                }
+                _ => continue,
             }
         }
     }
-    Ok(package_indices)
+
+    Ok(())
 }

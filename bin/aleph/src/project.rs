@@ -217,8 +217,8 @@ impl<'a> AlephProject<'a> {
     //     &self.dot_aleph_path
     // }
 
-    /// Returns the path to the folder that contains the `aleph-project.toml` file for the project
-    /// we're working with
+    /// Returns the path to the folder that contains the `shaders` directory that will be used as
+    /// the output directory for our shader builds
     pub fn shader_build_path(&self) -> &Path {
         &self.shader_build_path
     }

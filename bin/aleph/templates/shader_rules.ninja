@@ -4,7 +4,14 @@
 
 cc = slangc
 
-disabled_warnings = -Wno-39013
+## Will be overriden by build commands
+module_include = 
+
+## Will be overriden by build commands
+disabled_warnings = 
+
+## Will be overriden by build commands
+definitions = 
 
 frag_stage = -stage fragment
 vert_stage = -stage vertex
@@ -18,22 +25,22 @@ opt = -O3
 rule fragment_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $frag_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
+    command = $cc $frag_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule vertex_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $vert_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
+    command = $cc $vert_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule geometry_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $geom_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in-I $includes
+    command = $cc $geom_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule compute_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $comp_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
+    command = $cc $comp_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 #
 # D3D12 BUILD RULES
@@ -42,19 +49,19 @@ rule compute_shader_spirv
 rule fragment_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $frag_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
+    command = $cc $frag_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule vertex_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $vert_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
+    command = $cc $vert_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule geometry_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $geom_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
+    command = $cc $geom_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule compute_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $comp_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $includes
+    command = $cc $comp_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
