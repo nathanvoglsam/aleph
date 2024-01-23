@@ -162,19 +162,7 @@ impl<'a> AlephProject<'a> {
         slang_path.push("sdks");
         slang_path.push("slang");
         slang_path.push("bin");
-        if target_platform().is_windows() {
-            let arch = match target_architecture() {
-                Architecture::X8664 => "windows-x64",
-                Architecture::AARCH64 => "windows-arm64",
-                Architecture::Unknown => unreachable!(),
-            };
-            slang_path.push(arch);
-            slang_path.push("release");
-            slang_path.push("slangc.exe");
-        } else {
-            slang_path.push("release");
-            slang_path.push("slangc");
-        }
+        push_platform_slang_path(&mut slang_path)?;
 
         let mut ninja_path = dot_aleph_path.clone();
         ninja_path.push("sdks");
@@ -596,4 +584,52 @@ impl<'a> AlephProject<'a> {
             )),
         }
     }
+}
+
+fn push_platform_slang_path(slang_path: &mut PathBuf) -> anyhow::Result<()> {
+    match target_platform() {
+        p @ aleph_target::Platform::WindowsGNU | p @ aleph_target::Platform::WindowsMSVC => {
+            match target_architecture() {
+                Architecture::X8664 => slang_path.push("windows-x64"),
+                Architecture::AARCH64 => slang_path.push("windows-arm64"),
+                v @ Architecture::Unknown => {
+                    return Err(anyhow!(
+                        "Unsupported build host arch '{}' for platform '{}'",
+                        v,
+                        p
+                    ));
+                }
+            };
+            slang_path.push("release");
+            slang_path.push("slangc.exe");
+        }
+        p @ aleph_target::Platform::Linux => {
+            match target_architecture() {
+                Architecture::X8664 => slang_path.push("linux-x64"),
+                Architecture::AARCH64 => slang_path.push("linux-arm64"),
+                v @ Architecture::Unknown => {
+                    return Err(anyhow!(
+                        "Unsupported build host arch '{}' for platform '{}'",
+                        v,
+                        p
+                    ));
+                }
+            };
+            slang_path.push("release");
+            slang_path.push("slangc");
+        }
+        aleph_target::Platform::MacOS => {
+            // No Mac ARM builds currently, rosetta to the rescue I guess?
+            slang_path.push("macosx-x64");
+            slang_path.push("release");
+            slang_path.push("slangc");
+        }
+        v @ aleph_target::Platform::UniversalWindowsGNU
+        | v @ aleph_target::Platform::UniversalWindowsMSVC
+        | v @ aleph_target::Platform::Android
+        | v @ aleph_target::Platform::Unknown => {
+            return Err(anyhow!("Unsupported build host platform '{}'", v));
+        }
+    }
+    Ok(())
 }
