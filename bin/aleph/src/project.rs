@@ -618,9 +618,18 @@ fn push_platform_slang_path(slang_path: &mut PathBuf) -> anyhow::Result<()> {
             slang_path.push("release");
             slang_path.push("slangc");
         }
-        aleph_target::Platform::MacOS => {
-            // No Mac ARM builds currently, rosetta to the rescue I guess?
-            slang_path.push("macosx-x64");
+        p @ aleph_target::Platform::MacOS => {
+            match target_architecture() {
+                Architecture::X8664 => slang_path.push("macosx-x64"),
+                Architecture::AARCH64 => slang_path.push("macosx-aarch64"),
+                v @ Architecture::Unknown => {
+                    return Err(anyhow!(
+                        "Unsupported build host arch '{}' for platform '{}'",
+                        v,
+                        p
+                    ));
+                }
+            };
             slang_path.push("release");
             slang_path.push("slangc");
         }

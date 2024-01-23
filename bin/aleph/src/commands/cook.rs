@@ -492,7 +492,7 @@ fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
 
     command.env("PATH", path_string);
 
-    log::info!("{:#?}", &command);
+    log::info!("Running Ninja!");
     let status = command.status()?;
 
     if !status.success() {
