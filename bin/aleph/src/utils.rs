@@ -29,9 +29,10 @@
 
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use std::fmt::{Display, Formatter};
 use std::io::{Read, Seek};
-use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
@@ -129,15 +130,15 @@ pub fn architecture_from_arg(arg: &str) -> Option<Architecture> {
     }
 }
 
-pub fn find_project_file<A: AsRef<Path>>(path: A) -> std::io::Result<PathBuf> {
-    let file = Path::new("aleph-project.toml");
+pub fn find_project_file<A: AsRef<Utf8Path>>(path: A) -> std::io::Result<Utf8PathBuf> {
+    let file = Utf8Path::new("aleph-project.toml");
     find_file_in_parents_of(path, file)
 }
 
-pub fn find_file_in_parents_of<A: AsRef<Path>, B: AsRef<Path>>(
+pub fn find_file_in_parents_of<A: AsRef<Utf8Path>, B: AsRef<Utf8Path>>(
     path: A,
     file: B,
-) -> std::io::Result<PathBuf> {
+) -> std::io::Result<Utf8PathBuf> {
     let path = path.as_ref();
     let file = file.as_ref();
 
@@ -145,7 +146,7 @@ pub fn find_file_in_parents_of<A: AsRef<Path>, B: AsRef<Path>>(
     if !current.is_dir() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
-            format!("Path \"{}\" does not point to a directory", path.display()),
+            format!("Path \"{}\" does not point to a directory", path),
         ));
     }
     assert!(current.is_dir());
@@ -163,20 +164,25 @@ pub fn find_file_in_parents_of<A: AsRef<Path>, B: AsRef<Path>>(
         std::io::ErrorKind::NotFound,
         format!(
             "Failed to find \"{}\" in any parents of the \"{}\"",
-            file.display(),
-            path.display(),
+            file, path,
         ),
     ))
 }
 
 pub fn extract_zip<R: Seek + Read>(
     archive: &mut ZipArchive<R>,
-    target_dir: Option<&Path>,
+    target_dir: Option<&Utf8Path>,
 ) -> anyhow::Result<()> {
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
         let outpath = match file.enclosed_name() {
-            Some(path) => path.to_owned(),
+            Some(path) => {
+                if let Some(v) = Utf8Path::from_path(path) {
+                    v.to_owned()
+                } else {
+                    continue;
+                }
+            }
             None => continue,
         };
         let outpath = match target_dir {
@@ -209,14 +215,45 @@ pub fn extract_zip<R: Seek + Read>(
     Ok(())
 }
 
-pub fn resolve_absolute_or_root_relative_path<P: AsRef<Path>>(
-    project_root: &Path,
+pub fn resolve_absolute_or_root_relative_path<P: AsRef<Utf8Path>>(
+    project_root: &Utf8Path,
     v: P,
-) -> PathBuf {
+) -> Utf8PathBuf {
     let v = v.as_ref();
     if v.is_absolute() {
         v.to_path_buf()
     } else {
         project_root.join(v)
+    }
+}
+
+pub mod ninja {
+    use crate::utils::dunce_utf8;
+    use camino::Utf8Path;
+
+    /// Prepares the given path ready to be used in a ninja build statement
+    pub fn prepare_path_for_build_statement(path: &Utf8Path) -> String {
+        // UNC = sadness for ninja
+        let path = dunce_utf8::simplified(path).as_str();
+
+        // The drive letter gets incorrectly parsed as the end of the build output so we have to
+        // escape it. /shrug
+        path.replace(':', "$:")
+    }
+}
+
+pub mod dunce_utf8 {
+    use camino::Utf8Path;
+
+    /// A wrapper over [dunce::simplified] that takes a [camino::Utf8Path]
+    pub fn simplified<'a>(path: &'a Utf8Path) -> &'a Utf8Path {
+        let simplified = dunce::simplified(path.as_std_path());
+        let path = unsafe {
+            // Safety: simplified can strictly only return a subset of the input path which is
+            //         guaranteed to be utf8. The subset will respect utf8 so the resulting
+            //         simplified path is also guaranteed to be utf8.
+            Utf8Path::from_path(simplified).unwrap_unchecked()
+        };
+        path
     }
 }

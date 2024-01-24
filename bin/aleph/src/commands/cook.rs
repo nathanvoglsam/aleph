@@ -27,9 +27,6 @@
 // SOFTWARE.
 //
 
-use std::collections::HashSet;
-use std::path::Path;
-
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 use crate::shader_system::AlephCrateMetadata;
@@ -39,6 +36,8 @@ use crate::shader_system::ShaderCrateContext;
 use crate::shader_system::ShaderModuleContext;
 use crate::shader_system::ShaderModuleDefinition;
 use crate::shader_system::ShaderModuleDefinitionFile;
+use crate::utils::dunce_utf8;
+use crate::utils::ninja;
 use crate::utils::BuildPlatform;
 use aleph_shader_db::ShaderDatabase;
 use aleph_shader_db::ShaderEntry;
@@ -52,6 +51,7 @@ use cargo_metadata::Package;
 use clap::{Arg, ArgMatches};
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
+use std::collections::HashSet;
 use std::io::Write;
 
 pub struct Cook {}
@@ -97,7 +97,7 @@ impl ISubcommand for Cook {
             .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
 
         // Build the base level project context for our shader build system
-        let project_ctx = ProjectShaderContext::new(project, platform)?;
+        let project_ctx = ProjectShaderContext::new(project, platform);
         project_ctx.ensure_build_directories()?;
         project_ctx.ensure_build_files()?;
 
@@ -245,7 +245,7 @@ fn generate_shader_module_ninja_files(
             write!(
                 &mut build_file,
                 " -I {}",
-                dunce::simplified(include_dir.as_std_path()).display()
+                dunce_utf8::simplified(&include_dir)
             )?;
         }
     }
@@ -413,11 +413,8 @@ fn output_build_statement_for_shader(
     };
 
     if target_platform().is_windows() {
-        // We have to replace bare colons with '$:' as ninja doesn't handle them
-        let out_file = dunce::simplified(out_file.as_std_path()).to_str().unwrap();
-        let out_file = out_file.replace(':', "$:");
-        let in_file = dunce::simplified(in_file.as_std_path()).to_str().unwrap();
-        let in_file = in_file.replace(':', "$:");
+        let out_file = ninja::prepare_path_for_build_statement(out_file);
+        let in_file = ninja::prepare_path_for_build_statement(in_file);
 
         writeln!(
             ninja_file,
@@ -429,19 +426,22 @@ fn output_build_statement_for_shader(
             "build {out_file}.{backend}: {rule}_{backend} {in_file}"
         )?;
     }
+
     compilation_params.write_ninja_overrides(ninja_file)?;
+
     writeln!(ninja_file)?;
+
     Ok(())
 }
 
 fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
-    fn push_path_if_tool_exists(v: &mut String, tool: &Path) {
+    fn push_path_if_tool_exists(v: &mut String, tool: &Utf8Path) {
         if tool.exists() {
-            let dir = dunce::simplified(tool.parent().unwrap());
-            log::trace!("Tool found!: '{}'", tool.display());
-            push_path_str(v, dir.to_str().unwrap());
+            let dir = dunce_utf8::simplified(tool.parent().unwrap());
+            log::trace!("Tool found!: '{}'", tool);
+            push_path_str(v, dir.as_str());
         } else {
-            log::trace!("Tool is missing!: '{}'", tool.display());
+            log::trace!("Tool is missing!: '{}'", tool);
         }
     }
 
@@ -459,9 +459,9 @@ fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
     // If we have a bundled ninja exe use that, otherwise just rely on what's in the path
     let ninja = project.ninja_path();
     let ninja = if ninja.exists() {
-        dunce::simplified(ninja)
+        dunce_utf8::simplified(ninja)
     } else {
-        Path::new("ninja")
+        Utf8Path::new("ninja")
     };
 
     let mut command = std::process::Command::new(ninja);
@@ -497,9 +497,7 @@ fn archive_shaders(
     let shader_db_file = project_ctx.shaders_output_root_dir.join("shaders.shaderdb");
     log::info!(
         "Compiling ShaderDatabase '{}'",
-        dunce::simplified(shader_db_file.as_std_path())
-            .to_str()
-            .unwrap()
+        dunce_utf8::simplified(&shader_db_file)
     );
 
     let mut shader_db = ShaderDatabase::default();

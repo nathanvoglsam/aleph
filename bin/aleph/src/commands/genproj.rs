@@ -42,9 +42,8 @@ use crate::utils::{
 };
 use aleph_target::Architecture;
 use anyhow::anyhow;
+use camino::Utf8Path;
 use clap::{Arg, ArgMatches, Command};
-use std::ffi::OsStr;
-use std::path::Path;
 use tera::{Context, Tera};
 
 pub struct GenProj {}
@@ -105,7 +104,7 @@ impl ISubcommand for GenProj {
 }
 
 impl GenProj {
-    fn uwp(&self, project: &AlephProject, root: &Path, target: &Target) -> anyhow::Result<()> {
+    fn uwp(&self, project: &AlephProject, root: &Utf8Path, target: &Target) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
         let context = build_uwp_template_context(project, target)?;
@@ -149,7 +148,12 @@ impl GenProj {
         Ok(())
     }
 
-    fn android(&self, project: &AlephProject, root: &Path, _target: &Target) -> anyhow::Result<()> {
+    fn android(
+        &self,
+        project: &AlephProject,
+        root: &Utf8Path,
+        _target: &Target,
+    ) -> anyhow::Result<()> {
         let project_schema = project.get_project_schema()?;
 
         let context = build_android_template_context(project)?;
@@ -190,7 +194,7 @@ impl GenProj {
         create_activity_from_template(android, &root, &context)?;
 
         let local_properties = root.join("local.properties");
-        log::trace!("Writing template file '{}'", local_properties.display());
+        log::trace!("Writing template file '{}'", local_properties);
         std::fs::write(&local_properties, LOCAL_PROPERTIES_TEMPLATE)?;
 
         if let Some(branding) = android.branding.as_ref() {
@@ -229,7 +233,7 @@ impl GenProj {
 
 fn create_activity_from_template(
     android: &AndroidSchema,
-    root: &Path,
+    root: &Utf8Path,
     context: &Context,
 ) -> anyhow::Result<()> {
     // Create the path chain for the main AlephActivity
@@ -243,44 +247,36 @@ fn create_activity_from_template(
     let rendered_activity = tera.render("a", &context)?;
 
     let java_file_path = package_path.join("AlephActivity.java");
-    log::trace!("Writing template file '{}'", java_file_path.display());
+    log::trace!("Writing template file '{}'", java_file_path);
     std::fs::write(java_file_path, rendered_activity)?;
 
     Ok(())
 }
 
 fn make_branding_file_copier<'a>(
-    project_root: &'a Path,
-    root: &'a Path,
+    project_root: &'a Utf8Path,
+    root: &'a Utf8Path,
 ) -> impl (FnOnce(&[(&str, &str)]) -> anyhow::Result<()>) + 'a {
-    let copy_branding_file = |src: &Path, dst: &str| -> anyhow::Result<()> {
+    let copy_branding_file = |src: &Utf8Path, dst: &str| -> anyhow::Result<()> {
         match src.extension() {
-            None => {
-                return Err(anyhow!(
-                    "Branding file \"{}\" is not a .png file",
-                    src.display()
-                ))
-            }
+            None => return Err(anyhow!("Branding file \"{}\" is not a .png file", src)),
             Some(v) => {
-                if v != OsStr::new("png") {
-                    return Err(anyhow!(
-                        "Branding file \"{}\" is not a .png file",
-                        src.display()
-                    ));
+                if v != "png" {
+                    return Err(anyhow!("Branding file \"{}\" is not a .png file", src));
                 }
             }
         }
 
         let from = resolve_absolute_or_root_relative_path(project_root, src);
         let to = root.join(dst);
-        log::trace!("Copying '{} -> {}'", from.display(), to.display());
+        log::trace!("Copying '{} -> {}'", from, to);
         std::fs::copy(from, to)?;
         Ok(())
     };
 
     move |pairs: &[(&str, &str)]| -> anyhow::Result<()> {
         for (src, dst) in pairs {
-            copy_branding_file(Path::new(src), dst)?
+            copy_branding_file(Utf8Path::new(src), dst)?
         }
         Ok(())
     }
@@ -387,15 +383,15 @@ fn context_var_logger<'a>(context: &'a mut Context) -> impl FnMut(&str, &str) + 
     }
 }
 
-fn apply_template_context_to_files(context: &Context, files: &[&Path]) -> anyhow::Result<()> {
+fn apply_template_context_to_files(context: &Context, files: &[&Utf8Path]) -> anyhow::Result<()> {
     let mut tera = Tera::default();
     for file in files.iter().copied() {
-        let path_string = file.to_string_lossy();
+        let path_string = file.as_str();
         let file_content = std::fs::read_to_string(file)?;
         tera.add_raw_template(&path_string, &file_content)?;
         let rendered_content = tera.render(&path_string, context)?;
 
-        log::trace!("Writing template file '{}'", file.display());
+        log::trace!("Writing template file '{}'", file);
         std::fs::write(file, rendered_content)?;
     }
     Ok(())

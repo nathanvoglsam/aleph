@@ -214,20 +214,18 @@ pub struct ProjectShaderContext<'a> {
 }
 
 impl<'a> ProjectShaderContext<'a> {
-    pub fn new(project: &'a AlephProject, platform: BuildPlatform) -> anyhow::Result<Self> {
+    pub fn new(project: &'a AlephProject, platform: BuildPlatform) -> Self {
         let shaders_output_root_dir = project.shader_build_path();
-        let shaders_output_root_dir = Utf8Path::from_path(shaders_output_root_dir)
-            .ok_or(anyhow!("Shader dir has non-utf8 path"))?;
 
         let root_ninja_file = shaders_output_root_dir.join("build.ninja");
         let root_rules_file = shaders_output_root_dir.join("rules.ninja");
 
-        Ok(Self {
+        Self {
             shaders_output_root_dir: Cow::Borrowed(shaders_output_root_dir),
             root_ninja_file: Cow::Owned(root_ninja_file),
             root_rules_file: Cow::Owned(root_rules_file),
             platform,
-        })
+        }
     }
 
     pub fn ensure_build_directories(&self) -> std::io::Result<()> {

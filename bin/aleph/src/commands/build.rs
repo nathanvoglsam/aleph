@@ -35,8 +35,9 @@ use crate::utils::{
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::Profile;
 use anyhow::anyhow;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use clap::{Arg, ArgAction, ArgMatches};
-use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub struct Build {}
@@ -297,18 +298,14 @@ impl Build {
             let lib_name = format!("lib{}.so", &library_target.name);
             let target_lib = target_dir.join(&lib_name);
             let dst_lib = output_dir.join(&lib_name);
-            log::trace!(
-                "Copying '{}' -> '{}'",
-                target_lib.display(),
-                dst_lib.display()
-            );
+            log::trace!("Copying '{}' -> '{}'", target_lib, dst_lib);
             std::fs::copy(target_lib, dst_lib)?;
 
             Self::copy_artifacts_from_target_to_project(&target_dir, &output_dir)?;
         } else {
             log::warn!(
                 "Skipping android build artifact copy as \"{}\" does not exist",
-                output_dir.display()
+                output_dir
             );
         }
 
@@ -330,14 +327,14 @@ impl Build {
 
             let src_exe = target_dir.join(&exe_name);
             let dst_exe = uwp_project_root.join(&exe_name);
-            log::trace!("Copying '{}' -> '{}'", src_exe.display(), dst_exe.display());
+            log::trace!("Copying '{}' -> '{}'", src_exe, dst_exe);
             std::fs::copy(src_exe, dst_exe)?;
 
             Self::copy_artifacts_from_target_to_project(&target_dir, &uwp_project_root)?;
         } else {
             log::warn!(
                 "Skipping uwp build artifact copy as \"{}\" does not exist",
-                uwp_project_root.display()
+                uwp_project_root
             );
         }
 
@@ -345,17 +342,17 @@ impl Build {
     }
 
     fn copy_artifacts_from_target_to_project(
-        target_dir: &Path,
-        output_dir: &Path,
+        target_dir: &Utf8Path,
+        output_dir: &Utf8Path,
     ) -> anyhow::Result<()> {
         let target_artifacts_dir = target_dir.join("artifacts");
-        for item in target_artifacts_dir.read_dir()? {
+        for item in target_artifacts_dir.read_dir_utf8()? {
             let item = item?;
             if item.metadata()?.is_file() {
                 let item_path = item.path();
                 let dst = output_dir.join(item_path.file_name().unwrap());
 
-                log::trace!("Copying '{}' -> '{}'", item_path.display(), dst.display());
+                log::trace!("Copying '{}' -> '{}'", item_path, dst);
                 std::fs::copy(item_path, dst)?;
             }
         }
@@ -427,7 +424,7 @@ fn android_build(
 
     profile_args(&mut cmd, profile);
 
-    let ndk_home = std::env::var("ANDROID_NDK_HOME").map(PathBuf::from).or_else(|_err| {
+    let ndk_home = std::env::var("ANDROID_NDK_HOME").map(Utf8PathBuf::from).or_else(|_err| {
         let ndk_path = project.ndk_path();
         if !ndk_path.exists() {
             log::error!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!");

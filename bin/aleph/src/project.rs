@@ -34,13 +34,14 @@ use aleph_target::build::target_platform;
 use aleph_target::{Architecture, Profile};
 use anyhow::{anyhow, Context};
 use bumpalo::Bump;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use cargo_metadata::semver::Version;
 use cargo_metadata::semver::VersionReq;
 use cargo_metadata::Package;
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use std::mem::size_of;
-use std::path::{Path, PathBuf};
 
 /// A tuple of [Version] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
 /// instead of a String allows avoiding extra .clone calls when building the table.
@@ -59,44 +60,44 @@ pub struct AlephProject<'a> {
     arena: &'a Bump,
 
     /// The path to the 'aleph-project.toml' file for this project
-    project_file: PathBuf,
+    project_file: Utf8PathBuf,
 
     /// The path to the directory that contains 'aleph-project.toml' for this project. Just a cached
     /// form of `project_file.parent()`
-    project_root: PathBuf,
+    project_root: Utf8PathBuf,
 
     /// The path to the '.aleph' folder for this project
-    dot_aleph_path: PathBuf,
+    dot_aleph_path: Utf8PathBuf,
 
     /// The path to the '.aleph/.shaders' folder for this project
-    shader_build_path: PathBuf,
+    shader_build_path: Utf8PathBuf,
 
     /// Path to the android project in the '.aleph/proj' directory
-    android_proj_path: PathBuf,
+    android_proj_path: Utf8PathBuf,
 
     /// Path to the uwp x86_64 project in the '.aleph/proj' directory
-    uwp_x86_64_proj_path: PathBuf,
+    uwp_x86_64_proj_path: Utf8PathBuf,
 
     /// Path to the uwp aarch64 project in the '.aleph/proj' directory
-    uwp_aarch64_proj_path: PathBuf,
+    uwp_aarch64_proj_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdks/ndk' folder for this project
-    ndk_path: PathBuf,
+    ndk_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdks/dxc' bin folder for this project
-    dxc_path: PathBuf,
+    dxc_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdks/slang' bin folder for this project
-    slang_path: PathBuf,
+    slang_path: Utf8PathBuf,
 
     /// The path to the '.aleph/sdks/ninja' bin folder for this project
-    ninja_path: PathBuf,
+    ninja_path: Utf8PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
-    cargo_toml_file: PathBuf,
+    cargo_toml_file: Utf8PathBuf,
 
     /// The cargo target directory
-    cargo_target_dir: PathBuf,
+    cargo_target_dir: Utf8PathBuf,
 
     /// A cached copy of the collect Cargo metadata
     cargo_metadata: OnceCell<cargo_metadata::Metadata>,
@@ -120,10 +121,13 @@ pub struct AlephProject<'a> {
 
 impl<'a> AlephProject<'a> {
     pub fn new(arena: &'a Bump) -> anyhow::Result<Self> {
-        let project_file = find_project_file(std::env::current_dir()?)
+        let current_dir = std::env::current_dir()?;
+        let current_dir = Utf8PathBuf::try_from(current_dir)?;
+        let project_file = find_project_file(&current_dir)
             .context("Finding aleph-project.toml in current working directory")?
             .canonicalize()
             .context("Canonicalizing aleph-project.toml path")?;
+        let project_file = Utf8PathBuf::try_from(project_file)?;
         let project_root = project_file.parent().unwrap().to_path_buf();
         let dot_aleph_path = project_root.join(".aleph");
         let cargo_toml_file = project_root.join("Cargo.toml");
@@ -201,13 +205,13 @@ impl<'a> AlephProject<'a> {
     }
 
     /// Returns the path to the `aleph-project.toml` file for the project we're working with
-    pub fn project_file(&self) -> &Path {
+    pub fn project_file(&self) -> &Utf8Path {
         &self.project_file
     }
 
     /// Returns the path to the folder that contains the `aleph-project.toml` file for the project
     /// we're working with
-    pub fn project_root(&self) -> &Path {
+    pub fn project_root(&self) -> &Utf8Path {
         &self.project_root
     }
 
@@ -219,13 +223,13 @@ impl<'a> AlephProject<'a> {
 
     /// Returns the path to the folder that contains the `shaders` directory that will be used as
     /// the output directory for our shader builds
-    pub fn shader_build_path(&self) -> &Path {
+    pub fn shader_build_path(&self) -> &Utf8Path {
         &self.shader_build_path
     }
 
     /// A utility around [Self::target_project_root] that returns also ensures that the project
     /// directory exists and is a directory.
-    pub fn ensure_target_project_root(&self, target: &Target) -> anyhow::Result<&Path> {
+    pub fn ensure_target_project_root(&self, target: &Target) -> anyhow::Result<&Utf8Path> {
         let path = self.target_project_root(target)?;
         std::fs::create_dir_all(path)?;
         Ok(path)
@@ -242,7 +246,7 @@ impl<'a> AlephProject<'a> {
     /// - UWP aarch64
     ///
     /// All other targets will return Err()
-    pub fn target_project_root(&self, target: &Target) -> anyhow::Result<&Path> {
+    pub fn target_project_root(&self, target: &Target) -> anyhow::Result<&Utf8Path> {
         match target.platform {
             BuildPlatform::UWP => {
                 assert_ne!(target.arch, Architecture::Unknown);
@@ -262,37 +266,37 @@ impl<'a> AlephProject<'a> {
 
     /// Returns the path to the Cargo.toml file that the project is using, adjacent to the
     /// 'aleph-project.toml'
-    pub fn cargo_toml_file(&self) -> &Path {
+    pub fn cargo_toml_file(&self) -> &Utf8Path {
         &self.cargo_toml_file
     }
 
     /// Returns the path to the cargo target directory root, which will be adjacent to the
     /// 'aleph-project.toml' and 'Cargo.toml'
-    pub fn cargo_target_dir(&self) -> &Path {
+    pub fn cargo_target_dir(&self) -> &Utf8Path {
         &self.cargo_target_dir
     }
 
     /// Returns the path to the project's bundled NDK, in '.aleph/sdks/ndk'. This path may not exist
     /// so check before using!
-    pub fn ndk_path(&self) -> &Path {
+    pub fn ndk_path(&self) -> &Utf8Path {
         &self.ndk_path
     }
 
     /// Returns the path to the project's bundled dxc, in '.aleph/sdks/dxc'. This path may not exist
     /// so check before using!
-    pub fn dxc_path(&self) -> &Path {
+    pub fn dxc_path(&self) -> &Utf8Path {
         &self.dxc_path
     }
 
     /// Returns the path to the project's bundled dxc, in '.aleph/sdks/slang'. This path may not
     /// exist so check before using!
-    pub fn slang_path(&self) -> &Path {
+    pub fn slang_path(&self) -> &Utf8Path {
         &self.slang_path
     }
 
     /// Returns the path to the project's bundled ninja, in '.aleph/sdks/ninja'. This path may not
     /// exist so check before using!
-    pub fn ninja_path(&self) -> &Path {
+    pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
     }
 
@@ -301,7 +305,7 @@ impl<'a> AlephProject<'a> {
         &self,
         target: &Target,
         profile: Profile,
-    ) -> anyhow::Result<PathBuf> {
+    ) -> anyhow::Result<Utf8PathBuf> {
         assert_ne!(target.arch, Architecture::Unknown);
 
         match target.platform {
@@ -562,7 +566,10 @@ impl<'a> AlephProject<'a> {
         Ok(())
     }
 
-    fn compute_target_project_root(root: &Path, target: &Target) -> anyhow::Result<PathBuf> {
+    fn compute_target_project_root(
+        root: &Utf8Path,
+        target: &Target,
+    ) -> anyhow::Result<Utf8PathBuf> {
         match target.platform {
             BuildPlatform::UWP => {
                 assert_ne!(target.arch, Architecture::Unknown);
@@ -586,7 +593,7 @@ impl<'a> AlephProject<'a> {
     }
 }
 
-fn push_platform_slang_path(slang_path: &mut PathBuf) -> anyhow::Result<()> {
+fn push_platform_slang_path(slang_path: &mut Utf8PathBuf) -> anyhow::Result<()> {
     match target_platform() {
         p @ aleph_target::Platform::WindowsGNU | p @ aleph_target::Platform::WindowsMSVC => {
             match target_architecture() {
