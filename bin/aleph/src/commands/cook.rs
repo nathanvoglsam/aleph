@@ -227,7 +227,7 @@ fn generate_shader_module_ninja_files(
             "Generating Ninja Files For: {}",
             v.crate_ctx.crate_output_name.as_ref(),
         );
-        build_shader_ninja_file_for_package(&v.crate_ctx, &v.module_contexts).unwrap();
+        build_shader_ninja_file_for_package(&v.module_contexts).unwrap();
     });
 
     let mut build_file = std::fs::OpenOptions::new()
@@ -253,28 +253,22 @@ fn generate_shader_module_ninja_files(
     writeln!(&mut build_file)?;
 
     for v in deps.iter() {
-        writeln!(
-            &mut build_file,
-            "include {}/build.ninja",
-            &v.crate_ctx.crate_output_name,
-        )?;
-        writeln!(&mut build_file)?;
+        for m in v.module_contexts.iter() {
+            writeln!(
+                &mut build_file,
+                "include {}/{}/build.ninja",
+                &m.crate_ctx.crate_output_name, &m.module_name
+            )?;
+            writeln!(&mut build_file)?;
+        }
     }
 
     Ok(())
 }
 
 fn build_shader_ninja_file_for_package(
-    crate_ctx: &ShaderCrateContext,
     module_contexts: &[ShaderModuleContext],
 ) -> anyhow::Result<()> {
-    let output_file_path = crate_ctx.crate_output_dir.join("build.ninja");
-    let mut output_file = std::fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(&output_file_path)?;
-
     let mut modules = Vec::new();
     for module_ctx in module_contexts {
         module_ctx.ensure_build_directories()?;
@@ -291,13 +285,6 @@ fn build_shader_ninja_file_for_package(
             module_ctx.module_name
         );
         build_shader_ninja_file_for_shader_module(&module_ctx, &module)?;
-
-        writeln!(
-            &mut output_file,
-            "include {}/{}/build.ninja",
-            &crate_ctx.crate_output_name, &module_ctx.module_name
-        )?;
-        writeln!(&mut output_file)?;
     }
 
     Ok(())
