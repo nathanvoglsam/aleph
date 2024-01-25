@@ -108,8 +108,8 @@ pub fn egui_pass(
             let descriptor_set_layout = create_descriptor_set_layout(device);
             let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
-            let vertex_shader = shader_db.get("egui.vert").unwrap();
-            let fragment_shader = shader_db.get("egui.frag").unwrap();
+            let vertex_shader = shader_db.get("aleph-render/egui/egui.vert").unwrap();
+            let fragment_shader = shader_db.get("aleph-render/egui/egui.frag").unwrap();
             let (vertex_data, fragment_data) = match device.get_backend_api() {
                 BackendAPI::Vulkan => (
                     ShaderBinary::Spirv(vertex_shader.spirv),

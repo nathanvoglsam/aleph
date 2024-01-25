@@ -116,7 +116,9 @@ pub fn lighting_resolve_pass(
                 )
                 .unwrap();
 
-            let shader_data = shader_db.get("deferred_lighting.cs").unwrap();
+            let shader_data = shader_db
+                .get("aleph-render/deferred/deferred_lighting.cs")
+                .unwrap();
             let shader_data = match device.get_backend_api() {
                 BackendAPI::Vulkan => ShaderBinary::Spirv(shader_data.spirv),
                 BackendAPI::D3D12 => ShaderBinary::Dxil(shader_data.dxil),
