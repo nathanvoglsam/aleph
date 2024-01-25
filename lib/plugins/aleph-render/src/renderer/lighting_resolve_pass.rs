@@ -29,11 +29,12 @@
 
 use crate::renderer::main_gbuffer_pass::MainGBufferPassOutput;
 use crate::renderer::params::BackBufferInfo;
+use crate::shaders;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use aleph_shader_db::IShaderDatabase;
+use aleph_shader_db::{IShaderDatabase, IShaderDatabaseExt};
 
 struct LightingResolvePassPayload {
     gbuffer0: ResourceRef,
@@ -117,7 +118,7 @@ pub fn lighting_resolve_pass(
                 .unwrap();
 
             let shader_data = shader_db
-                .get("aleph-render/deferred/deferred_lighting.cs")
+                .get(shaders::aleph_render::deferred_deferred_lighting_cs())
                 .unwrap();
             let shader_data = match device.get_backend_api() {
                 BackendAPI::Vulkan => ShaderBinary::Spirv(shader_data.spirv),

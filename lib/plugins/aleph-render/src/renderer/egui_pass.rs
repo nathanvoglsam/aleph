@@ -28,11 +28,13 @@
 //
 
 use crate::renderer::params::BackBufferInfo;
+use crate::shaders;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::IShaderDatabase;
+use aleph_shader_db::IShaderDatabaseExt;
 use egui::RenderData;
 
 struct EguiPassPayload {
@@ -108,8 +110,12 @@ pub fn egui_pass(
             let descriptor_set_layout = create_descriptor_set_layout(device);
             let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
-            let vertex_shader = shader_db.get("aleph-render/egui/egui.vert").unwrap();
-            let fragment_shader = shader_db.get("aleph-render/egui/egui.frag").unwrap();
+            let vertex_shader = shader_db
+                .get(shaders::aleph_render::egui_egui_vert())
+                .unwrap();
+            let fragment_shader = shader_db
+                .get(shaders::aleph_render::egui_egui_frag())
+                .unwrap();
             let (vertex_data, fragment_data) = match device.get_backend_api() {
                 BackendAPI::Vulkan => (
                     ShaderBinary::Spirv(vertex_shader.spirv),
