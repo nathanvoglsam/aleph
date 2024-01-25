@@ -368,7 +368,7 @@ impl<'a> ShaderModuleContext<'a> {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ShaderFileFormat {
     HLSL,
-    Slang
+    Slang,
 }
 
 impl ShaderFileFormat {
@@ -377,13 +377,6 @@ impl ShaderFileFormat {
             "hlsl" => Some(ShaderFileFormat::HLSL),
             "slang" => Some(ShaderFileFormat::Slang),
             _ => None,
-        }
-    }
-
-    pub fn to_file_ext(self) -> &'static str {
-        match self {
-            ShaderFileFormat::HLSL => "hlsl",
-            ShaderFileFormat::Slang => "slang",
         }
     }
 }
@@ -407,21 +400,12 @@ impl ShaderType {
         }
     }
 
-    pub fn to_ext(self) -> &'static str {
-        match self {
-            ShaderType::Vertex => "vs",
-            ShaderType::Fragment => "fs",
-            ShaderType::Geometry => "gs",
-            ShaderType::Compute => "cs",
-        }
-    }
-
     pub fn to_ninja_rule(self) -> &'static str {
         match self {
             ShaderType::Vertex => "vertex_shader",
             ShaderType::Fragment => "fragment_shader",
-            ShaderType::Geometry => "compute_shader",
-            ShaderType::Compute => "geometry_shader",
+            ShaderType::Geometry => "geometry_shader",
+            ShaderType::Compute => "compute_shader",
         }
     }
 }

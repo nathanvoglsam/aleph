@@ -33,6 +33,7 @@ use crate::shader_system::AlephCrateMetadata;
 use crate::shader_system::CompilationParams;
 use crate::shader_system::ProjectShaderContext;
 use crate::shader_system::ShaderCrateContext;
+use crate::shader_system::ShaderFile;
 use crate::shader_system::ShaderModuleContext;
 use crate::shader_system::ShaderModuleDefinition;
 use crate::shader_system::ShaderModuleDefinitionFile;
@@ -309,75 +310,41 @@ fn build_shader_ninja_file_for_shader_module(
         if let Ok(entry) = entry {
             // We will only process utf-8 paths because we are sane little crewmates. If it's
             // not utf-8 we're in for sadness
-            let entry_path =
-                if let Some(v) = Utf8PathBuf::from_path_buf(entry.path().to_path_buf()).ok() {
-                    v
-                } else {
-                    log::trace!(
-                        "Skipping file '{}' because of non-unicode path",
-                        entry.path().display()
-                    );
-                    continue;
-                };
+            let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+
+            let entry_path_tail = entry_path.strip_prefix(module_ctx.module_source_dir.as_ref())?;
 
             let f_type = entry.file_type().unwrap();
             if f_type.is_file() {
-                let file_name = entry_path.file_name().expect("File with a name");
-
-                // Split out the last two dot segments of the file name. For something like
-                // shader.frag.hlsl we should get a file_ext = hlsl and shader_type = frag with
-                // name_segment = shader.
-                //
-                // We need to know part of the rest of the name so we can reject files like
-                // 'frag.hlsl' as it is effectively a nameless shader.
-                let mut dot_segments = file_name.split('.').rev();
-                let file_ext = dot_segments.next();
-                let shader_type = dot_segments.next();
-                let name_segment = dot_segments.next();
-
-                // Extract our shader type and file extension from the segments of the file
-                // name.
-                //
-                // We want file names like <name>.<stype>.hlsl or <name>.<name>.<stype>.hlsl
-                let (file_ext, shader_type) = match (file_ext, shader_type, name_segment) {
-                    (Some(a), Some(b), Some(_)) => (a, b),
-                    (Some(_), Some(_), None) => {
-                        // If there's no file name then the shader has no name, we should log
-                        // to warn that we're skipping the shader and skip the file.
-                        log::warn!("Skipping nameless shader - '{}'", entry.path().display());
-                        continue;
-                    }
-                    _ => continue,
+                let shader_file = match ShaderFile::new(&entry_path) {
+                    Some(v) => v,
+                    None => continue,
                 };
-
-                // Skip any file that isn't a HLSL or Slang file.
-                match file_ext {
-                    "slang" | "hlsl" => {}
-                    _ => continue,
-                }
-
-                let file_name_no_ext = entry_path.file_stem().unwrap();
-                let out_file = module_ctx.module_output_dir.join(file_name_no_ext);
 
                 // Only build dxil on windows, where the full dxil pipeline will be available.
                 if module_ctx.platform() == BuildPlatform::Windows {
                     output_build_statement_for_shader(
                         &mut ninja_file,
+                        module_ctx,
                         &compilation_params,
-                        &out_file,
-                        &entry_path,
-                        shader_type,
+                        &shader_file,
                         "dxil",
                     )?;
                 }
                 output_build_statement_for_shader(
                     &mut ninja_file,
+                    module_ctx,
                     &compilation_params,
-                    &out_file,
-                    &entry_path,
-                    shader_type,
+                    &shader_file,
                     "spirv",
                 )?;
+            }
+            if f_type.is_dir() {
+                let v = module_ctx.module_output_dir.join(entry_path_tail);
+                std::fs::create_dir_all(v)?;
             }
         }
     }
@@ -387,33 +354,19 @@ fn build_shader_ninja_file_for_shader_module(
 
 fn output_build_statement_for_shader(
     ninja_file: &mut std::fs::File,
+    module_ctx: &ShaderModuleContext,
     compilation_params: &CompilationParams,
-    out_file: &Utf8Path,
-    in_file: &Utf8Path,
-    shader_type: &str,
+    shader_file: &ShaderFile,
     backend: &str,
 ) -> anyhow::Result<()> {
-    // Select which ninja rule to use based on the declared shader type
-    let rule = match shader_type {
-        // Fragment/Pixel shaders
-        "frag" | "fragment" | "pix" | "pixel" | "ps" | "fg" => "fragment_shader",
-
-        // Vertex shaders
-        "vert" | "vertex" | "vs" => "vertex_shader",
-
-        // Compute shaders
-        "comp" | "compute" | "cs" => "compute_shader",
-
-        // Geometry shaders
-        "geom" | "geometry" | "gs" => "geometry_shader",
-
-        _ => {
-            return Ok(());
-        }
-    };
+    let rule = shader_file.ninja_rule();
+    let in_file = shader_file.path;
+    let out_file = module_ctx
+        .module_output_dir
+        .join(shader_file.name_with_type);
 
     if target_platform().is_windows() {
-        let out_file = ninja::prepare_path_for_build_statement(out_file);
+        let out_file = ninja::prepare_path_for_build_statement(&out_file);
         let in_file = ninja::prepare_path_for_build_statement(in_file);
 
         writeln!(
