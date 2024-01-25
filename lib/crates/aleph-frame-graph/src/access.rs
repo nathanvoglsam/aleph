@@ -163,7 +163,7 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
     }
 
     fn barrier_access_for_write(&self, format: Format) -> BarrierAccess {
-        let mut out = self.barrier_access_for_read(format);
+        let mut out = BarrierAccess::NONE;
         if self.contains(Self::COPY_DEST) {
             out |= BarrierAccess::COPY_WRITE
         }
