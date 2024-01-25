@@ -369,6 +369,8 @@ impl<'a> ShaderModuleContext<'a> {
 pub enum ShaderFileFormat {
     HLSL,
     Slang,
+    Dxil,
+    Spirv,
 }
 
 impl ShaderFileFormat {
@@ -376,6 +378,14 @@ impl ShaderFileFormat {
         match v {
             "hlsl" => Some(ShaderFileFormat::HLSL),
             "slang" => Some(ShaderFileFormat::Slang),
+            _ => None,
+        }
+    }
+
+    pub fn from_binary_file_ext(v: &str) -> Option<Self> {
+        match v {
+            "dxil" => Some(ShaderFileFormat::Dxil),
+            "spirv" => Some(ShaderFileFormat::Spirv),
             _ => None,
         }
     }
@@ -387,6 +397,17 @@ pub enum ShaderType {
     Fragment,
     Geometry,
     Compute,
+}
+
+impl Into<aleph_shader_db::ShaderType> for ShaderType {
+    fn into(self) -> aleph_shader_db::ShaderType {
+        match self {
+            ShaderType::Vertex => aleph_shader_db::ShaderType::Vertex,
+            ShaderType::Fragment => aleph_shader_db::ShaderType::Fragment,
+            ShaderType::Geometry => aleph_shader_db::ShaderType::Geometry,
+            ShaderType::Compute => aleph_shader_db::ShaderType::Compute,
+        }
+    }
 }
 
 impl ShaderType {
@@ -406,6 +427,28 @@ impl ShaderType {
             ShaderType::Fragment => "fragment_shader",
             ShaderType::Geometry => "geometry_shader",
             ShaderType::Compute => "compute_shader",
+        }
+    }
+
+    pub fn shader_db_name_type(&self) -> &'static str {
+        match self {
+            ShaderType::Vertex => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Vertex>",
+            ShaderType::Fragment => {
+                "aleph_shader_db::ShaderName<'static, aleph_shader_db::Fragment>"
+            }
+            ShaderType::Geometry => {
+                "aleph_shader_db::ShaderName<'static, aleph_shader_db::Geometry>"
+            }
+            ShaderType::Compute => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Compute>",
+        }
+    }
+
+    pub fn shader_db_name_constructor(&self) -> &'static str {
+        match self {
+            ShaderType::Vertex => "aleph_shader_db::ShaderName::<aleph_shader_db::Vertex>::new",
+            ShaderType::Fragment => "aleph_shader_db::ShaderName::<aleph_shader_db::Fragment>::new",
+            ShaderType::Geometry => "aleph_shader_db::ShaderName::<aleph_shader_db::Geometry>::new",
+            ShaderType::Compute => "aleph_shader_db::ShaderName::<aleph_shader_db::Compute>::new",
         }
     }
 }
@@ -432,6 +475,17 @@ pub struct ShaderFile<'a> {
 
 impl<'a> ShaderFile<'a> {
     pub fn new(path: &'a Utf8Path) -> Option<Self> {
+        Self::new_internal(path, ShaderFileFormat::from_file_ext)
+    }
+
+    pub fn new_binary(path: &'a Utf8Path) -> Option<Self> {
+        Self::new_internal(path, ShaderFileFormat::from_binary_file_ext)
+    }
+
+    fn new_internal(
+        path: &'a Utf8Path,
+        ext_mapper: fn(&str) -> Option<ShaderFileFormat>,
+    ) -> Option<Self> {
         let file_name = path.file_name()?;
 
         // Split out the last two dot segments of the file name. For something like
@@ -446,7 +500,7 @@ impl<'a> ShaderFile<'a> {
         let _name_segment = dot_segments.next()?;
 
         let shader_type = ShaderType::from_ext(shader_type_str)?;
-        let file_ext = ShaderFileFormat::from_file_ext(file_ext_str)?;
+        let file_ext = ext_mapper(file_ext_str)?;
 
         // This _can't_ fail as we've already proven that these are the last segments of the file
         // name above.
