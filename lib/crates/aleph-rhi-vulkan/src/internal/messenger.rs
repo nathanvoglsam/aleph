@@ -171,7 +171,9 @@ pub unsafe extern "system" fn vulkan_debug_messenger(
     log!(severity_level, "");
 
     // Break on debugger, if one is attached (assuming the platform supports the behavior)
-    debug_break();
+    if !message_types.intersects(vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE) {
+        debug_break();
+    }
 
     vk::FALSE
 }
