@@ -1955,12 +1955,12 @@ impl Format {
 
     /// Returns whether the format is a stencil texture format
     pub const fn is_stencil(&self) -> bool {
-        matches!(self, Self::Depth24Stencil8)
+        matches!(self, Self::Depth32FloatStencil8 | Self::Depth24Stencil8)
     }
 
     /// Returns whether the format is a depth/stencil texture format
     pub const fn is_depth_stencil(&self) -> bool {
-        matches!(self, Self::Depth32Float | Self::Depth24Stencil8)
+        matches!(self, Self::Depth32Float | Self::Depth32FloatStencil8 | Self::Depth24Stencil8)
     }
 
     /// Returns whether the format is a float format
@@ -1976,6 +1976,7 @@ impl Format {
                 | Self::Rgba16Float
                 | Self::Rgba32Float
                 | Self::Depth32Float
+                | Self::Depth32FloatStencil8
         )
     }
 
