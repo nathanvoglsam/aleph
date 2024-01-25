@@ -1397,9 +1397,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 barrier_next,
                 resource_id,
                 version.creator_sync,
-                version.creator_access.barrier_access_for_write(),
+                version.creator_access.barrier_access_for_write(Default::default()),
                 all_read_sync,
-                all_read_usage.barrier_access_for_read(),
+                all_read_usage.barrier_access_for_read(Default::default()),
             )?;
 
             if let Some(import_desc) = root_variant.import.as_ref() {
@@ -1415,7 +1415,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                         &[],
                         resource_id,
                         all_read_sync,
-                        all_read_usage.barrier_access_for_read(),
+                        all_read_usage.barrier_access_for_read(Default::default()),
                         import_desc.after_sync,
                         import_desc.after_access,
                     )?;
@@ -1430,7 +1430,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     &[],
                     resource_id,
                     version.creator_sync,
-                    version.creator_access.barrier_access_for_write(),
+                    version.creator_access.barrier_access_for_write(Default::default()),
                     import_desc.after_sync,
                     import_desc.after_access,
                 )?;
@@ -1467,9 +1467,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     barrier_next,
                     previous_id,
                     all_read_sync,
-                    all_read_usage.barrier_access_for_read(),
+                    all_read_usage.barrier_access_for_read(Default::default()),
                     version.creator_sync,
-                    version.creator_access.barrier_access_for_write(),
+                    version.creator_access.barrier_access_for_write(Default::default()),
                 )?;
             } else {
                 // This is one of the simplest barriers to emit, write-after-write.
@@ -1485,9 +1485,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     barrier_next,
                     previous_id,
                     previous_version.creator_sync,
-                    previous_version.creator_access.barrier_access_for_write(),
+                    previous_version.creator_access.barrier_access_for_write(Default::default()),
                     version.creator_sync,
-                    version.creator_access.barrier_access_for_write(),
+                    version.creator_access.barrier_access_for_write(Default::default()),
                 )?;
             }
         } else if let Some(import_desc) = &root_variant.import.as_ref() {
@@ -1516,7 +1516,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 import_desc.before_sync,
                 import_desc.before_access,
                 version.creator_sync,
-                version.creator_access.barrier_access_for_write(),
+                version.creator_access.barrier_access_for_write(Default::default()),
             )?;
         } else {
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
@@ -1528,7 +1528,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 BarrierSync::NONE,
                 BarrierAccess::NONE,
                 version.creator_sync,
-                version.creator_access.barrier_access_for_write(),
+                version.creator_access.barrier_access_for_write(Default::default()),
             )?;
         }
         Ok(())
@@ -1567,7 +1567,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             // These values will be updated in our walk over the sorted reads list.
             let mut barrier_type = IRBarrierType::ReadAfterWrite;
             let mut before_sync = version.creator_sync;
-            let mut before_access = version.creator_access.barrier_access_for_write();
+            let mut before_access = version.creator_access.barrier_access_for_write(root_variant.desc.format);
             let mut before_layout = version
                 .creator_access
                 .image_layout(false, root_variant.desc.format);
@@ -1663,7 +1663,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                         before_access,
                         before_layout,
                         pending_read_sync,
-                        pending_read_access.barrier_access_for_read(),
+                        pending_read_access.barrier_access_for_read(root_variant.desc.format),
                         current_layout,
                     )?;
 
@@ -1676,7 +1676,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     // barrier becomes our 'before' sync scope for the next barrier.
                     barrier_type = IRBarrierType::ReadAfterRead;
                     before_sync = pending_read_sync;
-                    before_access = pending_read_access.barrier_access_for_read();
+                    before_access = pending_read_access.barrier_access_for_read(root_variant.desc.format);
                     before_layout = current_layout;
 
                     // Lastly we change what the expected layout is so we can keep
@@ -1726,7 +1726,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     &[],
                     resource_id,
                     version.creator_sync,
-                    version.creator_access.barrier_access_for_write(),
+                    version.creator_access.barrier_access_for_write(root_variant.desc.format),
                     version
                         .creator_access
                         .image_layout(false, root_variant.desc.format),
@@ -1809,10 +1809,10 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     barrier_next,
                     previous_id,
                     all_read_sync,
-                    all_read_usage.barrier_access_for_read(),
+                    all_read_usage.barrier_access_for_read(root_variant.desc.format),
                     last_read_layout,
                     version.creator_sync,
-                    version.creator_access.barrier_access_for_write(),
+                    version.creator_access.barrier_access_for_write(root_variant.desc.format),
                     version
                         .creator_access
                         .image_layout(false, root_variant.desc.format),
@@ -1832,12 +1832,12 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     barrier_next,
                     previous_id,
                     previous_version.creator_sync,
-                    previous_version.creator_access.barrier_access_for_write(),
+                    previous_version.creator_access.barrier_access_for_write(root_variant.desc.format),
                     previous_version
                         .creator_access
                         .image_layout(false, root_variant.desc.format),
                     version.creator_sync,
-                    version.creator_access.barrier_access_for_write(),
+                    version.creator_access.barrier_access_for_write(root_variant.desc.format),
                     version
                         .creator_access
                         .image_layout(false, root_variant.desc.format),
@@ -1871,7 +1871,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 import_desc.before_access,
                 import_desc.before_layout,
                 version.creator_sync,
-                version.creator_access.barrier_access_for_write(),
+                version.creator_access.barrier_access_for_write(root_variant.desc.format),
                 version
                     .creator_access
                     .image_layout(false, root_variant.desc.format),
@@ -1888,7 +1888,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 BarrierAccess::NONE,
                 ImageLayout::Undefined,
                 version.creator_sync,
-                version.creator_access.barrier_access_for_write(),
+                version.creator_access.barrier_access_for_write(root_variant.desc.format),
                 version
                     .creator_access
                     .image_layout(false, root_variant.desc.format),

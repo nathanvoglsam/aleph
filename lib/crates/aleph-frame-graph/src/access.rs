@@ -32,8 +32,8 @@ use aleph_rhi_api::*;
 pub trait ResourceUsageFlagsExt {
     fn image_layout(&self, read_only: bool, format: Format) -> ImageLayout;
     fn default_barrier_sync(&self, read_only: bool, format: Format) -> BarrierSync;
-    fn barrier_access_for_read(&self) -> BarrierAccess;
-    fn barrier_access_for_write(&self) -> BarrierAccess;
+    fn barrier_access_for_read(&self, format: Format) -> BarrierAccess;
+    fn barrier_access_for_write(&self, format: Format) -> BarrierAccess;
     fn is_valid_texture_usage(&self) -> bool;
 }
 
@@ -126,7 +126,7 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
         sync
     }
 
-    fn barrier_access_for_read(&self) -> BarrierAccess {
+    fn barrier_access_for_read(&self, format: Format) -> BarrierAccess {
         let mut out = BarrierAccess::NONE;
         if self.contains(Self::COPY_SOURCE) {
             out |= BarrierAccess::COPY_READ
@@ -153,13 +153,17 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
             out |= BarrierAccess::SHADER_READ
         }
         if self.contains(Self::RENDER_TARGET) {
-            out |= BarrierAccess::RENDER_TARGET_READ
+            if format.is_depth_stencil() {
+                out |= BarrierAccess::DEPTH_STENCIL_READ
+            } else {
+                out |= BarrierAccess::RENDER_TARGET_READ
+            }
         }
         out
     }
 
-    fn barrier_access_for_write(&self) -> BarrierAccess {
-        let mut out = self.barrier_access_for_read();
+    fn barrier_access_for_write(&self, format: Format) -> BarrierAccess {
+        let mut out = self.barrier_access_for_read(format);
         if self.contains(Self::COPY_DEST) {
             out |= BarrierAccess::COPY_WRITE
         }
@@ -170,7 +174,11 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
             out |= BarrierAccess::SHADER_WRITE
         }
         if self.contains(Self::RENDER_TARGET) {
-            out |= BarrierAccess::RENDER_TARGET_WRITE
+            if format.is_depth_stencil() {
+                out |= BarrierAccess::DEPTH_STENCIL_WRITE
+            } else {
+                out |= BarrierAccess::RENDER_TARGET_WRITE
+            }
         }
         out
     }
