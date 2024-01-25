@@ -134,6 +134,7 @@ impl ISubcommand for GenShaderProj {
         let deps = load_dependencies_module_contexts(&deps)?;
 
         generate_shader_module_ninja_files(&project_ctx, &deps)?;
+        generate_shader_name_bindings(&deps)?;
 
         Ok(())
     }
@@ -292,13 +293,25 @@ fn generate_shader_module_ninja_files(
 ) -> anyhow::Result<()> {
     // Walk through all the dependency packages that have shaders and create a build.ninja
     // file for them so we can compile the shaders using ninja
-    deps.par_iter().for_each(|v| {
-        log::info!(
-            "Generating Ninja Files For: {}",
-            v.crate_ctx.crate_output_name.as_ref(),
-        );
-        build_shader_ninja_file_for_package(&v.module_contexts).unwrap();
-    });
+    let (error_send, error_recv) = crossbeam::channel::bounded(deps.len());
+    deps.par_iter()
+        .for_each_with(error_send, |error_channel, v| {
+            log::info!(
+                "Generating Ninja Files For: {}",
+                v.crate_ctx.crate_output_name.as_ref(),
+            );
+            match build_shader_ninja_file_for_package(&v.module_contexts) {
+                Ok(_) => {}
+                Err(v) => error_channel.send(v).unwrap(),
+            }
+        });
+
+    if !error_recv.is_empty() {
+        while let Ok(error) = error_recv.try_recv() {
+            log::error!("Error while generating shader project!: {:#?}", error);
+        }
+        return Err(anyhow!("'generate_shader_module_ninja_files' failed!'"));
+    }
 
     let mut build_file = std::fs::OpenOptions::new()
         .write(true)
@@ -461,6 +474,120 @@ fn output_build_statement_for_shader(
     Ok(())
 }
 
+fn generate_shader_name_bindings(deps: &[LoadedCrateShaderProject]) -> anyhow::Result<()> {
+    let (error_send, error_recv) = crossbeam::channel::bounded(deps.len());
+    deps.par_iter()
+        .for_each_with(error_send, |error_channel, v| {
+            log::info!(
+                "Generating Ninja Files For: {}",
+                v.crate_ctx.crate_output_name.as_ref(),
+            );
+            match generate_shader_name_bindings_for_package(&v.module_contexts) {
+                Ok(_) => {}
+                Err(v) => error_channel.send(v).unwrap(),
+            }
+        });
+
+    if !error_recv.is_empty() {
+        while let Ok(error) = error_recv.try_recv() {
+            log::error!("Error while generating shader name bindings!: {:#?}", error);
+        }
+        return Err(anyhow!("'generate_shader_name_bindings' failed!'"));
+    }
+
+    Ok(())
+}
+
+fn generate_shader_name_bindings_for_package(
+    module_contexts: &[ShaderModuleContext],
+) -> anyhow::Result<()> {
+    for module_ctx in module_contexts {
+        log::info!(
+            "Generating Shader Name Bindings For: {}@{}",
+            module_ctx.crate_ctx.crate_output_name,
+            module_ctx.module_name
+        );
+        generate_shader_name_bindings_for_module(module_ctx)?;
+    }
+    Ok(())
+}
+
+fn generate_shader_name_bindings_for_module(
+    module_ctx: &ShaderModuleContext,
+) -> anyhow::Result<()> {
+    let module_name = module_ctx.module_name.replace("-", "_");
+    let module_output_file = module_ctx
+        .crate_ctx
+        .crate_shader_dir
+        .join(module_name)
+        .with_extension("rs")
+        .to_string();
+    let mut module_output_file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&module_output_file)?;
+
+    writeln!(
+        &mut module_output_file,
+        "// Do not edit manually! File is GENERATED!"
+    )?;
+    writeln!(&mut module_output_file)?;
+
+    // We use a single-threaded walker as we intend to parallelise at the package level instead
+    let walker = ignore::WalkBuilder::new(module_ctx.module_source_dir.as_ref()).build();
+    for entry in walker {
+        if let Ok(entry) = entry {
+            // We will only process utf-8 paths because we are sane little crewmates. If it's
+            // not utf-8 we're in for sadness
+            let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            let entry_path_tail = entry_path.strip_prefix(module_ctx.module_source_dir.as_ref())?;
+
+            let f_type = entry.file_type().unwrap();
+            if f_type.is_file() {
+                let shader_file = match ShaderFile::new(&entry_path) {
+                    Some(v) => v,
+                    None => continue,
+                };
+
+                let file_stem_no_dots = shader_file.name_with_type.replace(".", "_");
+                let module_name = module_ctx.module_output_dir.file_name().unwrap();
+                let mut shader_name = format!("{module_name}/");
+                let mut shader_fn_name = String::new();
+                for component in entry_path_tail.parent().unwrap().components() {
+                    use std::fmt::Write;
+                    write!(&mut shader_name, "{component}/")?;
+                    write!(&mut shader_fn_name, "{component}_")?;
+                }
+                shader_name.push_str(shader_file.name_with_type);
+                shader_fn_name.push_str(&file_stem_no_dots);
+
+                writeln!(&mut module_output_file, "#[allow(unused)]")?;
+                writeln!(
+                    &mut module_output_file,
+                    "pub fn {}() -> {} {{",
+                    shader_fn_name,
+                    shader_file.shader_type.shader_db_name_type()
+                )?;
+                writeln!(
+                    &mut module_output_file,
+                    "    unsafe {{ {}(\"{}\") }} // Safety guaranteed by code-gen",
+                    shader_file.shader_type.shader_db_name_constructor(),
+                    shader_name
+                )?;
+                writeln!(&mut module_output_file, "}}")?;
+                writeln!(&mut module_output_file)?;
+
+                log::trace!("{}", shader_name);
+            }
+        }
+    }
+    Ok(())
+}
+
 fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
     fn push_path_if_tool_exists(v: &mut String, tool: &Utf8Path) {
         if tool.exists() {
@@ -572,8 +699,7 @@ fn archive_shaders_for_package(
                     continue;
                 }
 
-                let file_name = Utf8Path::new(entry_path.file_name().unwrap());
-                let file_stem = match file_name.file_stem() {
+                let shader_file = match ShaderFile::new_binary(&entry_path) {
                     Some(v) => v,
                     None => continue,
                 };
@@ -584,25 +710,12 @@ fn archive_shaders_for_package(
                     use std::fmt::Write;
                     write!(&mut shader_name, "{component}/")?;
                 }
-                shader_name.push_str(file_stem);
+                shader_name.push_str(shader_file.name_with_type);
 
-                match file_name.extension() {
-                    Some("spirv") => {
-                        log::trace!("Collecting SPIRV for shader '{shader_name}'");
-                        let file_data = std::fs::read(&entry_path)?;
-                        if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                            db_entry.spirv = file_data;
-                        } else {
-                            shader_db.shaders.insert(
-                                shader_name,
-                                ShaderEntry {
-                                    spirv: file_data,
-                                    dxil: Vec::new(),
-                                },
-                            );
-                        }
-                    }
-                    Some("dxil") => {
+                match shader_file.file_ext {
+                    crate::shader_system::ShaderFileFormat::HLSL => unreachable!(),
+                    crate::shader_system::ShaderFileFormat::Slang => unreachable!(),
+                    crate::shader_system::ShaderFileFormat::Dxil => {
                         log::trace!("Collecting DXIL for shader '{shader_name}'");
                         let file_data = std::fs::read(&entry_path)?;
                         if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
@@ -611,13 +724,29 @@ fn archive_shaders_for_package(
                             shader_db.shaders.insert(
                                 shader_name,
                                 ShaderEntry {
+                                    shader_type: shader_file.shader_type.into(),
                                     spirv: Vec::new(),
                                     dxil: file_data,
                                 },
                             );
                         }
                     }
-                    _ => continue,
+                    crate::shader_system::ShaderFileFormat::Spirv => {
+                        log::trace!("Collecting SPIRV for shader '{shader_name}'");
+                        let file_data = std::fs::read(&entry_path)?;
+                        if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
+                            db_entry.spirv = file_data;
+                        } else {
+                            shader_db.shaders.insert(
+                                shader_name,
+                                ShaderEntry {
+                                    shader_type: shader_file.shader_type.into(),
+                                    spirv: file_data,
+                                    dxil: Vec::new(),
+                                },
+                            );
+                        }
+                    }
                 }
             }
         }
