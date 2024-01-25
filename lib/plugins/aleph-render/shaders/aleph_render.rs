@@ -6,6 +6,16 @@ pub fn deferred_deferred_lighting_cs() -> aleph_shader_db::ShaderName<'static, a
 }
 
 #[allow(unused)]
+pub fn deferred_main_gbuffer_frag() -> aleph_shader_db::ShaderName<'static, aleph_shader_db::Fragment> {
+    unsafe { aleph_shader_db::ShaderName::<aleph_shader_db::Fragment>::new("aleph-render/deferred/main_gbuffer.frag") } // Safety guaranteed by code-gen
+}
+
+#[allow(unused)]
+pub fn deferred_main_gbuffer_vert() -> aleph_shader_db::ShaderName<'static, aleph_shader_db::Vertex> {
+    unsafe { aleph_shader_db::ShaderName::<aleph_shader_db::Vertex>::new("aleph-render/deferred/main_gbuffer.vert") } // Safety guaranteed by code-gen
+}
+
+#[allow(unused)]
 pub fn egui_egui_frag() -> aleph_shader_db::ShaderName<'static, aleph_shader_db::Fragment> {
     unsafe { aleph_shader_db::ShaderName::<aleph_shader_db::Fragment>::new("aleph-render/egui/egui.frag") } // Safety guaranteed by code-gen
 }
