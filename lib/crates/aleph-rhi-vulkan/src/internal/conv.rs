@@ -79,6 +79,7 @@ pub const fn texture_format_to_vk(format: Format) -> vk::Format {
         Format::Rgba32Sint => vk::Format::R32G32B32A32_SINT,
         Format::Rgba32Float => vk::Format::R32G32B32A32_SFLOAT,
         Format::Depth32Float => vk::Format::D32_SFLOAT,
+        Format::Depth32FloatStencil8 => vk::Format::D32_SFLOAT_S8_UINT,
         Format::Depth24Stencil8 => vk::Format::D24_UNORM_S8_UINT,
     }
 }
