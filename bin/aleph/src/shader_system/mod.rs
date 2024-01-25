@@ -366,3 +366,120 @@ impl<'a> ShaderModuleContext<'a> {
         self.crate_ctx.platform()
     }
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ShaderFileFormat {
+    HLSL,
+    Slang
+}
+
+impl ShaderFileFormat {
+    pub fn from_file_ext(v: &str) -> Option<Self> {
+        match v {
+            "hlsl" => Some(ShaderFileFormat::HLSL),
+            "slang" => Some(ShaderFileFormat::Slang),
+            _ => None,
+        }
+    }
+
+    pub fn to_file_ext(self) -> &'static str {
+        match self {
+            ShaderFileFormat::HLSL => "hlsl",
+            ShaderFileFormat::Slang => "slang",
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ShaderType {
+    Vertex,
+    Fragment,
+    Geometry,
+    Compute,
+}
+
+impl ShaderType {
+    pub fn from_ext(v: &str) -> Option<Self> {
+        match v {
+            "frag" | "fragment" | "pix" | "pixel" | "ps" | "fg" => Some(Self::Fragment),
+            "vert" | "vertex" | "vs" => Some(Self::Vertex),
+            "comp" | "compute" | "cs" => Some(Self::Compute),
+            "geom" | "geometry" | "gs" => Some(Self::Geometry),
+            _ => None,
+        }
+    }
+
+    pub fn to_ext(self) -> &'static str {
+        match self {
+            ShaderType::Vertex => "vs",
+            ShaderType::Fragment => "fs",
+            ShaderType::Geometry => "gs",
+            ShaderType::Compute => "cs",
+        }
+    }
+
+    pub fn to_ninja_rule(self) -> &'static str {
+        match self {
+            ShaderType::Vertex => "vertex_shader",
+            ShaderType::Fragment => "fragment_shader",
+            ShaderType::Geometry => "compute_shader",
+            ShaderType::Compute => "geometry_shader",
+        }
+    }
+}
+
+pub struct ShaderFile<'a> {
+    /// The path to the shader file
+    pub path: &'a Utf8Path,
+
+    /// The extracted file extension of the shader file.
+    pub file_ext: ShaderFileFormat,
+
+    /// The extracted shader type of the shader file.
+    pub shader_type: ShaderType,
+
+    /// The name of the shader, with the shader type and file extension stripped.
+    pub name: &'a str,
+
+    /// The name of the shader, including the shader type.
+    pub name_with_type: &'a str,
+}
+
+impl<'a> ShaderFile<'a> {
+    pub fn new(path: &'a Utf8Path) -> Option<Self> {
+        let file_name = path.file_name()?;
+
+        // Split out the last two dot segments of the file name. For something like
+        // shader.frag.hlsl we should get a file_ext = hlsl and shader_type = frag with
+        // name_segment = shader.
+        //
+        // We need to know part of the rest of the name so we can reject files like
+        // 'frag.hlsl' as it is effectively a nameless shader.
+        let mut dot_segments = file_name.split('.').rev();
+        let file_ext_str = dot_segments.next()?;
+        let shader_type_str = dot_segments.next()?;
+        let _name_segment = dot_segments.next()?;
+
+        let shader_type = ShaderType::from_ext(shader_type_str)?;
+        let file_ext = ShaderFileFormat::from_file_ext(file_ext_str)?;
+
+        // This _can't_ fail as we've already proven that these are the last segments of the file
+        // name above.
+        let file_name_no_ext = file_name.strip_suffix(file_ext_str).unwrap();
+        let file_name_no_ext = file_name_no_ext.strip_suffix(".").unwrap();
+        let file_name_no_s_type = file_name_no_ext.strip_suffix(shader_type_str).unwrap();
+        let file_name_no_s_type = file_name_no_s_type.strip_suffix(".").unwrap();
+
+        Some(Self {
+            path,
+            file_ext,
+            shader_type,
+            name: file_name_no_s_type,
+            name_with_type: file_name_no_ext,
+        })
+    }
+
+    pub fn ninja_rule(&self) -> &'static str {
+        self.shader_type.to_ninja_rule()
+    }
+}
