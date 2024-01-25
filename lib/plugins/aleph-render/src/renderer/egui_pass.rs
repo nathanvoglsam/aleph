@@ -59,7 +59,7 @@ pub struct EguiPassContext {
     pub render_data: RenderData,
 }
 
-pub fn egui_pass(
+pub fn pass(
     frame_graph: &mut FrameGraphBuilder,
     device: &dyn IDevice,
     pin_board: &PinBoard,

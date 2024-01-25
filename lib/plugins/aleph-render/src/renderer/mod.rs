@@ -143,7 +143,7 @@ impl EguiRenderer {
         shader_db: &dyn IShaderDatabase,
     ) -> FrameGraph {
         let mut frame_graph = FrameGraph::builder();
-        egui_pass::egui_pass(&mut frame_graph, device, pin_board, shader_db);
+        egui_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         frame_graph.build()
     }
 
