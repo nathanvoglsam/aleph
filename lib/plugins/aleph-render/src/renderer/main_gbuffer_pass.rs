@@ -31,8 +31,10 @@ use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
+use aleph_shader_db::{IShaderDatabase, IShaderDatabaseExt};
 
 use crate::renderer::params::BackBufferInfo;
+use crate::shaders;
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,
@@ -44,6 +46,7 @@ struct MainGBufferPassPayload {
     depth_buffer: ResourceMut,
     depth_buffer_format: Format,
     gbuffer_extent: Extent2D,
+    pipeline: AnyArc<dyn IGraphicsPipeline>,
 }
 
 pub struct MainGBufferPassOutput {
@@ -57,6 +60,7 @@ pub fn pass(
     frame_graph: &mut FrameGraphBuilder,
     device: &dyn IDevice,
     pin_board: &PinBoard,
+    shader_db: &dyn IShaderDatabase,
 ) {
     frame_graph.add_pass(
         "EguiPass",
@@ -84,7 +88,7 @@ pub fn pass(
                 ResourceUsageFlags::RENDER_TARGET,
             );
 
-            // Normal
+            // WorldNormal
             let gbuffer1_format = Format::Rgba32Float;
             let gbuffer1 = resources.create_texture(
                 &TextureDesc {
@@ -124,7 +128,7 @@ pub fn pass(
                 ResourceUsageFlags::RENDER_TARGET,
             );
 
-            let depth_buffer_format = Format::Depth24Stencil8;
+            let depth_buffer_format = Format::Depth32Float;
             let depth_buffer = resources.create_texture(
                 &TextureDesc {
                     width: b_desc.width,
@@ -143,6 +147,50 @@ pub fn pass(
                 ResourceUsageFlags::RENDER_TARGET,
             );
 
+            let descriptor_set_layout = create_descriptor_set_layout(device);
+            let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
+
+            let vertex_shader = shader_db
+                .get(shaders::aleph_render::deferred_main_gbuffer_vert())
+                .unwrap();
+            let fragment_shader = shader_db
+                .get(shaders::aleph_render::deferred_main_gbuffer_frag())
+                .unwrap();
+            let (vertex_data, fragment_data) = match device.get_backend_api() {
+                BackendAPI::Vulkan => (
+                    ShaderBinary::Spirv(vertex_shader.spirv),
+                    ShaderBinary::Spirv(fragment_shader.spirv),
+                ),
+                BackendAPI::D3D12 => (
+                    ShaderBinary::Dxil(vertex_shader.dxil),
+                    ShaderBinary::Dxil(fragment_shader.dxil),
+                ),
+            };
+            let vertex_shader = device
+                .create_shader(&ShaderOptions {
+                    shader_type: ShaderType::Vertex,
+                    data: vertex_data,
+                    entry_point: "main",
+                    name: Some("main_gbuffer::VertexShader"),
+                })
+                .unwrap();
+
+            let fragment_shader = device
+                .create_shader(&ShaderOptions {
+                    shader_type: ShaderType::Fragment,
+                    data: fragment_data,
+                    entry_point: "main",
+                    name: Some("main_gbuffer::FragmentShader"),
+                })
+                .unwrap();
+
+            let graphics_pipeline = create_pipeline_state(
+                device,
+                pipeline_layout.as_ref(),
+                vertex_shader.as_ref(),
+                fragment_shader.as_ref(),
+            );
+
             data.write(MainGBufferPassPayload {
                 gbuffer0,
                 gbuffer0_format,
@@ -153,6 +201,7 @@ pub fn pass(
                 depth_buffer,
                 depth_buffer_format,
                 gbuffer_extent: Extent2D::new(b_desc.width, b_desc.height),
+                pipeline: graphics_pipeline,
             });
             pin_board.publish(MainGBufferPassOutput {
                 gbuffer0,
@@ -201,7 +250,7 @@ pub fn pass(
                 .get_dsv(&ImageViewDesc {
                     format: data.depth_buffer_format,
                     view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_depth_stencil(),
+                    sub_resources: TextureSubResourceSet::with_depth(),
                     writable: true,
                 })
                 .unwrap();
@@ -241,7 +290,7 @@ pub fn pass(
                 allow_uav_writes: false,
             });
 
-            // encoder.bind_graphics_pipeline(data.pipeline.as_ref());
+            encoder.bind_graphics_pipeline(data.pipeline.as_ref());
 
             // encoder.bind_descriptor_sets(
             //     data.pipeline_layout.as_ref(),
@@ -282,37 +331,35 @@ pub fn pass(
     );
 }
 
-// fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
-//     let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-//         visibility: DescriptorShaderVisibility::All,
-//         items: &[
-//             DescriptorSetLayoutBinding::with_type(DescriptorType::Texture).with_binding_num(0),
-//             DescriptorSetLayoutBinding::with_type(DescriptorType::Sampler).with_binding_num(1),
-//         ],
-//         name: Some("main_gbuffer_pass::DescriptorSetLayout"),
-//     };
-//     device
-//         .create_descriptor_set_layout(&descriptor_set_layout_desc)
-//         .unwrap()
-// }
+fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
+    let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+        visibility: DescriptorShaderVisibility::All,
+        items: &[
+            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
+                .with_binding_num(0),
+            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
+                .with_binding_num(1),
+        ],
+        name: Some("main_gbuffer_pass::DescriptorSetLayout"),
+    };
+    device
+        .create_descriptor_set_layout(&descriptor_set_layout_desc)
+        .unwrap()
+}
 
-// fn create_root_signature(
-//     device: &dyn IDevice,
-//     descriptor_set_layout: &dyn IDescriptorSetLayout,
-// ) -> AnyArc<dyn IPipelineLayout> {
-//     let pipeline_layout_desc = PipelineLayoutDesc {
-//         set_layouts: &[descriptor_set_layout],
-//         push_constant_blocks: &[PushConstantBlock {
-//             binding: 0,
-//             visibility: DescriptorShaderVisibility::All,
-//             size: 8,
-//         }],
-//         name: Some("egui::RootSignature"),
-//     };
-//     device
-//         .create_pipeline_layout(&pipeline_layout_desc)
-//         .unwrap()
-// }
+fn create_root_signature(
+    device: &dyn IDevice,
+    descriptor_set_layout: &dyn IDescriptorSetLayout,
+) -> AnyArc<dyn IPipelineLayout> {
+    let pipeline_layout_desc = PipelineLayoutDesc {
+        set_layouts: &[descriptor_set_layout],
+        push_constant_blocks: &[],
+        name: Some("main_gbuffer_pass::RootSignature"),
+    };
+    device
+        .create_pipeline_layout(&pipeline_layout_desc)
+        .unwrap()
+}
 
 fn create_pipeline_state(
     device: &dyn IDevice,
@@ -392,8 +439,12 @@ fn create_pipeline_state(
         rasterizer_state: &rasterizer_state,
         depth_stencil_state: &depth_stencil_state,
         blend_state: &blend_state,
-        render_target_formats: &[Format::Bgra8UnormSrgb],
-        depth_stencil_format: Some(Format::Depth24Stencil8),
+        render_target_formats: &[
+            Format::Bgra8UnormSrgb,
+            Format::Rgba32Float,
+            Format::Rg8Unorm,
+        ],
+        depth_stencil_format: Some(Format::Depth32Float),
         name: Some("main_gbuffer_pass::GraphicsPipelineState"),
     };
 
