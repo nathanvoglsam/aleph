@@ -1189,9 +1189,15 @@ impl Device {
         color_formats.extend(iter);
 
         let builder = if let Some(v) = desc.depth_stencil_format {
-            builder
-                .depth_attachment_format(texture_format_to_vk(v))
-                .stencil_attachment_format(texture_format_to_vk(v))
+            if v.is_stencil() {
+                builder
+                    .depth_attachment_format(texture_format_to_vk(v))
+                    .stencil_attachment_format(texture_format_to_vk(v))
+            } else {
+                builder
+                    .depth_attachment_format(texture_format_to_vk(v))
+                    .stencil_attachment_format(vk::Format::UNDEFINED)
+            }
         } else {
             builder
         };
