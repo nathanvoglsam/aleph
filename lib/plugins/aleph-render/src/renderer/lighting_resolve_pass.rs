@@ -89,7 +89,7 @@ pub fn pass(
                     usage: Default::default(),
                     name: Some("OutputLighting"),
                 },
-                ResourceUsageFlags::RENDER_TARGET,
+                ResourceUsageFlags::UNORDERED_ACCESS,
             );
 
             let set_layout = device
@@ -161,7 +161,7 @@ pub fn pass(
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
             let gbuffer1_desc = gbuffer1.desc();
             let gbuffer2 = resources.get_texture(data.gbuffer2).unwrap();
-            let gbuffer2_desc = gbuffer1.desc();
+            let gbuffer2_desc = gbuffer2.desc();
             let lighting = resources.get_texture(data.lighting).unwrap();
             let lighting_desc = lighting.desc();
 
@@ -196,13 +196,13 @@ pub fn pass(
                 writable: true,
             });
 
-            encoder.bind_compute_pipeline(data.pipeline.as_ref());
-
-            // TODO: Bind Descriptors
-
-            let group_count_x = data.back_buffer_extent.width.div_ceil(8);
-            let group_count_y = data.back_buffer_extent.height.div_ceil(8);
-            encoder.dispatch(group_count_x, group_count_y, 1);
+            // encoder.bind_compute_pipeline(data.pipeline.as_ref());
+            //
+            // // TODO: Bind Descriptors
+            //
+            // let group_count_x = data.back_buffer_extent.width.div_ceil(8);
+            // let group_count_y = data.back_buffer_extent.height.div_ceil(8);
+            // encoder.dispatch(group_count_x, group_count_y, 1);
         },
     );
 }

@@ -115,7 +115,7 @@ pub fn pass(
                     width: b_desc.width,
                     height: b_desc.height,
                     depth: 1,
-                    format: gbuffer1_format,
+                    format: gbuffer2_format,
                     dimension: TextureDimension::Texture2D,
                     clear_value: Some(OptimalClearValue::ColorInt(0x00000000)),
                     array_size: 1,
@@ -284,8 +284,8 @@ pub fn pass(
                     image_layout: ImageLayout::DepthStencilAttachment,
                     depth_load_op: AttachmentLoadOp::Clear(DepthStencilClearValue::depth(1.0)),
                     depth_store_op: AttachmentStoreOp::Store,
-                    stencil_load_op: AttachmentLoadOp::DontCare,
-                    stencil_store_op: AttachmentStoreOp::DontCare,
+                    stencil_load_op: AttachmentLoadOp::None,
+                    stencil_store_op: AttachmentStoreOp::None,
                 }),
                 allow_uav_writes: false,
             });
@@ -424,11 +424,23 @@ fn create_pipeline_state(
     };
 
     let blend_state = BlendStateDesc {
-        attachments: &[AttachmentBlendState {
-            blend_enabled: false,
-            color_write_mask: ColorComponentFlags::all(),
-            ..Default::default()
-        }],
+        attachments: &[
+            AttachmentBlendState {
+                blend_enabled: false,
+                color_write_mask: ColorComponentFlags::all(),
+                ..Default::default()
+            },
+            AttachmentBlendState {
+                blend_enabled: false,
+                color_write_mask: ColorComponentFlags::all(),
+                ..Default::default()
+            },
+            AttachmentBlendState {
+                blend_enabled: false,
+                color_write_mask: ColorComponentFlags::all(),
+                ..Default::default()
+            },
+        ],
     };
 
     let graphics_pipeline_desc_new = GraphicsPipelineDesc {
