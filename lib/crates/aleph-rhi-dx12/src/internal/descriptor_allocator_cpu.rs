@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use crossbeam::queue::SegQueue;
-use parking_lot::Mutex;
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+
+use crossbeam::queue::SegQueue;
+use parking_lot::Mutex;
 use windows::core::CanInto;
 use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;

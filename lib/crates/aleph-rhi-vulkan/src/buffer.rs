@@ -27,14 +27,16 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use std::any::TypeId;
+use std::ptr::NonNull;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
-use std::any::TypeId;
-use std::ptr::NonNull;
 use vulkan_alloc::vma;
+
+use crate::device::Device;
 
 pub struct Buffer {
     pub(crate) _this: AnyWeak<Self>,

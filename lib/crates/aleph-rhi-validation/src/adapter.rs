@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::{ValidationContext, ValidationDevice, ValidationQueue};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+
+use crate::{ValidationContext, ValidationDevice, ValidationQueue};
 
 pub struct ValidationAdapter {
     pub(crate) _this: AnyWeak<Self>,

@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Field, HasAttributes};
-use smartstring::alias::CompactString;
 use std::ops::Range;
+
+use smartstring::alias::CompactString;
+
+use crate::ast::{Field, HasAttributes};
 
 #[derive(Default, Debug)]
 pub struct Table<'input> {

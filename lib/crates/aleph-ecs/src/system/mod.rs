@@ -29,20 +29,16 @@
 
 mod system_access;
 
-pub use system_access::QueryState;
-pub use system_access::Res;
-pub use system_access::ResMut;
-pub use system_access::ResMutState;
-pub use system_access::ResState;
-pub use system_access::SystemParam;
-pub use system_access::SystemParamFetch;
-pub use system_access::SystemParamFunction;
-pub use system_access::SystemParamState;
+use std::any::Any;
+
+use aleph_label::Label;
+pub use system_access::{
+    QueryState, Res, ResMut, ResMutState, ResState, SystemParam, SystemParamFetch,
+    SystemParamFunction, SystemParamState,
+};
 
 use crate::scheduler::AccessDescriptor;
 use crate::world::World;
-use aleph_label::Label;
-use std::any::Any;
 
 // ============================================================================================== //
 

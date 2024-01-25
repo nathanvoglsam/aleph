@@ -27,17 +27,18 @@
 // SOFTWARE.
 //
 
+use interfaces::any::AnyArc;
+use interfaces::platform::{
+    IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
+    IKeyboard, IKeyboardProvider, IMouse, IMouseProvider, IWindow, IWindowProvider,
+};
+
 use crate::clipboard::ClipboardImpl;
 use crate::events::EventsImpl;
 use crate::frame_timer::FrameTimerImpl;
 use crate::keyboard::KeyboardImpl;
 use crate::mouse::MouseImpl;
 use crate::window::WindowImpl;
-use interfaces::any::AnyArc;
-use interfaces::platform::{
-    IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
-    IKeyboard, IKeyboardProvider, IMouse, IMouseProvider, IWindow, IWindowProvider,
-};
 
 pub struct ProviderImpl {
     pub frame_timer: Option<AnyArc<FrameTimerImpl>>,

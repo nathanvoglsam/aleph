@@ -29,11 +29,13 @@
 
 #![allow(clippy::missing_safety_doc)]
 
-use crate::Colour;
-use pix_raw::*;
 use std::ffi::{CStr, CString};
+
+use pix_raw::*;
 use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
+
+use crate::Colour;
 
 ///
 /// Returns whether the PIX library is linked and ready to use.

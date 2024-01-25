@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::internal::unwrap;
-use crate::{ValidationDevice, ValidationSurface, ValidationTexture};
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+
+use crate::internal::unwrap;
+use crate::{ValidationDevice, ValidationSurface, ValidationTexture};
 
 pub struct ValidationSwapChain {
     pub(crate) _this: AnyWeak<Self>,

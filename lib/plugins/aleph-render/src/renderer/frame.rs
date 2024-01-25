@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::renderer::FontTexture;
-use aleph_frame_graph::FrameGraph;
-use aleph_frame_graph::TransientResourceBundle;
+use std::ops::Deref;
+
+use aleph_frame_graph::{FrameGraph, TransientResourceBundle};
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
-use std::ops::Deref;
+
+use crate::renderer::FontTexture;
 
 pub struct PerFrameObjects {
     pub acquire_semaphore: AnyArc<dyn ISemaphore>,

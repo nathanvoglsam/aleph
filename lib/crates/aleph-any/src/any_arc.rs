@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::{IAny, TraitObject};
 use std::any::TypeId;
 use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::{Arc, Weak};
+
+use crate::{IAny, TraitObject};
 
 ///
 /// AnyArc is a wrapper around [`std::sync::Arc`] that enables the ability to cast

@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::internal::framebuffer_cache_key::FramebufferCacheKey;
+use std::collections::HashMap;
+use std::mem::ManuallyDrop;
+
 use ash::prelude::VkResult;
 use ash::vk;
 use bumpalo::Bump;
-use std::collections::HashMap;
-use std::mem::ManuallyDrop;
+
+use crate::device::Device;
+use crate::internal::framebuffer_cache_key::FramebufferCacheKey;
 
 pub struct FramebufferCache {
     /// A memory pool used for allocating data for the keys in the hashmap. Must outlive the cache.

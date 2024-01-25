@@ -27,6 +27,15 @@
 // SOFTWARE.
 //
 
+use std::collections::{HashMap, HashSet};
+use std::num::NonZeroU32;
+use std::ops::Deref;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_rhi_api::*;
+use crossbeam::atomic::AtomicCell;
+
 use crate::descriptor_set_layout::DescriptorBindingInfo;
 use crate::fence::FenceState;
 use crate::internal::descriptor_set::DescriptorSet;
@@ -39,13 +48,6 @@ use crate::{
     ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationQueue, ValidationSampler,
     ValidationSemaphore, ValidationShader, ValidationTexture,
 };
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
-use aleph_rhi_api::*;
-use crossbeam::atomic::AtomicCell;
-use std::collections::{HashMap, HashSet};
-use std::num::NonZeroU32;
-use std::ops::Deref;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct ValidationDevice {
     pub(crate) _this: AnyWeak<Self>,

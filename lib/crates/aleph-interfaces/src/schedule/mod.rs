@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
+use std::mem::ManuallyDrop;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+
 pub use aleph_ecs::scheduler::*;
 
 use crate::any::IAny;
 use crate::label::Label;
-use std::mem::ManuallyDrop;
-use std::ops::{Deref, DerefMut};
-use std::sync::Arc;
 
 ///
 /// This trait is used to provide the engine with a central [Schedule] object to schedule work onto.

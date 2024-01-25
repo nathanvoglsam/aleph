@@ -67,10 +67,11 @@ mod profile;
 mod triple;
 
 pub mod build {
+    use std::env;
+
     use crate::{
         get_architecture_from, get_platform_from, Architecture, BuildConfig, BuildType, Platform,
     };
-    use std::env;
 
     ///
     /// Returns the host platform (operating system)
@@ -155,11 +156,9 @@ pub mod build {
     }
 }
 
-pub use architecture::get_architecture_from;
-pub use architecture::Architecture;
+pub use architecture::{get_architecture_from, Architecture};
 pub use build_config::BuildConfig;
 pub use build_type::BuildType;
-pub use platform::get_platform_from;
-pub use platform::Platform;
+pub use platform::{get_platform_from, Platform};
 pub use profile::Profile;
 pub use triple::recreate_triple;

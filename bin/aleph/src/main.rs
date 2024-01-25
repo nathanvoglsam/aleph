@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::commands::shaders;
-use crate::commands::SubcommandSet;
-use crate::commands::{Build, GenProj};
+use crate::commands::{shaders, Build, GenProj, SubcommandSet};
 
 mod commands;
 mod project;

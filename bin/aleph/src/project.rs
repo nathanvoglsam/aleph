@@ -27,21 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::project_schema::ProjectSchema;
-use crate::utils::{find_project_file, BuildPlatform, Target};
-use aleph_target::build::target_architecture;
-use aleph_target::build::target_platform;
+use std::collections::HashMap;
+use std::mem::size_of;
+
+use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Profile};
 use anyhow::{anyhow, Context};
 use bumpalo::Bump;
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
-use cargo_metadata::semver::Version;
-use cargo_metadata::semver::VersionReq;
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::semver::{Version, VersionReq};
 use cargo_metadata::Package;
 use once_cell::sync::OnceCell;
-use std::collections::HashMap;
-use std::mem::size_of;
+
+use crate::project_schema::ProjectSchema;
+use crate::utils::{find_project_file, BuildPlatform, Target};
 
 /// A tuple of [Version] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
 /// instead of a String allows avoiding extra .clone calls when building the table.

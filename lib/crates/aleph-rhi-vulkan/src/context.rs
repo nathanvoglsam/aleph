@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::adapter::Adapter;
-use crate::internal::device_info::DeviceInfo;
-use crate::internal::unwrap;
-use crate::surface::Surface;
+use std::any::TypeId;
+use std::ffi::CStr;
+use std::mem::ManuallyDrop;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
@@ -38,9 +38,11 @@ use aleph_rhi_impl_utils::str_from_ptr;
 use aleph_rhi_loader_api::VulkanConfig;
 use ash::vk;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use std::any::TypeId;
-use std::ffi::CStr;
-use std::mem::ManuallyDrop;
+
+use crate::adapter::Adapter;
+use crate::internal::device_info::DeviceInfo;
+use crate::internal::unwrap;
+use crate::surface::Surface;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,

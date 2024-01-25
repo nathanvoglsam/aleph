@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use crate::interfaces::any::AnyArc;
 use crate::interfaces::plugin::IQuitHandle;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 ///
 /// The struct that implements `IQuitHandle`

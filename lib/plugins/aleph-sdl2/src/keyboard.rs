@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
+use std::collections::HashMap;
+
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
     Event, IKeyboard, IKeyboardEventsLock, IKeyboardStateLock, KeyCode, KeyDownEvent, KeyMod,
     KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
 };
 use parking_lot::{RwLock, RwLockReadGuard};
-use std::collections::HashMap;
 
 ///
 /// Represents the state of the keyboard this frame

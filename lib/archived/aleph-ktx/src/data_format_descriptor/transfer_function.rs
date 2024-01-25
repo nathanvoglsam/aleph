@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use aleph_vk_format::VkFormat;
+
 use crate::format::is_format_prohibited;
 use crate::is_format_unsupported;
-use aleph_vk_format::VkFormat;
 
 ///
 /// Represents the set of supported `transferFunction` values

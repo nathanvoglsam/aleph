@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use aleph_rhi_api::SamplerDesc;
 use std::hash::{Hash, Hasher};
 use std::mem::transmute;
+
+use aleph_rhi_api::SamplerDesc;
 
 #[repr(transparent)]
 pub struct SamplerCacheKey<'a>(SamplerDesc<'a>);

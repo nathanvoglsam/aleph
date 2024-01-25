@@ -73,13 +73,8 @@ mod any_arc;
 #[cfg(test)]
 mod tests;
 
-pub use any::box_downcast;
-pub use any::box_downcast_unchecked;
-pub use any::IAny;
-pub use any::QueryInterface;
-pub use any::TraitObject;
-pub use any_arc::AnyArc;
-pub use any_arc::AnyWeak;
+pub use any::{box_downcast, box_downcast_unchecked, IAny, QueryInterface, TraitObject};
+pub use any_arc::{AnyArc, AnyWeak};
 
 /// This macro is used for implementing IAny for a concrete type. This will correctly generate the
 /// required glue for casting to any of the provided interfaces that the concrete type implements.

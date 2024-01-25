@@ -29,6 +29,7 @@
 
 use std::ffi::{c_char, CStr};
 use std::ops::Deref;
+
 use utf16_lit::utf16_null;
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D::*;

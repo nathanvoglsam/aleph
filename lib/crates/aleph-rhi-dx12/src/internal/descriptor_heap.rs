@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use parking_lot::Mutex;
 use std::num::{NonZeroU64, NonZeroUsize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+
+use parking_lot::Mutex;
 use windows::core::CanInto;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Graphics::Direct3D12::*;

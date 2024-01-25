@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::platform::{KeyboardEvent, MouseEvent, WindowEvent};
 use any::*;
+
+use crate::platform::{KeyboardEvent, MouseEvent, WindowEvent};
 
 ///
 /// This interface should be used by plugins that wish to register themselves as the engine's

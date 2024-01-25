@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::{ValidationDevice, ValidationPipelineLayout};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+
+use crate::{ValidationDevice, ValidationPipelineLayout};
 
 pub struct ValidationGraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,

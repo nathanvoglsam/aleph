@@ -35,6 +35,7 @@ use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::mem::{size_of, ManuallyDrop};
 use std::ops::Deref;
+
 use windows::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -332,9 +333,10 @@ impl<T> Drop for AlignmentWrapper<T> {
 }
 
 mod packed {
-    use super::PackedPipelineStateStreamObject;
     use windows::Win32::Graphics::Direct3D12::*;
     use windows::Win32::Graphics::Dxgi::Common::*;
+
+    use super::PackedPipelineStateStreamObject;
 
     pub(crate) type RootSignature = PackedPipelineStateStreamObject<
         Option<ID3D12RootSignature>,

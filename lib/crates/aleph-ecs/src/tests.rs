@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
+
 use crate::scheduler::SystemSchedule;
 use crate::system::{ExplicitDependencies, IntoSystem, Res, ResMut};
 use crate::world::{Query, World};
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
 
 #[derive(Default, PartialEq, Debug)]
 struct Position {

@@ -27,13 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::clipboard::ClipboardImpl;
-use crate::events::EventsImpl;
-use crate::frame_timer::FrameTimerImpl;
-use crate::keyboard::{KeyboardImpl, KeyboardState};
-use crate::mouse::MouseImpl;
-use crate::provider::ProviderImpl;
-use crate::window::{WindowImpl, WindowState};
+use std::any::TypeId;
+use std::cell::Cell;
+use std::collections::HashMap;
+use std::ops::Deref;
+use std::rc::Rc;
+
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::{
@@ -46,11 +45,14 @@ use interfaces::plugin::{
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 use parking_lot::RwLockWriteGuard;
 use sdl2::mouse::SystemCursor;
-use std::any::TypeId;
-use std::cell::Cell;
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::rc::Rc;
+
+use crate::clipboard::ClipboardImpl;
+use crate::events::EventsImpl;
+use crate::frame_timer::FrameTimerImpl;
+use crate::keyboard::{KeyboardImpl, KeyboardState};
+use crate::mouse::MouseImpl;
+use crate::provider::ProviderImpl;
+use crate::window::{WindowImpl, WindowState};
 
 pub struct PluginPlatformSDL2 {
     sdl: Rc<Cell<Option<SdlObjects>>>,

@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::ValidationDevice;
+use std::collections::HashMap;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
-use std::collections::HashMap;
+
+use crate::ValidationDevice;
 
 pub struct ValidationTexture {
     pub(crate) _this: AnyWeak<Self>,

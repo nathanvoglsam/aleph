@@ -35,33 +35,23 @@ mod raw;
 mod sample_info;
 mod transfer_function;
 
-pub use channel_type::ASTCChannelType;
-pub use channel_type::BC1ChannelType;
-pub use channel_type::BC2ChannelType;
-pub use channel_type::BC3ChannelType;
-pub use channel_type::BC4ChannelType;
-pub use channel_type::BC5ChannelType;
-pub use channel_type::BC6ChannelType;
-pub use channel_type::BC7ChannelType;
-pub use channel_type::ETC1ChannelType;
-pub use channel_type::ETC1SChannelType;
-pub use channel_type::ETC2ChannelType;
-pub use channel_type::PVRTC2ChannelType;
-pub use channel_type::PVRTCChannelType;
-pub use channel_type::RGBSDAChannelType;
+use std::io::{Read, Seek, SeekFrom};
+
+use aleph_vk_format::VkFormat;
+pub use channel_type::{
+    ASTCChannelType, BC1ChannelType, BC2ChannelType, BC3ChannelType, BC4ChannelType,
+    BC5ChannelType, BC6ChannelType, BC7ChannelType, ETC1ChannelType, ETC1SChannelType,
+    ETC2ChannelType, PVRTC2ChannelType, PVRTCChannelType, RGBSDAChannelType,
+};
 pub use color_model::ColorModel;
 pub use color_primaries::ColorPrimaries;
-pub use flags::DFDFlags;
-pub use flags::SampleFlags;
-pub use sample_info::SampleInfo;
-pub use sample_info::SampleInfoIterator;
+pub use flags::{DFDFlags, SampleFlags};
+pub use sample_info::{SampleInfo, SampleInfoIterator};
 pub use transfer_function::TransferFunction;
 
 use crate::data_format_descriptor::raw::RawDataFormatDescriptor;
 use crate::document::FileIndex;
 use crate::{format_bytes_per_block, KTXReadError};
-use aleph_vk_format::VkFormat;
-use std::io::{Read, Seek, SeekFrom};
 
 ///
 /// The set of errors that can be produced when reading the DFD section of a ktx file

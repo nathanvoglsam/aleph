@@ -27,6 +27,14 @@
 // SOFTWARE.
 //
 
+use std::collections::HashMap;
+use std::ptr::NonNull;
+
+use aleph_arena_drop_list::DropLink;
+use aleph_pin_board::PinBoard;
+use aleph_rhi_api::*;
+use bumpalo::Bump;
+
 use crate::internal::{
     FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle, RenderPass,
     ResourceRoot, ResourceVersion,
@@ -34,12 +42,6 @@ use crate::internal::{
 use crate::{
     FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, TransientResourceBundle,
 };
-use aleph_arena_drop_list::DropLink;
-use aleph_pin_board::PinBoard;
-use aleph_rhi_api::*;
-use bumpalo::Bump;
-use std::collections::HashMap;
-use std::ptr::NonNull;
 
 pub struct FrameGraph {
     /// The bump allocation arena that provides the backing memory for the render passes and any

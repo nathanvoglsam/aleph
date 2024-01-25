@@ -31,11 +31,12 @@
 //! This provides a [log::Log] implementation in [Logger].
 //!
 
-use log::{Level, LevelFilter, Metadata, Record};
 use std::io::{BufWriter, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+
+use log::{Level, LevelFilter, Metadata, Record};
 
 ///
 /// Provides a [log::Log] implementation that wraps an [env_logger::Logger] for local logging and

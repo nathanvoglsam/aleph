@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
+use windows::core::CanInto;
+use windows::Win32::Graphics::Direct3D12::*;
+
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap::DescriptorHeap;
 use crate::internal::sampler_cache::SamplerCache;
-use windows::core::CanInto;
-use windows::Win32::Graphics::Direct3D12::*;
 
 /// Internal struct that caches the descriptor increment sizes needed for allocating space in
 /// descriptor heaps.

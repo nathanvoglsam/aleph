@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use combine_utils::CharExtensions;
 use std::str::CharIndices;
+
+use combine_utils::CharExtensions;
 
 /// The error type the lexer emits
 #[derive(Clone, PartialEq, Eq, Debug)]

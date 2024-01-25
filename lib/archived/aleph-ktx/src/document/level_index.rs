@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::{KTXReadError, SuperCompressionScheme};
-use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Read;
+
+use byteorder::{LittleEndian, ReadBytesExt};
+
+use crate::{KTXReadError, SuperCompressionScheme};
 
 ///
 /// Internal struct for holding a single member object of the level indicies list

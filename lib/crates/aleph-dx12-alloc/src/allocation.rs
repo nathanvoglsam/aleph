@@ -29,6 +29,12 @@
 
 #![allow(non_snake_case)]
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
+use windows::utils::WeakRef;
+use windows::Win32::Graphics::Direct3D12::*;
+
 use crate::raw::{
     D3D12MA_Allocation_GetAlignment, D3D12MA_Allocation_GetHeap, D3D12MA_Allocation_GetName,
     D3D12MA_Allocation_GetOffset, D3D12MA_Allocation_GetPrivateData,
@@ -36,10 +42,6 @@ use crate::raw::{
     D3D12MA_Allocation_SetName, D3D12MA_Allocation_SetPrivateData, D3D12MA_Allocation_SetResource,
     D3D12MA_Allocation_WasZeroInitialized,
 };
-use std::ffi::c_void;
-use std::ptr::NonNull;
-use windows::utils::WeakRef;
-use windows::Win32::Graphics::Direct3D12::*;
 
 #[repr(transparent)]
 pub struct Allocation(pub(crate) NonNull<c_void>);

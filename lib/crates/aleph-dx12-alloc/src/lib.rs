@@ -38,40 +38,17 @@ mod pool;
 mod raw;
 mod virtual_block;
 
+pub use raw::{
+    AllocHandle, Budget, DetailedStatistics, Statistics, TotalStatistics, VirtualAllocation,
+    ALLOCATE_FN, ALLOCATION_CALLBACKS, ALLOCATION_DESC, ALLOCATION_FLAGS, ALLOCATOR_DESC,
+    ALLOCATOR_FLAGS, DEFRAGMENTATION_DESC, DEFRAGMENTATION_FLAGS, DEFRAGMENTATION_MOVE,
+    DEFRAGMENTATION_MOVE_OPERATION, DEFRAGMENTATION_PASS_MOVE_INFO, DEFRAGMENTATION_STATS, FREE_FN,
+    POOL_DESC, POOL_FLAGS, VIRTUAL_ALLOCATION_DESC, VIRTUAL_ALLOCATION_FLAGS,
+    VIRTUAL_ALLOCATION_INFO, VIRTUAL_BLOCK_DESC, VIRTUAL_BLOCK_FLAGS,
+};
+
 pub use crate::allocation::Allocation;
 pub use crate::allocator::Allocator;
 pub use crate::defragmentation_context::DefragmentationContext;
 pub use crate::pool::Pool;
 pub use crate::virtual_block::VirtualBlock;
-
-pub use raw::ALLOCATE_FN;
-pub use raw::ALLOCATION_CALLBACKS;
-pub use raw::ALLOCATOR_DESC;
-pub use raw::ALLOCATOR_FLAGS;
-pub use raw::FREE_FN;
-
-pub use raw::AllocHandle;
-pub use raw::ALLOCATION_DESC;
-pub use raw::ALLOCATION_FLAGS;
-
-pub use raw::POOL_DESC;
-pub use raw::POOL_FLAGS;
-
-pub use raw::DEFRAGMENTATION_DESC;
-pub use raw::DEFRAGMENTATION_FLAGS;
-pub use raw::DEFRAGMENTATION_MOVE;
-pub use raw::DEFRAGMENTATION_MOVE_OPERATION;
-pub use raw::DEFRAGMENTATION_PASS_MOVE_INFO;
-pub use raw::DEFRAGMENTATION_STATS;
-
-pub use raw::Budget;
-pub use raw::DetailedStatistics;
-pub use raw::Statistics;
-pub use raw::TotalStatistics;
-
-pub use raw::VirtualAllocation;
-pub use raw::VIRTUAL_ALLOCATION_DESC;
-pub use raw::VIRTUAL_ALLOCATION_FLAGS;
-pub use raw::VIRTUAL_ALLOCATION_INFO;
-pub use raw::VIRTUAL_BLOCK_DESC;
-pub use raw::VIRTUAL_BLOCK_FLAGS;

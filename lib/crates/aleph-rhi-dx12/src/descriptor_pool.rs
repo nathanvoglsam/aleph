@@ -27,16 +27,18 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::cell::UnsafeCell;
+use std::ptr::NonNull;
+
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
+
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
 use crate::internal::descriptor_arena::DescriptorArena;
 use crate::internal::descriptor_set::DescriptorSet;
-use aleph_any::{declare_interfaces, AnyArc};
-use aleph_rhi_api::*;
-use std::any::TypeId;
-use std::cell::UnsafeCell;
-use std::ptr::NonNull;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 pub struct DescriptorPool {
     pub(crate) _device: AnyArc<Device>,

@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
+use std::ptr::NonNull;
+
 use crate::world::{
     ArchetypeFilter, ComponentQuery, ComponentQueryItem, EntityId, EntityLayout, EntityLayoutBuf,
     Fetch, World,
 };
-use std::ptr::NonNull;
 
 pub struct Query<'world, Q: ComponentQuery> {
     world: &'world mut World,

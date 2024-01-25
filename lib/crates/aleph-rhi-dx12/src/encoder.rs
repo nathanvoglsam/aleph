@@ -27,6 +27,21 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::marker::PhantomData;
+use std::mem::transmute_copy;
+use std::ptr::NonNull;
+
+use aleph_any::AnyArc;
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use bumpalo::collections::Vec as BumpVec;
+use bumpalo::Bump;
+use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
+use windows::Win32::Foundation::RECT;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
+
 use crate::command_list::CommandList;
 use crate::internal::conv::{
     barrier_access_to_dx12, barrier_sync_to_dx12, image_layout_to_dx12,
@@ -35,22 +50,8 @@ use crate::internal::conv::{
 };
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::unwrap;
-use crate::pipeline::ComputePipeline;
-use crate::pipeline::GraphicsPipeline;
+use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::ImageViewObject;
-use aleph_any::AnyArc;
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use bumpalo::collections::Vec as BumpVec;
-use bumpalo::Bump;
-use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
-use std::any::TypeId;
-use std::marker::PhantomData;
-use std::mem::transmute_copy;
-use std::ptr::NonNull;
-use windows::Win32::Foundation::RECT;
-use windows::Win32::Graphics::Direct3D12::*;
-use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub struct Encoder<'a> {
     pub(crate) _list: ID3D12GraphicsCommandList7,

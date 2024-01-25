@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::{FrameGraphResources, Payload};
-use aleph_pin_board::PinBoard;
-use aleph_rhi_api::*;
 use std::mem::size_of_val;
 use std::ptr::NonNull;
+
+use aleph_pin_board::PinBoard;
+use aleph_rhi_api::*;
+
+use crate::{FrameGraphResources, Payload};
 
 pub trait IRenderPass: Send + 'static {
     fn execute(

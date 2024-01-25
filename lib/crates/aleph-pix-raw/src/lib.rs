@@ -29,8 +29,7 @@
 
 #![cfg(windows)]
 
-use std::os::raw::c_char;
-use std::os::raw::c_void;
+use std::os::raw::{c_char, c_void};
 
 extern "C" {
     /// This is an internal utility provided to allow the rust code to query whether it's linked to the actual PIX

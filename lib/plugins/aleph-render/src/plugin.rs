@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::renderer::EguiRenderer;
+use std::ops::Deref;
+
 use aleph_rhi_api::*;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::make_plugin_description_for_crate;
@@ -35,7 +36,8 @@ use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
-use std::ops::Deref;
+
+use crate::renderer::EguiRenderer;
 
 struct Data {
     index: usize,

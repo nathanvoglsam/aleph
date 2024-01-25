@@ -29,10 +29,11 @@
 
 #![allow(unused)]
 
-use ash::vk;
-use bitflags::bitflags;
 use std::ffi::c_char;
 use std::ptr::NonNull;
+
+use ash::vk;
+use bitflags::bitflags;
 
 /// Identifies the level of logging MoltenVK should be limited to outputting
 #[repr(transparent)]

@@ -27,6 +27,19 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::ffi::CStr;
+use std::marker::PhantomData;
+use std::ops::Deref;
+
+use aleph_any::AnyArc;
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use ash::extensions::khr::Synchronization2;
+use ash::vk;
+use bumpalo::collections::Vec as BumpVec;
+use bumpalo::Bump;
+
 use crate::command_list::CommandList;
 use crate::context::Context;
 use crate::device::Device;
@@ -35,17 +48,6 @@ use crate::internal::framebuffer_cache_key::{FramebufferCacheKey, FramebufferCac
 use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::RenderTargetView;
-use aleph_any::AnyArc;
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use ash::extensions::khr::Synchronization2;
-use ash::vk;
-use bumpalo::collections::Vec as BumpVec;
-use bumpalo::Bump;
-use std::any::TypeId;
-use std::ffi::CStr;
-use std::marker::PhantomData;
-use std::ops::Deref;
 
 pub struct Encoder<'a> {
     pub(crate) _buffer: vk::CommandBuffer,

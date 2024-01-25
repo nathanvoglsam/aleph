@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use egui::{ClippedPrimitive, FullOutput, RawInput};
-use interfaces::any::IAny;
 use std::ops::DerefMut;
 use std::sync::{Mutex, RwLock};
+
+use egui::{ClippedPrimitive, FullOutput, RawInput};
+use interfaces::any::IAny;
 
 ///
 /// This interface is used for getting an `egui::CtxRef`.

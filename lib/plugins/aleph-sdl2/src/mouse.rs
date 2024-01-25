@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
+
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
     Cursor, Event, IMouse, IMouseEventsLock, MouseButton, MouseButtonDownEvent, MouseButtonUpEvent,
     MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection, MouseWheelEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 
 ///
 /// Internal enum for representing a mouse request

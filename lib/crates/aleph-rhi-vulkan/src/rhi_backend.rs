@@ -1,6 +1,8 @@
-use crate::context::{Context, SurfaceLoaders};
-use crate::internal::messenger::vulkan_debug_messenger;
-use crate::internal::{loader, mvk};
+use std::ffi::CStr;
+use std::iter;
+use std::mem::ManuallyDrop;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use aleph_any::AnyArc;
 use aleph_rhi_api::{BackendAPI, IContext};
 use aleph_rhi_impl_utils::cstr;
@@ -12,10 +14,10 @@ use ash::extensions::khr::{
 use ash::extensions::mvk::{IOSSurface, MacOSSurface};
 use ash::vk;
 use libloading::Library;
-use std::ffi::CStr;
-use std::iter;
-use std::mem::ManuallyDrop;
-use std::sync::atomic::{AtomicBool, Ordering};
+
+use crate::context::{Context, SurfaceLoaders};
+use crate::internal::messenger::vulkan_debug_messenger;
+use crate::internal::{loader, mvk};
 
 pub static RHI_BACKEND: &'static dyn IRhiBackend = &RHI_BACKEND_OBJECT;
 

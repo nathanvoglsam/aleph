@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
+use std::collections::HashSet;
+
+use aleph_label::Label;
+
 use crate::scheduler::AccessDescriptor;
 use crate::world::{ComponentTypeId, ResourceId};
-use aleph_label::Label;
-use std::collections::HashSet;
 
 ///
 /// Internal container for storing the sets of resource accesses of a system

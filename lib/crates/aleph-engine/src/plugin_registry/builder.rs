@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
+use std::any::{Any, TypeId};
+use std::collections::{BTreeMap, BTreeSet};
+
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
 use crate::plugin_registry::PluginRegistry;
-use std::any::{Any, TypeId};
-use std::collections::{BTreeMap, BTreeSet};
 
 ///
 ///

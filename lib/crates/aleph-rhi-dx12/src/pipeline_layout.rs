@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use std::any::TypeId;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use std::any::TypeId;
 use windows::Win32::Graphics::Direct3D12::*;
+
+use crate::device::Device;
 
 pub struct PipelineLayout {
     pub(crate) this: AnyWeak<Self>,

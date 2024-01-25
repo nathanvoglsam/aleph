@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::path::{Path, PathBuf};
+
 use aleph_target_build::build::{target_architecture, target_build_config, target_platform};
 use aleph_target_build::Architecture;
-use std::path::{Path, PathBuf};
 
 ///
 /// This function will perform the necessary work to allow rust to export the `D3D12SDKVersion` and

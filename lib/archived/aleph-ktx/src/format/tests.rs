@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use aleph_vk_format::ALL_FORMATS;
+
 use crate::format::{is_format_prohibited, is_format_unsupported, ALLOWED_FORMATS};
 use crate::{format_sample_info_count, SampleInfo};
-use aleph_vk_format::ALL_FORMATS;
 
 #[test]
 fn all_formats_handled_prohibited() {

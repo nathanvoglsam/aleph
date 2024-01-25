@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use crossbeam::atomic::AtomicCell;
 use interfaces::schedule::{IScheduleCell, IScheduleProvider, Schedule, ScheduleScope};
-use std::sync::Arc;
 
 pub struct ScheduleProvider {
     schedule: Arc<dyn IScheduleCell>,

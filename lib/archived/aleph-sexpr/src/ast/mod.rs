@@ -29,10 +29,10 @@
 
 mod builders;
 
-pub use builders::ListBuilder;
-
 use std::fmt::{Display, Formatter};
 use std::ops::Range;
+
+pub use builders::ListBuilder;
 
 ///
 /// A wrapper over `ItemVariant` that associates the position within the source file of the item

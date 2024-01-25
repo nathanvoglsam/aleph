@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::internal::VersionIndex;
 use std::num::NonZeroU16;
 use std::ptr::NonNull;
+
+use crate::internal::VersionIndex;
 
 /// The underlying, binary representation of a Resource ID handle.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]

@@ -27,18 +27,19 @@
 // SOFTWARE.
 //
 
+use std::process::Command;
+
+use aleph_target::build::{target_architecture, target_platform};
+use aleph_target::Profile;
+use anyhow::anyhow;
+use camino::{Utf8Path, Utf8PathBuf};
+use clap::{Arg, ArgAction, ArgMatches};
+
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 use crate::utils::{
     architecture_from_arg, resolve_absolute_or_root_relative_path, BuildPlatform, Target,
 };
-use aleph_target::build::{target_architecture, target_platform};
-use aleph_target::Profile;
-use anyhow::anyhow;
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
-use clap::{Arg, ArgAction, ArgMatches};
-use std::process::Command;
 
 pub struct Build {}
 

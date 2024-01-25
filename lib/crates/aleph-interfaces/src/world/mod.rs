@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
-pub use aleph_ecs::world::*;
-
-use crate::any::IAny;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+
+pub use aleph_ecs::world::*;
+
+use crate::any::IAny;
 
 ///
 /// This trait is used to provide the engine with a central [World] object to store game objects

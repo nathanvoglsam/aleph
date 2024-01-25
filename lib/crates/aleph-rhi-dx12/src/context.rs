@@ -27,6 +27,22 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::ops::Deref;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use parking_lot::Mutex;
+use raw_window_handle::HasRawWindowHandle;
+use windows::core::{CanInto, ComInterface};
+use windows::Win32::Foundation::BOOL;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::Graphics::Dxgi::*;
+
 use crate::adapter::Adapter;
 use crate::internal::adapter_description_decoder::adapter_description_string;
 use crate::internal::create_device::create_device;
@@ -35,20 +51,6 @@ use crate::internal::feature_support::FeatureSupport;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::internal::unwrap;
 use crate::surface::Surface;
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use parking_lot::Mutex;
-use raw_window_handle::HasRawWindowHandle;
-use std::any::TypeId;
-use std::ops::Deref;
-use windows::core::{CanInto, ComInterface};
-use windows::Win32::Foundation::BOOL;
-use windows::Win32::Graphics::Direct3D::*;
-use windows::Win32::Graphics::Direct3D12::*;
-use windows::Win32::Graphics::Dxgi::Common::*;
-use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Context {
     pub(crate) this: AnyWeak<Self>,

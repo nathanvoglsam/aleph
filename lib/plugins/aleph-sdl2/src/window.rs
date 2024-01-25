@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
     Event, HasRawWindowHandle, IWindow, IWindowEventsLock, RawWindowHandle, WindowEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
-use std::sync::atomic::{AtomicBool, Ordering};
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more

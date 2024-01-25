@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use crossbeam::atomic::AtomicCell;
 use interfaces::world::{IWorldCell, IWorldProvider, World, WorldOptions, WorldScope};
-use std::sync::Arc;
 
 pub struct WorldProvider {
     world: Arc<dyn IWorldCell>,

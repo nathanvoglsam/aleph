@@ -29,14 +29,16 @@
 
 #![allow(non_snake_case)]
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
+use windows::core::HRESULT;
+
 use crate::raw::{
     D3D12MA_DefragmentationContext_BeginPass, D3D12MA_DefragmentationContext_EndPass,
     D3D12MA_DefragmentationContext_GetStats, D3D12MA_DefragmentationContext_Release,
 };
 use crate::{DEFRAGMENTATION_PASS_MOVE_INFO, DEFRAGMENTATION_STATS};
-use std::ffi::c_void;
-use std::ptr::NonNull;
-use windows::core::HRESULT;
 
 #[repr(transparent)]
 pub struct DefragmentationContext(pub(crate) NonNull<c_void>);

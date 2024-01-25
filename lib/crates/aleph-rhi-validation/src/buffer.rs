@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::ValidationDevice;
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+
+use crate::ValidationDevice;
 
 pub struct ValidationBuffer {
     pub(crate) _this: AnyWeak<Self>,

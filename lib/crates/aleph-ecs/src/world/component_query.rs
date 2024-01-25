@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::scheduler::AccessDescriptor;
-use crate::world::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, EntityLayoutBuf};
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
+
+use crate::scheduler::AccessDescriptor;
+use crate::world::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, EntityLayoutBuf};
 
 pub trait ComponentQuery: Send + Sync {
     type Fetch: for<'a> Fetch<'a>;

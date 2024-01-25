@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use aleph_type_id_hasher::TypeIdHasher;
 use std::any::{Any, TypeId};
 use std::hash::Hash;
+
+use aleph_type_id_hasher::TypeIdHasher;
 
 ///
 /// This trait specifies the requirements of a type that will be used as a [`Resource`] within the

@@ -29,10 +29,7 @@
 
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-
-pub use aleph_rhi_loader_api::ContextCreateError;
-pub use aleph_rhi_loader_api::ContextOptions;
-pub use aleph_rhi_loader_api::IRhiBackend;
+pub use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
 
 pub struct RhiLoader {
     /// List of backends that are available

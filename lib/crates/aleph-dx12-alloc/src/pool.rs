@@ -29,13 +29,14 @@
 
 #![allow(non_snake_case)]
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
 use crate::raw::{
     D3D12MA_Pool_BeginDefragmentation, D3D12MA_Pool_CalculateStatistics, D3D12MA_Pool_GetDesc,
     D3D12MA_Pool_GetName, D3D12MA_Pool_GetStatistics, D3D12MA_Pool_Release, D3D12MA_Pool_SetName,
 };
 use crate::{DetailedStatistics, Statistics, DEFRAGMENTATION_DESC, POOL_DESC};
-use std::ffi::c_void;
-use std::ptr::NonNull;
 
 #[repr(transparent)]
 pub struct Pool(pub(crate) NonNull<c_void>);

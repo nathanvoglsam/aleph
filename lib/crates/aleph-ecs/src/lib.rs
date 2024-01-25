@@ -51,21 +51,19 @@ pub mod c_api {
     //! data structure internals.
     //!
 
-    pub use crate::world::archetype::archetype_get_capacity;
-    pub use crate::world::archetype::archetype_get_component_descriptions;
-    pub use crate::world::archetype::archetype_get_component_index;
-    pub use crate::world::archetype::archetype_get_entity_layout;
-    pub use crate::world::archetype::archetype_get_len;
-    pub use crate::world::archetype::archetype_get_storage_by_index;
-    pub use crate::world::archetype_filter::archetype_filter_current;
-    pub use crate::world::archetype_filter::archetype_filter_destroy;
-    pub use crate::world::archetype_filter::archetype_filter_new;
-    pub use crate::world::archetype_filter::archetype_filter_next;
-    pub use crate::world::world::world_add_component;
-    pub use crate::world::world::world_get_component_ptr;
-    pub use crate::world::world::world_has_component;
-    pub use crate::world::world::world_register;
-    pub use crate::world::world::world_remove_component;
+    pub use crate::world::archetype::{
+        archetype_get_capacity, archetype_get_component_descriptions,
+        archetype_get_component_index, archetype_get_entity_layout, archetype_get_len,
+        archetype_get_storage_by_index,
+    };
+    pub use crate::world::archetype_filter::{
+        archetype_filter_current, archetype_filter_destroy, archetype_filter_new,
+        archetype_filter_next,
+    };
+    pub use crate::world::world::{
+        world_add_component, world_get_component_ptr, world_has_component, world_register,
+        world_remove_component,
+    };
 }
 
 // TODO: CommandBuffers so that world modification commands can be queued by jobs and then resolved

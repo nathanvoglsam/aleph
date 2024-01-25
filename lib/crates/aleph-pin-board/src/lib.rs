@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
-use aleph_arena_drop_list::DropLink;
-use aleph_type_id_hasher::TypeIdHasher;
-use bumpalo::Bump;
-use parking_lot::Mutex;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::mem::needs_drop;
 use std::ptr::NonNull;
+
+use aleph_arena_drop_list::DropLink;
+use aleph_type_id_hasher::TypeIdHasher;
+use bumpalo::Bump;
+use parking_lot::Mutex;
 
 /// A data structure for publishing data keyed by type that can be shared among a group of threads
 /// or tasks. Used as a mechanism for dynamically publishing data from one place to another in a
@@ -238,9 +239,10 @@ unsafe impl Sync for Table {}
 
 #[cfg(test)]
 mod tests {
-    use crate::PinBoard;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+
+    use crate::PinBoard;
 
     struct A(usize);
     struct B(u32);

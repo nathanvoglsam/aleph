@@ -27,20 +27,22 @@
 // SOFTWARE.
 //
 
+use std::borrow::Borrow;
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use aleph_label::Label;
+use crossbeam::atomic::AtomicCell;
+use crossbeam::sync::WaitGroup;
+use rayon::prelude::*;
+
 use crate::scheduler::system_schedule::system_box::SystemBox;
 use crate::scheduler::system_schedule::system_cell::{
     ExclusiveSystemCell, GenericSystemCell, SystemCell,
 };
 use crate::system::{IntoSystem, System};
 use crate::world::{ComponentTypeId, ResourceId, World};
-use aleph_label::Label;
-use crossbeam::atomic::AtomicCell;
-use crossbeam::sync::WaitGroup;
-use rayon::prelude::*;
-use std::borrow::Borrow;
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Default)]
 pub struct SystemChannel<T: GenericSystemCell> {

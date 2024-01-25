@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::raw;
-use crate::raw::{PoolCreateInfo, PoolH};
-use crate::vma;
+use std::ptr::NonNull;
+use std::sync::Arc;
+
 use ash::prelude::VkResult;
 use ash::vk;
 use raw::PoolCreateFlags;
-use std::ptr::NonNull;
-use std::sync::Arc;
+
+use crate::raw::{PoolCreateInfo, PoolH};
+use crate::{raw, vma};
 
 ///
 /// Builder for a VmaPool, wraps VmaPoolCreateInfo, vmaCreatePool and vmaDestroyPool (drop)

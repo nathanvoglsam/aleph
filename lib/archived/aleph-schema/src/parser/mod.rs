@@ -29,15 +29,17 @@
 
 mod parsers;
 
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+use std::ops::Range;
+
+use smartstring::alias::CompactString;
+
 use crate::ast::{
     Enum, EnumVariant, Field, FieldType, Module, ModuleItem, ModuleItemType, PrimitiveType, Struct,
     Table,
 };
 use crate::parser::Error::UnexpectedWord;
-use smartstring::alias::CompactString;
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use std::ops::Range;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Error {

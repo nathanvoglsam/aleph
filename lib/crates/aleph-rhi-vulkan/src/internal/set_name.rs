@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
+use std::ffi::CStr;
+
 use ash::extensions::ext::DebugUtils;
 use ash::vk;
 use bumpalo::Bump;
-use std::ffi::CStr;
 
 pub fn set_name<T: vk::Handle>(
     loader: Option<&DebugUtils>,

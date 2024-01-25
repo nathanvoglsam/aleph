@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::internal::profile::CreateProfile;
 use ash::vk;
+
+use crate::internal::profile::CreateProfile;
 
 pub trait CheckMeetsProfile {
     fn meets_profile(&self, v: &Self) -> Option<()>;

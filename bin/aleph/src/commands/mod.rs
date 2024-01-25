@@ -32,10 +32,10 @@ mod genproj;
 pub mod shaders;
 
 pub use build::Build;
+use clap::{ArgMatches, Command};
 pub use genproj::GenProj;
 
 use crate::project::AlephProject;
-use clap::{ArgMatches, Command};
 
 pub trait ISubcommand {
     fn name(&self) -> &'static str;

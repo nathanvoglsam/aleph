@@ -42,36 +42,22 @@ pub(crate) mod query;
 pub(crate) mod resource;
 pub(crate) mod world;
 
-pub use self::archetype::Archetype;
-pub use self::archetype::ArchetypeEntityIndex;
-pub use self::archetype::ArchetypeIndex;
+pub use self::archetype::{Archetype, ArchetypeEntityIndex, ArchetypeIndex};
 pub use self::archetype_filter::ArchetypeFilter;
-pub use self::component::Component;
-pub use self::component::ComponentIdMap;
-pub use self::component::ComponentSet;
-pub use self::component::ComponentTypeDescription;
-pub use self::component::ComponentTypeId;
-pub use self::component::IdentityHasher;
-pub use self::component_query::ComponentQuery;
-pub use self::component_query::ComponentQueryItem;
-pub use self::component_query::ComponentRead;
-pub use self::component_query::ComponentWrite;
-pub use self::component_query::Fetch;
+pub use self::component::{
+    Component, ComponentIdMap, ComponentSet, ComponentTypeDescription, ComponentTypeId,
+    IdentityHasher,
+};
+pub use self::component_query::{
+    ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,
+};
 pub use self::component_registry::ComponentRegistry;
-pub use self::entity::EntityId;
-pub use self::entity::EntityIndex;
-pub use self::entity_layout::EntityLayout;
-pub use self::entity_layout::EntityLayoutBuf;
-pub use self::entity_storage::EntityEntry;
-pub use self::entity_storage::EntityEntryData;
-pub use self::entity_storage::EntityFreeListLink;
-pub use self::entity_storage::EntityLocation;
-pub use self::entity_storage::EntityStorage;
+pub use self::entity::{EntityId, EntityIndex};
+pub use self::entity_layout::{EntityLayout, EntityLayoutBuf};
+pub use self::entity_storage::{
+    EntityEntry, EntityEntryData, EntityFreeListLink, EntityLocation, EntityStorage,
+};
 pub use self::generation::Generation;
 pub use self::query::Query;
-pub use self::resource::Resource;
-pub use self::resource::ResourceId;
-pub use self::world::ComponentSource;
-pub use self::world::IntoComponentSource;
-pub use self::world::World;
-pub use self::world::WorldOptions;
+pub use self::resource::{Resource, ResourceId};
+pub use self::world::{ComponentSource, IntoComponentSource, World, WorldOptions};

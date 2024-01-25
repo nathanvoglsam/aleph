@@ -32,9 +32,10 @@ fn main() {}
 
 #[cfg(windows)]
 fn main() {
+    use std::path::Path;
+
     use aleph_target_build::build::{target_architecture, target_platform};
     use aleph_target_build::Architecture;
-    use std::path::Path;
 
     if !target_platform().is_windows() {
         // This script should do nothing if we're building for windows

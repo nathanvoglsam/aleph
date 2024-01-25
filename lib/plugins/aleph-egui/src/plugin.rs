@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::traits::{EguiContextProvider, EguiRenderData};
-use crate::{IEguiContextProvider, IEguiRenderData, RenderData};
+use std::any::TypeId;
+use std::ops::Deref;
+
 use egui::ClippedPrimitive;
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
@@ -40,8 +41,9 @@ use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
 use interfaces::schedule::{CoreStage, IScheduleProvider};
-use std::any::TypeId;
-use std::ops::Deref;
+
+use crate::traits::{EguiContextProvider, EguiRenderData};
+use crate::{IEguiContextProvider, IEguiRenderData, RenderData};
 
 pub struct PluginEgui();
 

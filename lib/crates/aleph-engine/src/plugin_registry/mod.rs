@@ -33,13 +33,14 @@ mod builder;
 mod quit_handle;
 mod registrar;
 
+use std::any::TypeId;
+use std::collections::{BTreeMap, BTreeSet};
+
 pub use builder::PluginRegistryBuilder;
 
 use crate::interfaces::any::{AnyArc, IAny};
 use crate::interfaces::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
-use std::any::TypeId;
-use std::collections::{BTreeMap, BTreeSet};
 
 ///
 pub struct PluginRegistry {

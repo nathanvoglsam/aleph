@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use interfaces::any::AnyArc;
 use interfaces::platform::IFrameTimer;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct FrameTimerImpl {
     freq: AtomicU64,

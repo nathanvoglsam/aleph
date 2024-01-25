@@ -33,18 +33,18 @@ mod lighting_resolve_pass;
 mod main_gbuffer_pass;
 mod params;
 
-use crate::renderer::egui_pass::EguiPassContext;
-use crate::renderer::params::BackBufferInfo;
+use std::ops::{Deref, DerefMut};
+
 use aleph_frame_graph::*;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use aleph_shader_db::IShaderDatabase;
-use aleph_shader_db::ShaderDatabase;
-use egui::ImageData;
-use egui::RenderData;
+use aleph_shader_db::{IShaderDatabase, ShaderDatabase};
+use egui::{ImageData, RenderData};
 pub(crate) use frame::PerFrameObjects;
 use interfaces::any::AnyArc;
-use std::ops::{Deref, DerefMut};
+
+use crate::renderer::egui_pass::EguiPassContext;
+use crate::renderer::params::BackBufferInfo;
 
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,

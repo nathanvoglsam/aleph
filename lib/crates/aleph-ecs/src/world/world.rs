@@ -27,16 +27,17 @@
 // SOFTWARE.
 //
 
-use crate::world::{
-    Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
-    ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
-    EntityLayoutBuf, EntityLocation, EntityStorage, Query, Resource, ResourceId,
-};
 use std::any::Any;
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
+
+use crate::world::{
+    Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
+    ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
+    EntityLayoutBuf, EntityLocation, EntityStorage, Query, Resource, ResourceId,
+};
 
 /// Interface for converting one type into a type that implements `ComponentSource`.
 ///

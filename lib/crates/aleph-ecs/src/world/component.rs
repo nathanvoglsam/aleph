@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use aleph_type_id_hasher::TypeIdHasher;
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash, Hasher};
+
+use aleph_type_id_hasher::TypeIdHasher;
 
 ///
 /// This trait needs to be implemented by any type that wishes to be used as a component

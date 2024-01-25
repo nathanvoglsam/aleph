@@ -34,12 +34,14 @@
 //! create_descriptor_set_layout call so we can collect and use it when we create the root
 //! signature.
 
-use crate::device::Device;
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::collections::HashMap;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
 use windows::Win32::Graphics::Direct3D12::*;
+
+use crate::device::Device;
 
 pub struct DescriptorSetLayout {
     pub(crate) this: AnyWeak<Self>,

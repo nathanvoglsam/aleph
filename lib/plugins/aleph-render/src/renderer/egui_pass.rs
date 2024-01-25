@@ -27,15 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::renderer::params::BackBufferInfo;
-use crate::shaders;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use aleph_shader_db::IShaderDatabase;
-use aleph_shader_db::IShaderDatabaseExt;
+use aleph_shader_db::{IShaderDatabase, IShaderDatabaseExt};
 use egui::RenderData;
+
+use crate::renderer::params::BackBufferInfo;
+use crate::shaders;
 
 struct EguiPassPayload {
     pipeline_layout: AnyArc<dyn IPipelineLayout>,

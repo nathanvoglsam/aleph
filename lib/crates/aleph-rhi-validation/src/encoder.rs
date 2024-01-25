@@ -27,14 +27,18 @@
 // SOFTWARE.
 //
 
-use crate::internal::get_as_unwrapped;
-use crate::texture::{ValidationImageView, ValidationViewType};
-use crate::ValidationComputePipeline;
-use crate::{ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationTexture};
-use aleph_any::{AnyArc, QueryInterface};
-use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::ops::Deref;
+
+use aleph_any::{AnyArc, QueryInterface};
+use aleph_rhi_api::*;
+
+use crate::internal::get_as_unwrapped;
+use crate::texture::{ValidationImageView, ValidationViewType};
+use crate::{
+    ValidationComputePipeline, ValidationGraphicsPipeline, ValidationPipelineLayout,
+    ValidationTexture,
+};
 
 pub struct ValidationEncoder<T: ?Sized> {
     pub(crate) bound_graphics_pipeline: Option<AnyArc<ValidationGraphicsPipeline>>,

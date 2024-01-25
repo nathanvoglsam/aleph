@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::raw;
 use ash::vk;
+
+use crate::raw;
 
 ///
 /// Builder wrapper for the VmaVulkanFunctions struct provided by vma-sys

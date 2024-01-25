@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::ValidationDevice;
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+
+use crate::ValidationDevice;
 
 pub struct ValidationDescriptorSetLayout {
     pub(crate) _this: AnyWeak<Self>,

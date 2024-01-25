@@ -27,6 +27,21 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::ffi::CString;
+use std::mem::ManuallyDrop;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::bump_cell::BumpCell;
+use ash::prelude::VkResult;
+use ash::vk;
+use bumpalo::collections::Vec as BVec;
+use bumpalo::Bump;
+use byteorder::{ByteOrder, NativeEndian};
+use parking_lot::Mutex;
+use vulkan_alloc::vma;
+
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
@@ -45,19 +60,6 @@ use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use crate::texture::Texture;
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::bump_cell::BumpCell;
-use ash::prelude::VkResult;
-use ash::vk;
-use bumpalo::collections::Vec as BVec;
-use bumpalo::Bump;
-use byteorder::{ByteOrder, NativeEndian};
-use parking_lot::Mutex;
-use std::any::TypeId;
-use std::ffi::CString;
-use std::mem::ManuallyDrop;
-use vulkan_alloc::vma;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,

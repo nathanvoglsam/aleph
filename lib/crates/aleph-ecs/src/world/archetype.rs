@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
+use std::num::NonZeroU32;
+use std::ptr::NonNull;
+
+use virtual_buffer::VirtualVec;
+
 use crate::world::{
     ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId,
     EntityId, EntityLayout, EntityLayoutBuf,
 };
-use std::num::NonZeroU32;
-use std::ptr::NonNull;
-use virtual_buffer::VirtualVec;
 
 ///
 /// This index wrapper represents an index into the list of archetypes within a world.

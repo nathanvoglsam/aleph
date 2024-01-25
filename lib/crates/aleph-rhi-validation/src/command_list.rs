@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::{ValidationDevice, ValidationEncoder};
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
+
+use crate::{ValidationDevice, ValidationEncoder};
 
 pub struct ValidationCommandList {
     pub(crate) _device: AnyArc<ValidationDevice>,

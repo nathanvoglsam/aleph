@@ -43,12 +43,10 @@
 
 #[cfg(all(target_os = "windows", not(target_vendor = "uwp")))]
 pub use self::pc::dxgi_get_debug_interface;
-
-#[cfg(all(target_os = "windows", target_vendor = "uwp"))]
-pub use self::uwp::dxgi_get_debug_interface;
-
 #[cfg(not(target_os = "windows"))]
 pub use self::unimplemented::dxgi_get_debug_interface;
+#[cfg(all(target_os = "windows", target_vendor = "uwp"))]
+pub use self::uwp::dxgi_get_debug_interface;
 
 #[cfg(target_os = "windows")]
 mod windows {

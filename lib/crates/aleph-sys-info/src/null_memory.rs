@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use once_cell::sync::Lazy;
 use std::num::NonZeroU64;
+
+use once_cell::sync::Lazy;
 
 ///
 /// Only need to look this up once so wrap it in a lazy static

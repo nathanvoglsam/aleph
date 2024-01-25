@@ -34,39 +34,17 @@ mod keyboard;
 mod mouse;
 mod window;
 
-pub use clipboard::IClipboard;
-pub use clipboard::IClipboardProvider;
-pub use events::Event;
-pub use events::IEvents;
-pub use events::IEventsLock;
-pub use events::IEventsProvider;
-pub use frame_timer::IFrameTimer;
-pub use frame_timer::IFrameTimerProvider;
-pub use keyboard::IKeyboard;
-pub use keyboard::IKeyboardEventsLock;
-pub use keyboard::IKeyboardProvider;
-pub use keyboard::IKeyboardStateLock;
-pub use keyboard::KeyCode;
-pub use keyboard::KeyDownEvent;
-pub use keyboard::KeyMod;
-pub use keyboard::KeyUpEvent;
-pub use keyboard::KeyboardEvent;
-pub use keyboard::ScanCode;
-pub use keyboard::TextInputEvent;
-pub use mouse::Cursor;
-pub use mouse::IMouse;
-pub use mouse::IMouseEventsLock;
-pub use mouse::IMouseProvider;
-pub use mouse::MouseButton;
-pub use mouse::MouseButtonDownEvent;
-pub use mouse::MouseButtonUpEvent;
-pub use mouse::MouseEvent;
-pub use mouse::MouseMotionEvent;
-pub use mouse::MouseState;
-pub use mouse::MouseWheelDirection;
-pub use mouse::MouseWheelEvent;
+pub use clipboard::{IClipboard, IClipboardProvider};
+pub use events::{Event, IEvents, IEventsLock, IEventsProvider};
+pub use frame_timer::{IFrameTimer, IFrameTimerProvider};
+pub use keyboard::{
+    IKeyboard, IKeyboardEventsLock, IKeyboardProvider, IKeyboardStateLock, KeyCode, KeyDownEvent,
+    KeyMod, KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
+};
+pub use mouse::{
+    Cursor, IMouse, IMouseEventsLock, IMouseProvider, MouseButton, MouseButtonDownEvent,
+    MouseButtonUpEvent, MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection,
+    MouseWheelEvent,
+};
 pub use raw_window_handle::*;
-pub use window::IWindow;
-pub use window::IWindowEventsLock;
-pub use window::IWindowProvider;
-pub use window::WindowEvent;
+pub use window::{IWindow, IWindowEventsLock, IWindowProvider, WindowEvent};

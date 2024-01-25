@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::KTXDocument;
-use crate::KTXReadError;
 use std::io::Cursor;
+
+use crate::{KTXDocument, KTXReadError};
 
 static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &[u8] =
     include_bytes!("../test_images/cubemap_yokohama_astc_8x8_srgb.ktx2");

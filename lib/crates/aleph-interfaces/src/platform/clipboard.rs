@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use any::*;
 use std::ffi::{CStr, CString};
+
+use any::*;
 
 ///
 /// This interface should be used by plugins that wish to register themselves as the engine's

@@ -27,19 +27,21 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use parking_lot::Mutex;
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use windows::Win32::Foundation::BOOL;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::Graphics::Dxgi::*;
+
 use crate::context::Context;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::internal::unwrap;
 use crate::swap_chain::{SwapChain, SwapChainState};
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
-use parking_lot::Mutex;
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use std::any::TypeId;
-use windows::Win32::Foundation::BOOL;
-use windows::Win32::Graphics::Dxgi::Common::*;
-use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,

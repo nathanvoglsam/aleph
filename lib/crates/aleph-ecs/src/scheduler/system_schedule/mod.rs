@@ -32,12 +32,13 @@ mod system_box;
 mod system_cell;
 mod system_channel;
 
+use aleph_label::Label;
+
 use crate::scheduler::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
 use crate::scheduler::system_schedule::system_channel::SystemChannel;
 use crate::scheduler::Stage;
 use crate::system::{IntoSystem, System};
 use crate::world::World;
-use aleph_label::Label;
 
 #[derive(Default)]
 pub struct SystemSchedule {

@@ -27,6 +27,28 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::collections::HashMap;
+use std::mem::{size_of, transmute_copy};
+use std::ops::Deref;
+use std::ptr::NonNull;
+use std::sync::atomic::AtomicU64;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::bump_cell::BumpCell;
+use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
+use bumpalo::collections::Vec as BVec;
+use bumpalo::Bump;
+use parking_lot::Mutex;
+use windows::core::PCSTR;
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
+use windows::Win32::Foundation::*;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::System::Threading::*;
+
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
@@ -61,26 +83,6 @@ use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::shader::Shader;
 use crate::texture::{ImageViewObject, Texture};
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::bump_cell::BumpCell;
-use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
-use bumpalo::collections::Vec as BVec;
-use bumpalo::Bump;
-use parking_lot::Mutex;
-use std::any::TypeId;
-use std::collections::HashMap;
-use std::mem::{size_of, transmute_copy};
-use std::ops::Deref;
-use std::ptr::NonNull;
-use std::sync::atomic::AtomicU64;
-use windows::core::PCSTR;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
-use windows::Win32::Foundation::*;
-use windows::Win32::Graphics::Direct3D::*;
-use windows::Win32::Graphics::Direct3D12::*;
-use windows::Win32::Graphics::Dxgi::Common::*;
-use windows::Win32::System::Threading::*;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,

@@ -27,6 +27,12 @@
 // SOFTWARE.
 //
 
+use aleph_target::Architecture;
+use anyhow::anyhow;
+use camino::Utf8Path;
+use clap::{Arg, ArgMatches, Command};
+use tera::{Context, Tera};
+
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 use crate::project_schema::{
@@ -40,11 +46,6 @@ use crate::utils::{
     architecture_from_arg, extract_zip, resolve_absolute_or_root_relative_path, BuildPlatform,
     Target,
 };
-use aleph_target::Architecture;
-use anyhow::anyhow;
-use camino::Utf8Path;
-use clap::{Arg, ArgMatches, Command};
-use tera::{Context, Tera};
 
 pub struct GenProj {}
 

@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Enum, HasAttributes, Struct, Table};
-use smartstring::alias::CompactString;
 use std::ops::Range;
+
+use smartstring::alias::CompactString;
+
+use crate::ast::{Enum, HasAttributes, Struct, Table};
 
 /// AST node that adds a name context for all it's child elements
 #[derive(Default, Debug)]

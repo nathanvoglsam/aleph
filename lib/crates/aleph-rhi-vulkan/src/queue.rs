@@ -27,15 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::command_list::CommandList;
-use crate::device::Device;
-use crate::internal::unwrap;
-use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use ash::vk;
-use crossbeam::queue::ArrayQueue;
-use parking_lot::Mutex;
 use std::any::TypeId;
 use std::ffi::CString;
 use std::mem::transmute;
@@ -43,6 +34,17 @@ use std::ops::Deref;
 use std::ptr;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
+
+use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use ash::vk;
+use crossbeam::queue::ArrayQueue;
+use parking_lot::Mutex;
+
+use crate::command_list::CommandList;
+use crate::device::Device;
+use crate::internal::unwrap;
 
 pub struct Queue {
     pub(crate) _this: AnyWeak<Self>,

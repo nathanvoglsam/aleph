@@ -35,13 +35,9 @@ mod table;
 mod traits;
 mod types;
 
-pub use enumeration::Enum;
-pub use enumeration::EnumVariant;
-pub use field::Field;
-pub use field::FieldType;
-pub use module::Module;
-pub use module::ModuleItem;
-pub use module::ModuleItemType;
+pub use enumeration::{Enum, EnumVariant};
+pub use field::{Field, FieldType};
+pub use module::{Module, ModuleItem, ModuleItemType};
 pub use structure::Struct;
 pub use table::Table;
 pub use traits::HasAttributes;

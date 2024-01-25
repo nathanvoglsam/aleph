@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
+use std::collections::HashSet;
+
+use aleph_label::Label;
+
 use crate::scheduler::system_schedule::access_descriptor::SystemAccessDescriptor;
 use crate::scheduler::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
 use crate::system::System;
-use aleph_label::Label;
-use std::collections::HashSet;
 
 ///
 /// Internal container for pairing a boxed system with some metadata used to schedule the system

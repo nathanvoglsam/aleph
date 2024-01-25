@@ -29,10 +29,11 @@
 
 #[cfg(target_vendor = "uwp")]
 mod uwp {
-    use once_cell::sync::OnceCell;
     use std::ffi::c_void;
     use std::os::raw::{c_char, c_int};
     use std::ptr::NonNull;
+
+    use once_cell::sync::OnceCell;
     use windows::Win32::System::Threading::{
         ConvertFiberToThread, ConvertThreadToFiberEx, CreateFiberEx, DeleteFiber, SwitchToFiber,
     };

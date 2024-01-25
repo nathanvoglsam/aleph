@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::pipeline_layout::PipelineLayout;
+use std::any::TypeId;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
-use std::any::TypeId;
+
+use crate::device::Device;
+use crate::pipeline_layout::PipelineLayout;
 
 pub struct GraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,

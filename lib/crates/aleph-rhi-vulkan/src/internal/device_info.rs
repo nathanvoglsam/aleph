@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
+use std::ffi::{c_char, CStr};
+
+use ash::vk;
+
 use crate::internal::features::CheckMeetsMinimum;
 use crate::internal::profile::CreateProfile;
-use ash::vk;
-use std::ffi::{c_char, CStr};
 
 #[derive(Clone, Default)]
 #[rustfmt::skip]

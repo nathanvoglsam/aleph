@@ -32,6 +32,7 @@
 #![warn(unused_imports)]
 
 use std::mem::MaybeUninit;
+
 use windows::core::{CanInto, Error, HRESULT};
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;

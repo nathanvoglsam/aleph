@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Atom, Item, List};
 use std::ops::Range;
+
+use crate::ast::{Atom, Item, List};
 
 pub struct ListBuilder<'input> {
     inner: List<'input>,

@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::context::Context;
-use crate::device::Device;
-use crate::internal::queue_present_support::QueuePresentSupportFlags;
-use crate::internal::unwrap;
-use crate::swap_chain::{SwapChain, SwapChainState};
+use std::any::TypeId;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use parking_lot::Mutex;
-use std::any::TypeId;
+
+use crate::context::Context;
+use crate::device::Device;
+use crate::internal::queue_present_support::QueuePresentSupportFlags;
+use crate::internal::unwrap;
+use crate::swap_chain::{SwapChain, SwapChainState};
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,

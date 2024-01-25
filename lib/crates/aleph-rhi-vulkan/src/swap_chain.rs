@@ -27,6 +27,13 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use ash::vk;
+use parking_lot::Mutex;
+
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
@@ -34,11 +41,6 @@ use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use crate::texture::Texture;
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
-use ash::vk;
-use parking_lot::Mutex;
-use std::any::TypeId;
 
 pub struct SwapChain {
     pub(crate) this: AnyWeak<Self>,

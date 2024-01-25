@@ -27,6 +27,11 @@
 // SOFTWARE.
 //
 
+use std::io::{Read, Seek};
+
+use aleph_vk_format::VkFormat;
+use byteorder::{LittleEndian, ReadBytesExt};
+
 use crate::data_format_descriptor::{
     ASTCChannelType, BC1ChannelType, BC2ChannelType, BC3ChannelType, BC4ChannelType,
     BC5ChannelType, BC6ChannelType, BC7ChannelType, ETC1ChannelType, ETC1SChannelType,
@@ -38,9 +43,6 @@ use crate::{
     format_stencil_bits, is_format_alpha_first_ordered, is_format_prohibited,
     is_format_rgbds_ordered, is_format_unsupported, RGBSDAChannelType,
 };
-use aleph_vk_format::VkFormat;
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Read, Seek};
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct SampleInfo {

@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::renderer::params::BackBufferInfo;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
+
+use crate::renderer::params::BackBufferInfo;
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,

@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::conversion_function;
+
 use crate::{
     ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
     ValidationDescriptorSetLayout, ValidationDevice, ValidationFence, ValidationGraphicsPipeline,
     ValidationPipelineLayout, ValidationSampler, ValidationSemaphore, ValidationShader,
     ValidationSurface, ValidationSwapChain, ValidationTexture,
 };
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::conversion_function;
 
 conversion_function!(IBuffer, ValidationBuffer, buffer, buffer_d, buffer_iter);
 conversion_function!(

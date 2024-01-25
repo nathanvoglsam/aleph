@@ -27,15 +27,17 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::encoder::Encoder;
-use crate::internal::conv::SyncShaderFeatures;
+use std::any::TypeId;
+
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use bumpalo::Bump;
-use std::any::TypeId;
+
+use crate::device::Device;
+use crate::encoder::Encoder;
+use crate::internal::conv::SyncShaderFeatures;
 
 pub struct CommandList {
     pub(crate) _device: AnyArc<Device>,

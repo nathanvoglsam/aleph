@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use std::any::TypeId;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use std::any::TypeId;
+
+use crate::device::Device;
 
 pub struct Shader {
     pub(crate) this: AnyWeak<Self>,

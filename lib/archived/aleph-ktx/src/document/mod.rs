@@ -31,6 +31,11 @@ mod file_index;
 mod level_index;
 mod super_compression_scheme;
 
+use std::cell::Cell;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+
+use aleph_vk_format::VkFormat;
+use byteorder::{LittleEndian, ReadBytesExt};
 pub use file_index::FileIndex;
 pub use level_index::LevelIndex;
 pub use super_compression_scheme::SuperCompressionScheme;
@@ -38,10 +43,6 @@ pub use super_compression_scheme::SuperCompressionScheme;
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::{is_format_prohibited, is_format_unsupported};
 use crate::{format_bytes_for_image, format_type_size, ColorPrimaries, DFDError, DFDFlags};
-use aleph_vk_format::VkFormat;
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::cell::Cell;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -352,8 +353,7 @@ impl<R: Read + Seek> KTXDocument<R> {
         level: usize,
         writer: &mut impl Write,
     ) -> Result<(), std::io::Error> {
-        use std::io::Error;
-        use std::io::ErrorKind;
+        use std::io::{Error, ErrorKind};
 
         // Check we're in bounds for the number of levels, faces and levels
         if level >= self.level_num() as usize {

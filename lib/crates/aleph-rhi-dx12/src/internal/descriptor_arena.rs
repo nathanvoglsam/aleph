@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::internal::descriptor_heap::{DescriptorHeap, DescriptorID};
 use aleph_rhi_api::*;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
+
+use crate::internal::descriptor_heap::{DescriptorHeap, DescriptorID};
 
 /// An internal data-structure used as the backing storage for an object-pool based descriptor pool
 /// allocator.

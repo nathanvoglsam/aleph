@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use rkyv::{Archive, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::marker::PhantomData;
+
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[derive(
     Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug,

@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::fence::FenceState;
-use crate::internal::{get_as_unwrapped, unwrap};
-use crate::semaphore::SemaphoreState;
-use crate::{ValidationCommandList, ValidationDevice, ValidationSemaphore, ValidationSwapChain};
-use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
-use aleph_rhi_api::*;
 use std::any::TypeId;
 use std::mem::transmute;
 use std::ptr;
 use std::ptr::NonNull;
 use std::sync::atomic::Ordering;
+
+use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
+use aleph_rhi_api::*;
+
+use crate::fence::FenceState;
+use crate::internal::{get_as_unwrapped, unwrap};
+use crate::semaphore::SemaphoreState;
+use crate::{ValidationCommandList, ValidationDevice, ValidationSemaphore, ValidationSwapChain};
 
 pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,

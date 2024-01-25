@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::format_red_bits;
 use aleph_vk_format::VkFormat;
+
+use crate::format_red_bits;
 
 ///
 /// Returns the bit size of a PACKxx format. If the format isn't a PACK format this function returns

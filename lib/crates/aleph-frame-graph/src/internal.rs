@@ -32,11 +32,13 @@
 //! API. These are collected inside this 'internal' module
 //!
 
+use std::ptr::NonNull;
+
+use aleph_rhi_api::*;
+
 use crate::access::ResourceUsageFlagsExt;
 use crate::resource::ResourceId;
 use crate::IRenderPass;
-use aleph_rhi_api::*;
-use std::ptr::NonNull;
 
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,

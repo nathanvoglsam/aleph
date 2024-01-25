@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::ValidationDevice;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
+
+use crate::ValidationDevice;
 
 pub struct ValidationFence {
     pub(crate) _this: AnyWeak<Self>,

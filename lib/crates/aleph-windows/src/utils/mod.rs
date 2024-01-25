@@ -30,12 +30,6 @@
 mod d3d12_component_mapping;
 mod descriptor_handles;
 
-use crate::core::PCSTR;
-use crate::core::PCWSTR;
-use crate::Win32::Foundation::*;
-use crate::Win32::Graphics::Direct3D12::*;
-use crate::Win32::System::LibraryLoader::*;
-use once_cell::sync::OnceCell;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -43,12 +37,16 @@ use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::os::raw::c_char;
+
+pub use d3d12_component_mapping::{D3D12ComponentMapping, D3D12ComponentMappingValue};
+pub use descriptor_handles::{CPUDescriptorHandle, GPUDescriptorHandle};
+use once_cell::sync::OnceCell;
 use windows::core::ComInterface;
 
-pub use d3d12_component_mapping::D3D12ComponentMapping;
-pub use d3d12_component_mapping::D3D12ComponentMappingValue;
-pub use descriptor_handles::CPUDescriptorHandle;
-pub use descriptor_handles::GPUDescriptorHandle;
+use crate::core::{PCSTR, PCWSTR};
+use crate::Win32::Foundation::*;
+use crate::Win32::Graphics::Direct3D12::*;
+use crate::Win32::System::LibraryLoader::*;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -188,8 +186,7 @@ impl<T: Sized> DynamicLoadCell<T> {
 ///
 #[inline]
 pub unsafe fn name_current_thread(name: &[u16]) -> crate::windows::core::Result<()> {
-    use crate::Win32::System::Threading::GetCurrentThread;
-    use crate::Win32::System::Threading::SetThreadDescription;
+    use crate::Win32::System::Threading::{GetCurrentThread, SetThreadDescription};
 
     let handle: HANDLE = GetCurrentThread();
     if handle.is_invalid() {
@@ -376,8 +373,7 @@ impl<'a, T: ComInterface + Clone> WeakRef<'a, T> {
     /// created from, making it safe to create usable 'dangling' references
     #[inline]
     pub fn new(v: &'a T) -> Self {
-        use std::mem::size_of;
-        use std::mem::size_of_val;
+        use std::mem::{size_of, size_of_val};
 
         // Assert that object and manually drop object are the same size (should compile away as
         // it's compile time known)

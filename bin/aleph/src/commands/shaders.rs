@@ -27,35 +27,25 @@
 // SOFTWARE.
 //
 
-use crate::commands::ISubcommand;
-use crate::commands::SubcommandSet;
-use crate::project::AlephProject;
-use crate::shader_system::AlephCrateMetadata;
-use crate::shader_system::CompilationParams;
-use crate::shader_system::ProjectShaderContext;
-use crate::shader_system::ShaderCrateContext;
-use crate::shader_system::ShaderFile;
-use crate::shader_system::ShaderModuleContext;
-use crate::shader_system::ShaderModuleDefinition;
-use crate::shader_system::ShaderModuleDefinitionFile;
-use crate::utils::dunce_utf8;
-use crate::utils::ninja;
-use crate::utils::BuildPlatform;
-use aleph_shader_db::ShaderDatabase;
-use aleph_shader_db::ShaderEntry;
+use std::collections::HashSet;
+use std::io::Write;
+
+use aleph_shader_db::{ShaderDatabase, ShaderEntry};
 use aleph_target::build::target_platform;
 use aleph_target::Profile;
 use anyhow::anyhow;
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
-use cargo_metadata::DependencyKind;
-use cargo_metadata::Package;
-use clap::Arg;
-use clap::ArgMatches;
-use rayon::iter::IntoParallelRefIterator;
-use rayon::iter::ParallelIterator;
-use std::collections::HashSet;
-use std::io::Write;
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::{DependencyKind, Package};
+use clap::{Arg, ArgMatches};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+
+use crate::commands::{ISubcommand, SubcommandSet};
+use crate::project::AlephProject;
+use crate::shader_system::{
+    AlephCrateMetadata, CompilationParams, ProjectShaderContext, ShaderCrateContext, ShaderFile,
+    ShaderModuleContext, ShaderModuleDefinition, ShaderModuleDefinitionFile,
+};
+use crate::utils::{dunce_utf8, ninja, BuildPlatform};
 
 pub fn make() -> SubcommandSet {
     let mut subcommands = SubcommandSet::new("shaders")

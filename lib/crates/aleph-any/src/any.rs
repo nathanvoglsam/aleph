@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use core::any::Any;
-use core::any::TypeId;
+use core::any::{Any, TypeId};
 use core::marker::PhantomData;
 use core::mem::size_of;
 use core::ptr::NonNull;

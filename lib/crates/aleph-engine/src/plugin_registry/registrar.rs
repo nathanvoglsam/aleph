@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::IPluginRegistrar;
 use std::any::TypeId;
 use std::collections::BTreeSet;
+
+use crate::interfaces::plugin::IPluginRegistrar;
 
 pub struct PluginRegistrar {
     pub depends_on_list: BTreeSet<TypeId>,

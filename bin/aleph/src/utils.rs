@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use aleph_target::build::{target_architecture, target_platform};
-use aleph_target::{Architecture, Platform};
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
 use std::fmt::{Display, Formatter};
 use std::io::{Read, Seek};
+
+use aleph_target::build::{target_architecture, target_platform};
+use aleph_target::{Architecture, Platform};
+use camino::{Utf8Path, Utf8PathBuf};
 use zip::ZipArchive;
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
@@ -228,8 +228,9 @@ pub fn resolve_absolute_or_root_relative_path<P: AsRef<Utf8Path>>(
 }
 
 pub mod ninja {
-    use crate::utils::dunce_utf8;
     use camino::Utf8Path;
+
+    use crate::utils::dunce_utf8;
 
     /// Prepares the given path ready to be used in a ninja build statement
     pub fn prepare_path_for_build_statement(path: &Utf8Path) -> String {

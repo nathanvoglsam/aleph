@@ -57,18 +57,18 @@
 mod stage;
 mod system_schedule;
 
-pub use stage::AccessDescriptor;
-pub use stage::Stage;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::ptr::NonNull;
+
+use aleph_arena_drop_list::DropLink;
+use aleph_label::Label;
+use bumpalo::Bump;
+pub use stage::{AccessDescriptor, Stage};
 pub use system_schedule::SystemSchedule;
 
 use crate::system::{IntoSystem, System};
 use crate::world::World;
-use aleph_arena_drop_list::DropLink;
-use aleph_label::Label;
-use bumpalo::Bump;
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-use std::ptr::NonNull;
 
 ///
 /// Provides an interface for dynamically composing a set of executable code blocks into a sequence

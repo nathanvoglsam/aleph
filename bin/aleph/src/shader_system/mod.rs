@@ -31,11 +31,9 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use anyhow::anyhow;
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::Package;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::project::AlephProject;
 use crate::utils::BuildPlatform;

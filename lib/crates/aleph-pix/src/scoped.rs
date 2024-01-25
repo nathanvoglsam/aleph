@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use super::functions::*;
-use crate::Colour;
 use std::ffi::CStr;
+
 use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
+
+use super::functions::*;
+use crate::Colour;
 
 ///
 /// # Safety

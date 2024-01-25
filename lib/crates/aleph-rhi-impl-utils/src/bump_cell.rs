@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use bumpalo::Bump;
 use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
+
+use bumpalo::Bump;
 
 pub struct BumpCell(Cell<Option<Bump>>);
 

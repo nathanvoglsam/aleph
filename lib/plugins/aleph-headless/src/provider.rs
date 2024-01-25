@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::frame_timer::FrameTimerImpl;
 use interfaces::any::AnyArc;
 use interfaces::platform::{IFrameTimer, IFrameTimerProvider};
+
+use crate::frame_timer::FrameTimerImpl;
 
 pub struct ProviderImpl {
     pub frame_timer: AnyArc<FrameTimerImpl>,

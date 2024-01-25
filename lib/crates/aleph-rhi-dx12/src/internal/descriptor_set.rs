@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
+use std::ptr::NonNull;
+
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-use std::ptr::NonNull;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
+
+use crate::descriptor_set_layout::DescriptorSetLayout;
 
 /// This internal struct is a critical piece of the implementation of the descriptor sets API. The
 /// RHI API specifies [DescriptorSetHandle] as an opaque handle to a 'descriptor set object'. This

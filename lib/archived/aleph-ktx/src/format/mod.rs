@@ -36,20 +36,12 @@ mod layout;
 mod samples;
 mod support;
 
-pub use bit_count::format_alpha_bits;
-pub use bit_count::format_blue_bits;
-pub use bit_count::format_bytes_for_image;
-pub use bit_count::format_bytes_per_block;
-pub use bit_count::format_depth_bits;
-pub use bit_count::format_exponent_bits;
-pub use bit_count::format_green_bits;
-pub use bit_count::format_red_bits;
-pub use bit_count::format_stencil_bits;
-pub use component_order::is_format_alpha_first_ordered;
-pub use component_order::is_format_rgbds_ordered;
-pub use layout::format_pack_bits;
-pub use layout::format_type_size;
+pub use bit_count::{
+    format_alpha_bits, format_blue_bits, format_bytes_for_image, format_bytes_per_block,
+    format_depth_bits, format_exponent_bits, format_green_bits, format_red_bits,
+    format_stencil_bits,
+};
+pub use component_order::{is_format_alpha_first_ordered, is_format_rgbds_ordered};
+pub use layout::{format_pack_bits, format_type_size};
 pub use samples::format_sample_info_count;
-pub use support::is_format_prohibited;
-pub use support::is_format_unsupported;
-pub use support::ALLOWED_FORMATS;
+pub use support::{is_format_prohibited, is_format_unsupported, ALLOWED_FORMATS};

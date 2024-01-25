@@ -48,17 +48,19 @@
 //! allocate new arrays for structs that take arrays of references.
 //!
 
+use std::cell::Cell;
+use std::ops::Deref;
+use std::ptr::NonNull;
+
+use aleph_any::{box_downcast, QueryInterface};
+use aleph_rhi_api::*;
+
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::texture::ValidationImageView;
 use crate::{
     ValidationBuffer, ValidationCommandList, ValidationDescriptorSetLayout, ValidationFence,
     ValidationSampler, ValidationSemaphore, ValidationSwapChain, ValidationTexture,
 };
-use aleph_any::{box_downcast, QueryInterface};
-use aleph_rhi_api::*;
-use std::cell::Cell;
-use std::ops::Deref;
-use std::ptr::NonNull;
 
 pub fn buffer(buffer: &dyn IBuffer) -> &dyn IBuffer {
     buffer

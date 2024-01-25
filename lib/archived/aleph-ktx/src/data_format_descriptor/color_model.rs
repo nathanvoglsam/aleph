@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::format::is_format_prohibited;
 use aleph_vk_format::VkFormat;
+
+use crate::format::is_format_prohibited;
 
 ///
 /// Represents the supported set of DFD color models

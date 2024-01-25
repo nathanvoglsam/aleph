@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::conversion_function;
+
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::descriptor_set_layout::DescriptorSetLayout;
@@ -40,8 +43,6 @@ use crate::shader::Shader;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
 use crate::texture::Texture;
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::conversion_function;
 
 conversion_function!(IBuffer, Buffer, buffer, buffer_d, buffer_iter);
 conversion_function!(

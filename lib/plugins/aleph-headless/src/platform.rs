@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::frame_timer::FrameTimerImpl;
-use crate::provider::ProviderImpl;
+use std::any::TypeId;
+
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::IFrameTimerProvider;
@@ -36,7 +36,9 @@ use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
 use interfaces::schedule::{CoreStage, IScheduleProvider};
-use std::any::TypeId;
+
+use crate::frame_timer::FrameTimerImpl;
+use crate::provider::ProviderImpl;
 
 pub struct PluginPlatformHeadless();
 

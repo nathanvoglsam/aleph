@@ -33,7 +33,5 @@ mod tests;
 mod buffer;
 mod vec;
 
-pub use buffer::CommittedVirtualBuffer;
-pub use buffer::VirtualBuffer;
-pub use vec::CommittedVirtualVec;
-pub use vec::VirtualVec;
+pub use buffer::{CommittedVirtualBuffer, VirtualBuffer};
+pub use vec::{CommittedVirtualVec, VirtualVec};

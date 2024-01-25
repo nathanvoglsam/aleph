@@ -29,6 +29,14 @@
 
 #![allow(non_snake_case)]
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+use std::sync::Arc;
+
+use windows::core::ComInterface;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::DXGI_MEMORY_SEGMENT_GROUP;
+
 use crate::raw::{
     D3D12MA_Allocator_AllocateMemory, D3D12MA_Allocator_BeginDefragmentation,
     D3D12MA_Allocator_CalculateStatistics, D3D12MA_Allocator_CreateAliasingResource,
@@ -42,12 +50,6 @@ use crate::{
     Allocation, Budget, Pool, TotalStatistics, ALLOCATION_DESC, ALLOCATOR_DESC, ALLOCATOR_FLAGS,
     DEFRAGMENTATION_DESC, POOL_DESC,
 };
-use std::ffi::c_void;
-use std::ptr::NonNull;
-use std::sync::Arc;
-use windows::core::ComInterface;
-use windows::Win32::Graphics::Direct3D12::*;
-use windows::Win32::Graphics::Dxgi::DXGI_MEMORY_SEGMENT_GROUP;
 
 #[repr(transparent)]
 pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);

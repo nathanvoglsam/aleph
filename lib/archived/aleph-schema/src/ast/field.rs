@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::ast::{HasAttributes, PrimitiveType};
-use smartstring::alias::CompactString;
 use std::ops::Range;
+
+use smartstring::alias::CompactString;
+
+use crate::ast::{HasAttributes, PrimitiveType};
 
 #[derive(Clone, Hash, Debug)]
 pub struct Field<'input> {

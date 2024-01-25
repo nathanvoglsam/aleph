@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::internal::slice_from_ptr_len_vk;
-use ash::vk;
 use std::hash::{Hash, Hasher};
+
+use ash::vk;
+
+use crate::internal::slice_from_ptr_len_vk;
 
 /// A new-type wrapper over [BeginRenderingInfo] with a manual Hash and PartialEq function that only
 /// hashes and compares state that is used for constructing `VkRenderPass` objects.
@@ -381,11 +383,13 @@ fn cmp<T: PartialEq + Eq>(l: &T, r: &T) -> Option<()> {
 
 #[cfg(test)]
 mod test {
-    use crate::internal::render_pass_cache::RenderPassCache;
-    use crate::internal::rendering_info_key::RenderingInfoKey;
-    use ash::vk;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
+
+    use ash::vk;
+
+    use crate::internal::render_pass_cache::RenderPassCache;
+    use crate::internal::rendering_info_key::RenderingInfoKey;
 
     #[test]
     pub fn hash_test() {

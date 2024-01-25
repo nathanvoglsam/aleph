@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
+use std::num::NonZeroU32;
+use std::ptr::NonNull;
+
 use crate::world::{
     Archetype, ArchetypeIndex, ComponentTypeId, EntityLayout, EntityLayoutBuf, World,
 };
-use std::num::NonZeroU32;
-use std::ptr::NonNull;
 
 ///
 /// The raw implementation of a world query that provides the implementation for an iteration over

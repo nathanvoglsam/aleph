@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Seek};
+
+use byteorder::{LittleEndian, ReadBytesExt};
 
 ///
 /// Raw layout of a DFD

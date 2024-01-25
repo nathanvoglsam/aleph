@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use ash::vk;
 use std::ffi::c_float;
+
+use ash::vk;
 
 pub trait CreateProfile {
     fn baseline() -> Self;

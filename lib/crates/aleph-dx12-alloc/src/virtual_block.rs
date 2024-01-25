@@ -29,6 +29,9 @@
 
 #![allow(non_snake_case)]
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
 use crate::raw::{
     D3D12MA_VirtualBlock_Allocate, D3D12MA_VirtualBlock_CalculateStatistics,
     D3D12MA_VirtualBlock_Clear, D3D12MA_VirtualBlock_CreateVirtualBlock,
@@ -40,8 +43,6 @@ use crate::{
     DetailedStatistics, Statistics, VirtualAllocation, VIRTUAL_ALLOCATION_DESC,
     VIRTUAL_ALLOCATION_INFO, VIRTUAL_BLOCK_DESC,
 };
-use std::ffi::c_void;
-use std::ptr::NonNull;
 
 #[repr(transparent)]
 pub struct VirtualBlock(pub(crate) NonNull<c_void>);

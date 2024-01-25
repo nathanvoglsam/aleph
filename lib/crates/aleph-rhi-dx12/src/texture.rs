@@ -27,22 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::internal::conv::texture_format_to_dxgi;
-use crate::internal::{
-    calc_subresource_index, plane_layer_for_aspect, plane_layer_for_aspect_flag,
-};
+use std::any::TypeId;
+use std::collections::HashMap;
+use std::ptr::NonNull;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::Bump;
 use parking_lot::Mutex;
-use std::any::TypeId;
-use std::collections::HashMap;
-use std::ptr::NonNull;
 use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
+
+use crate::device::Device;
+use crate::internal::conv::texture_format_to_dxgi;
+use crate::internal::{
+    calc_subresource_index, plane_layer_for_aspect, plane_layer_for_aspect_flag,
+};
 
 pub struct Texture {
     pub(crate) this: AnyWeak<Self>,

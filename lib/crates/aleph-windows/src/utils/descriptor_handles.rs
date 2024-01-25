@@ -29,6 +29,7 @@
 
 use std::convert::TryFrom;
 use std::num::{NonZeroU64, NonZeroUsize};
+
 use windows::Win32::Graphics::Direct3D12::*;
 
 /// Internal [D3D12_CPU_DESCRIPTOR_HANDLE] wrapper that uses [NonZeroUsize] to enable niche value

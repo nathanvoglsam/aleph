@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::world::{ArchetypeEntityIndex, ArchetypeIndex, EntityId, EntityIndex, Generation};
 use std::io::{Error, ErrorKind};
 use std::num::NonZeroU32;
+
 use virtual_buffer::VirtualVec;
+
+use crate::world::{ArchetypeEntityIndex, ArchetypeIndex, EntityId, EntityIndex, Generation};
 
 ///
 /// This represents a reference to the location an entity is stored within the set of all archetypes

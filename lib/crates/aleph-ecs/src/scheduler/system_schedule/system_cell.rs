@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
+
+use crossbeam::atomic::AtomicCell;
+
 use crate::scheduler::system_schedule::access_descriptor::SystemAccessDescriptor;
 use crate::system::System;
 use crate::world::World;
-use crossbeam::atomic::AtomicCell;
-use std::cell::Cell;
 
 /// Type alias for a boxed system trait object
 pub type BoxedSystem = Box<dyn System<In = (), Out = ()> + Send + Sync>;

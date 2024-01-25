@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::ValidationDescriptorSetLayout;
+use std::ptr::NonNull;
+
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-use std::ptr::NonNull;
+
+use crate::ValidationDescriptorSetLayout;
 
 #[repr(C)]
 pub struct DescriptorSet {

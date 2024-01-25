@@ -30,15 +30,17 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
-use crate::Allocation;
-use bitflags::bitflags;
 use std::ffi::c_void;
 use std::num::NonZeroU64;
+
+use bitflags::bitflags;
 use windows::core::{GUID, HRESULT};
 use windows::utils::WeakRef;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::IDXGIAdapter;
+
+use crate::Allocation;
 
 // ============================================================================================== //
 // Allocation

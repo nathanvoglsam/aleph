@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use std::any::TypeId;
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use std::any::TypeId;
-use std::sync::atomic::{AtomicU64, Ordering};
 use windows::Win32::Graphics::Direct3D12::*;
+
+use crate::device::Device;
 
 pub struct Fence {
     pub(crate) _this: AnyWeak<Self>,

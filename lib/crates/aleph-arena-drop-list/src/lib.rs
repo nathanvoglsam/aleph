@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use bumpalo::Bump;
 use std::mem::{needs_drop, ManuallyDrop};
 use std::ptr::NonNull;
+
+use bumpalo::Bump;
 
 pub struct DropLink {
     pub ptr: NonNull<ManuallyDrop<()>>,

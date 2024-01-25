@@ -27,18 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::context::Context;
-use crate::device::Device;
-use crate::internal::device_info::DeviceInfo;
-use crate::queue::{Queue, QueueInfo};
+use std::any::TypeId;
+use std::ffi::CStr;
+use std::mem::ManuallyDrop;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
-use std::any::TypeId;
-use std::ffi::CStr;
-use std::mem::ManuallyDrop;
 use vulkan_alloc::vma;
+
+use crate::context::Context;
+use crate::device::Device;
+use crate::internal::device_info::DeviceInfo;
+use crate::queue::{Queue, QueueInfo};
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,

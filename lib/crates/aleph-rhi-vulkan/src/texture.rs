@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
-use crate::internal::framebuffer_cache::FramebufferCache;
+use std::any::TypeId;
+use std::collections::HashMap;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use parking_lot::Mutex;
-use std::any::TypeId;
-use std::collections::HashMap;
 use vulkan_alloc::vma;
+
+use crate::device::Device;
+use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
+use crate::internal::framebuffer_cache::FramebufferCache;
 
 pub struct Texture {
     pub(crate) _this: AnyWeak<Self>,

@@ -27,23 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::internal::unwrap;
-use crate::surface::Surface;
-use crate::texture::{ImageViewObject, Texture};
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::manually_drop;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use bumpalo::Bump;
-use parking_lot::Mutex;
 use std::any::TypeId;
 use std::mem::{size_of, ManuallyDrop};
 use std::sync::atomic::{AtomicBool, Ordering};
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::{manually_drop, try_clone_value_into_slot};
+use bumpalo::Bump;
+use parking_lot::Mutex;
 use windows::core::IUnknown;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
+
+use crate::device::Device;
+use crate::internal::unwrap;
+use crate::surface::Surface;
+use crate::texture::{ImageViewObject, Texture};
 
 pub struct SwapChain {
     pub(crate) this: AnyWeak<Self>,

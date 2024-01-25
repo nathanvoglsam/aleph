@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use std::ffi::c_void;
-use std::ffi::CStr;
+use std::ffi::{c_void, CStr};
 use std::slice;
 
 use ash::vk;
@@ -181,8 +180,7 @@ pub unsafe extern "system" fn vulkan_debug_messenger(
 #[inline(always)]
 fn debug_break() {
     unsafe {
-        use aleph_windows::Win32::System::Diagnostics::Debug::DebugBreak;
-        use aleph_windows::Win32::System::Diagnostics::Debug::IsDebuggerPresent;
+        use aleph_windows::Win32::System::Diagnostics::Debug::{DebugBreak, IsDebuggerPresent};
 
         let debugger_present: bool = IsDebuggerPresent().as_bool();
         if debugger_present {

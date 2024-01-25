@@ -1,14 +1,16 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use aleph_any::AnyArc;
+use aleph_rhi_api::{BackendAPI, IContext};
+use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
+use parking_lot::Mutex;
+use windows::Win32::Graphics::Dxgi::*;
+
 use crate::context::Context;
 use crate::internal::create_dxgi_factory::create_dxgi_factory;
 use crate::internal::debug_interface::DebugInterface;
 use crate::internal::dxgi_debug_interface::dxgi_get_debug_interface;
 use crate::internal::{create_device, create_dxgi_factory};
-use aleph_any::AnyArc;
-use aleph_rhi_api::{BackendAPI, IContext};
-use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
-use parking_lot::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
-use windows::Win32::Graphics::Dxgi::*;
 
 pub static RHI_BACKEND: &'static dyn IRhiBackend = &RHI_BACKEND_OBJECT;
 

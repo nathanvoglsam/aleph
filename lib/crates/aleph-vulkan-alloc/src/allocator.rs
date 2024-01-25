@@ -27,23 +27,22 @@
 // SOFTWARE.
 //
 
-use crate::raw;
-use crate::raw::{
-    AllocationH, AllocationInfo, AllocatorCreateFlags, AllocatorCreateInfo, AllocatorH,
-};
-use crate::utils;
-use crate::vma;
-use crate::vulkan_functions::VulkanFunctionsBuilder;
-use ash::prelude::VkResult;
-use ash::vk;
-use core::mem;
-use core::ptr;
+use core::{mem, ptr};
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::Arc;
+
+use ash::prelude::VkResult;
+use ash::vk;
 use thiserror::Error;
+
+use crate::raw::{
+    AllocationH, AllocationInfo, AllocatorCreateFlags, AllocatorCreateInfo, AllocatorH,
+};
+use crate::vulkan_functions::VulkanFunctionsBuilder;
+use crate::{raw, utils, vma};
 
 ///
 /// Errors that can be produced by trying to construct a vma Allocator incorrectly

@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::{ValidationContext, ValidationDevice, ValidationSwapChain};
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
+
+use crate::{ValidationContext, ValidationDevice, ValidationSwapChain};
 
 pub struct ValidationSurface {
     pub(crate) _this: AnyWeak<Self>,

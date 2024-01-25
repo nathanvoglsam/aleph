@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+use aleph_rhi_api::SamplerDesc;
+use parking_lot::RwLock;
+use windows::core::CanInto;
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
+use windows::Win32::Graphics::Direct3D12::*;
+
 use crate::internal::conv::{
     border_color_to_dx12, compare_op_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
 };
 use crate::internal::sampler_cache_key::SamplerCacheKey;
-use aleph_rhi_api::SamplerDesc;
-use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicU32, Ordering};
-use windows::core::CanInto;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
-use windows::Win32::Graphics::Direct3D12::*;
 
 /// This data structure owns and manages the GPU visible sampler heap. Samplers need special
 /// treatment because of the extremely limited gpu visible heap size of 2048. We can't allocate them

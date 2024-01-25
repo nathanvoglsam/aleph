@@ -32,10 +32,12 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 
-use crate::vma::AllocationCreateInfoBuilder;
-use ash::vk;
 use std::ffi::{c_char, c_float, c_void};
 use std::ptr::NonNull;
+
+use ash::vk;
+
+use crate::vma::AllocationCreateInfoBuilder;
 
 bitflags::bitflags! {
     #[repr(transparent)]

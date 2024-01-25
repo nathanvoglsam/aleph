@@ -27,21 +27,23 @@
 // SOFTWARE.
 //
 
-use crate::command_list::CommandList;
-use crate::internal::unwrap;
+use std::any::{Any, TypeId};
+use std::mem::transmute;
+use std::ptr;
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
-use std::any::{Any, TypeId};
-use std::mem::transmute;
-use std::ptr;
-use std::ptr::NonNull;
-use std::sync::atomic::{AtomicU64, Ordering};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
+
+use crate::command_list::CommandList;
+use crate::internal::unwrap;
 
 pub struct Queue {
     pub(crate) this: AnyWeak<Self>,

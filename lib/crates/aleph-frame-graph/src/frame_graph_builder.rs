@@ -49,19 +49,20 @@
 //!   problem to be solved when it matters.
 //!
 
-use crate::access::ResourceUsageFlagsExt;
-use crate::internal::*;
-use crate::render_pass::CallbackRenderPass;
-use crate::resource::ResourceId;
-use crate::FrameGraphResources;
-use crate::{FrameGraph, IRenderPass, ResourceMut, ResourceRef};
+use std::mem::MaybeUninit;
+use std::ptr::NonNull;
+
 use aleph_arena_drop_list::DropLink;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
-use std::mem::MaybeUninit;
-use std::ptr::NonNull;
+
+use crate::access::ResourceUsageFlagsExt;
+use crate::internal::*;
+use crate::render_pass::CallbackRenderPass;
+use crate::resource::ResourceId;
+use crate::{FrameGraph, FrameGraphResources, IRenderPass, ResourceMut, ResourceRef};
 
 /// A wrapper object around a [MaybeUninit] that allows specifying payloads for render passes
 /// without requiring that they all implement [Default].

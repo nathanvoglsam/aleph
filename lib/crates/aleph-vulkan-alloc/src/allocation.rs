@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::raw::{AllocationCreateFlags, AllocationCreateInfo, AllocationH, MemoryUsage};
-use crate::vma;
-use ash::vk;
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::ops::Deref;
+
+use ash::vk;
+
+use crate::raw::{AllocationCreateFlags, AllocationCreateInfo, AllocationH, MemoryUsage};
+use crate::vma;
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]

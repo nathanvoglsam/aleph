@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
+use std::time::{Duration, Instant};
+
 use interfaces::any::AnyArc;
 use interfaces::platform::IFrameTimer;
 use parking_lot::RwLock;
-use std::time::{Duration, Instant};
 
 struct Inner {
     first: Instant,

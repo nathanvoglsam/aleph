@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::ffi::{c_void, CStr, CString};
+
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::IClipboard;
-use std::ffi::{c_void, CStr, CString};
 
 ///
 /// Object that provides implementation of `IClipboard`

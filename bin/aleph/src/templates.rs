@@ -28,6 +28,7 @@
 //
 
 use std::io::Cursor;
+
 use zip::ZipArchive;
 
 pub const ANDROID_PROJECT: &[u8] = include_bytes!("../templates/android.zip");

@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use std::any::TypeId;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use std::any::TypeId;
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
+
+use crate::device::Device;
 
 pub struct Sampler {
     pub(crate) this: AnyWeak<Self>,

@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::rhi_provider::RhiProvider;
+use std::any::TypeId;
+use std::ops::Deref;
+
 use aleph_interfaces::any::{declare_interfaces, AnyArc, IAny};
 use aleph_interfaces::make_plugin_description_for_crate;
 use aleph_interfaces::platform::IWindowProvider;
@@ -37,8 +39,8 @@ use aleph_interfaces::plugin::{
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::{AdapterRequestOptions, BackendAPI};
 use aleph_rhi_loader::{ContextOptions, RhiLoader};
-use std::any::TypeId;
-use std::ops::Deref;
+
+use crate::rhi_provider::RhiProvider;
 
 pub struct PluginRHI {
     rhi_loader: RhiLoader,

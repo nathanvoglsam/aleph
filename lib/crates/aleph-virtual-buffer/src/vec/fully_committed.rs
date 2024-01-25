@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::buffer::CommittedVirtualBuffer;
-use crate::VirtualBuffer;
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 use std::mem::{align_of, needs_drop, size_of};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use std::slice::{from_raw_parts, from_raw_parts_mut, SliceIndex};
+
+use crate::buffer::CommittedVirtualBuffer;
+use crate::VirtualBuffer;
 pub struct CommittedVirtualVec<T> {
     /// The backing buffer the `CommittedVirtualVec` uses as storage
     buffer: CommittedVirtualBuffer,

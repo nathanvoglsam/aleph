@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use ash::vk;
-use libloading::Library;
 use std::ffi::OsStr;
 use std::ptr;
+
+use ash::vk;
+use libloading::Library;
 
 pub const fn platform_library_name() -> &'static str {
     #[cfg(windows)]

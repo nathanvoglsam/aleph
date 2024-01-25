@@ -27,6 +27,18 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+use std::ops::Deref;
+
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use parking_lot::Mutex;
+use windows::core::CanInto;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::*;
+
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::queue_type_to_dx12;
@@ -37,16 +49,6 @@ use crate::internal::register_message_callback::{
     category_name, device_register_message_callback, message_id_name,
 };
 use crate::queue::Queue;
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use parking_lot::Mutex;
-use std::any::TypeId;
-use std::ops::Deref;
-use windows::core::CanInto;
-use windows::Win32::Graphics::Direct3D::*;
-use windows::Win32::Graphics::Direct3D12::*;
-use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
@@ -180,8 +182,7 @@ impl IAdapter for Adapter {
 #[inline(always)]
 fn debug_break() {
     unsafe {
-        use aleph_windows::Win32::System::Diagnostics::Debug::DebugBreak;
-        use aleph_windows::Win32::System::Diagnostics::Debug::IsDebuggerPresent;
+        use aleph_windows::Win32::System::Diagnostics::Debug::{DebugBreak, IsDebuggerPresent};
 
         let debugger_present: bool = IsDebuggerPresent().as_bool();
         if debugger_present {

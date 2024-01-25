@@ -65,11 +65,12 @@
 //!
 //!
 
+use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
+
 use crate::scheduler::AccessDescriptor;
 use crate::system::{IntoSystem, System};
 use crate::world::{ComponentQuery, Query, Resource, World};
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
 
 // ============================================================================================== //
 

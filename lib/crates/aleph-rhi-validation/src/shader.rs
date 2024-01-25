@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::ValidationDevice;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+
+use crate::ValidationDevice;
 
 pub struct ValidationShader {
     pub(crate) _this: AnyWeak<Self>,

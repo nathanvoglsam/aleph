@@ -34,9 +34,6 @@ mod plugin;
 mod traits;
 mod utils;
 
-pub use plugin::PluginEgui;
-pub use traits::IEguiContextProvider;
-pub use traits::IEguiRenderData;
-pub use traits::RenderData;
-
 pub use egui::*;
+pub use plugin::PluginEgui;
+pub use traits::{IEguiContextProvider, IEguiRenderData, RenderData};
