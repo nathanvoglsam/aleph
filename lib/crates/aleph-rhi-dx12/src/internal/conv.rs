@@ -601,6 +601,10 @@ pub fn texture_create_clear_value_to_dx12(
     desc: &TextureDesc,
     format: DXGI_FORMAT,
 ) -> Result<Option<D3D12_CLEAR_VALUE>, TextureCreateError> {
+    // If we don't allow render target then we can't provide a clear value
+    if !desc.usage.contains(ResourceUsageFlags::RENDER_TARGET) {
+        return Ok(None);
+    }
     let clear = if let Some(clear) = &desc.clear_value {
         let clear = clear.clone();
         match clear.clone() {
