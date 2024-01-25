@@ -1936,6 +1936,7 @@ pub enum Format {
     Rgba32Sint,
     Rgba32Float,
     Depth32Float,
+    Depth32FloatStencil8,
     Depth24Stencil8,
 }
 
@@ -2094,6 +2095,7 @@ impl Format {
             Format::Rgba32Sint => 16,
             Format::Rgba32Float => 16,
             Format::Depth32Float => 4,
+            Format::Depth32FloatStencil8 => 4,
             Format::Depth24Stencil8 => 4,
         }
     }
@@ -2153,7 +2155,7 @@ impl Format {
             | Format::Rgba32Sint
             | Format::Rgba32Float => TextureAspect::COLOR,
             Format::Depth32Float => TextureAspect::DEPTH,
-            Format::Depth24Stencil8 => TextureAspect::DEPTH_STENCIL,
+            Format::Depth32FloatStencil8 | Format::Depth24Stencil8 => TextureAspect::DEPTH_STENCIL,
         }
     }
 }
@@ -2206,6 +2208,7 @@ impl Display for Format {
             Format::Rgba32Sint => f.write_str("Rgba32Sint"),
             Format::Rgba32Float => f.write_str("Rgba32Float"),
             Format::Depth32Float => f.write_str("Depth32Float"),
+            Format::Depth32FloatStencil8 => f.write_str("Depth32FloatStencil8"),
             Format::Depth24Stencil8 => f.write_str("Depth24Stencil8"),
         }
     }
