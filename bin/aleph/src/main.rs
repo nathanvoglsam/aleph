@@ -27,12 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::commands::{Build, Cook, GenProj, ISubcommand};
-use crate::project::AlephProject;
-use anyhow::Context;
-use bumpalo::Bump;
-use log::LevelFilter;
-use std::collections::HashMap;
+use crate::commands::shaders;
+use crate::commands::SubcommandSet;
+use crate::commands::{Build, GenProj};
 
 mod commands;
 mod project;
@@ -42,56 +39,9 @@ mod templates;
 mod utils;
 
 fn main() -> anyhow::Result<()> {
-    let mut command = clap::Command::new(env!("CARGO_PKG_NAME"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("The aleph-engine meta tool for managing an aleph-engine project")
-        .arg_required_else_help(true);
-
-    let mut subcommands: HashMap<String, Box<dyn ISubcommand>> = HashMap::new();
-    register_subcommand(&mut subcommands, GenProj {});
-    register_subcommand(&mut subcommands, Build {});
-    register_subcommand(&mut subcommands, Cook {});
-
-    for (name, subcommand) in subcommands.iter_mut() {
-        let description = subcommand.description();
-
-        assert_eq!(name.as_str(), subcommand.name());
-        assert_eq!(name.as_str(), description.get_name());
-
-        command = command.subcommand(description);
-    }
-
-    let matches = command.get_matches();
-    if let Some((subcommand_name, matches)) = matches.subcommand() {
-        if let Some(subcommand) = subcommands.get_mut(subcommand_name) {
-            // We only want to initialize the logger until _after_ we've started handling subcommands
-            // so we don't get people (somehow) logging in the middle of the command info dump.
-            env_logger::builder()
-                .filter_level(LevelFilter::Trace)
-                .init();
-
-            let arena = Bump::new();
-
-            // Finds the 'aleph-project.toml' and deduces all the project directories against the
-            // active project.
-            let project = AlephProject::new(&arena).context("Loading project information")?;
-
-            // Now we can run the command
-            let result = subcommand.exec(&project, matches.clone());
-            if result.is_ok() {
-                log::info!("Subcommand {subcommand_name} completed successfully!");
-            }
-            return result;
-        }
-    }
-    Ok(())
-}
-
-fn register_subcommand(
-    subcommands: &mut HashMap<String, Box<dyn ISubcommand>>,
-    subcommand: impl ISubcommand + 'static,
-) {
-    let name = subcommand.name();
-    subcommands.insert(name.to_string(), Box::new(subcommand));
+    let mut subcommands = SubcommandSet::new(env!("CARGO_PKG_NAME"));
+    subcommands.register_subcommand(GenProj {});
+    subcommands.register_subcommand(Build {});
+    subcommands.register_subcommand(shaders::make());
+    subcommands.exec_as_root()
 }

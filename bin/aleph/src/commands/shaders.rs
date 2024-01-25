@@ -28,6 +28,7 @@
 //
 
 use crate::commands::ISubcommand;
+use crate::commands::SubcommandSet;
 use crate::project::AlephProject;
 use crate::shader_system::AlephCrateMetadata;
 use crate::shader_system::CompilationParams;
@@ -49,39 +50,52 @@ use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use cargo_metadata::DependencyKind;
 use cargo_metadata::Package;
-use clap::{Arg, ArgMatches};
+use clap::Arg;
+use clap::ArgMatches;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
 use std::collections::HashSet;
 use std::io::Write;
 
-pub struct Cook {}
+pub fn make() -> SubcommandSet {
+    let mut subcommands = SubcommandSet::new("shaders")
+        .about("Commands for handling shaders within an aleph-engine project");
+    subcommands.register_subcommand(GenShaderProj {});
+    subcommands.register_subcommand(BuildShaderProj {});
+    subcommands
+}
 
-impl ISubcommand for Cook {
+fn platform_arg() -> Arg {
+    Arg::new("platform")
+            .help("The platform to build shaders for.")
+            .long_help("The platform to build shaders for. Supported values: native, uwp, android, windows, macos, linux.")
+            .default_value("native")
+            .required(false)
+}
+
+fn config_arg() -> Arg {
+    Arg::new("profile")
+        .short('p')
+        .long("profile")
+        .help("The build configuration to target.")
+        .long_help("The build configuration to target. Supported values: debug, release, retail.")
+        .default_value("debug")
+        .required(false)
+}
+
+pub struct GenShaderProj {}
+
+impl ISubcommand for GenShaderProj {
     fn name(&self) -> &'static str {
-        "cook"
+        "genproj"
     }
 
     fn description(&mut self) -> clap::Command {
-        let platform = Arg::new("platform")
-            .help("The platform to cook the game assets for.")
-            .long_help("The platform to cook the game assets for. Supported values: native, uwp, android, windows, macos, linux.")
-            .default_value("native")
-            .required(false);
-        let config = Arg::new("profile")
-            .short('p')
-            .long("profile")
-            .help("The cook configuration to target.")
-            .long_help(
-                "The cook configuration to target. Supported values: debug, release, retail.",
-            )
-            .default_value("debug")
-            .required(false);
         clap::Command::new(self.name())
-            .about("Cooks the game assets for the requested platform/config")
-            .long_about("Tool for cooking game assets for the requested platform/config.")
-            .arg(platform)
-            .arg(config)
+            .about("Generates the build system for compiling our shader database")
+            .long_about("Generates the build system for compiling our shader database")
+            .arg(platform_arg())
+            .arg(config_arg())
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -120,6 +134,61 @@ impl ISubcommand for Cook {
         let deps = load_dependencies_module_contexts(&deps)?;
 
         generate_shader_module_ninja_files(&project_ctx, &deps)?;
+
+        Ok(())
+    }
+}
+
+pub struct BuildShaderProj {}
+
+impl ISubcommand for BuildShaderProj {
+    fn name(&self) -> &'static str {
+        "build"
+    }
+
+    fn description(&mut self) -> clap::Command {
+        clap::Command::new(self.name())
+            .about("Cooks the game assets for the requested platform/config")
+            .long_about("Tool for cooking game assets for the requested platform/config.")
+            .arg(platform_arg())
+            .arg(config_arg())
+    }
+
+    fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
+        let platform_arg: String = matches
+            .remove_one("platform")
+            .expect("platform should have a default");
+        let profile_arg: String = matches
+            .remove_one("profile")
+            .expect("profile should have a default");
+
+        let platform = BuildPlatform::from_arg(&platform_arg)
+            .ok_or(anyhow!("Unknown platform \"{}\"", &platform_arg))?;
+        let _profile = Profile::from_name(&profile_arg.to_lowercase())
+            .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
+
+        // Build the base level project context for our shader build system
+        let project_ctx = ProjectShaderContext::new(project, platform);
+        project_ctx.ensure_build_directories()?;
+        project_ctx.ensure_build_files()?;
+
+        // We need to compute a full list of all the dependencies of the game crate. This is
+        // represented by a list of package indices. This may include several versions of the same
+        // crate and is calculated by a full traversal of the crate graph starting from the game
+        // crate.
+        let dependencies = get_game_crate_dependencies(project)?;
+        let cargo_metadata = project.get_cargo_metadata()?;
+        let deps: Vec<_> = dependencies
+            .iter()
+            .map(|&v| &cargo_metadata.packages[v])
+            .collect();
+
+        // Filter out any dependencies that _definitely don't_ have any shaders. Could contain false
+        // positives for crates with aleph metadata but no shaders but eh, this will filter the
+        // _VAST_ majority of crates
+        let deps = filter_dependencies_without_aleph_metadata(&project_ctx, &deps)?;
+        let deps = load_dependencies_module_contexts(&deps)?;
+
         run_shader_ninja_build(project)?;
         archive_shaders(&project_ctx, &deps)?;
 
