@@ -49,7 +49,7 @@ pub struct LightingResolvePassOutput {
     pub lighting: ResourceMut,
 }
 
-pub fn lighting_resolve_pass(
+pub fn pass(
     frame_graph: &mut FrameGraphBuilder,
     device: &dyn IDevice,
     pin_board: &PinBoard,

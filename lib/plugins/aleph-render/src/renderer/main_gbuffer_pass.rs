@@ -53,7 +53,7 @@ pub struct MainGBufferPassOutput {
     pub depth_buffer: ResourceMut,
 }
 
-pub fn main_gbuffer_pass(
+pub fn pass(
     frame_graph: &mut FrameGraphBuilder,
     device: &dyn IDevice,
     pin_board: &PinBoard,
