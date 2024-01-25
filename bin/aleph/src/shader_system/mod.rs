@@ -414,6 +414,9 @@ pub struct ShaderFile<'a> {
     /// The path to the shader file
     pub path: &'a Utf8Path,
 
+    /// The full file name of the shader file
+    pub file_name: &'a str,
+
     /// The extracted file extension of the shader file.
     pub file_ext: ShaderFileFormat,
 
@@ -454,6 +457,7 @@ impl<'a> ShaderFile<'a> {
 
         Some(Self {
             path,
+            file_name,
             file_ext,
             shader_type,
             name: file_name_no_s_type,

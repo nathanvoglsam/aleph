@@ -360,9 +360,14 @@ fn output_build_statement_for_shader(
     backend: &str,
 ) -> anyhow::Result<()> {
     let rule = shader_file.ninja_rule();
+
     let in_file = shader_file.path;
+    let in_file_relative_to_src = in_file.strip_prefix(module_ctx.module_source_dir.as_ref())?;
+    let in_file_dir_relative_to_src = in_file_relative_to_src.parent().unwrap();
+
     let out_file = module_ctx
         .module_output_dir
+        .join(in_file_dir_relative_to_src)
         .join(shader_file.name_with_type);
 
     if target_platform().is_windows() {
@@ -481,47 +486,70 @@ fn archive_shaders_for_package(
             loaded.crate_ctx.crate_output_name,
             module.module_name,
         );
-        let read_dir = module.module_output_dir.read_dir_utf8()?;
-        for file in read_dir {
-            let file = file?;
 
-            let file_type = file.file_type()?;
-            if !file_type.is_file() {
-                continue;
-            }
+        let walker = ignore::WalkBuilder::new(module.module_output_dir.as_ref()).build();
+        for entry in walker {
+            if let Ok(entry) = entry {
+                // We will only process utf-8 paths because we are sane little crewmates. If it's
+                // not utf-8 we're in for sadness
+                let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
+                    Ok(v) => v,
+                    Err(_) => continue,
+                };
+                let entry_path_tail = entry_path.strip_prefix(module.module_output_dir.as_ref())?;
 
-            let file_name = Utf8Path::new(file.file_name());
-            let file_stem = file_name.file_stem();
-            match (file_name.extension(), file_stem) {
-                (Some("spirv"), Some(stem)) => {
-                    let file_data = std::fs::read(file.path())?;
-                    if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
-                        db_entry.spirv = file_data;
-                    } else {
-                        shader_db.shaders.insert(
-                            stem.to_string(),
-                            ShaderEntry {
-                                spirv: file_data,
-                                dxil: Vec::new(),
-                            },
-                        );
-                    }
+                let file_type = entry.file_type().unwrap();
+                if !file_type.is_file() {
+                    continue;
                 }
-                (Some("dxil"), Some(stem)) => {
-                    let file_data = std::fs::read(file.path())?;
-                    if let Some(db_entry) = shader_db.shaders.get_mut(stem) {
-                        db_entry.dxil = file_data;
-                    } else {
-                        shader_db.shaders.insert(
-                            stem.to_string(),
-                            ShaderEntry {
-                                spirv: Vec::new(),
-                                dxil: file_data,
-                            },
-                        );
-                    }
+
+                let file_name = Utf8Path::new(entry_path.file_name().unwrap());
+                let file_stem = match file_name.file_stem() {
+                    Some(v) => v,
+                    None => continue,
+                };
+
+                let module_name = module.module_output_dir.file_name().unwrap();
+                let mut shader_name = format!("{module_name}/");
+                for component in entry_path_tail.parent().unwrap().components() {
+                    use std::fmt::Write;
+                    write!(&mut shader_name, "{component}/")?;
                 }
-                _ => continue,
+                shader_name.push_str(file_stem);
+
+                match file_name.extension() {
+                    Some("spirv") => {
+                        log::trace!("Collecting SPIRV for shader '{shader_name}'");
+                        let file_data = std::fs::read(&entry_path)?;
+                        if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
+                            db_entry.spirv = file_data;
+                        } else {
+                            shader_db.shaders.insert(
+                                shader_name,
+                                ShaderEntry {
+                                    spirv: file_data,
+                                    dxil: Vec::new(),
+                                },
+                            );
+                        }
+                    }
+                    Some("dxil") => {
+                        log::trace!("Collecting DXIL for shader '{shader_name}'");
+                        let file_data = std::fs::read(&entry_path)?;
+                        if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
+                            db_entry.dxil = file_data;
+                        } else {
+                            shader_db.shaders.insert(
+                                shader_name,
+                                ShaderEntry {
+                                    spirv: Vec::new(),
+                                    dxil: file_data,
+                                },
+                            );
+                        }
+                    }
+                    _ => continue,
+                }
             }
         }
     }
