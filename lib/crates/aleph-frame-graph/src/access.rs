@@ -89,19 +89,19 @@ impl ResourceUsageFlagsExt for ResourceUsageFlags {
         if self.contains(Self::CONSTANT_BUFFER) {
             sync |= BarrierSync::PIXEL_SHADING
                 | BarrierSync::VERTEX_SHADING
-                | BarrierSync::RAYTRACING
+                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
                 | BarrierSync::COMPUTE_SHADING;
         }
         if self.contains(Self::SHADER_RESOURCE) {
             sync |= BarrierSync::PIXEL_SHADING
                 | BarrierSync::VERTEX_SHADING
-                | BarrierSync::RAYTRACING
+                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
                 | BarrierSync::COMPUTE_SHADING;
         }
         if self.contains(Self::UNORDERED_ACCESS) {
             sync |= BarrierSync::PIXEL_SHADING
                 | BarrierSync::VERTEX_SHADING
-                | BarrierSync::RAYTRACING
+                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
                 | BarrierSync::COMPUTE_SHADING;
         }
         if self.contains(Self::INDIRECT_DRAW_ARGS) {
