@@ -391,19 +391,27 @@ impl ShaderFileFormat {
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ShaderType {
-    Vertex,
-    Fragment,
-    Geometry,
     Compute,
+    Vertex,
+    Hull,
+    Domain,
+    Geometry,
+    Fragment,
+    Amplification,
+    Mesh,
 }
 
 impl Into<aleph_shader_db::ShaderType> for ShaderType {
     fn into(self) -> aleph_shader_db::ShaderType {
         match self {
-            ShaderType::Vertex => aleph_shader_db::ShaderType::Vertex,
-            ShaderType::Fragment => aleph_shader_db::ShaderType::Fragment,
-            ShaderType::Geometry => aleph_shader_db::ShaderType::Geometry,
             ShaderType::Compute => aleph_shader_db::ShaderType::Compute,
+            ShaderType::Vertex => aleph_shader_db::ShaderType::Vertex,
+            ShaderType::Hull => aleph_shader_db::ShaderType::Hull,
+            ShaderType::Domain => aleph_shader_db::ShaderType::Domain,
+            ShaderType::Geometry => aleph_shader_db::ShaderType::Geometry,
+            ShaderType::Fragment => aleph_shader_db::ShaderType::Fragment,
+            ShaderType::Amplification => aleph_shader_db::ShaderType::Amplification,
+            ShaderType::Mesh => aleph_shader_db::ShaderType::Mesh,
         }
     }
 }
@@ -411,42 +419,68 @@ impl Into<aleph_shader_db::ShaderType> for ShaderType {
 impl ShaderType {
     pub fn from_ext(v: &str) -> Option<Self> {
         match v {
-            "frag" | "fragment" | "pix" | "pixel" | "ps" | "fg" => Some(Self::Fragment),
-            "vert" | "vertex" | "vs" => Some(Self::Vertex),
             "comp" | "compute" | "cs" => Some(Self::Compute),
+            "vert" | "vertex" | "vs" => Some(Self::Vertex),
+            "hull" | "hs" => Some(Self::Hull),
+            "domain" | "ds" => Some(Self::Domain),
             "geom" | "geometry" | "gs" => Some(Self::Geometry),
+            "frag" | "fragment" | "pix" | "pixel" | "ps" | "fg" => Some(Self::Fragment),
+            "amp" | "as" => Some(Self::Amplification),
+            "mesh" | "ms" => Some(Self::Mesh),
             _ => None,
         }
     }
 
     pub fn to_ninja_rule(self) -> &'static str {
         match self {
-            ShaderType::Vertex => "vertex_shader",
-            ShaderType::Fragment => "fragment_shader",
-            ShaderType::Geometry => "geometry_shader",
             ShaderType::Compute => "compute_shader",
+            ShaderType::Vertex => "vertex_shader",
+            ShaderType::Hull => "hull_shader",
+            ShaderType::Domain => "domain_shader",
+            ShaderType::Geometry => "geometry_shader",
+            ShaderType::Fragment => "fragment_shader",
+            ShaderType::Amplification => "amplification_shader",
+            ShaderType::Mesh => "mesh_shader",
         }
     }
 
     pub fn shader_db_name_type(&self) -> &'static str {
         match self {
+            ShaderType::Compute => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Compute>",
             ShaderType::Vertex => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Vertex>",
-            ShaderType::Fragment => {
-                "aleph_shader_db::ShaderName<'static, aleph_shader_db::Fragment>"
-            }
+            ShaderType::Hull => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Hull>",
+            ShaderType::Domain => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Domain>",
             ShaderType::Geometry => {
                 "aleph_shader_db::ShaderName<'static, aleph_shader_db::Geometry>"
             }
-            ShaderType::Compute => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Compute>",
+            ShaderType::Fragment => {
+                "aleph_shader_db::ShaderName<'static, aleph_shader_db::Fragment>"
+            }
+            ShaderType::Amplification => {
+                "aleph_shader_db::ShaderName<'static, aleph_shader_db::Amplification>"
+            }
+            ShaderType::Mesh => "aleph_shader_db::ShaderName<'static, aleph_shader_db::Mesh>",
         }
     }
 
     pub fn shader_db_name_constructor(&self) -> &'static str {
         match self {
+            ShaderType::Compute => "aleph_shader_db::ShaderName::<aleph_shader_db::Compute>::new",
             ShaderType::Vertex => "aleph_shader_db::ShaderName::<aleph_shader_db::Vertex>::new",
+            ShaderType::Hull => {
+                "aleph_shader_db::ShaderName::<'static, aleph_shader_db::Hull>::new"
+            }
+            ShaderType::Domain => {
+                "aleph_shader_db::ShaderName::<'static, aleph_shader_db::Domain>::new"
+            }
             ShaderType::Fragment => "aleph_shader_db::ShaderName::<aleph_shader_db::Fragment>::new",
             ShaderType::Geometry => "aleph_shader_db::ShaderName::<aleph_shader_db::Geometry>::new",
-            ShaderType::Compute => "aleph_shader_db::ShaderName::<aleph_shader_db::Compute>::new",
+            ShaderType::Amplification => {
+                "aleph_shader_db::ShaderName::<'static, aleph_shader_db::Amplification>::new"
+            }
+            ShaderType::Mesh => {
+                "aleph_shader_db::ShaderName::<'static, aleph_shader_db::Mesh>::new"
+            }
         }
     }
 }
