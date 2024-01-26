@@ -36,50 +36,46 @@ use rkyv::{Archive, Deserialize, Serialize};
     Archive, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug,
 )]
 pub enum ShaderType {
-    Vertex,
-    Fragment,
     Compute,
+    Vertex,
+    Hull,
+    Domain,
     Geometry,
+    Fragment,
+    Amplification,
+    Mesh,
 }
 
 pub trait ShaderStage {
+    const SHADER_TYPE: ShaderType;
     fn shader_type_matches(v: ShaderType) -> bool;
 }
 
-pub struct Vertex {}
+macro_rules! shader_stage_variant {
+    ($v_name: ident) => {
+        pub struct $v_name {}
 
-impl ShaderStage for Vertex {
-    fn shader_type_matches(v: ShaderType) -> bool {
-        v == ShaderType::Vertex
-    }
+        impl ShaderStage for $v_name {
+            const SHADER_TYPE: ShaderType = ShaderType::$v_name;
+
+            fn shader_type_matches(v: ShaderType) -> bool {
+                v == ShaderType::$v_name
+            }
+        }
+    };
 }
 
-pub struct Fragment {}
-
-impl ShaderStage for Fragment {
-    fn shader_type_matches(v: ShaderType) -> bool {
-        v == ShaderType::Fragment
-    }
-}
-
-pub struct Compute {}
-
-impl ShaderStage for Compute {
-    fn shader_type_matches(v: ShaderType) -> bool {
-        v == ShaderType::Compute
-    }
-}
-
-pub struct Geometry {}
-
-impl ShaderStage for Geometry {
-    fn shader_type_matches(v: ShaderType) -> bool {
-        v == ShaderType::Geometry
-    }
-}
+shader_stage_variant!(Compute);
+shader_stage_variant!(Vertex);
+shader_stage_variant!(Hull);
+shader_stage_variant!(Domain);
+shader_stage_variant!(Geometry);
+shader_stage_variant!(Fragment);
+shader_stage_variant!(Amplification);
+shader_stage_variant!(Mesh);
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct ShaderName<'a, T: ShaderStage> {
+pub struct ShaderName<'a, T> {
     v: &'a str,
     _phantom: PhantomData<T>,
 }
@@ -90,6 +86,12 @@ impl<'a, T: ShaderStage> ShaderName<'a, T> {
             v,
             _phantom: PhantomData,
         }
+    }
+}
+
+impl<'a, T> Into<&'a str> for ShaderName<'a, T> {
+    fn into(self) -> &'a str {
+        self.v
     }
 }
 
