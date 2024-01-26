@@ -32,6 +32,7 @@ extern crate aleph_interfaces as interfaces;
 
 mod plugin;
 mod renderer;
+mod shader_db_accessor;
 mod shaders;
 
 pub use plugin::PluginRender;
