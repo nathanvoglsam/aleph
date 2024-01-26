@@ -38,13 +38,14 @@ use std::ops::{Deref, DerefMut};
 use aleph_frame_graph::*;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use aleph_shader_db::{IShaderDatabase, ShaderDatabase};
+use aleph_shader_db::ShaderDatabase;
 use egui::{ImageData, RenderData};
 pub(crate) use frame::PerFrameObjects;
 use interfaces::any::AnyArc;
 
 use crate::renderer::egui_pass::EguiPassContext;
 use crate::renderer::params::BackBufferInfo;
+use crate::shader_db_accessor::ShaderDatabaseAccessor;
 
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,
@@ -68,7 +69,11 @@ impl EguiRenderer {
 
         let shader_db_bin =
             std::fs::read("shaders.shaderdb").expect("Failed to load shader database");
+
         let shader_db = unsafe { rkyv::archived_root::<ShaderDatabase>(&shader_db_bin) };
+        shader_db.validate_header();
+
+        let shader_db = ShaderDatabaseAccessor::new(device.as_ref(), shader_db);
 
         let sampler = Self::create_sampler(device.as_ref());
 
@@ -78,7 +83,7 @@ impl EguiRenderer {
             pixels_per_point,
         });
 
-        let frame_graph = Self::create_frame_graph(device.as_ref(), &pin_board, shader_db);
+        let frame_graph = Self::create_frame_graph(device.as_ref(), &pin_board, &shader_db);
 
         let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
         let back_buffer_id = output.id;
@@ -116,7 +121,8 @@ impl EguiRenderer {
         });
 
         let shader_db = unsafe { rkyv::archived_root::<ShaderDatabase>(&self.shader_db_bin) };
-        let frame_graph = Self::create_frame_graph(self.device.as_ref(), &pin_board, shader_db);
+        let shader_db = ShaderDatabaseAccessor::new(self.device.as_ref(), shader_db);
+        let frame_graph = Self::create_frame_graph(self.device.as_ref(), &pin_board, &shader_db);
 
         let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
         let back_buffer_id = output.id;
@@ -140,7 +146,7 @@ impl EguiRenderer {
     pub fn create_frame_graph(
         device: &dyn IDevice,
         pin_board: &PinBoard,
-        shader_db: &dyn IShaderDatabase,
+        shader_db: &ShaderDatabaseAccessor,
     ) -> FrameGraph {
         let mut frame_graph = FrameGraph::builder();
         egui_pass::pass(&mut frame_graph, device, pin_board, shader_db);

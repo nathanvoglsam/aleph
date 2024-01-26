@@ -31,10 +31,10 @@ use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use aleph_shader_db::{IShaderDatabase, IShaderDatabaseExt};
 use egui::RenderData;
 
 use crate::renderer::params::BackBufferInfo;
+use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 
 struct EguiPassPayload {
@@ -63,7 +63,7 @@ pub fn pass(
     frame_graph: &mut FrameGraphBuilder,
     device: &dyn IDevice,
     pin_board: &PinBoard,
-    shader_db: &dyn IShaderDatabase,
+    shader_db: &ShaderDatabaseAccessor,
 ) {
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
     const INDEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
@@ -111,38 +111,13 @@ pub fn pass(
             let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
             let vertex_shader = shader_db
-                .get(shaders::aleph_render::egui_egui_vert())
+                .load(shaders::aleph_render::egui_egui_vert())
                 .unwrap();
             let fragment_shader = shader_db
-                .get(shaders::aleph_render::egui_egui_frag())
+                .load(shaders::aleph_render::egui_egui_frag())
                 .unwrap();
-            let (vertex_data, fragment_data) = match device.get_backend_api() {
-                BackendAPI::Vulkan => (
-                    ShaderBinary::Spirv(vertex_shader.spirv),
-                    ShaderBinary::Spirv(fragment_shader.spirv),
-                ),
-                BackendAPI::D3D12 => (
-                    ShaderBinary::Dxil(vertex_shader.dxil),
-                    ShaderBinary::Dxil(fragment_shader.dxil),
-                ),
-            };
-            let vertex_shader = device
-                .create_shader(&ShaderOptions {
-                    shader_type: ShaderType::Vertex,
-                    data: vertex_data,
-                    entry_point: "main",
-                    name: Some("egui::VertexShader"),
-                })
-                .unwrap();
-
-            let fragment_shader = device
-                .create_shader(&ShaderOptions {
-                    shader_type: ShaderType::Fragment,
-                    data: fragment_data,
-                    entry_point: "main",
-                    name: Some("egui::FragmentShader"),
-                })
-                .unwrap();
+            let vertex_shader = device.create_shader(&vertex_shader).unwrap();
+            let fragment_shader = device.create_shader(&fragment_shader).unwrap();
 
             let graphics_pipeline = create_pipeline_state(
                 device,

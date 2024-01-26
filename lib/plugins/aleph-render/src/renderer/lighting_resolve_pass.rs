@@ -31,10 +31,10 @@ use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use aleph_shader_db::{IShaderDatabase, IShaderDatabaseExt};
 
 use crate::renderer::main_gbuffer_pass::MainGBufferPassOutput;
 use crate::renderer::params::BackBufferInfo;
+use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 
 struct LightingResolvePassPayload {
@@ -53,7 +53,7 @@ pub fn pass(
     frame_graph: &mut FrameGraphBuilder,
     device: &dyn IDevice,
     pin_board: &PinBoard,
-    shader_db: &dyn IShaderDatabase,
+    shader_db: &ShaderDatabaseAccessor,
 ) {
     frame_graph.add_pass(
         "DeferredLightingPass",
@@ -119,20 +119,9 @@ pub fn pass(
                 .unwrap();
 
             let shader_data = shader_db
-                .get(shaders::aleph_render::deferred_deferred_lighting_cs())
+                .load(shaders::aleph_render::deferred_deferred_lighting_cs())
                 .unwrap();
-            let shader_data = match device.get_backend_api() {
-                BackendAPI::Vulkan => ShaderBinary::Spirv(shader_data.spirv),
-                BackendAPI::D3D12 => ShaderBinary::Dxil(shader_data.dxil),
-            };
-            let shader_module = device
-                .create_shader(&ShaderOptions {
-                    shader_type: ShaderType::Compute,
-                    data: shader_data,
-                    entry_point: "main",
-                    name: Some("DeferredLightingComputeShader"),
-                })
-                .unwrap();
+            let shader_module = device.create_shader(&shader_data).unwrap();
 
             let pipeline = device
                 .create_compute_pipeline(&ComputePipelineDesc {
