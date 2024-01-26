@@ -46,21 +46,17 @@ pub enum ShaderType {
     Mesh,
 }
 
-pub trait ShaderStage {
+pub trait ShaderStage: Copy + Clone {
     const SHADER_TYPE: ShaderType;
-    fn shader_type_matches(v: ShaderType) -> bool;
 }
 
 macro_rules! shader_stage_variant {
     ($v_name: ident) => {
+        #[derive(Copy, Clone)]
         pub struct $v_name {}
 
         impl ShaderStage for $v_name {
             const SHADER_TYPE: ShaderType = ShaderType::$v_name;
-
-            fn shader_type_matches(v: ShaderType) -> bool {
-                v == ShaderType::$v_name
-            }
         }
     };
 }
@@ -125,7 +121,7 @@ impl<T: IShaderDatabase + ?Sized> IShaderDatabaseExt for T {
     fn get<S: ShaderStage>(&self, name: ShaderName<S>) -> Option<ShaderEntryRef> {
         self.get_by_name(name.v)
             .map(|v| {
-                if S::shader_type_matches(v.shader_type) {
+                if S::SHADER_TYPE == v.shader_type {
                     Some(v)
                 } else {
                     None
