@@ -91,9 +91,51 @@ impl<'a, T> Into<&'a str> for ShaderName<'a, T> {
     }
 }
 
-#[derive(Default, Archive, Serialize, Deserialize)]
+#[derive(Archive, Serialize, Deserialize)]
 pub struct ShaderDatabase {
+    pub magic_number: u64,
+    pub format_version: u64,
     pub shaders: HashMap<String, ShaderEntry>,
+}
+
+impl ShaderDatabase {
+    const MAGIC_NUMBER: u64 = 569420;
+    const EXPECTED_VERSION: u64 = 1;
+
+    pub fn is_header_valid(&self) -> bool {
+        self.magic_number == Self::MAGIC_NUMBER && self.format_version == Self::EXPECTED_VERSION
+    }
+
+    pub fn validate_header(&self) {
+        assert!(
+            self.is_header_valid(),
+            "Invalid header detected, incompatible shader db"
+        );
+    }
+}
+
+impl ArchivedShaderDatabase {
+    pub fn is_header_valid(&self) -> bool {
+        self.magic_number == ShaderDatabase::MAGIC_NUMBER
+            && self.format_version == ShaderDatabase::EXPECTED_VERSION
+    }
+
+    pub fn validate_header(&self) {
+        assert!(
+            self.is_header_valid(),
+            "Invalid header detected, incompatible shader db"
+        );
+    }
+}
+
+impl Default for ShaderDatabase {
+    fn default() -> Self {
+        Self {
+            magic_number: 569420,
+            shaders: Default::default(),
+            format_version: Self::EXPECTED_VERSION,
+        }
+    }
 }
 
 #[derive(Archive, Serialize, Deserialize)]
