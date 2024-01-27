@@ -149,6 +149,8 @@ impl EguiRenderer {
         shader_db: &ShaderDatabaseAccessor,
     ) -> FrameGraph {
         let mut frame_graph = FrameGraph::builder();
+        main_gbuffer_pass::pass(&mut frame_graph, device, pin_board, shader_db);
+        lighting_resolve_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         egui_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         frame_graph.build()
     }
