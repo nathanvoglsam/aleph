@@ -151,10 +151,10 @@ pub fn pass(
             let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
             let vertex_shader = shader_db
-                .load(shaders::aleph_render::deferred_main_gbuffer_vert())
+                .load(shaders::aleph_render::deferred::main_gbuffer_vert())
                 .unwrap();
             let fragment_shader = shader_db
-                .load(shaders::aleph_render::deferred_main_gbuffer_frag())
+                .load(shaders::aleph_render::deferred::main_gbuffer_frag())
                 .unwrap();
             let vertex_shader = device.create_shader(&vertex_shader).unwrap();
             let fragment_shader = device.create_shader(&fragment_shader).unwrap();

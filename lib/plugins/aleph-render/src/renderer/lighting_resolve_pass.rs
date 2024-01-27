@@ -119,7 +119,7 @@ pub fn pass(
                 .unwrap();
 
             let shader_data = shader_db
-                .load(shaders::aleph_render::deferred_deferred_lighting_cs())
+                .load(shaders::aleph_render::deferred::deferred_lighting_cs())
                 .unwrap();
             let shader_module = device.create_shader(&shader_data).unwrap();
 
