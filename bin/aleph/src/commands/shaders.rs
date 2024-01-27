@@ -524,57 +524,76 @@ fn generate_shader_name_bindings_for_module(
     )?;
     writeln!(&mut module_output_file)?;
 
-    // We use a single-threaded walker as we intend to parallelise at the package level instead
-    let walker = ignore::WalkBuilder::new(module_ctx.module_source_dir.as_ref()).build();
-    for entry in walker {
-        if let Ok(entry) = entry {
-            // We will only process utf-8 paths because we are sane little crewmates. If it's
-            // not utf-8 we're in for sadness
-            let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
-                Ok(v) => v,
-                Err(_) => continue,
-            };
-            let entry_path_tail = entry_path.strip_prefix(module_ctx.module_source_dir.as_ref())?;
+    let mut indent = String::with_capacity(32);
+    let mut stack = Vec::new();
+    stack.push(module_ctx.module_source_dir.read_dir_utf8()?);
+    'outer: while let Some(mut item) = stack.pop() {
+        while let Some(dir_item) = item.next() {
+            let dir_item = dir_item?;
+            let item_type = dir_item.file_type()?;
 
-            let f_type = entry.file_type().unwrap();
-            if f_type.is_file() {
-                let shader_file = match ShaderFile::new(&entry_path) {
+            if item_type.is_file() {
+                // Just skip anything that we don't identify as a valid shader file
+                let shader_file = match ShaderFile::new(dir_item.path()) {
                     Some(v) => v,
                     None => continue,
                 };
 
+                // Output the function declaration
                 let file_stem_no_dots = shader_file.name_with_type.replace(".", "_");
-                let module_name = module_ctx.module_output_dir.file_name().unwrap();
-                let mut shader_name = format!("{module_name}/");
-                let mut shader_fn_name = String::new();
-                for component in entry_path_tail.parent().unwrap().components() {
-                    use std::fmt::Write;
-                    write!(&mut shader_name, "{component}/")?;
-                    write!(&mut shader_fn_name, "{component}_")?;
-                }
-                shader_name.push_str(shader_file.name_with_type);
-                shader_fn_name.push_str(&file_stem_no_dots);
-
-                writeln!(&mut module_output_file, "#[allow(unused)]")?;
+                writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
                 writeln!(
                     &mut module_output_file,
-                    "pub fn {}() -> {} {{",
-                    shader_fn_name,
+                    "{indent}pub fn {file_stem_no_dots}() -> {} {{",
                     shader_file.shader_type.shader_db_name_type()
                 )?;
+
+                // Output the function body
+                let shader_name = shader_name_for_src_file_in_module(module_ctx, &shader_file)?;
                 writeln!(
                     &mut module_output_file,
-                    "    unsafe {{ {}(\"{}\") }} // Safety guaranteed by code-gen",
+                    "{indent}    unsafe {{ {}(\"{shader_name}\") }} // Safety guaranteed by code-gen",
                     shader_file.shader_type.shader_db_name_constructor(),
-                    shader_name
                 )?;
-                writeln!(&mut module_output_file, "}}")?;
-                writeln!(&mut module_output_file)?;
+
+                // Close the function block
+                writeln!(&mut module_output_file, "{indent}}}")?;
 
                 log::trace!("{}", shader_name);
+            } else if item_type.is_dir() {
+                // If we find another nested directory we open a new module and start iterating the
+                // new directory.
+
+                // Open the new module in the file
+                let sanitized_dir_name = dir_item.file_name().replace("-", "_");
+                writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
+                writeln!(
+                    &mut module_output_file,
+                    "{indent}pub mod {sanitized_dir_name} {{"
+                )?;
+
+                // Increase our indent level
+                indent.push_str("    ");
+
+                // Store our progress through the current directory and then push the newly found
+                // child directory as the next element to process onto the stack.
+                stack.push(item);
+                stack.push(dir_item.path().read_dir_utf8()?);
+
+                // Exit from the inner loop so we can iterate the child directory
+                continue 'outer;
             }
         }
+
+        // We don't close the module scope on the final item
+        if !stack.is_empty() {
+            // If we hit here we've finished iterating a dir, so for every level except the very
+            // bottom level we close an (assumed to be open) module and decrease the indent level.
+            indent.truncate(indent.len() - 4);
+            writeln!(&mut module_output_file, "{indent}}}",)?;
+        }
     }
+
     Ok(())
 }
 
@@ -682,7 +701,6 @@ fn archive_shaders_for_package(
                     Ok(v) => v,
                     Err(_) => continue,
                 };
-                let entry_path_tail = entry_path.strip_prefix(module.module_output_dir.as_ref())?;
 
                 let file_type = entry.file_type().unwrap();
                 if !file_type.is_file() {
@@ -694,13 +712,7 @@ fn archive_shaders_for_package(
                     None => continue,
                 };
 
-                let module_name = module.module_output_dir.file_name().unwrap();
-                let mut shader_name = format!("{module_name}/");
-                for component in entry_path_tail.parent().unwrap().components() {
-                    use std::fmt::Write;
-                    write!(&mut shader_name, "{component}/")?;
-                }
-                shader_name.push_str(shader_file.name_with_type);
+                let shader_name = shader_name_for_bin_file_in_module(module, &shader_file)?;
 
                 match shader_file.file_ext {
                     crate::shader_system::ShaderFileFormat::HLSL => unreachable!(),
@@ -743,4 +755,44 @@ fn archive_shaders_for_package(
     }
 
     Ok(())
+}
+
+fn shader_name_for_file_in_module<const IS_SOURCE_FILE: bool>(
+    module: &ShaderModuleContext,
+    shader_file: &ShaderFile,
+) -> anyhow::Result<String> {
+    use std::fmt::Write;
+
+    // if we have a source file or a binary file we need to use a different prefix to get our
+    // stripped path
+    let prefix = if IS_SOURCE_FILE {
+        module.module_source_dir.as_ref()
+    } else {
+        module.module_output_dir.as_ref()
+    };
+
+    let module_name = module.module_output_dir.file_name().unwrap();
+    let entry_path_tail = shader_file.path.strip_prefix(prefix)?;
+
+    let mut shader_name = format!("{module_name}/");
+    for component in entry_path_tail.parent().unwrap().components() {
+        write!(&mut shader_name, "{component}/")?;
+    }
+    shader_name.push_str(shader_file.name_with_type);
+
+    Ok(shader_name)
+}
+
+fn shader_name_for_src_file_in_module(
+    module: &ShaderModuleContext,
+    shader_file: &ShaderFile,
+) -> anyhow::Result<String> {
+    shader_name_for_file_in_module::<true>(module, shader_file)
+}
+
+fn shader_name_for_bin_file_in_module(
+    module: &ShaderModuleContext<'_>,
+    shader_file: &ShaderFile<'_>,
+) -> anyhow::Result<String> {
+    shader_name_for_file_in_module::<false>(module, shader_file)
 }
