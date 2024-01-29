@@ -35,7 +35,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
-use raw_window_handle::HasRawWindowHandle;
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use windows::core::{CanInto, ComInterface};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
