@@ -67,8 +67,12 @@ impl EguiRenderer {
     ) -> Self {
         log::trace!("Initializing Egui Renderer");
 
-        let shader_db_bin =
-            std::fs::read("shaders.shaderdb").expect("Failed to load shader database");
+        // Try load the shader db, first from the immediate working directory and then from the
+        // potential aleph project's .aleph/shaders directory.
+        // TODO: we need a better way of managing and configuring where we get our shader db from
+        let shader_db_bin = std::fs::read("shaders.shaderdb")
+            .or_else(|_| std::fs::read(".aleph/shaders/shaders.shaderdb"))
+            .unwrap();
 
         let shader_db = unsafe { rkyv::archived_root::<ShaderDatabase>(&shader_db_bin) };
         shader_db.validate_header();
