@@ -28,7 +28,7 @@
 //
 
 use any::*;
-use raw_window_handle::HasRawWindowHandle;
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 
 /// An enum of window events.
 #[derive(Clone, Debug)]
@@ -73,7 +73,7 @@ pub trait IWindowProvider: IAny + 'static {
 /// This interface should be implemented as the interface to an OS window. Ideally access to an
 /// `IWindow` instance will be provided from an `IWindowProvider`.
 ///
-pub trait IWindow: IAny + HasRawWindowHandle + Send + Sync + 'static {
+pub trait IWindow: IAny + HasRawDisplayHandle + HasRawWindowHandle + Send + Sync + 'static {
     ///
     /// Returns whether the window has been resized since the last time this function was called.
     ///
