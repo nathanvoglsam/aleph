@@ -31,7 +31,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
-    Event, HasRawWindowHandle, IWindow, IWindowEventsLock, RawWindowHandle, WindowEvent,
+    Event, HasRawDisplayHandle, HasRawWindowHandle, IWindow, IWindowEventsLock, RawDisplayHandle,
+    RawWindowHandle, WindowEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 
@@ -70,8 +71,11 @@ pub struct WindowState {
     /// Is the DPI of the window based on the display it is currently on
     pub current_dpi: f32,
 
+    /// The window's display handle
+    pub display_handle: RawDisplayHandle,
+
     /// The window's window handle
-    pub handle: RawWindowHandle,
+    pub window_handle: RawWindowHandle,
 }
 
 unsafe impl Send for WindowState {}
@@ -160,10 +164,10 @@ impl WindowImpl {
 
         let drawable_size = window.drawable_size();
 
-        let raw_window_handle = {
+        let (raw_display_handle, raw_window_handle) = {
             #[cfg(not(target_os = "macos"))]
             {
-                window.raw_window_handle()
+                (window.raw_display_handle(), window.raw_window_handle())
             }
 
             #[cfg(target_os = "macos")]
@@ -176,7 +180,8 @@ impl WindowImpl {
                 } else {
                     panic!("We only support MacOS window handles, not iOS");
                 }
-                raw_window_handle
+                let raw_display_handle = window.raw_display_handle();
+                (raw_display_handle, raw_window_handle)
             }
         };
 
@@ -191,7 +196,8 @@ impl WindowImpl {
             fullscreen: false,
             focused: false,
             current_dpi: hdpi,
-            handle: raw_window_handle,
+            display_handle: raw_display_handle,
+            window_handle: raw_window_handle,
         };
 
         let out = Self {
@@ -492,9 +498,15 @@ impl IWindow for WindowImpl {
     }
 }
 
+unsafe impl HasRawDisplayHandle for WindowImpl {
+    fn raw_display_handle(&self) -> RawDisplayHandle {
+        self.state.read().display_handle
+    }
+}
+
 unsafe impl HasRawWindowHandle for WindowImpl {
     fn raw_window_handle(&self) -> RawWindowHandle {
-        self.state.read().handle
+        self.state.read().window_handle
     }
 }
 
