@@ -354,6 +354,7 @@ impl IContext for Context {
 
     fn create_surface(
         &self,
+        _display: &dyn HasRawDisplayHandle,
         window: &dyn HasRawWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
         let surface = AnyArc::new_cyclic(move |v| Surface {
