@@ -28,7 +28,6 @@
 //
 
 use std::any::TypeId;
-use std::ops::Deref;
 
 use aleph_interfaces::any::{declare_interfaces, AnyArc, IAny};
 use aleph_interfaces::make_plugin_description_for_crate;
@@ -99,7 +98,7 @@ impl IPlugin for PluginRHI {
             .get_interface::<dyn IWindowProvider>()
             .and_then(|v| v.get_window());
         let surface = if let Some(window) = window {
-            let surface = context.create_surface(&window.deref());
+            let surface = context.create_surface(&window.as_ref(), &window.as_ref());
             match surface {
                 Ok(v) => Some(v),
                 Err(v) => {
