@@ -36,7 +36,7 @@ use std::ptr::NonNull;
 
 use aleph_any::{AnyArc, IAny};
 use bitflags::bitflags;
-use raw_window_handle::HasRawWindowHandle;
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use thiserror::Error;
 
 pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
@@ -183,6 +183,7 @@ pub trait IContext: IAny + IGetPlatformInterface + Send + Sync {
     /// Create a surface from the provided window handle.
     fn create_surface(
         &self,
+        display: &dyn HasRawDisplayHandle,
         window: &dyn HasRawWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError>;
 
