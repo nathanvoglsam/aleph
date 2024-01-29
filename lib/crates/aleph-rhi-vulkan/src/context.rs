@@ -37,7 +37,9 @@ use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::str_from_ptr;
 use aleph_rhi_loader_api::VulkanConfig;
 use ash::vk;
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{
+    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
+};
 
 use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
@@ -392,10 +394,13 @@ impl IContext for Context {
 
     fn create_surface(
         &self,
+        display: &dyn HasRawDisplayHandle,
         window: &dyn HasRawWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+        let display = display.raw_display_handle();
+        let window = window.raw_window_handle();
         let result = unsafe {
-            match window.raw_window_handle() {
+            match (display, window) {
                 #[cfg(any(
                     target_os = "linux",
                     target_os = "dragonfly",
@@ -403,10 +408,10 @@ impl IContext for Context {
                     target_os = "netbsd",
                     target_os = "openbsd"
                 ))]
-                RawWindowHandle::Wayland(handle) => {
+                (RawDisplayHandle::Wayland(display), RawWindowHandle::Wayland(window)) => {
                     let create_info = vk::WaylandSurfaceCreateInfoKHR {
-                        display: handle.display,
-                        surface: handle.surface,
+                        display: display.display,
+                        surface: window.surface,
                         ..Default::default()
                     };
 
@@ -424,10 +429,10 @@ impl IContext for Context {
                     target_os = "netbsd",
                     target_os = "openbsd"
                 ))]
-                RawWindowHandle::Xlib(handle) => {
+                (RawDisplayHandle::Xlib(display), RawWindowHandle::Xlib(window)) => {
                     let create_info = vk::XlibSurfaceCreateInfoKHR {
-                        dpy: handle.display as *mut _,
-                        window: handle.window as _,
+                        dpy: display.display as *mut _,
+                        window: window.window as _,
                         ..Default::default()
                     };
 
@@ -445,10 +450,10 @@ impl IContext for Context {
                     target_os = "netbsd",
                     target_os = "openbsd"
                 ))]
-                RawWindowHandle::Xcb(handle) => {
+                (RawDisplayHandle::Xcb(display), RawWindowHandle::Xcb(window)) => {
                     let create_info = vk::XcbSurfaceCreateInfoKHR {
-                        connection: handle.connection as *mut _,
-                        window: handle.window,
+                        connection: display.connection as *mut _,
+                        window: window.window,
                         ..Default::default()
                     };
 
@@ -460,9 +465,9 @@ impl IContext for Context {
                 }
 
                 #[cfg(any(target_os = "android"))]
-                RawWindowHandle::AndroidNdk(handle) => {
+                (RawDisplayHandle::Android(_), RawWindowHandle::AndroidNdk(window)) => {
                     let create_info = vk::AndroidSurfaceCreateInfoKHR {
-                        window: handle.a_native_window as _,
+                        window: window.a_native_window as _,
                         ..Default::default()
                     };
 
@@ -474,9 +479,9 @@ impl IContext for Context {
                 }
 
                 #[cfg(any(target_os = "macos"))]
-                RawWindowHandle::AppKit(handle) => {
+                (RawDisplayHandle::AppKit(_), RawWindowHandle::AppKit(window)) => {
                     let create_info = vk::MacOSSurfaceCreateInfoMVK {
-                        p_view: &*handle.ns_view,
+                        p_view: &*window.ns_view,
                         ..Default::default()
                     };
 
@@ -488,9 +493,9 @@ impl IContext for Context {
                 }
 
                 #[cfg(any(target_os = "ios"))]
-                RawWindowHandle::IOS(handle) => {
+                (RawDisplayHandle::UiKit(_), RawWindowHandle::UiKit(window)) => {
                     let create_info = vk::IOSSurfaceCreateInfoMVK {
-                        p_view: &*handle.ui_view,
+                        p_view: &*window.ui_view,
                         ..Default::default()
                     };
 
@@ -502,10 +507,10 @@ impl IContext for Context {
                 }
 
                 #[cfg(target_os = "windows")]
-                RawWindowHandle::Win32(handle) => {
+                (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(window)) => {
                     let create_info = vk::Win32SurfaceCreateInfoKHR {
-                        hinstance: handle.hinstance,
-                        hwnd: handle.hwnd,
+                        hinstance: window.hinstance,
+                        hwnd: window.hwnd,
                         ..Default::default()
                     };
 
