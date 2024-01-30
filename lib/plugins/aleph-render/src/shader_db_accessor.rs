@@ -42,6 +42,7 @@ impl<'a> ShaderDatabaseAccessor<'a> {
         let loader = match backend {
             BackendAPI::Vulkan => vulkan_loader,
             BackendAPI::D3D12 => d3d12_loader,
+            BackendAPI::Null => vulkan_loader, // Just give it spirv because it doesn't matter
         };
         Self { loader, shader_db }
     }
