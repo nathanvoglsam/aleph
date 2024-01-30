@@ -1157,6 +1157,7 @@ impl From<Color> for [f32; 4] {
 pub enum BackendAPI {
     Vulkan,
     D3D12,
+    Null,
 }
 
 impl Display for BackendAPI {
@@ -1164,6 +1165,7 @@ impl Display for BackendAPI {
         match self {
             BackendAPI::Vulkan => f.write_str("Vulkan"),
             BackendAPI::D3D12 => f.write_str("D3D12"),
+            BackendAPI::Null => f.write_str("Null"),
         }
     }
 }
