@@ -27,418 +27,20 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-use std::ptr::NonNull;
-
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
+use aleph_rhi_null::NullContext;
 
 use crate::{
     BufferImportDesc, FrameGraph, ImportBundle, Payload, ResourceMut, ResourceRef,
     TextureImportDesc,
 };
 
-pub struct MockEncoder {}
-
-impl IGetPlatformInterface for MockEncoder {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
-    }
-}
-
-impl IGeneralEncoder for MockEncoder {
-    unsafe fn bind_graphics_pipeline(&mut self, _pipeline: &dyn IGraphicsPipeline) {
-        unimplemented!()
-    }
-
-    unsafe fn bind_vertex_buffers(
-        &mut self,
-        _first_binding: u32,
-        _bindings: &[InputAssemblyBufferBinding],
-    ) {
-        unimplemented!()
-    }
-
-    unsafe fn bind_index_buffer(
-        &mut self,
-        _index_type: IndexType,
-        _binding: &InputAssemblyBufferBinding,
-    ) {
-        unimplemented!()
-    }
-
-    unsafe fn set_viewports(&mut self, _viewports: &[Viewport]) {
-        unimplemented!()
-    }
-
-    unsafe fn set_scissor_rects(&mut self, _rects: &[Rect]) {
-        unimplemented!()
-    }
-
-    unsafe fn set_push_constant_block(&mut self, _block_index: usize, _data: &[u8]) {
-        unimplemented!()
-    }
-
-    unsafe fn begin_rendering(&mut self, _info: &BeginRenderingInfo) {
-        unimplemented!()
-    }
-
-    unsafe fn end_rendering(&mut self) {
-        unimplemented!()
-    }
-
-    unsafe fn draw(
-        &mut self,
-        _vertex_count: u32,
-        _instance_count: u32,
-        _first_vertex: u32,
-        _first_instance: u32,
-    ) {
-        unimplemented!()
-    }
-
-    unsafe fn draw_indexed(
-        &mut self,
-        _index_count: u32,
-        _instance_count: u32,
-        _first_index: u32,
-        _first_instance: u32,
-        _vertex_offset: i32,
-    ) {
-        unimplemented!()
-    }
-}
-
-impl IComputeEncoder for MockEncoder {
-    unsafe fn bind_compute_pipeline(&mut self, _pipeline: &dyn IComputePipeline) {
-        unimplemented!()
-    }
-
-    unsafe fn bind_descriptor_sets(
-        &mut self,
-        _pipeline_layout: &dyn IPipelineLayout,
-        _bind_point: PipelineBindPoint,
-        _first_set: u32,
-        _sets: &[DescriptorSetHandle],
-    ) {
-        unimplemented!()
-    }
-
-    unsafe fn dispatch(&mut self, _group_count_x: u32, _group_count_y: u32, _group_count_z: u32) {
-        unimplemented!()
-    }
-}
-
-impl ITransferEncoder for MockEncoder {
-    unsafe fn resource_barrier(
-        &mut self,
-        _memory_barriers: &[GlobalBarrier],
-        _buffer_barriers: &[BufferBarrier],
-        _texture_barriers: &[TextureBarrier],
-    ) {
-        // intentionally empty
-    }
-
-    unsafe fn copy_buffer_regions(
-        &mut self,
-        _src: &dyn IBuffer,
-        _dst: &dyn IBuffer,
-        _regions: &[BufferCopyRegion],
-    ) {
-        unimplemented!()
-    }
-
-    unsafe fn copy_buffer_to_texture(
-        &mut self,
-        _src: &dyn IBuffer,
-        _dst: &dyn ITexture,
-        _dst_layout: ImageLayout,
-        _regions: &[BufferToTextureCopyRegion],
-    ) {
-        unimplemented!()
-    }
-
-    unsafe fn set_marker(&mut self, _color: Color, _message: &str) {
-        unimplemented!()
-    }
-
-    unsafe fn begin_event(&mut self, _color: Color, _message: &str) {
-        unimplemented!()
-    }
-
-    unsafe fn end_event(&mut self) {
-        unimplemented!()
-    }
-}
-
-pub struct MockDevice {
-    pub(crate) this: AnyWeak<Self>,
-}
-
-impl MockDevice {
-    pub fn new() -> AnyArc<dyn IDevice> {
-        let device = AnyArc::new_cyclic(move |v| MockDevice { this: v.clone() });
-        AnyArc::map::<dyn IDevice, _>(device, |v| v)
-    }
-}
-
-declare_interfaces!(MockDevice, [IDevice]);
-
-impl IGetPlatformInterface for MockDevice {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
-    }
-}
-
-impl IDevice for MockDevice {
-    fn upgrade(&self) -> AnyArc<dyn IDevice> {
-        AnyArc::map::<dyn IDevice, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn garbage_collect(&self) {
-        unimplemented!()
-    }
-
-    fn wait_idle(&self) {
-        unimplemented!()
-    }
-
-    fn create_graphics_pipeline(
-        &self,
-        _desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
-        unimplemented!()
-    }
-
-    fn create_compute_pipeline(
-        &self,
-        _desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
-        unimplemented!()
-    }
-
-    fn create_shader(
-        &self,
-        _options: &ShaderOptions,
-    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        unimplemented!()
-    }
-
-    fn create_descriptor_set_layout(
-        &self,
-        _desc: &DescriptorSetLayoutDesc,
-    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
-        unimplemented!()
-    }
-
-    fn create_descriptor_pool(
-        &self,
-        _desc: &DescriptorPoolDesc,
-    ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        unimplemented!()
-    }
-
-    fn create_pipeline_layout(
-        &self,
-        _desc: &PipelineLayoutDesc,
-    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        unimplemented!()
-    }
-
-    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
-        Ok(MockBuffer::new(desc))
-    }
-
-    fn create_texture(
-        &self,
-        desc: &TextureDesc,
-    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
-        Ok(MockTexture::new(desc))
-    }
-
-    fn create_sampler(
-        &self,
-        _desc: &SamplerDesc,
-    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
-        unimplemented!()
-    }
-
-    fn create_command_list(
-        &self,
-        _desc: &CommandListDesc,
-    ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        unimplemented!()
-    }
-
-    fn get_queue(&self, _queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        unimplemented!()
-    }
-
-    unsafe fn update_descriptor_sets(&self, _writes: &[DescriptorWriteDesc]) {
-        unimplemented!()
-    }
-
-    fn create_fence(&self, _signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
-        unimplemented!()
-    }
-
-    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
-        unimplemented!()
-    }
-
-    fn wait_fences(
-        &self,
-        _fences: &[&dyn IFence],
-        _wait_all: bool,
-        _timeout: u32,
-    ) -> FenceWaitResult {
-        unimplemented!()
-    }
-
-    fn poll_fence(&self, _fence: &dyn IFence) -> bool {
-        unimplemented!()
-    }
-
-    fn reset_fences(&self, _fences: &[&dyn IFence]) {
-        unimplemented!()
-    }
-
-    fn get_backend_api(&self) -> BackendAPI {
-        unimplemented!()
-    }
-}
-
-pub struct MockBuffer {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) desc: BufferDesc<'static>,
-    pub(crate) name: Option<String>,
-}
-
-impl MockBuffer {
-    pub fn new(desc: &BufferDesc) -> AnyArc<dyn IBuffer> {
-        let name = desc.name.map(str::to_string);
-        let desc = desc.clone().strip_name();
-
-        let buffer = AnyArc::new_cyclic(move |v| MockBuffer {
-            this: v.clone(),
-            desc,
-            name,
-        });
-        AnyArc::map::<dyn IBuffer, _>(buffer, |v| v)
-    }
-}
-
-declare_interfaces!(MockBuffer, [IBuffer]);
-
-impl IGetPlatformInterface for MockBuffer {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
-    }
-}
-
-impl IBuffer for MockBuffer {
-    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
-        AnyArc::map::<dyn IBuffer, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn desc(&self) -> BufferDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
-        unimplemented!()
-    }
-
-    fn unmap(&self) {
-        unimplemented!()
-    }
-
-    fn flush_range(&self, _offset: u64, _len: u64) {
-        unimplemented!()
-    }
-
-    fn invalidate_range(&self, _offset: u64, _len: u64) {
-        unimplemented!()
-    }
-}
-
-pub struct MockTexture {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) desc: TextureDesc<'static>,
-    pub(crate) name: Option<String>,
-}
-
-impl MockTexture {
-    pub fn new(desc: &TextureDesc) -> AnyArc<dyn ITexture> {
-        let name = desc.name.map(str::to_string);
-        let desc = desc.clone().strip_name();
-
-        let texture = AnyArc::new_cyclic(move |v| MockTexture {
-            this: v.clone(),
-            desc,
-            name,
-        });
-        AnyArc::map::<dyn ITexture, _>(texture, |v| v)
-    }
-}
-
-declare_interfaces!(MockTexture, [ITexture]);
-
-impl IGetPlatformInterface for MockTexture {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
-    }
-}
-
-impl ITexture for MockTexture {
-    fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn desc(&self) -> TextureDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    fn get_view(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        unimplemented!()
-    }
-
-    fn get_rtv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        unimplemented!()
-    }
-
-    fn get_dsv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        unimplemented!()
-    }
+fn make_null_device() -> AnyArc<dyn IDevice> {
+    let context = NullContext::new();
+    let adapter = context.request_adapter(&Default::default()).unwrap();
+    adapter.request_device().unwrap()
 }
 
 #[test]
@@ -454,8 +56,14 @@ pub fn test_builder() {
         resource: Option<ResourceRef>,
     }
 
-    let device = MockDevice::new();
-    let mut encoder = MockEncoder {};
+    let device = make_null_device();
+    let mut command_list = device
+        .create_command_list(&CommandListDesc {
+            queue_type: QueueType::General,
+            name: None,
+        })
+        .unwrap();
+    let mut encoder = command_list.begin_general().unwrap();
 
     let mut out_create = None;
     let mut out_write = None;
@@ -551,14 +159,25 @@ pub fn test_builder() {
     let context = PinBoard::new();
     context.publish(512usize);
     unsafe {
-        graph.execute(&transient_bundle, &import_bundle, &mut encoder, &context);
+        graph.execute(
+            &transient_bundle,
+            &import_bundle,
+            encoder.as_mut(),
+            &context,
+        );
     }
 }
 
 #[test]
 pub fn test_handle_equality() {
-    let device = MockDevice::new();
-    let mut encoder = MockEncoder {};
+    let device = make_null_device();
+    let mut command_list = device
+        .create_command_list(&CommandListDesc {
+            queue_type: QueueType::General,
+            name: None,
+        })
+        .unwrap();
+    let mut encoder = command_list.begin_general().unwrap();
 
     let mock_buffer = device
         .create_buffer(&BufferDesc {
@@ -675,7 +294,7 @@ pub fn test_handle_equality() {
         graph.execute(
             &transient_bundle,
             &import_bundle,
-            &mut encoder,
+            encoder.as_mut(),
             &PinBoard::new(),
         );
     }
@@ -683,8 +302,14 @@ pub fn test_handle_equality() {
 
 #[test]
 pub fn test_usage_collection() {
-    let device = MockDevice::new();
-    let mut encoder = MockEncoder {};
+    let device = make_null_device();
+    let mut command_list = device
+        .create_command_list(&CommandListDesc {
+            queue_type: QueueType::General,
+            name: None,
+        })
+        .unwrap();
+    let mut encoder = command_list.begin_general().unwrap();
 
     let mock_buffer = device
         .create_buffer(&BufferDesc {
@@ -801,7 +426,7 @@ pub fn test_usage_collection() {
         graph.execute(
             &transient_bundle,
             &import_bundle,
-            &mut encoder,
+            encoder.as_mut(),
             &PinBoard::new(),
         );
     }
@@ -810,8 +435,14 @@ pub fn test_usage_collection() {
 #[test]
 pub fn test_usage_schedule() {
     let pin_board = PinBoard::new();
-    let device = MockDevice::new();
-    let mut encoder = MockEncoder {};
+    let device = make_null_device();
+    let mut command_list = device
+        .create_command_list(&CommandListDesc {
+            queue_type: QueueType::General,
+            name: None,
+        })
+        .unwrap();
+    let mut encoder = command_list.begin_general().unwrap();
 
     let mock_buffer = device
         .create_buffer(&BufferDesc {
@@ -1103,7 +734,7 @@ pub fn test_usage_schedule() {
         graph.execute(
             &transient_bundle,
             &import_bundle,
-            &mut encoder,
+            encoder.as_mut(),
             &PinBoard::new(),
         );
     }

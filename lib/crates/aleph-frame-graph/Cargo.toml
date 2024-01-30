@@ -53,3 +53,4 @@ bumpalo = { workspace = true }
 
 [dev-dependencies]
 aleph-pin-board = { workspace = true }
+aleph-rhi-null = { workspace = true }
