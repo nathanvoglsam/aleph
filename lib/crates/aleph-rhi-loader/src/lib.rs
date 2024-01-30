@@ -253,6 +253,7 @@ impl RhiLoader {
         match backend {
             BackendAPI::Vulkan => self.vulkan.unwrap(),
             BackendAPI::D3D12 => self.d3d12.unwrap(),
+            BackendAPI::Null => unimplemented!(),
         }
     }
 
