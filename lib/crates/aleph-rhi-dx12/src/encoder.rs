@@ -328,10 +328,9 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
             // Next we bind the samplers, which are separated out and bound as one table for each
             // sampler to work around limits making a single table of samplers impractical.
-            if let Some(samplers) = v.s_list_ref() {
-                for (i, sampler) in samplers.iter().cloned().enumerate() {
-                    bind_fn(self, param_index + i as u32, sampler.unwrap().into());
-                }
+            let samplers = v.samplers.as_ref();
+            for (i, sampler) in samplers.iter().cloned().enumerate() {
+                bind_fn(self, param_index + i as u32, sampler.unwrap().into());
             }
         }
     }

@@ -1360,7 +1360,7 @@ impl Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_set(&self, set_write: &DescriptorWriteDesc) {
-        let set = DescriptorSet::ptr_from_handle(set_write.set.clone());
+        let mut set = DescriptorSet::ptr_from_handle(set_write.set.clone());
         let set_layout = {
             let set = set.as_ref();
             let layout = set._layout.deref();
@@ -1438,7 +1438,7 @@ impl Device {
         debug_assert_eq!(writes.len(), 1, "No support for sampler arrays currently");
 
         for (_i, v) in writes.iter().enumerate() {
-            let target = set.assume_s_list_mut();
+            let target = set.samplers.as_mut();
             let sampler = unwrap::sampler(v.sampler);
 
             // Copy the gpu descriptor handle into the descriptor set's internal list of samplers.

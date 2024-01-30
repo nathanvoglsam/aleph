@@ -96,19 +96,15 @@ impl DescriptorPool {
         let (resource_handle_cpu, resource_handle_gpu) =
             Self::get_optional_handles_for_arena(self.resource_arena.as_ref(), set_index);
 
-        let samplers = if !self._layout.sampler_tables.is_empty() {
-            let idx = set_index as usize * self._layout.sampler_tables.len();
-            Some(NonNull::from(&self.sampler_buffer[idx]))
-        } else {
-            None
-        };
+        let idx = set_index as usize * self._layout.sampler_tables.len();
+        let end = idx + self._layout.sampler_tables.len();
+        let samplers = NonNull::from(&self.sampler_buffer[idx..end]);
 
         DescriptorSet {
             _layout: self._layout.clone(),
             resource_handle_cpu,
             resource_handle_gpu,
             samplers,
-            num_samplers: self._layout.sampler_tables.len(),
         }
     }
 

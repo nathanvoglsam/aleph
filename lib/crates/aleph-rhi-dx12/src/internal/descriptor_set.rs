@@ -54,10 +54,7 @@ pub struct DescriptorSet {
 
     /// A list of all the distinct samplers in the order they are expected to be arranged as
     /// distinct descriptor tables.
-    pub samplers: Option<NonNull<Option<GPUDescriptorHandle>>>,
-
-    /// Length of the 'samplers' list
-    pub num_samplers: usize,
+    pub samplers: NonNull<[Option<GPUDescriptorHandle>]>,
 }
 
 impl DescriptorSet {
@@ -67,35 +64,6 @@ impl DescriptorSet {
         let cpu = self.resource_handle_cpu.unwrap_unchecked();
         let gpu = self.resource_handle_gpu.unwrap_unchecked();
         (cpu, gpu)
-    }
-
-    #[track_caller]
-    #[inline(always)]
-    pub unsafe fn assume_s_list_mut(&mut self) -> &mut [Option<GPUDescriptorHandle>] {
-        self.s_list_mut().unwrap_unchecked()
-    }
-
-    #[track_caller]
-    #[inline(always)]
-    pub unsafe fn s_list_ref(&self) -> Option<&[Option<GPUDescriptorHandle>]> {
-        if let Some(ptr) = self.samplers {
-            Some(std::slice::from_raw_parts(ptr.as_ptr(), self.num_samplers))
-        } else {
-            None
-        }
-    }
-
-    #[track_caller]
-    #[inline(always)]
-    pub unsafe fn s_list_mut(&mut self) -> Option<&mut [Option<GPUDescriptorHandle>]> {
-        if let Some(ptr) = self.samplers {
-            Some(std::slice::from_raw_parts_mut(
-                ptr.as_ptr(),
-                self.num_samplers,
-            ))
-        } else {
-            None
-        }
     }
 
     /// Grabs the pointer inside a [DescriptorSetHandle] as a non-null [DescriptorSet] ptr
