@@ -167,7 +167,7 @@ impl RhiBackend {
             .flags(flags);
 
         // Construct the vulkan instance
-        log::trace!("Creating Vulkan instance");
+        log::info!("Creating Vulkan instance");
         let instance_loader = unsafe {
             entry
                 .create_instance(&create_info, None)

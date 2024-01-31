@@ -65,16 +65,16 @@ impl IRhiBackend for RhiBackend {
 
 unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<DebugInterface> {
     if want_debug {
-        log::trace!("D3D12 debug layers requested");
+        log::debug!("D3D12 debug layers requested");
         if let Ok(debug) = DebugInterface::new() {
             debug.enable_debug_layer();
-            log::trace!("D3D12 debug layers enabled");
+            log::debug!("D3D12 debug layers enabled");
             if gpu_assisted {
-                log::trace!("D3D12 gpu validation requested");
+                log::debug!("D3D12 gpu validation requested");
                 if debug.set_enable_gpu_validation(true).is_ok() {
-                    log::trace!("D3D12 gpu validation enabled");
+                    log::debug!("D3D12 gpu validation enabled");
                 } else {
-                    log::trace!("D3D12 gpu validation not enabled");
+                    log::debug!("D3D12 gpu validation not enabled");
                 }
             }
             Some(debug)
@@ -88,14 +88,14 @@ unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<Debu
 
 unsafe fn setup_dxgi_debug_interface(debug: bool) -> Option<IDXGIDebug> {
     if debug {
-        log::trace!("DXGI debug interface requested");
+        log::debug!("DXGI debug interface requested");
         match dxgi_get_debug_interface(true) {
             Ok(v) => {
-                log::trace!("DXGI debug interface loaded");
+                log::debug!("DXGI debug interface loaded");
                 Some(v)
             }
             Err(e) => {
-                log::trace!("DXGI debug interface not loaded: {:#?}", e);
+                log::debug!("DXGI debug interface not loaded: {:#?}", e);
                 None
             }
         }

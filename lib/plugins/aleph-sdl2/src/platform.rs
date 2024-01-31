@@ -123,25 +123,25 @@ impl IPlugin for PluginPlatformSDL2 {
             sdl2::hint::set("SDL_WINDOWS_DPI_SCALING", "1");
         }
 
-        log::trace!("Initializing SDL2 Library");
+        log::info!("Initializing SDL2 Library");
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
 
-        log::trace!("Initializing SDL2 Timer Subsystem");
+        log::info!("Initializing SDL2 Timer Subsystem");
         let sdl_timer = sdl
             .timer()
             .expect("Failed to initialize SDL2 timer subsystem");
 
-        log::trace!("Initializing SDL2 Video Subsystem");
+        log::info!("Initializing SDL2 Video Subsystem");
         let sdl_video = sdl
             .video()
             .expect("Failed to initialize SDL2 video subsystem");
 
-        log::trace!("Initializing SDL2 Event Subsystem");
+        log::info!("Initializing SDL2 Event Subsystem");
         let sdl_event = sdl
             .event()
             .expect("Failed to initialize SDL2 event subsystem");
 
-        log::trace!("Initializing SDL2 Event Pump");
+        log::info!("Initializing SDL2 Event Pump");
         let sdl_event_pump = sdl
             .event_pump()
             .expect("Failed to initialize SDL2 event pump");

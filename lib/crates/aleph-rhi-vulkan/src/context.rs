@@ -86,12 +86,12 @@ impl Context {
             Self::log_device_info(&device_info);
 
             if vk::api_version_major(device_info.properties_10.api_version) < 1 {
-                log::trace!("Device does not support Vulkan 1.x");
+                log::debug!("Device does not support Vulkan 1.x");
                 continue;
             }
 
             if vk::api_version_minor(device_info.properties_10.api_version) < 1 {
-                log::trace!("Device does not support Vulkan 1.1");
+                log::debug!("Device does not support Vulkan 1.1");
             }
 
             // Check if the physical device supports the requested surface
@@ -102,7 +102,7 @@ impl Context {
             }
 
             if let None = Self::check_device_supports_minimum_features(&device_info) {
-                log::trace!("Device rejected as doesn't support minimum feature requirements");
+                log::debug!("Device rejected as doesn't support minimum feature requirements");
                 continue;
             }
 
@@ -137,10 +137,10 @@ impl Context {
             let vendor = pci_id_to_vendor(device_info.properties_10.vendor_id);
             let name = str_from_ptr(device_info.properties_10.device_name.as_ptr());
 
-            log::trace!("=====================");
-            log::trace!("Considering Device: ");
-            log::trace!("Vendor         : {vendor}");
-            log::trace!("Name           : {name}");
+            log::info!("=====================");
+            log::info!("Considering Device: ");
+            log::info!("Vendor         : {vendor}");
+            log::info!("Name           : {name}");
 
             // Log additional driver information if available
             let v = device_info.properties_10.api_version;
@@ -149,9 +149,9 @@ impl Context {
                 let driver_info = str_from_ptr(device_info.driver_properties.driver_info.as_ptr());
                 let driver_id = device_info.driver_properties.driver_id;
 
-                log::trace!("Driver         : {driver_name}");
-                log::trace!("Driver ID      : {driver_id:?}");
-                log::trace!("Driver Info    : {driver_info}");
+                log::info!("Driver         : {driver_name}");
+                log::info!("Driver ID      : {driver_id:?}");
+                log::info!("Driver Info    : {driver_info}");
             }
 
             // The VERSION_x functions are deprecated but we're supposed to use them here as this
@@ -162,7 +162,7 @@ impl Context {
                 let dv_major = vk::version_major(device_info.properties_10.driver_version);
                 let dv_minor = vk::version_minor(device_info.properties_10.driver_version);
                 let dv_patch = vk::version_patch(device_info.properties_10.driver_version);
-                log::trace!("Driver Version : {dv_major}.{dv_minor}.{dv_patch}");
+                log::info!("Driver Version : {dv_major}.{dv_minor}.{dv_patch}");
             }
         }
     }
@@ -238,7 +238,7 @@ impl Context {
 
             // The VK_KHR_surface must be supported if a surface is requested
             if surface.is_some() & !surface_extension_supported {
-                log::trace!("Device doesn't support '{ext_name}' extension");
+                log::debug!("Device doesn't support '{ext_name}' extension");
                 return None;
             }
         }
@@ -256,20 +256,20 @@ impl Context {
             // Theoretically you could get no allowed usage flags on the surface, which would
             // mean the device can't actually do anything with the swap images.
             if surface_capabilities.supported_usage_flags.is_empty() {
-                log::trace!("Device doesn't allow any usage flags for the surface");
+                log::debug!("Device doesn't allow any usage flags for the surface");
                 return None;
             }
 
             // No present modes means we can't present to the surface. If empty then the surface
             // is unsupported.
             if present_modes.is_empty() {
-                log::trace!("Device doesn't expose any present modes for requested surface");
+                log::debug!("Device doesn't expose any present modes for requested surface");
                 return None;
             }
 
             // We require at least a single format for the surface to be supported.
             if surface_formats.is_empty() {
-                log::trace!("Device doesn't expose any image formats for requested surface");
+                log::debug!("Device doesn't expose any image formats for requested surface");
                 return None;
             }
         }

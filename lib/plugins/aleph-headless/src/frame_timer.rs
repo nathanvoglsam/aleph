@@ -45,7 +45,7 @@ pub struct FrameTimerImpl {
 
 impl FrameTimerImpl {
     pub fn new() -> AnyArc<Self> {
-        log::trace!("Initializing the Frame Timer");
+        log::info!("Initializing the Frame Timer");
         // Get the first two time stamps
         let first = Instant::now();
         let last = first;

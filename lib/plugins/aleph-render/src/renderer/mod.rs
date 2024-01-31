@@ -65,7 +65,7 @@ impl EguiRenderer {
         back_buffer_desc: &TextureDesc,
         pixels_per_point: f32,
     ) -> Self {
-        log::trace!("Initializing Egui Renderer");
+        log::info!("Initializing Egui Renderer");
 
         // Try load the shader db, first from the immediate working directory and then from the
         // potential aleph project's .aleph/shaders directory.

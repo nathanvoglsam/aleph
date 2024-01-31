@@ -185,14 +185,14 @@ impl Context {
         let device = if let Some(device) = device {
             device
         } else {
-            log::trace!("Adapter Doesn't Provide ID3D12Device10");
+            log::debug!("Adapter Doesn't Provide ID3D12Device10");
             return false;
         };
 
         if let Some(surface) = options.surface {
             let surface = unwrap::surface(surface);
             if Self::check_surface_compatibility(factory, &device, surface).is_none() {
-                log::trace!("Adapter Can't Use Requested Surface");
+                log::debug!("Adapter Can't Use Requested Surface");
                 return false;
             }
         }
@@ -245,10 +245,10 @@ impl Context {
                     let vendor = pci_id_to_vendor(desc.VendorId);
                     let name =
                         adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
-                    log::trace!("=====================");
-                    log::trace!("Considering Adapter: ");
-                    log::trace!("Vendor : {}", vendor);
-                    log::trace!("Name   : {}", name);
+                    log::info!("=====================");
+                    log::info!("Considering Adapter: ");
+                    log::info!("Vendor : {}", vendor);
+                    log::info!("Name   : {}", name);
 
                     // Check the flag to determine if this adapter is a software adapter
                     let is_software_adapter = (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0;
@@ -268,7 +268,7 @@ impl Context {
 
                     // Skip by advancing the counter and starting the loop again
                     if deny_adapter || already_selected {
-                        log::trace!("Adapter rejected by adapter type criteria");
+                        log::debug!("Adapter rejected by adapter type criteria");
                         i += 1;
                         continue;
                     }
@@ -280,7 +280,7 @@ impl Context {
                             selected_hardware_adapter = Some(adapter);
                         }
                     } else {
-                        log::trace!("Adapter rejected for missing required capabilities");
+                        log::debug!("Adapter rejected for missing required capabilities");
                     }
                 } else {
                     break;
