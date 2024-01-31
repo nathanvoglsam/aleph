@@ -252,6 +252,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
+        dynamic_offsets: &[u32],
     ) {
         assert!(
             matches!(self.list_type, QueueType::General | QueueType::Compute),
@@ -269,8 +270,13 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
             .map(|v| get_as_unwrapped::descriptor_set_handle(v, None))
             .collect();
 
-        self.inner
-            .bind_descriptor_sets(pipeline_layout, bind_point, first_set, &sets)
+        self.inner.bind_descriptor_sets(
+            pipeline_layout,
+            bind_point,
+            first_set,
+            &sets,
+            dynamic_offsets,
+        )
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {

@@ -246,6 +246,10 @@ pub fn descriptor_writes<'a>(writes: &'a DescriptorWrites<'a>) -> OwnedDescripto
             let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
             OwnedDescriptorWrites::UniformBuffer(writes)
         }
+        DescriptorWrites::UniformBufferDynamic(v) => {
+            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
+            OwnedDescriptorWrites::UniformBufferDynamic(writes)
+        }
         DescriptorWrites::StructuredBuffer(v) => {
             let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
             OwnedDescriptorWrites::StructuredBuffer(writes)
@@ -323,6 +327,7 @@ pub enum OwnedDescriptorWrites<'a> {
     Texture(Vec<ImageDescriptorWrite>),
     TextureRW(Vec<ImageDescriptorWrite>),
     UniformBuffer(Vec<BufferDescriptorWrite<'a>>),
+    UniformBufferDynamic(Vec<BufferDescriptorWrite<'a>>),
     StructuredBuffer(Vec<BufferDescriptorWrite<'a>>),
     StructuredBufferRW(Vec<BufferDescriptorWrite<'a>>),
     ByteAddressBuffer(Vec<BufferDescriptorWrite<'a>>),
@@ -339,6 +344,7 @@ impl<'a> OwnedDescriptorWrites<'a> {
             Self::Texture(v) => DescriptorWrites::Texture(v.as_slice()),
             Self::TextureRW(v) => DescriptorWrites::TextureRW(v.as_slice()),
             Self::UniformBuffer(v) => DescriptorWrites::UniformBuffer(v.as_slice()),
+            Self::UniformBufferDynamic(v) => DescriptorWrites::UniformBufferDynamic(v.as_slice()),
             Self::StructuredBuffer(v) => DescriptorWrites::StructuredBuffer(v.as_slice()),
             Self::StructuredBufferRW(v) => DescriptorWrites::StructuredBufferRW(v.as_slice()),
             Self::ByteAddressBuffer(v) => DescriptorWrites::ByteAddressBuffer(v.as_slice()),
