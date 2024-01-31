@@ -689,6 +689,7 @@ pub trait IComputeEncoder: ITransferEncoder {
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
+        dynamic_offsets: &[u32],
     );
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
@@ -2781,6 +2782,10 @@ pub enum DescriptorType {
     /// A UniformBuffer/ConstantBuffer descriptor. Maps accordingly on Vulkan/D3D12. CBV on DX12.
     UniformBuffer,
 
+    /// A dynamic UniformBuffer/ConstantBuffer descriptor. Maps accordingly on Vulkan/D3D12. CBV on
+    /// DX12.
+    UniformBufferDynamic,
+
     /// A buffer with a stride that represents N*stride items. Layout defined in the shader. On
     /// Vulkan this is just a storage buffer, D3D12 this is a SRV as it's read-only.
     StructuredBuffer,
@@ -2814,6 +2819,7 @@ impl Display for DescriptorType {
             DescriptorType::Texture => f.write_str("Texture"),
             DescriptorType::TextureRW => f.write_str("TextureRW"),
             DescriptorType::UniformBuffer => f.write_str("UniformBuffer"),
+            DescriptorType::UniformBufferDynamic => f.write_str("UniformBufferDynamic"),
             DescriptorType::StructuredBuffer => f.write_str("StructuredBuffer"),
             DescriptorType::StructuredBufferRW => f.write_str("StructuredBufferRW"),
             DescriptorType::ByteAddressBuffer => f.write_str("ByteAddressBuffer"),
@@ -2991,6 +2997,7 @@ pub enum DescriptorWrites<'a> {
     Texture(&'a [ImageDescriptorWrite]),
     TextureRW(&'a [ImageDescriptorWrite]),
     UniformBuffer(&'a [BufferDescriptorWrite<'a>]),
+    UniformBufferDynamic(&'a [BufferDescriptorWrite<'a>]),
     StructuredBuffer(&'a [BufferDescriptorWrite<'a>]),
     StructuredBufferRW(&'a [BufferDescriptorWrite<'a>]),
     ByteAddressBuffer(&'a [BufferDescriptorWrite<'a>]),
@@ -3007,6 +3014,7 @@ impl<'a> DescriptorWrites<'a> {
             DescriptorWrites::Texture(_) => DescriptorType::Texture,
             DescriptorWrites::TextureRW(_) => DescriptorType::TextureRW,
             DescriptorWrites::UniformBuffer(_) => DescriptorType::UniformBuffer,
+            DescriptorWrites::UniformBufferDynamic(_) => DescriptorType::UniformBufferDynamic,
             DescriptorWrites::StructuredBuffer(_) => DescriptorType::StructuredBuffer,
             DescriptorWrites::StructuredBufferRW(_) => DescriptorType::StructuredBufferRW,
             DescriptorWrites::ByteAddressBuffer(_) => DescriptorType::ByteAddressBuffer,
@@ -3031,6 +3039,7 @@ impl<'a> DescriptorWrites<'a> {
             Self::Texture(v) => v.len(),
             Self::TextureRW(v) => v.len(),
             Self::UniformBuffer(v) => v.len(),
+            Self::UniformBufferDynamic(v) => v.len(),
             Self::StructuredBuffer(v) => v.len(),
             Self::StructuredBufferRW(v) => v.len(),
             Self::ByteAddressBuffer(v) => v.len(),
