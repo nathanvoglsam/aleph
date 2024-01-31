@@ -1279,7 +1279,7 @@ impl Device {
                 OffsetInDescriptorsFromTableStart: offset,
             };
             table.push(item);
-            offset += self.descriptor_heap_info.resource_inc * num_descriptors;
+            offset += num_descriptors;
         }
         table
     }
