@@ -34,8 +34,8 @@ struct RootConstantLayout {
     float2 ScreenSize;
 };
 
-[[vk::push_constant]]
-ConstantBuffer<RootConstantLayout> RootConstants : register(b0, space1024);
+[[vk::binding(0, 0)]]
+ConstantBuffer<RootConstantLayout> RootConstants : register(b0);
 
 EguiPixelInput main(in EguiVertexInput input, out float4 Pos : SV_POSITION) {
     EguiPixelInput output;

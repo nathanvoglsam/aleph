@@ -40,6 +40,7 @@ pub struct PerFrameObjects {
     pub present_semaphore: AnyArc<dyn ISemaphore>,
 
     pub transient_bundle: TransientResourceBundle,
+    pub uniform_buffer: AnyArc<dyn IBuffer>,
 
     pub font_version: usize,
     pub font_staging_buffer: AnyArc<dyn IBuffer>,
@@ -70,11 +71,34 @@ impl PerFrameObjects {
         let descriptor_set = descriptor_pool.allocate_set().unwrap();
 
         let transient_bundle = frame_graph.allocate_transient_resource_bundle(device);
+        let uniform_buffer = device.create_buffer(&BufferDesc {
+            size: 1024,
+            cpu_access: CpuAccessMode::Write,
+            usage: ResourceUsageFlags::CONSTANT_BUFFER,
+            name: Some("egui::ConstantBuffer"),
+        }).unwrap();
+        unsafe {
+            device.update_descriptor_sets(&[
+                DescriptorWriteDesc {
+                    set: descriptor_set.clone(),
+                    binding: 0,
+                    array_element: 0,
+                    writes: DescriptorWrites::UniformBuffer(&[BufferDescriptorWrite {
+                        buffer: uniform_buffer.as_ref(),
+                        offset: 0,
+                        len: 256,
+                        structure_byte_stride: 0,
+                    }]),
+                },
+            ]);
+        }
+        
 
         Self {
             acquire_semaphore: device.create_semaphore().unwrap(),
             present_semaphore: device.create_semaphore().unwrap(),
             transient_bundle,
+            uniform_buffer,
             font_version: 0,
             font_staging_buffer,
             font_staged: None,
@@ -222,7 +246,7 @@ impl PerFrameObjects {
         device.update_descriptor_sets(&[
             DescriptorWriteDesc {
                 set: self.descriptor_set.clone(),
-                binding: 0,
+                binding: 1,
                 array_element: 0,
                 writes: DescriptorWrites::Texture(&[ImageDescriptorWrite {
                     image_view: view,
@@ -231,7 +255,7 @@ impl PerFrameObjects {
             },
             DescriptorWriteDesc {
                 set: self.descriptor_set.clone(),
-                binding: 1,
+                binding: 2,
                 array_element: 0,
                 writes: DescriptorWrites::Sampler(&[SamplerDescriptorWrite { sampler }]),
             },

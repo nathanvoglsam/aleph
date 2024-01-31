@@ -55,6 +55,7 @@ pub struct EguiPassOutput {
 
 /// The input the pass expects in the execute phase, to be pulled from the context pin board.
 pub struct EguiPassContext {
+    pub buffer: AnyArc<dyn IBuffer>,
     pub descriptor_set: DescriptorSetHandle,
     pub render_data: RenderData,
 }
@@ -149,6 +150,7 @@ pub fn pass(
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
 
             let EguiPassContext {
+                buffer,
                 descriptor_set,
                 render_data,
             } = context.get().unwrap();
@@ -190,13 +192,6 @@ pub fn pass(
 
             encoder.bind_graphics_pipeline(data.pipeline.as_ref());
 
-            encoder.bind_descriptor_sets(
-                data.pipeline_layout.as_ref(),
-                PipelineBindPoint::Graphics,
-                0,
-                &[descriptor_set.clone()],
-            );
-
             //
             // Push screen size via root constants
             //
@@ -205,7 +200,19 @@ pub fn pass(
             let width_points = width_pixels / data.pixels_per_point;
             let height_points = height_pixels / data.pixels_per_point;
             let values_data = [width_points, height_points];
-            encoder.set_push_constant_block(0, bytemuck::cast_slice(&values_data));
+
+            let ptr = buffer.map().unwrap();
+            let mut ptr = ptr.cast::<[f32;2]>();
+            *ptr.as_mut() = values_data;
+            buffer.unmap();
+
+            encoder.bind_descriptor_sets(
+                data.pipeline_layout.as_ref(),
+                PipelineBindPoint::Graphics,
+                0,
+                &[descriptor_set.clone()],
+                
+            );
 
             //
             // Bind the vertex and index buffers to render with
@@ -364,8 +371,9 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
     let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
         visibility: DescriptorShaderVisibility::All,
         items: &[
-            DescriptorSetLayoutBinding::with_type(DescriptorType::Texture).with_binding_num(0),
-            DescriptorSetLayoutBinding::with_type(DescriptorType::Sampler).with_binding_num(1),
+            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer).with_binding_num(0),
+            DescriptorSetLayoutBinding::with_type(DescriptorType::Texture).with_binding_num(1),
+            DescriptorSetLayoutBinding::with_type(DescriptorType::Sampler).with_binding_num(2),
         ],
         name: Some("egui::DescriptorSetLayout"),
     };
@@ -380,11 +388,7 @@ fn create_root_signature(
 ) -> AnyArc<dyn IPipelineLayout> {
     let pipeline_layout_desc = PipelineLayoutDesc {
         set_layouts: &[descriptor_set_layout],
-        push_constant_blocks: &[PushConstantBlock {
-            binding: 0,
-            visibility: DescriptorShaderVisibility::All,
-            size: 8,
-        }],
+        push_constant_blocks: &[],
         name: Some("egui::RootSignature"),
     };
     device

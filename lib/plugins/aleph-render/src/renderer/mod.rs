@@ -200,6 +200,7 @@ impl EguiRenderer {
 
             self.execute_context.clear();
             self.execute_context.publish(EguiPassContext {
+                buffer: self.frames[index].uniform_buffer.clone(),
                 descriptor_set: self.frames[index].descriptor_set.clone(),
                 render_data,
             });
