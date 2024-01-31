@@ -27,6 +27,5 @@
 // SOFTWARE.
 //
 
-pub mod aleph_render {
-    include!("../shaders/aleph_render.rs");
-}
+#[path ="../shaders/aleph_render.rs"]
+pub mod aleph_render;
