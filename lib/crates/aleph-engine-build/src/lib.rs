@@ -36,6 +36,9 @@ pub fn add_platform_flags() {
         aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
     }
 
+    aleph_target_build::build::target_build_config().print_target_cargo_cfg();
+    aleph_target_build::build::target_build_type().print_target_cargo_cfg();
+
     if target_platform().is_macos() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
     }
