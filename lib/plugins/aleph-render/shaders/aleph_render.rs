@@ -35,6 +35,10 @@ pub mod fullscreen_quad {
 }
 #[allow(unused)]
 pub mod postprocess {
+    #[allow(unused)]
+    pub fn tonemapping_cs() -> aleph_shader_db::ShaderName<'static, aleph_shader_db::Compute> {
+        unsafe { aleph_shader_db::ShaderName::<aleph_shader_db::Compute>::new("aleph-render/postprocess/tonemapping.cs") } // Safety guaranteed by code-gen
+    }
 }
 #[allow(unused)]
 pub mod standard {
