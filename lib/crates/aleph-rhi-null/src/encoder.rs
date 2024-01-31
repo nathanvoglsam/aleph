@@ -95,6 +95,7 @@ impl IComputeEncoder for NullEncoder {
         _bind_point: PipelineBindPoint,
         _first_set: u32,
         _sets: &[DescriptorSetHandle],
+        _dynamic_offsets: &[u32],
     ) {
     }
 
