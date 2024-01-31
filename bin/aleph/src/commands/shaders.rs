@@ -526,15 +526,13 @@ fn generate_shader_name_bindings_for_module(
 
     let mut indent = String::with_capacity(32);
     let mut stack = Vec::new();
-    stack.push(module_ctx.module_source_dir.read_dir_utf8()?);
+    stack.push(sorted_dir_listing(module_ctx.module_source_dir.as_ref())?);
     'outer: while let Some(mut item) = stack.pop() {
-        while let Some(dir_item) = item.next() {
-            let dir_item = dir_item?;
-            let item_type = dir_item.file_type()?;
-
+        while let Some((item_type, item_path)) = item.next() {
+            let file_name = item_path.file_name().unwrap();
             if item_type.is_file() {
                 // Just skip anything that we don't identify as a valid shader file
-                let shader_file = match ShaderFile::new(dir_item.path()) {
+                let shader_file = match ShaderFile::new(item_path.as_path()) {
                     Some(v) => v,
                     None => continue,
                 };
@@ -565,7 +563,7 @@ fn generate_shader_name_bindings_for_module(
                 // new directory.
 
                 // Open the new module in the file
-                let sanitized_dir_name = dir_item.file_name().replace("-", "_");
+                let sanitized_dir_name = file_name.replace("-", "_");
                 writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
                 writeln!(
                     &mut module_output_file,
@@ -578,7 +576,7 @@ fn generate_shader_name_bindings_for_module(
                 // Store our progress through the current directory and then push the newly found
                 // child directory as the next element to process onto the stack.
                 stack.push(item);
-                stack.push(dir_item.path().read_dir_utf8()?);
+                stack.push(sorted_dir_listing(item_path.as_path())?);
 
                 // Exit from the inner loop so we can iterate the child directory
                 continue 'outer;
@@ -595,6 +593,27 @@ fn generate_shader_name_bindings_for_module(
     }
 
     Ok(())
+}
+
+type SortedDirListingIter = std::vec::IntoIter<(std::fs::FileType, Utf8PathBuf)>;
+
+fn sorted_dir_listing(item: &Utf8Path) -> std::io::Result<SortedDirListingIter> {
+    // We want our read dirs to be sorted (stably) so we can guarantee that different platforms will
+    // generate the same code. Not all platforms will yield the same order of elements for a
+    // read_dir walk (Windows is already sorted, unixes aren't) so we sort them ourselves.
+    //
+    // This adds some overhead, but is worth it for avoiding redundant diffs when generating
+    // bindings on different platforms.
+    let iter = item.read_dir_utf8()?;
+    let mut dir_items: Vec<(std::fs::FileType, Utf8PathBuf)> = Vec::new();
+    for i in iter {
+        let i = i?;
+        let file_type = i.file_type()?;
+        let path_buf = i.path().to_path_buf();
+        dir_items.push((file_type, path_buf));
+    }
+    dir_items.sort_by(|l, r| l.1.cmp(&r.1));
+    Ok(dir_items.into_iter())
 }
 
 fn run_shader_ninja_build(project: &AlephProject) -> anyhow::Result<()> {
