@@ -61,6 +61,8 @@ pub struct Encoder<'a> {
     pub(crate) input_binding_strides: [u32; 16],
     pub(crate) arena: Bump,
     pub(crate) phantom_data: PhantomData<&'a mut CommandList>,
+    pub(crate) bound_graphics_sets: Box<[Option<DescriptorSetHandle>]>,
+    pub(crate) bound_compute_sets: Box<[Option<DescriptorSetHandle>]>,
 }
 
 impl<'a> Drop for Encoder<'a> {
@@ -105,6 +107,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         // We need the currently bound pipeline while recording commands to access things like
         // the pipeline layout for handling binding descriptors.
         self.bound_graphics_pipeline = Some(concrete.this.upgrade().unwrap());
+        self.bound_graphics_sets.iter_mut().for_each(|v| *v = None);
     }
 
     unsafe fn bind_vertex_buffers(
@@ -290,6 +293,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         // We need the currently bound pipeline while recording commands to access things like
         // the pipeline layout for handling binding descriptors.
         self.bound_compute_pipeline = Some(concrete.this.upgrade().unwrap());
+        self.bound_compute_sets.iter_mut().for_each(|v| *v = None);
     }
 
     unsafe fn bind_descriptor_sets(
@@ -298,6 +302,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
+        dynamic_offsets: &[u32],
     ) {
         let pipeline_layout = unwrap::pipeline_layout(pipeline_layout);
 
@@ -306,31 +311,68 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             PipelineBindPoint::Graphics => set_graphics_descriptor_table,
         };
 
+        let dynamic_bind_fn = match bind_point {
+            PipelineBindPoint::Compute => set_compute_root_constant_buffer_view,
+            PipelineBindPoint::Graphics => set_graphics_root_constant_buffer_view,
+        };
+
+        let mut dynamic_offsets = dynamic_offsets;
         for (set_index, set) in sets.iter().enumerate() {
             // Safety: No checks, all up to the caller to ensure this is safe
             let v: NonNull<()> = set.clone().into();
             let v: NonNull<DescriptorSet> = v.cast();
             let v = v.as_ref();
 
+            // Computes the index of the set within the pipeline layout.
+            let set_global_index = first_set as usize + set_index;
+
             // Fetch the base root parameter index for this set from the pipeline layout
-            let mut param_index =
-                pipeline_layout.set_root_param_indices[first_set as usize + set_index];
+            let param_index = pipeline_layout.set_root_param_indices[set_global_index];
 
-            // First bind the resource descriptors, which will always take a single descriptor table
-            // slot
-            if let Some(handle) = v.resource_handle_gpu {
-                bind_fn(self, param_index, handle.into());
+            // We always place dynamic constant buffers before the tables in the root signature so
+            // they get treated as 'higher priority'
+            let dynamic_constant_buffers = v.dynamic_constant_buffers.as_ref();
 
-                // Increment the param index, as the samplers will always be placed in the following
-                // root parameter indices.
-                param_index += 1;
+            // Create a sub-slice of the dynamic offsets list that contains the offsets that
+            // apply for the current descriptor set
+            let set_dynamic_offsets = &dynamic_offsets[0..dynamic_constant_buffers.len()];
+
+            // Iterate over the dynamic constant buffers and matching offsets and update the
+            // root buffer views with the new dynamic buffer offset
+            for (&dynamic_cb, &offset) in dynamic_constant_buffers.iter().zip(set_dynamic_offsets) {
+                let offset = offset as u64;
+                let dynamic_cb = dynamic_cb + offset;
+                dynamic_bind_fn(self, param_index, dynamic_cb);
             }
 
-            // Next we bind the samplers, which are separated out and bound as one table for each
-            // sampler to work around limits making a single table of samplers impractical.
-            let samplers = v.samplers.as_ref();
-            for (i, sampler) in samplers.iter().cloned().enumerate() {
-                bind_fn(self, param_index + i as u32, sampler.unwrap().into());
+            // Consume the offsets we just updated ready for the next set
+            dynamic_offsets = set_dynamic_offsets;
+
+            let bound_sets = match bind_point {
+                PipelineBindPoint::Compute => &mut self.bound_compute_sets,
+                PipelineBindPoint::Graphics => &mut self.bound_graphics_sets,
+            };
+            let already_bound_set = bound_sets[set_global_index].clone();
+            if already_bound_set != Some(set.clone()) {
+                bound_sets[set_global_index] = Some(set.clone());
+
+                // First bind the resource descriptors, which will always take a single descriptor table
+                // slot
+                let mut param_index = param_index + dynamic_constant_buffers.len() as u32;
+                if let Some(handle) = v.resource_handle_gpu {
+                    bind_fn(self, param_index, handle.into());
+
+                    // Increment the param index, as the samplers will always be placed in the following
+                    // root parameter indices.
+                    param_index += 1;
+                }
+
+                // Next we bind the samplers, which are separated out and bound as one table for each
+                // sampler to work around limits making a single table of samplers impractical.
+                let samplers = v.samplers.as_ref();
+                for (i, sampler) in samplers.iter().cloned().enumerate() {
+                    bind_fn(self, param_index + i as u32, sampler.unwrap().into());
+                }
             }
         }
     }
@@ -632,6 +674,25 @@ impl<'a> Encoder<'a> {
 
         (layout_before, layout_after, access_before, access_after)
     }
+}
+
+unsafe fn set_compute_root_constant_buffer_view(
+    encoder: &Encoder,
+    rootparameterindex: u32,
+    buffer_location: u64,
+) {
+    encoder
+        ._list
+        .SetComputeRootConstantBufferView(rootparameterindex, buffer_location)
+}
+unsafe fn set_graphics_root_constant_buffer_view(
+    encoder: &Encoder,
+    rootparameterindex: u32,
+    buffer_location: u64,
+) {
+    encoder
+        ._list
+        .SetGraphicsRootConstantBufferView(rootparameterindex, buffer_location)
 }
 
 unsafe fn set_compute_descriptor_table(

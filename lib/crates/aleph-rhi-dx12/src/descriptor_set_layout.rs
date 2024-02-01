@@ -48,6 +48,7 @@ pub struct DescriptorSetLayout {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) binding_info: HashMap<u32, DescriptorBindingInfo>,
     pub(crate) visibility: D3D12_SHADER_VISIBILITY,
+    pub(crate) dynamic_constant_buffers: Vec<D3D12_ROOT_DESCRIPTOR1>,
     pub(crate) resource_table: Vec<D3D12_DESCRIPTOR_RANGE1>,
     pub(crate) resource_num: u32,
     pub(crate) sampler_tables: Vec<D3D12_DESCRIPTOR_RANGE1>,

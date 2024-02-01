@@ -336,6 +336,7 @@ impl IDevice for Device {
         //
         // Any non-immutable samplers require a second descriptor table.
         let mut binding_info = HashMap::with_capacity(desc.items.len());
+        let dynamic_constant_buffers = self.build_dynamic_buffer_views(desc, &mut binding_info);
         let resource_table = self.build_resource_table_layout(desc, &mut binding_info);
         let (sampler_tables, static_samplers) = self.build_sampler_tables(desc, &mut binding_info);
         let resource_num = Self::calculate_descriptor_num(&resource_table);
@@ -345,6 +346,7 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             binding_info,
             visibility,
+            dynamic_constant_buffers,
             resource_table,
             resource_num,
             sampler_tables,
@@ -368,6 +370,7 @@ impl IDevice for Device {
             .upgrade()
             .unwrap();
 
+        let dynamic_cbs_size = layout.dynamic_constant_buffers.len() * desc.num_sets as usize;
         let sampler_buffer_size = layout.sampler_tables.len() * desc.num_sets as usize;
         let resource_arena = DescriptorArena::new(
             self.descriptor_heaps.gpu_view_heap(),
@@ -381,6 +384,7 @@ impl IDevice for Device {
             resource_arena,
             set_objects: Vec::with_capacity(desc.num_sets as usize),
             sampler_buffer: vec![Default::default(); sampler_buffer_size],
+            dynamic_cbs: vec![Default::default(); dynamic_cbs_size],
             free_list: Vec::with_capacity(128),
         });
 
@@ -414,6 +418,16 @@ impl IDevice for Device {
                 // First thing is we store the base root parameter index into our set->param_index
                 // lookup table.
                 set_root_param_indices.push(root_param_index);
+
+                for dynamic_cb in layout.dynamic_constant_buffers.iter() {
+                    let mut dynamic_cb = dynamic_cb.clone();
+                    dynamic_cb.RegisterSpace = i as u32;
+                    let dynamic_cb =
+                        root_param_for_cbv_root_descriptor(dynamic_cb, layout.visibility);
+
+                    parameters.push(dynamic_cb);
+                    root_param_index += 1;
+                }
 
                 // Create a parameter for the resource table only if this set has resources in its
                 // layout.
@@ -1225,17 +1239,79 @@ impl Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    fn build_dynamic_buffer_views(
+        &self,
+        desc: &DescriptorSetLayoutDesc,
+        binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
+    ) -> Vec<D3D12_ROOT_DESCRIPTOR1> {
+        let mut table = Vec::with_capacity(desc.items.len());
+        for item in desc
+            .items
+            .iter()
+            .filter(|v| v.binding_type == DescriptorType::UniformBufferDynamic)
+        {
+            if item.binding_count.is_some() {
+                // Descriptor arrays are currently unimplemented pending a solution for mapping
+                // how they surface in SPIR-V vs D3D12.
+                //
+                // - Vulkan uses a single binding for the whole array.
+                // - D3D12 uses a register per element.
+                //
+                // We currently map binding_num directly to register number. Arrays break this
+                // mapping, Vulkan will work but D3D12 will not. We either have to force asinine
+                // D3D12 behavior on Vulkan or
+                //
+                unimplemented!("Currently descriptor arrays are unimplemented");
+            }
+
+            let num_descriptors = match item.binding_count {
+                None => 1,
+                Some(v) => v.get(),
+            };
+
+            let base_shader_register = item.binding_num;
+
+            let info = DescriptorBindingInfo {
+                r#type: item.binding_type,
+                is_static_sampler: false,
+                layout: DescriptorBindingLayout {
+                    base: base_shader_register,
+                    num_descriptors,
+                },
+            };
+            binding_info.insert(item.binding_num, info);
+
+            let item = D3D12_ROOT_DESCRIPTOR1 {
+                ShaderRegister: base_shader_register,
+                RegisterSpace: 0,
+                Flags: D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
+            };
+            table.push(item);
+        }
+        table
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn build_resource_table_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
         binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
     ) -> Vec<D3D12_DESCRIPTOR_RANGE1> {
+        fn not_sampler_or_dynamic_ubo(v: DescriptorType) -> bool {
+            !matches!(
+                v,
+                DescriptorType::Sampler | DescriptorType::UniformBufferDynamic
+            )
+        }
+
         let mut offset = 0;
         let mut table = Vec::with_capacity(desc.items.len());
         for item in desc
             .items
             .iter()
-            .filter(|v| v.binding_type != DescriptorType::Sampler)
+            .filter(|v| not_sampler_or_dynamic_ubo(v.binding_type))
         {
             if item.binding_count.is_some() {
                 // Descriptor arrays are currently unimplemented pending a solution for mapping
@@ -1264,7 +1340,7 @@ impl Device {
                 r#type: item.binding_type,
                 is_static_sampler: item.static_samplers.is_some(),
                 layout: DescriptorBindingLayout {
-                    base: base_shader_register,
+                    base: offset,
                     num_descriptors,
                 },
             };
@@ -1397,6 +1473,24 @@ impl Device {
                 writes,
                 set_write.writes.descriptor_type(),
             ),
+            DescriptorWrites::UniformBufferDynamic(writes) => {
+                let dynamic_cb_index = set_layout
+                    .dynamic_constant_buffers
+                    .iter()
+                    .enumerate()
+                    .find(|v| v.1.ShaderRegister == set_write.binding)
+                    .map(|v| v.0)
+                    .unwrap();
+                let set = set.as_mut();
+                let dynamic_cbs = set.dynamic_constant_buffers.as_mut();
+                let dynamic_cbs = &mut dynamic_cbs[dynamic_cb_index..];
+
+                for (i, v) in writes.iter().enumerate() {
+                    let buffer = unwrap::buffer(v.buffer);
+                    let buffer = buffer.base_address.add(v.offset);
+                    dynamic_cbs[i] = buffer.get_inner().get();
+                }
+            }
             DescriptorWrites::InputAttachment(_) => {
                 unimplemented!()
             }
@@ -1875,6 +1969,17 @@ fn root_param_for_range_list(
                 pDescriptorRanges: v.as_ptr(),
             },
         },
+        ShaderVisibility: visibility,
+    }
+}
+
+fn root_param_for_cbv_root_descriptor(
+    v: D3D12_ROOT_DESCRIPTOR1,
+    visibility: D3D12_SHADER_VISIBILITY,
+) -> D3D12_ROOT_PARAMETER1 {
+    D3D12_ROOT_PARAMETER1 {
+        ParameterType: D3D12_ROOT_PARAMETER_TYPE_CBV,
+        Anonymous: D3D12_ROOT_PARAMETER1_0 { Descriptor: v },
         ShaderVisibility: visibility,
     }
 }

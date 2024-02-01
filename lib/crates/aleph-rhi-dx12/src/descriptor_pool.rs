@@ -53,6 +53,8 @@ pub struct DescriptorPool {
     /// Backing storage for all the set object's sampler slots
     pub(crate) sampler_buffer: Vec<Option<GPUDescriptorHandle>>,
 
+    pub(crate) dynamic_cbs: Vec<u64>,
+
     /// List of free handles
     pub(crate) free_list: Vec<DescriptorSetHandle>,
 }
@@ -96,12 +98,17 @@ impl DescriptorPool {
         let (resource_handle_cpu, resource_handle_gpu) =
             Self::get_optional_handles_for_arena(self.resource_arena.as_ref(), set_index);
 
+        let idx = set_index as usize * self._layout.dynamic_constant_buffers.len();
+        let end = idx + self._layout.dynamic_constant_buffers.len();
+        let dynamic_constant_buffers = NonNull::from(&self.dynamic_cbs[idx..end]);
+
         let idx = set_index as usize * self._layout.sampler_tables.len();
         let end = idx + self._layout.sampler_tables.len();
         let samplers = NonNull::from(&self.sampler_buffer[idx..end]);
 
         DescriptorSet {
             _layout: self._layout.clone(),
+            dynamic_constant_buffers,
             resource_handle_cpu,
             resource_handle_gpu,
             samplers,

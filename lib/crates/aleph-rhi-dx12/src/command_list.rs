@@ -85,6 +85,8 @@ impl ICommandList for CommandList {
                 input_binding_strides: [0; 16],
                 arena: Bump::with_capacity(1024 * 16),
                 phantom_data: Default::default(),
+                bound_graphics_sets: vec![None; 16].into(),
+                bound_compute_sets: vec![None; 16].into(),
             };
             Ok(Box::new(encoder))
         } else {

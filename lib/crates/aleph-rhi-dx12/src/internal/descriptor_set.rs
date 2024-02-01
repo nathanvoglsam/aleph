@@ -44,6 +44,8 @@ pub struct DescriptorSet {
     /// The descriptor set layout of this set
     pub _layout: AnyArc<DescriptorSetLayout>,
 
+    pub dynamic_constant_buffers: NonNull<[u64]>,
+
     /// The CPU virtual address of the beginning of the set's memory in the resource heap. This can
     /// be null when no resources are present in the set layout (it contains only samplers).
     pub resource_handle_cpu: Option<CPUDescriptorHandle>,
