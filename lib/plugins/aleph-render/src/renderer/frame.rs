@@ -84,7 +84,7 @@ impl PerFrameObjects {
                 set: descriptor_set.clone(),
                 binding: 0,
                 array_element: 0,
-                writes: DescriptorWrites::UniformBufferDynamic(&[BufferDescriptorWrite {
+                writes: DescriptorWrites::UniformBuffer(&[BufferDescriptorWrite {
                     buffer: uniform_buffer.as_ref(),
                     offset: 0,
                     len: 256,

@@ -211,7 +211,7 @@ pub fn pass(
                 PipelineBindPoint::Graphics,
                 0,
                 &[descriptor_set.clone()],
-                
+                &[],
             );
 
             //
