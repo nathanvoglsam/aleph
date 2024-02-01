@@ -276,6 +276,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
+        dynamic_offsets: &[u32],
     ) {
         {
             let pipeline_layout = unwrap::pipeline_layout(pipeline_layout);
@@ -292,7 +293,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                 pipeline_layout.pipeline_layout,
                 first_set,
                 &new_sets,
-                &[],
+                dynamic_offsets,
             );
         }
 

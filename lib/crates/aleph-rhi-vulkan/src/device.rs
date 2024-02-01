@@ -899,7 +899,8 @@ impl IDevice for Device {
                     | DescriptorWrites::ByteAddressBufferRW(v)
                     | DescriptorWrites::StructuredBufferRW(v)
                     | DescriptorWrites::StructuredBuffer(v)
-                    | DescriptorWrites::UniformBuffer(v) => {
+                    | DescriptorWrites::UniformBuffer(v)
+                    | DescriptorWrites::UniformBufferDynamic(v) => {
                         let translator = v.iter().map(|v| {
                             let buffer = unwrap::buffer(v.buffer);
                             let len = buffer.clamp_max_size_for_view(v.len);

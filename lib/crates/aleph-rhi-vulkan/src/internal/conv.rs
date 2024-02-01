@@ -698,6 +698,7 @@ pub const fn descriptor_type_to_vk(v: DescriptorType) -> vk::DescriptorType {
         DescriptorType::Texture => vk::DescriptorType::SAMPLED_IMAGE,
         DescriptorType::TextureRW => vk::DescriptorType::STORAGE_IMAGE,
         DescriptorType::UniformBuffer => vk::DescriptorType::UNIFORM_BUFFER,
+        DescriptorType::UniformBufferDynamic => vk::DescriptorType::UNIFORM_BUFFER_DYNAMIC,
         DescriptorType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
         DescriptorType::StructuredBufferRW => vk::DescriptorType::STORAGE_BUFFER,
         DescriptorType::ByteAddressBuffer => vk::DescriptorType::STORAGE_BUFFER,
