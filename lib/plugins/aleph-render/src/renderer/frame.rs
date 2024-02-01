@@ -71,28 +71,27 @@ impl PerFrameObjects {
         let descriptor_set = descriptor_pool.allocate_set().unwrap();
 
         let transient_bundle = frame_graph.allocate_transient_resource_bundle(device);
-        let uniform_buffer = device.create_buffer(&BufferDesc {
-            size: 1024,
-            cpu_access: CpuAccessMode::Write,
-            usage: ResourceUsageFlags::CONSTANT_BUFFER,
-            name: Some("egui::ConstantBuffer"),
-        }).unwrap();
+        let uniform_buffer = device
+            .create_buffer(&BufferDesc {
+                size: 1024,
+                cpu_access: CpuAccessMode::Write,
+                usage: ResourceUsageFlags::CONSTANT_BUFFER,
+                name: Some("egui::ConstantBuffer"),
+            })
+            .unwrap();
         unsafe {
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc {
-                    set: descriptor_set.clone(),
-                    binding: 0,
-                    array_element: 0,
-                    writes: DescriptorWrites::UniformBuffer(&[BufferDescriptorWrite {
-                        buffer: uniform_buffer.as_ref(),
-                        offset: 0,
-                        len: 256,
-                        structure_byte_stride: 0,
-                    }]),
-                },
-            ]);
+            device.update_descriptor_sets(&[DescriptorWriteDesc {
+                set: descriptor_set.clone(),
+                binding: 0,
+                array_element: 0,
+                writes: DescriptorWrites::UniformBufferDynamic(&[BufferDescriptorWrite {
+                    buffer: uniform_buffer.as_ref(),
+                    offset: 0,
+                    len: 256,
+                    structure_byte_stride: 0,
+                }]),
+            }]);
         }
-        
 
         Self {
             acquire_semaphore: device.create_semaphore().unwrap(),

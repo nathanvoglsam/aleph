@@ -202,7 +202,7 @@ pub fn pass(
             let values_data = [width_points, height_points];
 
             let ptr = buffer.map().unwrap();
-            let mut ptr = ptr.cast::<[f32;2]>();
+            let mut ptr = ptr.cast::<[f32; 2]>();
             *ptr.as_mut() = values_data;
             buffer.unmap();
 

@@ -27,5 +27,6 @@
 // SOFTWARE.
 //
 
-#[path ="../shaders/aleph_render.rs"]
+#[rustfmt::skip]
+#[path = "../shaders/aleph_render.rs"]
 pub mod aleph_render;
