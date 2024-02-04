@@ -27,14 +27,16 @@
 // SOFTWARE.
 //
 
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_interfaces::any::AnyArc;
 use aleph_rhi_api::*;
 
-use crate::allocators::{AllocationResult, BumpAllocator, UniformsAllocationResult};
+use crate::ObjectAllocationResult;
+use crate::{AllocationResult, BumpAllocator, DeviceAllocationResult};
 
-pub struct UniformsBumpAllocator {
+pub struct UploadBumpAllocator {
     /// The buffer object we're allocating from.
     buffer: AnyArc<dyn IBuffer>,
 
@@ -50,10 +52,14 @@ pub struct UniformsBumpAllocator {
     state: BumpAllocator,
 }
 
-impl UniformsBumpAllocator {
-    /// Constructs a [UniformsBumpAllocator] with the given capacity and name, allocating the buffer
+impl UploadBumpAllocator {
+    /// Constructs a [UploadBumpAllocator] with the given capacity and name, allocating the buffer
     /// from the provided device.
-    pub fn new(device: &dyn IDevice, capacity: usize, name: Option<&str>) -> Option<Self> {
+    pub fn new_uniform_buffer(
+        device: &dyn IDevice,
+        capacity: usize,
+        name: Option<&str>,
+    ) -> Option<Self> {
         if let Some(state) = BumpAllocator::new(capacity) {
             let buffer = device
                 .create_buffer(&BufferDesc {
@@ -75,7 +81,7 @@ impl UniformsBumpAllocator {
         }
     }
 
-    /// Constructs a new [UniformsBumpAllocator] with the given capacity from the description of a
+    /// Constructs a new [UploadBumpAllocator] with the given capacity from the description of a
     /// memory block.
     ///
     /// `buffer`: The buffer object this allocator is allocating from
@@ -120,7 +126,7 @@ impl UniformsBumpAllocator {
     /// Allocate the given number of bytes from the buffer.
     ///
     /// See [BumpAllocator::allocate] for more in-depth information on the algorithm.
-    pub fn allocate(&mut self, size: usize) -> UniformsAllocationResult {
+    pub fn allocate(&self, size: usize) -> DeviceAllocationResult {
         let allocation = self.state.allocate(size);
         self.convert_result(allocation)
     }
@@ -128,10 +134,72 @@ impl UniformsBumpAllocator {
     /// Allocate the number of bytes from the buffer, accounting for the requested alignment.
     ///
     /// See [BumpAllocator::allocate_aligned] for more in-depth information.
-    pub fn allocate_aligned(&mut self, size: usize, align: usize) -> UniformsAllocationResult {
+    pub fn allocate_aligned(&self, size: usize, align: usize) -> DeviceAllocationResult {
         let allocation = self.state.allocate_aligned(size, align);
         debug_assert!(allocation.offset & (align - 1) == 0);
         self.convert_result(allocation)
+    }
+
+    pub fn allocate_objects_uninit<T: Sized>(
+        &self,
+        count: usize,
+    ) -> ObjectAllocationResult<MaybeUninit<T>> {
+        let size = count * std::mem::size_of::<T>();
+        let allocation = self.state.allocate_aligned(size, std::mem::align_of::<T>());
+        let allocation = self.convert_result(allocation);
+
+        // Safety: This is safe as the allocator already satisfies all the preconditions.
+        let objects = unsafe {
+            let data = allocation.host_address.cast::<MaybeUninit<T>>();
+            std::slice::from_raw_parts_mut(data.as_ptr(), count)
+        };
+
+        ObjectAllocationResult {
+            device_offset: allocation.device_offset,
+            objects: objects,
+            allocated: allocation.allocated,
+        }
+    }
+
+    pub fn allocate_objects_default<T: Sized + Default>(
+        &self,
+        count: usize,
+    ) -> ObjectAllocationResult<T> {
+        self.allocate_objects_iter((0..count).map(|_| T::default()))
+    }
+
+    pub fn allocate_objects_copy<T: Sized + Copy>(&self, src: &[T]) -> ObjectAllocationResult<T> {
+        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+    }
+
+    pub fn allocate_objects_clone<T: Sized + Clone>(&self, src: &[T]) -> ObjectAllocationResult<T> {
+        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+    }
+
+    pub fn allocate_objects_iter<T: Sized>(
+        &self,
+        src: impl ExactSizeIterator<Item = T>,
+    ) -> ObjectAllocationResult<T> {
+        let ObjectAllocationResult {
+            device_offset,
+            objects,
+            allocated,
+        } = self.allocate_objects_uninit(src.len());
+
+        objects.iter_mut().zip(src).for_each(|(v, src)| {
+            v.write(src);
+        });
+
+        // Convert the array to an initialized array
+        let ptr = objects.as_mut_ptr();
+        let len = objects.len();
+        let objects = unsafe { std::slice::from_raw_parts_mut(ptr.cast::<T>(), len) };
+
+        ObjectAllocationResult {
+            device_offset,
+            objects,
+            allocated,
+        }
     }
 
     /// Free all bytes from the bump allocator.
@@ -151,9 +219,9 @@ impl UniformsBumpAllocator {
         self.buffer.as_ref()
     }
 
-    /// Internal function for convertin an allocation result to our own [UniformsAllocationResult]
+    /// Internal function for convertin an allocation result to our own [DeviceAllocationResult]
     #[inline]
-    fn convert_result(&self, v: AllocationResult) -> UniformsAllocationResult {
+    fn convert_result(&self, v: AllocationResult) -> DeviceAllocationResult {
         // Safety: This is safe because 'size' is guaranteed to be less than 'isize::MAX' at this
         //         point (checked inside BumpAllocator::allocate). Assuming 'base_host_address' is
         //         placed correctly it is thus not possible for this addition to overflow the
@@ -163,7 +231,7 @@ impl UniformsBumpAllocator {
             NonNull::new_unchecked(addr)
         };
 
-        UniformsAllocationResult {
+        DeviceAllocationResult {
             device_offset: v.offset + self.base_device_offset,
             host_address,
             allocated: v.allocated,

@@ -30,7 +30,6 @@
 extern crate aleph_egui as egui;
 extern crate aleph_interfaces as interfaces;
 
-mod allocators;
 mod plugin;
 mod renderer;
 mod shader_db_accessor;

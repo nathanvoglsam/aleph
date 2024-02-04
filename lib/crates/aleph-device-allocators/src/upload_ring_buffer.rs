@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_interfaces::any::AnyArc;
 use aleph_rhi_api::*;
 
-use crate::allocators::{
-    AllocationResult, RingBuffer, SubAllocatorResult, UniformsAllocationResult,
-    UniformsBumpAllocator,
+use crate::ObjectAllocationResult;
+use crate::{
+    AllocationResult, DeviceAllocationResult, RingBuffer, SubAllocatorResult, UploadBumpAllocator,
 };
 
 /// A wrapper over [RingBuffer] that allows allocating blocks from a device visible uniform buffer.
@@ -56,16 +57,20 @@ use crate::allocators::{
 /// uniform buffer.
 ///
 /// If buffers get evicted from cache we start losing performance so be aware.
-pub struct UniformsRingBuffer {
+pub struct UploadRingBuffer {
     buffer: AnyArc<dyn IBuffer>,
     base_host_address: NonNull<u8>,
     state: RingBuffer,
 }
 
-impl UniformsRingBuffer {
-    /// Constructs a [UniformsRingBuffer] with the given capacity and name, allocating the buffer
+impl UploadRingBuffer {
+    /// Constructs a [UploadRingBuffer] with the given capacity and name, allocating the buffer
     /// from the provided device.
-    pub fn new(device: &dyn IDevice, capacity: usize, name: Option<&str>) -> Option<Self> {
+    pub fn new_uniform_buffer(
+        device: &dyn IDevice,
+        capacity: usize,
+        name: Option<&str>,
+    ) -> Option<Self> {
         if let Some(state) = RingBuffer::new(capacity) {
             let buffer = device
                 .create_buffer(&BufferDesc {
@@ -89,7 +94,7 @@ impl UniformsRingBuffer {
     /// Allocate the given number of bytes from the ring buffer.
     ///
     /// See [RingBuffer::allocate] for more in-depth information on the algorithm.
-    pub fn allocate(&mut self, size: usize) -> UniformsAllocationResult {
+    pub fn allocate(&self, size: usize) -> DeviceAllocationResult {
         let allocation = self.state.allocate(size);
         self.convert_result(allocation)
     }
@@ -97,20 +102,82 @@ impl UniformsRingBuffer {
     /// Allocate the number of bytes from the ring buffer, accounting for the requested alignment.
     ///
     /// See [RingBuffer::allocate_aligned] for more in-depth information.
-    pub fn allocate_aligned(&mut self, size: usize, align: usize) -> UniformsAllocationResult {
+    pub fn allocate_aligned(&self, size: usize, align: usize) -> DeviceAllocationResult {
         let allocation = self.state.allocate_aligned(size, align);
         debug_assert!(allocation.offset & (align - 1) == 0);
         self.convert_result(allocation)
+    }
+
+    pub fn allocate_objects_uninit<T: Sized>(
+        &self,
+        count: usize,
+    ) -> ObjectAllocationResult<MaybeUninit<T>> {
+        let size = count * std::mem::size_of::<T>();
+        let allocation = self.state.allocate_aligned(size, std::mem::align_of::<T>());
+        let allocation = self.convert_result(allocation);
+
+        // Safety: This is safe as the allocator already satisfies all the preconditions.
+        let objects = unsafe {
+            let data = allocation.host_address.cast::<MaybeUninit<T>>();
+            std::slice::from_raw_parts_mut(data.as_ptr(), count)
+        };
+
+        ObjectAllocationResult {
+            device_offset: allocation.device_offset,
+            objects: objects,
+            allocated: allocation.allocated,
+        }
+    }
+
+    pub fn allocate_objects_default<T: Sized + Default>(
+        &self,
+        count: usize,
+    ) -> ObjectAllocationResult<T> {
+        self.allocate_objects_iter((0..count).map(|_| T::default()))
+    }
+
+    pub fn allocate_objects_copy<T: Sized + Copy>(&self, src: &[T]) -> ObjectAllocationResult<T> {
+        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+    }
+
+    pub fn allocate_objects_clone<T: Sized + Clone>(&self, src: &[T]) -> ObjectAllocationResult<T> {
+        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+    }
+
+    pub fn allocate_objects_iter<T: Sized>(
+        &self,
+        src: impl ExactSizeIterator<Item = T>,
+    ) -> ObjectAllocationResult<T> {
+        let ObjectAllocationResult {
+            device_offset,
+            objects,
+            allocated,
+        } = self.allocate_objects_uninit(src.len());
+
+        objects.iter_mut().zip(src).for_each(|(v, src)| {
+            v.write(src);
+        });
+
+        // Convert the array to an initialized array
+        let ptr = objects.as_mut_ptr();
+        let len = objects.len();
+        let objects = unsafe { std::slice::from_raw_parts_mut(ptr.cast::<T>(), len) };
+
+        ObjectAllocationResult {
+            device_offset,
+            objects,
+            allocated,
+        }
     }
 
     /// A utility for creating a bump allocator backed by a region of the ring buffer. Useful for
     /// creating a sub-allocator from the ring buffer that can be sent to other threads for parallel
     /// command recording.
     pub fn allocate_aligned_bump_allocator(
-        &mut self,
+        &self,
         size: usize,
         align: usize,
-    ) -> SubAllocatorResult<UniformsBumpAllocator> {
+    ) -> SubAllocatorResult<UploadBumpAllocator> {
         let allocation = self.state.allocate_aligned(size, align);
         debug_assert!(allocation.offset & (align - 1) == 0);
 
@@ -118,7 +185,7 @@ impl UniformsRingBuffer {
         //         a bad region and the ring buffer is already guaranteed to have a valid base
         //         block.
         let allocator = unsafe {
-            UniformsBumpAllocator::new_from_block(
+            UploadBumpAllocator::new_from_block(
                 self.buffer.as_ref(),
                 self.base_host_address,
                 allocation.offset,
@@ -161,9 +228,9 @@ impl UniformsRingBuffer {
         self.buffer.as_ref()
     }
 
-    /// Internal function for convertin an allocation result to our own [UniformsAllocationResult]
+    /// Internal function for convertin an allocation result to our own [DeviceAllocationResult]
     #[inline]
-    fn convert_result(&self, v: AllocationResult) -> UniformsAllocationResult {
+    fn convert_result(&self, v: AllocationResult) -> DeviceAllocationResult {
         // Safety: This is safe because 'size' is guaranteed to be less than 'isize::MAX' at this
         //         point (checked inside RingBuffer::allocate). Assuming 'base_host_address' is
         //         placed correctly it is thus not possible for this addition to overflow the
@@ -173,7 +240,7 @@ impl UniformsRingBuffer {
             NonNull::new_unchecked(addr)
         };
 
-        UniformsAllocationResult {
+        DeviceAllocationResult {
             device_offset: v.offset,
             host_address,
             allocated: v.allocated,

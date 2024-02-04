@@ -27,11 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::allocators::{forward_align_offset, AllocationResult};
+use std::cell::Cell;
+use std::num::NonZeroUsize;
+
+use crate::{forward_align_offset, AllocationResult};
 
 pub struct BumpAllocator {
-    pub head: usize,
-    pub capacity: usize,
+    head: Cell<usize>,
+    capacity: NonZeroUsize,
 }
 
 impl BumpAllocator {
@@ -46,40 +49,50 @@ impl BumpAllocator {
 
     pub fn new(capacity: usize) -> Option<Self> {
         if capacity <= Self::MAX_CAPACITY {
-            Some(Self { head: 0, capacity })
+            if let Some(capacity) = NonZeroUsize::new(capacity) {
+                Some(Self {
+                    head: Cell::new(0),
+                    capacity,
+                })
+            } else {
+                None
+            }
         } else {
             None
         }
     }
 
-    pub fn allocate(&mut self, size: usize) -> AllocationResult {
+    pub fn allocate(&self, size: usize) -> AllocationResult {
         assert!(size <= self.size_remaining(), "OOM");
 
-        let head = self.head;
-        self.head += size;
-        AllocationResult {
+        let head = self.head.get();
+        self.head.set(head + size);
+        let out = AllocationResult {
             offset: head,
             allocated: size,
-        }
+        };
+
+        out
     }
 
-    pub fn allocate_aligned(&mut self, size: usize, align: usize) -> AllocationResult {
+    pub fn allocate_aligned(&self, size: usize, align: usize) -> AllocationResult {
         debug_assert!(align.is_power_of_two());
 
         assert!(
-            size <= self.capacity,
+            size <= self.capacity.get(),
             "Requested allocation larger than buffer capacity '{}'",
             self.capacity
         );
         assert!(
-            align <= self.capacity,
+            align <= self.capacity.get(),
             "Requested alignment larger than buffer capacity '{}'",
             self.capacity
         );
 
-        let aligned_head = forward_align_offset(self.head, align);
+        let head = self.head.get();
+        let aligned_head = forward_align_offset(head, align);
         let new_head = aligned_head + size;
-        let total_size = new_head - self.head;
+        let total_size = new_head - head;
 
         assert!(
             total_size <= self.size_remaining(),
@@ -88,33 +101,37 @@ impl BumpAllocator {
             self.size_remaining()
         );
 
-        self.head = new_head;
-        AllocationResult {
+        self.head.set(new_head);
+        let out = AllocationResult {
             offset: aligned_head,
             allocated: total_size,
-        }
+        };
+
+        out
     }
 
-    pub fn clear(&mut self) {
-        self.head = 0;
+    pub fn clear(&self) {
+        self.head.set(0);
     }
 
     pub const fn capacity(&self) -> usize {
-        self.capacity
+        self.capacity.get()
     }
 
-    pub const fn size(&self) -> usize {
-        self.head
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.head.get()
     }
 
-    pub const fn size_remaining(&self) -> usize {
-        self.capacity - self.head
+    #[inline]
+    pub fn size_remaining(&self) -> usize {
+        self.capacity() - self.size()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::allocators::BumpAllocator;
+    use crate::BumpAllocator;
 
     #[test]
     fn test_bump_allocator_create_success() {
@@ -134,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_bump_allocator_allocate() {
-        let mut ba = BumpAllocator::new(16).unwrap();
+        let ba = BumpAllocator::new(16).unwrap();
 
         let allocation = ba.allocate(4);
         assert_eq!(allocation.offset, 0);
@@ -151,7 +168,7 @@ mod tests {
 
     #[test]
     fn test_bump_allocator_allocate_max_size() {
-        let mut ba = BumpAllocator::new(16).unwrap();
+        let ba = BumpAllocator::new(16).unwrap();
 
         let allocation = ba.allocate(16);
         assert_eq!(allocation.offset, 0);
@@ -171,7 +188,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_bump_allocator_allocate_oom() {
-        let mut ba = BumpAllocator::new(16).unwrap();
+        let ba = BumpAllocator::new(16).unwrap();
 
         let allocation = ba.allocate(8);
         assert_eq!(allocation.offset, 0);
@@ -184,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_bump_allocator_allocate_aligned() {
-        let mut ba = BumpAllocator::new(64).unwrap();
+        let ba = BumpAllocator::new(64).unwrap();
 
         let allocation = ba.allocate(12);
         assert_eq!(allocation.offset, 0);

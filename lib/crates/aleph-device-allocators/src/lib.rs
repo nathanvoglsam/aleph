@@ -29,13 +29,13 @@
 
 mod bump_allocator;
 mod ring_buffer;
-mod uniforms_bump_allocator;
-mod uniforms_ring_buffer;
+mod upload_bump_allocator;
+mod upload_ring_buffer;
 
 pub use bump_allocator::BumpAllocator;
 pub use ring_buffer::RingBuffer;
-pub use uniforms_bump_allocator::UniformsBumpAllocator;
-pub use uniforms_ring_buffer::UniformsRingBuffer;
+pub use upload_bump_allocator::UploadBumpAllocator;
+pub use upload_ring_buffer::UploadRingBuffer;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct AllocationResult {
@@ -47,7 +47,7 @@ pub struct AllocationResult {
     pub allocated: usize,
 }
 
-pub struct UniformsAllocationResult {
+pub struct DeviceAllocationResult {
     /// The offset from the start of the buffer that the allocated block starts at in the device's
     /// address space.
     pub device_offset: usize,
@@ -55,6 +55,19 @@ pub struct UniformsAllocationResult {
     /// Pointer to the start of the block in the host's address space. There is no alignment
     /// guarantees on this pointer.
     pub host_address: std::ptr::NonNull<u8>,
+
+    /// The actual number of bytes allocated for the block, including any padding bytes needed to
+    /// wrap over the end of the ring buffer.
+    pub allocated: usize,
+}
+
+pub struct ObjectAllocationResult<'a, T: Sized> {
+    /// The offset from the start of the buffer that the allocated block starts at in the device's
+    /// address space.
+    pub device_offset: usize,
+
+    /// The array of objects that were allocated, in the host's address space
+    pub objects: &'a mut [T],
 
     /// The actual number of bytes allocated for the block, including any padding bytes needed to
     /// wrap over the end of the ring buffer.

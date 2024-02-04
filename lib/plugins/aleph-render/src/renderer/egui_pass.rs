@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_device_allocators::UploadBumpAllocator;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
@@ -157,10 +158,15 @@ pub fn pass(
 
             // Map and calculate our begin/end pointers for the mapped vertex and index buffer
             // regions
-            let mut v_ptr = vtx_buffer.map().unwrap().as_ptr();
-            let v_ptr_end = v_ptr.add(VERTEX_BUFFER_SIZE);
-            let mut i_ptr = idx_buffer.map().unwrap().as_ptr();
-            let i_ptr_end = i_ptr.add(INDEX_BUFFER_SIZE);
+            let v_ptr = vtx_buffer.map().unwrap();
+            let vtx_alloc =
+                UploadBumpAllocator::new_from_block(vtx_buffer, v_ptr, 0, VERTEX_BUFFER_SIZE)
+                    .unwrap();
+
+            let i_ptr = idx_buffer.map().unwrap();
+            let idx_alloc =
+                UploadBumpAllocator::new_from_block(idx_buffer, i_ptr, 0, INDEX_BUFFER_SIZE)
+                    .unwrap();
 
             // Get an RTV from our imported back buffer
             let desc = back_buffer.desc();
@@ -253,32 +259,10 @@ pub fn pass(
                         continue;
                     }
 
-                    // Get the slice to copy from and various byte counts
-                    let v_slice = &triangles.vertices;
-                    let v_size = core::mem::size_of_val(&v_slice[0]);
-                    let v_copy_size = v_slice.len() * v_size;
-
-                    // Get the slice to copy from and various byte counts
-                    let i_slice = &triangles.indices;
-                    let i_size = core::mem::size_of_val(&i_slice[0]);
-                    let i_copy_size = i_slice.len() * i_size;
-
-                    // Calculate where the pointers will be after writing the current set of data
-                    let v_ptr_next = v_ptr.add(v_copy_size);
-                    let i_ptr_next = i_ptr.add(i_copy_size);
-
-                    // Check if we're going to over-run the buffers, and panic if we will
-                    if v_ptr_next >= v_ptr_end || i_ptr_next >= i_ptr_end {
-                        panic!("Out of memory");
-                    }
-
-                    // Perform the actual copies
-                    v_ptr.copy_from(v_slice.as_ptr() as *const _, v_copy_size);
-                    i_ptr.copy_from(i_slice.as_ptr() as *const _, i_copy_size);
-
-                    // Setup the pointers for the next iteration
-                    v_ptr = v_ptr_next;
-                    i_ptr = i_ptr_next;
+                    let v_slice = triangles.vertices.as_slice();
+                    let _ = vtx_alloc.allocate_objects_clone(v_slice);
+                    let i_slice = triangles.indices.as_slice();
+                    let _ = idx_alloc.allocate_objects_copy(i_slice);
 
                     record_job_commands(
                         encoder,
@@ -371,7 +355,8 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
     let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
         visibility: DescriptorShaderVisibility::All,
         items: &[
-            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer).with_binding_num(0),
+            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
+                .with_binding_num(0),
             DescriptorSetLayoutBinding::with_type(DescriptorType::Texture).with_binding_num(1),
             DescriptorSetLayoutBinding::with_type(DescriptorType::Sampler).with_binding_num(2),
         ],

@@ -27,7 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::allocators::{forward_align_offset, AllocationResult};
+use std::cell::Cell;
+use std::num::NonZeroUsize;
+
+use crate::{forward_align_offset, AllocationResult};
 
 /// A virtual ring-buffer allocator. Controls a 'capcity' sized block of memory in some region of
 /// memory managed outside of the [RingBuffer] object.
@@ -37,14 +40,14 @@ use crate::allocators::{forward_align_offset, AllocationResult};
 #[derive(Clone, Debug)]
 pub struct RingBuffer {
     /// The maximum capacity of the ring buffer. Must be a power of two
-    capacity: usize,
+    capacity: NonZeroUsize,
 
     /// The current head 'ptr' within the ring buffer
-    head: usize,
+    head: Cell<usize>,
 
     /// The number of bytes currently allocated out of the ring buffer. Also encodes the 'tail' as
     /// wrap(head - size)
-    size: usize,
+    size: Cell<usize>,
 }
 
 impl RingBuffer {
@@ -62,11 +65,15 @@ impl RingBuffer {
         if !capacity.is_power_of_two() || capacity > Self::MAX_CAPACITY {
             None
         } else {
-            Some(Self {
-                capacity: capacity,
-                head: 0,
-                size: 0,
-            })
+            if let Some(capacity) = NonZeroUsize::new(capacity) {
+                Some(Self {
+                    capacity: capacity,
+                    head: Cell::new(0),
+                    size: Cell::new(0),
+                })
+            } else {
+                None
+            }
         }
     }
 
@@ -105,9 +112,9 @@ impl RingBuffer {
     /// some minimum alignment. Because [RingBuffer] does not own any memory it is not _unsafe_ for
     /// this data structure to provide unaligned 'pointers'.
     #[inline]
-    pub fn allocate(&mut self, size: usize) -> AllocationResult {
+    pub fn allocate(&self, size: usize) -> AllocationResult {
         assert!(
-            size <= self.capacity,
+            size <= self.capacity.get(),
             "Requested allocation larger than buffer capacity '{}'",
             self.capacity
         );
@@ -120,16 +127,17 @@ impl RingBuffer {
             self.size_remaining()
         );
 
-        let head = self.head;
-        let new_head = head + size;
+        let old_head = self.head.get();
+        let old_size = self.size.get();
+        let new_head = old_head + size;
 
-        if new_head <= self.capacity {
+        if new_head <= self.capacity.get() {
             // If we aren't stradling the edge of the end of the ring buffer we can just consume
             // the given number of bytes and exit
-            self.size += size;
-            self.head = new_head;
+            self.size.set(size + old_size);
+            self.head.set(new_head);
             AllocationResult {
-                offset: head,
+                offset: old_head,
                 allocated: size,
             }
         } else {
@@ -149,30 +157,33 @@ impl RingBuffer {
     /// the caller's responsibility to ensure 'align' is a power of two and it's the caller's
     /// responsibility to not do anything unsafe with the offsets this allocator yields.
     #[inline]
-    pub fn allocate_aligned(&mut self, size: usize, align: usize) -> AllocationResult {
+    pub fn allocate_aligned(&self, size: usize, align: usize) -> AllocationResult {
         debug_assert!(align.is_power_of_two());
 
         // Check if the allocation is larger than the maximum size we could serve
         assert!(
-            size <= self.capacity,
+            size <= self.capacity.get(),
             "Requested allocation larger than buffer capacity '{}'",
             self.capacity
         );
 
         assert!(
-            align <= self.capacity,
+            align <= self.capacity.get(),
             "Requested alignment larger than buffer capacity '{}'",
             self.capacity
         );
 
+        let old_head = self.head.get();
+        let old_size = self.size.get();
+
         // Forward align the head pointer to the required alignment, keeping it in place if it's
         // already aligned
-        let aligned_head = forward_align_offset(self.head, align);
+        let aligned_head = forward_align_offset(self.head.get(), align);
 
         let new_head = aligned_head + size;
-        if new_head <= self.capacity {
+        if new_head <= self.capacity.get() {
             // Check we have enough space for the allocation
-            let total_size = new_head - self.head;
+            let total_size = new_head - old_head;
             assert!(
                 total_size <= self.size_remaining(),
                 "(total_size) {} > (size_remaining) {}: OOM",
@@ -182,8 +193,8 @@ impl RingBuffer {
 
             // If we aren't stradling the edge of the end of the ring buffer we can just consume
             // the total number of bytes and exit
-            self.size += total_size;
-            self.head = new_head;
+            self.size.set(old_size + total_size);
+            self.head.set(new_head);
             AllocationResult {
                 offset: aligned_head,
                 allocated: total_size,
@@ -195,49 +206,56 @@ impl RingBuffer {
 
     /// Free the given number of bytes back to the ring buffer.
     #[inline]
-    pub fn free(&mut self, size: usize) {
+    pub fn free(&self, size: usize) {
         assert!(
-            size <= self.size,
+            size <= self.size.get(),
             "Tried to free more memory than the ring buffer has allocated"
         );
-        self.size -= size;
+        self.size.set(self.size.get() - size);
     }
 
     /// Frees all currently allocated bytes, but leaves the head in place.
-    pub fn clear(&mut self) {
-        self.size = 0;
+    #[inline]
+    pub fn clear(&self) {
+        self.size.set(0);
     }
 
     /// Returns whether the ring buffer is empty and has no bytes in use.
-    pub const fn is_empty(&self) -> bool {
-        self.size == 0
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
     }
 
     /// Returns the capacity of the ring buffer in bytes.
     pub const fn capacity(&self) -> usize {
-        self.capacity
+        self.capacity.get()
     }
 
     /// Returns the size of the ring buffer in bytes.
-    pub const fn size(&self) -> usize {
-        self.size
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.size.get()
     }
 
     /// Returns the size of the ring buffer in bytes.
-    pub const fn size_remaining(&self) -> usize {
-        self.capacity - self.size
+    #[inline]
+    pub fn size_remaining(&self) -> usize {
+        self.capacity.get() - self.size()
     }
 
     /// Internal function for getting the capacity wrap mask.
     const fn mask(&self) -> usize {
-        self.capacity - 1
+        self.capacity.get() - 1
     }
 
     #[track_caller]
     #[inline(always)]
-    fn allocate_over_buffer_edge(&mut self, size: usize) -> AllocationResult {
-        let new_head = self.capacity + size;
-        let total_size = new_head - self.head;
+    fn allocate_over_buffer_edge(&self, size: usize) -> AllocationResult {
+        let old_head = self.head.get();
+        let old_size = self.size.get();
+
+        let new_head = self.capacity.get() + size;
+        let total_size = new_head - old_head;
 
         // Check we have enough space for our larger allocation
         assert!(
@@ -249,8 +267,8 @@ impl RingBuffer {
 
         // Perform our allocation with the new inflated size and wrap the head pointer around
         let new_head = new_head & self.mask();
-        self.size += total_size;
-        self.head = new_head;
+        self.size.set(old_size + total_size);
+        self.head.set(new_head);
 
         AllocationResult {
             offset: 0,
@@ -261,7 +279,7 @@ impl RingBuffer {
 
 #[cfg(test)]
 mod tests {
-    use crate::allocators::RingBuffer;
+    use crate::RingBuffer;
 
     #[test]
     fn test_ring_buffer_create_success() {
@@ -287,7 +305,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_allocate_free() {
-        let mut rb = RingBuffer::new(16).unwrap();
+        let rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(4);
         assert_eq!(allocation.offset, 0);
@@ -308,7 +326,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_allocate_roll_over() {
-        let mut rb = RingBuffer::new(16).unwrap();
+        let rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(12);
         assert_eq!(allocation.offset, 0);
@@ -335,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_allocate_roll_over_to_full() {
-        let mut rb = RingBuffer::new(16).unwrap();
+        let rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(12);
         assert_eq!(allocation.offset, 0);
@@ -356,7 +374,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_allocate_max_size() {
-        let mut rb = RingBuffer::new(16).unwrap();
+        let rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(16);
         assert_eq!(allocation.offset, 0);
@@ -376,7 +394,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_ring_buffer_allocate_oom() {
-        let mut rb = RingBuffer::new(16).unwrap();
+        let rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(8);
         assert_eq!(allocation.offset, 0);
@@ -389,7 +407,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_allocate_aligned() {
-        let mut rb = RingBuffer::new(64).unwrap();
+        let rb = RingBuffer::new(64).unwrap();
 
         let allocation = rb.allocate(12);
         assert_eq!(allocation.offset, 0);
@@ -406,7 +424,7 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_allocate_aligned_over_edge() {
-        let mut rb = RingBuffer::new(64).unwrap();
+        let rb = RingBuffer::new(64).unwrap();
 
         let allocation = rb.allocate(48);
         assert_eq!(allocation.offset, 0);

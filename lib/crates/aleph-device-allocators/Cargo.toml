@@ -29,34 +29,18 @@
 
 
 [package]
-name = "aleph-render"
+name = "aleph-device-allocators"
 version = "0.1.0"
 authors.workspace = true
-description = "The aleph-engine renderer"
+description = "A set of utilities of doing ring-buffer and bump allocation for device memory"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-render/"
-keywords = ["engine", "graphics", "vulkan", "game"]
-categories = ["game-engines"]
+documentation = "https://docs.rs/aleph-device-allocators/"
 edition.workspace = true
-
-[package.metadata.aleph]
-shaders = { modules = ["aleph-render"] }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-device-allocators = { workspace = true }
-aleph-egui = { workspace = true }
 aleph-interfaces = { workspace = true }
-aleph-frame-graph = { workspace = true }
-aleph-pin-board = { workspace = true }
 aleph-rhi-api = { workspace = true }
-aleph-shader-db = { workspace = true }
-crossbeam = { workspace = true }
-log = { workspace = true }
-once_cell = { workspace = true }
-ultraviolet = { workspace = true }
-bytemuck = { workspace = true }
-rkyv = { workspace = true }
