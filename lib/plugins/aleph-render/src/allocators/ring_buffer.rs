@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use crate::allocators::{forward_align_offset, AllocationResult};
+
 /// A virtual ring-buffer allocator. Controls a 'capcity' sized block of memory in some region of
 /// memory managed outside of the [RingBuffer] object.
 ///
@@ -127,7 +129,7 @@ impl RingBuffer {
             self.size += size;
             self.head = new_head;
             AllocationResult {
-                ptr: head,
+                offset: head,
                 allocated: size,
             }
         } else {
@@ -165,12 +167,7 @@ impl RingBuffer {
 
         // Forward align the head pointer to the required alignment, keeping it in place if it's
         // already aligned
-        let aligned_head = if self.head & (align - 1) == 0 {
-            self.head
-        } else {
-            (self.head + align) & !(align - 1)
-        };
-        debug_assert!(aligned_head & (align - 1) == 0);
+        let aligned_head = forward_align_offset(self.head, align);
 
         let new_head = aligned_head + size;
         if new_head <= self.capacity {
@@ -188,7 +185,7 @@ impl RingBuffer {
             self.size += total_size;
             self.head = new_head;
             AllocationResult {
-                ptr: aligned_head,
+                offset: aligned_head,
                 allocated: total_size,
             }
         } else {
@@ -256,25 +253,15 @@ impl RingBuffer {
         self.head = new_head;
 
         AllocationResult {
-            ptr: 0,
+            offset: 0,
             allocated: total_size,
         }
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct AllocationResult {
-    /// The pointer to the start of the allocation in the ring buffer
-    pub ptr: usize,
-
-    /// The number of bytes that were _actually_ allocated, including any wastage spent wrapping
-    /// the head ptr around the end of the buffer to provide a contiguous allocation.
-    pub allocated: usize,
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::ring_buffer::RingBuffer;
+    use crate::allocators::RingBuffer;
 
     #[test]
     fn test_ring_buffer_create_success() {
@@ -303,13 +290,13 @@ mod tests {
         let mut rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(4);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 4);
         assert_eq!(rb.size(), 4);
         assert_eq!(rb.size_remaining(), 12);
 
         let allocation = rb.allocate(2);
-        assert_eq!(allocation.ptr, 4);
+        assert_eq!(allocation.offset, 4);
         assert_eq!(allocation.allocated, 2);
         assert_eq!(rb.size(), 6);
         assert_eq!(rb.size_remaining(), 10);
@@ -324,7 +311,7 @@ mod tests {
         let mut rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(12);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 12);
         assert_eq!(rb.size(), 12);
         assert_eq!(rb.size_remaining(), 4);
@@ -334,13 +321,13 @@ mod tests {
         assert_eq!(rb.size_remaining(), 16);
 
         let allocation = rb.allocate(6);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 10);
         assert_eq!(rb.size(), 10);
         assert_eq!(rb.size_remaining(), 6);
 
         let allocation = rb.allocate(6);
-        assert_eq!(allocation.ptr, 6);
+        assert_eq!(allocation.offset, 6);
         assert_eq!(allocation.allocated, 6);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
@@ -351,7 +338,7 @@ mod tests {
         let mut rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(12);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 12);
         assert_eq!(rb.size(), 12);
         assert_eq!(rb.size_remaining(), 4);
@@ -361,7 +348,7 @@ mod tests {
         assert_eq!(rb.size_remaining(), 16);
 
         let allocation = rb.allocate(12);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 16);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
@@ -372,7 +359,7 @@ mod tests {
         let mut rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(16);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 16);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
@@ -380,7 +367,7 @@ mod tests {
         rb.free(16);
 
         let allocation = rb.allocate(16);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 16);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
@@ -392,7 +379,7 @@ mod tests {
         let mut rb = RingBuffer::new(16).unwrap();
 
         let allocation = rb.allocate(8);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 8);
         assert_eq!(rb.size(), 8);
         assert_eq!(rb.size_remaining(), 8);
@@ -405,13 +392,13 @@ mod tests {
         let mut rb = RingBuffer::new(64).unwrap();
 
         let allocation = rb.allocate(12);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 12);
         assert_eq!(rb.size(), 12);
         assert_eq!(rb.size_remaining(), 52);
 
         let allocation = rb.allocate_aligned(6, 16);
-        assert_eq!(allocation.ptr, 16);
+        assert_eq!(allocation.offset, 16);
         assert_eq!(allocation.allocated, 10);
         assert_eq!(rb.size(), 22);
         assert_eq!(rb.size_remaining(), 42);
@@ -422,7 +409,7 @@ mod tests {
         let mut rb = RingBuffer::new(64).unwrap();
 
         let allocation = rb.allocate(48);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 48);
         assert_eq!(rb.size(), 48);
         assert_eq!(rb.size_remaining(), 16);
@@ -430,7 +417,7 @@ mod tests {
         rb.free(32);
 
         let allocation = rb.allocate_aligned(8, 32);
-        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.offset, 0);
         assert_eq!(allocation.allocated, 24);
         assert_eq!(rb.size(), 40);
         assert_eq!(rb.size_remaining(), 24);
