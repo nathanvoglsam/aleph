@@ -82,13 +82,13 @@ impl RingBuffer {
     /// # Important
     ///
     /// The returned allocation will _always_ only be valid for exactly the requested number of
-    /// bytes. If [AllocationResult::allocated] > 'bytes' then this _does not_ mean that the block
+    /// bytes. If [AllocationResult::allocated] > 'size' then this _does not_ mean that the block
     /// is valid for [AllocationResult::allocated] bytes. Any bytes more than what was requested in
-    /// 'bytes' are padding bytes and are not contiguous with the returned block.
+    /// 'size' are padding bytes and are not contiguous with the returned block.
     ///
     /// [AllocationResult::allocated] is provided so the caller can keep track of the true number
     /// of bytes allocated from the ring buffer so the correct value can be provided to
-    /// [RingBuffer::free]. Otherwise naively assuming 'bytes' was allocated would lead to memory
+    /// [RingBuffer::free]. Otherwise naively assuming 'size' was allocated would lead to memory
     /// being leaked. Other strategies like taking a snapshot of [RingBuffer::size] before and after
     /// some work and freeing the difference can be used, but the information is immediately
     /// available from the algorithm so it's included in the result.
@@ -99,81 +99,116 @@ impl RingBuffer {
     /// caller's responsibility to make arrangements to allow aligning the block.
     ///
     /// This could be done by requesting 'size' + 'alignment' bytes and forward aligning with some
-    /// memory wasted. You could also coordinate your 'bytes' requests to always be a multiple of
+    /// memory wasted. You could also coordinate your 'size' requests to always be a multiple of
     /// some minimum alignment. Because [RingBuffer] does not own any memory it is not _unsafe_ for
     /// this data structure to provide unaligned 'pointers'.
     #[inline]
-    pub fn allocate(&mut self, bytes: usize) -> AllocationResult {
+    pub fn allocate(&mut self, size: usize) -> AllocationResult {
         assert!(
-            bytes <= self.capacity,
+            size <= self.capacity,
             "Requested allocation larger than buffer capacity '{}'",
             self.capacity
         );
 
         // Check we have enough space for the allocation
         assert!(
-            bytes <= self.size_remaining(),
-            "(bytes) {} > (size_remaining) {}: OOM",
-            bytes,
+            size <= self.size_remaining(),
+            "(size) {} > (size_remaining) {}: OOM",
+            size,
             self.size_remaining()
         );
 
         let head = self.head;
-        let new_head = head + bytes;
+        let new_head = head + size;
 
         if new_head <= self.capacity {
             // If we aren't stradling the edge of the end of the ring buffer we can just consume
             // the given number of bytes and exit
-            self.size += bytes;
+            self.size += size;
             self.head = new_head;
             AllocationResult {
                 ptr: head,
-                allocated: bytes,
+                allocated: size,
             }
         } else {
-            // Number of bytes hanging off the edge of the ring buffer
+            self.allocate_over_buffer_edge(size)
+        }
+    }
 
-            // Calculate how many bytes are dangling over the end of the ring buffer, and use that
-            // to calculate how many are still within the ring buffer range so we know how many
-            // bytes we're wasting wrapping over the edge early. We wrap our allocation up to
-            // bytes + wasted_bytes to guarantee a contiguous block of memory
-            let remaining_bytes = new_head - self.capacity;
-            let wasted_bytes = bytes - remaining_bytes;
-            let total_bytes = wasted_bytes + bytes;
+    /// An extended form of [RingBuffer::allocate] that also handles aligning the resulting block
+    /// to the requested alignment. This may allocate more memory than 'size' to satisfy the
+    /// requested alignment. The allocator may forward align the block and consume additional memory
+    /// to do so via padding.
+    ///
+    /// # Warning
+    ///
+    /// 'align' must be a power of two. Otherwise the algorithm implodes. This function isn't unsafe
+    /// because an incorrect alignment can't do anything memory unsafe, only the caller can. It's
+    /// the caller's responsibility to ensure 'align' is a power of two and it's the caller's
+    /// responsibility to not do anything unsafe with the offsets this allocator yields.
+    #[inline]
+    pub fn allocate_aligned(&mut self, size: usize, align: usize) -> AllocationResult {
+        debug_assert!(align.is_power_of_two());
 
-            // Check we have enough space for our larger allocation
+        // Check if the allocation is larger than the maximum size we could serve
+        assert!(
+            size <= self.capacity,
+            "Requested allocation larger than buffer capacity '{}'",
+            self.capacity
+        );
+
+        assert!(
+            align <= self.capacity,
+            "Requested alignment larger than buffer capacity '{}'",
+            self.capacity
+        );
+
+        // Forward align the head pointer to the required alignment, keeping it in place if it's
+        // already aligned
+        let aligned_head = if self.head & (align - 1) == 0 {
+            self.head
+        } else {
+            (self.head + align) & !(align - 1)
+        };
+        debug_assert!(aligned_head & (align - 1) == 0);
+
+        let new_head = aligned_head + size;
+        if new_head <= self.capacity {
+            // Check we have enough space for the allocation
+            let total_size = new_head - self.head;
             assert!(
-                total_bytes <= self.size_remaining(),
-                "(total_bytes) {} > (size_remaining) {}: OOM",
-                total_bytes,
+                total_size <= self.size_remaining(),
+                "(total_size) {} > (size_remaining) {}: OOM",
+                total_size,
                 self.size_remaining()
             );
 
-            // Perform our allocation with the new inflated size
-            let new_head = (new_head + wasted_bytes) & self.mask();
-            self.size += total_bytes;
+            // If we aren't stradling the edge of the end of the ring buffer we can just consume
+            // the total number of bytes and exit
+            self.size += total_size;
             self.head = new_head;
-
             AllocationResult {
-                ptr: 0,
-                allocated: total_bytes,
+                ptr: aligned_head,
+                allocated: total_size,
             }
+        } else {
+            self.allocate_over_buffer_edge(size)
         }
     }
 
     /// Free the given number of bytes back to the ring buffer.
     #[inline]
-    pub fn free(&mut self, bytes: usize) {
+    pub fn free(&mut self, size: usize) {
         assert!(
-            bytes <= self.size,
+            size <= self.size,
             "Tried to free more memory than the ring buffer has allocated"
         );
-        self.size -= bytes;
+        self.size -= size;
     }
 
     /// Frees all currently allocated bytes, but leaves the head in place.
     pub fn clear(&mut self) {
-        self.free(self.size);
+        self.size = 0;
     }
 
     /// Returns whether the ring buffer is empty and has no bytes in use.
@@ -199,6 +234,31 @@ impl RingBuffer {
     /// Internal function for getting the capacity wrap mask.
     const fn mask(&self) -> usize {
         self.capacity - 1
+    }
+
+    #[track_caller]
+    #[inline(always)]
+    fn allocate_over_buffer_edge(&mut self, size: usize) -> AllocationResult {
+        let new_head = self.capacity + size;
+        let total_size = new_head - self.head;
+
+        // Check we have enough space for our larger allocation
+        assert!(
+            total_size <= self.size_remaining(),
+            "(total_size) {} > (size_remaining) {}: OOM",
+            total_size,
+            self.size_remaining()
+        );
+
+        // Perform our allocation with the new inflated size and wrap the head pointer around
+        let new_head = new_head & self.mask();
+        self.size += total_size;
+        self.head = new_head;
+
+        AllocationResult {
+            ptr: 0,
+            allocated: total_size,
+        }
     }
 }
 
