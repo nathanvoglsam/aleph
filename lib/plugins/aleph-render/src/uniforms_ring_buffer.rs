@@ -107,16 +107,19 @@ impl UniformsRingBuffer {
     ///
     /// It is the caller's responsibility to ensure that the bytes being freed are not in use both
     /// on the host and on the device.
+    #[inline]
     pub unsafe fn free(&mut self, size: usize) {
         self.state.free(size)
     }
 
     /// Get the buffer that this is allocating from
+    #[inline]
     pub fn buffer(&self) -> &dyn IBuffer {
         self.buffer.as_ref()
     }
 
     /// Internal function for convertin an allocation result to our own 'UniformAllocationResult'
+    #[inline]
     fn convert_result(&self, v: AllocationResult) -> UniformAllocationResult {
         // Safety: This is safe because 'size' is guaranteed to be less than 'isize::MAX' at this
         //         point (checked inside RingBuffer::allocate). Assuming 'base_host_address' is

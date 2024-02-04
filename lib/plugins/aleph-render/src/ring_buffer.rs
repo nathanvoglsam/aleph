@@ -399,4 +399,40 @@ mod tests {
 
         let _allocation = rb.allocate(10);
     }
+
+    #[test]
+    fn test_ring_buffer_allocate_aligned() {
+        let mut rb = RingBuffer::new(64).unwrap();
+
+        let allocation = rb.allocate(12);
+        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.allocated, 12);
+        assert_eq!(rb.size(), 12);
+        assert_eq!(rb.size_remaining(), 52);
+
+        let allocation = rb.allocate_aligned(6, 16);
+        assert_eq!(allocation.ptr, 16);
+        assert_eq!(allocation.allocated, 10);
+        assert_eq!(rb.size(), 22);
+        assert_eq!(rb.size_remaining(), 42);
+    }
+
+    #[test]
+    fn test_ring_buffer_allocate_aligned_over_edge() {
+        let mut rb = RingBuffer::new(64).unwrap();
+
+        let allocation = rb.allocate(48);
+        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.allocated, 48);
+        assert_eq!(rb.size(), 48);
+        assert_eq!(rb.size_remaining(), 16);
+
+        rb.free(32);
+
+        let allocation = rb.allocate_aligned(8, 32);
+        assert_eq!(allocation.ptr, 0);
+        assert_eq!(allocation.allocated, 24);
+        assert_eq!(rb.size(), 40);
+        assert_eq!(rb.size_remaining(), 24);
+    }
 }
