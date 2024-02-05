@@ -32,7 +32,14 @@ use std::num::NonZeroUsize;
 
 use crate::{forward_align_offset, AllocationResult};
 
+/// A virtual bump allocator. Controls a 'capcity' sized block of memory in some region of
+/// memory managed outside of the [BumpAllocator] object.
+///
+/// This object represents the allocation safe allocation logic. Any unsafe memory management must
+/// be done by the owning object.
+#[derive(Clone, Debug)]
 pub struct BumpAllocator {
+    /// Head of the linked list. Bumps towards higher addresses.
     head: Cell<usize>,
     capacity: NonZeroUsize,
 }
@@ -47,6 +54,11 @@ impl BumpAllocator {
     /// buffers so I think that's more than enough for any expected use for this data structure.
     pub const MAX_CAPACITY: usize = 2usize.pow(usize::BITS - 2);
 
+    /// Constructs a new [BumpAllocator] with the given capacity.
+    ///
+    /// # Info
+    ///
+    /// Will return [None] if `capacity` is > [BumpAllocator::MAX_CAPACITY].
     pub fn new(capacity: usize) -> Option<Self> {
         if capacity <= Self::MAX_CAPACITY {
             if let Some(capacity) = NonZeroUsize::new(capacity) {
@@ -62,6 +74,23 @@ impl BumpAllocator {
         }
     }
 
+    /// Allocate the given number of bytes from the bump allocator.
+    ///
+    /// # Alignment
+    ///
+    /// This routine makes no guarantees about the alignment of the returned pointer. It is the
+    /// caller's responsibility to make arrangements to allow aligning the block.
+    ///
+    /// This could be done by requesting 'size' + 'alignment' bytes and forward aligning with some
+    /// memory wasted. You could also coordinate your 'size' requests to always be a multiple of
+    /// some minimum alignment. Because [RingBuffer] does not own any memory it is not _unsafe_ for
+    /// this data structure to provide unaligned 'pointers'.
+    ///
+    /// There are also a suite of utilities available for aligned allocation.
+    ///
+    /// It is also important to note that the allocator can't provide alignment higher than the
+    /// alignment of the block you're allocating from (and creating the pointers from) as there's
+    /// no way for this utility to know that alignment.
     pub fn allocate(&self, size: usize) -> AllocationResult {
         assert!(size <= self.size_remaining(), "OOM");
 
@@ -75,6 +104,17 @@ impl BumpAllocator {
         out
     }
 
+    /// An extended form of [BumpAllocator::allocate] that also handles aligning the resulting block
+    /// to the requested alignment. This may allocate more memory than 'size' to satisfy the
+    /// requested alignment. The allocator may forward align the block and consume additional memory
+    /// to do so via padding.
+    ///
+    /// # Warning
+    ///
+    /// 'align' must be a power of two. Otherwise the algorithm implodes. This function isn't unsafe
+    /// because an incorrect alignment can't do anything memory unsafe, only the caller can. It's
+    /// the caller's responsibility to ensure 'align' is a power of two and it's the caller's
+    /// responsibility to not do anything unsafe with the offsets this allocator yields.
     pub fn allocate_aligned(&self, size: usize, align: usize) -> AllocationResult {
         debug_assert!(align.is_power_of_two());
 
@@ -110,19 +150,23 @@ impl BumpAllocator {
         out
     }
 
+    /// Clear the bump allocator, resetting it to the empty state
     pub fn clear(&self) {
         self.head.set(0);
     }
 
+    /// The total capacity the bump allocator can allocate for
     pub const fn capacity(&self) -> usize {
         self.capacity.get()
     }
 
+    /// The current number of bytes allocated from the allocator
     #[inline]
     pub fn size(&self) -> usize {
         self.head.get()
     }
 
+    /// The number of bytes remaining that can still be allocated from the allocator
     #[inline]
     pub fn size_remaining(&self) -> usize {
         self.capacity() - self.size()

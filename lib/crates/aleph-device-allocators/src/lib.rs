@@ -47,27 +47,16 @@ pub struct AllocationResult {
     pub allocated: usize,
 }
 
-pub struct DeviceAllocationResult {
+pub type RawDeviceAllocationResult = DeviceAllocationResult<std::ptr::NonNull<u8>>;
+
+pub struct DeviceAllocationResult<T> {
     /// The offset from the start of the buffer that the allocated block starts at in the device's
     /// address space.
     pub device_offset: usize,
 
     /// Pointer to the start of the block in the host's address space. There is no alignment
     /// guarantees on this pointer.
-    pub host_address: std::ptr::NonNull<u8>,
-
-    /// The actual number of bytes allocated for the block, including any padding bytes needed to
-    /// wrap over the end of the ring buffer.
-    pub allocated: usize,
-}
-
-pub struct ObjectAllocationResult<'a, T: Sized> {
-    /// The offset from the start of the buffer that the allocated block starts at in the device's
-    /// address space.
-    pub device_offset: usize,
-
-    /// The array of objects that were allocated, in the host's address space
-    pub objects: &'a mut [T],
+    pub result: T,
 
     /// The actual number of bytes allocated for the block, including any padding bytes needed to
     /// wrap over the end of the ring buffer.

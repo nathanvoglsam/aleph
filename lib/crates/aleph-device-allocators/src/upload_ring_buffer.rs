@@ -33,7 +33,7 @@ use std::ptr::NonNull;
 use aleph_interfaces::any::AnyArc;
 use aleph_rhi_api::*;
 
-use crate::ObjectAllocationResult;
+use crate::RawDeviceAllocationResult;
 use crate::{
     AllocationResult, DeviceAllocationResult, RingBuffer, SubAllocatorResult, UploadBumpAllocator,
 };
@@ -94,7 +94,7 @@ impl UploadRingBuffer {
     /// Allocate the given number of bytes from the ring buffer.
     ///
     /// See [RingBuffer::allocate] for more in-depth information on the algorithm.
-    pub fn allocate(&self, size: usize) -> DeviceAllocationResult {
+    pub fn allocate(&self, size: usize) -> RawDeviceAllocationResult {
         let allocation = self.state.allocate(size);
         self.convert_result(allocation)
     }
@@ -102,70 +102,134 @@ impl UploadRingBuffer {
     /// Allocate the number of bytes from the ring buffer, accounting for the requested alignment.
     ///
     /// See [RingBuffer::allocate_aligned] for more in-depth information.
-    pub fn allocate_aligned(&self, size: usize, align: usize) -> DeviceAllocationResult {
+    pub fn allocate_aligned(&self, size: usize, align: usize) -> RawDeviceAllocationResult {
         let allocation = self.state.allocate_aligned(size, align);
         debug_assert!(allocation.offset & (align - 1) == 0);
         self.convert_result(allocation)
     }
 
+    /// Wrapper over [UploadBumpAllocator::allocate_object] that default-initializes the object.
+    pub fn allocate_object_default<T: Sized + Default>(&self) -> DeviceAllocationResult<&mut T> {
+        self.allocate_object(T::default())
+    }
+
+    /// Wrapper over [UploadBumpAllocator::allocate_object] that clones the given resource using
+    /// [Copy].
+    pub fn allocate_object_copy<T: Sized + Copy>(&self, src: &T) -> DeviceAllocationResult<&mut T> {
+        self.allocate_object(src.clone())
+    }
+
+    /// Wrapper over [UploadBumpAllocator::allocate_object] that clones the given resource using
+    /// [Clone].
+    pub fn allocate_object_clone<T: Sized + Clone>(
+        &self,
+        src: &T,
+    ) -> DeviceAllocationResult<&mut T> {
+        self.allocate_object(src.clone())
+    }
+
+    /// A utility function that will allocate a sufficiently large and aligned block to store a
+    /// single `T` object. This will return the object completely uninitialized.
+    /// 
+    /// It is the caller's responsibility to handle correctly initializing the objects.
+    /// Alternatively utility methods are available for common cases.
+    pub fn allocate_object_uninit<T: Sized>(&self) -> DeviceAllocationResult<&mut MaybeUninit<T>> {
+        let v = self.allocate_objects_uninit(1);
+        DeviceAllocationResult {
+            device_offset: v.device_offset,
+            result: &mut v.result[0],
+            allocated: v.allocated,
+        }
+    }
+
+    /// Wrapper over [UploadBumpAllocator::allocate_object_uninit] that initializes an object of
+    /// type `T` by placement of the given object.
+    pub fn allocate_object<T: Sized>(&self, object: T) -> DeviceAllocationResult<&mut T> {
+        let v = self.allocate_object_uninit();
+        DeviceAllocationResult {
+            device_offset: v.device_offset,
+            result: v.result.write(object),
+            allocated: v.allocated,
+        }
+    }
+
+    /// Wrapper over [UploadRingBuffer::allocate_objects_iter] that default-initializes `count`
+    /// objects.
+    pub fn allocate_objects_default<T: Sized + Default>(
+        &self,
+        count: usize,
+    ) -> DeviceAllocationResult<&mut [T]> {
+        self.allocate_objects_iter((0..count).map(|_| T::default()))
+    }
+
+    /// Wrapper over [UploadRingBuffer::allocate_objects_iter] that copies the objects from the
+    /// provided array using [Copy].
+    pub fn allocate_objects_copy<T: Sized + Copy>(
+        &self,
+        src: &[T],
+    ) -> DeviceAllocationResult<&mut [T]> {
+        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+    }
+
+    /// Wrapper over [UploadRingBuffer::allocate_objects_iter] that copies the objects from the
+    /// provided array using [Clone].
+    pub fn allocate_objects_clone<T: Sized + Clone>(
+        &self,
+        src: &[T],
+    ) -> DeviceAllocationResult<&mut [T]> {
+        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+    }
+
+    /// A utility function that will allocate a sufficiently large and aligned block to store a
+    /// `count` sized array of `T` objects. This will return the objects completely uninitialized.
+    /// 
+    /// It is the caller's responsibility to handle correctly initializing the objects.
+    /// Alternatively utility methods are available for common cases.
     pub fn allocate_objects_uninit<T: Sized>(
         &self,
         count: usize,
-    ) -> ObjectAllocationResult<MaybeUninit<T>> {
+    ) -> DeviceAllocationResult<&mut [MaybeUninit<T>]> {
         let size = count * std::mem::size_of::<T>();
         let allocation = self.state.allocate_aligned(size, std::mem::align_of::<T>());
         let allocation = self.convert_result(allocation);
 
         // Safety: This is safe as the allocator already satisfies all the preconditions.
-        let objects = unsafe {
-            let data = allocation.host_address.cast::<MaybeUninit<T>>();
+        let result = unsafe {
+            let data = allocation.result.cast::<MaybeUninit<T>>();
             std::slice::from_raw_parts_mut(data.as_ptr(), count)
         };
 
-        ObjectAllocationResult {
+        DeviceAllocationResult {
             device_offset: allocation.device_offset,
-            objects: objects,
+            result,
             allocated: allocation.allocated,
         }
     }
 
-    pub fn allocate_objects_default<T: Sized + Default>(
-        &self,
-        count: usize,
-    ) -> ObjectAllocationResult<T> {
-        self.allocate_objects_iter((0..count).map(|_| T::default()))
-    }
-
-    pub fn allocate_objects_copy<T: Sized + Copy>(&self, src: &[T]) -> ObjectAllocationResult<T> {
-        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
-    }
-
-    pub fn allocate_objects_clone<T: Sized + Clone>(&self, src: &[T]) -> ObjectAllocationResult<T> {
-        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
-    }
-
+    /// Wrapper over [UploadRingBuffer::allocate_objects_uninit] that initializes an array of
+    /// objects from the provided [ExactSizeIterator].
     pub fn allocate_objects_iter<T: Sized>(
         &self,
         src: impl ExactSizeIterator<Item = T>,
-    ) -> ObjectAllocationResult<T> {
-        let ObjectAllocationResult {
+    ) -> DeviceAllocationResult<&mut [T]> {
+        let DeviceAllocationResult {
             device_offset,
-            objects,
+            result,
             allocated,
         } = self.allocate_objects_uninit(src.len());
 
-        objects.iter_mut().zip(src).for_each(|(v, src)| {
+        result.iter_mut().zip(src).for_each(|(v, src)| {
             v.write(src);
         });
 
         // Convert the array to an initialized array
-        let ptr = objects.as_mut_ptr();
-        let len = objects.len();
-        let objects = unsafe { std::slice::from_raw_parts_mut(ptr.cast::<T>(), len) };
+        let ptr = result.as_mut_ptr();
+        let len = result.len();
+        let result = unsafe { std::slice::from_raw_parts_mut(ptr.cast::<T>(), len) };
 
-        ObjectAllocationResult {
+        DeviceAllocationResult {
             device_offset,
-            objects,
+            result,
             allocated,
         }
     }
@@ -222,15 +286,32 @@ impl UploadRingBuffer {
         self.state.clear()
     }
 
+    /// The total capacity the bump allocator can allocate for
+    pub const fn capacity(&self) -> usize {
+        self.state.capacity()
+    }
+
+    /// The current number of bytes allocated from the allocator
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.state.size()
+    }
+
+    /// The number of bytes remaining that can still be allocated from the allocator
+    #[inline]
+    pub fn size_remaining(&self) -> usize {
+        self.state.size_remaining()
+    }
+
     /// Get the buffer that this is allocating from
     #[inline]
     pub fn buffer(&self) -> &dyn IBuffer {
         self.buffer.as_ref()
     }
 
-    /// Internal function for convertin an allocation result to our own [DeviceAllocationResult]
+    /// Internal function for convertin an allocation result to our own [RawDeviceAllocationResult]
     #[inline]
-    fn convert_result(&self, v: AllocationResult) -> DeviceAllocationResult {
+    fn convert_result(&self, v: AllocationResult) -> RawDeviceAllocationResult {
         // Safety: This is safe because 'size' is guaranteed to be less than 'isize::MAX' at this
         //         point (checked inside RingBuffer::allocate). Assuming 'base_host_address' is
         //         placed correctly it is thus not possible for this addition to overflow the
@@ -240,9 +321,9 @@ impl UploadRingBuffer {
             NonNull::new_unchecked(addr)
         };
 
-        DeviceAllocationResult {
+        RawDeviceAllocationResult {
             device_offset: v.offset,
-            host_address,
+            result: host_address,
             allocated: v.allocated,
         }
     }

@@ -61,6 +61,12 @@ impl RingBuffer {
     /// structure.
     pub const MAX_CAPACITY: usize = 2usize.pow(usize::BITS - 2);
 
+    /// Constructs a new [RingBuffer] with the given capacity
+    ///
+    /// # Info
+    ///
+    /// `capacity` must be < [RingBuffer::MAX_CAPACITY] and must also be a power of two. This
+    /// function will return [None] if those conditions are not met.
     pub fn new(capacity: usize) -> Option<Self> {
         if !capacity.is_power_of_two() || capacity > Self::MAX_CAPACITY {
             None
@@ -111,6 +117,12 @@ impl RingBuffer {
     /// memory wasted. You could also coordinate your 'size' requests to always be a multiple of
     /// some minimum alignment. Because [RingBuffer] does not own any memory it is not _unsafe_ for
     /// this data structure to provide unaligned 'pointers'.
+    ///
+    /// There are also a suite of utilities available for aligned allocation.
+    ///
+    /// It is also important to note that the allocator can't provide alignment higher than the
+    /// alignment of the block you're allocating from (and creating the pointers from) as there's
+    /// no way for this utility to know that alignment.
     #[inline]
     pub fn allocate(&self, size: usize) -> AllocationResult {
         assert!(
