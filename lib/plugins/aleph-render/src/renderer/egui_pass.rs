@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_device_allocators::UploadBumpAllocator;
+use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
