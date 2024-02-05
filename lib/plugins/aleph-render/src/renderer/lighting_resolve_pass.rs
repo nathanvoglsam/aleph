@@ -42,7 +42,6 @@ struct LightingResolvePassPayload {
     gbuffer1: ResourceRef,
     gbuffer2: ResourceRef,
     lighting: ResourceMut,
-    back_buffer_extent: Extent2D,
     pipeline: AnyArc<dyn IComputePipeline>,
 }
 pub struct LightingResolvePassOutput {
@@ -96,16 +95,14 @@ pub fn pass(
                 .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
                     visibility: DescriptorShaderVisibility::Compute,
                     items: &[
-                        DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
+                        DescriptorSetLayoutBinding::with_type(DescriptorType::Texture)
                             .with_binding_num(0),
                         DescriptorSetLayoutBinding::with_type(DescriptorType::Texture)
                             .with_binding_num(1),
                         DescriptorSetLayoutBinding::with_type(DescriptorType::Texture)
                             .with_binding_num(2),
-                        DescriptorSetLayoutBinding::with_type(DescriptorType::Texture)
-                            .with_binding_num(3),
                         DescriptorSetLayoutBinding::with_type(DescriptorType::TextureRW)
-                            .with_binding_num(4),
+                            .with_binding_num(3),
                     ],
                     name: Some("DeferredLightingDescriptorSetLayout"),
                 })
@@ -136,7 +133,6 @@ pub fn pass(
                 gbuffer1,
                 gbuffer2,
                 lighting,
-                back_buffer_extent: Extent2D::new(b_desc.width, b_desc.height),
                 pipeline,
             });
             pin_board.publish(LightingResolvePassOutput { lighting });
