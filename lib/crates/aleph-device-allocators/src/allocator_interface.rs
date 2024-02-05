@@ -36,20 +36,20 @@ pub trait IUploadAllocator {
     /// Allocate the number of bytes from the allocator, accounting for the requested alignment.
     fn allocate_aligned(&self, size: usize, align: usize) -> RawDeviceAllocationResult;
 
-    /// Wrapper over [IAllocator::allocate_object] that default-initializes the object.
+    /// Wrapper over [IUploadAllocator::allocate_object] that default-initializes the object.
     #[inline]
     fn allocate_object_default<T: Sized + Default>(&self) -> DeviceAllocationResult<&mut T> {
         self.allocate_object(T::default())
     }
 
-    /// Wrapper over [IAllocator::allocate_object] that clones the given resource using
+    /// Wrapper over [IUploadAllocator::allocate_object] that clones the given resource using
     /// [Copy].
     #[inline]
     fn allocate_object_copy<T: Sized + Copy>(&self, src: &T) -> DeviceAllocationResult<&mut T> {
         self.allocate_object(src.clone())
     }
 
-    /// Wrapper over [IAllocator::allocate_object] that clones the given resource using
+    /// Wrapper over [IUploadAllocator::allocate_object] that clones the given resource using
     /// [Clone].
     #[inline]
     fn allocate_object_clone<T: Sized + Clone>(&self, src: &T) -> DeviceAllocationResult<&mut T> {
@@ -73,7 +73,7 @@ pub trait IUploadAllocator {
         }
     }
 
-    /// Wrapper over [IAllocator::allocate_object_uninit] that initializes an object of
+    /// Wrapper over [IUploadAllocator::allocate_object_uninit] that initializes an object of
     /// type `T` by placement of the given object.
     #[inline]
     fn allocate_object<T: Sized>(&self, object: T) -> DeviceAllocationResult<&mut T> {
@@ -85,7 +85,7 @@ pub trait IUploadAllocator {
         }
     }
 
-    /// Wrapper over [IAllocator::allocate_objects_iter] that default-initializes `count`
+    /// Wrapper over [IUploadAllocator::allocate_objects_iter] that default-initializes `count`
     /// objects.
     #[inline]
     fn allocate_objects_default<T: Sized + Default>(
@@ -95,7 +95,7 @@ pub trait IUploadAllocator {
         self.allocate_objects_iter((0..count).map(|_| T::default()))
     }
 
-    /// Wrapper over [IAllocator::allocate_objects_iter] that copies the objects from the
+    /// Wrapper over [IUploadAllocator::allocate_objects_iter] that copies the objects from the
     /// provided array using [Copy].
     #[inline]
     fn allocate_objects_copy<T: Sized + Copy>(
@@ -105,7 +105,7 @@ pub trait IUploadAllocator {
         self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
     }
 
-    /// Wrapper over [IAllocator::allocate_objects_iter] that copies the objects from the
+    /// Wrapper over [IUploadAllocator::allocate_objects_iter] that copies the objects from the
     /// provided array using [Clone].
     #[inline]
     fn allocate_objects_clone<T: Sized + Clone>(
