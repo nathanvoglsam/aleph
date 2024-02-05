@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
+mod allocator_interface;
 mod bump_allocator;
 mod ring_buffer;
 mod upload_bump_allocator;
 mod upload_ring_buffer;
 
+pub use allocator_interface::IUploadAllocator;
 pub use bump_allocator::BumpAllocator;
 pub use ring_buffer::RingBuffer;
 pub use upload_bump_allocator::UploadBumpAllocator;

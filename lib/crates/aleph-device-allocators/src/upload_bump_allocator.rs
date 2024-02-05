@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_interfaces::any::AnyArc;
 use aleph_rhi_api::*;
 
+use crate::IUploadAllocator;
 use crate::RawDeviceAllocationResult;
-use crate::{AllocationResult, BumpAllocator, DeviceAllocationResult};
+use crate::{AllocationResult, BumpAllocator};
 
 pub struct UploadBumpAllocator {
     /// The buffer object we're allocating from.
@@ -50,6 +50,27 @@ pub struct UploadBumpAllocator {
 
     /// The bump allocator state. The allocator's brain.
     state: BumpAllocator,
+}
+
+impl IUploadAllocator for UploadBumpAllocator {
+    /// Allocate the given number of bytes from the buffer.
+    ///
+    /// See [BumpAllocator::allocate] for more in-depth information on the algorithm.
+    #[inline]
+    fn allocate(&self, size: usize) -> RawDeviceAllocationResult {
+        let allocation = self.state.allocate(size);
+        self.convert_result(allocation)
+    }
+
+    /// Allocate the number of bytes from the buffer, accounting for the requested alignment.
+    ///
+    /// See [BumpAllocator::allocate_aligned] for more in-depth information.
+    #[inline]
+    fn allocate_aligned(&self, size: usize, align: usize) -> RawDeviceAllocationResult {
+        let allocation = self.state.allocate_aligned(size, align);
+        debug_assert!(allocation.offset & (align - 1) == 0);
+        self.convert_result(allocation)
+    }
 }
 
 impl UploadBumpAllocator {
@@ -120,149 +141,6 @@ impl UploadBumpAllocator {
             })
         } else {
             None
-        }
-    }
-
-    /// Allocate the given number of bytes from the buffer.
-    ///
-    /// See [BumpAllocator::allocate] for more in-depth information on the algorithm.
-    pub fn allocate(&self, size: usize) -> RawDeviceAllocationResult {
-        let allocation = self.state.allocate(size);
-        self.convert_result(allocation)
-    }
-
-    /// Allocate the number of bytes from the buffer, accounting for the requested alignment.
-    ///
-    /// See [BumpAllocator::allocate_aligned] for more in-depth information.
-    pub fn allocate_aligned(&self, size: usize, align: usize) -> RawDeviceAllocationResult {
-        let allocation = self.state.allocate_aligned(size, align);
-        debug_assert!(allocation.offset & (align - 1) == 0);
-        self.convert_result(allocation)
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_object] that default-initializes the object.
-    pub fn allocate_object_default<T: Sized + Default>(&self) -> DeviceAllocationResult<&mut T> {
-        self.allocate_object(T::default())
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_object] that clones the given resource using
-    /// [Copy].
-    pub fn allocate_object_copy<T: Sized + Copy>(&self, src: &T) -> DeviceAllocationResult<&mut T> {
-        self.allocate_object(src.clone())
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_object] that clones the given resource using
-    /// [Clone].
-    pub fn allocate_object_clone<T: Sized + Clone>(
-        &self,
-        src: &T,
-    ) -> DeviceAllocationResult<&mut T> {
-        self.allocate_object(src.clone())
-    }
-
-    /// A utility function that will allocate a sufficiently large and aligned block to store a
-    /// single `T` object. This will return the object completely uninitialized.
-    /// 
-    /// It is the caller's responsibility to handle correctly initializing the objects.
-    /// Alternatively utility methods are available for common cases.
-    pub fn allocate_object_uninit<T: Sized>(&self) -> DeviceAllocationResult<&mut MaybeUninit<T>> {
-        let v = self.allocate_objects_uninit(1);
-        DeviceAllocationResult {
-            device_offset: v.device_offset,
-            result: &mut v.result[0],
-            allocated: v.allocated,
-        }
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_object_uninit] that initializes an object of
-    /// type `T` by placement of the given object.
-    pub fn allocate_object<T: Sized>(&self, object: T) -> DeviceAllocationResult<&mut T> {
-        let v = self.allocate_object_uninit();
-        DeviceAllocationResult {
-            device_offset: v.device_offset,
-            result: v.result.write(object),
-            allocated: v.allocated,
-        }
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_objects_iter] that default-initializes `count`
-    /// objects.
-    pub fn allocate_objects_default<T: Sized + Default>(
-        &self,
-        count: usize,
-    ) -> DeviceAllocationResult<&mut [T]> {
-        self.allocate_objects_iter((0..count).map(|_| T::default()))
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_objects_iter] that copies the objects from the
-    /// provided array using [Copy].
-    pub fn allocate_objects_copy<T: Sized + Copy>(
-        &self,
-        src: &[T],
-    ) -> DeviceAllocationResult<&mut [T]> {
-        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_objects_iter] that copies the objects from the
-    /// provided array using [Clone].
-    pub fn allocate_objects_clone<T: Sized + Clone>(
-        &self,
-        src: &[T],
-    ) -> DeviceAllocationResult<&mut [T]> {
-        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
-    }
-
-    /// A utility function that will allocate a sufficiently large and aligned block to store a
-    /// `count` sized array of `T` objects. This will return the objects completely uninitialized.
-    /// 
-    /// It is the caller's responsibility to handle correctly initializing the objects.
-    /// Alternatively utility methods are available for common cases.
-    pub fn allocate_objects_uninit<T: Sized>(
-        &self,
-        count: usize,
-    ) -> DeviceAllocationResult<&mut [MaybeUninit<T>]> {
-        let size = count * std::mem::size_of::<T>();
-        let allocation = self.state.allocate_aligned(size, std::mem::align_of::<T>());
-        let allocation = self.convert_result(allocation);
-
-        // Safety: This is safe as the allocator already satisfies all the preconditions.
-        let result = unsafe {
-            let data = allocation.result.cast::<MaybeUninit<T>>();
-            std::slice::from_raw_parts_mut(data.as_ptr(), count)
-        };
-
-        DeviceAllocationResult {
-            device_offset: allocation.device_offset,
-            result,
-            allocated: allocation.allocated,
-        }
-    }
-
-    /// Wrapper over [UploadBumpAllocator::allocate_objects_uninit] that initializes an array of
-    /// objects from the provided [ExactSizeIterator].
-    pub fn allocate_objects_iter<T: Sized>(
-        &self,
-        src: impl ExactSizeIterator<Item = T>,
-    ) -> DeviceAllocationResult<&mut [T]> {
-        let DeviceAllocationResult {
-            device_offset,
-            result,
-            allocated,
-        } = self.allocate_objects_uninit(src.len());
-
-        result.iter_mut().zip(src).for_each(|(v, src)| {
-            v.write(src);
-        });
-
-        // Convert the array to an initialized array
-        let ptr = result.as_mut_ptr();
-        let len = result.len();
-        let result = unsafe { std::slice::from_raw_parts_mut(ptr.cast::<T>(), len) };
-
-        DeviceAllocationResult {
-            device_offset,
-            result,
-            allocated,
         }
     }
 
