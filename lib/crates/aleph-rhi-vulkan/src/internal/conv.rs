@@ -290,7 +290,7 @@ pub fn barrier_sync_to_vk2(sync: BarrierSync) -> vk::PipelineStageFlags2 {
         sync,
         out,
         BarrierSync::CLEAR_UNORDERED_ACCESS_VIEW,
-        vk::PipelineStageFlags2::CLEAR
+        vk::PipelineStageFlags2::COMPUTE_SHADER
     );
     translate_flag_onto!(
         sync,
@@ -417,7 +417,7 @@ pub fn barrier_sync_to_vk(
         sync,
         out,
         BarrierSync::CLEAR_UNORDERED_ACCESS_VIEW,
-        vk::PipelineStageFlags::TRANSFER
+        vk::PipelineStageFlags::COMPUTE_SHADER
     );
     translate_flag_onto!(
         sync,
