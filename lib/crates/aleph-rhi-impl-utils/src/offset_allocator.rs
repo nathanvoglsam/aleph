@@ -51,6 +51,9 @@
 // SOFTWARE.
 //
 
+//! Direct port of Sebastian Aaltonen's OffsetAllocator. Not very idiomatic rust but it works so
+//! shoot me.
+
 type NodeIndex = u32;
 
 const NUM_TOP_BINS: u32 = 32;
@@ -67,6 +70,10 @@ pub struct Allocation {
 
 impl Allocation {
     const NO_SPACE: u32 = 0xFFFFFFFF;
+
+    pub const fn is_fail(&self) -> bool {
+        self.metadata == Allocation::NO_SPACE
+    }
 }
 
 impl Default for Allocation {
