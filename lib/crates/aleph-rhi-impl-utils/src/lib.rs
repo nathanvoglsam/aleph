@@ -40,6 +40,7 @@ pub mod bump_cell;
 pub mod conv;
 pub mod macros;
 pub mod manually_drop;
+pub mod offset_allocator;
 pub mod unwrap;
 
 pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
