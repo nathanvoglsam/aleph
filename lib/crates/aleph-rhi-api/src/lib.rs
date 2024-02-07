@@ -1671,16 +1671,17 @@ bitflags! {
         ///
         /// I don't know if this is needed, or can be mapped in a sane way. This will describe what
         /// I think this should map to.
+        /// 
+        /// We can just implement these with compute shaders
         ///
         /// ## Vulkan
         ///
-        /// - `CLEAR_BIT`
+        /// - `COMPUTE_SHADER`
         ///
         /// ## D3D12
         ///
         /// - `CLEAR_UNORDERED_ACCESS_VIEW`
         ///
-        #[deprecated]
         const CLEAR_UNORDERED_ACCESS_VIEW = 0x8000;
 
         ///
