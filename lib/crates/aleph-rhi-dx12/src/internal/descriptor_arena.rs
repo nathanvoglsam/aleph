@@ -30,7 +30,7 @@
 use aleph_rhi_api::*;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
-use crate::internal::descriptor_heap::{DescriptorHeap, DescriptorID};
+use crate::internal::descriptor_heap::{DescriptorHeap, DescriptorAllocation};
 
 /// An internal data-structure used as the backing storage for an object-pool based descriptor pool
 /// allocator.
@@ -43,7 +43,7 @@ use crate::internal::descriptor_heap::{DescriptorHeap, DescriptorID};
 /// allocator to get the arena's memory.
 pub struct DescriptorArena {
     /// The allocation handle of the descriptor arena
-    pub id: DescriptorID,
+    pub allocation: DescriptorAllocation,
 
     /// The descriptor increment for the descriptor type this arena allocates for
     pub descriptor_increment: u32,
@@ -76,14 +76,14 @@ impl DescriptorArena {
         // The total number of descriptors needed from the heap to store 'num_sets'
         let num_descriptors = num_descriptors_per_set * num_sets;
 
-        let id = heap
+        let allocation = heap
             .allocate(num_descriptors)
             .ok_or(DescriptorPoolCreateError::OutOfMemory)?;
-        let cpu_base = heap.id_to_cpu_handle(id).unwrap();
-        let gpu_base = heap.id_to_gpu_handle(id).unwrap();
+        let cpu_base = heap.allocation_to_cpu_handle(allocation).unwrap();
+        let gpu_base = heap.allocation_to_gpu_handle(allocation).unwrap();
 
         Ok(Some(DescriptorArena {
-            id,
+            allocation,
             descriptor_increment: heap.descriptor_increment(),
             num_sets,
             num_descriptors_per_set,
@@ -126,6 +126,6 @@ impl DescriptorArena {
     /// allocation. It is the caller's responsibility to ensure that the arena is no longer used
     /// after calling this function.
     pub unsafe fn release_allocation_to_heap(&self, heap: &DescriptorHeap) {
-        heap.release(self.id, self.num_sets * self.num_descriptors_per_set);
+        heap.release(self.allocation);
     }
 }
