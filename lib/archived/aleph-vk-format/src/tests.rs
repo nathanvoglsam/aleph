@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-pub use super::VkFormat;
 use crate::ALL_FORMATS;
 
 #[test]
