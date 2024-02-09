@@ -159,7 +159,10 @@ impl DescriptorHeap {
 
     /// Converts the given 'id' into the [CPUDescriptorHandle] it represents
     #[allow(unused)]
-    pub fn allocation_to_cpu_handle(&self, id: DescriptorAllocation) -> Option<CPUDescriptorHandle> {
+    pub fn allocation_to_cpu_handle(
+        &self,
+        id: DescriptorAllocation,
+    ) -> Option<CPUDescriptorHandle> {
         let size = self.descriptor_increment as usize;
         let id = id.0.offset as usize;
         let base = self.start_cpu_handle.ptr;
@@ -169,7 +172,10 @@ impl DescriptorHeap {
 
     /// Converts the given 'id' into the [GPUDescriptorHandle] it represents
     #[allow(unused)]
-    pub fn allocation_to_gpu_handle(&self, id: DescriptorAllocation) -> Option<GPUDescriptorHandle> {
+    pub fn allocation_to_gpu_handle(
+        &self,
+        id: DescriptorAllocation,
+    ) -> Option<GPUDescriptorHandle> {
         let size = self.descriptor_increment as u64;
         let id = id.0.offset as u64;
         let base = self.start_gpu_handle.ptr;
