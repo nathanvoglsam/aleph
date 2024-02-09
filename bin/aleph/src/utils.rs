@@ -228,18 +228,26 @@ pub fn resolve_absolute_or_root_relative_path<P: AsRef<Utf8Path>>(
 }
 
 pub mod ninja {
+    use std::borrow::Cow;
+
     use camino::Utf8Path;
 
     use crate::utils::dunce_utf8;
 
     /// Prepares the given path ready to be used in a ninja build statement
-    pub fn prepare_path_for_build_statement(path: &Utf8Path) -> String {
-        // UNC = sadness for ninja
-        let path = dunce_utf8::simplified(path).as_str();
+    pub fn prepare_path_for_build_statement(path: &Utf8Path) -> Cow<str> {
+        if cfg!(windows) {
+            // UNC = sadness for ninja
+            let path = dunce_utf8::simplified(path).as_str();
 
-        // The drive letter gets incorrectly parsed as the end of the build output so we have to
-        // escape it. /shrug
-        path.replace(':', "$:")
+            // The drive letter gets incorrectly parsed as the end of the build output so we have to
+            // escape it. /shrug
+            let string = path.replace(':', "$:");
+
+            Cow::Owned(string)
+        } else {
+            Cow::Borrowed(path.as_str())
+        }
     }
 }
 

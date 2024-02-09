@@ -29,6 +29,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt::Display;
 
 use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
@@ -387,6 +388,37 @@ impl ShaderFileFormat {
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ShaderTargetLanguage {
+    /// The DXIL format for consumption by dx12
+    Dxil,
+    Spirv,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum ShaderPipeline {
+    /// Use slang to directly output to the target shader binary.
+    Direct,
+
+    /// Have slang output glsl code and then compile the resulting glsl with glslc. This only works
+    /// for Spirv output.
+    Glslc,
+}
+
+impl Display for ShaderPipeline {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ShaderPipeline::Direct => f.write_str("direct"),
+            ShaderPipeline::Glslc => f.write_str("glslc"),
+        }
+    }
+}
+
+pub struct ShaderCompileOptions {
+    pub target_ir: ShaderTargetLanguage,
+    pub pipeline: ShaderPipeline,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]

@@ -41,6 +41,9 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::commands::{ISubcommand, SubcommandSet};
 use crate::project::AlephProject;
+use crate::shader_system::ShaderCompileOptions;
+use crate::shader_system::ShaderPipeline;
+use crate::shader_system::ShaderTargetLanguage;
 use crate::shader_system::{
     AlephCrateMetadata, CompilationParams, ProjectShaderContext, ShaderCrateContext, ShaderFile,
     ShaderModuleContext, ShaderModuleDefinition, ShaderModuleDefinitionFile,
@@ -403,16 +406,38 @@ fn build_shader_ninja_file_for_shader_module(
                         module_ctx,
                         &compilation_params,
                         &shader_file,
-                        "dxil",
+                        ShaderCompileOptions {
+                            target_ir: ShaderTargetLanguage::Dxil,
+                            pipeline: ShaderPipeline::Direct,
+                        },
                     )?;
                 }
-                output_build_statement_for_shader(
-                    &mut ninja_file,
-                    module_ctx,
-                    &compilation_params,
-                    &shader_file,
-                    "spirv",
-                )?;
+
+                // On macos we need to use the glslc pipeline because we don't have the slang-glsl
+                // wrapper available for slang to do the compilation end-to-end.
+                if target_platform().is_macos() {
+                    output_build_statement_for_shader(
+                        &mut ninja_file,
+                        module_ctx,
+                        &compilation_params,
+                        &shader_file,
+                        ShaderCompileOptions {
+                            target_ir: ShaderTargetLanguage::Spirv,
+                            pipeline: ShaderPipeline::Glslc,
+                        },
+                    )?;
+                } else {
+                    output_build_statement_for_shader(
+                        &mut ninja_file,
+                        module_ctx,
+                        &compilation_params,
+                        &shader_file,
+                        ShaderCompileOptions {
+                            target_ir: ShaderTargetLanguage::Spirv,
+                            pipeline: ShaderPipeline::Direct,
+                        },
+                    )?;
+                }
             }
             if f_type.is_dir() {
                 let v = module_ctx.module_output_dir.join(entry_path_tail);
@@ -429,7 +454,7 @@ fn output_build_statement_for_shader(
     module_ctx: &ShaderModuleContext,
     compilation_params: &CompilationParams,
     shader_file: &ShaderFile,
-    backend: &str,
+    options: ShaderCompileOptions,
 ) -> anyhow::Result<()> {
     let rule = shader_file.ninja_rule();
 
@@ -442,24 +467,42 @@ fn output_build_statement_for_shader(
         .join(in_file_dir_relative_to_src)
         .join(shader_file.name_with_type);
 
-    if target_platform().is_windows() {
-        let out_file = ninja::prepare_path_for_build_statement(&out_file);
-        let in_file = ninja::prepare_path_for_build_statement(in_file);
+    let out_file = ninja::prepare_path_for_build_statement(&out_file);
+    let in_file = ninja::prepare_path_for_build_statement(in_file);
 
-        writeln!(
-            ninja_file,
-            "build {out_file}.{backend}: {rule}_{backend} {in_file}"
-        )?;
-    } else {
-        writeln!(
-            ninja_file,
-            "build {out_file}.{backend}: {rule}_{backend} {in_file}"
-        )?;
+    match options.target_ir {
+        crate::shader_system::ShaderTargetLanguage::Dxil => {
+            if options.pipeline != ShaderPipeline::Direct {
+                log::warn!(
+                    "Invalid shader pipeline '{}' for dxil target. Falling back to '{}'",
+                    options.pipeline,
+                    ShaderPipeline::Direct
+                );
+            }
+
+            writeln!(ninja_file, "build {out_file}.dxil: {rule}_dxil {in_file}")?;
+            compilation_params.write_ninja_overrides(ninja_file)?;
+            writeln!(ninja_file)?;
+        }
+        crate::shader_system::ShaderTargetLanguage::Spirv => match options.pipeline {
+            ShaderPipeline::Direct => {
+                writeln!(ninja_file, "build {out_file}.spirv: {rule}_spirv {in_file}")?;
+                compilation_params.write_ninja_overrides(ninja_file)?;
+                writeln!(ninja_file)?;
+            }
+            ShaderPipeline::Glslc => {
+                writeln!(ninja_file, "build {out_file}.glsl: {rule}_glsl {in_file}")?;
+                compilation_params.write_ninja_overrides(ninja_file)?;
+                writeln!(ninja_file)?;
+
+                writeln!(
+                    ninja_file,
+                    "build {out_file}.spirv: {rule}_glsl_stage2 {out_file}.glsl"
+                )?;
+                writeln!(ninja_file)?;
+            }
+        },
     }
-
-    compilation_params.write_ninja_overrides(ninja_file)?;
-
-    writeln!(ninja_file)?;
 
     Ok(())
 }
