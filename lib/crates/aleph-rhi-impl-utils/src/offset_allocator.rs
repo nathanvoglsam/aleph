@@ -29,19 +29,19 @@
 
 //
 // MIT License
-// 
+//
 // Copyright (c) 2023 Sebastian Aaltonen
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -388,7 +388,8 @@ impl OffsetAllocator {
             free_storage = self.free_storage;
             if self.used_bins_top != 0 {
                 let top_bin_index = 31 - self.used_bins_top.leading_zeros();
-                let leaf_bin_index = 31 - (self.used_bins[top_bin_index as usize] as u32).leading_zeros();
+                let leaf_bin_index =
+                    31 - (self.used_bins[top_bin_index as usize] as u32).leading_zeros();
                 largest_free_region = small_float::float_to_uint(
                     (top_bin_index << TOP_BINS_INDEX_SHIFT) | leaf_bin_index,
                 );
