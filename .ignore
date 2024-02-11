@@ -1,0 +1,16 @@
+lib/crates/aleph-vulkan-alloc/Vulkan-Headers/
+lib/crates/aleph-vulkan-alloc/VulkanMemoryAllocator/
+lib/crates/aleph-pix-raw/thirdparty
+lib/crates/aleph-dx12-alloc/thirdparty
+lib/crates/aleph-dx12-alloc/DirectX-Headers
+lib/crates/aleph-dx12-agility-sdk/thirdparty
+
+lib/plugins/aleph-sdl2/thirdparty
+
+submodules/D3D12MemoryAllocator/
+submodules/DirectX-Headers/
+submodules/DirectX12AgilitySDK/
+submodules/SDL2-builds/
+submodules/Vulkan-Headers/
+submodules/VulkanMemoryAllocator/
+submodules/WinPixEventRuntime/
