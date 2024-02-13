@@ -84,6 +84,10 @@ impl ITexture for Texture {
         desc
     }
 
+    fn desc_ref(&self) -> &TextureDesc {
+        &self.desc
+    }
+
     fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.views.lock();
 

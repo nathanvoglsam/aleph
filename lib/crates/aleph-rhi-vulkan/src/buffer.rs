@@ -97,6 +97,10 @@ impl IBuffer for Buffer {
         desc
     }
 
+    fn desc_ref(&self) -> &BufferDesc {
+        &self.desc
+    }
+
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
         unsafe {
             let ptr = self
