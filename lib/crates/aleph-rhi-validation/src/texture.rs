@@ -65,6 +65,10 @@ impl ITexture for ValidationTexture {
         self.inner.desc()
     }
 
+    fn desc_ref(&self) -> &TextureDesc {
+        self.inner.desc_ref()
+    }
+
     fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.views.lock();
         let view = if let Some(v) = views.get(desc) {

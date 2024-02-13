@@ -63,6 +63,10 @@ impl IBuffer for ValidationBuffer {
         self.inner.desc()
     }
 
+    fn desc_ref(&self) -> &BufferDesc {
+        self.inner.desc_ref()
+    }
+
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
         // Debug check for tracking that the resource is unmapped when trying to map it
         assert!(self

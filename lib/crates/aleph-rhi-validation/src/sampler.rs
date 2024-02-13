@@ -58,4 +58,8 @@ impl ISampler for ValidationSampler {
     fn desc(&self) -> SamplerDesc {
         self.inner.desc()
     }
+
+    fn desc_ref(&self) -> &SamplerDesc {
+        self.inner.desc_ref()
+    }
 }
