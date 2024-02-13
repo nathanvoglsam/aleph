@@ -74,4 +74,8 @@ impl ISampler for Sampler {
         desc.name = self.name.as_deref();
         desc
     }
+
+    fn desc_ref(&self) -> &SamplerDesc {
+        &self.desc
+    }
 }

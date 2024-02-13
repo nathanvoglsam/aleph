@@ -99,6 +99,10 @@ impl IBuffer for Buffer {
         desc
     }
 
+    fn desc_ref(&self) -> &BufferDesc {
+        &self.desc
+    }
+
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
         // TODO: should we expose 'read_range'?
         unsafe {
