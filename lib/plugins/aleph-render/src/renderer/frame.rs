@@ -83,7 +83,7 @@ impl PerFrameObjects {
             device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer(
                 set,
                 0,
-                &BufferDescriptorWrite::uniform_buffer(uniform_buffer.as_ref()),
+                &BufferDescriptorWrite::uniform_buffer(uniform_buffer.as_ref(), 256),
             )]);
         }
 
