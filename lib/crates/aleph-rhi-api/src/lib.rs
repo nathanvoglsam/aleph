@@ -2997,6 +2997,87 @@ pub struct DescriptorWriteDesc<'a> {
     pub writes: DescriptorWrites<'a>,
 }
 
+macro_rules! descriptor_write_wrappers {
+    ($fn_name: ident, $fn_at_name: ident, $dw_type: ident, $inner_type: ident, $lt: lifetime) => {
+        pub const fn $fn_name(
+            set: DescriptorSetHandle,
+            binding: u32,
+            v: &$lt $inner_type<$lt>,
+        ) -> Self {
+            Self::$fn_at_name(set, binding, 0, v)
+        }
+
+        pub const fn $fn_at_name(
+            set: DescriptorSetHandle,
+            binding: u32,
+            array_element: u32,
+            v: &$lt $inner_type<$lt>,
+        ) -> Self {
+            let writes = DescriptorWrites::$dw_type(::std::slice::from_ref(v));
+            Self::new_at(set, binding, array_element, writes)
+        }
+    };
+}
+
+macro_rules! descriptor_write_wrappers_no_lt {
+    ($fn_name: ident, $fn_at_name: ident, $dw_type: ident, $inner_type: ident, $lt: lifetime) => {
+        pub const fn $fn_name(
+            set: DescriptorSetHandle,
+            binding: u32,
+            v: &$lt $inner_type,
+        ) -> Self {
+            Self::$fn_at_name(set, binding, 0, v)
+        }
+
+        pub const fn $fn_at_name(
+            set: DescriptorSetHandle,
+            binding: u32,
+            array_element: u32,
+            v: &$lt $inner_type,
+        ) -> Self {
+            let writes = DescriptorWrites::$dw_type(::std::slice::from_ref(v));
+            Self::new_at(set, binding, array_element, writes)
+        }
+    };
+}
+
+impl<'a> DescriptorWriteDesc<'a> {
+    pub const fn new_at(
+        set: DescriptorSetHandle,
+        binding: u32,
+        array_element: u32,
+        writes: DescriptorWrites<'a>,
+    ) -> Self {
+        Self {
+            set,
+            binding,
+            array_element,
+            writes,
+        }
+    }
+
+    pub const fn sampler(
+        set: DescriptorSetHandle,
+        binding: u32,
+        v: &'a SamplerDescriptorWrite<'a>,
+    ) -> Self {
+        let writes = DescriptorWrites::Sampler(std::slice::from_ref(v));
+        Self::new_at(set, binding, 0, writes)
+    }
+
+    descriptor_write_wrappers!(texel_buffer, texel_buffer_at, TexelBuffer, TexelBufferDescriptorWrite, 'a);
+    descriptor_write_wrappers!(texel_buffer_rw, texel_buffer_rw_at, TexelBufferRW, TexelBufferDescriptorWrite, 'a);
+    descriptor_write_wrappers_no_lt!(texture, texture_at, Texture, ImageDescriptorWrite, 'a);
+    descriptor_write_wrappers_no_lt!(texture_rw, texture_rw_at, TextureRW, ImageDescriptorWrite, 'a);
+    descriptor_write_wrappers!(uniform_buffer, uniform_buffer_at, UniformBuffer, BufferDescriptorWrite, 'a);
+    descriptor_write_wrappers!(uniform_buffer_dynamic, uniform_buffer_dynamic_at, UniformBufferDynamic, BufferDescriptorWrite, 'a);
+    descriptor_write_wrappers!(structured_buffer, structured_buffer_at, StructuredBuffer, BufferDescriptorWrite, 'a);
+    descriptor_write_wrappers!(structured_buffer_rw, structured_buffer_rw_at, StructuredBufferRW, BufferDescriptorWrite, 'a);
+    descriptor_write_wrappers!(byte_address_buffer, byte_address_buffer_at, ByteAddressBuffer, BufferDescriptorWrite, 'a);
+    descriptor_write_wrappers!(byte_address_buffer_rw, byte_address_buffer_rw_at, ByteAddressBufferRW, BufferDescriptorWrite, 'a);
+    descriptor_write_wrappers_no_lt!(input_attachment, input_attachment_at, InputAttachment, ImageDescriptorWrite, 'a);
+}
+
 /// The set of descriptor write types.
 ///
 /// Each descriptor type needs different pieces of information in order to construct or write the
@@ -3104,6 +3185,29 @@ pub struct ImageDescriptorWrite {
     pub image_layout: ImageLayout,
 }
 
+impl ImageDescriptorWrite {
+    pub const fn new(image_view: ImageView, image_layout: ImageLayout) -> Self {
+        Self {
+            image_view,
+            image_layout,
+        }
+    }
+
+    pub const fn srv(image_view: ImageView) -> Self {
+        Self {
+            image_view,
+            image_layout: ImageLayout::ShaderReadOnly,
+        }
+    }
+
+    pub const fn uav(image_view: ImageView) -> Self {
+        Self {
+            image_view,
+            image_layout: ImageLayout::UnorderedAccess,
+        }
+    }
+}
+
 /// Describes the parameters of a descriptor to write when writing into a simple buffer like
 /// binding.
 #[derive(Clone)]
@@ -3122,6 +3226,21 @@ pub struct BufferDescriptorWrite<'a> {
     /// The stride/size of an individual structure in the structured buffer, in bytes. This is only
     /// relevant for structured buffers. All other buffer types will ignore this field.
     pub structure_byte_stride: u32,
+}
+
+impl<'a> BufferDescriptorWrite<'a> {
+    pub const fn uniform_buffer(buffer: &'a dyn IBuffer) -> Self {
+        Self::uniform_buffer_offset_len(buffer, 0, u32::MAX)
+    }
+
+    pub const fn uniform_buffer_offset_len(buffer: &'a dyn IBuffer, offset: u64, len: u32) -> Self {
+        Self {
+            buffer,
+            offset,
+            len,
+            structure_byte_stride: 0,
+        }
+    }
 }
 
 /// Describes the parameters of a descriptor to write when writing into a texel buffer binding.
@@ -3157,8 +3276,90 @@ pub struct ImageViewDesc {
     pub writable: bool,
 }
 
+impl ImageViewDesc {
+    #[inline]
+    pub fn srv_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
+        Self::srv_for_desc(texture.desc_ref())
+    }
+
+    #[inline]
+    pub fn srv_for_desc(desc: &TextureDesc) -> ImageViewDesc {
+        debug_assert!(desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE));
+        let view_type = match desc.dimension {
+            TextureDimension::Texture1D => ImageViewType::Tex1D,
+            TextureDimension::Texture2D => ImageViewType::Tex2D,
+            TextureDimension::Texture3D => ImageViewType::Tex3D,
+        };
+        let aspect = desc.format.aspect_mask();
+        ImageViewDesc {
+            format: desc.format,
+            view_type,
+            sub_resources: TextureSubResourceSet {
+                aspect,
+                base_mip_level: 0,
+                num_mip_levels: desc.mip_levels,
+                base_array_slice: 0,
+                num_array_slices: desc.array_size,
+            },
+            writable: false,
+        }
+    }
+
+    #[inline]
+    pub fn uav_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
+        Self::uav_for_desc(texture.desc_ref())
+    }
+
+    #[inline]
+    pub fn uav_for_desc(desc: &TextureDesc) -> ImageViewDesc {
+        debug_assert!(desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS));
+        let view_type = match desc.dimension {
+            TextureDimension::Texture1D => ImageViewType::Tex1D,
+            TextureDimension::Texture2D => ImageViewType::Tex2D,
+            TextureDimension::Texture3D => ImageViewType::Tex3D,
+        };
+        let aspect = desc.format.aspect_mask();
+        ImageViewDesc {
+            format: desc.format,
+            view_type,
+            sub_resources: TextureSubResourceSet {
+                aspect,
+                base_mip_level: 0,
+                num_mip_levels: desc.mip_levels,
+                base_array_slice: 0,
+                num_array_slices: desc.array_size,
+            },
+            writable: true,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct ImageView(NonNull<()>);
+
+impl ImageView {
+    #[inline]
+    pub fn get_srv_for(texture: &dyn ITexture) -> Result<Self, ()> {
+        texture.get_view(&ImageViewDesc::srv_for_texture(texture))
+    }
+
+    #[inline]
+    pub fn get_uav_for(texture: &dyn ITexture) -> Result<Self, ()> {
+        texture.get_view(&ImageViewDesc::uav_for_texture(texture))
+    }
+
+    pub const fn descriptor_write(self, image_layout: ImageLayout) -> ImageDescriptorWrite {
+        ImageDescriptorWrite::new(self, image_layout)
+    }
+
+    pub const fn srv_write(self) -> ImageDescriptorWrite {
+        ImageDescriptorWrite::srv(self)
+    }
+
+    pub const fn uav_write(self) -> ImageDescriptorWrite {
+        ImageDescriptorWrite::uav(self)
+    }
+}
 
 unsafe impl Send for ImageView {}
 unsafe impl Sync for ImageView {}
