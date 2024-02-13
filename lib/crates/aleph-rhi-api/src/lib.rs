@@ -579,6 +579,10 @@ pub trait IBuffer: IAny + IGetPlatformInterface + Send + Sync {
     /// Returns a [BufferDesc] that describes this [IBuffer]
     fn desc(&self) -> BufferDesc;
 
+    /// Returns a [BufferDesc] that describes this [IBuffer], but without the name component so we
+    /// can send a reference out.
+    fn desc_ref(&self) -> &BufferDesc;
+
     /// Returns a host virtual address pointer to a region of a mappable buffer.
     ///
     /// [IBuffer::map] will map the entire buffer.
@@ -618,6 +622,10 @@ pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
     /// Returns a [TextureDesc] that describes this [ITexture]
     fn desc(&self) -> TextureDesc;
 
+    /// Returns a [TextureDesc] that describes this [ITexture], but without the name component so we
+    /// can send a reference out.
+    fn desc_ref(&self) -> &TextureDesc;
+
     fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
 
     fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
@@ -630,6 +638,10 @@ pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
 
     /// Returns a [SamplerDesc] that describes this [ISampler]
     fn desc(&self) -> SamplerDesc;
+
+    /// Returns a [SamplerDesc] that describes this [ISampler], but without the name component so we
+    /// can send a reference out.
+    fn desc_ref(&self) -> &SamplerDesc;
 }
 
 //
@@ -785,7 +797,7 @@ pub trait ICommandList: IAny + IGetPlatformInterface + Send {
 // Descriptors
 
 #[repr(transparent)]
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct DescriptorSetHandle(NonNull<()>);
 
 impl DescriptorSetHandle {
