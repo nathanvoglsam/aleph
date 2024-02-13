@@ -46,6 +46,7 @@ use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::context::Context;
+use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::Fence;
@@ -451,7 +452,7 @@ impl IDevice for Device {
             }
 
             let create_info = vk::DescriptorPoolCreateInfo::builder()
-                .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET) // TODO: perhaps this could be exposed to the API? D3D12 could do it easy as just a bump allocator
+                .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET)
                 .max_sets(desc.num_sets)
                 .pool_sizes(&pool_sizes);
 
@@ -472,6 +473,79 @@ impl IDevice for Device {
             let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
                 _device: self.this.upgrade().unwrap(),
                 _layout: layout,
+                descriptor_pool,
+            });
+
+            Ok(pool)
+        })
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_descriptor_arena(
+        &self,
+        desc: &DescriptorArenaDesc,
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
+
+            const fn pool_size(
+                ty: vk::DescriptorType,
+                descriptor_count: u32,
+            ) -> vk::DescriptorPoolSize {
+                vk::DescriptorPoolSize {
+                    ty,
+                    descriptor_count,
+                }
+            }
+            let mut pool_sizes = [
+                pool_size(vk::DescriptorType::SAMPLER, 1),
+                // pool_size(vk::DescriptorType::COMBINED_IMAGE_SAMPLER, 0),
+                pool_size(vk::DescriptorType::SAMPLED_IMAGE, 8),
+                pool_size(vk::DescriptorType::STORAGE_IMAGE, 4),
+                pool_size(vk::DescriptorType::UNIFORM_TEXEL_BUFFER, 2),
+                pool_size(vk::DescriptorType::STORAGE_TEXEL_BUFFER, 2),
+                pool_size(vk::DescriptorType::UNIFORM_BUFFER, 4),
+                pool_size(vk::DescriptorType::STORAGE_BUFFER, 4),
+                pool_size(vk::DescriptorType::UNIFORM_BUFFER_DYNAMIC, 2),
+                // pool_size(vk::DescriptorType::STORAGE_BUFFER_DYNAMIC, 0),
+                // pool_size(vk::DescriptorType::INPUT_ATTACHMENT, 0),
+            ];
+            // Multiply the pool sizes by our multiplier. We encode the default sizes as the number
+            // of descriptors expected per '2' sets so we can do some nice integer math instead of
+            // icky float maths with fractional ratios
+            let multiplier = desc.num_sets.div_ceil(2).min(2);
+            for v in &mut pool_sizes {
+                v.descriptor_count *= multiplier;
+            }
+
+            let flags = match desc.arena_type {
+                DescriptorArenaType::Linear => vk::DescriptorPoolCreateFlags::empty(),
+                DescriptorArenaType::Heap => vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET,
+            };
+
+            let create_info = vk::DescriptorPoolCreateInfo::builder()
+                .flags(flags)
+                .max_sets(desc.num_sets)
+                .pool_sizes(&pool_sizes);
+
+            let descriptor_pool = unsafe {
+                self.device
+                    .create_descriptor_pool(&create_info, None)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+            };
+
+            set_name(
+                self.context.debug_loader.as_ref(),
+                self.device.handle(),
+                &bump,
+                descriptor_pool,
+                desc.name,
+            );
+
+            let pool: Box<dyn IDescriptorArena> = Box::new(DescriptorArena {
+                _device: self.this.upgrade().unwrap(),
                 descriptor_pool,
             });
 

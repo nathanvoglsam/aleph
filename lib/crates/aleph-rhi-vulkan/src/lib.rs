@@ -33,6 +33,7 @@ mod adapter;
 mod buffer;
 mod command_list;
 mod context;
+mod descriptor_arena;
 mod descriptor_pool;
 mod descriptor_set_layout;
 mod device;
