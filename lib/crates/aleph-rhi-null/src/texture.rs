@@ -64,6 +64,10 @@ impl ITexture for NullTexture {
         desc
     }
 
+    fn desc_ref(&self) -> &TextureDesc {
+        &self.desc
+    }
+
     fn get_view(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
         Ok(unsafe { std::mem::transmute(NonNull::<()>::dangling()) })
     }

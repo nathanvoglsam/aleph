@@ -64,6 +64,10 @@ impl IBuffer for NullBuffer {
         desc
     }
 
+    fn desc_ref(&self) -> &BufferDesc {
+        &self.desc
+    }
+
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
         unimplemented!()
     }
