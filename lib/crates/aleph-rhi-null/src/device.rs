@@ -30,6 +30,7 @@
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use aleph_rhi_api::*;
 
+use crate::NullDescriptorArena;
 use crate::{
     NullAdapter, NullBuffer, NullCommandList, NullComputePipeline, NullContext, NullDescriptorPool,
     NullDescriptorSetLayout, NullFence, NullGraphicsPipeline, NullPipelineLayout, NullQueue,
@@ -169,6 +170,21 @@ impl IDevice for NullDevice {
         let pool = Box::new(NullDescriptorPool {
             _device: self._this.upgrade().unwrap(),
             _layout: inner_layout,
+            counter: 1,
+        });
+
+        Ok(pool)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_descriptor_arena(
+        &self,
+        _desc: &DescriptorArenaDesc,
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
+        let pool = Box::new(NullDescriptorArena {
+            _device: self._this.upgrade().unwrap(),
             counter: 1,
         });
 

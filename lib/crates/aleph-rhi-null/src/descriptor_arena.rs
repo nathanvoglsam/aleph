@@ -27,46 +27,35 @@
 // SOFTWARE.
 //
 
-#[doc(hidden)]
-extern crate aleph_rhi_api;
+use aleph_any::{declare_interfaces, AnyArc};
+use aleph_rhi_api::*;
 
-mod adapter;
-mod buffer;
-mod command_list;
-mod context;
-mod descriptor_arena;
-mod descriptor_pool;
-mod descriptor_set_layout;
-mod device;
-mod encoder;
-mod fence;
-mod internal;
-mod pipeline;
-mod pipeline_layout;
-mod queue;
-mod sampler;
-mod semaphore;
-mod shader;
-mod surface;
-mod swap_chain;
-mod texture;
+use crate::NullDevice;
 
-pub use adapter::NullAdapter;
-pub use buffer::NullBuffer;
-pub use command_list::NullCommandList;
-pub use context::NullContext;
-pub use descriptor_arena::NullDescriptorArena;
-pub use descriptor_pool::NullDescriptorPool;
-pub use descriptor_set_layout::NullDescriptorSetLayout;
-pub use device::NullDevice;
-pub use encoder::NullEncoder;
-pub use fence::NullFence;
-pub use pipeline::{NullComputePipeline, NullGraphicsPipeline};
-pub use pipeline_layout::NullPipelineLayout;
-pub use queue::NullQueue;
-pub use sampler::NullSampler;
-pub use semaphore::NullSemaphore;
-pub use shader::NullShader;
-pub use surface::NullSurface;
-pub use swap_chain::NullSwapChain;
-pub use texture::NullTexture;
+pub struct NullDescriptorArena {
+    pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) counter: u64,
+}
+
+declare_interfaces!(NullDescriptorArena, [IDescriptorArena]);
+
+crate::impl_platform_interface_passthrough!(NullDescriptorArena);
+
+impl IDescriptorArena for NullDescriptorArena {
+    fn allocate_set(
+        &mut self,
+        _layout: &dyn IDescriptorSetLayout,
+    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+        let handle = self.counter;
+        self.counter += 1;
+        Ok(unsafe { DescriptorSetHandle::from_raw_int(handle).unwrap() })
+    }
+
+    unsafe fn free(&mut self, _sets: &[DescriptorSetHandle]) {
+        self.counter = 1;
+    }
+
+    unsafe fn reset(&mut self) {
+        self.counter = 1;
+    }
+}
