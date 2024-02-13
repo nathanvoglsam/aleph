@@ -27,30 +27,29 @@
 // SOFTWARE.
 //
 
-// TODO: generational index + extra indirection for validating use-after-free for descriptor sets
-
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 
 use crate::internal::descriptor_set::DescriptorSet;
-use crate::{ValidationDescriptorSetLayout, ValidationDevice};
+use crate::internal::unwrap;
+use crate::ValidationDescriptorSetLayout;
+use crate::ValidationDevice;
 
-pub struct ValidationDescriptorPool {
+pub struct ValidationDescriptorArena {
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _layout: AnyArc<ValidationDescriptorSetLayout>,
-    pub(crate) inner: Box<dyn IDescriptorPool>,
+    pub(crate) inner: Box<dyn IDescriptorArena>,
     pub(crate) pool_id: u64,
     pub(crate) set_objects: Vec<DescriptorSet>,
     pub(crate) free_list: Vec<DescriptorSetHandle>,
 }
 
-declare_interfaces!(ValidationDescriptorPool, [IDescriptorPool]);
+declare_interfaces!(ValidationDescriptorArena, [IDescriptorArena]);
 
-crate::impl_platform_interface_passthrough!(ValidationDescriptorPool);
+crate::impl_platform_interface_passthrough!(ValidationDescriptorArena);
 
-impl ValidationDescriptorPool {
+impl ValidationDescriptorArena {
     /// Checks if there is space to allocate a new set in the descriptor pool.
     ///
     /// # Warning
@@ -77,11 +76,15 @@ impl ValidationDescriptorPool {
     ///
     /// This function is expected to be used when allocating a new set out of `self.set_pool`
     /// instead of from the free list.
-    fn create_set_object_for_set_index(&mut self, inner: DescriptorSetHandle) -> DescriptorSet {
+    fn create_set_object_for_set_index(
+        &mut self,
+        inner: DescriptorSetHandle,
+        layout: AnyArc<ValidationDescriptorSetLayout>,
+    ) -> DescriptorSet {
         DescriptorSet {
             _magic_header: DescriptorSet::MAGIC_HEADER_VAL,
             _pool_id: self.pool_id,
-            _layout: self._layout.clone(),
+            _layout: layout,
             inner,
         }
     }
@@ -153,7 +156,7 @@ impl ValidationDescriptorPool {
         // If the pool is empty it's impossible for any handles to be from this particular pool.
         // This should never happen as we never allow empty descriptor pools.
         assert!(
-            self.set_objects.is_empty(),
+            !self.set_objects.is_empty(),
             "The DescriptorSet pool is empty, no handle can be valid"
         );
 
@@ -180,8 +183,11 @@ impl ValidationDescriptorPool {
     }
 }
 
-impl IDescriptorPool for ValidationDescriptorPool {
-    fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+impl IDescriptorArena for ValidationDescriptorArena {
+    fn allocate_set(
+        &mut self,
+        layout: &dyn IDescriptorSetLayout,
+    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         // First try and grab something from the free list
         if let Some(handle) = self.free_list.pop() {
             return Ok(handle);
@@ -190,11 +196,14 @@ impl IDescriptorPool for ValidationDescriptorPool {
         // We don't need to check OOM unless we're trying to allocate a new set object
         self.check_oom()?;
 
-        let inner = self.inner.allocate_set()?;
+        let layout = unwrap::descriptor_set_layout(layout);
+
+        let inner = self.inner.allocate_set(layout.inner.as_ref())?;
 
         // Take the next free set, we create fresh set objects linearly
         let set_index = self.set_objects.len();
-        let set = self.create_set_object_for_set_index(inner);
+        let layout = layout._this.upgrade().unwrap();
+        let set = self.create_set_object_for_set_index(inner, layout);
         self.set_objects.push(set);
 
         // Safety: set_index is guaranteed to be < set_objects.len() because it is created from
@@ -208,17 +217,6 @@ impl IDescriptorPool for ValidationDescriptorPool {
         };
 
         Ok(handle)
-    }
-
-    fn allocate_sets(
-        &mut self,
-        num_sets: usize,
-    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
-        let mut sets = Vec::with_capacity(num_sets);
-        for _ in 0..num_sets {
-            sets.push(self.allocate_set()?);
-        }
-        Ok(sets)
     }
 
     unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {

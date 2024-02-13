@@ -42,6 +42,7 @@ use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::{get_as_unwrapped, unwrap};
 use crate::semaphore::SemaphoreState;
 use crate::texture::{ValidationImageView, ValidationViewType};
+use crate::ValidationDescriptorArena;
 use crate::{
     ValidationAdapter, ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
     ValidationContext, ValidationDescriptorPool, ValidationDescriptorSetLayout, ValidationFence,
@@ -311,6 +312,26 @@ impl IDevice for ValidationDevice {
         let pool = Box::new(ValidationDescriptorPool {
             _device: self._this.upgrade().unwrap(),
             _layout: inner_layout,
+            inner,
+            pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
+            set_objects: Vec::with_capacity(desc.num_sets as usize),
+            free_list: Vec::with_capacity(128),
+        });
+
+        Ok(pool)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_descriptor_arena(
+        &self,
+        desc: &DescriptorArenaDesc,
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
+        let inner = self.inner.create_descriptor_arena(desc)?;
+
+        let pool = Box::new(ValidationDescriptorArena {
+            _device: self._this.upgrade().unwrap(),
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
             set_objects: Vec::with_capacity(desc.num_sets as usize),
