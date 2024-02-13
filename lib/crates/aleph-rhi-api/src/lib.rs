@@ -281,6 +281,11 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError>;
 
+    fn create_descriptor_arena(
+        &self,
+        desc: &DescriptorArenaDesc,
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError>;
+
     fn create_pipeline_layout(
         &self,
         desc: &PipelineLayoutDesc,
@@ -860,6 +865,70 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
         let mut sets = Vec::with_capacity(num_sets);
         for _ in 0..num_sets {
             sets.push(self.allocate_set()?);
+        }
+        Ok(sets)
+    }
+
+    /// Will free the given descriptor sets, allowing them and their memory to be reused.
+    ///
+    /// # Safety
+    ///
+    /// [DescriptorSetHandle] is semantically a pointer. This function will take ownership of the
+    /// set, so it is unsafe to call this function and then use the [DescriptorSetHandle] again.
+    /// That would be an immediate use after free.
+    ///
+    /// This also means double-freeing is unsafe.
+    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]);
+
+    /// Will free all the descriptor sets allocated from the pool, resetting it to an empty state
+    /// where it can allocate sets again. Even after an OOM error.
+    ///
+    /// # Safety
+    ///
+    /// The safety requirements are similar to [IDescriptorPool::free]. This will implicitly take
+    /// ownership of all [DescriptorSetHandle]s allocated from the pool and free them. It is the
+    /// responsibility of the caller to ensure that all handles are never re-used after they are
+    /// freed.
+    ///
+    /// This function requires extra care as it will affect every set in the pool instead of only
+    /// the individual sets requested like in 'free'.
+    unsafe fn reset(&mut self);
+}
+
+pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
+    /// Allocates a new individual descriptor set from the pool.
+    ///
+    /// May fail if the pool's backing memory has been exhausted.
+    ///
+    /// # Warning
+    ///
+    /// The descriptor sets returned by a pool will by default contain invalid descriptors. That is,
+    /// assume they contain uninitialized memory. It is required to update the set with fresh
+    /// descriptors before use.
+    ///
+    /// Vulkan requires this behavior for valid API usage. Other implementations may re-use
+    /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
+    /// stale descriptors.
+    fn allocate_set(
+        &mut self,
+        layout: &dyn IDescriptorSetLayout,
+    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError>;
+
+    /// Allocates `num_sets` descriptors from the pool. Some implementations may be able to
+    /// implement this more efficiently than naively calling [IDescriptorPool::allocate_set] in a
+    /// loop.
+    ///
+    /// # Warning
+    ///
+    /// See [IDescriptorPool::allocate_set] for some pitfalls and warnings to check for.
+    fn allocate_sets(
+        &mut self,
+        layout: &dyn IDescriptorSetLayout,
+        num_sets: usize,
+    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
+        let mut sets = Vec::with_capacity(num_sets);
+        for _ in 0..num_sets {
+            sets.push(self.allocate_set(layout)?);
         }
         Ok(sets)
     }
@@ -2971,6 +3040,37 @@ pub struct DescriptorPoolDesc<'a> {
     /// The descriptor set layout that the descriptor pool will allocate descriptor sets for. A pool
     /// can only allocate descriptor sets with a single layout.
     pub layout: &'a dyn IDescriptorSetLayout,
+
+    /// The number of sets the pool should have capacity for. A pool is only guaranteed to have
+    /// enough space for `num_sets` descriptor sets.
+    pub num_sets: u32,
+
+    /// The name of the object
+    pub name: Option<&'a str>,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum DescriptorArenaType {
+    /// A linear (bump) allocation based arena. Allocating sets should be cheap(er) but freeing
+    /// individual sets is not possible.
+    Linear,
+
+    /// A general purpose heap allocation based arena. Slower to allocate from but sets can be freed
+    /// individually without resetting the whole arena.
+    Heap,
+}
+
+impl Default for DescriptorArenaType {
+    fn default() -> Self {
+        Self::Linear
+    }
+}
+
+#[derive(Clone)]
+pub struct DescriptorArenaDesc<'a> {
+    /// The type of arena, which controls which allocation algorithm is used and which features
+    /// are supported.
+    pub arena_type: DescriptorArenaType,
 
     /// The number of sets the pool should have capacity for. A pool is only guaranteed to have
     /// enough space for `num_sets` descriptor sets.
