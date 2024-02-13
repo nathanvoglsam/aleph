@@ -68,7 +68,7 @@ impl PerFrameObjects {
             name: Some("egui::DescriptorPool"),
         };
         let mut descriptor_pool = device.create_descriptor_pool(&desc).unwrap();
-        let descriptor_set = descriptor_pool.allocate_set().unwrap();
+        let set = descriptor_pool.allocate_set().unwrap();
 
         let transient_bundle = frame_graph.allocate_transient_resource_bundle(device);
         let uniform_buffer = device
@@ -80,17 +80,11 @@ impl PerFrameObjects {
             })
             .unwrap();
         unsafe {
-            device.update_descriptor_sets(&[DescriptorWriteDesc {
-                set: descriptor_set.clone(),
-                binding: 0,
-                array_element: 0,
-                writes: DescriptorWrites::UniformBuffer(&[BufferDescriptorWrite {
-                    buffer: uniform_buffer.as_ref(),
-                    offset: 0,
-                    len: 256,
-                    structure_byte_stride: 0,
-                }]),
-            }]);
+            device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer(
+                set,
+                0,
+                &BufferDescriptorWrite::uniform_buffer(uniform_buffer.as_ref()),
+            )]);
         }
 
         Self {
@@ -103,7 +97,7 @@ impl PerFrameObjects {
             font_staged: None,
             font_staged_size: (0, 0),
             descriptor_pool,
-            descriptor_set,
+            descriptor_set: set,
             done_fence: device.create_fence(true).unwrap(),
         }
     }
@@ -242,22 +236,10 @@ impl PerFrameObjects {
             })
             .unwrap();
 
+        let set = self.descriptor_set;
         device.update_descriptor_sets(&[
-            DescriptorWriteDesc {
-                set: self.descriptor_set.clone(),
-                binding: 1,
-                array_element: 0,
-                writes: DescriptorWrites::Texture(&[ImageDescriptorWrite {
-                    image_view: view,
-                    image_layout: ImageLayout::ShaderReadOnly,
-                }]),
-            },
-            DescriptorWriteDesc {
-                set: self.descriptor_set.clone(),
-                binding: 2,
-                array_element: 0,
-                writes: DescriptorWrites::Sampler(&[SamplerDescriptorWrite { sampler }]),
-            },
+            DescriptorWriteDesc::texture(set, 1, &view.srv_write()),
+            DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite { sampler }),
         ]);
     }
 

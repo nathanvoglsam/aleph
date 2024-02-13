@@ -38,10 +38,13 @@ use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 
 struct LightingResolvePassPayload {
+    device: AnyArc<dyn IDevice>,
     gbuffer0: ResourceRef,
     gbuffer1: ResourceRef,
     gbuffer2: ResourceRef,
     lighting: ResourceMut,
+    set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pipeline: AnyArc<dyn IComputePipeline>,
 }
 pub struct LightingResolvePassOutput {
@@ -129,64 +132,52 @@ pub fn pass(
                 .unwrap();
 
             data.write(LightingResolvePassPayload {
+                device: device.upgrade(),
                 gbuffer0,
                 gbuffer1,
                 gbuffer2,
                 lighting,
+                set_layout,
+                pipeline_layout,
                 pipeline,
             });
             pin_board.publish(LightingResolvePassOutput { lighting });
         },
-        |data, encoder, resources, _| unsafe {
+        |data, encoder, resources, context| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
 
-            let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
-            let gbuffer0_desc = gbuffer0.desc();
-            let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
-            let gbuffer1_desc = gbuffer1.desc();
-            let gbuffer2 = resources.get_texture(data.gbuffer2).unwrap();
-            let gbuffer2_desc = gbuffer2.desc();
-            let lighting = resources.get_texture(data.lighting).unwrap();
-            let lighting_desc = lighting.desc();
+            // let arena: &mut dyn IDescriptorArena = ();
 
-            let _gbuffer0_srv = gbuffer0
-                .get_view(&ImageViewDesc {
-                    format: gbuffer0_desc.format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color(),
-                    writable: false,
-                })
-                .unwrap();
-            let _gbuffer1_srv = gbuffer1
-                .get_view(&ImageViewDesc {
-                    format: gbuffer1_desc.format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color(),
-                    writable: false,
-                })
-                .unwrap();
-            let _gbuffer2_srv = gbuffer2
-                .get_view(&ImageViewDesc {
-                    format: gbuffer2_desc.format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color(),
-                    writable: false,
-                })
-                .unwrap();
-            let _lighting_uav = lighting.get_view(&ImageViewDesc {
-                format: lighting_desc.format,
-                view_type: ImageViewType::Tex2D,
-                sub_resources: TextureSubResourceSet::with_color(),
-                writable: true,
-            });
+            let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
+            let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
+            let gbuffer2 = resources.get_texture(data.gbuffer2).unwrap();
+            let lighting = resources.get_texture(data.lighting).unwrap();
+            let _gbuffer0_srv = ImageView::get_srv_for(gbuffer0).unwrap();
+            let _gbuffer1_srv = ImageView::get_srv_for(gbuffer1).unwrap();
+            let _gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
+            let _lighting_uav = ImageView::get_uav_for(lighting).unwrap();
+
+            // let set = arena.allocate_set(data.set_layout.as_ref()).unwrap();
+            // data.device.update_descriptor_sets(&[
+            //     DescriptorWriteDesc::texture(set, 0, &gbuffer0_srv.srv_write()),
+            //     DescriptorWriteDesc::texture(set, 1, &gbuffer1_srv.srv_write()),
+            //     DescriptorWriteDesc::texture(set, 2, &gbuffer2_srv.srv_write()),
+            //     DescriptorWriteDesc::texture(set, 3, &lighting_uav.uav_write()),
+            // ]);
 
             // encoder.bind_compute_pipeline(data.pipeline.as_ref());
-            //
-            // // TODO: Bind Descriptors
-            //
-            // let group_count_x = data.back_buffer_extent.width.div_ceil(8);
-            // let group_count_y = data.back_buffer_extent.height.div_ceil(8);
+            // encoder.bind_descriptor_sets(
+            //     data.pipeline_layout.as_ref(),
+            //     PipelineBindPoint::Graphics,
+            //     0,
+            //     &[set],
+            //     &[],
+            // );
+
+            // let gbuffer0_desc = gbuffer0.desc_ref();
+            // let group_count_x = gbuffer0_desc.width.div_ceil(8);
+            // let group_count_y = gbuffer0_desc.height.div_ceil(8);
             // encoder.dispatch(group_count_x, group_count_y, 1);
         },
     );
