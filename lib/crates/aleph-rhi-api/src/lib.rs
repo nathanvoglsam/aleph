@@ -915,12 +915,12 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError>;
 
     /// Allocates `num_sets` descriptors from the pool. Some implementations may be able to
-    /// implement this more efficiently than naively calling [IDescriptorPool::allocate_set] in a
+    /// implement this more efficiently than naively calling [IDescriptorArena::allocate_set] in a
     /// loop.
     ///
     /// # Warning
     ///
-    /// See [IDescriptorPool::allocate_set] for some pitfalls and warnings to check for.
+    /// See [IDescriptorArena::allocate_set] for some pitfalls and warnings to check for.
     fn allocate_sets(
         &mut self,
         layout: &dyn IDescriptorSetLayout,
@@ -934,6 +934,12 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     }
 
     /// Will free the given descriptor sets, allowing them and their memory to be reused.
+    /// 
+    /// # Warning
+    /// 
+    /// Depending on the [DescriptorArenaType] this arena was created with, this may not free any
+    /// memory back to the arena. For those arena types it is required to call
+    /// [IDescriptorArena::reset] to reset all allocations at once for memory to be freed.
     ///
     /// # Safety
     ///
@@ -949,7 +955,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     ///
     /// # Safety
     ///
-    /// The safety requirements are similar to [IDescriptorPool::free]. This will implicitly take
+    /// The safety requirements are similar to [IDescriptorArena::free]. This will implicitly take
     /// ownership of all [DescriptorSetHandle]s allocated from the pool and free them. It is the
     /// responsibility of the caller to ensure that all handles are never re-used after they are
     /// freed.
