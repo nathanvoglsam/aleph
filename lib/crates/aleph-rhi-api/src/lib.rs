@@ -3229,11 +3229,11 @@ pub struct BufferDescriptorWrite<'a> {
 }
 
 impl<'a> BufferDescriptorWrite<'a> {
-    pub const fn uniform_buffer(buffer: &'a dyn IBuffer) -> Self {
-        Self::uniform_buffer_offset_len(buffer, 0, u32::MAX)
+    pub const fn uniform_buffer(buffer: &'a dyn IBuffer, len: u32) -> Self {
+        Self::uniform_buffer_offset(buffer, 0, len)
     }
 
-    pub const fn uniform_buffer_offset_len(buffer: &'a dyn IBuffer, offset: u64, len: u32) -> Self {
+    pub const fn uniform_buffer_offset(buffer: &'a dyn IBuffer, offset: u64, len: u32) -> Self {
         Self {
             buffer,
             offset,
