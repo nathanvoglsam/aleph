@@ -934,9 +934,9 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     }
 
     /// Will free the given descriptor sets, allowing them and their memory to be reused.
-    /// 
+    ///
     /// # Warning
-    /// 
+    ///
     /// Depending on the [DescriptorArenaType] this arena was created with, this may not free any
     /// memory back to the arena. For those arena types it is required to call
     /// [IDescriptorArena::reset] to reset all allocations at once for memory to be freed.
@@ -2572,6 +2572,21 @@ pub struct TextureDesc<'a> {
 }
 
 impl<'a> TextureDesc<'a> {
+    pub const fn get_extent_2d(&self) -> Extent2D {
+        Extent2D {
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    pub const fn get_extent_3d(&self) -> Extent3D {
+        Extent3D {
+            width: self.width,
+            height: self.height,
+            depth: self.depth,
+        }
+    }
+
     /// A utility function that strips the debug name from the description so we can get a static
     /// lifetime on the desc
     pub const fn strip_name(self) -> TextureDesc<'static> {
@@ -2608,6 +2623,133 @@ impl<'a> TextureDesc<'a> {
             usage: self.usage,
             name: Some(name),
         }
+    }
+
+    pub const fn with_width(mut self, width: u32) -> Self {
+        self.width = width;
+        self
+    }
+
+    pub const fn with_height(mut self, height: u32) -> Self {
+        self.height = height;
+        self
+    }
+
+    pub const fn with_depth(mut self, depth: u32) -> Self {
+        self.depth = depth;
+        self
+    }
+
+    pub const fn with_format(mut self, format: Format) -> Self {
+        self.format = format;
+        self
+    }
+
+    pub const fn with_dimension(mut self, dimension: TextureDimension) -> Self {
+        self.dimension = dimension;
+        self
+    }
+
+    pub const fn with_clear_value(mut self, clear_value: OptimalClearValue) -> Self {
+        self.clear_value = Some(clear_value);
+        self
+    }
+
+    pub const fn with_array_size(mut self, array_size: u32) -> Self {
+        self.array_size = array_size;
+        self
+    }
+
+    pub const fn with_mip_levels(mut self, mip_levels: u32) -> Self {
+        self.mip_levels = mip_levels;
+        self
+    }
+
+    pub const fn with_sample_count(mut self, sample_count: u32) -> Self {
+        self.sample_count = sample_count;
+        self
+    }
+
+    pub const fn with_sample_quality(mut self, sample_quality: u32) -> Self {
+        self.sample_quality = sample_quality;
+        self
+    }
+
+    pub const fn with_usage(mut self, usage: ResourceUsageFlags) -> Self {
+        self.usage = usage;
+        self
+    }
+
+    pub const fn texture_1d(width: u32) -> TextureDesc<'static> {
+        TextureDesc {
+            width,
+            height: 1,
+            depth: 1,
+            format: Format::R8Unorm,
+            dimension: TextureDimension::Texture1D,
+            clear_value: None,
+            array_size: 1,
+            mip_levels: 1,
+            sample_count: 1,
+            sample_quality: 0,
+            usage: ResourceUsageFlags::NONE,
+            name: None,
+        }
+    }
+
+    pub const fn texture_1d_array(width: u32, array_size: u32) -> TextureDesc<'static> {
+        Self::texture_1d(width).with_array_size(array_size)
+    }
+
+    pub const fn texture_2d(width: u32, height: u32) -> TextureDesc<'static> {
+        TextureDesc {
+            width,
+            height,
+            depth: 1,
+            format: Format::R8Unorm,
+            dimension: TextureDimension::Texture2D,
+            clear_value: None,
+            array_size: 1,
+            mip_levels: 1,
+            sample_count: 1,
+            sample_quality: 0,
+            usage: ResourceUsageFlags::NONE,
+            name: None,
+        }
+    }
+
+    pub const fn texture_2d_array(
+        width: u32,
+        height: u32,
+        array_size: u32,
+    ) -> TextureDesc<'static> {
+        Self::texture_2d(width, height).with_array_size(array_size)
+    }
+
+    pub const fn texture_3d(width: u32, height: u32, depth: u32) -> TextureDesc<'static> {
+        TextureDesc {
+            width,
+            height,
+            depth,
+            format: Format::R8Unorm,
+            dimension: TextureDimension::Texture3D,
+            clear_value: None,
+            array_size: 1,
+            mip_levels: 1,
+            sample_count: 1,
+            sample_quality: 0,
+            usage: ResourceUsageFlags::NONE,
+            name: None,
+        }
+    }
+
+    pub const fn texture_3d_array(
+        width: u32,
+        height: u32,
+        depth: u32,
+        array_size: u32,
+    ) -> TextureDesc<'static> {
+        Self::texture_3d(width, height, depth).with_array_size(array_size)
     }
 }
 
@@ -2896,6 +3038,17 @@ pub enum DescriptorType {
 
     /// UNIMPLEMENTED
     InputAttachment,
+}
+
+impl DescriptorType {
+    pub const fn binding(self, num: u32) -> DescriptorSetLayoutBinding<'static> {
+        DescriptorSetLayoutBinding {
+            binding_num: num,
+            binding_type: self,
+            binding_count: None,
+            static_samplers: None,
+        }
+    }
 }
 
 impl Display for DescriptorType {
@@ -3436,6 +3589,62 @@ impl ImageViewDesc {
                 num_array_slices: desc.array_size,
             },
             writable: true,
+        }
+    }
+
+    #[inline]
+    pub fn rtv_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
+        Self::rtv_for_desc(texture.desc_ref())
+    }
+
+    #[inline]
+    pub fn rtv_for_desc(desc: &TextureDesc) -> ImageViewDesc {
+        debug_assert!(desc.usage.contains(ResourceUsageFlags::RENDER_TARGET));
+        let view_type = match desc.dimension {
+            TextureDimension::Texture1D => ImageViewType::Tex1D,
+            TextureDimension::Texture2D => ImageViewType::Tex2D,
+            TextureDimension::Texture3D => ImageViewType::Tex3D,
+        };
+        let aspect = desc.format.aspect_mask();
+        ImageViewDesc {
+            format: desc.format,
+            view_type,
+            sub_resources: TextureSubResourceSet {
+                aspect,
+                base_mip_level: 0,
+                num_mip_levels: desc.mip_levels,
+                base_array_slice: 0,
+                num_array_slices: desc.array_size,
+            },
+            writable: false,
+        }
+    }
+
+    #[inline]
+    pub fn dsv_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
+        Self::rtv_for_desc(texture.desc_ref())
+    }
+
+    #[inline]
+    pub fn dsv_for_desc(desc: &TextureDesc) -> ImageViewDesc {
+        debug_assert!(desc.usage.contains(ResourceUsageFlags::RENDER_TARGET));
+        let view_type = match desc.dimension {
+            TextureDimension::Texture1D => ImageViewType::Tex1D,
+            TextureDimension::Texture2D => ImageViewType::Tex2D,
+            TextureDimension::Texture3D => ImageViewType::Tex3D,
+        };
+        let aspect = desc.format.aspect_mask();
+        ImageViewDesc {
+            format: desc.format,
+            view_type,
+            sub_resources: TextureSubResourceSet {
+                aspect,
+                base_mip_level: 0,
+                num_mip_levels: desc.mip_levels,
+                base_array_slice: 0,
+                num_array_slices: desc.array_size,
+            },
+            writable: false,
         }
     }
 }
