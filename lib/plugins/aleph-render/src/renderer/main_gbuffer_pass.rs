@@ -88,24 +88,12 @@ pub fn pass(
             let gbuffer2 =
                 resources.create_texture(&gbuffer2_desc, ResourceUsageFlags::RENDER_TARGET);
 
-            let depth_buffer_format = Format::Depth32Float;
-            let depth_buffer = resources.create_texture(
-                &TextureDesc {
-                    width: b_desc.width,
-                    height: b_desc.height,
-                    depth: 1,
-                    format: depth_buffer_format,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: Some(OptimalClearValue::DepthStencil(1.0, 0)),
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    usage: Default::default(),
-                    name: Some("Gbuffer1"),
-                },
-                ResourceUsageFlags::RENDER_TARGET,
-            );
+            let depth_buffer_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+                .with_format(Format::Depth32Float)
+                .with_clear_value(OptimalClearValue::DepthStencil(1.0, 0))
+                .with_name("DepthBuffer");
+            let depth_buffer =
+                resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
 
             let descriptor_set_layout = create_descriptor_set_layout(device);
             let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
