@@ -169,23 +169,15 @@ pub fn pass(
                     .unwrap();
 
             // Get an RTV from our imported back buffer
-            let desc = back_buffer.desc();
             let image_view = back_buffer
-                .get_rtv(&ImageViewDesc {
-                    format: desc.format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color(),
-                    writable: true,
-                })
+                .get_rtv(&ImageViewDesc::rtv_for_texture(back_buffer))
                 .unwrap();
 
             // Begin a render pass targeting our back buffer
+            let desc = back_buffer.desc_ref();
             encoder.begin_rendering(&BeginRenderingInfo {
                 layer_count: 1,
-                extent: Extent2D {
-                    width: desc.width,
-                    height: desc.height,
-                },
+                extent: desc.get_extent_2d(),
                 color_attachments: &[RenderingColorAttachmentInfo {
                     image_view,
                     image_layout: ImageLayout::ColorAttachment,
@@ -355,10 +347,9 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
     let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
         visibility: DescriptorShaderVisibility::All,
         items: &[
-            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
-                .with_binding_num(0),
-            DescriptorSetLayoutBinding::with_type(DescriptorType::Texture).with_binding_num(1),
-            DescriptorSetLayoutBinding::with_type(DescriptorType::Sampler).with_binding_num(2),
+            DescriptorType::UniformBuffer.binding(0),
+            DescriptorType::Texture.binding(1),
+            DescriptorType::Sampler.binding(2),
         ],
         name: Some("egui::DescriptorSetLayout"),
     };

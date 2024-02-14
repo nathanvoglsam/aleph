@@ -38,13 +38,9 @@ use crate::shaders;
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,
-    gbuffer0_format: Format,
     gbuffer1: ResourceMut,
-    gbuffer1_format: Format,
     gbuffer2: ResourceMut,
-    gbuffer2_format: Format,
     depth_buffer: ResourceMut,
-    depth_buffer_format: Format,
     gbuffer_extent: Extent2D,
     pipeline: AnyArc<dyn IGraphicsPipeline>,
 }
@@ -69,64 +65,28 @@ pub fn pass(
             let b_desc = &back_buffer_info.desc;
 
             // BaseColor+AO
-            let gbuffer0_format = Format::Rgba8Unorm;
-            let gbuffer0 = resources.create_texture(
-                &TextureDesc {
-                    width: b_desc.width,
-                    height: b_desc.height,
-                    depth: 1,
-                    format: gbuffer0_format,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: Some(OptimalClearValue::ColorInt(0x00000000)),
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    usage: Default::default(),
-                    name: Some("Gbuffer0"),
-                },
-                ResourceUsageFlags::RENDER_TARGET,
-            );
+            let gbuffer0_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+                .with_format(Format::Rgba8Unorm)
+                .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
+                .with_name("Gbuffer0");
+            let gbuffer0 =
+                resources.create_texture(&gbuffer0_desc, ResourceUsageFlags::RENDER_TARGET);
 
             // WorldNormal
-            let gbuffer1_format = Format::Rgba32Float;
-            let gbuffer1 = resources.create_texture(
-                &TextureDesc {
-                    width: b_desc.width,
-                    height: b_desc.height,
-                    depth: 1,
-                    format: gbuffer1_format,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: Some(OptimalClearValue::ColorInt(0x00000000)),
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    usage: Default::default(),
-                    name: Some("Gbuffer1"),
-                },
-                ResourceUsageFlags::RENDER_TARGET,
-            );
+            let gbuffer1_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+                .with_format(Format::Rgba32Float)
+                .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
+                .with_name("Gbuffer1");
+            let gbuffer1 =
+                resources.create_texture(&gbuffer1_desc, ResourceUsageFlags::RENDER_TARGET);
 
             // Metal+Roughnes
-            let gbuffer2_format = Format::Rg8Unorm;
-            let gbuffer2 = resources.create_texture(
-                &TextureDesc {
-                    width: b_desc.width,
-                    height: b_desc.height,
-                    depth: 1,
-                    format: gbuffer2_format,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: Some(OptimalClearValue::ColorInt(0x00000000)),
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    usage: Default::default(),
-                    name: Some("Gbuffer2"),
-                },
-                ResourceUsageFlags::RENDER_TARGET,
-            );
+            let gbuffer2_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+                .with_format(Format::Rg8Unorm)
+                .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
+                .with_name("Gbuffer2");
+            let gbuffer2 =
+                resources.create_texture(&gbuffer2_desc, ResourceUsageFlags::RENDER_TARGET);
 
             let depth_buffer_format = Format::Depth32Float;
             let depth_buffer = resources.create_texture(
@@ -168,13 +128,9 @@ pub fn pass(
 
             data.write(MainGBufferPassPayload {
                 gbuffer0,
-                gbuffer0_format,
                 gbuffer1,
-                gbuffer1_format,
                 gbuffer2,
-                gbuffer2_format,
                 depth_buffer,
-                depth_buffer_format,
                 gbuffer_extent: Extent2D::new(b_desc.width, b_desc.height),
                 pipeline: graphics_pipeline,
             });
@@ -195,39 +151,19 @@ pub fn pass(
             let depth_buffer = resources.get_texture(data.depth_buffer).unwrap();
 
             let gbuffer0_rtv = gbuffer0
-                .get_rtv(&ImageViewDesc {
-                    format: data.gbuffer0_format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color(),
-                    writable: true,
-                })
+                .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer0))
                 .unwrap();
 
             let gbuffer1_rtv = gbuffer1
-                .get_rtv(&ImageViewDesc {
-                    format: data.gbuffer1_format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color(),
-                    writable: true,
-                })
+                .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer1))
                 .unwrap();
 
             let gbuffer2_rtv = gbuffer2
-                .get_rtv(&ImageViewDesc {
-                    format: data.gbuffer2_format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color(),
-                    writable: true,
-                })
+                .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer2))
                 .unwrap();
 
             let depth_buffer_dsv = depth_buffer
-                .get_dsv(&ImageViewDesc {
-                    format: data.depth_buffer_format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_depth(),
-                    writable: true,
-                })
+                .get_dsv(&ImageViewDesc::dsv_for_texture(depth_buffer))
                 .unwrap();
 
             // Begin a render pass targeting our back buffer

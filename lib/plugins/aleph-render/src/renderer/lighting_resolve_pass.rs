@@ -77,20 +77,10 @@ pub fn pass(
                 ResourceUsageFlags::SHADER_RESOURCE,
             );
             let lighting = resources.create_texture(
-                &TextureDesc {
-                    width: b_desc.width,
-                    height: b_desc.height,
-                    depth: 1,
-                    format: Format::Rgba16Float,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: Some(OptimalClearValue::ColorInt(0x000000FF)),
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    usage: Default::default(),
-                    name: Some("OutputLighting"),
-                },
+                &TextureDesc::texture_2d(b_desc.width, b_desc.height)
+                    .with_format(Format::Rgba16Float)
+                    .with_clear_value(OptimalClearValue::ColorInt(0x000000FF))
+                    .with_name("OutputLighting"),
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
 
@@ -98,14 +88,10 @@ pub fn pass(
                 .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
                     visibility: DescriptorShaderVisibility::Compute,
                     items: &[
-                        DescriptorSetLayoutBinding::with_type(DescriptorType::Texture)
-                            .with_binding_num(0),
-                        DescriptorSetLayoutBinding::with_type(DescriptorType::Texture)
-                            .with_binding_num(1),
-                        DescriptorSetLayoutBinding::with_type(DescriptorType::Texture)
-                            .with_binding_num(2),
-                        DescriptorSetLayoutBinding::with_type(DescriptorType::TextureRW)
-                            .with_binding_num(3),
+                        DescriptorType::Texture.binding(0),
+                        DescriptorType::Texture.binding(1),
+                        DescriptorType::Texture.binding(2),
+                        DescriptorType::TextureRW.binding(3),
                     ],
                     name: Some("DeferredLightingDescriptorSetLayout"),
                 })
