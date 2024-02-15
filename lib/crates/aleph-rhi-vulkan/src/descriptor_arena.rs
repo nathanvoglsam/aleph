@@ -54,7 +54,7 @@ impl IGetPlatformInterface for DescriptorArena {
 
 impl IDescriptorArena for DescriptorArena {
     fn allocate_set(
-        &mut self,
+        &self,
         layout: &dyn IDescriptorSetLayout,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         let layout = unwrap::descriptor_set_layout(layout);
@@ -74,7 +74,7 @@ impl IDescriptorArena for DescriptorArena {
     }
 
     fn allocate_sets(
-        &mut self,
+        &self,
         layout: &dyn IDescriptorSetLayout,
         num_sets: usize,
     ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
@@ -96,7 +96,7 @@ impl IDescriptorArena for DescriptorArena {
         unsafe { Ok(core::mem::transmute(descriptor_sets.to_vec())) }
     }
 
-    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&self, sets: &[DescriptorSetHandle]) {
         let descriptor_sets =
             core::slice::from_raw_parts(sets.as_ptr() as *const vk::DescriptorSet, sets.len());
         self._device
@@ -105,7 +105,7 @@ impl IDescriptorArena for DescriptorArena {
             .unwrap()
     }
 
-    unsafe fn reset(&mut self) {
+    unsafe fn reset(&self) {
         self._device
             .device
             .reset_descriptor_pool(self.descriptor_pool, Default::default())
