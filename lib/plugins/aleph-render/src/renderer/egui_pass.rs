@@ -70,6 +70,25 @@ pub fn pass(
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
     const INDEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
 
+    let descriptor_set_layout = create_descriptor_set_layout(device);
+    let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
+
+    let vertex_shader = shader_db
+        .load(shaders::aleph_render::egui::egui_vert())
+        .unwrap();
+    let fragment_shader = shader_db
+        .load(shaders::aleph_render::egui::egui_frag())
+        .unwrap();
+    let vertex_shader = device.create_shader(&vertex_shader).unwrap();
+    let fragment_shader = device.create_shader(&fragment_shader).unwrap();
+
+    let graphics_pipeline = create_pipeline_state(
+        device,
+        pipeline_layout.as_ref(),
+        vertex_shader.as_ref(),
+        fragment_shader.as_ref(),
+    );
+
     frame_graph.add_pass(
         "EguiPass",
         |data: &mut Payload<EguiPassPayload>, resources| {
@@ -90,42 +109,17 @@ pub fn pass(
             );
 
             let vtx_buffer = resources.create_buffer(
-                &BufferDesc {
-                    size: VERTEX_BUFFER_SIZE as u64,
-                    cpu_access: CpuAccessMode::Write,
-                    name: Some("Egui Vertex Buffer"),
-                    ..Default::default()
-                },
-                ResourceUsageFlags::VERTEX_BUFFER | ResourceUsageFlags::COPY_DEST,
+                &BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
+                    .cpu_write()
+                    .with_name("Egui Vertex Buffer"),
+                ResourceUsageFlags::VERTEX_BUFFER,
             );
 
             let idx_buffer = resources.create_buffer(
-                &BufferDesc {
-                    size: INDEX_BUFFER_SIZE as u64,
-                    cpu_access: CpuAccessMode::Write,
-                    name: Some("Egui Index Buffer"),
-                    ..Default::default()
-                },
-                ResourceUsageFlags::INDEX_BUFFER | ResourceUsageFlags::COPY_DEST,
-            );
-
-            let descriptor_set_layout = create_descriptor_set_layout(device);
-            let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
-
-            let vertex_shader = shader_db
-                .load(shaders::aleph_render::egui::egui_vert())
-                .unwrap();
-            let fragment_shader = shader_db
-                .load(shaders::aleph_render::egui::egui_frag())
-                .unwrap();
-            let vertex_shader = device.create_shader(&vertex_shader).unwrap();
-            let fragment_shader = device.create_shader(&fragment_shader).unwrap();
-
-            let graphics_pipeline = create_pipeline_state(
-                device,
-                pipeline_layout.as_ref(),
-                vertex_shader.as_ref(),
-                fragment_shader.as_ref(),
+                &BufferDesc::new(INDEX_BUFFER_SIZE as u64)
+                    .cpu_write()
+                    .with_name("Egui Index Buffer"),
+                ResourceUsageFlags::INDEX_BUFFER,
             );
 
             let pixels_per_point = back_buffer_info.pixels_per_point;
