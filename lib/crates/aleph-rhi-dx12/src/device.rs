@@ -28,9 +28,9 @@
 //
 
 use std::any::TypeId;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::mem::{size_of, transmute_copy};
-use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
 
@@ -53,6 +53,7 @@ use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::context::Context;
+use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::{
     DescriptorBindingInfo, DescriptorBindingLayout, DescriptorSetLayout,
@@ -65,7 +66,7 @@ use crate::internal::conv::{
     sampler_filters_to_dx12, shader_visibility_to_dx12, stencil_op_to_dx12,
     texture_create_clear_value_to_dx12, texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
-use crate::internal::descriptor_arena::DescriptorArena;
+use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
 use crate::internal::descriptor_set::DescriptorSet;
@@ -370,22 +371,59 @@ impl IDevice for Device {
             .upgrade()
             .unwrap();
 
-        let dynamic_cbs_size = layout.dynamic_constant_buffers.len() * desc.num_sets as usize;
-        let sampler_buffer_size = layout.sampler_tables.len() * desc.num_sets as usize;
-        let resource_arena = DescriptorArena::new(
+        let resource_arena = DescriptorChunk::new(
             self.descriptor_heaps.gpu_view_heap(),
-            desc.num_sets,
-            layout.resource_num,
+            desc.num_sets * layout.resource_num,
         )?;
+
+        let set_size = DescriptorSet::descriptor_set_allocation_layout(
+            layout.dynamic_constant_buffers.len(),
+            layout.sampler_tables.len(),
+        )
+        .unwrap()
+        .size();
+        let set_pool_capacity = set_size * desc.num_sets as usize;
 
         let pool = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
             _layout: layout,
             resource_arena,
-            set_objects: Vec::with_capacity(desc.num_sets as usize),
-            sampler_buffer: vec![Default::default(); sampler_buffer_size],
-            dynamic_cbs: vec![Default::default(); dynamic_cbs_size],
+            descriptor_set_pool: Bump::with_capacity(set_pool_capacity),
+            descriptor_bump_index: 0,
+            set_capacity: desc.num_sets,
             free_list: Vec::with_capacity(128),
+        });
+
+        Ok(pool)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_descriptor_arena(
+        &self,
+        desc: &DescriptorArenaDesc,
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
+        if desc.arena_type == DescriptorArenaType::Heap {
+            todo!();
+        }
+
+        let resource_arena =
+            DescriptorChunk::new(self.descriptor_heaps.gpu_view_heap(), desc.num_sets * 16)?
+                .unwrap();
+
+        let set_size = DescriptorSet::descriptor_set_allocation_layout(1, 1)
+            .unwrap()
+            .size();
+        let set_pool_capacity = set_size * desc.num_sets as usize;
+
+        let pool = Box::new(DescriptorArena {
+            _device: self.this.upgrade().unwrap(),
+            resource_arena,
+            descriptor_set_pool: Cell::new(Some(Bump::with_capacity(set_pool_capacity))),
+            descriptor_bump_index: Cell::new(0),
+            num_sets: Cell::new(0),
+            set_capacity: desc.num_sets,
         });
 
         Ok(pool)
@@ -1439,7 +1477,7 @@ impl Device {
         let mut set = DescriptorSet::ptr_from_handle(set_write.set.clone());
         let set_layout = {
             let set = set.as_ref();
-            let layout = set._layout.deref();
+            let layout = set._layout.as_ref();
             layout
         };
         let binding_layout = set_layout
@@ -1516,6 +1554,7 @@ impl Device {
         // GPUs.
         let sampler_index = set
             ._layout
+            .as_ref()
             .sampler_tables
             .iter()
             .enumerate()

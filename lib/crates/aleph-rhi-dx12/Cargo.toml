@@ -48,6 +48,7 @@ aleph-rhi-loader-api = { workspace = true }
 aleph-rhi-impl-utils = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
+allocator-api2 = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }
 parking_lot = { workspace = true }

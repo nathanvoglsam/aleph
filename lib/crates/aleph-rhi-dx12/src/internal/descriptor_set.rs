@@ -27,10 +27,13 @@
 // SOFTWARE.
 //
 
+use std::alloc::Layout;
+use std::alloc::LayoutError;
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
+use allocator_api2::alloc::Allocator;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::descriptor_set_layout::DescriptorSetLayout;
@@ -42,7 +45,7 @@ use crate::descriptor_set_layout::DescriptorSetLayout;
 /// This tracks the necessary state to write descriptors and bind the set to a slot in the pipeline.
 pub struct DescriptorSet {
     /// The descriptor set layout of this set
-    pub _layout: AnyArc<DescriptorSetLayout>,
+    pub _layout: NonNull<DescriptorSetLayout>,
 
     pub dynamic_constant_buffers: NonNull<[u64]>,
 
@@ -101,6 +104,106 @@ impl DescriptorSet {
     pub fn ptr_from_handle(handle: DescriptorSetHandle) -> NonNull<DescriptorSet> {
         let inner: NonNull<()> = handle.into();
         inner.cast()
+    }
+
+    pub fn heap_allocate(
+        allocator: &impl Allocator,
+        layout: &DescriptorSetLayout,
+        num_dynamic_cbs: usize,
+        num_samplers: usize,
+        resource_handle_cpu: Option<CPUDescriptorHandle>,
+        resource_handle_gpu: Option<GPUDescriptorHandle>,
+    ) -> DescriptorSetHandle {
+        // Make sure we can just allocate some u64 off the end of the set with no alignment issues
+        assert_eq!(
+            std::mem::align_of::<DescriptorSet>(),
+            std::mem::align_of::<u64>()
+        );
+
+        // The size is equal to one constant buffer object + num_dynamic_cbs u64s + num_samplers
+        // u64s.
+        let mem_layout =
+            Self::descriptor_set_allocation_layout(num_dynamic_cbs, num_samplers).unwrap();
+        let mut set = match allocator.allocate_zeroed(mem_layout) {
+            Ok(v) => v.cast::<MaybeUninit<DescriptorSet>>(),
+            Err(_) => allocator_api2::alloc::handle_alloc_error(mem_layout),
+        };
+
+        let (dynamic_constant_buffers, samplers) =
+            Self::get_allocated_arrays(set, num_dynamic_cbs, num_samplers);
+
+        unsafe {
+            let set_uninit = set.as_mut();
+            set_uninit.write(DescriptorSet {
+                _layout: NonNull::from(layout),
+                dynamic_constant_buffers,
+                resource_handle_cpu,
+                resource_handle_gpu,
+                samplers,
+            });
+        }
+
+        unsafe { DescriptorSetHandle::from_raw(set.cast()) }
+    }
+
+    pub unsafe fn free_heap_allocated(allocator: &impl Allocator, handle: DescriptorSetHandle) {
+        let set = Self::ptr_from_handle(handle);
+        let layout = {
+            let set_ref = set.as_ref();
+            let num_dynamic_cbs = set_ref.dynamic_constant_buffers.len();
+            let num_samplers = set_ref.samplers.len();
+            Self::descriptor_set_allocation_layout(num_dynamic_cbs, num_samplers).unwrap()
+        };
+
+        // Drop the set object
+        std::ptr::drop_in_place(set.as_ptr());
+
+        // Free the set's allocation
+        allocator.deallocate(set.cast(), layout);
+    }
+
+    pub const fn descriptor_set_allocation_layout(
+        num_dynamic_cbs: usize,
+        num_samplers: usize,
+    ) -> Result<Layout, LayoutError> {
+        let size = std::mem::size_of::<DescriptorSet>();
+        let size = size + num_dynamic_cbs * std::mem::size_of::<u64>();
+        let size = size + num_samplers * std::mem::size_of::<u64>();
+        let align = std::mem::align_of::<DescriptorSet>();
+
+        std::alloc::Layout::from_size_align(size, align)
+    }
+
+    fn get_allocated_arrays(
+        set: NonNull<MaybeUninit<DescriptorSet>>,
+        num_dynamic_cbs: usize,
+        num_samplers: usize,
+    ) -> (NonNull<[u64]>, NonNull<[Option<GPUDescriptorHandle>]>) {
+        unsafe {
+            let dynamic_constant_buffers = set.as_ptr().add(1).cast::<u64>();
+            let samplers = dynamic_constant_buffers
+                .add(num_dynamic_cbs)
+                .cast::<Option<GPUDescriptorHandle>>();
+
+            // We use alloc-zeroed so we know that these arrays will be zero initialized so we don't
+            // need to do anything here
+
+            let dynamic_constant_buffers = if num_dynamic_cbs != 0 {
+                std::slice::from_raw_parts_mut(dynamic_constant_buffers, num_dynamic_cbs)
+            } else {
+                &mut []
+            };
+            let samplers = if num_samplers != 0 {
+                std::slice::from_raw_parts_mut(samplers, num_samplers)
+            } else {
+                &mut []
+            };
+
+            (
+                NonNull::from(dynamic_constant_buffers),
+                NonNull::from(samplers),
+            )
+        }
     }
 }
 

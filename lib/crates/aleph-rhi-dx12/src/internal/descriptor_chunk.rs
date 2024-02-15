@@ -41,18 +41,15 @@ use crate::internal::descriptor_heap::{DescriptorAllocation, DescriptorHeap};
 ///
 /// This includes indexing logic, virtual address calculation, and calling the underlying heap
 /// allocator to get the arena's memory.
-pub struct DescriptorArena {
+pub struct DescriptorChunk {
     /// The allocation handle of the descriptor arena
     pub allocation: DescriptorAllocation,
 
+    /// The number of descriptors that this arena has storage for
+    pub num_descriptors: u32,
+
     /// The descriptor increment for the descriptor type this arena allocates for
     pub descriptor_increment: u32,
-
-    /// The total number of descriptor sets this arena has space for
-    pub num_sets: u32,
-
-    /// The number of descriptors per set for this arena
-    pub num_descriptors_per_set: u32,
 
     /// The CPU handle to the start of the descriptor arena
     pub cpu_base: CPUDescriptorHandle,
@@ -61,20 +58,16 @@ pub struct DescriptorArena {
     pub gpu_base: GPUDescriptorHandle,
 }
 
-impl DescriptorArena {
+impl DescriptorChunk {
     /// Constructs a new arena from the given heap that has enough space for 'num_sets' that have
     /// 'num_descriptors_per_set'
     pub fn new(
         heap: &DescriptorHeap,
-        num_sets: u32,
-        num_descriptors_per_set: u32,
+        num_descriptors: u32,
     ) -> Result<Option<Self>, DescriptorPoolCreateError> {
-        if num_sets * num_descriptors_per_set == 0 {
+        if num_descriptors == 0 {
             return Ok(None);
         }
-
-        // The total number of descriptors needed from the heap to store 'num_sets'
-        let num_descriptors = num_descriptors_per_set * num_sets;
 
         let allocation = heap
             .allocate(num_descriptors)
@@ -82,29 +75,23 @@ impl DescriptorArena {
         let cpu_base = heap.allocation_to_cpu_handle(allocation).unwrap();
         let gpu_base = heap.allocation_to_gpu_handle(allocation).unwrap();
 
-        Ok(Some(DescriptorArena {
+        Ok(Some(DescriptorChunk {
             allocation,
+            num_descriptors,
             descriptor_increment: heap.descriptor_increment(),
-            num_sets,
-            num_descriptors_per_set,
             cpu_base,
             gpu_base,
         }))
     }
 
-    /// Gets the CPU and GPU handle for the given set index in this arena.
-    pub fn get_handles_for_set_index(
-        &self,
-        set_index: u32,
-    ) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
+    /// Gets the CPU and GPU handle for the given index in this arena.
+    pub fn get_handles_for_index(&self, index: u32) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
         debug_assert!(
-            set_index < self.num_sets,
+            index < self.num_descriptors,
             "Requested a set out of the arena's bounds"
         );
 
-        let offset = set_index as usize
-            * self.num_descriptors_per_set as usize
-            * self.descriptor_increment as usize;
+        let offset = index as usize * self.descriptor_increment as usize;
         let cpu = self.cpu_base.add(offset);
         let gpu = self.gpu_base.add(offset as u64);
         (cpu, gpu)
