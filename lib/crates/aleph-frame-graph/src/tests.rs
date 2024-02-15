@@ -91,11 +91,11 @@ pub fn test_builder() {
             ));
             out_create = data.resource;
         },
-        |data, _encoder, _resources, context| {
+        |data, _encoder, resources| {
             let data = data.unwrap();
             // Verify we got the right payload
             assert_eq!(data.value, 54321);
-            let context = context.get::<usize>().copied().unwrap();
+            let context = resources.context().get::<usize>().copied().unwrap();
             assert_eq!(context, 512);
         },
     );
@@ -117,11 +117,11 @@ pub fn test_builder() {
             ));
             out_write = data.resource;
         },
-        |data, _encoder, _resources, context| {
+        |data, _encoder, resources| {
             let data = data.unwrap();
             // Verify we got the right payload
             assert_eq!(data.value, 1234);
-            let context = context.get::<usize>().copied().unwrap();
+            let context = resources.context().get::<usize>().copied().unwrap();
             assert_eq!(context, 512);
         },
     );
@@ -143,28 +143,25 @@ pub fn test_builder() {
             ));
             out_read = data.resource;
         },
-        |data, _encoder, _resources, context| {
+        |data, _encoder, resources| {
             let data = data.unwrap();
             // Verify we got the right payload
             assert_eq!(data.value, -432);
-            let context = context.get::<usize>().copied().unwrap();
+            let context = resources.context().get::<usize>().copied().unwrap();
             assert_eq!(context, 512);
         },
     );
 
-    let mut graph = builder.build();
+    let mut graph = builder.build(device.as_ref());
+    unsafe {
+        graph.allocate_transients(1);
+    }
 
     let import_bundle = ImportBundle::default();
-    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     let context = PinBoard::new();
     context.publish(512usize);
     unsafe {
-        graph.execute(
-            &transient_bundle,
-            &import_bundle,
-            encoder.as_mut(),
-            &context,
-        );
+        graph.execute(0, &import_bundle, encoder.as_mut(), &context);
     }
 }
 
@@ -214,7 +211,7 @@ pub fn test_handle_equality() {
             );
             imported_resource = Some(r);
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
@@ -236,7 +233,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
     builder.add_pass(
@@ -253,7 +250,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
     builder.add_pass(
@@ -265,7 +262,7 @@ pub fn test_handle_equality() {
                 ResourceUsageFlags::CONSTANT_BUFFER,
             ));
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
     let out_create = out_create.unwrap();
@@ -285,18 +282,15 @@ pub fn test_handle_equality() {
 
     assert_eq!(out_write_transient, out_read_transient); // Read of the transient write, not renamed
 
-    let mut graph = builder.build();
+    let mut graph = builder.build(device.as_ref());
+    unsafe {
+        graph.allocate_transients(1);
+    }
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
-    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
-        graph.execute(
-            &transient_bundle,
-            &import_bundle,
-            encoder.as_mut(),
-            &PinBoard::new(),
-        );
+        graph.execute(0, &import_bundle, encoder.as_mut(), &PinBoard::new());
     }
 }
 
@@ -345,7 +339,7 @@ pub fn test_usage_collection() {
             );
             imported_resource = Some(r);
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
     let imported_resource = imported_resource.unwrap();
 
@@ -367,7 +361,7 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::INDEX_BUFFER,
             ));
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
     builder.add_pass(
@@ -384,7 +378,7 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::UNORDERED_ACCESS,
             ));
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
     builder.add_pass(
@@ -396,10 +390,13 @@ pub fn test_usage_collection() {
                 ResourceUsageFlags::CONSTANT_BUFFER,
             );
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
-    let mut graph = builder.build();
+    let mut graph = builder.build(device.as_ref());
+    unsafe {
+        graph.allocate_transients(1);
+    }
 
     let out_create = out_create.unwrap();
 
@@ -421,14 +418,8 @@ pub fn test_usage_collection() {
 
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(imported_resource, &mock_buffer);
-    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
-        graph.execute(
-            &transient_bundle,
-            &import_bundle,
-            encoder.as_mut(),
-            &PinBoard::new(),
-        );
+        graph.execute(0, &import_bundle, encoder.as_mut(), &PinBoard::new());
     }
 }
 
@@ -496,7 +487,7 @@ pub fn test_usage_schedule() {
             );
             pin_board.publish(Pass0 { import })
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
     struct Pass1 {
@@ -536,7 +527,7 @@ pub fn test_usage_schedule() {
 
             pin_board.publish(Pass1 { create, import });
         },
-        |_data, _encoder, _resources, _context| {},
+        |_data, _encoder, _resources| {},
     );
 
     #[derive(Clone)]
@@ -579,7 +570,7 @@ pub fn test_usage_schedule() {
             pin_board.publish(payload.clone());
             data.write(payload);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let data = data.as_ref().unwrap();
             let _resource = resources.get_buffer(data.import_buffer_write).unwrap();
             let _resource = resources.get_texture(data.import_texture_write).unwrap();
@@ -597,7 +588,7 @@ pub fn test_usage_schedule() {
             );
             data.write(read);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let read = data.copied().unwrap();
             let _resource = resources.get_buffer(read).unwrap();
         },
@@ -614,7 +605,7 @@ pub fn test_usage_schedule() {
             );
             data.write(read);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -631,7 +622,7 @@ pub fn test_usage_schedule() {
             );
             data.write(read);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -648,7 +639,7 @@ pub fn test_usage_schedule() {
             );
             data.write(read);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -665,7 +656,7 @@ pub fn test_usage_schedule() {
             );
             data.write(read);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -682,7 +673,7 @@ pub fn test_usage_schedule() {
             );
             data.write(read);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let read = data.copied().unwrap();
             let _resource = resources.get_texture(read).unwrap();
         },
@@ -708,7 +699,7 @@ pub fn test_usage_schedule() {
             pin_board.publish(payload.clone());
             data.write(payload);
         },
-        |data, _encoder, resources, _context| {
+        |data, _encoder, resources| {
             let data = data.as_ref().unwrap();
             let _resource = resources.get_texture(data.import_texture_write).unwrap();
         },
@@ -716,11 +707,19 @@ pub fn test_usage_schedule() {
 
     let mut dot_text = Vec::<u8>::new();
     let mut graph = builder
-        .build_with_graph_viz("TestGraph", &mut dot_text, &Default::default())
+        .build_with_graph_viz(
+            device.as_ref(),
+            "TestGraph",
+            &mut dot_text,
+            &Default::default(),
+        )
         .unwrap();
     graph
         .graph_viz_for_pass_order("PassOrder", &mut dot_text)
         .unwrap();
+    unsafe {
+        graph.allocate_transients(1);
+    }
 
     // std::fs::write("./graphviz.dot", dot_text).unwrap();
 
@@ -729,13 +728,7 @@ pub fn test_usage_schedule() {
     let mut import_bundle = ImportBundle::default();
     import_bundle.add_resource(import_buffer, &mock_buffer);
     import_bundle.add_resource(import_texture, &mock_texture);
-    let transient_bundle = graph.allocate_transient_resource_bundle(device.as_ref());
     unsafe {
-        graph.execute(
-            &transient_bundle,
-            &import_bundle,
-            encoder.as_mut(),
-            &PinBoard::new(),
-        );
+        graph.execute(0, &import_bundle, encoder.as_mut(), &PinBoard::new());
     }
 }

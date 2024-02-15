@@ -53,7 +53,6 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_arena_drop_list::DropLink;
-use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
@@ -232,9 +231,7 @@ impl FrameGraphBuilder {
     pub fn add_pass<
         T: Send + 'static,
         SetupFn: FnOnce(&mut Payload<T>, &mut ResourceRegistry),
-        ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources, &PinBoard)
-            + Send
-            + 'static,
+        ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
     >(
         &mut self,
         name: &str,
@@ -278,13 +275,14 @@ impl FrameGraphBuilder {
     /// passes constructed earlier. This function is expected to be expensive, so don't build new
     /// graphs often. It is intended for a graph to be built once and run many times and invalidated
     /// rarely for extenuating circum stances like the size of the backbuffer changing.
-    pub fn build(self) -> FrameGraph {
+    pub fn build(self, device: &dyn IDevice) -> FrameGraph {
         // We have to constrain the type of the writer even though we don't use it here, so we just
         // use Sink.
         //
         // This can't error unless we pass a writer, so we _could_ use unwrap_unchecked. The cost
         // is miniscule so just check anyway so we don't have unsafe code here.
-        self.build_internal::<std::io::Sink>("", None).unwrap()
+        self.build_internal::<std::io::Sink>(device, "", None)
+            .unwrap()
     }
 
     /// This is an alternate form of [FrameGraphBuilder::build] that accepts a writer for the graph
@@ -293,15 +291,17 @@ impl FrameGraphBuilder {
     /// other passes).
     pub fn build_with_graph_viz(
         self,
+        device: &dyn IDevice,
         graph_name: &str,
         writer: &mut impl std::io::Write,
         options: &GraphVizOutputOptions,
     ) -> std::io::Result<FrameGraph> {
-        self.build_internal(graph_name, Some((writer, options)))
+        self.build_internal(device, graph_name, Some((writer, options)))
     }
 
     fn build_internal<T: std::io::Write>(
         mut self,
+        device: &dyn IDevice,
         graph_name: &str,
         writer: Option<(&mut T, &GraphVizOutputOptions)>,
     ) -> std::io::Result<FrameGraph> {
@@ -331,12 +331,15 @@ impl FrameGraphBuilder {
 
         Ok(FrameGraph {
             _arena: arena,
+            device: device.upgrade(),
             execution_bundles,
             ir_nodes,
             render_passes,
             root_resources,
             resource_versions,
             imported_resources,
+            transient_bundles: Vec::new(),
+            linear_descriptor_pools: Vec::new(),
             drop_head,
         })
     }

@@ -39,6 +39,7 @@ use aleph_rhi_api::*;
 use crate::access::ResourceUsageFlagsExt;
 use crate::resource::ResourceId;
 use crate::IRenderPass;
+use crate::ResourceVariant;
 
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
@@ -846,5 +847,28 @@ impl core::fmt::Debug for PassOrderBundle {
             .field("barriers", &barriers)
             .field("passes", &passes)
             .finish()
+    }
+}
+
+#[derive(Default)]
+pub struct TransientResourceBundle {
+    pub(crate) transients: std::collections::HashMap<u16, ResourceVariant>,
+}
+
+impl TransientResourceBundle {
+    pub(crate) fn add_resource(&mut self, i: u16, r: impl Into<ResourceVariant>) -> &mut Self {
+        let r = r.into();
+
+        let existed = self.transients.insert(i, r).is_some();
+        assert!(
+            !existed,
+            "It is invalid to insert a handle for the same resource ID twice"
+        );
+
+        self
+    }
+
+    pub(crate) fn get_resource(&self, i: u16) -> Option<&ResourceVariant> {
+        self.transients.get(&i)
     }
 }

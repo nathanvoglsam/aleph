@@ -30,23 +30,17 @@
 use std::mem::size_of_val;
 use std::ptr::NonNull;
 
-use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::{FrameGraphResources, Payload};
 
 pub trait IRenderPass: Send + 'static {
-    fn execute(
-        &mut self,
-        encoder: &mut dyn IGeneralEncoder,
-        resources: &FrameGraphResources,
-        context: &PinBoard,
-    );
+    fn execute(&mut self, encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources);
 }
 
 pub(crate) struct CallbackRenderPass<
     T: Send + 'static,
-    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources, &PinBoard) + Send + 'static,
+    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 > {
     /// A type-erased pointer to the payload object of type 'T'.
     payload: NonNull<Payload<T>>,
@@ -58,9 +52,7 @@ pub(crate) struct CallbackRenderPass<
 impl<T, ExecFn> CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources, &PinBoard)
-        + Send
-        + 'static,
+    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 {
     pub fn new(payload: NonNull<Payload<T>>, exec_fn: ExecFn) -> Self {
         assert!(
@@ -77,16 +69,9 @@ where
 impl<T, ExecFn> IRenderPass for CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources, &PinBoard)
-        + Send
-        + 'static,
+    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 {
-    fn execute(
-        &mut self,
-        encoder: &mut dyn IGeneralEncoder,
-        resources: &FrameGraphResources,
-        context: &PinBoard,
-    ) {
+    fn execute(&mut self, encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources) {
         // Safety: It is the responsibility of the frame graph implementation to ensure that this
         //         is safe to do. So, it's the responsibility of whoever constructs the callback
         //         pass.
@@ -101,15 +86,13 @@ where
         } else {
             None
         };
-        (self.exec_fn)(payload, encoder, resources, context)
+        (self.exec_fn)(payload, encoder, resources)
     }
 }
 
 unsafe impl<T, ExecFn> Send for CallbackRenderPass<T, ExecFn>
 where
     T: Send + 'static,
-    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources, &PinBoard)
-        + Send
-        + 'static,
+    ExecFn: FnMut(Option<&T>, &mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
 {
 }

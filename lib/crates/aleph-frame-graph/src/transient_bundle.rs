@@ -29,25 +29,3 @@
 
 use crate::ResourceVariant;
 
-#[derive(Default)]
-pub struct TransientResourceBundle {
-    pub(crate) transients: std::collections::HashMap<u16, ResourceVariant>,
-}
-
-impl TransientResourceBundle {
-    pub(crate) fn add_resource(&mut self, i: u16, r: impl Into<ResourceVariant>) -> &mut Self {
-        let r = r.into();
-
-        let existed = self.transients.insert(i, r).is_some();
-        assert!(
-            !existed,
-            "It is invalid to insert a handle for the same resource ID twice"
-        );
-
-        self
-    }
-
-    pub(crate) fn get_resource(&self, i: u16) -> Option<&ResourceVariant> {
-        self.transients.get(&i)
-    }
-}

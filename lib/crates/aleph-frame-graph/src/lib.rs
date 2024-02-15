@@ -136,7 +136,6 @@ mod internal;
 mod render_pass;
 mod resource;
 mod resource_variant;
-mod transient_bundle;
 
 #[cfg(test)]
 mod tests;
@@ -149,4 +148,3 @@ pub use import_bundle::ImportBundle;
 pub use render_pass::IRenderPass;
 pub use resource::{ResourceMut, ResourceRef};
 pub use resource_variant::ResourceVariant;
-pub use transient_bundle::TransientResourceBundle;

@@ -44,6 +44,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-any = { workspace = true }
 aleph-arena-drop-list = { workspace = true }
+aleph-device-allocators = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-type-id-hasher = { workspace = true }
 aleph-pin-board = { workspace = true }

@@ -30,18 +30,18 @@
 use std::collections::HashMap;
 use std::ptr::NonNull;
 
+use aleph_any::AnyArc;
 use aleph_arena_drop_list::DropLink;
+use aleph_device_allocators::LinearDescriptorPool;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use bumpalo::Bump;
 
 use crate::internal::{
     FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle, RenderPass,
-    ResourceRoot, ResourceVersion,
+    ResourceRoot, ResourceVersion, TransientResourceBundle,
 };
-use crate::{
-    FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, TransientResourceBundle,
-};
+use crate::{FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant};
 
 pub struct FrameGraph {
     /// The bump allocation arena that provides the backing memory for the render passes and any
@@ -53,6 +53,9 @@ pub struct FrameGraph {
     /// This won't be directly used by a constructed graph but must be stored inside the graph in
     /// order to keep the allocations for all the render passes alive.
     pub(crate) _arena: Bump,
+
+    /// The device object that this frame graph is created to work with
+    pub(crate) device: AnyArc<dyn IDevice>,
 
     /// Our final pass + barrier execution order that is the final output of our graph building
     /// operations. The passes and barriers are executed by iterating this list and executing the
@@ -92,6 +95,12 @@ pub struct FrameGraph {
     /// root_resources array.
     pub(crate) imported_resources: Vec<u16>,
 
+    /// The transient resource bundles that the user requested by allocated for N frames in flight.
+    pub(crate) transient_bundles: Vec<TransientResourceBundle>,
+
+    /// Another 'transient pool' of sorts, but used for descriptors.
+    pub(crate) linear_descriptor_pools: Vec<LinearDescriptorPool>,
+
     /// The head of the dropper linked-list that contains all the drop functions for objects
     /// allocated from the graph arena
     pub(crate) drop_head: Option<NonNull<DropLink>>,
@@ -102,9 +111,25 @@ impl FrameGraph {
         FrameGraphBuilder::new()
     }
 
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that none of the resources referenced by the
+    /// frame graph are in use on the host or device when calling this funciton. This will free any
+    /// existing transient allocations, leaving them dangling if they are still in use anywhere.
+    pub unsafe fn allocate_transients(&mut self, num_frames: usize) {
+        self.transient_bundles.clear();
+        self.linear_descriptor_pools.clear();
+        for _ in 0..num_frames {
+            self.transient_bundles
+                .push(self.allocate_transient_resource_bundle());
+            self.linear_descriptor_pools
+                .push(LinearDescriptorPool::new(self.device.as_ref(), 1024).unwrap())
+        }
+    }
+
     pub unsafe fn execute(
         &mut self,
-        transient_bundle: &TransientResourceBundle,
+        frame_index: usize,
         import_bundle: &ImportBundle,
         encoder: &mut dyn IGeneralEncoder,
         context: &PinBoard,
@@ -113,12 +138,23 @@ impl FrameGraph {
         //
         // We could record in parallel by allocating command buffers ourselves and doing a parallel
         // iteration over the execution bundles list.
+        self.execute_pre_assertions(frame_index, import_bundle);
 
-        self.execute_pre_assertions(transient_bundle, import_bundle);
+        let transient_bundle = &self.transient_bundles[frame_index];
+        let linear_descriptor_pool = &self.linear_descriptor_pools[frame_index];
+
+        // Reset the pool, ready to allocate fresh descriptors.
+        //
+        // Safety: It is up to the caller to ensure that none of the descriptors that were allocated
+        //         into this pool were in use or can ever be used again.
+        linear_descriptor_pool.reset();
 
         let resources = FrameGraphResources {
+            device: self.device.as_ref(),
             import_bundle,
             transient_bundle,
+            linear_descriptor_pool,
+            context,
         };
 
         for bundle in self.execution_bundles.iter() {
@@ -181,20 +217,12 @@ impl FrameGraph {
 
                 let render_pass = node.render_pass();
                 let render_pass = &mut self.render_passes[render_pass];
-                unsafe {
-                    render_pass
-                        .pass
-                        .as_mut()
-                        .execute(encoder, &resources, context)
-                }
+                unsafe { render_pass.pass.as_mut().execute(encoder, &resources) }
             }
         }
     }
 
-    pub fn allocate_transient_resource_bundle(
-        &self,
-        device: &dyn IDevice,
-    ) -> TransientResourceBundle {
+    fn allocate_transient_resource_bundle(&self) -> TransientResourceBundle {
         let num_transients = self.root_resources.len() - self.imported_resources.len();
         let mut bundle = TransientResourceBundle {
             transients: HashMap::with_capacity(num_transients),
@@ -214,7 +242,7 @@ impl FrameGraph {
                         usage: transient.total_access_flags,
                         name: v.desc.name.map(|v| unsafe { v.as_ref() }),
                     };
-                    let buffer = device.create_buffer(&desc).unwrap();
+                    let buffer = self.device.create_buffer(&desc).unwrap();
                     bundle.add_resource(i, buffer);
                 }
                 crate::internal::ResourceType::Texture(v) => {
@@ -232,7 +260,7 @@ impl FrameGraph {
                         usage: transient.total_access_flags,
                         name: v.desc.name.map(|v| unsafe { v.as_ref() }),
                     };
-                    let texture = device.create_texture(&desc).unwrap();
+                    let texture = self.device.create_texture(&desc).unwrap();
                     bundle.add_resource(i, texture);
                 }
             }
@@ -318,11 +346,9 @@ impl FrameGraph {
 impl FrameGraph {
     /// Internal function that implements the debug assertions that run prior to the main execute
     /// pass in the frame graph.
-    unsafe fn execute_pre_assertions(
-        &mut self,
-        transient_bundle: &TransientResourceBundle,
-        import_bundle: &ImportBundle,
-    ) {
+    unsafe fn execute_pre_assertions(&self, frame_index: usize, import_bundle: &ImportBundle) {
+        let transient_bundle = &self.transient_bundles[frame_index];
+
         if cfg!(debug_assertions) {
             for v in self.imported_resources.iter() {
                 let root_resource = &self.root_resources[*v as usize];
@@ -493,11 +519,18 @@ impl Drop for FrameGraph {
 }
 
 pub struct FrameGraphResources<'a> {
+    device: &'a dyn IDevice,
     import_bundle: &'a ImportBundle,
     transient_bundle: &'a TransientResourceBundle,
+    linear_descriptor_pool: &'a LinearDescriptorPool,
+    context: &'a PinBoard,
 }
 
 impl<'a> FrameGraphResources<'a> {
+    pub fn device(&self) -> &'a dyn IDevice {
+        self.device
+    }
+
     pub fn get<T: Into<ResourceRef>>(&self, r: T) -> Option<&ResourceVariant> {
         let r: ResourceRef = r.into();
         let i = r.0.root_id();
@@ -518,5 +551,13 @@ impl<'a> FrameGraphResources<'a> {
     pub fn get_texture<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn ITexture> {
         let r = self.get(r);
         r.map(|v| v.unwrap_texture())
+    }
+
+    pub fn descriptor_arena(&self) -> &'a LinearDescriptorPool {
+        self.linear_descriptor_pool
+    }
+
+    pub fn context(&self) -> &PinBoard {
+        self.context
     }
 }
