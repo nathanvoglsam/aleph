@@ -58,6 +58,25 @@ pub fn pass(
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
 ) {
+    let descriptor_set_layout = create_descriptor_set_layout(device);
+    let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
+
+    let vertex_shader = shader_db
+        .load(shaders::aleph_render::deferred::main_gbuffer_vert())
+        .unwrap();
+    let fragment_shader = shader_db
+        .load(shaders::aleph_render::deferred::main_gbuffer_frag())
+        .unwrap();
+    let vertex_shader = device.create_shader(&vertex_shader).unwrap();
+    let fragment_shader = device.create_shader(&fragment_shader).unwrap();
+
+    let graphics_pipeline = create_pipeline_state(
+        device,
+        pipeline_layout.as_ref(),
+        vertex_shader.as_ref(),
+        fragment_shader.as_ref(),
+    );
+
     frame_graph.add_pass(
         "EguiPass",
         |data: &mut Payload<MainGBufferPassPayload>, resources| {
@@ -94,25 +113,6 @@ pub fn pass(
                 .with_name("DepthBuffer");
             let depth_buffer =
                 resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
-
-            let descriptor_set_layout = create_descriptor_set_layout(device);
-            let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
-
-            let vertex_shader = shader_db
-                .load(shaders::aleph_render::deferred::main_gbuffer_vert())
-                .unwrap();
-            let fragment_shader = shader_db
-                .load(shaders::aleph_render::deferred::main_gbuffer_frag())
-                .unwrap();
-            let vertex_shader = device.create_shader(&vertex_shader).unwrap();
-            let fragment_shader = device.create_shader(&fragment_shader).unwrap();
-
-            let graphics_pipeline = create_pipeline_state(
-                device,
-                pipeline_layout.as_ref(),
-                vertex_shader.as_ref(),
-                fragment_shader.as_ref(),
-            );
 
             data.write(MainGBufferPassPayload {
                 gbuffer0,
@@ -159,33 +159,21 @@ pub fn pass(
                 layer_count: 1,
                 extent: data.gbuffer_extent.clone(),
                 color_attachments: &[
-                    RenderingColorAttachmentInfo {
-                        image_view: gbuffer0_rtv,
-                        image_layout: ImageLayout::ColorAttachment,
-                        load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0x00000000)),
-                        store_op: AttachmentStoreOp::Store,
-                    },
-                    RenderingColorAttachmentInfo {
-                        image_view: gbuffer1_rtv,
-                        image_layout: ImageLayout::ColorAttachment,
-                        load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0x00000000)),
-                        store_op: AttachmentStoreOp::Store,
-                    },
-                    RenderingColorAttachmentInfo {
-                        image_view: gbuffer2_rtv,
-                        image_layout: ImageLayout::ColorAttachment,
-                        load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0x00000000)),
-                        store_op: AttachmentStoreOp::Store,
-                    },
+                    RenderingColorAttachmentInfo::new(gbuffer0_rtv)
+                        .clear(ColorClearValue::Int(0x00000000))
+                        .store(),
+                    RenderingColorAttachmentInfo::new(gbuffer1_rtv)
+                        .clear(ColorClearValue::Int(0x00000000))
+                        .store(),
+                    RenderingColorAttachmentInfo::new(gbuffer2_rtv)
+                        .clear(ColorClearValue::Int(0x00000000))
+                        .store(),
                 ],
-                depth_stencil_attachment: Some(&RenderingDepthStencilAttachmentInfo {
-                    image_view: depth_buffer_dsv,
-                    image_layout: ImageLayout::DepthStencilAttachment,
-                    depth_load_op: AttachmentLoadOp::Clear(DepthStencilClearValue::depth(1.0)),
-                    depth_store_op: AttachmentStoreOp::Store,
-                    stencil_load_op: AttachmentLoadOp::None,
-                    stencil_store_op: AttachmentStoreOp::None,
-                }),
+                depth_stencil_attachment: Some(
+                    &RenderingDepthStencilAttachmentInfo::new(depth_buffer_dsv)
+                        .depth_clear(DepthStencilClearValue::depth(1.0))
+                        .depth_store(),
+                ),
                 allow_uav_writes: false,
             });
 

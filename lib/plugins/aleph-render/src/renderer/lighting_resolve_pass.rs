@@ -56,6 +56,39 @@ pub fn pass(
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
 ) {
+    let set_layout = device
+        .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::Compute,
+            items: &[
+                DescriptorType::Texture.binding(0),
+                DescriptorType::Texture.binding(1),
+                DescriptorType::Texture.binding(2),
+                DescriptorType::TextureRW.binding(3),
+            ],
+            name: Some("DeferredLightingDescriptorSetLayout"),
+        })
+        .unwrap();
+    let pipeline_layout = device
+        .create_pipeline_layout(
+            &PipelineLayoutDesc::new()
+                .with_set_layouts(&[set_layout.as_ref()])
+                .with_name("DeferredLightingPipelineLayout"),
+        )
+        .unwrap();
+
+    let shader_data = shader_db
+        .load(shaders::aleph_render::deferred::deferred_lighting_cs())
+        .unwrap();
+    let shader_module = device.create_shader(&shader_data).unwrap();
+
+    let pipeline = device
+        .create_compute_pipeline(&ComputePipelineDesc {
+            shader_module: shader_module.as_ref(),
+            pipeline_layout: pipeline_layout.as_ref(),
+            name: Some("DeferredLightingPipeline"),
+        })
+        .unwrap();
+
     frame_graph.add_pass(
         "DeferredLightingPass",
         |data: &mut Payload<LightingResolvePassPayload>, resources| {
@@ -82,39 +115,6 @@ pub fn pass(
                     .with_name("OutputLighting"),
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
-
-            let set_layout = device
-                .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
-                    visibility: DescriptorShaderVisibility::Compute,
-                    items: &[
-                        DescriptorType::Texture.binding(0),
-                        DescriptorType::Texture.binding(1),
-                        DescriptorType::Texture.binding(2),
-                        DescriptorType::TextureRW.binding(3),
-                    ],
-                    name: Some("DeferredLightingDescriptorSetLayout"),
-                })
-                .unwrap();
-            let pipeline_layout = device
-                .create_pipeline_layout(
-                    &PipelineLayoutDesc::new()
-                        .with_set_layouts(&[set_layout.as_ref()])
-                        .with_name("DeferredLightingPipelineLayout"),
-                )
-                .unwrap();
-
-            let shader_data = shader_db
-                .load(shaders::aleph_render::deferred::deferred_lighting_cs())
-                .unwrap();
-            let shader_module = device.create_shader(&shader_data).unwrap();
-
-            let pipeline = device
-                .create_compute_pipeline(&ComputePipelineDesc {
-                    shader_module: shader_module.as_ref(),
-                    pipeline_layout: pipeline_layout.as_ref(),
-                    name: Some("DeferredLightingPipeline"),
-                })
-                .unwrap();
 
             data.write(LightingResolvePassPayload {
                 gbuffer0,
