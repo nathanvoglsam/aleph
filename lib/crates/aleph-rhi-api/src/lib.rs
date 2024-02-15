@@ -910,7 +910,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
     /// stale descriptors.
     fn allocate_set(
-        &mut self,
+        &self,
         layout: &dyn IDescriptorSetLayout,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError>;
 
@@ -922,7 +922,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     ///
     /// See [IDescriptorArena::allocate_set] for some pitfalls and warnings to check for.
     fn allocate_sets(
-        &mut self,
+        &self,
         layout: &dyn IDescriptorSetLayout,
         num_sets: usize,
     ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
@@ -948,7 +948,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     /// That would be an immediate use after free.
     ///
     /// This also means double-freeing is unsafe.
-    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]);
+    unsafe fn free(&self, sets: &[DescriptorSetHandle]);
 
     /// Will free all the descriptor sets allocated from the pool, resetting it to an empty state
     /// where it can allocate sets again. Even after an OOM error.
@@ -962,7 +962,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     ///
     /// This function requires extra care as it will affect every set in the pool instead of only
     /// the individual sets requested like in 'free'.
-    unsafe fn reset(&mut self);
+    unsafe fn reset(&self);
 }
 
 pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + Send + Sync {
