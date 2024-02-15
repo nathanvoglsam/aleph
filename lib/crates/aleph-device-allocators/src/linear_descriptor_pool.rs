@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
+
 use aleph_interfaces::any::AnyArc;
 use aleph_rhi_api::*;
 
@@ -37,27 +39,28 @@ pub struct LinearDescriptorPool {
     device: AnyArc<dyn IDevice>,
 
     /// The active descriptor arena
-    active: Box<dyn IDescriptorArena>,
+    active: Cell<Option<Box<dyn IDescriptorArena>>>,
 
     /// The num_sets value used to allocate the current active arena.
-    last_num_sets: u32,
+    last_num_sets: Cell<u32>,
 
     /// The list of descriptor arenas that have been exhausted. We have to keep them around so that
     /// the arena stays live
-    exhausted: Vec<Box<dyn IDescriptorArena>>,
+    exhausted: Cell<Vec<Box<dyn IDescriptorArena>>>,
 }
 
 impl LinearDescriptorPool {
     pub fn new(device: &dyn IDevice, num_sets: u32) -> Result<Self, DescriptorPoolCreateError> {
+        let active = device.create_descriptor_arena(&DescriptorArenaDesc {
+            arena_type: DescriptorArenaType::Linear,
+            num_sets,
+            name: Some("LinearDescriptorPoolArena"),
+        })?;
         Ok(Self {
             device: device.upgrade(),
-            active: device.create_descriptor_arena(&DescriptorArenaDesc {
-                arena_type: DescriptorArenaType::Linear,
-                num_sets,
-                name: Some("LinearDescriptorPoolArena"),
-            })?,
-            last_num_sets: num_sets,
-            exhausted: Vec::new(),
+            active: Cell::new(Some(active)),
+            last_num_sets: Cell::new(num_sets),
+            exhausted: Cell::new(Vec::new()),
         })
     }
 
@@ -75,16 +78,22 @@ impl LinearDescriptorPool {
     /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
     /// stale descriptors.
     pub fn allocate_set(
-        &mut self,
+        &self,
         layout: &dyn IDescriptorSetLayout,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         use DescriptorPoolAllocateError::*;
 
-        match self.active.allocate_set(layout) {
-            Ok(v) => Ok(v),
+        let active = self.active.take().unwrap();
+        match active.allocate_set(layout) {
+            Ok(v) => {
+                assert!(self.active.replace(Some(active)).is_none());
+                Ok(v)
+            }
             Err(FragmentedPool) | Err(OutOfMemory) | Err(OutOfPoolMemory) => {
-                self.grow()?;
-                self.active.allocate_set(layout)
+                let active = self.grow(active)?;
+                let result = active.allocate_set(layout);
+                assert!(self.active.replace(Some(active)).is_none());
+                result
             }
             v @ _ => v,
         }
@@ -98,37 +107,50 @@ impl LinearDescriptorPool {
     ///
     /// See [IDescriptorArena::allocate_set] for some pitfalls and warnings to check for.
     pub fn allocate_sets(
-        &mut self,
+        &self,
         layout: &dyn IDescriptorSetLayout,
         num_sets: usize,
     ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
         use DescriptorPoolAllocateError::*;
 
-        match self.active.allocate_sets(layout, num_sets) {
-            Ok(v) => Ok(v),
+        let active = self.active.take().unwrap();
+        match active.allocate_sets(layout, num_sets) {
+            Ok(v) => {
+                assert!(self.active.replace(Some(active)).is_none());
+                Ok(v)
+            }
             Err(FragmentedPool) | Err(OutOfMemory) | Err(OutOfPoolMemory) => {
-                self.grow()?;
-                self.active.allocate_sets(layout, num_sets)
+                let active = self.grow(active)?;
+                let result = active.allocate_sets(layout, num_sets);
+                assert!(self.active.replace(Some(active)).is_none());
+                result
             }
             v @ _ => v,
         }
     }
 
-    fn grow(&mut self) -> Result<(), DescriptorPoolAllocateError> {
+    fn grow(
+        &self,
+        active: Box<dyn IDescriptorArena>,
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolAllocateError> {
         use DescriptorPoolAllocateError::*;
 
+        // Immediately move the active arena into the exhausted set before trying to allocate a new
+        // pool
+        let mut exhausted = self.exhausted.take();
+        exhausted.push(active);
+        self.exhausted.set(exhausted);
+
+        let last_num_sets = self.last_num_sets.get();
         let new_arena = self.device.create_descriptor_arena(&DescriptorArenaDesc {
             arena_type: DescriptorArenaType::Linear,
-            num_sets: self.last_num_sets * 2,
+            num_sets: last_num_sets * 2,
             name: Some("LinearDescriptorPoolArena"),
         });
-        self.last_num_sets = self.last_num_sets * 2;
+        self.last_num_sets.set(last_num_sets * 2);
 
         match new_arena {
-            Ok(mut v) => {
-                std::mem::swap(&mut self.active, &mut v);
-                Ok(())
-            }
+            Ok(v) => Ok(v),
             Err(DescriptorPoolCreateError::OutOfMemory) => Err(OutOfMemory),
             Err(DescriptorPoolCreateError::Platform) => Err(Platform),
         }
@@ -141,8 +163,13 @@ impl LinearDescriptorPool {
     ///
     /// It is the caller's responsibility to ensure that none of the descriptors that will be freed
     /// by this operation are in use on the host or device.
-    pub unsafe fn reset(&mut self) {
-        self.active.reset();
-        self.exhausted.clear();
+    pub unsafe fn reset(&self) {
+        let active = self.active.take().unwrap();
+        active.reset();
+        self.active.set(Some(active));
+
+        let mut exhausted = self.exhausted.take();
+        exhausted.clear();
+        self.exhausted.set(exhausted);
     }
 }
