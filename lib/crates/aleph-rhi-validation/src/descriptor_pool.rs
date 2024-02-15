@@ -132,11 +132,10 @@ impl ValidationDescriptorPool {
         DescriptorSetHandle::from_raw(handle)
     }
 
-    fn validate_set_handle(&self, set: &DescriptorSetHandle) {
+    fn validate_set_handle(&self, set: DescriptorSetHandle) {
         // Validate that a DescriptorSetHandle contains a correctly aligned pointer. This may help
         // catch when someone is passing in bad handles
         let align = core::mem::align_of::<DescriptorSet>();
-        let set = set.clone();
         let set = unsafe { core::mem::transmute::<_, NonNull<DescriptorSet>>(set) };
 
         // This should also never happen in practice, but can help flag when people are doing
@@ -222,7 +221,7 @@ impl IDescriptorPool for ValidationDescriptorPool {
     }
 
     unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
-        for set in sets {
+        for &set in sets {
             self.validate_set_handle(set);
 
             // Does further validation based on reading the set object itself

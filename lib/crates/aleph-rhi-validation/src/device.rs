@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::ops::Deref;
@@ -334,8 +335,8 @@ impl IDevice for ValidationDevice {
             _device: self._this.upgrade().unwrap(),
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            set_objects: Vec::with_capacity(desc.num_sets as usize),
-            free_list: Vec::with_capacity(128),
+            set_objects: Cell::new(Vec::with_capacity(desc.num_sets as usize)),
+            free_list: Cell::new(Vec::with_capacity(128)),
         });
 
         Ok(pool)

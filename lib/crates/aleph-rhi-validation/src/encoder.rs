@@ -267,7 +267,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
 
         let sets: Vec<_> = sets
             .iter()
-            .map(|v| get_as_unwrapped::descriptor_set_handle(v, None))
+            .map(|&v| get_as_unwrapped::descriptor_set_handle(v, None))
             .collect();
 
         self.inner.bind_descriptor_sets(

@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc};
@@ -41,8 +42,8 @@ pub struct ValidationDescriptorArena {
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: Box<dyn IDescriptorArena>,
     pub(crate) pool_id: u64,
-    pub(crate) set_objects: Vec<DescriptorSet>,
-    pub(crate) free_list: Vec<DescriptorSetHandle>,
+    pub(crate) set_objects: Cell<Vec<DescriptorSet>>,
+    pub(crate) free_list: Cell<Vec<DescriptorSetHandle>>,
 }
 
 declare_interfaces!(ValidationDescriptorArena, [IDescriptorArena]);
@@ -56,12 +57,15 @@ impl ValidationDescriptorArena {
     ///
     /// This function assumes it is being called immediately prior to trying to allocate a set. As
     /// such it returns an OOM error instead of a simple bool.
-    fn check_oom(&mut self) -> Result<(), DescriptorPoolAllocateError> {
-        if self.set_objects.len() == self.set_objects.capacity() {
+    fn check_oom(&self) -> Result<(), DescriptorPoolAllocateError> {
+        let set_objects = self.set_objects.take();
+        let out = if set_objects.len() == set_objects.capacity() {
             Err(DescriptorPoolAllocateError::OutOfMemory)
         } else {
             Ok(())
-        }
+        };
+        self.set_objects.set(set_objects);
+        out
     }
 
     /// Constructs a [DescriptorSet] object for the descriptor set with index 'set_index'.
@@ -77,7 +81,7 @@ impl ValidationDescriptorArena {
     /// This function is expected to be used when allocating a new set out of `self.set_pool`
     /// instead of from the free list.
     fn create_set_object_for_set_index(
-        &mut self,
+        &self,
         inner: DescriptorSetHandle,
         layout: AnyArc<ValidationDescriptorSetLayout>,
     ) -> DescriptorSet {
@@ -123,8 +127,10 @@ impl ValidationDescriptorArena {
         //
         // This won't solve use-after-free, or un-synchronized access to the underlying descriptor
         // memory. Thus any API that reads or writes from descriptors or descriptor sets is unsafe.
-        let handle = self.set_objects.as_ptr().wrapping_add(set_index);
+        let set_objects = self.set_objects.take();
+        let handle = set_objects.as_ptr().wrapping_add(set_index);
         let handle = handle as *mut DescriptorSet;
+        self.set_objects.set(set_objects);
 
         // Safety: It's the caller's responsibility to ensure 'set_index' is in bounds. The pointer
         // is guaranteed to be valid if the index is in bounds.
@@ -135,7 +141,7 @@ impl ValidationDescriptorArena {
         DescriptorSetHandle::from_raw(handle)
     }
 
-    fn validate_set_handle(&self, set: &DescriptorSetHandle) {
+    fn validate_set_handle(&self, set: DescriptorSetHandle) {
         // Validate that a DescriptorSetHandle contains a correctly aligned pointer. This may help
         // catch when someone is passing in bad handles
         let align = core::mem::align_of::<DescriptorSet>();
@@ -153,18 +159,17 @@ impl ValidationDescriptorArena {
             "DescriptorSetHandle contains badly-aligned pointer"
         );
 
+        let set_objects = self.set_objects.take();
+
         // If the pool is empty it's impossible for any handles to be from this particular pool.
         // This should never happen as we never allow empty descriptor pools.
         assert!(
-            !self.set_objects.is_empty(),
+            !set_objects.is_empty(),
             "The DescriptorSet pool is empty, no handle can be valid"
         );
 
-        let sets_base = self.set_objects.as_ptr();
-        let sets_end = self
-            .set_objects
-            .as_ptr()
-            .wrapping_add(self.set_objects.len());
+        let sets_base = set_objects.as_ptr();
+        let sets_end = set_objects.as_ptr().wrapping_add(set_objects.len());
 
         // This should never happen, but we check for completeness sake.
         assert!(
@@ -180,18 +185,23 @@ impl ValidationDescriptorArena {
             !set_oob,
             "The DescriptorSetHandle points outside of the pool, this handle is from another pool"
         );
+
+        self.set_objects.set(set_objects);
     }
 }
 
 impl IDescriptorArena for ValidationDescriptorArena {
     fn allocate_set(
-        &mut self,
+        &self,
         layout: &dyn IDescriptorSetLayout,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         // First try and grab something from the free list
-        if let Some(handle) = self.free_list.pop() {
+        let mut free_list = self.free_list.take();
+        if let Some(handle) = free_list.pop() {
+            self.free_list.set(free_list);
             return Ok(handle);
         }
+        self.free_list.set(free_list);
 
         // We don't need to check OOM unless we're trying to allocate a new set object
         self.check_oom()?;
@@ -201,45 +211,55 @@ impl IDescriptorArena for ValidationDescriptorArena {
         let inner = self.inner.allocate_set(layout.inner.as_ref())?;
 
         // Take the next free set, we create fresh set objects linearly
-        let set_index = self.set_objects.len();
+        let mut set_objects = self.set_objects.take();
+        let set_index = set_objects.len();
         let layout = layout._this.upgrade().unwrap();
         let set = self.create_set_object_for_set_index(inner, layout);
-        self.set_objects.push(set);
+        set_objects.push(set);
 
         // Safety: set_index is guaranteed to be < set_objects.len() because it is created from
         // set_objects.len() immediately prior to pushing a new element in set_objects.
         let handle = unsafe {
             assert!(
-                set_index < self.set_objects.len(),
+                set_index < set_objects.len(),
                 "'set_index' is out of bounds"
             );
+            self.set_objects.set(set_objects);
             self.convert_set_index_to_handle(set_index)
         };
 
         Ok(handle)
     }
 
-    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
-        for set in sets {
+    unsafe fn free(&self, sets: &[DescriptorSetHandle]) {
+        for &set in sets {
             self.validate_set_handle(set);
 
             // Does further validation based on reading the set object itself
             DescriptorSet::validate(set, Some(self.pool_id));
 
-            let inner: NonNull<()> = set.clone().into();
+            let inner: NonNull<()> = set.into();
             let inner: NonNull<DescriptorSet> = inner.cast();
             let inner = inner.as_ref();
 
             // Validation is done, free the set.
-            self.inner.free(&[inner.inner.clone()]);
+            self.inner.free(&[inner.inner]);
 
-            self.free_list.push(set.clone());
+            let mut free_list = self.free_list.take();
+            free_list.push(set);
+            self.free_list.set(free_list);
         }
     }
 
-    unsafe fn reset(&mut self) {
+    unsafe fn reset(&self) {
         self.inner.reset();
-        self.set_objects.clear();
-        self.free_list.clear();
+
+        let mut set_objects = self.set_objects.take();
+        set_objects.clear();
+        self.set_objects.set(set_objects);
+
+        let mut free_list = self.free_list.take();
+        free_list.clear();
+        self.free_list.set(free_list);
     }
 }

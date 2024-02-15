@@ -79,7 +79,7 @@ pub fn texture(texture: &dyn ITexture) -> &dyn ITexture {
 }
 
 pub unsafe fn descriptor_set_handle(
-    handle: &DescriptorSetHandle,
+    handle: DescriptorSetHandle,
     expected_pool_id: Option<u64>,
 ) -> DescriptorSetHandle {
     // Unwrap and validate to get the inner DescriptorSetHandle
@@ -122,7 +122,7 @@ pub fn descriptor_set_updates<Return>(
 
     let mut new_writes = Vec::new();
     for (i, v) in writes.iter().enumerate() {
-        let set = unsafe { descriptor_set_handle(&v.set, None) };
+        let set = unsafe { descriptor_set_handle(v.set, None) };
 
         new_writes.push(DescriptorWriteDesc {
             set,

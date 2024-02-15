@@ -58,8 +58,8 @@ impl DescriptorSet {
     pub const MAGIC_HEADER_VAL: u64 = 0x56214203605621;
 
     #[inline(always)]
-    pub unsafe fn validate(handle: &DescriptorSetHandle, expected_pool_id: Option<u64>) {
-        let inner: NonNull<()> = handle.clone().into();
+    pub unsafe fn validate(handle: DescriptorSetHandle, expected_pool_id: Option<u64>) {
+        let inner: NonNull<()> = handle.into();
         let inner: NonNull<Self> = inner.cast();
         let inner = inner.as_ref();
 
