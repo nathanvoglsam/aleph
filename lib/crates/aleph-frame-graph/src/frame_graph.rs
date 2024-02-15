@@ -157,6 +157,8 @@ impl FrameGraph {
             context,
         };
 
+        encoder.begin_event(Color::BLUE, "FrameGraph::execute");
+
         for bundle in self.execution_bundles.iter() {
             let mut has_memory_barrier = false;
             let mut memory_barrier = GlobalBarrier {
@@ -217,9 +219,14 @@ impl FrameGraph {
 
                 let render_pass = node.render_pass();
                 let render_pass = &mut self.render_passes[render_pass];
-                unsafe { render_pass.pass.as_mut().execute(encoder, &resources) }
+
+                encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
+                render_pass.pass.as_mut().execute(encoder, &resources);
+                encoder.end_event();
             }
         }
+
+        encoder.end_event()
     }
 
     fn allocate_transient_resource_bundle(&self) -> TransientResourceBundle {
