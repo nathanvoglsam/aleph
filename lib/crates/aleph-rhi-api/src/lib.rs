@@ -4854,6 +4854,60 @@ pub struct RenderingColorAttachmentInfo {
     pub store_op: AttachmentStoreOp,
 }
 
+impl RenderingColorAttachmentInfo {
+    pub const fn new(image_view: ImageView) -> Self {
+        Self {
+            image_view,
+            image_layout: ImageLayout::ColorAttachment,
+            load_op: AttachmentLoadOp::None,
+            store_op: AttachmentStoreOp::None,
+        }
+    }
+
+    pub const fn with_layout(mut self, image_layout: ImageLayout) -> Self {
+        self.image_layout = image_layout;
+        self
+    }
+
+    pub const fn with_load_op(mut self, load_op: AttachmentLoadOp<ColorClearValue>) -> Self {
+        self.load_op = load_op;
+        self
+    }
+
+    pub const fn with_store_op(mut self, store_op: AttachmentStoreOp) -> Self {
+        self.store_op = store_op;
+        self
+    }
+
+    pub const fn load(self) -> Self {
+        self.with_load_op(AttachmentLoadOp::Load)
+    }
+
+    pub const fn clear(self, value: ColorClearValue) -> Self {
+        self.with_load_op(AttachmentLoadOp::Clear(value))
+    }
+
+    pub const fn load_dont_care(self) -> Self {
+        self.with_load_op(AttachmentLoadOp::DontCare)
+    }
+
+    pub const fn load_none(self) -> Self {
+        self.with_load_op(AttachmentLoadOp::None)
+    }
+
+    pub const fn store(self) -> Self {
+        self.with_store_op(AttachmentStoreOp::Store)
+    }
+
+    pub const fn store_dont_care(self) -> Self {
+        self.with_store_op(AttachmentStoreOp::DontCare)
+    }
+
+    pub const fn store_none(self) -> Self {
+        self.with_store_op(AttachmentStoreOp::None)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct RenderingDepthStencilAttachmentInfo {
     pub image_view: ImageView,
@@ -4862,6 +4916,106 @@ pub struct RenderingDepthStencilAttachmentInfo {
     pub depth_store_op: AttachmentStoreOp,
     pub stencil_load_op: AttachmentLoadOp<DepthStencilClearValue>,
     pub stencil_store_op: AttachmentStoreOp,
+}
+
+impl RenderingDepthStencilAttachmentInfo {
+    pub const fn new(image_view: ImageView) -> Self {
+        Self {
+            image_view,
+            image_layout: ImageLayout::DepthStencilAttachment,
+            depth_load_op: AttachmentLoadOp::None,
+            depth_store_op: AttachmentStoreOp::None,
+            stencil_load_op: AttachmentLoadOp::None,
+            stencil_store_op: AttachmentStoreOp::None,
+        }
+    }
+
+    pub const fn with_layout(mut self, image_layout: ImageLayout) -> Self {
+        self.image_layout = image_layout;
+        self
+    }
+
+    pub const fn with_depth_load_op(
+        mut self,
+        load_op: AttachmentLoadOp<DepthStencilClearValue>,
+    ) -> Self {
+        self.depth_load_op = load_op;
+        self
+    }
+
+    pub const fn with_depth_store_op(mut self, store_op: AttachmentStoreOp) -> Self {
+        self.depth_store_op = store_op;
+        self
+    }
+
+    pub const fn with_stencil_load_op(
+        mut self,
+        load_op: AttachmentLoadOp<DepthStencilClearValue>,
+    ) -> Self {
+        self.stencil_load_op = load_op;
+        self
+    }
+
+    pub const fn with_stencil_store_op(mut self, store_op: AttachmentStoreOp) -> Self {
+        self.stencil_store_op = store_op;
+        self
+    }
+
+    pub const fn depth_load(self) -> Self {
+        self.with_depth_load_op(AttachmentLoadOp::Load)
+    }
+
+    pub const fn depth_clear(self, value: DepthStencilClearValue) -> Self {
+        self.with_depth_load_op(AttachmentLoadOp::Clear(value))
+    }
+
+    pub const fn depth_load_dont_care(self) -> Self {
+        self.with_depth_load_op(AttachmentLoadOp::DontCare)
+    }
+
+    pub const fn depth_load_none(self) -> Self {
+        self.with_depth_load_op(AttachmentLoadOp::None)
+    }
+
+    pub const fn depth_store(self) -> Self {
+        self.with_depth_store_op(AttachmentStoreOp::Store)
+    }
+
+    pub const fn depth_store_dont_care(self) -> Self {
+        self.with_depth_store_op(AttachmentStoreOp::DontCare)
+    }
+
+    pub const fn depth_store_none(self) -> Self {
+        self.with_depth_store_op(AttachmentStoreOp::None)
+    }
+
+    pub const fn stencil_load(self) -> Self {
+        self.with_stencil_load_op(AttachmentLoadOp::Load)
+    }
+
+    pub const fn stencil_clear(self, value: DepthStencilClearValue) -> Self {
+        self.with_stencil_load_op(AttachmentLoadOp::Clear(value))
+    }
+
+    pub const fn stencil_load_dont_care(self) -> Self {
+        self.with_stencil_load_op(AttachmentLoadOp::DontCare)
+    }
+
+    pub const fn stencil_load_none(self) -> Self {
+        self.with_stencil_load_op(AttachmentLoadOp::None)
+    }
+
+    pub const fn stencil_store(self) -> Self {
+        self.with_stencil_store_op(AttachmentStoreOp::Store)
+    }
+
+    pub const fn stencil_store_dont_care(self) -> Self {
+        self.with_stencil_store_op(AttachmentStoreOp::DontCare)
+    }
+
+    pub const fn stencil_store_none(self) -> Self {
+        self.with_stencil_store_op(AttachmentStoreOp::None)
+    }
 }
 
 #[derive(Clone, Debug)]
