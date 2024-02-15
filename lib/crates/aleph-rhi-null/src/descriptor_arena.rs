@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
+
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 
@@ -34,7 +36,7 @@ use crate::NullDevice;
 
 pub struct NullDescriptorArena {
     pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) counter: u64,
+    pub(crate) counter: Cell<u64>,
 }
 
 declare_interfaces!(NullDescriptorArena, [IDescriptorArena]);
@@ -43,19 +45,19 @@ crate::impl_platform_interface_passthrough!(NullDescriptorArena);
 
 impl IDescriptorArena for NullDescriptorArena {
     fn allocate_set(
-        &mut self,
+        &self,
         _layout: &dyn IDescriptorSetLayout,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        let handle = self.counter;
-        self.counter += 1;
+        let handle = self.counter.get();
+        self.counter.set(self.counter.get() + 1);
         Ok(unsafe { DescriptorSetHandle::from_raw_int(handle).unwrap() })
     }
 
-    unsafe fn free(&mut self, _sets: &[DescriptorSetHandle]) {
-        self.counter = 1;
+    unsafe fn free(&self, _sets: &[DescriptorSetHandle]) {
+        // Intentionally do nothing
     }
 
-    unsafe fn reset(&mut self) {
-        self.counter = 1;
+    unsafe fn reset(&self) {
+        self.counter.set(1);
     }
 }

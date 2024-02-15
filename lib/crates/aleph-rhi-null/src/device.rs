@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::cell::Cell;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use aleph_rhi_api::*;
 
@@ -185,7 +187,7 @@ impl IDevice for NullDevice {
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
         let pool = Box::new(NullDescriptorArena {
             _device: self._this.upgrade().unwrap(),
-            counter: 1,
+            counter: Cell::new(1),
         });
 
         Ok(pool)
