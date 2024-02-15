@@ -2449,6 +2449,33 @@ impl<'a> BufferDesc<'a> {
             name: Some(name),
         }
     }
+
+    pub const fn new(size: u64) -> Self {
+        Self {
+            size,
+            cpu_access: CpuAccessMode::None,
+            usage: ResourceUsageFlags::NONE,
+            name: None,
+        }
+    }
+
+    pub const fn with_cpu_access(mut self, cpu_access: CpuAccessMode) -> Self {
+        self.cpu_access = cpu_access;
+        self
+    }
+
+    pub const fn cpu_read(self) -> Self {
+        self.with_cpu_access(CpuAccessMode::Read)
+    }
+
+    pub const fn cpu_write(self) -> Self {
+        self.with_cpu_access(CpuAccessMode::Write)
+    }
+
+    pub const fn with_usage(mut self, usage: ResourceUsageFlags) -> Self {
+        self.usage = usage;
+        self
+    }
 }
 
 //
