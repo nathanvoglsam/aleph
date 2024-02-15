@@ -38,7 +38,6 @@ use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 
 struct LightingResolvePassPayload {
-    device: AnyArc<dyn IDevice>,
     gbuffer0: ResourceRef,
     gbuffer1: ResourceRef,
     gbuffer2: ResourceRef,
@@ -118,7 +117,6 @@ pub fn pass(
                 .unwrap();
 
             data.write(LightingResolvePassPayload {
-                device: device.upgrade(),
                 gbuffer0,
                 gbuffer1,
                 gbuffer2,
@@ -129,42 +127,43 @@ pub fn pass(
             });
             pin_board.publish(LightingResolvePassOutput { lighting });
         },
-        |data, encoder, resources, context| unsafe {
+        |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
 
-            // let arena: &mut dyn IDescriptorArena = ();
+            let device = resources.device();
+            let arena = resources.descriptor_arena();
 
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
             let gbuffer2 = resources.get_texture(data.gbuffer2).unwrap();
             let lighting = resources.get_texture(data.lighting).unwrap();
-            let _gbuffer0_srv = ImageView::get_srv_for(gbuffer0).unwrap();
-            let _gbuffer1_srv = ImageView::get_srv_for(gbuffer1).unwrap();
-            let _gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
-            let _lighting_uav = ImageView::get_uav_for(lighting).unwrap();
+            let gbuffer0_srv = ImageView::get_srv_for(gbuffer0).unwrap();
+            let gbuffer1_srv = ImageView::get_srv_for(gbuffer1).unwrap();
+            let gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
+            let lighting_uav = ImageView::get_uav_for(lighting).unwrap();
 
-            // let set = arena.allocate_set(data.set_layout.as_ref()).unwrap();
-            // data.device.update_descriptor_sets(&[
-            //     DescriptorWriteDesc::texture(set, 0, &gbuffer0_srv.srv_write()),
-            //     DescriptorWriteDesc::texture(set, 1, &gbuffer1_srv.srv_write()),
-            //     DescriptorWriteDesc::texture(set, 2, &gbuffer2_srv.srv_write()),
-            //     DescriptorWriteDesc::texture(set, 3, &lighting_uav.uav_write()),
-            // ]);
+            let set = arena.allocate_set(data.set_layout.as_ref()).unwrap();
+            device.update_descriptor_sets(&[
+                DescriptorWriteDesc::texture(set, 0, &gbuffer0_srv.srv_write()),
+                DescriptorWriteDesc::texture(set, 1, &gbuffer1_srv.srv_write()),
+                DescriptorWriteDesc::texture(set, 2, &gbuffer2_srv.srv_write()),
+                DescriptorWriteDesc::texture_rw(set, 3, &lighting_uav.uav_write()),
+            ]);
 
-            // encoder.bind_compute_pipeline(data.pipeline.as_ref());
-            // encoder.bind_descriptor_sets(
-            //     data.pipeline_layout.as_ref(),
-            //     PipelineBindPoint::Graphics,
-            //     0,
-            //     &[set],
-            //     &[],
-            // );
+            encoder.bind_compute_pipeline(data.pipeline.as_ref());
+            encoder.bind_descriptor_sets(
+                data.pipeline_layout.as_ref(),
+                PipelineBindPoint::Compute,
+                0,
+                &[set],
+                &[],
+            );
 
-            // let gbuffer0_desc = gbuffer0.desc_ref();
-            // let group_count_x = gbuffer0_desc.width.div_ceil(8);
-            // let group_count_y = gbuffer0_desc.height.div_ceil(8);
-            // encoder.dispatch(group_count_x, group_count_y, 1);
+            let gbuffer0_desc = gbuffer0.desc_ref();
+            let group_count_x = gbuffer0_desc.width.div_ceil(8);
+            let group_count_y = gbuffer0_desc.height.div_ceil(8);
+            encoder.dispatch(group_count_x, group_count_y, 1);
         },
     );
 }

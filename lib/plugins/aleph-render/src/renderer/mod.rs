@@ -94,7 +94,7 @@ impl EguiRenderer {
 
         let frames = (0..2)
             .into_iter()
-            .map(|_| PerFrameObjects::new(device.deref(), output.set_layout.as_ref(), &frame_graph))
+            .map(|_| PerFrameObjects::new(device.deref(), output.set_layout.as_ref()))
             .collect();
 
         Self {
@@ -133,13 +133,7 @@ impl EguiRenderer {
 
         let frames: Vec<_> = (0..2)
             .into_iter()
-            .map(|_| {
-                PerFrameObjects::new(
-                    self.device.as_ref(),
-                    output.set_layout.as_ref(),
-                    &frame_graph,
-                )
-            })
+            .map(|_| PerFrameObjects::new(self.device.as_ref(), output.set_layout.as_ref()))
             .collect();
 
         self.frames = frames;
@@ -156,7 +150,15 @@ impl EguiRenderer {
         main_gbuffer_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         lighting_resolve_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         egui_pass::pass(&mut frame_graph, device, pin_board, shader_db);
-        frame_graph.build()
+        let mut frame_graph = frame_graph.build(device);
+
+        // Safety: We _just_ created this graph. There's no way any transient allocations exist
+        //         yet.
+        unsafe {
+            frame_graph.allocate_transients(3);
+        }
+
+        frame_graph
     }
 
     pub unsafe fn record_frame(
@@ -206,7 +208,7 @@ impl EguiRenderer {
             });
 
             self.frame_graph.execute(
-                &self.frames[index].transient_bundle,
+                index,
                 &import_bundle,
                 encoder.as_mut(),
                 &self.execute_context,

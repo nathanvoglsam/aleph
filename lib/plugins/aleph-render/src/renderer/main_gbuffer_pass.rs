@@ -129,7 +129,7 @@ pub fn pass(
                 depth_buffer,
             });
         },
-        |data, encoder, resources, _| unsafe {
+        |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
 

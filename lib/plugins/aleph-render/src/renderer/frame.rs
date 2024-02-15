@@ -29,7 +29,6 @@
 
 use std::ops::Deref;
 
-use aleph_frame_graph::{FrameGraph, TransientResourceBundle};
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
@@ -39,7 +38,6 @@ pub struct PerFrameObjects {
     pub acquire_semaphore: AnyArc<dyn ISemaphore>,
     pub present_semaphore: AnyArc<dyn ISemaphore>,
 
-    pub transient_bundle: TransientResourceBundle,
     pub uniform_buffer: AnyArc<dyn IBuffer>,
 
     pub font_version: usize,
@@ -55,11 +53,7 @@ pub struct PerFrameObjects {
 }
 
 impl PerFrameObjects {
-    pub fn new(
-        device: &dyn IDevice,
-        set_layout: &dyn IDescriptorSetLayout,
-        frame_graph: &FrameGraph,
-    ) -> Self {
+    pub fn new(device: &dyn IDevice, set_layout: &dyn IDescriptorSetLayout) -> Self {
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
         let desc = DescriptorPoolDesc {
@@ -70,7 +64,6 @@ impl PerFrameObjects {
         let mut descriptor_pool = device.create_descriptor_pool(&desc).unwrap();
         let set = descriptor_pool.allocate_set().unwrap();
 
-        let transient_bundle = frame_graph.allocate_transient_resource_bundle(device);
         let uniform_buffer = device
             .create_buffer(&BufferDesc {
                 size: 1024,
@@ -90,7 +83,6 @@ impl PerFrameObjects {
         Self {
             acquire_semaphore: device.create_semaphore().unwrap(),
             present_semaphore: device.create_semaphore().unwrap(),
-            transient_bundle,
             uniform_buffer,
             font_version: 0,
             font_staging_buffer,

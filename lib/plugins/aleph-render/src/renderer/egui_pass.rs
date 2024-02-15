@@ -143,7 +143,7 @@ pub fn pass(
                 set_layout: descriptor_set_layout,
             });
         },
-        |data, encoder, resources, context| unsafe {
+        |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
             let back_buffer = resources.get_texture(data.back_buffer).unwrap();
@@ -154,7 +154,7 @@ pub fn pass(
                 buffer,
                 descriptor_set,
                 render_data,
-            } = context.get().unwrap();
+            } = resources.context().get().unwrap();
 
             // Map and calculate our begin/end pointers for the mapped vertex and index buffer
             // regions
