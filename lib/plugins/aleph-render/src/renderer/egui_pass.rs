@@ -73,21 +73,7 @@ pub fn pass(
     let descriptor_set_layout = create_descriptor_set_layout(device);
     let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
-    let vertex_shader = shader_db
-        .load(shaders::aleph_render::egui::egui_vert())
-        .unwrap();
-    let fragment_shader = shader_db
-        .load(shaders::aleph_render::egui::egui_frag())
-        .unwrap();
-    let vertex_shader = device.create_shader(&vertex_shader).unwrap();
-    let fragment_shader = device.create_shader(&fragment_shader).unwrap();
-
-    let graphics_pipeline = create_pipeline_state(
-        device,
-        pipeline_layout.as_ref(),
-        vertex_shader.as_ref(),
-        fragment_shader.as_ref(),
-    );
+    let graphics_pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
     frame_graph.add_pass(
         "EguiPass",
@@ -369,8 +355,7 @@ fn create_root_signature(
 fn create_pipeline_state(
     device: &dyn IDevice,
     pipeline_layout: &dyn IPipelineLayout,
-    vertex_shader: &dyn IShader,
-    pixel_shader: &dyn IShader,
+    shader_db: &ShaderDatabaseAccessor,
 ) -> AnyArc<dyn IGraphicsPipeline> {
     let rasterizer_state_new = RasterizerStateDesc {
         cull_mode: CullMode::None,
@@ -431,8 +416,15 @@ fn create_pipeline_state(
         }],
     };
 
+    let vertex_shader = shader_db
+        .load_stage(shaders::aleph_render::egui::egui_vert())
+        .unwrap();
+    let fragment_shader = shader_db
+        .load_stage(shaders::aleph_render::egui::egui_frag())
+        .unwrap();
+
     let graphics_pipeline_desc_new = GraphicsPipelineDesc {
-        shader_stages: &[vertex_shader, pixel_shader],
+        shader_stages: &[vertex_shader, fragment_shader],
         pipeline_layout,
         vertex_layout: &vertex_layout_new,
         input_assembly_state: &input_assembly_state_new,

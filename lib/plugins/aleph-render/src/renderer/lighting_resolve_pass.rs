@@ -76,14 +76,13 @@ pub fn pass(
         )
         .unwrap();
 
-    let shader_data = shader_db
-        .load(shaders::aleph_render::deferred::deferred_lighting_cs())
+    let shader_module = shader_db
+        .load_data(shaders::aleph_render::deferred::deferred_lighting_cs())
         .unwrap();
-    let shader_module = device.create_shader(&shader_data).unwrap();
 
     let pipeline = device
         .create_compute_pipeline(&ComputePipelineDesc {
-            shader_module: shader_module.as_ref(),
+            shader_module,
             pipeline_layout: pipeline_layout.as_ref(),
             name: Some("DeferredLightingPipeline"),
         })

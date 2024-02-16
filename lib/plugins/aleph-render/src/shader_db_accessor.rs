@@ -47,20 +47,34 @@ impl<'a> ShaderDatabaseAccessor<'a> {
         Self { loader, shader_db }
     }
 
-    pub fn load<'b: 'a, S: ShaderStage>(
+    pub fn load_stage<'b: 'a, S: aleph_shader_db::ShaderStage>(
         &self,
         name: ShaderName<'b, S>,
-    ) -> Option<ShaderOptions<'a>> {
+    ) -> Option<aleph_rhi_api::ShaderStage<'a>> {
         let loaded = (self.loader)(self.shader_db, name.into());
         if let Some(loaded) = loaded {
             if S::SHADER_TYPE == loaded.shader_type {
-                let options = ShaderOptions {
-                    shader_type: map_shader_type(S::SHADER_TYPE),
+                let out = aleph_rhi_api::ShaderStage {
+                    stage: map_shader_type(S::SHADER_TYPE),
                     data: loaded.data,
-                    entry_point: "main",
-                    name: Some(name.into()),
                 };
-                Some(options)
+                Some(out)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn load_data<'b: 'a, S: aleph_shader_db::ShaderStage>(
+        &self,
+        name: ShaderName<'b, S>,
+    ) -> Option<ShaderBinary<'a>> {
+        let loaded = (self.loader)(self.shader_db, name.into());
+        if let Some(loaded) = loaded {
+            if S::SHADER_TYPE == loaded.shader_type {
+                Some(loaded.data)
             } else {
                 None
             }
