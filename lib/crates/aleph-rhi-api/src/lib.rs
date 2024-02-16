@@ -259,17 +259,12 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError>;
+    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError>;
 
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError>;
-
-    fn create_shader(
-        &self,
-        options: &ShaderOptions,
-    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError>;
+    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError>;
 
     fn create_descriptor_set_layout(
         &self,
@@ -984,18 +979,6 @@ pub trait IGraphicsPipeline: IAny + IGetPlatformInterface + Send + Sync {
 
 pub trait IComputePipeline: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IComputePipeline);
-}
-
-//
-//
-// _________________________________________________________________________________________________
-// Shader
-
-pub trait IShader: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IShader);
-
-    fn shader_type(&self) -> ShaderType;
-    fn entry_point(&self) -> &str;
 }
 
 //
@@ -2952,7 +2935,7 @@ impl<'a> SamplerDesc<'a> {
 // Resources - Shader
 
 /// An enumeration of the supported set of shader input types.
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum ShaderBinary<'a> {
     /// This variant encloses a SPIR-V binary. Only supported by the `Vulkan` backend.
     Spirv(&'a [u8]),
@@ -2994,22 +2977,6 @@ impl Default for ShaderType {
     fn default() -> Self {
         Self::Compute
     }
-}
-
-/// Set of options for creating a new shader module
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
-pub struct ShaderOptions<'a> {
-    /// Specifies the type of shader that this module will hold
-    pub shader_type: ShaderType,
-
-    /// The raw bytes of the shader module, discriminated as either SPIR-V or DXIL
-    pub data: ShaderBinary<'a>,
-
-    /// The name of the entry point function that will be married to the shader module
-    pub entry_point: &'a str,
-
-    /// The name of the object
-    pub name: Option<&'a str>,
 }
 
 //
@@ -4378,11 +4345,17 @@ pub struct BlendStateDesc<'a> {
     pub attachments: &'a [AttachmentBlendState],
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct ShaderStage<'a> {
+    pub data: ShaderBinary<'a>,
+    pub stage: ShaderType,
+}
+
 #[derive(Clone)]
 pub struct GraphicsPipelineDesc<'a> {
     /// The list of shader modules that the pipeline configuration will use. The shader stage for
-    /// each module is specified on the [IShader] object.
-    pub shader_stages: &'a [&'a dyn IShader],
+    /// each module is specified on the [ShaderStage] object.
+    pub shader_stages: &'a [ShaderStage<'a>],
 
     /// The description of binding locations used by both the pipeline and descriptor sets used with
     /// the pipeline
@@ -4416,7 +4389,7 @@ pub struct GraphicsPipelineDesc<'a> {
 #[derive(Clone)]
 pub struct ComputePipelineDesc<'a> {
     /// The compute shader module that will be used by the compute pipeline being created.
-    pub shader_module: &'a dyn IShader,
+    pub shader_module: ShaderBinary<'a>,
 
     /// The description of binding locations used by both the pipeline and descriptor sets used with
     /// the pipeline
@@ -5416,47 +5389,6 @@ error_enum_from_unit_type!(SamplerCreateError);
 //
 //
 // _________________________________________________________________________________________________
-// Resource Construction - Shader
-
-#[derive(Error, Debug)]
-pub enum ShaderCreateError {
-    /// This error occurs when the byte size of the shader blob is of an invalid size.
-    ///
-    /// Invalid sizes include:
-    ///     - 0
-    ///     - Non multiples of 4 (on Vulkan)
-    ///
-    /// # Vulkan
-    ///
-    /// Vulkan consumes SPIR-V as the shader blob. SPIR-V is encoded as a sequence of `u32` values.
-    /// It is impossible for a valid SPIR-V binary to have a size that is not a multiple of 4 (the
-    /// size of a u32) for this reason.
-    #[error("The shader binary size '{0}' is invalid")]
-    InvalidInputSize(usize),
-
-    /// This error occurs when the entry point name string is invalid. The primary trigger for this
-    /// will be getting dodgy null-terminated strings as '&str'.
-    ///
-    /// Do not 'pre-null-terminate' the entry point names.
-    #[error("The string provided for the entry point name is invalid")]
-    InvalidEntryPointName,
-
-    /// This error occurs when a shader binary is provided in a format not supported by the active
-    /// backend.
-    ///
-    /// The `Vulkan` backend can only accept SPIR-V shaders, while the `D3D12` backend can only
-    /// accept DXIL shaders.
-    #[error("The shader binary is of unsupported format")]
-    UnsupportedShaderFormat,
-
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-}
-error_enum_from_unit_type!(ShaderCreateError);
-
-//
-//
-// _________________________________________________________________________________________________
 // Descriptors
 
 #[derive(Error, Debug)]
@@ -5508,18 +5440,33 @@ pub enum PipelineLayoutCreateError {
 error_enum_from_unit_type!(PipelineLayoutCreateError);
 
 #[derive(Error, Debug)]
-pub enum GraphicsPipelineCreateError {
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-}
-error_enum_from_unit_type!(GraphicsPipelineCreateError);
+pub enum PipelineCreateError {
+    /// This error occurs when the byte size of the shader blob is of an invalid size.
+    ///
+    /// Invalid sizes include:
+    ///     - 0
+    ///     - Non multiples of 4 (on Vulkan)
+    ///
+    /// # Vulkan
+    ///
+    /// Vulkan consumes SPIR-V as the shader blob. SPIR-V is encoded as a sequence of `u32` values.
+    /// It is impossible for a valid SPIR-V binary to have a size that is not a multiple of 4 (the
+    /// size of a u32) for this reason.
+    #[error("The shader [{0}] binary size '{1}' is invalid")]
+    InvalidInputSize(usize, usize),
 
-#[derive(Error, Debug)]
-pub enum ComputePipelineCreateError {
+    /// This error occurs when a shader binary is provided in a format not supported by the active
+    /// backend.
+    ///
+    /// The `Vulkan` backend can only accept SPIR-V shaders, while the `D3D12` backend can only
+    /// accept DXIL shaders.
+    #[error("The shader [{0}] binary is of unsupported format")]
+    UnsupportedShaderFormat(usize),
+
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(ComputePipelineCreateError);
+error_enum_from_unit_type!(PipelineCreateError);
 
 //
 //
