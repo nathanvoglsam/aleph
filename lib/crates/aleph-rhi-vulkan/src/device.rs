@@ -28,12 +28,13 @@
 //
 
 use std::any::TypeId;
-use std::ffi::CString;
 use std::mem::ManuallyDrop;
+use std::ops::Deref;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
+use aleph_rhi_impl_utils::cstr;
 use ash::prelude::VkResult;
 use ash::vk;
 use bumpalo::collections::Vec as BVec;
@@ -50,6 +51,7 @@ use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::Fence;
+use crate::internal::allocation_callbacks::callbacks_from_rust_allocator;
 use crate::internal::conv::*;
 use crate::internal::render_pass_cache::RenderPassCache;
 use crate::internal::set_name::set_name;
@@ -59,7 +61,6 @@ use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
-use crate::shader::Shader;
 use crate::texture::Texture;
 
 pub struct Device {
@@ -145,7 +146,7 @@ impl IDevice for Device {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
+    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -192,14 +193,28 @@ impl IDevice for Device {
             let attachments = Self::translate_color_attachment_state(&bump, desc);
             let color_blend_state = Self::translate_color_blend_state(&attachments);
 
-            let stages_iter = desc.shader_stages.iter().map(unwrap::shader_d).map(|v| {
-                vk::PipelineShaderStageCreateInfo::builder()
-                    .stage(v.vk_shader_type)
-                    .module(v.module)
-                    .name(v.entry_point.as_ref())
-                    .build()
-            });
-            let stages = BVec::from_iter_in(stages_iter, &bump);
+            let alloc_adapter = callbacks_from_rust_allocator(bump.deref());
+            let mut shader_modules = BVec::with_capacity_in(desc.shader_stages.len(), &bump);
+            for (i, v) in desc.shader_stages.iter().enumerate() {
+                let module = unsafe {
+                    let shader_data = Self::unwrap_shader_bytecode(&bump, i, &v.data)?;
+                    let create_info = vk::ShaderModuleCreateInfo::builder().code(shader_data);
+                    self.device
+                        .create_shader_module(&create_info, Some(&alloc_adapter))
+                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                };
+                shader_modules.push((v.stage, module));
+            }
+
+            let mut stages = BVec::with_capacity_in(shader_modules.len(), &bump);
+            for &(shader_type, module) in shader_modules.iter() {
+                let info = vk::PipelineShaderStageCreateInfo::builder()
+                    .stage(shader_type_to_vk(shader_type))
+                    .module(module)
+                    .name(cstr!("main"))
+                    .build();
+                stages.push(info);
+            }
 
             builder = builder.dynamic_state(&dynamic_state);
             builder = builder.stages(&stages);
@@ -222,6 +237,13 @@ impl IDevice for Device {
                     .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
+
+            for (_, module) in shader_modules {
+                unsafe {
+                    self.device
+                        .destroy_shader_module(module, Some(&alloc_adapter));
+                }
+            }
 
             set_name(
                 self.context.debug_loader.as_ref(),
@@ -247,20 +269,29 @@ impl IDevice for Device {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
+    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let module = unwrap::shader(desc.shader_module);
+            let shader_data = Self::unwrap_shader_bytecode(&bump, 0, &desc.shader_module)?;
             let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
+
+            // Create a temporary shader module using
+            let alloc_adapter = callbacks_from_rust_allocator(bump.deref());
+            let module = unsafe {
+                let create_info = vk::ShaderModuleCreateInfo::builder().code(shader_data);
+                self.device
+                    .create_shader_module(&create_info, Some(&alloc_adapter))
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+            };
 
             let builder = vk::ComputePipelineCreateInfo::builder()
                 .layout(pipeline_layout.pipeline_layout)
                 .stage(
                     vk::PipelineShaderStageCreateInfo::builder()
                         .stage(vk::ShaderStageFlags::COMPUTE)
-                        .module(module.module)
-                        .name(&module.entry_point)
+                        .module(module)
+                        .name(cstr!("main"))
                         .build(),
                 );
 
@@ -270,6 +301,12 @@ impl IDevice for Device {
                     .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
+
+            // Destroy the temporary shader module
+            unsafe {
+                self.device
+                    .destroy_shader_module(module, Some(&alloc_adapter))
+            }
 
             set_name(
                 self.context.debug_loader.as_ref(),
@@ -286,59 +323,6 @@ impl IDevice for Device {
                 pipeline,
             });
             Ok(AnyArc::map::<dyn IComputePipeline, _>(out, |v| v))
-        })
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_shader(
-        &self,
-        options: &ShaderOptions,
-    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
-            if let ShaderBinary::Spirv(data) = options.data {
-                // Vulkan shaders must always have a buffer length that is a multiple of 4. SPIR-V's binary
-                // representation is a sequence of u32 values.
-                if data.len() % 4 != 0 || data.is_empty() {
-                    return Err(ShaderCreateError::InvalidInputSize(data.len()));
-                }
-
-                // We need to copy the data into a u32 buffer to satisfy alignment requirements
-                let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
-                let data = BVec::from_iter_in(data_iter, &bump);
-
-                let module = unsafe {
-                    let create_info = vk::ShaderModuleCreateInfo::builder().code(&data);
-                    self.device
-                        .create_shader_module(&create_info, None)
-                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-                };
-
-                set_name(
-                    self.context.debug_loader.as_ref(),
-                    self.device.handle(),
-                    &bump,
-                    module,
-                    options.name,
-                );
-
-                let entry_point = CString::new(options.entry_point)
-                    .map_err(|_| ShaderCreateError::InvalidEntryPointName)?;
-
-                let shader = AnyArc::new_cyclic(move |v| Shader {
-                    this: v.clone(),
-                    device: self.this.upgrade().unwrap(),
-                    shader_type: options.shader_type,
-                    vk_shader_type: shader_type_to_vk(options.shader_type),
-                    module,
-                    entry_point,
-                });
-                Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
-            } else {
-                Err(ShaderCreateError::UnsupportedShaderFormat)
-            }
         })
     }
 
@@ -1111,6 +1095,28 @@ impl Device {
             QueueType::General => self.general_queue.as_ref().unwrap().info.family_index,
             QueueType::Compute => self.compute_queue.as_ref().unwrap().info.family_index,
             QueueType::Transfer => self.transfer_queue.as_ref().unwrap().info.family_index,
+        }
+    }
+
+    fn unwrap_shader_bytecode<'a>(
+        bump: &'a Bump,
+        index: usize,
+        shader: &ShaderBinary,
+    ) -> Result<&'a [u32], PipelineCreateError> {
+        if let ShaderBinary::Spirv(data) = shader {
+            // Vulkan shaders must always have a buffer length that is a multiple of 4. SPIR-V's binary
+            // representation is a sequence of u32 values.
+            if data.len() % 4 != 0 || data.is_empty() {
+                return Err(PipelineCreateError::InvalidInputSize(index, data.len()));
+            }
+
+            // We need to copy the data into a u32 buffer to satisfy alignment requirements
+            let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
+            let data = bump.alloc_slice_fill_iter(data_iter);
+
+            Ok(&*data)
+        } else {
+            Err(PipelineCreateError::UnsupportedShaderFormat(index))
         }
     }
 

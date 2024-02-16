@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod allocation_callbacks;
 pub mod conv;
 pub mod device_info;
 pub mod features;

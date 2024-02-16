@@ -46,7 +46,6 @@ mod queue;
 mod rhi_backend;
 mod sampler;
 mod semaphore;
-mod shader;
 mod surface;
 mod swap_chain;
 mod texture;
