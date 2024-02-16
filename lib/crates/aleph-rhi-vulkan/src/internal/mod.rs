@@ -31,22 +31,10 @@ pub mod allocation_callbacks;
 pub mod conv;
 pub mod device_info;
 pub mod features;
-pub mod framebuffer_cache;
-pub mod framebuffer_cache_key;
 pub mod loader;
 pub mod messenger;
 pub mod mvk;
 pub mod profile;
 pub mod queue_present_support;
-pub mod render_pass_cache;
-pub mod rendering_info_key;
 pub mod set_name;
 pub mod unwrap;
-
-pub unsafe fn slice_from_ptr_len_vk<'a, T>(ptr: *const T, len: u32) -> &'a [T] {
-    if ptr.is_null() || len == 0 {
-        &[]
-    } else {
-        std::slice::from_raw_parts(ptr, len as usize)
-    }
-}

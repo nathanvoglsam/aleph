@@ -114,6 +114,7 @@ impl DeviceInfo {
                 make_ext_prop("VK_KHR_separate_depth_stencil_layouts\0"),
                 make_ext_prop("VK_KHR_driver_properties\0"),
                 make_ext_prop("VK_KHR_create_renderpass2\0"),
+                make_ext_prop("VK_KHR_dynamic_rendering\0"),
                 make_ext_prop("VK_KHR_image_format_list\0"),
                 make_ext_prop("VK_KHR_sampler_mirror_clamp_to_edge\0"),
                 // make_ext_prop("VK_EXT_sampler_filter_minmax\0"),

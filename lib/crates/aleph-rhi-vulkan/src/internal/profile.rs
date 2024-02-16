@@ -597,7 +597,7 @@ impl CreateProfile for vk::PhysicalDeviceDynamicRenderingFeatures {
 
     fn minimum() -> Self {
         Self {
-            // dynamic_rendering: vk::TRUE,
+            dynamic_rendering: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }

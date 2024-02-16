@@ -184,22 +184,6 @@ impl IAdapter for Adapter {
         enable_if_supported(vk::Khr8bitStorageFn::name());
         enable_if_supported(vk::KhrShaderFloat16Int8Fn::name());
         enable_if_supported(vk::KhrShaderAtomicInt64Fn::name());
-        if !enable_if_supported(vk::KhrDynamicRenderingFn::name()) {
-            // If we don't have dynamic rendering we need to load one of the extensions that
-            // provides store op none, otherwise unhappiness will ensue. Try the khronos one first,
-            // then the original qualcomm one.
-            //
-            // We can't work without store op none, fail if none of the extensions are available.
-            if !enable_if_supported(vk::ExtLoadStoreOpNoneFn::name()) {
-                if !enable_if_supported(vk::QcomRenderPassStoreOpsFn::name()) {
-                    panic!(
-                        "Missing mandatory extension, either '{:?}', or '{:?}'",
-                        vk::ExtLoadStoreOpNoneFn::name(),
-                        vk::QcomRenderPassStoreOpsFn::name()
-                    );
-                }
-            }
-        }
         enable_if_supported(vk::KhrSwapchainFn::name());
         enable_if_supported(vk::KhrPortabilitySubsetFn::name());
 
@@ -231,6 +215,7 @@ impl IAdapter for Adapter {
             mut buffer_device_address_features,
             mut uniform_buffer_standard_layout_features,
             mut host_query_reset_features,
+            mut dynamic_rendering_features,
             ..
         } = DeviceInfo::minimum();
         let mut device_create_info = vk::DeviceCreateInfo::builder()
@@ -247,6 +232,7 @@ impl IAdapter for Adapter {
             .push_next(&mut buffer_device_address_features)
             .push_next(&mut uniform_buffer_standard_layout_features)
             .push_next(&mut host_query_reset_features)
+            .push_next(&mut dynamic_rendering_features)
             .enabled_features(&features_10)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
@@ -256,7 +242,6 @@ impl IAdapter for Adapter {
             mut t_8bit_storage_features,
             mut shader_float16int8features,
             mut shader_atomic_int_64_features,
-            mut dynamic_rendering_features,
             mut portability_features,
             mut synchronization_2_features,
             ..
@@ -272,9 +257,6 @@ impl IAdapter for Adapter {
         }
         if is_supported(vk::KhrShaderAtomicInt64Fn::name()) {
             device_create_info = device_create_info.push_next(&mut shader_atomic_int_64_features)
-        }
-        if is_supported(vk::KhrDynamicRenderingFn::name()) {
-            device_create_info = device_create_info.push_next(&mut dynamic_rendering_features)
         }
         if is_supported(vk::KhrPortabilitySubsetFn::name()) {
             device_create_info = device_create_info.push_next(&mut portability_features)
@@ -294,21 +276,8 @@ impl IAdapter for Adapter {
             ash::extensions::khr::TimelineSemaphore::new(&self.context.instance, &device);
         let create_renderpass_2 =
             ash::extensions::khr::CreateRenderPass2::new(&self.context.instance, &device);
-
-        let deny_dynamic_rendering = self.context.config.deny_dynamic_rendering;
-        let have_dynamic_rendering = dynamic_rendering_features.dynamic_rendering != 0;
-        let load_dynamic_rendering = have_dynamic_rendering && !deny_dynamic_rendering;
-        let dynamic_rendering = if load_dynamic_rendering {
-            Some(ash::extensions::khr::DynamicRendering::new(
-                &self.context.instance,
-                &device,
-            ))
-        } else {
-            if deny_dynamic_rendering {
-                log::warn!("VK_KHR_dynamic_rendering begin/end rendering path has been disabled");
-            }
-            None
-        };
+        let dynamic_rendering =
+            ash::extensions::khr::DynamicRendering::new(&self.context.instance, &device);
 
         let swapchain = if is_supported(vk::KhrSwapchainFn::name()) {
             Some(ash::extensions::khr::Swapchain::new(
@@ -348,7 +317,7 @@ impl IAdapter for Adapter {
                 context: self.context.clone(),
                 device: ManuallyDrop::new(device),
                 timeline_semaphore,
-                create_renderpass_2,
+                _create_renderpass_2: create_renderpass_2,
                 dynamic_rendering,
                 swapchain,
                 synchronization_2,
@@ -356,7 +325,6 @@ impl IAdapter for Adapter {
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,
-                render_pass_cache: Default::default(),
             };
 
             unsafe { found_families.build_queue_objects(&mut device) };

@@ -36,12 +36,10 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::cstr;
 use allocator_api2::alloc::Allocator;
-use ash::prelude::VkResult;
 use ash::vk;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
 use byteorder::{ByteOrder, NativeEndian};
-use parking_lot::Mutex;
 use vulkan_alloc::vma;
 
 use crate::adapter::Adapter;
@@ -54,7 +52,6 @@ use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::Fence;
 use crate::internal::allocation_callbacks::callbacks_from_rust_allocator;
 use crate::internal::conv::*;
-use crate::internal::render_pass_cache::RenderPassCache;
 use crate::internal::set_name::set_name;
 use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
@@ -70,15 +67,14 @@ pub struct Device {
     pub(crate) adapter: AnyArc<Adapter>,
     pub(crate) device: ManuallyDrop<ash::Device>,
     pub(crate) timeline_semaphore: ash::extensions::khr::TimelineSemaphore,
-    pub(crate) create_renderpass_2: ash::extensions::khr::CreateRenderPass2,
-    pub(crate) dynamic_rendering: Option<ash::extensions::khr::DynamicRendering>,
+    pub(crate) _create_renderpass_2: ash::extensions::khr::CreateRenderPass2,
+    pub(crate) dynamic_rendering: ash::extensions::khr::DynamicRendering,
     pub(crate) swapchain: Option<ash::extensions::khr::Swapchain>,
     pub(crate) synchronization_2: Option<ash::extensions::khr::Synchronization2>,
     pub(crate) allocator: ManuallyDrop<vma::Allocator>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
-    pub(crate) render_pass_cache: Mutex<RenderPassCache>,
 }
 
 declare_interfaces!(Device, [IDevice]);
@@ -184,12 +180,6 @@ impl IDevice for Device {
 
             let mut color_formats = BVec::with_capacity_in(desc.render_target_formats.len(), &bump);
             let mut dynamic_rendering = Self::translate_framebuffer_info(desc, &mut color_formats);
-            let render_pass = if self.dynamic_rendering.is_none() {
-                self.translate_framebuffer_info_fallback(desc, &bump)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-            } else {
-                vk::RenderPass::null()
-            };
 
             let attachments = Self::translate_color_attachment_state(&bump, desc);
             let color_blend_state = Self::translate_color_blend_state(&attachments);
@@ -225,11 +215,7 @@ impl IDevice for Device {
             builder = builder.rasterization_state(&rasterization_state);
             builder = builder.multisample_state(&multisample_state);
             builder = builder.depth_stencil_state(&depth_stencil_state);
-            if self.dynamic_rendering.is_some() {
-                builder = builder.push_next(&mut dynamic_rendering);
-            } else {
-                builder = builder.render_pass(render_pass);
-            }
+            builder = builder.push_next(&mut dynamic_rendering);
             builder = builder.color_blend_state(&color_blend_state);
 
             let pipeline = unsafe {
@@ -765,7 +751,6 @@ impl IDevice for Device {
             views: Default::default(),
             rtvs: Default::default(),
             dsvs: Default::default(),
-            framebuffers: Default::default(),
             desc,
             name,
         });
@@ -1288,84 +1273,11 @@ impl Device {
             .view_mask(0)
             .color_attachment_formats(color_formats.as_slice())
     }
-
-    fn translate_framebuffer_info_fallback(
-        &self,
-        desc: &GraphicsPipelineDesc,
-        bump: &Bump,
-    ) -> VkResult<vk::RenderPass> {
-        // Number of attachments is number of color attachments + 1 if we have a depth attachment
-        let num_attachments =
-            desc.render_target_formats.len() + desc.depth_stencil_format.map(|_| 1).unwrap_or(0);
-
-        let attachments: &mut [vk::AttachmentDescription2] =
-            bump.alloc_slice_fill_default(num_attachments);
-        let references: &mut [vk::AttachmentReference2] =
-            bump.alloc_slice_fill_default(num_attachments);
-
-        let mut attachment_index = 0usize;
-        for v in desc.render_target_formats.iter().copied() {
-            attachments[attachment_index] = vk::AttachmentDescription2::builder()
-                .format(texture_format_to_vk(v))
-                .samples(vk::SampleCountFlags::TYPE_1)
-                .load_op(vk::AttachmentLoadOp::NONE_EXT)
-                .store_op(vk::AttachmentStoreOp::NONE_EXT)
-                .initial_layout(vk::ImageLayout::UNDEFINED)
-                .final_layout(vk::ImageLayout::GENERAL)
-                .build();
-
-            references[attachment_index] = vk::AttachmentReference2::builder()
-                .attachment(attachment_index as _)
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .layout(vk::ImageLayout::GENERAL)
-                .build();
-
-            attachment_index += 1;
-        }
-
-        if let Some(v) = desc.depth_stencil_format {
-            attachments[attachment_index] = vk::AttachmentDescription2::builder()
-                .format(texture_format_to_vk(v))
-                .samples(vk::SampleCountFlags::TYPE_1)
-                .load_op(vk::AttachmentLoadOp::NONE_EXT)
-                .store_op(vk::AttachmentStoreOp::NONE_EXT)
-                .initial_layout(vk::ImageLayout::UNDEFINED)
-                .final_layout(vk::ImageLayout::GENERAL)
-                .build();
-
-            references[attachment_index] = vk::AttachmentReference2::builder()
-                .attachment(attachment_index as _)
-                .aspect_mask(vk::ImageAspectFlags::DEPTH | vk::ImageAspectFlags::STENCIL)
-                .layout(vk::ImageLayout::GENERAL)
-                .build();
-        }
-
-        let mut subpass = vk::SubpassDescription2::builder()
-            .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
-            .view_mask(0)
-            .color_attachments(&references[0..desc.render_target_formats.len()]);
-        if desc.depth_stencil_format.is_some() {
-            subpass = subpass.depth_stencil_attachment(references.last().unwrap())
-        }
-        let subpass = &*bump.alloc(subpass);
-
-        let create_info = vk::RenderPassCreateInfo2::builder()
-            .attachments(attachments)
-            .subpasses(std::slice::from_ref(&subpass));
-
-        unsafe {
-            self.render_pass_cache
-                .lock()
-                .get_render_pass_for_create_info(&self, &create_info)
-        }
-    }
 }
 
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
-            self.render_pass_cache.get_mut().destroy(&self.device);
-
             if let Some(queue) = self.general_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
                 self.device.destroy_semaphore(queue.semaphore, None);

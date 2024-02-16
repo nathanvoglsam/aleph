@@ -274,7 +274,6 @@ impl SwapChain {
                     views: Default::default(),
                     rtvs: Default::default(),
                     dsvs: Default::default(),
-                    framebuffers: Default::default(),
                     desc,
                     name: None,
                 })
