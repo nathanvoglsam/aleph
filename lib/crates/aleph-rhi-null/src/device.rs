@@ -36,7 +36,7 @@ use crate::NullDescriptorArena;
 use crate::{
     NullAdapter, NullBuffer, NullCommandList, NullComputePipeline, NullContext, NullDescriptorPool,
     NullDescriptorSetLayout, NullFence, NullGraphicsPipeline, NullPipelineLayout, NullQueue,
-    NullSampler, NullSemaphore, NullShader, NullTexture,
+    NullSampler, NullSemaphore, NullTexture,
 };
 
 pub struct NullDevice {
@@ -90,7 +90,7 @@ impl IDevice for NullDevice {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
+    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
         let pipeline_layout = desc
             .pipeline_layout
             .query_interface::<NullPipelineLayout>()
@@ -110,7 +110,7 @@ impl IDevice for NullDevice {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
+    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
         let pipeline_layout = desc
             .pipeline_layout
             .query_interface::<NullPipelineLayout>()
@@ -122,22 +122,6 @@ impl IDevice for NullDevice {
             _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
         });
         Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_shader(
-        &self,
-        options: &ShaderOptions,
-    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        let shader = AnyArc::new_cyclic(move |v| NullShader {
-            _this: v.clone(),
-            _device: self._this.upgrade().unwrap(),
-            shader_type: options.shader_type,
-            entry_point: options.entry_point.to_owned(),
-        });
-        Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
     }
 
     // ========================================================================================== //
