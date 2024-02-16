@@ -103,10 +103,6 @@ pub struct BackendConfigs {
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct VulkanConfig {
-    /// Force disable the VK_KHR_dynamic_rendering path. Intended for testing the fallback on
-    /// platforms that support dynamic rendering.
-    pub deny_dynamic_rendering: bool,
-
     /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
     /// platforms that support sync2.
     pub deny_sync_2: bool,
@@ -114,10 +110,7 @@ pub struct VulkanConfig {
 
 impl Default for VulkanConfig {
     fn default() -> Self {
-        Self {
-            deny_dynamic_rendering: false,
-            deny_sync_2: false,
-        }
+        Self { deny_sync_2: false }
     }
 }
 
