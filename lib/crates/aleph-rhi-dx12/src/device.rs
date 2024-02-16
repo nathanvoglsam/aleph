@@ -82,7 +82,6 @@ use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
-use crate::shader::Shader;
 use crate::texture::{ImageViewObject, Texture};
 
 pub struct Device {
@@ -167,7 +166,7 @@ impl IDevice for Device {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
+    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -253,20 +252,23 @@ impl IDevice for Device {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
+    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
         // Unwrap the pipeline layout trait object into the concrete implementation
         let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout)
             .this
             .upgrade()
             .unwrap();
 
-        let module = unwrap::shader(desc.shader_module);
+        let shader = match desc.shader_module {
+            ShaderBinary::Dxil(v) => v,
+            _ => return Err(PipelineCreateError::UnsupportedShaderFormat(0)),
+        };
 
         let pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
             pRootSignature: unsafe { transmute_copy(&pipeline_layout.root_signature) },
             CS: D3D12_SHADER_BYTECODE {
-                pShaderBytecode: module.data.as_ptr() as *const _,
-                BytecodeLength: module.data.len(),
+                pShaderBytecode: shader.as_ptr() as *const _,
+                BytecodeLength: shader.len(),
             },
             NodeMask: 0,
             CachedPSO: D3D12_CACHED_PIPELINE_STATE {
@@ -292,32 +294,6 @@ impl IDevice for Device {
             pipeline_layout,
         });
         Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_shader(
-        &self,
-        options: &ShaderOptions,
-    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        if let ShaderBinary::Dxil(data) = options.data {
-            // Empty shader binary is invalid
-            if data.is_empty() {
-                return Err(ShaderCreateError::InvalidInputSize(0));
-            }
-
-            let shader = AnyArc::new_cyclic(move |v| Shader {
-                this: v.clone(),
-                _device: self.this.upgrade().unwrap(),
-                shader_type: options.shader_type,
-                data: data.to_vec(),
-                entry_point: options.entry_point.to_string(),
-            });
-            Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
-        } else {
-            Err(ShaderCreateError::UnsupportedShaderFormat)
-        }
     }
 
     // ========================================================================================== //
@@ -989,25 +965,28 @@ impl IDevice for Device {
 }
 
 impl Device {
-    /// Internal function for translating the list of [IShader] stages into the pipeline description
+    /// Internal function for translating the list of [ShaderStage] stages into the pipeline
+    /// description
     fn translate_shader_stage_list<'a>(
-        shader_stages: &'a [&'a dyn IShader],
+        shader_stages: &'a [ShaderStage<'a>],
         mut builder: GraphicsPipelineStateStreamBuilder<'a>,
-    ) -> Result<GraphicsPipelineStateStreamBuilder<'a>, GraphicsPipelineCreateError> {
-        for shader in shader_stages {
-            let shader = unwrap::shader_d(shader);
-            builder = match shader.shader_type {
-                ShaderType::Vertex => builder.vertex_shader(&shader.data),
-                ShaderType::Hull => builder.hull_shader(&shader.data),
-                ShaderType::Domain => builder.domain_shader(&shader.data),
-                ShaderType::Geometry => builder.geometry_shader(&shader.data),
-                ShaderType::Fragment => builder.pixel_shader(&shader.data),
-                ShaderType::Compute => {
-                    panic!("Can't bind a compute shader to a graphics pipeline")
-                }
-                ShaderType::Amplification | ShaderType::Mesh => {
-                    todo!("Missing implementation for amplification and mesh shaders")
-                }
+    ) -> Result<GraphicsPipelineStateStreamBuilder<'a>, PipelineCreateError> {
+        for (i, shader_stage) in shader_stages.iter().enumerate() {
+            builder = match shader_stage.data {
+                ShaderBinary::Dxil(shader) => match shader_stage.stage {
+                    ShaderType::Vertex => builder.vertex_shader(shader),
+                    ShaderType::Hull => builder.hull_shader(shader),
+                    ShaderType::Domain => builder.domain_shader(shader),
+                    ShaderType::Geometry => builder.geometry_shader(shader),
+                    ShaderType::Fragment => builder.pixel_shader(shader),
+                    ShaderType::Compute => {
+                        panic!("Can't bind a compute shader to a graphics pipeline")
+                    }
+                    ShaderType::Amplification | ShaderType::Mesh => {
+                        todo!("Missing implementation for amplification and mesh shaders")
+                    }
+                },
+                _ => return Err(PipelineCreateError::UnsupportedShaderFormat(i)),
             }
         }
         Ok(builder)

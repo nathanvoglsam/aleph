@@ -50,10 +50,8 @@ mod queue;
 mod rhi_backend;
 mod sampler;
 mod semaphore;
-mod shader;
 mod surface;
 mod swap_chain;
 mod texture;
 
 pub use rhi_backend::RHI_BACKEND;
-pub use shader::ShaderData;

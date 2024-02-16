@@ -39,7 +39,6 @@ use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
-use crate::shader::Shader;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
 use crate::texture::Texture;
@@ -90,7 +89,6 @@ conversion_function!(
     semaphore_d,
     semaphore_iter
 );
-conversion_function!(IShader, Shader, shader, shader_d, shader_iter);
 conversion_function!(ISurface, Surface, surface, surface_d, surface_iter);
 
 conversion_function!(
