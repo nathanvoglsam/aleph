@@ -33,7 +33,7 @@ use aleph_rhi_impl_utils::conversion_function;
 use crate::{
     ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
     ValidationDescriptorSetLayout, ValidationDevice, ValidationFence, ValidationGraphicsPipeline,
-    ValidationPipelineLayout, ValidationSampler, ValidationSemaphore, ValidationShader,
+    ValidationPipelineLayout, ValidationSampler, ValidationSemaphore,
     ValidationSurface, ValidationSwapChain, ValidationTexture,
 };
 
@@ -89,7 +89,6 @@ conversion_function!(
     semaphore_d,
     semaphore_iter
 );
-conversion_function!(IShader, ValidationShader, shader, shader_d, shader_iter);
 conversion_function!(
     ISurface,
     ValidationSurface,

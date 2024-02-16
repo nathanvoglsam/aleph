@@ -48,7 +48,7 @@ use crate::{
     ValidationAdapter, ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
     ValidationContext, ValidationDescriptorPool, ValidationDescriptorSetLayout, ValidationFence,
     ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationQueue, ValidationSampler,
-    ValidationSemaphore, ValidationShader, ValidationTexture,
+    ValidationSemaphore, ValidationTexture,
 };
 
 pub struct ValidationDevice {
@@ -108,28 +108,20 @@ impl IDevice for ValidationDevice {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
+    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
         let mut stage_set = HashSet::with_capacity(8);
-        let shader_stages: Vec<&dyn IShader> = desc
-            .shader_stages
-            .iter()
-            .map(|v| {
-                let v = unwrap::shader_d(v);
-
-                let duplicate_stage = !stage_set.insert(v.shader_type as u32);
-                assert!(
-                    !duplicate_stage,
-                    "Provided multiple shader modules of the same type for a graphics pipeline"
-                );
-                assert_ne!(
-                    v.shader_type,
-                    ShaderType::Compute,
-                    "Passed a compute shader module to a graphics pipeline"
-                );
-
-                v.inner.as_ref()
-            })
-            .collect();
+        desc.shader_stages.iter().for_each(|v| {
+            let duplicate_stage = !stage_set.insert(v.stage as u32);
+            assert!(
+                !duplicate_stage,
+                "Provided multiple shader modules of the same type for a graphics pipeline"
+            );
+            assert_ne!(
+                v.stage,
+                ShaderType::Compute,
+                "Passed a compute shader module to a graphics pipeline"
+            );
+        });
 
         let pipeline_layout = desc
             .pipeline_layout
@@ -137,7 +129,7 @@ impl IDevice for ValidationDevice {
             .expect("Unknown IGraphicsPipeline implementation");
 
         let new_desc = GraphicsPipelineDesc {
-            shader_stages: &shader_stages,
+            shader_stages: desc.shader_stages,
             pipeline_layout: pipeline_layout.inner.as_ref(),
             vertex_layout: desc.vertex_layout,
             input_assembly_state: desc.input_assembly_state,
@@ -165,25 +157,14 @@ impl IDevice for ValidationDevice {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
-        let shader_module = desc
-            .shader_module
-            .query_interface::<ValidationShader>()
-            .expect("Unknown IShader implementation");
-
-        assert_eq!(
-            shader_module.shader_type,
-            ShaderType::Compute,
-            "Passed a non-compute shader as the module for a compute pipeline"
-        );
-
+    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
         let pipeline_layout = desc
             .pipeline_layout
             .query_interface::<ValidationPipelineLayout>()
             .expect("Unknown IGraphicsPipeline implementation");
 
         let new_desc = ComputePipelineDesc {
-            shader_module: shader_module.inner.as_ref(),
+            shader_module: desc.shader_module.clone(),
             pipeline_layout: pipeline_layout.inner.as_ref(),
             name: desc.name,
         };
@@ -196,23 +177,6 @@ impl IDevice for ValidationDevice {
             inner,
         });
         Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_shader(
-        &self,
-        options: &ShaderOptions,
-    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        let inner = self.inner.create_shader(options)?;
-        let shader = AnyArc::new_cyclic(move |v| ValidationShader {
-            _this: v.clone(),
-            _device: self._this.upgrade().unwrap(),
-            inner,
-            shader_type: options.shader_type,
-        });
-        Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
     }
 
     // ========================================================================================== //
