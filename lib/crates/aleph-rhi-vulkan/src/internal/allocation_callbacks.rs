@@ -38,9 +38,8 @@ use ash::vk;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
 /// allocator into the
-pub fn callbacks_from_rust_allocator<T: Allocator>(v: T) -> vk::AllocationCallbacks {
-    let user_data = v.by_ref();
-    let user_data = user_data as *const T as *mut T;
+pub fn callbacks_from_rust_allocator<T: Allocator>(v: &T) -> vk::AllocationCallbacks {
+    let user_data = v as *const T as *mut T;
     vk::AllocationCallbacks {
         p_user_data: user_data.cast(),
         pfn_allocation: Some(allocation::<T>),

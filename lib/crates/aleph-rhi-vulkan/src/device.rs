@@ -35,6 +35,7 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::cstr;
+use allocator_api2::alloc::Allocator;
 use ash::prelude::VkResult;
 use ash::vk;
 use bumpalo::collections::Vec as BVec;
@@ -193,7 +194,7 @@ impl IDevice for Device {
             let attachments = Self::translate_color_attachment_state(&bump, desc);
             let color_blend_state = Self::translate_color_blend_state(&attachments);
 
-            let alloc_adapter = callbacks_from_rust_allocator(bump.deref());
+            let alloc_adapter = callbacks_from_rust_allocator(bump.deref().by_ref());
             let mut shader_modules = BVec::with_capacity_in(desc.shader_stages.len(), &bump);
             for (i, v) in desc.shader_stages.iter().enumerate() {
                 let module = unsafe {
@@ -277,7 +278,7 @@ impl IDevice for Device {
             let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
 
             // Create a temporary shader module using
-            let alloc_adapter = callbacks_from_rust_allocator(bump.deref());
+            let alloc_adapter = callbacks_from_rust_allocator(bump.deref().by_ref());
             let module = unsafe {
                 let create_info = vk::ShaderModuleCreateInfo::builder().code(shader_data);
                 self.device
