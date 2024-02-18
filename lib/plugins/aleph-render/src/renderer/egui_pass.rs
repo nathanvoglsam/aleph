@@ -41,7 +41,6 @@ use crate::shaders;
 struct EguiPassPayload {
     pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pipeline: AnyArc<dyn IGraphicsPipeline>,
-    swap_extent: Extent2D,
     pixels_per_point: f32,
     back_buffer: ResourceMut,
     vtx_buffer: ResourceMut,
@@ -112,7 +111,6 @@ pub fn pass(
             data.write(EguiPassPayload {
                 pipeline_layout: pipeline_layout,
                 pipeline: graphics_pipeline,
-                swap_extent: Extent2D::new(back_buffer_desc.width, back_buffer_desc.height),
                 pixels_per_point,
                 back_buffer,
                 vtx_buffer,
@@ -129,6 +127,8 @@ pub fn pass(
             let back_buffer = resources.get_texture(data.back_buffer).unwrap();
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
+
+            let extent = back_buffer.desc_ref().get_extent_2d();
 
             let EguiPassContext {
                 buffer,
@@ -154,10 +154,9 @@ pub fn pass(
                 .unwrap();
 
             // Begin a render pass targeting our back buffer
-            let desc = back_buffer.desc_ref();
             encoder.begin_rendering(&BeginRenderingInfo {
                 layer_count: 1,
-                extent: desc.get_extent_2d(),
+                extent: extent.clone(),
                 color_attachments: &[RenderingColorAttachmentInfo {
                     image_view,
                     image_layout: ImageLayout::ColorAttachment,
@@ -173,8 +172,8 @@ pub fn pass(
             //
             // Push screen size via root constants
             //
-            let width_pixels = data.swap_extent.width as f32;
-            let height_pixels = data.swap_extent.height as f32;
+            let width_pixels = extent.width as f32;
+            let height_pixels = extent.height as f32;
             let width_points = width_pixels / data.pixels_per_point;
             let height_points = height_pixels / data.pixels_per_point;
             let values_data = [width_points, height_points];
@@ -216,8 +215,8 @@ pub fn pass(
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
                 y: 0.0,
-                width: data.swap_extent.width as _,
-                height: data.swap_extent.height as _,
+                width: extent.width as _,
+                height: extent.height as _,
                 min_depth: 0.0,
                 max_depth: 1.0,
             }]);
@@ -239,7 +238,7 @@ pub fn pass(
                     record_job_commands(
                         encoder,
                         &job,
-                        data.swap_extent.clone(),
+                        extent.clone(),
                         data.pixels_per_point,
                         vtx_base,
                         idx_base,
