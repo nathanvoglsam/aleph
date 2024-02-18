@@ -371,14 +371,10 @@ impl IQueue for Queue {
             Ok(true) => Err(QueuePresentError::SubOptimal),
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(QueuePresentError::OutOfDate),
             Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(QueuePresentError::SurfaceLost),
-            _ => {
+            Err(e) => {
                 // Coerce everything we don't explicitly handle to an error.
-                let sub_optimal = result.map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-                if sub_optimal {
-                    Err(QueuePresentError::SubOptimal)
-                } else {
-                    Ok(())
-                }
+                log::error!("Platform Error: {:#?}", e);
+                Err(QueuePresentError::Platform)
             }
         }
     }

@@ -156,15 +156,10 @@ impl ISwapChain for SwapChain {
             Err(vk::Result::TIMEOUT) => unimplemented!(),
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(ImageAcquireError::OutOfDate),
             Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(ImageAcquireError::SurfaceLost),
-            _ => {
+            Err(e) => {
                 // Coerce everything we don't explicitly handle to an error.
-                let (i, sub_optimal) =
-                    result.map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-                if sub_optimal {
-                    Err(ImageAcquireError::SubOptimal(i))
-                } else {
-                    Ok(i)
-                }
+                log::error!("Platform Error: {:#?}", e);
+                Err(ImageAcquireError::Platform)
             }
         };
     }
