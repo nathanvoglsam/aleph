@@ -611,6 +611,66 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
+    unsafe fn copy_texture_regions(
+        &mut self,
+        src: &dyn ITexture,
+        dst: &dyn ITexture,
+        regions: &[TextureToTextureCopyInfo],
+    ) {
+        let src = unwrap::texture(src);
+        let dst = unwrap::texture(dst);
+
+        for region in regions {
+            let subresource = src
+                .subresource_index_for(
+                    region.src.mip_level,
+                    region.src.array_layer,
+                    region.src.aspect,
+                )
+                .unwrap();
+            let src = D3D12_TEXTURE_COPY_LOCATION {
+                pResource: unsafe { transmute_copy(&src.resource) },
+                Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                    SubresourceIndex: subresource,
+                },
+            };
+
+            let subresource = dst
+                .subresource_index_for(
+                    region.dst.mip_level,
+                    region.dst.array_layer,
+                    region.dst.aspect,
+                )
+                .unwrap();
+            let dst = D3D12_TEXTURE_COPY_LOCATION {
+                pResource: unsafe { transmute_copy(&dst.resource) },
+                Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                    SubresourceIndex: subresource,
+                },
+            };
+
+            let src_box = D3D12_BOX {
+                left: region.src.offset.x,
+                top: region.src.offset.y,
+                front: region.src.offset.z,
+                right: region.src.offset.x + region.extent.width,
+                bottom: region.src.offset.y + region.extent.height,
+                back: region.src.offset.z + region.extent.depth,
+            };
+
+            self._list.CopyTextureRegion(
+                &dst,
+                region.dst.offset.x,
+                region.dst.offset.y,
+                region.dst.offset.z,
+                &src,
+                Some(&src_box),
+            );
+        }
+    }
+
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
         set_marker_on_list(&self._list, color.0.into(), message);
     }
