@@ -730,6 +730,13 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
         regions: &[BufferToTextureCopyRegion],
     );
 
+    unsafe fn copy_texture_regions(
+        &mut self,
+        src: &dyn ITexture,
+        dst: &dyn ITexture,
+        regions: &[TextureToTextureCopyInfo],
+    );
+
     ///
     /// Emits an instantaneous 'marker' on this command list, with the given message and message
     /// color.
@@ -5084,6 +5091,34 @@ pub struct TextureCopyInfo {
     pub origin: UOffset3D,
 
     /// The extent of the region to copy into
+    pub extent: Extent3D,
+}
+
+#[derive(Clone, Debug)]
+pub struct TextureSubresourceCopyInfo {
+    /// The mip layer to copy to/from
+    pub mip_level: u32,
+
+    /// The array layer to copy to/from
+    pub array_layer: u32,
+
+    /// The image aspect to copy to/from
+    pub aspect: TextureCopyAspect,
+
+    /// The origin of the region to copy to/from
+    pub offset: UOffset3D,
+}
+
+/// A description of a region within a texture for a buffer -> texture copy operation
+#[derive(Clone, Debug)]
+pub struct TextureToTextureCopyInfo {
+    /// Description of the copy source
+    pub src: TextureSubresourceCopyInfo,
+
+    /// Description of the copy dest
+    pub dst: TextureSubresourceCopyInfo,
+
+    /// The extent of the region to copy
     pub extent: Extent3D,
 }
 
