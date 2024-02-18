@@ -41,6 +41,7 @@ pub mod descriptor_heap;
 pub mod descriptor_heap_info;
 pub mod descriptor_heaps;
 pub mod descriptor_set;
+pub mod descriptor_set_pool;
 pub mod dxgi_debug_interface;
 pub mod feature_support;
 pub mod graphics_pipeline_state_stream;

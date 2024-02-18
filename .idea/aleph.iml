@@ -157,6 +157,7 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-pin-board/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-shader-db/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-rhi-null/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-device-allocators/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-rhi/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />

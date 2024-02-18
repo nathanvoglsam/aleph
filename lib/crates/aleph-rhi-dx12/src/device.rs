@@ -37,7 +37,9 @@ use std::sync::atomic::AtomicU64;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
+use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
+use blink_alloc::BlinkAlloc;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
 use parking_lot::Mutex;
@@ -53,7 +55,8 @@ use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::context::Context;
-use crate::descriptor_arena::DescriptorArena;
+use crate::descriptor_arena::DescriptorArenaHeap;
+use crate::descriptor_arena::DescriptorArenaLinear;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::{
     DescriptorBindingInfo, DescriptorBindingLayout, DescriptorSetLayout,
@@ -70,6 +73,7 @@ use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
 use crate::internal::descriptor_set::DescriptorSet;
+use crate::internal::descriptor_set_pool::DescriptorSetPool;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
@@ -352,22 +356,17 @@ impl IDevice for Device {
             desc.num_sets * layout.resource_num,
         )?;
 
-        let set_size = DescriptorSet::descriptor_set_allocation_layout(
-            layout.dynamic_constant_buffers.len(),
-            layout.sampler_tables.len(),
-        )
-        .unwrap()
-        .size();
-        let set_pool_capacity = set_size * desc.num_sets as usize;
+        let dynamic_cbs_size = layout.dynamic_constant_buffers.len() * size_of::<u64>();
+        let samplers_size = layout.sampler_tables.len() * size_of::<Option<GPUDescriptorHandle>>();
+        let array_pool_size = dynamic_cbs_size + samplers_size;
 
         let pool = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
             _layout: layout,
             resource_arena,
-            descriptor_set_pool: Bump::with_capacity(set_pool_capacity),
+            set_pool: DescriptorSetPool::new(desc.num_sets),
+            set_array_pool: BlinkAlloc::with_chunk_size(array_pool_size),
             descriptor_bump_index: 0,
-            set_capacity: desc.num_sets,
-            free_list: Vec::with_capacity(128),
         });
 
         Ok(pool)
@@ -380,29 +379,52 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
-        if desc.arena_type == DescriptorArenaType::Heap {
-            todo!();
-        }
-
-        let resource_arena =
-            DescriptorChunk::new(self.descriptor_heaps.gpu_view_heap(), desc.num_sets * 16)?
+        match desc.arena_type {
+            DescriptorArenaType::Linear => {
+                let resource_arena = DescriptorChunk::new(
+                    self.descriptor_heaps.gpu_view_heap(),
+                    desc.num_sets * 16,
+                )?
                 .unwrap();
 
-        let set_size = DescriptorSet::descriptor_set_allocation_layout(1, 1)
-            .unwrap()
-            .size();
-        let set_pool_capacity = set_size * desc.num_sets as usize;
+                let set_size = DescriptorArenaLinear::descriptor_set_allocation_layout(1, 1)
+                    .unwrap()
+                    .size();
+                let set_pool_capacity = set_size * desc.num_sets as usize;
 
-        let pool = Box::new(DescriptorArena {
-            _device: self.this.upgrade().unwrap(),
-            resource_arena,
-            descriptor_set_pool: Cell::new(Some(Bump::with_capacity(set_pool_capacity))),
-            descriptor_bump_index: Cell::new(0),
-            num_sets: Cell::new(0),
-            set_capacity: desc.num_sets,
-        });
+                let pool = Box::new(DescriptorArenaLinear {
+                    _device: self.this.upgrade().unwrap(),
+                    resource_arena,
+                    set_pool: BlinkAlloc::with_chunk_size(set_pool_capacity),
+                    descriptor_bump_index: Cell::new(0),
+                    num_sets: Cell::new(0),
+                    set_capacity: desc.num_sets,
+                });
 
-        Ok(pool)
+                Ok(pool)
+            }
+            DescriptorArenaType::Heap => {
+                let resource_block = DescriptorChunk::new(
+                    self.descriptor_heaps.gpu_view_heap(),
+                    desc.num_sets * 16,
+                )?
+                .unwrap();
+
+                let resource_pool =
+                    OffsetAllocator::new(resource_block.num_descriptors, desc.num_sets * 2);
+                let resource_pool = Box::new(resource_pool);
+
+                let pool = Box::new(DescriptorArenaHeap {
+                    _device: self.this.upgrade().unwrap(),
+                    resource_block,
+                    resource_pool: Cell::new(Some(resource_pool)),
+                    set_pool: DescriptorSetPool::new(desc.num_sets),
+                    live_handles: Cell::new(Vec::with_capacity(128)),
+                });
+
+                Ok(pool)
+            }
+        }
     }
 
     // ========================================================================================== //

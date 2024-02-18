@@ -95,6 +95,7 @@ anyhow = "1"
 ash = { version = "0.37", default-features = false, features = ["debug"] }
 bitflags = "2"
 bumpalo = { version = "3", features = ["boxed", "collections", "allocator-api2"] }
+blink-alloc = { version = "0.3" }
 bytemuck = "1"
 byteorder = "1"
 cargo_metadata = "0.18"
