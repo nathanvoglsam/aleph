@@ -184,7 +184,7 @@ impl IDevice for Device {
             let attachments = Self::translate_color_attachment_state(&bump, desc);
             let color_blend_state = Self::translate_color_blend_state(&attachments);
 
-            let alloc_adapter = callbacks_from_rust_allocator(bump.deref().by_ref());
+            let alloc_adapter = callbacks_from_rust_allocator(&bump);
             let mut shader_modules = BVec::with_capacity_in(desc.shader_stages.len(), &bump);
             for (i, v) in desc.shader_stages.iter().enumerate() {
                 let module = unsafe {

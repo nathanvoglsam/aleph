@@ -35,35 +35,38 @@ use std::ptr::NonNull;
 
 use allocator_api2::alloc::Allocator;
 use ash::vk;
+use bumpalo::Bump;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
 /// allocator into the
-pub fn callbacks_from_rust_allocator<T: Allocator>(v: &T) -> vk::AllocationCallbacks {
-    let user_data = v as *const T as *mut T;
+pub fn callbacks_from_rust_allocator(v: &Bump) -> vk::AllocationCallbacks {
+    // let user_data = v.by_ref();
+    let user_data = v as *const Bump as *mut Bump;
     vk::AllocationCallbacks {
         p_user_data: user_data.cast(),
-        pfn_allocation: Some(allocation::<T>),
-        pfn_reallocation: Some(reallocation::<T>),
-        pfn_free: Some(free::<T>),
+        pfn_allocation: Some(allocation),
+        pfn_reallocation: Some(reallocation),
+        pfn_free: Some(free),
         pfn_internal_allocation: None,
         pfn_internal_free: None,
     }
 }
 
-unsafe extern "system" fn allocation<T: Allocator>(
+unsafe extern "system" fn allocation(
     p_user_data: *mut c_void,
     size: usize,
     alignment: usize,
     _allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
-    let user_data = p_user_data.cast::<T>().cast_const();
+    let user_data = p_user_data.cast::<Bump>();
+    let allocator = user_data.as_ref().unwrap_unchecked();
 
     let alignment = alignment.min(align_of::<Layout>());
     let extra_capacity = size_of::<Layout>().max(alignment);
     let size = size + extra_capacity;
 
     let layout = Layout::from_size_align_unchecked(size, alignment);
-    let result = T::allocate(user_data.as_ref().unwrap_unchecked(), layout);
+    let result = allocator.allocate(layout);
 
     match result {
         Ok(v) => {
@@ -79,14 +82,14 @@ unsafe extern "system" fn allocation<T: Allocator>(
     }
 }
 
-unsafe extern "system" fn reallocation<T: Allocator>(
+unsafe extern "system" fn reallocation(
     p_user_data: *mut c_void,
     p_original: *mut c_void,
     size: usize,
     alignment: usize,
     allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
-    let new_ptr = allocation::<T>(p_user_data, size, alignment, allocation_scope).cast::<u8>();
+    let new_ptr = allocation(p_user_data, size, alignment, allocation_scope).cast::<u8>();
     if !new_ptr.is_null() {
         // Pull the layout from the block directly behind the allocation pointer
         let ptr = p_original.cast::<Layout>().sub(1);
@@ -99,7 +102,7 @@ unsafe extern "system" fn reallocation<T: Allocator>(
         new_ptr.copy_from(src, count);
 
         // Free the original block
-        free::<T>(p_user_data, p_original);
+        free(p_user_data, p_original);
 
         new_ptr.cast()
     } else {
@@ -107,8 +110,9 @@ unsafe extern "system" fn reallocation<T: Allocator>(
     }
 }
 
-unsafe extern "system" fn free<T: Allocator>(p_user_data: *mut c_void, p_memory: *mut c_void) {
-    let user_data = p_user_data.cast::<T>().cast_const();
+unsafe extern "system" fn free(p_user_data: *mut c_void, p_memory: *mut c_void) {
+    let user_data = p_user_data.cast::<Bump>();
+    let allocator = user_data.as_ref().unwrap_unchecked();
 
     // Pull the layout from the block directly behind the allocation pointer
     let ptr = p_memory.cast::<Layout>().sub(1);
@@ -120,9 +124,5 @@ unsafe extern "system" fn free<T: Allocator>(p_user_data: *mut c_void, p_memory:
     let extra_capacity = size_of::<Layout>().max(alignment);
     let real_ptr = p_memory.byte_sub(extra_capacity);
 
-    T::deallocate(
-        user_data.as_ref().unwrap_unchecked(),
-        NonNull::new_unchecked(real_ptr).cast(),
-        layout,
-    );
+    allocator.deallocate(NonNull::new_unchecked(real_ptr).cast(), layout);
 }
