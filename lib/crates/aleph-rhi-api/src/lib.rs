@@ -4820,6 +4820,17 @@ pub struct InputAssemblyBufferBinding<'a> {
     pub offset: u64,
 }
 
+impl<'a> InputAssemblyBufferBinding<'a> {
+    pub const fn new(buffer: &'a dyn IBuffer) -> Self {
+        Self { buffer, offset: 0 }
+    }
+
+    pub const fn with_offset(mut self, offset: u64) -> Self {
+        self.offset = offset;
+        self
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum IndexType {
     U16,
