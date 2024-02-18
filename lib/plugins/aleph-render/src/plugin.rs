@@ -193,6 +193,10 @@ impl IPlugin for PluginRender {
                             data.should_resize = true;
                             i
                         }
+                        Err(ImageAcquireError::OutOfDate) => {
+                            data.should_resize = true;
+                            return;
+                        }
                         v @ _ => v.unwrap(),
                     };
                     let acquired_image = data.swap_images[acquired_index as usize].clone();
@@ -211,13 +215,18 @@ impl IPlugin for PluginRender {
                             fence: Some(fence.as_ref()),
                         })
                         .unwrap();
-                    queue
-                        .present(&QueuePresentDesc {
-                            swap_chain: data.swap_chain.as_ref(),
-                            image_index: acquired_index,
-                            wait_semaphores: &[present_semaphore.as_ref()],
-                        })
-                        .unwrap();
+                    let submit_result = queue.present(&QueuePresentDesc {
+                        swap_chain: data.swap_chain.as_ref(),
+                        image_index: acquired_index,
+                        wait_semaphores: &[present_semaphore.as_ref()],
+                    });
+                    match submit_result {
+                        Ok(_) => {}
+                        Err(QueuePresentError::OutOfDate) | Err(QueuePresentError::SubOptimal) => {
+                            data.should_resize = true;
+                        }
+                        v @ Err(_) => v.unwrap(),
+                    }
                 }
             },
         );
