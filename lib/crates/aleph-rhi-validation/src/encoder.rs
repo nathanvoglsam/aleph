@@ -355,6 +355,18 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
             .copy_buffer_to_texture(src, dst, dst_layout, regions);
     }
 
+    unsafe fn copy_texture_regions(
+        &mut self,
+        src: &dyn ITexture,
+        dst: &dyn ITexture,
+        regions: &[TextureToTextureCopyInfo],
+    ) {
+        // TODO: any validation at all
+        let src = get_as_unwrapped::texture(src);
+        let dst = get_as_unwrapped::texture(dst);
+        self.inner.copy_texture_regions(src, dst, regions)
+    }
+
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
         self.inner.set_marker(color, message)
     }
