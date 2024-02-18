@@ -438,15 +438,13 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// The image to be presented is the most recently acquired image from the swap chain.
     ///
-    /// Returns whether the swap chain is currently sub-optimal for the surface being presented to.
-    ///
     /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the image that is being presented will be
     /// in the required resource state for presentation by the time this operation will be executed
     /// on the GPU timeline.
     ///
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<bool, QueuePresentError>;
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError>;
 }
 
 /// Optional extension to [IQueue] that provides various debug utilities, like setting debug markers
@@ -5571,6 +5569,28 @@ error_enum_from_unit_type!(QueueSubmitError);
 pub enum QueuePresentError {
     #[error("The queue '{0}' does not support presentation to the requested swap chain")]
     QueuePresentationNotSupported(QueueType),
+
+    /// This 'error' is a soft failure case for [IQueue::present]. In some cases it is possible for
+    /// the swapchain to be placed in a state where it does not fully match the underlying surface
+    /// being rendered to. For example, when the window is resized but the surface isn't lost. This
+    /// can happen on composited platforms where they stretch/squash the swap images into the real
+    /// surface.
+    ///
+    /// This is not a hard error, and it is perfectly valid to continue using and presenting to a
+    /// sub-optimal swapchain. It is, however, recommended that the swapchain be rebuilt to
+    /// correctly match the underlying surface again. This error variant flags the sub-optimal case
+    /// for the caller to handle.
+    #[error("The swapchain is sub-optimal for the surface and should be rebuilt")]
+    SubOptimal,
+
+    #[error("The swap chain is out of date and needs to be rebuilt")]
+    OutOfDate,
+
+    /// This error occurs when the surface backing a swap chain has become permanently lost to the
+    /// RHI and can no longer be used. The swap chain, and the surface it was created from, are now
+    /// 'dead' and must not be accessed.
+    #[error("The surface has been permanently lost")]
+    SurfaceLost,
 
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
