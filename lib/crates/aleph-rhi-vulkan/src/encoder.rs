@@ -394,6 +394,62 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
+    unsafe fn copy_texture_regions(
+        &mut self,
+        src: &dyn ITexture,
+        dst: &dyn ITexture,
+        regions: &[TextureToTextureCopyInfo],
+    ) {
+        {
+            let src = unwrap::texture(src);
+            let dst = unwrap::texture(dst);
+
+            // src_subresource
+            // src_offset
+            // dst_subresource
+            // dst_offset
+            let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
+            for v in regions {
+                let src_subresource = vk::ImageSubresourceLayers {
+                    aspect_mask: texture_copy_aspect_to_vk(v.src.aspect),
+                    mip_level: v.src.mip_level,
+                    base_array_layer: v.src.array_layer,
+                    layer_count: 1,
+                };
+                let src_offset = vk::Offset3D { x: 0, y: 0, z: 0 };
+                let dst_subresource = vk::ImageSubresourceLayers {
+                    aspect_mask: texture_copy_aspect_to_vk(v.dst.aspect),
+                    mip_level: v.dst.mip_level,
+                    base_array_layer: v.dst.array_layer,
+                    layer_count: 1,
+                };
+                let dst_offset = vk::Offset3D { x: 0, y: 0, z: 0 };
+                let extent = vk::Extent3D {
+                    width: v.extent.width,
+                    height: v.extent.height,
+                    depth: v.extent.depth,
+                };
+                new_regions.push(vk::ImageCopy {
+                    src_subresource,
+                    src_offset,
+                    dst_subresource,
+                    dst_offset,
+                    extent,
+                });
+            }
+
+            self._device.device.cmd_copy_image(
+                self._buffer,
+                src.image,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                dst.image,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                &new_regions,
+            )
+        }
+        self.arena.reset();
+    }
+
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
         if let Some(loader) = self._context.debug_loader.as_ref() {
             // Create our null terminated string in the encoder's arena
