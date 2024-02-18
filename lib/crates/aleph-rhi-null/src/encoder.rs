@@ -128,6 +128,14 @@ impl ITransferEncoder for NullEncoder {
     ) {
     }
 
+    unsafe fn copy_texture_regions(
+        &mut self,
+        _src: &dyn ITexture,
+        _dst: &dyn ITexture,
+        _regions: &[TextureToTextureCopyInfo],
+    ) {
+    }
+
     unsafe fn set_marker(&mut self, _color: Color, _message: &str) {}
 
     unsafe fn begin_event(&mut self, _color: Color, _message: &str) {}
