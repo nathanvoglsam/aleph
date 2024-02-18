@@ -312,7 +312,7 @@ fn create_pipeline_state(
 ) -> AnyArc<dyn IGraphicsPipeline> {
     let rasterizer_state = RasterizerStateDesc {
         cull_mode: CullMode::Back,
-        front_face: FrontFaceOrder::Clockwise,
+        front_face: FrontFaceOrder::CounterClockwise,
         polygon_mode: PolygonMode::Fill,
         depth_bias: 0,
         depth_bias_clamp: 0.0,
@@ -496,39 +496,28 @@ impl Vertex {
 
 #[rustfmt::skip]
 const VERTS: [Vertex; 8] = [
-    Vertex::new(-1., -1.,  1.), //0
-    Vertex::new( 1., -1.,  1.), //1
-    Vertex::new(-1.,  1.,  1.), //2
-    Vertex::new( 1.,  1.,  1.), //3
-    Vertex::new(-1., -1., -1.), //4
-    Vertex::new( 1., -1., -1.), //5
-    Vertex::new(-1.,  1., -1.), //6
-    Vertex::new( 1.,  1., -1.)  //7
+    Vertex::new( 1.,  1., -1.), //0
+    Vertex::new( 1., -1., -1.), //1
+    Vertex::new( 1.,  1.,  1.), //2
+    Vertex::new( 1., -1.,  1.), //3
+    Vertex::new(-1.,  1., -1.), //4
+    Vertex::new(-1., -1., -1.), //5
+    Vertex::new(-1.,  1.,  1.), //6
+    Vertex::new(-1., -1.,  1.), //7
 ];
 
 #[rustfmt::skip]
 const INDICES: [u32; 36] = [
-    //Top
+    4, 2, 0,
+    2, 7, 3,
+    6, 5, 7,
+    1, 7, 5,
+    0, 3, 1,
+    4, 1, 5,
+    4, 6, 2,
     2, 6, 7,
-    2, 3, 7,
-
-    //Bottom
-    0, 4, 5,
-    0, 1, 5,
-
-    //Left
-    0, 2, 6,
-    0, 4, 6,
-
-    //Right
+    6, 4, 5,
     1, 3, 7,
-    1, 5, 7,
-
-    //Front
     0, 2, 3,
-    0, 1, 3,
-
-    //Back
-    4, 6, 7,
-    4, 5, 7
+    4, 0, 1,
 ];

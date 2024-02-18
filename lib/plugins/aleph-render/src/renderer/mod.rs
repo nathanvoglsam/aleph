@@ -27,11 +27,14 @@
 // SOFTWARE.
 //
 
+mod backbuffer_import_pass;
+mod copy_texture_pass;
 mod egui_pass;
 mod frame;
 mod lighting_resolve_pass;
 mod main_gbuffer_pass;
 mod params;
+mod tone_map_pass;
 
 use std::ops::{Deref, DerefMut};
 
@@ -43,6 +46,7 @@ use egui::{ImageData, RenderData};
 pub(crate) use frame::PerFrameObjects;
 use interfaces::any::AnyArc;
 
+use crate::renderer::backbuffer_import_pass::BackBufferHandle;
 use crate::renderer::egui_pass::EguiPassContext;
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
@@ -90,7 +94,7 @@ impl EguiRenderer {
         let frame_graph = Self::create_frame_graph(device.as_ref(), &pin_board, &shader_db);
 
         let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
-        let back_buffer_id = output.id;
+        let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
         let frames = (0..2)
             .into_iter()
@@ -101,7 +105,7 @@ impl EguiRenderer {
             device,
             frames,
             frame_graph,
-            back_buffer_id,
+            back_buffer_id: *back_buffer,
             graph_build_pin_board: pin_board,
             execute_context: PinBoard::new(),
             sampler,
@@ -129,7 +133,7 @@ impl EguiRenderer {
         let frame_graph = Self::create_frame_graph(self.device.as_ref(), &pin_board, &shader_db);
 
         let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
-        let back_buffer_id = output.id;
+        let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
         let frames: Vec<_> = (0..2)
             .into_iter()
@@ -138,7 +142,7 @@ impl EguiRenderer {
 
         self.frames = frames;
         self.frame_graph = frame_graph;
-        self.back_buffer_id = back_buffer_id;
+        self.back_buffer_id = *back_buffer;
     }
 
     pub fn create_frame_graph(
@@ -147,8 +151,11 @@ impl EguiRenderer {
         shader_db: &ShaderDatabaseAccessor,
     ) -> FrameGraph {
         let mut frame_graph = FrameGraph::builder();
+        backbuffer_import_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         main_gbuffer_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         lighting_resolve_pass::pass(&mut frame_graph, device, pin_board, shader_db);
+        tone_map_pass::pass(&mut frame_graph, device, pin_board, shader_db);
+        copy_texture_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         egui_pass::pass(&mut frame_graph, device, pin_board, shader_db);
         let mut frame_graph = frame_graph.build(device);
 

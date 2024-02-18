@@ -41,24 +41,21 @@ float3 LinearTosRGB(in float3 color) {
     return clr;
 }
 
-struct Params {
-    int2 size;
-};
-
 [[vk::binding(0, 0)]]
-ConstantBuffer<Params> g_params : register(b0, space0);
+Texture2D<float4> g_input : register(t0, space0);
 
 [[vk::binding(1, 0)]]
-Texture2D<float4> g_input : register(t1, space0);
-
-[[vk::binding(2, 0)]]
-RWTexture2D<float4> g_output : register(u2, space0);
+RWTexture2D<float4> g_output : register(u1, space0);
 
 [numthreads(8, 8, 1)]
 void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
 {
-    if (dispatch_thread_id.x < g_params.size.x && dispatch_thread_id.y < g_params.size.y) {
-        float3 colour = g_input.Load(int3(0, 0, 0)).rgb;
+    uint width;
+    uint height;
+    g_input.GetDimensions(width, height);
+
+    if (dispatch_thread_id.x < width && dispatch_thread_id.y < height) {
+        float3 colour = g_input.Load(int3(dispatch_thread_id.x, dispatch_thread_id.y, 0)).rgb;
         colour = LinearTosRGB(ACESFitted(colour) * 1.8f);
         g_output[dispatch_thread_id.xy] = float4(colour, 1.0);
     }

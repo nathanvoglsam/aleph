@@ -34,6 +34,7 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use egui::RenderData;
 
+use crate::renderer::backbuffer_import_pass::BackBufferHandle;
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
@@ -50,7 +51,6 @@ struct EguiPassPayload {
 /// The output of the setup phase
 pub struct EguiPassOutput {
     pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub id: ResourceMut,
 }
 
 /// The input the pass expects in the execute phase, to be pulled from the context pin board.
@@ -79,19 +79,9 @@ pub fn pass(
         |data: &mut Payload<EguiPassPayload>, resources| {
             let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
 
-            let back_buffer_desc = back_buffer_info.desc.clone().with_name("Swap Chain Image");
-            let back_buffer = resources.import_texture(
-                &TextureImportDesc {
-                    desc: &back_buffer_desc,
-                    before_sync: BarrierSync::ALL,
-                    before_access: BarrierAccess::NONE,
-                    before_layout: ImageLayout::Undefined,
-                    after_sync: BarrierSync::NONE,
-                    after_access: BarrierAccess::NONE,
-                    after_layout: ImageLayout::PresentSrc,
-                },
-                ResourceUsageFlags::RENDER_TARGET,
-            );
+            let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
+            let back_buffer =
+                resources.write_texture(*back_buffer, ResourceUsageFlags::RENDER_TARGET);
 
             let vtx_buffer = resources.create_buffer(
                 &BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
@@ -117,9 +107,9 @@ pub fn pass(
                 idx_buffer,
             });
             pin_board.publish(EguiPassOutput {
-                id: back_buffer,
                 set_layout: descriptor_set_layout,
             });
+            pin_board.publish(BackBufferHandle { back_buffer });
         },
         |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
@@ -160,7 +150,7 @@ pub fn pass(
                 color_attachments: &[RenderingColorAttachmentInfo {
                     image_view,
                     image_layout: ImageLayout::ColorAttachment,
-                    load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
+                    load_op: AttachmentLoadOp::Load,
                     store_op: AttachmentStoreOp::Store,
                 }],
                 depth_stencil_attachment: None,
