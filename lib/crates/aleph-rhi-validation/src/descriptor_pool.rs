@@ -209,17 +209,6 @@ impl IDescriptorPool for ValidationDescriptorPool {
         Ok(handle)
     }
 
-    fn allocate_sets(
-        &mut self,
-        num_sets: usize,
-    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
-        let mut sets = Vec::with_capacity(num_sets);
-        for _ in 0..num_sets {
-            sets.push(self.allocate_set()?);
-        }
-        Ok(sets)
-    }
-
     unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
         for &set in sets {
             self.validate_set_handle(set);
