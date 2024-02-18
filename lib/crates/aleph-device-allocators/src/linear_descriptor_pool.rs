@@ -110,7 +110,7 @@ impl LinearDescriptorPool {
         &self,
         layout: &dyn IDescriptorSetLayout,
         num_sets: usize,
-    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         use DescriptorPoolAllocateError::*;
 
         let active = self.active.take().unwrap();
