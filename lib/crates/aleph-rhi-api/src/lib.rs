@@ -856,12 +856,14 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
     fn allocate_sets(
         &mut self,
         num_sets: usize,
-    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         let mut sets = Vec::with_capacity(num_sets);
         for _ in 0..num_sets {
             sets.push(self.allocate_set()?);
         }
-        Ok(sets)
+        debug_assert_eq!(sets.len(), sets.capacity());
+        debug_assert_eq!(sets.len(), num_sets as usize);
+        Ok(sets.into_boxed_slice())
     }
 
     /// Will free the given descriptor sets, allowing them and their memory to be reused.
@@ -920,12 +922,14 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
         &self,
         layout: &dyn IDescriptorSetLayout,
         num_sets: usize,
-    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         let mut sets = Vec::with_capacity(num_sets);
         for _ in 0..num_sets {
             sets.push(self.allocate_set(layout)?);
         }
-        Ok(sets)
+        debug_assert_eq!(sets.len(), sets.capacity());
+        debug_assert_eq!(sets.len(), num_sets as usize);
+        Ok(sets.into_boxed_slice())
     }
 
     /// Will free the given descriptor sets, allowing them and their memory to be reused.
