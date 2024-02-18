@@ -14,100 +14,103 @@ disabled_warnings =
 ## Will be overriden by build commands
 definitions = 
 
+matrix_layout = -matrix-layout-column-major
 frag_stage = -stage fragment
 vert_stage = -stage vertex
 geom_stage = -stage geometry
 comp_stage = -stage compute
-dx_target = -target dxil
-vk_target = -target spirv
-glsl_target = -target glsl
 sh_model = -profile sm_6_0
 opt = -O3
+debug =
 
 #
 # SPIRV BUILD RULES
 #
-
+vk_target = -target spirv
 rule fragment_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $frag_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $frag_stage $sh_model $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule vertex_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $vert_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $vert_stage $sh_model $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule geometry_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $geom_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $geom_stage $sh_model $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule compute_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $comp_stage $sh_model $vk_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $comp_stage $sh_model $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 #
 # GLSL BUILD RULES
 #
-
+glsl_target = -target glsl
 rule fragment_shader_glsl
     depfile = $out.d
     deps = gcc
-    command = $cc $frag_stage $sh_model $glsl_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $frag_stage $sh_model $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule vertex_shader_glsl
     depfile = $out.d
     deps = gcc
-    command = $cc $vert_stage $sh_model $glsl_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $vert_stage $sh_model $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule geometry_shader_glsl
     depfile = $out.d
     deps = gcc
-    command = $cc $geom_stage $sh_model $glsl_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $geom_stage $sh_model $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule compute_shader_glsl
     depfile = $out.d
     deps = gcc
-    command = $cc $comp_stage $sh_model $glsl_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $comp_stage $sh_model $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 #
 # GLSL BUILD RULES
 #
-
+glsl_frag_stage = -fshader-stage=fragment
+glsl_vert_stage = -fshader-stage=vertex
+glsl_geom_stage = -fshader-stage=geometry
+glsl_comp_stage = -fshader-stage=compute
+glsl_env = --target-env=vulkan1.1
 rule fragment_shader_glsl_stage2
-    command = $glsl_cc -fshader-stage=fragment --target-env=vulkan1.1 -O -o $out $in
+    command = $glsl_cc $glsl_frag_stage $glsl_env $debug -O -o $out $in
 
 rule vertex_shader_glsl_stage2
-    command = $glsl_cc -fshader-stage=vertex --target-env=vulkan1.1 -O -o $out $in
+    command = $glsl_cc $glsl_vert_stage $glsl_env $debug -O -o $out $in
 
 rule geometry_shader_glsl_stage2
-    command = $glsl_cc -fshader-stage=geometry --target-env=vulkan1.1 -O -o $out $in
+    command = $glsl_cc $glsl_geom_stage $glsl_env $debug -O -o $out $in
 
 rule compute_shader_glsl_stage2
-    command = $glsl_cc -fshader-stage=compute --target-env=vulkan1.1 -O -o $out $in
+    command = $glsl_cc $glsl_comp_stage $glsl_env $debug -O -o $out $in
 
 #
 # DXIL BUILD RULES
 #
-
+dx_target = -target dxil
 rule fragment_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $frag_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $frag_stage $sh_model $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule vertex_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $vert_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $vert_stage $sh_model $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule geometry_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $geom_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $geom_stage $sh_model $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
 
 rule compute_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $comp_stage $sh_model $dx_target $opt $disabled_warnings -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $comp_stage $sh_model $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
