@@ -53,6 +53,7 @@ pub struct AllocationResult {
 
 pub type RawDeviceAllocationResult = DeviceAllocationResult<std::ptr::NonNull<u8>>;
 
+#[derive(Debug)]
 pub struct DeviceAllocationResult<T> {
     /// The offset from the start of the buffer that the allocated block starts at in the device's
     /// address space.
@@ -67,6 +68,7 @@ pub struct DeviceAllocationResult<T> {
     pub allocated: usize,
 }
 
+#[derive(Debug)]
 pub struct SubAllocatorResult<T> {
     /// The suballocator object we allocated from the buffer.
     pub allocator: T,
