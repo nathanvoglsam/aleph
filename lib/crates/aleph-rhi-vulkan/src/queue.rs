@@ -331,7 +331,7 @@ impl IQueue for Queue {
         Ok(())
     }
 
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<bool, QueuePresentError> {
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
         let device = self._device.upgrade().unwrap();
         let swap_chain = unwrap::swap_chain(desc.swap_chain);
         let loader = device.swapchain.as_ref().unwrap();
@@ -350,7 +350,7 @@ impl IQueue for Queue {
             wait_semaphores.push(semaphore.semaphore);
         }
 
-        let is_suboptimal = unsafe {
+        let result = unsafe {
             let swap_chain = swap_chain.inner.lock();
 
             let swapchains = [swap_chain.swap_chain];
@@ -362,13 +362,25 @@ impl IQueue for Queue {
 
             {
                 let _lock = self.submit_lock.lock();
-                loader
-                    .queue_present(self.handle, &info)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+                loader.queue_present(self.handle, &info)
             }
         };
 
-        Ok(is_suboptimal)
+        match result {
+            Ok(false) => Ok(()),
+            Ok(true) => Err(QueuePresentError::SubOptimal),
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(QueuePresentError::OutOfDate),
+            Err(vk::Result::ERROR_SURFACE_LOST_KHR) => Err(QueuePresentError::SurfaceLost),
+            _ => {
+                // Coerce everything we don't explicitly handle to an error.
+                let sub_optimal = result.map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                if sub_optimal {
+                    Err(QueuePresentError::SubOptimal)
+                } else {
+                    Ok(())
+                }
+            }
+        }
     }
 }
 
