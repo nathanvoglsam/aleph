@@ -180,7 +180,7 @@ impl IQueue for ValidationQueue {
         })
     }
 
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<bool, QueuePresentError> {
+    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
         let swap_chain = desc
             .swap_chain
             .query_interface::<ValidationSwapChain>()
