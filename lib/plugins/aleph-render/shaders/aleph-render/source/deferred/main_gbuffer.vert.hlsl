@@ -50,7 +50,7 @@ StaticMeshPixelInput main(in StaticMeshVertexInput input, out float4 out_positio
     float3 tangent = normalize(mul(input.tangent.xyz, normal_matrix));
     output.position = position.xyz;
     output.normal = normal;
-    output.tangent = float4(tangent, input.tangent.w);
+    output.tangent = tangent;
     output.uv = input.uv;
 
     position = mul(position, camera.view_matrix);

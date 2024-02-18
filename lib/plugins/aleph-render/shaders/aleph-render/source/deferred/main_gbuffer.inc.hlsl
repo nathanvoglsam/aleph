@@ -34,9 +34,9 @@
  */
 struct StaticMeshPixelInput {
     float3 position  : A0;
-    float3 normal    : A1;
-    float4 tangent   : A2;
-    float2 uv        : A3;
+    float2 uv        : A1;
+    float3 normal    : A2;
+    float3 tangent   : A3;
 };
 
 /*
@@ -44,9 +44,9 @@ struct StaticMeshPixelInput {
  */
 struct StaticMeshVertexInput {
     float3 position : A0;
-    float3 normal   : A1;
-    float4 tangent  : A2;
-    float2 uv       : A3;
+    float2 uv       : A1;
+    float3 normal   : A2;
+    float3 tangent  : A3;
 };
 
 struct CameraLayout {

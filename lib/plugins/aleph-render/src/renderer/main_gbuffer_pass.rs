@@ -27,10 +27,14 @@
 // SOFTWARE.
 //
 
+use aleph_device_allocators::IUploadAllocator;
+use aleph_device_allocators::UploadBumpAllocator;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
+use ultraviolet::Mat4;
+use ultraviolet::Vec3;
 
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
@@ -41,7 +45,11 @@ struct MainGBufferPassPayload {
     gbuffer1: ResourceMut,
     gbuffer2: ResourceMut,
     depth_buffer: ResourceMut,
-    gbuffer_extent: Extent2D,
+    vtx_buffer: AnyArc<dyn IBuffer>,
+    idx_buffer: AnyArc<dyn IBuffer>,
+    uniform_buffer: ResourceMut,
+    descriptor_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pipeline: AnyArc<dyn IGraphicsPipeline>,
 }
 
@@ -58,20 +66,46 @@ pub fn pass(
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
 ) {
+    let desc = BufferDesc::new(4 * 1024 as u64)
+        .cpu_write()
+        .with_usage(ResourceUsageFlags::VERTEX_BUFFER)
+        .with_name("Test Vertex Buffer");
+    let vtx_buffer = device.create_buffer(&desc).unwrap();
+
+    let desc = BufferDesc::new(4 * 1024 as u64)
+        .cpu_write()
+        .with_usage(ResourceUsageFlags::INDEX_BUFFER)
+        .with_name("Test Index Buffer");
+    let idx_buffer = device.create_buffer(&desc).unwrap();
+
+    unsafe {
+        let v_ptr = vtx_buffer.map().unwrap();
+        let v_alloc =
+            UploadBumpAllocator::new_from_block(vtx_buffer.as_ref(), v_ptr, 0, 4 * 1024).unwrap();
+        v_alloc.allocate_objects_clone(&VERTS);
+        vtx_buffer.unmap();
+
+        let i_ptr = idx_buffer.map().unwrap();
+        let i_alloc =
+            UploadBumpAllocator::new_from_block(idx_buffer.as_ref(), i_ptr, 0, 4 * 1024).unwrap();
+        i_alloc.allocate_objects_copy(&INDICES);
+        idx_buffer.unmap();
+    }
+
     let descriptor_set_layout = create_descriptor_set_layout(device);
     let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
     let graphics_pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
     frame_graph.add_pass(
-        "EguiPass",
+        "MainGBufferPass",
         |data: &mut Payload<MainGBufferPassPayload>, resources| {
             let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
             let b_desc = &back_buffer_info.desc;
 
             // BaseColor+AO
             let gbuffer0_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-                .with_format(Format::Rgba8Unorm)
+                .with_format(Format::Rgba8UnormSrgb)
                 .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
                 .with_name("Gbuffer0");
             let gbuffer0 =
@@ -95,17 +129,28 @@ pub fn pass(
 
             let depth_buffer_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
                 .with_format(Format::Depth32Float)
-                .with_clear_value(OptimalClearValue::DepthStencil(1.0, 0))
+                .with_clear_value(OptimalClearValue::DepthStencil(0.0, 0))
                 .with_name("DepthBuffer");
             let depth_buffer =
                 resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
+
+            let uniform_buffer = resources.create_buffer(
+                &BufferDesc::new(4 * 1024 as u64)
+                    .cpu_write()
+                    .with_name("Test Uniform Buffer"),
+                ResourceUsageFlags::CONSTANT_BUFFER,
+            );
 
             data.write(MainGBufferPassPayload {
                 gbuffer0,
                 gbuffer1,
                 gbuffer2,
                 depth_buffer,
-                gbuffer_extent: Extent2D::new(b_desc.width, b_desc.height),
+                vtx_buffer,
+                idx_buffer,
+                uniform_buffer,
+                descriptor_set_layout,
+                pipeline_layout,
                 pipeline: graphics_pipeline,
             });
             pin_board.publish(MainGBufferPassOutput {
@@ -119,10 +164,26 @@ pub fn pass(
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
 
+            let vtx_buffer = data.vtx_buffer.as_ref();
+            let idx_buffer = data.idx_buffer.as_ref();
+            let set_layout = data.descriptor_set_layout.as_ref();
+            let device = resources.device();
+            let descriptor_arena = resources.descriptor_arena();
+
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
             let gbuffer2 = resources.get_texture(data.gbuffer2).unwrap();
             let depth_buffer = resources.get_texture(data.depth_buffer).unwrap();
+            let uniform_buffer = resources.get_buffer(data.uniform_buffer).unwrap();
+
+            let u_ptr = uniform_buffer.map().unwrap();
+            let u_alloc =
+                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
+
+            u_alloc.allocate_object(CameraLayout::init());
+            u_alloc.allocate_object(ModelLayout::init());
+
+            uniform_buffer.unmap();
 
             let gbuffer0_rtv = gbuffer0
                 .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer0))
@@ -141,9 +202,10 @@ pub fn pass(
                 .unwrap();
 
             // Begin a render pass targeting our back buffer
+            let extent = gbuffer0.desc_ref().get_extent_2d();
             encoder.begin_rendering(&BeginRenderingInfo {
                 layer_count: 1,
-                extent: data.gbuffer_extent.clone(),
+                extent: extent.clone(),
                 color_attachments: &[
                     RenderingColorAttachmentInfo::new(gbuffer0_rtv)
                         .clear(ColorClearValue::Int(0x00000000))
@@ -157,7 +219,7 @@ pub fn pass(
                 ],
                 depth_stencil_attachment: Some(
                     &RenderingDepthStencilAttachmentInfo::new(depth_buffer_dsv)
-                        .depth_clear(DepthStencilClearValue::depth(1.0))
+                        .depth_clear(DepthStencilClearValue::depth(0.0))
                         .depth_store(),
                 ),
                 allow_uav_writes: false,
@@ -165,39 +227,48 @@ pub fn pass(
 
             encoder.bind_graphics_pipeline(data.pipeline.as_ref());
 
-            // encoder.bind_descriptor_sets(
-            //     data.pipeline_layout.as_ref(),
-            //     PipelineBindPoint::Graphics,
-            //     0,
-            //     &[descriptor_set],
-            // );
+            let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
+            device.update_descriptor_sets(&[
+                DescriptorWriteDesc::uniform_buffer(
+                    descriptor_set,
+                    0,
+                    &BufferDescriptorWrite::uniform_buffer_offset(uniform_buffer, 0, 256),
+                ),
+                DescriptorWriteDesc::uniform_buffer(
+                    descriptor_set,
+                    1,
+                    &BufferDescriptorWrite::uniform_buffer_offset(uniform_buffer, 256, 256),
+                ),
+            ]);
 
-            // //
-            // // Bind the vertex and index buffers to render with
-            // //
-            // encoder.bind_vertex_buffers(
-            //     0,
-            //     &[InputAssemblyBufferBinding {
-            //         buffer: vtx_buffer,
-            //         offset: 0,
-            //     }],
-            // );
-            // encoder.bind_index_buffer(
-            //     IndexType::U32,
-            //     &InputAssemblyBufferBinding {
-            //         buffer: idx_buffer,
-            //         offset: 0,
-            //     },
-            // );
+            encoder.bind_descriptor_sets(
+                data.pipeline_layout.as_ref(),
+                PipelineBindPoint::Graphics,
+                0,
+                &[descriptor_set],
+                &[],
+            );
+
+            encoder.bind_vertex_buffers(0, &[InputAssemblyBufferBinding::new(vtx_buffer)]);
+            encoder.bind_index_buffer(IndexType::U32, &InputAssemblyBufferBinding::new(idx_buffer));
 
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
                 y: 0.0,
-                width: data.gbuffer_extent.width as _,
-                height: data.gbuffer_extent.height as _,
+                width: extent.width as _,
+                height: extent.height as _,
                 min_depth: 0.0,
                 max_depth: 1.0,
             }]);
+
+            encoder.set_scissor_rects(&[Rect {
+                x: 0,
+                y: 0,
+                w: extent.width,
+                h: extent.height,
+            }]);
+
+            encoder.draw_indexed(INDICES.len() as _, 1, 0, 0, 0);
 
             encoder.end_rendering();
         },
@@ -241,7 +312,7 @@ fn create_pipeline_state(
 ) -> AnyArc<dyn IGraphicsPipeline> {
     let rasterizer_state = RasterizerStateDesc {
         cull_mode: CullMode::Back,
-        front_face: FrontFaceOrder::CounterClockwise,
+        front_face: FrontFaceOrder::Clockwise,
         polygon_mode: PolygonMode::Fill,
         depth_bias: 0,
         depth_bias_clamp: 0.0,
@@ -251,7 +322,7 @@ fn create_pipeline_state(
     let depth_stencil_state = DepthStencilStateDesc {
         depth_test: true,
         depth_write: true,
-        depth_compare_op: CompareOp::Less,
+        depth_compare_op: CompareOp::Greater,
         stencil_test: false,
         depth_bounds_enable: false,
         ..Default::default()
@@ -331,7 +402,7 @@ fn create_pipeline_state(
         depth_stencil_state: &depth_stencil_state,
         blend_state: &blend_state,
         render_target_formats: &[
-            Format::Bgra8UnormSrgb,
+            Format::Rgba8UnormSrgb,
             Format::Rgba32Float,
             Format::Rg8Unorm,
         ],
@@ -343,3 +414,121 @@ fn create_pipeline_state(
         .create_graphics_pipeline(&graphics_pipeline_desc_new)
         .unwrap()
 }
+
+fn proj_matrix() -> [f32; 16] {
+    ultraviolet::projection::perspective_reversed_infinite_z_wgpu_dx_gl(90., 16. / 9., 0.1)
+        .transposed()
+        .as_array()
+        .clone() // Hopefully gets elided
+}
+
+fn view_matrix() -> [f32; 16] {
+    let axis = ultraviolet::Bivec3::from_normalized_axis(ultraviolet::Vec3::new(0., 0., 1.));
+    let rotor = ultraviolet::Rotor3::from_angle_plane(0., axis);
+    rotor
+        .into_matrix()
+        .into_homogeneous()
+        .transposed()
+        .as_array()
+        .clone()
+}
+
+fn camera_position() -> [f32; 4] {
+    [0., 0., 0., 0.]
+}
+
+#[repr(align(256))]
+#[derive(Default, Debug)]
+struct CameraLayout {
+    _view_matrix: [f32; 16],
+    _proj_matrix: [f32; 16],
+    _position: [f32; 4],
+}
+
+impl CameraLayout {
+    pub fn init() -> Self {
+        Self {
+            _view_matrix: view_matrix(),
+            _proj_matrix: proj_matrix(),
+            _position: camera_position(),
+        }
+    }
+}
+
+#[repr(align(256))]
+#[derive(Default, Debug)]
+struct ModelLayout {
+    _model_matrix: [f32; 16],
+    _normal_matrix: [f32; 16],
+}
+
+impl ModelLayout {
+    pub fn init() -> Self {
+        Self {
+            _model_matrix: Mat4::from_translation(Vec3::new(0., 0., -3.))
+                .transposed()
+                .as_array()
+                .clone(),
+            _normal_matrix: Mat4::identity().as_array().clone(),
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone)]
+struct Vertex {
+    pub position: [f32; 3],
+    pub uv: [f32; 2],
+    pub normal: [f32; 3],
+    pub tangent: [f32; 3],
+}
+
+impl Vertex {
+    pub const fn new(x: f32, y: f32, z: f32) -> Self {
+        Self {
+            position: [x, y, z],
+            uv: [0.; 2],
+            normal: [0.; 3],
+            tangent: [0.; 3],
+        }
+    }
+}
+
+#[rustfmt::skip]
+const VERTS: [Vertex; 8] = [
+    Vertex::new(-1., -1.,  1.), //0
+    Vertex::new( 1., -1.,  1.), //1
+    Vertex::new(-1.,  1.,  1.), //2
+    Vertex::new( 1.,  1.,  1.), //3
+    Vertex::new(-1., -1., -1.), //4
+    Vertex::new( 1., -1., -1.), //5
+    Vertex::new(-1.,  1., -1.), //6
+    Vertex::new( 1.,  1., -1.)  //7
+];
+
+#[rustfmt::skip]
+const INDICES: [u32; 36] = [
+    //Top
+    2, 6, 7,
+    2, 3, 7,
+
+    //Bottom
+    0, 4, 5,
+    0, 1, 5,
+
+    //Left
+    0, 2, 6,
+    0, 4, 6,
+
+    //Right
+    1, 3, 7,
+    1, 5, 7,
+
+    //Front
+    0, 2, 3,
+    0, 1, 3,
+
+    //Back
+    4, 6, 7,
+    4, 5, 7
+];

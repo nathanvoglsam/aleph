@@ -45,7 +45,7 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
     g_gbuffer0.GetDimensions(width, height);
 
     if (dispatch_thread_id.x < width && dispatch_thread_id.y < height) {
-        float4 v = g_gbuffer0.Load(int3(0, 0, 0));
+        let v = g_gbuffer0.Load(int3(dispatch_thread_id.x, dispatch_thread_id.y, 0));
         g_output[dispatch_thread_id.xy] = v;
     }
 }
