@@ -98,7 +98,7 @@ impl IDescriptorPool for DescriptorPool {
     fn allocate_sets(
         &mut self,
         num_sets: usize,
-    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         let mut set_layouts = Vec::with_capacity(num_sets);
         for _ in 0..num_sets {
             set_layouts.push(self._layout.descriptor_set_layout);
@@ -107,13 +107,15 @@ impl IDescriptorPool for DescriptorPool {
         let allocate_info = vk::DescriptorSetAllocateInfo::builder()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
-        let descriptor_sets = unsafe {
+        let sets = unsafe {
             let result = self._device.device.allocate_descriptor_sets(&allocate_info);
 
             Self::handle_allocate_result(result)?
         };
 
-        unsafe { Ok(core::mem::transmute(descriptor_sets.to_vec())) }
+        debug_assert_eq!(sets.len(), sets.capacity());
+        debug_assert_eq!(sets.len(), num_sets as usize);
+        unsafe { Ok(core::mem::transmute(sets.into_boxed_slice())) }
     }
 
     unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
