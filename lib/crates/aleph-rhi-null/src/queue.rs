@@ -100,8 +100,8 @@ impl IQueue for NullQueue {
         Ok(())
     }
 
-    unsafe fn present(&self, _desc: &QueuePresentDesc) -> Result<bool, QueuePresentError> {
-        Ok(false)
+    unsafe fn present(&self, _desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+        Ok(())
     }
 }
 
