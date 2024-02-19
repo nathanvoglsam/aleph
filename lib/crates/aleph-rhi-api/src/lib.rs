@@ -3503,6 +3503,21 @@ impl<'a> BufferDescriptorWrite<'a> {
             structure_byte_stride: 0,
         }
     }
+
+    pub const fn with_offset(mut self, offset: u64) -> Self {
+        self.offset = offset;
+        self
+    }
+
+    pub const fn with_len(mut self, len: u32) -> Self {
+        self.len = len;
+        self
+    }
+
+    pub const fn with_stride(mut self, stride: u32) -> Self {
+        self.structure_byte_stride = stride;
+        self
+    }
 }
 
 /// Describes the parameters of a descriptor to write when writing into a texel buffer binding.
