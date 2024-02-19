@@ -676,18 +676,120 @@ impl ValidationDevice {
 
         // Check that the declared descriptor type matches the DescriptorWrites variant provided.
         match &write.writes {
-            DescriptorWrites::Texture(writes) | DescriptorWrites::TextureRW(writes) => {
+            DescriptorWrites::Texture(writes) => {
                 for v in writes.iter() {
                     let image_view =
                         &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view);
-                    assert!(
-                        matches!(image_view.view_type, ValidationViewType::ResourceView),
-                        "Writing a resource view with an '{:?}' image view is invalid",
-                        image_view.view_type
-                    );
+
+                    Self::validate_image_view_type(image_view);
+
+                    let texture = image_view
+                        ._image
+                        .upgrade()
+                        .expect("Trying to write view for destroyed image");
+
+                    Self::validate_texture_usage(&texture, ResourceUsageFlags::SHADER_RESOURCE);
+                }
+            }
+            DescriptorWrites::TextureRW(writes) => {
+                for v in writes.iter() {
+                    let image_view =
+                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view);
+
+                    Self::validate_image_view_type(image_view);
+
+                    let texture = image_view
+                        ._image
+                        .upgrade()
+                        .expect("Trying to write view for destroyed image");
+
+                    Self::validate_texture_usage(&texture, ResourceUsageFlags::UNORDERED_ACCESS);
+                }
+            }
+            DescriptorWrites::UniformBuffer(writes)
+            | DescriptorWrites::UniformBufferDynamic(writes) => {
+                for write in writes.iter() {
+                    let buffer = unwrap::buffer(write.buffer);
+                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::CONSTANT_BUFFER);
+                    Self::validate_buffer_write_range(buffer, write);
+                    Self::validate_uniform_buffer_offset_alignment(write);
+                }
+            }
+            DescriptorWrites::StructuredBuffer(writes) => {
+                for write in writes.iter() {
+                    let buffer = unwrap::buffer(write.buffer);
+                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::SHADER_RESOURCE);
+                    Self::validate_buffer_write_range(buffer, write);
+                }
+            }
+            DescriptorWrites::StructuredBufferRW(writes) => {
+                for write in writes.iter() {
+                    let buffer = unwrap::buffer(write.buffer);
+                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::UNORDERED_ACCESS);
+                    Self::validate_buffer_write_range(buffer, write);
+                }
+            }
+            DescriptorWrites::ByteAddressBuffer(writes) => {
+                for write in writes.iter() {
+                    let buffer = unwrap::buffer(write.buffer);
+                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::SHADER_RESOURCE);
+                    Self::validate_buffer_write_range(buffer, write);
+                }
+            }
+            DescriptorWrites::ByteAddressBufferRW(writes) => {
+                for write in writes.iter() {
+                    let buffer = unwrap::buffer(write.buffer);
+                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::UNORDERED_ACCESS);
+                    Self::validate_buffer_write_range(buffer, write);
                 }
             }
             _ => {}
         }
+    }
+
+    fn validate_image_view_type(image_view: &ValidationImageView) {
+        assert!(
+            matches!(image_view.view_type, ValidationViewType::ResourceView),
+            "Writing a resource view with an '{:?}' image view is invalid",
+            image_view.view_type
+        );
+    }
+
+    fn validate_texture_usage(texture: &ValidationTexture, required: ResourceUsageFlags) {
+        let texture_usage = texture.desc_ref().usage;
+        assert!(
+            texture_usage.contains(required),
+            "Texture missing required usage '{:?}' for view",
+            required
+        );
+    }
+
+    fn validate_buffer_usage(buffer: &ValidationBuffer, required: ResourceUsageFlags) {
+        let buffer_usage = buffer.desc_ref().usage;
+        assert!(
+            buffer_usage.contains(required),
+            "Buffer missing required usage '{:?}' for view",
+            required
+        );
+    }
+
+    fn validate_buffer_write_range(buffer: &ValidationBuffer, write: &BufferDescriptorWrite) {
+        let buffer_size = buffer.desc_ref().size;
+        let view_end = write.offset + write.len as u64;
+        assert!(
+            view_end <= buffer_size,
+            "Buffer view 'offset: {} len: {}' out of buffer bounds. Size '{}'.",
+            write.offset,
+            write.len,
+            buffer_size
+        );
+    }
+
+    fn validate_uniform_buffer_offset_alignment(write: &BufferDescriptorWrite) {
+        assert!(
+            write.offset % 256 == 0,
+            "UniformBuffer offset '{}' does not maintain 256 byte alignment",
+            write.offset
+        );
     }
 }
