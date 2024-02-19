@@ -180,8 +180,8 @@ pub fn pass(
             let u_alloc =
                 UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
 
-            u_alloc.allocate_object(CameraLayout::init());
-            u_alloc.allocate_object(ModelLayout::init());
+            let camera_offset = u_alloc.allocate_object(CameraLayout::init()).device_offset;
+            let model_offset = u_alloc.allocate_object(ModelLayout::init()).device_offset;
 
             uniform_buffer.unmap();
 
@@ -228,16 +228,17 @@ pub fn pass(
             encoder.bind_graphics_pipeline(data.pipeline.as_ref());
 
             let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
+            let write = BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256);
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::uniform_buffer(
                     descriptor_set,
                     0,
-                    &BufferDescriptorWrite::uniform_buffer_offset(uniform_buffer, 0, 256),
+                    &write.clone().with_offset(camera_offset as u64),
                 ),
                 DescriptorWriteDesc::uniform_buffer(
                     descriptor_set,
                     1,
-                    &BufferDescriptorWrite::uniform_buffer_offset(uniform_buffer, 256, 256),
+                    &write.clone().with_offset(model_offset as u64),
                 ),
             ]);
 
