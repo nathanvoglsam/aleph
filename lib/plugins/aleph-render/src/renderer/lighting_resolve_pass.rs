@@ -27,21 +27,26 @@
 // SOFTWARE.
 //
 
+use aleph_device_allocators::IUploadAllocator;
+use aleph_device_allocators::UploadBumpAllocator;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::renderer::main_gbuffer_pass::CameraLayout;
 use crate::renderer::main_gbuffer_pass::MainGBufferPassOutput;
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 
 struct LightingResolvePassPayload {
+    depth: ResourceRef,
     gbuffer0: ResourceRef,
     gbuffer1: ResourceRef,
     gbuffer2: ResourceRef,
     lighting: ResourceMut,
+    uniform_buffer: ResourceMut,
     set_layout: AnyArc<dyn IDescriptorSetLayout>,
     pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pipeline: AnyArc<dyn IComputePipeline>,
@@ -63,7 +68,9 @@ pub fn pass(
                 DescriptorType::Texture.binding(0),
                 DescriptorType::Texture.binding(1),
                 DescriptorType::Texture.binding(2),
-                DescriptorType::TextureRW.binding(3),
+                DescriptorType::Texture.binding(3),
+                DescriptorType::TextureRW.binding(4),
+                DescriptorType::UniformBuffer.binding(5),
             ],
             name: Some("DeferredLightingDescriptorSetLayout"),
         })
@@ -95,6 +102,10 @@ pub fn pass(
             let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
             let b_desc = &back_buffer_info.desc;
 
+            let depth = resources.read_texture(
+                main_gbuffer_pass_output.depth_buffer,
+                ResourceUsageFlags::SHADER_RESOURCE,
+            );
             let gbuffer0 = resources.read_texture(
                 main_gbuffer_pass_output.gbuffer0,
                 ResourceUsageFlags::SHADER_RESOURCE,
@@ -114,12 +125,20 @@ pub fn pass(
                     .with_name("OutputLighting"),
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
+            let uniform_buffer = resources.create_buffer(
+                &BufferDesc::new(1024 as u64)
+                    .cpu_write()
+                    .with_name("Test Uniform Buffer"),
+                ResourceUsageFlags::CONSTANT_BUFFER,
+            );
 
             data.write(LightingResolvePassPayload {
+                depth,
                 gbuffer0,
                 gbuffer1,
                 gbuffer2,
                 lighting,
+                uniform_buffer,
                 set_layout,
                 pipeline_layout,
                 pipeline,
@@ -133,21 +152,36 @@ pub fn pass(
             let device = resources.device();
             let arena = resources.descriptor_arena();
 
+            let depth = resources.get_texture(data.depth).unwrap();
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
             let gbuffer2 = resources.get_texture(data.gbuffer2).unwrap();
             let lighting = resources.get_texture(data.lighting).unwrap();
+            let uniform_buffer = resources.get_buffer(data.uniform_buffer).unwrap();
+            let depth_srv = ImageView::get_srv_for(depth).unwrap();
             let gbuffer0_srv = ImageView::get_srv_for(gbuffer0).unwrap();
             let gbuffer1_srv = ImageView::get_srv_for(gbuffer1).unwrap();
             let gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
             let lighting_uav = ImageView::get_uav_for(lighting).unwrap();
 
+            let u_ptr = uniform_buffer.map().unwrap();
+            let u_alloc =
+                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
+            u_alloc.allocate_object(CameraLayout::init());
+            uniform_buffer.unmap();
+
             let set = arena.allocate_set(data.set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[
-                DescriptorWriteDesc::texture(set, 0, &gbuffer0_srv.srv_write()),
-                DescriptorWriteDesc::texture(set, 1, &gbuffer1_srv.srv_write()),
-                DescriptorWriteDesc::texture(set, 2, &gbuffer2_srv.srv_write()),
-                DescriptorWriteDesc::texture_rw(set, 3, &lighting_uav.uav_write()),
+                DescriptorWriteDesc::texture(set, 0, &depth_srv.srv_write()),
+                DescriptorWriteDesc::texture(set, 1, &gbuffer0_srv.srv_write()),
+                DescriptorWriteDesc::texture(set, 2, &gbuffer1_srv.srv_write()),
+                DescriptorWriteDesc::texture(set, 3, &gbuffer2_srv.srv_write()),
+                DescriptorWriteDesc::texture_rw(set, 4, &lighting_uav.uav_write()),
+                DescriptorWriteDesc::uniform_buffer(
+                    set,
+                    5,
+                    &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256),
+                ),
             ]);
 
             encoder.bind_compute_pipeline(data.pipeline.as_ref());

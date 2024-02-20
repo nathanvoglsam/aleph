@@ -424,14 +424,7 @@ fn proj_matrix() -> [f32; 16] {
 }
 
 fn view_matrix() -> [f32; 16] {
-    let axis = ultraviolet::Bivec3::from_normalized_axis(ultraviolet::Vec3::new(0., 0., 1.));
-    let rotor = ultraviolet::Rotor3::from_angle_plane(0., axis);
-    rotor
-        .into_matrix()
-        .into_homogeneous()
-        .transposed()
-        .as_array()
-        .clone()
+    Mat4::identity().as_array().clone()
 }
 
 fn camera_position() -> [f32; 4] {
@@ -440,7 +433,7 @@ fn camera_position() -> [f32; 4] {
 
 #[repr(align(256))]
 #[derive(Default, Debug)]
-struct CameraLayout {
+pub struct CameraLayout {
     _view_matrix: [f32; 16],
     _proj_matrix: [f32; 16],
     _position: [f32; 4],
