@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#include "projection.hlsl"
+
 [[vk::binding(0, 0)]]
 Texture2D<float4> g_gbuffer0 : register(t0, space0);
 [[vk::binding(1, 0)]]

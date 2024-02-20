@@ -47,14 +47,14 @@ struct Ray {
 // 
 // Returns the value of the largest component in the vector passed into the function
 // 
-float MaxComponent(float2 v) {
+func MaxComponent(float2 v) -> float {
     return max(v.x, v.y);
 }
 
 // 
 // Returns the value of the largest component in the vector passed into the function
 // 
-float MaxComponent(float3 v) {
+func MaxComponent(float3 v) -> float{
     const float max_xy = max(v.x, v.y);
     return max(max_xy, v.z);
 }
@@ -62,22 +62,22 @@ float MaxComponent(float3 v) {
 // 
 // Returns the value of the largest component in the vector passed into the function
 // 
-float MaxComponent(float4 v) {
+func MaxComponent(float4 v) -> float {
     const float max_xy = max(v.x, v.y);
     const float max_xyz = max(max_xy, v.z);
     return max(max_xyz, v.w);
 }
 
-// 
+//
 // Saturate a FP16 (half precision) float to be in the 0-1 range but never actually 0
-// 
-inline float SaturateFP16(float val) {
-    return clamp(val, 0.089, 1.0);
+//
+inline func SaturateFP16<T: __BuiltinFloatingPointType>(T val) -> T{
+    return clamp(val, T(0.089), T(1.0));
 }
 
-// 
+//
 // Saturate a FP32 (full precision) float to be in the 0-1 range but never actually 0
-// 
-inline float SaturateFP32(float val) {
-    return clamp(val, 0.045, 1.0);
+//
+inline func SaturateFP32<T : __BuiltinFloatingPointType>(T val) -> T {
+    return clamp(val, T(0.045), T(1.0));
 }
