@@ -66,10 +66,10 @@ pub const fn calc_subresource_index(
 pub const fn plane_layer_for_aspect(format: Format, aspect: TextureCopyAspect) -> Option<u32> {
     match format {
         Format::Depth32Float => match aspect {
-            TextureCopyAspect::Depth => Some(1),
+            TextureCopyAspect::Depth => Some(0),
             _ => None,
         },
-        Format::Depth24Stencil8 => match aspect {
+        Format::Depth24Stencil8 | Format::Depth32FloatStencil8 => match aspect {
             TextureCopyAspect::Color => None,
             TextureCopyAspect::Depth => Some(0),
             TextureCopyAspect::Stencil => Some(1),
@@ -86,12 +86,12 @@ pub const fn plane_layer_for_aspect_flag(format: Format, aspect: TextureAspect) 
     match format {
         Format::Depth32Float => {
             if aspect.contains(TextureAspect::DEPTH) {
-                Some(1)
+                Some(0)
             } else {
                 None
             }
         }
-        Format::Depth24Stencil8 => {
+        Format::Depth24Stencil8 | Format::Depth32FloatStencil8 => {
             if aspect.contains(TextureAspect::DEPTH) {
                 Some(0)
             } else if aspect.contains(TextureAspect::STENCIL) {

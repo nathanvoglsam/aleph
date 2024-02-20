@@ -42,6 +42,7 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
+use crate::internal::conv::texture_format_to_dxgi_view;
 use crate::internal::{
     calc_subresource_index, plane_layer_for_aspect, plane_layer_for_aspect_flag,
 };
@@ -332,7 +333,7 @@ impl Texture {
         };
 
         D3D12_SHADER_RESOURCE_VIEW_DESC {
-            Format: texture_format_to_dxgi(desc.format),
+            Format: texture_format_to_dxgi_view(desc.format),
             ViewDimension: dimension,
             Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
             Anonymous: anonymous,
@@ -405,7 +406,7 @@ impl Texture {
         };
 
         D3D12_UNORDERED_ACCESS_VIEW_DESC {
-            Format: texture_format_to_dxgi(desc.format),
+            Format: texture_format_to_dxgi_view(desc.format),
             ViewDimension: dimension,
             Anonymous: anonymous,
         }
