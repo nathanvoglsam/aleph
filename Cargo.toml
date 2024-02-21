@@ -50,6 +50,7 @@ members = [
     "lib/crates/aleph-frame-graph",
     "lib/crates/aleph-interfaces",
     "lib/crates/aleph-label",
+    "lib/crates/aleph-math",
     "lib/crates/aleph-pin-board",
     "lib/crates/aleph-pix",
     "lib/crates/aleph-pix-raw",
@@ -147,6 +148,7 @@ aleph-engine-build = { path = "./lib/crates/aleph-engine-build", version = "0.1"
 aleph-frame-graph = { path = "./lib/crates/aleph-frame-graph", version = "0.1" }
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./lib/crates/aleph-label", version = "1" }
+aleph-math = { path = "./lib/crates/aleph-math", version = "0.1" }
 aleph-pin-board = { path = "./lib/crates/aleph-pin-board", version = "0.1" }
 aleph-pix = { path = "./lib/crates/aleph-pix", version = "0.1" }
 aleph-pix-raw = { path = "./lib/crates/aleph-pix-raw", version = "0.1" }
