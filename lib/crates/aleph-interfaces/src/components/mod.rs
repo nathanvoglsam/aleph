@@ -36,15 +36,15 @@ mod transform {
     pub struct Transform {
         /// This stores the position of the entity in world space using double-precision floating
         /// point. This makes position "just work" for planet scale worlds
-        pub position: ultraviolet::DVec3,
+        pub position: aleph_math::DVec3,
 
         /// This stores the rotation of the entity in world space using single-precision floating
         /// point. Rotation will not need more precision than an f32.
-        pub rotation: ultraviolet::Rotor3,
+        pub rotation: aleph_math::Rotor3,
 
         /// This stores the scaling component using single-precision floating point. Double
         /// precision would be wasted here so f32 is chosen instead.
-        pub scale: ultraviolet::Vec3,
+        pub scale: aleph_math::Vec3,
     }
 }
 

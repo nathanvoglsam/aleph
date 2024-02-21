@@ -44,9 +44,9 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-ecs = { workspace = true }
 aleph-label = { workspace = true }
+aleph-math = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 raw-window-handle = { workspace = true }
 thiserror = { workspace = true }
 bitflags = { workspace = true }
-ultraviolet = { workspace = true }
