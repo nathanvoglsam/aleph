@@ -31,10 +31,11 @@ use aleph_device_allocators::IUploadAllocator;
 use aleph_device_allocators::UploadBumpAllocator;
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
+use aleph_math::projection::perspective_reversed_infinite_z_wgpu_dx_gl;
+use aleph_math::Mat4;
+use aleph_math::Vec3;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use ultraviolet::Mat4;
-use ultraviolet::Vec3;
 
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
@@ -417,7 +418,7 @@ fn create_pipeline_state(
 }
 
 fn proj_matrix() -> [f32; 16] {
-    ultraviolet::projection::perspective_reversed_infinite_z_wgpu_dx_gl(90., 16. / 9., 0.1)
+    perspective_reversed_infinite_z_wgpu_dx_gl(90.0f32.to_radians(), 16. / 9., 0.1)
         .transposed()
         .as_array()
         .clone() // Hopefully gets elided
