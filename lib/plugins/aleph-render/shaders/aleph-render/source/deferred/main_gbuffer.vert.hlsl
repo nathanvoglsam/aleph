@@ -29,33 +29,35 @@
 
 #include "main_gbuffer.inc.hlsl"
 
-[[vk::binding(0, 0)]]
-ConstantBuffer<CameraLayout> camera_buffer : register(b0);
+struct Params {
+    ConstantBuffer<CameraLayout> camera;
+    ConstantBuffer<ModelLayout> model;
+};
 
-[[vk::binding(1, 0)]]
-ConstantBuffer<ModelLayout> model_buffer : register(b1);
+ParameterBlock<Params> g_params;
 
-StaticMeshPixelInput main(in StaticMeshVertexInput input, out float4 out_position : SV_POSITION) {
-    // Load buffers so auto complete works properly
-    const CameraLayout camera = camera_buffer;
-    const ModelLayout model = model_buffer;
-	
-    StaticMeshPixelInput output;
+struct VSResult<T> {
+    float4 sv_position : SV_Position;
+    T payload;
+};
 
-    const float4 in_pos = float4(input.position, 1.0);
-    const float3x3 normal_matrix = (float3x3)model.normal_matrix;
-    
-    float4 position = mul(in_pos, model.model_matrix);
-    float3 normal = normalize(mul(input.normal, normal_matrix));
-    float3 tangent = normalize(mul(input.tangent.xyz, normal_matrix));
-    output.position = position.xyz;
-    output.normal = normal;
-    output.tangent = tangent;
-    output.uv = input.uv;
+func main(in StaticMeshVertexInput input) -> VSResult<StaticMeshPixelInput> {
+    let in_pos = float4(input.position, 1.0);
+    let normal_matrix = (float3x3)g_params.model.normal_matrix;
 
-    position = mul(position, camera.view_matrix);
-    position = mul(position, camera.proj_matrix);
-    out_position = position;
+    var position = mul(in_pos, g_params.model.model_matrix);
+    let normal = normalize(mul(input.normal, normal_matrix));
+    let tangent = normalize(mul(input.tangent.xyz, normal_matrix));
+
+    VSResult<StaticMeshPixelInput> output;
+    output.payload.position = position.xyz;
+    output.payload.normal = normal;
+    output.payload.tangent = tangent;
+    output.payload.uv = input.uv;
+
+    position = mul(position, g_params.camera.view_matrix);
+    position = mul(position, g_params.camera.proj_matrix);
+    output.sv_position = position;
 
     return output;
 }

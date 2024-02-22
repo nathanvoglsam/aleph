@@ -44,27 +44,27 @@ struct Ray {
     float3 direction;
 };
 
-// 
+//
 // Returns the value of the largest component in the vector passed into the function
-// 
-func MaxComponent(float2 v) -> float {
+//
+func MaxComponent<T: __BuiltinFloatingPointType>(vector<T, 2> v) -> T {
     return max(v.x, v.y);
 }
 
-// 
+//
 // Returns the value of the largest component in the vector passed into the function
-// 
-func MaxComponent(float3 v) -> float{
-    const float max_xy = max(v.x, v.y);
+//
+func MaxComponent<T: __BuiltinFloatingPointType>(vector<T, 3> v) -> T {
+    let max_xy = max(v.x, v.y);
     return max(max_xy, v.z);
 }
 
-// 
+//
 // Returns the value of the largest component in the vector passed into the function
-// 
-func MaxComponent(float4 v) -> float {
-    const float max_xy = max(v.x, v.y);
-    const float max_xyz = max(max_xy, v.z);
+//
+func MaxComponent<T: __BuiltinFloatingPointType>(vector<T, 4> v) -> T {
+    let max_xy = max(v.x, v.y);
+    let max_xyz = max(max_xy, v.z);
     return max(max_xyz, v.w);
 }
 

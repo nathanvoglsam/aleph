@@ -43,10 +43,17 @@
 // - OUT t: The normalized tangent vector
 // - OUT b: The normalized bitangent vector
 // 
-void TBNNormalMapSample(const float3 map_normal, const float3 mesh_normal, const float4 mesh_tangent, out float3 n, out float3 t, out float3 b) {
-	const float3 tangent = mesh_tangent.xyz;
-	const float3 bitangent = cross(mesh_normal, tangent) * sign(mesh_tangent.w);
-	const float3x3 tbn = float3x3(tangent, bitangent, mesh_normal);
+func TBNNormalMapSample(
+	in float3 map_normal,
+	in float3 mesh_normal,
+	in float4 mesh_tangent,
+	out float3 n,
+	out float3 t,
+	out float3 b
+) {
+	let tangent = mesh_tangent.xyz;
+	let bitangent = cross(mesh_normal, tangent) * sign(mesh_tangent.w);
+	let tbn = float3x3(tangent, bitangent, mesh_normal);
 	n = normalize(mul(map_normal, tbn));
 	t = normalize(tangent);
 	b = normalize(bitangent);
@@ -56,7 +63,8 @@ void TBNNormalMapSample(const float3 map_normal, const float3 mesh_normal, const
 // 
 // Calculate a world space normal vector from a normal map and the vertex normal + vertex tangent.
 // 
-// This uses the code listing on http://www.mikktspace.com/ for sampling the normal under the Pixel Shader Transformation section
+// This uses the code listing on http://www.mikktspace.com/ for sampling the normal under the Pixel
+// Shader Transformation section
 // 
 // Arguments:
 // 
@@ -67,9 +75,16 @@ void TBNNormalMapSample(const float3 map_normal, const float3 mesh_normal, const
 // - OUT t: The normalized tangent vector
 // - OUT b: The normalized bitangent vector
 // 
-void MikkTNormalMapSample(const float3 map_normal, const float3 mesh_normal, const float4 mesh_tangent, out float3 n, out float3 t, out float3 b) {
-	const float3 tangent = mesh_tangent.xyz;
-	const float3 bitangent = cross(mesh_normal, tangent) * sign(mesh_tangent.w);
+func MikkTNormalMapSample(
+	in float3 map_normal,
+	in float3 mesh_normal,
+	in float4 mesh_tangent,
+	out float3 n,
+	out float3 t,
+	out float3 b
+) {
+	let tangent = mesh_tangent.xyz;
+	let bitangent = cross(mesh_normal, tangent) * sign(mesh_tangent.w);
 	n = normalize(map_normal.x * tangent + map_normal.y * bitangent + map_normal.z * mesh_normal);
 	t = normalize(tangent);
 	b = normalize(bitangent);

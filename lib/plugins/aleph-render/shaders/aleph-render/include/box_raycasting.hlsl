@@ -76,15 +76,13 @@ struct TracingBox {
 // A Ray-Box Intersection Algorithm and Efficient Dynamic Voxel Rendering by Alexander Majercik,
 // Cyril Crassin, Peter Shirley, and Morgan McGuire
 // 
-bool TraceRayAgainstBox(
-    const TracingBox box,
-    const Ray ray,
+func TraceRayAgainstBox<let CAN_START_IN_BOX: bool, let ORIENTED: bool>(
+    in TracingBox box,
+    in Ray ray,
     out float distance,
     out float3 normal,
-    const bool can_start_in_box,
-    const bool is_oriented,
-    const float3 inv_ray_direction
-) {
+    in float3 inv_ray_direction = float3(0, 0, 0)
+) -> bool {
     // I don't know how this works, it's described in the reference paper. I removed all the
     // comments because they aren't really useful to me. If you want to know how this works, look
     // up the paper.
@@ -92,14 +90,14 @@ bool TraceRayAgainstBox(
     const float3 ray_origin = mul(box.rotation, (ray.origin - box.center));
 
     float3 ray_direction;
-    if (is_oriented) {
+    if (ORIENTED) {
         ray_direction = mul(box.rotation,ray.direction);
     } else {
         ray_direction = ray.direction;
     }
 
     float winding;
-    if (can_start_in_box) {
+    if (CAN_START_IN_BOX) {
         winding = (MaxComponent(abs(ray_origin) * box.inv_radius) < 1.0) ? -1.0 : 1.0;
     }
     else {
@@ -109,7 +107,7 @@ bool TraceRayAgainstBox(
     float3 sgn = -sign(ray_direction);
 
     float3 distance_to_plane = box.radius * winding * sgn - ray_origin;
-    if (is_oriented) {
+    if (ORIENTED) {
         distance_to_plane /= ray_direction;
     }
     else {
@@ -126,7 +124,7 @@ bool TraceRayAgainstBox(
 
     distance = (sgn.x != 0.0) ? distance_to_plane.x : ((sgn.y != 0.0) ? distance_to_plane.y : distance_to_plane.z);
 
-    if (is_oriented) {
+    if (ORIENTED) {
         normal = mul(sgn, box.rotation);
     }
     else {
@@ -139,55 +137,53 @@ bool TraceRayAgainstBox(
 // 
 // A wrapper around TraceRayAgainstBox. This function can be used for tracing against axis-aligned
 // boxes where the ray will always originate from outside the box
-// 
-bool TraceOutsideRayAgainstAABox(
-    const TracingBox box,
-    const Ray ray,
+//
+func TraceOutsideRayAgainstAABox(
+    in TracingBox box,
+    in Ray ray,
     out float distance,
     out float3 normal,
-    const float3 inv_ray_direction,
-) {
-    return TraceRayAgainstBox(box, ray, distance, normal, false, false, inv_ray_direction);
+    in float3 inv_ray_direction,
+) -> bool {
+    return TraceRayAgainstBox<false, false>(box, ray, distance, normal, inv_ray_direction);
 }
 
 // 
 // A wrapper around TraceRayAgainstBox. This function can be used for tracing against axis-aligned
 // boxes where the ray may originate from inside the box
-// 
-bool TraceRayAgainstAABox(
-        const TracingBox box,
-        const Ray ray,
-        out float distance,
-        out float3 normal,
-        const float3 inv_ray_direction,
-) {
-    return TraceRayAgainstBox(box, ray, distance, normal, true, false, inv_ray_direction);
+//
+func TraceRayAgainstAABox(
+    in TracingBox box,
+    in Ray ray,
+    out float distance,
+    out float3 normal,
+    in float3 inv_ray_direction,
+) -> bool {
+    return TraceRayAgainstBox<true, false>(box, ray, distance, normal, inv_ray_direction);
 }
 
 // 
 // A wrapper around TraceRayAgainstBox. This function can be used for tracing against oriented
 // boxes where the ray will always originate from outside the box
-// 
-bool TraceOutsideRayAgainstOrientedBox(
-        const TracingBox box,
-        const Ray ray,
-        out float distance,
-        out float3 normal,
-        const float3 inv_ray_direction,
-) {
-    return TraceRayAgainstBox(box, ray, distance, normal, false, true, inv_ray_direction);
+//
+func TraceOutsideRayAgainstOrientedBox(
+    in TracingBox box,
+    in Ray ray,
+    out float distance,
+    out float3 normal,
+) -> bool {
+    return TraceRayAgainstBox<false, true>(box, ray, distance, normal);
 }
 
 // 
 // A wrapper around TraceRayAgainstBox. This function can be used for tracing against oriented
 // boxes where the ray may originate from inside the box
-// 
-bool TraceRayAgainstOrientedBox(
-        const TracingBox box,
-        const Ray ray,
-        out float distance,
-        out float3 normal,
-        const float3 inv_ray_direction,
-) {
-    return TraceRayAgainstBox(box, ray, distance, normal, true, true, inv_ray_direction);
+//
+func TraceRayAgainstOrientedBox(
+    in TracingBox box,
+    in Ray ray,
+    out float distance,
+    out float3 normal,
+) -> bool {
+    return TraceRayAgainstBox<true, true>(box, ray, distance, normal);
 }

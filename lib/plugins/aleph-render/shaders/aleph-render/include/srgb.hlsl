@@ -29,106 +29,112 @@
 
 #pragma once
 
-// 
+//
 // Approximate SRGB to linear (linear from srgb) based on the gamma 2.2 curve
-// 
+//
 // Faster, and simpler, but less correct
-// 
-inline float3 ApproxLinearFromSRGB(float3 srgb) {
-    return pow(srgb, 2.2);
+//
+inline func ApproxLinearFromSRGB<T : __BuiltinFloatingPointType>(
+    vector<T, 3> srgb
+) -> vector<T, 3> {
+    return pow(srgb, T(2.2));
 }
 
-// 
+//
 // Approximate linear to SRGB (srgb from linear) based on the gamma 2.2 curve
-// 
+//
 // Faster, and simpler, but less correct
-// 
-inline float3 ApproxLinearToSRGB(float3 colour) {
-    return pow(colour, 1 / 2.2);
+//
+inline func ApproxLinearToSRGB<T : __BuiltinFloatingPointType>(
+    vector<T, 3> colour
+) -> vector<T, 3> {
+    return pow(colour, T(1 / 2.2));
 }
 
-// 
+//
 // Approximate SRGB to linear (linear from srgb) based on the gamma 2.2 curve
-// 
+//
 // Faster, and simpler, but less correct
-// 
+//
 // The 4th alpha channel is unchanged (presumed linear in most cases)
-// 
-inline float4 ApproxLinearFromSRGBA(float4 srgba) {
-    return float4(ApproxLinearFromSRGB(srgba.xyz), srgba.w);
+//
+inline func ApproxLinearFromSRGBA<T : __BuiltinFloatingPointType>(
+    vector<T, 4> srgba
+) -> vector<T, 4> {
+    return vector<T, 4>(ApproxLinearFromSRGB(srgba.xyz), srgba.w);
 }
 
-// 
+//
 // Approximate linear to SRGB (srgb from linear) based on the gamma 2.2 curve
-// 
+//
 // Faster, and simpler, but less correct
-// 
+//
 // The 4th alpha channel is unchanged (presumed linear in most cases)
-// 
-inline float4 ApproxLinearToSRGBA(float4 colour) {
-    return float4(ApproxLinearToSRGB(colour.xyz), colour.w);
+//
+inline func ApproxLinearToSRGBA<T : __BuiltinFloatingPointType>(
+    vector<T, 4> colour
+) -> vector<T, 4> {
+    return vector<T, 4>(ApproxLinearToSRGB(colour.xyz), colour.w);
 }
 
-// 
+//
 // Single component implementation for correct linear to SRGB
-// 
-inline float LinearComponentToSRGB(float val)
-{
-    if( val < 0.0031308 ) {
-        val *= 12.92;
+//
+inline func LinearComponentToSRGB<T: __BuiltinFloatingPointType>(T val) -> T {
+    if( val < T(0.0031308) ) {
+        val *= T(12.92);
     } else {
-        val = 1.055 * pow(val,1.0/2.4) - 0.055;
+        val = T(1.055) * pow(val,T(1.0/2.4)) - T(0.055);
     }
     return val;
 }
 
-// 
+//
 // Single component implementation for correct SRGB to linear
-// 
-inline float LinearComponentFromSRGB(float val)
-{
-    if( val < 0.04045f ) {
-        val /= 12.92f;
+//
+inline func LinearComponentFromSRGB<T: __BuiltinFloatingPointType>(T val) -> T {
+    if( val < T(0.04045) ) {
+        val /= T(12.92);
     } else {
-        val = pow((val + 0.055f)/1.055f,2.4f);
+        val = pow((val + T(0.055)) / T(1.055), T(2.4));
     }
     return val;
 }
 
-// 
+//
 // SRGB to linear (linear from srgb)
-// 
-inline float3 LinearFromSRGB(float3 srgb) {
-    const float x = LinearComponentFromSRGB(srgb.x);
-    const float y = LinearComponentFromSRGB(srgb.y);
-    const float z = LinearComponentFromSRGB(srgb.z);
-    return float3(x,y,z);
+//
+inline func LinearFromSRGB<T : __BuiltinFloatingPointType>(vector<T, 3> srgb) -> vector<T, 3> {
+    let x = LinearComponentFromSRGB(srgb.x);
+    let y = LinearComponentFromSRGB(srgb.y);
+    let z = LinearComponentFromSRGB(srgb.z);
+    return vector<T, 3>(x,y,z);
 }
 
-// 
+//
 // Linear to SRGB (srgb from linear)
-// 
-inline float3 LinearToSRGB(float3 colour) {
-    const float x = LinearComponentToSRGB(colour.x);
-    const float y = LinearComponentToSRGB(colour.y);
-    const float z = LinearComponentToSRGB(colour.z);
-    return float3(x,y,z);
+//
+inline func LinearToSRGB<T : __BuiltinFloatingPointType>(vector<T, 3> colour) -> vector<T, 3> {
+    let x = LinearComponentToSRGB(colour.x);
+    let y = LinearComponentToSRGB(colour.y);
+    let z = LinearComponentToSRGB(colour.z);
+    return vector<T, 3>(x,y,z);
 }
 
-// 
+//
 // SRGB to linear (linear from srgb)
-// 
+//
 // The 4th alpha channel is unchanged (presumed linear in most cases)
-// 
-inline float4 LinearFromSRGBA(float4 srgba) {
-    return float4(LinearFromSRGB(srgba.xyz), srgba.w);
+//
+inline func LinearFromSRGBA<T : __BuiltinFloatingPointType>(vector<T, 4> srgba) -> vector<T, 4> {
+    return vector<T, 4>(LinearFromSRGB(srgba.xyz), srgba.w);
 }
 
-// 
+//
 // Linear to SRGB (srgb from linear)
-// 
+//
 // The 4th alpha channel is unchanged (presumed linear in most cases)
-// 
-inline float4 LinearToSRGBA(float4 colour) {
-    return float4(LinearToSRGB(colour.xyz), colour.w);
+//
+inline func LinearToSRGBA<T : __BuiltinFloatingPointType>(vector<T, 4> colour) -> vector<T, 4> {
+    return vector<T, 4>(LinearToSRGB(colour.xyz), colour.w);
 }
