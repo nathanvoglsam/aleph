@@ -81,3 +81,13 @@ inline func SaturateFP16<T: __BuiltinFloatingPointType>(T val) -> T{
 inline func SaturateFP32<T : __BuiltinFloatingPointType>(T val) -> T {
     return clamp(val, T(0.045), T(1.0));
 }
+
+inline func Saturate<T : __BuiltinFloatingPointType>(T val) -> T {
+    if (val is float) {
+        return clamp(val, T(0.045), T(1.0));
+    } else if (val is half) {
+        return clamp(val, T(0.089), T(1.0));
+    } else {
+        return clamp(val, T(0.045), T(1.0)); // TODO: other types
+    }
+}

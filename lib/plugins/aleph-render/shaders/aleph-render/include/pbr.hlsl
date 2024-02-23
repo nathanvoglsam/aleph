@@ -60,8 +60,8 @@ inline func EvaluatePointLight<T: __BuiltinFloatingPointType>(
 // Performs a remapping of the roughness parameter. It makes the roughness parameter seem more
 // linear when being tweaked so it's a bit more intuitive to work with.
 // 
-inline func RemapRoughness(const float perceptual_roughness) -> float {
-    return SaturateFP32(perceptual_roughness * perceptual_roughness);
+inline func RemapRoughness<T: __BuiltinFloatingPointType>(in T perceptual_roughness) -> T {
+    return Saturate<T>(perceptual_roughness * perceptual_roughness);
 }
 
 //
@@ -150,20 +150,20 @@ inline func V_SmithGGXCorrelated<T: __BuiltinFloatingPointType>(
 // 
 // The SmithGGXCorrelated V term with support for anisotropic materials
 // 
-inline float V_SmithGGXCorrelated_Anisotropic(
-    in float at,
-    in float ab,
-    in float ToV,
-    in float BoV,
-    in float ToL,
-    in float BoL,
-    in float NoV, 
-    in float NoL
-) {
-    let lambdaV = NoL * length(float3(at * ToV, ab * BoV, NoV));
-    let lambdaL = NoV * length(float3(at * ToL, ab * BoL, NoL));
-    let v = 0.5 / (lambdaV + lambdaL);
-    return SaturateFP32(v);
+inline func V_SmithGGXCorrelated_Anisotropic<T: __BuiltinFloatingPointType>(
+    in T at,
+    in T ab,
+    in T ToV,
+    in T BoV,
+    in T ToL,
+    in T BoL,
+    in T NoV, 
+    in T NoL
+) -> T {
+    let lambdaV = NoL * length(vector<T, 3>(at * ToV, ab * BoV, NoV));
+    let lambdaL = NoV * length(vector<T, 3>(at * ToL, ab * BoL, NoL));
+    let v = T(0.5) / (lambdaV + lambdaL);
+    return Saturate<T>(v);
 }
 
 //

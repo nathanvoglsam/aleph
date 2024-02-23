@@ -487,18 +487,23 @@ impl Vertex {
             tangent: [0.; 3],
         }
     }
+
+    pub const fn normal(mut self, x: f32, y: f32, z: f32) -> Self {
+        self.normal = [x, y, z];
+        self
+    }
 }
 
 #[rustfmt::skip]
 const VERTS: [Vertex; 8] = [
-    Vertex::new( 1.,  1., -1.), //0
-    Vertex::new( 1., -1., -1.), //1
-    Vertex::new( 1.,  1.,  1.), //2
-    Vertex::new( 1., -1.,  1.), //3
-    Vertex::new(-1.,  1., -1.), //4
-    Vertex::new(-1., -1., -1.), //5
-    Vertex::new(-1.,  1.,  1.), //6
-    Vertex::new(-1., -1.,  1.), //7
+    Vertex::new( 1.,  1., -1.).normal(0., 0., 1.), //0
+    Vertex::new( 1., -1., -1.).normal(0., 0., 1.), //1
+    Vertex::new( 1.,  1.,  1.).normal(0., 0., 1.), //2
+    Vertex::new( 1., -1.,  1.).normal(0., 0., 1.), //3
+    Vertex::new(-1.,  1., -1.).normal(0., 0., 1.), //4
+    Vertex::new(-1., -1., -1.).normal(0., 0., 1.), //5
+    Vertex::new(-1.,  1.,  1.).normal(0., 0., 1.), //6
+    Vertex::new(-1., -1.,  1.).normal(0., 0., 1.), //7
 ];
 
 #[rustfmt::skip]
