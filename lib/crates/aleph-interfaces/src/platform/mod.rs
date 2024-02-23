@@ -30,6 +30,7 @@
 mod clipboard;
 mod events;
 mod frame_timer;
+mod gamepad;
 mod keyboard;
 mod mouse;
 mod window;
@@ -37,6 +38,7 @@ mod window;
 pub use clipboard::{IClipboard, IClipboardProvider};
 pub use events::{Event, IEvents, IEventsLock, IEventsProvider};
 pub use frame_timer::{IFrameTimer, IFrameTimerProvider};
+pub use gamepad::*;
 pub use keyboard::{
     IKeyboard, IKeyboardEventsLock, IKeyboardProvider, IKeyboardStateLock, KeyCode, KeyDownEvent,
     KeyMod, KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
