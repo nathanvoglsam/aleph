@@ -275,6 +275,8 @@ impl PluginPlatformSDL2 {
     }
 
     fn handle_events(sdl: &mut SdlObjects, provider: &ProviderImpl, quit_handle: &dyn IQuitHandle) {
+        use sdl2::event::Event as SdlEvent;
+
         let video_ctx = sdl.video.take().unwrap();
         let mut event_pump = sdl.event_pump.take().unwrap();
         let mut sdl_window = sdl.window.take().unwrap();
@@ -299,11 +301,11 @@ impl PluginPlatformSDL2 {
         // Clear the event pump and delegate the events to their event handlers
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit { .. } => {
+                SdlEvent::Quit { .. } => {
                     log::info!("Quit Event Received");
                     quit_handle.quit();
                 }
-                sdl2::event::Event::Window { win_event, .. } => {
+                SdlEvent::Window { win_event, .. } => {
                     window.process_window_event(
                         &video_ctx,
                         &mut window_state,
@@ -312,35 +314,15 @@ impl PluginPlatformSDL2 {
                         win_event,
                     );
                 }
-                event @ sdl2::event::Event::MouseButtonDown { .. } => {
+                event @ SdlEvent::MouseButtonDown { .. }
+                | event @ SdlEvent::MouseButtonUp { .. }
+                | event @ SdlEvent::MouseMotion { .. }
+                | event @ SdlEvent::MouseWheel { .. } => {
                     mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
                 }
-                event @ sdl2::event::Event::MouseButtonUp { .. } => {
-                    mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
-                }
-                event @ sdl2::event::Event::MouseMotion { .. } => {
-                    mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
-                }
-                event @ sdl2::event::Event::MouseWheel { .. } => {
-                    mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
-                }
-                event @ sdl2::event::Event::KeyDown { .. } => {
-                    keyboard.process_keyboard_event(
-                        &mut keyboard_events,
-                        &mut keyboard_state,
-                        &mut all_events,
-                        event,
-                    );
-                }
-                event @ sdl2::event::Event::KeyUp { .. } => {
-                    keyboard.process_keyboard_event(
-                        &mut keyboard_events,
-                        &mut keyboard_state,
-                        &mut all_events,
-                        event,
-                    );
-                }
-                event @ sdl2::event::Event::TextInput { .. } => {
+                event @ SdlEvent::KeyDown { .. }
+                | event @ SdlEvent::KeyUp { .. }
+                | event @ SdlEvent::TextInput { .. } => {
                     keyboard.process_keyboard_event(
                         &mut keyboard_events,
                         &mut keyboard_state,
