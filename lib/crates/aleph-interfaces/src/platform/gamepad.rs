@@ -52,29 +52,33 @@ pub trait IGamepadsProvider: IAny + 'static {
 /// device's gamepads.
 ///
 pub trait IGamepads: IAny + Send + Sync + 'static {
-    /// Gets the current state of the gamepad this frame.
-    fn get_state(&self, _todo_identifier: u32) -> GamepadState;
+    /// Loads the first available gamepad, if one is connected. Useful for just grabbing _a_
+    /// controller for single controller games.
+    ///
+    /// # Info
+    ///
+    /// It would be more robust to connect to all the gamepads and pull input from whichever was the
+    /// most recently used controller. This can be used in the simple case of a single controller
+    /// being connected to the host.
+    fn get_first_connected_controller(&self) -> Option<AnyArc<dyn IGamepad>>;
 
-    ///
-    /// Get read only access to this frame's list of gamepad events.
-    ///
-    /// # Warning
-    ///
-    /// This will probably lock an RwLock so trying to hold on to this between frames will likely
-    /// deadlock the engine.
-    ///
-    fn events<'a>(&'a self) -> Box<dyn IGamepadEventsLock + 'a>;
+    /// Grabs the current frame's list of gamepad events.
+    fn get_events(&self) -> Vec<GamepadEvent>;
 }
 
-///
-/// This interface is used to provide access to the list of mouse events for the current frame.
-///
-/// Some implementations may need to lock a mutex or read/write lock to provide access to the list
-/// safely so this interface is passed to wrap the lock guard
-///
-pub trait IGamepadEventsLock {    
-    fn events(&self) -> &[GamepadEvent];
+pub trait IGamepad: IAny + Send + Sync + 'static {
+    fn get_id(&self) -> GamepadId;
+
+    fn get_name(&self) -> String;
+
+    fn is_attached(&self) -> bool;
+
+    fn get_state(&self) -> GamepadState;
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[repr(transparent)]
+pub struct GamepadId(pub u32);
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum GamepadEvent {
@@ -140,36 +144,50 @@ pub enum GamepadButton {
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct GamepadAxisMotion {
-    pub which: u32,
+    /// The ID of the gamepad this event was emitted from
+    pub which: GamepadId,
+
+    /// The Axis this event is emitted from
     pub axis: GamepadAxis,
+
+    /// The axis value, at the time of this event being emitted
     pub value: i16,
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct GamepadButtonDown {
-    pub which: u32,
+    /// The ID of the gamepad this event was emitted from
+    pub which: GamepadId,
+
+    /// The button that has been pressed
     pub button: GamepadButton,
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct GamepadButtonUp {
-    pub which: u32,
+    /// The ID of the gamepad this event was emitted from
+    pub which: GamepadId,
+
+    /// The button that has been released
     pub button: GamepadButton,
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct GamepadDeviceAdded {
-    pub which: u32,
+    /// The ID of the gamepad this event was emitted from
+    pub which: GamepadId,
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct GamepadDeviceRemoved {
-    pub which: u32,
+    /// The ID of the gamepad this event was emitted from
+    pub which: GamepadId,
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct GamepadDeviceRemapped {
-    pub which: u32,
+    /// The ID of the gamepad this event was emitted from
+    pub which: GamepadId,
 }
 
 ///
