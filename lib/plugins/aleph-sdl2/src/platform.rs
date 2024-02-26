@@ -71,6 +71,8 @@ impl PluginPlatformSDL2 {
             mouse_util: None,
             timer: None,
             window: None,
+            joystick: None,
+            gamecontroller: None,
             main_ctx,
         };
         Self {
@@ -146,6 +148,16 @@ impl IPlugin for PluginPlatformSDL2 {
             .event_pump()
             .expect("Failed to initialize SDL2 event pump");
 
+        log::info!("Initializing SDL2 Joystick Subsystem");
+        let sdl_joystick = sdl
+            .joystick()
+            .expect("Failed to initialize SDL2 joystick subsystem");
+
+        log::info!("Initializing SDL2 Game Controller Subsystem");
+        let sdl_gamecontroller = sdl
+            .game_controller()
+            .expect("Failed to initialize SDL2 controller subsystem");
+
         let sdl_mouse_util = sdl.mouse();
         let cursors = init_cursor_map();
 
@@ -166,6 +178,8 @@ impl IPlugin for PluginPlatformSDL2 {
         sdl_o.mouse_util = Some(sdl_mouse_util);
         sdl_o.timer = Some(sdl_timer);
         sdl_o.window = Some(sdl_window);
+        sdl_o.joystick = Some(sdl_joystick);
+        sdl_o.gamecontroller = Some(sdl_gamecontroller);
         self.sdl.set(Some(sdl_o));
 
         // Update our provider with the newly created implementations
@@ -280,6 +294,8 @@ impl PluginPlatformSDL2 {
         let video_ctx = sdl.video.take().unwrap();
         let mut event_pump = sdl.event_pump.take().unwrap();
         let mut sdl_window = sdl.window.take().unwrap();
+        let game_controller = sdl.gamecontroller.take().unwrap();
+        let joystick = sdl.joystick.take().unwrap();
 
         let window = Self::window(provider).unwrap();
         let mouse = Self::mouse(provider).unwrap();
@@ -349,6 +365,8 @@ impl PluginPlatformSDL2 {
         sdl.video = Some(video_ctx);
         sdl.event_pump = Some(event_pump);
         sdl.window = Some(sdl_window);
+        sdl.gamecontroller = Some(game_controller);
+        sdl.joystick = Some(joystick);
     }
 }
 
@@ -445,5 +463,7 @@ struct SdlObjects {
     mouse_util: Option<sdl2::mouse::MouseUtil>,
     timer: Option<sdl2::TimerSubsystem>,
     window: Option<sdl2::video::Window>,
+    joystick: Option<sdl2::JoystickSubsystem>,
+    gamecontroller: Option<sdl2::GameControllerSubsystem>,
     main_ctx: crate::sdl_main_wrapper::MainCtx,
 }
