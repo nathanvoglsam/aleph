@@ -27,6 +27,16 @@
 // SOFTWARE.
 //
 
+//!
+//! The gamepad interface provides a high-level API for accessing gamepad input across all
+//! platforms. This API is designed assuming only single-player gamepad usage. That is, we only
+//! expose a single logical 'gamepad' that is internally managed by the implementation, even in the
+//! presence of multiple gamepads connected to the host.
+//!
+//! This simplification is a pragmatic choice based on aleph-engine's intended usecases which do not
+//! include local multiplayer gameplay.
+//!
+
 use any::*;
 
 ///
@@ -47,33 +57,25 @@ pub trait IGamepadsProvider: IAny + 'static {
     fn get_gamepads(&self) -> Option<AnyArc<dyn IGamepads>>;
 }
 
-///
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's gamepads.
-///
-pub trait IGamepads: IAny + Send + Sync + 'static {
-    /// Loads the first available gamepad, if one is connected. Useful for just grabbing _a_
-    /// controller for single controller games.
-    ///
-    /// # Info
-    ///
-    /// It would be more robust to connect to all the gamepads and pull input from whichever was the
-    /// most recently used controller. This can be used in the simple case of a single controller
-    /// being connected to the host.
-    fn get_first_connected_controller(&self) -> Option<AnyArc<dyn IGamepad>>;
-
-    /// Grabs the current frame's list of gamepad events.
-    fn get_events(&self) -> Vec<GamepadEvent>;
+pub trait IGamepads: IAny + 'static {
+    /// Returns a thread-safe accessor to the gamepad state as recorded from the most recently
+    /// executed input polling cycle (i.e most recent frame).
+    fn get_accessor(&self) -> AnyArc<dyn IGamepadsAccessor>;
 }
 
-pub trait IGamepad: IAny + Send + Sync + 'static {
-    fn get_id(&self) -> GamepadId;
+/// A thread-safe, sharable accessor to the gamepad state.
+pub trait IGamepadsAccessor: IAny + Send + Sync + 'static {
+    /// Returns the current state of the active gamepad as recorded for this frame. May return
+    /// [None] if no gamepad is connected.
+    fn get_active_controller_state(&self) -> Option<GamepadState>;
 
-    fn get_name(&self) -> String;
-
-    fn is_attached(&self) -> bool;
-
-    fn get_state(&self) -> GamepadState;
+    /// Returns a list of events as recorded this frame for the active game controller. May return
+    /// [None] if no gamepad is connected.
+    ///
+    /// This will contain only the events for the active controller.
+    fn get_active_controller_events(&self) -> Option<Vec<GamepadEvent>>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
