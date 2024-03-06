@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-type-id-hasher"
+name = "aleph-identity-hasher"
 version = "1.0.0"
 authors.workspace = true
-description = "A utility hasher that crunches a TypeId down to a 64bit integer"
+description = "A utility hasher that crunches simple types like integers down to a 64bit hash by just casting the hashed object"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-type-id-hasher/"
+documentation = "https://docs.rs/aleph-identity-hasher/"
 edition.workspace = true
 
 [badges]

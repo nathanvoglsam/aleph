@@ -48,6 +48,7 @@ members = [
     "lib/crates/aleph-engine",
     "lib/crates/aleph-engine-build",
     "lib/crates/aleph-frame-graph",
+    "lib/crates/aleph-identity-hasher",
     "lib/crates/aleph-interfaces",
     "lib/crates/aleph-label",
     "lib/crates/aleph-math",
@@ -66,7 +67,6 @@ members = [
     "lib/crates/aleph-sys-info",
     "lib/crates/aleph-target",
     "lib/crates/aleph-target-build",
-    "lib/crates/aleph-type-id-hasher",
     "lib/crates/aleph-virtual-buffer",
     "lib/crates/aleph-vulkan-alloc",
     "lib/crates/aleph-windows",
@@ -146,6 +146,7 @@ aleph-ecs = { path = "./lib/crates/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./lib/crates/aleph-engine", version = "0.1" }
 aleph-engine-build = { path = "./lib/crates/aleph-engine-build", version = "0.1" }
 aleph-frame-graph = { path = "./lib/crates/aleph-frame-graph", version = "0.1" }
+aleph-identity-hasher = { path = "./lib/crates/aleph-identity-hasher", version = "1" }
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./lib/crates/aleph-label", version = "1" }
 aleph-math = { path = "./lib/crates/aleph-math", version = "0.1" }
@@ -164,7 +165,6 @@ aleph-shader-db = { path = "./lib/crates/aleph-shader-db", version = "0.1" }
 aleph-sys-info = { path = "./lib/crates/aleph-sys-info", version = "0.1" }
 aleph-target = { path = "./lib/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./lib/crates/aleph-target-build", version = "2" }
-aleph-type-id-hasher = { path = "./lib/crates/aleph-type-id-hasher", version = "1" }
 aleph-virtual-buffer = { path = "./lib/crates/aleph-virtual-buffer", version = "0.1" }
 aleph-vulkan-alloc = { path = "./lib/crates/aleph-vulkan-alloc", version = "0.1" }
 aleph-windows = { path = "./lib/crates/aleph-windows", version = "0.1" }

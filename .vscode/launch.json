@@ -292,16 +292,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'aleph-type-id-hasher'",
+            "name": "Debug unit tests in library 'aleph-identity-hasher'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=aleph-type-id-hasher"
+                    "--package=aleph-identity-hasher"
                 ],
                 "filter": {
-                    "name": "aleph-type-id-hasher",
+                    "name": "aleph-identity-hasher",
                     "kind": "lib"
                 }
             },

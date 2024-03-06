@@ -152,7 +152,7 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-engine-build/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bin/aleph/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-frame-graph/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-type-id-hasher/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-identity-hasher/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-arena-drop-list/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-pin-board/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-shader-db/src" isTestSource="false" />
