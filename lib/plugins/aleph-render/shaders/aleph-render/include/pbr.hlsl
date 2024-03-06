@@ -253,7 +253,7 @@ inline func StandardBRDF(
     // Half unit vector between l and v
     let h = normalize(v + l);
 
-    let NoV = abs(dot(n, v)) + 0.00005;
+    let NoV = clamp(abs(dot(n, v)) + 0.00005, 0.0, 1.0);
     let NoL = clamp(dot(n, l), 0.0, 1.0);
     let NoH = clamp(dot(n, h), 0.0, 1.0);
     let LoH = clamp(dot(l, h), 0.0, 1.0);

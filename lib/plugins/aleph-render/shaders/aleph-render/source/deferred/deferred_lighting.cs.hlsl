@@ -51,7 +51,7 @@ struct CameraLayout {
 ConstantBuffer<CameraLayout> g_camera : register(b5, space0);
 
 // Light parameters
-static float lumens = 10000;
+static float lumens = 100;
 
 static float reflectance = 0.5;
 
@@ -68,7 +68,7 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         let viewportX = ((float(texCoord.x) / float(width)) - 0.5) * 2;
         let viewportY = ((float(texCoord.y) / float(height)) - 0.5) * 2;
         let viewportZ = g_depth.Load(texCoord);
-        let viewportPoint = float3(viewportX, viewportY, viewportZ);
+        let viewportPoint = float3(viewportX, -viewportY, viewportZ);
         let viewspacePoint = UnprojectPointWithMatrix(g_camera.proj_matrix, viewportPoint);
 
         let base_colour = g_gbuffer0.Load(texCoord).rgb;
@@ -78,27 +78,27 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         let roughness = RemapRoughness(gbuffer_2.g);
 
         // Transform light and normal into viewspace
-        let light_pos = mul(float4(float3(5.0,0.5,1.0), 1), g_camera.view_matrix);
+        let light_pos = mul(float4(float3(1.0,0.0,0.0), 1), g_camera.view_matrix);
         let normal = mul(ws_normal, float3x3(g_camera.view_matrix));
 
         // Camera and light vectors
-        const float3 camera_to_frag = g_camera.position - viewspacePoint;
-        const float3 light_to_frag = viewspacePoint - light_pos.xyz;
+        let frag_to_camera = g_camera.position - viewspacePoint;
+        let frag_to_light = light_pos.xyz - viewspacePoint;
 
         // Derived material parameters
-        const float3 v = normalize(camera_to_frag);
-        const float3 l = normalize(light_to_frag);
-        const float3 n = normalize(normal);
-        const float3 f0 = CalculateF0(base_colour, metallic, reflectance);
+        let v = normalize(frag_to_camera);
+        let l = normalize(frag_to_light);
+        let n = normalize(normal);
+        let f0 = CalculateF0(base_colour, metallic, reflectance);
 
         // Calculate the result of our BRDF
-        const float3 brdf = StandardBRDF(v, l, n, base_colour, metallic, roughness, f0);
+        let brdf = StandardBRDF(v, l, n, base_colour, metallic, roughness, f0);
 
         // Apply a single point light
-        const float NoL = clamp(dot(n, l), 0.0, 1.0);
-        const float distance_squared = dot(light_to_frag, light_to_frag);
-        const float3 final = EvaluatePointLight(brdf, lumens, distance_squared, NoL);
+        let NoL = clamp(dot(n, l), 0.0, 1.0);
+        let distance_squared = dot(frag_to_light, frag_to_light);
+        let final = EvaluatePointLight(brdf, lumens, distance_squared, NoL);
 
-        g_output[dispatch_thread_id.xy] = float4(float3(NoL), 1);
+        g_output[dispatch_thread_id.xy] = float4(final, 1);
     }
 }
