@@ -41,7 +41,7 @@ struct VSResult<T> {
     T payload;
 };
 
-func main(in StaticMeshVertexInput input) -> VSResult<StaticMeshPixelInput> {
+func main(in StaticMeshVertexInput input, out float4 sv_position : SV_Position) -> StaticMeshPixelInput {
     let in_pos = float4(input.position, 1.0);
     let normal_matrix = (float3x3)g_params.model.normal_matrix;
 
@@ -49,15 +49,15 @@ func main(in StaticMeshVertexInput input) -> VSResult<StaticMeshPixelInput> {
     let normal = normalize(mul(input.normal, normal_matrix));
     let tangent = normalize(mul(input.tangent.xyz, normal_matrix));
 
-    VSResult<StaticMeshPixelInput> output;
-    output.payload.position = position.xyz;
-    output.payload.normal = normal;
-    output.payload.tangent = tangent;
-    output.payload.uv = input.uv;
+    StaticMeshPixelInput output;
+    output.position = position.xyz;
+    output.normal = normal;
+    output.tangent = tangent;
+    output.uv = input.uv;
 
     position = mul(position, g_params.camera.view_matrix);
     position = mul(position, g_params.camera.proj_matrix);
-    output.sv_position = position;
+    sv_position = position;
 
     return output;
 }

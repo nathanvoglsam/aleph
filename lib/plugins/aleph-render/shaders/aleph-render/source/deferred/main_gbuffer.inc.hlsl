@@ -33,20 +33,20 @@
  * Standard fragment payload for passing interpolated params to fragment shader for static mesh
  */
 struct StaticMeshPixelInput {
-    float3 position  : A0;
-    float2 uv        : A1;
-    float3 normal    : A2;
-    float3 tangent   : A3;
+    [[vk::location(0)]] float3 position  : A0;
+    [[vk::location(1)]] float2 uv        : A1;
+    [[vk::location(2)]] float3 normal    : A2;
+    [[vk::location(3)]] float3 tangent   : A3;
 };
 
 /*
  * The standard vertex layout that a static mesh shader will use
  */
 struct StaticMeshVertexInput {
-    float3 position : A0;
-    float2 uv       : A1;
-    float3 normal   : A2;
-    float3 tangent  : A3;
+    [[vk::location(0)]] float3 position : A0;
+    [[vk::location(1)]] float2 uv       : A1;
+    [[vk::location(2)]] float3 normal   : A2;
+    [[vk::location(3)]] float3 tangent  : A3;
 };
 
 struct CameraLayout {
