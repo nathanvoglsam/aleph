@@ -29,9 +29,9 @@
 
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
-use std::hash::{BuildHasherDefault, Hash, Hasher};
+use std::hash::{BuildHasherDefault, Hash};
 
-use aleph_type_id_hasher::TypeIdHasher;
+use aleph_identity_hasher::IdentityHasher;
 
 ///
 /// This trait needs to be implemented by any type that wishes to be used as a component
@@ -78,7 +78,7 @@ impl ComponentTypeId {
     /// Returns the ComponentTypeId of the given component type
     #[inline]
     pub fn of<T: Component>() -> Self {
-        let v = TypeIdHasher::hash(TypeId::of::<T>());
+        let v = IdentityHasher::hash(TypeId::of::<T>());
         Self(v)
     }
 
@@ -115,37 +115,6 @@ pub struct ComponentTypeDescription {
     /// The function this points to must treat the pointer given to it as a pointer to a single
     /// component and should call the corresponding drop function on it.
     pub fn_drop: Option<unsafe extern "C" fn(*mut u8)>,
-}
-
-/// A hasher optimized for hashing a single u64.
-///
-/// Given something like `TypeId`, which is already a hash, to use as a key in a HashMap can be
-/// less efficient than it needs to be. For `u64` keys which already hold sufficiently scrambled
-/// data (like `TypeId` which is already a hash) we can skip the cost of the hash function in a
-/// HashMap by just using the integer directly.
-#[derive(Clone, Default)]
-pub struct IdentityHasher {
-    hash: u64,
-}
-
-impl Hasher for IdentityHasher {
-    #[inline]
-    fn write_u64(&mut self, n: u64) {
-        // Only a single value can be hashed, so the old hash should be zero.
-        debug_assert_eq!(self.hash, 0);
-        self.hash = n;
-    }
-
-    // This should never be called as this struct only supports hashing u64
-    #[inline]
-    fn write(&mut self, _: &[u8]) {
-        unimplemented!()
-    }
-
-    #[inline]
-    fn finish(&self) -> u64 {
-        self.hash
-    }
 }
 
 /// A type alias for a configuration of `std::hash::HashMap` that efficiently uses `ComponentTypeId`

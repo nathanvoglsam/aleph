@@ -46,7 +46,6 @@ pub use self::archetype::{Archetype, ArchetypeEntityIndex, ArchetypeIndex};
 pub use self::archetype_filter::ArchetypeFilter;
 pub use self::component::{
     Component, ComponentIdMap, ComponentSet, ComponentTypeDescription, ComponentTypeId,
-    IdentityHasher,
 };
 pub use self::component_query::{
     ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,

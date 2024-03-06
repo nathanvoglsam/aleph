@@ -30,7 +30,7 @@
 use std::any::{Any, TypeId};
 use std::hash::Hash;
 
-use aleph_type_id_hasher::TypeIdHasher;
+use aleph_identity_hasher::IdentityHasher;
 
 ///
 /// This trait specifies the requirements of a type that will be used as a [`Resource`] within the
@@ -63,7 +63,7 @@ impl ResourceId {
     /// Returns the [`ResourceId`] of the given resource.
     #[inline]
     pub fn of<T: Resource>() -> Self {
-        let v = TypeIdHasher::hash(TypeId::of::<T>());
+        let v = IdentityHasher::hash(TypeId::of::<T>());
         Self(v)
     }
 
@@ -78,7 +78,7 @@ impl ResourceId {
     /// type is known at compile-time use [`ResourceId::of`] of [`ResourceId::of_val`].
     pub fn of_any(val: &dyn Resource) -> Self {
         let id = val.type_id();
-        let v = TypeIdHasher::hash(id);
+        let v = IdentityHasher::hash(id);
         Self(v)
     }
 }
