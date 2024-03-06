@@ -28,7 +28,6 @@
 //
 
 use aleph_frame_graph::*;
-use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -40,9 +39,6 @@ use crate::shaders;
 struct TonemapPassPayload {
     input: ResourceRef,
     output: ResourceMut,
-    set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pipeline: AnyArc<dyn IComputePipeline>,
 }
 
 pub struct TonemapPassOutput {
@@ -106,13 +102,10 @@ pub fn pass(
             data.write(TonemapPassPayload {
                 input,
                 output,
-                set_layout,
-                pipeline_layout,
-                pipeline,
             });
             pin_board.publish(TonemapPassOutput { output });
         },
-        |data, encoder, resources| unsafe {
+        move |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
 
@@ -124,15 +117,15 @@ pub fn pass(
             let input_srv = ImageView::get_srv_for(input).unwrap();
             let output_uav = ImageView::get_uav_for(output).unwrap();
 
-            let set = arena.allocate_set(data.set_layout.as_ref()).unwrap();
+            let set = arena.allocate_set(set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &input_srv.srv_write()),
                 DescriptorWriteDesc::texture_rw(set, 1, &output_uav.uav_write()),
             ]);
 
-            encoder.bind_compute_pipeline(data.pipeline.as_ref());
+            encoder.bind_compute_pipeline(pipeline.as_ref());
             encoder.bind_descriptor_sets(
-                data.pipeline_layout.as_ref(),
+                pipeline_layout.as_ref(),
                 PipelineBindPoint::Compute,
                 0,
                 &[set],
