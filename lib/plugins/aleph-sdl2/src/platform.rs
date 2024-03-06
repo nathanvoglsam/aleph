@@ -35,6 +35,7 @@ use std::rc::Rc;
 
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
+use interfaces::platform::IGamepadsProvider;
 use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
@@ -49,6 +50,7 @@ use sdl2::mouse::SystemCursor;
 use crate::clipboard::ClipboardImpl;
 use crate::events::EventsImpl;
 use crate::frame_timer::FrameTimerImpl;
+use crate::gamepad::GamepadsImpl;
 use crate::keyboard::{KeyboardImpl, KeyboardState};
 use crate::mouse::MouseImpl;
 use crate::provider::ProviderImpl;
@@ -82,6 +84,7 @@ impl PluginPlatformSDL2 {
                 window: None,
                 mouse: None,
                 keyboard: None,
+                gamepads: None,
                 events: None,
                 clipboard: None,
             }),
@@ -108,6 +111,7 @@ impl IPlugin for PluginPlatformSDL2 {
         registrar.provides_interface::<dyn IWindowProvider>();
         registrar.provides_interface::<dyn IClipboardProvider>();
         registrar.provides_interface::<dyn IKeyboardProvider>();
+        registrar.provides_interface::<dyn IGamepadsProvider>();
         registrar.provides_interface::<dyn IMouseProvider>();
         registrar.provides_interface::<dyn IEventsProvider>();
     }
@@ -166,6 +170,7 @@ impl IPlugin for PluginPlatformSDL2 {
         let mouse = MouseImpl::new();
         let (window, sdl_window) = WindowImpl::new(&sdl_video, "test");
         let keyboard = KeyboardImpl::new();
+        let gamepads = GamepadsImpl::new();
         let events = EventsImpl::new();
         let clipboard = ClipboardImpl::new();
 
@@ -189,6 +194,7 @@ impl IPlugin for PluginPlatformSDL2 {
             provider.window = Some(window);
             provider.mouse = Some(mouse);
             provider.keyboard = Some(keyboard);
+            provider.gamepads = Some(gamepads);
             provider.events = Some(events);
             provider.clipboard = Some(clipboard);
         }
@@ -240,6 +246,10 @@ impl IPlugin for PluginPlatformSDL2 {
                 AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
             (
+                TypeId::of::<dyn IGamepadsProvider>(),
+                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+            ),
+            (
                 TypeId::of::<dyn IMouseProvider>(),
                 AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
             ),
@@ -254,13 +264,7 @@ impl IPlugin for PluginPlatformSDL2 {
     fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {
         let mut sdl = self.sdl.take().unwrap();
 
-        sdl._ctx = None;
-        sdl.video = None;
-        sdl._event = None;
-        sdl.event_pump = None;
-        sdl.mouse_util = None;
-        sdl.timer = None;
-        sdl.window = None;
+        sdl.on_exit();
 
         unsafe { crate::sdl_main_wrapper::run_sdl_exit(&sdl.main_ctx) }
     }
@@ -294,12 +298,13 @@ impl PluginPlatformSDL2 {
         let video_ctx = sdl.video.take().unwrap();
         let mut event_pump = sdl.event_pump.take().unwrap();
         let mut sdl_window = sdl.window.take().unwrap();
-        let game_controller = sdl.gamecontroller.take().unwrap();
+        let controller = sdl.gamecontroller.take().unwrap();
         let joystick = sdl.joystick.take().unwrap();
 
         let window = Self::window(provider).unwrap();
         let mouse = Self::mouse(provider).unwrap();
         let keyboard = Self::keyboard(provider).unwrap();
+        let gamepads = Self::gamepads(provider).unwrap();
 
         let mut window_state = Self::window_state(provider).unwrap();
         let mut window_events = Self::window_events(provider).unwrap();
@@ -307,6 +312,9 @@ impl PluginPlatformSDL2 {
         let mut keyboard_events = Self::keyboard_events(provider).unwrap();
         let mut mouse_events = Self::mouse_events(provider).unwrap();
         let mut all_events = Self::all_events(provider).unwrap();
+
+        let mut gamepads_map = gamepads.gamepads.borrow_mut();
+        let mut gamepad_events = Vec::new();
 
         // Clear the events buffers of last frames events
         window_events.clear();
@@ -346,12 +354,29 @@ impl PluginPlatformSDL2 {
                         event,
                     );
                 }
+                event @ SdlEvent::ControllerDeviceAdded { .. }
+                | event @ SdlEvent::ControllerDeviceRemoved { .. }
+                | event @ SdlEvent::ControllerDeviceRemapped { .. }
+                | event @ SdlEvent::ControllerAxisMotion { .. }
+                | event @ SdlEvent::ControllerButtonDown { .. }
+                | event @ SdlEvent::ControllerButtonUp { .. } => {
+                    gamepads.process_gamepad_event(
+                        &mut gamepads_map,
+                        &joystick,
+                        &controller,
+                        &event,
+                    );
+                    gamepad_events.push(event);
+                }
                 _ => {}
             }
         }
 
         // Update the mouse's state from the fresh sequence of events
         mouse.update_state(&event_pump);
+
+        // Publish the active controller's state now that we've flushed the event pump
+        gamepads.publish_active_state(&gamepads_map, &gamepad_events);
 
         WindowImpl::update_state(&mut sdl_window, &mut window_state);
 
@@ -362,10 +387,12 @@ impl PluginPlatformSDL2 {
         drop(mouse_events);
         drop(all_events);
 
+        drop(gamepads_map);
+
         sdl.video = Some(video_ctx);
         sdl.event_pump = Some(event_pump);
         sdl.window = Some(sdl_window);
-        sdl.gamecontroller = Some(game_controller);
+        sdl.gamecontroller = Some(controller);
         sdl.joystick = Some(joystick);
     }
 }
@@ -405,6 +432,10 @@ impl PluginPlatformSDL2 {
 
     fn keyboard(provider: &ProviderImpl) -> Option<&KeyboardImpl> {
         provider.keyboard.as_deref()
+    }
+
+    fn gamepads(provider: &ProviderImpl) -> Option<&GamepadsImpl> {
+        provider.gamepads.as_deref()
     }
 
     fn frame_timer(provider: &ProviderImpl) -> Option<&FrameTimerImpl> {
@@ -466,4 +497,18 @@ struct SdlObjects {
     joystick: Option<sdl2::JoystickSubsystem>,
     gamecontroller: Option<sdl2::GameControllerSubsystem>,
     main_ctx: crate::sdl_main_wrapper::MainCtx,
+}
+
+impl SdlObjects {
+    pub fn on_exit(&mut self) {
+        self._ctx = None;
+        self.video = None;
+        self._event = None;
+        self.event_pump = None;
+        self.mouse_util = None;
+        self.timer = None;
+        self.window = None;
+        self.joystick = None;
+        self.gamecontroller = None;
+    }
 }

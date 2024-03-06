@@ -185,7 +185,7 @@ impl<'a> IKeyboardStateLock for KeyboardStateLockImpl<'a> {
     }
 }
 
-fn translate_scan_code(scan_code: sdl2::keyboard::Scancode) -> ScanCode {
+const fn translate_scan_code(scan_code: sdl2::keyboard::Scancode) -> ScanCode {
     use sdl2::keyboard::Scancode;
     match scan_code {
         Scancode::A => ScanCode::A,
@@ -432,6 +432,6 @@ fn translate_scan_code(scan_code: sdl2::keyboard::Scancode) -> ScanCode {
     }
 }
 
-fn translate_key_mod(keymod: sdl2::keyboard::Mod) -> KeyMod {
+const fn translate_key_mod(keymod: sdl2::keyboard::Mod) -> KeyMod {
     KeyMod(keymod.bits())
 }

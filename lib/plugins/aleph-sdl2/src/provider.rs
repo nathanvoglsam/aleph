@@ -28,6 +28,8 @@
 //
 
 use interfaces::any::AnyArc;
+use interfaces::platform::IGamepads;
+use interfaces::platform::IGamepadsProvider;
 use interfaces::platform::{
     IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
     IKeyboard, IKeyboardProvider, IMouse, IMouseProvider, IWindow, IWindowProvider,
@@ -36,6 +38,7 @@ use interfaces::platform::{
 use crate::clipboard::ClipboardImpl;
 use crate::events::EventsImpl;
 use crate::frame_timer::FrameTimerImpl;
+use crate::gamepad::GamepadsImpl;
 use crate::keyboard::KeyboardImpl;
 use crate::mouse::MouseImpl;
 use crate::window::WindowImpl;
@@ -45,6 +48,7 @@ pub struct ProviderImpl {
     pub window: Option<AnyArc<WindowImpl>>,
     pub mouse: Option<AnyArc<MouseImpl>>,
     pub keyboard: Option<AnyArc<KeyboardImpl>>,
+    pub gamepads: Option<AnyArc<GamepadsImpl>>,
     pub events: Option<AnyArc<EventsImpl>>,
     pub clipboard: Option<AnyArc<ClipboardImpl>>,
 }
@@ -85,6 +89,15 @@ impl IKeyboardProvider for ProviderImpl {
     }
 }
 
+impl IGamepadsProvider for ProviderImpl {
+    fn get_gamepads(&self) -> Option<AnyArc<dyn IGamepads>> {
+        self.gamepads.as_ref().map(|v| {
+            let v = v.clone();
+            AnyArc::map::<dyn IGamepads, _>(v, |v| v)
+        })
+    }
+}
+
 impl IMouseProvider for ProviderImpl {
     fn get_mouse(&self) -> Option<AnyArc<dyn IMouse>> {
         self.mouse.as_ref().map(|v| {
@@ -110,6 +123,7 @@ interfaces::any::declare_interfaces!(
         IWindowProvider,
         IClipboardProvider,
         IKeyboardProvider,
+        IGamepadsProvider,
         IMouseProvider,
         IEventsProvider
     ]

@@ -43,6 +43,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-interfaces = { workspace = true }
+aleph-identity-hasher = { workspace = true }
 sdl2 = { workspace = true }
 sdl2-sys = { workspace = true }
 

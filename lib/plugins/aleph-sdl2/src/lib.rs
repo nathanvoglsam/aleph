@@ -35,6 +35,7 @@ extern crate aleph_interfaces as interfaces;
 mod clipboard;
 mod events;
 mod frame_timer;
+mod gamepad;
 mod keyboard;
 mod mouse;
 mod platform;
