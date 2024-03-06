@@ -53,9 +53,7 @@ impl IdentityHasher {
 impl Default for IdentityHasher {
     #[inline(always)]
     fn default() -> Self {
-        Self {
-            result: 0,
-        }
+        Self { result: 0 }
     }
 }
 
@@ -69,17 +67,17 @@ impl Hasher for IdentityHasher {
     fn write(&mut self, _bytes: &[u8]) {
         unimplemented!()
     }
-    
+
     #[inline(always)]
     fn write_u8(&mut self, i: u8) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_u16(&mut self, i: u16) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_u32(&mut self, i: u32) {
         self.result = i as u64;
@@ -89,42 +87,42 @@ impl Hasher for IdentityHasher {
     fn write_u64(&mut self, i: u64) {
         self.result = i;
     }
-    
+
     #[inline(always)]
     fn write_u128(&mut self, i: u128) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_usize(&mut self, i: usize) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_i8(&mut self, i: i8) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_i16(&mut self, i: i16) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_i32(&mut self, i: i32) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_i64(&mut self, i: i64) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_i128(&mut self, i: i128) {
         self.result = i as u64;
     }
-    
+
     #[inline(always)]
     fn write_isize(&mut self, i: isize) {
         self.result = i as u64;
