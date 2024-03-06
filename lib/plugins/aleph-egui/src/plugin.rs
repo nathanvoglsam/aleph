@@ -120,17 +120,20 @@ impl IPlugin for PluginEgui {
             .get_clipboard()
             .unwrap();
 
+        let pre_update_keyboard = keyboard.clone();
+        let pre_update_frame_timer = frame_timer.clone();
         let pre_update_ctx = context_provider.clone();
+        let pre_update_window = window.clone();
+        let pre_update_events = events.clone();
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::PreUpdate,
             "egui::pre_update",
             move || {
                 let context_provider = pre_update_ctx.deref();
-
-                let window = window.deref();
-                let keyboard = keyboard.deref();
-                let frame_timer = frame_timer.deref();
-                let events = events.deref();
+                let window = pre_update_window.deref();
+                let keyboard = pre_update_keyboard.deref();
+                let frame_timer = pre_update_frame_timer.deref();
+                let events = pre_update_events.deref();
 
                 let input = crate::utils::get_egui_input(window, keyboard, frame_timer, events);
                 context_provider.begin_frame(input);
@@ -140,6 +143,7 @@ impl IPlugin for PluginEgui {
         let post_update_mouse = mouse.clone();
         let post_update_rnd = render_data.clone();
         let post_update_ctx = context_provider.clone();
+        let post_update_window = window.clone();
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::PostUpdate,
             "egui::post_update",
@@ -152,7 +156,8 @@ impl IPlugin for PluginEgui {
 
                 let output = context_provider.end_frame();
                 let egui_ctx = context_provider.get_context();
-                let jobs: Vec<ClippedPrimitive> = egui_ctx.tessellate(output.shapes);
+                let pixels_per_point = post_update_window.current_display_scale();
+                let jobs: Vec<ClippedPrimitive> = egui_ctx.tessellate(output.shapes, pixels_per_point);
                 crate::utils::process_egui_output(output.platform_output, mouse, clipboard);
 
                 render_data.put(RenderData {
