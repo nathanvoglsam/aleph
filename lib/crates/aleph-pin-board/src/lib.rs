@@ -33,7 +33,7 @@ use std::mem::needs_drop;
 use std::ptr::NonNull;
 
 use aleph_arena_drop_list::DropLink;
-use aleph_type_id_hasher::TypeIdHasher;
+use aleph_identity_hasher::IdentityHasher;
 use bumpalo::Bump;
 use parking_lot::Mutex;
 
@@ -168,7 +168,7 @@ impl PinBoard {
         //
         // The distribution of TypeId should be uniform so this will reduce how frequently we will
         // collide on hash maps between threads and reduce lock contention.
-        let t_hash = TypeIdHasher::hash(t);
+        let t_hash = IdentityHasher::hash(t);
         (t_hash % 256) as usize
     }
 }

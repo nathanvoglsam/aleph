@@ -43,6 +43,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-arena-drop-list = { workspace = true }
-aleph-type-id-hasher = { workspace = true }
+aleph-identity-hasher = { workspace = true }
 bumpalo = { workspace = true }
 parking_lot = { workspace = true }
