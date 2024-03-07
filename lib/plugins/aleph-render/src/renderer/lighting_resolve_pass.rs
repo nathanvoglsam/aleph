@@ -164,10 +164,13 @@ pub fn pass(
             let gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
             let lighting_uav = ImageView::get_uav_for(lighting).unwrap();
 
+            let gbuffer0_desc = gbuffer0.desc_ref();
+            let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
+
             let u_ptr = uniform_buffer.map().unwrap();
             let u_alloc =
                 UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
-            u_alloc.allocate_object(CameraLayout::init());
+            u_alloc.allocate_object(CameraLayout::init(aspect_ratio));
             uniform_buffer.unmap();
 
             let set = arena.allocate_set(data.set_layout.as_ref()).unwrap();

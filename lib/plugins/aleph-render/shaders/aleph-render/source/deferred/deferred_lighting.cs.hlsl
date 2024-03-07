@@ -78,7 +78,7 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         let roughness = RemapRoughness(gbuffer_2.g);
 
         // Transform light and normal into viewspace
-        let light_pos = mul(float4(float3(1.0,0.0,0.0), 1), g_camera.view_matrix);
+        let light_pos = mul(float4(float3(1.5,0.0,0.0), 1), g_camera.view_matrix);
         let normal = mul(ws_normal, float3x3(g_camera.view_matrix));
 
         // Camera and light vectors

@@ -181,7 +181,10 @@ pub fn pass(
             let u_alloc =
                 UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
 
-            let camera_offset = u_alloc.allocate_object(CameraLayout::init()).device_offset;
+            let extent = gbuffer0.desc_ref().get_extent_2d();
+            let aspect_ratio = extent.width as f32 / extent.height as f32;
+
+            let camera_offset = u_alloc.allocate_object(CameraLayout::init(aspect_ratio)).device_offset;
             let model_offset = u_alloc.allocate_object(ModelLayout::init()).device_offset;
 
             uniform_buffer.unmap();
@@ -203,7 +206,6 @@ pub fn pass(
                 .unwrap();
 
             // Begin a render pass targeting our back buffer
-            let extent = gbuffer0.desc_ref().get_extent_2d();
             encoder.begin_rendering(&BeginRenderingInfo {
                 layer_count: 1,
                 extent: extent.clone(),
@@ -417,19 +419,22 @@ fn create_pipeline_state(
         .unwrap()
 }
 
-fn proj_matrix() -> [f32; 16] {
-    perspective_reversed_infinite_z_wgpu_dx_gl(90.0f32.to_radians(), 16. / 9., 0.1)
+fn proj_matrix(aspect_ratio: f32) -> [f32; 16] {
+    perspective_reversed_infinite_z_wgpu_dx_gl(90.0f32.to_radians(), aspect_ratio, 0.1)
         .transposed()
         .as_array()
         .clone() // Hopefully gets elided
 }
 
 fn view_matrix() -> [f32; 16] {
-    Mat4::identity().as_array().clone()
+    let camera_position = camera_position();
+    let pos = Vec3::new(camera_position[0], camera_position[1], camera_position[2]);
+    let at = Vec3::new(0., 0., -3.);
+    Mat4::look_at(pos, at, Vec3::new(0., 1., 0.)).transposed().as_array().clone()
 }
 
 fn camera_position() -> [f32; 4] {
-    [0., 0., 0., 0.]
+    [2., 0., 0., 0.]
 }
 
 #[repr(align(256))]
@@ -441,10 +446,10 @@ pub struct CameraLayout {
 }
 
 impl CameraLayout {
-    pub fn init() -> Self {
+    pub fn init(aspect_ratio: f32) -> Self {
         Self {
             _view_matrix: view_matrix(),
-            _proj_matrix: proj_matrix(),
+            _proj_matrix: proj_matrix(aspect_ratio),
             _position: camera_position(),
         }
     }
@@ -492,32 +497,53 @@ impl Vertex {
         self.normal = [x, y, z];
         self
     }
+
+    pub const fn uv(mut self, u: f32, v: f32) -> Self {
+        self.uv = [u, v];
+        self
+    }
 }
 
 #[rustfmt::skip]
-const VERTS: [Vertex; 8] = [
-    Vertex::new( 1.,  1., -1.).normal(0., 0., 1.), //0
-    Vertex::new( 1., -1., -1.).normal(0., 0., 1.), //1
-    Vertex::new( 1.,  1.,  1.).normal(0., 0., 1.), //2
-    Vertex::new( 1., -1.,  1.).normal(0., 0., 1.), //3
-    Vertex::new(-1.,  1., -1.).normal(0., 0., 1.), //4
-    Vertex::new(-1., -1., -1.).normal(0., 0., 1.), //5
-    Vertex::new(-1.,  1.,  1.).normal(0., 0., 1.), //6
-    Vertex::new(-1., -1.,  1.).normal(0., 0., 1.), //7
+const VERTS: [Vertex; 24] = [
+    Vertex::new(-1.,  1., -1.).normal( 0.,  1.,  0.).uv(0.875, 0.5),
+    Vertex::new( 1.,  1.,  1.).normal( 0.,  1.,  0.).uv(0.625, 0.75),
+    Vertex::new( 1.,  1., -1.).normal( 0.,  1.,  0.).uv(0.625, 0.5),
+    Vertex::new( 1.,  1.,  1.).normal( 0.,  0.,  1.).uv(0.625, 0.75),
+    Vertex::new(-1., -1.,  1.).normal( 0.,  0.,  1.).uv(0.375, 1.),
+    Vertex::new( 1., -1.,  1.).normal( 0.,  0.,  1.).uv(0.375, 0.75),
+    Vertex::new(-1.,  1.,  1.).normal(-1.,  0.,  0.).uv(0.625, 0.),
+    Vertex::new(-1., -1., -1.).normal(-1.,  0.,  0.).uv(0.375, 0.25),
+    Vertex::new(-1., -1.,  1.).normal(-1.,  0.,  0.).uv(0.375, 0.),
+    Vertex::new( 1., -1., -1.).normal( 0., -1.,  0.).uv(0.375, 0.5),
+    Vertex::new(-1., -1.,  1.).normal( 0., -1.,  0.).uv(0.125, 0.75),
+    Vertex::new(-1., -1., -1.).normal( 0., -1.,  0.).uv(0.125, 0.5),
+    Vertex::new( 1.,  1., -1.).normal( 1.,  0.,  0.).uv(0.625, 0.5),
+    Vertex::new( 1., -1.,  1.).normal( 1.,  0.,  0.).uv(0.375, 0.75),
+    Vertex::new( 1., -1., -1.).normal( 1.,  0.,  0.).uv(0.375, 0.5),
+    Vertex::new(-1.,  1., -1.).normal( 0.,  0., -1.).uv(0.625, 0.25),
+    Vertex::new( 1., -1., -1.).normal( 0.,  0., -1.).uv(0.375, 0.5),
+    Vertex::new(-1., -1., -1.).normal( 0.,  0., -1.).uv(0.375, 0.25),
+    Vertex::new(-1.,  1.,  1.).normal( 0.,  1.,  0.).uv(0.875, 0.75),
+    Vertex::new(-1.,  1.,  1.).normal( 0.,  0.,  1.).uv(0.625, 1.),
+    Vertex::new(-1.,  1., -1.).normal(-1.,  0.,  0.).uv(0.625, 0.25),
+    Vertex::new( 1., -1.,  1.).normal( 0., -1.,  0.).uv(0.375, 0.75),
+    Vertex::new( 1.,  1.,  1.).normal( 1.,  0.,  0.).uv(0.625, 0.75),
+    Vertex::new( 1.,  1., -1.).normal( 0.,  0., -1.).uv(0.625, 0.5),
 ];
 
 #[rustfmt::skip]
 const INDICES: [u32; 36] = [
-    4, 2, 0,
-    2, 7, 3,
-    6, 5, 7,
-    1, 7, 5,
-    0, 3, 1,
-    4, 1, 5,
-    4, 6, 2,
-    2, 6, 7,
-    6, 4, 5,
-    1, 3, 7,
-    0, 2, 3,
-    4, 0, 1,
+    0, 1, 2,
+    3, 4, 5,
+    6, 7, 8,
+    9, 10, 11,
+    12, 13, 14,
+    15, 16, 17,
+    0, 18, 1,
+    3, 19, 4,
+    6, 20, 7,
+    9, 21, 10,
+    12, 22, 13,
+    15, 23, 16,
 ];
