@@ -99,10 +99,7 @@ pub fn pass(
             let output =
                 resources.create_texture(&output_desc, ResourceUsageFlags::UNORDERED_ACCESS);
 
-            data.write(TonemapPassPayload {
-                input,
-                output,
-            });
+            data.write(TonemapPassPayload { input, output });
             pin_board.publish(TonemapPassOutput { output });
         },
         move |data, encoder, resources| unsafe {

@@ -40,9 +40,6 @@ use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 
 struct EguiPassPayload {
-    pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pipeline: AnyArc<dyn IGraphicsPipeline>,
-    pixels_per_point: f32,
     back_buffer: ResourceMut,
     vtx_buffer: ResourceMut,
     idx_buffer: ResourceMut,
@@ -69,16 +66,17 @@ pub fn pass(
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
     const INDEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
 
+    let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+    let pixels_per_point = back_buffer_info.pixels_per_point;
+
     let descriptor_set_layout = create_descriptor_set_layout(device);
     let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
-    let graphics_pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
+    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
     frame_graph.add_pass(
         "EguiPass",
         |data: &mut Payload<EguiPassPayload>, resources| {
-            let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
-
             let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
             let back_buffer =
                 resources.write_texture(*back_buffer, ResourceUsageFlags::RENDER_TARGET);
@@ -97,11 +95,7 @@ pub fn pass(
                 ResourceUsageFlags::INDEX_BUFFER,
             );
 
-            let pixels_per_point = back_buffer_info.pixels_per_point;
             data.write(EguiPassPayload {
-                pipeline_layout: pipeline_layout,
-                pipeline: graphics_pipeline,
-                pixels_per_point,
                 back_buffer,
                 vtx_buffer,
                 idx_buffer,
@@ -111,7 +105,7 @@ pub fn pass(
             });
             pin_board.publish(BackBufferHandle { back_buffer });
         },
-        |data, encoder, resources| unsafe {
+        move |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
             let back_buffer = resources.get_texture(data.back_buffer).unwrap();
@@ -157,15 +151,15 @@ pub fn pass(
                 allow_uav_writes: false,
             });
 
-            encoder.bind_graphics_pipeline(data.pipeline.as_ref());
+            encoder.bind_graphics_pipeline(pipeline.as_ref());
 
             //
             // Push screen size via root constants
             //
             let width_pixels = extent.width as f32;
             let height_pixels = extent.height as f32;
-            let width_points = width_pixels / data.pixels_per_point;
-            let height_points = height_pixels / data.pixels_per_point;
+            let width_points = width_pixels / pixels_per_point;
+            let height_points = height_pixels / pixels_per_point;
             let values_data = [width_points, height_points];
 
             let ptr = buffer.map().unwrap();
@@ -174,7 +168,7 @@ pub fn pass(
             buffer.unmap();
 
             encoder.bind_descriptor_sets(
-                data.pipeline_layout.as_ref(),
+                pipeline_layout.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
                 &[descriptor_set.clone()],
@@ -229,7 +223,7 @@ pub fn pass(
                         encoder,
                         &job,
                         extent.clone(),
-                        data.pixels_per_point,
+                        pixels_per_point,
                         vtx_base,
                         idx_base,
                     );

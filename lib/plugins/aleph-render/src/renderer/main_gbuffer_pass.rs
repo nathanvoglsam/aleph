@@ -49,9 +49,6 @@ struct MainGBufferPassPayload {
     vtx_buffer: AnyArc<dyn IBuffer>,
     idx_buffer: AnyArc<dyn IBuffer>,
     uniform_buffer: ResourceMut,
-    descriptor_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pipeline: AnyArc<dyn IGraphicsPipeline>,
 }
 
 pub struct MainGBufferPassOutput {
@@ -96,7 +93,7 @@ pub fn pass(
     let descriptor_set_layout = create_descriptor_set_layout(device);
     let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
 
-    let graphics_pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
+    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
     frame_graph.add_pass(
         "MainGBufferPass",
@@ -150,9 +147,6 @@ pub fn pass(
                 vtx_buffer,
                 idx_buffer,
                 uniform_buffer,
-                descriptor_set_layout,
-                pipeline_layout,
-                pipeline: graphics_pipeline,
             });
             pin_board.publish(MainGBufferPassOutput {
                 gbuffer0,
@@ -161,13 +155,13 @@ pub fn pass(
                 depth_buffer,
             });
         },
-        |data, encoder, resources| unsafe {
+        move |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
 
             let vtx_buffer = data.vtx_buffer.as_ref();
             let idx_buffer = data.idx_buffer.as_ref();
-            let set_layout = data.descriptor_set_layout.as_ref();
+            let set_layout = descriptor_set_layout.as_ref();
             let device = resources.device();
             let descriptor_arena = resources.descriptor_arena();
 
@@ -184,7 +178,9 @@ pub fn pass(
             let extent = gbuffer0.desc_ref().get_extent_2d();
             let aspect_ratio = extent.width as f32 / extent.height as f32;
 
-            let camera_offset = u_alloc.allocate_object(CameraLayout::init(aspect_ratio)).device_offset;
+            let camera_offset = u_alloc
+                .allocate_object(CameraLayout::init(aspect_ratio))
+                .device_offset;
             let model_offset = u_alloc.allocate_object(ModelLayout::init()).device_offset;
 
             uniform_buffer.unmap();
@@ -228,7 +224,7 @@ pub fn pass(
                 allow_uav_writes: false,
             });
 
-            encoder.bind_graphics_pipeline(data.pipeline.as_ref());
+            encoder.bind_graphics_pipeline(pipeline.as_ref());
 
             let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
             let write = BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256);
@@ -246,7 +242,7 @@ pub fn pass(
             ]);
 
             encoder.bind_descriptor_sets(
-                data.pipeline_layout.as_ref(),
+                pipeline_layout.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
                 &[descriptor_set],
@@ -430,7 +426,10 @@ fn view_matrix() -> [f32; 16] {
     let camera_position = camera_position();
     let pos = Vec3::new(camera_position[0], camera_position[1], camera_position[2]);
     let at = Vec3::new(0., 0., -3.);
-    Mat4::look_at(pos, at, Vec3::new(0., 1., 0.)).transposed().as_array().clone()
+    Mat4::look_at(pos, at, Vec3::new(0., 1., 0.))
+        .transposed()
+        .as_array()
+        .clone()
 }
 
 fn camera_position() -> [f32; 4] {

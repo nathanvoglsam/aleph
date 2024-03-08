@@ -30,7 +30,6 @@
 use aleph_device_allocators::IUploadAllocator;
 use aleph_device_allocators::UploadBumpAllocator;
 use aleph_frame_graph::*;
-use aleph_interfaces::any::AnyArc;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -47,9 +46,6 @@ struct LightingResolvePassPayload {
     gbuffer2: ResourceRef,
     lighting: ResourceMut,
     uniform_buffer: ResourceMut,
-    set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pipeline: AnyArc<dyn IComputePipeline>,
 }
 pub struct LightingResolvePassOutput {
     pub lighting: ResourceMut,
@@ -139,13 +135,10 @@ pub fn pass(
                 gbuffer2,
                 lighting,
                 uniform_buffer,
-                set_layout,
-                pipeline_layout,
-                pipeline,
             });
             pin_board.publish(LightingResolvePassOutput { lighting });
         },
-        |data, encoder, resources| unsafe {
+        move |data, encoder, resources| unsafe {
             // Unwrap all our fg resources from our setup payload
             let data = data.unwrap();
 
@@ -173,7 +166,7 @@ pub fn pass(
             u_alloc.allocate_object(CameraLayout::init(aspect_ratio));
             uniform_buffer.unmap();
 
-            let set = arena.allocate_set(data.set_layout.as_ref()).unwrap();
+            let set = arena.allocate_set(set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &depth_srv.srv_write()),
                 DescriptorWriteDesc::texture(set, 1, &gbuffer0_srv.srv_write()),
@@ -187,9 +180,9 @@ pub fn pass(
                 ),
             ]);
 
-            encoder.bind_compute_pipeline(data.pipeline.as_ref());
+            encoder.bind_compute_pipeline(pipeline.as_ref());
             encoder.bind_descriptor_sets(
-                data.pipeline_layout.as_ref(),
+                pipeline_layout.as_ref(),
                 PipelineBindPoint::Compute,
                 0,
                 &[set],
