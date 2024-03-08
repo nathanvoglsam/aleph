@@ -52,5 +52,5 @@ pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> st
 }
 
 pub const fn page_size() -> usize {
-    4096
+    panic!("Unsupported platform")
 }

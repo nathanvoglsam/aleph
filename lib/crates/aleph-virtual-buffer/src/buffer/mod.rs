@@ -58,7 +58,7 @@ impl VirtualBuffer {
     ///
     pub fn reserve_bytes(bytes: usize) -> std::io::Result<VirtualBuffer> {
         // Calculate the number of pages we need to store the given number of bytes
-        let (_, pages) = Self::resolve_range(std::ptr::null_mut(), 0..bytes);
+        let (_, pages) = Self::page_range_for_offset_len(0, bytes);
 
         // Reserve the required number of pages
         Self::reserve(pages)
@@ -74,8 +74,10 @@ impl VirtualBuffer {
                 "Range out of bounds",
             ))
         } else {
-            let (base, pages) = Self::resolve_range(self.data, range);
-            unsafe { implementation::commit_virtual_address_range(base, pages) }
+            let (offset, pages) = Self::page_range_for_byte_range(range);
+
+            let ptr = unsafe { self.data.add(offset) };
+            unsafe { implementation::commit_virtual_address_range(ptr, pages) }
         }
     }
 
@@ -98,8 +100,10 @@ impl VirtualBuffer {
                 "Range out of bounds",
             ))
         } else {
-            let (base, pages) = Self::resolve_range(self.data, range);
-            unsafe { implementation::release_virtual_address_range(base, pages) }
+            let (offset, pages) = Self::page_range_for_byte_range(range);
+
+            let ptr = unsafe { self.data.add(offset) };
+            unsafe { implementation::release_virtual_address_range(ptr, pages) }
         }
     }
 
@@ -195,27 +199,34 @@ impl VirtualBuffer {
 
 impl Drop for VirtualBuffer {
     fn drop(&mut self) {
-        unsafe { implementation::free_virtual_buffer(self.data, self.len / 4096).unwrap() }
+        unsafe {
+            implementation::free_virtual_buffer(self.data, self.len / Self::page_size()).unwrap()
+        }
     }
 }
 
 impl VirtualBuffer {
-    #[inline]
-    fn resolve_range(data: *mut u8, range: Range<usize>) -> (*mut u8, usize) {
+    /// This function will calculate the number of pages for any pages that are in
+    /// the range specified by the given byte range.
+    const fn page_range_for_byte_range(range: Range<usize>) -> (usize, usize) {
+        let offset = range.start;
+        let len = range.end - offset;
+        Self::page_range_for_offset_len(offset, len)
+    }
+
+    /// This function will calculate the number of pages for any pages that are in
+    /// the range specified by the given byte range.
+    const fn page_range_for_offset_len(offset: usize, len: usize) -> (usize, usize) {
         let mask = implementation::page_size() - 1;
 
-        // Destructure the range as it's not a copy type
-        let (start, end) = (range.start, range.end);
-
         // Find the base address for the first page the range intersects
-        let base = start & !mask;
+        let base = offset & !mask;
 
         // Find the number of pages the address intersects
-        let pages = end - base; // Get the size of the range in bytes from the new base
-        let pages = (pages + mask) & !mask; // Round up to the next page size
-        let pages = pages / implementation::page_size(); // Division should optimize to shift
+        let extended_len = (offset + len) - base; // Get the size of the range in bytes from the new base
+        let pages = extended_len.div_ceil(implementation::page_size());
 
-        unsafe { (data.add(base), pages) }
+        (base, pages)
     }
 }
 
@@ -231,21 +242,15 @@ unsafe impl Sync for VirtualBuffer {}
 pub struct CommittedVirtualBuffer(VirtualBuffer);
 
 impl Deref for CommittedVirtualBuffer {
-    type Target = [u8];
+    type Target = VirtualBuffer;
 
     fn deref(&self) -> &Self::Target {
-        // SAFETY:
-        // This is safe as the `CommittedVirtualBuffer` can only be constructed (in safe rust) if
-        // the whole buffer has been explicitly committed.
-        unsafe { self.0.as_slice() }
+        &self.0
     }
 }
 
 impl DerefMut for CommittedVirtualBuffer {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        // SAFETY:
-        // This is safe as the `CommittedVirtualBuffer` can only be constructed (in safe rust) if
-        // the whole buffer has been explicitly committed.
-        unsafe { self.0.as_slice_mut() }
+        &mut self.0
     }
 }
