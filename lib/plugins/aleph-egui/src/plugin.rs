@@ -157,7 +157,8 @@ impl IPlugin for PluginEgui {
                 let output = context_provider.end_frame();
                 let egui_ctx = context_provider.get_context();
                 let pixels_per_point = post_update_window.current_display_scale();
-                let jobs: Vec<ClippedPrimitive> = egui_ctx.tessellate(output.shapes, pixels_per_point);
+                let jobs: Vec<ClippedPrimitive> =
+                    egui_ctx.tessellate(output.shapes, pixels_per_point);
                 crate::utils::process_egui_output(output.platform_output, mouse, clipboard);
 
                 render_data.put(RenderData {
