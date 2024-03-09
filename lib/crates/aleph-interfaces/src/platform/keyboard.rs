@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::fmt::Display;
+
 use any::*;
 
 ///
@@ -414,9 +416,9 @@ impl KeyCode {
     }
 }
 
-impl ToString for KeyCode {
-    fn to_string(&self) -> String {
-        self.name().to_owned()
+impl Display for KeyCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
     }
 }
 

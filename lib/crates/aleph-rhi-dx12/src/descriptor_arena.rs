@@ -27,20 +27,16 @@
 // SOFTWARE.
 //
 
-use std::alloc::handle_alloc_error;
-use std::alloc::Layout;
-use std::alloc::LayoutError;
+use std::alloc::{handle_alloc_error, Layout, LayoutError};
 use std::any::TypeId;
 use std::cell::Cell;
-use std::mem::transmute;
-use std::mem::MaybeUninit;
+use std::mem::{transmute, MaybeUninit};
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
-use allocator_api2::alloc::Allocator;
-use allocator_api2::alloc::Global;
+use allocator_api2::alloc::{Allocator, Global};
 use blink_alloc::BlinkAlloc;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
@@ -115,7 +111,7 @@ impl IDescriptorArena for DescriptorArenaLinear {
         }
 
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets as usize);
+        debug_assert_eq!(sets.len(), num_sets);
         Ok(sets.into_boxed_slice())
     }
 
@@ -347,7 +343,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
             .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
 
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets as usize);
+        debug_assert_eq!(sets.len(), num_sets);
         let sets = sets.into_boxed_slice();
         let sets: Box<[DescriptorSetHandle]> = unsafe { transmute(sets) };
 

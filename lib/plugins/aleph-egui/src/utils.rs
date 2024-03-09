@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use egui::ViewportId;
-use egui::ViewportInfo;
+use egui::{ViewportId, ViewportInfo};
 use interfaces::platform::{
     Cursor, Event, IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow, KeyCode, KeyMod,
     KeyboardEvent, MouseButton, MouseEvent, MouseWheelDirection, ScanCode,

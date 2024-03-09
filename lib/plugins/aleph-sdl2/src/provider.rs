@@ -28,11 +28,10 @@
 //
 
 use interfaces::any::AnyArc;
-use interfaces::platform::IGamepads;
-use interfaces::platform::IGamepadsProvider;
 use interfaces::platform::{
     IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
-    IKeyboard, IKeyboardProvider, IMouse, IMouseProvider, IWindow, IWindowProvider,
+    IGamepads, IGamepadsProvider, IKeyboard, IKeyboardProvider, IMouse, IMouseProvider, IWindow,
+    IWindowProvider,
 };
 
 use crate::clipboard::ClipboardImpl;

@@ -35,10 +35,9 @@ use std::rc::Rc;
 
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
-use interfaces::platform::IGamepadsProvider;
 use interfaces::platform::{
-    Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
-    IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
+    Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IGamepadsProvider,
+    IKeyboardProvider, IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
 };
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IQuitHandle, IRegistryAccessor, PluginDescription,

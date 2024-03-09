@@ -1,4 +1,5 @@
 ## TODO: Use this when stable
+## Run with cargo +nightly fmt for now
 ## imports_granularity = "Module"
 ## reorder_imports = true
 ## reorder_modules = true

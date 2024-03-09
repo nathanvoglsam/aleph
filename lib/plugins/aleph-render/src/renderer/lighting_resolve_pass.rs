@@ -27,14 +27,12 @@
 // SOFTWARE.
 //
 
-use aleph_device_allocators::IUploadAllocator;
-use aleph_device_allocators::UploadBumpAllocator;
+use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
-use crate::renderer::main_gbuffer_pass::CameraLayout;
-use crate::renderer::main_gbuffer_pass::MainGBufferPassOutput;
+use crate::renderer::main_gbuffer_pass::{CameraLayout, MainGBufferPassOutput};
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
@@ -122,7 +120,7 @@ pub fn pass(
                 ResourceUsageFlags::UNORDERED_ACCESS,
             );
             let uniform_buffer = resources.create_buffer(
-                &BufferDesc::new(1024 as u64)
+                &BufferDesc::new(1024u64)
                     .cpu_write()
                     .with_name("Test Uniform Buffer"),
                 ResourceUsageFlags::CONSTANT_BUFFER,

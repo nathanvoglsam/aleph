@@ -43,12 +43,12 @@ use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::{get_as_unwrapped, unwrap};
 use crate::semaphore::SemaphoreState;
 use crate::texture::{ValidationImageView, ValidationViewType};
-use crate::ValidationDescriptorArena;
 use crate::{
     ValidationAdapter, ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
-    ValidationContext, ValidationDescriptorPool, ValidationDescriptorSetLayout, ValidationFence,
-    ValidationGraphicsPipeline, ValidationPipelineLayout, ValidationQueue, ValidationSampler,
-    ValidationSemaphore, ValidationTexture,
+    ValidationContext, ValidationDescriptorArena, ValidationDescriptorPool,
+    ValidationDescriptorSetLayout, ValidationFence, ValidationGraphicsPipeline,
+    ValidationPipelineLayout, ValidationQueue, ValidationSampler, ValidationSemaphore,
+    ValidationTexture,
 };
 
 pub struct ValidationDevice {

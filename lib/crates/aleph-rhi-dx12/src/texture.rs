@@ -41,8 +41,7 @@ use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 
 use crate::device::Device;
-use crate::internal::conv::texture_format_to_dxgi;
-use crate::internal::conv::texture_format_to_dxgi_view;
+use crate::internal::conv::{texture_format_to_dxgi, texture_format_to_dxgi_view};
 use crate::internal::{
     calc_subresource_index, plane_layer_for_aspect, plane_layer_for_aspect_flag,
 };

@@ -212,7 +212,7 @@ impl MouseImpl {
     pub fn update_state(&self, event_pump: &sdl2::EventPump) {
         let state = sdl2::mouse::MouseState::new(event_pump);
 
-        (*self.state.write().deref_mut()) = MouseState {
+        *self.state.write().deref_mut() = MouseState {
             pos: (state.x(), state.y()),
             buttons: state.to_sdl_state(),
         };

@@ -278,7 +278,7 @@ impl<T: FnMut() + 'static> System for T {
     fn declare_access(&mut self, _access: &mut dyn AccessDescriptor) {}
 
     unsafe fn execute(&mut self, _input: Self::In, _world: &World) -> Self::Out {
-        (self)()
+        self()
     }
 }
 

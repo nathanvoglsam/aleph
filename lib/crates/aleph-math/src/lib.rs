@@ -30,8 +30,7 @@
 pub use ultraviolet::*;
 
 pub mod unprojection {
-    use ultraviolet::Mat4;
-    use ultraviolet::Vec3;
+    use ultraviolet::{Mat4, Vec3};
 
     ///
     /// Unprojects the given point, assuming that the point was projected with a reversed Z matrix

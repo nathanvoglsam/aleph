@@ -442,7 +442,7 @@ impl OffsetAllocator {
         let node_index = self.free_nodes[self.free_offset as usize];
         self.free_offset -= 1;
         self.nodes[node_index as usize] = Node {
-            data_offset: data_offset,
+            data_offset,
             data_size: size,
             bin_list_next: top_node_index,
             ..Default::default()
@@ -583,9 +583,7 @@ fn find_lowest_set_bit_after(bit_mask: u32, start_bit_index: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::offset_allocator::small_float;
-    use crate::offset_allocator::Allocation;
-    use crate::offset_allocator::OffsetAllocator;
+    use crate::offset_allocator::{small_float, Allocation, OffsetAllocator};
 
     #[test]
     fn numbers_small_float_uint_to_float() {

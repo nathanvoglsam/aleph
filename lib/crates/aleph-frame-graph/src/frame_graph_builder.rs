@@ -1045,7 +1045,7 @@ impl FrameGraphBuilder {
         // value to encode a 'null' version. By guaranteeing u32::MAX is never a valid index into this
         // array we can rely on rust's bounds checking to assert that we never access the u32::MAXth
         // version by construction (we never make it).
-        assert!(self.resource_versions.len() < ((u32::MAX) as usize));
+        assert!(self.resource_versions.len() < (u32::MAX as usize));
 
         ResourceMut(id)
     }
@@ -1088,7 +1088,7 @@ impl FrameGraphBuilder {
         // value to encode a 'null' version. By guaranteeing u32::MAX is never a valid index into this
         // array we can rely on rust's bounds checking to assert that we never access the u32::MAXth
         // version by construction (we never make it).
-        assert!(self.resource_versions.len() < ((u16::MAX) as usize));
+        assert!(self.resource_versions.len() < (u16::MAX as usize));
 
         ResourceMut(id)
     }

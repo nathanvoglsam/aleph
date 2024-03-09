@@ -27,13 +27,11 @@
 // SOFTWARE.
 //
 
-use aleph_device_allocators::IUploadAllocator;
-use aleph_device_allocators::UploadBumpAllocator;
+use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_math::projection::perspective_reversed_infinite_z_wgpu_dx_gl;
-use aleph_math::Mat4;
-use aleph_math::Vec3;
+use aleph_math::{Mat4, Vec3};
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -64,13 +62,13 @@ pub fn pass(
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
 ) {
-    let desc = BufferDesc::new(4 * 1024 as u64)
+    let desc = BufferDesc::new(4 * 1024u64)
         .cpu_write()
         .with_usage(ResourceUsageFlags::VERTEX_BUFFER)
         .with_name("Test Vertex Buffer");
     let vtx_buffer = device.create_buffer(&desc).unwrap();
 
-    let desc = BufferDesc::new(4 * 1024 as u64)
+    let desc = BufferDesc::new(4 * 1024u64)
         .cpu_write()
         .with_usage(ResourceUsageFlags::INDEX_BUFFER)
         .with_name("Test Index Buffer");
@@ -133,7 +131,7 @@ pub fn pass(
                 resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
 
             let uniform_buffer = resources.create_buffer(
-                &BufferDesc::new(4 * 1024 as u64)
+                &BufferDesc::new(4 * 1024u64)
                     .cpu_write()
                     .with_name("Test Uniform Buffer"),
                 ResourceUsageFlags::CONSTANT_BUFFER,

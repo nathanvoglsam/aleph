@@ -38,8 +38,7 @@ use aleph_rhi_api::*;
 
 use crate::access::ResourceUsageFlagsExt;
 use crate::resource::ResourceId;
-use crate::IRenderPass;
-use crate::ResourceVariant;
+use crate::{IRenderPass, ResourceVariant};
 
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,

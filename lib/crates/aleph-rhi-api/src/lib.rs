@@ -867,7 +867,7 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
             sets.push(self.allocate_set()?);
         }
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets as usize);
+        debug_assert_eq!(sets.len(), num_sets);
         Ok(sets.into_boxed_slice())
     }
 
@@ -933,7 +933,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
             sets.push(self.allocate_set(layout)?);
         }
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets as usize);
+        debug_assert_eq!(sets.len(), num_sets);
         Ok(sets.into_boxed_slice())
     }
 

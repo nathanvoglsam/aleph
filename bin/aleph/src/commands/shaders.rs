@@ -41,12 +41,10 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::commands::{ISubcommand, SubcommandSet};
 use crate::project::AlephProject;
-use crate::shader_system::ShaderCompileOptions;
-use crate::shader_system::ShaderPipeline;
-use crate::shader_system::ShaderTargetLanguage;
 use crate::shader_system::{
-    AlephCrateMetadata, CompilationParams, ProjectShaderContext, ShaderCrateContext, ShaderFile,
-    ShaderModuleContext, ShaderModuleDefinition, ShaderModuleDefinitionFile,
+    AlephCrateMetadata, CompilationParams, ProjectShaderContext, ShaderCompileOptions,
+    ShaderCrateContext, ShaderFile, ShaderModuleContext, ShaderModuleDefinition,
+    ShaderModuleDefinitionFile, ShaderPipeline, ShaderTargetLanguage,
 };
 use crate::utils::{dunce_utf8, ninja, BuildPlatform};
 

@@ -272,7 +272,7 @@ impl World {
         assert!(
             ids.len() < (u32::MAX - 1) as usize,
             "Can't allocate more than {} entities",
-            (u32::MAX - 1)
+            u32::MAX - 1
         );
 
         assert!(

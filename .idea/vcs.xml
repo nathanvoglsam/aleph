@@ -2,13 +2,6 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lib/crates/aleph-dx12-agility-sdk/thirdparty" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lib/crates/aleph-dx12-alloc/DirectX-Headers" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lib/crates/aleph-dx12-alloc/thirdparty" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lib/crates/aleph-pix-raw/thirdparty" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lib/crates/aleph-vulkan-alloc/Vulkan-Headers" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lib/crates/aleph-vulkan-alloc/VulkanMemoryAllocator" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/lib/plugins/aleph-sdl2/thirdparty" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/D3D12MemoryAllocator" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/DirectX-Headers" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/DirectX12AgilitySDK" vcs="Git" />

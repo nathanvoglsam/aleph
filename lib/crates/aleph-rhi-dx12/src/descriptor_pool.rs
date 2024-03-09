@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use std::alloc::handle_alloc_error;
-use std::alloc::Layout;
+use std::alloc::{handle_alloc_error, Layout};
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
@@ -213,7 +212,7 @@ impl IDescriptorPool for DescriptorPool {
         }
 
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets as usize);
+        debug_assert_eq!(sets.len(), num_sets);
         unsafe { Ok(std::mem::transmute(sets.into_boxed_slice())) }
     }
 

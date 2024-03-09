@@ -55,8 +55,7 @@ use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::context::Context;
-use crate::descriptor_arena::DescriptorArenaHeap;
-use crate::descriptor_arena::DescriptorArenaLinear;
+use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::{
     DescriptorBindingInfo, DescriptorBindingLayout, DescriptorSetLayout,

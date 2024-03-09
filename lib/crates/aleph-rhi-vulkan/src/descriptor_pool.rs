@@ -114,7 +114,7 @@ impl IDescriptorPool for DescriptorPool {
         };
 
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets as usize);
+        debug_assert_eq!(sets.len(), num_sets);
         unsafe { Ok(core::mem::transmute(sets.into_boxed_slice())) }
     }
 

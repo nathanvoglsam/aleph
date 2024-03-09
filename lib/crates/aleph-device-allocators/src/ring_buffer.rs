@@ -73,7 +73,7 @@ impl RingBuffer {
         } else {
             if let Some(capacity) = NonZeroUsize::new(capacity) {
                 Some(Self {
-                    capacity: capacity,
+                    capacity,
                     head: Cell::new(0),
                     size: Cell::new(0),
                 })

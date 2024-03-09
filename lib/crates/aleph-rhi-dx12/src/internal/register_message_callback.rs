@@ -57,7 +57,7 @@ pub unsafe fn device_register_message_callback<
         let description = CStr::from_ptr(pdescription.0 as *const _);
 
         // Call the actual callback
-        (context)(category, severity, id, description);
+        context(category, severity, id, description);
     }
 
     let casted: ID3D12InfoQueue1 = device.cast::<ID3D12InfoQueue1>()?;

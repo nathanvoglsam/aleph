@@ -35,8 +35,7 @@ use aleph_rhi_api::*;
 
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::unwrap;
-use crate::ValidationDescriptorSetLayout;
-use crate::ValidationDevice;
+use crate::{ValidationDescriptorSetLayout, ValidationDevice};
 
 pub struct ValidationDescriptorArena {
     pub(crate) _device: AnyArc<ValidationDevice>,

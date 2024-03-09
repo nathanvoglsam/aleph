@@ -32,9 +32,7 @@ use std::ptr::NonNull;
 use aleph_interfaces::any::AnyArc;
 use aleph_rhi_api::*;
 
-use crate::IUploadAllocator;
-use crate::RawDeviceAllocationResult;
-use crate::{AllocationResult, BumpAllocator};
+use crate::{AllocationResult, BumpAllocator, IUploadAllocator, RawDeviceAllocationResult};
 
 pub struct UploadBumpAllocator {
     /// The buffer object we're allocating from.

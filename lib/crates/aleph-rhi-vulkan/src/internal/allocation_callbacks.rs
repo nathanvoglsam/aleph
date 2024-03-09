@@ -29,8 +29,7 @@
 
 use std::alloc::Layout;
 use std::ffi::c_void;
-use std::mem::align_of;
-use std::mem::size_of;
+use std::mem::{align_of, size_of};
 use std::ptr::NonNull;
 
 use allocator_api2::alloc::Allocator;

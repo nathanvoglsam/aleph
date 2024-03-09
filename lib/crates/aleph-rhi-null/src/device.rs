@@ -32,11 +32,10 @@ use std::cell::Cell;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use aleph_rhi_api::*;
 
-use crate::NullDescriptorArena;
 use crate::{
-    NullAdapter, NullBuffer, NullCommandList, NullComputePipeline, NullContext, NullDescriptorPool,
-    NullDescriptorSetLayout, NullFence, NullGraphicsPipeline, NullPipelineLayout, NullQueue,
-    NullSampler, NullSemaphore, NullTexture,
+    NullAdapter, NullBuffer, NullCommandList, NullComputePipeline, NullContext,
+    NullDescriptorArena, NullDescriptorPool, NullDescriptorSetLayout, NullFence,
+    NullGraphicsPipeline, NullPipelineLayout, NullQueue, NullSampler, NullSemaphore, NullTexture,
 };
 
 pub struct NullDevice {

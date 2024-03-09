@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use std::alloc::handle_alloc_error;
-use std::alloc::Layout;
+use std::alloc::{handle_alloc_error, Layout};
 use std::cell::Cell;
-use std::mem::size_of;
-use std::mem::MaybeUninit;
+use std::mem::{size_of, MaybeUninit};
 use std::ptr::NonNull;
 
 use aleph_rhi_api::*;

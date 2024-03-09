@@ -27,21 +27,17 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::ops::Deref;
 
 use aleph_identity_hasher::IdentityHasher;
 use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::platform::GamepadAxis;
-use interfaces::platform::GamepadAxisMotion;
-use interfaces::platform::GamepadButton;
-use interfaces::platform::GamepadButtonDown;
-use interfaces::platform::GamepadButtonUp;
-use interfaces::platform::GamepadId;
-use interfaces::platform::{GamepadEvent, GamepadState, IGamepads, IGamepadsAccessor};
+use interfaces::platform::{
+    GamepadAxis, GamepadAxisMotion, GamepadButton, GamepadButtonDown, GamepadButtonUp,
+    GamepadEvent, GamepadId, GamepadState, IGamepads, IGamepadsAccessor,
+};
 use parking_lot::RwLock;
 use sdl2::controller::GameController;
 

@@ -32,9 +32,10 @@ use std::ptr::NonNull;
 use aleph_interfaces::any::AnyArc;
 use aleph_rhi_api::*;
 
-use crate::IUploadAllocator;
-use crate::RawDeviceAllocationResult;
-use crate::{AllocationResult, RingBuffer, SubAllocatorResult, UploadBumpAllocator};
+use crate::{
+    AllocationResult, IUploadAllocator, RawDeviceAllocationResult, RingBuffer, SubAllocatorResult,
+    UploadBumpAllocator,
+};
 
 /// A wrapper over [RingBuffer] that allows allocating blocks from a device visible uniform buffer.
 ///
