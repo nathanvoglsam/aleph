@@ -86,10 +86,8 @@ impl ISubcommand for GenProj {
         let arch = architecture_from_arg(&arch_arg)
             .ok_or(anyhow!("Unknown architecture \"{}\"", &arch_arg))?;
 
-        if platform_arg == "native" {
-            if !platform.is_valid_native_platform() {
-                return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
-            }
+        if platform_arg == "native" && !platform.is_valid_native_platform() {
+            return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
         }
 
         let target = Target { arch, platform };
@@ -97,7 +95,7 @@ impl ISubcommand for GenProj {
         let root = project.ensure_target_project_root(&target)?;
 
         match target.platform {
-            BuildPlatform::UWP => self.uwp(project, root, &target),
+            BuildPlatform::Uwp => self.uwp(project, root, &target),
             BuildPlatform::Android => self.android(project, root, &target),
             _ => Err(anyhow!("Unsupported genproj platform '{platform_arg}'")),
         }
@@ -112,7 +110,7 @@ impl GenProj {
 
         // Extract the .zip file onto our target directory
         let mut bundle = uwp_project_bundle();
-        extract_zip(&mut bundle, Some(&root))?;
+        extract_zip(&mut bundle, Some(root))?;
 
         let manifest_path = root.join("AppxManifest.xml");
         let template_files = [manifest_path.as_path()];
@@ -135,7 +133,7 @@ impl GenProj {
             let asset_dir = root.join("Assets");
             std::fs::create_dir_all(&asset_dir)?;
 
-            let copy_branding_files = make_branding_file_copier(&project_root, &asset_dir);
+            let copy_branding_files = make_branding_file_copier(project_root, &asset_dir);
             copy_branding_files(&[
                 (lock_screen_logo.as_ref(), "LockScreenLogo.png"),
                 (splash_screen.as_ref(), "SplashScreen.png"),
@@ -161,7 +159,7 @@ impl GenProj {
 
         // Extract the .zip file onto our target directory
         let mut bundle = android_project_bundle();
-        extract_zip(&mut bundle, Some(&root))?;
+        extract_zip(&mut bundle, Some(root))?;
 
         let manifest_path = root.join("app/src/main/AndroidManifest.xml");
         let gradle_path = root.join("app/build.gradle");
@@ -192,7 +190,7 @@ impl GenProj {
             ));
         }
 
-        create_activity_from_template(android, &root, &context)?;
+        create_activity_from_template(android, root, &context)?;
 
         let local_properties = root.join("local.properties");
         log::trace!("Writing template file '{}'", local_properties);
@@ -224,7 +222,7 @@ impl GenProj {
                 (icon_xxhdpi.as_ref(), "mipmap-xxhdpi/ic_launcher.png"),
                 (icon_xxxhdpi.as_ref(), "mipmap-xxxhdpi/ic_launcher.png"),
             ];
-            let copy_branding_files = make_branding_file_copier(&project_root, &res_dir);
+            let copy_branding_files = make_branding_file_copier(project_root, &res_dir);
             copy_branding_files(&pairs)?;
         }
 
@@ -245,7 +243,7 @@ fn create_activity_from_template(
 
     let mut tera = Tera::default();
     tera.add_raw_template("a", ANDROID_ACTIVITY_SOURCE_TEMPLATE)?;
-    let rendered_activity = tera.render("a", &context)?;
+    let rendered_activity = tera.render("a", context)?;
 
     let java_file_path = package_path.join("AlephActivity.java");
     log::trace!("Writing template file '{}'", java_file_path);
@@ -320,11 +318,7 @@ fn build_uwp_template_context(project: &AlephProject, target: &Target) -> anyhow
 
     // Grab the description from the cargo package, or use the default of "No Description" if
     // the crate lacks a description
-    let uwp_description = package
-        .description
-        .as_ref()
-        .map(|v| v.as_str())
-        .unwrap_or("No Description");
+    let uwp_description = package.description.as_deref().unwrap_or("No Description");
 
     // Prepare our template context with information from the schema
     let mut context = Context::new();
@@ -367,8 +361,8 @@ fn build_android_template_context(project: &AlephProject) -> anyhow::Result<Cont
     let mut context = Context::new();
     let mut set_var = context_var_logger(&mut context);
     log::trace!("Project Template Variable Settings");
-    set_var("ANDROID_GAME_APPLICATION_ID", &app_id);
-    set_var("ANDROID_GAME_NAME", &name);
+    set_var("ANDROID_GAME_APPLICATION_ID", app_id);
+    set_var("ANDROID_GAME_NAME", name);
     set_var("ANDROID_GAME_VERSION_CODE", &version_id.to_string());
     set_var("ANDROID_GAME_VERSION_NAME", &app_version);
     set_var("ANDROID_GAME_LIBRARY", &library_target.name);
@@ -377,7 +371,7 @@ fn build_android_template_context(project: &AlephProject) -> anyhow::Result<Cont
     Ok(context)
 }
 
-fn context_var_logger<'a>(context: &'a mut Context) -> impl FnMut(&str, &str) + 'a {
+fn context_var_logger(context: &mut Context) -> impl FnMut(&str, &str) + '_ {
     |key: &str, val: &str| {
         log::info!("{key} = {val}");
         context.insert(key, &val)
@@ -389,8 +383,8 @@ fn apply_template_context_to_files(context: &Context, files: &[&Utf8Path]) -> an
     for file in files.iter().copied() {
         let path_string = file.as_str();
         let file_content = std::fs::read_to_string(file)?;
-        tera.add_raw_template(&path_string, &file_content)?;
-        let rendered_content = tera.render(&path_string, context)?;
+        tera.add_raw_template(path_string, &file_content)?;
+        let rendered_content = tera.render(path_string, context)?;
 
         log::trace!("Writing template file '{}'", file);
         std::fs::write(file, rendered_content)?;

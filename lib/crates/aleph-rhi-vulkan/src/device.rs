@@ -908,7 +908,7 @@ impl IDevice for Device {
                 let d_type = write.writes.descriptor_type();
                 let d_type = descriptor_type_to_vk(d_type);
                 let new_write = vk::WriteDescriptorSet::builder()
-                    .dst_set(std::mem::transmute(write.set.clone()))
+                    .dst_set(std::mem::transmute(write.set))
                     .dst_binding(write.binding)
                     .dst_array_element(write.array_element)
                     .descriptor_type(d_type);
@@ -1027,7 +1027,7 @@ impl IDevice for Device {
             match result {
                 Ok(_) => FenceWaitResult::Complete,
                 Err(vk::Result::TIMEOUT) => FenceWaitResult::Timeout,
-                v @ _ => {
+                v => {
                     v.unwrap();
                     unreachable!()
                 }
@@ -1046,7 +1046,7 @@ impl IDevice for Device {
         match result {
             Ok(_) => true,
             Err(vk::Result::NOT_READY) => false,
-            v @ _ => {
+            v => {
                 v.unwrap();
                 unreachable!()
             }
@@ -1242,8 +1242,8 @@ impl Device {
             .blend_constants([0.0, 0.0, 0.0, 0.0])
     }
 
-    fn translate_framebuffer_info<'a, 'b>(
-        desc: &'b GraphicsPipelineDesc,
+    fn translate_framebuffer_info<'a>(
+        desc: &GraphicsPipelineDesc,
         color_formats: &'a mut BVec<vk::Format>,
     ) -> vk::PipelineRenderingCreateInfoBuilder<'a> {
         let builder = vk::PipelineRenderingCreateInfo::builder();

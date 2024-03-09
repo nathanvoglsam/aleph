@@ -65,7 +65,7 @@ pub fn cpu_vendor() -> &'static str {
         return sys_info::SYSTEM_INFO.global_cpu_info().vendor_id();
     }
 
-    return unimplemented!();
+    unimplemented!()
 }
 
 ///
@@ -88,7 +88,7 @@ pub fn cpu_brand() -> &'static str {
         return sys_info::SYSTEM_INFO.global_cpu_info().brand();
     }
 
-    return unimplemented!();
+    unimplemented!()
 }
 
 ///
@@ -117,5 +117,5 @@ pub fn installed_memory() -> Option<NonZeroU64> {
     #[cfg(unix)]
     return *unix_memory::SYSTEM_MEMORY;
 
-    return *null_memory::SYSTEM_MEMORY;
+    *null_memory::SYSTEM_MEMORY
 }

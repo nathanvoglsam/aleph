@@ -42,7 +42,7 @@ declare_interfaces!(NullContext, [IContext]);
 crate::impl_platform_interface_passthrough!(NullContext);
 
 impl NullContext {
-    pub fn new() -> AnyArc<dyn IContext> {
+    pub fn new_arced() -> AnyArc<dyn IContext> {
         let context = AnyArc::new_cyclic(move |v| NullContext { _this: v.clone() });
         AnyArc::map::<dyn IContext, _>(context, |v| v)
     }

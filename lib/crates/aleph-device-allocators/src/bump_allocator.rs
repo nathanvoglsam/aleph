@@ -61,14 +61,10 @@ impl BumpAllocator {
     /// Will return [None] if `capacity` is > [BumpAllocator::MAX_CAPACITY].
     pub fn new(capacity: usize) -> Option<Self> {
         if capacity <= Self::MAX_CAPACITY {
-            if let Some(capacity) = NonZeroUsize::new(capacity) {
-                Some(Self {
-                    head: Cell::new(0),
-                    capacity,
-                })
-            } else {
-                None
-            }
+            NonZeroUsize::new(capacity).map(|capacity| Self {
+                head: Cell::new(0),
+                capacity,
+            })
         } else {
             None
         }
@@ -96,12 +92,11 @@ impl BumpAllocator {
 
         let head = self.head.get();
         self.head.set(head + size);
-        let out = AllocationResult {
+
+        AllocationResult {
             offset: head,
             allocated: size,
-        };
-
-        out
+        }
     }
 
     /// An extended form of [BumpAllocator::allocate] that also handles aligning the resulting block
@@ -142,12 +137,11 @@ impl BumpAllocator {
         );
 
         self.head.set(new_head);
-        let out = AllocationResult {
+
+        AllocationResult {
             offset: aligned_head,
             allocated: total_size,
-        };
-
-        out
+        }
     }
 
     /// Clear the bump allocator, resetting it to the empty state

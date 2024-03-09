@@ -47,11 +47,7 @@ pub struct AlephCrateMetadata<'a> {
 
 impl<'a> AlephCrateMetadata<'a> {
     pub fn value_for_package(package: &Package) -> Option<&serde_json::Value> {
-        package
-            .metadata
-            .as_object()
-            .map(|v| v.get("aleph"))
-            .flatten()
+        package.metadata.as_object().and_then(|v| v.get("aleph"))
     }
 
     pub fn load_for_package(
@@ -366,7 +362,7 @@ impl<'a> ShaderModuleContext<'a> {
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ShaderFileFormat {
-    HLSL,
+    Hlsl,
     Slang,
     Dxil,
     Spirv,
@@ -375,7 +371,7 @@ pub enum ShaderFileFormat {
 impl ShaderFileFormat {
     pub fn from_file_ext(v: &str) -> Option<Self> {
         match v {
-            "hlsl" => Some(ShaderFileFormat::HLSL),
+            "hlsl" => Some(ShaderFileFormat::Hlsl),
             "slang" => Some(ShaderFileFormat::Slang),
             _ => None,
         }
@@ -433,9 +429,9 @@ pub enum ShaderType {
     Mesh,
 }
 
-impl Into<aleph_shader_db::ShaderType> for ShaderType {
-    fn into(self) -> aleph_shader_db::ShaderType {
-        match self {
+impl From<ShaderType> for aleph_shader_db::ShaderType {
+    fn from(val: ShaderType) -> Self {
+        match val {
             ShaderType::Compute => aleph_shader_db::ShaderType::Compute,
             ShaderType::Vertex => aleph_shader_db::ShaderType::Vertex,
             ShaderType::Hull => aleph_shader_db::ShaderType::Hull,
@@ -569,9 +565,9 @@ impl<'a> ShaderFile<'a> {
         // This _can't_ fail as we've already proven that these are the last segments of the file
         // name above.
         let file_name_no_ext = file_name.strip_suffix(file_ext_str).unwrap();
-        let file_name_no_ext = file_name_no_ext.strip_suffix(".").unwrap();
+        let file_name_no_ext = file_name_no_ext.strip_suffix('.').unwrap();
         let file_name_no_s_type = file_name_no_ext.strip_suffix(shader_type_str).unwrap();
-        let file_name_no_s_type = file_name_no_s_type.strip_suffix(".").unwrap();
+        let file_name_no_s_type = file_name_no_s_type.strip_suffix('.').unwrap();
 
         Some(Self {
             path,

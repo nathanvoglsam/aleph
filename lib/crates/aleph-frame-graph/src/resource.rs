@@ -104,9 +104,9 @@ impl AsRef<ResourceRef> for ResourceMut {
 }
 
 // Allow using a mutable resource as an immutable one
-impl Into<ResourceRef> for ResourceMut {
-    fn into(self) -> ResourceRef {
-        ResourceRef(self.0)
+impl From<ResourceMut> for ResourceRef {
+    fn from(val: ResourceMut) -> Self {
+        ResourceRef(val.0)
     }
 }
 

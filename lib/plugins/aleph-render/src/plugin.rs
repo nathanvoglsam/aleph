@@ -197,7 +197,7 @@ impl IPlugin for PluginRender {
                             data.should_resize = true;
                             return;
                         }
-                        v @ _ => v.unwrap(),
+                        v => v.unwrap(),
                     };
                     let acquired_image = data.swap_images[acquired_index as usize].clone();
 
@@ -231,7 +231,7 @@ impl IPlugin for PluginRender {
             },
         );
 
-        Box::new(Vec::new())
+        default_response()
     }
 
     fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {

@@ -612,7 +612,7 @@ pub struct Configuration {
     /// on the platform, the following limited set of VkImageView swizzles are supported by
     /// MoltenVK, via automatic format substitution:
     ///
-    /// Texture format			       Swizzle
+    /// Texture format                  Swizzle
     /// --------------                  -------
     /// VK_FORMAT_R8_UNORM              ZERO, ANY, ANY, RED
     /// VK_FORMAT_A8_UNORM              ALPHA, ANY, ANY, ZERO

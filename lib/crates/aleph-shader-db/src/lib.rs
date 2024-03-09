@@ -77,6 +77,9 @@ pub struct ShaderName<'a, T> {
 }
 
 impl<'a, T: ShaderStage> ShaderName<'a, T> {
+    /// # Safety
+    /// It is required that the shader referred to by the provided name _must_ be of the type
+    /// specified by the `T` type parameter. It is up to the caller to ensure this.
     pub unsafe fn new(v: &'a str) -> Self {
         Self {
             v,
@@ -85,9 +88,9 @@ impl<'a, T: ShaderStage> ShaderName<'a, T> {
     }
 }
 
-impl<'a, T> Into<&'a str> for ShaderName<'a, T> {
-    fn into(self) -> &'a str {
-        self.v
+impl<'a, T> From<ShaderName<'a, T>> for &'a str {
+    fn from(val: ShaderName<'a, T>) -> Self {
+        val.v
     }
 }
 
@@ -161,42 +164,32 @@ pub trait IShaderDatabaseExt {
 
 impl<T: IShaderDatabase + ?Sized> IShaderDatabaseExt for T {
     fn get<S: ShaderStage>(&self, name: ShaderName<S>) -> Option<ShaderEntryRef> {
-        self.get_by_name(name.v)
-            .map(|v| {
-                if S::SHADER_TYPE == v.shader_type {
-                    Some(v)
-                } else {
-                    None
-                }
-            })
-            .flatten()
+        self.get_by_name(name.v).and_then(|v| {
+            if S::SHADER_TYPE == v.shader_type {
+                Some(v)
+            } else {
+                None
+            }
+        })
     }
 }
 
 impl IShaderDatabase for ShaderDatabase {
     fn get_by_name(&self, name: &str) -> Option<ShaderEntryRef> {
-        if let Some(v) = self.shaders.get(name) {
-            Some(ShaderEntryRef {
-                shader_type: v.shader_type,
-                spirv: &v.spirv,
-                dxil: &v.dxil,
-            })
-        } else {
-            None
-        }
+        self.shaders.get(name).map(|v| ShaderEntryRef {
+            shader_type: v.shader_type,
+            spirv: &v.spirv,
+            dxil: &v.dxil,
+        })
     }
 }
 
 impl IShaderDatabase for ArchivedShaderDatabase {
     fn get_by_name(&self, name: &str) -> Option<ShaderEntryRef> {
-        if let Some(v) = self.shaders.get(name) {
-            Some(ShaderEntryRef {
-                shader_type: v.shader_type.deserialize(&mut rkyv::Infallible).unwrap(),
-                spirv: &v.spirv,
-                dxil: &v.dxil,
-            })
-        } else {
-            None
-        }
+        self.shaders.get(name).map(|v| ShaderEntryRef {
+            shader_type: v.shader_type.deserialize(&mut rkyv::Infallible).unwrap(),
+            spirv: &v.spirv,
+            dxil: &v.dxil,
+        })
     }
 }

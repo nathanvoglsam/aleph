@@ -97,7 +97,6 @@ impl EguiRenderer {
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
         let frames = (0..2)
-            .into_iter()
             .map(|_| PerFrameObjects::new(device.deref(), output.set_layout.as_ref()))
             .collect();
 
@@ -130,13 +129,12 @@ impl EguiRenderer {
 
         let shader_db = unsafe { rkyv::archived_root::<ShaderDatabase>(&self.shader_db_bin) };
         let shader_db = ShaderDatabaseAccessor::new(self.device.as_ref(), shader_db);
-        let frame_graph = Self::create_frame_graph(self.device.as_ref(), &pin_board, &shader_db);
+        let frame_graph = Self::create_frame_graph(self.device.as_ref(), pin_board, &shader_db);
 
         let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
         let frames: Vec<_> = (0..2)
-            .into_iter()
             .map(|_| PerFrameObjects::new(self.device.as_ref(), output.set_layout.as_ref()))
             .collect();
 
@@ -210,7 +208,7 @@ impl EguiRenderer {
             self.execute_context.clear();
             self.execute_context.publish(EguiPassContext {
                 buffer: self.frames[index].uniform_buffer.clone(),
-                descriptor_set: self.frames[index].descriptor_set.clone(),
+                descriptor_set: self.frames[index].descriptor_set,
                 render_data,
             });
 

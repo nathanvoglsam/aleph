@@ -164,7 +164,7 @@ impl IDevice for ValidationDevice {
             .expect("Unknown IGraphicsPipeline implementation");
 
         let new_desc = ComputePipelineDesc {
-            shader_module: desc.shader_module.clone(),
+            shader_module: desc.shader_module,
             pipeline_layout: pipeline_layout.inner.as_ref(),
             name: desc.name,
         };

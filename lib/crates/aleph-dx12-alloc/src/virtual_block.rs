@@ -63,7 +63,7 @@ impl VirtualBlock {
         unsafe { D3D12MA_VirtualBlock_IsEmpty(self.0.as_ptr()).as_bool() }
     }
 
-    /// # Unsafe
+    /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the given [VirtualAllocation] handle is
     /// both alive (hasn't been freed) and was allocated from this allocator.
@@ -97,7 +97,7 @@ impl VirtualBlock {
         }
     }
 
-    /// # Unsafe
+    /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the given [VirtualAllocation] handle is
     /// both alive (hasn't been freed) and was allocated from this allocator.
@@ -111,7 +111,7 @@ impl VirtualBlock {
         unsafe { D3D12MA_VirtualBlock_Clear(self.0.as_ptr()) }
     }
 
-    /// # Unsafe
+    /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the given [VirtualAllocation] handle is
     /// both alive (hasn't been freed) and was allocated from this allocator.

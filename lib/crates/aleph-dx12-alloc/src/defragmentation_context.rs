@@ -49,14 +49,23 @@ impl DefragmentationContext {
         self.0.as_ptr() as *const _
     }
 
+    /// # Safety
+    ///
+    /// TODO: DOCS
     pub unsafe fn BeginPass(&mut self, pPassInfo: &mut DEFRAGMENTATION_PASS_MOVE_INFO) -> HRESULT {
         D3D12MA_DefragmentationContext_BeginPass(self.0.as_ptr(), pPassInfo)
     }
 
+    /// # Safety
+    ///
+    /// TODO: DOCS
     pub unsafe fn EndPass(&mut self, pPassInfo: &mut DEFRAGMENTATION_PASS_MOVE_INFO) -> HRESULT {
         D3D12MA_DefragmentationContext_EndPass(self.0.as_ptr(), pPassInfo)
     }
 
+    /// # Safety
+    ///
+    /// TODO: DOCS
     pub unsafe fn GetStats(&mut self, pStats: &mut DEFRAGMENTATION_STATS) {
         D3D12MA_DefragmentationContext_GetStats(self.0.as_ptr(), pStats)
     }

@@ -127,6 +127,16 @@ impl FrameGraph {
         }
     }
 
+    /// # Safety
+    ///
+    /// This function is only as safe as the render passes it executes. You _will_ be recording
+    /// device commands inside here somewhere, and those aren't safe to call in general so this
+    /// function is marked unsafe to respect this.
+    ///
+    /// That is to say, the frame graph implementation is safe but the passes will be calling into
+    /// the platform GPU API and ensuring that is safe is up to the caller. As such, to pretend this
+    /// function is safe to call in anything but the most trivial examples would be incorrect. This
+    /// can be used as _part_ of a safe renderer API though, just not at this level of abstraction.
     pub unsafe fn execute(
         &mut self,
         frame_index: usize,
@@ -209,7 +219,7 @@ impl FrameGraph {
                 } else {
                     &[]
                 };
-                encoder.resource_barrier(&memory_barrier, &[], &texture_barriers);
+                encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
             }
 
             let passes = unsafe { bundle.passes.as_ref() };

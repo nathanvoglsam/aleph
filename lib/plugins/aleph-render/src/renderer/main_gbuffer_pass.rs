@@ -414,20 +414,18 @@ fn create_pipeline_state(
 }
 
 fn proj_matrix(aspect_ratio: f32) -> [f32; 16] {
-    perspective_reversed_infinite_z_wgpu_dx_gl(90.0f32.to_radians(), aspect_ratio, 0.1)
+    *perspective_reversed_infinite_z_wgpu_dx_gl(90.0f32.to_radians(), aspect_ratio, 0.1)
         .transposed()
         .as_array()
-        .clone() // Hopefully gets elided
 }
 
 fn view_matrix() -> [f32; 16] {
     let camera_position = camera_position();
     let pos = Vec3::new(camera_position[0], camera_position[1], camera_position[2]);
     let at = Vec3::new(0., 0., -3.);
-    Mat4::look_at(pos, at, Vec3::new(0., 1., 0.))
+    *Mat4::look_at(pos, at, Vec3::new(0., 1., 0.))
         .transposed()
         .as_array()
-        .clone()
 }
 
 fn camera_position() -> [f32; 4] {
@@ -462,11 +460,10 @@ struct ModelLayout {
 impl ModelLayout {
     pub fn init() -> Self {
         Self {
-            _model_matrix: Mat4::from_translation(Vec3::new(0., 0., -3.))
+            _model_matrix: *Mat4::from_translation(Vec3::new(0., 0., -3.))
                 .transposed()
-                .as_array()
-                .clone(),
-            _normal_matrix: Mat4::identity().as_array().clone(),
+                .as_array(),
+            _normal_matrix: *Mat4::identity().as_array(),
         }
     }
 }

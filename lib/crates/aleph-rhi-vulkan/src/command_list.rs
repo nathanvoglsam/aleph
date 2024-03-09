@@ -91,7 +91,7 @@ impl ICommandList for CommandList {
                 task: false,
             };
             let encoder = Encoder::<'a> {
-                _buffer: self.buffer.clone(),
+                _buffer: self.buffer,
                 _context: self._device.context.clone(),
                 _device: self._device.clone(),
                 bound_graphics_pipeline: None,

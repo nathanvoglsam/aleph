@@ -95,7 +95,7 @@ impl LinearDescriptorPool {
                 assert!(self.active.replace(Some(active)).is_none());
                 result
             }
-            v @ _ => v,
+            v => v,
         }
     }
 
@@ -125,7 +125,7 @@ impl LinearDescriptorPool {
                 assert!(self.active.replace(Some(active)).is_none());
                 result
             }
-            v @ _ => v,
+            v => v,
         }
     }
 

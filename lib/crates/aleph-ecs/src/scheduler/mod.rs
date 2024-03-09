@@ -122,7 +122,7 @@ impl Schedule {
         let system = self.arena.alloc(system.system());
         let system = NonNull::from(system);
         DropLink::append_drop_list(&self.arena, &mut self.drop_head, system);
-        self.run_criteria.system = Some(NonNull::from(system));
+        self.run_criteria.system = Some(system);
         self.run_criteria.initialized = false;
         self
     }

@@ -78,7 +78,7 @@ impl IPlugin for PluginRHI {
         // If there are no GPU backends available we early exit and yield no provider as there's
         // nothing to provide
         if self.rhi_loader.backends().is_empty() {
-            return Box::new(vec![]);
+            return Box::<Vec<(TypeId, AnyArc<dyn IAny>)>>::default();
         }
 
         // Construct the context from the RHI loader with the final set of settings

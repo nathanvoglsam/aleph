@@ -319,7 +319,7 @@ fn generate_shader_module_ninja_files(
             write!(
                 &mut build_file,
                 " -I {}",
-                dunce_utf8::simplified(&include_dir)
+                dunce_utf8::simplified(include_dir)
             )?;
         }
     }
@@ -358,7 +358,7 @@ fn build_shader_ninja_file_for_package(
             module_ctx.crate_ctx.crate_output_name,
             module_ctx.module_name
         );
-        build_shader_ninja_file_for_shader_module(&module_ctx, &module)?;
+        build_shader_ninja_file_for_shader_module(module_ctx, &module)?;
     }
 
     Ok(())
@@ -379,68 +379,66 @@ fn build_shader_ninja_file_for_shader_module(
 
     // We use a single-threaded walker as we intend to parallelise at the package level instead
     let walker = ignore::WalkBuilder::new(module_ctx.module_source_dir.as_ref()).build();
-    for entry in walker {
-        if let Ok(entry) = entry {
-            // We will only process utf-8 paths because we are sane little crewmates. If it's
-            // not utf-8 we're in for sadness
-            let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
-                Ok(v) => v,
-                Err(_) => continue,
+    for entry in walker.flatten() {
+        // We will only process utf-8 paths because we are sane little crewmates. If it's
+        // not utf-8 we're in for sadness
+        let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+
+        let entry_path_tail = entry_path.strip_prefix(module_ctx.module_source_dir.as_ref())?;
+
+        let f_type = entry.file_type().unwrap();
+        if f_type.is_file() {
+            let shader_file = match ShaderFile::new(&entry_path) {
+                Some(v) => v,
+                None => continue,
             };
 
-            let entry_path_tail = entry_path.strip_prefix(module_ctx.module_source_dir.as_ref())?;
-
-            let f_type = entry.file_type().unwrap();
-            if f_type.is_file() {
-                let shader_file = match ShaderFile::new(&entry_path) {
-                    Some(v) => v,
-                    None => continue,
-                };
-
-                // Only build dxil on windows, where the full dxil pipeline will be available.
-                if module_ctx.platform() == BuildPlatform::Windows {
-                    output_build_statement_for_shader(
-                        &mut ninja_file,
-                        module_ctx,
-                        &compilation_params,
-                        &shader_file,
-                        ShaderCompileOptions {
-                            target_ir: ShaderTargetLanguage::Dxil,
-                            pipeline: ShaderPipeline::Direct,
-                        },
-                    )?;
-                }
-
-                // On macos we need to use the glslc pipeline because we don't have the slang-glsl
-                // wrapper available for slang to do the compilation end-to-end.
-                if target_platform().is_macos() {
-                    output_build_statement_for_shader(
-                        &mut ninja_file,
-                        module_ctx,
-                        &compilation_params,
-                        &shader_file,
-                        ShaderCompileOptions {
-                            target_ir: ShaderTargetLanguage::Spirv,
-                            pipeline: ShaderPipeline::Glslc,
-                        },
-                    )?;
-                } else {
-                    output_build_statement_for_shader(
-                        &mut ninja_file,
-                        module_ctx,
-                        &compilation_params,
-                        &shader_file,
-                        ShaderCompileOptions {
-                            target_ir: ShaderTargetLanguage::Spirv,
-                            pipeline: ShaderPipeline::Direct,
-                        },
-                    )?;
-                }
+            // Only build dxil on windows, where the full dxil pipeline will be available.
+            if module_ctx.platform() == BuildPlatform::Windows {
+                output_build_statement_for_shader(
+                    &mut ninja_file,
+                    module_ctx,
+                    &compilation_params,
+                    &shader_file,
+                    ShaderCompileOptions {
+                        target_ir: ShaderTargetLanguage::Dxil,
+                        pipeline: ShaderPipeline::Direct,
+                    },
+                )?;
             }
-            if f_type.is_dir() {
-                let v = module_ctx.module_output_dir.join(entry_path_tail);
-                std::fs::create_dir_all(v)?;
+
+            // On macos we need to use the glslc pipeline because we don't have the slang-glsl
+            // wrapper available for slang to do the compilation end-to-end.
+            if target_platform().is_macos() {
+                output_build_statement_for_shader(
+                    &mut ninja_file,
+                    module_ctx,
+                    &compilation_params,
+                    &shader_file,
+                    ShaderCompileOptions {
+                        target_ir: ShaderTargetLanguage::Spirv,
+                        pipeline: ShaderPipeline::Glslc,
+                    },
+                )?;
+            } else {
+                output_build_statement_for_shader(
+                    &mut ninja_file,
+                    module_ctx,
+                    &compilation_params,
+                    &shader_file,
+                    ShaderCompileOptions {
+                        target_ir: ShaderTargetLanguage::Spirv,
+                        pipeline: ShaderPipeline::Direct,
+                    },
+                )?;
             }
+        }
+        if f_type.is_dir() {
+            let v = module_ctx.module_output_dir.join(entry_path_tail);
+            std::fs::create_dir_all(v)?;
         }
     }
 
@@ -546,7 +544,7 @@ fn generate_shader_name_bindings_for_package(
 fn generate_shader_name_bindings_for_module(
     module_ctx: &ShaderModuleContext,
 ) -> anyhow::Result<()> {
-    let module_name = module_ctx.module_name.replace("-", "_");
+    let module_name = module_ctx.module_name.replace('-', "_");
     let module_output_file = module_ctx
         .crate_ctx
         .crate_shader_dir
@@ -557,7 +555,7 @@ fn generate_shader_name_bindings_for_module(
         .write(true)
         .create(true)
         .truncate(true)
-        .open(&module_output_file)?;
+        .open(module_output_file)?;
 
     writeln!(
         &mut module_output_file,
@@ -579,7 +577,7 @@ fn generate_shader_name_bindings_for_module(
                 };
 
                 // Output the function declaration
-                let file_stem_no_dots = shader_file.name_with_type.replace(".", "_");
+                let file_stem_no_dots = shader_file.name_with_type.replace('.', "_");
                 writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
                 writeln!(
                     &mut module_output_file,
@@ -604,7 +602,7 @@ fn generate_shader_name_bindings_for_module(
                 // new directory.
 
                 // Open the new module in the file
-                let sanitized_dir_name = file_name.replace("-", "_");
+                let sanitized_dir_name = file_name.replace('-', "_");
                 writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
                 writeln!(
                     &mut module_output_file,
@@ -753,61 +751,59 @@ fn archive_shaders_for_package(
         );
 
         let walker = ignore::WalkBuilder::new(module.module_output_dir.as_ref()).build();
-        for entry in walker {
-            if let Ok(entry) = entry {
-                // We will only process utf-8 paths because we are sane little crewmates. If it's
-                // not utf-8 we're in for sadness
-                let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
-                    Ok(v) => v,
-                    Err(_) => continue,
-                };
+        for entry in walker.flatten() {
+            // We will only process utf-8 paths because we are sane little crewmates. If it's
+            // not utf-8 we're in for sadness
+            let entry_path = match Utf8PathBuf::from_path_buf(entry.path().to_path_buf()) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
 
-                let file_type = entry.file_type().unwrap();
-                if !file_type.is_file() {
-                    continue;
-                }
+            let file_type = entry.file_type().unwrap();
+            if !file_type.is_file() {
+                continue;
+            }
 
-                let shader_file = match ShaderFile::new_binary(&entry_path) {
-                    Some(v) => v,
-                    None => continue,
-                };
+            let shader_file = match ShaderFile::new_binary(&entry_path) {
+                Some(v) => v,
+                None => continue,
+            };
 
-                let shader_name = shader_name_for_bin_file_in_module(module, &shader_file)?;
+            let shader_name = shader_name_for_bin_file_in_module(module, &shader_file)?;
 
-                match shader_file.file_ext {
-                    crate::shader_system::ShaderFileFormat::HLSL => unreachable!(),
-                    crate::shader_system::ShaderFileFormat::Slang => unreachable!(),
-                    crate::shader_system::ShaderFileFormat::Dxil => {
-                        log::trace!("Collecting DXIL for shader '{shader_name}'");
-                        let file_data = std::fs::read(&entry_path)?;
-                        if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                            db_entry.dxil = file_data;
-                        } else {
-                            shader_db.shaders.insert(
-                                shader_name,
-                                ShaderEntry {
-                                    shader_type: shader_file.shader_type.into(),
-                                    spirv: Vec::new(),
-                                    dxil: file_data,
-                                },
-                            );
-                        }
+            match shader_file.file_ext {
+                crate::shader_system::ShaderFileFormat::Hlsl => unreachable!(),
+                crate::shader_system::ShaderFileFormat::Slang => unreachable!(),
+                crate::shader_system::ShaderFileFormat::Dxil => {
+                    log::trace!("Collecting DXIL for shader '{shader_name}'");
+                    let file_data = std::fs::read(&entry_path)?;
+                    if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
+                        db_entry.dxil = file_data;
+                    } else {
+                        shader_db.shaders.insert(
+                            shader_name,
+                            ShaderEntry {
+                                shader_type: shader_file.shader_type.into(),
+                                spirv: Vec::new(),
+                                dxil: file_data,
+                            },
+                        );
                     }
-                    crate::shader_system::ShaderFileFormat::Spirv => {
-                        log::trace!("Collecting SPIRV for shader '{shader_name}'");
-                        let file_data = std::fs::read(&entry_path)?;
-                        if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                            db_entry.spirv = file_data;
-                        } else {
-                            shader_db.shaders.insert(
-                                shader_name,
-                                ShaderEntry {
-                                    shader_type: shader_file.shader_type.into(),
-                                    spirv: file_data,
-                                    dxil: Vec::new(),
-                                },
-                            );
-                        }
+                }
+                crate::shader_system::ShaderFileFormat::Spirv => {
+                    log::trace!("Collecting SPIRV for shader '{shader_name}'");
+                    let file_data = std::fs::read(&entry_path)?;
+                    if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
+                        db_entry.spirv = file_data;
+                    } else {
+                        shader_db.shaders.insert(
+                            shader_name,
+                            ShaderEntry {
+                                shader_type: shader_file.shader_type.into(),
+                                spirv: file_data,
+                                dxil: Vec::new(),
+                            },
+                        );
                     }
                 }
             }

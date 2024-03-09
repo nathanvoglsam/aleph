@@ -46,7 +46,7 @@ pub fn get_egui_input(
 
     let time = Some(frame_timer.elapsed_time());
 
-    let predicted_dt = 1.0 / 60 as f32;
+    let predicted_dt = 1.0 / 60_f32;
 
     let modifiers = get_egui_modifiers(keyboard);
 

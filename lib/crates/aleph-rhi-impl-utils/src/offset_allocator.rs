@@ -280,10 +280,10 @@ impl OffsetAllocator {
 
         let node = &self.nodes[node_index as usize];
 
-        return Allocation {
+        Allocation {
             offset: node.data_offset,
             metadata: node_index,
-        };
+        }
     }
 
     pub fn free(&mut self, allocation: Allocation) {
@@ -299,9 +299,7 @@ impl OffsetAllocator {
         let mut offset = node.data_offset;
         let mut size = node.data_size;
 
-        if (node.neighbor_prev != Node::UNUSED)
-            && (self.nodes[node.neighbor_prev as usize].used == false)
-        {
+        if (node.neighbor_prev != Node::UNUSED) && !self.nodes[node.neighbor_prev as usize].used {
             // Previous (contiguous) free node: Change offset to previous node offset. Sum sizes
             let prev_node = self.nodes[node.neighbor_prev as usize].clone();
             offset = prev_node.data_offset;
@@ -316,9 +314,7 @@ impl OffsetAllocator {
 
         let node = &self.nodes[node_index as usize];
 
-        if (node.neighbor_next != Node::UNUSED)
-            && (self.nodes[node.neighbor_next as usize].used == false)
-        {
+        if (node.neighbor_next != Node::UNUSED) && !self.nodes[node.neighbor_next as usize].used {
             // Next (contiguous) free node: Offset remains the same. Sum sizes.
             let next_node = self.nodes[node.neighbor_next as usize].clone();
             size += next_node.data_size;
@@ -799,9 +795,9 @@ mod tests {
         // Allocate 256x 1MB. Should fit. Then free four random slots and reallocate four slots.
         // Plus free four contiguous slots an allocate 4x larger slot. All must be zero fragmentation!
         let mut allocations = [Allocation::default(); 256];
-        for i in 0..256 {
-            allocations[i] = allocator.allocate(1024 * 1024);
-            assert_eq!(allocations[i].offset as usize, i * 1024 * 1024);
+        for (i, allocation) in allocations.iter_mut().enumerate() {
+            *allocation = allocator.allocate(1024 * 1024);
+            assert_eq!(allocation.offset as usize, i * 1024 * 1024);
         }
 
         let report = allocator.storage_report();
@@ -831,9 +827,9 @@ mod tests {
         assert_ne!(allocations[95].offset, Allocation::NO_SPACE);
         assert_ne!(allocations[151].offset, Allocation::NO_SPACE);
 
-        for i in 0..256 {
-            if i < 152 || i > 154 {
-                allocator.free(allocations[i]);
+        for (i, &allocation) in allocations.iter().enumerate() {
+            if !(152..=154).contains(&i) {
+                allocator.free(allocation);
             }
         }
 

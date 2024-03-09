@@ -71,12 +71,18 @@ pub struct PinBoard {
     tables: Vec<Mutex<Table>>,
 }
 
+impl Default for PinBoard {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PinBoard {
     /// Constructs a new [PinBoard]. This is relatively expensive as it needs to create an array of
     /// 256 mutex wrapped hash tables. Don't call this too often, prefer to create a set upfront
     /// and reuse them with [PinBoard::clear].
     pub fn new() -> Self {
-        let tables = Vec::from_iter((0..256).into_iter().map(|_| Mutex::new(Table::new())));
+        let tables = Vec::from_iter((0..256).map(|_| Mutex::new(Table::new())));
 
         debug_assert_eq!(tables.len(), 256);
 
@@ -264,8 +270,6 @@ mod tests {
 
         let pin_board = PinBoard::new();
         let _pin_board = send_sync_checker(pin_board);
-
-        assert!(true)
     }
 
     #[test]

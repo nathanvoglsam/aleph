@@ -190,7 +190,7 @@ impl<'input> Iterator for StringLiteralParser<'input> {
                                 expected,
                             }));
                         }
-                        2 | 3 | 4 | 5 | 6 => {
+                        2..=6 => {
                             if c == '}' {
                                 return self.unicode_token(i, span_start);
                             }

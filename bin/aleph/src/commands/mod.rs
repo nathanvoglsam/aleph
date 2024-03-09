@@ -132,7 +132,7 @@ impl ISubcommand for SubcommandSet {
     fn exec(&mut self, project: &AlephProject, matches: ArgMatches) -> anyhow::Result<()> {
         if let Some((subcommand_name, matches)) = matches.subcommand() {
             if let Some(subcommand) = self.subcommands.get_mut(subcommand_name) {
-                let result = subcommand.exec(&project, matches.clone());
+                let result = subcommand.exec(project, matches.clone());
                 if result.is_ok() {
                     log::info!("Subcommand {subcommand_name} completed successfully!");
                 }

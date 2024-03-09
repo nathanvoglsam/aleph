@@ -92,8 +92,7 @@ impl ITexture for ValidationTexture {
     fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.rtvs.lock();
         let view = if let Some(v) = views.get(desc) {
-            let v = unsafe { std::mem::transmute_copy::<_, ImageView>(v) };
-            v
+            unsafe { std::mem::transmute_copy::<_, ImageView>(v) }
         } else {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
@@ -113,8 +112,7 @@ impl ITexture for ValidationTexture {
     fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.dsvs.lock();
         let view = if let Some(v) = views.get(desc) {
-            let v = unsafe { std::mem::transmute_copy::<_, ImageView>(v) };
-            v
+            unsafe { std::mem::transmute_copy::<_, ImageView>(v) }
         } else {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),

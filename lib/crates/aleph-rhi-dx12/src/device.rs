@@ -455,7 +455,7 @@ impl IDevice for Device {
                 set_root_param_indices.push(root_param_index);
 
                 for dynamic_cb in layout.dynamic_constant_buffers.iter() {
-                    let mut dynamic_cb = dynamic_cb.clone();
+                    let mut dynamic_cb = *dynamic_cb;
                     dynamic_cb.RegisterSpace = i as u32;
                     let dynamic_cb =
                         root_param_for_cbv_root_descriptor(dynamic_cb, layout.visibility);
@@ -1433,7 +1433,7 @@ impl Device {
             if let Some(samplers) = item.static_samplers {
                 for sampler in samplers {
                     let sampler = unwrap::sampler_d(sampler);
-                    let mut desc = sampler.static_desc.clone();
+                    let mut desc = sampler.static_desc;
                     desc.ShaderRegister = item.binding_num;
 
                     static_samplers.push(desc);
@@ -1474,7 +1474,7 @@ impl Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_set(&self, set_write: &DescriptorWriteDesc) {
-        let mut set = DescriptorSet::ptr_from_handle(set_write.set.clone());
+        let mut set = DescriptorSet::ptr_from_handle(set_write.set);
         let set_layout = {
             let set = set.as_ref();
             let layout = set._layout.as_ref();

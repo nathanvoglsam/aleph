@@ -121,7 +121,7 @@ impl DescriptorSet {
     ///       *will* be interpreted as the incorrect type.
     ///
     pub unsafe fn ref_from_handle(handle: &DescriptorSetHandle) -> &DescriptorSet {
-        let ptr = Self::ptr_from_handle(handle.clone());
+        let ptr = Self::ptr_from_handle(*handle);
 
         // Safety: all left to the caller lmao
         ptr.as_ref()

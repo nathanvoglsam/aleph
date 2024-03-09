@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use core::{mem, ptr};
+use core::ptr;
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -189,9 +189,9 @@ impl<'a> AsRef<AllocatorCreateInfo> for AllocatorBuilder<'a> {
     }
 }
 
-impl<'a> Into<AllocatorCreateInfo> for AllocatorBuilder<'a> {
-    fn into(self) -> AllocatorCreateInfo {
-        self.create_info
+impl<'a> From<AllocatorBuilder<'a>> for AllocatorCreateInfo {
+    fn from(val: AllocatorBuilder<'a>) -> Self {
+        val.create_info
     }
 }
 
@@ -373,8 +373,8 @@ impl Allocator {
         allocations: &mut [Option<vma::Allocation>],
         allocation_infos: &mut [AllocationInfo],
     ) -> VkResult<()> {
-        if allocations.len() > 0 {
-            let get_infos = if allocation_infos.len() > 0 {
+        if !allocations.is_empty() {
+            let get_infos = if !allocation_infos.is_empty() {
                 assert_eq!(allocations.len(), allocation_infos.len());
                 true
             } else {
@@ -593,12 +593,7 @@ impl Allocator {
         allocation: vma::Allocation,
         image: vk::Image,
     ) -> VkResult<()> {
-        raw::vmaBindImageMemory(
-            self.inner.allocator,
-            allocation.allocation,
-            mem::transmute(image),
-        )
-        .result()
+        raw::vmaBindImageMemory(self.inner.allocator, allocation.allocation, image).result()
     }
 
     /// vmaCreateBuffer
@@ -633,11 +628,7 @@ impl Allocator {
     /// vmaDestroyBuffer
     #[inline]
     pub unsafe fn destroy_buffer(&self, buffer: vk::Buffer, alloc: vma::Allocation) {
-        raw::vmaDestroyBuffer(
-            self.inner.allocator,
-            mem::transmute(buffer),
-            Some(alloc.allocation),
-        )
+        raw::vmaDestroyBuffer(self.inner.allocator, buffer, Some(alloc.allocation))
     }
 
     /// vmaCreateImage
@@ -672,11 +663,7 @@ impl Allocator {
     /// vmaDestroyImage
     #[inline]
     pub unsafe fn destroy_image(&self, buffer: vk::Image, alloc: vma::Allocation) {
-        raw::vmaDestroyImage(
-            self.inner.allocator,
-            mem::transmute(buffer),
-            Some(alloc.allocation),
-        )
+        raw::vmaDestroyImage(self.inner.allocator, buffer, Some(alloc.allocation))
     }
 
     /// vmaSetCurrentFrameIndex

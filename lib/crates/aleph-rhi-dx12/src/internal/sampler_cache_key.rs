@@ -49,9 +49,9 @@ impl<'a> SamplerCacheKey<'a> {
     }
 }
 
-impl<'a> Into<SamplerDesc<'a>> for SamplerCacheKey<'a> {
-    fn into(self) -> SamplerDesc<'a> {
-        self.0
+impl<'a> From<SamplerCacheKey<'a>> for SamplerDesc<'a> {
+    fn from(val: SamplerCacheKey<'a>) -> Self {
+        val.0
     }
 }
 

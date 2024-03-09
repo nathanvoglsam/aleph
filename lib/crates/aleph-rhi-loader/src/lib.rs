@@ -42,6 +42,12 @@ pub struct RhiLoader {
     vulkan: Option<&'static dyn IRhiBackend>,
 }
 
+impl Default for RhiLoader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RhiLoader {
     /// Constructs a new RhiLoader object.
     ///
@@ -150,11 +156,11 @@ impl RhiLoader {
 impl RhiLoader {
     #[cfg(windows)]
     fn make_loader() -> Self {
-        return Self {
+        Self {
             backends: vec![BackendAPI::D3D12, BackendAPI::Vulkan],
             d3d12: None,
             vulkan: None,
-        };
+        }
     }
 
     #[cfg(target_os = "macos")]

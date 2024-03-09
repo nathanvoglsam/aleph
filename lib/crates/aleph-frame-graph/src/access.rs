@@ -28,7 +28,6 @@
 //
 
 use aleph_rhi_api::*;
-use bitflags::Flags;
 
 pub trait ResourceUsageFlagsExt {
     fn image_layout(&self, read_only: bool, format: Format) -> ImageLayout;

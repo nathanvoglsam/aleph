@@ -319,7 +319,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         let mut dynamic_offsets = dynamic_offsets;
         for (set_index, set) in sets.iter().enumerate() {
             // Safety: No checks, all up to the caller to ensure this is safe
-            let v: NonNull<()> = set.clone().into();
+            let v: NonNull<()> = (*set).into();
             let v: NonNull<DescriptorSet> = v.cast();
             let v = v.as_ref();
 
@@ -352,9 +352,9 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                 PipelineBindPoint::Compute => &mut self.bound_compute_sets,
                 PipelineBindPoint::Graphics => &mut self.bound_graphics_sets,
             };
-            let already_bound_set = bound_sets[set_global_index].clone();
-            if already_bound_set != Some(set.clone()) {
-                bound_sets[set_global_index] = Some(set.clone());
+            let already_bound_set = bound_sets[set_global_index];
+            if already_bound_set != Some(*set) {
+                bound_sets[set_global_index] = Some(*set);
 
                 // First bind the resource descriptors, which will always take a single descriptor table
                 // slot

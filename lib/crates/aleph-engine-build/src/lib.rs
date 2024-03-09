@@ -60,7 +60,7 @@ fn compile_and_link_windows_resource_file() {
         let v = Path::new(env!("CARGO_MANIFEST_DIR")).join("app_icon.ico");
         v.to_str().unwrap().to_string()
     });
-    let icon_path = icon_path.replace("\\", "/");
+    let icon_path = icon_path.replace('\\', "/");
 
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let out_dir = PathBuf::from(out_dir);
@@ -69,7 +69,7 @@ fn compile_and_link_windows_resource_file() {
     std::fs::write(&rc_file, format!("IDI_ICON1 ICON \"{}\"", icon_path)).unwrap();
 
     let name = std::env::var("CARGO_PKG_NAME").unwrap();
-    embed_resource::compile_for(&rc_file, &[&name], embed_resource::NONE);
+    embed_resource::compile_for(&rc_file, [&name], embed_resource::NONE);
 }
 
 #[cfg(not(windows))]

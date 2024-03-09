@@ -27,8 +27,12 @@
 // SOFTWARE.
 //
 
+/// # Safety
+///
+/// It's the caller's responsibility to ensure that the string is null terminated.
 #[inline]
 #[allow(dead_code)]
+#[doc(hidden)]
 pub unsafe fn str_to_cstr(string: &'static str) -> &'static std::ffi::CStr {
     std::mem::transmute(string)
 }
@@ -43,8 +47,12 @@ macro_rules! cstr {
     }};
 }
 
+/// # Safety
+///
+/// It's the caller's responsibility to ensure that the string is null terminated.
 #[inline]
 #[allow(dead_code)]
+#[doc(hidden)]
 pub unsafe fn str_to_cstr_raw(string: &'static str) -> *const std::os::raw::c_char {
     string.as_ptr() as *const _
 }

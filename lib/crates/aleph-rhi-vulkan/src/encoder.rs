@@ -579,10 +579,10 @@ impl<'a> Encoder<'a> {
             .layer_count(info.layer_count)
             .color_attachments(&color_attachments);
         if let Some(v) = &depth_attachment {
-            info = info.depth_attachment(&v);
+            info = info.depth_attachment(v);
         }
         if let Some(v) = &stencil_attachment {
-            info = info.stencil_attachment(&v);
+            info = info.stencil_attachment(v);
         }
 
         self._device

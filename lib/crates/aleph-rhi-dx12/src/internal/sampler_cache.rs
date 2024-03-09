@@ -121,7 +121,7 @@ impl SamplerCache {
         assert!(desc.min_lod.is_finite());
         assert!(desc.max_lod.is_finite());
 
-        let key = unsafe { SamplerCacheKey::from_desc(&desc) };
+        let key = unsafe { SamplerCacheKey::from_desc(desc) };
         // Try and grab from the cache first. Speculate a hit is likely so we only grab the reader
         // lock. Cache hits are quite likely once an app has warmed the cache
         let read_only = self.cache.read();

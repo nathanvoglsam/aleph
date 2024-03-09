@@ -83,7 +83,7 @@ pub trait IPlugin: IAny {
     /// itself in regards to other plugins
     #[allow(unused_variables)]
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        Box::new(Vec::new())
+        Box::<Vec<(TypeId, AnyArc<dyn IAny>)>>::default()
     }
 
     /// Called by the engine runtime exactly once *per iteration* of the main loop
@@ -120,6 +120,12 @@ pub trait IInitResponse {
     /// non `None` value after the first call, but such behavior is not required and *should not*
     /// be relied on.
     fn interfaces(&mut self) -> Box<dyn IInterfaceIterator>;
+}
+
+/// Utility function for a default, empty response object
+pub fn default_response() -> Box<dyn IInitResponse> {
+    #[allow(clippy::box_default)]
+    Box::new(Vec::new())
 }
 
 ///

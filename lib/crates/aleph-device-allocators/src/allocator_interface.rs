@@ -46,7 +46,7 @@ pub trait IUploadAllocator {
     /// [Copy].
     #[inline]
     fn allocate_object_copy<T: Sized + Copy>(&self, src: &T) -> DeviceAllocationResult<&mut T> {
-        self.allocate_object(src.clone())
+        self.allocate_object(*src)
     }
 
     /// Wrapper over [IUploadAllocator::allocate_object] that clones the given resource using
@@ -102,7 +102,7 @@ pub trait IUploadAllocator {
         &self,
         src: &[T],
     ) -> DeviceAllocationResult<&mut [T]> {
-        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+        self.allocate_objects_iter(src.iter().copied())
     }
 
     /// Wrapper over [IUploadAllocator::allocate_objects_iter] that copies the objects from the
@@ -112,7 +112,7 @@ pub trait IUploadAllocator {
         &self,
         src: &[T],
     ) -> DeviceAllocationResult<&mut [T]> {
-        self.allocate_objects_iter(src.into_iter().map(|v| v.clone()))
+        self.allocate_objects_iter(src.iter().cloned())
     }
 
     /// A utility function that will allocate a sufficiently large and aligned block to store a

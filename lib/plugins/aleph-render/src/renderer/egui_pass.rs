@@ -171,7 +171,7 @@ pub fn pass(
                 pipeline_layout.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
-                &[descriptor_set.clone()],
+                &[*descriptor_set],
                 &[],
             );
 
@@ -221,7 +221,7 @@ pub fn pass(
 
                     record_job_commands(
                         encoder,
-                        &job,
+                        job,
                         extent.clone(),
                         pixels_per_point,
                         vtx_base,

@@ -647,6 +647,13 @@ pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
 // _________________________________________________________________________________________________
 // Command Encoders
 
+/// # Safety
+///
+/// All the functions that are part of this API have preconditions that I need to document. They
+/// mostly mirror Vulkan's requirements so check those for now.
+///
+/// TODO: DOCS
+#[allow(clippy::missing_safety_doc)]
 pub trait IGeneralEncoder: IComputeEncoder {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline);
 
@@ -690,6 +697,13 @@ pub trait IGeneralEncoder: IComputeEncoder {
     );
 }
 
+/// # Safety
+///
+/// All the functions that are part of this API have preconditions that I need to document. They
+/// mostly mirror Vulkan's requirements so check those for now.
+///
+/// TODO: DOCS
+#[allow(clippy::missing_safety_doc)]
 pub trait IComputeEncoder: ITransferEncoder {
     unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline);
 
@@ -705,6 +719,13 @@ pub trait IComputeEncoder: ITransferEncoder {
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
+/// # Safety
+///
+/// All the functions that are part of this API have preconditions that I need to document. They
+/// mostly mirror Vulkan's requirements so check those for now.
+///
+/// TODO: DOCS
+#[allow(clippy::missing_safety_doc)]
 pub trait ITransferEncoder: IGetPlatformInterface + Send {
     unsafe fn resource_barrier(
         &mut self,
@@ -808,7 +829,7 @@ pub struct DescriptorSetHandle(NonNull<()>);
 impl DescriptorSetHandle {
     /// Unsafe utility function for constructing a new [DescriptorSetHandle] from a raw pointer.
     ///
-    /// # Warning
+    /// # Safety
     ///
     /// This technically doesn't cause immediate UB, the implementation is safe, but doing this
     /// outside of an RHI implementation is almost certainly incorrect. This function is marked as
@@ -821,6 +842,9 @@ impl DescriptorSetHandle {
         DescriptorSetHandle(v)
     }
 
+    /// # Safety
+    ///
+    /// See [DescriptorSetHandle::from_raw]
     pub unsafe fn from_raw_int(v: u64) -> Option<Self> {
         NonNull::new(v as *mut ()).map(DescriptorSetHandle)
     }

@@ -153,15 +153,14 @@ impl DescriptorArenaLinear {
             self.get_optional_handles_for_index(layout, set_index);
 
         let handle = {
-            let handle = Self::heap_allocate(
+            Self::heap_allocate(
                 &&self.set_pool,
                 layout,
                 layout.dynamic_constant_buffers.len(),
                 layout.sampler_tables.len(),
                 resource_handle_cpu,
                 resource_handle_gpu,
-            );
-            handle
+            )
         };
 
         handle.ok_or(DescriptorPoolAllocateError::OutOfMemory)
@@ -477,13 +476,13 @@ impl DescriptorArenaHeap {
         let set = DescriptorSet::ptr_from_handle(handle).as_mut();
 
         let dynamic_cbs = set.dynamic_constant_buffers.as_ref();
-        if dynamic_cbs.len() != 0 {
+        if !dynamic_cbs.is_empty() {
             let layout = Layout::for_value(dynamic_cbs);
             global_alloc.deallocate(set.dynamic_constant_buffers.cast(), layout);
         }
 
         let samplers = set.samplers.as_ref();
-        if samplers.len() != 0 {
+        if !samplers.is_empty() {
             let layout = Layout::for_value(samplers);
             global_alloc.deallocate(set.samplers.cast(), layout);
         }

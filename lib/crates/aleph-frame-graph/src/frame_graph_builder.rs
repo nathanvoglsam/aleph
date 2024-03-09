@@ -696,7 +696,7 @@ impl FrameGraphBuilder {
             after_layout: desc.after_layout,
         };
         let name = desc.desc.name.map(|v| self.arena.alloc_str(v));
-        let name = name.map(|v| NonNull::from(v));
+        let name = name.map(NonNull::from);
         let r_type = ResourceTypeTexture {
             import: Some(imported),
             desc: FrameGraphTextureDesc {
@@ -746,7 +746,7 @@ impl FrameGraphBuilder {
             after_layout: Default::default(),
         };
         let name = desc.desc.name.map(|v| self.arena.alloc_str(v));
-        let name = name.map(|v| NonNull::from(v));
+        let name = name.map(NonNull::from);
         let r_type = ResourceTypeBuffer {
             import: Some(imported),
             desc: FrameGraphBufferDesc {
@@ -830,9 +830,8 @@ impl FrameGraphBuilder {
         self.validate_and_update_for_handle_write(r);
         self.add_flags_to_root_for(r, access);
         let sync = get_given_or_default_sync_flags_for(access, sync, false, format);
-        let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
 
-        renamed_r
+        self.increment_handle_for_write(r, render_pass, sync, access)
     }
 
     pub(crate) fn write_buffer_internal<R: Into<ResourceMut>>(
@@ -853,9 +852,8 @@ impl FrameGraphBuilder {
         self.validate_and_update_for_handle_write(r);
         self.add_flags_to_root_for(r, access);
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
-        let renamed_r = self.increment_handle_for_write(r, render_pass, sync, access);
 
-        renamed_r
+        self.increment_handle_for_write(r, render_pass, sync, access)
     }
 
     pub(crate) fn create_texture_internal(
@@ -878,7 +876,7 @@ impl FrameGraphBuilder {
         let format = desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
         let name = desc.name.map(|v| self.arena.alloc_str(v));
-        let name = name.map(|v| NonNull::from(v));
+        let name = name.map(NonNull::from);
         let create_desc = FrameGraphTextureDesc {
             width: desc.width,
             height: desc.height,
@@ -892,7 +890,8 @@ impl FrameGraphBuilder {
             sample_quality: desc.sample_quality,
             name,
         };
-        let r = self.create_new_handle(
+
+        self.create_new_handle(
             render_pass,
             sync,
             access,
@@ -900,9 +899,7 @@ impl FrameGraphBuilder {
                 import: None,
                 desc: create_desc,
             },
-        );
-
-        r
+        )
     }
 
     pub(crate) fn create_buffer_internal(
@@ -924,13 +921,14 @@ impl FrameGraphBuilder {
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
         let name = desc.name.map(|v| self.arena.alloc_str(v));
-        let name = name.map(|v| NonNull::from(v));
+        let name = name.map(NonNull::from);
         let create_desc = FrameGraphBufferDesc {
             size: desc.size,
             cpu_access: desc.cpu_access,
             name,
         };
-        let r = self.create_new_handle(
+
+        self.create_new_handle(
             render_pass,
             sync,
             access,
@@ -938,9 +936,7 @@ impl FrameGraphBuilder {
                 import: None,
                 desc: create_desc,
             },
-        );
-
-        r
+        )
     }
 
     /// Validate the write status for the resource handle and update it if it's valid to write
@@ -1217,8 +1213,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             ir_nodes.push(ir_node.into());
         }
 
-        let pass_prevs = arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&arena));
-        let pass_nexts = arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(&arena));
+        let pass_prevs = arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(arena));
+        let pass_nexts = arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(arena));
 
         Self {
             arena,
@@ -2449,20 +2445,18 @@ impl<'arena> PassOrderBuilder<'arena> {
             let root_node = &ir.nodes[node_index];
             match root_node {
                 IRNode::RenderPass(_) => {}
-                IRNode::Barrier(node_variant) => match node_variant.barrier_type {
-                    IRBarrierType::Import => {
+                IRNode::Barrier(node_variant) => {
+                    if let IRBarrierType::Import = node_variant.barrier_type {
                         import_barriers.push(node_index);
                         self.mark_node_as_scheduled(node_variant, node_index);
                     }
-                    _ => {}
-                },
-                IRNode::LayoutChange(node_variant) => match node_variant.barrier_type {
-                    IRBarrierType::Import => {
+                }
+                IRNode::LayoutChange(node_variant) => {
+                    if let IRBarrierType::Import = node_variant.barrier_type {
                         import_barriers.push(node_index);
                         self.mark_node_as_scheduled(node_variant, node_index);
                     }
-                    _ => {}
-                },
+                }
             }
         }
         for node_index in leafs.iter().copied() {

@@ -246,7 +246,7 @@ impl ISwapChain for SwapChain {
                 height,
                 DXGI_FORMAT_UNKNOWN,
                 0,
-                &queues,
+                queues,
             )
             .unwrap();
 

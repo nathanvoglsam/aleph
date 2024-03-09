@@ -43,6 +43,10 @@ pub mod manually_drop;
 pub mod offset_allocator;
 pub mod unwrap;
 
+/// # Safety
+///
+/// It is the caller's responsibility to ensure that the ptr 'out' points to a region of memory
+/// that is safe to write a value of type 'T' into.
 pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
     src: &T,
     out: *mut (),
@@ -58,7 +62,11 @@ pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
     }
 }
 
+/// # Safety
+///
+/// It is the caller's responsibility to ensure that the given pointer refers to a valid
+/// null-terminated C string.
 #[inline(always)]
-pub unsafe fn str_from_ptr<'a>(v: *const c_char) -> &'a str {
+pub unsafe fn str_from_ptr(v: *const c_char) -> *const str {
     CStr::from_ptr(v).to_str().unwrap()
 }

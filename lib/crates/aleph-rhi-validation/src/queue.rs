@@ -211,11 +211,7 @@ impl IQueue for ValidationQueue {
             );
         }
 
-        get_as_unwrapped::queue_present_desc(desc, |inner_desc| {
-            let result = self.inner.present(inner_desc);
-
-            result
-        })
+        get_as_unwrapped::queue_present_desc(desc, |inner_desc| self.inner.present(inner_desc))
     }
 }
 

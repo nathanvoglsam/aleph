@@ -149,7 +149,7 @@ impl ISwapChain for SwapChain {
             vk::Fence::null(),
         );
 
-        return match result {
+        match result {
             Ok((i, false)) => Ok(i),
             Ok((i, true)) => Err(ImageAcquireError::SubOptimal(i)),
             Err(vk::Result::NOT_READY) => unimplemented!(),
@@ -161,7 +161,7 @@ impl ISwapChain for SwapChain {
                 log::error!("Platform Error: {:#?}", e);
                 Err(ImageAcquireError::Platform)
             }
-        };
+        }
     }
 }
 

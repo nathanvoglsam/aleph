@@ -109,7 +109,7 @@ macro_rules! feat_mask {
 
 macro_rules! merge_feat_mask {
     ($base:ident, $compare:ident, $v:ident) => {
-        $base.$v = $base.$v | $compare.$v;
+        $base.$v |= $compare.$v;
     };
 }
 
@@ -515,21 +515,23 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProperties {
             let wanted_minor_version = vk::api_version_minor(v.api_version);
             let wanted_patch_version = vk::api_version_patch(v.api_version);
 
-            if major_version < wanted_major_version {
-                self.api_version = v.api_version;
-            } else if major_version > wanted_major_version {
-                break;
+            match major_version.cmp(&wanted_major_version) {
+                std::cmp::Ordering::Less => self.api_version = v.api_version,
+                std::cmp::Ordering::Greater => break,
+                _ => todo!(),
             }
 
-            if minor_version < wanted_minor_version {
-                self.api_version = vk::make_api_version(
-                    0,
-                    major_version,
-                    wanted_minor_version,
-                    wanted_patch_version,
-                );
-            } else if minor_version > wanted_minor_version {
-                break;
+            match minor_version.cmp(&wanted_minor_version) {
+                std::cmp::Ordering::Less => {
+                    self.api_version = vk::make_api_version(
+                        0,
+                        major_version,
+                        wanted_minor_version,
+                        wanted_patch_version,
+                    );
+                }
+                std::cmp::Ordering::Greater => break,
+                _ => todo!(),
             }
 
             if patch_version < wanted_patch_version {
@@ -1566,19 +1568,17 @@ impl CheckMeetsProfile for vk::PointClippingBehavior {
         // USER_CLIP_PLANES_ONLY is the default
 
         // ALL_CLIP_PLANES is the most capable and must match
-        if *self == vk::PointClippingBehavior::ALL_CLIP_PLANES {
-            if *v != vk::PointClippingBehavior::ALL_CLIP_PLANES {
-                return None;
-            }
+        if *self == vk::PointClippingBehavior::ALL_CLIP_PLANES
+            && *v != vk::PointClippingBehavior::ALL_CLIP_PLANES
+        {
+            return None;
         }
         Some(())
     }
 
     fn merge(&mut self, v: &Self) {
-        match *self {
-            // Only two options, USER_CLIP_PLANES_ONLY is lower priority than ALL_CLIP_PLANES
-            vk::PointClippingBehavior::USER_CLIP_PLANES_ONLY => *self = *v,
-            _ => {}
+        if let vk::PointClippingBehavior::USER_CLIP_PLANES_ONLY = *self {
+            *self = *v
         }
     }
 }

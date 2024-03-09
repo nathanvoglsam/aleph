@@ -216,14 +216,14 @@ impl IDescriptorPool for ValidationDescriptorPool {
             // Does further validation based on reading the set object itself
             DescriptorSet::validate(set, Some(self.pool_id));
 
-            let inner: NonNull<()> = set.clone().into();
+            let inner: NonNull<()> = set.into();
             let inner: NonNull<DescriptorSet> = inner.cast();
             let inner = inner.as_ref();
 
             // Validation is done, free the set.
-            self.inner.free(&[inner.inner.clone()]);
+            self.inner.free(&[inner.inner]);
 
-            self.free_list.push(set.clone());
+            self.free_list.push(set);
         }
     }
 

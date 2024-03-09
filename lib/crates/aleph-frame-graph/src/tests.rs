@@ -38,7 +38,7 @@ use crate::{
 };
 
 fn make_null_device() -> AnyArc<dyn IDevice> {
-    let context = NullContext::new();
+    let context = NullContext::new_arced();
     let adapter = context.request_adapter(&Default::default()).unwrap();
     adapter.request_device().unwrap()
 }

@@ -211,7 +211,7 @@ impl<'w, Q: ComponentQuery + 'static> SystemParamFetch<'w> for QueryState<Q> {
     #[inline]
     unsafe fn get_param(_state: &'w mut Self, world: &'w World) -> Self::Item {
         // TODO: This is UB but no easy fix
-        #[allow(clippy::cast_ref_to_mut)]
+        #[allow(invalid_reference_casting)]
         #[allow(invalid_reference_casting)]
         let world = &mut *(world as *const World as *mut World);
         Query::new(world)

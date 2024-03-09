@@ -263,7 +263,7 @@ pub fn highlight_code(
         // Create a the spacer string for our marker
         let space = {
             let num_spaces = err_width + width + 2;
-            (0..num_spaces).into_iter().fold(String::new(), |mut v, _| {
+            (0..num_spaces).fold(String::new(), |mut v, _| {
                 v.push('~');
                 v
             })

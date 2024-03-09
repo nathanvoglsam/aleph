@@ -229,7 +229,7 @@ impl DeviceInfo {
         // Safety: we assume all the strings vulkan gives us are valid
         unsafe {
             // We load the portability subset properties if the extension is present
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::KhrPortabilitySubsetFn::name()) {
                 properties = properties.push_next(portability_properties)
             }
         };
@@ -256,37 +256,37 @@ impl DeviceInfo {
             .push_next(host_query_reset_features);
 
         unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrVulkanMemoryModelFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::KhrVulkanMemoryModelFn::name()) {
                 features = features.push_next(vulkan_memory_model_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::Khr8bitStorageFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::Khr8bitStorageFn::name()) {
                 features = features.push_next(t_8bit_storage_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderFloat16Int8Fn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::KhrShaderFloat16Int8Fn::name()) {
                 features = features.push_next(shader_float16int8features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrShaderAtomicInt64Fn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::KhrShaderAtomicInt64Fn::name()) {
                 features = features.push_next(shader_atomic_int_64_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrDynamicRenderingFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::KhrDynamicRenderingFn::name()) {
                 features = features.push_next(dynamic_rendering_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrPortabilitySubsetFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::KhrPortabilitySubsetFn::name()) {
                 features = features.push_next(portability_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(&extensions, vk::KhrSynchronization2Fn::name()) {
+            if Self::list_contains_extension_cstr(extensions, vk::KhrSynchronization2Fn::name()) {
                 features = features.push_next(synchronization_2_features)
             }
         };

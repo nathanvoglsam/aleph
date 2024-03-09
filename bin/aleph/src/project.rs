@@ -122,7 +122,7 @@ impl<'a> AlephProject<'a> {
     pub fn new(arena: &'a Bump) -> anyhow::Result<Self> {
         let current_dir = std::env::current_dir()?;
         let current_dir = Utf8PathBuf::try_from(current_dir)?;
-        let project_file = find_project_file(&current_dir)
+        let project_file = find_project_file(current_dir)
             .context("Finding aleph-project.toml in current working directory")?
             .canonicalize()
             .context("Canonicalizing aleph-project.toml path")?;
@@ -134,9 +134,9 @@ impl<'a> AlephProject<'a> {
 
         let target = Target::new(Architecture::Unknown, BuildPlatform::Android);
         let android_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
-        let target = Target::new(Architecture::X8664, BuildPlatform::UWP);
+        let target = Target::new(Architecture::X8664, BuildPlatform::Uwp);
         let uwp_x86_64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
-        let target = Target::new(Architecture::AARCH64, BuildPlatform::UWP);
+        let target = Target::new(Architecture::AARCH64, BuildPlatform::Uwp);
         let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
         let shader_build_path = dot_aleph_path.join("shaders");
@@ -247,7 +247,7 @@ impl<'a> AlephProject<'a> {
     /// All other targets will return Err()
     pub fn target_project_root(&self, target: &Target) -> anyhow::Result<&Utf8Path> {
         match target.platform {
-            BuildPlatform::UWP => {
+            BuildPlatform::Uwp => {
                 assert_ne!(target.arch, Architecture::Unknown);
                 match target.arch {
                     Architecture::X8664 => Ok(&self.uwp_x86_64_proj_path),
@@ -308,7 +308,7 @@ impl<'a> AlephProject<'a> {
         assert_ne!(target.arch, Architecture::Unknown);
 
         match target.platform {
-            BuildPlatform::UWP => {
+            BuildPlatform::Uwp => {
                 let mut target_dir = self.cargo_target_dir().to_path_buf();
                 target_dir.push(format!("{}-uwp-windows-msvc", target.arch.name()));
                 target_dir.push(profile.name());
@@ -570,7 +570,7 @@ impl<'a> AlephProject<'a> {
         target: &Target,
     ) -> anyhow::Result<Utf8PathBuf> {
         match target.platform {
-            BuildPlatform::UWP => {
+            BuildPlatform::Uwp => {
                 assert_ne!(target.arch, Architecture::Unknown);
                 let mut root = root.to_path_buf();
                 root.push("proj");

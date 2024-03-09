@@ -101,7 +101,7 @@ impl Context {
                 continue;
             }
 
-            if let None = Self::check_device_supports_minimum_features(&device_info) {
+            if Self::check_device_supports_minimum_features(&device_info).is_none() {
                 log::debug!("Device rejected as doesn't support minimum feature requirements");
                 continue;
             }
@@ -114,8 +114,9 @@ impl Context {
             };
 
             let vendor = pci_id_to_vendor(device_info.properties_10.vendor_id);
-            let name =
-                unsafe { str_from_ptr(device_info.properties_10.device_name.as_ptr()).to_owned() };
+            let name = unsafe {
+                (*str_from_ptr(device_info.properties_10.device_name.as_ptr())).to_owned()
+            };
             scores.push((name, vendor, physical_device, score));
         }
 
@@ -135,7 +136,7 @@ impl Context {
     pub fn log_device_info(device_info: &DeviceInfo) {
         unsafe {
             let vendor = pci_id_to_vendor(device_info.properties_10.vendor_id);
-            let name = str_from_ptr(device_info.properties_10.device_name.as_ptr());
+            let name = &*str_from_ptr(device_info.properties_10.device_name.as_ptr());
 
             log::info!("=====================");
             log::info!("Considering Device: ");
@@ -145,8 +146,10 @@ impl Context {
             // Log additional driver information if available
             let v = device_info.properties_10.api_version;
             if vk::api_version_major(v) >= 1 && vk::api_version_minor(v) >= 2 {
-                let driver_name = str_from_ptr(device_info.driver_properties.driver_name.as_ptr());
-                let driver_info = str_from_ptr(device_info.driver_properties.driver_info.as_ptr());
+                let driver_name =
+                    &*str_from_ptr(device_info.driver_properties.driver_name.as_ptr());
+                let driver_info =
+                    &*str_from_ptr(device_info.driver_properties.driver_info.as_ptr());
                 let driver_id = device_info.driver_properties.driver_id;
 
                 log::info!("Driver         : {driver_name}");
@@ -217,7 +220,7 @@ impl Context {
                 // as they're likely to be less reliable implementations.
                 log::warn!("Device is a 'Virtual GPU'");
             }
-            v @ _ => {
+            v => {
                 log::warn!("Unknown VkPhysicalDeviceType '{}'", v.as_raw());
             }
         }
@@ -464,7 +467,7 @@ impl IContext for Context {
                         .create_xcb_surface(&create_info, None)
                 }
 
-                #[cfg(any(target_os = "android"))]
+                #[cfg(target_os = "android")]
                 (RawDisplayHandle::Android(_), RawWindowHandle::AndroidNdk(window)) => {
                     let create_info = vk::AndroidSurfaceCreateInfoKHR {
                         window: window.a_native_window as _,
@@ -478,7 +481,7 @@ impl IContext for Context {
                         .create_android_surface(&create_info, None)
                 }
 
-                #[cfg(any(target_os = "macos"))]
+                #[cfg(target_os = "macos")]
                 (RawDisplayHandle::AppKit(_), RawWindowHandle::AppKit(window)) => {
                     let create_info = vk::MacOSSurfaceCreateInfoMVK {
                         p_view: &*window.ns_view,
@@ -492,7 +495,7 @@ impl IContext for Context {
                         .create_mac_os_surface(&create_info, None)
                 }
 
-                #[cfg(any(target_os = "ios"))]
+                #[cfg(target_os = "ios")]
                 (RawDisplayHandle::UiKit(_), RawWindowHandle::UiKit(window)) => {
                     let create_info = vk::IOSSurfaceCreateInfoMVK {
                         p_view: &*window.ui_view,
@@ -543,11 +546,8 @@ impl IContext for Context {
 impl Drop for Context {
     fn drop(&mut self) {
         unsafe {
-            match (&self.debug_loader, &self.messenger) {
-                (Some(debug_loader), Some(messenger)) => {
-                    debug_loader.destroy_debug_utils_messenger(*messenger, None);
-                }
-                _ => {}
+            if let (Some(debug_loader), Some(messenger)) = (&self.debug_loader, &self.messenger) {
+                debug_loader.destroy_debug_utils_messenger(*messenger, None);
             }
             self.instance.destroy_instance(None);
             ManuallyDrop::drop(&mut self.instance);

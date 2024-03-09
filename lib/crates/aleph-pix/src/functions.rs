@@ -80,7 +80,7 @@ pub unsafe fn begin_event_cstr(colour: Colour, text: &CStr) {
 /// FFI Call to `PIXBeginEvent`
 ///
 #[inline(always)]
-pub unsafe fn begin_event_on_queue<'a>(
+pub unsafe fn begin_event_on_queue(
     context: &impl CanInto<ID3D12CommandQueue>,
     colour: Colour,
     text: &str,

@@ -46,7 +46,7 @@ pub fn uwp_project_bundle() -> ZipArchive<Cursor<&'static [u8]>> {
         .expect("Failed to open internal zip archive for bundled project template")
 }
 
-pub const ANDROID_ACTIVITY_SOURCE_TEMPLATE: &'static str = r#"
+pub const ANDROID_ACTIVITY_SOURCE_TEMPLATE: &str = r#"
 package {{ANDROID_GAME_APPLICATION_ID}};
 
 import org.libsdl.app.SDLActivity;
@@ -66,7 +66,7 @@ public class AlephActivity extends SDLActivity {
 }
 "#;
 
-pub const LOCAL_PROPERTIES_TEMPLATE: &'static str = r#"
+pub const LOCAL_PROPERTIES_TEMPLATE: &str = r#"
 ## This file must *NOT* be checked into Version Control Systems,
 # as it contains information specific to your local configuration.
 #
@@ -79,4 +79,4 @@ pub const LOCAL_PROPERTIES_TEMPLATE: &'static str = r#"
 ## ndk.dir=C\:\\Users\\Nathan\\Programs\\Loose\\android-ndk-r25c
 "#;
 
-pub const SHADER_NINJA_RULES: &'static str = include_str!("../templates/shader_rules.ninja");
+pub const SHADER_NINJA_RULES: &str = include_str!("../templates/shader_rules.ninja");

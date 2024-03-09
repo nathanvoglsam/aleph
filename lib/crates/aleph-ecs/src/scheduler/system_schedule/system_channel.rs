@@ -130,13 +130,11 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
         // SoA list of flags that denote whether the matching task has completed, indexed in
         // parallel with self.systems
         let done: Vec<AtomicBool> = (0..self.systems.len())
-            .into_iter()
             .map(|_| AtomicBool::new(false))
             .collect();
 
         // SoA list of worker payloads, indexed in parallel with self.systems
         let payloads: Vec<PayloadCell> = (0..self.systems.len())
-            .into_iter()
             .map(|_| {
                 let payload = WorkerPayload { wg: wg.clone() };
                 AtomicCell::new(Some(Box::new(payload)))
@@ -218,7 +216,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
     pub fn execute_exclusive(&mut self, world: &mut World) {
         // SoA list of flags that denote whether the matching task has completed, indexed in
         // parallel with self.systems
-        let mut done: Vec<bool> = (0..self.systems.len()).into_iter().map(|_| false).collect();
+        let mut done: Vec<bool> = (0..self.systems.len()).map(|_| false).collect();
 
         // Stores the number of systems that have not yet been executed. Once this reaches 0 all
         // systems are done and we exit the exec loop

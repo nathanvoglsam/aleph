@@ -28,6 +28,7 @@
 //
 
 use std::ffi::CStr;
+use std::iter;
 
 use ash::extensions::ext::DebugUtils;
 use ash::vk;
@@ -44,7 +45,7 @@ pub fn set_name<T: vk::Handle>(
     if let Some(loader) = loader {
         // Can only set a name if one is provided
         if let Some(name) = name {
-            let iter = name.bytes().chain([0u8].into_iter());
+            let iter = name.bytes().chain(iter::once(0u8));
             let name = bump.alloc_slice_fill_default(name.len() + 1);
             name.iter_mut().zip(iter).for_each(|(n, v)| {
                 *n = v;
@@ -54,9 +55,9 @@ pub fn set_name<T: vk::Handle>(
             let info = vk::DebugUtilsObjectNameInfoEXT::builder()
                 .object_type(T::TYPE)
                 .object_handle(handle.as_raw())
-                .object_name(&name);
+                .object_name(name);
             unsafe {
-                let _ = loader.set_debug_utils_object_name(device, &info).unwrap();
+                loader.set_debug_utils_object_name(device, &info).unwrap();
             }
         }
     }

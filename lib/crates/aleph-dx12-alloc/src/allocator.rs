@@ -54,6 +54,9 @@ use crate::{
 #[repr(transparent)]
 pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);
 
+unsafe impl Send for AllocatorInner {}
+unsafe impl Sync for AllocatorInner {}
+
 impl Drop for AllocatorInner {
     fn drop(&mut self) {
         unsafe {

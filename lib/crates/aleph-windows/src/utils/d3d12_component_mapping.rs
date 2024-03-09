@@ -80,7 +80,6 @@ impl D3D12ComponentMapping {
         component_3: D3D12ComponentMappingValue,
     ) -> Self {
         let r = component_0.0 & D3D12_SHADER_COMPONENT_MAPPING_MASK;
-        let r = r;
 
         let g = component_1.0 & D3D12_SHADER_COMPONENT_MAPPING_MASK;
         let g = g << D3D12_SHADER_COMPONENT_MAPPING_SHIFT;

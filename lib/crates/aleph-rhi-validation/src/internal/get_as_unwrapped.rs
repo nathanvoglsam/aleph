@@ -84,9 +84,9 @@ pub unsafe fn descriptor_set_handle(
 ) -> DescriptorSetHandle {
     // Unwrap and validate to get the inner DescriptorSetHandle
     DescriptorSet::validate(handle, expected_pool_id);
-    let inner: NonNull<()> = handle.clone().into();
+    let inner: NonNull<()> = handle.into();
     let inner: NonNull<DescriptorSet> = inner.cast();
-    inner.as_ref().inner.clone()
+    inner.as_ref().inner
 }
 
 pub fn pipeline_layout_desc<Return>(
@@ -288,7 +288,7 @@ pub fn sampler_descriptor_write<'a>(
 pub fn image_descriptor_write(write: &ImageDescriptorWrite) -> ImageDescriptorWrite {
     let image_view = unsafe {
         let image_view = std::mem::transmute::<_, *const ValidationImageView>(write.image_view);
-        (&*image_view).image_view
+        (*image_view).image_view
     };
     ImageDescriptorWrite {
         image_view,
@@ -369,7 +369,7 @@ pub fn rendering_color_attachment_info(
 ) -> RenderingColorAttachmentInfo {
     let image_view = unsafe {
         let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
-        (&*image_view).image_view
+        (*image_view).image_view
     };
     RenderingColorAttachmentInfo {
         image_view,
@@ -384,14 +384,14 @@ pub fn rendering_depth_stencil_attachment_info(
 ) -> RenderingDepthStencilAttachmentInfo {
     let image_view = unsafe {
         let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
-        (&*image_view).image_view
+        (*image_view).image_view
     };
     RenderingDepthStencilAttachmentInfo {
         image_view,
         image_layout: info.image_layout,
-        depth_load_op: info.depth_load_op.clone(),
+        depth_load_op: info.depth_load_op,
         depth_store_op: info.depth_store_op,
-        stencil_load_op: info.stencil_load_op.clone(),
+        stencil_load_op: info.stencil_load_op,
         stencil_store_op: info.stencil_store_op,
     }
 }

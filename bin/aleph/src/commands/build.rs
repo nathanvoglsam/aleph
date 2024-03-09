@@ -102,23 +102,21 @@ impl ISubcommand for Build {
         let profile = Profile::from_name(&profile_arg.to_lowercase())
             .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
 
-        if platform_arg == "native" {
-            if !platform.is_valid_native_platform() {
-                return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
-            }
+        if platform_arg == "native" && !platform.is_valid_native_platform() {
+            return Err(anyhow!("Invalid native platform \"{}\"", platform.name()));
         }
 
         let native_build_platform = BuildPlatform::from(target_platform());
         match platform {
-            p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux) => {
-                if p != native_build_platform {
-                    log::error!("Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling", p, native_build_platform);
-                    return Err(anyhow!(
-                        "Trying to build platform '{}' on host '{}'.",
-                        p,
-                        native_build_platform
-                    ));
-                }
+            p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux)
+                if p != native_build_platform =>
+            {
+                log::error!("Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling", p, native_build_platform);
+                return Err(anyhow!(
+                    "Trying to build platform '{}' on host '{}'.",
+                    p,
+                    native_build_platform
+                ));
             }
             _ => {}
         }
@@ -130,7 +128,7 @@ impl ISubcommand for Build {
         if build_std && matches!(platform, BuildPlatform::Android) {
             log::warn!("--build-std flag specified for Android, but Android does not support this flag. --build-std will be ignored!");
         }
-        if build_std && matches!(platform, BuildPlatform::UWP) {
+        if build_std && matches!(platform, BuildPlatform::Uwp) {
             log::warn!("--build-std flag specified for UWP, but UWP does not require this flag. UWP always builds with build-std");
         }
 
@@ -138,7 +136,7 @@ impl ISubcommand for Build {
             BuildPlatform::Windows => self.windows(project, profile, &target, build_std),
             BuildPlatform::MacOS => self.macos(project, profile, &target, build_std),
             BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
-            BuildPlatform::UWP => self.uwp(project, profile, &target),
+            BuildPlatform::Uwp => self.uwp(project, profile, &target),
             BuildPlatform::Android => self.android(project, profile, &target),
         }
     }
@@ -243,7 +241,7 @@ impl Build {
         let project_schema = project.get_project_schema()?;
 
         let mut command = native_build(profile, &project_schema.game.crate_name, build_std);
-        self.add_win32_branding_env_vars(&project, target, &mut command)?;
+        self.add_win32_branding_env_vars(project, target, &mut command)?;
 
         log::info!("{:?}", &command);
         let status = command.status()?;
@@ -265,7 +263,7 @@ impl Build {
         let project_schema = project.get_project_schema()?;
 
         // For windows or uwp we need to add an environment var for configuring the executable icon
-        if matches!(target.platform, BuildPlatform::Windows | BuildPlatform::UWP) {
+        if matches!(target.platform, BuildPlatform::Windows | BuildPlatform::Uwp) {
             if let Some(branding) = project_schema
                 .windows
                 .as_ref()
@@ -331,7 +329,7 @@ impl Build {
             log::trace!("Copying '{}' -> '{}'", src_exe, dst_exe);
             std::fs::copy(src_exe, dst_exe)?;
 
-            Self::copy_artifacts_from_target_to_project(&target_dir, &uwp_project_root)?;
+            Self::copy_artifacts_from_target_to_project(&target_dir, uwp_project_root)?;
         } else {
             log::warn!(
                 "Skipping uwp build artifact copy as \"{}\" does not exist",
@@ -391,7 +389,7 @@ fn bin_build(profile: Profile, target: Option<&str>, package: &str, build_std: b
 }
 
 fn uwp_build(target: &Target, profile: Profile, package: &str) -> Command {
-    assert_eq!(target.platform, BuildPlatform::UWP);
+    assert_eq!(target.platform, BuildPlatform::Uwp);
 
     let target = format!("--target={}-uwp-windows-msvc", target.arch.name());
     bin_build(profile, Some(&target), package, true)

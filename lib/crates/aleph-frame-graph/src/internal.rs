@@ -142,9 +142,9 @@ pub(crate) struct ResourceTypeBuffer {
     pub desc: FrameGraphBufferDesc,
 }
 
-impl Into<ResourceType> for ResourceTypeBuffer {
-    fn into(self) -> ResourceType {
-        ResourceType::Buffer(self)
+impl From<ResourceTypeBuffer> for ResourceType {
+    fn from(val: ResourceTypeBuffer) -> Self {
+        ResourceType::Buffer(val)
     }
 }
 
@@ -153,9 +153,9 @@ pub(crate) struct ResourceTypeTexture {
     pub desc: FrameGraphTextureDesc,
 }
 
-impl Into<ResourceType> for ResourceTypeTexture {
-    fn into(self) -> ResourceType {
-        ResourceType::Texture(self)
+impl From<ResourceTypeTexture> for ResourceType {
+    fn from(val: ResourceTypeTexture) -> Self {
+        ResourceType::Texture(val)
     }
 }
 
@@ -320,8 +320,7 @@ impl<'a> Iterator for VersionReaderLinkIter<'a> {
         let out = self.current;
         self.current = self
             .current
-            .map(|v| v.next.map(|v| unsafe { v.as_ref() }))
-            .flatten();
+            .and_then(|v| v.next.map(|v| unsafe { v.as_ref() }));
         out
     }
 }

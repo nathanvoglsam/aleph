@@ -144,7 +144,6 @@ impl ValidationDescriptorArena {
         // Validate that a DescriptorSetHandle contains a correctly aligned pointer. This may help
         // catch when someone is passing in bad handles
         let align = core::mem::align_of::<DescriptorSet>();
-        let set = set.clone();
         let set = unsafe { core::mem::transmute::<_, NonNull<DescriptorSet>>(set) };
 
         // This should also never happen in practice, but can help flag when people are doing

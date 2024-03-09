@@ -101,27 +101,15 @@ pub struct BackendConfigs {
     pub d3d12: Option<D3D12Config>,
 }
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct VulkanConfig {
     /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
     /// platforms that support sync2.
     pub deny_sync_2: bool,
 }
 
-impl Default for VulkanConfig {
-    fn default() -> Self {
-        Self { deny_sync_2: false }
-    }
-}
-
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct D3D12Config {}
-
-impl Default for D3D12Config {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 /// Set of errors that can occur when creating an [IContext]
 #[derive(Error, Debug)]
