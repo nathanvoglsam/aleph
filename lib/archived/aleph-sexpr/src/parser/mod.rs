@@ -1,4 +1,4 @@
-// auto-generated: "lalrpop 0.20.0"
+// auto-generated: "lalrpop 0.20.2"
 // sha3: 079ba0a0321c7b47530e2998c71d139a182d222eac8baf6cc2daa5432d6a02fc
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
@@ -8,7 +8,7 @@ extern crate alloc;
 extern crate core;
 
 #[rustfmt::skip]
-#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::needless_lifetimes, clippy::type_complexity, clippy::needless_return, clippy::too_many_arguments, clippy::never_loop, clippy::match_single_binding, clippy::needless_raw_string_hashes)]
 mod __parse__Atom {
 
     #[allow(unused_extern_crates)]
@@ -89,7 +89,7 @@ mod __parse__Atom {
             }
         }).collect()
     }
-    pub(crate) struct __StateMachine<'input>
+    struct __StateMachine<'input>
     where 
     {
         __phantom: core::marker::PhantomData<(&'input ())>,
@@ -211,7 +211,7 @@ mod __parse__Atom {
         _: core::marker::PhantomData<(&'input ())>,
     ) -> __Symbol<'input>
     {
-        match __token_index {
+        #[allow(clippy::manual_range_patterns)]match __token_index {
             0 | 1 => __Symbol::Variant0(__token),
             2 | 3 => match __token {
                 crate::lexer::Tok::StringLiteral(__tok0) | crate::lexer::Tok::Word(__tok0) if true => __Symbol::Variant1(__tok0),
@@ -374,6 +374,7 @@ mod __parse__Atom {
         _priv: (),
     }
 
+    impl Default for AtomParser { fn default() -> Self { Self::new() } }
     impl AtomParser {
         pub fn new() -> AtomParser {
             AtomParser {
@@ -434,7 +435,7 @@ mod __parse__Atom {
             __states.push(__next_state);
         }
     }
-    pub(crate) fn __reduce<
+    fn __reduce<
         'input,
     >(
         __action: i8,
@@ -612,7 +613,7 @@ mod __parse__Atom {
             _ => __symbol_type_mismatch()
         }
     }
-    pub(crate) fn __reduce0<
+    fn __reduce0<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -621,13 +622,13 @@ mod __parse__Atom {
     ) -> (usize, usize)
     {
         // @L =  => ActionFn(15);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action15::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 0)
     }
-    pub(crate) fn __reduce1<
+    fn __reduce1<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -636,13 +637,13 @@ mod __parse__Atom {
     ) -> (usize, usize)
     {
         // @R =  => ActionFn(14);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action14::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 1)
     }
-    pub(crate) fn __reduce2<
+    fn __reduce2<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -658,7 +659,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce3<
+    fn __reduce3<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -674,7 +675,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce4<
+    fn __reduce4<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -683,13 +684,13 @@ mod __parse__Atom {
     ) -> (usize, usize)
     {
         // File =  => ActionFn(28);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action28::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (0, 3)
     }
-    pub(crate) fn __reduce5<
+    fn __reduce5<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -705,7 +706,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
     }
-    pub(crate) fn __reduce6<
+    fn __reduce6<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -721,7 +722,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce7<
+    fn __reduce7<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -737,7 +738,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce8<
+    fn __reduce8<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -746,13 +747,13 @@ mod __parse__Atom {
     ) -> (usize, usize)
     {
         // Item* =  => ActionFn(12);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action12::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 5)
     }
-    pub(crate) fn __reduce9<
+    fn __reduce9<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -768,7 +769,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
     }
-    pub(crate) fn __reduce10<
+    fn __reduce10<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -784,7 +785,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
     }
-    pub(crate) fn __reduce11<
+    fn __reduce11<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -802,7 +803,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
     }
-    pub(crate) fn __reduce12<
+    fn __reduce12<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -818,7 +819,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
     }
-    pub(crate) fn __reduce13<
+    fn __reduce13<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -834,7 +835,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
     }
-    pub(crate) fn __reduce14<
+    fn __reduce14<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -843,13 +844,13 @@ mod __parse__Atom {
     ) -> (usize, usize)
     {
         // ItemList* =  => ActionFn(16);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action16::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 9)
     }
-    pub(crate) fn __reduce15<
+    fn __reduce15<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -865,7 +866,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
     }
-    pub(crate) fn __reduce16<
+    fn __reduce16<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -881,7 +882,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
     }
-    pub(crate) fn __reduce17<
+    fn __reduce17<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -899,7 +900,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
     }
-    pub(crate) fn __reduce18<
+    fn __reduce18<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -917,7 +918,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
     }
-    pub(crate) fn __reduce19<
+    fn __reduce19<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -936,7 +937,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
     }
-    pub(crate) fn __reduce21<
+    fn __reduce21<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -952,7 +953,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 13)
     }
-    pub(crate) fn __reduce22<
+    fn __reduce22<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -968,7 +969,7 @@ mod __parse__Atom {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 14)
     }
-    pub(crate) fn __reduce23<
+    fn __reduce23<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -985,10 +986,11 @@ mod __parse__Atom {
         (1, 15)
     }
 }
+#[allow(unused_imports)]
 pub use self::__parse__Atom::AtomParser;
 
 #[rustfmt::skip]
-#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::needless_lifetimes, clippy::type_complexity, clippy::needless_return, clippy::too_many_arguments, clippy::never_loop, clippy::match_single_binding, clippy::needless_raw_string_hashes)]
 mod __parse__File {
 
     #[allow(unused_extern_crates)]
@@ -1135,7 +1137,7 @@ mod __parse__File {
             }
         }).collect()
     }
-    pub(crate) struct __StateMachine<'input>
+    struct __StateMachine<'input>
     where 
     {
         __phantom: core::marker::PhantomData<(&'input ())>,
@@ -1257,7 +1259,7 @@ mod __parse__File {
         _: core::marker::PhantomData<(&'input ())>,
     ) -> __Symbol<'input>
     {
-        match __token_index {
+        #[allow(clippy::manual_range_patterns)]match __token_index {
             0 | 1 => __Symbol::Variant0(__token),
             2 | 3 => match __token {
                 crate::lexer::Tok::StringLiteral(__tok0) | crate::lexer::Tok::Word(__tok0) if true => __Symbol::Variant1(__tok0),
@@ -1420,6 +1422,7 @@ mod __parse__File {
         _priv: (),
     }
 
+    impl Default for FileParser { fn default() -> Self { Self::new() } }
     impl FileParser {
         pub fn new() -> FileParser {
             FileParser {
@@ -1480,7 +1483,7 @@ mod __parse__File {
             __states.push(__next_state);
         }
     }
-    pub(crate) fn __reduce<
+    fn __reduce<
         'input,
     >(
         __action: i8,
@@ -1658,7 +1661,7 @@ mod __parse__File {
             _ => __symbol_type_mismatch()
         }
     }
-    pub(crate) fn __reduce0<
+    fn __reduce0<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1667,13 +1670,13 @@ mod __parse__File {
     ) -> (usize, usize)
     {
         // @L =  => ActionFn(15);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action15::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 0)
     }
-    pub(crate) fn __reduce1<
+    fn __reduce1<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1682,13 +1685,13 @@ mod __parse__File {
     ) -> (usize, usize)
     {
         // @R =  => ActionFn(14);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action14::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 1)
     }
-    pub(crate) fn __reduce2<
+    fn __reduce2<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1704,7 +1707,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce3<
+    fn __reduce3<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1720,7 +1723,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce4<
+    fn __reduce4<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1729,13 +1732,13 @@ mod __parse__File {
     ) -> (usize, usize)
     {
         // File =  => ActionFn(28);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action28::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (0, 3)
     }
-    pub(crate) fn __reduce5<
+    fn __reduce5<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1751,7 +1754,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
     }
-    pub(crate) fn __reduce6<
+    fn __reduce6<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1767,7 +1770,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce7<
+    fn __reduce7<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1783,7 +1786,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce8<
+    fn __reduce8<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1792,13 +1795,13 @@ mod __parse__File {
     ) -> (usize, usize)
     {
         // Item* =  => ActionFn(12);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action12::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 5)
     }
-    pub(crate) fn __reduce9<
+    fn __reduce9<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1814,7 +1817,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
     }
-    pub(crate) fn __reduce10<
+    fn __reduce10<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1830,7 +1833,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
     }
-    pub(crate) fn __reduce11<
+    fn __reduce11<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1848,7 +1851,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
     }
-    pub(crate) fn __reduce12<
+    fn __reduce12<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1864,7 +1867,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
     }
-    pub(crate) fn __reduce13<
+    fn __reduce13<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1880,7 +1883,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
     }
-    pub(crate) fn __reduce14<
+    fn __reduce14<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1889,13 +1892,13 @@ mod __parse__File {
     ) -> (usize, usize)
     {
         // ItemList* =  => ActionFn(16);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action16::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 9)
     }
-    pub(crate) fn __reduce15<
+    fn __reduce15<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1911,7 +1914,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
     }
-    pub(crate) fn __reduce16<
+    fn __reduce16<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1927,7 +1930,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
     }
-    pub(crate) fn __reduce17<
+    fn __reduce17<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1945,7 +1948,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
     }
-    pub(crate) fn __reduce18<
+    fn __reduce18<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1963,7 +1966,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
     }
-    pub(crate) fn __reduce19<
+    fn __reduce19<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1982,7 +1985,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
     }
-    pub(crate) fn __reduce20<
+    fn __reduce20<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -1998,7 +2001,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 12)
     }
-    pub(crate) fn __reduce22<
+    fn __reduce22<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2014,7 +2017,7 @@ mod __parse__File {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 14)
     }
-    pub(crate) fn __reduce23<
+    fn __reduce23<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2031,10 +2034,11 @@ mod __parse__File {
         (1, 15)
     }
 }
+#[allow(unused_imports)]
 pub use self::__parse__File::FileParser;
 
 #[rustfmt::skip]
-#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::needless_lifetimes, clippy::type_complexity, clippy::needless_return, clippy::too_many_arguments, clippy::never_loop, clippy::match_single_binding, clippy::needless_raw_string_hashes)]
 mod __parse__Item {
 
     #[allow(unused_extern_crates)]
@@ -2164,7 +2168,7 @@ mod __parse__Item {
             }
         }).collect()
     }
-    pub(crate) struct __StateMachine<'input>
+    struct __StateMachine<'input>
     where 
     {
         __phantom: core::marker::PhantomData<(&'input ())>,
@@ -2286,7 +2290,7 @@ mod __parse__Item {
         _: core::marker::PhantomData<(&'input ())>,
     ) -> __Symbol<'input>
     {
-        match __token_index {
+        #[allow(clippy::manual_range_patterns)]match __token_index {
             0 | 1 => __Symbol::Variant0(__token),
             2 | 3 => match __token {
                 crate::lexer::Tok::StringLiteral(__tok0) | crate::lexer::Tok::Word(__tok0) if true => __Symbol::Variant1(__tok0),
@@ -2449,6 +2453,7 @@ mod __parse__Item {
         _priv: (),
     }
 
+    impl Default for ItemParser { fn default() -> Self { Self::new() } }
     impl ItemParser {
         pub fn new() -> ItemParser {
             ItemParser {
@@ -2509,7 +2514,7 @@ mod __parse__Item {
             __states.push(__next_state);
         }
     }
-    pub(crate) fn __reduce<
+    fn __reduce<
         'input,
     >(
         __action: i8,
@@ -2687,7 +2692,7 @@ mod __parse__Item {
             _ => __symbol_type_mismatch()
         }
     }
-    pub(crate) fn __reduce0<
+    fn __reduce0<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2696,13 +2701,13 @@ mod __parse__Item {
     ) -> (usize, usize)
     {
         // @L =  => ActionFn(15);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action15::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 0)
     }
-    pub(crate) fn __reduce1<
+    fn __reduce1<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2711,13 +2716,13 @@ mod __parse__Item {
     ) -> (usize, usize)
     {
         // @R =  => ActionFn(14);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action14::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 1)
     }
-    pub(crate) fn __reduce2<
+    fn __reduce2<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2733,7 +2738,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce3<
+    fn __reduce3<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2749,7 +2754,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce4<
+    fn __reduce4<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2758,13 +2763,13 @@ mod __parse__Item {
     ) -> (usize, usize)
     {
         // File =  => ActionFn(28);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action28::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (0, 3)
     }
-    pub(crate) fn __reduce5<
+    fn __reduce5<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2780,7 +2785,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
     }
-    pub(crate) fn __reduce6<
+    fn __reduce6<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2796,7 +2801,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce7<
+    fn __reduce7<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2812,7 +2817,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce8<
+    fn __reduce8<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2821,13 +2826,13 @@ mod __parse__Item {
     ) -> (usize, usize)
     {
         // Item* =  => ActionFn(12);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action12::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 5)
     }
-    pub(crate) fn __reduce9<
+    fn __reduce9<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2843,7 +2848,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
     }
-    pub(crate) fn __reduce10<
+    fn __reduce10<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2859,7 +2864,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
     }
-    pub(crate) fn __reduce11<
+    fn __reduce11<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2877,7 +2882,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
     }
-    pub(crate) fn __reduce12<
+    fn __reduce12<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2893,7 +2898,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
     }
-    pub(crate) fn __reduce13<
+    fn __reduce13<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2909,7 +2914,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
     }
-    pub(crate) fn __reduce14<
+    fn __reduce14<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2918,13 +2923,13 @@ mod __parse__Item {
     ) -> (usize, usize)
     {
         // ItemList* =  => ActionFn(16);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action16::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 9)
     }
-    pub(crate) fn __reduce15<
+    fn __reduce15<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2940,7 +2945,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
     }
-    pub(crate) fn __reduce16<
+    fn __reduce16<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2956,7 +2961,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
     }
-    pub(crate) fn __reduce17<
+    fn __reduce17<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2974,7 +2979,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
     }
-    pub(crate) fn __reduce18<
+    fn __reduce18<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -2992,7 +2997,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
     }
-    pub(crate) fn __reduce19<
+    fn __reduce19<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3011,7 +3016,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
     }
-    pub(crate) fn __reduce20<
+    fn __reduce20<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3027,7 +3032,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 12)
     }
-    pub(crate) fn __reduce21<
+    fn __reduce21<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3043,7 +3048,7 @@ mod __parse__Item {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 13)
     }
-    pub(crate) fn __reduce23<
+    fn __reduce23<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3060,10 +3065,11 @@ mod __parse__Item {
         (1, 15)
     }
 }
+#[allow(unused_imports)]
 pub use self::__parse__Item::ItemParser;
 
 #[rustfmt::skip]
-#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
+#[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::needless_lifetimes, clippy::type_complexity, clippy::needless_return, clippy::too_many_arguments, clippy::never_loop, clippy::match_single_binding, clippy::needless_raw_string_hashes)]
 mod __parse__List {
 
     #[allow(unused_extern_crates)]
@@ -3195,7 +3201,7 @@ mod __parse__List {
             }
         }).collect()
     }
-    pub(crate) struct __StateMachine<'input>
+    struct __StateMachine<'input>
     where 
     {
         __phantom: core::marker::PhantomData<(&'input ())>,
@@ -3317,7 +3323,7 @@ mod __parse__List {
         _: core::marker::PhantomData<(&'input ())>,
     ) -> __Symbol<'input>
     {
-        match __token_index {
+        #[allow(clippy::manual_range_patterns)]match __token_index {
             0 | 1 => __Symbol::Variant0(__token),
             2 | 3 => match __token {
                 crate::lexer::Tok::StringLiteral(__tok0) | crate::lexer::Tok::Word(__tok0) if true => __Symbol::Variant1(__tok0),
@@ -3480,6 +3486,7 @@ mod __parse__List {
         _priv: (),
     }
 
+    impl Default for ListParser { fn default() -> Self { Self::new() } }
     impl ListParser {
         pub fn new() -> ListParser {
             ListParser {
@@ -3540,7 +3547,7 @@ mod __parse__List {
             __states.push(__next_state);
         }
     }
-    pub(crate) fn __reduce<
+    fn __reduce<
         'input,
     >(
         __action: i8,
@@ -3718,7 +3725,7 @@ mod __parse__List {
             _ => __symbol_type_mismatch()
         }
     }
-    pub(crate) fn __reduce0<
+    fn __reduce0<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3727,13 +3734,13 @@ mod __parse__List {
     ) -> (usize, usize)
     {
         // @L =  => ActionFn(15);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action15::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 0)
     }
-    pub(crate) fn __reduce1<
+    fn __reduce1<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3742,13 +3749,13 @@ mod __parse__List {
     ) -> (usize, usize)
     {
         // @R =  => ActionFn(14);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action14::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant2(__nt), __end));
         (0, 1)
     }
-    pub(crate) fn __reduce2<
+    fn __reduce2<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3764,7 +3771,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce3<
+    fn __reduce3<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3780,7 +3787,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 2)
     }
-    pub(crate) fn __reduce4<
+    fn __reduce4<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3789,13 +3796,13 @@ mod __parse__List {
     ) -> (usize, usize)
     {
         // File =  => ActionFn(28);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action28::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (0, 3)
     }
-    pub(crate) fn __reduce5<
+    fn __reduce5<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3811,7 +3818,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 3)
     }
-    pub(crate) fn __reduce6<
+    fn __reduce6<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3827,7 +3834,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce7<
+    fn __reduce7<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3843,7 +3850,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 4)
     }
-    pub(crate) fn __reduce8<
+    fn __reduce8<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3852,13 +3859,13 @@ mod __parse__List {
     ) -> (usize, usize)
     {
         // Item* =  => ActionFn(12);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action12::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 5)
     }
-    pub(crate) fn __reduce9<
+    fn __reduce9<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3874,7 +3881,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 5)
     }
-    pub(crate) fn __reduce10<
+    fn __reduce10<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3890,7 +3897,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 6)
     }
-    pub(crate) fn __reduce11<
+    fn __reduce11<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3908,7 +3915,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 6)
     }
-    pub(crate) fn __reduce12<
+    fn __reduce12<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3924,7 +3931,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 7)
     }
-    pub(crate) fn __reduce13<
+    fn __reduce13<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3940,7 +3947,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant5(__nt), __end));
         (1, 8)
     }
-    pub(crate) fn __reduce14<
+    fn __reduce14<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3949,13 +3956,13 @@ mod __parse__List {
     ) -> (usize, usize)
     {
         // ItemList* =  => ActionFn(16);
-        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
-        let __end = __start.clone();
+        let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2)).unwrap_or_default();
+        let __end = __start;
         let __nt = super::__action16::<>(&__start, &__end);
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (0, 9)
     }
-    pub(crate) fn __reduce15<
+    fn __reduce15<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3971,7 +3978,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 9)
     }
-    pub(crate) fn __reduce16<
+    fn __reduce16<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -3987,7 +3994,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (1, 10)
     }
-    pub(crate) fn __reduce17<
+    fn __reduce17<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -4005,7 +4012,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant6(__nt), __end));
         (2, 10)
     }
-    pub(crate) fn __reduce18<
+    fn __reduce18<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -4023,7 +4030,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (2, 11)
     }
-    pub(crate) fn __reduce19<
+    fn __reduce19<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -4042,7 +4049,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (3, 11)
     }
-    pub(crate) fn __reduce20<
+    fn __reduce20<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -4058,7 +4065,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant3(__nt), __end));
         (1, 12)
     }
-    pub(crate) fn __reduce21<
+    fn __reduce21<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -4074,7 +4081,7 @@ mod __parse__List {
         __symbols.push((__start, __Symbol::Variant4(__nt), __end));
         (1, 13)
     }
-    pub(crate) fn __reduce22<
+    fn __reduce22<
         'input,
     >(
         __lookahead_start: Option<&usize>,
@@ -4091,58 +4098,91 @@ mod __parse__List {
         (1, 14)
     }
 }
+#[allow(unused_imports)]
 pub use self::__parse__List::ListParser;
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action0<'input>(
     (_, __0, _): (usize, crate::ast::List<'input>, usize),
 ) -> crate::ast::List<'input> {
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action1<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> crate::ast::Item<'input> {
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action2<'input>(
     (_, __0, _): (usize, crate::ast::List<'input>, usize),
 ) -> crate::ast::List<'input> {
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action3<'input>(
     (_, __0, _): (usize, crate::ast::Atom<'input>, usize),
 ) -> crate::ast::Atom<'input> {
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action4<'input>(
     (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> crate::ast::List<'input> {
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action5<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> crate::ast::Item<'input> {
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action6<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> crate::ast::Item<'input> {
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action7<'input>(
     (_, pl, _): (usize, usize, usize),
     (_, l, _): (usize, crate::ast::List<'input>, usize),
@@ -4154,7 +4194,11 @@ fn __action7<'input>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action8<'input>(
     (_, pl, _): (usize, usize, usize),
     (_, a, _): (usize, crate::ast::Atom<'input>, usize),
@@ -4166,7 +4210,11 @@ fn __action8<'input>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action9<'input>(
     (_, _, _): (usize, crate::lexer::Tok<'input>, usize),
     (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
@@ -4175,17 +4223,29 @@ fn __action9<'input>(
     __0
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action10<'input>((_, s, _): (usize, &'input str, usize)) -> crate::ast::Atom<'input> {
     crate::ast::Atom::string(s)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action11<'input>((_, w, _): (usize, &'input str, usize)) -> crate::ast::Atom<'input> {
     crate::ast::Atom::word(w)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action12<'input>(
     __lookbehind: &usize,
     __lookahead: &usize,
@@ -4193,7 +4253,11 @@ fn __action12<'input>(
     alloc::vec![]
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action13<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
@@ -4208,7 +4272,11 @@ fn __action15<'input>(__lookbehind: &usize, __lookahead: &usize) -> usize {
     *__lookahead
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action16<'input>(
     __lookbehind: &usize,
     __lookahead: &usize,
@@ -4216,21 +4284,33 @@ fn __action16<'input>(
     alloc::vec![]
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action17<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
     v
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action18<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
     alloc::vec![__0]
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action19<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
     (_, e, _): (usize, crate::ast::Item<'input>, usize),
@@ -4242,14 +4322,22 @@ fn __action19<'input>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action20<'input>(
     (_, __0, _): (usize, crate::ast::Item<'input>, usize),
 ) -> alloc::vec::Vec<crate::ast::Item<'input>> {
     alloc::vec![__0]
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action21<'input>(
     (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
     (_, e, _): (usize, crate::ast::Item<'input>, usize),
@@ -4261,7 +4349,11 @@ fn __action21<'input>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action22<'input>(
     __0: (usize, crate::ast::Atom<'input>, usize),
     __1: (usize, usize, usize),
@@ -4273,7 +4365,11 @@ fn __action22<'input>(
     __action8(__temp0, __0, __1)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action23<'input>(
     __0: (usize, crate::ast::List<'input>, usize),
     __1: (usize, usize, usize),
@@ -4285,7 +4381,11 @@ fn __action23<'input>(
     __action7(__temp0, __0, __1)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action24<'input>(__0: (usize, crate::ast::Atom<'input>, usize)) -> crate::ast::Item<'input> {
     let __start0 = __0.2;
     let __end0 = __0.2;
@@ -4294,7 +4394,11 @@ fn __action24<'input>(__0: (usize, crate::ast::Atom<'input>, usize)) -> crate::a
     __action22(__0, __temp0)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action25<'input>(__0: (usize, crate::ast::List<'input>, usize)) -> crate::ast::Item<'input> {
     let __start0 = __0.2;
     let __end0 = __0.2;
@@ -4303,7 +4407,11 @@ fn __action25<'input>(__0: (usize, crate::ast::List<'input>, usize)) -> crate::a
     __action23(__0, __temp0)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action26<'input>(
     __0: (usize, crate::lexer::Tok<'input>, usize),
     __1: (usize, crate::lexer::Tok<'input>, usize),
@@ -4315,7 +4423,11 @@ fn __action26<'input>(
     __action9(__0, __temp0, __1)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action27<'input>(
     __0: (usize, crate::lexer::Tok<'input>, usize),
     __1: (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
@@ -4328,7 +4440,11 @@ fn __action27<'input>(
     __action9(__0, __temp0, __2)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action28<'input>(__lookbehind: &usize, __lookahead: &usize) -> crate::ast::List<'input> {
     let __start0 = *__lookbehind;
     let __end0 = *__lookahead;
@@ -4337,7 +4453,11 @@ fn __action28<'input>(__lookbehind: &usize, __lookahead: &usize) -> crate::ast::
     __action4(__temp0)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_lifetimes,
+    clippy::just_underscores_and_digits
+)]
 fn __action29<'input>(
     __0: (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
 ) -> crate::ast::List<'input> {
@@ -4347,7 +4467,7 @@ fn __action29<'input>(
     let __temp0 = (__start0, __temp0, __end0);
     __action4(__temp0)
 }
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, dead_code)]
 
 pub trait __ToTriple<'input> {
     fn to_triple(
