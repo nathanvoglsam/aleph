@@ -81,19 +81,24 @@ pub struct ComponentStorage {
 
     /// A guard object that enables dynamic borrow checking of our component storages
     pub guard: AtomicBorrow,
+
+    /// A description of the type being stored
+    pub type_description: ComponentTypeDescription,
 }
 
 impl ComponentStorage {
-    pub fn with_capacity(type_size: usize, capacity: usize) -> Self {
-        let mut data = VirtualVec::new(type_size * capacity)
-            .expect("Failed to reserve address space for components");
+    pub fn with_capacity(type_description: ComponentTypeDescription, capacity: usize) -> Self {
+        let capacity = type_description.type_size * capacity;
+        let mut data =
+            VirtualVec::new(capacity).expect("Failed to reserve address space for components");
 
         // Pre-fill the first slot with zeroes, it will never be accessed
-        data.resize(type_size, 0);
+        data.resize(type_description.type_size, 0);
 
         Self {
             data,
             guard: AtomicBorrow::new(),
+            type_description,
         }
     }
 }
@@ -142,10 +147,6 @@ pub struct Archetype {
     /// A hash table that maps a component's id to the storage index. The storage index is used to
     /// index into the `component_descriptions` and `storages` fields.
     storage_indices: ComponentIdMap<usize>,
-
-    /// A list of the description of each component type in the entity layout, indexed by the
-    /// storage index
-    component_descriptions: Vec<ComponentTypeDescription>,
 
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index
@@ -200,21 +201,16 @@ impl Archetype {
         let storage_indices: ComponentIdMap<usize> =
             layout.iter().enumerate().map(|v| (v.1, v.0)).collect();
 
-        // Lookup the list of descriptions in the registry
-        let component_descriptions: Vec<ComponentTypeDescription> = layout
+        // Create a virtual memory reservation for each component's storage
+        let storages = layout
             .iter()
             .map(|v| {
-                registry
+                let type_description = registry
                     .lookup(v)
                     .expect("Tried to create an archetype with an unregistered component type")
+                    .clone();
+                ComponentStorage::with_capacity(type_description, storage_capacity as _)
             })
-            .cloned()
-            .collect();
-
-        // Create a virtual memory reservation for each component's storage
-        let storages = component_descriptions
-            .iter()
-            .map(|v| ComponentStorage::with_capacity(v.type_size, storage_capacity as _))
             .collect();
 
         // Create the buffer for mapping entity indices back to an entity id
@@ -225,7 +221,6 @@ impl Archetype {
         Self {
             entity_layout: layout.to_owned(),
             storage_indices,
-            component_descriptions,
             storages,
             entity_ids,
             capacity,
@@ -254,12 +249,8 @@ impl Archetype {
             );
         }
 
-        for (desc, storage) in self
-            .component_descriptions
-            .iter()
-            .zip(self.storages.iter_mut())
-        {
-            let bytes = count as usize * desc.type_size;
+        for storage in self.storages.iter_mut() {
+            let bytes = count as usize * storage.type_description.type_size;
             storage.data.resize(storage.data.len() + bytes, 0);
         }
 
@@ -290,7 +281,7 @@ impl Archetype {
             let source = source.data_for(comp);
 
             // Get the size of the type we're copying from the buffers
-            let type_size = self.component_descriptions[i].type_size;
+            let type_size = self.storages[i].type_description.type_size;
 
             // Calculate the base index for where to start copying into the buffer
             let base = base.0.get() as usize;
@@ -319,7 +310,7 @@ impl Archetype {
     ) {
         // Get the index of the type inside the archetype and lookup the size of the type
         let type_index = self.storage_indices.get(&component_type).copied().unwrap();
-        let type_size = self.component_descriptions[type_index].type_size;
+        let type_size = self.storages[type_index].type_description.type_size;
 
         // Get the bounds of the component's data
         let dest_base = slot.0.get() as usize;
@@ -341,8 +332,8 @@ impl Archetype {
         component_type: ComponentTypeId,
     ) {
         let type_index = self.storage_indices.get(&component_type).copied().unwrap();
-        let type_size = self.component_descriptions[type_index].type_size;
-        let drop_fn = self.component_descriptions[type_index].fn_drop;
+        let type_size = self.storages[type_index].type_description.type_size;
+        let drop_fn = self.storages[type_index].type_description.fn_drop;
 
         if let Some(drop_fn) = drop_fn {
             let base = slot.0.get() as usize;
@@ -374,7 +365,7 @@ impl Archetype {
     ) -> Option<NonNull<u8>> {
         // Lookup the storage index, load the size of the type and get the storage pointer
         let storage_index = self.storage_indices.get(&component_type).copied()?;
-        let type_size = self.component_descriptions[storage_index].type_size;
+        let type_size = self.storages[storage_index].type_description.type_size;
         let storage = self.storages[storage_index].data.as_slice();
 
         // Get the bounds of the component's data
@@ -448,7 +439,7 @@ impl Archetype {
             self.pop_for_storage::<DROP>(storage_index);
         } else {
             let storage = &mut self.storages[storage_index];
-            let desc = &self.component_descriptions[storage_index];
+            let desc = &storage.type_description;
 
             let remove_offset = index * desc.type_size;
             let last_offset = last_index * desc.type_size;
@@ -472,7 +463,7 @@ impl Archetype {
     pub(crate) fn pop_for_storage<const DROP: bool>(&mut self, storage_index: usize) {
         if self.len != 0 {
             let storage = &mut self.storages[storage_index];
-            let desc = &self.component_descriptions[storage_index];
+            let desc = &storage.type_description;
 
             if DROP {
                 if let Some(fn_drop) = desc.fn_drop {
@@ -513,7 +504,7 @@ impl Archetype {
 
         for (source_index, source_id) in self.entity_layout.iter().enumerate() {
             // Get the size of the component to copy
-            let type_size = self.component_descriptions[source_index].type_size;
+            let type_size = self.storages[source_index].type_description.type_size;
 
             // Get the bounds of the data to copy
             let source_base = target.0.get() as usize;
@@ -571,10 +562,11 @@ impl Archetype {
 impl Drop for Archetype {
     fn drop(&mut self) {
         // Iterate over every component storage and call the drop function on all components
-        for (index, storage) in self.storages.iter_mut().enumerate() {
+        for storage in self.storages.iter_mut() {
             // Lookup the size and drop fn so we can iterate over the components in the storage
-            let type_size = self.component_descriptions[index].type_size;
-            let drop_fn = self.component_descriptions[index].fn_drop;
+            let desc = &storage.type_description;
+            let type_size = desc.type_size;
+            let drop_fn = desc.fn_drop;
 
             // Only need to iterate if the drop function is actually defined
             if let Some(drop_fn) = drop_fn {
@@ -591,79 +583,4 @@ impl Drop for Archetype {
             }
         }
     }
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_get_component_descriptions(
-    archetype: NonNull<Archetype>,
-    out_len: &mut usize,
-) -> NonNull<ComponentTypeDescription> {
-    let descriptions = &archetype.as_ref().component_descriptions;
-
-    let ptr = descriptions.as_ptr() as *mut ComponentTypeDescription;
-    let ptr = NonNull::new_unchecked(ptr);
-
-    *out_len = descriptions.len();
-
-    ptr
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_get_component_index(
-    archetype: NonNull<Archetype>,
-    component: ComponentTypeId,
-    out_index: &mut usize,
-) -> u32 {
-    if let Some(index) = archetype.as_ref().storage_indices.get(&component).copied() {
-        *out_index = index;
-        1
-    } else {
-        0
-    }
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_get_storage_by_index(
-    mut archetype: NonNull<Archetype>,
-    index: usize,
-) -> NonNull<u8> {
-    let storage = archetype.as_mut().storages[index].data.as_slice_mut();
-    NonNull::new_unchecked(storage.as_mut_ptr())
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_get_entity_layout(
-    archetype: NonNull<Archetype>,
-    out_len: &mut usize,
-) -> NonNull<ComponentTypeId> {
-    let layout = archetype.as_ref().entity_layout().as_inner();
-
-    let ptr = layout.as_ptr() as *mut ComponentTypeId;
-    let ptr = NonNull::new_unchecked(ptr);
-
-    *out_len = layout.len();
-
-    ptr
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_get_len(archetype: NonNull<Archetype>) -> u32 {
-    archetype.as_ref().len()
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_get_capacity(archetype: NonNull<Archetype>) -> u32 {
-    archetype.as_ref().capacity()
 }

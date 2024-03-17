@@ -63,33 +63,6 @@ pub use self::world::{ComponentSource, IntoComponentSource, World, WorldOptions}
 #[cfg(test)]
 mod tests;
 
-pub mod c_api {
-    //!
-    //! This module exposes a C friendly API for working with the ECS. Most functionality is unsafe as
-    //! none of the Rust type system tricks are available to C.
-    //!
-    //! These functions are intended to be utilized by language or script bindings to enable languages
-    //! other than Rust to interface with an ECS world. These provide the low-level building blocks for
-    //! building a more ergonomic interface in whichever language is being used.
-    //!
-    //! # Code Organization Details
-    //!
-    //! The functions are defined within private modules and re-exported here to avoid having to expose
-    //! data structure internals.
-    //!
-
-    pub use crate::archetype::{
-        archetype_get_capacity, archetype_get_component_descriptions,
-        archetype_get_component_index, archetype_get_entity_layout, archetype_get_len,
-        archetype_get_storage_by_index,
-    };
-    pub use crate::archetype_filter::{archetype_filter_destroy, archetype_filter_new};
-    pub use crate::world::{
-        world_add_component, world_get_component_ptr, world_has_component, world_register,
-        world_remove_component,
-    };
-}
-
 // TODO: CommandBuffers so that world modification commands can be queued by jobs and then resolved
 //       when the execution phase has completed. This completes the functionality of the ECS as
 //       currently it's not really possible to modify the world from within the task graph.

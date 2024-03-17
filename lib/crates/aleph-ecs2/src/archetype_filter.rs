@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use std::ptr::NonNull;
-
-use crate::{Archetype, ComponentTypeId, EntityLayout, EntityLayoutBuf};
+use crate::{Archetype, EntityLayout, EntityLayoutBuf};
 
 ///
 /// The raw implementation of a world query that provides the implementation for an iteration over
@@ -90,38 +88,4 @@ impl ArchetypeFilter {
             .is_disjoint_from(archetype.entity_layout());
         all_matching && no_excluded
     }
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_filter_new(
-    matching: NonNull<ComponentTypeId>,
-    matching_len: usize,
-    excluding: NonNull<ComponentTypeId>,
-    excluding_len: usize,
-) -> NonNull<ArchetypeFilter> {
-    // Convert unpacked slice to EntityLayout
-    let matching = core::slice::from_raw_parts(matching.as_ptr(), matching_len);
-    let matching = EntityLayout::from_inner_unchecked(matching);
-
-    // Convert unpacked slice to EntityLayout
-    let excluding = core::slice::from_raw_parts(excluding.as_ptr(), excluding_len);
-    let excluding = EntityLayout::from_inner_unchecked(excluding);
-
-    // Construct and box query
-    let query = ArchetypeFilter::new(matching, excluding);
-    let query = Box::new(query);
-
-    // Leak the box to transfer lifetime ownership to caller
-    let query = Box::leak(query);
-    NonNull::from(query)
-}
-
-/// # Safety
-///
-/// This is exposing raw FFI bindings for the data structures so there's _no_ checks for anything.
-pub unsafe extern "C" fn archetype_filter_destroy(query: NonNull<ArchetypeFilter>) {
-    // Recreate and drop the box to call cleanup code
-    drop(Box::from_raw(query.as_ptr()));
 }
