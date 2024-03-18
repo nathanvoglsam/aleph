@@ -62,10 +62,26 @@ pub unsafe trait IntoComponentSource {
 /// I have not put time into proving how safe this interface is so I mark it as unsafe
 /// pre-emptively. The implementations provided are safe, but the trait remains unsafe for now.
 pub unsafe trait ComponentSource {
+    /// The entity layout that describes the set of components the entities we're trying to insert
+    /// have.
+    /// 
+    /// It is the responsibility of the [ComponentSource] implementation to provide a buffer of
+    /// [ComponentSource::count] components of each type specified here on request via
+    /// [ComponentSource::data_for].
     fn entity_layout(&self) -> &EntityLayout;
 
+    /// Returns a type erased data buffer that is valid storage for [ComponentSource::count]
+    /// components of the requested type. That means valid size and alignment.
+    /// 
+    /// The objects will be copied into the destination buffer. This is logically a move operation
+    /// and the source objects should _not_ be dropped by the [ComponentSource] implementation as
+    /// the caller of [ComponentSource::data_for] has taken ownership of these objects.
     fn data_for(&self, component: ComponentTypeId) -> &[u8];
 
+    /// Returns the number of *entities* that this component source is storing data for. This
+    /// describes the number of entities that need to be inserted, and also describes the required
+    /// size of the buffers returned by [ComponentSource::data_for] as 
+    /// `entity_count' * size_of_component_type`.
     fn count(&self) -> u32;
 }
 
@@ -125,7 +141,7 @@ impl Default for WorldOptions {
 /// transformation to the source layout required to create the destination layout.
 ///
 /// This graph structure accelerates adding and removing components from entities. Changing an
-/// entity's shape requires moving it to the archetype of the target shape. Without this graph in,
+/// entity's shape requires moving it to the archetype of the target shape. Without this graph, in
 /// order to add/remove a component from an entity, it would be necessary to:
 ///   - Allocate a new [`EntityLayoutBuf`], which requires a heap allocation.
 ///   - Add the new component type to this [`EntityLayoutBuf`] so we know the layout of the
@@ -551,9 +567,6 @@ impl World {
         }
     }
 }
-
-unsafe impl Send for World {}
-unsafe impl Sync for World {}
 
 /// Private function implementations
 impl World {

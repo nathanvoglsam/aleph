@@ -439,3 +439,12 @@ fn query_checked_test_safe_access() {
     let iter = query_a.zip(query_b);
     assert_eq!(iter.count(), 2);
 }
+
+#[test]
+fn is_world_send_and_sync() {
+    fn the_send_sync_filter<T: Send + Sync>(_v: T) {
+        let _do_nothing = ();
+    }
+    let world = World::new(Default::default()).unwrap();
+    let _nothing = the_send_sync_filter::<World>(world);
+}
