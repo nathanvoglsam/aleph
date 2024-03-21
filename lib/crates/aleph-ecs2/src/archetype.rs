@@ -173,20 +173,17 @@ impl Archetype {
     }
 
     /// Returns the maximum number of entities that can be stored in this archetype
-    #[inline(always)]
-    pub fn capacity(&self) -> u32 {
+    pub const fn capacity(&self) -> u32 {
         self.capacity
     }
 
     /// Returns the current number of entities that can be stored in this archetype
-    #[inline(always)]
-    pub fn len(&self) -> u32 {
+    pub const fn len(&self) -> u32 {
         self.len
     }
 
     /// Returns if there are no entities in the archetype
-    #[inline(always)]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 }
@@ -233,7 +230,6 @@ impl Archetype {
     ///
     /// The function returns the base index where the first newly allocated entity can be found.
     /// All new entities will be contiguous.
-    #[inline]
     pub(crate) fn allocate_entities(&mut self, count: u32) -> ArchetypeEntityIndex {
         // The base will be the index of the first slot after the end of the densely packed section
         //
@@ -270,7 +266,6 @@ impl Archetype {
     /// This will not perform any checks to ensure existing data isn't overwritten, this is
     /// effectively a wrapper around `memcpy`. It will, however, ensure that data is not written or
     /// read out of bounds.
-    #[inline]
     pub(crate) fn copy_from_source<T: ComponentSource>(
         &mut self,
         base: ArchetypeEntityIndex,
@@ -301,7 +296,6 @@ impl Archetype {
 
     /// This function will write the provided `data` into the storage for the given `component_type`
     /// at the given `slot` within the storage.
-    #[inline]
     pub(crate) fn copy_component_data_into_slot(
         &mut self,
         slot: ArchetypeEntityIndex,
@@ -347,7 +341,6 @@ impl Archetype {
         }
     }
 
-    #[inline]
     pub(crate) fn get_component_guard(
         &self,
         component_type: ComponentTypeId,
@@ -357,7 +350,6 @@ impl Archetype {
         Some(&self.storages[storage_index].guard)
     }
 
-    #[inline]
     pub(crate) fn get_component_ptr(
         &self,
         slot: ArchetypeEntityIndex,
@@ -390,7 +382,6 @@ impl Archetype {
     /// If this function returns a value then the user (i.e. [`World`]) must update the
     /// `EntityLocation` field for that ID to prevent the ID from becoming a dangling reference
     /// (unsafe).
-    #[inline]
     pub(crate) fn remove_entity<const DROP: bool>(
         &mut self,
         index: ArchetypeEntityIndex,
@@ -426,7 +417,6 @@ impl Archetype {
     /// # Info
     ///
     /// DO NOT FORGET TO MANUALLY DECREMENT self.len
-    #[inline]
     pub(crate) fn swap_and_pop_for_storage<const DROP: bool>(
         &mut self,
         storage_index: usize,
@@ -459,7 +449,6 @@ impl Archetype {
     /// # Info
     ///
     /// DO NOT FORGET TO MANUALLY DECREMENT `self.len`
-    #[inline]
     pub(crate) fn pop_for_storage<const DROP: bool>(&mut self, storage_index: usize) {
         if self.len != 0 {
             let storage = &mut self.storages[storage_index];
@@ -490,7 +479,6 @@ impl Archetype {
         }
     }
 
-    #[inline]
     pub(crate) fn copy_from_archetype(
         &mut self,
         target: ArchetypeEntityIndex,
@@ -540,7 +528,6 @@ impl Archetype {
     /// Writes the entity ID into the ID list at the given slot.
     ///
     /// Used for initializing the ID when entities are inserted.
-    #[inline(always)]
     pub(crate) fn update_entity_id(&mut self, slot: ArchetypeEntityIndex, id: EntityId) {
         self.entity_ids[slot.0.get() as usize] = id;
     }
