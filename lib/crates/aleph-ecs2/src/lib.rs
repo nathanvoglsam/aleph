@@ -30,35 +30,31 @@
 extern crate aleph_virtual_buffer as virtual_buffer;
 
 mod archetype;
-mod archetype_filter;
-mod atomic_borrow;
 mod component;
-mod component_query;
-mod component_registry;
 mod entity;
-mod entity_layout;
-mod entity_storage;
-mod generation;
 mod query;
 mod world;
 
+mod utils;
+
 pub use self::archetype::{Archetype, ArchetypeEntityIndex, ArchetypeIndex};
-pub use self::archetype_filter::ArchetypeFilter;
+pub use self::component::component_query::{
+    ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,
+};
+pub use self::component::component_registry::ComponentRegistry;
+pub use self::component::component_source::{ComponentSource, IntoComponentSource};
 pub use self::component::{
     Component, ComponentIdMap, ComponentSet, ComponentTypeDescription, ComponentTypeId,
 };
-pub use self::component_query::{
-    ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,
-};
-pub use self::component_registry::ComponentRegistry;
-pub use self::entity::{EntityId, EntityIndex};
-pub use self::entity_layout::{EntityLayout, EntityLayoutBuf};
-pub use self::entity_storage::{
+pub use self::entity::entity_layout::{EntityLayout, EntityLayoutBuf};
+pub use self::entity::entity_storage::{
     EntityEntry, EntityEntryData, EntityFreeListLink, EntityLocation, EntityStorage,
 };
-pub use self::generation::Generation;
+pub use self::entity::{EntityId, EntityIndex};
+pub use self::query::query_filter::QueryFilter;
 pub use self::query::Query;
-pub use self::world::{ComponentSource, IntoComponentSource, World, WorldOptions};
+pub use self::utils::Generation;
+pub use self::world::{World, WorldOptions};
 
 #[cfg(test)]
 mod tests;

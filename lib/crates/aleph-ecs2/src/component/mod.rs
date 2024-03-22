@@ -27,6 +27,10 @@
 // SOFTWARE.
 //
 
+pub mod component_query;
+pub mod component_registry;
+pub mod component_source;
+
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use std::hash::{BuildHasherDefault, Hash};

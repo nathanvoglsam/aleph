@@ -48,7 +48,7 @@ use crate::{Archetype, EntityLayout, EntityLayoutBuf};
 ///
 /// This struct exists as an FFI compatible implementation layer that safe wrappers should
 /// abstract over
-pub struct ArchetypeFilter {
+pub struct QueryFilter {
     /// A list of components that *must* be present on a component for the query to match
     ///
     /// We create an owned copy to simplify FFI usage
@@ -60,8 +60,8 @@ pub struct ArchetypeFilter {
     excluded_components: EntityLayoutBuf,
 }
 
-impl ArchetypeFilter {
-    /// Constructs a new instance of `RawArchetypeQuery` in the default state.
+impl QueryFilter {
+    /// Constructs a new instance of [QueryFilter] in the default state.
     ///
     /// This struct will only yield archetypes that match the pattern specified when it was created
     ///

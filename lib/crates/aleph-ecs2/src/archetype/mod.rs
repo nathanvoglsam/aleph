@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 
 use virtual_buffer::VirtualVec;
 
-use crate::atomic_borrow::AtomicBorrow;
+use crate::utils::AtomicBorrow;
 use crate::{
     ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId,
     EntityId, EntityLayout, EntityLayoutBuf,

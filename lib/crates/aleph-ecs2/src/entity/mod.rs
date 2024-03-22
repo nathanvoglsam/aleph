@@ -31,6 +31,9 @@
 //! Most structures in this module are repr(C) for FFI reasons
 //!
 
+pub mod entity_layout;
+pub mod entity_storage;
+
 use std::num::NonZeroU32;
 
 use crate::Generation;

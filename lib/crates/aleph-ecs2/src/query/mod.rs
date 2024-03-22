@@ -27,15 +27,17 @@
 // SOFTWARE.
 //
 
+pub mod query_filter;
+
 use crate::ArchetypeIndex;
 use crate::{
-    ArchetypeFilter, ComponentQuery, ComponentQueryItem, EntityId, EntityLayout, EntityLayoutBuf,
-    Fetch, World,
+    ComponentQuery, ComponentQueryItem, EntityId, EntityLayout, EntityLayoutBuf, Fetch,
+    QueryFilter, World,
 };
 
 pub struct Query<'world, Q: ComponentQuery, const CHECKED: bool> {
     world: &'world World,
-    archetype_filter: ArchetypeFilter,
+    archetype_filter: QueryFilter,
     state: QueryState<Q>,
 }
 
@@ -45,7 +47,7 @@ impl<'world, Q: ComponentQuery, const CHECKED: bool> Query<'world, Q, CHECKED> {
         let mut matching = EntityLayoutBuf::new();
         Q::add_to_layout(&mut matching);
 
-        let archetype_filter = ArchetypeFilter::new(&matching, EntityLayout::empty());
+        let archetype_filter = QueryFilter::new(&matching, EntityLayout::empty());
 
         Self {
             world,
