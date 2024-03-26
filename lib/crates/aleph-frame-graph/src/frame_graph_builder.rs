@@ -2279,6 +2279,11 @@ impl<'arena> PassOrderBuilder<'arena> {
         }
         debug_assert!(is_sorted(candidates.as_slice()));
         loop {
+            // Capture the number of candidates we're trying to process in this iteration. This is
+            // used later to detect graph cycles, which manifest as unresolvable dependencies
+            // and an otherwise unbreakable deadlock in this loop.
+            let num_candidates = candidates.len();
+
             // We want to ensure that no scheduled nodes are in the candidate set
             for &candidate in candidates.iter() {
                 debug_assert!(!self.node_scheduled[candidate]);
@@ -2383,6 +2388,16 @@ impl<'arena> PassOrderBuilder<'arena> {
                     next_candidates.push(candidate);
                 }
             }
+
+            // If these lengths are both the same then that means we've failed to schedule any
+            // passes in this iteration. If this happens then we have an unsatisfiable dependency
+            // in the graph somewhere, caused by a cycle in the dependency graph. Unchecked this
+            // would cause us to deadlock in this loop.
+            //
+            // Instead we promote this to an assert (for now).
+            // TODO: Run a cycle-detection pass on the graph to find the actual passes causing the
+            //       problem.
+            assert!(num_candidates != next_candidates.len(), "Dependency Cycle Detected!");
 
             // next_candidates becomes the candidates array for the next loop iteration.
             std::mem::swap(&mut candidates, &mut next_candidates);
