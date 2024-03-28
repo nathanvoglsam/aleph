@@ -56,12 +56,24 @@ use aleph_arena_drop_list::DropLink;
 use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
+use thiserror::Error;
 
 use crate::access::ResourceUsageFlagsExt;
 use crate::internal::*;
 use crate::render_pass::CallbackRenderPass;
 use crate::resource::ResourceId;
 use crate::{FrameGraph, FrameGraphResources, IRenderPass, ResourceMut, ResourceRef};
+
+#[derive(Error, Debug)]
+pub enum GraphBuildError {
+    #[error("A cyclic dependency was dected inside the IR graph. Bad input passes!")]
+    CyclicDependencyDetected,
+
+    #[error("IO Error.")]
+    IO(#[from] std::io::Error),
+}
+
+pub type Result<T> = std::result::Result<T, GraphBuildError>;
 
 /// A wrapper object around a [MaybeUninit] that allows specifying payloads for render passes
 /// without requiring that they all implement [Default].
@@ -175,6 +187,14 @@ pub struct GraphVizOutputOptions {
     /// This option is intended for debugging to ensure that the graph is doubly linked correctly.
     /// The output quality goes down so it is not recommended to use this in the general case.
     pub output_previous_links: bool,
+}
+
+impl GraphVizOutputOptions {
+    pub const fn with_previous() -> Self {
+        Self {
+            output_previous_links: true,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -295,7 +315,7 @@ impl FrameGraphBuilder {
         graph_name: &str,
         writer: &mut impl std::io::Write,
         options: &GraphVizOutputOptions,
-    ) -> std::io::Result<FrameGraph> {
+    ) -> Result<FrameGraph> {
         self.build_internal(device, graph_name, Some((writer, options)))
     }
 
@@ -304,7 +324,7 @@ impl FrameGraphBuilder {
         device: &dyn IDevice,
         graph_name: &str,
         writer: Option<(&mut T, &GraphVizOutputOptions)>,
-    ) -> std::io::Result<FrameGraph> {
+    ) -> Result<FrameGraph> {
         // An arena allocator used for allocating resources that only live as long as the graph is
         // being built
         let build_arena = Bump::new();
@@ -317,7 +337,62 @@ impl FrameGraphBuilder {
         ir_builder.build(&self, graph_name)?;
 
         let mut pass_order_builder = PassOrderBuilder::new(&build_arena, &ir_builder);
-        pass_order_builder.build(&self, &ir_builder);
+        let result = pass_order_builder.build(&self, &ir_builder);
+
+        match result {
+            Ok(_) => {}
+            Err(mut bad_nodes) => {
+                log::error!("Cyclic Dependency Detected in FrameGraph! Inspect the GraphViz!");
+
+                // We only want to run cycle detection code from pass nodes so filter barrier nodes
+                // out of our potential 'bad_nodes' set
+                bad_nodes.retain(|v| ir_builder.nodes[*v].is_render_pass());
+
+                // Find all cycles in the IR graph starting from our bad_nodes passes
+                for bad_node_i in bad_nodes {
+                    let bad_node = &ir_builder.nodes[bad_node_i];
+                    let bad_node_name =
+                        unsafe { self.render_passes[bad_node.render_pass()].name.as_ref() };
+
+                    // All of these nodes _must_ be barrier nodes because we're starting from a
+                    // render pass node, and we require pass nodes only point to barriers.
+                    let nexts = unsafe { bad_node.next().as_ref() };
+                    for &next_i in nexts {
+                        let next = &ir_builder.nodes[next_i];
+                        debug_assert!(!next.is_render_pass()); // Catch if we break this though
+
+                        if ir_builder.shortest_path(next_i, bad_node_i).is_some() {
+                            let resource_id = next.resource_id();
+                            let resource_root_id = resource_id.root_id();
+                            let resource_version_id = resource_id.version_id();
+                            let resource_name = unsafe {
+                                self.root_resources[resource_root_id as usize]
+                                    .resource_type
+                                    .name()
+                                    .unwrap_or("Unnamed-Resource")
+                            };
+                            let resource_creator_pass_i =
+                                self.resource_versions[resource_version_id as usize].creator_pass;
+                            let resource_creator_pass_name = unsafe {
+                                self.render_passes[resource_creator_pass_i].name.as_ref()
+                            };
+                            log::error!(
+                                "Pass \"{}\" (NodeId[{}]) has cyclic dependency through Resource \"{}\" (RootId[{}], VersionId[{}]) which is created by Pass \"{}\" (NodeId[{}])",
+                                bad_node_name,
+                                bad_node_i,
+                                resource_name,
+                                resource_root_id,
+                                resource_version_id,
+                                resource_creator_pass_name,
+                                resource_creator_pass_i
+                            );
+                        }
+                    }
+                }
+
+                return Err(GraphBuildError::CyclicDependencyDetected);
+            }
+        }
 
         let execution_bundles = pass_order_builder.bundles;
         let ir_nodes = ir_builder.nodes;
@@ -1225,7 +1300,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         }
     }
 
-    pub fn build(&mut self, builder: &FrameGraphBuilder, graph_name: &str) -> std::io::Result<()> {
+    pub fn build(&mut self, builder: &FrameGraphBuilder, graph_name: &str) -> Result<()> {
         self.emit_graph_viz_start(graph_name)?;
 
         // The first step is to emit all the barriers and graph edges by iterating through our
@@ -1379,7 +1454,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         resource_id: ResourceId,
         root: &ResourceRoot,
         root_variant: &ResourceTypeBuffer,
-    ) -> Result<(), std::io::Error> {
+    ) -> Result<()> {
         if version.read_count > 0 {
             // We form a 'next' edge will all the reads to this buffer, collecting
             // the full set of usage/sync flags as the 'after' scope of the barrier.
@@ -1554,7 +1629,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         resource_id: ResourceId,
         root: &ResourceRoot,
         root_variant: &ResourceTypeTexture,
-    ) -> Result<(), std::io::Error> {
+    ) -> Result<()> {
         if version.read_count > 0 {
             // First we need all the reads of this resource version in an array, sorted
             // by the required image layout.
@@ -1946,7 +2021,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     }
 
     /// Output the start of the DOT graph if we have a writer
-    fn emit_graph_viz_start(&mut self, graph_name: &str) -> std::io::Result<()> {
+    fn emit_graph_viz_start(&mut self, graph_name: &str) -> Result<()> {
         if let Some((v, _options)) = self.writer.as_mut() {
             writeln!(v, "digraph {graph_name} {{")?;
         }
@@ -1954,7 +2029,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     }
 
     /// Output the end of the DOT graph if we have a writer
-    fn emit_graph_viz_end(&mut self) -> std::io::Result<()> {
+    fn emit_graph_viz_end(&mut self) -> Result<()> {
         if let Some((v, _options)) = self.writer.as_mut() {
             writeln!(v, "}}")?;
         }
@@ -1988,7 +2063,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         builder: &FrameGraphBuilder,
         node_index: usize,
         ir_node: &impl IIRNode,
-    ) -> std::io::Result<()> {
+    ) -> Result<()> {
         let resource_name = self.get_resource_name_for_resource_id(builder, ir_node.resource_id());
         write!(writer, "    ")?;
         ir_node.write_graph_viz(writer, resource_name, node_index)
@@ -2017,7 +2092,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         before_access: BarrierAccess,
         after_sync: BarrierSync,
         after_access: BarrierAccess,
-    ) -> std::io::Result<usize> {
+    ) -> Result<usize> {
         // Current length of the ir_node buffer will become the index of the node we insert
         let ir_node_index = self.nodes.len();
 
@@ -2076,7 +2151,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         after_sync: BarrierSync,
         after_access: BarrierAccess,
         after_layout: ImageLayout,
-    ) -> std::io::Result<usize> {
+    ) -> Result<usize> {
         // Current length of the ir_node buffer will become the index of the node we insert
         let ir_node_index = self.nodes.len();
 
@@ -2170,6 +2245,89 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             assert!(self.nodes[prev].is_render_pass());
         }
     }
+
+    /// Internal utility function used for finding a (shortest) path between the start and goal
+    /// nodes.
+    ///
+    /// Specifically used for cycle detection by trying to find a path from self->self which should
+    /// not be possible in a DAG.
+    fn shortest_path(&self, start: usize, goal: usize) -> Option<usize> {
+        use std::cmp::Ordering;
+        use std::collections::BinaryHeap;
+
+        #[derive(Copy, Clone, Eq, PartialEq)]
+        struct State {
+            cost: usize,
+            position: usize,
+        }
+
+        // The priority queue depends on `Ord`.
+        // Explicitly implement the trait so the queue becomes a min-heap
+        // instead of a max-heap.
+        impl Ord for State {
+            fn cmp(&self, other: &Self) -> Ordering {
+                // Notice that the we flip the ordering on costs.
+                // In case of a tie we compare positions - this step is necessary
+                // to make implementations of `PartialEq` and `Ord` consistent.
+                other
+                    .cost
+                    .cmp(&self.cost)
+                    .then_with(|| self.position.cmp(&other.position))
+            }
+        }
+
+        // `PartialOrd` needs to be implemented as well.
+        impl PartialOrd for State {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+
+        // dist[node] = current shortest distance from `start` to `node`
+        let mut dist: Vec<_> = (0..self.nodes.len()).map(|_| usize::MAX).collect();
+
+        let mut heap = BinaryHeap::new();
+
+        // We're at `start`, with a zero cost
+        dist[start] = 0;
+        heap.push(State {
+            cost: 0,
+            position: start,
+        });
+
+        // Examine the frontier with lower cost nodes first (min-heap)
+        while let Some(State { cost, position }) = heap.pop() {
+            // Alternatively we could have continued to find all shortest paths
+            if position == goal {
+                return Some(cost);
+            }
+
+            // Important as we may have already found a better way
+            if cost > dist[position] {
+                continue;
+            }
+
+            // For each node we can reach, see if we can find a way with
+            // a lower cost going through this node
+            let nexts = unsafe { self.nodes[position].next().as_ref() };
+            for &edge in nexts {
+                let next = State {
+                    cost: cost + 1,
+                    position: edge,
+                };
+
+                // If so, add it to the frontier and continue
+                if next.cost < dist[next.position] {
+                    heap.push(next);
+                    // Relaxation, we have now found a better way
+                    dist[next.position] = next.cost;
+                }
+            }
+        }
+
+        // Goal not reachable
+        None
+    }
 }
 
 struct PassOrderBuilder<'arena> {
@@ -2219,7 +2377,7 @@ impl<'arena> PassOrderBuilder<'arena> {
         &mut self,
         graph_builder: &FrameGraphBuilder,
         ir: &IRBuilder<'arena, '_, '_, T>,
-    ) {
+    ) -> std::result::Result<(), Vec<usize>> {
         let (roots, leafs) = self.find_root_and_leaf_nodes(graph_builder, ir);
         let barrier_type_counts = Self::sum_barrier_type_counts(ir);
 
@@ -2236,7 +2394,7 @@ impl<'arena> PassOrderBuilder<'arena> {
             passes: NonNull::from(&[]),
         });
 
-        self.schedule_passes(graph_builder, ir);
+        self.schedule_passes(graph_builder, ir)?;
 
         self.bundles.push(PassOrderBundle {
             barriers: NonNull::from(export_barriers.as_slice()),
@@ -2244,13 +2402,15 @@ impl<'arena> PassOrderBuilder<'arena> {
         });
 
         self.validate_bundles(graph_builder, ir);
+
+        Ok(())
     }
 
     fn schedule_passes<T: std::io::Write>(
         &mut self,
         graph_builder: &FrameGraphBuilder,
         ir: &IRBuilder<'_, '_, '_, T>,
-    ) {
+    ) -> std::result::Result<(), Vec<usize>> {
         // List that stores the candidates we should consider in a loop iteration. This is
         // initialized to contain all the remaining unscheduled nodes in the graph. The algorithm
         // works by looping over the candidates and progressively scheduling them as they become
@@ -2394,10 +2554,11 @@ impl<'arena> PassOrderBuilder<'arena> {
             // in the graph somewhere, caused by a cycle in the dependency graph. Unchecked this
             // would cause us to deadlock in this loop.
             //
-            // Instead we promote this to an assert (for now).
-            // TODO: Run a cycle-detection pass on the graph to find the actual passes causing the
-            //       problem.
-            assert!(num_candidates != next_candidates.len(), "Dependency Cycle Detected!");
+            // Return the current set of nodes we're being blocked on so the outer code can do a
+            // cycle detection pass to identify which resources and nodes are causing us problems.
+            if num_candidates == next_candidates.len() {
+                return Err(Vec::from_iter(next_candidates));
+            }
 
             // next_candidates becomes the candidates array for the next loop iteration.
             std::mem::swap(&mut candidates, &mut next_candidates);
@@ -2420,6 +2581,8 @@ impl<'arena> PassOrderBuilder<'arena> {
                 break;
             }
         }
+
+        Ok(())
     }
 
     fn schedule_pass_barriers<T: std::io::Write>(

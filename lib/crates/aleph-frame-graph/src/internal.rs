@@ -38,7 +38,7 @@ use aleph_rhi_api::*;
 
 use crate::access::ResourceUsageFlagsExt;
 use crate::resource::ResourceId;
-use crate::{IRenderPass, ResourceVariant};
+use crate::{IRenderPass, ResourceVariant, Result};
 
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
@@ -359,7 +359,7 @@ pub trait IIRNode: Clone + core::fmt::Debug {
         writer: &mut T,
         name: &str,
         node_index: usize,
-    ) -> std::io::Result<()>;
+    ) -> Result<()>;
 }
 
 #[derive(Clone, Debug)]
@@ -486,7 +486,7 @@ impl IIRNode for IRNode {
         writer: &mut T,
         name: &str,
         node_index: usize,
-    ) -> std::io::Result<()> {
+    ) -> Result<()> {
         match self {
             IRNode::RenderPass(v) => v.write_graph_viz(writer, name, node_index),
             IRNode::Barrier(v) => v.write_graph_viz(writer, name, node_index),
@@ -606,11 +606,12 @@ impl IIRNode for RenderPassIRNode {
         writer: &mut T,
         name: &str,
         node_index: usize,
-    ) -> std::io::Result<()> {
+    ) -> Result<()> {
         writeln!(
             writer,
             "node{node_index} [shape=box,label=\"Render Pass: \\\"{name}\\\"\"];"
-        )
+        )?;
+        Ok(())
     }
 }
 
@@ -675,7 +676,7 @@ impl IIRNode for BarrierIRNode {
         writer: &mut T,
         name: &str,
         node_index: usize,
-    ) -> std::io::Result<()> {
+    ) -> Result<()> {
         writeln!(
             writer,
             "node{} [label=\"{} Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"];",
@@ -687,7 +688,8 @@ impl IIRNode for BarrierIRNode {
             self.before_access,
             self.after_sync,
             self.after_access
-        )
+        )?;
+        Ok(())
     }
 }
 
@@ -752,7 +754,7 @@ impl IIRNode for LayoutChangeIRNode {
         writer: &mut T,
         name: &str,
         node_index: usize,
-    ) -> std::io::Result<()> {
+    ) -> Result<()> {
         writeln!(
             writer,
             "node{} [label=\"{} Layout Change Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nBeforeLayout: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\\nAfterLayout: {:?}\"];",
@@ -766,7 +768,8 @@ impl IIRNode for LayoutChangeIRNode {
             self.after_sync,
             self.after_access,
             self.after_layout,
-        )
+        )?;
+        Ok(())
     }
 }
 

@@ -41,7 +41,7 @@ use crate::internal::{
     FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle, RenderPass,
     ResourceRoot, ResourceVersion, TransientResourceBundle,
 };
-use crate::{FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant};
+use crate::{FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, Result};
 
 pub struct FrameGraph {
     /// The bump allocation arena that provides the backing memory for the render passes and any
@@ -291,7 +291,7 @@ impl FrameGraph {
         &self,
         graph_name: &str,
         writer: &mut impl std::io::Write,
-    ) -> std::io::Result<()> {
+    ) -> Result<()> {
         writeln!(writer, "digraph {graph_name} {{")?;
         writeln!(writer, "    compound=true;")?;
 

@@ -32,6 +32,7 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use aleph_rhi_null::NullContext;
 
+use crate::frame_graph_builder::GraphBuildError;
 use crate::{
     BufferImportDesc, FrameGraph, ImportBundle, Payload, ResourceMut, ResourceRef,
     TextureImportDesc,
@@ -42,6 +43,10 @@ fn make_null_device() -> AnyArc<dyn IDevice> {
     let adapter = context.request_adapter(&Default::default()).unwrap();
     adapter.request_device().unwrap()
 }
+
+struct Import(ResourceMut);
+struct Write(ResourceMut);
+struct Read(ResourceRef);
 
 #[test]
 pub fn test_builder() {
@@ -734,17 +739,9 @@ pub fn test_usage_schedule() {
 }
 
 #[test]
-#[should_panic]
 pub fn test_usage_illegal_dependency() {
     let pin_board = PinBoard::new();
     let device = make_null_device();
-    let mut command_list = device
-        .create_command_list(&CommandListDesc {
-            queue_type: QueueType::General,
-            name: None,
-        })
-        .unwrap();
-    let mut encoder = command_list.begin_general().unwrap();
 
     let mock_buffer = device
         .create_buffer(&BufferDesc {
@@ -757,10 +754,6 @@ pub fn test_usage_illegal_dependency() {
     let mock_buffer_desc = mock_buffer.desc();
 
     let mut builder = FrameGraph::builder();
-
-    struct Import(ResourceMut);
-    struct Write(ResourceMut);
-    struct Read(ResourceRef);
 
     builder.add_pass(
         "import-pass",
@@ -823,27 +816,120 @@ pub fn test_usage_illegal_dependency() {
     );
 
     let mut dot_text = Vec::<u8>::new();
-    let mut graph = builder
-        .build_with_graph_viz(
-            device.as_ref(),
-            "TestGraph",
-            &mut dot_text,
-            &Default::default(),
-        )
-        .unwrap();
-    graph
-        .graph_viz_for_pass_order("PassOrder", &mut dot_text)
-        .unwrap();
-    unsafe {
-        graph.allocate_transients(1);
-    }
+    let result = builder.build_with_graph_viz(
+        device.as_ref(),
+        "TestGraph",
+        &mut dot_text,
+        &Default::default(),
+    );
 
     // std::fs::write("./graphviz.dot", dot_text).unwrap();
 
-    let import_buffer = pin_board.get::<Import>().unwrap().0;
-    let mut import_bundle = ImportBundle::default();
-    import_bundle.add_resource(import_buffer, &mock_buffer);
-    unsafe {
-        graph.execute(0, &import_bundle, encoder.as_mut(), &PinBoard::new());
-    }
+    assert!(matches!(
+        result,
+        Err(GraphBuildError::CyclicDependencyDetected)
+    ));
+}
+
+#[test]
+pub fn test_usage_illegal_dependency_2() {
+    let pin_board = PinBoard::new();
+    let device = make_null_device();
+
+    let mock_buffer = device
+        .create_buffer(&BufferDesc {
+            size: 512,
+            cpu_access: CpuAccessMode::None,
+            usage: ResourceUsageFlags::UNORDERED_ACCESS | ResourceUsageFlags::CONSTANT_BUFFER,
+            name: Some("imported-mock-buffer"),
+        })
+        .unwrap();
+    let mock_buffer_desc = mock_buffer.desc();
+
+    let mut builder = FrameGraph::builder();
+
+    builder.add_pass(
+        "import-pass",
+        |_data: &mut Payload<()>, resources| {
+            let import = resources.import_buffer(
+                &BufferImportDesc {
+                    desc: &mock_buffer_desc,
+                    before_sync: BarrierSync::COMPUTE_SHADING,
+                    before_access: BarrierAccess::SHADER_WRITE,
+                    after_sync: BarrierSync::COPY,
+                    after_access: BarrierAccess::COPY_READ,
+                },
+                ResourceUsageFlags::UNORDERED_ACCESS,
+            );
+            pin_board.publish(Import(import));
+        },
+        |_data, _encoder, _resources| {},
+    );
+
+    builder.add_pass(
+        "writer-pass-1",
+        |_data: &mut Payload<()>, resources| {
+            let import: &Import = pin_board.get().unwrap();
+            let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+            pin_board.publish(Write(write));
+        },
+        |_, _, _| {},
+    );
+
+    builder.add_pass(
+        "writer-pass-2",
+        |_data: &mut Payload<()>, resources| {
+            let write: &Write = pin_board.get().unwrap();
+            let write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
+            pin_board.publish(Write(write));
+        },
+        |_, _, _| {},
+    );
+
+    builder.add_pass(
+        "reader-pass",
+        |_data: &mut Payload<()>, resources| {
+            let import: &Import = pin_board.get().unwrap();
+            let read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+            pin_board.publish(Read(read));
+        },
+        |_, _, _| {},
+    );
+
+    builder.add_pass(
+        "deadly-pass",
+        |_data: &mut Payload<()>, resources| {
+            let import: &Import = pin_board.get().unwrap();
+            let write: &Write = pin_board.get().unwrap();
+
+            // This creates a cyclic dependency. We depend on resource version N and N-1. This
+            // dependency can't be satisfied as version N destroys version N-1 when it is written.
+            // The graph builder turns this into a cyclic dependency (in what's meant to be a DAG)
+            // which then gets picked up by our cycle detection code.
+            //
+            // This dependency will lead to the build call panicking. If we didn't panic then the
+            // pass scheduler would deadlock.
+            //
+            // A user should work-around this by producing a copy of a resource if it's needed after
+            // it gets written over.
+            let _bad_read = resources.read_buffer(import.0, ResourceUsageFlags::CONSTANT_BUFFER);
+            let _bad_write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        },
+        |_, _, _| {},
+    );
+
+    let mut dot_text = Vec::<u8>::new();
+    let result = builder.build_with_graph_viz(
+        device.as_ref(),
+        "TestGraph",
+        &mut dot_text,
+        &Default::default(),
+    );
+
+    std::fs::write("./graphviz.dot", dot_text).unwrap();
+
+    assert!(matches!(
+        result,
+        Err(GraphBuildError::CyclicDependencyDetected)
+    ));
 }
