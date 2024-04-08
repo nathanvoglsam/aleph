@@ -1,8 +1,0 @@
-{
-    "cmake.configureOnOpen": false,
-    "slang.additionalSearchPaths": [
-        "C:/Users/Nathan/Code/aleph/lib/plugins/aleph-render/shaders/aleph-render/include",
-    ],
-    "slang.slangdLocation": "C:/Users/Nathan/Code/aleph/.aleph/sdks/slang/bin/windows-x64/release/slangd",
-    "slang.searchInAllWorkspaceDirectories": false,
-}

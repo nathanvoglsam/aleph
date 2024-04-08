@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.configureOnOpen": false,
+		"slang.slangdLocation": ".aleph/sdks/slang/bin/macosx-aarch64/release/slangd",
+		"slang.additionalSearchPaths": [
+			"lib/plugins/aleph-render/shaders/aleph-render/include"
+		],
+		"slang.searchInAllWorkspaceDirectories": false
+	}
+}
