@@ -1,6 +1,6 @@
 ## TODO: Use this when stable
 ## Run with cargo +nightly fmt for now
-## imports_granularity = "Module"
+## imports_granularity = "Item"
 ## reorder_imports = true
 ## reorder_modules = true
 ## group_imports = "StdExternalCrate"
