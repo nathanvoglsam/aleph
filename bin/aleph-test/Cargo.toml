@@ -44,7 +44,7 @@ path = "./src/lib.rs"
 
 [dependencies]
 aleph-engine = { path = "../../lib/crates/aleph-engine", version = "0.1.0", features = ["default", "remote-console"] }
-egui_demo_lib = "0.26.2"
+egui_demo_lib = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-dx12-agility-sdk = { workspace = true }
