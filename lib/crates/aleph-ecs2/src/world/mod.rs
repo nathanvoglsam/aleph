@@ -193,8 +193,7 @@ impl World {
         {
             // Debug assertion that checks that the buffer sizes for each component are exactly the
             // size and alignment needed.
-            let layouts = layout.iter();
-            let descs = layouts.map(|v| {
+            let descs = layout.iter().map(|v| {
                 let desc = self
                     .component_registry
                     .lookup(v)
@@ -266,7 +265,6 @@ impl World {
     /// unchanged and the provided component object will be dropped.
     ///
     /// Returns true if the component is successfully inserted, otherwise returns false.
-    #[inline]
     pub fn add_component<T: Component>(&mut self, entity: EntityId, component: T) -> bool {
         // Construct a slice of the component data. This will be used by the underlying
         // implementation
@@ -291,7 +289,6 @@ impl World {
     /// Removes the specified component from the provided entity.
     ///
     /// Returns true if the component is successfully removed, otherwise returns false.
-    #[inline]
     pub fn remove_component<T: Component>(&mut self, entity: EntityId) -> bool {
         unsafe { self.remove_component_dynamic(entity, ComponentTypeId::of::<T>()) }
     }
@@ -301,7 +298,6 @@ impl World {
     /// Returns true if the operation was successful, otherwise returns false.
     ///
     /// If the ID is invalid then this function does nothing and returns false.
-    #[inline]
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[location.archetype.0.get() as usize];
@@ -326,7 +322,6 @@ impl World {
     }
 
     /// Returns whether the specified component has the component `T`.
-    #[inline]
     pub fn has_component<T: Component>(&self, entity: EntityId) -> bool {
         self.has_component_dynamic(entity, ComponentTypeId::of::<T>())
     }
@@ -377,7 +372,6 @@ impl World {
 
     /// Constructs a safe query that performs no runtime borrow checking, but will only allow shared
     /// access to any component in the query.
-    #[inline]
     pub fn query<Q: ComponentQuery>(&self) -> Query<Q, false> {
         assert!(
             !Q::wants_any_mutable_access(),
@@ -388,14 +382,12 @@ impl World {
 
     /// Constructs a safe query that performs no runtime borrow checking, and allows mutable access
     /// to components in the query, but requires exclusive access to the world.
-    #[inline]
     pub fn query_mut<Q: ComponentQuery>(&mut self) -> Query<Q, false> {
         Query::new(self)
     }
 
     /// Constructs a query that allows mutable access to components via a shared reference to the
     /// world. Safe access is enforced by runtime borrow checking.
-    #[inline]
     pub fn query_checked<Q: ComponentQuery>(&self) -> Query<Q, true> {
         Query::new(self)
     }
@@ -404,7 +396,6 @@ impl World {
     /// but doesn't do any checking to ensure that this is safe to do.
     ///
     ///
-    #[inline]
     pub unsafe fn query_unchecked<Q: ComponentQuery>(&self) -> Query<Q, false> {
         Query::new(self)
     }
@@ -550,9 +541,11 @@ impl World {
                 if let Some(index) = edge.add {
                     return Some(index);
                 }
-            } else if let Some(index) = edge.remove {
-                return Some(index);
-            }
+            } else {
+                if let Some(index) = edge.remove {
+                    return Some(index);
+                }
+            } 
         }
 
         // If we get here then we failed to find an existing link so we'll need to lookup the target
@@ -568,9 +561,11 @@ impl World {
             if destination_layout.add_component_type(component) {
                 return None;
             }
-        } else if !destination_layout.remove_component_type(component) {
-            return None;
-        }
+        } else {
+            if !destination_layout.remove_component_type(component) {
+                return None;
+            }
+        } 
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(&destination_layout);
