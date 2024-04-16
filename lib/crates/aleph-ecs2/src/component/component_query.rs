@@ -65,7 +65,14 @@ pub unsafe trait Fetch<'a>: Sized {
     /// Constructs an instance of [`Fetch`] from the given archetype.
     ///
     /// Takes a pointer because borrow could mutable or shared depending on the implementation.
-    fn create(archetype: &Archetype) -> Self;
+    fn create(archetype: &Archetype) -> Self {
+        Self::create_at(archetype, ArchetypeEntityIndex(NonZeroU32::new(1).unwrap()))
+    }
+
+    /// Constructs an instance of [`Fetch`] from the given archetype.
+    ///
+    /// Takes a pointer because borrow could mutable or shared depending on the implementation.
+    fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self;
 
     /// Skip to the next item in the stream
     ///
@@ -123,11 +130,9 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
     }
 
     #[inline]
-    fn create(archetype: &Archetype) -> Self {
-        let slot = NonZeroU32::new(1).unwrap();
-        let slot = ArchetypeEntityIndex(slot);
+    fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         let ptr = archetype
-            .get_component_ptr(slot, ComponentTypeId::of::<T>())
+            .get_component_ptr(entity, ComponentTypeId::of::<T>())
             .unwrap()
             .cast::<T>();
         Self(ptr)
@@ -187,11 +192,9 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
     }
 
     #[inline]
-    fn create(archetype: &Archetype) -> Self {
-        let slot = NonZeroU32::new(1).unwrap();
-        let slot = ArchetypeEntityIndex(slot);
+    fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         let ptr = archetype
-            .get_component_ptr(slot, ComponentTypeId::of::<T>())
+            .get_component_ptr(entity, ComponentTypeId::of::<T>())
             .unwrap()
             .cast::<T>();
         Self(ptr)
@@ -226,8 +229,8 @@ macro_rules! impl_query_for_tuple {
             }
 
             #[inline]
-            fn create(archetype: &$crate::Archetype) -> Self {
-                ($($name::create(archetype),)*)
+            fn create_at(archetype: &$crate::Archetype, entity: $crate::archetype::ArchetypeEntityIndex) -> Self {
+                ($($name::create_at(archetype, entity),)*)
             }
 
             #[inline]

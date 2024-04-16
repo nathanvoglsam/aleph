@@ -104,19 +104,19 @@ fn extend_test_vec() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids[0]).unwrap(),
+        world.query_one::<&Position>(ids[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids[1]).unwrap(),
+        world.query_one::<&Position>(ids[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[0]).unwrap(),
+        world.query_one::<&Scale>(ids[0]).unwrap(),
         &Scale::new(5.0, 6.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[1]).unwrap(),
+        world.query_one::<&Scale>(ids[1]).unwrap(),
         &Scale::new(7.0, 8.0)
     );
 
@@ -141,19 +141,19 @@ fn extend_test_array() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids[0]).unwrap(),
+        world.query_one::<&Position>(ids[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids[1]).unwrap(),
+        world.query_one::<&Position>(ids[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[0]).unwrap(),
+        world.query_one::<&Scale>(ids[0]).unwrap(),
         &Scale::new(5.0, 6.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[1]).unwrap(),
+        world.query_one::<&Scale>(ids[1]).unwrap(),
         &Scale::new(7.0, 8.0)
     );
 
@@ -178,19 +178,19 @@ fn remove_entity_array() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids_a[0]).unwrap(),
+        world.query_one::<&Position>(ids_a[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids_a[1]).unwrap(),
+        world.query_one::<&Position>(ids_a[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids_a[0]).unwrap(),
+        world.query_one::<&Scale>(ids_a[0]).unwrap(),
         &Scale::new(5.0, 6.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids_a[1]).unwrap(),
+        world.query_one::<&Scale>(ids_a[1]).unwrap(),
         &Scale::new(7.0, 8.0)
     );
 
@@ -218,21 +218,15 @@ fn remove_entity_array() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids_b[0]).unwrap(),
+        world.query_one::<&Position>(ids_b[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids_b[1]).unwrap(),
+        world.query_one::<&Position>(ids_b[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
-    assert_eq!(
-        world.get_component_ref::<Mesh>(ids_b[0]).unwrap(),
-        &Mesh::new(9)
-    );
-    assert_eq!(
-        world.get_component_ref::<Mesh>(ids_b[1]).unwrap(),
-        &Mesh::new(10)
-    );
+    assert_eq!(world.query_one::<&Mesh>(ids_b[0]).unwrap(), &Mesh::new(9));
+    assert_eq!(world.query_one::<&Mesh>(ids_b[1]).unwrap(), &Mesh::new(10));
 
     assert!(!world.has_component::<Scale>(ids_b[0]));
     assert!(!world.has_component::<Scale>(ids_b[1]));
@@ -319,10 +313,10 @@ fn drop_test() {
     assert_eq!(ids.len(), 2);
     assert_eq!(world.len(), 2);
 
-    let comp = world.get_component_ref::<Dropper>(ids[0]).unwrap();
+    let comp = world.query_one::<&Dropper>(ids[0]).unwrap();
     assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
 
-    let comp = world.get_component_ref::<Dropper>(ids[1]).unwrap();
+    let comp = world.query_one::<&Dropper>(ids[1]).unwrap();
     assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
 
     assert!(world.remove_entity(ids[0]));

@@ -330,14 +330,10 @@ impl Archetype {
         let drop_fn = self.storages[type_index].type_description.fn_drop;
 
         if let Some(drop_fn) = drop_fn {
-            let base = slot.0.get() as usize;
-            let base = base * type_size;
-            let end = base + type_size;
+            let slot = slot.0.get() as usize;
+            let component = &mut self.storages[type_index].data[slot * type_size];
 
-            let slice = self.storages[type_index].data.as_slice_mut();
-            let slice = &mut slice[base..end];
-
-            drop_fn(slice.as_mut_ptr());
+            drop_fn(component);
         }
     }
 
@@ -357,19 +353,15 @@ impl Archetype {
     ) -> Option<NonNull<u8>> {
         // Lookup the storage index, load the size of the type and get the storage pointer
         let storage_index = self.storage_indices.get(&component_type).copied()?;
-        let type_size = self.storages[storage_index].type_description.type_size;
-        let storage = self.storages[storage_index].data.as_slice();
+        let storage = &self.storages[storage_index];
 
-        // Get the bounds of the component's data
-        let base = slot.0.get() as usize;
-        let base = base * type_size;
-        let end = base + type_size;
+        let type_size = storage.type_description.type_size;
+        let data = storage.data.as_slice();
+
+        let slot = slot.0.get() as usize;
 
         // Get a pointer to the position in the buffer the component can be found
-        let slice = &storage[base..end];
-        let ptr = slice.as_ptr();
-
-        NonNull::new(ptr as *mut u8)
+        Some(NonNull::from(&data[slot * type_size]))
     }
 
     /// Remove the entity at the given index.

@@ -29,8 +29,8 @@
 
 use std::collections::HashMap;
 use std::num::NonZeroU32;
-use std::ptr::NonNull;
 
+use crate::ComponentQueryItem;
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
     ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId, EntityId,
@@ -328,34 +328,52 @@ impl World {
     /// Returns whether the specified component has the component `T`.
     #[inline]
     pub fn has_component<T: Component>(&self, entity: EntityId) -> bool {
-        self.get_component_ref::<T>(entity).is_some()
+        self.has_component_dynamic(entity, ComponentTypeId::of::<T>())
     }
 
-    /// Returns a shared reference to the component `T` on the given entity, or `None` if no such
-    /// component is attached to the entity.
     #[inline]
-    pub fn get_component_ref<T: Component>(&self, entity: EntityId) -> Option<&T> {
-        unsafe {
-            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>())
-                .map(|v| {
-                    let ptr = v.as_ptr() as *const u8 as *const T;
-                    &*ptr
-                })
+    pub fn query_one<Q: ComponentQuery>(&self, entity: EntityId) -> Option<ComponentQueryItem<Q>> {
+        use crate::component::component_query::Fetch;
+
+        assert!(
+            !Q::wants_any_mutable_access(),
+            "Tried to execute a query with mutable access without mutable world"
+        );
+
+        if let Some(location) = self.entities.lookup(entity) {
+            let archetype = &self.archetypes[location.archetype.0.get() as usize];
+            let fetch = Q::Fetch::create_at(archetype, location.entity);
+
+            // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
+            //         break aliasing rules. Otherwise the entity lookup has performed all the
+            //         bounds checks we need so this is safe.
+            unsafe { Some(fetch.get()) }
+        } else {
+            None
         }
     }
 
-    /// Returns a mutable reference to the component `T` on the given entity, or `None` if no such
-    /// component is attached to the entity.
     #[inline]
-    pub fn get_component_mut<T: Component>(&mut self, entity: EntityId) -> Option<&mut T> {
-        unsafe {
-            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>())
-                .map(|v| {
-                    let ptr = v.as_ptr() as *mut T;
-                    &mut *ptr
-                })
+    pub fn query_one_mut<Q: ComponentQuery>(
+        &mut self,
+        entity: EntityId,
+    ) -> Option<ComponentQueryItem<Q>> {
+        use crate::component::component_query::Fetch;
+
+        if let Some(location) = self.entities.lookup(entity) {
+            let archetype = &self.archetypes[location.archetype.0.get() as usize];
+            let fetch = Q::Fetch::create_at(archetype, location.entity);
+
+            // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
+            //         break aliasing rules. Otherwise the entity lookup has performed all the
+            //         bounds checks we need so this is safe.
+            unsafe { Some(fetch.get()) }
+        } else {
+            None
         }
     }
+
+    // TODO: Add checked query functions to enable getting shared references
 
     /// Constructs a safe query that performs no runtime borrow checking, but will only allow shared
     /// access to any component in the query.
@@ -505,16 +523,13 @@ impl World {
     /// This function provides a raw, untyped interface for looking up an individual component for
     /// a given entity.
     #[inline]
-    pub fn get_component_ptr_dynamic(
-        &self,
-        entity: EntityId,
-        component: ComponentTypeId,
-    ) -> Option<NonNull<u8>> {
+    pub fn has_component_dynamic(&self, entity: EntityId, component: ComponentTypeId) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
             self.archetypes[location.archetype.0.get() as usize]
-                .get_component_ptr(location.entity, component)
+                .entity_layout()
+                .contains_component_type(component)
         } else {
-            None
+            false
         }
     }
 }
