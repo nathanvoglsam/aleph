@@ -54,19 +54,16 @@ impl Generation {
     }
 
     /// Returns whether this generation marks a generation that is alive
-    #[inline]
     pub const fn is_alive(self) -> bool {
         self.0 % 2 != 0
     }
 
     /// Returns whether this generation marks a generation that si dead
-    #[inline]
     pub const fn is_dead(self) -> bool {
         !self.is_alive()
     }
 
     /// Increments the generation index.
-    #[inline]
     pub const fn increment(self) -> Generation {
         Self(self.0.wrapping_add(1))
     }

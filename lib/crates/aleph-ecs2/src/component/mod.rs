@@ -80,7 +80,6 @@ pub struct ComponentTypeId(u64);
 
 impl ComponentTypeId {
     /// Returns the ComponentTypeId of the given component type
-    #[inline]
     pub fn of<T: Component>() -> Self {
         let v = IdentityHasher::hash(TypeId::of::<T>());
         Self(v)

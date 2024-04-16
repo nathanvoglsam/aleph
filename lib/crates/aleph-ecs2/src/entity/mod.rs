@@ -67,7 +67,6 @@ pub struct EntityId {
 }
 
 impl EntityId {
-    #[inline]
     pub const fn null() -> Self {
         Self {
             generation: Generation::new(),
@@ -76,7 +75,6 @@ impl EntityId {
     }
 
     /// Returns whether this entity reference is a null reference.
-    #[inline]
     pub const fn is_null(self) -> bool {
         self.generation.is_dead() && self.index.is_none()
     }

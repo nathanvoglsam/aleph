@@ -42,7 +42,6 @@ pub struct Query<'world, Q: ComponentQuery, const CHECKED: bool> {
 }
 
 impl<'world, Q: ComponentQuery, const CHECKED: bool> Query<'world, Q, CHECKED> {
-    #[inline]
     pub(crate) fn new(world: &'world World) -> Self {
         let mut matching = EntityLayoutBuf::new();
         Q::add_to_layout(&mut matching);

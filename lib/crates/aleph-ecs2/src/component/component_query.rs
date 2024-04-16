@@ -90,7 +90,7 @@ impl<'a, T: Component> ComponentQuery for &'a T {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     fn wants_any_mutable_access() -> bool {
         false
     }
@@ -154,6 +154,7 @@ impl<'a, T: Component> ComponentQuery for &'a mut T {
         }
     }
 
+    #[inline(always)]
     fn wants_any_mutable_access() -> bool {
         true
     }
@@ -196,12 +197,12 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
         Self(ptr)
     }
 
-    #[inline]
+    #[inline(always)]
     unsafe fn next(&mut self) {
         self.0 = NonNull::new_unchecked(self.0.as_ptr().add(1));
     }
 
-    #[inline]
+    #[inline(always)]
     unsafe fn get(&self) -> Self::Item {
         &mut *self.0.as_ptr()
     }
@@ -251,6 +252,7 @@ macro_rules! impl_query_for_tuple {
                 ($($name::add_to_layout(layout),)*);
             }
 
+            #[inline]
             fn wants_any_mutable_access() -> bool {
                 $($name::wants_any_mutable_access()|)* false
             }

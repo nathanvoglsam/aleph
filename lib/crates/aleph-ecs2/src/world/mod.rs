@@ -178,7 +178,6 @@ impl World {
     }
 
     /// Register's a rust component type with this ECS world so that it can be used as a component
-    #[inline]
     pub fn register<T: Component>(&mut self) -> ComponentTypeDescription {
         self.component_registry.register::<T>()
     }
