@@ -74,23 +74,21 @@ impl<T> CommittedVirtualVec<T> {
     }
 
     /// Returns the number of items that the `CommittedVirtualVec` holds.
-    #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.len
     }
 
     ///
     /// Returns whether the len is 0
     ///
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// Returns the number of items that the `CommittedVirtualVec` has address space reserved for.
     /// This is the maximum number of elements that can be held in a `CommittedVirtualVec`.
-    #[inline]
-    pub fn capacity(&self) -> usize {
-        self.buffer.len() / size_of::<T>()
+    pub const fn capacity(&self) -> usize {
+        self.buffer.0.len() / size_of::<T>()
     }
 
     /// Place an element onto the end of the vec.
@@ -111,7 +109,7 @@ impl<T> CommittedVirtualVec<T> {
         // The type's safe interface ensures that the pointer is valid to write to, and we ensure
         // that memory is committed at the address with the above growth check.
         unsafe {
-            self.ptr_mut().add(self.len).write(v);
+            self.as_ptr().add(self.len).write(v);
             self.len += 1;
         }
     }
@@ -130,7 +128,7 @@ impl<T> CommittedVirtualVec<T> {
             //
             // By decrementing the length we can just forget about the contents of the slot, and by
             // returning the value we don't need to care about
-            unsafe { Some(self.ptr().add(self.len).read()) }
+            unsafe { Some(self.as_ptr().add(self.len).read()) }
         }
     }
 
@@ -192,7 +190,7 @@ impl<T> CommittedVirtualVec<T> {
                         // The object is already inaccessible outside this function by the time
                         // the drop is actually called.
                         unsafe {
-                            self.ptr_mut().add(self.len).drop_in_place();
+                            self.as_ptr().add(self.len).drop_in_place();
                         }
                     }
                 } else {
@@ -229,8 +227,8 @@ impl<T> CommittedVirtualVec<T> {
             // and if the overlap.
             unsafe {
                 // Swap the value we want to remove so it's the last item in the array
-                let a = self.ptr_mut().add(index);
-                let b = self.ptr_mut().add(self.len - 1);
+                let a = self.as_ptr().add(index);
+                let b = self.as_ptr().add(self.len - 1);
                 std::ptr::swap_nonoverlapping(a, b, 1);
             }
             // Pop the removed element off the end
@@ -253,7 +251,7 @@ impl<T> CommittedVirtualVec<T> {
 
                 for i in start..end {
                     unsafe {
-                        self.ptr_mut().add(i).drop_in_place();
+                        self.as_ptr().add(i).drop_in_place();
                     }
                 }
             }
@@ -295,7 +293,7 @@ impl<T> CommittedVirtualVec<T> {
         // SAFETY:
         // Safe as we've guaranteed the memory to be accessible with the above reserve call
         unsafe {
-            let base = self.ptr_mut().add(self.len);
+            let base = self.as_ptr().add(self.len);
             for (i, item) in sli.iter().enumerate() {
                 base.add(i).write(item.clone())
             }
@@ -310,25 +308,18 @@ impl<T> CommittedVirtualVec<T> {
     // TODO: drain
 
     /// Returns a slice over all the elements stored inside `self`
-    #[inline(always)]
-    pub fn as_slice(&self) -> &[T] {
-        unsafe { from_raw_parts(self.ptr(), self.len) }
+    pub const fn as_slice(&self) -> &[T] {
+        unsafe { from_raw_parts(self.as_ptr(), self.len) }
     }
 
     /// Returns a slice over all the elements stored inside `self`
-    #[inline(always)]
+    #[inline]
     pub fn as_slice_mut(&mut self) -> &mut [T] {
-        unsafe { from_raw_parts_mut(self.ptr_mut(), self.len) }
+        unsafe { from_raw_parts_mut(self.as_ptr(), self.len) }
     }
 
-    #[inline(always)]
-    fn ptr(&self) -> *const T {
-        self.buffer.deref().as_ptr() as *const T
-    }
-
-    #[inline(always)]
-    fn ptr_mut(&mut self) -> *mut T {
-        self.buffer.deref_mut().as_mut_ptr() as *mut T
+    const fn as_ptr(&self) -> *mut T {
+        self.buffer.0.as_ptr() as *mut T
     }
 }
 
@@ -384,7 +375,7 @@ impl<T> Drop for CommittedVirtualVec<T> {
                 // This just iterates over all valid elements and calls their drop function, which
                 // is a perfectly valid operation.
                 unsafe {
-                    let ptr = self.ptr_mut();
+                    let ptr = self.as_ptr();
                     ptr.add(i).drop_in_place();
                 }
             }

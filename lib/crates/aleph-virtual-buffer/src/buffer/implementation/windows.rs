@@ -44,13 +44,13 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
 
     let result = VirtualAlloc(None, pages * page_size(), MEM_RESERVE, page_type);
 
-    if result.is_null() {
-        Err(std::io::Error::last_os_error())
-    } else {
+    if let Some(data) = std::ptr::NonNull::new(result) {
         Ok(VirtualBuffer {
-            data: result as _,
+            data: data.cast(),
             len: pages * page_size(),
         })
+    } else {
+        Err(std::io::Error::last_os_error())
     }
 }
 

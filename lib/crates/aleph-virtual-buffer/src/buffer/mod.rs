@@ -30,13 +30,14 @@
 mod implementation;
 
 use std::ops::{Deref, DerefMut, Range};
+use std::ptr::NonNull;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
 ///
 /// An abstraction over an owned region of address space that can be committed and released
 ///
 pub struct VirtualBuffer {
-    data: *mut u8,
+    data: NonNull<u8>,
     len: usize,
 }
 
@@ -76,7 +77,7 @@ impl VirtualBuffer {
         } else {
             let (offset, pages) = Self::page_range_for_byte_range(range);
 
-            let ptr = unsafe { self.data.add(offset) };
+            let ptr = unsafe { self.data.as_ptr().add(offset) };
             unsafe { implementation::commit_virtual_address_range(ptr, pages) }
         }
     }
@@ -102,7 +103,7 @@ impl VirtualBuffer {
         } else {
             let (offset, pages) = Self::page_range_for_byte_range(range);
 
-            let ptr = unsafe { self.data.add(offset) };
+            let ptr = unsafe { self.data.as_ptr().add(offset) };
             unsafe { implementation::release_virtual_address_range(ptr, pages) }
         }
     }
@@ -122,21 +123,21 @@ impl VirtualBuffer {
     /// This must be upheld by the caller, hence returning a pointer rather than a slice. We wash
     /// our hands of the safety problem from here after.
     ///
-    pub fn data(&self) -> *mut u8 {
-        self.data
+    pub const fn data(&self) -> *mut u8 {
+        self.data.as_ptr()
     }
 
     ///
     /// Returns the length of the buffer
     ///
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.len
     }
 
     ///
     /// Returns whether the len is 0
     ///
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
@@ -160,8 +161,8 @@ impl VirtualBuffer {
     /// Commit all memory before using, or check if the platform requires it with
     /// `Self::requires_committing`.
     ///
-    pub unsafe fn as_slice(&self) -> &[u8] {
-        from_raw_parts(self.data, self.len)
+    pub const unsafe fn as_slice(&self) -> &[u8] {
+        from_raw_parts(self.as_ptr(), self.len)
     }
 
     ///
@@ -176,17 +177,12 @@ impl VirtualBuffer {
     /// `Self::requires_committing`.
     ///
     pub unsafe fn as_slice_mut(&mut self) -> &mut [u8] {
-        from_raw_parts_mut(self.data, self.len)
+        from_raw_parts_mut(self.as_ptr(), self.len)
     }
 
     /// Returns a pointer to the base address of the virtual address range.
-    pub fn as_ptr(&self) -> *const u8 {
-        self.data as *const u8
-    }
-
-    /// Returns a pointer to the base address of the virtual address range.
-    pub fn as_mut_ptr(&mut self) -> *mut u8 {
-        self.data
+    pub const fn as_ptr(&self) -> *mut u8 {
+        self.data()
     }
 
     ///
@@ -200,7 +196,8 @@ impl VirtualBuffer {
 impl Drop for VirtualBuffer {
     fn drop(&mut self) {
         unsafe {
-            implementation::free_virtual_buffer(self.data, self.len / Self::page_size()).unwrap()
+            implementation::free_virtual_buffer(self.as_ptr(), self.len / Self::page_size())
+                .unwrap()
         }
     }
 }
@@ -239,7 +236,7 @@ unsafe impl Sync for VirtualBuffer {}
 /// By requiring the whole virtual address range to be committed we can safely treat the entire
 /// buffer as a contiguous slice.
 ///
-pub struct CommittedVirtualBuffer(VirtualBuffer);
+pub struct CommittedVirtualBuffer(pub(crate) VirtualBuffer);
 
 impl Deref for CommittedVirtualBuffer {
     type Target = VirtualBuffer;

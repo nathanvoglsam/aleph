@@ -29,6 +29,9 @@
 
 #![allow(unused)]
 
+use std::io::Error;
+use std::ptr::NonNull;
+
 use crate::VirtualBuffer;
 
 #[inline]
@@ -45,8 +48,11 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
     if result == libc::MAP_FAILED {
         Err(std::io::Error::last_os_error())
     } else {
+        // It's invalid for zero to be returned by mmap. It will return either a valid address or
+        // MAP_FAILED (-1) so we can assume the address if it isn't MAP_FAILED
+        let data = NonNull::new(result).unwrap_unchecked();
         Ok(VirtualBuffer {
-            data: result as _,
+            data: data.cast(),
             len: pages * page_size(),
         })
     }

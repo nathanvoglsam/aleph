@@ -77,26 +77,23 @@ impl<T> VirtualVec<T> {
     }
 
     /// Returns the number of items that the `VirtualVec` holds.
-    #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.len
     }
 
     /// Returns whether the len is 0
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// Returns the number of items that the `VirtualVec` has memory committed for.
-    #[inline]
-    pub fn committed(&self) -> usize {
+    pub const fn committed(&self) -> usize {
         self.committed
     }
 
     /// Returns the number of items that the `VirtualVec` has address space reserved for. This is
     /// the maximum number of elements that can be held in a `VirtualVec`.
-    #[inline]
-    pub fn capacity(&self) -> usize {
+    pub const fn capacity(&self) -> usize {
         self.buffer.len() / size_of::<T>()
     }
 
@@ -370,8 +367,7 @@ impl<T> VirtualVec<T> {
     // TODO: drain
 
     /// Returns a slice over all the elements stored inside `self`
-    #[inline(always)]
-    pub fn as_slice(&self) -> &[T] {
+    pub const fn as_slice(&self) -> &[T] {
         unsafe { from_raw_parts(self.ptr(), self.len) }
     }
 
@@ -431,8 +427,7 @@ impl<T> VirtualVec<T> {
         Ok(())
     }
 
-    #[inline(always)]
-    fn ptr(&self) -> *const T {
+    const fn ptr(&self) -> *const T {
         self.buffer.data() as *const u8 as *const T
     }
 
