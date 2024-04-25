@@ -168,12 +168,12 @@ impl World {
     }
 
     /// Returns the number of entities allocated in the `World`
-    pub fn len(&self) -> u32 {
-        self.entities.len() as u32
+    pub const fn len(&self) -> usize {
+        self.entities.len()
     }
 
     /// Returns if there are no entities in the `World`
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
 
@@ -545,7 +545,7 @@ impl World {
                 if let Some(index) = edge.remove {
                     return Some(index);
                 }
-            } 
+            }
         }
 
         // If we get here then we failed to find an existing link so we'll need to lookup the target
@@ -565,7 +565,7 @@ impl World {
             if !destination_layout.remove_component_type(component) {
                 return None;
             }
-        } 
+        }
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(&destination_layout);
