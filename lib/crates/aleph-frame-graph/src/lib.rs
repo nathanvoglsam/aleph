@@ -142,7 +142,7 @@ mod tests;
 
 pub use frame_graph::{FrameGraph, FrameGraphResources};
 pub use frame_graph_builder::{
-    BufferImportDesc, FrameGraphBuilder, Payload, ResourceRegistry, Result, TextureImportDesc,
+    BufferImportDesc, FrameGraphBuilder, ResourceRegistry, Result, TextureImportDesc,
 };
 pub use import_bundle::ImportBundle;
 pub use render_pass::IRenderPass;

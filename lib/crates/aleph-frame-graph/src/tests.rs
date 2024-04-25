@@ -34,8 +34,7 @@ use aleph_rhi_null::NullContext;
 
 use crate::frame_graph_builder::GraphBuildError;
 use crate::{
-    BufferImportDesc, FrameGraph, ImportBundle, Payload, ResourceMut, ResourceRef,
-    TextureImportDesc,
+    BufferImportDesc, FrameGraph, ImportBundle, ResourceMut, ResourceRef, TextureImportDesc,
 };
 
 fn make_null_device() -> AnyArc<dyn IDevice> {
@@ -50,15 +49,13 @@ struct Read(ResourceRef);
 
 #[test]
 pub fn test_builder() {
-    #[derive(Default)]
     struct TestPassData {
         value: u32,
-        resource: Option<ResourceMut>,
+        resource: ResourceMut,
     }
-    #[derive(Default)]
     struct TestPassData2 {
         value: i16,
-        resource: Option<ResourceRef>,
+        resource: ResourceRef,
     }
 
     let device = make_null_device();
@@ -76,16 +73,10 @@ pub fn test_builder() {
 
     let mut builder = FrameGraph::builder();
 
-    builder.add_pass(
-        "test-pass-0",
-        |data: &mut Payload<TestPassData>, resources| {
-            let data = data.defaulted();
-
-            // Payload init
-            data.value = 54321;
-
-            // Create a transient resource and send it out of the setup closure
-            data.resource = Some(resources.create_buffer_with_sync(
+    builder.add_pass("test-pass-0", |resources| {
+        let payload = TestPassData {
+            value: 54321,
+            resource: resources.create_buffer_with_sync(
                 &BufferDesc {
                     size: 256,
                     name: Some("test-pass-0-transient-resource"),
@@ -93,69 +84,56 @@ pub fn test_builder() {
                 },
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
-            ));
-            out_create = data.resource;
-        },
-        |data, _encoder, resources| {
-            let data = data.unwrap();
+            ),
+        };
+        out_create = Some(payload.resource);
+
+        move |_encoder, resources| {
             // Verify we got the right payload
-            assert_eq!(data.value, 54321);
+            assert_eq!(payload.value, 54321);
             let context = resources.context().get::<usize>().copied().unwrap();
             assert_eq!(context, 512);
-        },
-    );
+        }
+    });
 
-    builder.add_pass(
-        "test-pass-1",
-        |data: &mut Payload<TestPassData>, resources| {
-            let data = data.defaulted();
-
-            // Payload init
-            data.value = 1234;
-
-            // Write the transient resource created in the previous pass and send it out of the
-            // setup closure
-            data.resource = Some(resources.write_buffer_with_sync(
+    builder.add_pass("test-pass-1", |resources| {
+        let payload = TestPassData {
+            value: 1234,
+            resource: resources.write_buffer_with_sync(
                 out_create.unwrap(),
                 BarrierSync::COMPUTE_SHADING,
                 ResourceUsageFlags::UNORDERED_ACCESS,
-            ));
-            out_write = data.resource;
-        },
-        |data, _encoder, resources| {
-            let data = data.unwrap();
+            ),
+        };
+        out_write = Some(payload.resource);
+
+        move |_encoder, resources| {
             // Verify we got the right payload
-            assert_eq!(data.value, 1234);
+            assert_eq!(payload.value, 1234);
             let context = resources.context().get::<usize>().copied().unwrap();
             assert_eq!(context, 512);
-        },
-    );
+        }
+    });
 
-    builder.add_pass(
-        "test-pass-2",
-        |data: &mut Payload<TestPassData2>, resources| {
-            let data = data.defaulted();
-
-            // Payload init
-            data.value = -432;
-
-            // Read the transient resource based on the write rename created from the previous
-            // pass and send it out of the setup closure
-            data.resource = Some(resources.read_buffer_with_sync(
+    builder.add_pass("test-pass-2", |resources| {
+        let payload = TestPassData2 {
+            value: -432,
+            resource: resources.read_buffer_with_sync(
                 out_write.unwrap(),
                 BarrierSync::PIXEL_SHADING,
                 ResourceUsageFlags::CONSTANT_BUFFER,
-            ));
-            out_read = data.resource;
-        },
-        |data, _encoder, resources| {
-            let data = data.unwrap();
+            ),
+        };
+
+        out_read = Some(payload.resource);
+
+        move |_encoder, resources| {
             // Verify we got the right payload
-            assert_eq!(data.value, -432);
+            assert_eq!(payload.value, -432);
             let context = resources.context().get::<usize>().copied().unwrap();
             assert_eq!(context, 512);
-        },
-    );
+        }
+    });
 
     let mut graph = builder.build(device.as_ref());
     unsafe {
@@ -200,75 +178,66 @@ pub fn test_handle_equality() {
     let mut builder = FrameGraph::builder();
 
     let mut imported_resource = None;
-    builder.add_pass(
-        "test-pass-0",
-        |_data: &mut Payload<()>, resources| {
-            let r = resources.import_buffer_with_sync(
-                &BufferImportDesc {
-                    desc: &mock_desc,
-                    before_sync: BarrierSync::COMPUTE_SHADING,
-                    before_access: BarrierAccess::SHADER_WRITE,
-                    after_sync: BarrierSync::COPY,
-                    after_access: BarrierAccess::COPY_READ,
-                },
-                BarrierSync::NONE,
-                ResourceUsageFlags::NONE,
-            );
-            imported_resource = Some(r);
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-0", |resources| {
+        let r = resources.import_buffer_with_sync(
+            &BufferImportDesc {
+                desc: &mock_desc,
+                before_sync: BarrierSync::COMPUTE_SHADING,
+                before_access: BarrierAccess::SHADER_WRITE,
+                after_sync: BarrierSync::COPY,
+                after_access: BarrierAccess::COPY_READ,
+            },
+            BarrierSync::NONE,
+            ResourceUsageFlags::NONE,
+        );
+        imported_resource = Some(r);
+
+        move |_encoder, _resources| {}
+    });
     let imported_resource = imported_resource.unwrap();
 
-    builder.add_pass(
-        "test-pass-1",
-        |_data: &mut Payload<()>, resources| {
-            out_read_import = Some(resources.read_buffer_with_sync(
-                imported_resource,
-                BarrierSync::PIXEL_SHADING,
-                ResourceUsageFlags::CONSTANT_BUFFER,
-            ));
-            out_create = Some(resources.create_buffer_with_sync(
-                &BufferDesc {
-                    size: 256,
-                    name: Some("test-pass-1-transient-resource"),
-                    ..Default::default()
-                },
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            ));
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-1", |resources| {
+        out_read_import = Some(resources.read_buffer_with_sync(
+            imported_resource,
+            BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::CONSTANT_BUFFER,
+        ));
+        out_create = Some(resources.create_buffer_with_sync(
+            &BufferDesc {
+                size: 256,
+                name: Some("test-pass-1-transient-resource"),
+                ..Default::default()
+            },
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        ));
 
-    builder.add_pass(
-        "test-pass-2",
-        |_data: &mut Payload<()>, resources| {
-            out_write_import = Some(resources.write_buffer_with_sync(
-                imported_resource,
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            ));
-            out_write_transient = Some(resources.write_buffer_with_sync(
-                out_create.unwrap(),
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            ));
-        },
-        |_data, _encoder, _resources| {},
-    );
+        move |_encoder, _resources| {}
+    });
 
-    builder.add_pass(
-        "test-pass-3",
-        |_data: &mut Payload<()>, resources| {
-            out_read_transient = Some(resources.read_buffer_with_sync(
-                out_write_transient.unwrap(),
-                BarrierSync::PIXEL_SHADING,
-                ResourceUsageFlags::CONSTANT_BUFFER,
-            ));
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-2", |resources| {
+        out_write_import = Some(resources.write_buffer_with_sync(
+            imported_resource,
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        ));
+        out_write_transient = Some(resources.write_buffer_with_sync(
+            out_create.unwrap(),
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        ));
+
+        move |_encoder, _resources| {}
+    });
+
+    builder.add_pass("test-pass-3", |resources| {
+        out_read_transient = Some(resources.read_buffer_with_sync(
+            out_write_transient.unwrap(),
+            BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::CONSTANT_BUFFER,
+        ));
+        move |_encoder, _resources| {}
+    });
 
     let out_create = out_create.unwrap();
     let out_read_import = out_read_import.unwrap();
@@ -329,74 +298,63 @@ pub fn test_usage_collection() {
     let mut builder = FrameGraph::builder();
 
     let mut imported_resource = None;
-    builder.add_pass(
-        "test-pass-0",
-        |_data: &mut Payload<()>, resources| {
-            let r = resources.import_buffer(
-                &BufferImportDesc {
-                    desc: &mock_desc,
-                    before_sync: BarrierSync::COMPUTE_SHADING,
-                    before_access: BarrierAccess::SHADER_WRITE,
-                    after_sync: BarrierSync::COPY,
-                    after_access: BarrierAccess::COPY_READ,
-                },
-                ResourceUsageFlags::NONE,
-            );
-            imported_resource = Some(r);
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-0", |resources| {
+        let r = resources.import_buffer(
+            &BufferImportDesc {
+                desc: &mock_desc,
+                before_sync: BarrierSync::COMPUTE_SHADING,
+                before_access: BarrierAccess::SHADER_WRITE,
+                after_sync: BarrierSync::COPY,
+                after_access: BarrierAccess::COPY_READ,
+            },
+            ResourceUsageFlags::NONE,
+        );
+        imported_resource = Some(r);
+
+        move |_encoder, _resources| {}
+    });
     let imported_resource = imported_resource.unwrap();
 
-    builder.add_pass(
-        "test-pass-1",
-        |_data: &mut Payload<()>, resources| {
-            resources.read_buffer_with_sync(
-                imported_resource,
-                BarrierSync::VERTEX_SHADING,
-                ResourceUsageFlags::VERTEX_BUFFER,
-            );
-            out_create = Some(resources.create_buffer_with_sync(
-                &BufferDesc {
-                    size: 256,
-                    name: Some("test-pass-1-transient-resource"),
-                    ..Default::default()
-                },
-                BarrierSync::VERTEX_SHADING,
-                ResourceUsageFlags::INDEX_BUFFER,
-            ));
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-1", |resources| {
+        resources.read_buffer_with_sync(
+            imported_resource,
+            BarrierSync::VERTEX_SHADING,
+            ResourceUsageFlags::VERTEX_BUFFER,
+        );
+        out_create = Some(resources.create_buffer_with_sync(
+            &BufferDesc {
+                size: 256,
+                name: Some("test-pass-1-transient-resource"),
+                ..Default::default()
+            },
+            BarrierSync::VERTEX_SHADING,
+            ResourceUsageFlags::INDEX_BUFFER,
+        ));
+        move |_encoder, _resources| {}
+    });
 
-    builder.add_pass(
-        "test-pass-2",
-        |_data: &mut Payload<()>, resources| {
-            out_write_import = Some(resources.write_buffer_with_sync(
-                imported_resource,
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            ));
-            out_write_transient = Some(resources.write_buffer_with_sync(
-                out_create.unwrap(),
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            ));
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-2", |resources| {
+        out_write_import = Some(resources.write_buffer_with_sync(
+            imported_resource,
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        ));
+        out_write_transient = Some(resources.write_buffer_with_sync(
+            out_create.unwrap(),
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        ));
+        move |_encoder, _resources| {}
+    });
 
-    builder.add_pass(
-        "test-pass-3",
-        |_data: &mut Payload<()>, resources| {
-            resources.read_buffer_with_sync(
-                out_write_transient.unwrap(),
-                BarrierSync::PIXEL_SHADING,
-                ResourceUsageFlags::CONSTANT_BUFFER,
-            );
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-3", |resources| {
+        resources.read_buffer_with_sync(
+            out_write_transient.unwrap(),
+            BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::CONSTANT_BUFFER,
+        );
+        move |_encoder, _resources| {}
+    });
 
     let mut graph = builder.build(device.as_ref());
     unsafe {
@@ -477,63 +435,57 @@ pub fn test_usage_schedule() {
     struct Pass0 {
         import: ResourceMut,
     }
-    builder.add_pass(
-        "test-pass-0",
-        |_data: &mut Payload<()>, resources| {
-            let import = resources.import_buffer(
-                &BufferImportDesc {
-                    desc: &mock_buffer_desc,
-                    before_sync: BarrierSync::COMPUTE_SHADING,
-                    before_access: BarrierAccess::SHADER_WRITE,
-                    after_sync: BarrierSync::COPY,
-                    after_access: BarrierAccess::COPY_READ,
-                },
-                ResourceUsageFlags::NONE,
-            );
-            pin_board.publish(Pass0 { import })
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("test-pass-0", |resources| {
+        let import = resources.import_buffer(
+            &BufferImportDesc {
+                desc: &mock_buffer_desc,
+                before_sync: BarrierSync::COMPUTE_SHADING,
+                before_access: BarrierAccess::SHADER_WRITE,
+                after_sync: BarrierSync::COPY,
+                after_access: BarrierAccess::COPY_READ,
+            },
+            ResourceUsageFlags::NONE,
+        );
+        pin_board.publish(Pass0 { import });
+        move |_encoder, _resources| {}
+    });
 
     struct Pass1 {
         create: ResourceMut,
         import: ResourceMut,
     }
-    builder.add_pass(
-        "test-pass-1",
-        |_data: &mut Payload<()>, resources| {
-            let import = pin_board.get::<Pass0>().unwrap().import;
-            resources.read_buffer_with_sync(
-                import,
-                BarrierSync::VERTEX_SHADING,
-                ResourceUsageFlags::VERTEX_BUFFER,
-            );
-            let create = resources.create_buffer_with_sync(
-                &BufferDesc {
-                    size: 256,
-                    name: Some("test-pass-1-transient-resource"),
-                    ..Default::default()
-                },
-                BarrierSync::VERTEX_SHADING,
-                ResourceUsageFlags::INDEX_BUFFER,
-            );
-            let import = resources.import_texture(
-                &TextureImportDesc {
-                    desc: &mock_texture_desc,
-                    before_sync: BarrierSync::ALL,
-                    before_access: BarrierAccess::NONE,
-                    before_layout: ImageLayout::Undefined,
-                    after_sync: BarrierSync::DEPTH_STENCIL,
-                    after_access: BarrierAccess::DEPTH_STENCIL_READ,
-                    after_layout: ImageLayout::DepthStencilReadOnly,
-                },
-                ResourceUsageFlags::RENDER_TARGET,
-            );
+    builder.add_pass("test-pass-1", |resources| {
+        let import = pin_board.get::<Pass0>().unwrap().import;
+        resources.read_buffer_with_sync(
+            import,
+            BarrierSync::VERTEX_SHADING,
+            ResourceUsageFlags::VERTEX_BUFFER,
+        );
+        let create = resources.create_buffer_with_sync(
+            &BufferDesc {
+                size: 256,
+                name: Some("test-pass-1-transient-resource"),
+                ..Default::default()
+            },
+            BarrierSync::VERTEX_SHADING,
+            ResourceUsageFlags::INDEX_BUFFER,
+        );
+        let import = resources.import_texture(
+            &TextureImportDesc {
+                desc: &mock_texture_desc,
+                before_sync: BarrierSync::ALL,
+                before_access: BarrierAccess::NONE,
+                before_layout: ImageLayout::Undefined,
+                after_sync: BarrierSync::DEPTH_STENCIL,
+                after_access: BarrierAccess::DEPTH_STENCIL_READ,
+                after_layout: ImageLayout::DepthStencilReadOnly,
+            },
+            ResourceUsageFlags::RENDER_TARGET,
+        );
 
-            pin_board.publish(Pass1 { create, import });
-        },
-        |_data, _encoder, _resources| {},
-    );
+        pin_board.publish(Pass1 { create, import });
+        move |_encoder, _resources| {}
+    });
 
     #[derive(Clone)]
     struct Pass2 {
@@ -541,174 +493,142 @@ pub fn test_usage_schedule() {
         import_texture_write: ResourceMut,
         transient_write: ResourceMut,
     }
-    builder.add_pass(
-        "test-pass-2",
-        |data: &mut Payload<Pass2>, resources| {
-            let import_buffer = pin_board.get::<Pass0>().unwrap().import;
-            let pass1 = pin_board.get::<Pass1>().unwrap();
-            let create = pass1.create;
-            let import_texture = pass1.import;
+    builder.add_pass("test-pass-2", |resources| {
+        let import_buffer = pin_board.get::<Pass0>().unwrap().import;
+        let pass1 = pin_board.get::<Pass1>().unwrap();
+        let create = pass1.create;
+        let import_texture = pass1.import;
 
-            let import_buffer_write = resources.write_buffer_with_sync(
-                import_buffer,
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            );
+        let import_buffer_write = resources.write_buffer_with_sync(
+            import_buffer,
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        );
 
-            let import_texture_write = resources.write_texture_with_sync(
-                import_texture,
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            );
+        let import_texture_write = resources.write_texture_with_sync(
+            import_texture,
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        );
 
-            let transient_write = resources.write_buffer_with_sync(
-                create,
-                BarrierSync::COMPUTE_SHADING,
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            );
+        let transient_write = resources.write_buffer_with_sync(
+            create,
+            BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        );
 
-            let payload = Pass2 {
-                import_buffer_write,
-                import_texture_write,
-                transient_write,
-            };
-            pin_board.publish(payload.clone());
-            data.write(payload);
-        },
-        |data, _encoder, resources| {
-            let data = data.as_ref().unwrap();
-            let _resource = resources.get_buffer(data.import_buffer_write).unwrap();
-            let _resource = resources.get_texture(data.import_texture_write).unwrap();
-        },
-    );
+        let payload = Pass2 {
+            import_buffer_write,
+            import_texture_write,
+            transient_write,
+        };
+        pin_board.publish(payload.clone());
 
-    builder.add_pass(
-        "test-pass-3",
-        |data: &mut Payload<ResourceRef>, resources| {
-            let transient = pin_board.get::<Pass2>().unwrap().transient_write;
-            let read = resources.read_buffer_with_sync(
-                transient,
-                BarrierSync::PIXEL_SHADING,
-                ResourceUsageFlags::CONSTANT_BUFFER,
-            );
-            data.write(read);
-        },
-        |data, _encoder, resources| {
-            let read = data.copied().unwrap();
+        move |_encoder, resources| {
+            let _resource = resources.get_buffer(payload.import_buffer_write).unwrap();
+            let _resource = resources.get_texture(payload.import_texture_write).unwrap();
+        }
+    });
+
+    builder.add_pass("test-pass-3", |resources| {
+        let transient = pin_board.get::<Pass2>().unwrap().transient_write;
+        let read = resources.read_buffer_with_sync(
+            transient,
+            BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::CONSTANT_BUFFER,
+        );
+
+        move |_encoder, resources| {
             let _resource = resources.get_buffer(read).unwrap();
-        },
-    );
+        }
+    });
 
-    builder.add_pass(
-        "test-pass-4",
-        |data: &mut Payload<ResourceRef>, resources| {
-            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture_with_sync(
-                resource,
-                BarrierSync::PIXEL_SHADING,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            data.write(read);
-        },
-        |data, _encoder, resources| {
-            let read = data.copied().unwrap();
-            let _resource = resources.get_texture(read).unwrap();
-        },
-    );
+    builder.add_pass("test-pass-4", |resources| {
+        let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+        let read = resources.read_texture_with_sync(
+            resource,
+            BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
 
-    builder.add_pass(
-        "test-pass-5",
-        |data: &mut Payload<ResourceRef>, resources| {
-            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture_with_sync(
-                resource,
-                BarrierSync::PIXEL_SHADING,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            data.write(read);
-        },
-        |data, _encoder, resources| {
-            let read = data.copied().unwrap();
+        move |_encoder, resources| {
             let _resource = resources.get_texture(read).unwrap();
-        },
-    );
+        }
+    });
 
-    builder.add_pass(
-        "test-pass-6",
-        |data: &mut Payload<ResourceRef>, resources| {
-            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture_with_sync(
-                resource,
-                BarrierSync::PIXEL_SHADING,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            data.write(read);
-        },
-        |data, _encoder, resources| {
-            let read = data.copied().unwrap();
-            let _resource = resources.get_texture(read).unwrap();
-        },
-    );
+    builder.add_pass("test-pass-5", |resources| {
+        let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+        let read = resources.read_texture_with_sync(
+            resource,
+            BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
 
-    builder.add_pass(
-        "test-pass-7",
-        |data: &mut Payload<ResourceRef>, resources| {
-            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture_with_sync(
-                resource,
-                BarrierSync::DEPTH_STENCIL,
-                ResourceUsageFlags::RENDER_TARGET,
-            );
-            data.write(read);
-        },
-        |data, _encoder, resources| {
-            let read = data.copied().unwrap();
+        move |_encoder, resources| {
             let _resource = resources.get_texture(read).unwrap();
-        },
-    );
+        }
+    });
 
-    builder.add_pass(
-        "test-pass-8",
-        |data: &mut Payload<ResourceRef>, resources| {
-            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let read = resources.read_texture_with_sync(
-                resource,
-                BarrierSync::DEPTH_STENCIL,
-                ResourceUsageFlags::RENDER_TARGET,
-            );
-            data.write(read);
-        },
-        |data, _encoder, resources| {
-            let read = data.copied().unwrap();
+    builder.add_pass("test-pass-6", |resources| {
+        let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+        let read = resources.read_texture_with_sync(
+            resource,
+            BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
+
+        move |_encoder, resources| {
             let _resource = resources.get_texture(read).unwrap();
-        },
-    );
+        }
+    });
+
+    builder.add_pass("test-pass-7", |resources| {
+        let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+        let read = resources.read_texture_with_sync(
+            resource,
+            BarrierSync::DEPTH_STENCIL,
+            ResourceUsageFlags::RENDER_TARGET,
+        );
+
+        move |_encoder, resources| {
+            let _resource = resources.get_texture(read).unwrap();
+        }
+    });
+
+    builder.add_pass("test-pass-8", |resources| {
+        let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+        let read = resources.read_texture_with_sync(
+            resource,
+            BarrierSync::DEPTH_STENCIL,
+            ResourceUsageFlags::RENDER_TARGET,
+        );
+
+        move |_encoder, resources| {
+            let _resource = resources.get_texture(read).unwrap();
+        }
+    });
 
     #[derive(Clone)]
     struct Pass9 {
         pub import_texture_write: ResourceMut,
     }
-    builder.add_pass(
-        "test-pass-9",
-        |data: &mut Payload<Pass9>, resources| {
-            let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
-            let import_texture_write = resources.write_texture_with_sync(
-                resource,
-                BarrierSync::DEPTH_STENCIL,
-                ResourceUsageFlags::RENDER_TARGET,
-            );
+    builder.add_pass("test-pass-9", |resources| {
+        let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
+        let import_texture_write = resources.write_texture_with_sync(
+            resource,
+            BarrierSync::DEPTH_STENCIL,
+            ResourceUsageFlags::RENDER_TARGET,
+        );
 
-            let payload = Pass9 {
-                import_texture_write,
-            };
-            pin_board.publish(payload.clone());
-            data.write(payload);
-        },
-        |data, _encoder, resources| {
-            let data = data.as_ref().unwrap();
-            let _resource = resources.get_texture(data.import_texture_write).unwrap();
-        },
-    );
+        let payload = Pass9 {
+            import_texture_write,
+        };
+        pin_board.publish(payload.clone());
+
+        move |_encoder, resources| {
+            let _resource = resources.get_texture(payload.import_texture_write).unwrap();
+        }
+    });
 
     let mut dot_text = Vec::<u8>::new();
     let mut graph = builder
@@ -755,65 +675,57 @@ pub fn test_usage_illegal_dependency() {
 
     let mut builder = FrameGraph::builder();
 
-    builder.add_pass(
-        "import-pass",
-        |_data: &mut Payload<()>, resources| {
-            let import = resources.import_buffer(
-                &BufferImportDesc {
-                    desc: &mock_buffer_desc,
-                    before_sync: BarrierSync::COMPUTE_SHADING,
-                    before_access: BarrierAccess::SHADER_WRITE,
-                    after_sync: BarrierSync::COPY,
-                    after_access: BarrierAccess::COPY_READ,
-                },
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            );
-            pin_board.publish(Import(import));
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("import-pass", |resources| {
+        let import = resources.import_buffer(
+            &BufferImportDesc {
+                desc: &mock_buffer_desc,
+                before_sync: BarrierSync::COMPUTE_SHADING,
+                before_access: BarrierAccess::SHADER_WRITE,
+                after_sync: BarrierSync::COPY,
+                after_access: BarrierAccess::COPY_READ,
+            },
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        );
+        pin_board.publish(Import(import));
 
-    builder.add_pass(
-        "writer-pass",
-        |_data: &mut Payload<()>, resources| {
-            let import: &Import = pin_board.get().unwrap();
-            let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
-            pin_board.publish(Write(write));
-        },
-        |_, _, _| {},
-    );
+        move |_encoder, _resources| {}
+    });
 
-    builder.add_pass(
-        "reader-pass",
-        |_data: &mut Payload<()>, resources| {
-            let import: &Import = pin_board.get().unwrap();
-            let read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
-            pin_board.publish(Read(read));
-        },
-        |_, _, _| {},
-    );
+    builder.add_pass("writer-pass", |resources| {
+        let import: &Import = pin_board.get().unwrap();
+        let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        pin_board.publish(Write(write));
 
-    builder.add_pass(
-        "deadly-pass",
-        |_data: &mut Payload<()>, resources| {
-            let import: &Import = pin_board.get().unwrap();
-            let write: &Write = pin_board.get().unwrap();
+        move |_, _| {}
+    });
 
-            // This creates a cyclic dependency. We depend on resource version N and N-1. This
-            // dependency can't be satisfied as version N destroys version N-1 when it is written.
-            // The graph builder turns this into a cyclic dependency (in what's meant to be a DAG)
-            // which then gets picked up by our cycle detection code.
-            //
-            // This dependency will lead to the build call panicking. If we didn't panic then the
-            // pass scheduler would deadlock.
-            //
-            // A user should work-around this by producing a copy of a resource if it's needed after
-            // it gets written over.
-            let _bad_read = resources.read_buffer(import.0, ResourceUsageFlags::CONSTANT_BUFFER);
-            let _bad_write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
-        },
-        |_, _, _| {},
-    );
+    builder.add_pass("reader-pass", |resources| {
+        let import: &Import = pin_board.get().unwrap();
+        let read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        pin_board.publish(Read(read));
+
+        move |_, _| {}
+    });
+
+    builder.add_pass("deadly-pass", |resources| {
+        let import: &Import = pin_board.get().unwrap();
+        let write: &Write = pin_board.get().unwrap();
+
+        // This creates a cyclic dependency. We depend on resource version N and N-1. This
+        // dependency can't be satisfied as version N destroys version N-1 when it is written.
+        // The graph builder turns this into a cyclic dependency (in what's meant to be a DAG)
+        // which then gets picked up by our cycle detection code.
+        //
+        // This dependency will lead to the build call panicking. If we didn't panic then the
+        // pass scheduler would deadlock.
+        //
+        // A user should work-around this by producing a copy of a resource if it's needed after
+        // it gets written over.
+        let _bad_read = resources.read_buffer(import.0, ResourceUsageFlags::CONSTANT_BUFFER);
+        let _bad_write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
+
+        move |_, _| {}
+    });
 
     let mut dot_text = Vec::<u8>::new();
     let result = builder.build_with_graph_viz(
@@ -848,75 +760,65 @@ pub fn test_usage_illegal_dependency_2() {
 
     let mut builder = FrameGraph::builder();
 
-    builder.add_pass(
-        "import-pass",
-        |_data: &mut Payload<()>, resources| {
-            let import = resources.import_buffer(
-                &BufferImportDesc {
-                    desc: &mock_buffer_desc,
-                    before_sync: BarrierSync::COMPUTE_SHADING,
-                    before_access: BarrierAccess::SHADER_WRITE,
-                    after_sync: BarrierSync::COPY,
-                    after_access: BarrierAccess::COPY_READ,
-                },
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            );
-            pin_board.publish(Import(import));
-        },
-        |_data, _encoder, _resources| {},
-    );
+    builder.add_pass("import-pass", |resources| {
+        let import = resources.import_buffer(
+            &BufferImportDesc {
+                desc: &mock_buffer_desc,
+                before_sync: BarrierSync::COMPUTE_SHADING,
+                before_access: BarrierAccess::SHADER_WRITE,
+                after_sync: BarrierSync::COPY,
+                after_access: BarrierAccess::COPY_READ,
+            },
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        );
+        pin_board.publish(Import(import));
 
-    builder.add_pass(
-        "writer-pass-1",
-        |_data: &mut Payload<()>, resources| {
-            let import: &Import = pin_board.get().unwrap();
-            let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
-            pin_board.publish(Write(write));
-        },
-        |_, _, _| {},
-    );
+        move |_encoder, _resources| {}
+    });
 
-    builder.add_pass(
-        "writer-pass-2",
-        |_data: &mut Payload<()>, resources| {
-            let write: &Write = pin_board.get().unwrap();
-            let write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
-            pin_board.publish(Write(write));
-        },
-        |_, _, _| {},
-    );
+    builder.add_pass("writer-pass-1", |resources| {
+        let import: &Import = pin_board.get().unwrap();
+        let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        pin_board.publish(Write(write));
 
-    builder.add_pass(
-        "reader-pass",
-        |_data: &mut Payload<()>, resources| {
-            let import: &Import = pin_board.get().unwrap();
-            let read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
-            pin_board.publish(Read(read));
-        },
-        |_, _, _| {},
-    );
+        move |_encoder, _resources| {}
+    });
 
-    builder.add_pass(
-        "deadly-pass",
-        |_data: &mut Payload<()>, resources| {
-            let import: &Import = pin_board.get().unwrap();
-            let write: &Write = pin_board.get().unwrap();
+    builder.add_pass("writer-pass-2", |resources| {
+        let write: &Write = pin_board.get().unwrap();
+        let write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        pin_board.publish(Write(write));
 
-            // This creates a cyclic dependency. We depend on resource version N and N-1. This
-            // dependency can't be satisfied as version N destroys version N-1 when it is written.
-            // The graph builder turns this into a cyclic dependency (in what's meant to be a DAG)
-            // which then gets picked up by our cycle detection code.
-            //
-            // This dependency will lead to the build call panicking. If we didn't panic then the
-            // pass scheduler would deadlock.
-            //
-            // A user should work-around this by producing a copy of a resource if it's needed after
-            // it gets written over.
-            let _bad_read = resources.read_buffer(import.0, ResourceUsageFlags::CONSTANT_BUFFER);
-            let _bad_write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
-        },
-        |_, _, _| {},
-    );
+        move |_encoder, _resources| {}
+    });
+
+    builder.add_pass("reader-pass", |resources| {
+        let import: &Import = pin_board.get().unwrap();
+        let read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        pin_board.publish(Read(read));
+
+        move |_encoder, _resources| {}
+    });
+
+    builder.add_pass("deadly-pass", |resources| {
+        let import: &Import = pin_board.get().unwrap();
+        let write: &Write = pin_board.get().unwrap();
+
+        // This creates a cyclic dependency. We depend on resource version N and N-1. This
+        // dependency can't be satisfied as version N destroys version N-1 when it is written.
+        // The graph builder turns this into a cyclic dependency (in what's meant to be a DAG)
+        // which then gets picked up by our cycle detection code.
+        //
+        // This dependency will lead to the build call panicking. If we didn't panic then the
+        // pass scheduler would deadlock.
+        //
+        // A user should work-around this by producing a copy of a resource if it's needed after
+        // it gets written over.
+        let _bad_read = resources.read_buffer(import.0, ResourceUsageFlags::CONSTANT_BUFFER);
+        let _bad_write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
+
+        move |_encoder, _resources| {}
+    });
 
     let mut dot_text = Vec::<u8>::new();
     let result = builder.build_with_graph_viz(
@@ -926,7 +828,7 @@ pub fn test_usage_illegal_dependency_2() {
         &Default::default(),
     );
 
-    std::fs::write("./graphviz.dot", dot_text).unwrap();
+    // std::fs::write("./graphviz.dot", dot_text).unwrap();
 
     assert!(matches!(
         result,
