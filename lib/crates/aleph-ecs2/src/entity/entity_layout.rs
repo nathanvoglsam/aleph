@@ -31,7 +31,11 @@ use std::borrow::Borrow;
 use std::convert::TryFrom;
 use std::iter::FromIterator;
 use std::ops::Deref;
-use std::vec::IntoIter;
+
+use allocator_api2::alloc::Allocator;
+use allocator_api2::alloc::Global;
+use allocator_api2::vec::IntoIter as AIntoIter;
+use allocator_api2::vec::Vec as AVec;
 
 use crate::ComponentTypeId;
 
@@ -228,17 +232,17 @@ impl ToOwned for EntityLayout {
 /// - Subset Check: O(N) where N = number of member components.
 /// - Disjoint Check: O(N log N) where N = number of member components.
 ///
-#[derive(Clone, PartialEq, Eq, Debug, Hash)]
-pub struct EntityLayoutBuf {
-    components: Vec<ComponentTypeId>,
+#[derive(Debug)]
+pub struct EntityLayoutBuf<A: Allocator = Global> {
+    components: AVec<ComponentTypeId, A>,
 }
 
-impl EntityLayoutBuf {
+impl EntityLayoutBuf<Global> {
     /// Constructs a new, empty `EntityLayoutBuf`.
     #[inline]
     pub const fn new() -> EntityLayoutBuf {
         Self {
-            components: Vec::new(),
+            components: AVec::new(),
         }
     }
 
@@ -246,7 +250,25 @@ impl EntityLayoutBuf {
     #[inline]
     pub fn with_capacity(capacity: usize) -> EntityLayoutBuf {
         Self {
-            components: Vec::with_capacity(capacity),
+            components: AVec::with_capacity(capacity),
+        }
+    }
+}
+
+impl<A: Allocator> EntityLayoutBuf<A> {
+    /// Constructs a new, empty `EntityLayoutBuf`.
+    #[inline]
+    pub const fn new_in(alloc: A) -> Self {
+        Self {
+            components: AVec::new_in(alloc),
+        }
+    }
+
+    /// Constructs a new, empty `EntityLayoutBuf` with capacity for `capacity` elements.
+    #[inline]
+    pub fn with_capacity_in(capacity: usize, alloc: A) -> Self {
+        Self {
+            components: AVec::with_capacity_in(capacity, alloc),
         }
     }
 
@@ -280,7 +302,7 @@ impl EntityLayoutBuf {
     }
 }
 
-impl Deref for EntityLayoutBuf {
+impl<A: Allocator> Deref for EntityLayoutBuf<A> {
     type Target = EntityLayout;
 
     #[inline]
@@ -292,24 +314,24 @@ impl Deref for EntityLayoutBuf {
     }
 }
 
-impl AsRef<EntityLayout> for EntityLayoutBuf {
+impl<A: Allocator> AsRef<EntityLayout> for EntityLayoutBuf<A> {
     #[inline]
     fn as_ref(&self) -> &EntityLayout {
         self
     }
 }
 
-impl Borrow<EntityLayout> for EntityLayoutBuf {
+impl<A: Allocator> Borrow<EntityLayout> for EntityLayoutBuf<A> {
     #[inline]
     fn borrow(&self) -> &EntityLayout {
         self.deref()
     }
 }
 
-impl IntoIterator for EntityLayoutBuf {
+impl<A: Allocator> IntoIterator for EntityLayoutBuf<A> {
     type Item = ComponentTypeId;
 
-    type IntoIter = IntoIter<ComponentTypeId>;
+    type IntoIter = AIntoIter<ComponentTypeId, A>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -317,23 +339,45 @@ impl IntoIterator for EntityLayoutBuf {
     }
 }
 
-impl FromIterator<ComponentTypeId> for EntityLayoutBuf {
+impl FromIterator<ComponentTypeId> for EntityLayoutBuf<Global> {
     #[inline]
     fn from_iter<T: IntoIterator<Item = ComponentTypeId>>(iter: T) -> Self {
-        let mut components = Vec::from_iter(iter);
+        let mut components = AVec::from_iter(iter);
         components.sort();
         Self { components }
     }
 }
 
-impl TryFrom<Vec<ComponentTypeId>> for EntityLayoutBuf {
+impl<A: Allocator> TryFrom<AVec<ComponentTypeId, A>> for EntityLayoutBuf<A> {
     type Error = ();
 
-    fn try_from(components: Vec<ComponentTypeId>) -> Result<Self, Self::Error> {
+    fn try_from(components: AVec<ComponentTypeId, A>) -> Result<Self, Self::Error> {
         if EntityLayout::from_inner(&components).is_some() {
             Ok(Self { components })
         } else {
             Err(())
         }
+    }
+}
+
+impl<A: Allocator + Clone> Clone for EntityLayoutBuf<A> {
+    fn clone(&self) -> Self {
+        Self {
+            components: self.components.clone(),
+        }
+    }
+}
+
+impl<A: Allocator> PartialEq for EntityLayoutBuf<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.components.eq(&other.components)
+    }
+}
+
+impl<A: Allocator> Eq for EntityLayoutBuf<A> {}
+
+impl<A: Allocator> std::hash::Hash for EntityLayoutBuf<A> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.components.hash(state);
     }
 }
