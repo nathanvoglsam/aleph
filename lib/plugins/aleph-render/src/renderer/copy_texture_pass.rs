@@ -46,25 +46,19 @@ pub fn pass(
     pin_board: &PinBoard,
     _shader_db: &ShaderDatabaseAccessor,
 ) {
-    frame_graph.add_pass(
-        "CopyTexturePass",
-        |data: &mut Payload<CopyTexturePassPayload>, resources| {
-            let tonemap_pass: &TonemapPassOutput = pin_board.get().unwrap();
-            let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
+    frame_graph.add_pass("CopyTexturePass", |resources| {
+        let tonemap_pass: &TonemapPassOutput = pin_board.get().unwrap();
+        let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
-            let input =
-                resources.read_texture(tonemap_pass.output, ResourceUsageFlags::COPY_SOURCE);
-            let output = resources.write_texture(*back_buffer, ResourceUsageFlags::COPY_DEST);
+        let input = resources.read_texture(tonemap_pass.output, ResourceUsageFlags::COPY_SOURCE);
+        let output = resources.write_texture(*back_buffer, ResourceUsageFlags::COPY_DEST);
 
-            data.write(CopyTexturePassPayload { input, output });
-            pin_board.publish(BackBufferHandle {
-                back_buffer: output,
-            });
-        },
-        |data, encoder, resources| unsafe {
-            // Unwrap all our fg resources from our setup payload
-            let data = data.unwrap();
+        let data = CopyTexturePassPayload { input, output };
+        pin_board.publish(BackBufferHandle {
+            back_buffer: output,
+        });
 
+        move |encoder, resources| unsafe {
             let input = resources.get_texture(data.input).unwrap();
             let output = resources.get_texture(data.output).unwrap();
             let desc = input.desc_ref();
@@ -84,6 +78,6 @@ pub fn pass(
                     extent: desc.get_extent_3d(),
                 }],
             );
-        },
-    );
+        }
+    });
 }

@@ -93,70 +93,62 @@ pub fn pass(
 
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
-    frame_graph.add_pass(
-        "MainGBufferPass",
-        |data: &mut Payload<MainGBufferPassPayload>, resources| {
-            let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
-            let b_desc = &back_buffer_info.desc;
+    frame_graph.add_pass("MainGBufferPass", |resources| {
+        let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+        let b_desc = &back_buffer_info.desc;
 
-            // BaseColor+AO
-            let gbuffer0_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-                .with_format(Format::Rgba8UnormSrgb)
-                .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
-                .with_name("Gbuffer0");
-            let gbuffer0 =
-                resources.create_texture(&gbuffer0_desc, ResourceUsageFlags::RENDER_TARGET);
+        // BaseColor+AO
+        let gbuffer0_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+            .with_format(Format::Rgba8UnormSrgb)
+            .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
+            .with_name("Gbuffer0");
+        let gbuffer0 = resources.create_texture(&gbuffer0_desc, ResourceUsageFlags::RENDER_TARGET);
 
-            // WorldNormal
-            let gbuffer1_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-                .with_format(Format::Rgba32Float)
-                .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
-                .with_name("Gbuffer1");
-            let gbuffer1 =
-                resources.create_texture(&gbuffer1_desc, ResourceUsageFlags::RENDER_TARGET);
+        // WorldNormal
+        let gbuffer1_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+            .with_format(Format::Rgba32Float)
+            .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
+            .with_name("Gbuffer1");
+        let gbuffer1 = resources.create_texture(&gbuffer1_desc, ResourceUsageFlags::RENDER_TARGET);
 
-            // Metal+Roughnes
-            let gbuffer2_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-                .with_format(Format::Rg8Unorm)
-                .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
-                .with_name("Gbuffer2");
-            let gbuffer2 =
-                resources.create_texture(&gbuffer2_desc, ResourceUsageFlags::RENDER_TARGET);
+        // Metal+Roughnes
+        let gbuffer2_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+            .with_format(Format::Rg8Unorm)
+            .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
+            .with_name("Gbuffer2");
+        let gbuffer2 = resources.create_texture(&gbuffer2_desc, ResourceUsageFlags::RENDER_TARGET);
 
-            let depth_buffer_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-                .with_format(Format::Depth32Float)
-                .with_clear_value(OptimalClearValue::DepthStencil(0.0, 0))
-                .with_name("DepthBuffer");
-            let depth_buffer =
-                resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
+        let depth_buffer_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+            .with_format(Format::Depth32Float)
+            .with_clear_value(OptimalClearValue::DepthStencil(0.0, 0))
+            .with_name("DepthBuffer");
+        let depth_buffer =
+            resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
 
-            let uniform_buffer = resources.create_buffer(
-                &BufferDesc::new(4 * 1024u64)
-                    .cpu_write()
-                    .with_name("Test Uniform Buffer"),
-                ResourceUsageFlags::CONSTANT_BUFFER,
-            );
+        let uniform_buffer = resources.create_buffer(
+            &BufferDesc::new(4 * 1024u64)
+                .cpu_write()
+                .with_name("Test Uniform Buffer"),
+            ResourceUsageFlags::CONSTANT_BUFFER,
+        );
 
-            data.write(MainGBufferPassPayload {
-                gbuffer0,
-                gbuffer1,
-                gbuffer2,
-                depth_buffer,
-                vtx_buffer,
-                idx_buffer,
-                uniform_buffer,
-            });
-            pin_board.publish(MainGBufferPassOutput {
-                gbuffer0,
-                gbuffer1,
-                gbuffer2,
-                depth_buffer,
-            });
-        },
-        move |data, encoder, resources| unsafe {
-            // Unwrap all our fg resources from our setup payload
-            let data = data.unwrap();
+        let data = MainGBufferPassPayload {
+            gbuffer0,
+            gbuffer1,
+            gbuffer2,
+            depth_buffer,
+            vtx_buffer,
+            idx_buffer,
+            uniform_buffer,
+        };
+        pin_board.publish(MainGBufferPassOutput {
+            gbuffer0,
+            gbuffer1,
+            gbuffer2,
+            depth_buffer,
+        });
 
+        move |encoder, resources| unsafe {
             let vtx_buffer = data.vtx_buffer.as_ref();
             let idx_buffer = data.idx_buffer.as_ref();
             let set_layout = descriptor_set_layout.as_ref();
@@ -269,8 +261,8 @@ pub fn pass(
             encoder.draw_indexed(INDICES.len() as _, 1, 0, 0, 0);
 
             encoder.end_rendering();
-        },
-    );
+        }
+    });
 }
 
 fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {

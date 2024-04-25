@@ -81,31 +81,25 @@ pub fn pass(
         })
         .unwrap();
 
-    frame_graph.add_pass(
-        "TonemapPass",
-        |data: &mut Payload<TonemapPassPayload>, resources| {
-            let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
-            let b_desc = &back_buffer_info.desc;
+    frame_graph.add_pass("TonemapPass", |resources| {
+        let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+        let b_desc = &back_buffer_info.desc;
 
-            let lighting_resolve_pass: &LightingResolvePassOutput = pin_board.get().unwrap();
+        let lighting_resolve_pass: &LightingResolvePassOutput = pin_board.get().unwrap();
 
-            let input = resources.read_texture(
-                lighting_resolve_pass.lighting,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            let output_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-                .with_format(Format::Bgra8Unorm)
-                .with_name("TonemapOutput");
-            let output =
-                resources.create_texture(&output_desc, ResourceUsageFlags::UNORDERED_ACCESS);
+        let input = resources.read_texture(
+            lighting_resolve_pass.lighting,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
+        let output_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+            .with_format(Format::Bgra8Unorm)
+            .with_name("TonemapOutput");
+        let output = resources.create_texture(&output_desc, ResourceUsageFlags::UNORDERED_ACCESS);
 
-            data.write(TonemapPassPayload { input, output });
-            pin_board.publish(TonemapPassOutput { output });
-        },
-        move |data, encoder, resources| unsafe {
-            // Unwrap all our fg resources from our setup payload
-            let data = data.unwrap();
+        let data = TonemapPassPayload { input, output };
+        pin_board.publish(TonemapPassOutput { output });
 
+        move |encoder, resources| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
 
@@ -133,6 +127,6 @@ pub fn pass(
             let group_count_x = input_desc.width.div_ceil(8);
             let group_count_y = input_desc.height.div_ceil(8);
             encoder.dispatch(group_count_x, group_count_y, 1);
-        },
-    );
+        }
+    });
 }

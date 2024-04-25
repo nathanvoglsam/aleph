@@ -74,40 +74,36 @@ pub fn pass(
 
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
-    frame_graph.add_pass(
-        "EguiPass",
-        |data: &mut Payload<EguiPassPayload>, resources| {
-            let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
-            let back_buffer =
-                resources.write_texture(*back_buffer, ResourceUsageFlags::RENDER_TARGET);
+    frame_graph.add_pass("EguiPass", |resources| {
+        let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
+        let back_buffer = resources.write_texture(*back_buffer, ResourceUsageFlags::RENDER_TARGET);
 
-            let vtx_buffer = resources.create_buffer(
-                &BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
-                    .cpu_write()
-                    .with_name("Egui Vertex Buffer"),
-                ResourceUsageFlags::VERTEX_BUFFER,
-            );
+        let vtx_buffer = resources.create_buffer(
+            &BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
+                .cpu_write()
+                .with_name("Egui Vertex Buffer"),
+            ResourceUsageFlags::VERTEX_BUFFER,
+        );
 
-            let idx_buffer = resources.create_buffer(
-                &BufferDesc::new(INDEX_BUFFER_SIZE as u64)
-                    .cpu_write()
-                    .with_name("Egui Index Buffer"),
-                ResourceUsageFlags::INDEX_BUFFER,
-            );
+        let idx_buffer = resources.create_buffer(
+            &BufferDesc::new(INDEX_BUFFER_SIZE as u64)
+                .cpu_write()
+                .with_name("Egui Index Buffer"),
+            ResourceUsageFlags::INDEX_BUFFER,
+        );
 
-            data.write(EguiPassPayload {
-                back_buffer,
-                vtx_buffer,
-                idx_buffer,
-            });
-            pin_board.publish(EguiPassOutput {
-                set_layout: descriptor_set_layout,
-            });
-            pin_board.publish(BackBufferHandle { back_buffer });
-        },
-        move |data, encoder, resources| unsafe {
-            // Unwrap all our fg resources from our setup payload
-            let data = data.unwrap();
+        let data = EguiPassPayload {
+            back_buffer,
+            vtx_buffer,
+            idx_buffer,
+        };
+
+        pin_board.publish(EguiPassOutput {
+            set_layout: descriptor_set_layout,
+        });
+        pin_board.publish(BackBufferHandle { back_buffer });
+
+        move |encoder, resources| unsafe {
             let back_buffer = resources.get_texture(data.back_buffer).unwrap();
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
@@ -237,8 +233,8 @@ pub fn pass(
 
             vtx_buffer.unmap();
             idx_buffer.unmap();
-        },
-    );
+        }
+    });
 }
 
 unsafe fn record_job_commands(

@@ -44,28 +44,26 @@ pub fn pass(
     pin_board: &PinBoard,
     _shader_db: &ShaderDatabaseAccessor,
 ) {
-    frame_graph.add_pass(
-        "BackBufferImportPass",
-        |_data: &mut Payload<()>, resources| {
-            let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
-            let back_buffer_desc = back_buffer_info.desc.clone().with_name("Swap Chain Image");
-            let back_buffer = resources.import_texture(
-                &TextureImportDesc {
-                    desc: &back_buffer_desc,
-                    before_sync: BarrierSync::ALL,
-                    before_access: BarrierAccess::NONE,
-                    before_layout: ImageLayout::Undefined,
-                    after_sync: BarrierSync::NONE,
-                    after_access: BarrierAccess::NONE,
-                    after_layout: ImageLayout::PresentSrc,
-                },
-                ResourceUsageFlags::NONE,
-            );
+    frame_graph.add_pass("BackBufferImportPass", |resources| {
+        let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+        let back_buffer_desc = back_buffer_info.desc.clone().with_name("Swap Chain Image");
+        let back_buffer = resources.import_texture(
+            &TextureImportDesc {
+                desc: &back_buffer_desc,
+                before_sync: BarrierSync::ALL,
+                before_access: BarrierAccess::NONE,
+                before_layout: ImageLayout::Undefined,
+                after_sync: BarrierSync::NONE,
+                after_access: BarrierAccess::NONE,
+                after_layout: ImageLayout::PresentSrc,
+            },
+            ResourceUsageFlags::NONE,
+        );
 
-            pin_board.publish(BackBufferHandle { back_buffer });
-        },
-        |_data, _encoder, _resources| {
+        pin_board.publish(BackBufferHandle { back_buffer });
+
+        |_encoder, _resources| {
             // Nothing lol
-        },
-    );
+        }
+    });
 }

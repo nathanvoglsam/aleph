@@ -89,57 +89,52 @@ pub fn pass(
         })
         .unwrap();
 
-    frame_graph.add_pass(
-        "DeferredLightingPass",
-        |data: &mut Payload<LightingResolvePassPayload>, resources| {
-            let main_gbuffer_pass_output: &MainGBufferPassOutput = pin_board.get().unwrap();
-            let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
-            let b_desc = &back_buffer_info.desc;
+    frame_graph.add_pass("DeferredLightingPass", |resources| {
+        let main_gbuffer_pass_output: &MainGBufferPassOutput = pin_board.get().unwrap();
+        let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+        let b_desc = &back_buffer_info.desc;
 
-            let depth = resources.read_texture(
-                main_gbuffer_pass_output.depth_buffer,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            let gbuffer0 = resources.read_texture(
-                main_gbuffer_pass_output.gbuffer0,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            let gbuffer1 = resources.read_texture(
-                main_gbuffer_pass_output.gbuffer1,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            let gbuffer2 = resources.read_texture(
-                main_gbuffer_pass_output.gbuffer2,
-                ResourceUsageFlags::SHADER_RESOURCE,
-            );
-            let lighting = resources.create_texture(
-                &TextureDesc::texture_2d(b_desc.width, b_desc.height)
-                    .with_format(Format::Rgba16Float)
-                    .with_clear_value(OptimalClearValue::ColorInt(0x000000FF))
-                    .with_name("OutputLighting"),
-                ResourceUsageFlags::UNORDERED_ACCESS,
-            );
-            let uniform_buffer = resources.create_buffer(
-                &BufferDesc::new(1024u64)
-                    .cpu_write()
-                    .with_name("Test Uniform Buffer"),
-                ResourceUsageFlags::CONSTANT_BUFFER,
-            );
+        let depth = resources.read_texture(
+            main_gbuffer_pass_output.depth_buffer,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
+        let gbuffer0 = resources.read_texture(
+            main_gbuffer_pass_output.gbuffer0,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
+        let gbuffer1 = resources.read_texture(
+            main_gbuffer_pass_output.gbuffer1,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
+        let gbuffer2 = resources.read_texture(
+            main_gbuffer_pass_output.gbuffer2,
+            ResourceUsageFlags::SHADER_RESOURCE,
+        );
+        let lighting = resources.create_texture(
+            &TextureDesc::texture_2d(b_desc.width, b_desc.height)
+                .with_format(Format::Rgba16Float)
+                .with_clear_value(OptimalClearValue::ColorInt(0x000000FF))
+                .with_name("OutputLighting"),
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        );
+        let uniform_buffer = resources.create_buffer(
+            &BufferDesc::new(1024u64)
+                .cpu_write()
+                .with_name("Test Uniform Buffer"),
+            ResourceUsageFlags::CONSTANT_BUFFER,
+        );
 
-            data.write(LightingResolvePassPayload {
-                depth,
-                gbuffer0,
-                gbuffer1,
-                gbuffer2,
-                lighting,
-                uniform_buffer,
-            });
-            pin_board.publish(LightingResolvePassOutput { lighting });
-        },
-        move |data, encoder, resources| unsafe {
-            // Unwrap all our fg resources from our setup payload
-            let data = data.unwrap();
+        let data = LightingResolvePassPayload {
+            depth,
+            gbuffer0,
+            gbuffer1,
+            gbuffer2,
+            lighting,
+            uniform_buffer,
+        };
+        pin_board.publish(LightingResolvePassOutput { lighting });
 
+        move |encoder, resources| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
 
@@ -191,6 +186,6 @@ pub fn pass(
             let group_count_x = gbuffer0_desc.width.div_ceil(8);
             let group_count_y = gbuffer0_desc.height.div_ceil(8);
             encoder.dispatch(group_count_x, group_count_y, 1);
-        },
-    );
+        }
+    });
 }
