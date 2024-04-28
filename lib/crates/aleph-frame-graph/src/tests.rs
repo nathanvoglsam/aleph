@@ -45,7 +45,7 @@ fn make_null_device() -> AnyArc<dyn IDevice> {
 
 struct Import(ResourceMut);
 struct Write(ResourceMut);
-struct Read(ResourceRef);
+// struct Read(ResourceRef);
 
 #[test]
 pub fn test_builder() {
@@ -701,8 +701,8 @@ pub fn test_usage_illegal_dependency() {
 
     builder.add_pass("reader-pass", |resources| {
         let import: &Import = pin_board.get().unwrap();
-        let read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
-        pin_board.publish(Read(read));
+        let _read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        // pin_board.publish(Read(read));
 
         move |_, _| {}
     });
@@ -794,8 +794,8 @@ pub fn test_usage_illegal_dependency_2() {
 
     builder.add_pass("reader-pass", |resources| {
         let import: &Import = pin_board.get().unwrap();
-        let read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
-        pin_board.publish(Read(read));
+        let _read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
+        // pin_board.publish(Read(read));
 
         move |_encoder, _resources| {}
     });
