@@ -28,8 +28,8 @@
 //
 
 use std::ffi::{c_void, CStr};
-use std::slice;
 
+use aleph_rhi_impl_utils::slice_from_raw_with_null_ptr;
 use ash::vk;
 use log::{log, Level};
 
@@ -81,11 +81,11 @@ unsafe fn print_message(callback_data: &vk::DebugUtilsMessengerCallbackDataEXT, 
 }
 
 unsafe fn print_call_stack(callback_data: &vk::DebugUtilsMessengerCallbackDataEXT, level: Level) {
-    let queue_labels = slice::from_raw_parts(
+    let queue_labels = slice_from_raw_with_null_ptr(
         callback_data.p_queue_labels,
         callback_data.queue_label_count as usize,
     );
-    let cmd_labels = slice::from_raw_parts(
+    let cmd_labels = slice_from_raw_with_null_ptr(
         callback_data.p_cmd_buf_labels,
         callback_data.cmd_buf_label_count as usize,
     );
