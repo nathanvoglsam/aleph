@@ -43,6 +43,28 @@ pub mod manually_drop;
 pub mod offset_allocator;
 pub mod unwrap;
 
+/// Converts a raw pointer+len pair into a slice, accounting for cases where the pointer is null.
+///
+/// # Info
+///
+/// Many C native APIs (i.e, Vulkan) will provide ptr+len pairs for arrays, but allow the pointer to
+/// be null in the 0 sized array case. A slice is not allowed to contain a null-ptr and must
+/// store a special dangling address. We just need some additional checks to ensure we return a
+/// valid empty slice.
+pub unsafe fn slice_from_raw_with_null_ptr<'a, T>(ptr: *const T, len: usize) -> &'a [T] {
+    if !ptr.is_null() && len > 0 {
+        debug_assert_eq!(
+            ptr.align_offset(std::mem::align_of::<T>()),
+            0,
+            "The given pointer is not sufficiently aligned to store a T. Expected alignemnt {}",
+            std::mem::align_of::<T>()
+        );
+        std::slice::from_raw_parts(ptr, len)
+    } else {
+        &[]
+    }
+}
+
 /// # Safety
 ///
 /// It is the caller's responsibility to ensure that the ptr 'out' points to a region of memory
