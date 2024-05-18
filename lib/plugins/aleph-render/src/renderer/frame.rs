@@ -163,6 +163,7 @@ impl PerFrameObjects {
             &[BufferToTextureCopyRegion {
                 src: ImageDataLayout {
                     offset: 0,
+                    row_pitch: self.font_staged_size.0,
                     extent: extent.clone(),
                 },
                 dst: TextureCopyInfo {
