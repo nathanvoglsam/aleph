@@ -598,7 +598,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             footprint.Footprint.Width = region.src.extent.width;
             footprint.Footprint.Height = region.src.extent.height;
             footprint.Footprint.Depth = region.src.extent.depth;
-            footprint.Footprint.RowPitch = region.src.extent.width * bytes_per_element;
+            footprint.Footprint.RowPitch = region.src.row_pitch * bytes_per_element;
 
             self._list.CopyTextureRegion(
                 &dst_location,
