@@ -2212,6 +2212,19 @@ impl Format {
         }
     }
 
+    /// Returns the minimum row pitch required for a buffer to texture copy operation on a texture
+    /// with the format of 'self' in texels.
+    ///
+    /// # Info
+    ///
+    /// We require a minimum row pitch of 256 bytes for buffer to texture copies as this limit is
+    /// imposed by D3D12. D3D12 exposes the limit in bytes but Vulkan exposes the same concept in
+    /// texels. This utility function can be used for determining what values are valid row pitch
+    /// sizes for a particular format.
+    pub const fn buffer_to_texture_copy_row_pitch(&self) -> u32 {
+        256u32 / self.bytes_per_element()
+    }
+
     pub const fn has_aspect(&self, aspect: TextureCopyAspect) -> bool {
         self.aspect_mask().contains(aspect.as_flag())
     }
@@ -5102,13 +5115,44 @@ pub struct BufferCopyRegion {
 /// A description of an image's data inside buffer memory
 #[derive(Clone, Debug)]
 pub struct ImageDataLayout {
-    /// Offset in bytes from the start of the buffer that the image data begins at
+    /// Offset in bytes from the start of the buffer that the image data begins at.
+    ///
+    /// # Requirements
+    ///
+    /// For buffer to image copies this must be aligned to 512 bytes within the source buffer. This
+    /// limit is imposed primarily by D3D12 but must be observed everywhere.
     pub offset: u64,
 
-    /// The extents of the image data.
+    /// The row pitch in texels.
     ///
-    /// Minimum stride is 256 bytes, so `<width> * <format bytes per texel>` must be a multiple of
-    /// 256.
+    /// This describes the in-memory width of a row of texels in memory, which may need to be wider
+    /// than the actual width of the texture. This should always be _at least_ equal to
+    /// `extent.width` and may be greater depending on alignment requirements.
+    ///
+    /// # Requirements
+    ///
+    /// Some backends (D3D12) require the row pitch of a buffer-to-texture copy to be aligned to
+    /// 256 bytes. This means we may need to include extra space between rows to satisfy this
+    /// requirement for some textures depending on their format and width. This means that it isn't
+    /// always possible to upload densely packed texture data and some expansion so all rows start
+    /// at the required alignment with some padding data in between rows.
+    ///
+    /// This value should be equal to the full row pitch in texels. D3D12 requires bytes but using
+    /// texels is easier.
+    ///
+    /// # Tips
+    ///
+    /// Use [Format::buffer_to_texture_copy_row_pitch] to get the required pitch alignment for a
+    /// given texture format in texels. You can than simply set `row_pitch` by rounding the image
+    /// width up to the next multiple of the required row pitch alignment and ensure the image
+    /// data is laid out correctly.
+    ///
+    /// # Notes
+    ///
+    /// There is no such requirement for height pitch for 3D texture data.
+    pub row_pitch: u32,
+
+    /// The extents of the image data in texels.
     pub extent: Extent3D,
 }
 
