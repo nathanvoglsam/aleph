@@ -404,12 +404,39 @@ impl<T: ?Sized> ValidationEncoder<T> {
         dst_format: Format,
         region: &BufferToTextureCopyRegion,
     ) {
-        let bytes_per_element = dst_format.bytes_per_element();
-        let row_pitch = region.src.extent.width * bytes_per_element;
-        assert!(region.src.extent.width > 0, "extent.width must be > 0");
-        assert!(region.src.extent.height > 0, "extent.height must be > 0");
-        assert!(region.src.extent.depth > 0, "extent.depth must be > 0");
-        assert!(row_pitch % 256 == 0, "row_pitch must be a multiple of 256");
+        assert_eq!(
+            region.src.offset % 512,
+            0,
+            "offset ({}) must be aligned to 512 bytes",
+            region.src.offset
+        );
+        assert!(
+            region.src.extent.width > 0,
+            "extent.width ({}) must be > 0",
+            region.src.extent.width
+        );
+        assert!(
+            region.src.extent.height > 0,
+            "extent.height ({}) must be > 0",
+            region.src.extent.height
+        );
+        assert!(
+            region.src.extent.depth > 0,
+            "extent.depth ({}) must be > 0",
+            region.src.extent.depth
+        );
+        assert!(
+            region.src.row_pitch >= region.src.extent.width,
+            "row_pitch ({}) must be >= extent.width ({})",
+            region.src.row_pitch,
+            region.src.extent.width
+        );
+        let row_pitch_align = dst_format.buffer_to_texture_copy_row_pitch();
+        assert_eq!(
+            region.src.row_pitch % row_pitch_align,
+            0,
+            "row_pitch must be a multiple of {row_pitch_align} texels"
+        );
     }
 
     fn validate_buffer_to_texture_copy_dest_region(
