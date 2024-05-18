@@ -359,8 +359,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 new_regions.push(
                     vk::BufferImageCopy::builder()
                         .buffer_offset(v.src.offset)
-                        .buffer_row_length(v.src.extent.width)
-                        .buffer_image_height(v.src.extent.height)
+                        .buffer_row_length(v.src.row_pitch)
+                        .buffer_image_height(0) // implicitly maps to v.dst.extent.height
                         .image_subresource(vk::ImageSubresourceLayers {
                             aspect_mask: texture_copy_aspect_to_vk(v.dst.aspect),
                             mip_level: v.dst.mip_level,
