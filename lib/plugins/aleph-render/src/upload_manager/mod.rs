@@ -197,6 +197,19 @@ impl TextureUploadSource {
         }
     }
 
+    /// Get the upload block as a raw pointer.
+    ///
+    /// # Performance Warning
+    ///
+    /// The upload memory may be write-combined or uncached memory as it will be mapped for upload
+    /// to the GPU. Reads should be treated as *very* expensive for these mapped regions.
+    ///
+    /// It is recommended to use write-only accessors to prevent accidental reads. It is also
+    /// heavily recommended to only perform sequential writes to these regions.
+    pub fn data_ptr(&self) -> NonNull<[u8]> {
+        self.data
+    }
+
     /// Get the upload block as a slice.
     ///
     /// # Performance Warning
@@ -207,7 +220,9 @@ impl TextureUploadSource {
     /// It is recommended to use write-only accessors to prevent accidental reads. It is also
     /// heavily recommended to only perform sequential writes to these regions.
     ///
-    /// This is provided as it is technically valid usage but should be handled with care.
+    /// This is provided as it is technically valid usage but should be handled with care. Avoid
+    /// reading from this slice (which is the only thing you can do with a shared slice, so just
+    /// don't use this API).
     pub fn data_ref(&self) -> &[u8] {
         // Safety: It is guaranteed by the implementation that this should be uniquely owned by the
         //         request and valid for access as long as the upload request object is available.
@@ -224,7 +239,8 @@ impl TextureUploadSource {
     /// It is recommended to use write-only accessors to prevent accidental reads. It is also
     /// heavily recommended to only perform sequential writes to these regions.
     ///
-    /// This is provided as it is technically valid usage but should be handled with care.
+    /// This is provided as it is technically valid usage but should be handled with care. Avoid
+    /// reading from this slice.
     pub fn data_mut(&mut self) -> &mut [u8] {
         // Safety: It is guaranteed by the implementation that this should be uniquely owned by the
         //         request and valid for access as long as the upload request object is available.
