@@ -34,5 +34,8 @@ mod plugin;
 mod renderer;
 mod shader_db_accessor;
 mod shaders;
+mod upload_manager;
+
+pub use upload_manager::{TextureUploadDesc, TextureUploadSource};
 
 pub use plugin::PluginRender;
