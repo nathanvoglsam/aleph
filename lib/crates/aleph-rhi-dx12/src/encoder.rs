@@ -539,7 +539,6 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         &mut self,
         src: &dyn IBuffer,
         dst: &dyn ITexture,
-        _dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
         let src = unwrap::buffer(src);
