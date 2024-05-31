@@ -159,7 +159,6 @@ impl PerFrameObjects {
         encoder.copy_buffer_to_texture(
             self.font_staging_buffer.deref(),
             staged_resource.deref(),
-            ImageLayout::CopyDst,
             &[BufferToTextureCopyRegion {
                 src: ImageDataLayout {
                     offset: 0,
