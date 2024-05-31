@@ -347,7 +347,6 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         &mut self,
         src: &dyn IBuffer,
         dst: &dyn ITexture,
-        dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
         {
@@ -381,13 +380,11 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 );
             }
 
-            let layout = image_layout_to_vk(dst_layout);
-
             self._device.device.cmd_copy_buffer_to_image(
                 self._buffer,
                 src.buffer,
                 dst.image,
-                layout,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
                 &new_regions,
             );
         }
