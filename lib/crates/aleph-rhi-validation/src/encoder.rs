@@ -337,7 +337,6 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         &mut self,
         src: &dyn IBuffer,
         dst: &dyn ITexture,
-        dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
         regions.iter().for_each(|v| {
@@ -352,7 +351,7 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         let src = get_as_unwrapped::buffer(src);
         let dst = get_as_unwrapped::texture(dst);
         self.inner
-            .copy_buffer_to_texture(src, dst, dst_layout, regions);
+            .copy_buffer_to_texture(src, dst, regions);
     }
 
     unsafe fn copy_texture_regions(
