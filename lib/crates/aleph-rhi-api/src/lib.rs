@@ -745,7 +745,6 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
         &mut self,
         src: &dyn IBuffer,
         dst: &dyn ITexture,
-        dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     );
 
