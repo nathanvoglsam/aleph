@@ -45,15 +45,10 @@ struct EguiPassPayload {
     idx_buffer: ResourceMut,
 }
 
-/// The output of the setup phase
-pub struct EguiPassOutput {
-    pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
-}
-
 /// The input the pass expects in the execute phase, to be pulled from the context pin board.
 pub struct EguiPassContext {
     pub buffer: AnyArc<dyn IBuffer>,
-    pub descriptor_set: DescriptorSetHandle,
+    pub font_view: ImageView,
     pub render_data: RenderData,
 }
 
@@ -68,6 +63,8 @@ pub fn pass(
 
     let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
     let pixels_per_point = back_buffer_info.pixels_per_point;
+
+    let sampler = create_sampler(device);
 
     let descriptor_set_layout = create_descriptor_set_layout(device);
     let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
@@ -98,12 +95,12 @@ pub fn pass(
             idx_buffer,
         };
 
-        pin_board.publish(EguiPassOutput {
-            set_layout: descriptor_set_layout,
-        });
         pin_board.publish(BackBufferHandle { back_buffer });
 
         move |encoder, resources| unsafe {
+            let sampler = sampler.as_ref();
+            let descriptor_arena = resources.descriptor_arena();
+
             let back_buffer = resources.get_texture(data.back_buffer).unwrap();
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
@@ -112,9 +109,22 @@ pub fn pass(
 
             let EguiPassContext {
                 buffer,
-                descriptor_set,
+                font_view,
                 render_data,
             } = resources.context().get().unwrap();
+
+            let set = descriptor_arena
+                .allocate_set(descriptor_set_layout.as_ref())
+                .unwrap();
+            resources.device().update_descriptor_sets(&[
+                DescriptorWriteDesc::uniform_buffer(
+                    set,
+                    0,
+                    &BufferDescriptorWrite::uniform_buffer(buffer.as_ref(), 256),
+                ),
+                DescriptorWriteDesc::texture(set, 1, &font_view.srv_write()),
+                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite { sampler }),
+            ]);
 
             // Map and calculate our begin/end pointers for the mapped vertex and index buffer
             // regions
@@ -167,7 +177,7 @@ pub fn pass(
                 pipeline_layout.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
-                &[*descriptor_set],
+                &[set],
                 &[],
             );
 
@@ -418,4 +428,17 @@ fn create_pipeline_state(
     device
         .create_graphics_pipeline(&graphics_pipeline_desc_new)
         .unwrap()
+}
+
+fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+    let desc = SamplerDesc {
+        min_filter: SamplerFilter::Linear,
+        mag_filter: SamplerFilter::Linear,
+        mip_filter: SamplerMipFilter::Linear,
+        address_mode_u: SamplerAddressMode::Clamp,
+        address_mode_v: SamplerAddressMode::Clamp,
+        address_mode_w: SamplerAddressMode::Clamp,
+        ..Default::default()
+    };
+    device.create_sampler(&desc).unwrap()
 }

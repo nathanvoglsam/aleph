@@ -58,7 +58,6 @@ pub struct EguiRenderer {
     pub back_buffer_id: ResourceMut,
     pub graph_build_pin_board: PinBoard,
     pub execute_context: PinBoard,
-    pub sampler: AnyArc<dyn ISampler>,
     pub font_texture: FontTexture,
     pub shader_db_bin: Vec<u8>,
 }
@@ -83,8 +82,6 @@ impl EguiRenderer {
 
         let shader_db = ShaderDatabaseAccessor::new(device.as_ref(), shader_db);
 
-        let sampler = Self::create_sampler(device.as_ref());
-
         let pin_board = PinBoard::new();
         pin_board.publish(BackBufferInfo {
             desc: back_buffer_desc.clone().strip_name(),
@@ -93,11 +90,10 @@ impl EguiRenderer {
 
         let frame_graph = Self::create_frame_graph(device.as_ref(), &pin_board, &shader_db);
 
-        let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
         let frames = (0..2)
-            .map(|_| PerFrameObjects::new(device.deref(), output.set_layout.as_ref()))
+            .map(|_| PerFrameObjects::new(device.deref()))
             .collect();
 
         Self {
@@ -107,7 +103,6 @@ impl EguiRenderer {
             back_buffer_id: *back_buffer,
             graph_build_pin_board: pin_board,
             execute_context: PinBoard::new(),
-            sampler,
             font_texture: FontTexture {
                 width: 256,
                 height: 1,
@@ -131,11 +126,10 @@ impl EguiRenderer {
         let shader_db = ShaderDatabaseAccessor::new(self.device.as_ref(), shader_db);
         let frame_graph = Self::create_frame_graph(self.device.as_ref(), pin_board, &shader_db);
 
-        let output: &egui_pass::EguiPassOutput = pin_board.get().unwrap();
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
         let frames: Vec<_> = (0..2)
-            .map(|_| PerFrameObjects::new(self.device.as_ref(), output.set_layout.as_ref()))
+            .map(|_| PerFrameObjects::new(self.device.as_ref()))
             .collect();
 
         self.frames = frames;
@@ -194,12 +188,11 @@ impl EguiRenderer {
 
             // If the versions do not match then we should re-upload the texture to the GPU
             if self.frames[index].font_version != self.font_texture.version {
-                self.frames[index].update_texture_data(
+                self.frames[index].record_texture_upload(
+                    encoder.deref_mut(),
                     self.device.deref(),
-                    self.sampler.deref(),
                     &self.font_texture,
                 );
-                self.frames[index].record_texture_upload(encoder.deref_mut());
             }
 
             let mut import_bundle = ImportBundle::default();
@@ -208,7 +201,7 @@ impl EguiRenderer {
             self.execute_context.clear();
             self.execute_context.publish(EguiPassContext {
                 buffer: self.frames[index].uniform_buffer.clone(),
-                descriptor_set: self.frames[index].descriptor_set,
+                font_view: self.frames[index].font_view.unwrap(),
                 render_data,
             });
 
@@ -221,19 +214,6 @@ impl EguiRenderer {
         }
 
         list
-    }
-
-    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
-        let desc = SamplerDesc {
-            min_filter: SamplerFilter::Linear,
-            mag_filter: SamplerFilter::Linear,
-            mip_filter: SamplerMipFilter::Linear,
-            address_mode_u: SamplerAddressMode::Clamp,
-            address_mode_v: SamplerAddressMode::Clamp,
-            address_mode_w: SamplerAddressMode::Clamp,
-            ..Default::default()
-        };
-        device.create_sampler(&desc).unwrap()
     }
 
     pub fn update_font_texture(&mut self, delta: &egui::epaint::ImageDelta) {

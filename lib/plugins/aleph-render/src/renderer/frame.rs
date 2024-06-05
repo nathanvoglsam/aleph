@@ -27,12 +27,11 @@
 // SOFTWARE.
 //
 
-use std::ops::Deref;
-
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
 use crate::renderer::FontTexture;
+use crate::{TextureUploadDesc, TextureUploadSource};
 
 pub struct PerFrameObjects {
     pub acquire_semaphore: AnyArc<dyn ISemaphore>,
@@ -41,29 +40,17 @@ pub struct PerFrameObjects {
     pub uniform_buffer: AnyArc<dyn IBuffer>,
 
     pub font_version: usize,
-    pub font_staging_buffer: AnyArc<dyn IBuffer>,
-
-    pub font_staged: Option<AnyArc<dyn ITexture>>,
-    pub font_staged_size: (u32, u32),
-
-    pub descriptor_pool: Box<dyn IDescriptorPool>,
-    pub descriptor_set: DescriptorSetHandle,
+    pub font: Option<AnyArc<dyn ITexture>>,
+    pub font_view: Option<ImageView>,
+    pub font_size: (u32, u32),
 
     pub done_fence: AnyArc<dyn IFence>,
+
+    pub deferred_buffers: Vec<AnyArc<dyn IBuffer>>,
 }
 
 impl PerFrameObjects {
-    pub fn new(device: &dyn IDevice, set_layout: &dyn IDescriptorSetLayout) -> Self {
-        let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
-
-        let desc = DescriptorPoolDesc {
-            layout: set_layout,
-            num_sets: 2,
-            name: Some("egui::DescriptorPool"),
-        };
-        let mut descriptor_pool = device.create_descriptor_pool(&desc).unwrap();
-        let set = descriptor_pool.allocate_set().unwrap();
-
+    pub fn new(device: &dyn IDevice) -> Self {
         let uniform_buffer = device
             .create_buffer(&BufferDesc {
                 size: 1024,
@@ -72,76 +59,64 @@ impl PerFrameObjects {
                 name: Some("egui::ConstantBuffer"),
             })
             .unwrap();
-        unsafe {
-            device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer(
-                set,
-                0,
-                &BufferDescriptorWrite::uniform_buffer(uniform_buffer.as_ref(), 256),
-            )]);
-        }
 
         Self {
             acquire_semaphore: device.create_semaphore().unwrap(),
             present_semaphore: device.create_semaphore().unwrap(),
             uniform_buffer,
             font_version: 0,
-            font_staging_buffer,
-            font_staged: None,
-            font_staged_size: (0, 0),
-            descriptor_pool,
-            descriptor_set: set,
+            font: None,
+            font_view: None,
+            font_size: (0, 0),
             done_fence: device.create_fence(true).unwrap(),
+            deferred_buffers: Vec::with_capacity(4),
         }
     }
 
-    pub unsafe fn update_texture_data(
+    pub unsafe fn record_texture_upload(
         &mut self,
+        encoder: &mut dyn IGeneralEncoder,
         device: &dyn IDevice,
-        sampler: &dyn ISampler,
         texture: &FontTexture,
     ) {
+        encoder.begin_event(Color::GREEN, "Egui Texture Upload");
+
         // Check the data is correct
         assert_eq!(texture.bytes.len(), texture.width * texture.height);
 
         // Crunch our dimensions for d3d12
         let dimensions = (texture.width as u32, texture.height as u32);
 
-        // Explicitly drop staged image so the pool's memory will be free to create the new
-        // image
-        self.font_staged = None;
+        let staging_buffer = TextureUploadSource::new_owned(
+            device,
+            TextureUploadDesc::new(dimensions.0, dimensions.1, 1, Format::R8Unorm),
+        )
+        .unwrap();
+
+        assert_eq!(
+            staging_buffer.desc.aligned_width(),
+            staging_buffer.desc.width,
+            "Currently we don't handle row pitch here"
+        );
 
         // Create the GPU image with the new dimensions
-        self.create_staged_resources(device, dimensions);
-
-        // Update the srv to point at the newly created image
-        self.update_srv(device, sampler);
-
-        // Update the metadata for determining when to re-upload the texture
-        self.font_version = texture.version;
-        self.font_staged_size = dimensions;
-
-        // Map and write the texture data to our staging buffer
-
-        self.font_staging_buffer
-            .map()
-            .unwrap()
-            .as_ptr()
-            .copy_from_nonoverlapping(texture.bytes.as_ptr(), texture.bytes.len());
-        self.font_staging_buffer.unmap();
-    }
-
-    pub unsafe fn record_texture_upload(&mut self, encoder: &mut dyn IGeneralEncoder) {
-        encoder.begin_event(Color::GREEN, "Egui Texture Upload");
-
-        let staged_resource = self.font_staged.as_ref().unwrap();
+        let font = Self::create_font_texture(device, dimensions);
+        let view = font
+            .get_view(&ImageViewDesc {
+                format: Format::R8Unorm,
+                view_type: ImageViewType::Tex2D,
+                sub_resources: TextureSubResourceSet::with_color(),
+                writable: false,
+            })
+            .unwrap();
 
         encoder.resource_barrier(
             &[],
             &[],
             &[TextureBarrier {
-                texture: self.font_staged.as_ref().unwrap().deref(),
+                texture: font.as_ref(),
                 subresource_range: TextureSubResourceSet::with_color(),
-                before_sync: BarrierSync::ALL,
+                before_sync: BarrierSync::NONE,
                 after_sync: BarrierSync::COPY,
                 before_access: BarrierAccess::NONE,
                 after_access: BarrierAccess::COPY_WRITE,
@@ -151,35 +126,17 @@ impl PerFrameObjects {
             }],
         );
 
-        let extent = Extent3D {
-            width: self.font_staged_size.0,
-            height: self.font_staged_size.1,
-            depth: 1,
-        };
         encoder.copy_buffer_to_texture(
-            self.font_staging_buffer.deref(),
-            staged_resource.deref(),
-            &[BufferToTextureCopyRegion {
-                src: ImageDataLayout {
-                    offset: 0,
-                    row_pitch: self.font_staged_size.0,
-                    extent: extent.clone(),
-                },
-                dst: TextureCopyInfo {
-                    mip_level: 0,
-                    array_layer: 0,
-                    aspect: TextureCopyAspect::Color,
-                    origin: UOffset3D::default(),
-                    extent,
-                },
-            }],
+            staging_buffer.buffer.as_ref(),
+            font.as_ref(),
+            &[staging_buffer.get_copy_region(0, 0, TextureCopyAspect::Color)],
         );
 
         encoder.resource_barrier(
             &[],
             &[],
             &[TextureBarrier {
-                texture: self.font_staged.as_deref().unwrap(),
+                texture: font.as_ref(),
                 subresource_range: TextureSubResourceSet::with_color(),
                 before_sync: BarrierSync::COPY,
                 after_sync: BarrierSync::ALL,
@@ -191,12 +148,28 @@ impl PerFrameObjects {
             }],
         );
 
+        // Update the metadata for determining when to re-upload the texture
+        self.font = Some(font);
+        self.font_view = Some(view);
+        self.font_version = texture.version;
+        self.font_size = dimensions;
+
+        staging_buffer
+            .data
+            .cast::<u8>()
+            .as_ptr()
+            .copy_from_nonoverlapping(texture.bytes.as_ptr(), texture.bytes.len());
+
+        self.deferred_buffers.clear();
+        staging_buffer.buffer.unmap();
+        self.deferred_buffers.push(staging_buffer.buffer);
+
         encoder.end_event();
     }
 
     /// Allocates the font texture on GPU memory
-    fn create_staged_resources(&mut self, device: &dyn IDevice, dimensions: (u32, u32)) {
-        let image = device
+    fn create_font_texture(device: &dyn IDevice, dimensions: (u32, u32)) -> AnyArc<dyn ITexture> {
+        device
             .create_texture(&TextureDesc {
                 width: dimensions.0,
                 height: dimensions.1,
@@ -208,42 +181,6 @@ impl PerFrameObjects {
                 sample_count: 1,
                 sample_quality: 0,
                 usage: ResourceUsageFlags::COPY_DEST | ResourceUsageFlags::SHADER_RESOURCE,
-                ..Default::default()
-            })
-            .unwrap();
-
-        self.font_staged = Some(image);
-    }
-
-    unsafe fn update_srv(&mut self, device: &dyn IDevice, sampler: &dyn ISampler) {
-        let view = self
-            .font_staged
-            .as_ref()
-            .unwrap()
-            .get_view(&ImageViewDesc {
-                format: Format::R8Unorm,
-                view_type: ImageViewType::Tex2D,
-                sub_resources: TextureSubResourceSet::with_color(),
-                writable: false,
-            })
-            .unwrap();
-
-        let set = self.descriptor_set;
-        device.update_descriptor_sets(&[
-            DescriptorWriteDesc::texture(set, 1, &view.srv_write()),
-            DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite { sampler }),
-        ]);
-    }
-
-    fn create_font_staging_allocation(
-        device: &dyn IDevice,
-        dimensions: (u32, u32),
-    ) -> AnyArc<dyn IBuffer> {
-        device
-            .create_buffer(&BufferDesc {
-                size: (dimensions.0 * dimensions.1) as u64,
-                usage: ResourceUsageFlags::COPY_SOURCE,
-                cpu_access: CpuAccessMode::Write,
                 ..Default::default()
             })
             .unwrap()
