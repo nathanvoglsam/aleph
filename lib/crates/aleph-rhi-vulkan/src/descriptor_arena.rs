@@ -60,7 +60,7 @@ impl IDescriptorArena for DescriptorArena {
         let layout = unwrap::descriptor_set_layout(layout);
         let set_layouts = [layout.descriptor_set_layout];
 
-        let allocate_info = vk::DescriptorSetAllocateInfo::builder()
+        let allocate_info = vk::DescriptorSetAllocateInfo::default()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
         let sets = unsafe {
@@ -84,7 +84,7 @@ impl IDescriptorArena for DescriptorArena {
             set_layouts.push(layout.descriptor_set_layout);
         }
 
-        let allocate_info = vk::DescriptorSetAllocateInfo::builder()
+        let allocate_info = vk::DescriptorSetAllocateInfo::default()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
         let sets = unsafe {

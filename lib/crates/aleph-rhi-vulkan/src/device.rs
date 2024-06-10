@@ -66,11 +66,12 @@ pub struct Device {
     pub(crate) context: AnyArc<Context>,
     pub(crate) adapter: AnyArc<Adapter>,
     pub(crate) device: ManuallyDrop<ash::Device>,
-    pub(crate) timeline_semaphore: ash::extensions::khr::TimelineSemaphore,
-    pub(crate) _create_renderpass_2: ash::extensions::khr::CreateRenderPass2,
-    pub(crate) dynamic_rendering: ash::extensions::khr::DynamicRendering,
-    pub(crate) swapchain: Option<ash::extensions::khr::Swapchain>,
-    pub(crate) synchronization_2: Option<ash::extensions::khr::Synchronization2>,
+    pub(crate) timeline_semaphore: ash::khr::timeline_semaphore::Device,
+    pub(crate) _create_renderpass_2: ash::khr::create_renderpass2::Device,
+    pub(crate) dynamic_rendering: ash::khr::dynamic_rendering::Device,
+    pub(crate) swapchain: Option<ash::khr::swapchain::Device>,
+    pub(crate) synchronization_2: Option<ash::khr::synchronization2::Device>,
+    pub(crate) debug_loader: Option<ash::ext::debug_utils::Device>,
     pub(crate) allocator: ManuallyDrop<vma::Allocator>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
@@ -150,11 +151,11 @@ impl IDevice for Device {
             let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
 
             let mut builder =
-                vk::GraphicsPipelineCreateInfo::builder().layout(pipeline_layout.pipeline_layout);
+                vk::GraphicsPipelineCreateInfo::default().layout(pipeline_layout.pipeline_layout);
 
             let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
             let dynamic_state =
-                vk::PipelineDynamicStateCreateInfo::builder().dynamic_states(&dynamic_states);
+                vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&dynamic_states);
 
             // Translate the vertex input state
             let vertex_binding_descriptions: BVec<_> = Self::translate_vertex_bindings(&bump, desc);
@@ -165,12 +166,12 @@ impl IDevice for Device {
                 &vertex_attribute_descriptions,
             );
 
-            let viewport_state = vk::PipelineViewportStateCreateInfo::builder()
+            let viewport_state = vk::PipelineViewportStateCreateInfo::default()
                 .viewport_count(1)
                 .scissor_count(1);
             let input_assembly_state = Self::translate_input_assembly_state(desc);
             let rasterization_state = Self::translate_rasterization_state(desc);
-            let multisample_state = vk::PipelineMultisampleStateCreateInfo::builder()
+            let multisample_state = vk::PipelineMultisampleStateCreateInfo::default()
                 .rasterization_samples(vk::SampleCountFlags::TYPE_1)
                 .sample_shading_enable(false)
                 .min_sample_shading(0.0)
@@ -189,7 +190,7 @@ impl IDevice for Device {
             for (i, v) in desc.shader_stages.iter().enumerate() {
                 let module = unsafe {
                     let shader_data = Self::unwrap_shader_bytecode(&bump, i, &v.data)?;
-                    let create_info = vk::ShaderModuleCreateInfo::builder().code(shader_data);
+                    let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
                     self.device
                         .create_shader_module(&create_info, Some(&alloc_adapter))
                         .map_err(|v| log::error!("Platform Error: {:#?}", v))?
@@ -199,11 +200,10 @@ impl IDevice for Device {
 
             let mut stages = BVec::with_capacity_in(shader_modules.len(), &bump);
             for &(shader_type, module) in shader_modules.iter() {
-                let info = vk::PipelineShaderStageCreateInfo::builder()
+                let info = vk::PipelineShaderStageCreateInfo::default()
                     .stage(shader_type_to_vk(shader_type))
                     .module(module)
-                    .name(cstr!("main"))
-                    .build();
+                    .name(cstr!("main"));
                 stages.push(info);
             }
 
@@ -220,7 +220,7 @@ impl IDevice for Device {
 
             let pipeline = unsafe {
                 self.device
-                    .create_graphics_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
+                    .create_graphics_pipelines(vk::PipelineCache::null(), &[builder], None)
                     .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
@@ -232,13 +232,7 @@ impl IDevice for Device {
                 }
             }
 
-            set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
-                &bump,
-                pipeline,
-                desc.name,
-            );
+            set_name(self.debug_loader.as_ref(), &bump, pipeline, desc.name);
 
             let out = AnyArc::new_cyclic(move |v| GraphicsPipeline {
                 _this: v.clone(),
@@ -266,25 +260,24 @@ impl IDevice for Device {
             // Create a temporary shader module using
             let alloc_adapter = callbacks_from_rust_allocator(bump.deref().by_ref());
             let module = unsafe {
-                let create_info = vk::ShaderModuleCreateInfo::builder().code(shader_data);
+                let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
                 self.device
                     .create_shader_module(&create_info, Some(&alloc_adapter))
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
-            let builder = vk::ComputePipelineCreateInfo::builder()
+            let builder = vk::ComputePipelineCreateInfo::default()
                 .layout(pipeline_layout.pipeline_layout)
                 .stage(
-                    vk::PipelineShaderStageCreateInfo::builder()
+                    vk::PipelineShaderStageCreateInfo::default()
                         .stage(vk::ShaderStageFlags::COMPUTE)
                         .module(module)
-                        .name(cstr!("main"))
-                        .build(),
+                        .name(cstr!("main")),
                 );
 
             let pipeline = unsafe {
                 self.device
-                    .create_compute_pipelines(vk::PipelineCache::null(), &[builder.build()], None)
+                    .create_compute_pipelines(vk::PipelineCache::null(), &[builder], None)
                     .map_err(|(_, v)| log::error!("Platform Error: {:#?}", v))?
             };
             let pipeline = pipeline[0];
@@ -295,13 +288,7 @@ impl IDevice for Device {
                     .destroy_shader_module(module, Some(&alloc_adapter))
             }
 
-            set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
-                &bump,
-                pipeline,
-                desc.name,
-            );
+            set_name(self.debug_loader.as_ref(), &bump, pipeline, desc.name);
 
             let out = AnyArc::new_cyclic(move |v| ComputePipeline {
                 _this: v.clone(),
@@ -345,7 +332,7 @@ impl IDevice for Device {
 
                 sizes[descriptor_type.as_raw() as usize] += descriptor_count;
 
-                let binding = vk::DescriptorSetLayoutBinding::builder()
+                let binding = vk::DescriptorSetLayoutBinding::default()
                     .binding(v.binding_num)
                     .descriptor_type(descriptor_type)
                     .descriptor_count(descriptor_count)
@@ -359,7 +346,7 @@ impl IDevice for Device {
                     binding
                 };
 
-                bindings.push(binding.build());
+                bindings.push(binding);
             }
 
             let mut pool_sizes = Vec::with_capacity(sizes.len());
@@ -367,15 +354,14 @@ impl IDevice for Device {
                 // Accumulate any non-zero pool size into the list
                 if v > 0 {
                     pool_sizes.push(
-                        vk::DescriptorPoolSize::builder()
+                        vk::DescriptorPoolSize::default()
                             .ty(vk::DescriptorType::from_raw(i as i32))
-                            .descriptor_count(v)
-                            .build(),
+                            .descriptor_count(v),
                     );
                 }
             }
 
-            let create_info = vk::DescriptorSetLayoutCreateInfo::builder().bindings(&bindings);
+            let create_info = vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
 
             let descriptor_set_layout = unsafe {
                 self.device
@@ -384,8 +370,7 @@ impl IDevice for Device {
             };
 
             set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
+                self.debug_loader.as_ref(),
                 &bump,
                 descriptor_set_layout,
                 desc.name,
@@ -422,7 +407,7 @@ impl IDevice for Device {
                 size.descriptor_count *= desc.num_sets;
             }
 
-            let create_info = vk::DescriptorPoolCreateInfo::builder()
+            let create_info = vk::DescriptorPoolCreateInfo::default()
                 .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET)
                 .max_sets(desc.num_sets)
                 .pool_sizes(&pool_sizes);
@@ -434,8 +419,7 @@ impl IDevice for Device {
             };
 
             set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
+                self.debug_loader.as_ref(),
                 &bump,
                 descriptor_pool,
                 desc.name,
@@ -496,7 +480,7 @@ impl IDevice for Device {
                 DescriptorArenaType::Heap => vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET,
             };
 
-            let create_info = vk::DescriptorPoolCreateInfo::builder()
+            let create_info = vk::DescriptorPoolCreateInfo::default()
                 .flags(flags)
                 .max_sets(desc.num_sets)
                 .pool_sizes(&pool_sizes);
@@ -508,8 +492,7 @@ impl IDevice for Device {
             };
 
             set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
+                self.debug_loader.as_ref(),
                 &bump,
                 descriptor_pool,
                 desc.name,
@@ -543,16 +526,16 @@ impl IDevice for Device {
             let mut offset = 0;
             let mut ranges = Vec::with_capacity(desc.push_constant_blocks.len());
             for v in desc.push_constant_blocks {
-                let range = vk::PushConstantRange::builder()
+                let range = vk::PushConstantRange::default()
                     .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
                     .offset(offset)
                     .size(v.size as u32);
-                ranges.push(range.build());
+                ranges.push(range);
 
                 offset += v.size as u32;
             }
 
-            let create_info = vk::PipelineLayoutCreateInfo::builder()
+            let create_info = vk::PipelineLayoutCreateInfo::default()
                 .set_layouts(&set_layouts)
                 .push_constant_ranges(&ranges);
 
@@ -563,8 +546,7 @@ impl IDevice for Device {
             };
 
             set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
+                self.debug_loader.as_ref(),
                 &bump,
                 pipeline_layout,
                 desc.name,
@@ -627,7 +609,7 @@ impl IDevice for Device {
             usage |= vk::BufferUsageFlags::ACCELERATION_STRUCTURE_STORAGE_KHR;
         }
 
-        let create_info = vk::BufferCreateInfo::builder()
+        let create_info = vk::BufferCreateInfo::default()
             .size(desc.size)
             .usage(usage)
             .sharing_mode(vk::SharingMode::EXCLUSIVE);
@@ -711,7 +693,7 @@ impl IDevice for Device {
             flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
         }
 
-        let create_info = vk::ImageCreateInfo::builder()
+        let create_info = vk::ImageCreateInfo::default()
             .flags(flags)
             .image_type(image_type)
             .format(format)
@@ -767,7 +749,7 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let mut create_info = vk::SamplerCreateInfo::builder()
+            let mut create_info = vk::SamplerCreateInfo::default()
                 .mag_filter(sampler_filter_to_vk(desc.mag_filter))
                 .min_filter(sampler_filter_to_vk(desc.min_filter))
                 .mipmap_mode(sampler_mip_filter_to_vk(desc.mip_filter))
@@ -794,13 +776,7 @@ impl IDevice for Device {
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
-            set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
-                &bump,
-                sampler,
-                desc.name,
-            );
+            set_name(self.debug_loader.as_ref(), &bump, sampler, desc.name);
 
             let name = desc.name.map(String::from);
             let out = AnyArc::new_cyclic(move |v| Sampler {
@@ -830,7 +806,7 @@ impl IDevice for Device {
                 QueueType::Transfer => self.transfer_queue.as_ref().unwrap().info.family_index,
             };
 
-            let create_info = vk::CommandPoolCreateInfo::builder()
+            let create_info = vk::CommandPoolCreateInfo::default()
                 .flags(vk::CommandPoolCreateFlags::TRANSIENT)
                 .queue_family_index(family_index);
             let command_pool = unsafe {
@@ -839,7 +815,7 @@ impl IDevice for Device {
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
 
-            let allocate_info = vk::CommandBufferAllocateInfo::builder()
+            let allocate_info = vk::CommandBufferAllocateInfo::default()
                 .command_pool(command_pool)
                 .level(vk::CommandBufferLevel::PRIMARY)
                 .command_buffer_count(1);
@@ -850,20 +826,8 @@ impl IDevice for Device {
             };
             let command_buffer = command_buffer[0];
 
-            set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
-                &bump,
-                command_pool,
-                desc.name,
-            );
-            set_name(
-                self.context.debug_loader.as_ref(),
-                self.device.handle(),
-                &bump,
-                command_buffer,
-                desc.name,
-            );
+            set_name(self.debug_loader.as_ref(), &bump, command_pool, desc.name);
+            set_name(self.debug_loader.as_ref(), &bump, command_buffer, desc.name);
 
             let out: Box<dyn ICommandList> = Box::new(CommandList {
                 _device: self.this.upgrade().unwrap(),
@@ -907,7 +871,7 @@ impl IDevice for Device {
             for write in writes {
                 let d_type = write.writes.descriptor_type();
                 let d_type = descriptor_type_to_vk(d_type);
-                let new_write = vk::WriteDescriptorSet::builder()
+                let new_write = vk::WriteDescriptorSet::default()
                     .dst_set(std::mem::transmute(write.set))
                     .dst_binding(write.binding)
                     .dst_array_element(write.array_element)
@@ -915,9 +879,8 @@ impl IDevice for Device {
                 let new_write = match write.writes {
                     DescriptorWrites::Sampler(v) => {
                         let translator = v.iter().map(|v| {
-                            vk::DescriptorImageInfo::builder()
+                            vk::DescriptorImageInfo::default()
                                 .sampler(unwrap::sampler(v.sampler).sampler)
-                                .build()
                         });
                         let image_infos = bump.alloc_slice_fill_iter(translator);
                         new_write.image_info(image_infos)
@@ -931,10 +894,9 @@ impl IDevice for Device {
                     | DescriptorWrites::TextureRW(v)
                     | DescriptorWrites::Texture(v) => {
                         let translator = v.iter().map(|v| {
-                            vk::DescriptorImageInfo::builder()
+                            vk::DescriptorImageInfo::default()
                                 .image_view(std::mem::transmute(v.image_view))
                                 .image_layout(image_layout_to_vk(v.image_layout))
-                                .build()
                         });
                         let image_infos = bump.alloc_slice_fill_iter(translator);
                         new_write.image_info(image_infos)
@@ -948,17 +910,16 @@ impl IDevice for Device {
                         let translator = v.iter().map(|v| {
                             let buffer = unwrap::buffer(v.buffer);
                             let len = buffer.clamp_max_size_for_view(v.len);
-                            vk::DescriptorBufferInfo::builder()
+                            vk::DescriptorBufferInfo::default()
                                 .buffer(buffer.buffer)
                                 .offset(v.offset)
                                 .range(len)
-                                .build()
                         });
                         let buffer_infos = bump.alloc_slice_fill_iter(translator);
                         new_write.buffer_info(buffer_infos)
                     }
                 };
-                descriptor_writes.push(new_write.build());
+                descriptor_writes.push(new_write);
             }
 
             self.device.update_descriptor_sets(&descriptor_writes, &[]);
@@ -970,7 +931,7 @@ impl IDevice for Device {
 
     fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
         let fence = unsafe {
-            let mut info = vk::FenceCreateInfo::builder();
+            let mut info = vk::FenceCreateInfo::default();
             if signalled {
                 info = info.flags(vk::FenceCreateFlags::SIGNALED)
             }
@@ -992,7 +953,7 @@ impl IDevice for Device {
 
     fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
         let semaphore = unsafe {
-            let info = vk::SemaphoreCreateInfo::builder();
+            let info = vk::SemaphoreCreateInfo::default();
             self.device
                 .create_semaphore(&info, None)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
@@ -1111,11 +1072,10 @@ impl Device {
         desc: &GraphicsPipelineDesc,
     ) -> BVec<'a, vk::VertexInputBindingDescription> {
         let iter = desc.vertex_layout.input_bindings.iter().map(|v| {
-            vk::VertexInputBindingDescription::builder()
+            vk::VertexInputBindingDescription::default()
                 .binding(v.binding)
                 .stride(v.stride)
                 .input_rate(vertex_input_rate_to_vk(v.input_rate))
-                .build()
         });
         BVec::from_iter_in(iter, bump)
     }
@@ -1125,12 +1085,11 @@ impl Device {
         desc: &GraphicsPipelineDesc,
     ) -> BVec<'a, vk::VertexInputAttributeDescription> {
         let iter = desc.vertex_layout.input_attributes.iter().map(|v| {
-            vk::VertexInputAttributeDescription::builder()
+            vk::VertexInputAttributeDescription::default()
                 .location(v.location)
                 .binding(v.binding)
                 .offset(v.offset)
                 .format(texture_format_to_vk(v.format))
-                .build()
         });
         BVec::from_iter_in(iter, bump)
     }
@@ -1138,28 +1097,28 @@ impl Device {
     fn translate_vertex_input_state<'a>(
         vertex_binding_descriptions: &'a [vk::VertexInputBindingDescription],
         vertex_attribute_descriptions: &'a [vk::VertexInputAttributeDescription],
-    ) -> vk::PipelineVertexInputStateCreateInfoBuilder<'a> {
-        vk::PipelineVertexInputStateCreateInfo::builder()
+    ) -> vk::PipelineVertexInputStateCreateInfo<'a> {
+        vk::PipelineVertexInputStateCreateInfo::default()
             .vertex_binding_descriptions(vertex_binding_descriptions)
             .vertex_attribute_descriptions(vertex_attribute_descriptions)
     }
 
     fn translate_input_assembly_state(
         desc: &GraphicsPipelineDesc,
-    ) -> vk::PipelineInputAssemblyStateCreateInfoBuilder<'static> {
+    ) -> vk::PipelineInputAssemblyStateCreateInfo<'static> {
         let topology = primitive_topology_to_vk(desc.input_assembly_state.primitive_topology);
-        vk::PipelineInputAssemblyStateCreateInfo::builder()
+        vk::PipelineInputAssemblyStateCreateInfo::default()
             .topology(topology)
             .primitive_restart_enable(false)
     }
 
     fn translate_rasterization_state(
         desc: &GraphicsPipelineDesc,
-    ) -> vk::PipelineRasterizationStateCreateInfoBuilder<'static> {
+    ) -> vk::PipelineRasterizationStateCreateInfo<'static> {
         let polygon_mode = polygon_mode_to_vk(desc.rasterizer_state.polygon_mode);
         let cull_mode = cull_mode_to_vk(desc.rasterizer_state.cull_mode);
         let front_face = front_face_order_to_vk(desc.rasterizer_state.front_face);
-        vk::PipelineRasterizationStateCreateInfo::builder()
+        vk::PipelineRasterizationStateCreateInfo::default()
             .polygon_mode(polygon_mode)
             .cull_mode(cull_mode)
             .front_face(front_face)
@@ -1174,7 +1133,7 @@ impl Device {
 
     fn translate_depth_stencil_state(
         desc: &GraphicsPipelineDesc,
-    ) -> vk::PipelineDepthStencilStateCreateInfoBuilder<'static> {
+    ) -> vk::PipelineDepthStencilStateCreateInfo<'static> {
         const fn translate_stencil_op_state(
             state: &StencilOpState,
             compare_mask: u32,
@@ -1191,7 +1150,7 @@ impl Device {
             }
         }
 
-        vk::PipelineDepthStencilStateCreateInfo::builder()
+        vk::PipelineDepthStencilStateCreateInfo::default()
             .depth_test_enable(desc.depth_stencil_state.depth_test)
             .depth_write_enable(desc.depth_stencil_state.depth_write)
             .depth_compare_op(compare_op_to_vk(desc.depth_stencil_state.depth_compare_op))
@@ -1216,7 +1175,7 @@ impl Device {
         desc: &GraphicsPipelineDesc,
     ) -> BVec<'a, vk::PipelineColorBlendAttachmentState> {
         let iter = desc.blend_state.attachments.iter().map(|v| {
-            vk::PipelineColorBlendAttachmentState::builder()
+            vk::PipelineColorBlendAttachmentState::default()
                 .blend_enable(v.blend_enabled)
                 .src_color_blend_factor(blend_factor_to_vk(v.src_factor))
                 .dst_color_blend_factor(blend_factor_to_vk(v.dst_factor))
@@ -1227,15 +1186,14 @@ impl Device {
                 .color_write_mask(vk::ColorComponentFlags::from_raw(
                     v.color_write_mask.bits() as _
                 ))
-                .build()
         });
         BVec::from_iter_in(iter, bump)
     }
 
     fn translate_color_blend_state(
         attachments: &[vk::PipelineColorBlendAttachmentState],
-    ) -> vk::PipelineColorBlendStateCreateInfoBuilder {
-        vk::PipelineColorBlendStateCreateInfo::builder()
+    ) -> vk::PipelineColorBlendStateCreateInfo {
+        vk::PipelineColorBlendStateCreateInfo::default()
             .logic_op_enable(false)
             .logic_op(vk::LogicOp::CLEAR)
             .attachments(attachments)
@@ -1245,8 +1203,8 @@ impl Device {
     fn translate_framebuffer_info<'a>(
         desc: &GraphicsPipelineDesc,
         color_formats: &'a mut BVec<vk::Format>,
-    ) -> vk::PipelineRenderingCreateInfoBuilder<'a> {
-        let builder = vk::PipelineRenderingCreateInfo::builder();
+    ) -> vk::PipelineRenderingCreateInfo<'a> {
+        let builder = vk::PipelineRenderingCreateInfo::default();
 
         let iter = desc
             .render_target_formats

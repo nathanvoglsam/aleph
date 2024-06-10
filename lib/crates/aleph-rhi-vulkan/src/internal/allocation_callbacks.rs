@@ -48,6 +48,7 @@ pub fn callbacks_from_rust_allocator(v: &Bump) -> vk::AllocationCallbacks {
         pfn_free: Some(free),
         pfn_internal_allocation: None,
         pfn_internal_free: None,
+        _marker: Default::default(),
     }
 }
 

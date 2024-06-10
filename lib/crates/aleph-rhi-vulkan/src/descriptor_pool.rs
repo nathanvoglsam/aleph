@@ -82,7 +82,7 @@ impl IDescriptorPool for DescriptorPool {
     fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         let set_layouts = [self._layout.descriptor_set_layout];
 
-        let allocate_info = vk::DescriptorSetAllocateInfo::builder()
+        let allocate_info = vk::DescriptorSetAllocateInfo::default()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
         let descriptor_sets = unsafe {
@@ -104,7 +104,7 @@ impl IDescriptorPool for DescriptorPool {
             set_layouts.push(self._layout.descriptor_set_layout);
         }
 
-        let allocate_info = vk::DescriptorSetAllocateInfo::builder()
+        let allocate_info = vk::DescriptorSetAllocateInfo::default()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
         let sets = unsafe {

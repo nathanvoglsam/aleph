@@ -152,9 +152,9 @@ impl Texture {
         desc: &ImageViewDesc,
         usage: vk::ImageUsageFlags,
     ) -> Result<vk::ImageView, ()> {
-        let mut usage_info = vk::ImageViewUsageCreateInfo::builder().usage(usage);
+        let mut usage_info = vk::ImageViewUsageCreateInfo::default().usage(usage);
 
-        let create_info = vk::ImageViewCreateInfo::builder()
+        let create_info = vk::ImageViewCreateInfo::default()
             .image(self.image)
             .view_type(image_view_type_to_vk(desc.view_type))
             .format(texture_format_to_vk(desc.format))

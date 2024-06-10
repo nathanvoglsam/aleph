@@ -547,7 +547,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceVulkan11Properties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan11Properties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         lmin!(self, v, subgroup_size);
@@ -578,7 +578,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceVulkan11Properties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceIDProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceIDProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, _v: &Self) -> Option<()> {
         Some(())
@@ -589,7 +589,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceIDProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceSubgroupProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSubgroupProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         lmin!(self, v, subgroup_size);
@@ -608,7 +608,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceSubgroupProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDevicePointClippingProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDevicePointClippingProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         delegate!(self, v, point_clipping_behavior);
@@ -621,7 +621,7 @@ impl CheckMeetsProfile for vk::PhysicalDevicePointClippingProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceMultiviewProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceMultiviewProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         lmin!(self, v, max_multiview_view_count);
@@ -636,7 +636,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceMultiviewProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, protected_no_fault);
@@ -649,7 +649,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceMaintenance3Properties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceMaintenance3Properties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         lmin!(self, v, max_per_set_descriptors);
@@ -664,7 +664,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceMaintenance3Properties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceVulkan12Properties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         delegate!(self, v, conformance_version);
@@ -894,7 +894,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceVulkan11Features {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan11Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, storage_buffer16_bit_access);
@@ -929,7 +929,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceVulkan11Features {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDevice16BitStorageFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDevice16BitStorageFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, storage_buffer16_bit_access);
@@ -948,7 +948,7 @@ impl CheckMeetsProfile for vk::PhysicalDevice16BitStorageFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceMultiviewFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceMultiviewFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, multiview);
@@ -965,7 +965,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceMultiviewFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceVariablePointersFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVariablePointersFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, variable_pointers_storage_buffer);
@@ -980,7 +980,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceVariablePointersFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, protected_memory);
@@ -993,7 +993,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceProtectedMemoryFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, sampler_ycbcr_conversion);
@@ -1006,7 +1006,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceShaderDrawParametersFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceShaderDrawParametersFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, shader_draw_parameters);
@@ -1019,7 +1019,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceShaderDrawParametersFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceVulkan12Features {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkan12Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, sampler_mirror_clamp_to_edge);
@@ -1124,7 +1124,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceVulkan12Features {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceImagelessFramebufferFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceImagelessFramebufferFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, imageless_framebuffer);
@@ -1137,7 +1137,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceImagelessFramebufferFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, shader_input_attachment_array_dynamic_indexing);
@@ -1188,7 +1188,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, scalar_block_layout);
@@ -1201,7 +1201,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, timeline_semaphore);
@@ -1214,7 +1214,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, buffer_device_address);
@@ -1231,7 +1231,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, uniform_buffer_standard_layout);
@@ -1244,7 +1244,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDevice8BitStorageFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDevice8BitStorageFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, storage_buffer8_bit_access);
@@ -1261,7 +1261,7 @@ impl CheckMeetsProfile for vk::PhysicalDevice8BitStorageFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceShaderFloat16Int8Features {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceShaderFloat16Int8Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, shader_float16);
@@ -1276,7 +1276,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceShaderFloat16Int8Features {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceHostQueryResetFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceHostQueryResetFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, host_query_reset);
@@ -1289,7 +1289,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceHostQueryResetFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         lmin!(self, v, max_update_after_bind_descriptors_in_all_pools);
@@ -1346,7 +1346,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceDescriptorIndexingProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceFloatControlsProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceFloatControlsProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         delegate!(self, v, denorm_behavior_independence);
@@ -1391,7 +1391,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceFloatControlsProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceDepthStencilResolveProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDepthStencilResolveProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat_mask!(self, v, supported_depth_resolve_modes);
@@ -1410,7 +1410,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceDepthStencilResolveProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         lmin!(self, v, max_timeline_semaphore_value_difference);
@@ -1423,7 +1423,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceTimelineSemaphoreProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, filter_minmax_single_component_formats);
@@ -1438,7 +1438,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceDriverProperties {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDriverProperties<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         delegate!(self, v, conformance_version);
@@ -1451,7 +1451,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceDriverProperties {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceDynamicRenderingFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceDynamicRenderingFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, dynamic_rendering);
@@ -1464,7 +1464,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceDynamicRenderingFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceSynchronization2Features {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceSynchronization2Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, synchronization2);
@@ -1477,7 +1477,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceSynchronization2Features {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceShaderAtomicInt64Features<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, shader_buffer_int64_atomics);
@@ -1492,7 +1492,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures {
+impl<'a> CheckMeetsProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, vulkan_memory_model);
@@ -1509,7 +1509,7 @@ impl CheckMeetsProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR {
+impl<'a> CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         lmax!(self, v, min_vertex_input_binding_stride_alignment);
@@ -1522,7 +1522,7 @@ impl CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR {
     }
 }
 
-impl CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR {
+impl<'a> CheckMeetsProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'a> {
     #[rustfmt::skip]
     fn meets_profile(&self, v: &Self) -> Option<()> {
         feat!(self, v, constant_alpha_color_blend_factors);

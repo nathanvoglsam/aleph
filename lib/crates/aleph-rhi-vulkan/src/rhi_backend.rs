@@ -7,11 +7,6 @@ use aleph_any::AnyArc;
 use aleph_rhi_api::{BackendAPI, IContext};
 use aleph_rhi_impl_utils::cstr;
 use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
-use ash::extensions::ext::DebugUtils;
-use ash::extensions::khr::{
-    AndroidSurface, Surface, WaylandSurface, Win32Surface, XcbSurface, XlibSurface,
-};
-use ash::extensions::mvk::{IOSSurface, MacOSSurface};
 use ash::vk;
 use libloading::Library;
 
@@ -119,9 +114,11 @@ impl RhiBackend {
             log::warn!("Failed to configure MoltenVK on macOS");
         }
 
-        let instance_version = entry
-            .try_enumerate_instance_version()
-            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+        let instance_version = unsafe {
+            entry
+                .try_enumerate_instance_version()
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+        };
         let instance_version = instance_version.unwrap();
         if vk::api_version_major(instance_version) < 1 {
             log::error!("Vulkan Instance doesn't support Vulkan 1.x");
@@ -160,7 +157,7 @@ impl RhiBackend {
             vk::InstanceCreateFlags::empty()
         };
         let app_info = app_and_engine_info();
-        let create_info = vk::InstanceCreateInfo::builder()
+        let create_info = vk::InstanceCreateInfo::default()
             .application_info(&app_info)
             .enabled_extension_names(&extensions)
             .enabled_layer_names(&layers)
@@ -185,48 +182,48 @@ impl RhiBackend {
         instance: &ash::Instance,
         supported_extensions: &[&CStr],
     ) -> Extensions {
-        let debug_loader = if supported_extensions.contains(&DebugUtils::name()) {
-            Some(DebugUtils::new(entry, instance))
+        let debug_loader = if supported_extensions.contains(&ash::ext::debug_utils::NAME) {
+            Some(ash::ext::debug_utils::Instance::new(entry, instance))
         } else {
             None
         };
-        let surface_loader = if supported_extensions.contains(&Surface::name()) {
-            Some(Surface::new(entry, instance))
+        let surface_loader = if supported_extensions.contains(&ash::khr::surface::NAME) {
+            Some(ash::khr::surface::Instance::new(entry, instance))
         } else {
             None
         };
-        let xlib_loader = if supported_extensions.contains(&XlibSurface::name()) {
-            Some(XlibSurface::new(entry, instance))
+        let xlib_loader = if supported_extensions.contains(&ash::khr::xlib_surface::NAME) {
+            Some(ash::khr::xlib_surface::Instance::new(entry, instance))
         } else {
             None
         };
-        let xcb_loader = if supported_extensions.contains(&XcbSurface::name()) {
-            Some(XcbSurface::new(entry, instance))
+        let xcb_loader = if supported_extensions.contains(&ash::khr::xcb_surface::NAME) {
+            Some(ash::khr::xcb_surface::Instance::new(entry, instance))
         } else {
             None
         };
-        let wayland_loader = if supported_extensions.contains(&WaylandSurface::name()) {
-            Some(WaylandSurface::new(entry, instance))
+        let wayland_loader = if supported_extensions.contains(&ash::khr::wayland_surface::NAME) {
+            Some(ash::khr::wayland_surface::Instance::new(entry, instance))
         } else {
             None
         };
-        let android_loader = if supported_extensions.contains(&AndroidSurface::name()) {
-            Some(AndroidSurface::new(entry, instance))
+        let android_loader = if supported_extensions.contains(&ash::khr::android_surface::NAME) {
+            Some(ash::khr::android_surface::Instance::new(entry, instance))
         } else {
             None
         };
-        let win32_loader = if supported_extensions.contains(&Win32Surface::name()) {
-            Some(Win32Surface::new(entry, instance))
+        let win32_loader = if supported_extensions.contains(&ash::khr::win32_surface::NAME) {
+            Some(ash::khr::win32_surface::Instance::new(entry, instance))
         } else {
             None
         };
-        let macos_loader = if supported_extensions.contains(&MacOSSurface::name()) {
-            Some(MacOSSurface::new(entry, instance))
+        let macos_loader = if supported_extensions.contains(&ash::mvk::macos_surface::NAME) {
+            Some(ash::mvk::macos_surface::Instance::new(entry, instance))
         } else {
             None
         };
-        let ios_loader = if supported_extensions.contains(&IOSSurface::name()) {
-            Some(IOSSurface::new(entry, instance))
+        let ios_loader = if supported_extensions.contains(&ash::mvk::ios_surface::NAME) {
+            Some(ash::mvk::ios_surface::Instance::new(entry, instance))
         } else {
             None
         };
@@ -294,7 +291,7 @@ impl RhiBackend {
 fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
     // Get surface extensions
     // Push the base surface extension
-    let mut extensions = vec![vk::KhrSurfaceFn::name()];
+    let mut extensions = vec![ash::khr::surface::NAME];
 
     // Push all possible WSI extensions for the underlying platform
     if cfg!(all(
@@ -304,34 +301,34 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
     )) {
         // This is the branch for linux. Linux has a bunch of WSI extensions so add them all,
         // any unsupported extensions will be stripped later.
-        extensions.push(vk::KhrXlibSurfaceFn::name());
-        extensions.push(vk::KhrXcbSurfaceFn::name());
-        extensions.push(vk::KhrWaylandSurfaceFn::name());
+        extensions.push(ash::khr::xlib_surface::NAME);
+        extensions.push(ash::khr::xcb_surface::NAME);
+        extensions.push(ash::khr::wayland_surface::NAME);
     }
     if cfg!(target_os = "android") {
         // Android, only one. A sane platform
-        extensions.push(vk::KhrAndroidSurfaceFn::name());
+        extensions.push(ash::khr::android_surface::NAME);
     }
     if cfg!(target_os = "windows") {
         // Windows, again a single WSI extension.
-        extensions.push(vk::KhrWin32SurfaceFn::name());
+        extensions.push(ash::khr::win32_surface::NAME);
     }
     if cfg!(target_os = "macos") {
         // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
         // order for the loader to give us our mvk device.
-        extensions.push(vk::MvkMacosSurfaceFn::name());
-        extensions.push(vk::KhrPortabilityEnumerationFn::name());
+        extensions.push(ash::mvk::macos_surface::NAME);
+        extensions.push(ash::khr::portability_enumeration::NAME);
     }
     if cfg!(target_os = "ios") {
         // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
         // order for the loader to give us our mvk device.
-        extensions.push(vk::MvkIosSurfaceFn::name());
-        extensions.push(vk::KhrPortabilityEnumerationFn::name());
+        extensions.push(ash::mvk::ios_surface::NAME);
+        extensions.push(ash::khr::portability_enumeration::NAME);
     }
 
     // Add the debug extension if requested
     if debug {
-        extensions.push(vk::ExtDebugUtilsFn::name());
+        extensions.push(ash::ext::debug_utils::NAME);
     }
 
     extensions
@@ -352,7 +349,7 @@ fn strip_unsupported_extensions<'a>(
     // be feature emulation layers.
     let extension_sources = iter::once(None).chain(layers.iter().map(|v| Some(*v)));
     let supported_instance_extension_sets: Vec<Vec<vk::ExtensionProperties>> = extension_sources
-        .map(|v| {
+        .map(|v| unsafe {
             entry
                 .enumerate_instance_extension_properties(v)
                 .unwrap_or_default()
@@ -398,9 +395,11 @@ fn get_wanted_layers(validation: bool) -> Vec<&'static CStr> {
 }
 
 fn strip_unsupported_layers<'a>(entry: &ash::Entry, mut layers: Vec<&'a CStr>) -> Vec<&'a CStr> {
-    let supported_instance_layers = entry
-        .enumerate_instance_layer_properties()
-        .unwrap_or_default();
+    let supported_instance_layers = unsafe {
+        entry
+            .enumerate_instance_layer_properties()
+            .unwrap_or_default()
+    };
 
     // Strip all unsupported layers
     layers.retain(|&v| {
@@ -441,8 +440,8 @@ fn diff_lists<'a>(
     })
 }
 
-fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
-    vk::ApplicationInfo::builder()
+fn app_and_engine_info<'a>() -> vk::ApplicationInfo<'a> {
+    vk::ApplicationInfo::default()
         .application_name(cstr!("aleph-gpu"))
         .application_version(vk::make_api_version(
             0,
@@ -461,9 +460,9 @@ fn app_and_engine_info<'a>() -> vk::ApplicationInfoBuilder<'a> {
 }
 
 fn install_debug_messenger(
-    loader: &ash::extensions::ext::DebugUtils,
+    loader: &ash::ext::debug_utils::Instance,
 ) -> Result<vk::DebugUtilsMessengerEXT, ContextCreateError> {
-    let create_info = vk::DebugUtilsMessengerCreateInfoEXT::builder()
+    let create_info = vk::DebugUtilsMessengerCreateInfoEXT::default()
         .message_severity(
             vk::DebugUtilsMessageSeverityFlagsEXT::ERROR
                 | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
@@ -485,15 +484,15 @@ fn install_debug_messenger(
 }
 
 struct Extensions {
-    debug_loader: Option<DebugUtils>,
-    surface_loader: Option<Surface>,
-    xlib_loader: Option<XlibSurface>,
-    xcb_loader: Option<XcbSurface>,
-    wayland_loader: Option<WaylandSurface>,
-    android_loader: Option<AndroidSurface>,
-    win32_loader: Option<Win32Surface>,
-    macos_loader: Option<MacOSSurface>,
-    ios_loader: Option<IOSSurface>,
+    debug_loader: Option<ash::ext::debug_utils::Instance>,
+    surface_loader: Option<ash::khr::surface::Instance>,
+    xlib_loader: Option<ash::khr::xlib_surface::Instance>,
+    xcb_loader: Option<ash::khr::xcb_surface::Instance>,
+    wayland_loader: Option<ash::khr::wayland_surface::Instance>,
+    android_loader: Option<ash::khr::android_surface::Instance>,
+    win32_loader: Option<ash::khr::win32_surface::Instance>,
+    macos_loader: Option<ash::mvk::macos_surface::Instance>,
+    ios_loader: Option<ash::mvk::ios_surface::Instance>,
 }
 
 impl Extensions {

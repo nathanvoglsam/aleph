@@ -30,7 +30,6 @@
 use std::ffi::OsStr;
 use std::ptr;
 
-use ash::vk;
 use libloading::Library;
 
 pub const fn platform_library_name() -> &'static str {
@@ -59,7 +58,7 @@ pub unsafe fn load() -> Option<(Library, ash::Entry)> {
 unsafe fn load_from(path: impl AsRef<OsStr>) -> Option<(Library, ash::Entry)> {
     let lib = Library::new(path).ok()?;
 
-    let static_fn = vk::StaticFn::load_checked(|name| {
+    let static_fn = ash::StaticFn::load_checked(|name| {
         lib.get(name.to_bytes_with_nul())
             .map(|symbol| *symbol)
             .unwrap_or(ptr::null_mut())

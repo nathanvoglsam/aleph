@@ -53,7 +53,7 @@ pub struct Context {
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,
     pub surface_loaders: SurfaceLoaders,
-    pub debug_loader: Option<ash::extensions::ext::DebugUtils>,
+    pub debug_loader: Option<ash::ext::debug_utils::Instance>,
     pub messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
 
@@ -236,11 +236,12 @@ impl Context {
         surface: Option<vk::SurfaceKHR>,
     ) -> Option<()> {
         unsafe {
-            let ext_name = vk::KhrSwapchainFn::name().to_str().unwrap_unchecked();
-            let surface_extension_supported = device_info.supports_extension(ext_name);
+            let ext_name = ash::khr::swapchain::NAME;
+            let swapchain_extension_supported = device_info.supports_extension_cstr(ext_name);
 
-            // The VK_KHR_surface must be supported if a surface is requested
-            if surface.is_some() & !surface_extension_supported {
+            // The VK_KHR_swapchain must be supported if a surface is requested
+            if surface.is_some() & !swapchain_extension_supported {
+                let ext_name = ext_name.to_str().unwrap_unchecked();
                 log::debug!("Device doesn't support '{ext_name}' extension");
                 return None;
             }
@@ -248,7 +249,7 @@ impl Context {
 
         // Check if the device can present to the requested surface, if one was requested
         if let Some(surface) = surface {
-            let surface_khr = ash::extensions::khr::Surface::new(entry, instance);
+            let surface_khr = ash::khr::surface::Instance::new(entry, instance);
 
             // Load information about the device's support of the requested swap chain. If we can't
             // at least load the surface_capabilities then we assume no support and return None to
@@ -308,23 +309,23 @@ impl Context {
 
             // Check we meet requirements for store op none. Check for the three extensions that
             // provide it, failing only if none of them are available.
-            if !is_supported(vk::KhrDynamicRenderingFn::name()) {
+            if !is_supported(ash::khr::dynamic_rendering::NAME) {
                 log::warn!(
                     "Device does not support extension {:?}. Support will be emulated",
-                    vk::KhrDynamicRenderingFn::name()
+                    ash::khr::dynamic_rendering::NAME
                 );
-                if !is_supported(vk::ExtLoadStoreOpNoneFn::name()) {
+                if !is_supported(ash::ext::load_store_op_none::NAME) {
                     log::warn!(
                         "Device does not support extension {:?}. Falling back to QCOM extension",
-                        vk::ExtLoadStoreOpNoneFn::name()
+                        ash::ext::load_store_op_none::NAME
                     );
-                    check_for_extension_vk!(vk::QcomRenderPassStoreOpsFn::name())
+                    check_for_extension_vk!(ash::qcom::render_pass_store_ops::NAME)
                 }
             }
 
             // macOS will always be MoltenVK and portability subset must be available
             if cfg!(target_os = "macos") {
-                check_for_extension_vk!(vk::KhrPortabilitySubsetFn::name());
+                check_for_extension_vk!(ash::khr::portability_subset::NAME);
             }
 
             device_info.meets_minimum_requirements()?;
@@ -334,7 +335,7 @@ impl Context {
     }
 
     pub fn get_device_surface_support(
-        surface_khr: &ash::extensions::khr::Surface,
+        surface_khr: &ash::khr::surface::Instance,
         physical_device: vk::PhysicalDevice,
         surface: vk::SurfaceKHR,
     ) -> Result<
@@ -512,8 +513,8 @@ impl IContext for Context {
                 #[cfg(target_os = "windows")]
                 (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(window)) => {
                     let create_info = vk::Win32SurfaceCreateInfoKHR {
-                        hinstance: window.hinstance,
-                        hwnd: window.hwnd,
+                        hinstance: window.hinstance as _,
+                        hwnd: window.hwnd as _,
                         ..Default::default()
                     };
 
@@ -559,12 +560,12 @@ impl Drop for Context {
 
 /// Internal wrapper struct to make it easier to pass the surface extensions around
 pub struct SurfaceLoaders {
-    pub base: Option<ash::extensions::khr::Surface>,
-    pub win32: Option<ash::extensions::khr::Win32Surface>,
-    pub xlib: Option<ash::extensions::khr::XlibSurface>,
-    pub xcb: Option<ash::extensions::khr::XcbSurface>,
-    pub wayland: Option<ash::extensions::khr::WaylandSurface>,
-    pub android: Option<ash::extensions::khr::AndroidSurface>,
-    pub macos: Option<ash::extensions::mvk::MacOSSurface>,
-    pub ios: Option<ash::extensions::mvk::IOSSurface>,
+    pub base: Option<ash::khr::surface::Instance>,
+    pub win32: Option<ash::khr::win32_surface::Instance>,
+    pub xlib: Option<ash::khr::xlib_surface::Instance>,
+    pub xcb: Option<ash::khr::xcb_surface::Instance>,
+    pub wayland: Option<ash::khr::wayland_surface::Instance>,
+    pub android: Option<ash::khr::android_surface::Instance>,
+    pub macos: Option<ash::mvk::macos_surface::Instance>,
+    pub ios: Option<ash::mvk::ios_surface::Instance>,
 }

@@ -30,13 +30,11 @@
 use std::ffi::CStr;
 use std::iter;
 
-use ash::extensions::ext::DebugUtils;
 use ash::vk;
 use bumpalo::Bump;
 
 pub fn set_name<T: vk::Handle>(
-    loader: Option<&DebugUtils>,
-    device: vk::Device,
+    loader: Option<&ash::ext::debug_utils::Device>,
     bump: &Bump,
     handle: T,
     name: Option<&str>,
@@ -52,12 +50,11 @@ pub fn set_name<T: vk::Handle>(
             });
             let name = unsafe { CStr::from_bytes_with_nul_unchecked(name) };
 
-            let info = vk::DebugUtilsObjectNameInfoEXT::builder()
-                .object_type(T::TYPE)
-                .object_handle(handle.as_raw())
+            let info = vk::DebugUtilsObjectNameInfoEXT::default()
+                .object_handle(handle)
                 .object_name(name);
             unsafe {
-                loader.set_debug_utils_object_name(device, &info).unwrap();
+                loader.set_debug_utils_object_name(&info).unwrap();
             }
         }
     }

@@ -39,40 +39,40 @@ use crate::internal::profile::CreateProfile;
 pub struct DeviceInfo {
     pub extensions: Vec<vk::ExtensionProperties>,
     pub properties_10: vk::PhysicalDeviceProperties,
-    pub id_properties: vk::PhysicalDeviceIDProperties,
-    pub subgroup_properties: vk::PhysicalDeviceSubgroupProperties,
-    pub point_clipping_properties: vk::PhysicalDevicePointClippingProperties,
-    pub multiview_properties: vk::PhysicalDeviceMultiviewProperties,
-    pub protected_memory_properties: vk::PhysicalDeviceProtectedMemoryProperties,
-    pub maintenance_3_properties: vk::PhysicalDeviceMaintenance3Properties,
-    pub descriptor_indexing_properties: vk::PhysicalDeviceDescriptorIndexingProperties,
-    pub float_controls_properties: vk::PhysicalDeviceFloatControlsProperties,
-    pub depth_stencil_resolve_properties: vk::PhysicalDeviceDepthStencilResolveProperties,
-    pub timeline_semaphore_properties: vk::PhysicalDeviceTimelineSemaphoreProperties,
-    pub sampler_filter_minmax_properties: vk::PhysicalDeviceSamplerFilterMinmaxProperties,
-    pub driver_properties: vk::PhysicalDeviceDriverProperties,
-    pub portability_properties: vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
+    pub id_properties: vk::PhysicalDeviceIDProperties<'static>,
+    pub subgroup_properties: vk::PhysicalDeviceSubgroupProperties<'static>,
+    pub point_clipping_properties: vk::PhysicalDevicePointClippingProperties<'static>,
+    pub multiview_properties: vk::PhysicalDeviceMultiviewProperties<'static>,
+    pub protected_memory_properties: vk::PhysicalDeviceProtectedMemoryProperties<'static>,
+    pub maintenance_3_properties: vk::PhysicalDeviceMaintenance3Properties<'static>,
+    pub descriptor_indexing_properties: vk::PhysicalDeviceDescriptorIndexingProperties<'static>,
+    pub float_controls_properties: vk::PhysicalDeviceFloatControlsProperties<'static>,
+    pub depth_stencil_resolve_properties: vk::PhysicalDeviceDepthStencilResolveProperties<'static>,
+    pub timeline_semaphore_properties: vk::PhysicalDeviceTimelineSemaphoreProperties<'static>,
+    pub sampler_filter_minmax_properties: vk::PhysicalDeviceSamplerFilterMinmaxProperties<'static>,
+    pub driver_properties: vk::PhysicalDeviceDriverProperties<'static>,
+    pub portability_properties: vk::PhysicalDevicePortabilitySubsetPropertiesKHR<'static>,
     pub features_10: vk::PhysicalDeviceFeatures,
-    pub t_16bit_storage_features: vk::PhysicalDevice16BitStorageFeatures,
-    pub multiview_features: vk::PhysicalDeviceMultiviewFeatures,
-    pub variable_pointers_features: vk::PhysicalDeviceVariablePointersFeatures,
-    pub protected_memory_features: vk::PhysicalDeviceProtectedMemoryFeatures,
-    pub sampler_ycbcr_conversion_features: vk::PhysicalDeviceSamplerYcbcrConversionFeatures,
-    pub shader_draw_parameters_features: vk::PhysicalDeviceShaderDrawParametersFeatures,
-    pub descriptor_indexing_features: vk::PhysicalDeviceDescriptorIndexingFeatures,
-    pub imageless_framebuffer_features: vk::PhysicalDeviceImagelessFramebufferFeaturesKHR,
-    pub scalar_block_layout_features: vk::PhysicalDeviceScalarBlockLayoutFeatures,
-    pub timeline_semaphore_features: vk::PhysicalDeviceTimelineSemaphoreFeatures,
-    pub buffer_device_address_features: vk::PhysicalDeviceBufferDeviceAddressFeatures,
-    pub uniform_buffer_standard_layout_features: vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
-    pub t_8bit_storage_features: vk::PhysicalDevice8BitStorageFeatures,
-    pub shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features,
-    pub host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures,
-    pub shader_atomic_int_64_features: vk::PhysicalDeviceShaderAtomicInt64Features,
-    pub vulkan_memory_model_features: vk::PhysicalDeviceVulkanMemoryModelFeatures,
-    pub dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR,
-    pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
-    pub synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR,
+    pub t_16bit_storage_features: vk::PhysicalDevice16BitStorageFeatures<'static>,
+    pub multiview_features: vk::PhysicalDeviceMultiviewFeatures<'static>,
+    pub variable_pointers_features: vk::PhysicalDeviceVariablePointersFeatures<'static>,
+    pub protected_memory_features: vk::PhysicalDeviceProtectedMemoryFeatures<'static>,
+    pub sampler_ycbcr_conversion_features: vk::PhysicalDeviceSamplerYcbcrConversionFeatures<'static>,
+    pub shader_draw_parameters_features: vk::PhysicalDeviceShaderDrawParametersFeatures<'static>,
+    pub descriptor_indexing_features: vk::PhysicalDeviceDescriptorIndexingFeatures<'static>,
+    pub imageless_framebuffer_features: vk::PhysicalDeviceImagelessFramebufferFeaturesKHR<'static>,
+    pub scalar_block_layout_features: vk::PhysicalDeviceScalarBlockLayoutFeatures<'static>,
+    pub timeline_semaphore_features: vk::PhysicalDeviceTimelineSemaphoreFeatures<'static>,
+    pub buffer_device_address_features: vk::PhysicalDeviceBufferDeviceAddressFeatures<'static>,
+    pub uniform_buffer_standard_layout_features: vk::PhysicalDeviceUniformBufferStandardLayoutFeatures<'static>,
+    pub t_8bit_storage_features: vk::PhysicalDevice8BitStorageFeatures<'static>,
+    pub shader_float16int8features: vk::PhysicalDeviceShaderFloat16Int8Features<'static>,
+    pub host_query_reset_features: vk::PhysicalDeviceHostQueryResetFeatures<'static>,
+    pub shader_atomic_int_64_features: vk::PhysicalDeviceShaderAtomicInt64Features<'static>,
+    pub vulkan_memory_model_features: vk::PhysicalDeviceVulkanMemoryModelFeatures<'static>,
+    pub dynamic_rendering_features: vk::PhysicalDeviceDynamicRenderingFeaturesKHR<'static>,
+    pub portability_features: vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'static>,
+    pub synchronization_2_features: vk::PhysicalDeviceSynchronization2FeaturesKHR<'static>,
 }
 
 impl DeviceInfo {
@@ -212,7 +212,7 @@ impl DeviceInfo {
         } = &mut out;
 
         // Unconditionally required properties
-        let mut properties = vk::PhysicalDeviceProperties2::builder()
+        let mut properties = vk::PhysicalDeviceProperties2::default()
             .push_next(id_properties)
             .push_next(subgroup_properties)
             .push_next(point_clipping_properties)
@@ -229,7 +229,7 @@ impl DeviceInfo {
         // Safety: we assume all the strings vulkan gives us are valid
         unsafe {
             // We load the portability subset properties if the extension is present
-            if Self::list_contains_extension_cstr(extensions, vk::KhrPortabilitySubsetFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::portability_subset::NAME) {
                 properties = properties.push_next(portability_properties)
             }
         };
@@ -240,7 +240,7 @@ impl DeviceInfo {
         };
 
         // Glue all the feature extension structs together into our monster instance
-        let mut features = vk::PhysicalDeviceFeatures2::builder()
+        let mut features = vk::PhysicalDeviceFeatures2::default()
             .push_next(t_16bit_storage_features)
             .push_next(multiview_features)
             .push_next(variable_pointers_features)
@@ -256,37 +256,37 @@ impl DeviceInfo {
             .push_next(host_query_reset_features);
 
         unsafe {
-            if Self::list_contains_extension_cstr(extensions, vk::KhrVulkanMemoryModelFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::vulkan_memory_model::NAME) {
                 features = features.push_next(vulkan_memory_model_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(extensions, vk::Khr8bitStorageFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::_8bit_storage::NAME) {
                 features = features.push_next(t_8bit_storage_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(extensions, vk::KhrShaderFloat16Int8Fn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::shader_float16_int8::NAME) {
                 features = features.push_next(shader_float16int8features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(extensions, vk::KhrShaderAtomicInt64Fn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::shader_atomic_int64::NAME) {
                 features = features.push_next(shader_atomic_int_64_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(extensions, vk::KhrDynamicRenderingFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::dynamic_rendering::NAME) {
                 features = features.push_next(dynamic_rendering_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(extensions, vk::KhrPortabilitySubsetFn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::portability_subset::NAME) {
                 features = features.push_next(portability_features)
             }
         };
         unsafe {
-            if Self::list_contains_extension_cstr(extensions, vk::KhrSynchronization2Fn::name()) {
+            if Self::list_contains_extension_cstr(extensions, ash::khr::synchronization2::NAME) {
                 features = features.push_next(synchronization_2_features)
             }
         };

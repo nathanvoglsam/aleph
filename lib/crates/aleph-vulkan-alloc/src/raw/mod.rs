@@ -353,7 +353,7 @@ pub struct AllocatorCreateInfo {
     pub physical_device: vk::PhysicalDevice,
     pub device: vk::Device,
     pub preferred_large_heap_block_size: vk::DeviceSize,
-    pub p_allocation_callbacks: *const vk::AllocationCallbacks,
+    pub p_allocation_callbacks: *const vk::AllocationCallbacks<'static>,
     pub p_device_memory_callbacks: *const DeviceMemoryCallbacks,
     pub p_heap_size_limit: *const vk::DeviceSize,
     pub p_vulkan_functions: *const VulkanFunctions,
@@ -480,7 +480,7 @@ pub struct DefragmentationStats {
 pub struct VirtualBlockCreateInfo {
     pub size: vk::DeviceSize,
     pub flags: VirtualBlockCreateFlags,
-    pub p_allocation_callbacks: Option<NonNull<vk::AllocationCallbacks>>,
+    pub p_allocation_callbacks: Option<NonNull<vk::AllocationCallbacks<'static>>>,
 }
 
 #[repr(C)]

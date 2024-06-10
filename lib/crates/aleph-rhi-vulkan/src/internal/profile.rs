@@ -193,7 +193,7 @@ impl CreateProfile for vk::PhysicalDeviceProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceVulkan11Properties {
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan11Properties<'a> {
     fn baseline() -> Self {
         Self {
             subgroup_size: u32::MIN,
@@ -217,7 +217,7 @@ impl CreateProfile for vk::PhysicalDeviceVulkan11Properties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceIDProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceIDProperties<'a> {
     fn baseline() -> Self {
         Self {
             ..Default::default()
@@ -231,7 +231,7 @@ impl CreateProfile for vk::PhysicalDeviceIDProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceSubgroupProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceSubgroupProperties<'a> {
     fn baseline() -> Self {
         Self {
             subgroup_size: u32::MIN,
@@ -249,7 +249,7 @@ impl CreateProfile for vk::PhysicalDeviceSubgroupProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDevicePointClippingProperties {
+impl<'a> CreateProfile for vk::PhysicalDevicePointClippingProperties<'a> {
     fn baseline() -> Self {
         Self {
             point_clipping_behavior: Default::default(),
@@ -264,7 +264,7 @@ impl CreateProfile for vk::PhysicalDevicePointClippingProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceMultiviewProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceMultiviewProperties<'a> {
     fn baseline() -> Self {
         Self {
             max_multiview_view_count: u32::MIN,
@@ -280,7 +280,7 @@ impl CreateProfile for vk::PhysicalDeviceMultiviewProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceProtectedMemoryProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceProtectedMemoryProperties<'a> {
     fn baseline() -> Self {
         Self {
             protected_no_fault: vk::FALSE,
@@ -295,7 +295,7 @@ impl CreateProfile for vk::PhysicalDeviceProtectedMemoryProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceMaintenance3Properties {
+impl<'a> CreateProfile for vk::PhysicalDeviceMaintenance3Properties<'a> {
     fn baseline() -> Self {
         Self {
             max_per_set_descriptors: u32::MIN,
@@ -311,7 +311,7 @@ impl CreateProfile for vk::PhysicalDeviceMaintenance3Properties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceVulkan12Properties {
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan12Properties<'a> {
     fn baseline() -> Self {
         Self {
             conformance_version: Default::default(),
@@ -421,7 +421,7 @@ impl CreateProfile for vk::PhysicalDeviceFeatures {
             // shader_tessellation_and_geometry_point_size: vk::TRUE,
             shader_image_gather_extended: vk::TRUE,
             shader_storage_image_extended_formats: vk::TRUE,
-            // shader_storage_image_read_without_format: vk::TRUE,
+            shader_storage_image_read_without_format: vk::TRUE,
             shader_storage_image_write_without_format: vk::TRUE,
             shader_uniform_buffer_array_dynamic_indexing: vk::TRUE,
             shader_sampled_image_array_dynamic_indexing: vk::TRUE,
@@ -434,7 +434,7 @@ impl CreateProfile for vk::PhysicalDeviceFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceVulkan11Features {
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan11Features<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -458,7 +458,7 @@ impl CreateProfile for vk::PhysicalDeviceVulkan11Features {
     }
 }
 
-impl CreateProfile for vk::PhysicalDevice16BitStorageFeatures {
+impl<'a> CreateProfile for vk::PhysicalDevice16BitStorageFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -474,7 +474,7 @@ impl CreateProfile for vk::PhysicalDevice16BitStorageFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceMultiviewFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceMultiviewFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -489,7 +489,7 @@ impl CreateProfile for vk::PhysicalDeviceMultiviewFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceVariablePointersFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceVariablePointersFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -503,7 +503,7 @@ impl CreateProfile for vk::PhysicalDeviceVariablePointersFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceProtectedMemoryFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceProtectedMemoryFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -516,7 +516,7 @@ impl CreateProfile for vk::PhysicalDeviceProtectedMemoryFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -529,7 +529,7 @@ impl CreateProfile for vk::PhysicalDeviceSamplerYcbcrConversionFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceShaderDrawParametersFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceShaderDrawParametersFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -542,7 +542,7 @@ impl CreateProfile for vk::PhysicalDeviceShaderDrawParametersFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceVulkan12Features {
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkan12Features<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -590,7 +590,7 @@ impl CreateProfile for vk::PhysicalDeviceVulkan12Features {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceDynamicRenderingFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceDynamicRenderingFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -603,7 +603,7 @@ impl CreateProfile for vk::PhysicalDeviceDynamicRenderingFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceImagelessFramebufferFeaturesKHR {
+impl<'a> CreateProfile for vk::PhysicalDeviceImagelessFramebufferFeaturesKHR<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -616,7 +616,7 @@ impl CreateProfile for vk::PhysicalDeviceImagelessFramebufferFeaturesKHR {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceDescriptorIndexingFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceDescriptorIndexingFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -648,7 +648,7 @@ impl CreateProfile for vk::PhysicalDeviceDescriptorIndexingFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -661,7 +661,7 @@ impl CreateProfile for vk::PhysicalDeviceScalarBlockLayoutFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -674,7 +674,7 @@ impl CreateProfile for vk::PhysicalDeviceTimelineSemaphoreFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -687,7 +687,7 @@ impl CreateProfile for vk::PhysicalDeviceBufferDeviceAddressFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -700,7 +700,7 @@ impl CreateProfile for vk::PhysicalDeviceUniformBufferStandardLayoutFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDevice8BitStorageFeatures {
+impl<'a> CreateProfile for vk::PhysicalDevice8BitStorageFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -715,7 +715,7 @@ impl CreateProfile for vk::PhysicalDevice8BitStorageFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceShaderFloat16Int8Features {
+impl<'a> CreateProfile for vk::PhysicalDeviceShaderFloat16Int8Features<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -729,7 +729,7 @@ impl CreateProfile for vk::PhysicalDeviceShaderFloat16Int8Features {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceHostQueryResetFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceHostQueryResetFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -742,7 +742,7 @@ impl CreateProfile for vk::PhysicalDeviceHostQueryResetFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
+impl<'a> CreateProfile for vk::PhysicalDeviceShaderAtomicInt64Features<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -756,7 +756,7 @@ impl CreateProfile for vk::PhysicalDeviceShaderAtomicInt64Features {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures {
+impl<'a> CreateProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -771,7 +771,7 @@ impl CreateProfile for vk::PhysicalDeviceVulkanMemoryModelFeatures {
     }
 }
 
-impl CreateProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR {
+impl<'a> CreateProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -798,7 +798,7 @@ impl CreateProfile for vk::PhysicalDevicePortabilitySubsetFeaturesKHR {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceSynchronization2FeaturesKHR {
+impl<'a> CreateProfile for vk::PhysicalDeviceSynchronization2FeaturesKHR<'a> {
     fn baseline() -> Self {
         Self::default()
     }
@@ -811,7 +811,7 @@ impl CreateProfile for vk::PhysicalDeviceSynchronization2FeaturesKHR {
     }
 }
 
-impl CreateProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR {
+impl<'a> CreateProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR<'a> {
     fn baseline() -> Self {
         Self {
             min_vertex_input_binding_stride_alignment: u32::MAX,
@@ -827,7 +827,7 @@ impl CreateProfile for vk::PhysicalDevicePortabilitySubsetPropertiesKHR {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceDescriptorIndexingProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceDescriptorIndexingProperties<'a> {
     fn baseline() -> Self {
         Self {
             max_update_after_bind_descriptors_in_all_pools: u32::MIN,
@@ -879,7 +879,7 @@ impl CreateProfile for vk::PhysicalDeviceDescriptorIndexingProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceFloatControlsProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceFloatControlsProperties<'a> {
     fn baseline() -> Self {
         Self {
             denorm_behavior_independence: vk::ShaderFloatControlsIndependence::NONE,
@@ -910,7 +910,7 @@ impl CreateProfile for vk::PhysicalDeviceFloatControlsProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceDepthStencilResolveProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceDepthStencilResolveProperties<'a> {
     fn baseline() -> Self {
         Self {
             supported_depth_resolve_modes: Default::default(),
@@ -932,7 +932,7 @@ impl CreateProfile for vk::PhysicalDeviceDepthStencilResolveProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceTimelineSemaphoreProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceTimelineSemaphoreProperties<'a> {
     fn baseline() -> Self {
         Self {
             max_timeline_semaphore_value_difference: u64::MIN,
@@ -947,7 +947,7 @@ impl CreateProfile for vk::PhysicalDeviceTimelineSemaphoreProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties<'a> {
     fn baseline() -> Self {
         Self {
             filter_minmax_single_component_formats: vk::FALSE,
@@ -963,7 +963,7 @@ impl CreateProfile for vk::PhysicalDeviceSamplerFilterMinmaxProperties {
     }
 }
 
-impl CreateProfile for vk::PhysicalDeviceDriverProperties {
+impl<'a> CreateProfile for vk::PhysicalDeviceDriverProperties<'a> {
     fn baseline() -> Self {
         Self {
             conformance_version: Default::default(),

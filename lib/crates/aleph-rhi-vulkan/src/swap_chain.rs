@@ -207,7 +207,7 @@ impl SwapChain {
 
         let old_swapchain = inner.swap_chain;
 
-        let swap_create_info = vk::SwapchainCreateInfoKHR::builder()
+        let swap_create_info = vk::SwapchainCreateInfoKHR::default()
             .surface(self.surface.surface)
             .min_image_count(buffer_count)
             .present_mode(present_mode)

@@ -75,7 +75,7 @@ impl ICommandList for CommandList {
                     .reset_command_pool(self.pool, Default::default())
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
-                let begin_info = vk::CommandBufferBeginInfo::builder()
+                let begin_info = vk::CommandBufferBeginInfo::default()
                     .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
                 self._device
                     .device
