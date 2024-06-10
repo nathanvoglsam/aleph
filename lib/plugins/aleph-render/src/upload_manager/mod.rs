@@ -278,7 +278,7 @@ impl TextureUploadSource {
     ) -> BufferToTextureCopyRegion {
         BufferToTextureCopyRegion {
             src: ImageDataLayout {
-                offset: self.offset as u64,
+                offset: self.offset,
                 row_pitch: self.desc.aligned_width(),
                 extent: self.desc.extent(),
             },
