@@ -123,7 +123,6 @@ impl ITransferEncoder for NullEncoder {
         &mut self,
         _src: &dyn IBuffer,
         _dst: &dyn ITexture,
-        _dst_layout: ImageLayout,
         _regions: &[BufferToTextureCopyRegion],
     ) {
     }
