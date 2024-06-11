@@ -46,6 +46,7 @@ fn main() {
     let should_link = if target_platform().is_gnu() {
         cc::Build::new()
             .cpp(true)
+            .link_lib_modifier("-bundle")
             .file("cpp/shim_noop.cpp")
             .flag("-w")
             .include("thirdparty/Include/WinPixEventRuntime")
@@ -54,6 +55,7 @@ fn main() {
     } else {
         cc::Build::new()
             .cpp(true)
+            .link_lib_modifier("-bundle")
             .file("cpp/shim.cpp")
             .include("thirdparty/Include/WinPixEventRuntime")
             .compile("winpix_shim");

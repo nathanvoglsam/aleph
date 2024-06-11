@@ -34,6 +34,7 @@ fn main() {
     if target_platform().is_windows() && target_platform().is_gnu() {
         cc::Build::new()
             .cpp(true)
+            .link_lib_modifier("-bundle")
             .file("thirdparty/src/D3D12MemAlloc.cpp")
             .file("thirdparty_shim/shim.cpp")
             .flag("-fpermissive")
@@ -47,6 +48,7 @@ fn main() {
     } else if target_platform().is_msvc() {
         cc::Build::new()
             .cpp(true)
+            .link_lib_modifier("-bundle")
             .file("thirdparty/src/D3D12MemAlloc.cpp")
             .file("thirdparty_shim/shim.cpp")
             .include("DirectX-Headers/include")

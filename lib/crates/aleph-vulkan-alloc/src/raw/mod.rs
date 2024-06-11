@@ -500,7 +500,6 @@ pub struct VirtualAllocationInfo {
     pub p_user_data: Option<NonNull<c_void>>,
 }
 
-#[link(name = "vma", kind = "static")]
 #[allow(non_snake_case)]
 extern "C" {
     pub fn vmaCreateAllocator(

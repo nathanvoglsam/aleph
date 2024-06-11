@@ -82,6 +82,7 @@ fn main() {
     } else {
         let mut build = cc::Build::new();
         build.cpp(true);
+        build.link_lib_modifier("-bundle");
         build.debug(true);
         build.flag_if_supported("-w");
         build.define("VMA_STATIC_VULKAN_FUNCTIONS", "0");
