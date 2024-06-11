@@ -177,7 +177,7 @@ pub fn extract_zip<R: Seek + Read>(
         let mut file = archive.by_index(i)?;
         let outpath = match file.enclosed_name() {
             Some(path) => {
-                if let Some(v) = Utf8Path::from_path(path) {
+                if let Some(v) = Utf8Path::from_path(&path) {
                     v.to_owned()
                 } else {
                     continue;

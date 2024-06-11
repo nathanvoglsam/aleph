@@ -134,7 +134,7 @@ thiserror = "1"
 toml = "0.8"
 ultraviolet = { version = "0.9", features = ["f64"] }
 utf16_lit = "2"
-zip = "0.6"
+zip = "2"
 
 # Aleph Crates
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
