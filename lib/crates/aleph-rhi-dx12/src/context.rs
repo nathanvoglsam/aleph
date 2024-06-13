@@ -35,7 +35,9 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+use raw_window_handle::{
+    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
+};
 use windows::core::{CanInto, ComInterface};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
@@ -354,13 +356,29 @@ impl IContext for Context {
 
     fn create_surface(
         &self,
-        _display: &dyn HasRawDisplayHandle,
+        display: &dyn HasRawDisplayHandle,
         window: &dyn HasRawWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+        let display_handle = display.raw_display_handle();
+        let handle = window.raw_window_handle();
+
+        match (display_handle, handle) {
+            (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(_))
+            | (RawDisplayHandle::Windows(_), RawWindowHandle::WinRt(_)) => {}
+            _ => {
+                log::error!(
+                    "Requested Surface for unsupported WSI handle: display {:?} + window {:?}",
+                    display_handle,
+                    window
+                );
+                return Err(SurfaceCreateError::UnsupportedWSI);
+            }
+        }
+
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),
             context: self.this.upgrade().unwrap(),
-            handle: window.raw_window_handle(),
+            handle,
             has_swap_chain: Default::default(),
         });
         Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))

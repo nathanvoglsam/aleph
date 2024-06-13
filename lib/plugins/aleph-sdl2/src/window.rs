@@ -174,6 +174,8 @@ impl WindowImpl {
             unsafe {
                 use sdl2_sys::SDL_Metal_CreateView;
 
+                // TODO: to move to 'VK_EXT_metal_surface' in the future we'll need to share the
+                //       CAMetalLayer from SDL_Metal_GetLayer instead of the NSView.
                 let mut raw_window_handle = window.raw_window_handle();
                 if let RawWindowHandle::AppKit(v) = &mut raw_window_handle {
                     v.ns_view = SDL_Metal_CreateView(window.raw());

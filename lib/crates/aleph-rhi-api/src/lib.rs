@@ -5302,6 +5302,9 @@ impl Display for PipelineBindPoint {
 pub enum SurfaceCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
+
+    #[error("Requested an RHI surface for an unsupported windowing integration type.")]
+    UnsupportedWSI,
 }
 error_enum_from_unit_type!(SurfaceCreateError);
 

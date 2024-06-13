@@ -525,7 +525,14 @@ impl IContext for Context {
                         .create_win32_surface(&create_info, None)
                 }
 
-                _ => panic!("Unsupported WSI type"),
+                _ => {
+                    log::error!(
+                        "Requested Surface for unsupported WSI handle: display {:?} + window {:?}",
+                        display,
+                        window
+                    );
+                    return Err(SurfaceCreateError::UnsupportedWSI);
+                }
             }
         };
 
