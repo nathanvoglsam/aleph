@@ -94,7 +94,7 @@ pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std:
 }
 
 pub const fn page_size() -> usize {
-    if cfg!(target_os = "macos") {
+    if cfg!(any(target_os = "macos", target_os = "ios")) {
         if cfg!(target_arch = "aarch64") {
             16384
         } else {
