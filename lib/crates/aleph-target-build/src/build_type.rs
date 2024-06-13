@@ -40,6 +40,7 @@ pub enum BuildType {
 
 impl BuildType {
     pub const fn get_as_target() -> BuildType {
+        #[allow(unexpected_cfgs)]
         if cfg!(aleph_target_build_type = "retail") {
             BuildType::Retail
         } else {
