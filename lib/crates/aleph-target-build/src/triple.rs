@@ -44,6 +44,7 @@ pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&
             Platform::Linux => Some("x86_64-unknown-linux-gnu"),
             Platform::Android => Some("x86_64-linux-android"),
             Platform::MacOS => Some("x86_64-apple-darwin"),
+            Platform::IOS => Some("x86_64-apple-ios"),
             Platform::Unknown => None,
         },
         Architecture::AARCH64 => match platform {
@@ -54,6 +55,7 @@ pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&
             Platform::Linux => Some("aarch64-unknown-linux-gnu"),
             Platform::Android => Some("aarch64-linux-android"),
             Platform::MacOS => Some("aarch64-apple-darwin"),
+            Platform::IOS => Some("aarch64-apple-ios"),
             Platform::Unknown => None,
         },
         Architecture::Unknown => None,

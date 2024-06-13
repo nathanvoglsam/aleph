@@ -86,6 +86,8 @@ pub mod build {
             aleph_target::Platform::Linux
         } else if cfg!(target_os = "macos") {
             aleph_target::Platform::MacOS
+        } else if cfg!(target_os = "ios") {
+            aleph_target::Platform::IOS
         } else {
             aleph_target::Platform::Unknown
         }
@@ -108,6 +110,7 @@ pub mod build {
     /// Returns the target build type
     ///
     pub const fn target_build_type() -> aleph_target::BuildType {
+        #[allow(unexpected_cfgs)]
         if cfg!(aleph_target_build_type = "retail") {
             aleph_target::BuildType::Retail
         } else {
@@ -123,6 +126,7 @@ pub mod build {
     /// Only works in a build script
     ///
     pub fn target_build_config() -> aleph_target::BuildConfig {
+        #[allow(unexpected_cfgs)]
         aleph_target::BuildConfig::new(cfg!(aleph_target_debug), cfg!(aleph_target_optimized))
     }
 }
