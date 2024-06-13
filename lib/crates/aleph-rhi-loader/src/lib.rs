@@ -163,7 +163,7 @@ impl RhiLoader {
         }
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     fn make_loader() -> Self {
         return Self {
             backends: vec![BackendAPI::Vulkan],
@@ -188,7 +188,7 @@ impl RhiLoader {
     }
 
     /// Returns the statically preferred API for the current platform
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     fn preferred_backend() -> BackendAPI {
         BackendAPI::Vulkan
     }
@@ -217,6 +217,7 @@ impl RhiLoader {
         #[cfg(any(
             windows,
             target_os = "macos",
+            target_os = "ios",
             target_os = "linux",
             target_os = "android"
         ))]

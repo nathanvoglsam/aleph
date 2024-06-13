@@ -56,5 +56,5 @@ log = { workspace = true }
 [target.'cfg(windows)'.dependencies]
 aleph-rhi-dx12 = { workspace = true, optional = true }
 
-[target.'cfg(any(windows, target_os = "macos", target_os = "linux", target_os = "android"))'.dependencies]
+[target.'cfg(any(windows, target_os = "macos", target_os = "ios", target_os = "linux", target_os = "android"))'.dependencies]
 aleph-rhi-vulkan = { workspace = true, optional = true }
