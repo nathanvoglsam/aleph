@@ -116,6 +116,7 @@ fn get_ndk_build_file() -> String {
         Platform::WindowsGNU | Platform::WindowsMSVC => format!("{ndk_build}\\ndk-build.cmd"),
         Platform::Linux | Platform::MacOS => format!("{ndk_build}/ndk-build"),
         Platform::Android => panic!("Unsupported host"),
+        Platform::IOS => panic!("Unsupported host"),
         Platform::UniversalWindowsGNU => panic!("Unsupported host"),
         Platform::UniversalWindowsMSVC => panic!("Unsupported host"),
         Platform::Unknown => panic!("Unsupported host"),
