@@ -324,7 +324,7 @@ impl Context {
             }
 
             // macOS will always be MoltenVK and portability subset must be available
-            if cfg!(target_os = "macos") {
+            if cfg!(any(target_os = "macos", target_os = "ios")) {
                 check_for_extension_vk!(ash::khr::portability_subset::NAME);
             }
 
@@ -566,6 +566,7 @@ impl Drop for Context {
 }
 
 /// Internal wrapper struct to make it easier to pass the surface extensions around
+#[allow(dead_code)] // Some of these get disabled on different platforms
 pub struct SurfaceLoaders {
     pub base: Option<ash::khr::surface::Instance>,
     pub win32: Option<ash::khr::win32_surface::Instance>,

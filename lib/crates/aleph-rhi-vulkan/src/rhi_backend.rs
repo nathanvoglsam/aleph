@@ -110,7 +110,7 @@ impl RhiBackend {
         // We need to configure MoltenVK before we do much of anything with Vulkan so we can
         // properly observe all the configuration stuff we change.
         let result = Self::configure_mvk(debug);
-        if result.is_none() && cfg!(target_os = "macos") {
+        if result.is_none() && cfg!(any(target_os = "macos", target_os = "ios")) {
             log::warn!("Failed to configure MoltenVK on macOS");
         }
 
@@ -151,7 +151,7 @@ impl RhiBackend {
             .collect();
 
         // Fill out InstanceCreateInfo for creating a vulkan instance
-        let flags = if cfg!(target_os = "macos") {
+        let flags = if cfg!(any(target_os = "macos", target_os = "ios")) {
             vk::InstanceCreateFlags::ENUMERATE_PORTABILITY_KHR
         } else {
             vk::InstanceCreateFlags::empty()
@@ -297,7 +297,8 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
     if cfg!(all(
         unix,
         not(target_os = "android"),
-        not(target_os = "macos")
+        not(target_os = "macos"),
+        not(target_os = "ios")
     )) {
         // This is the branch for linux. Linux has a bunch of WSI extensions so add them all,
         // any unsupported extensions will be stripped later.
