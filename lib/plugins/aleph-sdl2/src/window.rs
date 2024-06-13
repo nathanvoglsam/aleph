@@ -152,7 +152,7 @@ impl WindowImpl {
             window.vulkan();
         }
 
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         {
             window.metal_view();
         }
@@ -165,12 +165,12 @@ impl WindowImpl {
         let drawable_size = window.drawable_size();
 
         let (raw_display_handle, raw_window_handle) = {
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(not(any(target_os = "macos", target_os = "ios")))]
             {
                 (window.raw_display_handle(), window.raw_window_handle())
             }
 
-            #[cfg(target_os = "macos")]
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
             unsafe {
                 use sdl2_sys::SDL_Metal_CreateView;
 
@@ -514,7 +514,7 @@ unsafe impl HasRawWindowHandle for WindowImpl {
 
 impl Drop for WindowImpl {
     fn drop(&mut self) {
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         unsafe {
             use sdl2_sys::SDL_Metal_DestroyView;
             let state = self.state.write();

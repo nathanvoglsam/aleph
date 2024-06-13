@@ -119,6 +119,21 @@ fn main() {
             compile::copy_file_to_target_dir(&source)
                 .expect("Failed to copy SDL2 dylib to target dir");
         }
+        Platform::IOS => {
+            let arch = match target_arch {
+                Architecture::X8664 => panic!("Unsupported architecture+platform"),
+                Architecture::AARCH64 => "aarch64",
+                Architecture::Unknown => panic!("Unknown architecture"),
+            };
+
+            let search_path = format!("./thirdparty/out/{arch}/ios");
+            let search_path = Path::new(&search_path).canonicalize().unwrap();
+
+            println!(
+                "cargo:rustc-link-search=framework={}",
+                search_path.display()
+            );
+        }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.
         }
@@ -136,6 +151,7 @@ fn dll_name() -> &'static str {
         | Platform::UniversalWindowsMSVC => "SDL2.dll",
         Platform::Linux | Platform::Android => "libSDL2.so",
         Platform::MacOS => "libSDL2-2.0.dylib",
+        Platform::IOS => "",
         Platform::Unknown => panic!("Unsupported Platform"),
     }
 }
