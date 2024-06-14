@@ -43,6 +43,10 @@ pub fn add_platform_flags() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
     }
 
+    if target_platform().is_ios() {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path/Frameworks");
+    }
+
     if target_platform().is_linux() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
     }
