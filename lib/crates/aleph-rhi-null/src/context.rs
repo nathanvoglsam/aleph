@@ -29,7 +29,7 @@
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use crate::{NullAdapter, NullSurface};
 
@@ -71,8 +71,8 @@ impl IContext for NullContext {
 
     fn create_surface(
         &self,
-        _display: &dyn HasRawDisplayHandle,
-        _window: &dyn HasRawWindowHandle,
+        _display: &dyn HasDisplayHandle,
+        _window: &dyn HasWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
         let surface = AnyArc::new_cyclic(move |v| NullSurface {
             _this: v.clone(),

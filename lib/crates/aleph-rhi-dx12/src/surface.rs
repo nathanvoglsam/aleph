@@ -32,7 +32,7 @@ use std::any::TypeId;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{HandleError, HasWindowHandle, RawWindowHandle, WindowHandle};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -223,8 +223,9 @@ impl ISurface for Surface {
     }
 }
 
-unsafe impl HasRawWindowHandle for Surface {
-    fn raw_window_handle(&self) -> RawWindowHandle {
-        self.handle
+impl HasWindowHandle for Surface {
+    fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
+        let handle = unsafe { WindowHandle::borrow_raw(self.handle) };
+        Ok(handle)
     }
 }

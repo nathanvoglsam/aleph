@@ -29,7 +29,7 @@
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use aleph_rhi_api::*;
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use crate::{ValidationAdapter, ValidationSurface};
 
@@ -76,8 +76,8 @@ impl IContext for ValidationContext {
 
     fn create_surface(
         &self,
-        display: &dyn HasRawDisplayHandle,
-        window: &dyn HasRawWindowHandle,
+        display: &dyn HasDisplayHandle,
+        window: &dyn HasWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
         let inner = self.inner.create_surface(display, window)?;
         let surface = AnyArc::new_cyclic(move |v| ValidationSurface {

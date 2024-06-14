@@ -35,9 +35,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
-use raw_window_handle::{
-    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
-};
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 use windows::core::{CanInto, ComInterface};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
@@ -356,11 +354,11 @@ impl IContext for Context {
 
     fn create_surface(
         &self,
-        display: &dyn HasRawDisplayHandle,
-        window: &dyn HasRawWindowHandle,
+        display: &dyn HasDisplayHandle,
+        window: &dyn HasWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        let display_handle = display.raw_display_handle();
-        let handle = window.raw_window_handle();
+        let display_handle = display.display_handle().unwrap().as_raw();
+        let handle = window.window_handle().unwrap().as_raw();
 
         match (display_handle, handle) {
             (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(_))

@@ -27,14 +27,16 @@
 // SOFTWARE.
 //
 
+use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
-    Event, HasRawDisplayHandle, HasRawWindowHandle, IWindow, IWindowEventsLock, RawDisplayHandle,
+    Event, HasDisplayHandle, HasWindowHandle, IWindow, IWindowEventsLock, RawDisplayHandle,
     RawWindowHandle, WindowEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
+use raw_window_handle::{AppKitWindowHandle, DisplayHandle, HandleError, WindowHandle};
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more
@@ -164,10 +166,13 @@ impl WindowImpl {
 
         let drawable_size = window.drawable_size();
 
-        let (raw_display_handle, raw_window_handle) = {
+        let (display_handle, window_handle) = {
             #[cfg(not(any(target_os = "macos", target_os = "ios")))]
             {
-                (window.raw_display_handle(), window.raw_window_handle())
+                (
+                    window.display_handle().unwrap().as_raw(),
+                    window.window_handle().unwrap().as_raw(),
+                )
             }
 
             #[cfg(any(target_os = "macos", target_os = "ios"))]
@@ -176,14 +181,21 @@ impl WindowImpl {
 
                 // TODO: to move to 'VK_EXT_metal_surface' in the future we'll need to share the
                 //       CAMetalLayer from SDL_Metal_GetLayer instead of the NSView.
-                let mut raw_window_handle = window.raw_window_handle();
-                if let RawWindowHandle::AppKit(v) = &mut raw_window_handle {
-                    v.ns_view = SDL_Metal_CreateView(window.raw());
-                } else {
-                    panic!("We only support MacOS window handles, not iOS");
-                }
-                let raw_display_handle = window.raw_display_handle();
-                (raw_display_handle, raw_window_handle)
+                let window_handle = window.window_handle().unwrap();
+                let window_handle = match window_handle.as_raw() {
+                    RawWindowHandle::AppKit(_) => {
+                        let ns_view = NonNull::new(SDL_Metal_CreateView(window.raw())).unwrap();
+                        RawWindowHandle::AppKit(AppKitWindowHandle::new(ns_view))
+                    }
+                    RawWindowHandle::UiKit(_) => {
+                        panic!("We only support MacOS window handles, not iOS")
+                    }
+                    _ => {
+                        panic!("Unexpected window handle for current platform!");
+                    }
+                };
+                let display_handle = window.display_handle().unwrap().as_raw();
+                (display_handle, window_handle)
             }
         };
 
@@ -198,8 +210,8 @@ impl WindowImpl {
             fullscreen: false,
             focused: false,
             current_dpi: hdpi,
-            display_handle: raw_display_handle,
-            window_handle: raw_window_handle,
+            display_handle,
+            window_handle,
         };
 
         let out = Self {
@@ -500,15 +512,17 @@ impl IWindow for WindowImpl {
     }
 }
 
-unsafe impl HasRawDisplayHandle for WindowImpl {
-    fn raw_display_handle(&self) -> RawDisplayHandle {
-        self.state.read().display_handle
+impl HasDisplayHandle for WindowImpl {
+    fn display_handle(&self) -> Result<DisplayHandle, HandleError> {
+        let handle = self.state.read().display_handle;
+        unsafe { Ok(DisplayHandle::borrow_raw(handle)) }
     }
 }
 
-unsafe impl HasRawWindowHandle for WindowImpl {
-    fn raw_window_handle(&self) -> RawWindowHandle {
-        self.state.read().window_handle
+impl HasWindowHandle for WindowImpl {
+    fn window_handle(&self) -> Result<WindowHandle, HandleError> {
+        let handle = self.state.read().window_handle;
+        unsafe { Ok(WindowHandle::borrow_raw(handle)) }
     }
 }
 
@@ -520,7 +534,7 @@ impl Drop for WindowImpl {
             let state = self.state.write();
 
             if let RawWindowHandle::AppKit(v) = &state.window_handle {
-                SDL_Metal_DestroyView(v.ns_view);
+                SDL_Metal_DestroyView(v.ns_view.as_ptr());
             } else {
                 panic!("We only support MacOS window handles, not iOS");
             }

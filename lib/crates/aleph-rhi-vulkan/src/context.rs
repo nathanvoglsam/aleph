@@ -37,9 +37,7 @@ use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::str_from_ptr;
 use aleph_rhi_loader_api::VulkanConfig;
 use ash::vk;
-use raw_window_handle::{
-    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
-};
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
 use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
@@ -398,11 +396,11 @@ impl IContext for Context {
 
     fn create_surface(
         &self,
-        display: &dyn HasRawDisplayHandle,
-        window: &dyn HasRawWindowHandle,
+        display: &dyn HasDisplayHandle,
+        window: &dyn HasWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        let display = display.raw_display_handle();
-        let window = window.raw_window_handle();
+        let display = display.display_handle().unwrap().as_raw();
+        let window = window.window_handle().unwrap().as_raw();
         let result = unsafe {
             match (display, window) {
                 #[cfg(any(
@@ -414,8 +412,8 @@ impl IContext for Context {
                 ))]
                 (RawDisplayHandle::Wayland(display), RawWindowHandle::Wayland(window)) => {
                     let create_info = vk::WaylandSurfaceCreateInfoKHR {
-                        display: display.display,
-                        surface: window.surface,
+                        display: display.display.as_ptr(),
+                        surface: window.surface.as_ptr(),
                         ..Default::default()
                     };
 
@@ -435,7 +433,7 @@ impl IContext for Context {
                 ))]
                 (RawDisplayHandle::Xlib(display), RawWindowHandle::Xlib(window)) => {
                     let create_info = vk::XlibSurfaceCreateInfoKHR {
-                        dpy: display.display as *mut _,
+                        dpy: display.display.unwrap().as_ptr(),
                         window: window.window as _,
                         ..Default::default()
                     };
@@ -456,8 +454,8 @@ impl IContext for Context {
                 ))]
                 (RawDisplayHandle::Xcb(display), RawWindowHandle::Xcb(window)) => {
                     let create_info = vk::XcbSurfaceCreateInfoKHR {
-                        connection: display.connection as *mut _,
-                        window: window.window,
+                        connection: display.connection.unwrap().as_ptr(),
+                        window: window.window.get(),
                         ..Default::default()
                     };
 
@@ -471,7 +469,7 @@ impl IContext for Context {
                 #[cfg(target_os = "android")]
                 (RawDisplayHandle::Android(_), RawWindowHandle::AndroidNdk(window)) => {
                     let create_info = vk::AndroidSurfaceCreateInfoKHR {
-                        window: window.a_native_window as _,
+                        window: window.a_native_window.as_ptr(),
                         ..Default::default()
                     };
 
@@ -485,7 +483,7 @@ impl IContext for Context {
                 #[cfg(target_os = "macos")]
                 (RawDisplayHandle::AppKit(_), RawWindowHandle::AppKit(window)) => {
                     let create_info = vk::MacOSSurfaceCreateInfoMVK {
-                        p_view: &*window.ns_view,
+                        p_view: window.ns_view.as_ptr(),
                         ..Default::default()
                     };
 
@@ -499,7 +497,7 @@ impl IContext for Context {
                 #[cfg(target_os = "ios")]
                 (RawDisplayHandle::UiKit(_), RawWindowHandle::UiKit(window)) => {
                     let create_info = vk::IOSSurfaceCreateInfoMVK {
-                        p_view: &*window.ui_view,
+                        p_view: window.ui_view.as_ptr(),
                         ..Default::default()
                     };
 
@@ -513,8 +511,8 @@ impl IContext for Context {
                 #[cfg(target_os = "windows")]
                 (RawDisplayHandle::Windows(_), RawWindowHandle::Win32(window)) => {
                     let create_info = vk::Win32SurfaceCreateInfoKHR {
-                        hinstance: window.hinstance as _,
-                        hwnd: window.hwnd as _,
+                        hinstance: window.hinstance.unwrap().get(),
+                        hwnd: window.hwnd.get(),
                         ..Default::default()
                     };
 
