@@ -7,5 +7,9 @@ pub fn main() {
             "cargo:rustc-link-search=framework={}",
             "/Users/nvoglsam/VulkanSDK/1.3.283.0/iOS/lib"
         );
+        println!(
+            "cargo:rustc-link-search=framework={}",
+            "/Users/nvoglsam/VulkanSDK/1.3.283.0/iOS/lib/MoltenVK.xcframework/ios-arm64"
+        );
     }
 }

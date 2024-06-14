@@ -31,8 +31,13 @@ impl IRhiBackend for RhiBackend {
     }
 
     fn is_available(&self) -> bool {
-        // Safety: We assume that loading the vulkan dll does not have any unsafe side effects
-        unsafe { Library::new(loader::platform_library_name()).is_ok() }
+        if cfg!(target_os = "ios") {
+            // On iOS we statically link to the loader and vulkan is always available via MoltenVK
+            true
+        } else {
+            // Safety: We assume that loading the vulkan dll does not have any unsafe side effects
+            unsafe { Library::new(loader::platform_library_name()).is_ok() }
+        }
     }
 
     fn make_context(
@@ -242,19 +247,7 @@ impl RhiBackend {
     }
 
     fn configure_mvk(debug: bool) -> Option<()> {
-        unsafe {
-            let library = libloading::Library::new("libMoltenVK.dylib").ok()?;
-
-            let name = "vkGetMoltenVKConfigurationMVK\0".as_bytes();
-            let get_fn = library
-                .get::<mvk::PFN_vkGetMoltenVKConfigurationMVK>(name)
-                .ok()?;
-
-            let name = "vkSetMoltenVKConfigurationMVK\0".as_bytes();
-            let set_fn = library
-                .get::<mvk::PFN_vkSetMoltenVKConfigurationMVK>(name)
-                .ok()?;
-
+        Self::load_mvk_fns(move |get_fn, set_fn| unsafe {
             let mut config = mvk::Configuration::default();
             let mut size = std::mem::size_of_val(&config);
 
@@ -283,8 +276,41 @@ impl RhiBackend {
                 log::warn!("'vkSetMoltenVKConfigurationMVK' failed with error '{result}'");
                 return None;
             };
+            Some(())
+        })
+    }
+
+    fn load_mvk_fns(
+        cont: impl FnOnce(
+            mvk::PFN_vkGetMoltenVKConfigurationMVK,
+            mvk::PFN_vkSetMoltenVKConfigurationMVK,
+        ) -> Option<()>,
+    ) -> Option<()> {
+        #[cfg(target_os = "ios")]
+        {
+            let get_fn = mvk::vkGetMoltenVKConfigurationMVK;
+            let set_fn = mvk::vkSetMoltenVKConfigurationMVK;
+            cont(get_fn, set_fn)
         }
-        Some(())
+
+        #[cfg(not(target_os = "ios"))]
+        {
+            unsafe {
+                let library = libloading::Library::new("libMoltenVK.dylib").ok()?;
+
+                let name = "vkGetMoltenVKConfigurationMVK\0".as_bytes();
+                let get_fn = library
+                    .get::<mvk::PFN_vkGetMoltenVKConfigurationMVK>(name)
+                    .ok()?;
+
+                let name = "vkSetMoltenVKConfigurationMVK\0".as_bytes();
+                let set_fn = library
+                    .get::<mvk::PFN_vkSetMoltenVKConfigurationMVK>(name)
+                    .ok()?;
+
+                cont(*get_fn, *set_fn)
+            }
+        }
     }
 }
 

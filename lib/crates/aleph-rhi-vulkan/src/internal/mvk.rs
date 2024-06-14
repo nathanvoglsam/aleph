@@ -1051,3 +1051,18 @@ pub type PFN_vkGetMoltenVKConfigurationMVK =
 #[allow(non_camel_case_types)]
 pub type PFN_vkSetMoltenVKConfigurationMVK =
     unsafe extern "system" fn(vk::Instance, *const Configuration, *mut usize) -> vk::Result;
+
+#[cfg(target_os = "ios")]
+#[link(kind = "framework", name = "MoltenVK")]
+extern "system" {
+    pub fn vkGetMoltenVKConfigurationMVK(
+        instance: vk::Instance,
+        configuration: *mut Configuration,
+        size: *mut usize,
+    ) -> vk::Result;
+    pub fn vkSetMoltenVKConfigurationMVK(
+        instance: vk::Instance,
+        configuration: *const Configuration,
+        size: *mut usize,
+    ) -> vk::Result;
+}

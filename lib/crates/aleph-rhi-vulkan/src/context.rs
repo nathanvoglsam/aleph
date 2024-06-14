@@ -97,6 +97,7 @@ impl Context {
             if Self::check_surface_support(entry, instance, &device_info, physical_device, surface)
                 .is_none()
             {
+                log::debug!("Device does not support the target surface");
                 continue;
             }
 
@@ -346,7 +347,11 @@ impl Context {
         vk::Result,
     > {
         let capabilities = unsafe {
-            surface_khr.get_physical_device_surface_capabilities(physical_device, surface)?
+            surface_khr
+                .get_physical_device_surface_capabilities(physical_device, surface)
+                .inspect_err(|v| {
+                    log::debug!("Failed to get surface capabilities for surface. Reason {v:?}");
+                })?
         };
         let formats = unsafe {
             surface_khr
