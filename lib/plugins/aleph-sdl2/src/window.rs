@@ -36,7 +36,9 @@ use interfaces::platform::{
     RawWindowHandle, WindowEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
-use raw_window_handle::{AppKitWindowHandle, DisplayHandle, HandleError, WindowHandle};
+use raw_window_handle::{
+    AppKitWindowHandle, DisplayHandle, HandleError, UiKitWindowHandle, WindowHandle,
+};
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more
@@ -188,7 +190,8 @@ impl WindowImpl {
                         RawWindowHandle::AppKit(AppKitWindowHandle::new(ns_view))
                     }
                     RawWindowHandle::UiKit(_) => {
-                        panic!("We only support MacOS window handles, not iOS")
+                        let ui_view = NonNull::new(SDL_Metal_CreateView(window.raw())).unwrap();
+                        RawWindowHandle::UiKit(UiKitWindowHandle::new(ui_view))
                     }
                     _ => {
                         panic!("Unexpected window handle for current platform!");
@@ -533,10 +536,16 @@ impl Drop for WindowImpl {
             use sdl2_sys::SDL_Metal_DestroyView;
             let state = self.state.write();
 
-            if let RawWindowHandle::AppKit(v) = &state.window_handle {
-                SDL_Metal_DestroyView(v.ns_view.as_ptr());
-            } else {
-                panic!("We only support MacOS window handles, not iOS");
+            match &state.window_handle {
+                RawWindowHandle::UiKit(v) => {
+                    SDL_Metal_DestroyView(v.ui_view.as_ptr());
+                }
+                RawWindowHandle::AppKit(v) => {
+                    SDL_Metal_DestroyView(v.ns_view.as_ptr());
+                }
+                _ => {
+                    panic!("Unsupported window handle type");
+                }
             }
         }
     }

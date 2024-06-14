@@ -157,7 +157,13 @@ impl IPlugin for PluginPlatformSDL2 {
             .expect("Failed to initialize SDL2 controller subsystem");
 
         let sdl_mouse_util = sdl.mouse();
-        let cursors = init_cursor_map();
+
+        // TODO: handle cursors better on platforms that lack cursors
+        let cursors = if !cfg!(target_os = "ios") {
+            init_cursor_map()
+        } else {
+            HashMap::new()
+        };
 
         // Initialize all our implementations
         let frame_timer = FrameTimerImpl::new(&sdl_timer);
