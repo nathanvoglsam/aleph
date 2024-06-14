@@ -54,6 +54,7 @@ pub enum BuildPlatform {
     Linux,
     Uwp,
     Android,
+    IOS,
 }
 
 impl BuildPlatform {
@@ -67,6 +68,7 @@ impl BuildPlatform {
             "linux" => Some(BuildPlatform::Linux),
             "uwp" => Some(BuildPlatform::Uwp),
             "android" => Some(BuildPlatform::Android),
+            "ios" => Some(BuildPlatform::IOS),
             "native" => Some(Self::native()),
             _ => None,
         }
@@ -84,6 +86,7 @@ impl BuildPlatform {
             BuildPlatform::Linux => "linux",
             BuildPlatform::Uwp => "uwp",
             BuildPlatform::Android => "android",
+            BuildPlatform::IOS => "ios",
         }
     }
 
@@ -96,6 +99,7 @@ impl BuildPlatform {
             BuildPlatform::Linux => true,
             BuildPlatform::Uwp => false,
             BuildPlatform::Android => false,
+            BuildPlatform::IOS => false,
         }
     }
 }
@@ -110,6 +114,7 @@ impl From<Platform> for BuildPlatform {
             Platform::Linux => BuildPlatform::Linux,
             Platform::Android => BuildPlatform::Android,
             Platform::MacOS => BuildPlatform::MacOS,
+            Platform::IOS => BuildPlatform::IOS,
             Platform::Unknown => panic!("Unknown platform"),
         }
     }

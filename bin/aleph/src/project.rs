@@ -642,6 +642,7 @@ fn push_platform_slang_path(slang_path: &mut Utf8PathBuf) -> anyhow::Result<()> 
         v @ aleph_target::Platform::UniversalWindowsGNU
         | v @ aleph_target::Platform::UniversalWindowsMSVC
         | v @ aleph_target::Platform::Android
+        | v @ aleph_target::Platform::IOS
         | v @ aleph_target::Platform::Unknown => {
             return Err(anyhow!("Unsupported build host platform '{}'", v));
         }

@@ -138,6 +138,7 @@ impl ISubcommand for Build {
             BuildPlatform::Linux => self.linux(project, profile, &target, build_std),
             BuildPlatform::Uwp => self.uwp(project, profile, &target),
             BuildPlatform::Android => self.android(project, profile, &target),
+            BuildPlatform::IOS => self.ios(project, profile, &target, build_std),
         }
     }
 }
@@ -225,6 +226,29 @@ impl Build {
         }
 
         self.copy_android_build_to_gradle_project(project, profile, target)?;
+
+        Ok(())
+    }
+
+    fn ios(
+        &self,
+        project: &AlephProject,
+        profile: Profile,
+        target: &Target,
+        build_std: bool,
+    ) -> anyhow::Result<()> {
+        let project_schema = project.get_project_schema()?;
+
+        let mut command = ios_build(target, profile, &project_schema.game.crate_name, build_std);
+        log::info!("{:?}", &command);
+        let status = command.status()?;
+
+        if !status.success() {
+            log::error!("Cargo invocation failed! Terminating build.");
+            return Err(anyhow!("cargo invocation failed!"));
+        }
+
+        // self.copy_android_build_to_gradle_project(project, profile, target)?;
 
         Ok(())
     }
@@ -391,7 +415,7 @@ fn bin_build(profile: Profile, target: Option<&str>, package: &str, build_std: b
 fn uwp_build(target: &Target, profile: Profile, package: &str) -> Command {
     assert_eq!(target.platform, BuildPlatform::Uwp);
 
-    let target = format!("--target={}-uwp-windows-msvc", target.arch.name());
+    let target = format!("{}-uwp-windows-msvc", target.arch.name());
     bin_build(profile, Some(&target), package, true)
 }
 
@@ -399,6 +423,13 @@ fn native_build(profile: Profile, package: &str, build_std: bool) -> Command {
     let target = build_std
         .then(|| aleph_target::recreate_triple(target_platform(), target_architecture()).unwrap());
     bin_build(profile, target, package, build_std)
+}
+
+fn ios_build(target: &Target, profile: Profile, package: &str, build_std: bool) -> Command {
+    assert_eq!(target.platform, BuildPlatform::IOS);
+
+    let target = format!("{}-apple-ios", target.arch.name());
+    bin_build(profile, Some(&target), package, build_std)
 }
 
 fn android_build(
