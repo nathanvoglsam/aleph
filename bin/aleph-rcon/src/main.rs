@@ -196,9 +196,9 @@ aleph::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
 
 fn main() {
     let mut engine = Engine::builder();
-    engine.default_plugins(false);
+    engine.default_plugins();
     engine.plugin(PluginGameLogic::new());
-    engine.build().run()
+    engine.build(|engine| engine.run())
 }
 
 struct ProgramState {

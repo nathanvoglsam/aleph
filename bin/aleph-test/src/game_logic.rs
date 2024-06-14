@@ -103,7 +103,7 @@ aleph::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
 
 pub fn engine_runner() {
     let mut engine = Engine::builder();
-    engine.default_plugins(false);
+    engine.default_plugins();
     engine.plugin(PluginGameLogic::new());
-    engine.build().run()
+    engine.build(|engine| engine.run())
 }

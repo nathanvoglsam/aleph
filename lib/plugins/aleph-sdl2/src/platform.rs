@@ -61,9 +61,11 @@ pub struct PluginPlatformSDL2 {
 }
 
 impl PluginPlatformSDL2 {
-    pub fn new() -> Self {
-        let main_ctx = unsafe { crate::sdl_main_wrapper::run_sdl_main() };
+    pub fn setup(continuation: impl FnOnce(Self)) {
+        crate::sdl_main_wrapper::intercept_main(|| continuation(Self::construct()));
+    }
 
+    fn construct() -> Self {
         let sdl = SdlObjects {
             _ctx: None,
             video: None,
@@ -74,7 +76,6 @@ impl PluginPlatformSDL2 {
             window: None,
             joystick: None,
             gamecontroller: None,
-            main_ctx,
         };
         Self {
             sdl: Rc::new(Cell::new(Some(sdl))),
@@ -88,12 +89,6 @@ impl PluginPlatformSDL2 {
                 clipboard: None,
             }),
         }
-    }
-}
-
-impl Default for PluginPlatformSDL2 {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -264,8 +259,6 @@ impl IPlugin for PluginPlatformSDL2 {
         let mut sdl = self.sdl.take().unwrap();
 
         sdl.on_exit();
-
-        unsafe { crate::sdl_main_wrapper::run_sdl_exit(&sdl.main_ctx) }
     }
 }
 
@@ -495,7 +488,6 @@ struct SdlObjects {
     window: Option<sdl2::video::Window>,
     joystick: Option<sdl2::JoystickSubsystem>,
     gamecontroller: Option<sdl2::GameControllerSubsystem>,
-    main_ctx: crate::sdl_main_wrapper::MainCtx,
 }
 
 impl SdlObjects {

@@ -27,131 +27,142 @@
 // SOFTWARE.
 //
 
-#[cfg(target_vendor = "uwp")]
-mod uwp {
-    use std::ffi::c_void;
-    use std::os::raw::{c_char, c_int};
-    use std::ptr::NonNull;
+#[cfg(any(target_vendor = "uwp", target_os = "ios"))]
+mod common {
+    use std::ffi::{c_char, c_int};
 
-    use once_cell::sync::OnceCell;
-    use windows::Win32::System::Threading::{
-        ConvertFiberToThread, ConvertThreadToFiberEx, CreateFiberEx, DeleteFiber, SwitchToFiber,
-    };
+    use parking_lot::Mutex;
 
-    type RTMain = unsafe extern "C" fn(c_int, *const *const c_char) -> c_int;
+    pub type MainFn = unsafe extern "C" fn(c_int, *const *const c_char) -> c_int;
 
-    extern "C" {
-        fn SDL_WinRTRunApp(main: RTMain, reserved: *const c_void) -> c_int;
+    #[derive(Copy, Clone)]
+    pub enum PayloadState {
+        /// The payload has not yet been written. Reading in this state is invalid.
+        None,
+
+        /// The payload has been written and is valid to read from exactly once.
+        Present(PayloadHack),
+
+        /// The payload has been read from and is now invalid for both reads and writes.
+        Used,
     }
 
-    struct FiberPayload {
-        fiber: NonNull<c_void>,
+    impl PayloadState {
+        pub fn write(&mut self, payload: PayloadHack) {
+            assert!(
+                matches!(*self, PayloadState::None),
+                "Trying to init platform twice"
+            );
+            *self = Self::Present(payload);
+        }
+
+        pub fn read(&mut self) -> PayloadHack {
+            match *self {
+                Self::None => panic!("How the fuck did you get here?"),
+                Self::Present(p) => {
+                    *self = Self::Used;
+                    p
+                }
+                Self::Used => {
+                    panic!("Trying to init platform twice");
+                }
+            }
+        }
     }
 
-    unsafe impl Send for FiberPayload {}
-    unsafe impl Sync for FiberPayload {}
+    /// A disgusting hack to work around the restriction that static types must be 'Sync'. We
+    /// guarantee we don't do any Send or Sync stuff (all on the main thread) in our implementation.
+    #[derive(Copy, Clone)]
+    pub struct PayloadHack(pub *mut (dyn FnOnce() + 'static));
+    unsafe impl Send for PayloadHack {}
+    unsafe impl Sync for PayloadHack {}
 
-    static MAIN_PAYLOAD: OnceCell<FiberPayload> = OnceCell::new();
-    static WINRT_PAYLOAD: OnceCell<FiberPayload> = OnceCell::new();
-
-    unsafe extern "C" fn main_wrapper(
-        _argc: std::os::raw::c_int,
-        _argv: *const *const std::os::raw::c_char,
-    ) -> std::os::raw::c_int {
-        let winrt_fiber = ConvertThreadToFiberEx(None, 0);
-        let winrt_fiber = NonNull::new(winrt_fiber).expect("Failed to convert thread to fiber");
-        let payload = FiberPayload { fiber: winrt_fiber };
-        if WINRT_PAYLOAD.set(payload).is_err() {
-            panic!("Trying to init platform twice");
+    impl PayloadHack {
+        pub fn from_continuation(continuation: impl FnOnce()) -> Self {
+            let payload: Box<dyn FnOnce()> = Box::new(continuation);
+            let payload = Box::leak(payload) as *mut dyn FnOnce();
+            PayloadHack(payload as *mut _)
         }
+    }
 
-        // Get our payload, panic if it isn't there
-        let main_payload = MAIN_PAYLOAD.get().unwrap();
+    static MAIN_PAYLOAD: Mutex<PayloadState> = Mutex::new(PayloadState::None);
 
-        // Now we've run the uwp init we can switch back to the original fiber
-        SwitchToFiber(main_payload.fiber.as_ptr());
+    pub fn send_payload(p: PayloadHack) {
+        let mut lock = MAIN_PAYLOAD.lock();
+        lock.write(p);
+    }
 
-        // Destroy this function's fiber
-        if ConvertFiberToThread() == false {
-            panic!("Failed to convert fiber to thread");
-        }
+    fn recv_payload() -> PayloadHack {
+        let mut lock = MAIN_PAYLOAD.lock();
+        lock.read()
+    }
 
-        // Return our exit code
+    pub unsafe extern "C" fn main_wrapper(_argc: c_int, _argv: *const *const c_char) -> c_int {
+        let payload = recv_payload();
+        let payload = Box::from_raw(payload.0);
+        payload();
+
         return 0;
     }
+}
 
-    extern "system" fn fiber_proc(_lp_parameter: *mut c_void) {
+#[cfg(target_vendor = "uwp")]
+mod uwp {
+    use crate::sdl_main_wrapper::common::{main_wrapper, send_payload, MainFn, PayloadHack};
+    use std::ffi::{c_int, c_void};
+
+    extern "C" {
+        fn SDL_WinRTRunApp(main: MainFn, reserved: *const c_void) -> c_int;
+    }
+
+    pub fn intercept_main(continuation: impl FnOnce()) {
+        let payload = PayloadHack::from_continuation(continuation);
+        send_payload(payload);
+
+        // Safety: We have no choice but to trust this function
         unsafe {
-            SDL_WinRTRunApp(main_wrapper, std::ptr::null());
-
-            // Get our payload, panic if it isn't there
-            let payload = MAIN_PAYLOAD.get().unwrap();
-
-            // Switch back again as we've escaped SDL_WinRTRunApp
-            SwitchToFiber(payload.fiber.as_ptr());
-        }
-    }
-
-    pub struct MainCtx {
-        sdl_fiber: NonNull<c_void>,
-    }
-
-    pub unsafe fn run_sdl_main() -> MainCtx {
-        // Convert to fiber so we can jump back here from within the main function
-        let main_fiber = ConvertThreadToFiberEx(None, 0);
-        let main_fiber = NonNull::new(main_fiber).expect("Failed to convert thread to fiber");
-
-        // Push into our global payload a pointer to the fiber to return to once SDL_WinRTRunApp
-        // returns control to us
-        let payload = FiberPayload { fiber: main_fiber };
-        if MAIN_PAYLOAD.set(payload).is_err() {
-            panic!("Trying to init platform twice");
-        }
-
-        // Create a new fiber which will drive our SDL_WinRTRunApp wrapper
-        let sdl_fiber = CreateFiberEx(0, 0, 0, Some(fiber_proc), None);
-        let sdl_fiber = NonNull::new(sdl_fiber).expect("Failed to crate main fiber");
-
-        // Switch to the created fiber to run the SDL_WinRTRunApp to initialize required
-        // resources. Once it hands control back to us with a callback we switch back to this
-        // fiber.
-        //
-        // To destroy the resources later we jump back into the SDL_WinRTRunApp and then once
-        // it completes it will return back to the main fiber again
-        SwitchToFiber(sdl_fiber.as_ptr());
-
-        MainCtx { sdl_fiber }
-    }
-
-    pub unsafe fn run_sdl_exit(ctx: &MainCtx) {
-        let winrt = WINRT_PAYLOAD.get().unwrap();
-        // Now we need to destroy the resources SDL_WinRTRunApp created. To do so we jump back
-        // into the sdl fiber so it can unwind its stack. Then it will jump back here again and
-        // we can continue
-        SwitchToFiber(winrt.fiber.as_ptr());
-
-        // We no longer need the other fiber so we destroy it.
-        DeleteFiber(ctx.sdl_fiber.as_ptr());
-
-        // Undo ConvertThreadToFiberEx
-        if ConvertFiberToThread() == false {
-            panic!("Failed to convert fiber to thread");
+            let _exit_code = SDL_WinRTRunApp(main_wrapper, std::ptr::null());
         }
     }
 }
 
 #[cfg(target_vendor = "uwp")]
-pub use uwp::{run_sdl_exit, run_sdl_main, MainCtx};
+pub use uwp::intercept_main;
 
-#[cfg(not(target_vendor = "uwp"))]
-mod pc {
-    pub struct MainCtx();
+#[cfg(target_os = "ios")]
+mod ios {
+    use crate::sdl_main_wrapper::common::{main_wrapper, send_payload, MainFn, PayloadHack};
+    use std::ffi::{c_char, c_int};
 
-    pub unsafe fn run_sdl_main() -> MainCtx {
-        MainCtx()
+    extern "C" {
+        fn SDL_UIKitRunApp(argc: c_int, argv: *const *const c_char, main: MainFn) -> c_int;
     }
-    pub unsafe fn run_sdl_exit(_ctx: &MainCtx) {}
+
+    pub fn intercept_main(continuation: impl FnOnce()) {
+        let payload = PayloadHack::from_continuation(continuation);
+        send_payload(payload);
+
+        // Cook up some dummy arguments to pass in. We never use these but SDL would probably get a
+        // little sad if we gave it argc = 0 and a nullptr here.
+        let dummy_arg_0 = "DeadBeef\0".as_ptr() as *const c_char;
+        let dummy_args = [dummy_arg_0, std::ptr::null()];
+
+        // Safety: We have no choice but to trust this function
+        unsafe {
+            let _exit_code = SDL_UIKitRunApp(1, dummy_args.as_ptr(), main_wrapper);
+        }
+    }
 }
 
-#[cfg(not(target_vendor = "uwp"))]
-pub use pc::{run_sdl_exit, run_sdl_main, MainCtx};
+#[cfg(target_os = "ios")]
+pub use ios::intercept_main;
+
+#[cfg(not(any(target_vendor = "uwp", target_os = "ios")))]
+mod pc {
+    pub fn intercept_main(continuation: impl FnOnce()) {
+        continuation()
+    }
+}
+
+#[cfg(not(any(target_vendor = "uwp", target_os = "ios")))]
+pub use pc::intercept_main;

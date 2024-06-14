@@ -56,6 +56,7 @@ use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
     registry: PluginRegistryBuilder,
+    headless: bool,
 }
 
 impl EngineBuilder {
@@ -74,26 +75,30 @@ impl EngineBuilder {
 
         Self {
             registry: PluginRegistry::builder(),
+            headless: cfg!(not(feature = "aleph-sdl2")), // Default to headless if there's no SDL2
         }
     }
 
-    pub fn default_plugins(&mut self, headless: bool) -> &mut Self {
+    pub fn headless(&mut self) -> &mut Self {
+        self.headless = true;
+        self
+    }
+
+    pub fn default_plugins(&mut self) -> &mut Self {
         self.plugin(core::PluginCore::new());
 
-        self.platform(headless);
-
-        if !headless {
+        if !self.headless {
             self.plugin(aleph_rhi::PluginRHI::new());
         }
 
         // This only makes sense to load on platforms we have a renderer for, and only if we're not
         // trying to run headless
-        if !headless {
+        if !self.headless {
             self.plugin(egui::PluginEgui::new());
         }
 
         // This only makes sense to load on windows and not headless
-        if !headless {
+        if !self.headless {
             self.plugin(aleph_render::PluginRender::new());
         }
 
@@ -105,7 +110,24 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(self) -> Engine {
+    pub fn build(mut self, cont: impl FnOnce(Engine)) {
+        if self.headless {
+            self.plugin(aleph_headless::PluginPlatformHeadless::new());
+            let engine = self.init();
+            cont(engine)
+        } else {
+            if cfg!(not(feature = "aleph-sdl2")) {
+                panic!("Requesting a non headless platform plugin when none is available");
+            }
+            aleph_sdl2::PluginPlatformSDL2::setup(move |v| {
+                self.plugin(v);
+                let engine = self.init();
+                cont(engine)
+            });
+        }
+    }
+
+    fn init(self) -> Engine {
         // Print engine info to the log so we know what engine version we're running on
         // First thing we do is initialize the log backend so everything can log from now on
         log::info!("Aleph Engine Starting");
@@ -117,23 +139,6 @@ impl EngineBuilder {
         Engine {
             registry: self.registry.build(),
         }
-    }
-
-    #[cfg(feature = "aleph-sdl2")]
-    fn platform(&mut self, headless: bool) {
-        if headless {
-            self.plugin(aleph_headless::PluginPlatformHeadless::new());
-        } else {
-            self.plugin(aleph_sdl2::PluginPlatformSDL2::new());
-        }
-    }
-
-    #[cfg(not(feature = "aleph-sdl2"))]
-    fn platform(&mut self, headless: bool) {
-        if !headless {
-            panic!("Requesting a non headless platform plugin when none is available");
-        }
-        self.plugin(aleph_headless::PluginPlatformHeadless::new())
     }
 }
 
