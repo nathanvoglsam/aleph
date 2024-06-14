@@ -27,11 +27,6 @@
 // SOFTWARE.
 //
 
-use std::ffi::OsStr;
-use std::ptr;
-
-use libloading::Library;
-
 pub const fn platform_library_name() -> &'static str {
     #[cfg(windows)]
     const LIB_PATH: &str = "vulkan-1.dll";
@@ -51,19 +46,44 @@ pub const fn platform_library_name() -> &'static str {
     LIB_PATH
 }
 
-pub unsafe fn load() -> Option<(Library, ash::Entry)> {
+#[cfg(not(target_os = "ios"))]
+pub type LibraryType = libloading::Library;
+
+#[cfg(target_os = "ios")]
+pub type LibraryType = ();
+
+#[cfg(not(target_os = "ios"))]
+pub unsafe fn load() -> Option<(LibraryType, ash::Entry)> {
+    unsafe fn load_from(path: impl AsRef<std::ffi::OsStr>) -> Option<(LibraryType, ash::Entry)> {
+        let lib = LibraryType::new(path).ok()?;
+
+        let static_fn = ash::StaticFn::load_checked(|name| {
+            lib.get(name.to_bytes_with_nul())
+                .map(|symbol| *symbol)
+                .unwrap_or(core::ptr::null_mut())
+        })
+        .ok()?;
+
+        Some((lib, ash::Entry::from_static_fn(static_fn)))
+    }
+
     load_from(platform_library_name())
 }
 
-unsafe fn load_from(path: impl AsRef<OsStr>) -> Option<(Library, ash::Entry)> {
-    let lib = Library::new(path).ok()?;
+#[cfg(target_os = "ios")]
+#[link(kind = "framework", name = "vulkan")]
+extern "system" {
+    fn vkGetInstanceProcAddr(
+        instance: ash::vk::Instance,
+        name: *const core::ffi::c_char,
+    ) -> ash::vk::PFN_vkVoidFunction;
+}
 
-    let static_fn = ash::StaticFn::load_checked(|name| {
-        lib.get(name.to_bytes_with_nul())
-            .map(|symbol| *symbol)
-            .unwrap_or(ptr::null_mut())
-    })
-    .ok()?;
+#[cfg(target_os = "ios")]
+pub unsafe fn load() -> Option<(LibraryType, ash::Entry)> {
+    let entry = ash::Entry::from_static_fn(ash::StaticFn {
+        get_instance_proc_addr: vkGetInstanceProcAddr,
+    });
 
-    Some((lib, ash::Entry::from_static_fn(static_fn)))
+    Some(((), entry))
 }

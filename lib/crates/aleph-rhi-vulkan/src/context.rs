@@ -41,13 +41,14 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, Raw
 
 use crate::adapter::Adapter;
 use crate::internal::device_info::DeviceInfo;
+use crate::internal::loader::LibraryType;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
     pub config: VulkanConfig,
-    pub library: ManuallyDrop<libloading::Library>,
+    pub library: ManuallyDrop<LibraryType>,
     pub entry_loader: ManuallyDrop<ash::Entry>,
     pub instance: ManuallyDrop<ash::Instance>,
     pub surface_loaders: SurfaceLoaders,
