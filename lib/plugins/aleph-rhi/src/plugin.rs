@@ -98,7 +98,11 @@ impl IPlugin for PluginRHI {
             .get_interface::<dyn IWindowProvider>()
             .and_then(|v| v.get_window());
         let surface = if let Some(window) = window {
-            let surface = context.create_surface(&window.as_ref(), &window.as_ref());
+            let surface = if cfg!(any(target_os = "ios", target_os = "macos")) {
+                context.create_surface_for_metal_layer(window.metal_layer().unwrap())
+            } else {
+                context.create_surface(&window.as_ref(), &window.as_ref())
+            };
             match surface {
                 Ok(v) => Some(v),
                 Err(v) => {
