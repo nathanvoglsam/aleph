@@ -94,8 +94,13 @@ impl MouseImpl {
                     log::trace!("Moved mouse to : {}, {}", x, y);
                 }
                 MouseRequest::SetCursor(cursor) => {
-                    let cursor = cursors.get(&cursor).unwrap();
-                    cursor.set();
+                    // Platforms with no cursor support (iOS) will not put any entries in the cursor
+                    // table so we just skip setting the cursor there. Platforms that do have
+                    // cursor support will always fill the table so this should always produce
+                    // correct behaviour everywhere.
+                    if let Some(cursor) = cursors.get(&cursor) {
+                        cursor.set();
+                    }
                 }
                 MouseRequest::ShowCursor => {
                     mouse_utils.show_cursor(true);
