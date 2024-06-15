@@ -29,6 +29,8 @@
 
 use any::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+use std::ffi::c_void;
+use std::ptr::NonNull;
 
 /// An enum of window events.
 #[derive(Clone, Debug)]
@@ -206,6 +208,11 @@ pub trait IWindow: IAny + HasDisplayHandle + HasWindowHandle + Send + Sync + 'st
     /// Returns the display scaling factor of the display the window is on.
     ///
     fn current_display_scale(&self) -> f32;
+
+    ///
+    /// Returns the 'CAMetalLayer' pointer for the window, if one exists.
+    ///
+    fn metal_layer(&self) -> Option<NonNull<c_void>>;
 
     ///
     /// Get read only access to this frame's list of window events.

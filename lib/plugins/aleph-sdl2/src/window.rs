@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -80,6 +81,9 @@ pub struct WindowState {
 
     /// The window's window handle
     pub window_handle: RawWindowHandle,
+
+    /// The 'CAMetalLayer' pointer for the window, only available on Metal (Apple) platforms.
+    pub metal_layer: Option<NonNull<c_void>>,
 }
 
 unsafe impl Send for WindowState {}
@@ -168,37 +172,44 @@ impl WindowImpl {
 
         let drawable_size = window.drawable_size();
 
-        let (display_handle, window_handle) = {
+        let (display_handle, window_handle, metal_layer) = {
             #[cfg(not(any(target_os = "macos", target_os = "ios")))]
             {
                 (
                     window.display_handle().unwrap().as_raw(),
                     window.window_handle().unwrap().as_raw(),
+                    None,
                 )
             }
 
             #[cfg(any(target_os = "macos", target_os = "ios"))]
             unsafe {
-                use sdl2_sys::SDL_Metal_CreateView;
+                use sdl2_sys::{SDL_Metal_CreateView, SDL_Metal_GetLayer};
 
                 // TODO: to move to 'VK_EXT_metal_surface' in the future we'll need to share the
                 //       CAMetalLayer from SDL_Metal_GetLayer instead of the NSView.
                 let window_handle = window.window_handle().unwrap();
-                let window_handle = match window_handle.as_raw() {
+                let (window_handle, metal_layer) = match window_handle.as_raw() {
                     RawWindowHandle::AppKit(_) => {
                         let ns_view = NonNull::new(SDL_Metal_CreateView(window.raw())).unwrap();
-                        RawWindowHandle::AppKit(AppKitWindowHandle::new(ns_view))
+                        let metal_layer = NonNull::new(SDL_Metal_GetLayer(ns_view.as_ptr()));
+                        let window_handle =
+                            RawWindowHandle::AppKit(AppKitWindowHandle::new(ns_view));
+                        (window_handle, metal_layer)
                     }
                     RawWindowHandle::UiKit(_) => {
                         let ui_view = NonNull::new(SDL_Metal_CreateView(window.raw())).unwrap();
-                        RawWindowHandle::UiKit(UiKitWindowHandle::new(ui_view))
+                        let metal_layer = NonNull::new(SDL_Metal_GetLayer(ui_view.as_ptr()));
+                        let window_handle = RawWindowHandle::UiKit(UiKitWindowHandle::new(ui_view));
+                        (window_handle, metal_layer)
                     }
                     _ => {
                         panic!("Unexpected window handle for current platform!");
                     }
                 };
                 let display_handle = window.display_handle().unwrap().as_raw();
-                (display_handle, window_handle)
+
+                (display_handle, window_handle, metal_layer)
             }
         };
 
@@ -215,6 +226,7 @@ impl WindowImpl {
             current_dpi: hdpi,
             display_handle,
             window_handle,
+            metal_layer,
         };
 
         let out = Self {
@@ -507,6 +519,11 @@ impl IWindow for WindowImpl {
     fn current_display_scale(&self) -> f32 {
         let state = self.state.read();
         state.drawable_width as f32 / state.current_width as f32
+    }
+
+    fn metal_layer(&self) -> Option<NonNull<c_void>> {
+        let state = self.state.read();
+        state.metal_layer
     }
 
     fn events<'a>(&'a self) -> Box<dyn IWindowEventsLock + 'a> {
