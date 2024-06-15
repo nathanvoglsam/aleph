@@ -28,8 +28,9 @@
 //
 
 use std::any::TypeId;
-use std::ffi::CStr;
+use std::ffi::{c_void, CStr};
 use std::mem::ManuallyDrop;
+use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -550,6 +551,37 @@ impl IContext for Context {
         Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
     }
 
+    fn create_surface_for_metal_layer(
+        &self,
+        layer: NonNull<c_void>,
+    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+        if !cfg!(any(target_os = "macos", target_os = "ios")) {
+            log::warn!("Called 'IContext::create_surface_for_metal_layer' on non apple platform!");
+            return Err(SurfaceCreateError::UnsupportedWSI);
+        }
+
+        let result = unsafe {
+            let create_info = vk::MetalSurfaceCreateInfoEXT {
+                p_layer: layer.as_ptr(),
+                ..Default::default()
+            };
+            self.surface_loaders
+                .metal
+                .as_ref()
+                .unwrap()
+                .create_metal_surface(&create_info, None)
+        };
+
+        let surface = result.map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+
+        let surface = AnyArc::new_cyclic(move |v| Surface {
+            this: v.clone(),
+            surface,
+            context: self._this.upgrade().unwrap(),
+        });
+        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+    }
+
     fn get_backend_api(&self) -> BackendAPI {
         BackendAPI::Vulkan
     }
@@ -578,6 +610,7 @@ pub struct SurfaceLoaders {
     pub xcb: Option<ash::khr::xcb_surface::Instance>,
     pub wayland: Option<ash::khr::wayland_surface::Instance>,
     pub android: Option<ash::khr::android_surface::Instance>,
+    pub metal: Option<ash::ext::metal_surface::Instance>,
     pub macos: Option<ash::mvk::macos_surface::Instance>,
     pub ios: Option<ash::mvk::ios_surface::Instance>,
 }

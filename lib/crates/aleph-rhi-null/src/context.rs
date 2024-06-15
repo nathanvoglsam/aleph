@@ -30,6 +30,8 @@
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+use std::ffi::c_void;
+use std::ptr::NonNull;
 
 use crate::{NullAdapter, NullSurface};
 
@@ -73,6 +75,17 @@ impl IContext for NullContext {
         &self,
         _display: &dyn HasDisplayHandle,
         _window: &dyn HasWindowHandle,
+    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+        let surface = AnyArc::new_cyclic(move |v| NullSurface {
+            _this: v.clone(),
+            _context: self._this.upgrade().unwrap(),
+        });
+        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+    }
+
+    fn create_surface_for_metal_layer(
+        &self,
+        _layer: NonNull<c_void>,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
         let surface = AnyArc::new_cyclic(move |v| NullSurface {
             _this: v.clone(),

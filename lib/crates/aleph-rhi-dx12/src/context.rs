@@ -28,7 +28,9 @@
 //
 
 use std::any::TypeId;
+use std::ffi::c_void;
 use std::ops::Deref;
+use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -380,6 +382,14 @@ impl IContext for Context {
             has_swap_chain: Default::default(),
         });
         Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
+    }
+
+    fn create_surface_for_metal_layer(
+        &self,
+        _layer: NonNull<c_void>,
+    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+        log::warn!("Called 'ISurface::create_surface_for_metal_layer' on non Apple platform!");
+        return Err(SurfaceCreateError::UnsupportedWSI);
     }
 
     fn get_backend_api(&self) -> BackendAPI {

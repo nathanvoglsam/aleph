@@ -222,6 +222,12 @@ impl RhiBackend {
         } else {
             None
         };
+        let metal_surface_loader = if supported_extensions.contains(&ash::ext::metal_surface::NAME)
+        {
+            Some(ash::ext::metal_surface::Instance::new(entry, instance))
+        } else {
+            None
+        };
         let macos_loader = if supported_extensions.contains(&ash::mvk::macos_surface::NAME) {
             Some(ash::mvk::macos_surface::Instance::new(entry, instance))
         } else {
@@ -241,6 +247,7 @@ impl RhiBackend {
             wayland_loader,
             android_loader,
             win32_loader,
+            metal_surface_loader,
             macos_loader,
             ios_loader,
         }
@@ -344,12 +351,14 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
         // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
         // order for the loader to give us our mvk device.
         extensions.push(ash::mvk::macos_surface::NAME);
+        extensions.push(ash::ext::metal_surface::NAME);
         extensions.push(ash::khr::portability_enumeration::NAME);
     }
     if cfg!(target_os = "ios") {
         // We need the molten vk surface extension as well as VK_KHR_portability_enumeration in
         // order for the loader to give us our mvk device.
         extensions.push(ash::mvk::ios_surface::NAME);
+        extensions.push(ash::ext::metal_surface::NAME);
         extensions.push(ash::khr::portability_enumeration::NAME);
     }
 
@@ -518,6 +527,7 @@ struct Extensions {
     wayland_loader: Option<ash::khr::wayland_surface::Instance>,
     android_loader: Option<ash::khr::android_surface::Instance>,
     win32_loader: Option<ash::khr::win32_surface::Instance>,
+    metal_surface_loader: Option<ash::ext::metal_surface::Instance>,
     macos_loader: Option<ash::mvk::macos_surface::Instance>,
     ios_loader: Option<ash::mvk::ios_surface::Instance>,
 }
@@ -531,6 +541,7 @@ impl Extensions {
             xcb: self.xcb_loader.clone(),
             wayland: self.wayland_loader.clone(),
             android: self.android_loader.clone(),
+            metal: self.metal_surface_loader.clone(),
             macos: self.macos_loader.clone(),
             ios: self.ios_loader.clone(),
         }

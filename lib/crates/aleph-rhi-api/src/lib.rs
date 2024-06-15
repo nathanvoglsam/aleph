@@ -29,6 +29,7 @@
 
 use std::any::TypeId;
 use std::cell::Cell;
+use std::ffi::c_void;
 use std::fmt::{Debug, Display, Formatter};
 use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
@@ -185,6 +186,12 @@ pub trait IContext: IAny + IGetPlatformInterface + Send + Sync {
         &self,
         display: &dyn HasDisplayHandle,
         window: &dyn HasWindowHandle,
+    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError>;
+
+    /// Create a surface from the provided `CAMetalLayer` pointer.
+    fn create_surface_for_metal_layer(
+        &self,
+        layer: NonNull<c_void>,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError>;
 
     /// Returns the API used by the underlying backend implementation.
