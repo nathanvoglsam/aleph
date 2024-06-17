@@ -38,7 +38,7 @@ use interfaces::platform::{
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use raw_window_handle::{
-    AppKitWindowHandle, DisplayHandle, HandleError, UiKitWindowHandle, WindowHandle,
+    DisplayHandle, HandleError, WindowHandle,
 };
 
 ///
@@ -185,6 +185,9 @@ impl WindowImpl {
             #[cfg(any(target_os = "macos", target_os = "ios"))]
             unsafe {
                 use sdl2_sys::{SDL_Metal_CreateView, SDL_Metal_GetLayer};
+                use raw_window_handle::{
+                    AppKitWindowHandle, UiKitWindowHandle
+                };
 
                 // TODO: to move to 'VK_EXT_metal_surface' in the future we'll need to share the
                 //       CAMetalLayer from SDL_Metal_GetLayer instead of the NSView.

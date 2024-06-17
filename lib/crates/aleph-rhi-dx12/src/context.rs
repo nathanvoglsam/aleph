@@ -369,7 +369,7 @@ impl IContext for Context {
                 log::error!(
                     "Requested Surface for unsupported WSI handle: display {:?} + window {:?}",
                     display_handle,
-                    window
+                    handle
                 );
                 return Err(SurfaceCreateError::UnsupportedWSI);
             }

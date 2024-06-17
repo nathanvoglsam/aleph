@@ -44,12 +44,10 @@ pub unsafe fn dxgi_create_swap_chain(
     // Create the swapchain
     let swapchain = match window_handle {
         RawWindowHandle::Win32(hwnd) => {
-            assert!(!hwnd.hwnd.is_null());
             let hwnd = HWND(hwnd.hwnd.get());
             dxgi_create_swap_chain_for_hwnd(factory, queue, hwnd, swap_chain_desc)?
         }
         RawWindowHandle::WinRt(core_window) => {
-            assert!(!core_window.core_window.is_null());
             let core_window = core_window.core_window;
             let core_window: IInspectable = std::mem::transmute(core_window);
             dxgi_create_swap_chain_for_core_window(factory, queue, core_window, swap_chain_desc)?
