@@ -44,13 +44,13 @@ pub struct Texture {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) image: vk::Image,
-    pub(crate) creation_flags: vk::ImageCreateFlags,
+    // pub(crate) creation_flags: vk::ImageCreateFlags,
     // pub(crate) created_usage: vk::ImageUsageFlags,
     pub(crate) allocation: Option<vma::Allocation>,
     pub(crate) is_owned: bool,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, Box<RenderTargetView>>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, Box<RenderTargetView>>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -125,23 +125,12 @@ impl Texture {
         let mut views = self.dsvs.lock();
 
         let view = if let Some(view) = views.get(desc) {
-            view.as_ref() as *const RenderTargetView
+            *view
         } else {
             let view = self.create_view_for_usage(desc, usage)?;
 
-            // Wrap into our RTV wrapper object
-            let view = Box::new(RenderTargetView {
-                _texture: self._this.clone(),
-                image_view: view,
-                format: texture_format_to_vk(desc.format),
-                creation_flags: self.creation_flags,
-                usage,
-            });
-            let view_ptr = view.as_ref() as *const RenderTargetView;
-
             views.insert(desc.clone(), view);
-
-            view_ptr
+            view
         };
 
         unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
@@ -186,15 +175,11 @@ impl Drop for Texture {
             }
 
             for (_desc, view) in self.rtvs.get_mut().drain() {
-                self._device
-                    .device
-                    .destroy_image_view(view.image_view, None);
+                self._device.device.destroy_image_view(view, None);
             }
 
             for (_desc, view) in self.dsvs.get_mut().drain() {
-                self._device
-                    .device
-                    .destroy_image_view(view.image_view, None);
+                self._device.device.destroy_image_view(view, None);
             }
 
             // Some images we don't own, like swap chain images, so we shouldn't destroy them
@@ -204,21 +189,5 @@ impl Drop for Texture {
                 }
             }
         }
-    }
-}
-
-/// Unfortunately, to sometimes need the format of an RTV. We create a proxy object so we can fetch
-/// it in our implementation.
-pub struct RenderTargetView {
-    pub _texture: AnyWeak<Texture>,
-    pub image_view: vk::ImageView,
-    pub format: vk::Format,
-    pub creation_flags: vk::ImageCreateFlags,
-    pub usage: vk::ImageUsageFlags,
-}
-
-impl RenderTargetView {
-    pub unsafe fn from_view(v: ImageView) -> *const RenderTargetView {
-        std::mem::transmute(v)
     }
 }

@@ -262,7 +262,7 @@ impl SwapChain {
                     _this: v.clone(),
                     _device: self.device.clone(),
                     image: *image,
-                    creation_flags: Default::default(),
+                    // creation_flags: Default::default(),
                     // created_usage: swap_create_info.image_usage,
                     allocation: None,
                     is_owned: false,
