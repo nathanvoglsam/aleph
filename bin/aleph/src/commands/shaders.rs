@@ -410,31 +410,16 @@ fn build_shader_ninja_file_for_shader_module(
                 )?;
             }
 
-            // On macos we need to use the glslc pipeline because we don't have the slang-glsl
-            // wrapper available for slang to do the compilation end-to-end.
-            if target_platform().is_macos() {
-                output_build_statement_for_shader(
-                    &mut ninja_file,
-                    module_ctx,
-                    &compilation_params,
-                    &shader_file,
-                    ShaderCompileOptions {
-                        target_ir: ShaderTargetLanguage::Spirv,
-                        pipeline: ShaderPipeline::Glslc,
-                    },
-                )?;
-            } else {
-                output_build_statement_for_shader(
-                    &mut ninja_file,
-                    module_ctx,
-                    &compilation_params,
-                    &shader_file,
-                    ShaderCompileOptions {
-                        target_ir: ShaderTargetLanguage::Spirv,
-                        pipeline: ShaderPipeline::Direct,
-                    },
-                )?;
-            }
+            output_build_statement_for_shader(
+                &mut ninja_file,
+                module_ctx,
+                &compilation_params,
+                &shader_file,
+                ShaderCompileOptions {
+                    target_ir: ShaderTargetLanguage::Spirv,
+                    pipeline: ShaderPipeline::Direct,
+                },
+            )?;
         }
         if f_type.is_dir() {
             let v = module_ctx.module_output_dir.join(entry_path_tail);
