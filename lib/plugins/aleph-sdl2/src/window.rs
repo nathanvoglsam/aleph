@@ -37,9 +37,7 @@ use interfaces::platform::{
     RawWindowHandle, WindowEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
-use raw_window_handle::{
-    DisplayHandle, HandleError, WindowHandle,
-};
+use raw_window_handle::{DisplayHandle, HandleError, WindowHandle};
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more
@@ -184,10 +182,8 @@ impl WindowImpl {
 
             #[cfg(any(target_os = "macos", target_os = "ios"))]
             unsafe {
+                use raw_window_handle::{AppKitWindowHandle, UiKitWindowHandle};
                 use sdl2_sys::{SDL_Metal_CreateView, SDL_Metal_GetLayer};
-                use raw_window_handle::{
-                    AppKitWindowHandle, UiKitWindowHandle
-                };
 
                 // TODO: to move to 'VK_EXT_metal_surface' in the future we'll need to share the
                 //       CAMetalLayer from SDL_Metal_GetLayer instead of the NSView.
