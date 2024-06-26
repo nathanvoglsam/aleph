@@ -30,8 +30,8 @@
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
+use crate::render::{TextureUploadDesc, TextureUploadSource};
 use crate::renderer::FontTexture;
-use crate::{TextureUploadDesc, TextureUploadSource};
 
 pub struct PerFrameObjects {
     pub acquire_semaphore: AnyArc<dyn ISemaphore>,

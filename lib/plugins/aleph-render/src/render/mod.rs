@@ -27,14 +27,39 @@
 // SOFTWARE.
 //
 
-extern crate aleph_egui as egui;
-extern crate aleph_interfaces as interfaces;
+mod handle;
+mod handle_pool;
+mod object_pool;
+mod streaming_request;
+mod upload_manager;
 
-pub mod render;
+pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
+pub use handle_pool::{HandleFreeError, HandlePool};
+pub use object_pool::ObjectPool;
+pub use streaming_request::{
+    BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestState,
+    StreamingRequest, TextureStreamingRequest,
+};
+pub use upload_manager::{TextureUploadDesc, TextureUploadSource};
 
-mod plugin;
-mod renderer;
-mod shader_db_accessor;
-mod shaders;
+#[cfg(test)]
+mod test_utils {
+    //!
+    //! Utils used by numerous tests in a shared module to reduce code duplication
+    //!
 
-pub use plugin::PluginRender;
+    use std::rc::Rc;
+
+    #[derive(Clone)]
+    pub struct DropCanary(Rc<()>);
+
+    impl DropCanary {
+        pub fn new() -> Self {
+            Self(Rc::new(()))
+        }
+
+        pub fn strong_count(&self) -> usize {
+            Rc::strong_count(&self.0)
+        }
+    }
+}

@@ -60,3 +60,4 @@ log = { workspace = true }
 once_cell = { workspace = true }
 bytemuck = { workspace = true }
 rkyv = { workspace = true }
+thiserror = { workspace = true }
