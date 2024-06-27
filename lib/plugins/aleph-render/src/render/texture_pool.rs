@@ -48,10 +48,9 @@ impl TexturePool {
     pub fn create_texture(&mut self, texture: AnyArc<dyn ITexture>) -> TextureHandle {
         let mut object = TextureObject {
             texture: Some(texture),
-            view: None,
-            view_type: ImageViewType::Tex2D,
+            default_view: None,
         };
-        object.update_view();
+        object.create_default_view();
 
         self.alloc(object)
     }
@@ -69,7 +68,7 @@ impl TexturePool {
             std::mem::swap(&mut texture, &mut object.texture);
 
             // Query the appropriate view for the new texture
-            object.update_view();
+            object.create_default_view();
 
             // And give the old texture back out to the caller
             texture
@@ -88,7 +87,7 @@ impl TexturePool {
 
     pub fn get_view(&self, handle: TextureHandle) -> Option<ImageView> {
         if let Some(object) = self.get_ref(handle) {
-            object.view
+            object.default_view
         } else {
             None
         }
@@ -125,20 +124,40 @@ pub struct TextureObject {
     texture: Option<AnyArc<dyn ITexture>>,
 
     /// The image view we want to view the texture through
-    view: Option<ImageView>,
-
-    /// The type of texture we're storing (as [ImageViewType]).
-    view_type: ImageViewType, // TODO: 3D textures? arrays? cube maps?
+    default_view: Option<ImageView>,
 }
 
 impl TextureObject {
-    /// Queries an ImageView from the texture object, replacing the old view. If there's no
-    pub fn update_view(&mut self) {
+    /// Queries an ImageView from the texture object, replacing the default view. If there's n
+    /// texture object this does nothing.
+    pub fn create_default_view(&mut self) {
         if let Some(texture) = &self.texture {
             let desc = texture.desc_ref();
 
-            let view_type = self.view_type;
-            let sub_resources = TextureSubResourceSet::with_color().with_mips(0, desc.mip_levels);
+            let view_type = match desc.dimension {
+                TextureDimension::Texture1D => {
+                    if desc.array_size > 1 {
+                        ImageViewType::TexArray1D
+                    } else {
+                        ImageViewType::Tex1D
+                    }
+                }
+                TextureDimension::Texture2D => {
+                    if desc.array_size > 1 {
+                        ImageViewType::TexArray2D
+                    } else {
+                        ImageViewType::Tex2D
+                    }
+                }
+                TextureDimension::Texture3D => {
+                    // Can't make Tex3D arrays so the default view will always be
+                    ImageViewType::Tex3D
+                }
+            };
+
+            let sub_resources = TextureSubResourceSet::with_color()
+                .with_mips(0, desc.mip_levels)
+                .with_levels(0, desc.array_size);
 
             let view = texture
                 .get_view(&ImageViewDesc {
@@ -149,7 +168,7 @@ impl TextureObject {
                 })
                 .unwrap();
 
-            self.view = Some(view);
+            self.default_view = Some(view);
         }
     }
 }
