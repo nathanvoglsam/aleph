@@ -62,9 +62,7 @@ impl<T> StreamingRequest<T> {
 
         // Safety: We create the id from an address (which was a reference) which means it's UB if
         //         'id' = 0, so we can safely assume that it is in fact != 0.
-        unsafe {
-            RequestId(NonZeroUsize::new_unchecked(id))
-        }
+        unsafe { RequestId(NonZeroUsize::new_unchecked(id)) }
     }
 
     /// Try to take ownership of this request and move it into the 'waiting' state. This will only
