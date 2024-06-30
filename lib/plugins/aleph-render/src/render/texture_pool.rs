@@ -63,6 +63,20 @@ impl TexturePool {
         texture: AnyArc<dyn ITexture>,
     ) -> Option<AnyArc<dyn ITexture>> {
         if let Some(object) = self.get_mut(handle) {
+            if let Some(old_texture) = &object.texture {
+                let new_desc = texture.desc_ref();
+                let old_desc = old_texture.desc_ref();
+
+                // It is illegal for any major property of the new texture to change from the old
+                // texture.
+                debug_assert_eq!(new_desc.format, old_desc.format);
+                debug_assert_eq!(new_desc.dimension, old_desc.dimension);
+                debug_assert_eq!(new_desc.clear_value, old_desc.clear_value);
+                debug_assert_eq!(new_desc.sample_count, old_desc.sample_count);
+                debug_assert_eq!(new_desc.sample_quality, old_desc.sample_quality);
+                debug_assert_eq!(new_desc.usage, old_desc.usage);
+            }
+
             // Swap the old texture for the new, taking the old texture to send it out to the caller
             let mut texture = Some(texture);
             std::mem::swap(&mut texture, &mut object.texture);
@@ -85,7 +99,7 @@ impl TexturePool {
         }
     }
 
-    pub fn get_view(&self, handle: TextureHandle) -> Option<ImageView> {
+    pub fn get_default_view(&self, handle: TextureHandle) -> Option<ImageView> {
         if let Some(object) = self.get_ref(handle) {
             object.default_view
         } else {
