@@ -45,7 +45,6 @@ remote-console = ["aleph-console/remote"]
 aleph-console = { workspace = true }
 aleph-label = { workspace = true }
 aleph-interfaces = { workspace = true }
-aleph-target = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }
 
@@ -54,10 +53,6 @@ env_logger = { workspace = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = { workspace = true }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-libc = { workspace = true }
-aleph-windows = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
