@@ -28,6 +28,7 @@
 //
 
 extern crate aleph_interfaces as interfaces;
+extern crate aleph_target as target;
 
 mod plugin;
 mod schedule_provider;

@@ -50,6 +50,9 @@ pub struct PluginCore {
 
 impl PluginCore {
     pub fn new() -> Self {
+        #[cfg(target_os = "windows")]
+        open_console_if_needed();
+
         #[cfg(not(target_os = "android"))]
         fn create_logger() -> env_logger::Logger {
             env_logger::Builder::from_default_env()
@@ -190,5 +193,55 @@ fn receiver_thread(channel: std::sync::mpsc::SyncSender<String>, mut stream: Buf
 
         // Finally we can send the command onto the channel
         channel.send(string.to_string()).unwrap();
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn open_console_if_needed() {
+    use aleph_windows::Win32::System::Console::{
+        AllocConsole, AttachConsole, GetConsoleWindow, ATTACH_PARENT_PROCESS,
+    };
+    use aleph_windows::Win32::System::Diagnostics::Debug::OutputDebugStringA;
+    use aleph_windows::Win32::System::Threading::GetCurrentProcessId;
+    use libc::freopen;
+    use std::ffi::CStr;
+    use std::io::stdout;
+    use std::os::windows::io::AsRawHandle;
+    use target::build::target_build_type;
+    use target::BuildType;
+
+    if target_build_type() == BuildType::Development {
+        unsafe {
+            // Development builds force a console window open and pipe stdout/stderr in.
+            if GetConsoleWindow().0 == 0 {
+                if !AttachConsole(ATTACH_PARENT_PROCESS).as_bool() {
+                    AllocConsole().ok().unwrap();
+                    AttachConsole(GetCurrentProcessId()).ok().unwrap();
+                }
+
+                let con_file_name = CStr::from_bytes_with_nul_unchecked("CON\0".as_bytes());
+                let mode_str = CStr::from_bytes_with_nul_unchecked("w\0".as_bytes());
+
+                // Horrible crimes trying to get a file handle for stdout
+                let stdout = stdout().as_raw_handle();
+                let result = freopen(con_file_name.as_ptr(), mode_str.as_ptr(), stdout as *mut _);
+                if result.is_null() {
+                    let msg = CStr::from_bytes_with_nul_unchecked(
+                        "Console failed to reopen on stdout\0".as_bytes(),
+                    );
+                    OutputDebugStringA(msg);
+                }
+
+                // Horrible crimes trying to get a file handle for stderr
+                let stderr = std::io::stdout().as_raw_handle();
+                let result = freopen(con_file_name.as_ptr(), mode_str.as_ptr(), stderr as *mut _);
+                if result.is_null() {
+                    let msg = CStr::from_bytes_with_nul_unchecked(
+                        "Console failed to reopen on stderr\0".as_bytes(),
+                    );
+                    OutputDebugStringA(msg);
+                }
+            }
+        }
     }
 }

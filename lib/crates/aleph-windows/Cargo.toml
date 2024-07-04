@@ -57,6 +57,7 @@ features = [
     "Win32_Graphics_Direct3D12",
     "Win32_UI_WindowsAndMessaging",
     "Win32_System_Com",
+    "Win32_System_Console",
     "Win32_System_Memory",
     "Win32_System_Services",
     "Win32_System_Threading",
