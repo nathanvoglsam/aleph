@@ -4735,6 +4735,18 @@ pub struct TextureSubResourceSet {
 }
 
 impl TextureSubResourceSet {
+    /// Returns a [TextureSubResourceSet] derived from the given [TextureDesc] that encodes a
+    /// subresource set that encompases all subresources of the texture.
+    pub const fn all(desc: &TextureDesc) -> Self {
+        Self {
+            aspect: desc.format.aspect_mask(),
+            base_mip_level: 0,
+            num_mip_levels: desc.mip_levels,
+            base_array_slice: 0,
+            num_array_slices: desc.array_size,
+        }
+    }
+
     /// A specialization of [TextureSubResourceSet::with_aspect] for [TextureAspect::COLOR].
     ///
     /// Returns a [TextureSubResourceSet] configured for a single mip/array level and access to the
