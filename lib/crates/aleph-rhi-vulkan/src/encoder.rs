@@ -608,7 +608,7 @@ impl<'a> Encoder<'a> {
         }
 
         for barrier in buffer_barriers {
-            let buffer = unwrap::buffer(barrier.buffer);
+            let buffer = unwrap::buffer(barrier.buffer.unwrap());
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
@@ -635,7 +635,7 @@ impl<'a> Encoder<'a> {
 
         for barrier in texture_barriers {
             // Grab the d3d12 resource handle from our texture impls
-            let texture = unwrap::texture(barrier.texture);
+            let texture = unwrap::texture(barrier.texture.unwrap());
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
@@ -705,7 +705,7 @@ impl<'a> Encoder<'a> {
         }
 
         for barrier in buffer_barriers {
-            let buffer = unwrap::buffer(barrier.buffer);
+            let buffer = unwrap::buffer(barrier.buffer.unwrap());
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
@@ -731,7 +731,7 @@ impl<'a> Encoder<'a> {
 
         for barrier in texture_barriers {
             // Grab the d3d12 resource handle from our texture impls
-            let texture = unwrap::texture(barrier.texture);
+            let texture = unwrap::texture(barrier.texture.unwrap());
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);

@@ -397,10 +397,10 @@ pub fn rendering_depth_stencil_attachment_info(
 }
 
 pub fn buffer_barrier<'a>(barrier: &'a BufferBarrier<'a>) -> BufferBarrier<'a> {
-    let buffer = buffer(barrier.buffer);
+    let buffer = buffer(barrier.buffer.unwrap());
 
     BufferBarrier {
-        buffer,
+        buffer: Some(buffer),
         offset: barrier.offset,
         size: barrier.size,
         before_sync: barrier.before_sync,
@@ -412,10 +412,10 @@ pub fn buffer_barrier<'a>(barrier: &'a BufferBarrier<'a>) -> BufferBarrier<'a> {
 }
 
 pub fn texture_barrier<'a>(barrier: &'a TextureBarrier<'a>) -> TextureBarrier<'a> {
-    let texture = texture(barrier.texture);
+    let texture = texture(barrier.texture.unwrap());
 
     TextureBarrier {
-        texture,
+        texture: Some(texture),
         before_sync: barrier.before_sync,
         after_sync: barrier.after_sync,
         before_access: barrier.before_access,

@@ -4809,8 +4809,11 @@ pub struct GlobalBarrier {
 /// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
 #[derive(Clone)]
 pub struct BufferBarrier<'a> {
-    /// The buffer that the barrier will describe a state transition for
-    pub buffer: &'a dyn IBuffer,
+    /// The buffer that the barrier will describe a state transition for.
+    ///
+    /// This field is _required_ for the barrier to be valid to issue. It may be useful to construct
+    /// barrier structs without a buffer stored in them _yet_ so the field is marked as optional.
+    pub buffer: Option<&'a dyn IBuffer>,
 
     /// The offset from the start of the buffer, in bytes, the barrier applies to.
     pub offset: u64,
@@ -4847,7 +4850,10 @@ impl<'a> Debug for BufferBarrier<'a> {
 #[derive(Clone)]
 pub struct TextureBarrier<'a> {
     /// The texture that the barrier will describe a state transition for
-    pub texture: &'a dyn ITexture,
+    ///
+    /// This field is _required_ for the barrier to be valid to issue. It may be useful to construct
+    /// barrier structs without a texture stored in them _yet_ so the field is marked as optional.
+    pub texture: Option<&'a dyn ITexture>,
 
     pub subresource_range: TextureSubResourceSet,
 

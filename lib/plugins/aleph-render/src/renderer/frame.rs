@@ -114,7 +114,7 @@ impl PerFrameObjects {
             &[],
             &[],
             &[TextureBarrier {
-                texture: font.as_ref(),
+                texture: Some(font.as_ref()),
                 subresource_range: TextureSubResourceSet::with_color(),
                 before_sync: BarrierSync::NONE,
                 after_sync: BarrierSync::COPY,
@@ -136,7 +136,7 @@ impl PerFrameObjects {
             &[],
             &[],
             &[TextureBarrier {
-                texture: font.as_ref(),
+                texture: Some(font.as_ref()),
                 subresource_range: TextureSubResourceSet::with_color(),
                 before_sync: BarrierSync::COPY,
                 after_sync: BarrierSync::ALL,

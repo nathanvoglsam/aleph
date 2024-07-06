@@ -422,7 +422,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         if !buffer_barriers.is_empty() {
             for barrier in buffer_barriers {
                 // Grab the d3d12 resource handle
-                let resource = unwrap::buffer(barrier.buffer);
+                let resource = unwrap::buffer(barrier.buffer.unwrap());
 
                 translated_buffer_barriers.push(D3D12_BUFFER_BARRIER {
                     SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
@@ -447,7 +447,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         if !texture_barriers.is_empty() {
             for barrier in texture_barriers {
                 // Grab the d3d12 resource handle from our texture impls
-                let texture = unwrap::texture(barrier.texture);
+                let texture = unwrap::texture(barrier.texture.unwrap());
 
                 // Vulkan initializes layout metadata automatically when transitioning from
                 // undefined to a compressed layout. D3D12 requires a flag to force it, otherwise

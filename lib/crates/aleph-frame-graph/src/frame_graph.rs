@@ -199,7 +199,7 @@ impl FrameGraph {
                             .map(|v| v.unwrap_texture())
                             .unwrap();
                         texture_barriers.push(TextureBarrier {
-                            texture,
+                            texture: Some(texture),
                             subresource_range: v.subresource_range.clone(),
                             before_sync: v.before_sync,
                             after_sync: v.after_sync,

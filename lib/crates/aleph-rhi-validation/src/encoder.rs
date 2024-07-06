@@ -303,8 +303,9 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         );
 
         texture_barriers.iter().for_each(|v| {
+            let texture = v.texture.unwrap();
             Self::validate_sub_resource_range_against_texture(
-                &v.texture.desc(),
+                texture.desc_ref(),
                 &v.subresource_range,
             );
         });
