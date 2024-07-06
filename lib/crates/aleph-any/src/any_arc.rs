@@ -183,6 +183,47 @@ impl<T: IAny + ?Sized> AnyArc<T> {
         Arc::get_mut(&mut this.0)
     }
 
+    /// Constructs an `AnyArc<T>` from a raw pointer.
+    ///
+    /// The raw pointer must have been previously returned by a call to
+    /// [`AnyArc<U>::into_raw`][into_raw] with the following requirements:
+    ///
+    /// * If `U` is sized, it must have the same size and alignment as `T`. This
+    ///   is trivially true if `U` is `T`.
+    /// * If `U` is unsized, its data pointer must have the same size and
+    ///   alignment as `T`. This is trivially true if `AnyArc<U>` was constructed
+    ///   through `AnyArc<T>` and then converted to `AnyArc<U>` through an [unsized
+    ///   coercion].
+    ///
+    /// Note that if `U` or `U`'s data pointer is not `T` but has the same size
+    /// and alignment, this is basically like transmuting references of
+    /// different types. See [`mem::transmute`][transmute] for more information
+    /// on what restrictions apply in this case.
+    ///
+    /// The user of `from_raw` has to make sure a specific value of `T` is only
+    /// dropped once.
+    ///
+    /// This function is unsafe because improper use may lead to memory unsafety,
+    /// even if the returned `AnyArc<T>` is never accessed.
+    ///
+    /// [into_raw]: Arc::into_raw
+    /// [transmute]: core::mem::transmute
+    /// [unsized coercion]: https://doc.rust-lang.org/reference/type-coercions.html#unsized-coercions
+    #[inline]
+    pub unsafe fn from_raw(ptr: *const T) -> Self {
+        Self(Arc::from_raw(ptr))
+    }
+
+    /// Consumes the `AnyArc`, returning the wrapped pointer.
+    ///
+    /// To avoid a memory leak the pointer must be converted back to an `AnyArc` using
+    /// [`AnyArc::from_raw`].
+    #[inline]
+    #[must_use = "losing the pointer will leak memory"]
+    pub fn into_raw(this: Self) -> *const T {
+        Arc::into_raw(this.0)
+    }
+
     ///
     /// Returns another `AnyArc` to the underlying object but with the `Into` interface. This
     /// function enables casting from one trait object type to another.
