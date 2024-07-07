@@ -64,6 +64,7 @@ once_cell = { workspace = true }
 utf16_lit = { workspace = true }
 raw-cpuid = { workspace = true }
 num_cpus = { workspace = true }
+profiling = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

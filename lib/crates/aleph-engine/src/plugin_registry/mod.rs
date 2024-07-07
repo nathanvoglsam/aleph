@@ -155,9 +155,14 @@ impl PluginRegistry {
         };
 
         while !accessor.quit_handle.quit_requested() {
-            for plugin_index in self.update_order.iter().cloned() {
-                plugins[plugin_index].on_update(&accessor);
+            {
+                profiling::scope!("aleph::OnUpdate");
+                for plugin_index in self.update_order.iter().cloned() {
+                    plugins[plugin_index].on_update(&accessor);
+                }
             }
+
+            profiling::finish_frame!();
         }
 
         self.plugins = plugins;

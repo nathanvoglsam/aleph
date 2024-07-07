@@ -23,8 +23,12 @@ rustflags = ["-C", "target-cpu=sandybridge"]
 [target.x86_64-linux-android]
 rustflags = ["-C", "target-cpu=sandybridge"]
 
+[profile.release]
+debug = true
+
 [profile.retail]
 inherits = "release"
+debug = false
 lto = true
 codegen-units = 1
 incremental = false
