@@ -39,7 +39,7 @@ use std::ptr::NonNull;
 /// level or array slice as that is handled separately. This allows for the same staging data to be
 /// used as the source for multiple destination resources.
 #[derive(Clone, Eq, PartialEq, Debug, Default, Hash)]
-pub struct TextureUploadDesc {
+pub struct TextureMipUploadDesc {
     /// The width of the texture. Row pitch is handled internally, this should be the logical width
     /// not physical width.
     pub width: u32,
@@ -54,7 +54,7 @@ pub struct TextureUploadDesc {
     pub format: Format,
 }
 
-impl TextureUploadDesc {
+impl TextureMipUploadDesc {
     pub const fn new(width: u32, height: u32, depth: u32, format: Format) -> Self {
         Self {
             width,
@@ -65,7 +65,7 @@ impl TextureUploadDesc {
     }
 
     /// Computes the number of bytes needed to store the texture slice described by this
-    /// [TextureUploadDesc] in a format compatible with being uploaded using a buffer to texture
+    /// [TextureMipUploadDesc] in a format compatible with being uploaded using a buffer to texture
     /// copy.
     pub const fn size_requirement(&self) -> u32 {
         debug_assert!(self.width > 0);
@@ -124,7 +124,7 @@ pub struct TextureUploadSource {
 
     /// A description of the texture data we will store in this upload memory block. The size of the
     /// staging memory block will have been derived from this description.
-    pub(crate) desc: TextureUploadDesc,
+    pub(crate) desc: TextureMipUploadDesc,
 
     /// An offset in bytes from the start of the buffer for where the upload data starts. This
     /// is needed as the upload commands use an offset+len and not a raw ptr+len pair.
@@ -167,9 +167,9 @@ impl TextureUploadSource {
     /// There are a bunch of debug asserts for these which are only enabled on debug builds, check
     /// those to see all the requirements. Do not violate these requirements as they will not be
     /// checked in a release build.
-    pub(crate) unsafe fn new(
+    pub unsafe fn new(
         buffer: AnyArc<dyn IBuffer>,
-        desc: TextureUploadDesc,
+        desc: TextureMipUploadDesc,
         offset: u64,
         data: NonNull<[u8]>,
     ) -> Self {
@@ -233,13 +233,13 @@ impl TextureUploadSource {
     ///
     /// This utility is safer to use than [TextureUploadSource::new] as it guarantees all the buffer
     /// size and ownership constraints by construction. The only relevant requirements are to
-    /// ensure the [TextureUploadDesc] encodes a valid non-zero-sized texture. That is:
+    /// ensure the [TextureMipUploadDesc] encodes a valid non-zero-sized texture. That is:
     ///
     /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
     ///   textures.
-    pub(crate) unsafe fn new_owned(
+    pub unsafe fn new_owned(
         device: &dyn IDevice,
-        desc: TextureUploadDesc,
+        desc: TextureMipUploadDesc,
     ) -> Result<Self, BufferCreateError> {
         let size_requirement = desc.size_requirement();
         let buffer = device.create_buffer(&BufferDesc {
@@ -270,7 +270,7 @@ impl TextureUploadSource {
     ///   [TextureCopyAspect::Color].
     /// - We only allow uploading entire mip levels and/or array layers so the origin is always
     ///   `(0, 0)` and the extent is assumed to cover the entire subresource.
-    pub(crate) const fn get_copy_region(
+    pub const fn get_copy_region(
         &self,
         mip_level: u32,
         array_layer: u32,

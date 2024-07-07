@@ -37,10 +37,28 @@ pub struct TexturePool {
 }
 
 impl TexturePool {
+    /// Constructs a new [TexturePool] with the given pool id tag.
+    ///
+    /// The `id` tag is stored inside any [TextureHandle] objects this pool allocates so that it
+    /// can do some cheap (though not bulletproof) verification that the handle came from this
+    /// pool.
+    ///
+    /// It's up to the caller to not reuse a pool id, at the very least at the same time.
     pub fn new(id: NonZeroU8) -> Self {
         Self {
             pool: ObjectPool::new(id),
         }
+    }
+
+    /// Creates a new texture handle with no texture data stored inside.
+    ///
+    /// The texture object inside will be missing until the data is populated using
+    /// [TexturePool::update_texture].
+    pub fn reserve_handle(&mut self) -> TextureHandle {
+        self.alloc(TextureObject {
+            texture: None,
+            default_view: None,
+        })
     }
 
     /// Creates a new texture object from the given texture and returns a [TextureHandle] that can
@@ -91,6 +109,12 @@ impl TexturePool {
         }
     }
 
+    /// Returns the texture object associated with the given [TextureHandle].
+    ///
+    /// May return [None] if either the handle is invalid (dead, wrong pool, etc) or if the pool
+    /// doesn't have a texture for the requested handle yet. It's possible for a handle to have
+    /// no texture, such as if the handle was reserved but hasn't been initialized with
+    /// [TexturePool::update_texture] yet.
     pub fn get_texture(&self, handle: TextureHandle) -> Option<&dyn ITexture> {
         if let Some(object) = self.get_ref(handle) {
             object.texture.as_deref()
@@ -99,6 +123,23 @@ impl TexturePool {
         }
     }
 
+    /// Returns an [ImageView], which is the default view for the requested handle.
+    ///
+    /// A default view is created when the texture is provided to the pool. The view will be a basic
+    /// read-only SRV of the texture over all subresources as the texture's native format. The image
+    /// array-ness and dimension (1D, 2D, 3D) is reflected and the most capable view will always
+    /// be created. In general we will create:
+    ///
+    /// - [TextureDimension::Texture1D]: `TexArray1D` for array textures and `Tex1D` otherwise.
+    /// - [TextureDimension::Texture2D]: `TexArray2D` for array textures and `Tex2D` otherwise.
+    /// - [TextureDimension::Texture3D]: Always `Tex3D`, as there are no `TexArray3D` views.
+    ///
+    /// `TexCube` and `TexArrayCube` are handled elsewhere.
+    ///
+    /// May return [None] if either the handle is invalid (dead, wrong pool, etc) or if the pool
+    /// doesn't have a texture for the requested handle yet. It's possible for a handle to have
+    /// no texture, such as if the handle was reserved but hasn't been initialized with
+    /// [TexturePool::update_texture] yet.
     pub fn get_default_view(&self, handle: TextureHandle) -> Option<ImageView> {
         if let Some(object) = self.get_ref(handle) {
             object.default_view
@@ -107,8 +148,19 @@ impl TexturePool {
         }
     }
 
-    pub fn destroy_texture(&mut self, handle: TextureHandle) -> Option<()> {
-        self.free(handle).map(|_| ())
+    /// Removes the given texture from the pool, returning the [ITexture] object it was storing if
+    /// one exists.
+    ///
+    /// The nested options represent two levels of optional values. The outer option return directly
+    /// by this function signals whether a texture object was found and removed from the given
+    /// handle. The inner option reflects that the referenced texture may not have an [ITexture]
+    /// to return. Flattening the options would make a missing [ITexture] look like an invalid
+    /// handle.
+    pub fn destroy_texture(
+        &mut self,
+        handle: TextureHandle,
+    ) -> Option<Option<AnyArc<dyn ITexture>>> {
+        self.free(handle).map(|v| v.texture)
     }
 }
 
@@ -142,7 +194,7 @@ pub struct TextureObject {
 }
 
 impl TextureObject {
-    /// Queries an ImageView from the texture object, replacing the default view. If there's n
+    /// Queries an ImageView from the texture object, replacing the default view. If there's no
     /// texture object this does nothing.
     pub fn create_default_view(&mut self) {
         if let Some(texture) = &self.texture {

@@ -31,8 +31,9 @@ mod handle;
 mod handle_pool;
 mod object_pool;
 mod streaming_request;
+mod texture_loader;
 mod texture_pool;
-mod upload_manager;
+mod texture_upload_desc;
 
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
@@ -41,8 +42,9 @@ pub use streaming_request::{
     BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestState,
     StreamingRequest, TextureStreamingRequest,
 };
+pub use texture_loader::TextureLoader;
 pub use texture_pool::{TextureObject, TexturePool};
-pub use upload_manager::{TextureUploadDesc, TextureUploadSource};
+pub use texture_upload_desc::{TextureMipUploadDesc, TextureUploadSource};
 
 #[cfg(test)]
 mod test_utils {

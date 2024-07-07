@@ -65,6 +65,16 @@ impl<T> StreamingRequest<T> {
         unsafe { RequestId(NonZeroUsize::new_unchecked(id)) }
     }
 
+    pub fn new() -> Self {
+        StreamingRequest {
+            data: Arc::new(RequestData {
+                state: Default::default(),
+                payload: Default::default(),
+            }),
+            _phantom: Default::default(),
+        }
+    }
+
     /// Try to take ownership of this request and move it into the 'waiting' state. This will only
     /// succeed a single time and failure should be taken as a signal that someone else is handling
     /// the request.
@@ -322,13 +332,7 @@ mod tests {
     use std::sync::Arc;
 
     fn make_request() -> StreamingRequest<u64> {
-        StreamingRequest {
-            data: Arc::new(RequestData {
-                state: Default::default(),
-                payload: Default::default(),
-            }),
-            _phantom: Default::default(),
-        }
+        StreamingRequest::new()
     }
 
     #[test]
