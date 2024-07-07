@@ -171,6 +171,17 @@ impl IPlugin for PluginRender {
                     data.should_resize = false;
                 }
 
+                let render_data = data.render_data.take();
+
+                // Filter the deltas to only those that affect the font texture
+                let font_updates = render_data
+                    .textures_delta
+                    .set
+                    .iter()
+                    .filter(|(id, _)| *id == egui::TextureId::Managed(0))
+                    .map(|(_, delta)| delta);
+                data.renderer.update_font_texture(font_updates);
+
                 unsafe {
                     data.index = (data.index + 1) % 2;
                     let acquire_semaphore =
@@ -201,11 +212,9 @@ impl IPlugin for PluginRender {
                     };
                     let acquired_image = data.swap_images[acquired_index as usize].clone();
 
-                    let command_list = data.renderer.record_frame(
-                        data.index,
-                        acquired_image.deref(),
-                        data.render_data.take(),
-                    );
+                    let command_list =
+                        data.renderer
+                            .record_frame(data.index, acquired_image.deref(), render_data);
 
                     queue
                         .submit(&QueueSubmitDesc {

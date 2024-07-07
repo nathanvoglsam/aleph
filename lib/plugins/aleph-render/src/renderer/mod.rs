@@ -36,29 +36,42 @@ mod main_gbuffer_pass;
 mod params;
 mod tone_map_pass;
 
-use std::ops::{Deref, DerefMut};
-
-use aleph_frame_graph::*;
-use aleph_pin_board::PinBoard;
-use aleph_rhi_api::*;
-use aleph_shader_db::ShaderDatabase;
-use egui::{ImageData, RenderData};
-pub(crate) use frame::PerFrameObjects;
-use interfaces::any::AnyArc;
-
+use crate::render::{
+    TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureUploadSource,
+};
 use crate::renderer::backbuffer_import_pass::BackBufferHandle;
 use crate::renderer::egui_pass::EguiPassContext;
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 
+use std::num::NonZeroU8;
+use std::ops::Deref;
+
+use aleph_frame_graph::*;
+use aleph_pin_board::PinBoard;
+use aleph_rhi_api::*;
+use aleph_shader_db::ShaderDatabase;
+use egui::epaint::ImageDelta;
+use egui::{ImageData, RenderData};
+use interfaces::any::AnyArc;
+
+pub(crate) use frame::PerFrameObjects;
+
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,
     pub frames: Vec<PerFrameObjects>,
+
+    pub texture_pool: TexturePool,
+    pub texture_loader: TextureLoader,
+
     pub frame_graph: FrameGraph,
     pub back_buffer_id: ResourceMut,
     pub graph_build_pin_board: PinBoard,
     pub execute_context: PinBoard,
+
     pub font_texture: FontTexture,
+    pub font_handle: TextureHandle,
+
     pub shader_db_bin: Vec<u8>,
 }
 
@@ -96,9 +109,16 @@ impl EguiRenderer {
             .map(|_| PerFrameObjects::new(device.deref()))
             .collect();
 
+        let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
+        let texture_loader = TextureLoader::new();
+
+        let font_handle = texture_pool.reserve_handle();
+
         Self {
             device,
             frames,
+            texture_pool,
+            texture_loader,
             frame_graph,
             back_buffer_id: *back_buffer,
             graph_build_pin_board: pin_board,
@@ -107,8 +127,8 @@ impl EguiRenderer {
                 width: 256,
                 height: 1,
                 bytes: vec![255; 256],
-                version: 1,
             },
+            font_handle,
             shader_db_bin,
         }
     }
@@ -178,22 +198,12 @@ impl EguiRenderer {
         {
             let mut encoder = list.begin_general().unwrap();
 
-            // If the font texture has changed then we need to update our copy and increment the
-            // version to invalidate the per-frame font textures
-            for (_, delta) in render_data.textures_delta.set.iter() {
-                if let egui::epaint::ImageData::Font(_) = &delta.image {
-                    self.update_font_texture(delta);
-                }
-            }
-
-            // If the versions do not match then we should re-upload the texture to the GPU
-            if self.frames[index].font_version != self.font_texture.version {
-                self.frames[index].record_texture_upload(
-                    encoder.deref_mut(),
-                    self.device.deref(),
-                    &self.font_texture,
-                );
-            }
+            self.texture_loader.upload_requests(
+                &mut self.texture_pool,
+                self.device.as_ref(),
+                encoder.as_mut(),
+                usize::MAX,
+            );
 
             let mut import_bundle = ImportBundle::default();
             import_bundle.add_resource(self.back_buffer_id, texture);
@@ -201,7 +211,10 @@ impl EguiRenderer {
             self.execute_context.clear();
             self.execute_context.publish(EguiPassContext {
                 buffer: self.frames[index].uniform_buffer.clone(),
-                font_view: self.frames[index].font_view.unwrap(),
+                font_view: self
+                    .texture_pool
+                    .get_default_view(self.font_handle)
+                    .unwrap(),
                 render_data,
             });
 
@@ -216,19 +229,47 @@ impl EguiRenderer {
         list
     }
 
-    pub fn update_font_texture(&mut self, delta: &egui::epaint::ImageDelta) {
-        fn coverage_mapper(v: &f32) -> u8 {
-            // Function jigged from egui
-            fn fast_round(r: f32) -> u8 {
-                (r + 0.5).floor() as _ // rust does a saturating cast since 1.45
-            }
-
-            fast_round(v.powf(1.0 / 2.2) * 255.0)
+    pub fn update_font_texture<'a>(&mut self, deltas: impl Iterator<Item = &'a ImageDelta>) {
+        let mut updated = false;
+        for delta in deltas {
+            updated = true;
+            self.apply_delta_to_font_texture(delta);
         }
 
-        // Increment the version to invalidate the cached textures on the GPU
-        self.font_texture.version += 1;
+        if updated {
+            unsafe {
+                let dimensions = (
+                    self.font_texture.width as u32,
+                    self.font_texture.height as u32,
+                );
 
+                let desc =
+                    TextureMipUploadDesc::new(dimensions.0, dimensions.1, 1, Format::R8Unorm);
+                let staging_buffer =
+                    TextureUploadSource::new_owned(self.device.as_ref(), desc).unwrap();
+
+                assert_eq!(
+                    staging_buffer.desc.aligned_width(),
+                    staging_buffer.desc.width,
+                    "Currently we don't handle row pitch here"
+                );
+
+                staging_buffer
+                    .data
+                    .cast::<u8>()
+                    .as_ptr()
+                    .copy_from_nonoverlapping(
+                        self.font_texture.bytes.as_ptr(),
+                        self.font_texture.bytes.len(),
+                    );
+
+                self.texture_loader
+                    .immediate_upload(self.font_handle, staging_buffer);
+            }
+        }
+    }
+
+    pub fn apply_delta_to_font_texture(&mut self, delta: &ImageDelta) {
         // We only support font images here so we panic if we get something else
         match &delta.image {
             ImageData::Font(font) => {
@@ -275,7 +316,7 @@ impl EguiRenderer {
                             let f_idx = f_row + f_col * self.font_texture.width; // In our tex
 
                             // Copy and map our coverage sample into our font texture
-                            self.font_texture.bytes[f_idx] = coverage_mapper(&font.pixels[d_idx]);
+                            self.font_texture.bytes[f_idx] = coverage_mapper(font.pixels[d_idx]);
                         }
                     }
                 } else {
@@ -284,7 +325,8 @@ impl EguiRenderer {
                     // Just replace the old texture with the new data, mapped to u8
                     self.font_texture.width = delta.image.width();
                     self.font_texture.height = delta.image.height();
-                    self.font_texture.bytes = font.pixels.iter().map(coverage_mapper).collect();
+                    self.font_texture.bytes =
+                        font.pixels.iter().copied().map(coverage_mapper).collect();
                 }
             }
             _ => {
@@ -303,8 +345,14 @@ pub struct FontTexture {
 
     /// Raw data for the texture
     pub bytes: Vec<u8>,
+}
 
-    /// Version index that should be incremented every time the texture is changed so the per-frame
-    /// data can detect when it needs to update
-    pub version: usize,
+fn coverage_mapper(v: f32) -> u8 {
+    // Function jigged from egui
+    fn fast_round(r: f32) -> u8 {
+        (r + 0.5).floor() as _ // rust does a saturating cast since 1.45
+    }
+
+    // 0.55 from egui srgba_pixels conversion on FontImage
+    fast_round(v.powf(0.55) * 255.0)
 }
