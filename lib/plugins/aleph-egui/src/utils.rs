@@ -59,6 +59,7 @@ pub fn get_egui_input(
     egui::RawInput {
         viewport_id: ViewportId::ROOT,
         viewports: std::iter::once((ViewportId::ROOT, viewport_info)).collect(),
+        max_texture_side: Some(8192),
         screen_rect,
         time,
         predicted_dt,

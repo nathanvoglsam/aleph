@@ -28,7 +28,7 @@
 //
 
 use std::ops::DerefMut;
-use std::sync::{Mutex, RwLock};
+use std::sync::Mutex;
 
 use egui::{ClippedPrimitive, FullOutput, RawInput};
 use interfaces::any::IAny;
@@ -43,31 +43,29 @@ pub trait IEguiContextProvider: IAny + Send + Sync {
 
 /// Concrete implementation of `IEguiContextProvider`
 pub struct EguiContextProvider {
-    ctx: RwLock<egui::Context>,
+    ctx: egui::Context,
 }
 
 impl EguiContextProvider {
     pub fn begin_frame(&self, new_input: RawInput) {
-        self.ctx.write().unwrap().begin_frame(new_input);
+        self.ctx.begin_frame(new_input);
     }
 
     pub fn end_frame(&self) -> FullOutput {
-        self.ctx.read().unwrap().end_frame()
+        self.ctx.end_frame()
     }
 }
 
 impl Default for EguiContextProvider {
     fn default() -> Self {
         let ctx = egui::Context::default();
-        EguiContextProvider {
-            ctx: RwLock::new(ctx),
-        }
+        EguiContextProvider { ctx }
     }
 }
 
 impl IEguiContextProvider for EguiContextProvider {
     fn get_context(&self) -> egui::Context {
-        self.ctx.read().unwrap().clone()
+        self.ctx.clone()
     }
 }
 
