@@ -281,6 +281,7 @@ impl TextureLoader {
             Some(handle) => {
                 // TODO: deferred deletion of old texture
                 let _old_texture = pool.update_texture(handle, texture.clone());
+                mem::forget(_old_texture);
                 Ok((handle, texture))
             }
             None => {
