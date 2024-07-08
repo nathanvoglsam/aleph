@@ -311,73 +311,6 @@ impl FontTexture {
 
     #[profiling::function]
     #[inline(never)]
-    fn debug_apply_patch_to_font_texture(&mut self, font: &FontImage, pos: (usize, usize)) {
-        // Handle a partial update
-        let x = pos.0;
-        let y = pos.1;
-        let w = font.size[0];
-        let h = font.size[1];
-
-        // Assert that we can't access the texture out of bounds based on the input we
-        // got.
-        assert!(x < self.width);
-        assert!(y < self.height);
-        assert!(x + w <= self.width);
-        assert!(y + h <= self.height);
-
-        // Assert that the buffers are big enough.
-        //
-        // We're trying to convince the optimizer that it can elide the bounds checks
-        // on array indexing.
-        assert!(self.bytes.len() >= self.width * self.height);
-        assert!(font.pixels.len() >= w * h);
-
-        // Iterate over each row
-        let mut src_row = 0;
-        while src_row < h {
-            // Transform our row in the delta pixels to our texture's pixel
-            let dst_row = src_row + y;
-
-            let mut src_col = 0;
-            while src_col < w {
-                // Transform our column in the delta pixels to our texture's pixels
-                let dst_col = src_col + x;
-
-                // Calculate indices
-                let src_idx = (src_row * w) + src_col;
-                let dst_idx = (dst_row * self.width) + dst_col;
-
-                // Copy and map our coverage sample into our font texture
-                self.bytes[dst_idx] = coverage_mapper(font.pixels[src_idx]);
-
-                src_col += 1;
-            }
-
-            src_row += 1;
-        }
-    }
-
-    #[profiling::function]
-    #[inline(never)]
-    fn debug_apply_whole_to_font_texture(&mut self, font: &FontImage) {
-        assert_eq!(font.width(), self.width);
-
-        // Just replace the old texture with the new data, mapped to u8
-        self.width = font.width();
-        self.height = font.height();
-
-        font.pixels
-            .iter()
-            .copied()
-            .map(coverage_mapper)
-            .zip(self.bytes.iter_mut())
-            .for_each(|(src, dst)| {
-                *dst = src;
-            });
-    }
-
-    #[profiling::function]
-    #[inline(never)]
     fn apply_patch_to_font_texture(&mut self, font: &FontImage, pos: (usize, usize)) {
         // Handle a partial update
         let x = pos.0;
@@ -423,7 +356,7 @@ impl FontTexture {
                     let mapped = coverage_mapper_simd_256(block_data);
 
                     // Store the mapped result into the destination block
-                    *dst_ptr = std::mem::transmute(mapped);
+                    *dst_ptr = mapped;
 
                     // Advance to the next block
                     src_ptr = src_ptr.add(1);
@@ -440,7 +373,7 @@ impl FontTexture {
                     let mapped = coverage_mapper(pixel_data);
 
                     // Store the mapped result into the destination block
-                    *dst_ptr = std::mem::transmute(mapped);
+                    *dst_ptr = mapped;
 
                     // Advance to the next block
                     src_ptr = src_ptr.add(1);
@@ -463,9 +396,6 @@ impl FontTexture {
         self.width = new_width;
         self.height = new_height;
 
-        // // Allocate a new dst image
-        // self.bytes = Vec::with_capacity(pixels);
-
         assert_eq!(
             pixels.next_multiple_of(8),
             pixels,
@@ -480,7 +410,7 @@ impl FontTexture {
         unsafe {
             let blocks = pixels / 8;
             let mut block_ptr = font.pixels.as_ptr() as *const f32x8;
-            let mut dst_ptr = self.bytes.as_mut_ptr() as *mut [MaybeUninit<u8>; 8];
+            let mut dst_ptr = self.bytes.as_mut_ptr() as *mut [u8; 8];
 
             let end_ptr = block_ptr.add(blocks);
             while block_ptr != end_ptr {
@@ -489,7 +419,7 @@ impl FontTexture {
                 let mapped = coverage_mapper_simd_256(block_data);
 
                 // Store the mapped result into the destination block
-                *dst_ptr = std::mem::transmute(mapped);
+                *dst_ptr = mapped;
 
                 // Advance to the next block
                 block_ptr = block_ptr.add(1);
