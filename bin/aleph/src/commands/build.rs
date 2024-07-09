@@ -37,6 +37,7 @@ use clap::{Arg, ArgAction, ArgMatches};
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
+use crate::shader_system::ProjectShaderContext;
 use crate::utils::{
     architecture_from_arg, resolve_absolute_or_root_relative_path, BuildPlatform, Target,
 };
@@ -362,6 +363,128 @@ impl Build {
         }
 
         Ok(())
+    }
+
+    #[allow(unused)]
+    fn copy_shader_db_to_appx_folder(
+        &self,
+        project: &AlephProject,
+        target: &Target,
+    ) -> anyhow::Result<()> {
+        let uwp_project_root = project.target_project_root(target)?;
+        let shader_ctx = ProjectShaderContext::new(project, target.platform);
+
+        if uwp_project_root.exists() {
+            let src_file = shader_ctx.shaders_output_root_dir.join("shaders.shaderdb");
+            let dst_file = uwp_project_root.join("shaders.shaderdb");
+            log::trace!("Copying '{}' -> '{}'", src_file, dst_file);
+            std::fs::copy(src_file, dst_file)?;
+        } else {
+            log::warn!(
+                "Skipping uwp shaderdb copy as \"{}\" does not exist",
+                uwp_project_root
+            );
+        }
+
+        Ok(())
+    }
+
+    #[allow(unused)]
+    fn uwp_bundle_to_appx(&self, project: &AlephProject, target: &Target) -> anyhow::Result<()> {
+        let uwp_project_root = project.target_project_root(target)?;
+
+        if uwp_project_root.exists() {
+            // TODO: we need to locate makeappx so we can run it
+            let output_msix = Self::get_msix_path_for_project(project, uwp_project_root)?;
+
+            let mut command = Command::new("makeappx");
+            command.arg("/o"); // Overwrite existing package
+            command.arg("/d"); // Input bundle directory
+            command.arg(&uwp_project_root);
+            command.arg("/p"); // Output .msix bundle
+            command.arg(&output_msix);
+
+            log::info!(
+                "Bundling {} into MSIX package {}",
+                &uwp_project_root,
+                &output_msix
+            );
+
+            let status = command.status()?;
+
+            if !status.success() {
+                log::error!("makeappx invocation failed! Terminating build.");
+                return Err(anyhow!("makeappx invocation failed!"));
+            }
+        } else {
+            log::warn!(
+                "Skipping appx packaging as \"{}\" does not exist",
+                uwp_project_root
+            );
+        }
+
+        Ok(())
+    }
+
+    #[allow(unused)]
+    fn uwp_sign_appx(&self, project: &AlephProject, target: &Target) -> anyhow::Result<()> {
+        let uwp_project_root = project.target_project_root(target)?;
+
+        if uwp_project_root.exists() {
+            // TODO: we need to locate signtool so we can run it
+            let project_schema = project.get_project_schema()?;
+            let cert: &str = project_schema
+                .uwp
+                .as_ref()
+                .ok_or_else(|| anyhow!("Missing UWP info in aleph-project.toml"))?
+                .certificate
+                .as_ref();
+            let cert = resolve_absolute_or_root_relative_path(project.project_root(), cert);
+
+            let target_msix = Self::get_msix_path_for_project(project, uwp_project_root)?;
+
+            let mut command = Command::new("signtool");
+            command.arg("sign");
+            command.arg("/a");
+            command.arg("/fd");
+            command.arg("SHA256");
+            // command.arg("/p"); // Password
+            // command.arg("");
+            command.arg("/f"); // Certificate File
+            command.arg(&cert);
+            command.arg(&target_msix);
+
+            log::info!(
+                "Signing MSIX package {} with certificate {}",
+                &cert,
+                &target_msix
+            );
+
+            let status = command.status()?;
+
+            if !status.success() {
+                log::error!("signtool invocation failed! Terminating build.");
+                return Err(anyhow!("signtool invocation failed!"));
+            }
+        } else {
+            log::warn!(
+                "Skipping appx codesign as \"{}\" does not exist",
+                uwp_project_root
+            );
+        }
+
+        Ok(())
+    }
+
+    #[allow(unused)]
+    fn get_msix_path_for_project(
+        project: &AlephProject,
+        uwp_project_root: &Utf8Path,
+    ) -> anyhow::Result<Utf8PathBuf> {
+        let msix: &str = project.get_project_schema()?.game.crate_name.as_ref();
+        let msix = format!("{msix}.msix");
+        let msix = uwp_project_root.parent().unwrap().join(msix);
+        Ok(msix)
     }
 
     fn copy_artifacts_from_target_to_project(
