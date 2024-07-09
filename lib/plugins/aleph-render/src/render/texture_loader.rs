@@ -157,6 +157,12 @@ impl TextureLoader {
             );
         }
 
+        // If there are no textures to upload then we early exit (we don't want to issue empty
+        // resource barriers)
+        if textures.is_empty() {
+            return;
+        }
+
         // Prepare all our resources in a single barrier command rather than 'n' barriers
         encoder.resource_barrier(&[], &[], &discard_barriers);
 
