@@ -166,7 +166,9 @@ impl WindowImpl {
         let mut window = window.build().expect("Failed to create window");
 
         let display_index = window.display_index().unwrap();
-        let (_ddpi, hdpi, _vdpi) = video_ctx.display_dpi(display_index).unwrap();
+        let (_ddpi, hdpi, _vdpi) = video_ctx
+            .display_dpi(display_index)
+            .unwrap_or((96.0, 96.0, 96.0));
 
         let drawable_size = window.drawable_size();
 
@@ -274,7 +276,7 @@ impl WindowImpl {
                 log::trace!("Window Size: {}x{}", width, height);
             }
             sdl2::event::WindowEvent::DisplayChanged(i) => {
-                let (_ddpi, hdpi, _vdpi) = video_ctx.display_dpi(*i).unwrap();
+                let (_ddpi, hdpi, _vdpi) = video_ctx.display_dpi(*i).unwrap_or((96., 96., 96.));
                 window_state.current_dpi = hdpi;
                 log::trace!("Window display changed");
                 log::trace!("Window Display: {} at {}dpi", i, hdpi);
