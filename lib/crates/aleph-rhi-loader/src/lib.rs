@@ -222,7 +222,10 @@ impl RhiLoader {
             target_os = "android"
         ))]
         {
-            self.vulkan = Some(aleph_rhi_vulkan::RHI_BACKEND);
+            // Except on UWP where there's no Vulkan
+            if !cfg!(target_vendor = "uwp") {
+                self.vulkan = Some(aleph_rhi_vulkan::RHI_BACKEND);
+            }
         }
     }
 
