@@ -38,11 +38,11 @@ use clap::{Arg, ArgMatches};
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 use crate::shader_system::ProjectShaderContext;
+use crate::utils::dunce_utf8::simplified;
 use crate::utils::{
     architecture_from_arg, get_gradlew_name, resolve_absolute_or_root_relative_path,
     resolve_ndk_from_proj_or_env, BuildPlatform, Target,
 };
-use crate::utils::dunce_utf8::simplified;
 
 pub struct Bundle {}
 
@@ -247,8 +247,10 @@ impl Bundle {
         let mut output_dir = android_project_root.join("app");
         output_dir.push("src");
         output_dir.push("main");
-        output_dir.push("res");
-        output_dir.push("raw");
+        output_dir.push("assets");
+
+        // Ensure the assets directory exists
+        std::fs::create_dir_all(&output_dir)?;
 
         if output_dir.exists() {
             let src_file = shader_ctx.shaders_output_root_dir.join("shaders.shaderdb");
