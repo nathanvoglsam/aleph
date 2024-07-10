@@ -28,6 +28,7 @@
 //
 
 use crate::project::AlephProject;
+use crate::utils::dunce_utf8::simplified;
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
 use anyhow::anyhow;
@@ -229,7 +230,7 @@ pub fn resolve_ndk_from_proj_or_env(project: &AlephProject) -> anyhow::Result<Ut
             log::error!("Building for android requires either ANDROID_NDK_HOME to be set or for an NDK to be present at .aleph/sdks/ndk");
             Err(anyhow!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!"))
         } else {
-            Ok(ndk_path.to_path_buf())
+            Ok(simplified(ndk_path).to_path_buf())
         }
     })
 }
