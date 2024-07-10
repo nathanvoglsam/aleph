@@ -44,7 +44,6 @@ use crate::renderer::egui_pass::EguiPassContext;
 use crate::renderer::params::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 
-use std::mem::MaybeUninit;
 use std::num::NonZeroU8;
 use std::ops::{BitAnd, Deref};
 
