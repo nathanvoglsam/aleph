@@ -32,14 +32,14 @@ use std::process::Command;
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::Profile;
 use anyhow::anyhow;
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8PathBuf;
 use clap::{Arg, ArgAction, ArgMatches};
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
-use crate::shader_system::ProjectShaderContext;
 use crate::utils::{
-    architecture_from_arg, resolve_absolute_or_root_relative_path, BuildPlatform, Target,
+    architecture_from_arg, resolve_absolute_or_root_relative_path, resolve_ndk_from_proj_or_env,
+    BuildPlatform, Target,
 };
 
 pub struct Build {}
@@ -204,8 +204,6 @@ impl Build {
             return Err(anyhow!("cargo invocation failed!"));
         }
 
-        self.copy_uwp_build_to_appx_folder(project, profile, target)?;
-
         Ok(())
     }
 
@@ -225,8 +223,6 @@ impl Build {
             log::error!("Cargo invocation failed! Terminating build.");
             return Err(anyhow!("cargo invocation failed!"));
         }
-
-        self.copy_android_build_to_gradle_project(project, profile, target)?;
 
         Ok(())
     }
@@ -298,208 +294,6 @@ impl Build {
                 let icon = resolve_absolute_or_root_relative_path(project.project_root(), icon);
                 log::info!("ALEPH_WIN32_ICON_FILE = {:#?}", &icon);
                 command.env("ALEPH_WIN32_ICON_FILE", icon);
-            }
-        }
-        Ok(())
-    }
-
-    fn copy_android_build_to_gradle_project(
-        &self,
-        project: &AlephProject,
-        profile: Profile,
-        target: &Target,
-    ) -> anyhow::Result<()> {
-        let android_project_root = project.target_project_root(target)?;
-        let mut output_dir = android_project_root.join("app");
-        output_dir.push("libs");
-        output_dir.push(target.arch.ndk_name());
-        let target_dir = project.cargo_build_dir_for_target(target, profile)?;
-
-        if output_dir.exists() {
-            let (_, library_target) = project.get_game_crate_and_target()?;
-            let library_target = library_target.unwrap();
-
-            let lib_name = format!("lib{}.so", &library_target.name);
-            let target_lib = target_dir.join(&lib_name);
-            let dst_lib = output_dir.join(&lib_name);
-            log::trace!("Copying '{}' -> '{}'", target_lib, dst_lib);
-            std::fs::copy(target_lib, dst_lib)?;
-
-            Self::copy_artifacts_from_target_to_project(&target_dir, &output_dir)?;
-        } else {
-            log::warn!(
-                "Skipping android build artifact copy as \"{}\" does not exist",
-                output_dir
-            );
-        }
-
-        Ok(())
-    }
-
-    fn copy_uwp_build_to_appx_folder(
-        &self,
-        project: &AlephProject,
-        profile: Profile,
-        target: &Target,
-    ) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-        let target_dir = project.cargo_build_dir_for_target(target, profile)?;
-
-        if uwp_project_root.exists() {
-            let (package, _) = project.get_game_crate_and_target()?;
-            let exe_name = format!("{}.exe", &package.name);
-
-            let src_exe = target_dir.join(&exe_name);
-            let dst_exe = uwp_project_root.join(&exe_name);
-            log::trace!("Copying '{}' -> '{}'", src_exe, dst_exe);
-            std::fs::copy(src_exe, dst_exe)?;
-
-            Self::copy_artifacts_from_target_to_project(&target_dir, uwp_project_root)?;
-        } else {
-            log::warn!(
-                "Skipping uwp build artifact copy as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    #[allow(unused)]
-    fn copy_shader_db_to_appx_folder(
-        &self,
-        project: &AlephProject,
-        target: &Target,
-    ) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-        let shader_ctx = ProjectShaderContext::new(project, target.platform);
-
-        if uwp_project_root.exists() {
-            let src_file = shader_ctx.shaders_output_root_dir.join("shaders.shaderdb");
-            let dst_file = uwp_project_root.join("shaders.shaderdb");
-            log::trace!("Copying '{}' -> '{}'", src_file, dst_file);
-            std::fs::copy(src_file, dst_file)?;
-        } else {
-            log::warn!(
-                "Skipping uwp shaderdb copy as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    #[allow(unused)]
-    fn uwp_bundle_to_appx(&self, project: &AlephProject, target: &Target) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-
-        if uwp_project_root.exists() {
-            // TODO: we need to locate makeappx so we can run it
-            let output_msix = Self::get_msix_path_for_project(project, uwp_project_root)?;
-
-            let mut command = Command::new("makeappx");
-            command.arg("/o"); // Overwrite existing package
-            command.arg("/d"); // Input bundle directory
-            command.arg(&uwp_project_root);
-            command.arg("/p"); // Output .msix bundle
-            command.arg(&output_msix);
-
-            log::info!(
-                "Bundling {} into MSIX package {}",
-                &uwp_project_root,
-                &output_msix
-            );
-
-            let status = command.status()?;
-
-            if !status.success() {
-                log::error!("makeappx invocation failed! Terminating build.");
-                return Err(anyhow!("makeappx invocation failed!"));
-            }
-        } else {
-            log::warn!(
-                "Skipping appx packaging as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    #[allow(unused)]
-    fn uwp_sign_appx(&self, project: &AlephProject, target: &Target) -> anyhow::Result<()> {
-        let uwp_project_root = project.target_project_root(target)?;
-
-        if uwp_project_root.exists() {
-            // TODO: we need to locate signtool so we can run it
-            let project_schema = project.get_project_schema()?;
-            let cert: &str = project_schema
-                .uwp
-                .as_ref()
-                .ok_or_else(|| anyhow!("Missing UWP info in aleph-project.toml"))?
-                .certificate
-                .as_ref();
-            let cert = resolve_absolute_or_root_relative_path(project.project_root(), cert);
-
-            let target_msix = Self::get_msix_path_for_project(project, uwp_project_root)?;
-
-            let mut command = Command::new("signtool");
-            command.arg("sign");
-            command.arg("/a");
-            command.arg("/fd");
-            command.arg("SHA256");
-            // command.arg("/p"); // Password
-            // command.arg("");
-            command.arg("/f"); // Certificate File
-            command.arg(&cert);
-            command.arg(&target_msix);
-
-            log::info!(
-                "Signing MSIX package {} with certificate {}",
-                &cert,
-                &target_msix
-            );
-
-            let status = command.status()?;
-
-            if !status.success() {
-                log::error!("signtool invocation failed! Terminating build.");
-                return Err(anyhow!("signtool invocation failed!"));
-            }
-        } else {
-            log::warn!(
-                "Skipping appx codesign as \"{}\" does not exist",
-                uwp_project_root
-            );
-        }
-
-        Ok(())
-    }
-
-    #[allow(unused)]
-    fn get_msix_path_for_project(
-        project: &AlephProject,
-        uwp_project_root: &Utf8Path,
-    ) -> anyhow::Result<Utf8PathBuf> {
-        let msix: &str = project.get_project_schema()?.game.crate_name.as_ref();
-        let msix = format!("{msix}.msix");
-        let msix = uwp_project_root.parent().unwrap().join(msix);
-        Ok(msix)
-    }
-
-    fn copy_artifacts_from_target_to_project(
-        target_dir: &Utf8Path,
-        output_dir: &Utf8Path,
-    ) -> anyhow::Result<()> {
-        let target_artifacts_dir = target_dir.join("artifacts");
-        for item in target_artifacts_dir.read_dir_utf8()? {
-            let item = item?;
-            if item.metadata()?.is_file() {
-                let item_path = item.path();
-                let dst = output_dir.join(item_path.file_name().unwrap());
-
-                log::trace!("Copying '{}' -> '{}'", item_path, dst);
-                std::fs::copy(item_path, dst)?;
             }
         }
         Ok(())
@@ -577,16 +371,7 @@ fn android_build(
 
     profile_args(&mut cmd, profile);
 
-    let ndk_home = std::env::var("ANDROID_NDK_HOME").map(Utf8PathBuf::from).or_else(|_err| {
-        let ndk_path = project.ndk_path();
-        if !ndk_path.exists() {
-            log::error!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!");
-            log::error!("Building for android requires either ANDROID_NDK_HOME to be set or for an NDK to be present at .aleph/sdks/ndk");
-            Err(anyhow!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!"))
-        } else {
-            Ok(ndk_path.to_path_buf())
-        }
-    })?;
+    let ndk_home = resolve_ndk_from_proj_or_env(project)?;
     cmd.env("ANDROID_NDK_HOME", ndk_home);
 
     Ok(cmd)

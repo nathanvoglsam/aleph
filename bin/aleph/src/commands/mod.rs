@@ -28,12 +28,15 @@
 //
 
 mod build;
+mod bundle;
 mod genproj;
 pub mod shaders;
 
 pub use build::Build;
-use clap::{ArgMatches, Command};
+pub use bundle::Bundle;
 pub use genproj::GenProj;
+
+use clap::{ArgMatches, Command};
 
 use crate::project::AlephProject;
 

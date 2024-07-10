@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::commands::{shaders, Build, GenProj, SubcommandSet};
+use crate::commands::{shaders, Build, Bundle, GenProj, SubcommandSet};
 
 mod commands;
 mod project;
@@ -40,6 +40,7 @@ fn main() -> anyhow::Result<()> {
     let mut subcommands = SubcommandSet::new(env!("CARGO_PKG_NAME"));
     subcommands.register_subcommand(GenProj {});
     subcommands.register_subcommand(Build {});
+    subcommands.register_subcommand(Bundle {});
     subcommands.register_subcommand(shaders::make());
     subcommands.exec_as_root()
 }

@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
-use std::fmt::{Display, Formatter};
-use std::io::{Read, Seek};
-
+use crate::project::AlephProject;
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
+use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
+use std::fmt::{Display, Formatter};
+use std::io::{Read, Seek};
 use zip::ZipArchive;
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
@@ -218,6 +219,27 @@ pub fn extract_zip<R: Seek + Read>(
         }
     }
     Ok(())
+}
+
+pub fn resolve_ndk_from_proj_or_env(project: &AlephProject) -> anyhow::Result<Utf8PathBuf> {
+    std::env::var("ANDROID_NDK_HOME").map(Utf8PathBuf::from).or_else(|_err| {
+        let ndk_path = project.ndk_path();
+        if !ndk_path.exists() {
+            log::error!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!");
+            log::error!("Building for android requires either ANDROID_NDK_HOME to be set or for an NDK to be present at .aleph/sdks/ndk");
+            Err(anyhow!("ANDROID_NDK_HOME is not set and .aleph/sdks/ndk is missing!"))
+        } else {
+            Ok(ndk_path.to_path_buf())
+        }
+    })
+}
+
+pub const fn get_gradlew_name() -> &'static str {
+    if target_platform().is_windows() {
+        "./gradlew.bat"
+    } else {
+        "./gradlew"
+    }
 }
 
 pub fn resolve_absolute_or_root_relative_path<P: AsRef<Utf8Path>>(

@@ -534,7 +534,7 @@ impl<'a> AlephProject<'a> {
                     .targets
                     .iter()
                     .enumerate()
-                    .find(|(_i, v)| v.kind.iter().any(|v| v.as_str() == "lib"))
+                    .find(|(_i, v)| v.kind.iter().any(|v| v.as_str() == "cdylib"))
                     .map(|(i, _v)| i);
 
                 Ok((package_index, target_index))
