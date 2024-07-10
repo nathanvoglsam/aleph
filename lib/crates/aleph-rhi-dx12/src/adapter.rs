@@ -40,7 +40,7 @@ use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
 
 use crate::context::Context;
-use crate::device::Device;
+use crate::device::{CommandListPool, Device};
 use crate::internal::conv::queue_type_to_dx12;
 use crate::internal::create_device::create_device;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
@@ -74,11 +74,7 @@ impl IGetPlatformInterface for Adapter {
 }
 
 impl Adapter {
-    fn create_queue(
-        device: &impl CanInto<ID3D12Device>,
-        queue_type: QueueType,
-        debug: bool,
-    ) -> Option<AnyArc<Queue>> {
+    fn create_queue(device: &Device, queue_type: QueueType, debug: bool) -> Option<AnyArc<Queue>> {
         let device = device.can_into();
         unsafe {
             let desc = D3D12_COMMAND_QUEUE_DESC {
@@ -88,6 +84,7 @@ impl Adapter {
                 NodeMask: 0,
             };
             device
+                .device
                 .CreateCommandQueue(&desc)
                 .ok()
                 .map(|v| Queue::new(device, queue_type, debug, v))
@@ -124,10 +121,12 @@ impl IAdapter for Adapter {
 
         let debug_queue = self.context.debug.is_some() && pix::is_library_available();
 
-        // Load our 3 queues
-        let general_queue = Adapter::create_queue(&device, QueueType::General, debug_queue);
-        let compute_queue = Adapter::create_queue(&device, QueueType::Compute, debug_queue);
-        let transfer_queue = Adapter::create_queue(&device, QueueType::Transfer, debug_queue);
+        fn create_queues(v: &mut Device, debug_queue: bool) {
+            // Load our 3 queues
+            v.general_queue = Adapter::create_queue(v, QueueType::General, debug_queue);
+            v.compute_queue = Adapter::create_queue(v, QueueType::Compute, debug_queue);
+            v.transfer_queue = Adapter::create_queue(v, QueueType::Transfer, debug_queue);
+        }
 
         let debug_message_cookie = if self.context.debug.is_some() {
             // SAFETY: Should be safe but I don't have a proof
@@ -162,17 +161,22 @@ impl IAdapter for Adapter {
             DescriptorHeaps::new(&device).map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
         // Bundle and return the device
-        let device = AnyArc::new_cyclic(move |v| Device {
-            this: v.clone(),
-            _context: self.context.clone(),
-            _adapter: self.this.upgrade().unwrap(),
-            debug_message_cookie,
-            descriptor_heap_info: DescriptorHeapInfo::new(&device),
-            descriptor_heaps,
-            device,
-            general_queue,
-            compute_queue,
-            transfer_queue,
+        let device = AnyArc::new_cyclic(move |v| {
+            let mut v = Device {
+                this: v.clone(),
+                _context: self.context.clone(),
+                _adapter: self.this.upgrade().unwrap(),
+                debug_message_cookie,
+                descriptor_heap_info: DescriptorHeapInfo::new(&device),
+                descriptor_heaps,
+                device,
+                general_queue: None,
+                compute_queue: None,
+                transfer_queue: None,
+                command_list_pool: CommandListPool::new(),
+            };
+            create_queues(&mut v, debug_queue);
+            v
         });
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }

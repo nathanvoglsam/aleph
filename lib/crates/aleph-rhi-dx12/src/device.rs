@@ -42,6 +42,7 @@ use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
 use blink_alloc::BlinkAlloc;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
+use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 use windows::core::PCSTR;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
@@ -98,6 +99,7 @@ pub struct Device {
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
+    pub(crate) command_list_pool: CommandListPool,
 }
 
 unsafe impl Send for Device {}
@@ -776,7 +778,39 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        // TODO: Can probably get easy gains by maintaining an object pool to reuse from
+        // First we try and grab a command list from the free list. This way we reuse an old
+        // list before we try and make a new one. This can save a lot of performance even if the
+        // free list is a bit slow.
+        //
+        // Some drivers will lazily allocate pages for the command list on first use. If we're
+        // only using fresh allocators then we hit that (very) slow path every time. To avoid
+        // this we front creating new command pools with a free list so we recycle old ones
+        // first.
+        if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
+            if let Some(name) = desc.name {
+                set_name(&list.allocator, name)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                set_name(&list.list, name).map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            }
+
+            // It is assumed that only command lists that are safe to reuse are placed into the
+            // free list.
+            //
+            // Typically, this will be done in 'garbage_collect'.
+            let out: Box<dyn ICommandList> = Box::new(CommandList {
+                _device: self.this.upgrade().unwrap(),
+                allocator: list.allocator,
+                list: list.list,
+                descriptor_heaps: list.descriptor_heaps,
+                list_type: list.list_type,
+            });
+            return Ok(out);
+        }
+
+        log::warn!(
+            "CommandList free-object-pool empty. Taking slow-path for creating a new object!"
+        );
+
         let platform_list_type = queue_type_to_dx12(desc.queue_type);
 
         let allocator = unsafe {
@@ -2025,4 +2059,58 @@ fn root_param_for_cbv_root_descriptor(
 
 thread_local! {
     pub static DEVICE_BUMP: BumpCell = BumpCell::with_capacity(8192 * 2);
+}
+
+pub struct CommandListPool {
+    pub general: ArrayQueue<FreeCommandList>,
+    pub compute: ArrayQueue<FreeCommandList>,
+    pub transfer: ArrayQueue<FreeCommandList>,
+}
+
+impl CommandListPool {
+    pub fn new() -> Self {
+        // We should only really ever need <num_lists_per_frame> * <frames_in_flight>
+        Self {
+            general: ArrayQueue::new(64),
+            compute: ArrayQueue::new(32),
+            transfer: ArrayQueue::new(32),
+        }
+    }
+
+    pub fn get_for_queue_type(&self, queue_type: QueueType) -> Option<FreeCommandList> {
+        match queue_type {
+            QueueType::General => self.general.pop(),
+            QueueType::Compute => self.compute.pop(),
+            QueueType::Transfer => self.transfer.pop(),
+        }
+    }
+
+    pub fn get_pool_for_queue_type(&self, queue_type: QueueType) -> &ArrayQueue<FreeCommandList> {
+        match queue_type {
+            QueueType::General => &self.general,
+            QueueType::Compute => &self.compute,
+            QueueType::Transfer => &self.transfer,
+        }
+    }
+
+    pub unsafe fn collect(&self) {
+        while let Some(list) = self.general.pop() {
+            drop(list);
+        }
+
+        while let Some(list) = self.compute.pop() {
+            drop(list);
+        }
+
+        while let Some(list) = self.transfer.pop() {
+            drop(list);
+        }
+    }
+}
+
+pub struct FreeCommandList {
+    pub allocator: ID3D12CommandAllocator,
+    pub list: ID3D12GraphicsCommandList7,
+    pub descriptor_heaps: [Option<ID3D12DescriptorHeap>; 2],
+    pub list_type: QueueType,
 }

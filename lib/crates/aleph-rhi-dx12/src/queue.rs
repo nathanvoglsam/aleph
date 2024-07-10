@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::mem::transmute;
 use std::ptr;
 use std::ptr::NonNull;
@@ -39,14 +39,17 @@ use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
+use windows::core::ComInterface;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
 
 use crate::command_list::CommandList;
+use crate::device::{Device, FreeCommandList};
 use crate::internal::unwrap;
 
 pub struct Queue {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) device: AnyWeak<Device>,
     pub(crate) queue_type: QueueType,
     pub(crate) handle: ID3D12CommandQueue,
 
@@ -119,7 +122,7 @@ impl IGetPlatformInterface for Queue {
 impl Queue {
     #[inline]
     pub(crate) fn new(
-        device: &ID3D12Device,
+        device: &Device,
         queue_type: QueueType,
         debug: bool,
         handle: ID3D12CommandQueue,
@@ -127,12 +130,13 @@ impl Queue {
         unsafe {
             AnyArc::new_cyclic(|v| Self {
                 this: v.clone(),
+                device: device.this.clone(),
                 queue_type,
                 handle,
                 submit_lock: Mutex::new(()),
                 is_queue_debug_available: debug,
                 debug_marker_depth: Default::default(),
-                fence: device.CreateFence(0, D3D12_FENCE_FLAG_NONE).unwrap(),
+                fence: device.device.CreateFence(0, D3D12_FENCE_FLAG_NONE).unwrap(),
                 last_submitted_index: Default::default(),
                 last_completed_index: Default::default(),
                 in_flight: ArrayQueue::new(256),
@@ -193,6 +197,8 @@ impl IQueue for Queue {
     }
 
     fn garbage_collect(&self) {
+        let device = self.device.upgrade().unwrap();
+
         // Grab the index of the most recently completed command list on this queue and update
         // the queue's value
         //
@@ -231,6 +237,37 @@ impl IQueue for Queue {
                     .push(v)
                     .ok()
                     .expect("Overflowed in-flight command list tracking buffer");
+            } else {
+                // If the submission is complete we recycle the command lists
+                //
+                // Grab the pool for the specific queue type. Don't want to get different
+                // classes of command list mixed up!
+                let pool_target = device
+                    .command_list_pool
+                    .get_pool_for_queue_type(self.queue_type);
+
+                for list in v.lists.into_iter() {
+                    debug_assert_eq!(list.list_type, self.queue_type);
+
+                    // Take the pool and buffer out of the CommandList object so they don't
+                    // get dropped. We destroy the Box<CommandList> because it also contains
+                    // a back reference to device.
+                    //
+                    // If we store it inside device then we create a reference cycle and we'll
+                    // leak Device. Not great...
+                    let list = FreeCommandList {
+                        allocator: list.allocator,
+                        list: list.list,
+                        descriptor_heaps: list.descriptor_heaps,
+                        list_type: list.list_type,
+                    };
+
+                    // If we fill the list we just start destroying command lists rather than
+                    // growing the pool.
+                    if pool_target.push(list).is_err() {
+                        log::warn!("CommandList free-object-pool overflowing!");
+                    }
+                }
             }
         }
     }
@@ -296,13 +333,18 @@ impl IQueue for Queue {
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
+        let mut lists: Vec<Box<CommandList>> = Vec::with_capacity(desc.command_lists.len());
         let mut handles: Vec<Option<ID3D12CommandList>> =
             Vec::with_capacity(desc.command_lists.len());
         for list in desc.command_lists {
             let list = list.take().unwrap();
             let list = box_downcast::<_, CommandList>(list).ok().unwrap();
 
-            handles.push(Some(transmute(list.list)));
+            // Get the command list to submit
+            handles.push(Some(list.list.cast().unwrap()));
+
+            // Add the bundle to our list
+            lists.push(list);
         }
 
         self.handle.ExecuteCommandLists(&handles);
@@ -329,17 +371,10 @@ impl IQueue for Queue {
             .record_submission_index_signal()
             .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
-        for handle in handles {
-            let _handle = handle.unwrap();
-            // TODO: we want to do some garbage collection for resources
-            self.in_flight
-                .push(QueueSubmission {
-                    index,
-                    items: Vec::new(),
-                })
-                .ok()
-                .expect("Overflowed in-flight submission tracking buffer");
-        }
+        self.in_flight
+            .push(QueueSubmission { index, lists })
+            .ok()
+            .expect("Overflowed in-flight submission tracking buffer");
 
         Ok(())
     }
@@ -439,6 +474,7 @@ pub struct QueueSubmission {
     /// The index of the queue submission. Used for tracking when the work has been retired
     pub index: u64,
 
-    /// A list of times to be dropped
-    pub items: Vec<Box<dyn Any + Send + Sync>>,
+    /// A list of command lists that are in flight in this submission. These lists will eventually
+    /// be recycled!
+    pub lists: Vec<Box<CommandList>>,
 }
