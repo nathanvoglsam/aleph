@@ -40,6 +40,7 @@ use ash::vk;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
 use byteorder::{ByteOrder, NativeEndian};
+use crossbeam::queue::ArrayQueue;
 use vulkan_alloc::vma;
 
 use crate::adapter::Adapter;
@@ -76,6 +77,7 @@ pub struct Device {
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
+    pub(crate) command_list_pool: CommandListPool,
 }
 
 declare_interfaces!(Device, [IDevice]);
@@ -800,6 +802,35 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
+            // First we try and grab a command list from the free list. This way we reuse an old
+            // list before we try and make a new one. This can save a lot of performance even if the
+            // free list is a bit slow.
+            //
+            // Some drivers will lazily allocate pages for the command list on first use. If we're
+            // only using fresh allocators then we hit that (very) slow path every time. To avoid
+            // this we front creating new command pools with a free list so we recycle old ones
+            // first.
+            if let Some(list) = self.command_list_pool.get_for_queue_type(desc.queue_type) {
+                set_name(self.debug_loader.as_ref(), &bump, list.pool, desc.name);
+                set_name(self.debug_loader.as_ref(), &bump, list.buffer, desc.name);
+
+                // It is assumed that only command lists that are safe to reuse are placed into the
+                // free list.
+                //
+                // Typically, this will be done in 'garbage_collect'.
+                let out: Box<dyn ICommandList> = Box::new(CommandList {
+                    _device: self.this.upgrade().unwrap(),
+                    pool: list.pool,
+                    buffer: list.buffer,
+                    list_type: list.list_type,
+                });
+                return Ok(out);
+            }
+
+            log::warn!(
+                "CommandList free-object-pool empty. Taking slow-path for creating a new object!"
+            );
+
             let family_index = match desc.queue_type {
                 QueueType::General => self.general_queue.as_ref().unwrap().info.family_index,
                 QueueType::Compute => self.compute_queue.as_ref().unwrap().info.family_index,
@@ -1249,6 +1280,8 @@ impl Drop for Device {
                 self.device.destroy_semaphore(queue.semaphore, None);
             }
 
+            self.command_list_pool.collect(self);
+
             ManuallyDrop::drop(&mut self.allocator);
 
             self.device.destroy_device(None);
@@ -1259,4 +1292,63 @@ impl Drop for Device {
 
 thread_local! {
     pub static DEVICE_BUMP: BumpCell = BumpCell::with_capacity(8192 * 2);
+}
+
+pub struct FreeCommandList {
+    pub pool: vk::CommandPool,
+    pub buffer: vk::CommandBuffer,
+    pub list_type: QueueType,
+}
+
+impl FreeCommandList {
+    pub unsafe fn collect(&self, device: &Device) {
+        device.device.destroy_command_pool(self.pool, None);
+    }
+}
+
+pub struct CommandListPool {
+    pub general: ArrayQueue<FreeCommandList>,
+    pub compute: ArrayQueue<FreeCommandList>,
+    pub transfer: ArrayQueue<FreeCommandList>,
+}
+
+impl CommandListPool {
+    pub fn new() -> Self {
+        // We should only really ever need <num_lists_per_frame> * <frames_in_flight>
+        Self {
+            general: ArrayQueue::new(64),
+            compute: ArrayQueue::new(32),
+            transfer: ArrayQueue::new(32),
+        }
+    }
+
+    pub fn get_for_queue_type(&self, queue_type: QueueType) -> Option<FreeCommandList> {
+        match queue_type {
+            QueueType::General => self.general.pop(),
+            QueueType::Compute => self.compute.pop(),
+            QueueType::Transfer => self.transfer.pop(),
+        }
+    }
+
+    pub fn get_pool_for_queue_type(&self, queue_type: QueueType) -> &ArrayQueue<FreeCommandList> {
+        match queue_type {
+            QueueType::General => &self.general,
+            QueueType::Compute => &self.compute,
+            QueueType::Transfer => &self.transfer,
+        }
+    }
+
+    pub unsafe fn collect(&self, device: &Device) {
+        while let Some(list) = self.general.pop() {
+            list.collect(device);
+        }
+
+        while let Some(list) = self.compute.pop() {
+            list.collect(device);
+        }
+
+        while let Some(list) = self.transfer.pop() {
+            list.collect(device);
+        }
+    }
 }

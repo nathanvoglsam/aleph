@@ -38,7 +38,7 @@ use ash::vk;
 use vulkan_alloc::vma;
 
 use crate::context::Context;
-use crate::device::Device;
+use crate::device::{CommandListPool, Device};
 use crate::internal::device_info::DeviceInfo;
 use crate::queue::{Queue, QueueInfo};
 
@@ -334,6 +334,7 @@ impl IAdapter for Adapter {
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,
+                command_list_pool: CommandListPool::new(),
             };
 
             unsafe { found_families.build_queue_objects(&mut device) };

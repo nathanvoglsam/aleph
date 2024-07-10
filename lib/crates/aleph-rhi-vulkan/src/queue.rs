@@ -42,7 +42,7 @@ use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 
 use crate::command_list::CommandList;
-use crate::device::Device;
+use crate::device::{Device, FreeCommandList};
 use crate::internal::unwrap;
 
 pub struct Queue {
@@ -236,8 +236,35 @@ impl IQueue for Queue {
                     .ok()
                     .expect("Overflowed in-flight command list tracking buffer");
             } else {
-                unsafe {
-                    v.items.collect(&device);
+                // Grab the pool for the specific queue type. Don't want to get different
+                // classes of command list mixed up!
+                let pool_target = device
+                    .command_list_pool
+                    .get_pool_for_queue_type(self.queue_type);
+
+                for mut list in v.lists.into_iter() {
+                    debug_assert_eq!(list.list_type, self.queue_type);
+
+                    // Take the pool and buffer out of the CommandList object so they don't
+                    // get dropped. We destroy the Box<CommandList> because it also contains
+                    // a back reference to device.
+                    //
+                    // If we store it inside device then we create a reference cycle and we'll
+                    // leak Device. Not great...
+                    let list = FreeCommandList {
+                        pool: std::mem::take(&mut list.pool),
+                        buffer: std::mem::take(&mut list.buffer),
+                        list_type: list.list_type,
+                    };
+
+                    // If we fill the list we just start destroying command lists rather than
+                    // growing the pool.
+                    if let Err(dropped) = pool_target.push(list) {
+                        unsafe {
+                            log::warn!("CommandList free-object-pool overflowing!");
+                            dropped.collect(&device);
+                        }
+                    }
                 }
             }
         }
@@ -280,16 +307,13 @@ impl IQueue for Queue {
         signal_semaphores.push(self.semaphore);
         signal_values.push(index);
 
-        let mut collectables: Vec<Box<dyn ICollect>> = Vec::with_capacity(desc.command_lists.len());
+        let mut lists: Vec<Box<CommandList>> = Vec::with_capacity(desc.command_lists.len());
         let mut command_buffers = Vec::with_capacity(desc.command_lists.len());
         for list in desc.command_lists {
             let list = list.take().unwrap();
-            let mut list = box_downcast::<_, CommandList>(list).ok().unwrap();
-
-            collectables.push(Box::new(CommandListSubmission {
-                pool: std::mem::take(&mut list.pool),
-            }));
-            command_buffers.push(std::mem::take(&mut list.buffer));
+            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
+            command_buffers.push(list.buffer);
+            lists.push(list);
         }
 
         // Signal the fence, if one is provided, to let CPU know the submitted commands are
@@ -320,10 +344,7 @@ impl IQueue for Queue {
 
         // TODO: we want to do some garbage collection for resources
         self.in_flight
-            .push(QueueSubmission {
-                index,
-                items: CollectBundle::Bundle(collectables),
-            })
+            .push(QueueSubmission { index, lists })
             .ok()
             .expect("Overflowed in-flight submission tracking buffer");
 
@@ -472,57 +493,7 @@ pub struct QueueSubmission {
     /// The index of the queue submission. Used for tracking when the work has been retired
     pub index: u64,
 
-    /// A list of times to be dropped
-    pub items: CollectBundle,
-}
-
-/// Internal trait used by collectable objects to handle being garbage collected
-pub trait ICollect: Send + Sync + 'static {
-    unsafe fn collect(&self, device: &Device);
-}
-
-// TODO: This could be optimized to use a ring buffer for allocating the 'boxed' objects to avoid
-//       hitting the system heap.
-pub enum CollectBundle {
-    Single(Box<dyn ICollect>),
-
-    /// A collection of collectable objects
-    Bundle(Vec<Box<dyn ICollect>>),
-}
-
-impl ICollect for CollectBundle {
-    unsafe fn collect(&self, device: &Device) {
-        match self {
-            CollectBundle::Single(v) => v.collect(device),
-            CollectBundle::Bundle(v) => v.iter().for_each(|v| v.collect(device)),
-        }
-    }
-}
-
-impl From<Box<dyn ICollect>> for CollectBundle {
-    fn from(value: Box<dyn ICollect>) -> Self {
-        Self::Single(value)
-    }
-}
-
-impl<T: ICollect> From<Box<T>> for CollectBundle {
-    fn from(value: Box<T>) -> Self {
-        Self::Single(value)
-    }
-}
-
-impl From<Vec<Box<dyn ICollect>>> for CollectBundle {
-    fn from(value: Vec<Box<dyn ICollect>>) -> Self {
-        Self::Bundle(value)
-    }
-}
-
-pub struct CommandListSubmission {
-    pool: vk::CommandPool,
-}
-
-impl ICollect for CommandListSubmission {
-    unsafe fn collect(&self, device: &Device) {
-        device.device.destroy_command_pool(self.pool, None);
-    }
+    /// We separate the command lists in the submission into their own list so they can be easily
+    /// filtered out and recycled later
+    pub lists: Vec<Box<CommandList>>,
 }

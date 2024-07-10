@@ -222,8 +222,6 @@ impl SwapChain {
             .old_swapchain(old_swapchain)
             .clipped(true);
 
-        // TODO: Handle destroying the old swap chain
-
         inner.swap_chain = swapchain_loader
             .create_swapchain(&swap_create_info, None)
             .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
@@ -385,8 +383,9 @@ impl SwapChain {
             wanted_mode
         } else {
             log::trace!(
-                "Wanted presentation mode unsupported '{}', falling back to FIFO",
-                config.present_mode
+                "Wanted presentation mode unsupported '{}', falling back to FIFO. Options {:?}",
+                config.present_mode,
+                present_modes
             );
             vk::PresentModeKHR::FIFO
         }
