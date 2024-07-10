@@ -42,6 +42,7 @@ use crate::utils::{
     architecture_from_arg, get_gradlew_name, resolve_absolute_or_root_relative_path,
     resolve_ndk_from_proj_or_env, BuildPlatform, Target,
 };
+use crate::utils::dunce_utf8::simplified;
 
 pub struct Bundle {}
 
@@ -247,6 +248,7 @@ impl Bundle {
         output_dir.push("src");
         output_dir.push("main");
         output_dir.push("res");
+        output_dir.push("raw");
 
         if output_dir.exists() {
             let src_file = shader_ctx.shaders_output_root_dir.join("shaders.shaderdb");
@@ -268,8 +270,10 @@ impl Bundle {
         let ndk_home = resolve_ndk_from_proj_or_env(project)?;
 
         if android_project_root.exists() {
-            // TODO: can we do this? or do we need to invoke cmd on windows? can't remember
-            let mut command = Command::new(get_gradlew_name());
+            let android_project_root = simplified(android_project_root);
+
+            let gradlew = android_project_root.join(get_gradlew_name());
+            let mut command = Command::new(gradlew);
             command.arg("assembleDebug");
             command.current_dir(android_project_root);
             command.env("ANDROID_NDK_HOME", ndk_home);
@@ -281,8 +285,8 @@ impl Bundle {
             let status = command.status()?;
 
             if !status.success() {
-                log::error!("makeappx invocation failed! Terminating build.");
-                return Err(anyhow!("makeappx invocation failed!"));
+                log::error!("gradlew invocation failed! Terminating build.");
+                return Err(anyhow!("gradlew invocation failed!"));
             }
         } else {
             log::warn!(

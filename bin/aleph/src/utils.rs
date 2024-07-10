@@ -237,9 +237,9 @@ pub fn resolve_ndk_from_proj_or_env(project: &AlephProject) -> anyhow::Result<Ut
 
 pub const fn get_gradlew_name() -> &'static str {
     if target_platform().is_windows() {
-        "./gradlew.bat"
+        "gradlew.bat"
     } else {
-        "./gradlew"
+        "gradlew"
     }
 }
 
