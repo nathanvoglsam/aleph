@@ -51,6 +51,8 @@ pub mod any {
 // Modules
 // =================================================================================================
 
+use std::env::current_dir;
+use std::path::Path;
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
@@ -136,6 +138,9 @@ impl EngineBuilder {
         // Print some system info to the log so we know what we were running on
         Engine::log_cpu_info();
 
+        // Print some general environment info so we can deduce things about how we're running
+        Engine::log_env_info();
+
         Engine {
             registry: self.registry.build(),
         }
@@ -180,6 +185,22 @@ impl Engine {
         log::info!("Build Type : {}", build);
         log::info!("Optimized  : {}", optimized);
         log::info!("Debug      : {}", debug);
+    }
+
+    ///
+    /// Internal function for logging info about the engine
+    ///
+    fn log_env_info() {
+        let current_dir = current_dir();
+        let working_dir = match &current_dir {
+            Ok(v) => v.display(),
+            Err(v) => {
+                log::warn!("Failed to get current working directory. Reason {v:?}");
+                Path::new("Unknown").display()
+            }
+        };
+        log::info!("=== Environment Info ===");
+        log::info!("Working Dir : {}", working_dir);
     }
 
     ///
