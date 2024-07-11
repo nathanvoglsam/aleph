@@ -29,7 +29,8 @@
 
 #![allow(unused)]
 
-use std::ffi::c_char;
+use std::ffi::{c_char, CStr};
+use std::fmt::{Display, Formatter};
 use std::ptr::NonNull;
 
 use ash::vk;
@@ -55,6 +56,19 @@ impl ConfigLogLevel {
 
     /// Log errors, warnings, infos and debug messages
     pub const DEBUG: Self = Self(4);
+}
+
+impl Display for ConfigLogLevel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::NONE => "NONE".fmt(f),
+            &Self::ERROR => "ERROR".fmt(f),
+            &Self::WARNING => "WARNING".fmt(f),
+            &Self::INFO => "INFO".fmt(f),
+            &Self::DEBUG => "DEBUG".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
 }
 
 /// Identifies the level of Vulkan call trace logging MoltenVK should perform
@@ -90,6 +104,21 @@ impl ConfigTraceVulkanCalls {
     pub const DURATION_THREAD_ID: Self = Self(6);
 }
 
+impl Display for ConfigTraceVulkanCalls {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::NONE => "NONE".fmt(f),
+            &Self::ENTER => "ENTER".fmt(f),
+            &Self::ENTER_THREAD_ID => "ENTER_THREAD_ID".fmt(f),
+            &Self::ENTER_EXIT => "ENTER_EXIT".fmt(f),
+            &Self::ENTER_EXIT_THREAD_ID => "ENTER_EXIT_THREAD_ID".fmt(f),
+            &Self::DURATION => "DURATION".fmt(f),
+            &Self::DURATION_THREAD_ID => "DURATION_THREAD_ID".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
+}
+
 /// Identifies the scope for Metal to run an automatic GPU capture for diagnostic debugging
 /// purposes.
 #[repr(transparent)]
@@ -106,6 +135,17 @@ impl ConfigAutoGPUCaptureScope {
     /// Automatically capture all GPU activity during the rendering and presentation of the first
     /// frame
     pub const FRAME: Self = Self(2);
+}
+
+impl Display for ConfigAutoGPUCaptureScope {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::NONE => "NONE".fmt(f),
+            &Self::DEVICE => "DEVICE".fmt(f),
+            &Self::FRAME => "FRAME".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
 }
 
 bitflags! {
@@ -140,6 +180,17 @@ impl UseMetalArgumentBuffers {
     pub const DESCRIPTOR_INDEXING: Self = Self(2);
 }
 
+impl Display for UseMetalArgumentBuffers {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::NEVER => "NEVER".fmt(f),
+            &Self::ALWAYS => "ALWAYS".fmt(f),
+            &Self::DESCRIPTOR_INDEXING => "DESCRIPTOR_INDEXING".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
+}
+
 /// Identifies the Metal functionality used to support Vulkan semaphore functionality (VkSemaphore).
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
@@ -165,6 +216,18 @@ impl VkSemaphoreSupportStyle {
     /// Use CPU callbacks upon GPU submission completion. This is the slowest technique, but allows
     /// multiple queues, compared to MVK_CONFIG_VK_SEMAPHORE_USE_SINGLE_QUEUE
     pub const CALLBACK: Self = Self(3);
+}
+
+impl Display for VkSemaphoreSupportStyle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::SINGLE_QUEUE => "SINGLE_QUEUE".fmt(f),
+            &Self::METAL_EVENTS_WHERE_SAFE => "METAL_EVENTS_WHERE_SAFE".fmt(f),
+            &Self::METAL_EVENTS => "METAL_EVENTS".fmt(f),
+            &Self::CALLBACK => "CALLBACK".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
 }
 
 /// Identifies the style of Metal command buffer pre-filling to be used.
@@ -205,6 +268,18 @@ impl PrefillMetalCommandBuffersStyle {
     pub const IMMEDIATE_ENCODING_NO_AUTORELEASE: Self = Self(3);
 }
 
+impl Display for PrefillMetalCommandBuffersStyle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::NO_PREFILL => "NO_PREFILL".fmt(f),
+            &Self::DEFERRED_ENCODING => "DEFERRED_ENCODING".fmt(f),
+            &Self::IMMEDIATE_ENCODING => "IMMEDIATE_ENCODING".fmt(f),
+            &Self::IMMEDIATE_ENCODING_NO_AUTORELEASE => "IMMEDIATE_ENCODING_NO_AUTORELEASE".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
+}
+
 /// Identifies when Metal shaders will be compiled with the fast math option.
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
@@ -220,6 +295,17 @@ impl ConfigFastMath {
     /// Metal shaders will be compiled with the fast math option, unless the shader includes
     /// execution modes that require it to be compiled without fast math
     pub const ON_DEMAND: Self = Self(2);
+}
+
+impl Display for ConfigFastMath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::NEVER => "NEVER".fmt(f),
+            &Self::ALWAYS => "ALWAYS".fmt(f),
+            &Self::ON_DEMAND => "ON_DEMAND".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
 }
 
 /// Identifies available system data compression algorithms.
@@ -246,6 +332,19 @@ impl ConfigCompressionAlgorithm {
     pub const LZMA: Self = Self(4);
 }
 
+impl Display for ConfigCompressionAlgorithm {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::NONE => "NONE".fmt(f),
+            &Self::LZFSE => "LZFSE".fmt(f),
+            &Self::ZLIB => "ZLIB".fmt(f),
+            &Self::LZ4 => "LZ4".fmt(f),
+            &Self::LZMA => "LZMA".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
+}
+
 /// Identifies the style of activity performance logging to use.
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
@@ -261,6 +360,17 @@ impl ConfigActivityPerformanceLoggingStyle {
     /// Log at the end of the VkDevice lifetime. This is useful for one-shot apps such as testing
     /// frameworks
     pub const DEVICE_LIFETIME: Self = Self(2);
+}
+
+impl Display for ConfigActivityPerformanceLoggingStyle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::FRAME_COUNT => "FRAME_COUNT".fmt(f),
+            &Self::IMMEDIATE => "IMMEDIATE".fmt(f),
+            &Self::DEVICE_LIFETIME => "DEVICE_LIFETIME".fmt(f),
+            _ => "Unknown".fmt(f),
+        }
+    }
 }
 
 /// MoltenVK configuration settings.
@@ -330,7 +440,7 @@ pub struct Configuration {
     /// MVK_CONFIG_SHADER_CONVERSION_FLIP_VERTEX_Y
     /// runtime environment variable or MoltenVK compile-time build setting.
     /// If neither is set, the value of this parameter defaults to true.
-    pub shader_conversion_flip_vertex_y: bool,
+    pub shader_conversion_flip_vertex_y: vk::Bool32,
 
     /// If enabled, queue command submissions (vkQueueSubmit() & vkQueuePresentKHR()) will be
     /// processed on the thread that called the submission function. If disabled, processing
@@ -976,6 +1086,55 @@ pub struct Configuration {
     /// MVK_CONFIG_COMPRESSION_ALGORITHM_NONE by default,
     /// and MoltenVK will not compress the MSL source code after compilation into a MTLLibrary.
     pub shader_source_compression_algorithm: ConfigCompressionAlgorithm,
+}
+
+impl Configuration {
+    /// # Safety
+    ///
+    /// Assumes for 'auto_gpu_capture_output_filepath', given it contains Some(ptr), that the
+    /// pointer points to a valid and sound-to-access cstr.
+    #[rustfmt::skip]
+    pub unsafe fn log(&self) {
+        let self_auto_gpu_capture_output_filepath = match self.auto_gpu_capture_output_filepath {
+            None => "<None>",
+            Some(v) => unsafe { CStr::from_ptr(v.as_ptr()).to_str().unwrap() }
+        };
+        log::info!("debug_mode = {}", self.debug_mode != 0);
+        log::info!("shader_conversion_flip_vertex_y = {}", self.shader_conversion_flip_vertex_y != 0);
+        log::info!("synchronous_queue_submits = {}", self.synchronous_queue_submits != 0);
+        log::info!("prefill_metal_command_buffers = {}", self.prefill_metal_command_buffers);
+        log::info!("max_active_metal_command_buffers_per_queue = {}", self.max_active_metal_command_buffers_per_queue);
+        log::info!("support_large_query_pools = {}", self.support_large_query_pools != 0);
+        log::info!("present_with_command_buffer = {}", self.present_with_command_buffer != 0);
+        log::info!("swapchain_min_mag_filter_use_nearest = {}", self.swapchain_min_mag_filter_use_nearest != 0);
+        log::info!("metal_compile_timeout = {}", self.metal_compile_timeout);
+        log::info!("performance_tracking = {}", self.performance_tracking != 0);
+        log::info!("performance_logging_frame_count = {}", self.performance_logging_frame_count);
+        log::info!("display_watermark = {}", self.display_watermark != 0);
+        log::info!("specialized_queue_families = {}", self.specialized_queue_families != 0);
+        log::info!("switch_system_gpu = {}", self.switch_system_gpu != 0);
+        log::info!("full_image_view_swizzle = {}", self.full_image_view_swizzle != 0);
+        log::info!("default_gpu_capture_scope_queue_family_index = {}", self.default_gpu_capture_scope_queue_family_index);
+        log::info!("default_gpu_capture_scope_queue_index = {}", self.default_gpu_capture_scope_queue_index);
+        log::info!("fast_math_enabled = {}", self.fast_math_enabled);
+        log::info!("log_level = {}", self.log_level);
+        log::info!("trace_vulkan_calls = {}", self.trace_vulkan_calls);
+        log::info!("force_low_power_gpu = {}", self.force_low_power_gpu != 0);
+        log::info!("semaphore_use_mtl_fence = {}", self.semaphore_use_mtl_fence != 0);
+        log::info!("semaphore_support_style = {}", self.semaphore_support_style);
+        log::info!("auto_gpu_capture_scope = {}", self.auto_gpu_capture_scope);
+        log::info!("auto_gpu_capture_output_filepath = {}", self_auto_gpu_capture_output_filepath);
+        log::info!("texture1d_as_2d = {}", self.texture1d_as_2d != 0);
+        log::info!("preallocate_descriptors = {}", self.preallocate_descriptors != 0);
+        log::info!("use_command_pooling = {}", self.use_command_pooling != 0);
+        log::info!("use_mtl_heapBool = {}", self.use_mtl_heap != 0);
+        log::info!("activity_performance_logging_style = {}", self.activity_performance_logging_style);
+        log::info!("api_version_to_advertise = {}", self.api_version_to_advertise);
+        log::info!("advertise_extensions = {:?}", self.advertise_extensions);
+        log::info!("resume_lost_device = {}", self.resume_lost_device != 0);
+        log::info!("use_metal_argument_buffers = {}", self.use_metal_argument_buffers);
+        log::info!("shader_source_compression_algorithm = {}", self.shader_source_compression_algorithm);
+    }
 }
 
 /// Populates the pConfiguration structure with the current MoltenVK configuration settings.
