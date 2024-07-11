@@ -31,6 +31,7 @@ use std::ops::Deref;
 
 use aleph_rhi_api::*;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
+use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
 use interfaces::plugin::*;
@@ -143,8 +144,8 @@ impl IPlugin for PluginRender {
             swap_images,
         };
         schedule.add_exclusive_at_start_system_to_stage(
-            &CoreStage::Render,
-            "render::render",
+            CoreStage::Render.into(),
+            make_label!("render::render"),
             move || {
                 device.garbage_collect();
 

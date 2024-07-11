@@ -32,6 +32,7 @@ use std::ops::Deref;
 
 use egui::ClippedPrimitive;
 use interfaces::any::{AnyArc, IAny};
+use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::{
     IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider, IMouseProvider,
@@ -126,8 +127,8 @@ impl IPlugin for PluginEgui {
         let pre_update_window = window.clone();
         let pre_update_events = events.clone();
         schedule.add_exclusive_at_start_system_to_stage(
-            &CoreStage::PreUpdate,
-            "egui::pre_update",
+            CoreStage::PreUpdate.into(),
+            make_label!("egui::pre_update"),
             move || {
                 let context_provider = pre_update_ctx.deref();
                 let window = pre_update_window.deref();
@@ -145,8 +146,8 @@ impl IPlugin for PluginEgui {
         let post_update_ctx = context_provider.clone();
         let post_update_window = window.clone();
         schedule.add_exclusive_at_start_system_to_stage(
-            &CoreStage::PostUpdate,
-            "egui::post_update",
+            CoreStage::PostUpdate.into(),
+            make_label!("egui::post_update"),
             move || {
                 let render_data = post_update_rnd.deref();
                 let context_provider = post_update_ctx.deref();

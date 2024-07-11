@@ -30,6 +30,7 @@
 use std::any::TypeId;
 
 use interfaces::any::{AnyArc, IAny};
+use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::IFrameTimerProvider;
 use interfaces::plugin::{
@@ -78,8 +79,8 @@ impl IPlugin for PluginPlatformHeadless {
 
         let send_provider = provider.clone();
         schedule.add_system_to_stage(
-            &CoreStage::InputCollection,
-            "platform_headless::input_collection",
+            CoreStage::InputCollection.into(),
+            make_label!("platform_headless::input_collection"),
             move || {
                 send_provider.frame_timer.update();
             },

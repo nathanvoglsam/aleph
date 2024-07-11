@@ -36,6 +36,8 @@ pub use aleph_ecs::scheduler::*;
 use crate::any::IAny;
 use crate::label::Label;
 
+use label::make_label;
+
 ///
 /// This trait is used to provide the engine with a central [Schedule] object to schedule work onto.
 ///
@@ -160,8 +162,21 @@ pub enum CoreStage {
     Render,
 }
 
-impl Label for CoreStage {
-    fn dyn_clone(&self) -> Box<dyn Label> {
-        Box::new(*self)
+impl CoreStage {
+    pub const fn to_label(self) -> Label {
+        match self {
+            CoreStage::InputCollection => make_label!("aleph_ecs::CoreStage::InputCollection"),
+            CoreStage::PreUpdate => make_label!("aleph_ecs::CoreStage::PreUpdate"),
+            CoreStage::Update => make_label!("aleph_ecs::CoreStage::Update"),
+            CoreStage::PostUpdate => make_label!("aleph_ecs::CoreStage::PostUpdate"),
+            CoreStage::Render => make_label!("aleph_ecs::CoreStage::Render"),
+        }
+    }
+}
+
+impl Into<Label> for CoreStage {
+    #[inline(always)]
+    fn into(self) -> Label {
+        self.to_label()
     }
 }

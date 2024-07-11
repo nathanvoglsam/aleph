@@ -50,10 +50,7 @@ pub struct SystemBox<T> {
 }
 
 impl SystemBox<SystemCell> {
-    pub fn new<S: System<In = (), Out = ()> + Send + Sync>(
-        label: Box<dyn Label>,
-        system: S,
-    ) -> Self {
+    pub fn new<S: System<In = (), Out = ()> + Send + Sync>(label: Label, system: S) -> Self {
         assert!(SystemCell::is_lock_free());
         Self {
             system: SystemCell::new(Some(Box::new(Box::new(system)))),
@@ -64,7 +61,7 @@ impl SystemBox<SystemCell> {
 }
 
 impl SystemBox<ExclusiveSystemCell> {
-    pub fn new_exclusive<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
+    pub fn new_exclusive<S: System<In = (), Out = ()>>(label: Label, system: S) -> Self {
         Self {
             system: ExclusiveSystemCell::new(Some(Box::new(Box::new(system)))),
             access: SystemAccessDescriptor::new(label),

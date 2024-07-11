@@ -103,10 +103,10 @@ pub trait AccessDescriptor: 'static {
     fn writes_resource_with_id(&mut self, resource: ResourceId);
 
     /// Caller uses this to declare the label of another system that `self` should run before
-    fn runs_before_label(&mut self, system: Box<dyn Label>);
+    fn runs_before_label(&mut self, system: Label);
 
     /// Caller uses this to declare the label of another system that `self` should run after
-    fn runs_after_label(&mut self, system: Box<dyn Label>);
+    fn runs_after_label(&mut self, system: Label);
 }
 
 impl dyn AccessDescriptor {
@@ -135,12 +135,12 @@ impl dyn AccessDescriptor {
     }
 
     /// Generic wrapper around [`AccessDescriptor::runs_before_label`] that handles boxing the label
-    pub fn runs_before(&mut self, system: impl Label) {
-        self.runs_before_label(Box::new(system))
+    pub fn runs_before(&mut self, system: Label) {
+        self.runs_before_label(system)
     }
 
     /// Generic wrapper around [`AccessDescriptor::runs_after_label`] that handles boxing the label
-    pub fn runs_after(&mut self, system: impl Label) {
-        self.runs_after_label(Box::new(system))
+    pub fn runs_after(&mut self, system: Label) {
+        self.runs_after_label(system)
     }
 }

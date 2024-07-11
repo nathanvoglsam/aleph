@@ -37,6 +37,7 @@ use aleph::interfaces::plugin::{
 };
 use aleph::interfaces::schedule::{CoreStage, IScheduleProvider};
 use aleph::Engine;
+use aleph_engine::interfaces::label::make_label;
 
 struct PluginGameLogic();
 
@@ -70,8 +71,8 @@ impl IPlugin for PluginGameLogic {
         let mut schedule = schedule_cell.get();
 
         schedule.add_exclusive_at_start_system_to_stage(
-            &CoreStage::Render,
-            "platform_headless::input_collection",
+            CoreStage::Render.into(),
+            make_label!("aleph_test::ui"),
             move || {
                 if let Some(egui) = egui_provider.as_ref() {
                     let egui_ctx = egui.get_context();

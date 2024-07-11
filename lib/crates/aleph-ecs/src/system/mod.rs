@@ -148,23 +148,23 @@ pub trait ExplicitDependencies {
 
     /// This adds an explicit dependency where the system `self` will finish executing before
     /// another system denoted by the [`Label`] `l` can start executing.
-    fn runs_before<L: Label>(self, l: L) -> RunsBeforeSystem<Self::OutSystem, L>;
+    fn runs_before(self, l: Label) -> RunsBeforeSystem<Self::OutSystem>;
 
     /// This adds an explicit dependency where the system `self` will only begin executing after
     /// another system denoted by the [`Label`] `l` has finished executing.
-    fn runs_after<L: Label>(self, l: L) -> RunsAfterSystem<Self::OutSystem, L>;
+    fn runs_after(self, l: Label) -> RunsAfterSystem<Self::OutSystem>;
 }
 
 impl<S: System + Sized> ExplicitDependencies for S {
     type OutSystem = S;
 
     #[inline]
-    fn runs_before<L: Label>(self, l: L) -> RunsBeforeSystem<S, L> {
+    fn runs_before(self, l: Label) -> RunsBeforeSystem<S> {
         RunsBeforeSystem { s: self, l }
     }
 
     #[inline]
-    fn runs_after<L: Label>(self, l: L) -> RunsAfterSystem<S, L> {
+    fn runs_after(self, l: Label) -> RunsAfterSystem<S> {
         RunsAfterSystem { s: self, l }
     }
 }
@@ -173,18 +173,18 @@ impl<S: System + Sized> ExplicitDependencies for S {
 
 /// A wrapper for some other [`System`] implementation that injects an explicit "runs before"
 /// dependency into [`System::declare_access`].
-pub struct RunsBeforeSystem<S: System + Sized, L: Label> {
+pub struct RunsBeforeSystem<S: System + Sized> {
     s: S,
-    l: L,
+    l: Label,
 }
 
-impl<S: System, L: Label> System for RunsBeforeSystem<S, L> {
+impl<S: System> System for RunsBeforeSystem<S> {
     type In = S::In;
     type Out = S::Out;
 
     #[inline]
     fn declare_access(&mut self, access: &mut dyn AccessDescriptor) {
-        access.runs_before_label(self.l.dyn_clone());
+        access.runs_before_label(self.l);
         self.s.declare_access(access);
     }
 
@@ -198,18 +198,18 @@ impl<S: System, L: Label> System for RunsBeforeSystem<S, L> {
 
 /// A wrapper for some other [`System`] implementation that injects an explicit "runs after"
 /// dependency into [`System::declare_access`].
-pub struct RunsAfterSystem<S: System + Sized, L: Label> {
+pub struct RunsAfterSystem<S: System + Sized> {
     s: S,
-    l: L,
+    l: Label,
 }
 
-impl<S: System, L: Label> System for RunsAfterSystem<S, L> {
+impl<S: System> System for RunsAfterSystem<S> {
     type In = S::In;
     type Out = S::Out;
 
     #[inline]
     fn declare_access(&mut self, access: &mut dyn AccessDescriptor) {
-        access.runs_after_label(self.l.dyn_clone());
+        access.runs_after_label(self.l);
         self.s.declare_access(access);
     }
 

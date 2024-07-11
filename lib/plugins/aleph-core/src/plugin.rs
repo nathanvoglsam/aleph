@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::io::BufReader;
 use std::net::TcpStream;
 
-use aleph_label::Label;
+use aleph_label::{make_label, Label};
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
 use interfaces::plugin::{
@@ -95,12 +95,12 @@ impl PluginCore {
         let core_schedule = SystemSchedule::default();
 
         let mut schedule = Schedule::default();
-        schedule.add_stage(InternalStage::Core, core_schedule);
-        schedule.add_stage(CoreStage::InputCollection, SystemSchedule::default());
-        schedule.add_stage(CoreStage::PreUpdate, SystemSchedule::default());
-        schedule.add_stage(CoreStage::Update, SystemSchedule::default());
-        schedule.add_stage(CoreStage::PostUpdate, SystemSchedule::default());
-        schedule.add_stage(CoreStage::Render, SystemSchedule::default());
+        schedule.add_stage(InternalStage::Core.into(), core_schedule);
+        schedule.add_stage(CoreStage::InputCollection.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::PreUpdate.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::Update.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::PostUpdate.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::Render.into(), SystemSchedule::default());
 
         let world_provider = AnyArc::new(WorldProvider::new());
         let schedule_provider = AnyArc::new(ScheduleProvider::new(schedule));
@@ -162,9 +162,18 @@ enum InternalStage {
     Core,
 }
 
-impl Label for InternalStage {
-    fn dyn_clone(&self) -> Box<dyn Label> {
-        Box::new(*self)
+impl InternalStage {
+    pub const fn to_label(self) -> Label {
+        match self {
+            InternalStage::Core => make_label!("aleph-core::InternalState::Core"),
+        }
+    }
+}
+
+impl Into<Label> for InternalStage {
+    #[inline(always)]
+    fn into(self) -> Label {
+        self.to_label()
     }
 }
 

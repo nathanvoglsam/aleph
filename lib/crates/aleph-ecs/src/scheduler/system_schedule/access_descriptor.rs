@@ -39,7 +39,7 @@ use crate::world::{ComponentTypeId, ResourceId};
 ///
 pub struct SystemAccessDescriptor {
     /// The label of the system we're collecting access for currently
-    pub label: Box<dyn Label>,
+    pub label: Label,
 
     /// Stores all component types that are read by a given system
     pub component_reads: HashSet<ComponentTypeId>,
@@ -54,14 +54,14 @@ pub struct SystemAccessDescriptor {
     pub resource_writes: HashSet<ResourceId>,
 
     /// Stores the labels of all systems that must run before the system this descriptor is for
-    pub runs_before: HashSet<Box<dyn Label>>,
+    pub runs_before: HashSet<Label>,
 
     /// Stores the labels of all systems that must run after the system this descriptor is for
-    pub runs_after: HashSet<Box<dyn Label>>,
+    pub runs_after: HashSet<Label>,
 }
 
 impl SystemAccessDescriptor {
-    pub fn new(label: Box<dyn Label>) -> Self {
+    pub fn new(label: Label) -> Self {
         Self {
             label,
             component_reads: Default::default(),
@@ -144,11 +144,11 @@ impl AccessDescriptor for SystemAccessDescriptor {
         );
     }
 
-    fn runs_before_label(&mut self, system: Box<dyn Label>) {
+    fn runs_before_label(&mut self, system: Label) {
         self.runs_before.insert(system);
     }
 
-    fn runs_after_label(&mut self, system: Box<dyn Label>) {
+    fn runs_after_label(&mut self, system: Label) {
         self.runs_after.insert(system);
     }
 }

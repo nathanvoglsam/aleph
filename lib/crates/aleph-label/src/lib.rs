@@ -27,93 +27,84 @@
 // SOFTWARE.
 //
 
-use std::any::Any;
-use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::ffi::CStr;
 
-///
-/// The generic interface expected of types that can be used as a label. A label is just a generic
-/// identifier or name that can be used in some context to identify something.
-///
-/// For example, the scheduler uses labels to identify execution stages.
-///
-/// A dynamic, generic system is more friendly to FFI bindings where special FFI friendly
-/// implementations of [`Label`] can be created while rust friendly interfaces can be used by pure
-/// rust code.
-///
-pub trait Label: DynHash + Debug + Send + Sync + 'static {
-    #[doc(hidden)]
-    fn dyn_clone(&self) -> Box<dyn Label>;
+#[macro_export]
+macro_rules! make_label {
+    ($v:literal) => {
+        unsafe { $crate::Label::new(concat!($v, "\0")) }
+    };
 }
 
-impl PartialEq for dyn Label {
-    fn eq(&self, other: &Self) -> bool {
-        self.dyn_eq(other.as_dyn_eq())
-    }
-}
+#[repr(transparent)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Label(&'static str);
 
-impl Eq for dyn Label {}
-
-impl Hash for dyn Label {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.dyn_hash(state);
-    }
-}
-
-impl Clone for Box<dyn Label> {
-    fn clone(&self) -> Self {
-        self.dyn_clone()
-    }
-}
-
-impl Label for &'static str {
-    fn dyn_clone(&self) -> Box<dyn Label> {
-        Box::new(<&str>::clone(self))
-    }
-}
-
-///
-/// Support trait used by [`Label`]
-///
-pub trait DynEq: Any {
-    /// Get `self` as [`Any`]
-    fn as_any(&self) -> &dyn Any;
-
-    /// Compare `self` with `other`.
-    fn dyn_eq(&self, other: &dyn DynEq) -> bool;
-}
-
-impl<T: Any + Eq> DynEq for T {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn dyn_eq(&self, other: &dyn DynEq) -> bool {
-        if let Some(other) = other.as_any().downcast_ref::<T>() {
-            return self == other;
+impl Label {
+    /// Constructs a new [Label2] instance from the given string.
+    ///
+    /// # Safety
+    ///
+    /// The given string __must__ be static string literal. A string allocated on the heap and
+    /// leaked is _not_ safe to use and violates assumptions users of [Label2] are allowed to make.
+    ///
+    /// The label must also be null-terminated. An empty string is encoded by a single null byte.
+    ///
+    /// # Why
+    ///
+    /// These labels may be passed to profiling instrumentation that requires string literals to
+    /// be used.
+    pub const unsafe fn new(v: &'static str) -> Self {
+        assert!(v.len() >= 1);
+        match CStr::from_bytes_with_nul(v.as_bytes()) {
+            Ok(_) => {}
+            Err(_e) => {
+                panic!("Label is not null terminated!");
+            }
         }
-        false
+        Self(v)
+    }
+
+    pub const fn to_str(self) -> &'static str {
+        // Safety: It's illegal to construct a Label that isn't a null terminated string so there
+        //         will always be a zero byte to drop. Sometimes we will give out the empty string
+        //         though, but that is 100% okay.
+        unsafe {
+            let bytes = self.0.as_bytes();
+            let bytes = CStr::from_bytes_with_nul_unchecked(bytes);
+
+            match bytes.to_str() {
+                Ok(v) => v,
+                Err(_) => {
+                    unreachable!()
+                }
+            }
+        }
+    }
+
+    pub const fn to_cstr(self) -> &'static CStr {
+        // Safety: It's illegal to construct a Label that isn't a valid CStr
+        unsafe { CStr::from_bytes_with_nul_unchecked(self.0.as_bytes()) }
     }
 }
 
-///
-/// Support trait used by [`Label`]
-///
-pub trait DynHash: DynEq {
-    /// Get `self` as [`DynEq`]
-    fn as_dyn_eq(&self) -> &dyn DynEq;
-
-    /// Dynamic version of [`Hash::hash`]
-    fn dyn_hash(&self, state: &mut dyn Hasher);
+impl Default for Label {
+    #[inline(always)]
+    fn default() -> Self {
+        make_label!("")
+    }
 }
 
-impl<T: DynEq + Hash> DynHash for T {
-    fn as_dyn_eq(&self) -> &dyn DynEq {
-        self
+impl std::fmt::Debug for Label {
+    #[inline(always)]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self.to_str(), f)
     }
+}
 
-    fn dyn_hash(&self, mut state: &mut dyn Hasher) {
-        T::hash(self, &mut state);
-        self.type_id().hash(&mut state);
+impl std::fmt::Display for Label {
+    #[inline(always)]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.to_str(), f)
     }
 }

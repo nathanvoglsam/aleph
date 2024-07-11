@@ -34,6 +34,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use interfaces::any::{AnyArc, IAny};
+use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IGamepadsProvider,
@@ -207,8 +208,8 @@ impl IPlugin for PluginPlatformSDL2 {
         let send_sdl = self.sdl.clone();
         let send_quit_handle = registry.quit_handle();
         schedule.add_exclusive_at_start_system_to_stage(
-            &CoreStage::InputCollection,
-            "platform_sdl2::input_collection",
+            CoreStage::InputCollection.into(),
+            make_label!("platform_sdl2::input_collection"),
             move || {
                 let provider = send_provider.deref();
                 let sdl_cell = send_sdl.deref();

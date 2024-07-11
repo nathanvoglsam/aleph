@@ -51,7 +51,7 @@ pub struct SystemChannel<T: GenericSystemCell> {
 
     /// Maps a label to the system it was registered with. Accelerates looking up a system by label
     /// as well as accelerating duplicate label checks.
-    pub system_label_map: HashMap<Box<dyn Label>, usize>,
+    pub system_label_map: HashMap<Label, usize>,
 
     /// This caches the list of root tasks where execution should start from
     pub root_systems: Vec<usize>,
@@ -64,19 +64,16 @@ impl SystemChannel<SystemCell> {
         S: IntoSystem<(), (), Param, System = T>,
     >(
         &mut self,
-        label: impl Label,
+        label: Label,
         system: S,
     ) {
-        let label: Box<dyn Label> = Box::new(label);
-
         // Push the new system into the system list, capturing the index it will be inserted into
         let index = self.systems.len();
-        self.systems
-            .push(SystemBox::new(label.clone(), system.system()));
+        self.systems.push(SystemBox::new(label, system.system()));
 
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)
-        if self.system_label_map.insert(label.clone(), index).is_some() {
+        if self.system_label_map.insert(label, index).is_some() {
             panic!("System already exists: {label:?}.");
         }
     }
@@ -89,19 +86,17 @@ impl SystemChannel<ExclusiveSystemCell> {
         S: IntoSystem<(), (), Param, System = T>,
     >(
         &mut self,
-        label: impl Label,
+        label: Label,
         system: S,
     ) {
-        let label: Box<dyn Label> = Box::new(label);
-
         // Push the new system into the system list, capturing the index it will be inserted into
         let index = self.systems.len();
         self.systems
-            .push(SystemBox::new_exclusive(label.clone(), system.system()));
+            .push(SystemBox::new_exclusive(label, system.system()));
 
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)
-        if self.system_label_map.insert(label.clone(), index).is_some() {
+        if self.system_label_map.insert(label, index).is_some() {
             panic!("System already exists: {label:?}.");
         }
     }

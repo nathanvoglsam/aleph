@@ -62,7 +62,7 @@ impl SystemSchedule {
         S: IntoSystem<(), (), Param, System = T>,
     >(
         &mut self,
-        label: impl Label,
+        label: Label,
         system: S,
     ) -> &mut Self {
         self.dirty = true;
@@ -76,7 +76,7 @@ impl SystemSchedule {
         S: IntoSystem<(), (), Param, System = T>,
     >(
         &mut self,
-        label: impl Label,
+        label: Label,
         system: S,
     ) -> &mut Self {
         self.dirty = true;
@@ -90,7 +90,7 @@ impl SystemSchedule {
         S: IntoSystem<(), (), Param, System = T>,
     >(
         &mut self,
-        label: impl Label,
+        label: Label,
         system: S,
     ) -> &mut Self {
         self.dirty = true;
