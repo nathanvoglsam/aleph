@@ -128,16 +128,16 @@ impl SwapChain {
         queues: &[ID3D12CommandQueue],
     ) -> windows::core::Result<()> {
         // Input validation
-        debug_assert!(
+        assert!(
             queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
             "queues len must be <= 16"
         );
-        debug_assert_eq!(
+        assert_eq!(
             queues.len(),
             buffer_count as usize,
             "queues len must == buffer count if buffer count != 0"
         );
-        debug_assert!(
+        assert!(
             buffer_count <= DXGI_MAX_SWAP_CHAIN_BUFFERS,
             "can't have more than 16 swap chain buffers"
         );
