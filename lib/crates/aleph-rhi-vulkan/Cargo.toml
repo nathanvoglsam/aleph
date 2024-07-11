@@ -61,6 +61,7 @@ libloading = { workspace = true }
 console = { workspace = true }
 byteorder = { workspace = true }
 allocator-api2 = { workspace = true }
+profiling = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

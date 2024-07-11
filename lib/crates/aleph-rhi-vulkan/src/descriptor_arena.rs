@@ -52,6 +52,7 @@ impl IGetPlatformInterface for DescriptorArena {
     }
 }
 
+#[profiling::all_functions]
 impl IDescriptorArena for DescriptorArena {
     fn allocate_set(
         &self,
