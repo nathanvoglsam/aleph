@@ -154,13 +154,15 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             // Unpack the wait group to explicitly drop it to "use" it
             let wg = payload.wg;
 
+            // SAFETY: This is unsafe to call in the event of unsafe implementations of System
+            //         that do not access world according to their access flags. If a System
+            //         does correctly respect its access declarations then the work scheduler
+            //         ensures that aliasing requirements will be upheld, making this safe to
+            //         call. This is only unsafe in the presence of other unsafe code.
             unsafe {
-                // SAFETY: This is unsafe to call in the event of unsafe implementations of System
-                //         that do not access world according to their access flags. If a System
-                //         does correctly respect its access declarations then the work scheduler
-                //         ensures that aliasing requirements will be upheld, making this safe to
-                //         call. This is only unsafe in the presence of other unsafe code.
-                systems[system_index].system.execute(world);
+                let system = &systems[system_index];
+                profiling::scope!(system.access.label.to_str());
+                system.system.execute(world);
             }
 
             // Update the "done" flag now that the system has executed
@@ -236,7 +238,11 @@ impl<C: GenericSystemCell> SystemChannel<C> {
                 }
 
                 // Execute the system
-                self.systems[system_index].system.execute_safe(world);
+                {
+                    let system = &self.systems[system_index];
+                    profiling::scope!(system.access.label.to_str());
+                    system.system.execute_safe(world);
+                }
 
                 // Update the "done" flag now that the system has executed
                 done[system_index] = true;

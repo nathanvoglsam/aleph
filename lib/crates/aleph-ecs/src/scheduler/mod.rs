@@ -310,8 +310,9 @@ impl Schedule {
     #[inline]
     pub fn run_once(&mut self, world: &mut World) {
         for label in self.stage_order.iter() {
-            let stage = self.stages.get_mut(&label).unwrap();
+            let stage = self.stages.get_mut(label).unwrap();
             unsafe {
+                profiling::scope!(label.to_str());
                 stage.as_mut().run(world);
             }
         }
@@ -332,7 +333,7 @@ impl Schedule {
         self.stage_order
             .iter()
             .enumerate()
-            .find(|(_i, stage_label)| **stage_label == target )
+            .find(|(_i, stage_label)| **stage_label == target)
             .map(|(i, _)| i)
             .unwrap_or_else(|| panic!("Target stage does not exist: {target:?}."))
     }

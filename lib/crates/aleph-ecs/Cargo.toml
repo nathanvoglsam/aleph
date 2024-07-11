@@ -49,4 +49,4 @@ aleph-label = { workspace = true }
 bumpalo = { workspace = true }
 crossbeam = { workspace = true }
 rayon = { workspace = true }
-
+profiling = { workspace = true }
