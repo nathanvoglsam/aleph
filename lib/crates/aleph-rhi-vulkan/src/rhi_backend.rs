@@ -281,10 +281,8 @@ impl RhiBackend {
 
             // Safety: If the cstr inside isn't valid even though we just got it from the runtime
             //         we're hosed so assume it's good.
-            unsafe {
-                log::info!("== MOLTEN-VK SETTINGS ==");
-                config.log();
-            }
+            log::info!("== MOLTEN-VK SETTINGS ==");
+            config.log();
 
             let mut size = std::mem::size_of_val(&config);
             let result = set_fn(vk::Instance::null(), &config, &mut size);

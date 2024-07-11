@@ -195,7 +195,7 @@ impl SwapChain {
         let extents = Self::select_extents(config, &capabilities)?;
         let present_mode = Self::select_presentation_mode(config, &present_modes);
         let (format, color_space) = Self::select_format_and_color_space(config, &formats)?;
-        let buffer_count = Self::select_buffer_count(present_mode, &capabilities);
+        let buffer_count = Self::select_buffer_count(config.buffer_count, &capabilities);
 
         let image_usage = vk::ImageUsageFlags::COLOR_ATTACHMENT
             | vk::ImageUsageFlags::TRANSFER_DST
@@ -283,19 +283,12 @@ impl SwapChain {
         Ok(())
     }
 
-    fn select_buffer_count(
-        present_mode: vk::PresentModeKHR,
-        capabilities: &vk::SurfaceCapabilitiesKHR,
-    ) -> u32 {
-        let buffer_count = match present_mode {
-            vk::PresentModeKHR::IMMEDIATE => 2,
-            vk::PresentModeKHR::MAILBOX => 3,
-            vk::PresentModeKHR::FIFO | vk::PresentModeKHR::FIFO_RELAXED => 2,
-            _ => unreachable!(),
-        };
-        buffer_count
+    fn select_buffer_count(wanted: u32, capabilities: &vk::SurfaceCapabilitiesKHR) -> u32 {
+        let count = wanted
             .min(capabilities.max_image_count)
-            .max(capabilities.min_image_count)
+            .max(capabilities.min_image_count);
+        log::info!("Wanted buffer_count = '{wanted}'. Got buffer_count = '{count}'.");
+        count
     }
 
     fn select_format_and_color_space(
@@ -330,7 +323,7 @@ impl SwapChain {
         ) {
             // Size we want is allowed in this case
             (u32::MAX, u32::MAX) => {
-                log::trace!(
+                log::info!(
                     "Selecting exact width/height ({}, {})",
                     config.width,
                     config.height
@@ -342,7 +335,7 @@ impl SwapChain {
             }
             // Otherwise only the exact size here is allowed
             (width, height) => {
-                log::trace!(
+                log::info!(
                     "Requested width/height unsupported ({}, {}), using ({}, {})",
                     config.width,
                     config.height,
@@ -379,10 +372,10 @@ impl SwapChain {
 
         // Give the user exactly the mode they want, or fallback to FIFO
         if present_modes.contains(&wanted_mode) {
-            log::trace!("Got wanted presentation mode {}", config.present_mode);
+            log::info!("Got wanted presentation mode {}", config.present_mode);
             wanted_mode
         } else {
-            log::trace!(
+            log::info!(
                 "Wanted presentation mode unsupported '{}', falling back to FIFO. Options {:?}",
                 config.present_mode,
                 present_modes
