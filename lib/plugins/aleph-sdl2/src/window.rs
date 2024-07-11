@@ -163,6 +163,11 @@ impl WindowImpl {
             window.metal_view();
         }
 
+        #[cfg(any(target_os = "ios", target_os = "android"))]
+        {
+            window.fullscreen();
+        }
+
         let mut window = window.build().expect("Failed to create window");
 
         let display_index = window.display_index().unwrap();
