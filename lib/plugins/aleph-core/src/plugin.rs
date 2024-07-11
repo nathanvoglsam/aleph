@@ -165,7 +165,7 @@ enum InternalStage {
 impl InternalStage {
     pub const fn to_label(self) -> Label {
         match self {
-            InternalStage::Core => make_label!("aleph-core::InternalState::Core"),
+            InternalStage::Core => make_label!("aleph-core::InternalStage::Core"),
         }
     }
 }
