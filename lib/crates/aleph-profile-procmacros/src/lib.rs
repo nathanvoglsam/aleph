@@ -132,10 +132,7 @@ pub fn all_functions(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[cfg(not(any(
-    feature = "profile-with-puffin",
-    feature = "profile-with-optick",
     feature = "profile-with-superluminal",
-    feature = "profile-with-tracing",
     feature = "profile-with-tracy"
 )))]
 fn impl_block(body: &syn::Block, _instrumented_function_name: &str) -> syn::Block {
@@ -150,7 +147,7 @@ fn impl_block(body: &syn::Block, _instrumented_function_name: &str) -> syn::Bloc
 fn impl_block(body: &syn::Block, instrumented_function_name: &str) -> syn::Block {
     parse_quote! {
         {
-            let _superluminal_guard = aleph_profile::superluminal::SuperluminalGuard::new(#instrumented_function_name);
+            let _superluminal_guard = aleph_profile::detail::Guard::new(#instrumented_function_name);
 
             #body
         }

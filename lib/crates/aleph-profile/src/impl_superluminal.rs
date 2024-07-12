@@ -88,15 +88,15 @@ pub mod detail {
 
     impl Guard {
         #[inline(always)]
-        pub fn new(name: &str) -> Self {
+        pub fn new(name: &'static str) -> Self {
             superluminal_perf::begin_event(name);
-            SuperluminalGuard
+            Guard
         }
 
         #[inline(always)]
-        pub fn new_with_data(name: &str, data: &str) -> Self {
+        pub fn new_with_data(name: &'static str, data: &str) -> Self {
             superluminal_perf::begin_event_with_data(name, data, DEFAULT_SUPERLUMINAL_COLOR);
-            SuperluminalGuard
+            Guard
         }
     }
 
