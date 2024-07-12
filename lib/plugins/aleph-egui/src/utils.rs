@@ -203,12 +203,16 @@ pub fn translate_mouse_event(
             Some(event)
         }
         MouseEvent::MouseWheel(e) => {
-            let scroll = if matches!(e.direction, MouseWheelDirection::Normal) {
+            let delta = if matches!(e.direction, MouseWheelDirection::Normal) {
                 egui::Vec2::new(e.x as f32, e.y as f32)
             } else {
                 egui::Vec2::new(-e.x as f32, -e.y as f32)
             };
-            let event = egui::Event::Scroll(scroll);
+            let event = egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Line,
+                delta,
+                modifiers: *modifiers,
+            };
             Some(event)
         }
     }

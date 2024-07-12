@@ -145,7 +145,7 @@ impl IPlugin for PluginEgui {
         let post_update_rnd = render_data.clone();
         let post_update_ctx = context_provider.clone();
         let post_update_window = window.clone();
-        schedule.add_exclusive_at_start_system_to_stage(
+        schedule.add_exclusive_at_end_system_to_stage(
             CoreStage::PostUpdate.into(),
             make_label!("egui::post_update"),
             move || {

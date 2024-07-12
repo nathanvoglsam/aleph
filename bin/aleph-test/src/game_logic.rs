@@ -71,7 +71,7 @@ impl IPlugin for PluginGameLogic {
         let mut schedule = schedule_cell.get();
 
         schedule.add_exclusive_at_start_system_to_stage(
-            CoreStage::Render.into(),
+            CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
             move || {
                 if let Some(egui) = egui_provider.as_ref() {
