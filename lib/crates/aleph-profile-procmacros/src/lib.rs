@@ -131,10 +131,7 @@ pub fn all_functions(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-#[cfg(not(any(
-    feature = "profile-with-superluminal",
-    feature = "profile-with-tracy"
-)))]
+#[cfg(not(any(feature = "profile-with-superluminal", feature = "profile-with-tracy")))]
 fn impl_block(body: &syn::Block, _instrumented_function_name: &str) -> syn::Block {
     parse_quote! {
         {
