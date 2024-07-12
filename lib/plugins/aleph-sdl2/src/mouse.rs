@@ -68,7 +68,7 @@ impl MouseImpl {
     pub fn new() -> AnyArc<Self> {
         let out = Self {
             state: RwLock::new(MouseState {
-                pos: (0, 0),
+                pos: (0.0, 0.0),
                 buttons: 0,
             }),
             events: RwLock::new(Vec::new()),
@@ -132,13 +132,13 @@ impl MouseImpl {
             } => {
                 let event = MouseMotionEvent {
                     mouse_state: MouseState {
-                        pos: (mousestate.x(), mousestate.y()),
+                        pos: (mousestate.x() as f32, mousestate.y() as f32),
                         buttons: mousestate.to_sdl_state(),
                     },
-                    x,
-                    y,
-                    x_rel: xrel,
-                    y_rel: yrel,
+                    x: x as f32,
+                    y: y as f32,
+                    x_rel: xrel as f32,
+                    y_rel: yrel as f32,
                 };
                 let event = MouseEvent::MouseMotion(event);
                 mouse_events.push(event.clone());
@@ -162,8 +162,8 @@ impl MouseImpl {
                 let event = MouseButtonDownEvent {
                     button,
                     clicks,
-                    x,
-                    y,
+                    x: x as f32,
+                    y: y as f32,
                 };
                 let event = MouseEvent::MouseButtonDown(event);
                 mouse_events.push(event.clone());
@@ -187,8 +187,8 @@ impl MouseImpl {
                 let event = MouseButtonUpEvent {
                     button,
                     clicks,
-                    x,
-                    y,
+                    x: x as f32,
+                    y: y as f32,
                 };
                 let event = MouseEvent::MouseButtonUp(event);
                 mouse_events.push(event.clone());
@@ -218,7 +218,7 @@ impl MouseImpl {
         let state = sdl2::mouse::MouseState::new(event_pump);
 
         *self.state.write().deref_mut() = MouseState {
-            pos: (state.x(), state.y()),
+            pos: (state.x() as f32, state.y() as f32),
             buttons: state.to_sdl_state(),
         };
     }

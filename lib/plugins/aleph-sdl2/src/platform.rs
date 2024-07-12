@@ -122,6 +122,30 @@ impl IPlugin for PluginPlatformSDL2 {
         #[cfg(windows)]
         {
             sdl2::hint::set("SDL_WINDOWS_DPI_SCALING", "1");
+            // TODO: oh boy
+            // SDL2's DPI scaling stuff on windows is _problematic_. When using the "DPI_SCALING"
+            // mode SDL2 will apply all the scaling into logical points inside the backend before
+            // giving them to us. That's fine, but unfortunately this is all done with integers.
+            // Guess what happens when fractional scaling is turned on? If you bet truncated output
+            // you'd be _very_ correct!!!!
+            //
+            // SDL3 is better and uses floats for the positions so you can get fractional positions
+            // and scales. We _can_ work around this ourselves by using this alternative hint.
+            //
+            // sdl2::hint::set("SDL_WINDOWS_DPI_AWARENESS", "permonitorv2");
+            //
+            // This enables DPI awareness the same as the DPI_SCALING hint but doesn't apply any
+            // scaling to the numbers we get from SDL. We have to do this ourselves, but critically
+            // we get to convert to float and do the scaling right with fractional values.
+            //
+            // This can cause a few problems
+            // - Artificially restricted input resolution as it will snap to integer mouse
+            //   positions.
+            // - Egui breaks as it can't cope with the rounding errors introduced by SDL2's scaling.
+            //
+            // Solving this should be possible by just looking at SDL2 and doing all the same
+            // scaling but in floats. Mouse positions etc are fine but I'm not so sure about window
+            // coordinates.
         }
 
         log::info!("Initializing SDL2 Library");

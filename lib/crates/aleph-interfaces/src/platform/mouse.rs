@@ -152,10 +152,10 @@ pub enum MouseWheelDirection {
 #[derive(Clone, Debug)]
 pub struct MouseMotionEvent {
     pub mouse_state: MouseState,
-    pub x: i32,
-    pub y: i32,
-    pub x_rel: i32,
-    pub y_rel: i32,
+    pub x: f32,
+    pub y: f32,
+    pub x_rel: f32,
+    pub y_rel: f32,
 }
 
 ///
@@ -165,8 +165,8 @@ pub struct MouseMotionEvent {
 pub struct MouseButtonDownEvent {
     pub button: MouseButton,
     pub clicks: u8,
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
 }
 
 ///
@@ -176,8 +176,8 @@ pub struct MouseButtonDownEvent {
 pub struct MouseButtonUpEvent {
     pub button: MouseButton,
     pub clicks: u8,
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
 }
 
 ///
@@ -195,7 +195,7 @@ pub struct MouseWheelEvent {
 ///
 #[derive(Clone, Debug)]
 pub struct MouseState {
-    pub pos: (i32, i32),
+    pub pos: (f32, f32),
     pub buttons: u32,
 }
 
@@ -203,7 +203,7 @@ impl MouseState {
     ///
     /// Get the position of the mouse
     ///
-    pub fn pos(&self) -> (i32, i32) {
+    pub fn pos(&self) -> (f32, f32) {
         self.pos
     }
 

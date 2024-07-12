@@ -176,12 +176,12 @@ pub fn translate_mouse_event(
 ) -> Option<egui::Event> {
     match event {
         MouseEvent::MouseMotion(e) => {
-            let pos = egui::Pos2::new(e.x as f32, e.y as f32);
+            let pos = egui::Pos2::new(e.x, e.y);
             let event = egui::Event::PointerMoved(pos);
             Some(event)
         }
         MouseEvent::MouseButtonDown(e) => {
-            let pos = egui::Pos2::new(e.x as f32, e.y as f32);
+            let pos = egui::Pos2::new(e.x, e.y);
             let button = translate_mouse_button(&e.button)?;
             let event = egui::Event::PointerButton {
                 pos,
@@ -192,7 +192,7 @@ pub fn translate_mouse_event(
             Some(event)
         }
         MouseEvent::MouseButtonUp(e) => {
-            let pos = egui::Pos2::new(e.x as f32, e.y as f32);
+            let pos = egui::Pos2::new(e.x, e.y);
             let button = translate_mouse_button(&e.button)?;
             let event = egui::Event::PointerButton {
                 pos,
