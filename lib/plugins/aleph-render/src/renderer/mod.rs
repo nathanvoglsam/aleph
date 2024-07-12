@@ -308,7 +308,6 @@ impl FontTexture {
         }
     }
 
-    #[profiling::function]
     #[inline(never)]
     fn apply_patch_to_font_texture(&mut self, font: &FontImage, pos: (usize, usize)) {
         // Handle a partial update
@@ -384,7 +383,6 @@ impl FontTexture {
         }
     }
 
-    #[profiling::function]
     #[inline(never)]
     fn apply_whole_to_font_texture(&mut self, font: &FontImage) {
         assert_eq!(font.width(), self.width);

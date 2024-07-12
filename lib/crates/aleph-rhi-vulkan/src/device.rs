@@ -89,7 +89,7 @@ impl IGetPlatformInterface for Device {
     }
 }
 
-#[profiling::all_functions]
+#[aleph_profile::all_functions]
 impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //

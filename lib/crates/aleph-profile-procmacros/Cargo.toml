@@ -1,0 +1,22 @@
+[package]
+name = "aleph-profile-procmacros"
+version = "0.1.0"
+authors.workspace = true
+description = "This crate provides a very thin abstraction over other profiler crates."
+license.workspace = true
+repository.workspace = true
+documentation = "https://docs.rs/aleph-profile-procmacros/"
+keywords = ["performance", "profiling"]
+categories = ["development-tools::profiling"]
+edition.workspace = true
+
+[dependencies]
+quote = { version = "1.0", default-features = false }
+syn = { version = "2.0", features = ["full"] }
+
+[lib]
+proc-macro=true
+
+[features]
+profile-with-superluminal = []
+profile-with-tracy = []

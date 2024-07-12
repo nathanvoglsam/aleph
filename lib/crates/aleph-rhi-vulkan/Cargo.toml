@@ -49,6 +49,8 @@ aleph-rhi-loader-api = { workspace = true }
 aleph-rhi-impl-utils = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
+aleph-profile = { workspace = true }
+
 log = { workspace = true }
 bitflags = { workspace = true }
 crossbeam = { workspace = true }
@@ -61,7 +63,6 @@ libloading = { workspace = true }
 console = { workspace = true }
 byteorder = { workspace = true }
 allocator-api2 = { workspace = true }
-profiling = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

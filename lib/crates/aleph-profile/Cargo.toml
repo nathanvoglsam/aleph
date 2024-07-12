@@ -1,0 +1,28 @@
+[package]
+name = "aleph-profile"
+version = "0.1.0"
+authors.workspace = true
+description = "This crate provides a very thin abstraction over other profiler crates."
+license.workspace = true
+repository.workspace = true
+documentation = "https://docs.rs/aleph-profile/"
+keywords = ["performance", "profiling"]
+categories = ["development-tools::profiling"]
+edition.workspace = true
+
+[dependencies]
+tracy-client = { workspace = true, optional = true }
+superluminal-perf = { workspace = true, optional = true }
+aleph-profile-procmacros = { workspace = true, optional = true }
+
+[features]
+default = ["procmacros"]
+profile-with-superluminal = [
+    "superluminal-perf",
+    "aleph-profile-procmacros?/profile-with-superluminal",
+]
+profile-with-tracy = [
+    "tracy-client",
+    "aleph-profile-procmacros?/profile-with-tracy",
+]
+procmacros = ["aleph-profile-procmacros"]

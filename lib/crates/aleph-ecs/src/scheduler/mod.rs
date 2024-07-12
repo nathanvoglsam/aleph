@@ -312,7 +312,7 @@ impl Schedule {
         for label in self.stage_order.iter() {
             let stage = self.stages.get_mut(label).unwrap();
             unsafe {
-                profiling::scope!("aleph::ExecScope", label.to_str());
+                aleph_profile::scope!("aleph::ExecScope", label.to_str());
                 stage.as_mut().run(world);
             }
         }

@@ -58,13 +58,13 @@ aleph-sdl2 = { workspace = true, optional = true }
 aleph-headless = { workspace = true }
 aleph-render = { workspace = true }
 aleph-rhi = { workspace = true }
+aleph-profile = { workspace = true }
 
 log = { workspace = true }
 once_cell = { workspace = true }
 utf16_lit = { workspace = true }
 raw-cpuid = { workspace = true }
 num_cpus = { workspace = true }
-profiling = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

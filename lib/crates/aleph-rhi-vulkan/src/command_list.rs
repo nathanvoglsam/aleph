@@ -62,7 +62,7 @@ impl IGetPlatformInterface for CommandList {
 
 unsafe impl Send for CommandList {}
 
-#[profiling::all_functions]
+#[aleph_profile::all_functions]
 impl ICommandList for CommandList {
     fn begin_general<'a>(
         &'a mut self,
