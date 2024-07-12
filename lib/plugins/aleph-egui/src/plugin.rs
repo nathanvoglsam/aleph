@@ -144,7 +144,6 @@ impl IPlugin for PluginEgui {
         let post_update_mouse = mouse.clone();
         let post_update_rnd = render_data.clone();
         let post_update_ctx = context_provider.clone();
-        let post_update_window = window.clone();
         schedule.add_exclusive_at_end_system_to_stage(
             CoreStage::PostUpdate.into(),
             make_label!("egui::post_update"),
@@ -156,11 +155,11 @@ impl IPlugin for PluginEgui {
                 let clipboard = clipboard.deref();
 
                 let output = context_provider.end_frame();
-                let egui_ctx = context_provider.get_context();
-                let pixels_per_point = post_update_window.current_display_scale();
-                let jobs: Vec<ClippedPrimitive> =
-                    egui_ctx.tessellate(output.shapes, pixels_per_point);
                 crate::utils::process_egui_output(output.platform_output, mouse, clipboard);
+
+                let egui_ctx = context_provider.get_context();
+                let jobs: Vec<ClippedPrimitive> =
+                    egui_ctx.tessellate(output.shapes, output.pixels_per_point);
 
                 render_data.put(RenderData {
                     primitives: jobs,

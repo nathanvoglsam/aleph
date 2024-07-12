@@ -41,8 +41,8 @@ pub fn get_egui_input(
 ) -> egui::RawInput {
     let window_size = window.size();
 
-    let screen_rect = egui::Pos2::new(window_size.0 as f32, window_size.1 as f32);
-    let screen_rect = Some(egui::Rect::from_min_max(Default::default(), screen_rect));
+    let screen_rect = egui::Vec2::new(window_size.0 as f32, window_size.1 as f32);
+    let screen_rect = Some(egui::Rect::from_min_size(Default::default(), screen_rect));
 
     let time = Some(frame_timer.elapsed_time());
 
@@ -114,7 +114,7 @@ pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec
                     if let Some(key) = translate_scan_code(e.scan_code) {
                         let event = egui::Event::Key {
                             key,
-                            physical_key: Some(key),
+                            physical_key: None,
                             pressed: true,
                             repeat: e.repeat,
                             modifiers: translate_modifiers(e.modifiers),
@@ -126,7 +126,7 @@ pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec
                     if let Some(key) = translate_scan_code(e.scan_code) {
                         let event = egui::Event::Key {
                             key,
-                            physical_key: Some(key),
+                            physical_key: None,
                             pressed: false,
                             repeat: e.repeat,
                             modifiers: translate_modifiers(e.modifiers),
