@@ -111,7 +111,7 @@ impl IPlugin for PluginRender {
             format: Format::Bgra8UnormSrgb,
             width: drawable_size.0,
             height: drawable_size.1,
-            present_mode: PresentationMode::Mailbox,
+            present_mode: PresentationMode::Immediate,
             buffer_count: 3,
             present_queue: QueueType::General,
         };

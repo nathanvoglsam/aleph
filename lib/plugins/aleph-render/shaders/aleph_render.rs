@@ -27,6 +27,14 @@ pub mod egui {
     }
 }
 #[allow(unused)]
+pub fn fullscreen_tri_copy_frag() -> aleph_shader_db::ShaderName<'static, aleph_shader_db::Fragment> {
+    unsafe { aleph_shader_db::ShaderName::<aleph_shader_db::Fragment>::new("aleph-render/fullscreen-tri-copy.frag") } // Safety guaranteed by code-gen
+}
+#[allow(unused)]
+pub fn fullscreen_tri_vert() -> aleph_shader_db::ShaderName<'static, aleph_shader_db::Vertex> {
+    unsafe { aleph_shader_db::ShaderName::<aleph_shader_db::Vertex>::new("aleph-render/fullscreen-tri.vert") } // Safety guaranteed by code-gen
+}
+#[allow(unused)]
 pub mod fullscreen_quad {
     #[allow(unused)]
     pub fn fullscreen_quad_vert() -> aleph_shader_db::ShaderName<'static, aleph_shader_db::Vertex> {
