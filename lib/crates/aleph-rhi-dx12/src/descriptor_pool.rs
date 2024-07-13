@@ -85,6 +85,7 @@ impl DescriptorPool {
     }
 }
 
+#[aleph_profile::all_functions]
 impl IDescriptorPool for DescriptorPool {
     fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         let mut set = MaybeUninit::uninit();

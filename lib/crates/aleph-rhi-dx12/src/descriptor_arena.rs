@@ -90,6 +90,7 @@ impl DescriptorArenaLinear {
     }
 }
 
+#[aleph_profile::all_functions]
 impl IDescriptorArena for DescriptorArenaLinear {
     fn allocate_set(
         &self,
