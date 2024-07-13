@@ -51,7 +51,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use std::ffi::{ CStr, CString };
+use std::ffi::{CStr, CString};
 
 #[cfg(feature = "procmacros")]
 pub use aleph_profile_procmacros::all_functions;
