@@ -40,7 +40,6 @@ members = [
     "lib/crates/aleph-any",
     "lib/crates/aleph-arena-drop-list",
     "lib/crates/aleph-compile",
-    "lib/crates/aleph-console",
     "lib/crates/aleph-device-allocators",
     "lib/crates/aleph-dx12-agility-sdk",
     "lib/crates/aleph-dx12-alloc",
@@ -81,7 +80,6 @@ members = [
     "lib/plugins/aleph-sdl2",
     "bin/aleph",
     "bin/aleph-test",
-    "bin/aleph-rcon",
 ]
 
 [workspace.package]
@@ -145,7 +143,6 @@ zip = "2"
 aleph-any = { path = "./lib/crates/aleph-any", version = "0.1" }
 aleph-arena-drop-list = { path = "./lib/crates/aleph-arena-drop-list", version = "0.1" }
 aleph-compile = { path = "./lib/crates/aleph-compile", version = "1" }
-aleph-console = { path = "./lib/crates/aleph-console", version = "0.1" }
 aleph-device-allocators = { path = "./lib/crates/aleph-device-allocators", version = "0.1" }
 aleph-dx12-agility-sdk = { path = "./lib/crates/aleph-dx12-agility-sdk", version = "1.711.3" }
 aleph-dx12-alloc = { path = "./lib/crates/aleph-dx12-alloc", version = "0.1" }

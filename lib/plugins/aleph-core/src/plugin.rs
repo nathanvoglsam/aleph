@@ -28,9 +28,7 @@
 //
 
 use std::any::TypeId;
-use std::io::BufReader;
-use std::net::TcpStream;
-
+use log::LevelFilter;
 use aleph_label::{make_label, Label};
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
@@ -66,7 +64,8 @@ impl PluginCore {
         // This will be one of the earliest pieces of code to run in aleph engine so initialize the
         // logger here. By initializing it here then this plugin remains optional (technically)
         let logger = create_logger();
-        let command_stream = aleph_console::Logger::from(logger).install();
+        log::set_boxed_logger(Box::new(logger)).expect("Attempting to install logger");
+        log::set_max_level(LevelFilter::Trace);
 
         // Android won't log panics properly afaik? We re-route to log so we can see it in logcat.
         if cfg!(target_os = "android") {
@@ -74,23 +73,6 @@ impl PluginCore {
                 log::error!("{}", v);
             }));
         }
-
-        // Construct a thread that handles reading messages from the remote console and publishes
-        // complete command messages to a channel which can be read by the main thread.
-        //
-        // This transparently handles when the "remote" feature is disabled as Logger::install will
-        // just always return None and so this code will never execute.
-        let _channel = if let Some(command_stream) = command_stream {
-            // Construct our channel
-            let (channel, receiver) = std::sync::mpsc::sync_channel(1024);
-
-            // Build the persistent thread, sending the channel and command stream over
-            std::thread::spawn(move || receiver_thread(channel, BufReader::new(command_stream)));
-
-            Some(receiver)
-        } else {
-            None
-        };
 
         let core_schedule = SystemSchedule::default();
 
@@ -174,30 +156,5 @@ impl Into<Label> for InternalStage {
     #[inline(always)]
     fn into(self) -> Label {
         self.to_label()
-    }
-}
-
-fn receiver_thread(channel: std::sync::mpsc::SyncSender<String>, mut stream: BufReader<TcpStream>) {
-    use std::io::BufRead;
-
-    let mut buffer = Vec::new();
-    loop {
-        // Clear the buffer from last iteration
-        buffer.clear();
-
-        // All commands are delimited by null bytes, this will read a single well formed message
-        // into buffer.
-        stream.read_until(b'\0', &mut buffer).unwrap();
-        stream.read_until(b'\0', &mut buffer).unwrap();
-
-        // Buffer will contain the delimiters so we strip them
-        let slice = buffer.strip_prefix(&[0]).unwrap();
-        let slice = slice.strip_suffix(&[0]).unwrap();
-
-        // Then verify the message is valid UTF8
-        let string = std::str::from_utf8(slice).unwrap();
-
-        // Finally we can send the command onto the channel
-        channel.send(string.to_string()).unwrap();
     }
 }
