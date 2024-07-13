@@ -544,7 +544,7 @@ pub struct FrameGraphResources<'a> {
 }
 
 impl<'a> FrameGraphResources<'a> {
-    pub fn device(&self) -> &'a dyn IDevice {
+    pub const fn device(&self) -> &'a dyn IDevice {
         self.device
     }
 
@@ -560,21 +560,23 @@ impl<'a> FrameGraphResources<'a> {
         resource
     }
 
+    #[inline]
     pub fn get_buffer<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn IBuffer> {
         let r = self.get(r);
         r.map(|v| v.unwrap_buffer())
     }
 
+    #[inline]
     pub fn get_texture<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn ITexture> {
         let r = self.get(r);
         r.map(|v| v.unwrap_texture())
     }
 
-    pub fn descriptor_arena(&self) -> &'a LinearDescriptorPool {
+    pub const fn descriptor_arena(&self) -> &'a LinearDescriptorPool {
         self.linear_descriptor_pool
     }
 
-    pub fn context(&self) -> &PinBoard {
+    pub const fn context(&self) -> &PinBoard {
         self.context
     }
 }
