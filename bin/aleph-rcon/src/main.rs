@@ -43,6 +43,7 @@ use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::Arc;
 
 use aleph::egui::IEguiContextProvider;
+use aleph::interfaces::label::make_label;
 use aleph::interfaces::make_plugin_description_for_crate;
 use aleph::interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
@@ -86,8 +87,8 @@ impl IPlugin for PluginGameLogic {
         let state = program_state.clone();
         let remote = remote_connection.clone();
         schedule.add_exclusive_at_start_system_to_stage(
-            &CoreStage::Update,
-            "aleph_rcon::update",
+            CoreStage::Update.into(),
+            make_label!("aleph_rcon::update"),
             move || {
                 let mut remote_cell = remote.take();
 
@@ -138,8 +139,8 @@ impl IPlugin for PluginGameLogic {
         let remote = remote_connection;
         let mut command_buffer = String::new();
         schedule.add_exclusive_at_start_system_to_stage(
-            &CoreStage::Render,
-            "aleph_rcon::render",
+            CoreStage::Render.into(),
+            make_label!("aleph_rcon::render"),
             move || {
                 if let Some(egui) = egui_provider.as_ref() {
                     let egui_ctx = egui.get_context();

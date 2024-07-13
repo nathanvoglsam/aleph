@@ -30,6 +30,8 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
+use aleph_label::make_label;
+
 use crate::scheduler::SystemSchedule;
 use crate::system::{ExplicitDependencies, IntoSystem, Res, ResMut};
 use crate::world::{Query, World};
@@ -455,11 +457,16 @@ fn system_schedule_test() {
     };
 
     let mut system_schedule = SystemSchedule::default();
-    system_schedule.add_system("SYSTEM_1", system_fn_1);
-    system_schedule.add_system("SYSTEM_2", system_fn_2.system());
-    system_schedule.add_system("SYSTEM_3", system_closure_1.system());
-    system_schedule.add_system("SYSTEM_4", system_closure_2);
-    system_schedule.add_system("SYSTEM_5", system_closure_3.system().runs_after("SYSTEM_4"));
+    system_schedule.add_system(make_label!("SYSTEM_1"), system_fn_1);
+    system_schedule.add_system(make_label!("SYSTEM_2"), system_fn_2.system());
+    system_schedule.add_system(make_label!("SYSTEM_3"), system_closure_1.system());
+    system_schedule.add_system(make_label!("SYSTEM_4"), system_closure_2);
+    system_schedule.add_system(
+        make_label!("SYSTEM_5"),
+        system_closure_3
+            .system()
+            .runs_after(make_label!("SYSTEM_4")),
+    );
 
     system_schedule.run_once(&mut world);
     system_schedule.run_once(&mut world);
