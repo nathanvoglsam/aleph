@@ -29,7 +29,7 @@
 
 #![cfg(windows)]
 
-extern crate aleph_pix_raw as pix_raw;
+pub extern crate aleph_pix_raw as raw;
 extern crate aleph_windows as windows;
 
 mod colour;

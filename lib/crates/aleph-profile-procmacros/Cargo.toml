@@ -20,3 +20,4 @@ proc-macro=true
 [features]
 profile-with-superluminal = []
 profile-with-tracy = []
+profile-with-pix = []

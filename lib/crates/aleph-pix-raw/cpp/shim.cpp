@@ -51,6 +51,14 @@ extern "C" {
         PIXSetMarker((UINT64)color, "%s", (PCSTR)string);
     }
 
+    void SHIM_PIXBeginEvent_N_D(uint64_t color, const char* string, const char* data) {
+        PIXBeginEvent((UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
+    }
+
+    void SHIM_PIXSetMarker_N_D(uint64_t color, const char* string, const char* data) {
+        PIXSetMarker((UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
+    }
+
     void SHIM_PIXBeginEvent_CL(void* context, uint64_t color, const char* string) {
         PIXBeginEvent((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s", (PCSTR)string);
     }
@@ -59,12 +67,28 @@ extern "C" {
         PIXBeginEvent((ID3D12CommandQueue*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
+    void SHIM_PIXBeginEvent_CL_D(void* context, uint64_t color, const char* string, const char* data) {
+        PIXBeginEvent((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
+    }
+
+    void SHIM_PIXBeginEvent_CQ_D(void* context, uint64_t color, const char* string, const char* data) {
+        PIXBeginEvent((ID3D12CommandQueue*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
+    }
+
     void SHIM_PIXSetMarker_CL(void* context, uint64_t color, const char* string) {
         PIXSetMarker((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
     void SHIM_PIXSetMarker_CQ(void* context, uint64_t color, const char* string) {
         PIXSetMarker((ID3D12CommandQueue*)context, (UINT64)color, "%s", (PCSTR)string);
+    }
+
+    void SHIM_PIXSetMarker_CL_D(void* context, uint64_t color, const char* string, const char* data) {
+        PIXSetMarker((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
+    }
+
+    void SHIM_PIXSetMarker_CQ_D(void* context, uint64_t color, const char* string, const char* data) {
+        PIXSetMarker((ID3D12CommandQueue*)context, (UINT64)color, "%s - %s", (PCSTR)string, (PCSTR)data);
     }
 
     void SHIM_PIXEndEvent_N() {

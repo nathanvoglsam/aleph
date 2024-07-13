@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 
 #[macro_export]
 macro_rules! make_label {
@@ -82,6 +82,10 @@ impl Label {
         }
     }
 
+    pub const fn to_str_with_nul(self) -> &'static str {
+        self.0
+    }
+
     pub const fn to_cstr(self) -> &'static CStr {
         // Safety: It's illegal to construct a Label that isn't a valid CStr
         unsafe { CStr::from_bytes_with_nul_unchecked(self.0.as_bytes()) }
@@ -106,5 +110,23 @@ impl std::fmt::Display for Label {
     #[inline(always)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.to_str(), f)
+    }
+}
+
+impl aleph_profile::ProfileDataParam for Label {
+    #[inline(always)]
+    fn as_str(&self) -> &str {
+        self.to_str()
+    }
+
+    #[inline(always)]
+    fn as_cstr(&self) -> Option<&CStr> {
+        Some(Label::to_cstr(*self))
+    }
+
+    #[inline(always)]
+    fn to_cstr(&self) -> CString {
+        let cstr = Label::to_cstr(*self);
+        CString::from(cstr)
     }
 }

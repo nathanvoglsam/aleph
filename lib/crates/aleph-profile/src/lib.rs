@@ -51,7 +51,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#![no_std]
+use std::ffi::{ CStr, CString };
 
 #[cfg(feature = "procmacros")]
 pub use aleph_profile_procmacros::all_functions;
@@ -80,9 +80,63 @@ mod impl_tracy;
 #[allow(unused_imports)]
 pub use impl_tracy::*;
 
-#[cfg(not(any(feature = "profile-with-superluminal", feature = "profile-with-tracy",)))]
+#[cfg(feature = "profile-with-pix")]
+mod impl_pix;
+#[cfg(feature = "profile-with-pix")]
+#[allow(unused_imports)]
+pub use impl_pix::*;
+
+#[cfg(not(any(
+    feature = "profile-with-superluminal",
+    feature = "profile-with-tracy",
+    feature = "profile-with-pix"
+)))]
 mod impl_empty;
 
-#[cfg(not(any(feature = "profile-with-superluminal", feature = "profile-with-tracy",)))]
+#[cfg(not(any(
+    feature = "profile-with-superluminal",
+    feature = "profile-with-tracy",
+    feature = "profile-with-pix"
+)))]
 #[allow(unused_imports)]
 pub use impl_empty::*;
+
+pub trait ProfileDataParam {
+    fn as_str(&self) -> &str;
+    fn as_cstr(&self) -> Option<&CStr>;
+    fn to_cstr(&self) -> CString;
+}
+
+impl ProfileDataParam for &str {
+    #[inline(always)]
+    fn as_str(&self) -> &str {
+        *self
+    }
+
+    #[inline(always)]
+    fn as_cstr(&self) -> Option<&CStr> {
+        CStr::from_bytes_with_nul(self.as_bytes()).ok()
+    }
+
+    #[inline(always)]
+    fn to_cstr(&self) -> CString {
+        CString::new(*self).unwrap()
+    }
+}
+
+impl ProfileDataParam for &CStr {
+    #[inline(always)]
+    fn as_str(&self) -> &str {
+        self.to_str().unwrap()
+    }
+
+    #[inline(always)]
+    fn as_cstr(&self) -> Option<&CStr> {
+        Some(*self)
+    }
+
+    #[inline(always)]
+    fn to_cstr(&self) -> CString {
+        CString::from(*self)
+    }
+}

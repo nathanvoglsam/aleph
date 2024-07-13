@@ -31,7 +31,7 @@
 
 use std::ffi::{CStr, CString};
 
-use pix_raw::*;
+use raw::*;
 use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 

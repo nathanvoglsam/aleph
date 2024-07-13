@@ -45,16 +45,34 @@ extern "C" {
     void SHIM_PIXSetMarker_N(uint64_t color, const char* string) {
     }
 
+    void SHIM_PIXBeginEvent_N_D(uint64_t color, const char* string, const char* data) {
+    }
+
+    void SHIM_PIXSetMarker_N_D(uint64_t color, const char* string, const char* data) {
+    }
+
     void SHIM_PIXBeginEvent_CL(void* context, uint64_t color, const char* string) {
     }
 
     void SHIM_PIXBeginEvent_CQ(void* context, uint64_t color, const char* string) {
     }
 
+    void SHIM_PIXBeginEvent_CL_D(void* context, uint64_t color, const char* string, const char* data) {
+    }
+
+    void SHIM_PIXBeginEvent_CQ_D(void* context, uint64_t color, const char* string, const char* data) {
+    }
+
     void SHIM_PIXSetMarker_CL(void* context, uint64_t color, const char* string) {
     }
 
     void SHIM_PIXSetMarker_CQ(void* context, uint64_t color, const char* string) {
+    }
+
+    void SHIM_PIXSetMarker_CL_D(void* context, uint64_t color, const char* string, const char* data) {
+    }
+
+    void SHIM_PIXSetMarker_CQ_D(void* context, uint64_t color, const char* string, const char* data) {
     }
 
     void SHIM_PIXEndEvent_N() {

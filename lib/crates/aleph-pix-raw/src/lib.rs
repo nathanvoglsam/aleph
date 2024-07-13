@@ -31,6 +31,7 @@
 
 use std::os::raw::{c_char, c_void};
 
+#[rustfmt::skip]
 extern "C" {
     /// This is an internal utility provided to allow the rust code to query whether it's linked to the actual PIX
     /// library or the dummy noop implementation. Useful for disabling the marker code when it won't do anything.
@@ -40,10 +41,16 @@ extern "C" {
 
     pub fn SHIM_PIXBeginEvent_N(colour: u64, string: *const c_char);
     pub fn SHIM_PIXSetMarker_N(colour: u64, string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_N_D(colour: u64, string: *const c_char, data: *const c_char);
+    pub fn SHIM_PIXSetMarker_N_D(colour: u64, string: *const c_char, data: *const c_char);
     pub fn SHIM_PIXBeginEvent_CL(context: *mut c_void, colour: u64, string: *const c_char);
     pub fn SHIM_PIXBeginEvent_CQ(context: *mut c_void, colour: u64, string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_CL_D(context: *mut c_void, colour: u64, string: *const c_char, data: *const c_char);
+    pub fn SHIM_PIXBeginEvent_CQ_D(context: *mut c_void, colour: u64, string: *const c_char, data: *const c_char);
     pub fn SHIM_PIXSetMarker_CL(context: *mut c_void, colour: u64, string: *const c_char);
     pub fn SHIM_PIXSetMarker_CQ(context: *mut c_void, colour: u64, string: *const c_char);
+    pub fn SHIM_PIXSetMarker_CL_D(context: *mut c_void, colour: u64, string: *const c_char, data: *const c_char);
+    pub fn SHIM_PIXSetMarker_CQ_D(context: *mut c_void, colour: u64, string: *const c_char, data: *const c_char);
     pub fn SHIM_PIXEndEvent_N();
     pub fn SHIM_PIXEndEvent_CL(context: *mut c_void);
     pub fn SHIM_PIXEndEvent_CQ(context: *mut c_void);

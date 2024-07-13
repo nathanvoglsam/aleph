@@ -53,6 +53,7 @@
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
+use std::ffi::CStr;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, parse_quote, ImplItem, ItemFn, ItemImpl};
 
@@ -121,7 +122,12 @@ pub fn all_functions(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
         let prev_block = &func.block;
-        let calling_info = format!("{}: {}", struct_name, func.sig.ident);
+        let calling_info = if cfg!(feature = "profile-with-pix") {
+            // Pix can only accept null-terminated strings, so we have to add one
+            format!("{}: {}\0", struct_name, func.sig.ident)
+        } else {
+            format!("{}: {}", struct_name, func.sig.ident)
+        };
         func.block = impl_block(prev_block, &calling_info);
     }
 
@@ -131,7 +137,11 @@ pub fn all_functions(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-#[cfg(not(any(feature = "profile-with-superluminal", feature = "profile-with-tracy")))]
+#[cfg(not(any(
+    feature = "profile-with-superluminal",
+    feature = "profile-with-tracy",
+    feature = "profile-with-pix"
+)))]
 fn impl_block(body: &syn::Block, _instrumented_function_name: &str) -> syn::Block {
     parse_quote! {
         {
@@ -158,6 +168,19 @@ fn impl_block(body: &syn::Block, instrumented_function_name: &str) -> syn::Block
             // Note: callstack_depth is 0 since this has significant overhead
             let _tracy_span = aleph_profile::tracy_client::span!(#instrumented_function_name, 0);
 
+            #body
+        }
+    }
+}
+
+#[cfg(feature = "profile-with-pix")]
+fn impl_block(body: &syn::Block, instrumented_function_name: &str) -> syn::Block {
+    // The unsafe block is safe because the pix backend is guaranteed to receive a cstr
+    assert!(CStr::from_bytes_with_nul(instrumented_function_name.as_bytes()).is_ok());
+    parse_quote! {
+        {
+            let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(#instrumented_function_name.as_bytes()) };
+            let _pix_guard = aleph_profile::detail::Guard::new(_cstr);
             #body
         }
     }
