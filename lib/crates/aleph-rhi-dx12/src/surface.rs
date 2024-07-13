@@ -165,6 +165,7 @@ impl Surface {
             textures: Vec::with_capacity(desc.BufferCount as usize),
             dxgi_format: in_memory_format,
             dxgi_view_format: view_format,
+            dxgi_flags: flags,
         };
         let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
             this: v.clone(),

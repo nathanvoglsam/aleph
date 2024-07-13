@@ -70,6 +70,7 @@ pub struct SwapChainState {
     pub textures: Vec<AnyArc<Texture>>,
     pub dxgi_format: DXGI_FORMAT,
     pub dxgi_view_format: DXGI_FORMAT,
+    pub dxgi_flags: DXGI_SWAP_CHAIN_FLAG,
 }
 
 impl SwapChain {
@@ -124,7 +125,7 @@ impl SwapChain {
         width: u32,
         height: u32,
         format: DXGI_FORMAT,
-        flags: u32,
+        flags: DXGI_SWAP_CHAIN_FLAG,
         queues: &[ID3D12CommandQueue],
     ) -> windows::core::Result<()> {
         // Input validation
@@ -154,7 +155,7 @@ impl SwapChain {
             width,
             height,
             format,
-            flags,
+            flags.0 as u32,
             p_creation_node_mask,
             pp_present_queue,
         )
@@ -245,7 +246,7 @@ impl ISwapChain for SwapChain {
                 width,
                 height,
                 DXGI_FORMAT_UNKNOWN,
-                0,
+                inner.dxgi_flags,
                 queues,
             )
             .unwrap();
