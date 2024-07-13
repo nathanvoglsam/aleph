@@ -93,7 +93,7 @@ impl SwapChain {
                 mip_levels: 1,
                 sample_count: 1,
                 sample_quality: 0,
-                usage: F::COPY_DEST | F::COPY_SOURCE | F::RENDER_TARGET,
+                usage: F::RENDER_TARGET,
                 name: None,
             };
             let dxgi_format = state.dxgi_format;

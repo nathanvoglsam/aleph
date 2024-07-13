@@ -2092,20 +2092,6 @@ impl CommandListPool {
             QueueType::Transfer => &self.transfer,
         }
     }
-
-    pub unsafe fn collect(&self) {
-        while let Some(list) = self.general.pop() {
-            drop(list);
-        }
-
-        while let Some(list) = self.compute.pop() {
-            drop(list);
-        }
-
-        while let Some(list) = self.transfer.pop() {
-            drop(list);
-        }
-    }
 }
 
 pub struct FreeCommandList {

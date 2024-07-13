@@ -197,9 +197,7 @@ impl SwapChain {
         let (format, color_space) = Self::select_format_and_color_space(config, &formats)?;
         let buffer_count = Self::select_buffer_count(config.buffer_count, &capabilities);
 
-        let image_usage = vk::ImageUsageFlags::COLOR_ATTACHMENT
-            | vk::ImageUsageFlags::TRANSFER_DST
-            | vk::ImageUsageFlags::TRANSFER_SRC;
+        let image_usage = vk::ImageUsageFlags::COLOR_ATTACHMENT;
         if !capabilities.supported_usage_flags.contains(image_usage) {
             // TODO: Make this return an error
             panic!("swap chain doesn't support all required usage flags");
@@ -253,7 +251,7 @@ impl SwapChain {
                     mip_levels: 1,
                     sample_count: 1,
                     sample_quality: 0,
-                    usage: F::COPY_DEST | F::COPY_SOURCE | F::RENDER_TARGET,
+                    usage: F::COPY_DEST | F::RENDER_TARGET,
                     name: None,
                 };
                 AnyArc::new_cyclic(move |v| Texture {
