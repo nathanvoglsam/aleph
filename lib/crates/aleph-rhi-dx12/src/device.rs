@@ -793,16 +793,23 @@ impl IDevice for Device {
                 set_name(&list.list, name).map_err(|v| log::error!("Platform Error: {:#?}", v))?;
             }
 
+            let FreeCommandList {
+                allocator,
+                list,
+                descriptor_heaps,
+                list_type,
+            } = list;
+
             // It is assumed that only command lists that are safe to reuse are placed into the
             // free list.
             //
             // Typically, this will be done in 'garbage_collect'.
             let out: Box<dyn ICommandList> = Box::new(CommandList {
                 _device: self.this.upgrade().unwrap(),
-                allocator: list.allocator,
-                list: list.list,
-                descriptor_heaps: list.descriptor_heaps,
-                list_type: list.list_type,
+                allocator,
+                list,
+                descriptor_heaps,
+                list_type,
             });
             return Ok(out);
         }

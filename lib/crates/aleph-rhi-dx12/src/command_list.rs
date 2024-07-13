@@ -71,6 +71,10 @@ impl ICommandList for CommandList {
             // Open the command list for recording with no bound pipeline so we can attach it to
             // the command allocator
             unsafe {
+                self.allocator
+                    .Reset()
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+
                 self.list
                     .Reset(&self.allocator, None)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
