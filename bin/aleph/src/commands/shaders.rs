@@ -529,7 +529,7 @@ fn generate_shader_name_bindings_for_package(
 fn generate_shader_name_bindings_for_module(
     module_ctx: &ShaderModuleContext,
 ) -> anyhow::Result<()> {
-    let module_name = module_ctx.module_name.replace('-', "_");
+    let module_name = module_ctx.module_name.replace(&['.', '-'], "_");
     let module_output_file = module_ctx
         .crate_ctx
         .crate_shader_dir
@@ -562,7 +562,7 @@ fn generate_shader_name_bindings_for_module(
                 };
 
                 // Output the function declaration
-                let file_stem_no_dots = shader_file.name_with_type.replace('.', "_");
+                let file_stem_no_dots = shader_file.name_with_type.replace(&['.', '-'], "_");
                 writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
                 writeln!(
                     &mut module_output_file,
@@ -587,7 +587,7 @@ fn generate_shader_name_bindings_for_module(
                 // new directory.
 
                 // Open the new module in the file
-                let sanitized_dir_name = file_name.replace('-', "_");
+                let sanitized_dir_name = file_name.replace(&['.', '-'], "_");
                 writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
                 writeln!(
                     &mut module_output_file,
