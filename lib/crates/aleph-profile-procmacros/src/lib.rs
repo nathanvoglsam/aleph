@@ -53,7 +53,6 @@
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use std::ffi::CStr;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, parse_quote, ImplItem, ItemFn, ItemImpl};
 
@@ -175,12 +174,13 @@ fn impl_block(body: &syn::Block, instrumented_function_name: &str) -> syn::Block
 
 #[cfg(feature = "profile-with-pix")]
 fn impl_block(body: &syn::Block, instrumented_function_name: &str) -> syn::Block {
+    use std::ffi::CStr;
     // The unsafe block is safe because the pix backend is guaranteed to receive a cstr
     assert!(CStr::from_bytes_with_nul(instrumented_function_name.as_bytes()).is_ok());
     parse_quote! {
         {
-            let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(#instrumented_function_name.as_bytes()) };
-            let _pix_guard = aleph_profile::detail::Guard::new(_cstr);
+            let _pix_guard = aleph_profile::detail::Guard::new(unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(#instrumented_function_name.as_bytes()) });
+
             #body
         }
     }

@@ -104,7 +104,7 @@ pub mod detail {
         #[inline(always)]
         pub fn new(name: &'static CStr) -> Self {
             unsafe {
-                raw::SHIM_PIXBeginEvent_N(aleph_pix::Colour::WHITE.into(), name.as_ptr());
+                raw::SHIM_PIXBeginEvent_N(aleph_pix::Colour::MAGENTA.into(), name.as_ptr());
             }
             Guard
         }
@@ -115,7 +115,7 @@ pub mod detail {
                 // If we can cheaply get the input as a cstr we're golden
                 unsafe {
                     raw::SHIM_PIXBeginEvent_N_D(
-                        aleph_pix::Colour::WHITE.into(),
+                        aleph_pix::Colour::MAGENTA.into(),
                         name.as_ptr(),
                         data.as_ptr(),
                     );
@@ -127,7 +127,7 @@ pub mod detail {
                 let data = data.to_cstr();
                 unsafe {
                     raw::SHIM_PIXBeginEvent_N_D(
-                        aleph_pix::Colour::WHITE.into(),
+                        aleph_pix::Colour::MAGENTA.into(),
                         name.as_ptr(),
                         data.as_ptr(),
                     );
