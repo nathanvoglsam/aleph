@@ -45,6 +45,7 @@ path = "./src/lib.rs"
 [dependencies]
 aleph-engine = { path = "../../lib/crates/aleph-engine", version = "0.1.0" }
 egui_demo_lib = { workspace = true }
+## aleph-profile = { workspace = true, features = ["profile-with-superluminal"] }
 
 [target.'cfg(windows)'.dependencies]
 aleph-dx12-agility-sdk = { workspace = true }
