@@ -47,6 +47,8 @@ aleph-arena-drop-list = { workspace = true }
 aleph-device-allocators = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-pin-board = { workspace = true }
+aleph-profile = { workspace = true }
+aleph-nstr = { workspace = true }
 log = { workspace = true }
 bitflags = { workspace = true }
 parking_lot = { workspace = true }

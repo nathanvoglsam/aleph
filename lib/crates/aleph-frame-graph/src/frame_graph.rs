@@ -230,8 +230,11 @@ impl FrameGraph {
                 let render_pass = node.render_pass();
                 let render_pass = &mut self.render_passes[render_pass];
 
-                encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
-                render_pass.pass.as_mut().execute(encoder, &resources);
+                encoder.begin_event(Color::GREEN, render_pass.name.as_ref().to_str());
+                {
+                    aleph_profile::scope!("frame-graph::Pass", render_pass.name.as_ref());
+                    render_pass.pass.as_mut().execute(encoder, &resources);
+                }
                 encoder.end_event();
             }
         }
@@ -331,7 +334,7 @@ impl FrameGraph {
                 let pass = &self.render_passes[node.render_pass()];
                 let pass_name = unsafe { pass.name.as_ref() };
                 write!(writer, "            ")?;
-                node.write_graph_viz(writer, pass_name, pass_index)?;
+                node.write_graph_viz(writer, pass_name.to_str(), pass_index)?;
 
                 let prevs = unsafe { node.prev().as_ref() };
                 for &prev in prevs {

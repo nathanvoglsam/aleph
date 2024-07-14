@@ -28,6 +28,7 @@
 //
 
 use aleph_frame_graph::*;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -81,7 +82,7 @@ pub fn pass(
         })
         .unwrap();
 
-    frame_graph.add_pass("TonemapPass", |resources| {
+    frame_graph.add_pass(nstr!("TonemapPass"), |resources| {
         let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
         let b_desc = &back_buffer_info.desc;
 

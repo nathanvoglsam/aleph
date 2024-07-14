@@ -32,6 +32,7 @@ use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
 use aleph_math::projection::perspective_reversed_infinite_z_wgpu_dx_gl;
 use aleph_math::{Mat4, Vec3};
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -93,7 +94,7 @@ pub fn pass(
 
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
-    frame_graph.add_pass("MainGBufferPass", |resources| {
+    frame_graph.add_pass(nstr!("MainGBufferPass"), |resources| {
         let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
         let b_desc = &back_buffer_info.desc;
 

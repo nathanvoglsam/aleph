@@ -52,6 +52,7 @@
 use std::ptr::NonNull;
 
 use aleph_arena_drop_list::DropLink;
+use aleph_nstr::NStr;
 use aleph_rhi_api::*;
 use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
@@ -198,7 +199,7 @@ impl FrameGraphBuilder {
         SetupFn: FnOnce(&mut ResourceRegistry) -> ExecFn,
     >(
         &mut self,
-        name: &str,
+        name: &NStr,
         setup_fn: SetupFn,
     ) {
         let exec_fn = {
@@ -659,11 +660,14 @@ impl<'a> ResourceRegistry<'a> {
 
 // Internal functions exposed through ResourceRegistry
 impl FrameGraphBuilder {
-    pub(crate) fn add_pass_internal<T: IRenderPass>(&mut self, name: &str, pass: T) {
-        let name = self.arena.alloc_str(name);
+    pub(crate) fn add_pass_internal<T: IRenderPass>(&mut self, name: &NStr, pass: T) {
+        let name = self.arena.alloc_slice_copy(name.to_bytes());
+        let name = NStr::from_bytes(name).unwrap();
         let name = NonNull::from(name);
+
         let pass = self.arena.alloc(pass);
         let mut pass = NonNull::from(pass);
+
         DropLink::append_drop_list(&self.arena, &mut self.drop_head, pass);
 
         unsafe {

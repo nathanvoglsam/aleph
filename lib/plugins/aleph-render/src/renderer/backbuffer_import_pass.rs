@@ -28,6 +28,7 @@
 //
 
 use aleph_frame_graph::*;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -44,7 +45,7 @@ pub fn pass(
     pin_board: &PinBoard,
     _shader_db: &ShaderDatabaseAccessor,
 ) {
-    frame_graph.add_pass("BackBufferImportPass", |resources| {
+    frame_graph.add_pass(nstr!("BackBufferImportPass"), |resources| {
         let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
         let back_buffer_desc = back_buffer_info.desc.clone().with_name("Swap Chain Image");
         let back_buffer = resources.import_texture(

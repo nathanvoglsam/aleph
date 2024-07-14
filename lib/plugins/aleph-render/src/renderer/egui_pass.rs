@@ -30,6 +30,7 @@
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use egui::RenderData;
@@ -71,7 +72,7 @@ pub fn pass(
 
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
-    frame_graph.add_pass("EguiPass", |resources| {
+    frame_graph.add_pass(nstr!("EguiPass"), |resources| {
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
         let back_buffer = resources.write_texture(*back_buffer, ResourceUsageFlags::RENDER_TARGET);
 

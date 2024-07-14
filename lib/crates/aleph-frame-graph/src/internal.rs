@@ -34,6 +34,7 @@
 
 use std::ptr::NonNull;
 
+use aleph_nstr::NStr;
 use aleph_rhi_api::*;
 
 use crate::access::ResourceUsageFlagsExt;
@@ -42,7 +43,7 @@ use crate::{IRenderPass, ResourceVariant, Result};
 
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
-    pub name: NonNull<str>,
+    pub name: NonNull<NStr>,
 }
 
 pub(crate) struct ResourceRoot {

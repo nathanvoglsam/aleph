@@ -29,6 +29,7 @@
 
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -89,7 +90,7 @@ pub fn pass(
         })
         .unwrap();
 
-    frame_graph.add_pass("DeferredLightingPass", |resources| {
+    frame_graph.add_pass(nstr!("DeferredLightingPass"), |resources| {
         let main_gbuffer_pass_output: &MainGBufferPassOutput = pin_board.get().unwrap();
         let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
         let b_desc = &back_buffer_info.desc;

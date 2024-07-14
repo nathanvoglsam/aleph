@@ -32,6 +32,7 @@ use crate::renderer::tone_map_pass::TonemapPassOutput;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 use aleph_frame_graph::*;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
@@ -57,7 +58,7 @@ pub fn pass(
         Format::Bgra8UnormSrgb,
     );
 
-    frame_graph.add_pass("CopyTexturePass", |resources| {
+    frame_graph.add_pass(nstr!("CopyTexturePass"), |resources| {
         let tonemap_pass: &TonemapPassOutput = pin_board.get().unwrap();
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
