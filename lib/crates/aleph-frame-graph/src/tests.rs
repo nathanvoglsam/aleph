@@ -28,6 +28,7 @@
 //
 
 use aleph_any::AnyArc;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use aleph_rhi_null::NullContext;
@@ -73,7 +74,7 @@ pub fn test_builder() {
 
     let mut builder = FrameGraph::builder();
 
-    builder.add_pass("test-pass-0", |resources| {
+    builder.add_pass(nstr!("test-pass-0"), |resources| {
         let payload = TestPassData {
             value: 54321,
             resource: resources.create_buffer_with_sync(
@@ -96,7 +97,7 @@ pub fn test_builder() {
         }
     });
 
-    builder.add_pass("test-pass-1", |resources| {
+    builder.add_pass(nstr!("test-pass-1"), |resources| {
         let payload = TestPassData {
             value: 1234,
             resource: resources.write_buffer_with_sync(
@@ -115,7 +116,7 @@ pub fn test_builder() {
         }
     });
 
-    builder.add_pass("test-pass-2", |resources| {
+    builder.add_pass(nstr!("test-pass-2"), |resources| {
         let payload = TestPassData2 {
             value: -432,
             resource: resources.read_buffer_with_sync(
@@ -178,7 +179,7 @@ pub fn test_handle_equality() {
     let mut builder = FrameGraph::builder();
 
     let mut imported_resource = None;
-    builder.add_pass("test-pass-0", |resources| {
+    builder.add_pass(nstr!("test-pass-0"), |resources| {
         let r = resources.import_buffer_with_sync(
             &BufferImportDesc {
                 desc: &mock_desc,
@@ -196,7 +197,7 @@ pub fn test_handle_equality() {
     });
     let imported_resource = imported_resource.unwrap();
 
-    builder.add_pass("test-pass-1", |resources| {
+    builder.add_pass(nstr!("test-pass-1"), |resources| {
         out_read_import = Some(resources.read_buffer_with_sync(
             imported_resource,
             BarrierSync::PIXEL_SHADING,
@@ -215,7 +216,7 @@ pub fn test_handle_equality() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("test-pass-2", |resources| {
+    builder.add_pass(nstr!("test-pass-2"), |resources| {
         out_write_import = Some(resources.write_buffer_with_sync(
             imported_resource,
             BarrierSync::COMPUTE_SHADING,
@@ -230,7 +231,7 @@ pub fn test_handle_equality() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("test-pass-3", |resources| {
+    builder.add_pass(nstr!("test-pass-3"), |resources| {
         out_read_transient = Some(resources.read_buffer_with_sync(
             out_write_transient.unwrap(),
             BarrierSync::PIXEL_SHADING,
@@ -298,7 +299,7 @@ pub fn test_usage_collection() {
     let mut builder = FrameGraph::builder();
 
     let mut imported_resource = None;
-    builder.add_pass("test-pass-0", |resources| {
+    builder.add_pass(nstr!("test-pass-0"), |resources| {
         let r = resources.import_buffer(
             &BufferImportDesc {
                 desc: &mock_desc,
@@ -315,7 +316,7 @@ pub fn test_usage_collection() {
     });
     let imported_resource = imported_resource.unwrap();
 
-    builder.add_pass("test-pass-1", |resources| {
+    builder.add_pass(nstr!("test-pass-1"), |resources| {
         resources.read_buffer_with_sync(
             imported_resource,
             BarrierSync::VERTEX_SHADING,
@@ -333,7 +334,7 @@ pub fn test_usage_collection() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("test-pass-2", |resources| {
+    builder.add_pass(nstr!("test-pass-2"), |resources| {
         out_write_import = Some(resources.write_buffer_with_sync(
             imported_resource,
             BarrierSync::COMPUTE_SHADING,
@@ -347,7 +348,7 @@ pub fn test_usage_collection() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("test-pass-3", |resources| {
+    builder.add_pass(nstr!("test-pass-3"), |resources| {
         resources.read_buffer_with_sync(
             out_write_transient.unwrap(),
             BarrierSync::PIXEL_SHADING,
@@ -435,7 +436,7 @@ pub fn test_usage_schedule() {
     struct Pass0 {
         import: ResourceMut,
     }
-    builder.add_pass("test-pass-0", |resources| {
+    builder.add_pass(nstr!("test-pass-0"), |resources| {
         let import = resources.import_buffer(
             &BufferImportDesc {
                 desc: &mock_buffer_desc,
@@ -454,7 +455,7 @@ pub fn test_usage_schedule() {
         create: ResourceMut,
         import: ResourceMut,
     }
-    builder.add_pass("test-pass-1", |resources| {
+    builder.add_pass(nstr!("test-pass-1"), |resources| {
         let import = pin_board.get::<Pass0>().unwrap().import;
         resources.read_buffer_with_sync(
             import,
@@ -493,7 +494,7 @@ pub fn test_usage_schedule() {
         import_texture_write: ResourceMut,
         transient_write: ResourceMut,
     }
-    builder.add_pass("test-pass-2", |resources| {
+    builder.add_pass(nstr!("test-pass-2"), |resources| {
         let import_buffer = pin_board.get::<Pass0>().unwrap().import;
         let pass1 = pin_board.get::<Pass1>().unwrap();
         let create = pass1.create;
@@ -530,7 +531,7 @@ pub fn test_usage_schedule() {
         }
     });
 
-    builder.add_pass("test-pass-3", |resources| {
+    builder.add_pass(nstr!("test-pass-3"), |resources| {
         let transient = pin_board.get::<Pass2>().unwrap().transient_write;
         let read = resources.read_buffer_with_sync(
             transient,
@@ -543,7 +544,7 @@ pub fn test_usage_schedule() {
         }
     });
 
-    builder.add_pass("test-pass-4", |resources| {
+    builder.add_pass(nstr!("test-pass-4"), |resources| {
         let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
         let read = resources.read_texture_with_sync(
             resource,
@@ -556,7 +557,7 @@ pub fn test_usage_schedule() {
         }
     });
 
-    builder.add_pass("test-pass-5", |resources| {
+    builder.add_pass(nstr!("test-pass-5"), |resources| {
         let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
         let read = resources.read_texture_with_sync(
             resource,
@@ -569,7 +570,7 @@ pub fn test_usage_schedule() {
         }
     });
 
-    builder.add_pass("test-pass-6", |resources| {
+    builder.add_pass(nstr!("test-pass-6"), |resources| {
         let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
         let read = resources.read_texture_with_sync(
             resource,
@@ -582,7 +583,7 @@ pub fn test_usage_schedule() {
         }
     });
 
-    builder.add_pass("test-pass-7", |resources| {
+    builder.add_pass(nstr!("test-pass-7"), |resources| {
         let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
         let read = resources.read_texture_with_sync(
             resource,
@@ -595,7 +596,7 @@ pub fn test_usage_schedule() {
         }
     });
 
-    builder.add_pass("test-pass-8", |resources| {
+    builder.add_pass(nstr!("test-pass-8"), |resources| {
         let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
         let read = resources.read_texture_with_sync(
             resource,
@@ -612,7 +613,7 @@ pub fn test_usage_schedule() {
     struct Pass9 {
         pub import_texture_write: ResourceMut,
     }
-    builder.add_pass("test-pass-9", |resources| {
+    builder.add_pass(nstr!("test-pass-9"), |resources| {
         let resource = pin_board.get::<Pass2>().unwrap().import_texture_write;
         let import_texture_write = resources.write_texture_with_sync(
             resource,
@@ -675,7 +676,7 @@ pub fn test_usage_illegal_dependency() {
 
     let mut builder = FrameGraph::builder();
 
-    builder.add_pass("import-pass", |resources| {
+    builder.add_pass(nstr!("import-pass"), |resources| {
         let import = resources.import_buffer(
             &BufferImportDesc {
                 desc: &mock_buffer_desc,
@@ -691,7 +692,7 @@ pub fn test_usage_illegal_dependency() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("writer-pass", |resources| {
+    builder.add_pass(nstr!("writer-pass"), |resources| {
         let import: &Import = pin_board.get().unwrap();
         let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         pin_board.publish(Write(write));
@@ -699,7 +700,7 @@ pub fn test_usage_illegal_dependency() {
         move |_, _| {}
     });
 
-    builder.add_pass("reader-pass", |resources| {
+    builder.add_pass(nstr!("reader-pass"), |resources| {
         let import: &Import = pin_board.get().unwrap();
         let _read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         // pin_board.publish(Read(read));
@@ -707,7 +708,7 @@ pub fn test_usage_illegal_dependency() {
         move |_, _| {}
     });
 
-    builder.add_pass("deadly-pass", |resources| {
+    builder.add_pass(nstr!("deadly-pass"), |resources| {
         let import: &Import = pin_board.get().unwrap();
         let write: &Write = pin_board.get().unwrap();
 
@@ -760,7 +761,7 @@ pub fn test_usage_illegal_dependency_2() {
 
     let mut builder = FrameGraph::builder();
 
-    builder.add_pass("import-pass", |resources| {
+    builder.add_pass(nstr!("import-pass"), |resources| {
         let import = resources.import_buffer(
             &BufferImportDesc {
                 desc: &mock_buffer_desc,
@@ -776,7 +777,7 @@ pub fn test_usage_illegal_dependency_2() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("writer-pass-1", |resources| {
+    builder.add_pass(nstr!("writer-pass-1"), |resources| {
         let import: &Import = pin_board.get().unwrap();
         let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         pin_board.publish(Write(write));
@@ -784,7 +785,7 @@ pub fn test_usage_illegal_dependency_2() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("writer-pass-2", |resources| {
+    builder.add_pass(nstr!("writer-pass-2"), |resources| {
         let write: &Write = pin_board.get().unwrap();
         let write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
         pin_board.publish(Write(write));
@@ -792,7 +793,7 @@ pub fn test_usage_illegal_dependency_2() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("reader-pass", |resources| {
+    builder.add_pass(nstr!("reader-pass"), |resources| {
         let import: &Import = pin_board.get().unwrap();
         let _read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         // pin_board.publish(Read(read));
@@ -800,7 +801,7 @@ pub fn test_usage_illegal_dependency_2() {
         move |_encoder, _resources| {}
     });
 
-    builder.add_pass("deadly-pass", |resources| {
+    builder.add_pass(nstr!("deadly-pass"), |resources| {
         let import: &Import = pin_board.get().unwrap();
         let write: &Write = pin_board.get().unwrap();
 
