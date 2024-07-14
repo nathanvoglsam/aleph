@@ -39,7 +39,7 @@ use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
-use windows::core::ComInterface;
+use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
 
@@ -411,7 +411,7 @@ impl IQueue for Queue {
         };
         swap_chain
             .swap_chain
-            .Present1(0, 0, &presentation_params)
+            .Present1(0, DXGI_PRESENT::default(), &presentation_params)
             .ok()
             .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 

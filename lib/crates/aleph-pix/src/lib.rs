@@ -34,7 +34,6 @@ extern crate aleph_windows as windows;
 
 mod colour;
 mod functions;
-mod scoped;
 
 pub use crate::colour::Colour;
 pub use crate::functions::{
@@ -42,7 +41,4 @@ pub use crate::functions::{
     begin_event_on_list, begin_event_on_queue, end_event, end_event_on_list, end_event_on_queue,
     is_library_available, set_marker, set_marker_cstr, set_marker_cstr_on_list,
     set_marker_cstr_on_queue, set_marker_on_list, set_marker_on_queue,
-};
-pub use crate::scoped::{
-    scoped_for_list, scoped_for_list_cstr, scoped_for_queue, scoped_for_queue_cstr,
 };

@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D12::*;
 
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
@@ -44,7 +43,9 @@ pub struct DescriptorHeaps {
 
 impl DescriptorHeaps {
     #[allow(unused)]
-    pub fn new(device: &impl CanInto<ID3D12Device>) -> windows::core::Result<Self> {
+    pub fn new<'a, T: Into<&'a ID3D12Device>>(device: T) -> windows::core::Result<Self> {
+        let device = device.into();
+
         // Construct the CPU side heaps for all 4 descriptor types
         let cpu_heaps = [
             DescriptorAllocatorCPU::new(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),

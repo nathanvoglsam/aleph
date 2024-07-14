@@ -34,7 +34,6 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
-use windows::core::CanInto;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -75,7 +74,6 @@ impl IGetPlatformInterface for Adapter {
 
 impl Adapter {
     fn create_queue(device: &Device, queue_type: QueueType, debug: bool) -> Option<AnyArc<Queue>> {
-        let device = device.can_into();
         unsafe {
             let desc = D3D12_COMMAND_QUEUE_DESC {
                 Type: queue_type_to_dx12(queue_type),

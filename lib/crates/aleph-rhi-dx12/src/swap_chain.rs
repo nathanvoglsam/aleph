@@ -155,7 +155,7 @@ impl SwapChain {
             width,
             height,
             format,
-            flags.0 as u32,
+            flags,
             p_creation_node_mask,
             pp_present_queue,
         )

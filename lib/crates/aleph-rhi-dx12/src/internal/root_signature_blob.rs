@@ -50,9 +50,7 @@ impl RootSignatureBlob {
         let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
         let mut blob: Option<ID3DBlob> = None;
         let mut err: Option<ID3DBlob> = None;
-        let result = create_fn(desc, &mut blob, &mut err)
-            .and_some(blob)
-            .map(RootSignatureBlob);
+        let result = create_fn(desc, &mut blob, &mut err).map(|| RootSignatureBlob(blob.unwrap()));
 
         // Log the error message
         if let Some(err) = err {

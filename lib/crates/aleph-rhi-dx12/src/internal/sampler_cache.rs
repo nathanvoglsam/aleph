@@ -32,7 +32,6 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use aleph_rhi_api::SamplerDesc;
 use parking_lot::RwLock;
-use windows::core::CanInto;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -82,8 +81,8 @@ impl SamplerCache {
     const NUM_DESCRIPTORS: u32 = 2048;
 
     #[allow(unused)]
-    pub fn new(device: &impl CanInto<ID3D12Device>) -> windows::core::Result<Self> {
-        let device: ID3D12Device = device.can_clone_into();
+    pub fn new<'a, T: Into<&'a ID3D12Device>>(device: T) -> windows::core::Result<Self> {
+        let device: ID3D12Device = device.into().clone();
 
         let heap = unsafe {
             let desc = D3D12_DESCRIPTOR_HEAP_DESC {

@@ -31,7 +31,7 @@
 #![warn(unused_imports)]
 
 use utf16_lit::utf16_null;
-use windows::core::ComInterface;
+use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -49,7 +49,7 @@ impl DebugInterface {
         let ptr = &mut debug;
         let ptr = ptr as *mut Option<ID3D12Debug>;
         let ptr = ptr as *mut *mut ::std::ffi::c_void;
-        create_fn(&ID3D12Debug::IID, ptr).and_some(debug).map(Self)
+        create_fn(&ID3D12Debug::IID, ptr).map(|| Self(debug.unwrap()))
     }
 
     #[inline]

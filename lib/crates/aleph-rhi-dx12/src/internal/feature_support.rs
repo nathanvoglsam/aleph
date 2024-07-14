@@ -33,7 +33,7 @@
 
 use std::mem::MaybeUninit;
 
-use windows::core::{CanInto, Error, HRESULT};
+use windows::core::{Error, HRESULT};
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -74,8 +74,8 @@ pub struct FeatureSupport {
 }
 
 impl FeatureSupport {
-    pub fn new(device: &impl CanInto<ID3D12Device>) -> windows::core::Result<Self> {
-        let device = device.can_clone_into();
+    pub fn new<'a, T: Into<&'a ID3D12Device>>(device: T) -> windows::core::Result<Self> {
+        let device = device.into().clone();
         unsafe {
             let options = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS)
                 .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS {

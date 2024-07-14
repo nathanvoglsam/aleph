@@ -69,7 +69,7 @@ mod windows {
 #[cfg(all(target_os = "windows", not(target_vendor = "uwp")))]
 mod pc {
     use utf16_lit::utf16_null;
-    use windows::core::ComInterface;
+    use windows::core::Interface;
     use windows::utils::DynamicLoadCell;
     use windows::Win32::Foundation::*;
 
@@ -83,7 +83,7 @@ mod pc {
     pub static CREATE_FN: DynamicLoadCell<PFN_DXGI_GET_DEBUG_INTERFACE> =
         DynamicLoadCell::new(&utf16_null!("DXGIDebug.dll"), "DXGIGetDebugInterface\0");
 
-    pub unsafe fn dxgi_get_debug_interface<T: ComInterface>(
+    pub unsafe fn dxgi_get_debug_interface<T: Interface>(
         enable_exit_callback: bool,
     ) -> windows::core::Result<T> {
         if enable_exit_callback {
@@ -96,16 +96,17 @@ mod pc {
             .ok_or(windows::core::Error::from(E_FAIL))?;
 
         let mut result__ = None;
-        create_fn(&<T as ComInterface>::IID, &mut result__ as *mut _ as *mut _).and_some(result__)
+        create_fn(&<T as Interface>::IID, &mut result__ as *mut _ as *mut _)
+            .map(|| result__.unwrap())
     }
 }
 
 #[cfg(all(target_os = "windows", target_vendor = "uwp"))]
 mod uwp {
-    use windows::core::ComInterface;
+    use windows::core::Interface;
     use windows::Win32::Graphics::Dxgi::*;
 
-    pub unsafe fn dxgi_get_debug_interface<T: ComInterface>(
+    pub unsafe fn dxgi_get_debug_interface<T: Interface>(
         enable_exit_callback: bool,
     ) -> windows::core::Result<T> {
         if enable_exit_callback {
@@ -118,9 +119,9 @@ mod uwp {
 
 #[cfg(not(target_os = "windows"))]
 mod unimplemented {
-    use windows::core::ComInterface;
+    use windows::core::Interface;
 
-    pub unsafe fn dxgi_get_debug_interface<T: ComInterface>(
+    pub unsafe fn dxgi_get_debug_interface<T: Interface>(
         _enable_exit_callback: bool,
     ) -> windows::core::Result<T> {
         unimplemented!("Unsupported on non windows platforms")

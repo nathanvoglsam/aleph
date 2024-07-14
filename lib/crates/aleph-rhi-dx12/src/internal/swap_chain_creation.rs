@@ -28,7 +28,7 @@
 //
 
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use windows::core::{ComInterface, IInspectable, IUnknown};
+use windows::core::{IInspectable, IUnknown, Interface};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -44,7 +44,7 @@ pub unsafe fn dxgi_create_swap_chain(
     // Create the swapchain
     let swapchain = match window_handle {
         RawWindowHandle::Win32(hwnd) => {
-            let hwnd = HWND(hwnd.hwnd.get());
+            let hwnd = HWND(hwnd.hwnd.get() as *mut _);
             dxgi_create_swap_chain_for_hwnd(factory, queue, hwnd, swap_chain_desc)?
         }
         RawWindowHandle::WinRt(core_window) => {

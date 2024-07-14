@@ -33,7 +33,7 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-use windows::core::ComInterface;
+use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::DXGI_MEMORY_SEGMENT_GROUP;
 
@@ -112,7 +112,7 @@ impl Allocator {
         }
     }
 
-    pub fn CreateResource<T: ComInterface>(
+    pub fn CreateResource<T: Interface>(
         &self,
         pAllocDesc: &ALLOCATION_DESC,
         pResourceDesc: &D3D12_RESOURCE_DESC,
@@ -135,15 +135,18 @@ impl Allocator {
                 InitialResourceState,
                 pOptimizedClearValue,
                 &mut allocation,
-                &<T as ComInterface>::IID,
+                &<T as Interface>::IID,
                 &mut resource,
             )
-            .from_abi(resource)
+            .map(|| {
+                assert!(!resource.is_null());
+                T::from_raw(resource)
+            })
             .map(|v| (Allocation(NonNull::new(allocation).unwrap()), v))
         }
     }
 
-    pub fn CreateResource2<T: ComInterface>(
+    pub fn CreateResource2<T: Interface>(
         &self,
         pAllocDesc: &ALLOCATION_DESC,
         pResourceDesc: &D3D12_RESOURCE_DESC1,
@@ -166,10 +169,13 @@ impl Allocator {
                 InitialResourceState,
                 pOptimizedClearValue,
                 &mut allocation,
-                &<T as ComInterface>::IID,
+                &<T as Interface>::IID,
                 &mut resource,
             )
-            .from_abi(resource)
+            .map(|| {
+                assert!(!resource.is_null());
+                T::from_raw(resource)
+            })
             .map(|v| (Allocation(NonNull::new(allocation).unwrap()), v))
         }
     }
@@ -192,14 +198,14 @@ impl Allocator {
         }
     }
 
-    pub fn CreateAliasingResource<T: ComInterface>(
+    pub fn CreateAliasingResource<T: Interface>(
         &self,
         pAllocation: Allocation,
         AllocationLocalOffset: u64,
         pResourceDesc: &D3D12_RESOURCE_DESC,
         InitialResourceState: D3D12_RESOURCE_STATES,
         pOptimizedClearValue: Option<&D3D12_CLEAR_VALUE>,
-    ) -> windows::core::Result<ID3D12Resource> {
+    ) -> windows::core::Result<T> {
         unsafe {
             let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
                 v as *const _
@@ -215,10 +221,13 @@ impl Allocator {
                 pResourceDesc,
                 InitialResourceState,
                 pOptimizedClearValue,
-                &<T as ComInterface>::IID,
+                &<T as Interface>::IID,
                 &mut resource,
             )
-            .from_abi(resource)
+            .map(|| {
+                assert!(!resource.is_null());
+                T::from_raw(resource)
+            })
         }
     }
 

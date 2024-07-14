@@ -38,7 +38,7 @@ use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
-use windows::core::{CanInto, ComInterface};
+use windows::core::Interface;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -90,12 +90,12 @@ impl Context {
     ///
     /// There's no other way to check if the surface can be used on the device so we just eat some
     /// overhead at init time to do this.
-    fn check_surface_compatibility(
+    fn check_surface_compatibility<'a, T: Into<&'a ID3D12Device>>(
         factory: &IDXGIFactory2,
-        device: &impl CanInto<ID3D12Device>,
+        device: T,
         surface: &Surface,
     ) -> Option<()> {
-        let device = device.can_into();
+        let device = device.into();
 
         // Create a direct queue so we can create a swapchain
         let desc = D3D12_COMMAND_QUEUE_DESC {
@@ -136,7 +136,7 @@ impl Context {
 
     /// Checks if the adapter supports all the minimum required features. This requires a full
     /// device initialization because of D3D12's API.
-    fn check_mandatory_features(device: &impl CanInto<ID3D12Device>) -> Option<()> {
+    fn check_mandatory_features<'a, T: Into<&'a ID3D12Device>>(device: T) -> Option<()> {
         let feature_support = FeatureSupport::new(device).ok()?;
 
         let mut failed = false;
@@ -241,8 +241,7 @@ impl Context {
                 // a big error or enumerated all of them already
                 if let Ok(adapter) = adapter {
                     // Get the adapter description so we can decide if we want to use it or not
-                    let mut desc = Default::default();
-                    adapter.GetDesc1(&mut desc).unwrap();
+                    let desc = adapter.GetDesc1().unwrap();
 
                     let vendor = pci_id_to_vendor(desc.VendorId);
                     let name =
@@ -253,7 +252,7 @@ impl Context {
                     log::info!("Name   : {}", name);
 
                     // Check the flag to determine if this adapter is a software adapter
-                    let is_software_adapter = (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0;
+                    let is_software_adapter = (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32) != 0;
                     let is_hardware_adapter = !is_software_adapter;
 
                     let software_already_selected = selected_software_adapter.is_some();
@@ -332,9 +331,8 @@ impl IContext for Context {
             }
 
             let desc = unsafe {
-                let mut desc = Default::default();
-                adapter
-                    .GetDesc1(&mut desc)
+                let desc = adapter
+                    .GetDesc1()
                     .expect("Failed to get adapter description. Something very wrong");
                 desc
             };

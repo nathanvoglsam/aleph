@@ -59,11 +59,8 @@ pub unsafe fn free_virtual_buffer(base: *mut u8, _pages: usize) -> std::io::Resu
     let free_type = MEM_RELEASE;
 
     // The number of pages to free isn't needed on the windows implementation
-    if VirtualFree(base as _, 0, free_type).as_bool() {
-        Ok(())
-    } else {
-        Err(std::io::Error::last_os_error())
-    }
+    VirtualFree(base as _, 0, free_type)?;
+    Ok(())
 }
 
 #[inline]
@@ -84,11 +81,8 @@ pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::
 pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
     let free_type = MEM_DECOMMIT;
 
-    if VirtualFree(base as _, pages * page_size(), free_type).as_bool() {
-        Ok(())
-    } else {
-        Err(std::io::Error::last_os_error())
-    }
+    VirtualFree(base as _, pages * page_size(), free_type)?;
+    Ok(())
 }
 
 pub const fn page_size() -> usize {

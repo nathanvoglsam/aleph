@@ -28,7 +28,7 @@
 //
 
 use aleph_rhi_api::*;
-use windows::Win32::Foundation::WIN32_ERROR;
+use windows::Win32::Foundation::WAIT_EVENT;
 
 pub mod adapter_description_decoder;
 pub mod conv;
@@ -120,7 +120,7 @@ pub const fn plane_layer_for_aspect_flag(format: Format, aspect: TextureAspect) 
 ///
 /// Calls `GetLastError` internally on error
 ///
-pub unsafe fn handle_wait_result(result: WIN32_ERROR) -> bool {
+pub unsafe fn handle_wait_result(result: WAIT_EVENT) -> bool {
     use windows::Win32::Foundation::*;
 
     // Successfully waited on the event

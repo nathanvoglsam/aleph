@@ -43,11 +43,9 @@ fn get_memory() -> Option<NonZeroU64> {
 
     unsafe {
         let mut memory = 0;
-        if GetPhysicallyInstalledSystemMemory(&mut memory) != false {
-            NonZeroU64::new(memory * 1024)
-        } else {
-            None
-        }
+        GetPhysicallyInstalledSystemMemory(&mut memory)
+            .ok()
+            .and_then(|_| NonZeroU64::new(memory * 1024))
     }
 }
 

@@ -32,7 +32,6 @@ use std::num::{NonZeroU64, NonZeroUsize};
 use aleph_rhi_impl_utils::offset_allocator;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use parking_lot::Mutex;
-use windows::core::CanInto;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -61,13 +60,13 @@ pub struct DescriptorHeap {
 
 impl DescriptorHeap {
     /// Creates a new [DescriptorHeap] based on the provided settings
-    pub fn new(
-        device: &impl CanInto<ID3D12Device>,
+    pub fn new<'a, T: Into<&'a ID3D12Device>>(
+        device: T,
         r#type: D3D12_DESCRIPTOR_HEAP_TYPE,
         num_descriptors: u32,
         gpu_visible: bool,
     ) -> windows::core::Result<Self> {
-        let device = device.can_into();
+        let device = device.into();
 
         if num_descriptors == 0 {
             // A descriptor heap with 0 size makes no sense

@@ -41,9 +41,8 @@ use std::os::raw::c_char;
 pub use d3d12_component_mapping::{D3D12ComponentMapping, D3D12ComponentMappingValue};
 pub use descriptor_handles::{CPUDescriptorHandle, GPUDescriptorHandle};
 use once_cell::sync::OnceCell;
-use windows::core::ComInterface;
 
-use crate::core::{PCSTR, PCWSTR};
+use crate::core::{Interface, PCSTR, PCWSTR};
 use crate::Win32::Foundation::*;
 use crate::Win32::Graphics::Direct3D12::*;
 use crate::Win32::System::LibraryLoader::*;
@@ -162,7 +161,7 @@ impl<T: Sized> DynamicLoadCell<T> {
             // Attempt to load the library
             let h_module: HMODULE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))?;
 
-            if h_module.0 == 0 {
+            if h_module.is_invalid() {
                 return Err(windows::core::Error::from(E_NOINTERFACE));
             }
 
@@ -356,12 +355,12 @@ macro_rules! deref_impl {
 /// COM pointers around without calling AddRef while remaining safe against use-after-free.
 ///
 #[repr(transparent)]
-pub struct WeakRef<'a, T: ComInterface> {
+pub struct WeakRef<'a, T: Interface> {
     object: ManuallyDrop<T>,
     phantom: PhantomData<&'a T>,
 }
 
-impl<'a, T: ComInterface + Clone> WeakRef<'a, T> {
+impl<'a, T: Interface + Clone> WeakRef<'a, T> {
     /// Constructs a new [WeakRef] from the given COM object.
     ///
     /// This creates a copy of the COM pointer without calling AddRef. Under normal circumstances
@@ -395,7 +394,7 @@ impl<'a, T: ComInterface + Clone> WeakRef<'a, T> {
     }
 }
 
-impl<'a, T: ComInterface + Clone> Deref for WeakRef<'a, T> {
+impl<'a, T: Interface + Clone> Deref for WeakRef<'a, T> {
     type Target = T;
 
     #[inline(always)]
@@ -404,7 +403,7 @@ impl<'a, T: ComInterface + Clone> Deref for WeakRef<'a, T> {
     }
 }
 
-impl<'a, T: ComInterface + Clone> From<&'a T> for WeakRef<'a, T> {
+impl<'a, T: Interface + Clone> From<&'a T> for WeakRef<'a, T> {
     fn from(value: &'a T) -> Self {
         WeakRef::new(value)
     }

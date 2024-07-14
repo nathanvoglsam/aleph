@@ -28,7 +28,7 @@
 //
 
 use utf16_lit::utf16_null;
-use windows::core::{ComInterface, IUnknown};
+use windows::core::{IUnknown, Interface};
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -54,6 +54,6 @@ pub fn create_device<'a>(
         let ptr = &mut device;
         let ptr = ptr as *mut Option<ID3D12Device10>;
         let ptr = ptr as *mut *mut ::std::ffi::c_void;
-        create_fn(adapter, minimum_feature_level, &ID3D12Device10::IID, ptr).and_some(device)
+        create_fn(adapter, minimum_feature_level, &ID3D12Device10::IID, ptr).map(|| device.unwrap())
     }
 }

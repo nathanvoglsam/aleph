@@ -28,7 +28,7 @@
 //
 
 use utf16_lit::utf16_null;
-use windows::core::{ComInterface, GUID};
+use windows::core::{Interface, GUID};
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Dxgi::*;
 
@@ -51,6 +51,6 @@ pub fn create_dxgi_factory(debug: bool) -> windows::core::Result<IDXGIFactory2> 
         let ptr = ptr as *mut Option<IDXGIFactory2>;
         let ptr = ptr as *mut *mut ::std::ffi::c_void;
 
-        create_fn(flags, &IDXGIFactory2::IID, ptr).and_some(dxgi_factory)
+        create_fn(flags, &IDXGIFactory2::IID, ptr).map(|| dxgi_factory.unwrap())
     }
 }
