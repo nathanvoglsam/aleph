@@ -63,7 +63,7 @@ pub use aleph_profile_procmacros::function;
 pub use aleph_profile_procmacros::skip;
 
 #[cfg(feature = "profile-with-superluminal")]
-pub use superluminal_perf;
+pub use superluminal_perf_sys;
 
 #[cfg(feature = "profile-with-tracy")]
 pub use tracy_client;
@@ -101,42 +101,42 @@ mod impl_empty;
 #[allow(unused_imports)]
 pub use impl_empty::*;
 
-pub trait ProfileDataParam {
-    fn as_str(&self) -> &str;
-    fn as_cstr(&self) -> Option<&CStr>;
-    fn to_cstr(&self) -> CString;
+pub trait ProfileDataParam<'a>: Copy + Clone {
+    fn as_str(self) -> &'a str;
+    fn as_cstr(self) -> Option<&'a CStr>;
+    fn to_cstr(self) -> CString;
 }
 
-impl ProfileDataParam for &str {
+impl<'a> ProfileDataParam<'a> for &'a str {
     #[inline(always)]
-    fn as_str(&self) -> &str {
-        *self
+    fn as_str(self) -> &'a str {
+        self
     }
 
     #[inline(always)]
-    fn as_cstr(&self) -> Option<&CStr> {
+    fn as_cstr(self) -> Option<&'a CStr> {
         CStr::from_bytes_with_nul(self.as_bytes()).ok()
     }
 
     #[inline(always)]
-    fn to_cstr(&self) -> CString {
-        CString::new(*self).unwrap()
+    fn to_cstr(self) -> CString {
+        CString::new(self).unwrap()
     }
 }
 
-impl ProfileDataParam for &CStr {
+impl<'a> ProfileDataParam<'a> for &'a CStr {
     #[inline(always)]
-    fn as_str(&self) -> &str {
+    fn as_str(self) -> &'a str {
         self.to_str().unwrap()
     }
 
     #[inline(always)]
-    fn as_cstr(&self) -> Option<&CStr> {
-        Some(*self)
+    fn as_cstr(self) -> Option<&'a CStr> {
+        Some(self)
     }
 
     #[inline(always)]
-    fn to_cstr(&self) -> CString {
-        CString::from(*self)
+    fn to_cstr(self) -> CString {
+        CString::from(self)
     }
 }

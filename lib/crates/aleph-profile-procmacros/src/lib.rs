@@ -121,7 +121,10 @@ pub fn all_functions(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
         let prev_block = &func.block;
-        let calling_info = if cfg!(feature = "profile-with-pix") {
+        let calling_info = if cfg!(any(
+            feature = "profile-with-pix",
+            feature = "profile-with-superluminal"
+        )) {
             // Pix can only accept null-terminated strings, so we have to add one
             format!("{}: {}\0", struct_name, func.sig.ident)
         } else {
@@ -151,9 +154,12 @@ fn impl_block(body: &syn::Block, _instrumented_function_name: &str) -> syn::Bloc
 
 #[cfg(feature = "profile-with-superluminal")]
 fn impl_block(body: &syn::Block, instrumented_function_name: &str) -> syn::Block {
+    use std::ffi::CStr;
+    // The unsafe block is safe because the pix backend is guaranteed to receive a cstr
+    assert!(CStr::from_bytes_with_nul(instrumented_function_name.as_bytes()).is_ok());
     parse_quote! {
         {
-            let _superluminal_guard = aleph_profile::detail::Guard::new(#instrumented_function_name);
+            let _superluminal_guard = aleph_profile::detail::Guard::new(unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(#instrumented_function_name.as_bytes()) });
 
             #body
         }

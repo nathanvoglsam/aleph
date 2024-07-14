@@ -54,17 +54,27 @@
 #[macro_export]
 macro_rules! scope {
     ($name:literal) => {
-        let _superluminal_guard = $crate::detail::Guard::new($name);
+        let _cstr = concat!($name, "\0");
+        let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(_cstr.as_bytes()) };
+        let _superluminal_guard = $crate::detail::Guard::new(_cstr);
     };
     ($name:literal, $data:expr) => {
-        let _superluminal_guard = $crate::detail::Guard::new_with_data($name, $data);
+        let _cstr = concat!($name, "\0");
+        let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(_cstr.as_bytes()) };
+        let _superluminal_guard = $crate::detail::Guard::new_with_data(_cstr, $data);
     };
 }
 
 #[macro_export]
 macro_rules! register_thread {
     ($name:expr) => {
-        $crate::superluminal_perf::set_current_thread_name($name);
+        #[cfg(target_os = "windows")]
+        unsafe {
+            ffi::PerformanceAPI_SetCurrentThreadName_N(
+                $name.as_ptr().cast::<i8>(),
+                $name.len() as u16,
+            );
+        }
     };
 }
 
@@ -81,21 +91,47 @@ macro_rules! finish_frame {
 //
 #[doc(hidden)]
 pub mod detail {
-    pub struct Guard;
+    use superluminal_perf_sys as ffi;
 
-    // 0xFFFFFFFF means "use default color"
-    const DEFAULT_SUPERLUMINAL_COLOR: u32 = 0xFFFFFFFF;
+    use crate::ProfileDataParam;
+    use std::ffi::CStr;
+
+    pub struct Guard;
 
     impl Guard {
         #[inline(always)]
-        pub fn new(name: &'static str) -> Self {
-            superluminal_perf::begin_event(name);
+        pub fn new(name: &'static CStr) -> Self {
+            #[cfg(target_os = "windows")]
+            unsafe {
+                ffi::PerformanceAPI_BeginEvent(name.as_ptr(), std::ptr::null(), ffi::DEFAULT_COLOR);
+            }
             Guard
         }
 
         #[inline(always)]
-        pub fn new_with_data(name: &'static str, data: &str) -> Self {
-            superluminal_perf::begin_event_with_data(name, data, DEFAULT_SUPERLUMINAL_COLOR);
+        pub fn new_with_data<'a>(name: &'static CStr, data: impl ProfileDataParam<'a>) -> Self {
+            #[cfg(target_os = "windows")]
+            if let Some(data) = data.as_cstr() {
+                // If we can cheaply get the input as a cstr we're golden
+                unsafe {
+                    ffi::PerformanceAPI_BeginEvent(
+                        name.as_ptr(),
+                        data.as_ptr(),
+                        ffi::DEFAULT_COLOR,
+                    );
+                }
+            } else {
+                // TODO: PERF - Could we get gains with stack allocation? Avoid hitting the global
+                //              heap? Ideal for less overhead when profiling
+                let data = data.to_cstr();
+                unsafe {
+                    ffi::PerformanceAPI_BeginEvent(
+                        name.as_ptr(),
+                        data.as_ptr(),
+                        ffi::DEFAULT_COLOR,
+                    );
+                }
+            }
             Guard
         }
     }
@@ -103,7 +139,12 @@ pub mod detail {
     impl Drop for Guard {
         #[inline(always)]
         fn drop(&mut self) {
-            superluminal_perf::end_event();
+            #[cfg(target_os = "windows")]
+            unsafe {
+                // PerformanceAPI_EndEvent returns a struct which is only used to prevent calls to it from being tail-call optimized.
+                // We ignore the return value here so the caller of end_event doesn't need to deal with it.
+                let _ = ffi::PerformanceAPI_EndEvent();
+            }
         }
     }
 }

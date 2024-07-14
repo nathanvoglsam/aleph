@@ -60,7 +60,10 @@ macro_rules! scope {
     ($name:literal, $data:expr) => {
         // Note: callstack_depth is 0 since this has significant overhead
         let _tracy_span = $crate::tracy_client::span!($name, 0);
-        _tracy_span.emit_text($data);
+        {
+            use $crate::ProfileDataParam;
+            _tracy_span.emit_text(ProfileDataParam::as_str($data));
+        }
     };
 }
 

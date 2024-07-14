@@ -54,6 +54,7 @@ impl Label {
     ///
     /// These labels may be passed to profiling instrumentation that requires string literals to
     /// be used.
+    #[inline]
     pub const unsafe fn new(v: &'static str) -> Self {
         assert!(v.len() >= 1);
         match CStr::from_bytes_with_nul(v.as_bytes()) {
@@ -65,6 +66,7 @@ impl Label {
         Self(v)
     }
 
+    #[inline]
     pub const fn to_str(self) -> &'static str {
         // Safety: It's illegal to construct a Label that isn't a null terminated string so there
         //         will always be a zero byte to drop. Sometimes we will give out the empty string
@@ -82,10 +84,12 @@ impl Label {
         }
     }
 
+    #[inline]
     pub const fn to_str_with_nul(self) -> &'static str {
         self.0
     }
 
+    #[inline]
     pub const fn to_cstr(self) -> &'static CStr {
         // Safety: It's illegal to construct a Label that isn't a valid CStr
         unsafe { CStr::from_bytes_with_nul_unchecked(self.0.as_bytes()) }
@@ -113,19 +117,37 @@ impl std::fmt::Display for Label {
     }
 }
 
-impl aleph_profile::ProfileDataParam for Label {
+impl aleph_profile::ProfileDataParam<'static> for Label {
     #[inline(always)]
-    fn as_str(&self) -> &str {
+    fn as_str(self) -> &'static str {
         self.to_str()
     }
 
     #[inline(always)]
-    fn as_cstr(&self) -> Option<&CStr> {
+    fn as_cstr(self) -> Option<&'static CStr> {
+        Some(Label::to_cstr(self))
+    }
+
+    #[inline(always)]
+    fn to_cstr(self) -> CString {
+        let cstr = Label::to_cstr(self);
+        CString::from(cstr)
+    }
+}
+
+impl<'a> aleph_profile::ProfileDataParam<'a> for &'a Label {
+    #[inline(always)]
+    fn as_str(self) -> &'a str {
+        self.to_str()
+    }
+
+    #[inline(always)]
+    fn as_cstr(self) -> Option<&'a CStr> {
         Some(Label::to_cstr(*self))
     }
 
     #[inline(always)]
-    fn to_cstr(&self) -> CString {
+    fn to_cstr(self) -> CString {
         let cstr = Label::to_cstr(*self);
         CString::from(cstr)
     }

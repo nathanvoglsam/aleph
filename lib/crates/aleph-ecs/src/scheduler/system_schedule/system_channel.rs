@@ -161,7 +161,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             //         call. This is only unsafe in the presence of other unsafe code.
             unsafe {
                 let system = &systems[system_index];
-                aleph_profile::scope!("aleph::ExecSystem", system.access.label.to_str());
+                aleph_profile::scope!("aleph::ExecSystem", system.access.label);
                 system.system.execute(world);
             }
 
@@ -240,7 +240,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
                 // Execute the system
                 {
                     let system = &self.systems[system_index];
-                    aleph_profile::scope!("aleph::ExecSystem", system.access.label.to_str());
+                    aleph_profile::scope!("aleph::ExecSystem", system.access.label);
                     system.system.execute_safe(world);
                 }
 
