@@ -46,6 +46,9 @@ pub fn pass(
     _shader_db: &ShaderDatabaseAccessor,
 ) {
     frame_graph.add_pass(nstr!("BackBufferImportPass"), |resources| {
+        // This will never run anything
+        resources.skip_execution();
+
         let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
         let back_buffer_desc = back_buffer_info.desc.clone().with_name("Swap Chain Image");
         let back_buffer = resources.import_texture(

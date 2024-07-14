@@ -231,6 +231,12 @@ impl FrameGraph {
                 let render_pass = node.render_pass();
                 let render_pass = &mut self.render_passes[render_pass];
 
+                // If the render pass has requested it doesn't need to be executed then we just
+                // skip calling it.
+                if render_pass.skip {
+                    continue;
+                }
+
                 encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
                 {
                     aleph_profile::scope!("frame-graph::Pass", render_pass.name.as_ref());

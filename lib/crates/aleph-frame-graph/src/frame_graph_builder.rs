@@ -202,18 +202,20 @@ impl FrameGraphBuilder {
         name: &NStr,
         setup_fn: SetupFn,
     ) {
-        let exec_fn = {
+        let (exec_fn, skip) = {
             let current_pass_index = self.render_passes.len();
             let mut resources = ResourceRegistry {
                 builder: self,
                 render_pass: current_pass_index,
+                skip: false,
             };
-            setup_fn(&mut resources)
+            let exec_fn = setup_fn(&mut resources);
+            (exec_fn, resources.skip)
         };
 
         // Construct the CallbackRenderPass instance and handoff to add_pass
         let callback_pass = CallbackRenderPass::new(exec_fn);
-        self.add_pass_internal(name, callback_pass);
+        self.add_pass_internal(name, callback_pass, skip);
     }
 
     /// Finalize the graph and fully resolve all the declared passes into a [FrameGraph]. Once the
@@ -354,6 +356,7 @@ impl FrameGraphBuilder {
 pub struct ResourceRegistry<'a> {
     builder: &'a mut FrameGraphBuilder,
     render_pass: usize,
+    skip: bool,
 }
 
 impl<'a> ResourceRegistry<'a> {
@@ -652,6 +655,17 @@ impl<'a> ResourceRegistry<'a> {
         self.builder
             .create_buffer_internal(self.render_pass, desc, sync, access)
     }
+
+    /// A flag that a render pass can set on itself to declare that the 'exec' fn should not be
+    /// called when executing the frame graph.
+    ///
+    /// This is an optimization to prevent calling renderpasses that purely exist to import
+    /// resources into the frame graph. It's purely an optimization hint and only affects whether
+    /// the 'exec' fn is called. It will also skip any debug or profiling markers from being
+    /// created.
+    pub fn skip_execution(&mut self) {
+        self.skip = true;
+    }
 }
 
 // =================================================================================================
@@ -660,7 +674,7 @@ impl<'a> ResourceRegistry<'a> {
 
 // Internal functions exposed through ResourceRegistry
 impl FrameGraphBuilder {
-    pub(crate) fn add_pass_internal<T: IRenderPass>(&mut self, name: &NStr, pass: T) {
+    pub(crate) fn add_pass_internal<T: IRenderPass>(&mut self, name: &NStr, pass: T, skip: bool) {
         let name = self.arena.alloc_slice_copy(name.to_bytes());
         let name = NStr::from_bytes(name).unwrap();
         let name = NonNull::from(name);
@@ -672,7 +686,7 @@ impl FrameGraphBuilder {
 
         unsafe {
             let pass = NonNull::from(pass.as_mut() as &mut dyn IRenderPass);
-            let pass = RenderPass { pass, name };
+            let pass = RenderPass { pass, name, skip };
             self.render_passes.push(pass);
         }
     }

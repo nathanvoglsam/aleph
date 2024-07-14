@@ -44,6 +44,7 @@ use crate::{IRenderPass, ResourceVariant, Result};
 pub(crate) struct RenderPass {
     pub pass: NonNull<dyn IRenderPass>,
     pub name: NonNull<NStr>,
+    pub skip: bool,
 }
 
 pub(crate) struct ResourceRoot {
