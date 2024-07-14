@@ -43,7 +43,9 @@ macro_rules! nstr {
 
 /// A utf8 string type that is a valid `str` but is guaranteed to contain a null
 /// terminator at the end of the string. This type is guaranteed to be both a valid `str` and a
-/// valid `CStr`, with accessors
+/// valid `CStr`, with accessors to convert to any of the compatible string types at zero cost.
+/// 
+/// These accessors are also const compatible.
 pub struct NStr([u8]);
 
 impl NStr {
@@ -101,7 +103,7 @@ impl NStr {
 
     #[inline]
     pub const fn to_str(&self) -> &str {
-        // Safety: It's illegal to construct a Label that isn't a null terminated string so there
+        // Safety: It's illegal to construct a NStr that isn't a null terminated string so there
         //         will always be a zero byte to drop. Sometimes we will give out the empty string
         //         though, but that is 100% okay.
         let bytes = self.to_bytes();
