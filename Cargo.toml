@@ -52,6 +52,7 @@ members = [
     "lib/crates/aleph-interfaces",
     "lib/crates/aleph-label",
     "lib/crates/aleph-math",
+    "lib/crates/aleph-nstr",
     "lib/crates/aleph-pin-board",
     "lib/crates/aleph-pix",
     "lib/crates/aleph-pix-raw",
@@ -154,6 +155,7 @@ aleph-identity-hasher = { path = "./lib/crates/aleph-identity-hasher", version =
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./lib/crates/aleph-label", version = "1" }
 aleph-math = { path = "./lib/crates/aleph-math", version = "0.1" }
+aleph-nstr = { path = "./lib/crates/aleph-nstr", version = "0.1" }
 aleph-pin-board = { path = "./lib/crates/aleph-pin-board", version = "0.1" }
 aleph-pix = { path = "./lib/crates/aleph-pix", version = "0.1" }
 aleph-pix-raw = { path = "./lib/crates/aleph-pix-raw", version = "0.1" }
