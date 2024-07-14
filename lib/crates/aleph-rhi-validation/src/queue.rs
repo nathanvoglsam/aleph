@@ -216,12 +216,12 @@ impl IQueue for ValidationQueue {
 }
 
 impl IQueueDebug for ValidationQueue {
-    fn set_marker(&self, color: Color, message: &str) {
+    fn set_marker(&self, color: Color, message: &aleph_nstr::NStr) {
         let debug = self.inner_debug.as_deref().unwrap();
         debug.set_marker(color, message)
     }
 
-    fn begin_event(&self, color: Color, message: &str) {
+    fn begin_event(&self, color: Color, message: &aleph_nstr::NStr) {
         let debug = self.inner_debug.as_deref().unwrap();
         debug.begin_event(color, message)
     }

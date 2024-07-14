@@ -33,6 +33,7 @@ use std::ptr::NonNull;
 use aleph_any::AnyArc;
 use aleph_arena_drop_list::DropLink;
 use aleph_device_allocators::LinearDescriptorPool;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use bumpalo::Bump;
@@ -167,7 +168,7 @@ impl FrameGraph {
             context,
         };
 
-        encoder.begin_event(Color::BLUE, "FrameGraph::execute");
+        encoder.begin_event(Color::BLUE, nstr!("FrameGraph::execute"));
 
         for bundle in self.execution_bundles.iter() {
             let mut has_memory_barrier = false;
@@ -230,7 +231,7 @@ impl FrameGraph {
                 let render_pass = node.render_pass();
                 let render_pass = &mut self.render_passes[render_pass];
 
-                encoder.begin_event(Color::GREEN, render_pass.name.as_ref().to_str());
+                encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
                 {
                     aleph_profile::scope!("frame-graph::Pass", render_pass.name.as_ref());
                     render_pass.pass.as_mut().execute(encoder, &resources);

@@ -28,7 +28,6 @@
 //
 
 use std::any::TypeId;
-use std::ffi::CStr;
 use std::marker::PhantomData;
 
 use aleph_any::AnyArc;
@@ -441,33 +440,22 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn set_marker(&mut self, color: Color, message: &str) {
+    unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
-            // Create our null terminated string in the encoder's arena
-            let mut name = BumpVec::with_capacity_in(message.len() + 1, &self.arena);
-            name.extend_from_slice(message.as_bytes());
-            name.push(0);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_slice());
-
             let color: [f32; 4] = color.into();
             let info = vk::DebugUtilsLabelEXT::default()
-                .label_name(name_cstr)
+                .label_name(message.to_cstr())
                 .color(color);
             loader.cmd_insert_debug_utils_label(self._buffer, &info);
         }
         self.arena.reset();
     }
 
-    unsafe fn begin_event(&mut self, color: Color, message: &str) {
+    unsafe fn begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
-            let mut name = BumpVec::with_capacity_in(message.len() + 1, &self.arena);
-            name.extend_from_slice(message.as_bytes());
-            name.push(0);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_slice());
-
             let color: [f32; 4] = color.into();
             let info = vk::DebugUtilsLabelEXT::default()
-                .label_name(name_cstr)
+                .label_name(message.to_cstr())
                 .color(color);
             loader.cmd_begin_debug_utils_label(self._buffer, &info);
         }

@@ -135,9 +135,9 @@ impl ITransferEncoder for NullEncoder {
     ) {
     }
 
-    unsafe fn set_marker(&mut self, _color: Color, _message: &str) {}
+    unsafe fn set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}
 
-    unsafe fn begin_event(&mut self, _color: Color, _message: &str) {}
+    unsafe fn begin_event(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}
 
     unsafe fn end_event(&mut self) {}
 }

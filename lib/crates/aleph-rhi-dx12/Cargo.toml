@@ -49,6 +49,7 @@ aleph-rhi-impl-utils = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-profile = { workspace = true }
+aleph-nstr = { workspace = true }
 allocator-api2 = { workspace = true }
 log = { workspace = true }
 crossbeam = { workspace = true }

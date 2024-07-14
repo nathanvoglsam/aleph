@@ -33,36 +33,20 @@
 #[inline]
 #[allow(dead_code)]
 #[doc(hidden)]
-pub unsafe fn str_to_cstr(string: &'static str) -> &'static std::ffi::CStr {
-    std::mem::transmute(string)
+pub const unsafe fn str_to_cstr(string: &'static str) -> &'static std::ffi::CStr {
+    std::ffi::CStr::from_bytes_with_nul_unchecked(string.as_bytes())
 }
 
 #[macro_export]
 macro_rules! cstr {
     ($strval:expr) => {{
-        fn caster(string: &'static str) -> &'static std::ffi::CStr {
-            unsafe { $crate::macros::str_to_cstr(string) }
-        }
-        caster(concat!($strval, "\0"))
+        unsafe { $crate::macros::str_to_cstr(concat!($strval, "\0")) }
     }};
-}
-
-/// # Safety
-///
-/// It's the caller's responsibility to ensure that the string is null terminated.
-#[inline]
-#[allow(dead_code)]
-#[doc(hidden)]
-pub unsafe fn str_to_cstr_raw(string: &'static str) -> *const std::os::raw::c_char {
-    string.as_ptr() as *const _
 }
 
 #[macro_export]
 macro_rules! cstr_ptr {
     ($strval:expr) => {{
-        fn caster(string: &'static str) -> *const std::os::raw::c_char {
-            unsafe { $crate::macros::str_to_cstr_raw(string) }
-        }
-        caster(concat!($strval, "\0"))
+        unsafe { $crate::macros::str_to_cstr_raw(concat!($strval, "\0")).as_ptr() }
     }};
 }

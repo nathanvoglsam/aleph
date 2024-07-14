@@ -38,7 +38,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
-use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
+use pix::{begin_event_cstr_on_queue, end_event_on_queue, set_marker_cstr_on_queue};
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -442,14 +442,14 @@ impl IQueue for Queue {
 }
 
 impl IQueueDebug for Queue {
-    fn set_marker(&self, color: Color, message: &str) {
+    fn set_marker(&self, color: Color, message: &aleph_nstr::NStr) {
         let _lock = self.submit_lock.lock();
         unsafe {
-            set_marker_on_queue(&self.handle, color.0.into(), message);
+            set_marker_cstr_on_queue(&self.handle, color.0.into(), message.to_cstr());
         }
     }
 
-    fn begin_event(&self, color: Color, message: &str) {
+    fn begin_event(&self, color: Color, message: &aleph_nstr::NStr) {
         let _lock = self.submit_lock.lock();
         unsafe {
             // Use a counter to track the event stack depth. Prevents mismatched
@@ -460,7 +460,7 @@ impl IQueueDebug for Queue {
                 u64::MAX,
                 "Event Stack Depth overflow. How!!??!?"
             );
-            begin_event_on_queue(&self.handle, color.0.into(), message);
+            begin_event_cstr_on_queue(&self.handle, color.0.into(), message.to_cstr());
         }
     }
 

@@ -366,11 +366,11 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         self.inner.copy_texture_regions(src, dst, regions)
     }
 
-    unsafe fn set_marker(&mut self, color: Color, message: &str) {
+    unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
         self.inner.set_marker(color, message)
     }
 
-    unsafe fn begin_event(&mut self, color: Color, message: &str) {
+    unsafe fn begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
         self.inner.begin_event(color, message)
     }
 

@@ -37,7 +37,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
-use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
+use pix::{begin_event_cstr_on_list, end_event_on_list, set_marker_cstr_on_list};
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -670,12 +670,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_marker(&mut self, color: Color, message: &str) {
-        set_marker_on_list(&self._list, color.0.into(), message);
+    unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
+        set_marker_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
     }
 
-    unsafe fn begin_event(&mut self, color: Color, message: &str) {
-        begin_event_on_list(&self._list, color.0.into(), message);
+    unsafe fn begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
+        begin_event_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
     }
 
     unsafe fn end_event(&mut self) {

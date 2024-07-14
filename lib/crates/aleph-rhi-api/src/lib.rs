@@ -36,6 +36,7 @@ use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
 use aleph_any::{AnyArc, IAny};
+use aleph_nstr::NStr;
 use bitflags::bitflags;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use thiserror::Error;
@@ -467,7 +468,7 @@ pub trait IQueueDebug: IQueue {
     /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
     /// instance is created and the required backend facilities are present (i.e. Vulkan may not
     /// always expose the `VK_EXT_debug_utils` extension).
-    fn set_marker(&self, color: Color, message: &str);
+    fn set_marker(&self, color: Color, message: &NStr);
 
     ///
     /// Marks the beginning of a new event on this queue, with the given message and message color.
@@ -475,7 +476,7 @@ pub trait IQueueDebug: IQueue {
     /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
     /// instance is created and the required backend facilities are present (i.e. Vulkan may not
     /// always expose the `VK_EXT_debug_utils` extension).
-    fn begin_event(&self, color: Color, message: &str);
+    fn begin_event(&self, color: Color, message: &NStr);
 
     ///
     /// Marks the end of an event on this queue.
@@ -774,7 +775,7 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
     ///
     /// TODO investigate
     ///
-    unsafe fn set_marker(&mut self, color: Color, message: &str);
+    unsafe fn set_marker(&mut self, color: Color, message: &NStr);
 
     ///
     /// Marks the beginning of a new event on this command list, with the given message and message
@@ -788,7 +789,7 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
     ///
     /// TODO investigate
     ///
-    unsafe fn begin_event(&mut self, color: Color, message: &str);
+    unsafe fn begin_event(&mut self, color: Color, message: &NStr);
 
     ///
     /// Marks the end of an event on this command list

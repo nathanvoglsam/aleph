@@ -145,7 +145,7 @@ impl NStr {
 impl<'a> aleph_profile::ProfileDataParam<'a> for &'a NStr {
     #[inline(always)]
     fn as_str(self) -> &'a str {
-        self.as_str()
+        self.to_str()
     }
 
     #[inline(always)]

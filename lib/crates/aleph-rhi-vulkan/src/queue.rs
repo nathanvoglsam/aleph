@@ -28,7 +28,6 @@
 //
 
 use std::any::TypeId;
-use std::ffi::CString;
 use std::mem::transmute;
 use std::ptr;
 use std::ptr::NonNull;
@@ -401,15 +400,14 @@ impl IQueue for Queue {
 }
 
 impl IQueueDebug for Queue {
-    fn set_marker(&self, color: Color, message: &str) {
+    fn set_marker(&self, color: Color, message: &aleph_nstr::NStr) {
         let device = self._device.upgrade().unwrap();
         let _lock = self.submit_lock.lock();
         unsafe {
             if let Some(loader) = device.debug_loader.as_ref() {
-                let name = CString::new(message).unwrap();
                 let color: [f32; 4] = color.into();
                 let info = vk::DebugUtilsLabelEXT::default()
-                    .label_name(&name)
+                    .label_name(message.to_cstr())
                     .color(color);
 
                 {
@@ -420,7 +418,7 @@ impl IQueueDebug for Queue {
         }
     }
 
-    fn begin_event(&self, color: Color, message: &str) {
+    fn begin_event(&self, color: Color, message: &aleph_nstr::NStr) {
         let device = self._device.upgrade().unwrap();
         let _lock = self.submit_lock.lock();
         unsafe {
@@ -434,10 +432,9 @@ impl IQueueDebug for Queue {
                     "Event Stack Depth overflow. How!!??!?"
                 );
 
-                let name = CString::new(message).unwrap();
                 let color: [f32; 4] = color.into();
                 let info = vk::DebugUtilsLabelEXT::default()
-                    .label_name(&name)
+                    .label_name(message.to_cstr())
                     .color(color);
 
                 {

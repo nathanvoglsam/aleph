@@ -32,7 +32,6 @@ use std::process::Command;
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::Profile;
 use anyhow::anyhow;
-use camino::Utf8PathBuf;
 use clap::{Arg, ArgAction, ArgMatches};
 
 use crate::commands::ISubcommand;

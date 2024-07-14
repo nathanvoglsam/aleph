@@ -106,9 +106,9 @@ impl IQueue for NullQueue {
 }
 
 impl IQueueDebug for NullQueue {
-    fn set_marker(&self, _color: Color, _message: &str) {}
+    fn set_marker(&self, _color: Color, _message: &aleph_nstr::NStr) {}
 
-    fn begin_event(&self, _color: Color, _message: &str) {}
+    fn begin_event(&self, _color: Color, _message: &aleph_nstr::NStr) {}
 
     fn end_event(&self) {}
 }
