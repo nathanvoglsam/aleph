@@ -28,71 +28,44 @@
 //
 
 use std::ffi::{CStr, CString};
+use std::fmt::{Debug, Display, Formatter};
+use std::ops::Deref;
+
+#[doc(hidden)]
+pub use aleph_nstr::NStr;
 
 #[macro_export]
 macro_rules! make_label {
     ($v:literal) => {
-        unsafe { $crate::Label::new(concat!($v, "\0")) }
+        unsafe { $crate::Label::from_nstr($crate::NStr::new_str(concat!($v, "\0"))) }
     };
 }
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Label(&'static str);
+pub struct Label(&'static NStr);
 
 impl Label {
-    /// Constructs a new [Label2] instance from the given string.
-    ///
     /// # Safety
-    ///
-    /// The given string __must__ be static string literal. A string allocated on the heap and
-    /// leaked is _not_ safe to use and violates assumptions users of [Label2] are allowed to make.
-    ///
-    /// The label must also be null-terminated. An empty string is encoded by a single null byte.
-    ///
-    /// # Why
-    ///
-    /// These labels may be passed to profiling instrumentation that requires string literals to
-    /// be used.
+    /// It is the caller's responsibility to guarantee that the input string comes from a string
+    /// literal.
     #[inline]
-    pub const unsafe fn new(v: &'static str) -> Self {
-        assert!(v.len() >= 1);
-        match CStr::from_bytes_with_nul(v.as_bytes()) {
-            Ok(_) => {}
-            Err(_e) => {
-                panic!("Label is not null terminated!");
-            }
-        }
+    pub const unsafe fn from_nstr(v: &'static NStr) -> Self {
         Self(v)
     }
 
     #[inline]
-    pub const fn to_str(self) -> &'static str {
-        // Safety: It's illegal to construct a Label that isn't a null terminated string so there
-        //         will always be a zero byte to drop. Sometimes we will give out the empty string
-        //         though, but that is 100% okay.
-        unsafe {
-            let bytes = self.0.as_bytes();
-            let bytes = CStr::from_bytes_with_nul_unchecked(bytes);
-
-            match bytes.to_str() {
-                Ok(v) => v,
-                Err(_) => {
-                    unreachable!()
-                }
-            }
-        }
-    }
-
-    #[inline]
-    pub const fn to_str_with_nul(self) -> &'static str {
+    pub const fn as_nstr(self) -> &'static NStr {
         self.0
     }
+}
 
-    #[inline]
-    pub const fn to_cstr(self) -> &'static CStr {
-        // Safety: It's illegal to construct a Label that isn't a valid CStr
-        unsafe { CStr::from_bytes_with_nul_unchecked(self.0.as_bytes()) }
+impl Deref for Label {
+    type Target = NStr;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        self.0
     }
 }
 
@@ -103,52 +76,50 @@ impl Default for Label {
     }
 }
 
-impl std::fmt::Debug for Label {
+impl Debug for Label {
     #[inline(always)]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self.to_str(), f)
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(self.to_str(), f)
     }
 }
 
-impl std::fmt::Display for Label {
+impl Display for Label {
     #[inline(always)]
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self.to_str(), f)
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self.to_str(), f)
     }
 }
 
 impl aleph_profile::ProfileDataParam<'static> for Label {
     #[inline(always)]
-    fn as_str(self) -> &'static str {
-        self.to_str()
+    fn get_str(self) -> &'static str {
+        self.0.to_str()
     }
 
     #[inline(always)]
-    fn as_cstr(self) -> Option<&'static CStr> {
-        Some(Label::to_cstr(self))
+    fn get_cstr(self) -> Option<&'static CStr> {
+        Some(self.0.to_cstr())
     }
 
     #[inline(always)]
-    fn to_cstr(self) -> CString {
-        let cstr = Label::to_cstr(self);
-        CString::from(cstr)
+    fn get_cstring(self) -> CString {
+        CString::from(self.0.to_cstr())
     }
 }
 
 impl<'a> aleph_profile::ProfileDataParam<'a> for &'a Label {
     #[inline(always)]
-    fn as_str(self) -> &'a str {
-        self.to_str()
+    fn get_str(self) -> &'a str {
+        self.0.to_str()
     }
 
     #[inline(always)]
-    fn as_cstr(self) -> Option<&'a CStr> {
-        Some(Label::to_cstr(*self))
+    fn get_cstr(self) -> Option<&'a CStr> {
+        Some(self.0.to_cstr())
     }
 
     #[inline(always)]
-    fn to_cstr(self) -> CString {
-        let cstr = Label::to_cstr(*self);
-        CString::from(cstr)
+    fn get_cstring(self) -> CString {
+        CString::from(self.0.to_cstr())
     }
 }

@@ -40,6 +40,7 @@ edition.workspace = true
 
 [dependencies]
 aleph-profile = { workspace = true }
+aleph-nstr = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

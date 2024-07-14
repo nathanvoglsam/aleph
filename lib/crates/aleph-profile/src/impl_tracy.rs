@@ -62,7 +62,7 @@ macro_rules! scope {
         let _tracy_span = $crate::tracy_client::span!($name, 0);
         {
             use $crate::ProfileDataParam;
-            _tracy_span.emit_text(ProfileDataParam::as_str($data));
+            _tracy_span.emit_text(ProfileDataParam::get_str($data));
         }
     };
 }

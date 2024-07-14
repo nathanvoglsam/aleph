@@ -144,17 +144,17 @@ impl NStr {
 
 impl<'a> aleph_profile::ProfileDataParam<'a> for &'a NStr {
     #[inline(always)]
-    fn as_str(self) -> &'a str {
+    fn get_str(self) -> &'a str {
         self.to_str()
     }
 
     #[inline(always)]
-    fn as_cstr(self) -> Option<&'a CStr> {
+    fn get_cstr(self) -> Option<&'a CStr> {
         Some(NStr::to_cstr(self))
     }
 
     #[inline(always)]
-    fn to_cstr(self) -> CString {
+    fn get_cstring(self) -> CString {
         let cstr = NStr::to_cstr(self);
         CString::from(cstr)
     }

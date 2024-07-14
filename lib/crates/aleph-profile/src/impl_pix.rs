@@ -111,7 +111,7 @@ pub mod detail {
 
         #[inline(always)]
         pub fn new_with_data(name: &'static CStr, data: impl ProfileDataParam) -> Self {
-            if let Some(data) = data.as_cstr() {
+            if let Some(data) = data.get_cstr() {
                 // If we can cheaply get the input as a cstr we're golden
                 unsafe {
                     raw::SHIM_PIXBeginEvent_N_D(
@@ -124,7 +124,7 @@ pub mod detail {
             } else {
                 // TODO: PERF - Could we get gains with stack allocation? Avoid hitting the global
                 //              heap? Ideal for less overhead when profiling
-                let data = data.to_cstr();
+                let data = data.get_cstring();
                 unsafe {
                     raw::SHIM_PIXBeginEvent_N_D(
                         aleph_pix::Colour::MAGENTA.into(),

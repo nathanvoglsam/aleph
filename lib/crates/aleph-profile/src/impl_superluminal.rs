@@ -111,7 +111,7 @@ pub mod detail {
         #[inline(always)]
         pub fn new_with_data<'a>(name: &'static CStr, data: impl ProfileDataParam<'a>) -> Self {
             #[cfg(target_os = "windows")]
-            if let Some(data) = data.as_cstr() {
+            if let Some(data) = data.get_cstr() {
                 // If we can cheaply get the input as a cstr we're golden
                 unsafe {
                     ffi::PerformanceAPI_BeginEvent(
@@ -123,7 +123,7 @@ pub mod detail {
             } else {
                 // TODO: PERF - Could we get gains with stack allocation? Avoid hitting the global
                 //              heap? Ideal for less overhead when profiling
-                let data = data.to_cstr();
+                let data = data.get_cstring();
                 unsafe {
                     ffi::PerformanceAPI_BeginEvent(
                         name.as_ptr(),

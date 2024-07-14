@@ -102,41 +102,41 @@ mod impl_empty;
 pub use impl_empty::*;
 
 pub trait ProfileDataParam<'a>: Copy + Clone {
-    fn as_str(self) -> &'a str;
-    fn as_cstr(self) -> Option<&'a CStr>;
-    fn to_cstr(self) -> CString;
+    fn get_str(self) -> &'a str;
+    fn get_cstr(self) -> Option<&'a CStr>;
+    fn get_cstring(self) -> CString;
 }
 
 impl<'a> ProfileDataParam<'a> for &'a str {
     #[inline(always)]
-    fn as_str(self) -> &'a str {
+    fn get_str(self) -> &'a str {
         self
     }
 
     #[inline(always)]
-    fn as_cstr(self) -> Option<&'a CStr> {
+    fn get_cstr(self) -> Option<&'a CStr> {
         CStr::from_bytes_with_nul(self.as_bytes()).ok()
     }
 
     #[inline(always)]
-    fn to_cstr(self) -> CString {
+    fn get_cstring(self) -> CString {
         CString::new(self).unwrap()
     }
 }
 
 impl<'a> ProfileDataParam<'a> for &'a CStr {
     #[inline(always)]
-    fn as_str(self) -> &'a str {
+    fn get_str(self) -> &'a str {
         self.to_str().unwrap()
     }
 
     #[inline(always)]
-    fn as_cstr(self) -> Option<&'a CStr> {
+    fn get_cstr(self) -> Option<&'a CStr> {
         Some(self)
     }
 
     #[inline(always)]
-    fn to_cstr(self) -> CString {
+    fn get_cstring(self) -> CString {
         CString::from(self)
     }
 }
