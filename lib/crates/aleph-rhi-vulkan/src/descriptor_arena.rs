@@ -52,7 +52,6 @@ impl IGetPlatformInterface for DescriptorArena {
     }
 }
 
-#[aleph_profile::all_functions]
 impl IDescriptorArena for DescriptorArena {
     fn allocate_set(
         &self,

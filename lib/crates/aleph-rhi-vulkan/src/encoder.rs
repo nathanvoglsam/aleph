@@ -74,7 +74,6 @@ impl<'a> IGetPlatformInterface for Encoder<'a> {
     }
 }
 
-#[aleph_profile::all_functions]
 impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
         let concrete = unwrap::graphics_pipeline(pipeline);
@@ -244,7 +243,6 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 }
 
-#[aleph_profile::all_functions]
 impl<'a> IComputeEncoder for Encoder<'a> {
     unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline) {
         let concrete = unwrap::compute_pipeline(pipeline);
@@ -298,7 +296,6 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     }
 }
 
-#[aleph_profile::all_functions]
 impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn resource_barrier(
         &mut self,

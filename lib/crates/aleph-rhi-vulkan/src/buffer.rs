@@ -78,7 +78,6 @@ impl Buffer {
     }
 }
 
-#[aleph_profile::all_functions]
 impl IBuffer for Buffer {
     fn upgrade(&self) -> AnyArc<dyn IBuffer> {
         AnyArc::map::<dyn IBuffer, _>(self._this.upgrade().unwrap(), |v| v)

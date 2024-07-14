@@ -177,7 +177,6 @@ impl Queue {
     }
 }
 
-#[aleph_profile::all_functions]
 impl IQueue for Queue {
     fn upgrade(&self) -> AnyArc<dyn IQueue> {
         AnyArc::map::<dyn IQueue, _>(self.this.upgrade().unwrap(), |v| v)
