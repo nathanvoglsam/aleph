@@ -252,7 +252,8 @@ impl Context {
                     log::info!("Name   : {}", name);
 
                     // Check the flag to determine if this adapter is a software adapter
-                    let is_software_adapter = (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32) != 0;
+                    let is_software_adapter =
+                        (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32) != 0;
                     let is_hardware_adapter = !is_software_adapter;
 
                     let software_already_selected = selected_software_adapter.is_some();

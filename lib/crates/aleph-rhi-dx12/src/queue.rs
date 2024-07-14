@@ -382,6 +382,7 @@ impl IQueue for Queue {
 
     unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
         let swap_chain = unwrap::swap_chain(desc.swap_chain);
+        let swap_state = swap_chain.inner.lock();
 
         // Checks if the queue supports present operations. While this could use a debug_assert
         // instead like other validation code, the cost of this check compared to the cost of the
@@ -403,6 +404,14 @@ impl IQueue for Queue {
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
         }
 
+        let flags = if swap_state
+            .dxgi_flags
+            .contains(DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)
+        {
+            DXGI_PRESENT_ALLOW_TEARING
+        } else {
+            DXGI_PRESENT::default()
+        };
         let presentation_params = DXGI_PRESENT_PARAMETERS {
             DirtyRectsCount: 0,
             pDirtyRects: std::ptr::null_mut(),
@@ -411,7 +420,7 @@ impl IQueue for Queue {
         };
         swap_chain
             .swap_chain
-            .Present1(0, DXGI_PRESENT::default(), &presentation_params)
+            .Present1(0, flags, &presentation_params)
             .ok()
             .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
