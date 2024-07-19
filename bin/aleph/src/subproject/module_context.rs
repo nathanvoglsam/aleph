@@ -27,28 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::commands::{shaders, Build, Bundle, GenProj, SubcommandSet};
+use crate::subproject::ISubproject;
 
-mod commands;
-mod crate_metadata;
-mod project;
-mod project_schema;
-mod shader_system;
-mod subproject;
-mod templates;
-mod utils;
+#[derive(Clone)]
+pub struct SubprojectModuleContext<'a, T: ISubproject<'a>> {
+    /// The name of the module
+    pub module_name: &'a str,
 
-// TODO: refactor the shader context stuff to use arenas and violently eject all the Cow crap from
-//       the whole thing because it's fucking awful. Should heavily simplify sharing the shader
-//       context around.
-//
-//       ideally we also end up with a framework for future project systems (haxe *cough*)
-
-fn main() -> anyhow::Result<()> {
-    let mut subcommands = SubcommandSet::new(env!("CARGO_PKG_NAME"));
-    subcommands.register_subcommand(GenProj {});
-    subcommands.register_subcommand(Build {});
-    subcommands.register_subcommand(Bundle {});
-    subcommands.register_subcommand(shaders::make());
-    subcommands.exec_as_root()
+    /// Any subproject type specific metadata
+    pub meta: T::ModuleMeta,
 }

@@ -32,6 +32,7 @@ use crate::utils::dunce_utf8::simplified;
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
 use anyhow::anyhow;
+use bumpalo::Bump;
 use camino::{Utf8Path, Utf8PathBuf};
 use std::fmt::{Display, Formatter};
 use std::io::{Read, Seek};
@@ -292,5 +293,16 @@ pub mod dunce_utf8 {
             Utf8Path::from_path(simplified).unwrap_unchecked()
         };
         path
+    }
+}
+
+pub trait BumpExt {
+    fn alloc_utf8_path<'a>(&'a self, v: &Utf8Path) -> &'a Utf8Path;
+}
+
+impl BumpExt for Bump {
+    fn alloc_utf8_path<'a>(&'a self, v: &Utf8Path) -> &'a Utf8Path {
+        let v = self.alloc_str(v.as_str());
+        Utf8Path::new(v)
     }
 }

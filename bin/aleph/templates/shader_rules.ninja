@@ -1,8 +1,6 @@
 #
 # VULKAN BUILD RULES
 #
-
-glsl_cc = glslc
 cc = slangc
 
 ## Will be overriden by build commands
@@ -45,50 +43,6 @@ rule compute_shader_spirv
     depfile = $out.d
     deps = gcc
     command = $cc $comp_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
-
-#
-# GLSL BUILD RULES
-#
-glsl_target = -profile spirv_1_3 -target glsl
-rule fragment_shader_glsl
-    depfile = $out.d
-    deps = gcc
-    command = $cc $frag_stage $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
-
-rule vertex_shader_glsl
-    depfile = $out.d
-    deps = gcc
-    command = $cc $vert_stage $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
-
-rule geometry_shader_glsl
-    depfile = $out.d
-    deps = gcc
-    command = $cc $geom_stage $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
-
-rule compute_shader_glsl
-    depfile = $out.d
-    deps = gcc
-    command = $cc $comp_stage $glsl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
-
-#
-# GLSL BUILD RULES
-#
-glsl_frag_stage = -fshader-stage=fragment
-glsl_vert_stage = -fshader-stage=vertex
-glsl_geom_stage = -fshader-stage=geometry
-glsl_comp_stage = -fshader-stage=compute
-glsl_env = --target-env=vulkan1.1
-rule fragment_shader_glsl_stage2
-    command = $glsl_cc $glsl_frag_stage $glsl_env $debug -O -o $out $in
-
-rule vertex_shader_glsl_stage2
-    command = $glsl_cc $glsl_vert_stage $glsl_env $debug -O -o $out $in
-
-rule geometry_shader_glsl_stage2
-    command = $glsl_cc $glsl_geom_stage $glsl_env $debug -O -o $out $in
-
-rule compute_shader_glsl_stage2
-    command = $glsl_cc $glsl_comp_stage $glsl_env $debug -O -o $out $in
 
 #
 # DXIL BUILD RULES

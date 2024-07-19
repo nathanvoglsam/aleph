@@ -32,12 +32,13 @@ use std::process::Command;
 use aleph_target::build::target_platform;
 use aleph_target::Profile;
 use anyhow::anyhow;
+use bumpalo::Bump;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Arg, ArgMatches};
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
-use crate::shader_system::ProjectShaderContext;
+use crate::shader_system::ShaderSubproject;
 use crate::utils::dunce_utf8::simplified;
 use crate::utils::{
     architecture_from_arg, get_gradlew_name, resolve_absolute_or_root_relative_path,
@@ -242,7 +243,6 @@ impl Bundle {
         target: &Target,
     ) -> anyhow::Result<()> {
         let android_project_root = project.target_project_root(target)?;
-        let shader_ctx = ProjectShaderContext::new(project, target.platform);
 
         let mut output_dir = android_project_root.join("app");
         output_dir.push("src");
@@ -253,7 +253,11 @@ impl Bundle {
         std::fs::create_dir_all(&output_dir)?;
 
         if output_dir.exists() {
-            let src_file = shader_ctx.shaders_output_root_dir.join("shaders.shaderdb");
+            // Build the base level project context for our shader build system
+            let arena = Bump::new();
+            let project_ctx = ShaderSubproject::load(&arena, project)?;
+
+            let src_file = project_ctx.meta.output_root.join("shaders.shaderdb");
             let dst_file = output_dir.join("shaders.shaderdb");
             log::trace!("Copying '{}' -> '{}'", src_file, dst_file);
             std::fs::copy(src_file, dst_file)?;
@@ -335,10 +339,13 @@ impl Bundle {
         target: &Target,
     ) -> anyhow::Result<()> {
         let uwp_project_root = project.target_project_root(target)?;
-        let shader_ctx = ProjectShaderContext::new(project, target.platform);
 
         if uwp_project_root.exists() {
-            let src_file = shader_ctx.shaders_output_root_dir.join("shaders.shaderdb");
+            // Build the base level project context for our shader build system
+            let arena = Bump::new();
+            let project_ctx = ShaderSubproject::load(&arena, project)?;
+
+            let src_file = project_ctx.meta.output_root.join("shaders.shaderdb");
             let dst_file = uwp_project_root.join("shaders.shaderdb");
             log::trace!("Copying '{}' -> '{}'", src_file, dst_file);
             std::fs::copy(src_file, dst_file)?;

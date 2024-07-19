@@ -28,26 +28,24 @@
 //
 
 use std::collections::HashMap;
-use std::mem::size_of;
 
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Profile};
 use anyhow::{anyhow, Context};
 use bumpalo::Bump;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::semver::{Version, VersionReq};
 use cargo_metadata::Package;
 use once_cell::sync::OnceCell;
 
 use crate::project_schema::ProjectSchema;
 use crate::utils::{find_project_file, BuildPlatform, Target};
 
-/// A tuple of [Version] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
-/// instead of a String allows avoiding extra .clone calls when building the table.
-pub type VersionedPackageId<'a> = (Version, &'a str);
-
-/// A table of crate versions keyed by the name of the crate.
-pub type CrateTable<'a> = HashMap<&'a str, &'a [VersionedPackageId<'a>]>;
+// /// A tuple of [Version] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
+// /// instead of a String allows avoiding extra .clone calls when building the table.
+// pub type VersionedPackageId<'a> = (Version, &'a str);
+//
+// /// A table of crate versions keyed by the name of the crate.
+// pub type CrateTable<'a> = HashMap<&'a str, &'a [VersionedPackageId<'a>]>;
 
 /// A hash table that maps a [cargo_metadata::PackageId] to the index in the metadata's packages
 /// array.
@@ -101,11 +99,10 @@ pub struct AlephProject<'a> {
     /// A cached copy of the collect Cargo metadata
     cargo_metadata: OnceCell<cargo_metadata::Metadata>,
 
-    /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
-    /// list of (version, package_id) pairs that represents all versions of that crate referenced
-    /// by the entire workspace.
-    crate_table: OnceCell<CrateTable<'a>>,
-
+    // /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
+    // /// list of (version, package_id) pairs that represents all versions of that crate referenced
+    // /// by the entire workspace.
+    // crate_table: OnceCell<CrateTable<'a>>,
     /// A hash table that maps a [cargo_metadata::PackageId] to the index in the metadata's packages
     /// array.
     crate_id_map: OnceCell<CrateIdMap<'a>>,
@@ -192,7 +189,7 @@ impl<'a> AlephProject<'a> {
             cargo_toml_file,
             cargo_target_dir,
             cargo_metadata: Default::default(),
-            crate_table: Default::default(),
+            // crate_table: Default::default(),
             crate_id_map: Default::default(),
             game_crate_and_target: Default::default(),
             project_schema: Default::default(),
@@ -359,88 +356,88 @@ impl<'a> AlephProject<'a> {
         })
     }
 
-    /// Computes and returns the 'crate table' structure.
-    ///
-    /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
-    /// list of (version, package_id) pairs that represents all versions of that crate referenced
-    /// by the entire workspace.
-    ///
-    /// This can be used to efficiently look up a crate by name using a hash lookup instead of a
-    /// linear search through an array. It is also logically a multimap, containing N elements at
-    /// any table entry. Those N elements will be the different versions of the crate present in
-    /// the workspace as it's possible for multiple versions of a crate to be present.
-    ///
-    /// This calls [Self::get_cargo_metadata] internally so can error in the same way as that
-    /// function.
-    pub fn get_crate_table(&self) -> anyhow::Result<&CrateTable> {
-        self.crate_table.get_or_try_init(|| {
-            let cargo_metadata = self.get_cargo_metadata()?;
-
-            // Temporary arena that makes it cheap to build the list of crates as a linked list
-            // before we ossify it to flat arrays allocated out of the [AlephProject]'s arena.
-            //
-            // Size hint to avoid allocating new pages in the loop. We should have exactly
-            // num_packages links.
-            let size_hint = size_of::<CrateLink>() * cargo_metadata.packages.len();
-            let temp_arena = Bump::with_capacity(size_hint);
-
-            // Link in the linked list we build while accumulating all the present versions of a
-            // given crate
-            struct CrateLink<'a, 'x> {
-                pub item: VersionedPackageId<'a>,
-                pub next: Option<&'x CrateLink<'a, 'x>>,
-            }
-
-            // First stage, iterate over all packages and bundle up all the versions of each crate
-            // by building a temporary linked list for every crate name key in the map.
-            //
-            // Using the linked list avoids reallocs, and allocation out of the temporary arena
-            // is cheap.
-            let mut crate_table = HashMap::new();
-            for package in cargo_metadata.packages.iter() {
-                let name = &*self.arena.alloc_str(&package.name);
-                let id = &*self.arena.alloc_str(&package.id.repr);
-                crate_table
-                    .entry(name)
-                    .and_modify(|old| {
-                        let next = *old;
-                        let link = temp_arena.alloc(CrateLink {
-                            item: (package.version.clone(), id),
-                            next: Some(next),
-                        });
-                        *old = link;
-                    })
-                    .or_insert_with(|| {
-                        temp_arena.alloc(CrateLink {
-                            item: (package.version.clone(), id),
-                            next: None,
-                        })
-                    });
-            }
-
-            let mut final_crate_table = HashMap::with_capacity(crate_table.capacity());
-            for (name, list) in crate_table.drain() {
-                // Count the number of entries in the crate list
-                let mut num_links = 1;
-                let mut next = list.next;
-                while let Some(v) = next {
-                    next = v.next;
-                    num_links += 1;
-                }
-
-                // 'Arrayify' our linked list
-                let mut link = Some(list);
-                let list = self.arena.alloc_slice_fill_with(num_links, |_| {
-                    let l = link.unwrap();
-                    link = list.next;
-                    l.item.clone()
-                });
-                final_crate_table.insert(name, &*list);
-            }
-
-            Ok(final_crate_table)
-        })
-    }
+    // /// Computes and returns the 'crate table' structure.
+    // ///
+    // /// A precomputed lookup acceleration table based on cargo metadata. Maps any crate name to a
+    // /// list of (version, package_id) pairs that represents all versions of that crate referenced
+    // /// by the entire workspace.
+    // ///
+    // /// This can be used to efficiently look up a crate by name using a hash lookup instead of a
+    // /// linear search through an array. It is also logically a multimap, containing N elements at
+    // /// any table entry. Those N elements will be the different versions of the crate present in
+    // /// the workspace as it's possible for multiple versions of a crate to be present.
+    // ///
+    // /// This calls [Self::get_cargo_metadata] internally so can error in the same way as that
+    // /// function.
+    // pub fn get_crate_table(&self) -> anyhow::Result<&CrateTable> {
+    //     self.crate_table.get_or_try_init(|| {
+    //         let cargo_metadata = self.get_cargo_metadata()?;
+    //
+    //         // Temporary arena that makes it cheap to build the list of crates as a linked list
+    //         // before we ossify it to flat arrays allocated out of the [AlephProject]'s arena.
+    //         //
+    //         // Size hint to avoid allocating new pages in the loop. We should have exactly
+    //         // num_packages links.
+    //         let size_hint = size_of::<CrateLink>() * cargo_metadata.packages.len();
+    //         let temp_arena = Bump::with_capacity(size_hint);
+    //
+    //         // Link in the linked list we build while accumulating all the present versions of a
+    //         // given crate
+    //         struct CrateLink<'a, 'x> {
+    //             pub item: VersionedPackageId<'a>,
+    //             pub next: Option<&'x CrateLink<'a, 'x>>,
+    //         }
+    //
+    //         // First stage, iterate over all packages and bundle up all the versions of each crate
+    //         // by building a temporary linked list for every crate name key in the map.
+    //         //
+    //         // Using the linked list avoids reallocs, and allocation out of the temporary arena
+    //         // is cheap.
+    //         let mut crate_table = HashMap::new();
+    //         for package in cargo_metadata.packages.iter() {
+    //             let name = &*self.arena.alloc_str(&package.name);
+    //             let id = &*self.arena.alloc_str(&package.id.repr);
+    //             crate_table
+    //                 .entry(name)
+    //                 .and_modify(|old| {
+    //                     let next = *old;
+    //                     let link = temp_arena.alloc(CrateLink {
+    //                         item: (package.version.clone(), id),
+    //                         next: Some(next),
+    //                     });
+    //                     *old = link;
+    //                 })
+    //                 .or_insert_with(|| {
+    //                     temp_arena.alloc(CrateLink {
+    //                         item: (package.version.clone(), id),
+    //                         next: None,
+    //                     })
+    //                 });
+    //         }
+    //
+    //         let mut final_crate_table = HashMap::with_capacity(crate_table.capacity());
+    //         for (name, list) in crate_table.drain() {
+    //             // Count the number of entries in the crate list
+    //             let mut num_links = 1;
+    //             let mut next = list.next;
+    //             while let Some(v) = next {
+    //                 next = v.next;
+    //                 num_links += 1;
+    //             }
+    //
+    //             // 'Arrayify' our linked list
+    //             let mut link = Some(list);
+    //             let list = self.arena.alloc_slice_fill_with(num_links, |_| {
+    //                 let l = link.unwrap();
+    //                 link = list.next;
+    //                 l.item.clone()
+    //             });
+    //             final_crate_table.insert(name, &*list);
+    //         }
+    //
+    //         Ok(final_crate_table)
+    //     })
+    // }
 
     /// Computes and returns a hash table that maps a [cargo_metadata::PackageId] to the index in
     /// the [cargo_metadata::Metadata::packages] array the package is from.
@@ -476,38 +473,38 @@ impl<'a> AlephProject<'a> {
     //         .map(|v| v.map(|v| &cargo_metadata.packages[v]))
     // }
 
-    /// Utility function that will return a package index for the given criteria.
-    ///
-    /// The function searches for a crate with the given name and the highest version number that
-    /// matches the provided version spec.
-    ///
-    /// This is useful for looking up the concrete package for a crate's dependency spec.
-    pub fn find_matching_crate_index(
-        &self,
-        name: &str,
-        version_spec: &VersionReq,
-    ) -> anyhow::Result<Option<usize>> {
-        let crate_table = self.get_crate_table()?;
-
-        if let Some(&versions) = crate_table.get(name) {
-            let best_match = versions.iter().fold(&versions[0], |acc, v| {
-                if version_spec.matches(&acc.0) && acc.0 > v.0 {
-                    acc
-                } else {
-                    v
-                }
-            });
-
-            let crate_id_map = self.get_crate_id_map()?;
-            if let Some(&package_index) = crate_id_map.get(best_match.1) {
-                Ok(Some(package_index))
-            } else {
-                Ok(None)
-            }
-        } else {
-            Ok(None)
-        }
-    }
+    // /// Utility function that will return a package index for the given criteria.
+    // ///
+    // /// The function searches for a crate with the given name and the highest version number that
+    // /// matches the provided version spec.
+    // ///
+    // /// This is useful for looking up the concrete package for a crate's dependency spec.
+    // pub fn find_matching_crate_index(
+    //     &self,
+    //     name: &str,
+    //     version_spec: &VersionReq,
+    // ) -> anyhow::Result<Option<usize>> {
+    //     let crate_table = self.get_crate_table()?;
+    //
+    //     if let Some(&versions) = crate_table.get(name) {
+    //         let best_match = versions.iter().fold(&versions[0], |acc, v| {
+    //             if version_spec.matches(&acc.0) && acc.0 > v.0 {
+    //                 acc
+    //             } else {
+    //                 v
+    //             }
+    //         });
+    //
+    //         let crate_id_map = self.get_crate_id_map()?;
+    //         if let Some(&package_index) = crate_id_map.get(best_match.1) {
+    //             Ok(Some(package_index))
+    //         } else {
+    //             Ok(None)
+    //         }
+    //     } else {
+    //         Ok(None)
+    //     }
+    // }
 
     pub fn get_game_crate_and_target(
         &self,
@@ -545,6 +542,36 @@ impl<'a> AlephProject<'a> {
                 (package, target)
             })
     }
+
+    // pub fn get_game_crate_dependencu_set(&self) -> anyhow::Result<&HashSet<usize>> {
+    //     self.game_crate_dependency_set.get_or_try_init(|| {
+    //         let cargo_metadata = self.get_cargo_metadata()?;
+    //         let (package, _) = self.get_game_crate_and_target()?;
+    //         let mut package_indices = HashSet::new();
+    //
+    //         let mut package_stack = Vec::new();
+    //         package_stack.push(package);
+    //         while let Some(next_package) = package_stack.pop() {
+    //             for dependency in next_package.dependencies.iter() {
+    //                 // We only care about regular dependencies and not any other kind
+    //                 if dependency.kind != DependencyKind::Normal {
+    //                     continue;
+    //                 }
+    //
+    //                 let name = dependency.name.as_str();
+    //                 let version_spec = &dependency.req;
+    //                 let found_crate = self.find_matching_crate_index(name, version_spec)?;
+    //                 if let Some(found_crate) = found_crate {
+    //                     let not_found = package_indices.insert(found_crate);
+    //                     if not_found {
+    //                         package_stack.push(&cargo_metadata.packages[found_crate]);
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         Ok(package_indices)
+    //     })
+    // }
 }
 
 impl<'a> AlephProject<'a> {
