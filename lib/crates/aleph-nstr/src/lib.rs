@@ -44,7 +44,7 @@ macro_rules! nstr {
 /// A utf8 string type that is a valid `str` but is guaranteed to contain a null
 /// terminator at the end of the string. This type is guaranteed to be both a valid `str` and a
 /// valid `CStr`, with accessors to convert to any of the compatible string types at zero cost.
-/// 
+///
 /// These accessors are also const compatible.
 pub struct NStr([u8]);
 
