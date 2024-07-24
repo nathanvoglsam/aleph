@@ -169,12 +169,35 @@ impl RhiBackend {
             .enabled_layer_names(&layers)
             .flags(flags);
 
-        // Construct the vulkan instance
         log::info!("Creating Vulkan instance");
         let instance_loader = unsafe {
-            entry
-                .create_instance(&create_info, None)
-                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+            let configurable_validation =
+                validation && get_supported_in_set(&ext_sets, ash::ext::layer_settings::NAME);
+            if !configurable_validation {
+                log::warn!(
+                    "VK_EXT_layer_settings is not available! Unable to config validation layers."
+                );
+                entry
+                    .create_instance(&create_info, None)
+                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+            } else {
+                let mut settings = Vec::new();
+
+                settings.push(
+                    vk::LayerSettingEXT::default()
+                        .layer_name(VALIDATION_LAYER_NAME)
+                        .setting_name(cstr!("validate_sync"))
+                        .values_bool(&VTRUE),
+                );
+
+                let mut layer_settings =
+                    vk::LayerSettingsCreateInfoEXT::default().settings(&settings);
+
+                let create_info = create_info.push_next(&mut layer_settings);
+                entry
+                    .create_instance(&create_info, None)
+                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+            }
         };
 
         let extensions =
@@ -560,3 +583,65 @@ impl Extensions {
 }
 
 const VALIDATION_LAYER_NAME: &'static CStr = cstr!("VK_LAYER_KHRONOS_validation");
+
+#[allow(unused)]
+static VTRUE: [vk::Bool32; 1] = [vk::TRUE];
+
+#[allow(unused)]
+static VFALSE: [vk::Bool32; 1] = [0];
+
+#[allow(unused)]
+trait LayerSettingsExt<'a> {
+    fn values_bool(self, values: &'a [vk::Bool32]) -> Self;
+    fn values_i32(self, values: &'a [i32]) -> Self;
+    fn values_i64(self, values: &'a [i64]) -> Self;
+    fn values_u32(self, values: &'a [u32]) -> Self;
+    fn values_u64(self, values: &'a [u64]) -> Self;
+    fn values_f32(self, values: &'a [f32]) -> Self;
+    fn values_f64(self, values: &'a [f64]) -> Self;
+    fn values_cstr(self, values: &'a [&'a CStr]) -> Self;
+}
+
+impl<'a> LayerSettingsExt<'a> for vk::LayerSettingEXT<'a> {
+    fn values_bool(self, values: &'a [vk::Bool32]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::BOOL32, values)
+    }
+
+    fn values_i32(self, values: &'a [i32]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::INT32, values)
+    }
+
+    fn values_i64(self, values: &'a [i64]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::INT64, values)
+    }
+
+    fn values_u32(self, values: &'a [u32]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::UINT32, values)
+    }
+
+    fn values_u64(self, values: &'a [u64]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::UINT64, values)
+    }
+
+    fn values_f32(self, values: &'a [f32]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::FLOAT32, values)
+    }
+
+    fn values_f64(self, values: &'a [f64]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::FLOAT64, values)
+    }
+
+    fn values_cstr(self, values: &'a [&'a CStr]) -> Self {
+        layer_settings_generic_values(self, vk::LayerSettingTypeEXT::STRING, values)
+    }
+}
+
+fn layer_settings_generic_values<'a, 'b: 'a, T: Sized>(
+    mut settings: vk::LayerSettingEXT<'b>,
+    ty: vk::LayerSettingTypeEXT,
+    values: &'a [T],
+) -> vk::LayerSettingEXT<'a> {
+    settings.value_count = values.len() as _;
+    settings.p_values = values.as_ptr().cast();
+    settings.ty(ty)
+}
