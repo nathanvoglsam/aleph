@@ -30,10 +30,10 @@
 use aleph_target::Architecture;
 use anyhow::anyhow;
 use camino::Utf8Path;
-use clap::{Arg, ArgMatches, Command};
+use clap::{ArgMatches, Command};
 use tera::{Context, Tera};
 
-use crate::commands::ISubcommand;
+use crate::commands::{arch_arg, platform_arg, ISubcommand};
 use crate::project::AlephProject;
 use crate::project_schema::{
     AndroidBrandingSchema, AndroidSchema, GameSchema, UwpBrandingSchema, UwpSchema,
@@ -55,22 +55,11 @@ impl ISubcommand for GenProj {
     }
 
     fn description(&mut self) -> Command {
-        let platform = Arg::new("platform")
-            .help("The platform to generate a project for.")
-            .long_help("The platform to generate a project for. Supported values: uwp, android")
-            .required(true);
-        let arch = Arg::new("arch")
-            .short('a')
-            .long("arch")
-            .help("The architecture to generate the project for.")
-            .long_help("The architecture to generate the project for, if the target needs architecture specific projects.")
-            .default_value("native")
-            .required(false);
         Command::new(self.name())
             .about("Generate platform target projects")
             .long_about("Tool for generating platform specific projects for platforms that have specific bundling requirements. For example: Android, which needs an android project to build an apk.")
-            .arg(platform)
-            .arg(arch)
+            .arg(platform_arg())
+            .arg(arch_arg())
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {

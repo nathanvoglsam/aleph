@@ -10,6 +10,13 @@
 		"slang.additionalSearchPaths": [
 			"lib/plugins/aleph-render/shaders/aleph-render/include"
 		],
-		"slang.searchInAllWorkspaceDirectories": false
+		"slang.searchInAllWorkspaceDirectories": false,
+		"Lua.runtime.version": "LuaJIT",
+		"Lua.runtime.pathStrict": true,
+		"haxe.executable": ".aleph/sdks/haxe/haxe",
+		"haxe.configurations": [
+			["build.hxml"]
+		],
+		"rust-analyzer.cargo.targetDir": true,
 	}
 }

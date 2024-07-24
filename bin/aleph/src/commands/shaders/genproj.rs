@@ -38,7 +38,7 @@ use camino::Utf8PathBuf;
 use clap::ArgMatches;
 use rayon::prelude::*;
 
-use crate::commands::ISubcommand;
+use crate::commands::{config_arg, platform_arg, ISubcommand};
 use crate::project::AlephProject;
 use crate::shader_system::{
     ShaderCompilationParams, ShaderCrateContext, ShaderFile, ShaderModuleContext,
@@ -60,8 +60,8 @@ impl ISubcommand for GenShaderProj {
         clap::Command::new(self.name())
             .about("Generates the build system for compiling our shader database")
             .long_about("Generates the build system for compiling our shader database")
-            .arg(super::platform_arg())
-            .arg(super::config_arg())
+            .arg(platform_arg())
+            .arg(config_arg())
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {

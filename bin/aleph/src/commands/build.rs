@@ -34,7 +34,7 @@ use aleph_target::Profile;
 use anyhow::anyhow;
 use clap::{Arg, ArgAction, ArgMatches};
 
-use crate::commands::ISubcommand;
+use crate::commands::{arch_arg, config_arg, platform_arg, ISubcommand};
 use crate::project::AlephProject;
 use crate::utils::{
     architecture_from_arg, resolve_absolute_or_root_relative_path, resolve_ndk_from_proj_or_env,
@@ -49,26 +49,6 @@ impl ISubcommand for Build {
     }
 
     fn description(&mut self) -> clap::Command {
-        let platform = Arg::new("platform")
-            .help("The platform to build the game for.")
-            .long_help("The platform to generate a project for. Supported values: native, uwp, android, windows, macos, linux.")
-            .default_value("native")
-            .required(false);
-        let arch = Arg::new("arch")
-            .short('a')
-            .long("arch")
-            .help("The architecture to build the game for.")
-            .default_value("native")
-            .required(false);
-        let config = Arg::new("profile")
-            .short('p')
-            .long("profile")
-            .help("The build configuration to target.")
-            .long_help(
-                "The build configuration to target. Supported values: debug, release, retail.",
-            )
-            .default_value("debug")
-            .required(false);
         let build_std = Arg::new("build-std")
             .long("build-std")
             .help("Force building the rust standard library with the build-std option")
@@ -78,9 +58,9 @@ impl ISubcommand for Build {
         clap::Command::new(self.name())
             .about("Builds the game for the requested platform/architecture/config")
             .long_about("Tool for building the game for the requested platform/architecture/config. Will also copy build artifacts into project directories, if they exist")
-            .arg(platform)
-            .arg(arch)
-            .arg(config)
+            .arg(platform_arg())
+            .arg(arch_arg())
+            .arg(config_arg())
             .arg(build_std)
     }
 

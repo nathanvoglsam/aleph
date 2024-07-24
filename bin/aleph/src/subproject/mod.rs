@@ -37,14 +37,15 @@ use cargo_metadata::Package;
 pub use crate_context::SubprojectCrateContext;
 pub use module_context::SubprojectModuleContext;
 pub use project_context::SubprojectProjectContext;
+use std::fmt::Debug;
 
 use crate::crate_metadata::AlephCrateMetadata;
 use crate::project::AlephProject;
 
 pub trait ISubproject<'a>: Sized {
-    type ProjectMeta: 'a + Sized;
-    type CrateMeta: 'a + Sized;
-    type ModuleMeta: 'a + Sized;
+    type ProjectMeta: 'a + Sized + Debug;
+    type CrateMeta: 'a + Sized + Debug;
+    type ModuleMeta: 'a + Sized + Debug;
 
     fn load_project(arena: &'a Bump, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta>;
 

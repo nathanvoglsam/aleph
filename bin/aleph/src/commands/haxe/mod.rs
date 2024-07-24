@@ -27,13 +27,17 @@
 // SOFTWARE.
 //
 
-use crate::subproject::ISubproject;
-use crate::subproject::SubprojectModuleContext;
+mod build;
+mod genproj;
 
-#[derive(Clone, Debug)]
-pub struct SubprojectCrateContext<'a, T: ISubproject<'a>> {
-    pub modules: &'a [SubprojectModuleContext<'a, T>],
+use crate::commands::haxe::build::BuildHaxeProj;
+use crate::commands::haxe::genproj::GenHaxeProj;
+use crate::commands::SubcommandSet;
 
-    /// Any subproject type specific metadata
-    pub meta: T::CrateMeta,
+pub fn make() -> SubcommandSet {
+    let mut subcommands = SubcommandSet::new("haxe")
+        .about("Commands for handling haxe modules within an aleph-engine project");
+    subcommands.register_subcommand(GenHaxeProj {});
+    subcommands.register_subcommand(BuildHaxeProj {});
+    subcommands
 }

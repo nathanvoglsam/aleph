@@ -29,7 +29,7 @@
 
 use crate::subproject::ISubproject;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SubprojectModuleContext<'a, T: ISubproject<'a>> {
     /// The name of the module
     pub module_name: &'a str,

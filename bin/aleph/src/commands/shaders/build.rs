@@ -35,7 +35,7 @@ use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use clap::ArgMatches;
 
-use crate::commands::ISubcommand;
+use crate::commands::{config_arg, platform_arg, ISubcommand};
 use crate::project::AlephProject;
 use crate::shader_system::ShaderCrateContext;
 use crate::shader_system::ShaderFile;
@@ -55,8 +55,8 @@ impl ISubcommand for BuildShaderProj {
         clap::Command::new(self.name())
             .about("Cooks the game assets for the requested platform/config")
             .long_about("Tool for cooking game assets for the requested platform/config.")
-            .arg(super::platform_arg())
-            .arg(super::config_arg())
+            .arg(platform_arg())
+            .arg(config_arg())
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {

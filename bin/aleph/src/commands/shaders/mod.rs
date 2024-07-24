@@ -30,8 +30,6 @@
 mod build;
 mod genproj;
 
-use clap::Arg;
-
 use crate::commands::shaders::build::BuildShaderProj;
 use crate::commands::shaders::genproj::GenShaderProj;
 use crate::commands::SubcommandSet;
@@ -44,24 +42,6 @@ pub fn make() -> SubcommandSet {
     subcommands.register_subcommand(GenShaderProj {});
     subcommands.register_subcommand(BuildShaderProj {});
     subcommands
-}
-
-fn platform_arg() -> Arg {
-    Arg::new("platform")
-            .help("The platform to build shaders for.")
-            .long_help("The platform to build shaders for. Supported values: native, uwp, android, windows, macos, linux.")
-            .default_value("native")
-            .required(false)
-}
-
-fn config_arg() -> Arg {
-    Arg::new("profile")
-        .short('p')
-        .long("profile")
-        .help("The build configuration to target.")
-        .long_help("The build configuration to target. Supported values: debug, release, retail.")
-        .default_value("debug")
-        .required(false)
 }
 
 fn shader_name_for_file_in_module<const IS_SOURCE_FILE: bool>(

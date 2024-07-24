@@ -35,7 +35,7 @@ use crate::subproject::ISubproject;
 use crate::subproject::SubprojectCrateContext;
 use crate::subproject::SubprojectModuleContext;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SubprojectProjectContext<'a, T: ISubproject<'a>> {
     /// The list of crates a part of this subproject set
     pub crates: &'a [SubprojectCrateContext<'a, T>],

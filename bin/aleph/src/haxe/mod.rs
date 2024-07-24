@@ -27,30 +27,41 @@
 // SOFTWARE.
 //
 
-use crate::commands::{Build, Bundle, GenProj, SubcommandSet};
-
-mod commands;
-mod crate_metadata;
-mod haxe;
-mod project;
-mod project_schema;
-mod shader_system;
 mod subproject;
-mod templates;
-mod utils;
 
-// TODO: refactor the shader context stuff to use arenas and violently eject all the Cow crap from
-//       the whole thing because it's fucking awful. Should heavily simplify sharing the shader
-//       context around.
-//
-//       ideally we also end up with a framework for future project systems (haxe *cough*)
+use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+pub use subproject::{
+    HaxeCrateContext, HaxeCrateMeta, HaxeModuleContext, HaxeModuleMeta, HaxeProjectContext,
+    HaxeProjectMeta, HaxeSubproject,
+};
 
-fn main() -> anyhow::Result<()> {
-    let mut subcommands = SubcommandSet::new(env!("CARGO_PKG_NAME"));
-    subcommands.register_subcommand(GenProj {});
-    subcommands.register_subcommand(Build {});
-    subcommands.register_subcommand(Bundle {});
-    subcommands.register_subcommand(commands::shaders::make());
-    subcommands.register_subcommand(commands::haxe::make());
-    subcommands.exec_as_root()
+#[derive(Default, Serialize, Deserialize)]
+pub struct HaxeModuleDefinitionFile<'a> {
+    /// Top level module definition
+    pub module: HaxeModuleDefinition<'a>,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct HaxeModuleDefinition<'a> {
+    /// The name of the top-level package in this haxe module.
+    pub name: Cow<'a, str>,
+
+    /// Description of the haxe module for the 'lua' target.
+    #[serde(default)]
+    pub lua: HaxeLuaDefinition,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct HaxeLuaDefinition {
+    /// Flags whether this haxe module should be compiled to output a lua module. This will output
+    /// a lua file that can be used with 'require' and the generated code will be callable by plain
+    /// lua code.
+    #[serde(default)]
+    pub package: bool,
+
+    /// Flags whether this haxe module should be added to the general class path for other haxe
+    /// modules so that it can be consumed as a haxe library.
+    #[serde(default)]
+    pub library: bool,
 }

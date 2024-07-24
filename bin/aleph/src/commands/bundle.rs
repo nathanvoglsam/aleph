@@ -34,9 +34,9 @@ use aleph_target::Profile;
 use anyhow::anyhow;
 use bumpalo::Bump;
 use camino::{Utf8Path, Utf8PathBuf};
-use clap::{Arg, ArgMatches};
+use clap::ArgMatches;
 
-use crate::commands::ISubcommand;
+use crate::commands::{arch_arg, config_arg, platform_arg, ISubcommand};
 use crate::project::AlephProject;
 use crate::shader_system::ShaderSubproject;
 use crate::utils::dunce_utf8::simplified;
@@ -53,26 +53,6 @@ impl ISubcommand for Bundle {
     }
 
     fn description(&mut self) -> clap::Command {
-        let platform = Arg::new("platform")
-            .help("The platform to bundle the game for.")
-            .long_help("The platform to bundle the game for. Supported values: native, uwp, android, windows, macos, linux.")
-            .default_value("native")
-            .required(false);
-        let arch = Arg::new("arch")
-            .short('a')
-            .long("arch")
-            .help("The architecture to bundle the game for.")
-            .default_value("native")
-            .required(false);
-        let config = Arg::new("profile")
-            .short('p')
-            .long("profile")
-            .help("The build configuration to target.")
-            .long_help(
-                "The build configuration to target. Supported values: debug, release, retail.",
-            )
-            .default_value("debug")
-            .required(false);
         const LONG: &str = "\
             Tool for building the game for the requested platform/architecture/config. This will \
             copy build artefacts into project dirs and generate a 'bundle' for the target \
@@ -81,9 +61,9 @@ impl ISubcommand for Bundle {
         clap::Command::new(self.name())
             .about("Bundles the game for the requested platform/architecture/config")
             .long_about(LONG)
-            .arg(platform)
-            .arg(arch)
-            .arg(config)
+            .arg(platform_arg())
+            .arg(arch_arg())
+            .arg(config_arg())
     }
 
     fn exec(&mut self, project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {

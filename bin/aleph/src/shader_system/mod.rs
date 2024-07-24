@@ -29,10 +29,11 @@
 
 mod subproject;
 
-use camino::Utf8PathBuf;
 pub use subproject::{
     ShaderCrateContext, ShaderModuleContext, ShaderProjectContext, ShaderSubproject,
 };
+
+use camino::Utf8PathBuf;
 
 use std::borrow::Cow;
 use std::collections::HashMap;

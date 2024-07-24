@@ -42,33 +42,26 @@ use crate::subproject::SubprojectProjectContext;
 use crate::utils::BumpExt;
 
 #[derive(Debug)]
-pub struct ShaderSubproject();
+pub struct HaxeSubproject();
 
-impl<'a> ISubproject<'a> for ShaderSubproject {
-    type ProjectMeta = ShaderProjectMeta<'a>;
+impl<'a> ISubproject<'a> for HaxeSubproject {
+    type ProjectMeta = HaxeProjectMeta<'a>;
 
-    type CrateMeta = ShaderCrateMeta<'a>;
+    type CrateMeta = HaxeCrateMeta<'a>;
 
-    type ModuleMeta = ShaderModuleMeta<'a>;
+    type ModuleMeta = HaxeModuleMeta<'a>;
 
     fn load_project(arena: &'a Bump, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta> {
-        let output_root = arena.alloc_utf8_path(ctx.shader_build_path());
+        let output_root = arena.alloc_utf8_path(ctx.haxe_build_path());
 
-        let root_ninja_file = arena.alloc_utf8_path(&output_root.join("build.ninja"));
-        let root_rules_file = arena.alloc_utf8_path(&output_root.join("rules.ninja"));
-
-        Ok(ShaderProjectMeta {
-            output_root,
-            root_ninja_file,
-            root_rules_file,
-        })
+        Ok(HaxeProjectMeta { output_root })
     }
 
     fn retain_crate(_package: &Package, metadata: &AlephCrateMetadata) -> bool {
         // Skip any packages with no shader metadata or no shader modules if the metadata was
         // defined with no modules specified.
-        if let Some(shaders) = &metadata.shaders {
-            !shaders.modules.is_empty()
+        if let Some(haxe) = &metadata.haxe {
+            !haxe.modules.is_empty()
         } else {
             false
         }
@@ -87,13 +80,13 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
         let output_dir = project_ctx.meta.output_root.join(&output_name);
         let output_dir = arena.alloc_utf8_path(&output_dir);
 
-        let shader_dir = package.manifest_path.parent().unwrap().join("shaders");
-        let shader_dir = arena.alloc_utf8_path(&shader_dir);
+        let haxe_dir = package.manifest_path.parent().unwrap().join("haxe");
+        let haxe_dir = arena.alloc_utf8_path(&haxe_dir);
 
-        Ok(ShaderCrateMeta {
+        Ok(HaxeCrateMeta {
             output_name,
             output_dir,
-            shader_dir,
+            haxe_dir,
         })
     }
 
@@ -102,11 +95,8 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
         _package: &Package,
         metadata: &AlephCrateMetadata,
     ) -> anyhow::Result<BVec<'a, &'a str>> {
-        let out = if let Some(shaders) = &metadata.shaders {
-            let iter = shaders
-                .modules
-                .iter()
-                .map(|v| &*arena.alloc_str(v.as_ref()));
+        let out = if let Some(haxe) = &metadata.haxe {
+            let iter = haxe.modules.iter().map(|v| &*arena.alloc_str(v.as_ref()));
             BVec::from_iter_in(iter, arena)
         } else {
             BVec::new_in(arena)
@@ -126,35 +116,28 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
         let output_dir = crate_ctx.meta.output_dir.join(module_name);
         let output_dir = arena.alloc_utf8_path(&output_dir);
 
-        let ninja_file = output_dir.join("build.ninja");
-        let ninja_file = arena.alloc_utf8_path(&ninja_file);
+        let build_xml_file = output_dir.join("build.hxml");
+        let build_xml_file = arena.alloc_utf8_path(&build_xml_file);
 
-        let shader_dir = crate_ctx.meta.shader_dir.join(module_name);
+        let haxe_dir = crate_ctx.meta.haxe_dir.join(module_name);
 
-        let toml_file = shader_dir.join("Module.toml");
+        let toml_file = haxe_dir.join("Module.toml");
         let toml_file = arena.alloc_utf8_path(&toml_file);
 
-        let source_dir = shader_dir.join("source");
+        let source_dir = haxe_dir.join("src");
         let source_dir = arena.alloc_utf8_path(&source_dir);
 
-        let include_dir = shader_dir.join("include");
-        let include_dir = arena.alloc_utf8_path(&include_dir);
-
-        Ok(ShaderModuleMeta {
+        Ok(HaxeModuleMeta {
             output_dir,
-            ninja_file,
+            build_xml_file,
             toml_file,
             source_dir,
-            include_dir,
         })
     }
 }
 
-impl ShaderSubproject {
-    pub fn load<'a>(
-        arena: &'a Bump,
-        ctx: &AlephProject,
-    ) -> anyhow::Result<ShaderProjectContext<'a>> {
+impl HaxeSubproject {
+    pub fn load<'a>(arena: &'a Bump, ctx: &AlephProject) -> anyhow::Result<HaxeProjectContext<'a>> {
         let metadata = ProjectCrateMetadata::load(ctx)?;
         let project_ctx = SubprojectProjectContext::load(&arena, ctx, &metadata)?;
         Ok(project_ctx)
@@ -170,64 +153,60 @@ impl ShaderSubproject {
         }
         Ok(())
     }
-
-    pub fn ensure_build_files(ctx: &SubprojectProjectContext<Self>) -> anyhow::Result<()> {
-        ctx.meta.ensure_build_files()?;
-        Ok(())
-    }
 }
 
-pub type ShaderProjectContext<'a> = SubprojectProjectContext<'a, ShaderSubproject>;
+pub type HaxeProjectContext<'a> = SubprojectProjectContext<'a, HaxeSubproject>;
 
 #[derive(Clone, Debug)]
-pub struct ShaderProjectMeta<'a> {
-    /// Path to '.aleph/shaders'
+pub struct HaxeProjectMeta<'a> {
+    /// Path to '.aleph/haxe'
     pub output_root: &'a Utf8Path,
-
-    /// Path to the shader build system's root ninja file
-    pub root_ninja_file: &'a Utf8Path,
-
-    /// Path to the stamped out rules template used by the build system's ninja files
-    pub root_rules_file: &'a Utf8Path,
 }
 
-impl<'a> ShaderProjectMeta<'a> {
+impl<'a> HaxeProjectMeta<'a> {
     pub fn ensure_build_directories(&self) -> std::io::Result<()> {
         std::fs::create_dir_all(self.output_root)
     }
-
-    pub fn ensure_build_files(&self) -> std::io::Result<()> {
-        std::fs::write(self.root_rules_file, crate::templates::SHADER_NINJA_RULES)
-    }
 }
 
-pub type ShaderCrateContext<'a> = SubprojectCrateContext<'a, ShaderSubproject>;
+pub type HaxeCrateContext<'a> = SubprojectCrateContext<'a, HaxeSubproject>;
 
 #[derive(Clone, Debug)]
-pub struct ShaderCrateMeta<'a> {
+pub struct HaxeCrateMeta<'a> {
+    /// The name of the output directory. The '{crate}' portion of '.aleph/haxe/{crate}'.
     pub output_name: &'a str,
+
+    /// Path to '.aleph/haxe/{crate}'
     pub output_dir: &'a Utf8Path,
-    pub shader_dir: &'a Utf8Path,
+
+    /// Path to the 'haxe' dir in the crate's folder. Adjactent to Cargo.toml.
+    pub haxe_dir: &'a Utf8Path,
 }
 
-impl<'a> ShaderCrateMeta<'a> {
+impl<'a> HaxeCrateMeta<'a> {
     pub fn ensure_build_directories(&self) -> std::io::Result<()> {
         std::fs::create_dir_all(self.output_dir)
     }
 }
 
-pub type ShaderModuleContext<'a> = SubprojectModuleContext<'a, ShaderSubproject>;
+pub type HaxeModuleContext<'a> = SubprojectModuleContext<'a, HaxeSubproject>;
 
 #[derive(Clone, Debug)]
-pub struct ShaderModuleMeta<'a> {
+pub struct HaxeModuleMeta<'a> {
+    /// Path to '.aleph/haxe/{crate}/{module}'
     pub output_dir: &'a Utf8Path,
-    pub ninja_file: &'a Utf8Path,
+
+    /// Path to '.aleph/haxe/{crate}/{module}/build.hxml'
+    pub build_xml_file: &'a Utf8Path,
+
+    /// Path to 'haxe/{module}/Module.toml' in the crate's folder.
     pub toml_file: &'a Utf8Path,
+
+    /// Path to 'haxe/{module}/src' in the crate's folder.
     pub source_dir: &'a Utf8Path,
-    pub include_dir: &'a Utf8Path,
 }
 
-impl<'a> ShaderModuleMeta<'a> {
+impl<'a> HaxeModuleMeta<'a> {
     pub fn ensure_build_directories(&self) -> std::io::Result<()> {
         std::fs::create_dir_all(self.output_dir)
     }

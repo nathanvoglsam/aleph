@@ -15,3 +15,6 @@ shader_cache.bin
 
 # You know what this is :(
 .DS_Store
+
+# Ignore Generated Haxe Projects
+build.hxml

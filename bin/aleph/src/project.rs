@@ -66,8 +66,11 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph' folder for this project
     dot_aleph_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/.shaders' folder for this project
+    /// The path to the '.aleph/shaders' folder for this project
     shader_build_path: Utf8PathBuf,
+
+    /// The path to the '.aleph/haxe' folder for this project
+    haxe_build_path: Utf8PathBuf,
 
     /// Path to the android project in the '.aleph/proj' directory
     android_proj_path: Utf8PathBuf,
@@ -89,6 +92,9 @@ pub struct AlephProject<'a> {
 
     /// The path to the '.aleph/sdks/ninja' bin folder for this project
     ninja_path: Utf8PathBuf,
+
+    /// The path to the '.aleph/sdks/haxe' bin folder for this project
+    haxe_path: Utf8PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
     cargo_toml_file: Utf8PathBuf,
@@ -137,6 +143,7 @@ impl<'a> AlephProject<'a> {
         let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
         let shader_build_path = dot_aleph_path.join("shaders");
+        let haxe_build_path = dot_aleph_path.join("haxe");
 
         let mut ndk_path = dot_aleph_path.clone();
         ndk_path.push("sdks");
@@ -173,12 +180,22 @@ impl<'a> AlephProject<'a> {
             ninja_path.push("ninja");
         }
 
+        let mut haxe_path = dot_aleph_path.clone();
+        haxe_path.push("sdks");
+        haxe_path.push("haxe");
+        if target_platform().is_windows() {
+            haxe_path.push("haxe.exe");
+        } else {
+            haxe_path.push("haxe");
+        }
+
         let out = Self {
             arena,
             project_file,
             project_root,
             dot_aleph_path,
             shader_build_path,
+            haxe_build_path,
             android_proj_path,
             uwp_x86_64_proj_path,
             uwp_aarch64_proj_path,
@@ -186,6 +203,7 @@ impl<'a> AlephProject<'a> {
             dxc_path,
             slang_path,
             ninja_path,
+            haxe_path,
             cargo_toml_file,
             cargo_target_dir,
             cargo_metadata: Default::default(),
@@ -221,6 +239,12 @@ impl<'a> AlephProject<'a> {
     /// the output directory for our shader builds
     pub fn shader_build_path(&self) -> &Utf8Path {
         &self.shader_build_path
+    }
+
+    /// Returns the path to the folder that contains the `haxe` directory that will be used as
+    /// the output directory for our haxe builds
+    pub fn haxe_build_path(&self) -> &Utf8Path {
+        &self.haxe_build_path
     }
 
     /// A utility around [Self::target_project_root] that returns also ensures that the project
@@ -294,6 +318,12 @@ impl<'a> AlephProject<'a> {
     /// exist so check before using!
     pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
+    }
+
+    /// Returns the path to the project's bundled haxe, in '.aleph/sdks/ninja'. This path may not
+    /// exist so check before using!
+    pub fn haxe_path(&self) -> &Utf8Path {
+        &self.haxe_path
     }
 
     /// Returns the './target/{target-triple}/{profile}' path for the request target + profile set.

@@ -30,13 +30,14 @@
 mod build;
 mod bundle;
 mod genproj;
+pub mod haxe;
 pub mod shaders;
 
 pub use build::Build;
 pub use bundle::Bundle;
 pub use genproj::GenProj;
 
-use clap::{ArgMatches, Command};
+use clap::{Arg, ArgMatches, Command};
 
 use crate::project::AlephProject;
 
@@ -144,4 +145,32 @@ impl ISubcommand for SubcommandSet {
         }
         Ok(())
     }
+}
+
+fn platform_arg() -> Arg {
+    Arg::new("platform")
+        .help("The platform to build shaders for.")
+        .long_help("The platform to build shaders for. Supported values: native, uwp, android, ios, windows, macos, linux.")
+        .default_value("native")
+        .required(false)
+}
+
+fn config_arg() -> Arg {
+    Arg::new("profile")
+        .short('p')
+        .long("profile")
+        .help("The build configuration to target.")
+        .long_help("The build configuration to target. Supported values: debug, release, retail.")
+        .default_value("debug")
+        .required(false)
+}
+
+fn arch_arg() -> Arg {
+    Arg::new("arch")
+        .short('a')
+        .long("arch")
+        .help("The target CPU architecture.")
+        .long_help("The target CPU architecture. Can be 'native', 'x86_64', or 'aarch64'")
+        .default_value("native")
+        .required(false)
 }
