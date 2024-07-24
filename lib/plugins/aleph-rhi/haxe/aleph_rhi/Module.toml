@@ -1,0 +1,12 @@
+[module]
+
+## The name of the root package in this module
+name = "aleph_rhi"
+
+[module.lua]
+
+## Should a lua module be generated for this package
+package = false
+
+## Should this module be included in the general classpath
+library = true
