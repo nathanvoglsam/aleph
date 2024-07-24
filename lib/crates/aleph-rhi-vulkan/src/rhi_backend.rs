@@ -145,9 +145,10 @@ impl RhiBackend {
             .collect();
 
         // Select the set of extensions that we want to load
+        let ext_sets = get_supported_extension_sets(entry, &supported_layers);
         let wanted_extensions = get_wanted_extensions(debug);
         let supported_extensions =
-            strip_unsupported_extensions(entry, &supported_layers, wanted_extensions.clone());
+            strip_unsupported_extensions(&ext_sets, wanted_extensions.clone());
         check_all_extensions_supported(&wanted_extensions, &supported_extensions)?;
         let extensions: Vec<_> = supported_extensions
             .iter()
@@ -377,40 +378,43 @@ fn get_wanted_extensions(debug: bool) -> Vec<&'static CStr> {
     extensions
 }
 
-fn strip_unsupported_extensions<'a>(
+fn get_supported_extension_sets(
     entry: &ash::Entry,
     layers: &[&CStr],
-    mut extensions: Vec<&'a CStr>,
-) -> Vec<&'a CStr> {
+) -> Vec<Vec<vk::ExtensionProperties>> {
     // We can source extensions from the loader/driver directly, *or* from layers. We have to ask
     // for extensions from the driver and extensions from the layer in separate calls as separate
     // 'sets' of supported extensions. This is what we do here. 'layers' contains a list of layers
-    // that *will* be loaded so we can include those layers each as a source of extensions.
+    // that *will* be loaded, so we can include those layers each as a source of extensions.
     //
     // This is primarily needed on platforms where some extensions are provided by layers like
     // android where VK_EXT_debug_utils is provided by the validation layers. Other examples would
     // be feature emulation layers.
     let extension_sources = iter::once(None).chain(layers.iter().map(|v| Some(*v)));
-    let supported_instance_extension_sets: Vec<Vec<vk::ExtensionProperties>> = extension_sources
+    extension_sources
         .map(|v| unsafe {
             entry
                 .enumerate_instance_extension_properties(v)
                 .unwrap_or_default()
         })
-        .collect();
+        .collect()
+}
 
+fn get_supported_in_set(sets: &[Vec<vk::ExtensionProperties>], ext: &CStr) -> bool {
+    // SAFETY: Everything is guaranteed to be a C string here
+    sets.iter().any(|set| {
+        set.iter()
+            .map(|s| unsafe { CStr::from_ptr(s.extension_name.as_ptr()) })
+            .any(|s| ext == s)
+    })
+}
+
+fn strip_unsupported_extensions<'a>(
+    sets: &[Vec<vk::ExtensionProperties>],
+    mut extensions: Vec<&'a CStr>,
+) -> Vec<&'a CStr> {
     // Strip all unsupported extensions
-    extensions.retain(|&v| {
-        // SAFETY: Everything is guaranteed to be a C string here
-        unsafe {
-            // Strip any unsupported extensions
-            supported_instance_extension_sets.iter().any(|set| {
-                set.iter()
-                    .map(|s| CStr::from_ptr(s.extension_name.as_ptr()))
-                    .any(|s| v == s)
-            })
-        }
-    });
+    extensions.retain(|&v| get_supported_in_set(sets, v));
     extensions
 }
 
@@ -432,7 +436,7 @@ fn check_all_layers_supported(
 fn get_wanted_layers(validation: bool) -> Vec<&'static CStr> {
     let mut layers = Vec::new();
     if validation {
-        layers.push(cstr!("VK_LAYER_KHRONOS_validation"));
+        layers.push(VALIDATION_LAYER_NAME);
     }
     layers
 }
@@ -554,3 +558,5 @@ impl Extensions {
         }
     }
 }
+
+const VALIDATION_LAYER_NAME: &'static CStr = cstr!("VK_LAYER_KHRONOS_validation");
