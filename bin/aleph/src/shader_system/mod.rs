@@ -222,8 +222,8 @@ pub struct ShaderFile<'a> {
     /// The path to the shader file
     pub path: &'a Utf8Path,
 
-    /// The full file name of the shader file
-    pub file_name: &'a str,
+    // /// The full file name of the shader file
+    // pub file_name: &'a str,
 
     /// The extracted file extension of the shader file.
     pub file_ext: ShaderFileFormat,
@@ -231,8 +231,8 @@ pub struct ShaderFile<'a> {
     /// The extracted shader type of the shader file.
     pub shader_type: ShaderType,
 
-    /// The name of the shader, with the shader type and file extension stripped.
-    pub name: &'a str,
+    // /// The name of the shader, with the shader type and file extension stripped.
+    // pub name: &'a str,
 
     /// The name of the shader, including the shader type.
     pub name_with_type: &'a str,
@@ -271,15 +271,15 @@ impl<'a> ShaderFile<'a> {
         // name above.
         let file_name_no_ext = file_name.strip_suffix(file_ext_str).unwrap();
         let file_name_no_ext = file_name_no_ext.strip_suffix('.').unwrap();
-        let file_name_no_s_type = file_name_no_ext.strip_suffix(shader_type_str).unwrap();
-        let file_name_no_s_type = file_name_no_s_type.strip_suffix('.').unwrap();
+        // let file_name_no_s_type = file_name_no_ext.strip_suffix(shader_type_str).unwrap();
+        // let file_name_no_s_type = file_name_no_s_type.strip_suffix('.').unwrap();
 
         Some(Self {
             path,
-            file_name,
+            // file_name,
             file_ext,
             shader_type,
-            name: file_name_no_s_type,
+            // name: file_name_no_s_type,
             name_with_type: file_name_no_ext,
         })
     }

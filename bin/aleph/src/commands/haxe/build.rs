@@ -114,8 +114,6 @@ fn build_module_hxmls(
     crate_ctx: &HaxeCrateContext,
     module_ctx: &HaxeModuleContext,
 ) -> anyhow::Result<()> {
-    use std::fmt::Write;
-
     let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
     let HaxeModuleDefinitionFile { module } = toml::from_str(&module_toml)?;
 

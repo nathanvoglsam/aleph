@@ -31,10 +31,7 @@ mod subproject;
 
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-pub use subproject::{
-    HaxeCrateContext, HaxeCrateMeta, HaxeModuleContext, HaxeModuleMeta, HaxeProjectContext,
-    HaxeProjectMeta, HaxeSubproject,
-};
+pub use subproject::{HaxeCrateContext, HaxeModuleContext, HaxeProjectContext, HaxeSubproject};
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct HaxeModuleDefinitionFile<'a> {

@@ -84,7 +84,6 @@ impl ISubcommand for GenHaxeProj {
 }
 
 struct HaxeModuleJob<'a> {
-    crate_ctx: &'a HaxeCrateContext<'a>,
     module_ctx: &'a HaxeModuleContext<'a>,
     module_toml: Option<HaxeModuleDefinitionFile<'static>>,
 }
@@ -95,7 +94,6 @@ impl<'a> HaxeModuleJob<'a> {
         for crate_ctx in project_ctx.crates {
             for module_ctx in crate_ctx.modules {
                 jobs.push(Self {
-                    crate_ctx,
                     module_ctx,
                     module_toml: None,
                 });
