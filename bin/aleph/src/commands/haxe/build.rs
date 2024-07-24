@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::io::IsTerminal;
+
 use aleph_target::Profile;
 use anyhow::anyhow;
 use bumpalo::Bump;
@@ -126,11 +128,21 @@ fn build_module_hxmls(
 
         let mut command = std::process::Command::new(haxe_path);
         command.arg(dunce_utf8::simplified(module_ctx.meta.build_xml_file));
+        command.arg("-D");
+        command.arg("message.reporting=pretty");
+
+        // If we're not writing to a terminal we want to skip color codes.
+        //
+        // I'm not sure if haxe does this itself, but just to be sure.
+        if !std::io::stdout().is_terminal() {
+            command.arg("-D");
+            command.arg("message.no-color");
+        }
 
         let status = command.status()?;
         if !status.success() {
-            log::error!("Ninja invocation failed! Terminating cook.");
-            return Err(anyhow!("ninja invocation failed!"));
+            log::error!("Haxe invocation failed! Terminating build.");
+            return Err(anyhow!("haxe invocation failed!"));
         }
     }
 

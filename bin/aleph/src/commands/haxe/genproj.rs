@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::borrow::Cow;
+
 use aleph_target::Profile;
 use anyhow::anyhow;
 use bumpalo::Bump;
@@ -205,7 +207,7 @@ fn generate_module_build_hxmls(
         let mut hxml = String::with_capacity(1024);
 
         for path in classpaths {
-            writeln!(hxml, "--class-path \"{}\"", dunce_utf8::simplified(path))?;
+            writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
         }
         if !module.lua.library {
             // If the module is not marked as a library then it won't already be present in the
@@ -214,7 +216,7 @@ fn generate_module_build_hxmls(
             writeln!(
                 hxml,
                 "--class-path \"{}\"",
-                dunce_utf8::simplified(module_ctx.meta.source_dir)
+                path_for_haxe(module_ctx.meta.source_dir)
             )?;
         }
         writeln!(hxml, "--dce std")?;
@@ -225,7 +227,7 @@ fn generate_module_build_hxmls(
             "--macro include(\"{}\", true)",
             module_ctx.module_name
         )?;
-        writeln!(hxml, "--lua \"{}\"", dunce_utf8::simplified(&out_file_name))?;
+        writeln!(hxml, "--lua \"{}\"", path_for_haxe(&out_file_name))?;
 
         std::fs::write(module_ctx.meta.build_xml_file, hxml)?;
     }
@@ -248,15 +250,23 @@ fn generate_vscode_build_hxml(
 
     writeln!(hxml, "{}", HAXE_LUA_BUILD_HXML_PREFIX)?;
     for path in classpaths {
-        writeln!(hxml, "--class-path \"{}\"", dunce_utf8::simplified(path))?;
+        writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
     }
-    writeln!(
-        hxml,
-        "--lua \"{}\"",
-        dunce_utf8::simplified(&dummy_output_file)
-    )?;
+    writeln!(hxml, "--lua \"{}\"", path_for_haxe(&dummy_output_file))?;
 
     std::fs::write(hxml_file_name, hxml)?;
 
     Ok(())
+}
+
+/// Does the whole 'UNC' discard + convers '\' to '/' for haxe. It's not required on windows, but it
+/// does make haxe output better error messages.
+fn path_for_haxe(path: &Utf8Path) -> Cow<str> {
+    let path = dunce_utf8::simplified(path);
+    if cfg!(windows) {
+        let path = path.as_str().replace('\\', "/");
+        Cow::Owned(path)
+    } else {
+        Cow::Borrowed(path.as_str())
+    }
 }

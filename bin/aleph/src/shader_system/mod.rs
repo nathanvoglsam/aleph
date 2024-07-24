@@ -224,7 +224,6 @@ pub struct ShaderFile<'a> {
 
     // /// The full file name of the shader file
     // pub file_name: &'a str,
-
     /// The extracted file extension of the shader file.
     pub file_ext: ShaderFileFormat,
 
@@ -233,7 +232,6 @@ pub struct ShaderFile<'a> {
 
     // /// The name of the shader, with the shader type and file extension stripped.
     // pub name: &'a str,
-
     /// The name of the shader, including the shader type.
     pub name_with_type: &'a str,
 }
