@@ -27,7 +27,11 @@
 // SOFTWARE.
 //
 
+extern crate aleph_target_build as target;
+
 use std::path::{Path, PathBuf};
+
+use target::{Architecture, Platform};
 
 ///
 /// Where to place build artifacts like .dll or .so files for this build. This will always be inside
@@ -134,4 +138,54 @@ pub fn copy_file_to_target_dir_with_name(source: &Path, name: &str) -> std::io::
     std::fs::copy(source, &out_artifact)?;
 
     Ok(())
+}
+
+pub fn standard_binary_path_for(platform: Platform, architecture: Architecture) -> Option<PathBuf> {
+    assert!(!architecture.is_unknown());
+
+    match platform {
+        Platform::WindowsGNU
+        | Platform::WindowsMSVC
+        | Platform::UniversalWindowsMSVC
+        | Platform::UniversalWindowsGNU => {
+            let vendor = if platform.is_uwp() { "winrt" } else { "win32" };
+            let abi = if platform.is_gnu() { "gnu" } else { "msvc" };
+
+            let mut out = PathBuf::new();
+            out.push(architecture.name());
+            out.push(vendor);
+            out.push(abi);
+
+            Some(out)
+        }
+        Platform::Linux => {
+            // Note: Shipping binaries for linux sucks. In practice we'll probably never use this
+            //       but for the sake of completness we include this anyway.
+            let mut out = PathBuf::new();
+            out.push(architecture.name());
+            out.push("linux");
+            Some(out)
+        }
+        Platform::Android => {
+            let mut out = PathBuf::new();
+            out.push(architecture.name());
+            out.push("android");
+            out.push("api-30"); // We assume api-30 for binaries we provide
+
+            Some(out)
+        }
+        Platform::MacOS => {
+            let mut out = PathBuf::new();
+            out.push(architecture.name());
+            out.push("macos");
+            Some(out)
+        }
+        Platform::IOS => {
+            let mut out = PathBuf::new();
+            out.push(architecture.name());
+            out.push("ios");
+            Some(out)
+        }
+        Platform::Unknown => None,
+    }
 }
