@@ -195,42 +195,44 @@ fn generate_module_build_hxmls(
     let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
     let HaxeModuleDefinitionFile { module } = toml::from_str(&module_toml)?;
 
-    if module.lua.package {
-        log::info!(
-            "Generating lua build.hxml for '{}@{}'",
-            crate_ctx.meta.output_name,
-            module_ctx.module_name
-        );
+    log::info!(
+        "Generating lua build.hxml for '{}@{}'",
+        crate_ctx.meta.output_name,
+        module_ctx.module_name
+    );
 
-        let out_file_name = module_ctx.meta.output_dir.join("out.lua");
+    let out_file_name = module_ctx.meta.output_dir.join("out.lua");
+    let xml_file_name = module_ctx.meta.output_dir.join("out.xml");
 
-        let mut hxml = String::with_capacity(1024);
+    let mut hxml = String::with_capacity(1024);
 
-        for path in classpaths {
-            writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
-        }
-        if !module.lua.library {
-            // If the module is not marked as a library then it won't already be present in the
-            // 'classpaths' bundle. We'll have to add it ourselves. If we did this unconditionally
-            // we would end up with the module added to the classpath twice
-            writeln!(
-                hxml,
-                "--class-path \"{}\"",
-                path_for_haxe(module_ctx.meta.source_dir)
-            )?;
-        }
-        writeln!(hxml, "--dce std")?;
-        writeln!(hxml, "-D lua-jit")?;
-        writeln!(hxml, "-D lua-ver=5.1")?;
+    for path in classpaths {
+        writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
+    }
+    if !module.lua.library {
+        // If the module is not marked as a library then it won't already be present in the
+        // 'classpaths' bundle. We'll have to add it ourselves. If we did this unconditionally
+        // we would end up with the module added to the classpath twice
         writeln!(
             hxml,
-            "--macro include(\"{}\", true)",
-            module_ctx.module_name
+            "--class-path \"{}\"",
+            path_for_haxe(module_ctx.meta.source_dir)
         )?;
-        writeln!(hxml, "--lua \"{}\"", path_for_haxe(&out_file_name))?;
-
-        std::fs::write(module_ctx.meta.build_xml_file, hxml)?;
     }
+    writeln!(hxml, "--dce std")?;
+    writeln!(hxml, "-D lua-jit")?;
+    writeln!(hxml, "-D lua-ver=5.1")?;
+    writeln!(
+        hxml,
+        "--macro include(\"{}\", true)",
+        module_ctx.module_name
+    )?;
+    if module.lua.package {
+        writeln!(hxml, "--lua \"{}\"", path_for_haxe(&out_file_name))?;
+    }
+    writeln!(hxml, "--xml \"{}\"", path_for_haxe(&xml_file_name))?;
+
+    std::fs::write(module_ctx.meta.build_xml_file, hxml)?;
 
     Ok(())
 }

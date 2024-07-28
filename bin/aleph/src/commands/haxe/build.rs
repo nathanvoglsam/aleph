@@ -119,31 +119,29 @@ fn build_module_hxmls(
     let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
     let HaxeModuleDefinitionFile { module } = toml::from_str(&module_toml)?;
 
-    if module.lua.package {
-        log::info!(
-            "Build lua module for '{}@{}'",
-            crate_ctx.meta.output_name,
-            module_ctx.module_name
-        );
+    log::info!(
+        "Build lua module for '{}@{}'",
+        crate_ctx.meta.output_name,
+        module_ctx.module_name
+    );
 
-        let mut command = std::process::Command::new(haxe_path);
-        command.arg(dunce_utf8::simplified(module_ctx.meta.build_xml_file));
+    let mut command = std::process::Command::new(haxe_path);
+    command.arg(dunce_utf8::simplified(module_ctx.meta.build_xml_file));
+    command.arg("-D");
+    command.arg("message.reporting=pretty");
+
+    // If we're not writing to a terminal we want to skip color codes.
+    //
+    // I'm not sure if haxe does this itself, but just to be sure.
+    if !std::io::stdout().is_terminal() {
         command.arg("-D");
-        command.arg("message.reporting=pretty");
+        command.arg("message.no-color");
+    }
 
-        // If we're not writing to a terminal we want to skip color codes.
-        //
-        // I'm not sure if haxe does this itself, but just to be sure.
-        if !std::io::stdout().is_terminal() {
-            command.arg("-D");
-            command.arg("message.no-color");
-        }
-
-        let status = command.status()?;
-        if !status.success() {
-            log::error!("Haxe invocation failed! Terminating build.");
-            return Err(anyhow!("haxe invocation failed!"));
-        }
+    let status = command.status()?;
+    if !status.success() {
+        log::error!("Haxe invocation failed! Terminating build.");
+        return Err(anyhow!("haxe invocation failed!"));
     }
 
     Ok(())
