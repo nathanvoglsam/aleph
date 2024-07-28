@@ -30,9 +30,9 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-use std::path::Path;
+use std::path::PathBuf;
 
-use target::{Architecture, Platform};
+use target::Platform;
 
 ///
 /// Main driver for compiling SDL2, handles switching between w/e implementation is needed for the
@@ -41,39 +41,40 @@ use target::{Architecture, Platform};
 fn main() {
     let target_platform = target::build::target_platform();
     let target_arch = target::build::target_architecture();
+
+    let mut binary_path = PathBuf::new();
+    binary_path.push("thirdparty");
+    binary_path.push("out");
+    binary_path.push(compile::standard_binary_path_for(target_platform, target_arch).unwrap());
+
+    let bin_path = binary_path.join("bin");
+    let lib_path = binary_path.join("lib");
+
+    // On windows the .dll is found in the 'bin' directory. On unix-likes the .so/.dylib is found in
+    // the 'lib' directory. Handle it here so everything can be common code (except iOS).
+    let dll_name = dll_name(target_platform);
+    let dll_path = if target_platform.is_windows() {
+        bin_path.join(dll_name)
+    } else {
+        lib_path.join(dll_name)
+    };
+
     match target_platform {
-        Platform::WindowsGNU | Platform::WindowsMSVC | Platform::UniversalWindowsMSVC => {
-            let arch = match target_arch {
-                Architecture::X8664 => "x86_64",
-                Architecture::AARCH64 => "aarch64",
-                Architecture::Unknown => panic!("Unknown architecture"),
-            };
-            let vendor = if target_platform.is_uwp() {
-                "winrt"
-            } else {
-                "win32"
-            };
-            let abi = if target_platform.is_gnu() {
-                "gnu"
-            } else {
-                "msvc"
-            };
+        Platform::WindowsGNU
+        | Platform::WindowsMSVC
+        | Platform::UniversalWindowsMSVC
+        | Platform::UniversalWindowsGNU
+        | Platform::MacOS
+        | Platform::Android => {
+            println!(
+                "cargo:rustc-link-search=all={}",
+                lib_path.canonicalize().unwrap().display()
+            );
 
-            let binary_path = format!("./thirdparty/out/{arch}/{vendor}/{abi}");
-            let binary_path = Path::new(&binary_path);
-            let link_path = binary_path.join("lib").canonicalize().unwrap();
-
-            println!("cargo:rustc-link-search=all={}", link_path.display());
-
-            let source = binary_path.join("bin").join(dll_name());
-            compile::copy_file_to_artifacts_dir(&source)
+            compile::copy_file_to_artifacts_dir(&dll_path)
                 .expect("Failed to copy SDL2 dll to artifacts dir");
-            compile::copy_file_to_target_dir(&source)
+            compile::copy_file_to_target_dir(&dll_path)
                 .expect("Failed to copy SDL2 dll to target dir");
-        }
-        Platform::UniversalWindowsGNU => {
-            // We can't compile SDL2 for this platform as it requires msvc
-            panic!("Unsupported platform")
         }
         Platform::Linux => {
             // Nothing has to be done on linux as the most sane choice is to use the system provided
@@ -81,57 +82,12 @@ fn main() {
             // If it's in the distro repository, get it from there as it will probably play much
             // nicer than compiling our own.
         }
-        Platform::Android => {
-            let arch = match target_arch {
-                Architecture::X8664 => "x86_64",
-                Architecture::AARCH64 => "aarch64",
-                Architecture::Unknown => panic!("Unknown architecture"),
-            };
-
-            let binary_path = format!("./thirdparty/out/{arch}/android/api-30");
-            let binary_path = Path::new(&binary_path);
-            let link_path = binary_path.join("lib").canonicalize().unwrap();
-
-            println!("cargo:rustc-link-search=all={}", link_path.display());
-
-            let source = binary_path.join("lib").join("libSDL2.so");
-            compile::copy_file_to_artifacts_dir(&source)
-                .expect("Failed to copy SDL2 .so to artifacts dir");
-            compile::copy_file_to_target_dir(&source)
-                .expect("Failed to copy SDL2 .so to target dir");
-        }
-        Platform::MacOS => {
-            let arch = match target_arch {
-                Architecture::X8664 => panic!("Unsupported architecture+platform"),
-                Architecture::AARCH64 => "aarch64",
-                Architecture::Unknown => panic!("Unknown architecture"),
-            };
-
-            let binary_path = format!("./thirdparty/out/{arch}/macos");
-            let binary_path = Path::new(&binary_path);
-            let link_path = binary_path.join("lib").canonicalize().unwrap();
-
-            println!("cargo:rustc-link-search=all={}", link_path.display());
-
-            let source = binary_path.join("lib").join("libSDL2-2.0.0.dylib");
-            compile::copy_file_to_artifacts_dir(&source)
-                .expect("Failed to copy SDL2 dylib to artifacts dir");
-            compile::copy_file_to_target_dir(&source)
-                .expect("Failed to copy SDL2 dylib to target dir");
-        }
         Platform::IOS => {
-            let arch = match target_arch {
-                Architecture::X8664 => panic!("Unsupported architecture+platform"),
-                Architecture::AARCH64 => "aarch64",
-                Architecture::Unknown => panic!("Unknown architecture"),
-            };
-
-            let search_path = format!("./thirdparty/out/{arch}/ios");
-            let search_path = Path::new(&search_path).canonicalize().unwrap();
-
+            // On iOS we link to a framework rather than directly to a binary. We just need to set
+            // the search path, the sdl2 crate handles the linker directives.
             println!(
                 "cargo:rustc-link-search=framework={}",
-                search_path.display()
+                binary_path.canonicalize().unwrap().display()
             );
         }
         Platform::Unknown => {
@@ -143,15 +99,15 @@ fn main() {
 ///
 /// Gets the name of the dll/so file that will need to be copied around
 ///
-fn dll_name() -> &'static str {
-    match target::build::target_platform() {
+const fn dll_name(platform: Platform) -> &'static str {
+    match platform {
         Platform::WindowsGNU
         | Platform::WindowsMSVC
         | Platform::UniversalWindowsGNU
         | Platform::UniversalWindowsMSVC => "SDL2.dll",
         Platform::Linux | Platform::Android => "libSDL2.so",
-        Platform::MacOS => "libSDL2-2.0.dylib",
+        Platform::MacOS => "libSDL2-2.0.0.dylib",
         Platform::IOS => "",
-        Platform::Unknown => panic!("Unsupported Platform"),
+        Platform::Unknown => "",
     }
 }
