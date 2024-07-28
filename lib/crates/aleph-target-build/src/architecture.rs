@@ -87,6 +87,13 @@ impl Architecture {
     pub const fn is_aarch64(self) -> bool {
         matches!(self, Architecture::AARCH64)
     }
+
+    ///
+    /// Are we building for an unknown architecture
+    ///
+    pub const fn is_unknown(self) -> bool {
+        matches!(self, Architecture::Unknown)
+    }
 }
 
 impl Display for Architecture {
