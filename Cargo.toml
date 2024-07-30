@@ -51,6 +51,7 @@ members = [
     "lib/crates/aleph-identity-hasher",
     "lib/crates/aleph-interfaces",
     "lib/crates/aleph-label",
+    "lib/crates/aleph-luajit-sys",
     "lib/crates/aleph-math",
     "lib/crates/aleph-nstr",
     "lib/crates/aleph-pin-board",
@@ -155,6 +156,7 @@ aleph-identity-hasher = { path = "./lib/crates/aleph-identity-hasher", version =
 aleph-interfaces = { path = "./lib/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./lib/crates/aleph-label", version = "1" }
 aleph-math = { path = "./lib/crates/aleph-math", version = "0.1" }
+aleph-luajit-sys = { path = "./lib/crates/aleph-luajit-sys", version = "0.1" }
 aleph-nstr = { path = "./lib/crates/aleph-nstr", version = "0.1" }
 aleph-pin-board = { path = "./lib/crates/aleph-pin-board", version = "0.1" }
 aleph-pix = { path = "./lib/crates/aleph-pix", version = "0.1" }
