@@ -49,6 +49,10 @@ jobs:
                 sudo apt -y install -qq wget libgtk-3-dev libsdl2-dev ninja-build libx11-dev libxext-dev libpulse-dev libasound2-dev curl p7zip-full p7zip-rar
               displayName: Install Dependencies
 
+            - bash: |
+                bash build_x86_64_linux_release.sh
+              workingDirectory: "./submodules/LuaJIT-builds"
+
             # The actual build
             - pwsh: |
                 cargo build --release
