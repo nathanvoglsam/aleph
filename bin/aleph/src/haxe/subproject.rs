@@ -116,8 +116,11 @@ impl<'a> ISubproject<'a> for HaxeSubproject {
         let output_dir = crate_ctx.meta.output_dir.join(module_name);
         let output_dir = arena.alloc_utf8_path(&output_dir);
 
-        let build_xml_file = output_dir.join("build.hxml");
-        let build_xml_file = arena.alloc_utf8_path(&build_xml_file);
+        let build_lua_file = output_dir.join("build_lua.hxml");
+        let build_lua_file = arena.alloc_utf8_path(&build_lua_file);
+
+        let build_js_file = output_dir.join("build_js.hxml");
+        let build_js_file = arena.alloc_utf8_path(&build_js_file);
 
         let haxe_dir = crate_ctx.meta.haxe_dir.join(module_name);
 
@@ -129,7 +132,8 @@ impl<'a> ISubproject<'a> for HaxeSubproject {
 
         Ok(HaxeModuleMeta {
             output_dir,
-            build_xml_file,
+            build_lua_file,
+            build_js_file,
             toml_file,
             source_dir,
         })
@@ -196,8 +200,11 @@ pub struct HaxeModuleMeta<'a> {
     /// Path to '.aleph/haxe/{crate}/{module}'
     pub output_dir: &'a Utf8Path,
 
-    /// Path to '.aleph/haxe/{crate}/{module}/build.hxml'
-    pub build_xml_file: &'a Utf8Path,
+    /// Path to '.aleph/haxe/{crate}/{module}/build_lua.hxml'
+    pub build_lua_file: &'a Utf8Path,
+
+    /// Path to '.aleph/haxe/{crate}/{module}/build_js.hxml'
+    pub build_js_file: &'a Utf8Path,
 
     /// Path to 'haxe/{module}/Module.toml' in the crate's folder.
     pub toml_file: &'a Utf8Path,

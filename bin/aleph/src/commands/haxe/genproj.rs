@@ -38,8 +38,8 @@ use rayon::prelude::*;
 
 use crate::commands::{config_arg, ISubcommand};
 use crate::haxe::{
-    HaxeCrateContext, HaxeModuleContext, HaxeModuleDefinitionFile, HaxeProjectContext,
-    HaxeSubproject,
+    ClasspathBundle, HaxeCrateContext, HaxeJsDefinition, HaxeLuaDefinition, HaxeModuleContext,
+    HaxeModuleDefinitionFile, HaxeProjectContext, HaxeSubproject,
 };
 use crate::project::AlephProject;
 use crate::templates::HAXE_LUA_BUILD_HXML_PREFIX;
@@ -126,16 +126,25 @@ impl<'a> HaxeModuleJob<'a> {
         jobs.iter().map(|v| v.module_ctx.meta.source_dir).collect()
     }
 
-    pub fn collect_library_classpaths(jobs: &[HaxeModuleJob<'a>]) -> Vec<&'a Utf8Path> {
-        jobs.iter()
-            .filter_map(|v| {
-                if v.module_toml.as_ref().unwrap().module.lua.library {
-                    Some(v.module_ctx.meta.source_dir)
-                } else {
-                    None
-                }
-            })
-            .collect()
+    pub fn collect_library_classpaths(jobs: &[HaxeModuleJob<'a>]) -> ClasspathBundle<'a> {
+        let mut bundle = ClasspathBundle::default();
+        for j in jobs {
+            let module = &j.module_toml.as_ref().unwrap();
+
+            if module.lua.library {
+                bundle.lua.push(j.module_ctx.meta.source_dir);
+            }
+            if module.js.library {
+                bundle.js.push(j.module_ctx.meta.source_dir);
+            }
+
+            // If any module target is a library then add it to the 'all' classpath too. This is
+            // used for generating a dummy hxml file for intellisense.
+            if module.lua.library || module.js.library {
+                bundle.all.push(j.module_ctx.meta.source_dir);
+            }
+        }
+        bundle
     }
 
     pub fn load_toml(&mut self) -> anyhow::Result<()> {
@@ -148,7 +157,7 @@ impl<'a> HaxeModuleJob<'a> {
 
 fn generate_project_build_hxmls(
     project_ctx: &HaxeProjectContext,
-    classpaths: &[&Utf8Path],
+    classpaths: &ClasspathBundle,
 ) -> anyhow::Result<()> {
     let (error_send, error_recv) = crossbeam::channel::bounded(project_ctx.crates.len());
     project_ctx
@@ -177,7 +186,7 @@ fn generate_project_build_hxmls(
 
 fn generate_crate_build_hxmls(
     crate_ctx: &HaxeCrateContext,
-    classpaths: &[&Utf8Path],
+    classpaths: &ClasspathBundle,
 ) -> anyhow::Result<()> {
     for module_ctx in crate_ctx.modules {
         generate_module_build_hxmls(crate_ctx, module_ctx, classpaths)?;
@@ -188,12 +197,29 @@ fn generate_crate_build_hxmls(
 fn generate_module_build_hxmls(
     crate_ctx: &HaxeCrateContext,
     module_ctx: &HaxeModuleContext,
-    classpaths: &[&Utf8Path],
+    classpaths: &ClasspathBundle,
+) -> anyhow::Result<()> {
+    let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
+    let HaxeModuleDefinitionFile { lua, js, .. } = toml::from_str(&module_toml)?;
+
+    generate_module_build_lua_hxml(crate_ctx, module_ctx, classpaths, &lua)?;
+    generate_module_build_js_hxml(crate_ctx, module_ctx, classpaths, &js)?;
+
+    Ok(())
+}
+
+fn generate_module_build_lua_hxml(
+    crate_ctx: &HaxeCrateContext,
+    module_ctx: &HaxeModuleContext,
+    classpaths: &ClasspathBundle,
+    lua: &HaxeLuaDefinition,
 ) -> anyhow::Result<()> {
     use std::fmt::Write;
 
-    let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
-    let HaxeModuleDefinitionFile { module } = toml::from_str(&module_toml)?;
+    // Early exit if we shouldn't generate a package
+    if !lua.package {
+        return Ok(());
+    }
 
     log::info!(
         "Generating lua build.hxml for '{}@{}'",
@@ -201,15 +227,16 @@ fn generate_module_build_hxmls(
         module_ctx.module_name
     );
 
-    let out_file_name = module_ctx.meta.output_dir.join("out.lua");
-    let xml_file_name = module_ctx.meta.output_dir.join("out.xml");
+    let out_dir = module_ctx.meta.output_dir.join("lua");
+    let out_file_name = out_dir.join("out.lua");
+    let xml_file_name = out_dir.join("out.xml");
 
     let mut hxml = String::with_capacity(1024);
 
-    for path in classpaths {
+    for path in classpaths.lua.iter().copied() {
         writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
     }
-    if !module.lua.library {
+    if !lua.library {
         // If the module is not marked as a library then it won't already be present in the
         // 'classpaths' bundle. We'll have to add it ourselves. If we did this unconditionally
         // we would end up with the module added to the classpath twice
@@ -227,12 +254,63 @@ fn generate_module_build_hxmls(
         "--macro include(\"{}\", true)",
         module_ctx.module_name
     )?;
-    if module.lua.package {
-        writeln!(hxml, "--lua \"{}\"", path_for_haxe(&out_file_name))?;
-    }
+    writeln!(hxml, "--lua \"{}\"", path_for_haxe(&out_file_name))?;
     writeln!(hxml, "--xml \"{}\"", path_for_haxe(&xml_file_name))?;
 
-    std::fs::write(module_ctx.meta.build_xml_file, hxml)?;
+    std::fs::write(module_ctx.meta.build_lua_file, hxml)?;
+
+    Ok(())
+}
+
+fn generate_module_build_js_hxml(
+    crate_ctx: &HaxeCrateContext,
+    module_ctx: &HaxeModuleContext,
+    classpaths: &ClasspathBundle,
+    js: &HaxeJsDefinition,
+) -> anyhow::Result<()> {
+    use std::fmt::Write;
+
+    // Early exit if we shouldn't generate a package
+    if !js.package {
+        return Ok(());
+    }
+
+    log::info!(
+        "Generating js build.hxml for '{}@{}'",
+        crate_ctx.meta.output_name,
+        module_ctx.module_name
+    );
+
+    let out_dir = module_ctx.meta.output_dir.join("js");
+    let out_file_name = out_dir.join("out.js");
+    let xml_file_name = out_dir.join("out.xml");
+
+    let mut hxml = String::with_capacity(1024);
+
+    for path in classpaths.js.iter().copied() {
+        writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
+    }
+    if !js.library {
+        // If the module is not marked as a library then it won't already be present in the
+        // 'classpaths' bundle. We'll have to add it ourselves. If we did this unconditionally
+        // we would end up with the module added to the classpath twice
+        writeln!(
+            hxml,
+            "--class-path \"{}\"",
+            path_for_haxe(module_ctx.meta.source_dir)
+        )?;
+    }
+    writeln!(hxml, "--dce std")?;
+    writeln!(hxml, "-D js-es=6")?;
+    writeln!(
+        hxml,
+        "--macro include(\"{}\", true)",
+        module_ctx.module_name
+    )?;
+    writeln!(hxml, "--js \"{}\"", path_for_haxe(&out_file_name))?;
+    writeln!(hxml, "--xml \"{}\"", path_for_haxe(&xml_file_name))?;
+
+    std::fs::write(module_ctx.meta.build_js_file, hxml)?;
 
     Ok(())
 }

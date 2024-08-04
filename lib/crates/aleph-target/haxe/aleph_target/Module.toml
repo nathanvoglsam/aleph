@@ -32,7 +32,15 @@
 ## The name of the root package in this haxe module
 name = "aleph_target"
 
-[module.lua]
+[lua]
+
+## Should a lua module be generated for this package
+package = true
+
+## Should this module be included in the general haxe classpath as a library
+library = true
+
+[js]
 
 ## Should a lua module be generated for this package
 package = true

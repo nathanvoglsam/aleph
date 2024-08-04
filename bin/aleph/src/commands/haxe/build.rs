@@ -117,16 +117,32 @@ fn build_module_hxmls(
     module_ctx: &HaxeModuleContext,
 ) -> anyhow::Result<()> {
     let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
-    let HaxeModuleDefinitionFile { module } = toml::from_str(&module_toml)?;
+    let HaxeModuleDefinitionFile { lua, js, .. } = toml::from_str(&module_toml)?;
 
-    log::info!(
-        "Build lua module for '{}@{}'",
-        crate_ctx.meta.output_name,
-        module_ctx.module_name
-    );
+    if lua.package {
+        log::info!(
+            "Build lua module for '{}@{}'",
+            crate_ctx.meta.output_name,
+            module_ctx.module_name
+        );
+        build_hxml(haxe_path, module_ctx.meta.build_lua_file)?;
+    }
 
+    if js.package {
+        log::info!(
+            "Build js module for '{}@{}'",
+            crate_ctx.meta.output_name,
+            module_ctx.module_name
+        );
+        build_hxml(haxe_path, module_ctx.meta.build_js_file)?;
+    }
+
+    Ok(())
+}
+
+fn build_hxml(haxe_path: &Utf8Path, path: &Utf8Path) -> anyhow::Result<()> {
     let mut command = std::process::Command::new(haxe_path);
-    command.arg(dunce_utf8::simplified(module_ctx.meta.build_xml_file));
+    command.arg(dunce_utf8::simplified(path));
     command.arg("-D");
     command.arg("message.reporting=pretty");
 
