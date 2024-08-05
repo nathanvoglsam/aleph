@@ -22,3 +22,6 @@
 [submodule "submodules/LuaJIT-builds"]
     path = submodules/LuaJIT-builds
     url = https://gitea.hmmr-cloud.com.au:5669/MindSpunk/LuaJIT-builds.git
+[submodule "submodules/QuickJSNG-builds"]
+	path = submodules/QuickJSNG-builds
+	url = https://gitea.hmmr-cloud.com.au:5669/MindSpunk/QuickJSNG-builds.git
