@@ -98,5 +98,8 @@ jobs:
                 cargo install cargo-deny
               displayName: "Install cargo-deny"
             - pwsh: |
-                cargo deny check
-              displayName: Check cargo-deny
+                cargo deny check licenses
+              displayName: Check cargo-deny licenses
+            - pwsh: |
+                cargo deny check bans
+              displayName: Check cargo-deny bans
