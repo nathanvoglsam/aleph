@@ -484,7 +484,7 @@ fn coverage_mapper_simd_256(v: f32x8) -> [u8; 8] {
 ///
 /// This is pre-calculated using the following python script
 ///
-/// ```{python}
+/// ```ignore
 /// for i in range(256):
 ///     v1 = float(i) / 255 # normalize from unorm range
 ///     v2 = int(pow(v1, 0.55) * 255) # do the actual conversion, including going back to unorm

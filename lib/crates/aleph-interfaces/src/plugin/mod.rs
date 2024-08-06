@@ -269,8 +269,8 @@ impl dyn IPluginRegistrar {
 /// initialize all the fields from the invoking crate's cargo metadata.
 ///
 /// Specifically this will generate the following:
-/// ```{ignore}
-/// PluginDescription {
+/// ```ignore
+/// aleph_interfaces::plugin::PluginDescription {
 ///      name: env!("CARGO_PKG_NAME").to_string(),
 ///      description: env!("CARGO_PKG_DESCRIPTION").to_string(),
 ///      major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),

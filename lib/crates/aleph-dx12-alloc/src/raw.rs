@@ -548,7 +548,7 @@ pub struct Statistics {
 ///
 /// Averages are not provided because they can be easily calculated as:
 ///
-/// ```{ignore}
+/// ```ignore
 /// let AllocationSizeAvg = DetailedStats.Statistics.AllocationBytes / detailedStats.Statistics.AllocationCount;
 /// let UnusedBytes = DetailedStats.Statistics.BlockBytes - DetailedStats.Statistics.AllocationBytes;
 /// let UnusedRangeSizeAvg = UnusedBytes / DetailedStats.UnusedRangeCount;
