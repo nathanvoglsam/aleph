@@ -62,7 +62,7 @@ fn main() {
                 "cargo:rustc-link-search=all={}",
                 lib_path.canonicalize().unwrap().display()
             );
-            println!("cargo::rustc-link-lib=static=quickjs");
+            println!("cargo::rustc-link-lib=static=qjs");
         }
         Platform::Unknown => {
             // Do nothing on 'unknown' as a safe default.

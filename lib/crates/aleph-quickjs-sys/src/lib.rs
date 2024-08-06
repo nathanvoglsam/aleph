@@ -34,18 +34,6 @@
 use std::ffi::*;
 use std::ptr::NonNull;
 
-#[cfg(target_pointer_width = "32")]
-mod nan_boxed;
-
-#[cfg(target_pointer_width = "32")]
-pub use nan_boxed::*;
-
-#[cfg(target_pointer_width = "64")]
-mod non_nan_boxed;
-
-#[cfg(target_pointer_width = "64")]
-pub use non_nan_boxed::*;
-
 macro_rules! bitflags_traits {
     ($name:ident) => {
         impl ::std::ops::BitOr for $name {
@@ -60,7 +48,7 @@ macro_rules! bitflags_traits {
         impl ::std::ops::BitOrAssign for $name {
             #[inline(always)]
             fn bitor_assign(&mut self, rhs: Self) {
-                *self = *self | *rhs;
+                *self = *self | rhs;
             }
         }
 
@@ -76,7 +64,7 @@ macro_rules! bitflags_traits {
         impl ::std::ops::BitAndAssign for $name {
             #[inline(always)]
             fn bitand_assign(&mut self, rhs: Self) {
-                *self = *self & *rhs;
+                *self = *self & rhs;
             }
         }
 
@@ -92,7 +80,7 @@ macro_rules! bitflags_traits {
         impl ::std::ops::BitXorAssign for $name {
             #[inline(always)]
             fn bitxor_assign(&mut self, rhs: Self) {
-                *self = *self ^ *rhs;
+                *self = *self ^ rhs;
             }
         }
 
@@ -106,6 +94,199 @@ macro_rules! bitflags_traits {
         }
     };
 }
+
+#[cfg(target_pointer_width = "32")]
+mod nan_boxed {
+    use std::ffi::*;
+    use std::mem::size_of;
+
+    use crate::JSTag;
+
+    const JS_FLOAT64_TAG_ADDEND: u64 = 0x7ff80000 - (JSTag::FIRST.0 as u64) + 1;
+
+    #[repr(transparent)]
+    #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+    pub struct JSValue(u64);
+
+    impl JSValue {
+        pub(crate) const __NAN: JSValue =
+            JSValue(0x7ff8000000000000 - (JS_FLOAT64_TAG_ADDEND << 32));
+
+        pub(crate) const fn __new_val(tag: JSTag, v: i32) -> JSValue {
+            let tag = (tag.0 as u64) << 32;
+            JSValue(tag | (v as u64))
+        }
+
+        pub(crate) const fn __new_ptr(tag: JSTag, v: *mut c_void) -> JSValue {
+            assert!(size_of::<usize>() <= size_of::<JSValue>());
+            let tag = (tag.0 as u64) << 32;
+            let v = v as u64;
+            JSValue(tag | v)
+        }
+
+        pub(crate) const fn __new_float64(d: f64) -> JSValue {
+            // normalize NaN
+            let v: u64 = unsafe { std::mem::transmute(d) };
+            if (v & 0x7fffffffffffffff) > 0x7ff0000000000000 {
+                Self::__NAN
+            } else {
+                JSValue(v - (JS_FLOAT64_TAG_ADDEND << 32))
+            }
+        }
+
+        pub(crate) const fn __get_tag(&self) -> JSTag {
+            JSTag((self.0 >> 32) as c_int)
+        }
+
+        pub(crate) const fn __get_norm_tag(&self) -> JSTag {
+            let tag = self.__get_tag();
+            if js_tag_is_float64(tag) {
+                JSTag::FLOAT64
+            } else {
+                tag
+            }
+        }
+
+        pub(crate) const fn __get_int(&self) -> i32 {
+            self.0 as c_int
+        }
+
+        pub(crate) const fn __get_bool(&self) -> bool {
+            self.0 != 0
+        }
+
+        pub(crate) const fn __get_float64(&self) -> f64 {
+            let v = self.0;
+            let v = v + (JS_FLOAT64_TAG_ADDEND << 32);
+            return unsafe { std::mem::transmute(v) };
+        }
+
+        pub(crate) const fn __get_ptr(&self) -> *mut c_void {
+            assert!(size_of::<usize>() <= size_of::<JSValue>());
+            self.0 as usize as *mut c_void
+        }
+
+        pub(crate) const fn __is_nan(&self) -> bool {
+            let tag = self.__get_tag();
+            tag.0 == (Self::__NAN.0 >> 32) as c_int
+        }
+    }
+
+    const fn js_tag_is_float64(tag: JSTag) -> bool {
+        ((tag.0 - JSTag::FIRST.0) as c_uint) >= (JSTag::FLOAT64.0 - JSTag::FIRST.0) as c_uint
+    }
+}
+
+#[cfg(target_pointer_width = "32")]
+pub use nan_boxed::*;
+
+#[cfg(target_pointer_width = "64")]
+mod non_nan_boxed {
+    use crate::JSTag;
+    use std::ffi::*;
+    use std::hash::{Hash, Hasher};
+
+    #[repr(C)]
+    #[derive(Copy, Clone)]
+    union JSValueUnion {
+        int32: i32,
+        float64: f64,
+        ptr: *mut c_void,
+    }
+
+    #[repr(C)]
+    #[derive(Copy, Clone)]
+    pub struct JSValue {
+        u: JSValueUnion,
+        tag: i64,
+    }
+
+    impl JSValue {
+        pub(crate) const __NAN: JSValue = JSValue {
+            u: JSValueUnion { float64: f64::NAN },
+            tag: JSTag::FLOAT64.0 as i64,
+        };
+
+        pub(crate) const fn __new_val(tag: JSTag, v: i32) -> JSValue {
+            let u = JSValueUnion { int32: v };
+            JSValue {
+                u,
+                tag: tag.0 as i64,
+            }
+        }
+
+        pub(crate) const fn __new_ptr(tag: JSTag, v: *mut c_void) -> JSValue {
+            let u = JSValueUnion { ptr: v };
+            JSValue {
+                u,
+                tag: tag.0 as i64,
+            }
+        }
+
+        pub(crate) const fn __new_float64(d: f64) -> JSValue {
+            JSValue {
+                u: JSValueUnion { float64: d },
+                tag: JSTag::FLOAT64.0 as i64,
+            }
+        }
+
+        pub(crate) const fn __get_tag(&self) -> JSTag {
+            JSTag(self.tag as c_int)
+        }
+
+        pub(crate) const fn __get_norm_tag(&self) -> JSTag {
+            self.__get_tag()
+        }
+
+        pub(crate) const fn __get_int(&self) -> i32 {
+            unsafe { self.u.int32 }
+        }
+
+        pub(crate) const fn __get_bool(&self) -> bool {
+            self.__get_int() != 0
+        }
+
+        pub(crate) const fn __get_float64(&self) -> f64 {
+            unsafe { self.u.float64 }
+        }
+
+        pub(crate) const fn __get_ptr(&self) -> *mut c_void {
+            unsafe { self.u.ptr }
+        }
+
+        pub(crate) const fn __is_nan(&self) -> bool {
+            if self.tag != (JSTag::FLOAT64.0 as i64) {
+                false
+            } else {
+                let d = unsafe { self.u.float64 };
+                let d: u64 = unsafe { std::mem::transmute(d) };
+                (d & 0x7fffffffffffffff) > 0x7ff0000000000000
+            }
+        }
+    }
+
+    impl PartialEq for JSValue {
+        #[inline]
+        fn eq(&self, other: &Self) -> bool {
+            self.tag == other.tag && unsafe { self.u.ptr == other.u.ptr }
+        }
+    }
+
+    impl Eq for JSValue {}
+
+    impl Hash for JSValue {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            unsafe {
+                let v = self.u.ptr as usize;
+                Hash::hash(&v, state);
+            }
+            Hash::hash(&self.tag, state);
+        }
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+pub use non_nan_boxed::*;
 
 pub const QJS_VERSION_MAJOR: u32 = 0;
 pub const QJS_VERSION_MINOR: u32 = 5;
@@ -322,157 +503,64 @@ impl JSDef {
     pub const ALIAS: Self = Self(9);
 }
 
-pub type JSCFunctionFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    this_val: JSValue,
-    argc: c_int,
-    argv: *mut JSValue,
-) -> JSValue;
-pub type JSCFunctionMagicFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    this_val: JSValue,
-    argc: c_int,
-    argv: *mut JSValue,
-    magic: c_int,
-) -> JSValue;
-pub type JSCFunctionDataFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    this_val: JSValue,
-    argc: c_int,
-    argv: *mut JSValue,
-    magic: c_int,
-    func_data: *mut JSValue,
-) -> JSValue;
+mod fns {
+    #![cfg_attr(rustfmt, rustfmt_skip)]
 
-pub type JSMallocFn = extern "C" fn(s: *mut JSMallocState, size: usize) -> *mut c_void;
-pub type JSFreeFn = extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void);
-pub type JSReallocFn =
-    extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void, size: usize) -> *mut c_void;
-pub type JSUsableSizeFn = extern "C" fn(ptr: *const c_void) -> usize;
+    use std::ffi::{c_int, c_void};
+    use std::ptr::NonNull;
+    use crate::*;
 
-pub type JSMarkFunc = extern "C" fn(rt: NonNull<JSRuntime>, gp: *mut JSGCObjectHeader);
+    pub type JSCFunctionFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue) -> JSValue;
+    pub type JSCFunctionMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
+    pub type JSCFunctionDataFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int, func_data: *mut JSValue) -> JSValue;
 
-pub type JSGetOwnPropertyFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    desc: *mut JSPropertyDescriptor,
-    obj: JSValue,
-    prop: JSAtom,
-) -> c_int;
-pub type JSGetOwnPropertyNamesFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    ptab: *mut *mut JSPropertyEnum,
-    plen: *mut u32,
-    obj: JSValue,
-) -> c_int;
-pub type JSDeletePropertyFn =
-    extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, prop: JSAtom) -> c_int;
-pub type JSDefineOwnPropertyFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    this_obj: JSValue,
-    prop: JSAtom,
-    val: JSValue,
-    getter: JSValue,
-    setter: JSValue,
-    flags: c_int,
-) -> c_int;
-pub type JSHasPropertyFn =
-    extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom) -> c_int;
-pub type JSGetPropertyFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    obj: JSValue,
-    atom: JSAtom,
-    receiver: JSValue,
-) -> JSValue;
-pub type JSSetPropertyFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    obj: JSValue,
-    atom: JSAtom,
-    value: JSValue,
-    receiver: JSValue,
-    flags: c_int,
-) -> c_int;
+    pub type JSMallocFn = extern "C" fn(s: *mut JSMallocState, size: usize) -> *mut c_void;
+    pub type JSFreeFn = extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void);
+    pub type JSReallocFn = extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void, size: usize) -> *mut c_void;
+    pub type JSUsableSizeFn = extern "C" fn(ptr: *const c_void) -> usize;
 
-pub type JSClassFinalizerFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue);
-pub type JSClassGCMarkFn =
-    extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue, mark_func: JSMarkFunc);
-pub type JSClassCallFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    func_obj: JSValue,
-    this_val: JSValue,
-    argc: c_int,
-    argv: *mut JSValue,
-    flags: c_int,
-) -> JSValue;
+    pub type JSMarkFunc = extern "C" fn(rt: NonNull<JSGCObjectHeader>, gp: *mut JSGCObjectHeader);
 
-pub type JSFreeArrayBufferDataFn =
-    extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void, ptr: *mut c_void);
+    pub type JSGetOwnPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, desc: *mut JSPropertyDescriptor, obj: JSValue, prop: JSAtom) -> c_int;
+    pub type JSGetOwnPropertyNamesFn = extern "C" fn(ctx: NonNull<JSContext>, ptab: *mut *mut JSPropertyEnum, plen: *mut u32, obj: JSValue) -> c_int;
+    pub type JSDeletePropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, prop: JSAtom) -> c_int;
+    pub type JSDefineOwnPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, this_obj: JSValue, prop: JSAtom, val: JSValue, getter: JSValue, setter: JSValue, flags: c_int) -> c_int;
+    pub type JSHasPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom) -> c_int;
+    pub type JSGetPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom, receiver: JSValue) -> JSValue;
+    pub type JSSetPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom, value: JSValue, receiver: JSValue, flags: c_int) -> c_int;
 
-pub type JSSabMallocFn = extern "C" fn(opaque: *mut c_void, size: usize) -> *mut c_void;
-pub type JSSabFreeFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
-pub type JSSabDupFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
+    pub type JSClassFinalizerFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue);
+    pub type JSClassGCMarkFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue, mark_func: JSMarkFunc);
+    pub type JSClassCallFn = extern "C" fn(ctx: NonNull<JSContext>, func_obj: JSValue, this_val: JSValue, argc: c_int, argv: *mut JSValue, flags: c_int) -> JSValue;
 
-pub type JSHostPromiseRejectionTrackerFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    promise: JSValue,
-    reason: JSValue,
-    is_handled: JSBool,
-    opaque: *mut c_void,
-);
+    pub type JSFreeArrayBufferDataFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void, ptr: *mut c_void);
 
-pub type JSInterruptHandlerFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void) -> c_int;
+    pub type JSSabMallocFn = extern "C" fn(opaque: *mut c_void, size: usize) -> *mut c_void;
+    pub type JSSabFreeFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
+    pub type JSSabDupFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
 
-pub type JSModuleNormalizeFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    module_base_name: *const c_char,
-    module_name: *const c_char,
-    opaque: *mut c_void,
-) -> *mut c_char;
-pub type JSModuleLoaderFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    module_name: *const c_char,
-    opaque: *mut c_void,
-) -> Option<NonNull<JSModuleDef>>;
+    pub type JSHostPromiseRejectionTrackerFn = extern "C" fn(ctx: NonNull<JSContext>, promise: JSValue, reason: JSValue, is_handled: JSBool, opaque: *mut c_void);
 
-pub type JSJobFn =
-    extern "C" fn(ctx: NonNull<JSContext>, argc: c_int, argv: *mut JSValue) -> JSValue;
+    pub type JSInterruptHandlerFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void) -> c_int;
 
-pub type JSGenericMagicFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    this_val: JSValue,
-    argc: c_int,
-    argv: *mut JSValue,
-    magic: c_int,
-) -> JSValue;
-pub type JSConstructorMagicFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    new_target: JSValue,
-    argc: c_int,
-    argv: *mut JSValue,
-    magic: c_int,
-) -> JSValue;
-pub type JSFFFn = extern "C" fn(f64) -> f64;
-pub type JSFFFFn = extern "C" fn(f64, f64) -> f64;
-pub type JSGetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue) -> JSValue;
-pub type JSSetterFn =
-    extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, val: JSValue) -> JSValue;
-pub type JSGetterMagicFn =
-    extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, magic: c_int) -> JSValue;
-pub type JSSetterMagicFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    this_val: JSValue,
-    val: JSValue,
-    magic: c_int,
-) -> JSValue;
-pub type JSIteratorNextFn = extern "C" fn(
-    ctx: NonNull<JSContext>,
-    this_val: JSValue,
-    argc: c_int,
-    argv: *mut JSValue,
-    pdone: *mut c_int,
-    magic: c_int,
-) -> JSValue;
+    pub type JSModuleNormalizeFn = extern "C" fn(ctx: NonNull<JSContext>, module_base_name: *const c_char, module_name: *const c_char, opaque: *mut c_void) -> *mut c_char;
+    pub type JSModuleLoaderFn = extern "C" fn(ctx: NonNull<JSContext>, module_name: *const c_char, opaque: *mut c_void) -> Option<NonNull<JSModuleDef>>;
 
-pub type JSModuleInitFn = extern "C" fn(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> c_int;
+    pub type JSJobFn = extern "C" fn(ctx: NonNull<JSContext>, argc: c_int, argv: *mut JSValue) -> JSValue;
+
+    pub type JSGenericMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
+    pub type JSConstructorMagicFn = extern "C" fn(ctx: NonNull<JSContext>, new_target: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
+    pub type JSFFFn = extern "C" fn(f64) -> f64;
+    pub type JSFFFFn = extern "C" fn(f64, f64) -> f64;
+    pub type JSGetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue) -> JSValue;
+    pub type JSSetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, val: JSValue) -> JSValue;
+    pub type JSGetterMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, magic: c_int) -> JSValue;
+    pub type JSSetterMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, val: JSValue, magic: c_int) -> JSValue;
+    pub type JSIteratorNextFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, pdone: *mut c_int, magic: c_int) -> JSValue;
+
+    pub type JSModuleInitFn = extern "C" fn(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> c_int;
+}
+pub use fns::*;
 
 #[repr(C)]
 pub struct JSRefCountHeader {
@@ -591,18 +679,23 @@ impl JSValue {
     }
 
     pub const fn new_i64(val: i64) -> JSValue {
-        if let Ok(val) = i32::try_from(val) {
-            Self::new_i32(val)
-        } else {
+        let min = i32::MIN as i64;
+        let max = i32::MAX as i64;
+        if val < min || val > max {
             Self::new_f64(val as f64)
+        } else {
+            Self::new_i32(val as i32)
         }
     }
 
     pub const fn new_u32(val: u32) -> JSValue {
-        if let Ok(val) = i32::try_from(val) {
-            Self::new_i32(val)
-        } else {
+        let vi64 = val as i64;
+        let min = i32::MIN as i64;
+        let max = i32::MAX as i64;
+        if vi64 < min || vi64 > max {
             Self::new_f64(val as f64)
+        } else {
+            Self::new_i32(val as i32)
         }
     }
 
@@ -652,44 +745,44 @@ impl JSValue {
 
     pub const fn is_number(&self) -> bool {
         let tag = self.get_tag();
-        return tag == JSTag::INT || tag == JSTag::FLOAT64;
+        tag.0 == JSTag::INT.0 || tag.0 == JSTag::FLOAT64.0
     }
 
     pub const fn is_big_int(&self) -> bool {
         let tag = self.get_tag();
-        return tag == JSTag::BIG_INT;
+        tag.0 == JSTag::BIG_INT.0
     }
 
     pub const fn is_bool(&self) -> bool {
-        return self.get_tag() == JSTag::BOOL;
+        return self.get_tag().0 == JSTag::BOOL.0;
     }
 
     pub const fn is_null(&self) -> bool {
-        return self.get_tag() == JSTag::NULL;
+        return self.get_tag().0 == JSTag::NULL.0;
     }
 
     pub const fn is_undefined(&self) -> bool {
-        return self.get_tag() == JSTag::UNDEFINED;
+        return self.get_tag().0 == JSTag::UNDEFINED.0;
     }
 
     pub const fn is_exception(&self) -> bool {
-        return self.get_tag() == JSTag::EXCEPTION;
+        return self.get_tag().0 == JSTag::EXCEPTION.0;
     }
 
     pub const fn is_uninitialized(&self) -> bool {
-        return self.get_tag() == JSTag::UNINITIALIZED;
+        return self.get_tag().0 == JSTag::UNINITIALIZED.0;
     }
 
     pub const fn is_string(&self) -> bool {
-        return self.get_tag() == JSTag::STRING;
+        return self.get_tag().0 == JSTag::STRING.0;
     }
 
     pub const fn is_symbol(&self) -> bool {
-        return self.get_tag() == JSTag::SYMBOL;
+        return self.get_tag().0 == JSTag::SYMBOL.0;
     }
 
     pub const fn is_object(&self) -> bool {
-        return self.get_tag() == JSTag::OBJECT;
+        return self.get_tag().0 == JSTag::OBJECT.0;
     }
 
     pub unsafe fn free_value(&self, ctx: NonNull<JSContext>) {
