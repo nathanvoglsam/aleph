@@ -105,7 +105,7 @@ mod nan_boxed {
     const JS_FLOAT64_TAG_ADDEND: u64 = 0x7ff80000 - (JSTag::FIRST.0 as u64) + 1;
 
     #[repr(transparent)]
-    #[derive(Copy, Clone, Eq, PartialEq, Hash)]
+    #[derive(Copy, Clone)]
     pub struct JSValue(u64);
 
     impl JSValue {
@@ -184,7 +184,6 @@ pub use nan_boxed::*;
 mod non_nan_boxed {
     use crate::JSTag;
     use std::ffi::*;
-    use std::hash::{Hash, Hasher};
 
     #[repr(C)]
     #[derive(Copy, Clone)]
@@ -264,25 +263,6 @@ mod non_nan_boxed {
             }
         }
     }
-
-    impl PartialEq for JSValue {
-        #[inline]
-        fn eq(&self, other: &Self) -> bool {
-            self.tag == other.tag && unsafe { self.u.ptr == other.u.ptr }
-        }
-    }
-
-    impl Eq for JSValue {}
-
-    impl Hash for JSValue {
-        fn hash<H: Hasher>(&self, state: &mut H) {
-            unsafe {
-                let v = self.u.ptr as usize;
-                Hash::hash(&v, state);
-            }
-            Hash::hash(&self.tag, state);
-        }
-    }
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -298,8 +278,6 @@ pub const JS_DEFAULT_STACK_SIZE: c_int = 256 * 1024;
 pub const JS_INVALID_CLASS_ID: JSClassID = 0;
 
 pub const JS_ATOM_NULL: JSAtom = 0;
-
-pub const JS_CALL_FLAG_CONSTRUCTOR: c_int = 1 << 0;
 
 #[repr(C)]
 struct Private {
@@ -460,6 +438,7 @@ impl JSWriteObj {
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct JSReadObj(pub c_int);
+bitflags_traits!(JSReadObj);
 
 impl JSReadObj {
     pub const BYTECODE: Self = Self(1 << 0);
@@ -469,6 +448,7 @@ impl JSReadObj {
 }
 
 #[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct JSCFunctionEnum(pub c_int);
 
 impl JSCFunctionEnum {
@@ -488,6 +468,7 @@ impl JSCFunctionEnum {
 }
 
 #[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct JSDef(pub u8);
 
 impl JSDef {
@@ -501,6 +482,15 @@ impl JSDef {
     pub const PROP_UNDEFINED: Self = Self(7);
     pub const OBJECT: Self = Self(8);
     pub const ALIAS: Self = Self(9);
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSCallFlag(pub c_int);
+bitflags_traits!(JSCallFlag);
+
+impl JSCallFlag {
+    pub const CONSTRUCTOR: Self = Self(1 << 0);
 }
 
 mod fns {
