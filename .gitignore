@@ -1,20 +1,38 @@
-# Ignore Rust compiler output
-/target
+##
+## PLATFORM JUNK
+##
 
-# Ignore Cargo lockfile so CI will always run on latest dependencies
+# MacOS Junk
+.DS_Store
+
+##
+## COMPILER OUTPUT
+##
+
+# Rust Stuff
+/target
 Cargo.lock
+
+##
+## IDE OUTPUT
+##
 
 # Igore Visual Studio dir
 .vs
 
+##
+## GRAPHICS JUNK
+##
+
 # Ignore Vulkan shader cache
 shader_cache.bin
 
-# Ignore all shaderdb files as they're just binary blobs
-*.shaderdb
-
-# You know what this is :(
-.DS_Store
+##
+## ALEPH
+##
 
 # Ignore Generated Haxe Projects
 build.hxml
+
+# .aleph project dirs should be ignored
+.aleph
