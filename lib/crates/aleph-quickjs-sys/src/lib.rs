@@ -32,6 +32,7 @@
 #![allow(non_snake_case)]
 
 use std::ffi::*;
+use std::fmt::{Debug, Formatter};
 use std::ptr::NonNull;
 
 macro_rules! bitflags_traits {
@@ -302,9 +303,54 @@ pub struct JSGCObjectHeader(Private);
 #[repr(C)]
 pub struct JSModuleDef(Private);
 
-pub type JSClassID = u32;
-pub type JSAtom = u32;
-pub type JSBool = c_int;
+pub type JSClassID = u32; // TODO: this can probably be nonzerou32
+pub type JSAtom = u32; // TODO: this can probably be nonzerou32
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct JSBool(pub c_int);
+
+impl JSBool {
+    pub const TRUE: Self = Self::new(true);
+    pub const FALSE: Self = Self::new(false);
+
+    pub const fn new(v: bool) -> Self {
+        Self(v as c_int)
+    }
+
+    pub const fn to_bool(self) -> bool {
+        self.0 != 0
+    }
+
+    pub const fn is_true(&self) -> bool {
+        self.0 != 0
+    }
+
+    pub const fn is_false(&self) -> bool {
+        !self.is_true()
+    }
+}
+
+impl Debug for JSBool {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        bool::fmt(&self.to_bool(), f)
+    }
+}
+
+impl Into<bool> for JSBool {
+    #[inline(always)]
+    fn into(self) -> bool {
+        self.to_bool()
+    }
+}
+
+impl From<bool> for JSBool {
+    #[inline(always)]
+    fn from(value: bool) -> Self {
+        Self::new(value)
+    }
+}
 
 impl JSValue {
     pub const NULL: Self = JSValue::__new_val(JSTag::NULL, 0);
@@ -313,331 +359,6 @@ impl JSValue {
     pub const TRUE: Self = JSValue::__new_val(JSTag::BOOL, 1);
     pub const EXCEPTION: Self = JSValue::__new_val(JSTag::EXCEPTION, 0);
     pub const UNINITIALIZED: Self = JSValue::__new_val(JSTag::UNINITIALIZED, 0);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSTag(pub c_int);
-
-impl JSTag {
-    pub const FIRST: JSTag = JSTag(-9);
-    pub const BIG_INT: JSTag = JSTag(-9);
-    pub const SYMBOL: JSTag = JSTag(-8);
-    pub const STRING: JSTag = JSTag(-7);
-    pub const MODULE: JSTag = JSTag(-3);
-    pub const FUNCTION_BYTECODE: JSTag = JSTag(-2);
-    pub const OBJECT: JSTag = JSTag(-1);
-    pub const INT: JSTag = JSTag(0);
-    pub const BOOL: JSTag = JSTag(1);
-    pub const NULL: JSTag = JSTag(2);
-    pub const UNDEFINED: JSTag = JSTag(3);
-    pub const UNINITIALIZED: JSTag = JSTag(4);
-    pub const CATCH_OFFSET: JSTag = JSTag(5);
-    pub const EXCEPTION: JSTag = JSTag(6);
-    pub const FLOAT64: JSTag = JSTag(7);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSProp(pub c_int);
-bitflags_traits!(JSProp);
-
-impl JSProp {
-    pub const CONFIGURABLE: Self = Self(1 << 0);
-    pub const WRITABLE: Self = Self(1 << 1);
-    pub const ENUMERABLE: Self = Self(1 << 2);
-    pub const C_W_E: Self = Self(Self::CONFIGURABLE.0 | Self::WRITABLE.0 | Self::ENUMERABLE.0);
-    pub const LENGTH: Self = Self(1 << 3);
-
-    pub const TMASK: Self = Self(3 << 4);
-    pub const NORMAL: Self = Self(0 << 4);
-    pub const GETSET: Self = Self(1 << 4);
-    pub const VARREF: Self = Self(2 << 4);
-    pub const AUTOINIT: Self = Self(3 << 4);
-
-    pub const HAS_SHIFT: Self = Self(8);
-    pub const HAS_CONFIGURABLE: Self = Self(1 << 8);
-    pub const HAS_WRITABLE: Self = Self(1 << 9);
-    pub const HAS_ENUMERABLE: Self = Self(1 << 10);
-    pub const HAS_GET: Self = Self(1 << 11);
-    pub const HAS_SET: Self = Self(1 << 12);
-    pub const HAS_VALUE: Self = Self(1 << 13);
-
-    pub const THROW: Self = Self(1 << 14);
-    pub const THROW_STRICT: Self = Self(1 << 15);
-
-    pub const NO_ADD: Self = Self(1 << 16);
-    pub const NO_EXOTIC: Self = Self(1 << 17);
-    pub const DEFINE_PROPERTY: Self = Self(1 << 18);
-    pub const REFLECT_DEFINE_PROPERTY: Self = Self(1 << 19);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSEvalType(pub c_int);
-bitflags_traits!(JSEvalType);
-
-impl JSEvalType {
-    pub const GLOBAL: Self = Self(0 << 0);
-    pub const MODULE: Self = Self(1 << 0);
-    pub const DIRECT: Self = Self(2 << 0);
-    pub const INDIRECT: Self = Self(3 << 0);
-    pub const MASK: Self = Self(3 << 0);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSEvalFlag(pub c_int);
-bitflags_traits!(JSEvalFlag);
-
-impl JSEvalFlag {
-    pub const STRICT: Self = Self(1 << 3);
-    pub const UNUSED: Self = Self(1 << 4);
-    pub const COMPILE_ONLY: Self = Self(1 << 5);
-    pub const BACKTRACE_BARRIER: Self = Self(1 << 6);
-    pub const ASYNC: Self = Self(1 << 7);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSGpn(pub c_int);
-bitflags_traits!(JSGpn);
-
-impl JSGpn {
-    pub const STRING_MASK: Self = Self(1 << 0);
-    pub const SYMBOL_MASK: Self = Self(1 << 1);
-    pub const PRIVATE_MASK: Self = Self(1 << 2);
-    pub const ENUM_ONLY: Self = Self(1 << 4);
-    pub const SET_ENUM: Self = Self(1 << 5);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSPromiseStateEnum(pub c_int);
-
-impl JSPromiseStateEnum {
-    pub const PENDING: Self = Self(0);
-    pub const FULFILLED: Self = Self(1);
-    pub const REJECTED: Self = Self(2);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSWriteObj(pub c_int);
-bitflags_traits!(JSWriteObj);
-
-impl JSWriteObj {
-    pub const BYTECODE: Self = Self(1 << 0);
-    pub const BSWAP: Self = Self(0);
-    pub const SAB: Self = Self(1 << 2);
-    pub const REFERENCE: Self = Self(1 << 3);
-    pub const STRIP_SOURCE: Self = Self(1 << 4);
-    pub const STRIP_DEBUG: Self = Self(1 << 5);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSReadObj(pub c_int);
-bitflags_traits!(JSReadObj);
-
-impl JSReadObj {
-    pub const BYTECODE: Self = Self(1 << 0);
-    pub const ROM_DATA: Self = Self(0);
-    pub const SAB: Self = Self(1 << 2);
-    pub const REFERENCE: Self = Self(1 << 3);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSCFunctionEnum(pub c_int);
-
-impl JSCFunctionEnum {
-    pub const GENERIC: Self = Self(0);
-    pub const GENERIC_MAGIC: Self = Self(1);
-    pub const CONSTRUCTOR: Self = Self(2);
-    pub const CONSTRUCTOR_MAGIC: Self = Self(3);
-    pub const CONSTRUCTOR_OR_FUNC: Self = Self(4);
-    pub const CONSTRUCTOR_OR_FUNC_MAGIC: Self = Self(5);
-    pub const F_F: Self = Self(6);
-    pub const F_F_F: Self = Self(7);
-    pub const GETTER: Self = Self(8);
-    pub const SETTER: Self = Self(9);
-    pub const GETTER_MAGIC: Self = Self(10);
-    pub const SETTER_MAGIC: Self = Self(11);
-    pub const ITERATOR_NEXT: Self = Self(12);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSDef(pub u8);
-
-impl JSDef {
-    pub const CFUNC: Self = Self(0);
-    pub const CGETSET: Self = Self(1);
-    pub const CGETSET_MAGIC: Self = Self(2);
-    pub const PROP_STRING: Self = Self(3);
-    pub const PROP_INT32: Self = Self(4);
-    pub const PROP_INT64: Self = Self(5);
-    pub const PROP_DOUBLE: Self = Self(6);
-    pub const PROP_UNDEFINED: Self = Self(7);
-    pub const OBJECT: Self = Self(8);
-    pub const ALIAS: Self = Self(9);
-}
-
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSCallFlag(pub c_int);
-bitflags_traits!(JSCallFlag);
-
-impl JSCallFlag {
-    pub const CONSTRUCTOR: Self = Self(1 << 0);
-}
-
-mod fns {
-    #![cfg_attr(rustfmt, rustfmt_skip)]
-
-    use std::ffi::{c_int, c_void};
-    use std::ptr::NonNull;
-    use crate::*;
-
-    pub type JSCFunctionFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue) -> JSValue;
-    pub type JSCFunctionMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
-    pub type JSCFunctionDataFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int, func_data: *mut JSValue) -> JSValue;
-
-    pub type JSMallocFn = extern "C" fn(s: *mut JSMallocState, size: usize) -> *mut c_void;
-    pub type JSFreeFn = extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void);
-    pub type JSReallocFn = extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void, size: usize) -> *mut c_void;
-    pub type JSUsableSizeFn = extern "C" fn(ptr: *const c_void) -> usize;
-
-    pub type JSMarkFunc = extern "C" fn(rt: NonNull<JSGCObjectHeader>, gp: *mut JSGCObjectHeader);
-
-    pub type JSGetOwnPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, desc: *mut JSPropertyDescriptor, obj: JSValue, prop: JSAtom) -> c_int;
-    pub type JSGetOwnPropertyNamesFn = extern "C" fn(ctx: NonNull<JSContext>, ptab: *mut *mut JSPropertyEnum, plen: *mut u32, obj: JSValue) -> c_int;
-    pub type JSDeletePropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, prop: JSAtom) -> c_int;
-    pub type JSDefineOwnPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, this_obj: JSValue, prop: JSAtom, val: JSValue, getter: JSValue, setter: JSValue, flags: c_int) -> c_int;
-    pub type JSHasPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom) -> c_int;
-    pub type JSGetPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom, receiver: JSValue) -> JSValue;
-    pub type JSSetPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom, value: JSValue, receiver: JSValue, flags: c_int) -> c_int;
-
-    pub type JSClassFinalizerFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue);
-    pub type JSClassGCMarkFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue, mark_func: JSMarkFunc);
-    pub type JSClassCallFn = extern "C" fn(ctx: NonNull<JSContext>, func_obj: JSValue, this_val: JSValue, argc: c_int, argv: *mut JSValue, flags: c_int) -> JSValue;
-
-    pub type JSFreeArrayBufferDataFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void, ptr: *mut c_void);
-
-    pub type JSSabMallocFn = extern "C" fn(opaque: *mut c_void, size: usize) -> *mut c_void;
-    pub type JSSabFreeFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
-    pub type JSSabDupFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
-
-    pub type JSHostPromiseRejectionTrackerFn = extern "C" fn(ctx: NonNull<JSContext>, promise: JSValue, reason: JSValue, is_handled: JSBool, opaque: *mut c_void);
-
-    pub type JSInterruptHandlerFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void) -> c_int;
-
-    pub type JSModuleNormalizeFn = extern "C" fn(ctx: NonNull<JSContext>, module_base_name: *const c_char, module_name: *const c_char, opaque: *mut c_void) -> *mut c_char;
-    pub type JSModuleLoaderFn = extern "C" fn(ctx: NonNull<JSContext>, module_name: *const c_char, opaque: *mut c_void) -> Option<NonNull<JSModuleDef>>;
-
-    pub type JSJobFn = extern "C" fn(ctx: NonNull<JSContext>, argc: c_int, argv: *mut JSValue) -> JSValue;
-
-    pub type JSGenericMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
-    pub type JSConstructorMagicFn = extern "C" fn(ctx: NonNull<JSContext>, new_target: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
-    pub type JSFFFn = extern "C" fn(f64) -> f64;
-    pub type JSFFFFn = extern "C" fn(f64, f64) -> f64;
-    pub type JSGetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue) -> JSValue;
-    pub type JSSetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, val: JSValue) -> JSValue;
-    pub type JSGetterMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, magic: c_int) -> JSValue;
-    pub type JSSetterMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, val: JSValue, magic: c_int) -> JSValue;
-    pub type JSIteratorNextFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, pdone: *mut c_int, magic: c_int) -> JSValue;
-
-    pub type JSModuleInitFn = extern "C" fn(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> c_int;
-}
-pub use fns::*;
-
-#[repr(C)]
-pub struct JSRefCountHeader {
-    pub ref_count: c_int,
-}
-
-#[repr(C)]
-pub struct JSMallocState {
-    pub malloc_count: usize,
-    pub malloc_size: usize,
-    pub malloc_limit: usize,
-    pub opaque: *mut c_void,
-}
-
-#[repr(C)]
-pub struct JSMallocFunctions {
-    pub js_malloc: Option<JSMallocFn>,
-    pub js_free: Option<JSFreeFn>,
-    pub js_realloc: Option<JSReallocFn>,
-    pub js_malloc_usable_size: Option<JSUsableSizeFn>,
-}
-
-#[repr(C)]
-pub struct JSMemoryUsage {
-    pub malloc_size: i64,
-    pub malloc_limit: i64,
-    pub memory_used_size: i64,
-    pub malloc_count: i64,
-    pub memory_used_count: i64,
-    pub atom_count: i64,
-    pub atom_size: i64,
-    pub str_count: i64,
-    pub str_size: i64,
-    pub obj_count: i64,
-    pub obj_size: i64,
-    pub prop_count: i64,
-    pub prop_size: i64,
-    pub shape_count: i64,
-    pub shape_size: i64,
-    pub js_func_count: i64,
-    pub js_func_size: i64,
-    pub js_func_code_size: i64,
-    pub js_func_pc2line_count: i64,
-    pub js_func_pc2line_size: i64,
-    pub c_func_count: i64,
-    pub array_count: i64,
-    pub fast_array_count: i64,
-    pub fast_array_elements: i64,
-    pub binary_object_count: i64,
-    pub binary_object_size: i64,
-}
-
-#[repr(C)]
-pub struct JSPropertyEnum {
-    pub is_enumerable: JSBool,
-    pub atom: JSAtom,
-}
-
-#[repr(C)]
-pub struct JSPropertyDescriptor {
-    pub flags: c_int,
-    pub value: JSValue,
-    pub getter: JSValue,
-    pub setter: JSValue,
-}
-
-#[repr(C)]
-pub struct JSClassExoticMethods {
-    pub get_own_property: JSGetOwnPropertyFn,
-    pub get_own_property_names: JSGetOwnPropertyNamesFn,
-    pub delete_property: JSDeletePropertyFn,
-    pub define_own_property: JSDefineOwnPropertyFn,
-    pub has_property: Option<JSHasPropertyFn>,
-    pub get_property: Option<JSGetPropertyFn>,
-    pub set_property: Option<JSSetPropertyFn>,
-}
-
-#[repr(C)]
-pub struct JSClassDef {
-    pub class_name: *const c_char,
-    pub finalizer: JSClassFinalizerFn,
-    pub gc_mark: JSClassGCMarkFn,
-    pub call: JSClassCallFn,
-    pub exotic: *mut JSClassExoticMethods,
-}
-
-impl JSValue {
     pub const NAN: JSValue = Self::__NAN;
 
     pub const fn new_val(tag: JSTag, v: i32) -> JSValue {
@@ -804,7 +525,414 @@ impl JSValue {
     }
 }
 
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct JSTag(pub c_int);
+
+impl JSTag {
+    pub const FIRST: JSTag = JSTag(-9);
+    pub const BIG_INT: JSTag = JSTag(-9);
+    pub const SYMBOL: JSTag = JSTag(-8);
+    pub const STRING: JSTag = JSTag(-7);
+    pub const MODULE: JSTag = JSTag(-3);
+    pub const FUNCTION_BYTECODE: JSTag = JSTag(-2);
+    pub const OBJECT: JSTag = JSTag(-1);
+    pub const INT: JSTag = JSTag(0);
+    pub const BOOL: JSTag = JSTag(1);
+    pub const NULL: JSTag = JSTag(2);
+    pub const UNDEFINED: JSTag = JSTag(3);
+    pub const UNINITIALIZED: JSTag = JSTag(4);
+    pub const CATCH_OFFSET: JSTag = JSTag(5);
+    pub const EXCEPTION: JSTag = JSTag(6);
+    pub const FLOAT64: JSTag = JSTag(7);
+}
+
+impl Debug for JSTag {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match *self {
+            Self::BIG_INT => "BIG_INT",
+            Self::SYMBOL => "SYMBOL",
+            Self::STRING => "STRING",
+            Self::MODULE => "MODULE",
+            Self::FUNCTION_BYTECODE => "FUNCTION_BYTECODE",
+            Self::OBJECT => "OBJECT",
+            Self::INT => "INT",
+            Self::BOOL => "BOOL",
+            Self::NULL => "NULL",
+            Self::UNDEFINED => "UNDEFINED",
+            Self::UNINITIALIZED => "UNINITIALIZED",
+            Self::CATCH_OFFSET => "CATCH_OFFSET",
+            Self::EXCEPTION => "EXCEPTION",
+            Self::FLOAT64 => "FLOAT64",
+            _ => "(Unknown)",
+        })
+    }
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSProp(pub c_int);
+bitflags_traits!(JSProp);
+
+impl JSProp {
+    pub const CONFIGURABLE: Self = Self(1 << 0);
+    pub const WRITABLE: Self = Self(1 << 1);
+    pub const ENUMERABLE: Self = Self(1 << 2);
+    pub const C_W_E: Self = Self(Self::CONFIGURABLE.0 | Self::WRITABLE.0 | Self::ENUMERABLE.0);
+    pub const LENGTH: Self = Self(1 << 3);
+
+    pub const TMASK: Self = Self(3 << 4);
+    pub const NORMAL: Self = Self(0 << 4);
+    pub const GETSET: Self = Self(1 << 4);
+    pub const VARREF: Self = Self(2 << 4);
+    pub const AUTOINIT: Self = Self(3 << 4);
+
+    pub const HAS_SHIFT: Self = Self(8);
+    pub const HAS_CONFIGURABLE: Self = Self(1 << 8);
+    pub const HAS_WRITABLE: Self = Self(1 << 9);
+    pub const HAS_ENUMERABLE: Self = Self(1 << 10);
+    pub const HAS_GET: Self = Self(1 << 11);
+    pub const HAS_SET: Self = Self(1 << 12);
+    pub const HAS_VALUE: Self = Self(1 << 13);
+
+    pub const THROW: Self = Self(1 << 14);
+    pub const THROW_STRICT: Self = Self(1 << 15);
+
+    pub const NO_ADD: Self = Self(1 << 16);
+    pub const NO_EXOTIC: Self = Self(1 << 17);
+    pub const DEFINE_PROPERTY: Self = Self(1 << 18);
+    pub const REFLECT_DEFINE_PROPERTY: Self = Self(1 << 19);
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSEvalType(pub c_int);
+bitflags_traits!(JSEvalType);
+
+impl JSEvalType {
+    pub const GLOBAL: Self = Self(0 << 0);
+    pub const MODULE: Self = Self(1 << 0);
+    pub const DIRECT: Self = Self(2 << 0);
+    pub const INDIRECT: Self = Self(3 << 0);
+    pub const MASK: Self = Self(3 << 0);
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSEvalFlag(pub c_int);
+bitflags_traits!(JSEvalFlag);
+
+impl JSEvalFlag {
+    pub const STRICT: Self = Self(1 << 3);
+    pub const UNUSED: Self = Self(1 << 4);
+    pub const COMPILE_ONLY: Self = Self(1 << 5);
+    pub const BACKTRACE_BARRIER: Self = Self(1 << 6);
+    pub const ASYNC: Self = Self(1 << 7);
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSGpn(pub c_int);
+bitflags_traits!(JSGpn);
+
+impl JSGpn {
+    pub const STRING_MASK: Self = Self(1 << 0);
+    pub const SYMBOL_MASK: Self = Self(1 << 1);
+    pub const PRIVATE_MASK: Self = Self(1 << 2);
+    pub const ENUM_ONLY: Self = Self(1 << 4);
+    pub const SET_ENUM: Self = Self(1 << 5);
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct JSPromiseStateEnum(pub c_int);
+
+impl JSPromiseStateEnum {
+    pub const PENDING: Self = Self(0);
+    pub const FULFILLED: Self = Self(1);
+    pub const REJECTED: Self = Self(2);
+}
+
+impl Debug for JSPromiseStateEnum {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match *self {
+            Self::PENDING => "PENDING",
+            Self::FULFILLED => "FULFILLED",
+            Self::REJECTED => "REJECTED",
+            _ => "(Unknown)",
+        })
+    }
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSWriteObj(pub c_int);
+bitflags_traits!(JSWriteObj);
+
+impl JSWriteObj {
+    pub const BYTECODE: Self = Self(1 << 0);
+    pub const BSWAP: Self = Self(0);
+    pub const SAB: Self = Self(1 << 2);
+    pub const REFERENCE: Self = Self(1 << 3);
+    pub const STRIP_SOURCE: Self = Self(1 << 4);
+    pub const STRIP_DEBUG: Self = Self(1 << 5);
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSReadObj(pub c_int);
+bitflags_traits!(JSReadObj);
+
+impl JSReadObj {
+    pub const BYTECODE: Self = Self(1 << 0);
+    pub const ROM_DATA: Self = Self(0);
+    pub const SAB: Self = Self(1 << 2);
+    pub const REFERENCE: Self = Self(1 << 3);
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct JSCFunctionEnum(pub c_int);
+
+impl JSCFunctionEnum {
+    pub const GENERIC: Self = Self(0);
+    pub const GENERIC_MAGIC: Self = Self(1);
+    pub const CONSTRUCTOR: Self = Self(2);
+    pub const CONSTRUCTOR_MAGIC: Self = Self(3);
+    pub const CONSTRUCTOR_OR_FUNC: Self = Self(4);
+    pub const CONSTRUCTOR_OR_FUNC_MAGIC: Self = Self(5);
+    pub const F_F: Self = Self(6);
+    pub const F_F_F: Self = Self(7);
+    pub const GETTER: Self = Self(8);
+    pub const SETTER: Self = Self(9);
+    pub const GETTER_MAGIC: Self = Self(10);
+    pub const SETTER_MAGIC: Self = Self(11);
+    pub const ITERATOR_NEXT: Self = Self(12);
+}
+
+impl Debug for JSCFunctionEnum {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match *self {
+            Self::GENERIC => "GENERIC",
+            Self::GENERIC_MAGIC => "GENERIC_MAGIC",
+            Self::CONSTRUCTOR => "CONSTRUCTOR",
+            Self::CONSTRUCTOR_MAGIC => "CONSTRUCTOR_MAGIC",
+            Self::CONSTRUCTOR_OR_FUNC => "CONSTRUCTOR_OR_FUNC",
+            Self::CONSTRUCTOR_OR_FUNC_MAGIC => "CONSTRUCTOR_OR_FUNC_MAGIC",
+            Self::F_F => "F_F",
+            Self::F_F_F => "F_F_F",
+            Self::GETTER => "GETTER",
+            Self::SETTER => "SETTER",
+            Self::GETTER_MAGIC => "GETTER_MAGIC",
+            Self::SETTER_MAGIC => "SETTER_MAGIC",
+            Self::ITERATOR_NEXT => "ITERATOR_NEXT",
+            _ => "(Unknown)",
+        })
+    }
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
+pub struct JSDef(pub u8);
+
+impl JSDef {
+    pub const CFUNC: Self = Self(0);
+    pub const CGETSET: Self = Self(1);
+    pub const CGETSET_MAGIC: Self = Self(2);
+    pub const PROP_STRING: Self = Self(3);
+    pub const PROP_INT32: Self = Self(4);
+    pub const PROP_INT64: Self = Self(5);
+    pub const PROP_DOUBLE: Self = Self(6);
+    pub const PROP_UNDEFINED: Self = Self(7);
+    pub const OBJECT: Self = Self(8);
+    pub const ALIAS: Self = Self(9);
+}
+
+impl Debug for JSDef {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match *self {
+            Self::CFUNC => "CFUNC",
+            Self::CGETSET => "CGETSET",
+            Self::CGETSET_MAGIC => "CGETSET_MAGIC",
+            Self::PROP_STRING => "PROP_STRING",
+            Self::PROP_INT32 => "PROP_INT32",
+            Self::PROP_INT64 => "PROP_INT64",
+            Self::PROP_DOUBLE => "PROP_DOUBLE",
+            Self::PROP_UNDEFINED => "PROP_UNDEFINED",
+            Self::OBJECT => "OBJECT",
+            Self::ALIAS => "ALIAS",
+            _ => "(Unknown)",
+        })
+    }
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSCallFlag(pub c_int);
+bitflags_traits!(JSCallFlag);
+
+impl JSCallFlag {
+    pub const CONSTRUCTOR: Self = Self(1 << 0);
+}
+
+mod fns {
+    #![cfg_attr(rustfmt, rustfmt_skip)]
+
+    use std::ffi::{c_int, c_void};
+    use std::ptr::NonNull;
+    use crate::*;
+
+    pub type JSCFunctionFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue) -> JSValue;
+    pub type JSCFunctionMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
+    pub type JSCFunctionDataFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int, func_data: *mut JSValue) -> JSValue;
+
+    pub type JSMallocFn = extern "C" fn(s: *mut JSMallocState, size: usize) -> *mut c_void;
+    pub type JSFreeFn = extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void);
+    pub type JSReallocFn = extern "C" fn(s: *mut JSMallocState, ptr: *mut c_void, size: usize) -> *mut c_void;
+    pub type JSUsableSizeFn = extern "C" fn(ptr: *const c_void) -> usize;
+
+    pub type JSMarkFunc = extern "C" fn(rt: NonNull<JSGCObjectHeader>, gp: *mut JSGCObjectHeader);
+
+    pub type JSGetOwnPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, desc: *mut JSPropertyDescriptor, obj: JSValue, prop: JSAtom) -> c_int;
+    pub type JSGetOwnPropertyNamesFn = extern "C" fn(ctx: NonNull<JSContext>, ptab: *mut *mut JSPropertyEnum, plen: *mut u32, obj: JSValue) -> c_int;
+    pub type JSDeletePropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, prop: JSAtom) -> c_int;
+    pub type JSDefineOwnPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, this_obj: JSValue, prop: JSAtom, val: JSValue, getter: JSValue, setter: JSValue, flags: c_int) -> c_int;
+    pub type JSHasPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom) -> c_int;
+    pub type JSGetPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom, receiver: JSValue) -> JSValue;
+    pub type JSSetPropertyFn = extern "C" fn(ctx: NonNull<JSContext>, obj: JSValue, atom: JSAtom, value: JSValue, receiver: JSValue, flags: c_int) -> c_int;
+
+    pub type JSClassFinalizerFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue);
+    pub type JSClassGCMarkFn = extern "C" fn(rt: NonNull<JSRuntime>, val: JSValue, mark_func: JSMarkFunc);
+    pub type JSClassCallFn = extern "C" fn(ctx: NonNull<JSContext>, func_obj: JSValue, this_val: JSValue, argc: c_int, argv: *mut JSValue, flags: c_int) -> JSValue;
+
+    pub type JSFreeArrayBufferDataFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void, ptr: *mut c_void);
+
+    pub type JSSabMallocFn = extern "C" fn(opaque: *mut c_void, size: usize) -> *mut c_void;
+    pub type JSSabFreeFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
+    pub type JSSabDupFn = extern "C" fn(opaque: *mut c_void, ptr: *mut c_void);
+
+    pub type JSHostPromiseRejectionTrackerFn = extern "C" fn(ctx: NonNull<JSContext>, promise: JSValue, reason: JSValue, is_handled: JSBool, opaque: *mut c_void);
+
+    pub type JSInterruptHandlerFn = extern "C" fn(rt: NonNull<JSRuntime>, opaque: *mut c_void) -> c_int;
+
+    pub type JSModuleNormalizeFn = extern "C" fn(ctx: NonNull<JSContext>, module_base_name: *const c_char, module_name: *const c_char, opaque: *mut c_void) -> *mut c_char;
+    pub type JSModuleLoaderFn = extern "C" fn(ctx: NonNull<JSContext>, module_name: *const c_char, opaque: *mut c_void) -> Option<NonNull<JSModuleDef>>;
+
+    pub type JSJobFn = extern "C" fn(ctx: NonNull<JSContext>, argc: c_int, argv: *mut JSValue) -> JSValue;
+
+    pub type JSGenericMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
+    pub type JSConstructorMagicFn = extern "C" fn(ctx: NonNull<JSContext>, new_target: JSValue, argc: c_int, argv: *mut JSValue, magic: c_int) -> JSValue;
+    pub type JSFFFn = extern "C" fn(f64) -> f64;
+    pub type JSFFFFn = extern "C" fn(f64, f64) -> f64;
+    pub type JSGetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue) -> JSValue;
+    pub type JSSetterFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, val: JSValue) -> JSValue;
+    pub type JSGetterMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, magic: c_int) -> JSValue;
+    pub type JSSetterMagicFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, val: JSValue, magic: c_int) -> JSValue;
+    pub type JSIteratorNextFn = extern "C" fn(ctx: NonNull<JSContext>, this_val: JSValue, argc: c_int, argv: *mut JSValue, pdone: *mut c_int, magic: c_int) -> JSValue;
+
+    pub type JSModuleInitFn = extern "C" fn(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> c_int;
+}
+pub use fns::*;
+
 #[repr(C)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSRefCountHeader {
+    pub ref_count: c_int,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct JSMallocState {
+    pub malloc_count: usize,
+    pub malloc_size: usize,
+    pub malloc_limit: usize,
+    pub opaque: *mut c_void,
+}
+
+#[repr(C)]
+#[derive(Clone, Default)]
+pub struct JSMallocFunctions {
+    pub js_malloc: Option<JSMallocFn>,
+    pub js_free: Option<JSFreeFn>,
+    pub js_realloc: Option<JSReallocFn>,
+    pub js_malloc_usable_size: Option<JSUsableSizeFn>,
+}
+
+#[repr(C)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSMemoryUsage {
+    pub malloc_size: i64,
+    pub malloc_limit: i64,
+    pub memory_used_size: i64,
+    pub malloc_count: i64,
+    pub memory_used_count: i64,
+    pub atom_count: i64,
+    pub atom_size: i64,
+    pub str_count: i64,
+    pub str_size: i64,
+    pub obj_count: i64,
+    pub obj_size: i64,
+    pub prop_count: i64,
+    pub prop_size: i64,
+    pub shape_count: i64,
+    pub shape_size: i64,
+    pub js_func_count: i64,
+    pub js_func_size: i64,
+    pub js_func_code_size: i64,
+    pub js_func_pc2line_count: i64,
+    pub js_func_pc2line_size: i64,
+    pub c_func_count: i64,
+    pub array_count: i64,
+    pub fast_array_count: i64,
+    pub fast_array_elements: i64,
+    pub binary_object_count: i64,
+    pub binary_object_size: i64,
+}
+
+#[repr(C)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct JSPropertyEnum {
+    pub is_enumerable: JSBool,
+    pub atom: JSAtom,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct JSPropertyDescriptor {
+    pub flags: c_int,
+    pub value: JSValue,
+    pub getter: JSValue,
+    pub setter: JSValue,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct JSClassExoticMethods {
+    pub get_own_property: JSGetOwnPropertyFn,
+    pub get_own_property_names: JSGetOwnPropertyNamesFn,
+    pub delete_property: JSDeletePropertyFn,
+    pub define_own_property: JSDefineOwnPropertyFn,
+    pub has_property: Option<JSHasPropertyFn>,
+    pub get_property: Option<JSGetPropertyFn>,
+    pub set_property: Option<JSSetPropertyFn>,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct JSClassDef {
+    pub class_name: *const c_char,
+    pub finalizer: JSClassFinalizerFn,
+    pub gc_mark: JSClassGCMarkFn,
+    pub call: JSClassCallFn,
+    pub exotic: *mut JSClassExoticMethods,
+}
+
+#[repr(C)]
+#[derive(Clone)]
 pub struct JSSharedArrayBufferFunctions {
     pub sab_alloc: JSSabMallocFn,
     pub sab_free: JSSabFreeFn,
@@ -887,271 +1015,273 @@ pub struct JSCFunctionListEntry {
 }
 
 type Dun = JSCFunctionListEntryUnion;
-pub const fn JS_CFUNC_DEF(
-    name: *const c_char,
-    length: u8,
-    func1: JSCFunctionFn,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
-        def_type: JSDef::CFUNC.0,
-        magic: 0,
-        u: Dun {
-            func: JSCFunctionListEntryUnionFunc {
-                length,
-                cproto: JSCFunctionEnum::GENERIC.0 as u8,
-                cfunc: JSCFunctionType { generic: func1 },
-            },
-        },
-    }
-}
-
-pub const fn JS_CFUNC_DEF2(
-    name: *const c_char,
-    length: u8,
-    func1: JSCFunctionFn,
-    prop_flags: JSProp,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: prop_flags.0 as u8,
-        def_type: JSDef::CFUNC.0,
-        magic: 0,
-        u: Dun {
-            func: JSCFunctionListEntryUnionFunc {
-                length,
-                cproto: JSCFunctionEnum::GENERIC.0 as u8,
-                cfunc: JSCFunctionType { generic: func1 },
-            },
-        },
-    }
-}
-
-pub const fn JS_CFUNC_MAGIC_DEF(
-    name: *const c_char,
-    length: u8,
-    func1: JSCFunctionMagicFn,
-    magic: i16,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
-        def_type: JSDef::CFUNC.0,
-        magic,
-        u: Dun {
-            func: JSCFunctionListEntryUnionFunc {
-                length,
-                cproto: JSCFunctionEnum::GENERIC_MAGIC.0 as u8,
-                cfunc: JSCFunctionType {
-                    generic_magic: func1,
+impl JSCFunctionListEntry {
+    pub const fn func_def(
+        name: *const c_char,
+        length: u8,
+        func1: JSCFunctionFn,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
+            def_type: JSDef::CFUNC.0,
+            magic: 0,
+            u: Dun {
+                func: JSCFunctionListEntryUnionFunc {
+                    length,
+                    cproto: JSCFunctionEnum::GENERIC.0 as u8,
+                    cfunc: JSCFunctionType { generic: func1 },
                 },
             },
-        },
+        }
     }
-}
 
-pub const fn JS_CFUNC_SPECIAL_DEF(
-    name: *const c_char,
-    length: u8,
-    cproto: JSCFunctionEnum,
-    func1: JSCFunctionType,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
-        def_type: JSDef::CFUNC.0,
-        magic: 0,
-        u: Dun {
-            func: JSCFunctionListEntryUnionFunc {
-                length,
-                cproto: cproto.0 as u8,
-                cfunc: func1,
-            },
-        },
-    }
-}
-
-pub const fn JS_ITERATOR_NEXT_DEF(
-    name: *const c_char,
-    length: u8,
-    func1: JSIteratorNextFn,
-    magic: i16,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
-        def_type: JSDef::CFUNC.0,
-        magic,
-        u: Dun {
-            func: JSCFunctionListEntryUnionFunc {
-                length,
-                cproto: JSCFunctionEnum::ITERATOR_NEXT.0 as u8,
-                cfunc: JSCFunctionType {
-                    iterator_next: func1,
+    pub const fn func_def2(
+        name: *const c_char,
+        length: u8,
+        func1: JSCFunctionFn,
+        prop_flags: JSProp,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: prop_flags.0 as u8,
+            def_type: JSDef::CFUNC.0,
+            magic: 0,
+            u: Dun {
+                func: JSCFunctionListEntryUnionFunc {
+                    length,
+                    cproto: JSCFunctionEnum::GENERIC.0 as u8,
+                    cfunc: JSCFunctionType { generic: func1 },
                 },
             },
-        },
+        }
     }
-}
 
-pub const fn JS_CGETSET_DEF(
-    name: *const c_char,
-    fgetter: JSGetterFn,
-    fsetter: JSSetterFn,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: JSProp::CONFIGURABLE.0 as u8,
-        def_type: JSDef::CGETSET.0,
-        magic: 0,
-        u: Dun {
-            getset: JSCFunctionListEntryUnionGetSet {
-                get: JSCFunctionType { getter: fgetter },
-                set: JSCFunctionType { setter: fsetter },
-            },
-        },
-    }
-}
-
-pub const fn JS_CGETSET_MAGIC_DEF(
-    name: *const c_char,
-    fgetter: JSGetterMagicFn,
-    fsetter: JSSetterMagicFn,
-    magic: i16,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: JSProp::CONFIGURABLE.0 as u8,
-        def_type: JSDef::CGETSET_MAGIC.0,
-        magic,
-        u: Dun {
-            getset: JSCFunctionListEntryUnionGetSet {
-                get: JSCFunctionType {
-                    getter_magic: fgetter,
-                },
-                set: JSCFunctionType {
-                    setter_magic: fsetter,
+    pub const fn func_magic_def(
+        name: *const c_char,
+        length: u8,
+        func1: JSCFunctionMagicFn,
+        magic: i16,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
+            def_type: JSDef::CFUNC.0,
+            magic,
+            u: Dun {
+                func: JSCFunctionListEntryUnionFunc {
+                    length,
+                    cproto: JSCFunctionEnum::GENERIC_MAGIC.0 as u8,
+                    cfunc: JSCFunctionType {
+                        generic_magic: func1,
+                    },
                 },
             },
-        },
+        }
     }
-}
 
-pub const fn JS_PROP_STRING_DEF(
-    name: *const c_char,
-    cstr: *const c_char,
-    prop_flags: JSProp,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: prop_flags.0 as u8,
-        def_type: JSDef::PROP_STRING.0,
-        magic: 0,
-        u: Dun { _str: cstr },
-    }
-}
-
-pub const fn JS_PROP_INT32_DEF(
-    name: *const c_char,
-    val: i32,
-    prop_flags: JSProp,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: prop_flags.0 as u8,
-        def_type: JSDef::PROP_INT32.0,
-        magic: 0,
-        u: Dun { _i32: val },
-    }
-}
-
-pub const fn JS_PROP_INT64_DEF(
-    name: *const c_char,
-    val: i64,
-    prop_flags: JSProp,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: prop_flags.0 as u8,
-        def_type: JSDef::PROP_INT64.0,
-        magic: 0,
-        u: Dun { _i64: val },
-    }
-}
-
-pub const fn JS_PROP_DOUBLE_DEF(
-    name: *const c_char,
-    val: f64,
-    prop_flags: JSProp,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: prop_flags.0 as u8,
-        def_type: JSDef::PROP_DOUBLE.0,
-        magic: 0,
-        u: Dun { _f64: val },
-    }
-}
-
-pub const fn JS_PROP_UNDEFINED_DEF(
-    name: *const c_char,
-    prop_flags: JSProp,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: prop_flags.0 as u8,
-        def_type: JSDef::PROP_UNDEFINED.0,
-        magic: 0,
-        u: Dun { _i32: 0 },
-    }
-}
-
-pub const fn JS_OBJECT_DEF(
-    name: *const c_char,
-    tab: *const JSCFunctionListEntry,
-    len: c_int,
-    prop_flags: JSProp,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: prop_flags.0 as u8,
-        def_type: JSDef::OBJECT.0,
-        magic: 0,
-        u: Dun {
-            prop_list: JSCFunctionListEntryUnionPropList { tab, len },
-        },
-    }
-}
-
-pub const fn JS_ALIAS_DEF(name: *const c_char, from: *const c_char) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
-        def_type: JSDef::ALIAS.0,
-        magic: 0,
-        u: Dun {
-            alias: JSCFunctionListEntryUnionAlias {
-                name: from,
-                base: -1,
+    pub const fn func_special_def(
+        name: *const c_char,
+        length: u8,
+        cproto: JSCFunctionEnum,
+        func1: JSCFunctionType,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
+            def_type: JSDef::CFUNC.0,
+            magic: 0,
+            u: Dun {
+                func: JSCFunctionListEntryUnionFunc {
+                    length,
+                    cproto: cproto.0 as u8,
+                    cfunc: func1,
+                },
             },
-        },
+        }
     }
-}
 
-pub const fn JS_ALIAS_BASE_DEF(
-    name: *const c_char,
-    from: *const c_char,
-    base: c_int,
-) -> JSCFunctionListEntry {
-    JSCFunctionListEntry {
-        name,
-        prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
-        def_type: JSDef::ALIAS.0,
-        magic: 0,
-        u: Dun {
-            alias: JSCFunctionListEntryUnionAlias { name: from, base },
-        },
+    pub const fn iterator_next_def(
+        name: *const c_char,
+        length: u8,
+        func1: JSIteratorNextFn,
+        magic: i16,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
+            def_type: JSDef::CFUNC.0,
+            magic,
+            u: Dun {
+                func: JSCFunctionListEntryUnionFunc {
+                    length,
+                    cproto: JSCFunctionEnum::ITERATOR_NEXT.0 as u8,
+                    cfunc: JSCFunctionType {
+                        iterator_next: func1,
+                    },
+                },
+            },
+        }
+    }
+
+    pub const fn getset_def(
+        name: *const c_char,
+        fgetter: JSGetterFn,
+        fsetter: JSSetterFn,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: JSProp::CONFIGURABLE.0 as u8,
+            def_type: JSDef::CGETSET.0,
+            magic: 0,
+            u: Dun {
+                getset: JSCFunctionListEntryUnionGetSet {
+                    get: JSCFunctionType { getter: fgetter },
+                    set: JSCFunctionType { setter: fsetter },
+                },
+            },
+        }
+    }
+
+    pub const fn getset_magic_def(
+        name: *const c_char,
+        fgetter: JSGetterMagicFn,
+        fsetter: JSSetterMagicFn,
+        magic: i16,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: JSProp::CONFIGURABLE.0 as u8,
+            def_type: JSDef::CGETSET_MAGIC.0,
+            magic,
+            u: Dun {
+                getset: JSCFunctionListEntryUnionGetSet {
+                    get: JSCFunctionType {
+                        getter_magic: fgetter,
+                    },
+                    set: JSCFunctionType {
+                        setter_magic: fsetter,
+                    },
+                },
+            },
+        }
+    }
+
+    pub const fn prop_string_def(
+        name: *const c_char,
+        cstr: *const c_char,
+        prop_flags: JSProp,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: prop_flags.0 as u8,
+            def_type: JSDef::PROP_STRING.0,
+            magic: 0,
+            u: Dun { _str: cstr },
+        }
+    }
+
+    pub const fn prop_int32_def(
+        name: *const c_char,
+        val: i32,
+        prop_flags: JSProp,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: prop_flags.0 as u8,
+            def_type: JSDef::PROP_INT32.0,
+            magic: 0,
+            u: Dun { _i32: val },
+        }
+    }
+
+    pub const fn prop_int64_def(
+        name: *const c_char,
+        val: i64,
+        prop_flags: JSProp,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: prop_flags.0 as u8,
+            def_type: JSDef::PROP_INT64.0,
+            magic: 0,
+            u: Dun { _i64: val },
+        }
+    }
+
+    pub const fn prop_double_def(
+        name: *const c_char,
+        val: f64,
+        prop_flags: JSProp,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: prop_flags.0 as u8,
+            def_type: JSDef::PROP_DOUBLE.0,
+            magic: 0,
+            u: Dun { _f64: val },
+        }
+    }
+
+    pub const fn prop_undefined_def(
+        name: *const c_char,
+        prop_flags: JSProp,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: prop_flags.0 as u8,
+            def_type: JSDef::PROP_UNDEFINED.0,
+            magic: 0,
+            u: Dun { _i32: 0 },
+        }
+    }
+
+    pub const fn object_def(
+        name: *const c_char,
+        tab: *const JSCFunctionListEntry,
+        len: c_int,
+        prop_flags: JSProp,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: prop_flags.0 as u8,
+            def_type: JSDef::OBJECT.0,
+            magic: 0,
+            u: Dun {
+                prop_list: JSCFunctionListEntryUnionPropList { tab, len },
+            },
+        }
+    }
+
+    pub const fn alias_def(name: *const c_char, from: *const c_char) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
+            def_type: JSDef::ALIAS.0,
+            magic: 0,
+            u: Dun {
+                alias: JSCFunctionListEntryUnionAlias {
+                    name: from,
+                    base: -1,
+                },
+            },
+        }
+    }
+
+    pub const fn alias_base_def(
+        name: *const c_char,
+        from: *const c_char,
+        base: c_int,
+    ) -> JSCFunctionListEntry {
+        JSCFunctionListEntry {
+            name,
+            prop_flags: (JSProp::WRITABLE.0 | JSProp::CONFIGURABLE.0) as u8,
+            def_type: JSDef::ALIAS.0,
+            magic: 0,
+            u: Dun {
+                alias: JSCFunctionListEntryUnionAlias { name: from, base },
+            },
+        }
     }
 }
 
@@ -1160,11 +1290,11 @@ pub unsafe fn JS_ToCStringLen(
     plen: *mut usize,
     v1: JSValue,
 ) -> *const c_char {
-    return JS_ToCStringLen2(ctx, plen, v1, 0);
+    return JS_ToCStringLen2(ctx, plen, v1, JSBool::FALSE);
 }
 
 pub unsafe fn JS_ToCString(ctx: NonNull<JSContext>, v1: JSValue) -> *const c_char {
-    return JS_ToCStringLen2(ctx, std::ptr::null_mut(), v1, 0);
+    return JS_ToCStringLen2(ctx, std::ptr::null_mut(), v1, JSBool::FALSE);
 }
 
 pub unsafe fn JS_NewCFunction(
@@ -1350,8 +1480,8 @@ extern "C" {
     pub fn JS_CallConstructor(ctx: NonNull<JSContext>, func_obj: JSValue, argc: c_int, argv: *mut JSValue) -> JSValue;
     pub fn JS_CallConstructor2(ctx: NonNull<JSContext>, func_obj: JSValue, new_target: JSValue, argc: c_int, argv: *mut JSValue) -> JSValue;
     pub fn JS_DetectModule(input: *const c_char, input_len: usize) -> JSBool;
-    pub fn JS_Eval(ctx: NonNull<JSContext>, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: c_int) -> JSValue;
-    pub fn JS_EvalThis(ctx: NonNull<JSContext>, this_obj: JSValue, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: c_int) -> JSValue;
+    pub fn JS_Eval(ctx: NonNull<JSContext>, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: JSEvalType) -> JSValue;
+    pub fn JS_EvalThis(ctx: NonNull<JSContext>, this_obj: JSValue, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: JSEvalType) -> JSValue;
     pub fn JS_GetGlobalObject(ctx: NonNull<JSContext>) -> JSValue;
     pub fn JS_IsInstanceOf(ctx: NonNull<JSContext>, val: JSValue, obj: JSValue) -> c_int;
     pub fn JS_DefineProperty(ctx: NonNull<JSContext>, this_obj: JSValue, prop: JSAtom, val: JSValue, getter: JSValue, setter: JSValue, flags: c_uint) -> c_int;
@@ -1428,3 +1558,6 @@ extern "C" {
 
     pub fn JS_GetVersion() -> *const c_char;
 }
+
+#[cfg(test)]
+mod tests;
