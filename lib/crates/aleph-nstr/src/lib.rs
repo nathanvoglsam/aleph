@@ -69,11 +69,11 @@ impl NStr {
 
     #[inline]
     pub const fn from_cstr(v: &CStr) -> Option<&NStr> {
-        if let Ok(v) = v.to_str() {
+        if let Ok(_s) = v.to_str() {
             // Safety: This is hoisted directly from the implementation from
             //         CStr::from_bytes_with_nul so if this isn't safe then we're hosed because
             //         neither is the standard library
-            Some(unsafe { &*(v as *const str as *const NStr) })
+            Some(unsafe { &*(v as *const CStr as *const NStr) })
         } else {
             None
         }
@@ -94,6 +94,11 @@ impl NStr {
 
     #[inline]
     pub const fn from_bytes(v: &[u8]) -> Option<&NStr> {
+        // Empty strings are invalid
+        if v.is_empty() {
+            return None;
+        }
+
         if let Ok(v) = std::str::from_utf8(v) {
             Self::from_str(v)
         } else {
@@ -146,6 +151,12 @@ impl NStr {
         //
         //         It is illegal to construct an NStr that isn't also a valid CStr.
         unsafe { &*((&self.0) as *const [u8]) }
+    }
+
+    /// Returns the length of the string, not including the null terminator.
+    #[inline]
+    pub const fn len(&self) -> usize {
+        self.0.len() - 1
     }
 }
 
@@ -231,3 +242,6 @@ impl Hash for NStr {
         Hash::hash(this, state)
     }
 }
+
+#[cfg(test)]
+mod tests;
