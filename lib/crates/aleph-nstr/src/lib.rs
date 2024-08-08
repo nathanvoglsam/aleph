@@ -114,6 +114,11 @@ impl NStr {
     }
 
     #[inline]
+    pub const fn to_cstr_ptr(&self) -> *const std::ffi::c_char {
+        self.0.as_ptr() as *const std::ffi::c_char
+    }
+
+    #[inline]
     pub const fn to_str_with_nul(&self) -> &str {
         // Safety: This is hoisted directly from the implementation from
         //         CStr::from_bytes_with_nul so if this isn't safe then we're hosed because
