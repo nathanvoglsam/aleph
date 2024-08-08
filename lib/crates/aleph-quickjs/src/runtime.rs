@@ -27,13 +27,55 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_quickjs_sys as raw;
+use std::ptr::NonNull;
+use std::rc::Rc;
 
-mod context;
-mod runtime;
+use crate::context::InnerContext;
+use crate::Context;
 
-pub use context::Context;
-pub use runtime::Runtime;
+#[derive(Clone)]
+pub struct Runtime {
+    /// We ref-count the runtime so we can't leave dangling contexts. Overhead is low as Runtime is
+    /// pinned to a thread
+    pub(crate) rt: Rc<InnerRuntime>,
+}
 
-#[cfg(test)]
-mod tests;
+impl Runtime {
+    pub fn new() -> Option<Self> {
+        unsafe {
+            let rt = raw::JS_NewRuntime()?;
+            Some(Self {
+                rt: Rc::new(InnerRuntime { rt }),
+            })
+        }
+    }
+
+    pub fn new_context(&self) -> Option<Context> {
+        unsafe {
+            let ctx = raw::JS_NewContext(self.rt.rt)?;
+            Some(Context {
+                ctx: Rc::new(InnerContext {
+                    rt: self.clone(),
+                    ctx,
+                }),
+            })
+        }
+    }
+
+    pub fn get_raw(&self) -> NonNull<raw::JSRuntime> {
+        self.rt.rt
+    }
+}
+
+pub(crate) struct InnerRuntime {
+    /// The inner runtime pointer
+    pub rt: NonNull<raw::JSRuntime>,
+}
+
+impl Drop for InnerRuntime {
+    fn drop(&mut self) {
+        unsafe {
+            raw::JS_FreeRuntime(self.rt);
+        }
+    }
+}

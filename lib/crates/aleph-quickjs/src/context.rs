@@ -27,13 +27,37 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_quickjs_sys as raw;
+use std::ptr::NonNull;
+use std::rc::Rc;
 
-mod context;
-mod runtime;
+use crate::Runtime;
 
-pub use context::Context;
-pub use runtime::Runtime;
+#[derive(Clone)]
+pub struct Context {
+    /// We ref-count the context so we can't leave dangling contexts. Overhead is low as Context is
+    /// pinned to a thread
+    pub(crate) ctx: Rc<InnerContext>,
+}
 
-#[cfg(test)]
-mod tests;
+impl Context {
+    pub fn get_raw(&self) -> NonNull<raw::JSContext> {
+        self.ctx.ctx
+    }
+}
+
+pub(crate) struct InnerContext {
+    /// Hold a reference to the runtime to keep it alive as long as any contexts created from it are
+    /// still live too.
+    pub rt: Runtime,
+
+    /// The context itself
+    pub ctx: NonNull<raw::JSContext>,
+}
+
+impl Drop for InnerContext {
+    fn drop(&mut self) {
+        unsafe {
+            raw::JS_FreeContext(self.ctx);
+        }
+    }
+}

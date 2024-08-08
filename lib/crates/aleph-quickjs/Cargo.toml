@@ -42,4 +42,5 @@ edition.workspace = true
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
+aleph-nstr = { workspace = true }
 aleph-quickjs-sys = { workspace = true }
