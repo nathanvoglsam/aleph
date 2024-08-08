@@ -28,60 +28,41 @@
 //
 
 use crate::Runtime;
-use aleph_nstr::nstr;
+use aleph_nstr::{nstr, NStr};
 use raw::*;
 use std::ffi::*;
 use std::ptr::NonNull;
 
 #[test]
 pub fn create_and_destroy_runtime_plus_context() {
-    unsafe {
-        let runtime = Runtime::new().unwrap();
-        let _ctx = runtime.new_context().unwrap();
-    }
+    let runtime = Runtime::new().unwrap();
+    let _ctx = runtime.new_context().unwrap();
 }
 
 #[test]
 pub fn eval_script_int_add() {
     let runtime = Runtime::new().unwrap();
     let ctx = runtime.new_context().unwrap();
-    unsafe {
-        let ctx = ctx.get_raw();
 
-        let filename = nstr!("script.js");
-        let script = nstr!("2 + 2");
-        let result = JS_Eval(
-            ctx,
-            script.to_cstr_ptr(),
-            script.len(),
-            filename.to_cstr_ptr(),
-            JSEvalType::GLOBAL,
-        );
-        assert_eq!(result.get_tag(), JSTag::INT);
-        assert_eq!(result.get_int(), 4);
-    }
+    let filename = nstr!("script.js");
+    let script = nstr!("2 + 2");
+    let result = ctx.eval(script, filename, JSEvalOptions::STRICT);
+
+    assert_eq!(result.get_tag(), JSTag::INT);
+    assert_eq!(result.get_int(), 4);
 }
 
 #[test]
 pub fn eval_script_float_add() {
     let runtime = Runtime::new().unwrap();
     let ctx = runtime.new_context().unwrap();
-    unsafe {
-        let ctx = ctx.get_raw();
 
-        let filename = nstr!("script.js");
-        let script = nstr!("2.2 + 2.4");
-        let result = JS_Eval(
-            ctx,
-            script.to_cstr_ptr(),
-            script.len(),
-            filename.to_cstr_ptr(),
-            JSEvalType::GLOBAL,
-        );
+    let filename = nstr!("script.js");
+    let script = nstr!("2.2 + 2.4");
+    let result = ctx.eval(script, filename, JSEvalOptions::STRICT);
 
-        assert_eq!(result.get_tag(), JSTag::FLOAT64);
-        assert_eq!(result.get_float64(), 2.2f64 + 2.4f64);
-    }
+    assert_eq!(result.get_tag(), JSTag::FLOAT64);
+    assert_eq!(result.get_float64(), 2.2f64 + 2.4f64);
 }
 
 #[test]
@@ -113,10 +94,10 @@ pub fn eval_script_call_c_func() {
     }
 
     let runtime = Runtime::new().unwrap();
-    let ctx = runtime.new_context().unwrap();
+    let context = runtime.new_context().unwrap();
 
     unsafe {
-        let ctx = ctx.get_raw();
+        let ctx = context.get_raw();
 
         let global = JS_GetGlobalObject(ctx);
         assert!(global.is_object());
@@ -130,16 +111,57 @@ pub fn eval_script_call_c_func() {
 
         let filename = nstr!("script.js");
         let script = nstr!("call_me_maybe(56);");
-        let result = JS_Eval(
-            ctx,
-            script.to_cstr_ptr(),
-            script.len(),
-            filename.to_cstr_ptr(),
-            JSEvalType::GLOBAL,
-        );
+        let result = context.eval(script, filename, JSEvalOptions::STRICT);
 
         assert!(CALLED.load(Ordering::SeqCst));
         assert_eq!(result.get_tag(), JSTag::INT);
         assert_eq!(result.get_int(), 21);
+    }
+}
+
+#[test]
+pub fn eval_script_get_property_names() {
+    const SCRIPT: &'static NStr = nstr!(
+        r#"
+        var OUTPUT = {
+            thingA: "Hello, World!",
+            thingB: 56,
+            thingC: {
+                thingD: "Foo",
+                bar: "baz"
+            }
+        };
+        "#
+    );
+
+    let runtime = Runtime::new().unwrap();
+    let context = runtime.new_context().unwrap();
+
+    unsafe {
+        let ctx = context.get_raw();
+
+        let filename = nstr!("script.js");
+        let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
+        assert!(result.is_undefined());
+
+        let global = JS_GetGlobalObject(ctx);
+        assert!(global.is_object());
+
+        let result = JS_GetPropertyStr(ctx, global, nstr!("OUTPUT").to_cstr_ptr());
+        assert!(
+            result.is_object(),
+            "Expected 'object' got '{:?}'",
+            result.get_tag()
+        );
+
+        let props = context.get_own_property_names(
+            result,
+            JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
+        );
+
+        let props = props.get();
+
+        assert_eq!(props.len(), 3);
+        // TODO: evaluate the resulting names
     }
 }

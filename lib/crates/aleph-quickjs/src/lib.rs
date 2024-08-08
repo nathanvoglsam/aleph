@@ -30,9 +30,11 @@
 pub extern crate aleph_quickjs_sys as raw;
 
 mod context;
+mod own_property_names;
 mod runtime;
 
 pub use context::Context;
+pub use own_property_names::OwnPropertyNames;
 pub use runtime::Runtime;
 
 #[cfg(test)]
