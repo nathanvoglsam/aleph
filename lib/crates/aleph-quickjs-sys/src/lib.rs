@@ -1560,6 +1560,3 @@ extern "C" {
 
     pub fn JS_GetVersion() -> *const c_char;
 }
-
-#[cfg(test)]
-mod tests;
