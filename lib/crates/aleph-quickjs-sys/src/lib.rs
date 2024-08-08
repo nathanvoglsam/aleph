@@ -376,19 +376,19 @@ impl JSValue {
     }
 
     pub const fn new_bool(val: bool) -> JSValue {
-        return Self::__new_val(JSTag::BOOL, val as i32);
+        Self::__new_val(JSTag::BOOL, val as i32)
     }
 
     pub const fn new_i32(val: i32) -> JSValue {
-        return Self::__new_val(JSTag::INT, val);
+        Self::__new_val(JSTag::INT, val)
     }
 
     pub const fn new_f64(val: f64) -> JSValue {
-        return Self::__new_float64(val);
+        Self::__new_float64(val)
     }
 
     pub const fn new_catch_offset(val: i32) -> JSValue {
-        return Self::__new_val(JSTag::CATCH_OFFSET, val);
+        Self::__new_val(JSTag::CATCH_OFFSET, val)
     }
 
     pub const fn new_i64(val: i64) -> JSValue {
@@ -417,7 +417,7 @@ impl JSValue {
             let str = CStr::from_ptr(str);
             str.count_bytes()
         };
-        return JS_NewStringLen(ctx, str, len);
+        JS_NewStringLen(ctx, str, len)
     }
 
     pub const fn get_obj(&self) -> *mut JSObject {
@@ -467,35 +467,35 @@ impl JSValue {
     }
 
     pub const fn is_bool(&self) -> bool {
-        return self.get_tag().0 == JSTag::BOOL.0;
+        self.get_tag().0 == JSTag::BOOL.0
     }
 
     pub const fn is_null(&self) -> bool {
-        return self.get_tag().0 == JSTag::NULL.0;
+        self.get_tag().0 == JSTag::NULL.0
     }
 
     pub const fn is_undefined(&self) -> bool {
-        return self.get_tag().0 == JSTag::UNDEFINED.0;
+        self.get_tag().0 == JSTag::UNDEFINED.0
     }
 
     pub const fn is_exception(&self) -> bool {
-        return self.get_tag().0 == JSTag::EXCEPTION.0;
+        self.get_tag().0 == JSTag::EXCEPTION.0
     }
 
     pub const fn is_uninitialized(&self) -> bool {
-        return self.get_tag().0 == JSTag::UNINITIALIZED.0;
+        self.get_tag().0 == JSTag::UNINITIALIZED.0
     }
 
     pub const fn is_string(&self) -> bool {
-        return self.get_tag().0 == JSTag::STRING.0;
+        self.get_tag().0 == JSTag::STRING.0
     }
 
     pub const fn is_symbol(&self) -> bool {
-        return self.get_tag().0 == JSTag::SYMBOL.0;
+        self.get_tag().0 == JSTag::SYMBOL.0
     }
 
     pub const fn is_object(&self) -> bool {
-        return self.get_tag().0 == JSTag::OBJECT.0;
+        self.get_tag().0 == JSTag::OBJECT.0
     }
 
     pub unsafe fn free_value(&self, ctx: NonNull<JSContext>) {
@@ -607,17 +607,45 @@ impl JSProp {
     pub const REFLECT_DEFINE_PROPERTY: Self = Self(1 << 19);
 }
 
+/// A combination of `JS_EVAL_TYPE` and `JS_EVAL_FLAG`. These are named separately in the C API but
+/// are passed in the same bitfield and control behavior of the same functions.
+///
+/// These bindings make the choice to combine them into a single type and filter out variants marked
+/// for internal use only. The 'eval type' flags set what context the script should be executed in.
+/// The 'eval flag' flags set options for alternative behaviors.
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSEvalType(pub c_int);
-bitflags_traits!(JSEvalType);
+pub struct JSEvalOptions(pub c_int);
+bitflags_traits!(JSEvalOptions);
 
-impl JSEvalType {
+impl JSEvalOptions {
+    /* These values below are actually from JS_EVAL_TYPE */
+    // pub const DIRECT: Self = Self(2 << 0);
+    // pub const INDIRECT: Self = Self(3 << 0);
+    // pub const MASK: Self = Self(3 << 0);
+
+    /// Evaluate the code in the global context (default)
     pub const GLOBAL: Self = Self(0 << 0);
+
+    /// Evaluate the code as a module
     pub const MODULE: Self = Self(1 << 0);
-    pub const DIRECT: Self = Self(2 << 0);
-    pub const INDIRECT: Self = Self(3 << 0);
-    pub const MASK: Self = Self(3 << 0);
+
+    /* These values below are actually from JS_EVAL_FLAG */
+    // pub const UNUSED: Self = Self(1 << 4);
+
+    /// Force the script to be run in strict mode.
+    pub const STRICT: Self = Self(1 << 3);
+
+    /// Compile but do not run. The result is an object with a JSTag::FUNCTION_BYTECODE or
+    /// JSTag::MODULE tag. It can be executed with JS_EvalFunction().
+    pub const COMPILE_ONLY: Self = Self(1 << 5);
+
+    /// Don't include the stack frames before this eval in the Error() backtraces
+    pub const BACKTRACE_BARRIER: Self = Self(1 << 6);
+
+    /// Allow top-level await in normal script. JS_Eval() returns a promise. Only allowed with
+    /// JS_EVAL_TYPE_GLOBAL
+    pub const ASYNC: Self = Self(1 << 7);
 }
 
 #[repr(transparent)]
@@ -625,13 +653,7 @@ impl JSEvalType {
 pub struct JSEvalFlag(pub c_int);
 bitflags_traits!(JSEvalFlag);
 
-impl JSEvalFlag {
-    pub const STRICT: Self = Self(1 << 3);
-    pub const UNUSED: Self = Self(1 << 4);
-    pub const COMPILE_ONLY: Self = Self(1 << 5);
-    pub const BACKTRACE_BARRIER: Self = Self(1 << 6);
-    pub const ASYNC: Self = Self(1 << 7);
-}
+impl JSEvalFlag {}
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
@@ -1292,11 +1314,11 @@ pub unsafe fn JS_ToCStringLen(
     plen: *mut usize,
     v1: JSValue,
 ) -> *const c_char {
-    return JS_ToCStringLen2(ctx, plen, v1, JSBool::FALSE);
+    JS_ToCStringLen2(ctx, plen, v1, JSBool::FALSE)
 }
 
 pub unsafe fn JS_ToCString(ctx: NonNull<JSContext>, v1: JSValue) -> *const c_char {
-    return JS_ToCStringLen2(ctx, std::ptr::null_mut(), v1, JSBool::FALSE);
+    JS_ToCStringLen2(ctx, std::ptr::null_mut(), v1, JSBool::FALSE)
 }
 
 pub unsafe fn JS_NewCFunction(
@@ -1305,7 +1327,7 @@ pub unsafe fn JS_NewCFunction(
     name: *const c_char,
     length: c_int,
 ) -> JSValue {
-    return JS_NewCFunction2(ctx, func, name, length, JSCFunctionEnum::GENERIC, 0);
+    JS_NewCFunction2(ctx, func, name, length, JSCFunctionEnum::GENERIC, 0)
 }
 
 pub unsafe fn JS_NewCFunctionMagic(
@@ -1319,7 +1341,7 @@ pub unsafe fn JS_NewCFunctionMagic(
     let ft = JSCFunctionType {
         generic_magic: func,
     };
-    return JS_NewCFunction2(ctx, ft.generic, name, length, cproto, magic);
+    JS_NewCFunction2(ctx, ft.generic, name, length, cproto, magic)
 }
 
 extern "C" {
@@ -1482,8 +1504,8 @@ extern "C" {
     pub fn JS_CallConstructor(ctx: NonNull<JSContext>, func_obj: JSValue, argc: c_int, argv: *mut JSValue) -> JSValue;
     pub fn JS_CallConstructor2(ctx: NonNull<JSContext>, func_obj: JSValue, new_target: JSValue, argc: c_int, argv: *mut JSValue) -> JSValue;
     pub fn JS_DetectModule(input: *const c_char, input_len: usize) -> JSBool;
-    pub fn JS_Eval(ctx: NonNull<JSContext>, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: JSEvalType) -> JSValue;
-    pub fn JS_EvalThis(ctx: NonNull<JSContext>, this_obj: JSValue, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: JSEvalType) -> JSValue;
+    pub fn JS_Eval(ctx: NonNull<JSContext>, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: JSEvalOptions) -> JSValue;
+    pub fn JS_EvalThis(ctx: NonNull<JSContext>, this_obj: JSValue, input: *const c_char, input_len: usize, filename: *const c_char, eval_flags: JSEvalOptions) -> JSValue;
     pub fn JS_GetGlobalObject(ctx: NonNull<JSContext>) -> JSValue;
     pub fn JS_IsInstanceOf(ctx: NonNull<JSContext>, val: JSValue, obj: JSValue) -> c_int;
     pub fn JS_DefineProperty(ctx: NonNull<JSContext>, this_obj: JSValue, prop: JSAtom, val: JSValue, getter: JSValue, setter: JSValue, flags: c_uint) -> c_int;
