@@ -59,6 +59,7 @@ members = [
     "lib/crates/aleph-pix-raw",
     "lib/crates/aleph-profile",
     "lib/crates/aleph-profile-procmacros",
+    "lib/crates/aleph-quickjs",
     "lib/crates/aleph-quickjs-sys",
     "lib/crates/aleph-rhi-api",
     "lib/crates/aleph-rhi-dx12",
@@ -164,6 +165,7 @@ aleph-pix = { path = "./lib/crates/aleph-pix", version = "0.1" }
 aleph-pix-raw = { path = "./lib/crates/aleph-pix-raw", version = "0.1" }
 aleph-profile = { path = "./lib/crates/aleph-profile", version = "0.1" }
 aleph-profile-procmacros = { path = "./lib/crates/aleph-profile-procmacros", version = "0.1" }
+aleph-quickjs = { path = "./lib/crates/aleph-quickjs", version = "0.1" }
 aleph-quickjs-sys = { path = "./lib/crates/aleph-quickjs-sys", version = "0.1" }
 aleph-rhi-api = { path = "./lib/crates/aleph-rhi-api", version = "0.1" }
 aleph-rhi-dx12 = { path = "./lib/crates/aleph-rhi-dx12", version = "0.1" }
