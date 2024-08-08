@@ -33,6 +33,7 @@
 
 use std::ffi::*;
 use std::fmt::{Debug, Formatter};
+use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
 macro_rules! bitflags_traits {
@@ -276,10 +277,6 @@ pub const QJS_VERSION_SUFFIX: &str = "";
 
 pub const JS_DEFAULT_STACK_SIZE: c_int = 256 * 1024;
 
-pub const JS_INVALID_CLASS_ID: JSClassID = 0;
-
-pub const JS_ATOM_NULL: JSAtom = 0;
-
 #[repr(C)]
 struct Private {
     _private: (),
@@ -303,8 +300,13 @@ pub struct JSGCObjectHeader(Private);
 #[repr(C)]
 pub struct JSModuleDef(Private);
 
-pub type JSClassID = u32; // TODO: this can probably be nonzerou32
-pub type JSAtom = u32; // TODO: this can probably be nonzerou32
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct JSClassID(pub NonZeroU32);
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct JSAtom(pub NonZeroU32);
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Default)]
@@ -897,7 +899,7 @@ pub struct JSMemoryUsage {
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct JSPropertyEnum {
     pub is_enumerable: JSBool,
-    pub atom: JSAtom,
+    pub atom: Option<JSAtom>,
 }
 
 #[repr(C)]
@@ -1387,19 +1389,19 @@ extern "C" {
     pub fn JS_ComputeMemoryUsage(rt: NonNull<JSRuntime>, s: *mut JSMemoryUsage);
     // fn JS_DumpMemoryUsage(fp: *mut FILE, s: *const JSMemoryUsage, rt: NonNull<JSRuntime>);
 
-    pub fn JS_NewAtomLen(ctx: NonNull<JSContext>, str: *const c_char, len: usize) -> JSAtom;
-    pub fn JS_NewAtom(ctx: NonNull<JSContext>, str: *const c_char) -> JSAtom;
-    pub fn JS_NewAtomUInt32(ctx: NonNull<JSContext>, n: u32) -> JSAtom;
-    pub fn JS_DupAtom(ctx: NonNull<JSContext>, v: JSAtom) -> JSAtom;
+    pub fn JS_NewAtomLen(ctx: NonNull<JSContext>, str: *const c_char, len: usize) -> Option<JSAtom>;
+    pub fn JS_NewAtom(ctx: NonNull<JSContext>, str: *const c_char) -> Option<JSAtom>;
+    pub fn JS_NewAtomUInt32(ctx: NonNull<JSContext>, n: u32) -> Option<JSAtom>;
+    pub fn JS_DupAtom(ctx: NonNull<JSContext>, v: JSAtom) -> Option<JSAtom>;
     pub fn JS_FreeAtom(ctx: NonNull<JSContext>, v: JSAtom);
     pub fn JS_FreeAtomRT(rt: NonNull<JSRuntime>, v: JSAtom);
     pub fn JS_AtomToValue(ctx: NonNull<JSContext>, atom: JSAtom) -> JSValue;
     pub fn JS_AtomToString(ctx: NonNull<JSContext>, atom: JSAtom) -> JSValue;
     pub fn JS_AtomToCString(ctx: NonNull<JSContext>, atom: JSAtom) -> *const c_char;
-    pub fn JS_ValueToAtom(ctx: NonNull<JSContext>, val: JSValue) -> JSAtom;
+    pub fn JS_ValueToAtom(ctx: NonNull<JSContext>, val: JSValue) -> Option<JSAtom>;
 
-    pub fn JS_NewClassID(rt: NonNull<JSRuntime>, pclass_id: *mut JSClassID) -> JSClassID;
-    pub fn JS_GetClassID(v: JSValue) -> JSClassID;
+    pub fn JS_NewClassID(rt: NonNull<JSRuntime>, pclass_id: *mut Option<JSClassID>) -> Option<JSClassID>;
+    pub fn JS_GetClassID(v: JSValue) -> Option<JSClassID>;
     pub fn JS_NewClass(rt: NonNull<JSRuntime>, class_id: JSClassID, class_def: *const JSClassDef) -> c_int;
     pub fn JS_IsRegisteredClass(rt: NonNull<JSRuntime>, class_id: JSClassID) -> c_int;
 
@@ -1492,7 +1494,7 @@ extern "C" {
     pub fn JS_SetOpaque(obj: JSValue, opaque: *mut c_void);
     pub fn JS_GetOpaque(obj: JSValue, class_id: JSClassID) -> *mut c_void;
     pub fn JS_GetOpaque2(ctx: NonNull<JSContext>, obj: JSValue, class_id: JSClassID) -> *mut c_void;
-    pub fn JS_GetAnyOpaque(obj: JSValue, class_id: *mut JSClassID) -> *mut c_void;
+    pub fn JS_GetAnyOpaque(obj: JSValue, class_id: *mut Option<JSClassID>) -> *mut c_void;
 
     pub fn JS_ParseJSON(ctx: NonNull<JSContext>, buf: *const c_char, buf_len: usize, filename: *const c_char) -> JSValue;
     pub fn JS_JSONStringify(ctx: NonNull<JSContext>, obj: JSValue, replacer: JSValue, space0: JSValue) -> JSValue;
@@ -1524,7 +1526,7 @@ extern "C" {
 
     pub fn JS_SetModuleLoaderFunc(rt: NonNull<JSRuntime>, module_normalize: JSModuleNormalizeFn, module_loader: JSModuleLoaderFn, opaque: *mut c_void);
     pub fn JS_GetImportMeta(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> JSValue;
-    pub fn JS_GetModuleName(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> JSAtom;
+    pub fn JS_GetModuleName(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> Option<JSAtom>;
     pub fn JS_GetModuleNamespace(ctx: NonNull<JSContext>, m: NonNull<JSModuleDef>) -> JSValue; // wasn't marked extern?
 
     pub fn JS_EnqueueJob(ctx: NonNull<JSContext>, job_func: JSJobFn, argc: c_int, argv: *mut JSValue) -> c_int;
@@ -1540,7 +1542,7 @@ extern "C" {
     pub fn JS_EvalFunction(ctx: NonNull<JSContext>, fun_obj: JSValue) -> JSValue;
     pub fn JS_ResolveModule(ctx: NonNull<JSContext>, obj: JSValue) -> c_int;
 
-    pub fn JS_GetScriptOrModuleName(ctx: NonNull<JSContext>, n_stack_levels: c_int) -> JSAtom;
+    pub fn JS_GetScriptOrModuleName(ctx: NonNull<JSContext>, n_stack_levels: c_int) -> Option<JSAtom>;
     pub fn JS_LoadModule(ctx: NonNull<JSContext>, basename: *const c_char, filename: *const c_char) -> JSValue;
 
     pub fn JS_NewCFunction2(ctx: NonNull<JSContext>, func: JSCFunctionFn, name: *const c_char, length: c_int, cproto: JSCFunctionEnum, magic: c_int) -> JSValue;
