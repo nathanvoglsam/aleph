@@ -657,10 +657,10 @@ impl JSEvalFlag {}
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct JSGpn(pub c_int);
-bitflags_traits!(JSGpn);
+pub struct JSGetPropertyNameOption(pub c_int);
+bitflags_traits!(JSGetPropertyNameOption);
 
-impl JSGpn {
+impl JSGetPropertyNameOption {
     pub const STRING_MASK: Self = Self(1 << 0);
     pub const SYMBOL_MASK: Self = Self(1 << 1);
     pub const PRIVATE_MASK: Self = Self(1 << 2);
@@ -1495,7 +1495,7 @@ extern "C" {
     pub fn JS_GetPrototype(ctx: NonNull<JSContext>, v: JSValue) -> JSValue;
     pub fn JS_GetLength(ctx: NonNull<JSContext>, obj: JSValue, pres: *mut i64) -> c_int;
 
-    pub fn JS_GetOwnPropertyNames(ctx: NonNull<JSContext>, ptab: *mut *mut JSPropertyEnum, plen: *mut u32, obj: JSValue, flags: c_uint) -> c_int;
+    pub fn JS_GetOwnPropertyNames(ctx: NonNull<JSContext>, ptab: *mut *mut JSPropertyEnum, plen: *mut u32, obj: JSValue, flags: JSGetPropertyNameOption) -> c_int;
     pub fn JS_GetOwnProperty(ctx: NonNull<JSContext>, desc: *mut JSPropertyDescriptor, obj: JSValue, prop: JSAtom) -> c_int;
     pub fn JS_FreePropertyEnum(ctx: NonNull<JSContext>, tab: *mut JSPropertyEnum, len: u32);
 
