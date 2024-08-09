@@ -40,6 +40,9 @@ use aleph_nstr::NStr;
 //       Problem is that freeing them requires access to the context. Which means we'd need to hold
 //       on to a reference to the context for each JSValue. Ironically it would be easier with a
 //       real GC and value rooting, at least as a caller and in this specific situation.
+//
+//       Perhaps what we need is tighter documentation on when it is our responsibility to free a
+//       JSValue and when we don't.
 
 #[derive(Clone)]
 pub struct Context {
@@ -62,13 +65,18 @@ impl Context {
         }
     }
 
+    /// Returns the global object [`raw::JSValue`] for this context.
     pub fn get_global_object(&self) -> raw::JSValue {
         unsafe {
             raw::JS_GetGlobalObject(self.ctx.ctx)
         }
     }
 
-    pub fn get_property_str(
+    /// # Safety
+    /// 
+    /// It is the caller's responsibility to ensure the [`raw::JSValue`] given is live and allocated
+    /// from this context.
+    pub unsafe fn get_property_str(
         &self,
         this: raw::JSValue,
         prop: &NStr,
@@ -78,7 +86,11 @@ impl Context {
         }
     }
 
-    pub fn get_own_property_names(
+    /// # Safety
+    /// 
+    /// It is the caller's responsibility to ensure the [`raw::JSValue`] given is live and allocated
+    /// from this context.
+    pub unsafe fn get_own_property_names(
         &self,
         obj: raw::JSValue,
         opts: raw::JSGetPropertyNameOption,
@@ -106,10 +118,27 @@ impl Context {
         }
     }
 
+    /// # Safety
+    /// 
+    /// It is the caller's responsibility to ensure that the given [`raw::JSValue`] is live _and_ it
+    /// was allocated from this context.
+    pub unsafe fn free_value(&self, v: raw::JSValue) {
+        v.free_value(self.ctx.ctx)
+    } 
+
+    /// Take the current exception object, if one exists. Will return 'undefined' if there is no
+    /// exception.
+    /// 
+    /// This will take the exception from its slot inside the context, meaning it can only be
+    /// fetched once. In the event an exception is thrown, back to back calls to this function
+    /// will only yield the exception object for the first time with all future calls returning
+    /// 'undefined'. This will continue to return 'undefined' until a new JS call fires another
+    /// exception.
     pub fn get_exception(&self) -> raw::JSValue {
         unsafe { raw::JS_GetException(self.ctx.ctx) }
     }
 
+    /// Returns the inner [`raw::JSContext`].
     pub fn get_raw(&self) -> NonNull<raw::JSContext> {
         self.ctx.ctx
     }
@@ -118,7 +147,7 @@ impl Context {
 pub(crate) struct InnerContext {
     /// Hold a reference to the runtime to keep it alive as long as any contexts created from it are
     /// still live too.
-    pub rt: Runtime,
+    pub _rt: Runtime,
 
     /// The context itself
     pub ctx: NonNull<raw::JSContext>,

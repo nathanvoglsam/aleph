@@ -55,7 +55,7 @@ impl Runtime {
             let ctx = raw::JS_NewContext(self.rt.rt)?;
             Some(Context {
                 ctx: Rc::new(InnerContext {
-                    rt: self.clone(),
+                    _rt: self.clone(),
                     ctx,
                 }),
             })
