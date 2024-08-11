@@ -27,42 +27,48 @@
 // SOFTWARE.
 //
 
-use crate::Runtime;
-use aleph_nstr::{nstr, NStr};
-use raw::*;
 use std::ffi::*;
 use std::ptr::NonNull;
+
+use crate::NumberVariant;
+use crate::Runtime;
+
+use aleph_nstr::{nstr, NStr};
+use raw::*;
 
 #[test]
 pub fn create_and_destroy_runtime_plus_context() {
     let runtime = Runtime::new().unwrap();
-    let _ctx = runtime.new_context().unwrap();
+    let _context = runtime.new_context().unwrap();
 }
 
 #[test]
 pub fn eval_script_int_add() {
     let runtime = Runtime::new().unwrap();
-    let ctx = runtime.new_context().unwrap();
+    let context = runtime.new_context().unwrap();
 
     let filename = nstr!("script.js");
     let script = nstr!("2 + 2");
-    let result = ctx.eval(script, filename, JSEvalOptions::STRICT);
+    let result = context.eval(script, filename, JSEvalOptions::STRICT);
 
     assert_eq!(result.get_tag(), JSTag::INT);
-    assert_eq!(result.get_int(), 4);
+    assert_eq!(result.get_number(), Some(NumberVariant::Integer(4)));
 }
 
 #[test]
 pub fn eval_script_float_add() {
     let runtime = Runtime::new().unwrap();
-    let ctx = runtime.new_context().unwrap();
+    let context = runtime.new_context().unwrap();
 
     let filename = nstr!("script.js");
     let script = nstr!("2.2 + 2.4");
-    let result = ctx.eval(script, filename, JSEvalOptions::STRICT);
+    let result = context.eval(script, filename, JSEvalOptions::STRICT);
 
     assert_eq!(result.get_tag(), JSTag::FLOAT64);
-    assert_eq!(result.get_float64(), 2.2f64 + 2.4f64);
+    assert_eq!(
+        result.get_number(),
+        Some(NumberVariant::Double(2.2f64 + 2.4f64))
+    );
 }
 
 #[test]
@@ -97,16 +103,13 @@ pub fn eval_script_call_c_func() {
     let context = runtime.new_context().unwrap();
 
     unsafe {
-        let ctx = context.get_raw();
-
-        let global = JS_GetGlobalObject(ctx);
-        assert!(global.is_object());
+        let global = context.get_global_object();
 
         let func_name = nstr!("call_me_maybe");
-        let func_v = JS_NewCFunction(ctx, func, func_name.to_cstr_ptr(), 1);
+        let func_v = context.new_c_function(func, func_name, 1);
         assert!(func_v.is_object());
 
-        let result = JS_SetPropertyStr(ctx, global, func_name.to_cstr_ptr(), func_v);
+        let result = context.set_property_str(&global, func_name, &func_v);
         assert_ne!(result, -1);
 
         let filename = nstr!("script.js");
@@ -115,7 +118,7 @@ pub fn eval_script_call_c_func() {
 
         assert!(CALLED.load(Ordering::SeqCst));
         assert_eq!(result.get_tag(), JSTag::INT);
-        assert_eq!(result.get_int(), 21);
+        assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
     }
 }
 
@@ -138,24 +141,23 @@ pub fn eval_script_get_property_names() {
     let context = runtime.new_context().unwrap();
 
     unsafe {
-        let ctx = context.get_raw();
-
         let filename = nstr!("script.js");
         let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
         assert!(result.is_undefined());
 
-        let global = JS_GetGlobalObject(ctx);
-        assert!(global.is_object());
+        let global = context.get_global_object();
 
-        let result = JS_GetPropertyStr(ctx, global, nstr!("OUTPUT").to_cstr_ptr());
+        let result = context.get_property_str(&global, nstr!("OUTPUT"));
+
         assert!(
             result.is_object(),
             "Expected 'object' got '{:?}'",
             result.get_tag()
         );
+        let result = result.to_object().ok().unwrap();
 
         let props = context.get_own_property_names(
-            result,
+            &result,
             JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
         );
 
@@ -163,5 +165,108 @@ pub fn eval_script_get_property_names() {
 
         assert_eq!(props.len(), 3);
         // TODO: evaluate the resulting names
+    }
+}
+
+#[test]
+pub fn runtime_deferred_gc_free() {
+    //!
+    //! This test is in a sense just testing the QuickJS runtime, but it exists for an important
+    //! reason.
+    //!
+    //! Our safe wrapper depends on the semantics seen below to be valid for ref-counted objects.
+    //! We provide an Rc like interface for JS objects. It is important that we're allowed to set
+    //! the ref-count to zero without freeing the object without breaking things. This means we can
+    //! allow the value wrappers to use Clone and Drop like Rc does to increment/decrement the value
+    //! ref-count.
+    //!
+    //! The expectation is that freeing objects used like this will be deferred to the next garbage
+    //! collection cycle. This means we'll use more memory and generate more garbage but the API
+    //! will be __much__ nicer to use. If performance is important enough then explicit freeing APIs
+    //! are also available but the API is unsafe and a bit harder to use.
+    //!
+    let runtime = Runtime::new().unwrap();
+    let context = runtime.new_context().unwrap();
+
+    unsafe {
+        // Capture the baseline allocation stats so we know how many objects are live before we
+        // do anything.
+        let baseline = context.compute_memory_usage();
+
+        // Create an object and assert we have exclusive ownership of it
+        let obj1 = context.new_object();
+        assert_eq!(obj1.get_ref_count(), 1);
+
+        // Capture the allocation stats after we've created a single object. We should have exactly
+        // one more object and the stats should reflect this
+        let created = context.compute_memory_usage();
+        assert_eq!(baseline.obj_count + 1, created.obj_count);
+
+        // Increment the refcount and assert we have 2 ref counts now and that both objects have
+        // the same ref count.
+        let obj2 = obj1.clone();
+        assert_eq!(obj1.get_ref_count(), 2);
+        assert_eq!(obj2.get_ref_count(), 2);
+
+        // Incrementing should never make more objects so make sure.
+        let increment = context.compute_memory_usage();
+        assert_eq!(created.obj_count, increment.obj_count);
+
+        // Manually decrement the reference count for each object
+        let raw1 = obj1.to_raw();
+        let raw2 = obj2.to_raw();
+        drop(obj1);
+        drop(obj2);
+
+        // Both should now have a reference count of zero
+        assert_eq!(raw1.get_ref_count(), Some(0));
+        assert_eq!(raw2.get_ref_count(), Some(0));
+
+        // We've manually decremented the ref-count without freeing. It should now be zero but the
+        // object is still alive as a zombie until the GC runs when it will actually be freed.
+        let decrement = context.compute_memory_usage();
+        assert_eq!(created.obj_count, decrement.obj_count);
+
+        // Trigger a manual GC and hope for the best?
+        //
+        // What we want to know is if it's valid for us to decrement the refcount from zero from
+        // outside of the runtime with out actually freeing the object and then let the GC clean
+        // the dead objects up later.
+        //
+        // This would make lifetime management for our safe wrappers significantly easier as we
+        // could just treat values like rust's Rc types.
+        runtime.gc();
+
+        // Our object should have been collected now. It had already hit a ref-count of zero before
+        // but we opted not to free it then and instead defer it to the garbage collector to find
+        // and free.
+        let collected = context.compute_memory_usage();
+        assert_eq!(baseline.obj_count, collected.obj_count);
+    }
+}
+
+#[test]
+pub fn set_object_property_ref_count_behavior() {
+    let runtime = Runtime::new().unwrap();
+    let context = runtime.new_context().unwrap();
+
+    unsafe {
+        let root = context.new_object();
+        let leaf = context.new_object();
+
+        assert_eq!(root.get_ref_count(), 1);
+        assert_eq!(leaf.get_ref_count(), 1);
+
+        let result = context.set_property_str(&root, nstr!("leaf"), &leaf);
+        assert!(result >= 0);
+
+        assert_eq!(root.get_ref_count(), 1);
+        assert_eq!(leaf.get_ref_count(), 2);
+
+        let result = context.delete_property_str(&root, nstr!("leaf"));
+        assert!(result >= 0);
+
+        assert_eq!(root.get_ref_count(), 1);
+        assert_eq!(leaf.get_ref_count(), 1);
     }
 }

@@ -28,54 +28,59 @@
 //
 
 use std::ptr::NonNull;
-use std::rc::Rc;
 
-use crate::context::InnerContext;
 use crate::Context;
 
-#[derive(Clone)]
-pub struct Runtime {
-    /// We ref-count the runtime so we can't leave dangling contexts. Overhead is low as Runtime is
-    /// pinned to a thread
-    pub(crate) rt: Rc<InnerRuntime>,
-}
+pub struct Runtime(pub(crate) NonNull<raw::JSRuntime>);
 
 impl Runtime {
+    #[inline]
     pub fn new() -> Option<Self> {
         unsafe {
             let rt = raw::JS_NewRuntime()?;
-            Some(Self {
-                rt: Rc::new(InnerRuntime { rt }),
-            })
+            Some(Self(rt))
         }
     }
 
+    #[inline]
+    pub fn to_raw(&self) -> NonNull<raw::JSRuntime> {
+        self.0
+    }
+
+    #[inline]
     pub fn new_context(&self) -> Option<Context> {
         unsafe {
-            let ctx = raw::JS_NewContext(self.rt.rt)?;
+            let ctx = raw::JS_NewContext(self.0)?;
             Some(Context {
-                ctx: Rc::new(InnerContext {
-                    _rt: self.clone(),
-                    ctx,
-                }),
+                ctx,
+                _phantom: std::marker::PhantomData,
             })
         }
     }
 
-    pub fn get_raw(&self) -> NonNull<raw::JSRuntime> {
-        self.rt.rt
+    #[inline]
+    pub fn gc(&self) {
+        unsafe {
+            raw::JS_RunGC(self.0);
+        }
+    }
+
+    /// Query the memory usage from the runtime.
+    #[inline]
+    pub fn compute_memory_usage(&self) -> raw::JSMemoryUsage {
+        unsafe {
+            let mut usage = raw::JSMemoryUsage::default();
+            raw::JS_ComputeMemoryUsage(self.0, &mut usage);
+            usage
+        }
     }
 }
 
-pub(crate) struct InnerRuntime {
-    /// The inner runtime pointer
-    pub rt: NonNull<raw::JSRuntime>,
-}
-
-impl Drop for InnerRuntime {
+impl Drop for Runtime {
+    #[inline]
     fn drop(&mut self) {
         unsafe {
-            raw::JS_FreeRuntime(self.rt);
+            raw::JS_FreeRuntime(self.0);
         }
     }
 }

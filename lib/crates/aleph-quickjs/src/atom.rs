@@ -27,19 +27,25 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_quickjs_sys as raw;
+use std::marker::PhantomData;
 
-mod atom;
-mod context;
-mod own_property_names;
-mod runtime;
-mod value;
+use crate::Context;
 
-pub use atom::Atom;
-pub use context::Context;
-pub use own_property_names::OwnPropertyNames;
-pub use runtime::Runtime;
-pub use value::{DupRawValue, GetRawValue, NumberVariant, Object, RefValue, ToRefValue, Value};
+#[repr(transparent)]
+pub struct Atom<'a> {
+    v: raw::JSAtom,
+    _phantom: PhantomData<&'a Context<'a>>,
+}
 
-#[cfg(test)]
-mod tests;
+impl<'a> Atom<'a> {
+    pub const unsafe fn from_raw(v: raw::JSAtom) -> Self {
+        Self {
+            v,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub const fn to_raw(&self) -> raw::JSAtom {
+        self.v
+    }
+}

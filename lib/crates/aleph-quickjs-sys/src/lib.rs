@@ -31,6 +31,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+use std::cell::Cell;
 use std::ffi::*;
 use std::fmt::{Debug, Formatter};
 use std::num::NonZeroU32;
@@ -371,10 +372,6 @@ impl JSValue {
         Self::__new_ptr(tag, v)
     }
 
-    pub const fn new_float64(d: f64) -> JSValue {
-        Self::__new_float64(d)
-    }
-
     pub const fn new_bool(val: bool) -> JSValue {
         Self::__new_val(JSTag::BOOL, val as i32)
     }
@@ -389,27 +386,6 @@ impl JSValue {
 
     pub const fn new_catch_offset(val: i32) -> JSValue {
         Self::__new_val(JSTag::CATCH_OFFSET, val)
-    }
-
-    pub const fn new_i64(val: i64) -> JSValue {
-        let min = i32::MIN as i64;
-        let max = i32::MAX as i64;
-        if val < min || val > max {
-            Self::new_f64(val as f64)
-        } else {
-            Self::new_i32(val as i32)
-        }
-    }
-
-    pub const fn new_u32(val: u32) -> JSValue {
-        let vi64 = val as i64;
-        let min = i32::MIN as i64;
-        let max = i32::MAX as i64;
-        if vi64 < min || vi64 > max {
-            Self::new_f64(val as f64)
-        } else {
-            Self::new_i32(val as i32)
-        }
     }
 
     pub unsafe fn new_string(ctx: NonNull<JSContext>, str: *const c_char) -> JSValue {
@@ -498,32 +474,73 @@ impl JSValue {
         self.get_tag().0 == JSTag::OBJECT.0
     }
 
-    pub unsafe fn free_value(&self, ctx: NonNull<JSContext>) {
+    #[inline]
+    pub unsafe fn get_ref_count_header(&self) -> Option<&JSRefCountHeader> {
         if self.has_ref_count() {
-            let p = self.get_ptr() as *mut JSRefCountHeader;
-            (*p).ref_count -= 1;
-            if (*p).ref_count <= 0 {
+            unsafe {
+                let ptr = self.get_ptr() as *mut JSRefCountHeader;
+                Some(&*ptr)
+            }
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub unsafe fn get_ref_count(&self) -> Option<c_int> {
+        self.get_ref_count_header().map(|v| v.ref_count.get())
+    }
+
+    #[inline]
+    pub unsafe fn decrement_ref_count(&self) -> Option<c_int> {
+        if let Some(p) = self.get_ref_count_header() {
+            // We opt into checked sub on the Rust side for some extra safety guarantees.
+            let rc = p.ref_count.get();
+            let new_rc = rc.checked_sub(1).unwrap();
+            p.ref_count.set(new_rc);
+
+            // Check our ref counting is balanced, at least on debug builds anyway. It shouldn't be
+            // possible to do this within the bounds of our safe wrappers.
+            debug_assert!(new_rc >= 0);
+
+            Some(new_rc)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub unsafe fn increment_ref_count(&self) -> Option<c_int> {
+        if let Some(p) = self.get_ref_count_header() {
+            // We opt into checked add on the Rust side for some extra safety guarantees.
+            let rc = p.ref_count.get();
+            let new_rc = rc.checked_add(1).unwrap();
+            p.ref_count.set(new_rc);
+
+            Some(new_rc)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    pub unsafe fn free_value(&self, ctx: NonNull<JSContext>) {
+        if let Some(rc) = self.decrement_ref_count() {
+            // If the 'rc' is now 0 we free the value.
+            if rc <= 0 {
                 __JS_FreeValue(ctx, *self);
             }
         }
     }
 
+    #[inline]
     pub unsafe fn free_value_rt(&self, rt: NonNull<JSRuntime>) {
-        if self.has_ref_count() {
-            let p = self.get_ptr() as *mut JSRefCountHeader;
-            (*p).ref_count -= 1;
-            if (*p).ref_count <= 0 {
+        if let Some(rc) = self.decrement_ref_count() {
+            // If the 'rc' is now 0 we free the value.
+            if rc <= 0 {
                 __JS_FreeValueRT(rt, *self);
             }
         }
-    }
-
-    pub unsafe fn dup_value(&self) -> JSValue {
-        if self.has_ref_count() {
-            let p = self.get_ptr() as *mut JSRefCountHeader;
-            (*p).ref_count += 1;
-        }
-        *self
     }
 }
 
@@ -863,9 +880,12 @@ mod fns {
 pub use fns::*;
 
 #[repr(C)]
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Default)]
 pub struct JSRefCountHeader {
-    pub ref_count: c_int,
+    /// The C headers declare this as a raw c_int, but we have to inline shared mutable access to
+    /// this value into Rust code. To make the Rust code sound we wrap the value in a Cell to
+    /// respect the interior mutability semantics.
+    pub ref_count: Cell<c_int>,
 }
 
 #[repr(C)]

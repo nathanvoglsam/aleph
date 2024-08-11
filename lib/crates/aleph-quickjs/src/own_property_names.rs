@@ -42,7 +42,7 @@ pub struct OwnPropertyNames<'a> {
     pub(crate) props: NonNull<[raw::JSPropertyEnum]>,
 
     /// The context must be kept alive
-    pub(crate) _phantom: PhantomData<&'a Context>,
+    pub(crate) _phantom: PhantomData<&'a Context<'a>>,
 }
 
 impl<'a> OwnPropertyNames<'a> {
