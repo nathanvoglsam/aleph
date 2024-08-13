@@ -48,4 +48,16 @@ impl<'a> Atom<'a> {
     pub const fn to_raw(&self) -> raw::JSAtom {
         self.v
     }
+
+    pub const fn leak(self) -> raw::JSAtom {
+        let out = self.v;
+        std::mem::forget(self);
+        out
+    }
+}
+
+impl<'a> Drop for Atom<'a> {
+    fn drop(&mut self) {
+        panic!("Dropping an Atom may leak. Please use Atom::leak to explicitly leak");
+    }
 }

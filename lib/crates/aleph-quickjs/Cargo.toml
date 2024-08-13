@@ -44,3 +44,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-nstr = { workspace = true }
 aleph-quickjs-sys = { workspace = true }
+
+serde_json = { workspace = true }

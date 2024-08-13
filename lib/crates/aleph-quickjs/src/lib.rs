@@ -31,13 +31,15 @@ pub extern crate aleph_quickjs_sys as raw;
 
 mod atom;
 mod context;
+mod ctx_string;
 mod own_property_names;
 mod runtime;
 mod value;
 
 pub use atom::Atom;
 pub use context::Context;
-pub use own_property_names::OwnPropertyNames;
+pub use ctx_string::CtxString;
+pub use own_property_names::{OwnPropertyNames, PropertyEnum};
 pub use runtime::Runtime;
 pub use value::{DupRawValue, GetRawValue, NumberVariant, Object, RefValue, ToRefValue, Value};
 

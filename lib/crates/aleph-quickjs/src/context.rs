@@ -27,13 +27,17 @@
 // SOFTWARE.
 //
 
+use core::str;
+use std::ffi::c_char;
 use std::ffi::c_int;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 
+use crate::PropertyEnum;
 use crate::{
-    Atom, DupRawValue, GetRawValue, Object, OwnPropertyNames, RefValue, Runtime, ToRefValue,
+    Atom, CtxString, DupRawValue, GetRawValue, Object, OwnPropertyNames, RefValue, Runtime,
+    ToRefValue,
 };
 
 use aleph_nstr::NStr;
@@ -116,7 +120,7 @@ impl<'a> Context<'a> {
     /// It is the caller's responsibility to ensure the JS value given is live and allocated
     /// from this context.
     #[inline]
-    pub unsafe fn get_property_str(&self, this: &impl GetRawValue, prop: &NStr) -> RefValue {
+    pub unsafe fn get_property_str(&self, this: &impl GetRawValue, prop: &str) -> RefValue {
         unsafe {
             if let Some(a) = self.new_atom(prop) {
                 let v = self.get_property(this, &a);
@@ -149,7 +153,7 @@ impl<'a> Context<'a> {
     pub unsafe fn set_property_str(
         &self,
         this: &impl GetRawValue,
-        prop: &NStr,
+        prop: &str,
         v: &impl DupRawValue,
     ) -> c_int {
         unsafe {
@@ -184,7 +188,7 @@ impl<'a> Context<'a> {
     /// It is the caller's responsibility to ensure the JS values given are live and allocated
     /// from this context.
     #[inline]
-    pub unsafe fn delete_property_str(&self, this: &impl GetRawValue, prop: &NStr) -> c_int {
+    pub unsafe fn delete_property_str(&self, this: &impl GetRawValue, prop: &str) -> c_int {
         unsafe {
             if let Some(a) = self.new_atom(prop) {
                 let result = self.delete_property(this, &a);
@@ -219,34 +223,116 @@ impl<'a> Context<'a> {
         opts: raw::JSGetPropertyNameOption,
     ) -> OwnPropertyNames {
         let obj = obj.get_raw_value();
+
+        let mut tab = std::ptr::null_mut();
+        let mut len = 0;
+        let result = raw::JS_GetOwnPropertyNames(self.ctx, &mut tab, &mut len, obj, opts);
+        if result < 0 {
+            panic!("Don't know how to handle exceptions yet");
+        }
+
+        let slice = if len > 0 {
+            let tab = NonNull::new(tab).unwrap();
+            let tab: NonNull<PropertyEnum> = tab.cast();
+            NonNull::slice_from_raw_parts(tab, len as usize)
+        } else {
+            NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
+        };
+
+        OwnPropertyNames {
+            ctx: self.ctx,
+            props: slice,
+            _phantom: Default::default(),
+        }
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`RefValue`] was allocated from
+    /// this context.
+    #[inline]
+    pub unsafe fn to_string(&self, v: &impl GetRawValue) -> RefValue {
+        let v = v.get_raw_value();
+        let string = raw::JS_ToString(self.ctx, v);
+        RefValue::from_raw(string)
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`Atom`] was allocated from
+    /// this context.
+    #[inline]
+    pub unsafe fn atom_to_string(&self, v: &Atom) -> RefValue {
+        let string = raw::JS_AtomToString(self.ctx, v.to_raw());
+        RefValue::from_raw(string)
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`RefValue`] was allocated from
+    /// this context.
+    #[inline]
+    pub unsafe fn to_c_str(&self, v: &impl GetRawValue) -> Option<CtxString> {
+        let v = v.get_raw_value();
+
+        let mut len = 0;
+        let cstr = raw::JS_ToCStringLen2(self.ctx, &mut len, v, raw::JSBool::FALSE);
+
+        if len == 0 || cstr.is_null() {
+            None
+        } else {
+            let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
+            let string = str::from_utf8(bytes).unwrap_unchecked();
+            Some(CtxString::from_ctx_and_str(self, string))
+        }
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`RefValue`] was allocated from
+    /// this context.
+    #[inline]
+    pub unsafe fn atom_to_c_str(&self, v: &Atom) -> Option<CtxString> {
+        let string = self.atom_to_string(v);
+        if !string.is_exception() {
+            self.to_c_str(&string)
+        } else {
+            None
+        }
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`str`] was allocated from
+    /// this context.
+    pub unsafe fn free_c_str(&self, v: &str) {
+        raw::JS_FreeCString(self.ctx, v.as_ptr() as *const c_char)
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`Atom`] was allocated from
+    /// this context.
+    #[inline]
+    pub unsafe fn atom_to_value(&self, v: &Atom) -> RefValue {
+        let string = raw::JS_AtomToValue(self.ctx, v.to_raw());
+        RefValue::from_raw(string)
+    }
+
+    #[inline]
+    pub fn new_atom(&self, s: &str) -> Option<Atom> {
         unsafe {
-            let mut tab = std::ptr::null_mut();
-            let mut len = 0;
-            let result = raw::JS_GetOwnPropertyNames(self.ctx, &mut tab, &mut len, obj, opts);
-            if result < 0 {
-                panic!("Don't know how to handle exceptions yet");
-            }
-
-            let slice = if len > 0 {
-                let tab = NonNull::new(tab).unwrap();
-                NonNull::slice_from_raw_parts(tab, len as usize)
-            } else {
-                NonNull::<[raw::JSPropertyEnum]>::slice_from_raw_parts(NonNull::dangling(), 0)
-            };
-
-            OwnPropertyNames {
-                ctx: self.ctx,
-                props: slice,
-                _phantom: Default::default(),
-            }
+            assert!(s.is_ascii());
+            let atom = raw::JS_NewAtomLen(self.ctx, s.as_ptr() as *const _, s.len());
+            atom.map(|v| Atom::from_raw(v))
         }
     }
 
     #[inline]
-    pub fn new_atom(&self, s: &NStr) -> Option<Atom> {
+    pub fn new_string(&self, v: &str) -> RefValue {
         unsafe {
-            let atom = raw::JS_NewAtomLen(self.ctx, s.to_cstr_ptr(), s.len());
-            atom.map(|v| Atom::from_raw(v))
+            let v = raw::JS_NewStringLen(self.ctx, v.as_ptr() as *const c_char, v.len());
+            RefValue::from_raw(v)
         }
     }
 
@@ -296,7 +382,7 @@ impl<'a> Context<'a> {
     /// allocated from this context.
     #[inline]
     pub unsafe fn free_atom<'b>(&self, a: Atom) {
-        let v = a.to_raw();
+        let v = a.leak();
         raw::JS_FreeAtom(self.ctx, v);
     }
 
@@ -310,6 +396,68 @@ impl<'a> Context<'a> {
             let atom = raw::JS_DupAtom(self.ctx, a.to_raw());
             atom.map(|v| Atom::from_raw(v))
         }
+    }
+}
+
+impl<'a> Context<'a> {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`RefValue`] was allocated from
+    /// this context.
+    pub unsafe fn to_json(&self, v: &RefValue) -> Option<serde_json::Value> {
+        let v = match v.get_tag() {
+            raw::JSTag::BIG_INT => unimplemented!(),
+            raw::JSTag::SYMBOL => unimplemented!(),
+            raw::JSTag::STRING => {
+                let string = self.to_c_str(v)?;
+                let string = string.to_owned();
+                serde_json::Value::String(string)
+            }
+            raw::JSTag::MODULE => unimplemented!(),
+            raw::JSTag::FUNCTION_BYTECODE => unimplemented!(),
+            raw::JSTag::OBJECT => {
+                let v = v.clone().to_object().ok().unwrap_unchecked();
+                self.object_to_json(&v)?
+            }
+            raw::JSTag::BOOL => {
+                let boolean = v.get_bool().unwrap_unchecked();
+                serde_json::Value::Bool(boolean)
+            }
+            raw::JSTag::NULL => serde_json::Value::Null,
+            raw::JSTag::UNDEFINED => return None,
+            raw::JSTag::UNINITIALIZED => unimplemented!(),
+            raw::JSTag::CATCH_OFFSET => unimplemented!(),
+            raw::JSTag::EXCEPTION => return None,
+            raw::JSTag::INT | raw::JSTag::FLOAT64 => {
+                let number = v.get_number().unwrap_unchecked().normalize();
+                let number = serde_json::Number::from_f64(number)?;
+                serde_json::Value::Number(number)
+            }
+            _ => unimplemented!(),
+        };
+        Some(v)
+    }
+
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given [`RefValue`] was allocated from
+    /// this context.
+    pub unsafe fn object_to_json(&self, v: &Object) -> Option<serde_json::Value> {
+        let opts =
+            raw::JSGetPropertyNameOption::STRING_MASK | raw::JSGetPropertyNameOption::ENUM_ONLY;
+        let props = self.get_own_property_names(v, opts);
+
+        let mut object = serde_json::Map::new();
+        for prop in props.iter() {
+            let atom = prop.atom.as_ref()?;
+            let value = self.get_property(v, atom);
+            if let Some(value) = self.to_json(&value) {
+                let name = self.atom_to_c_str(atom)?;
+                object.insert(name.to_string(), value);
+            }
+        }
+
+        Some(serde_json::Value::Object(object))
     }
 }
 

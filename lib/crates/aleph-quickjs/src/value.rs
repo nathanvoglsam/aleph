@@ -62,6 +62,20 @@ impl NumberVariant {
             NumberVariant::Integer(v) => v as f64,
         }
     }
+
+    pub const fn get_double(self) -> Option<f64> {
+        match self {
+            NumberVariant::Double(v) => Some(v),
+            NumberVariant::Integer(_) => None,
+        }
+    }
+
+    pub const fn get_int(self) -> Option<c_int> {
+        match self {
+            NumberVariant::Double(_) => None,
+            NumberVariant::Integer(v) => Some(v),
+        }
+    }
 }
 
 /// Represents a wrapper of [`JSValue`] that represents only the pure value type variants of
@@ -596,13 +610,6 @@ impl<'a> GetRawValue for Object<'a> {
     #[inline]
     fn get_raw_value(&self) -> JSValue {
         self.v
-    }
-}
-
-impl GetRawValue for raw::JSValue {
-    #[inline]
-    fn get_raw_value(&self) -> JSValue {
-        *self
     }
 }
 

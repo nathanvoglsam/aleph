@@ -28,10 +28,16 @@
 //
 
 use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::ptr::NonNull;
 
-use crate::Context;
+use crate::{Atom, Context};
+
+#[repr(C)]
+pub struct PropertyEnum<'a> {
+    pub is_enumerable: raw::JSBool,
+    pub atom: Option<Atom<'a>>,
+}
 
 /// Wrapper type over the result of [`raw::JS_GetOwnPropertyNames`]. Manages freeing the result
 /// array when the 'Self' is dropped.
@@ -39,49 +45,31 @@ pub struct OwnPropertyNames<'a> {
     pub(crate) ctx: NonNull<raw::JSContext>,
 
     /// Reference to the context to keep it alive
-    pub(crate) props: NonNull<[raw::JSPropertyEnum]>,
+    pub(crate) props: NonNull<[PropertyEnum<'a>]>,
 
     /// The context must be kept alive
     pub(crate) _phantom: PhantomData<&'a Context<'a>>,
 }
 
 impl<'a> OwnPropertyNames<'a> {
-    pub fn get(&self) -> &[raw::JSPropertyEnum] {
+    pub fn get(&self) -> &[PropertyEnum<'a>] {
         self.as_ref()
-    }
-
-    pub fn get_mut(&mut self) -> &mut [raw::JSPropertyEnum] {
-        self.as_mut()
     }
 }
 
-impl<'a> AsRef<[raw::JSPropertyEnum]> for OwnPropertyNames<'a> {
+impl<'a> AsRef<[PropertyEnum<'a>]> for OwnPropertyNames<'a> {
     #[inline]
-    fn as_ref(&self) -> &[raw::JSPropertyEnum] {
+    fn as_ref(&self) -> &[PropertyEnum<'a>] {
         unsafe { &*self.props.as_ptr() }
     }
 }
 
-impl<'a> AsMut<[raw::JSPropertyEnum]> for OwnPropertyNames<'a> {
-    #[inline]
-    fn as_mut(&mut self) -> &mut [raw::JSPropertyEnum] {
-        unsafe { &mut *self.props.as_ptr() }
-    }
-}
-
 impl<'a> Deref for OwnPropertyNames<'a> {
-    type Target = [raw::JSPropertyEnum];
+    type Target = [PropertyEnum<'a>];
 
     #[inline]
     fn deref(&self) -> &Self::Target {
         self.as_ref()
-    }
-}
-
-impl<'a> DerefMut for OwnPropertyNames<'a> {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.as_mut()
     }
 }
 
@@ -96,7 +84,11 @@ impl<'a> Drop for OwnPropertyNames<'a> {
 
                 // 'len' is guaranteed to fit in u32 as we got the length from quickjs in the first
                 // place.
-                raw::JS_FreePropertyEnum(self.ctx, props.as_mut_ptr(), self.props.len() as u32);
+                raw::JS_FreePropertyEnum(
+                    self.ctx,
+                    props.as_mut_ptr() as *mut _,
+                    self.props.len() as u32,
+                );
             }
         }
     }

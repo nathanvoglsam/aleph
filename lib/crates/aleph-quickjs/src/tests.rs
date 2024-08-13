@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::collections::HashSet;
 use std::ffi::*;
 use std::ptr::NonNull;
 
@@ -109,7 +110,7 @@ pub fn eval_script_call_c_func() {
         let func_v = context.new_c_function(func, func_name, 1);
         assert!(func_v.is_object());
 
-        let result = context.set_property_str(&global, func_name, &func_v);
+        let result = context.set_property_str(&global, func_name.to_str(), &func_v);
         assert_ne!(result, -1);
 
         let filename = nstr!("script.js");
@@ -137,6 +138,11 @@ pub fn eval_script_get_property_names() {
         "#
     );
 
+    let mut expected_names = HashSet::new();
+    expected_names.insert("thingA");
+    expected_names.insert("thingB");
+    expected_names.insert("thingC");
+
     let runtime = Runtime::new().unwrap();
     let context = runtime.new_context().unwrap();
 
@@ -147,7 +153,7 @@ pub fn eval_script_get_property_names() {
 
         let global = context.get_global_object();
 
-        let result = context.get_property_str(&global, nstr!("OUTPUT"));
+        let result = context.get_property_str(&global, "OUTPUT");
 
         assert!(
             result.is_object(),
@@ -164,7 +170,64 @@ pub fn eval_script_get_property_names() {
         let props = props.get();
 
         assert_eq!(props.len(), 3);
-        // TODO: evaluate the resulting names
+        for prop in props {
+            let atom = prop.atom.as_ref().unwrap();
+            let prop_name = context.atom_to_c_str(atom).unwrap();
+            assert!(expected_names.remove(prop_name.as_ref()));
+        }
+    }
+}
+
+#[test]
+pub fn eval_script_to_serde() {
+    const SCRIPT: &'static NStr = nstr!(
+        r#"
+        var OUTPUT = {
+            thingA: "Hello, World!",
+            thingB: 56.1,
+            thingC: {
+                thingD: "Foo",
+                bar: "baz"
+            }
+        };
+        "#
+    );
+
+    const JSON_EXPECTED: &'static str = 
+    r#"
+    {
+        "thingA": "Hello, World!",
+        "thingB": 56.1,
+        "thingC": {
+            "thingD": "Foo",
+            "bar": "baz"
+        }
+    }
+    "#;
+
+    let runtime = Runtime::new().unwrap();
+    let context = runtime.new_context().unwrap();
+
+    unsafe {
+        let filename = nstr!("script.js");
+        let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
+        assert!(result.is_undefined());
+
+        let global = context.get_global_object();
+
+        let result = context.get_property_str(&global, "OUTPUT");
+
+        assert!(
+            result.is_object(),
+            "Expected 'object' got '{:?}'",
+            result.get_tag()
+        );
+        let result = result.to_object().ok().unwrap();
+
+        let result_json = context.object_to_json(&result).unwrap();
+        let expected_json: serde_json::Value = serde_json::from_str(JSON_EXPECTED).unwrap();
+
+        assert_eq!(result_json, expected_json);
     }
 }
 
@@ -257,16 +320,32 @@ pub fn set_object_property_ref_count_behavior() {
         assert_eq!(root.get_ref_count(), 1);
         assert_eq!(leaf.get_ref_count(), 1);
 
-        let result = context.set_property_str(&root, nstr!("leaf"), &leaf);
+        let result = context.set_property_str(&root, "leaf", &leaf);
         assert!(result >= 0);
 
         assert_eq!(root.get_ref_count(), 1);
         assert_eq!(leaf.get_ref_count(), 2);
 
-        let result = context.delete_property_str(&root, nstr!("leaf"));
+        let result = context.delete_property_str(&root, "leaf");
         assert!(result >= 0);
 
         assert_eq!(root.get_ref_count(), 1);
         assert_eq!(leaf.get_ref_count(), 1);
+    }
+}
+
+#[test]
+pub fn string_with_internal_null_character() {
+    let runtime = Runtime::new().unwrap();
+    let context = runtime.new_context().unwrap();
+
+    unsafe {
+        let string = "String with a \0 character in the middle";
+
+        let v = context.new_string(string);
+        assert!(v.is_string());
+
+        let got_string = context.to_c_str(&v).unwrap();
+        assert_eq!(string, got_string.as_ref());
     }
 }
