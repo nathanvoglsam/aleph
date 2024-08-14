@@ -45,6 +45,8 @@ impl BuildConfig {
     /// Utility function that will output the build-script configuration to stdout that is used for
     /// detecting the build type in the 'crate' side of the library.
     pub fn print_target_cargo_cfg(self) {
+        println!("cargo::rustc-check-cfg=cfg(aleph_target_debug, values())");
+        println!("cargo::rustc-check-cfg=cfg(aleph_target_optimized, values())");
         if self.debug {
             println!("cargo:rustc-cfg=aleph_target_debug");
         }
