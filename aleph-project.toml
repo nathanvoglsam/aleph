@@ -25,21 +25,21 @@ version_id = 1
 
 # Specification of app branding for Windows
 [windows.branding]
-icon = "branding/windows/app_icon.ico"
+icon = "engine/branding/windows/app_icon.ico"
 
 # Specification of app branding for UWP
 [uwp.branding]
-lock_screen_logo = "branding/uwp/LockScreenLogo.png"
-splash_screen = "branding/uwp/SplashScreen.png"
-square_44_x_44_logo = "branding/uwp/Square44x44Logo.png"
-square_150_x_150_logo = "branding/uwp/Square150x150Logo.png"
-store_logo = "branding/uwp/StoreLogo.png"
-wide_310_x_150_logo = "branding/uwp/Wide310x150Logo.png"
+lock_screen_logo = "engine/branding/uwp/LockScreenLogo.png"
+splash_screen = "engine/branding/uwp/SplashScreen.png"
+square_44_x_44_logo = "engine/branding/uwp/Square44x44Logo.png"
+square_150_x_150_logo = "engine/branding/uwp/Square150x150Logo.png"
+store_logo = "engine/branding/uwp/StoreLogo.png"
+wide_310_x_150_logo = "engine/branding/uwp/Wide310x150Logo.png"
 
 # Specification of app branding for Android
 [android.branding]
-icon_mdpi = "branding/android/mipmap-mdpi/ic_launcher.png"
-icon_hdpi = "branding/android/mipmap-hdpi/ic_launcher.png"
-icon_xhdpi = "branding/android/mipmap-xhdpi/ic_launcher.png"
-icon_xxhdpi = "branding/android/mipmap-xxhdpi/ic_launcher.png"
-icon_xxxhdpi = "branding/android/mipmap-xxxhdpi/ic_launcher.png"
+icon_mdpi = "engine/branding/android/mipmap-mdpi/ic_launcher.png"
+icon_hdpi = "engine/branding/android/mipmap-hdpi/ic_launcher.png"
+icon_xhdpi = "engine/branding/android/mipmap-xhdpi/ic_launcher.png"
+icon_xxhdpi = "engine/branding/android/mipmap-xxhdpi/ic_launcher.png"
+icon_xxxhdpi = "engine/branding/android/mipmap-xxxhdpi/ic_launcher.png"

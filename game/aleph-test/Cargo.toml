@@ -43,7 +43,7 @@ name = "aleph_test_lib"
 path = "./src/lib.rs"
 
 [dependencies]
-aleph-engine = { path = "../../lib/crates/aleph-engine", version = "0.1.0" }
+aleph-engine = { workspace = true }
 egui_demo_lib = { workspace = true }
 ## aleph-profile = { workspace = true, features = ["profile-with-superluminal"] }
 

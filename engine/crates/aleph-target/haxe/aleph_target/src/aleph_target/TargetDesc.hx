@@ -30,6 +30,7 @@
 package aleph_target;
 
 @:structInit
+@:expose
 class TargetDesc {
     public var platform: Platform;
     public var arch: Architecture;
