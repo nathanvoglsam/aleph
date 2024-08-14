@@ -193,8 +193,7 @@ pub fn eval_script_to_serde() {
         "#
     );
 
-    const JSON_EXPECTED: &'static str = 
-    r#"
+    const JSON_EXPECTED: &'static str = r#"
     {
         "thingA": "Hello, World!",
         "thingB": 56.1,
