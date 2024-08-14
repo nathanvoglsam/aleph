@@ -323,7 +323,7 @@ fn generate_vscode_build_hxml(
 
     log::info!("Generating 'build.xml' for language server");
 
-    let dummy_output_file = project.haxe_build_path().join("dummy.lua");
+    let dummy_output_file = project.haxe_build_path().join("dummy.js");
     let hxml_file_name = project.project_root().join("build.hxml");
 
     let mut hxml = String::with_capacity(1024);
@@ -332,7 +332,7 @@ fn generate_vscode_build_hxml(
     for path in classpaths {
         writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
     }
-    writeln!(hxml, "--lua \"{}\"", path_for_haxe(&dummy_output_file))?;
+    writeln!(hxml, "--js \"{}\"", path_for_haxe(&dummy_output_file))?;
 
     std::fs::write(hxml_file_name, hxml)?;
 

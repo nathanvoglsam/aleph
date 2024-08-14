@@ -88,6 +88,5 @@ pub const HAXE_LUA_BUILD_HXML_PREFIX: &str = r#"
 ##
 ## EXISTS ONLY FOR CODE COMPLETION IN VSCODE
 
--D lua-jit
--D lua-ver=5.1
+-D js-es=6
 "#;
