@@ -29,8 +29,6 @@
 
 package aleph_rhi;
 
-import aleph_target.TargetDesc;
-
 /**
  * All the supported RHI backends.
  */
@@ -66,7 +64,7 @@ typedef RhiBackendConfig = {
     var ?vulkan: VulkanOptions;
 
     /** Any options to configure the D3D12 backend, if it is loaded. **/
-    var ?d3d12: VulkanOptions;
+    var ?d3d12: D3D12Options;
 }
 
 /**
@@ -91,36 +89,16 @@ typedef RhiConfig = {
     var debug: RhiDebugConfig;
 }
 
+/**
+ * Utility for fetching the config from the ConfigTable after the config has been initialized.
+ * 
+ * This is intended to be used by config overrides and not the default config logic for a plugin.
+ */
 class Config {
-    /**
-     * Constructs a default 'RhiConfig' object based on the given target.
-     * 
-     * This function will choose opinionated defaults for the available settings based on the target
-     * platform and architecture. These may be override though command line flags or through
-     * additional config scripts.
-     * @param target
-     */
-    public static function getDefaultFor(target: TargetDesc): RhiConfig {
-        // On Windows we prefer D3D12 for better platform integration (DXGI)
-        var backend = if (target.platform.isWindows()) {
-            RhiBackend.D3D12;
-        } else {
-            RhiBackend.Vulkan;
-        };
+    public static var NAME: String = "aleph_rhi";
 
-        var backend: RhiBackendConfig = {
-            backend: backend,
-        };
-
-        // We'll never want validation or debug by default. Leave that to an override
-        var debug: RhiDebugConfig = {
-            validation: false,
-            debug: false,
-        };
-
-        return {
-            backend: backend,
-            debug: debug,
-        };
+    @:access(aleph_config.ConfigTable.get)
+    public static function get(config: aleph_config.ConfigTable): RhiConfig {
+        return config.get(NAME);
     }
 }
