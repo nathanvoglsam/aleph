@@ -32,10 +32,7 @@
 resolver = "2"
 
 members = [
-    "engine/archived/aleph-combine-utils",
     "engine/archived/aleph-ktx",
-    "engine/archived/aleph-schema",
-    "engine/archived/aleph-sexpr",
     "engine/archived/aleph-vk-format",
     "engine/crates/aleph-any",
     "engine/crates/aleph-arena-drop-list",
@@ -51,7 +48,6 @@ members = [
     "engine/crates/aleph-identity-hasher",
     "engine/crates/aleph-interfaces",
     "engine/crates/aleph-label",
-    "engine/crates/aleph-luajit-sys",
     "engine/crates/aleph-math",
     "engine/crates/aleph-nstr",
     "engine/crates/aleph-pin-board",
@@ -192,19 +188,12 @@ aleph-rhi = { path = "./engine/plugins/aleph-rhi", version = "0.1" }
 aleph-sdl2 = { path = "./engine/plugins/aleph-sdl2", version = "0.1" }
 
 # 'archived' Crates
-aleph-combine-utils = { path = "./engine/archived/aleph-combine-utils", version = "0.1" }
 aleph-ktx = { path = "./engine/archived/aleph-ktx", version = "0.1" }
-aleph-schema = { path = "./engine/archived/aleph-schema", version = "0.1" }
-aleph-sexpr = { path = "./engine/archived/aleph-sexpr", version = "0.1" }
 aleph-vk-format = { path = "./engine/archived/aleph-vk-format", version = "1" }
 
 # 'archived' Dependencies
-combine = "4"
-unicode-width = "0.1"
 num-integer = "0.1"
 smartstring = "1"
-lalrpop = "0.20.0"
-lalrpop-util = "0.20.0"
 
 # Compile all our third-party dependencies with optimizations even on debug builds. Some crates (mainly math crates)
 # will bring our runtime performance to a crawl when built without optimizations, so we definitely want this enabled.
