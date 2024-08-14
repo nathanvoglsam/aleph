@@ -51,10 +51,6 @@ jobs:
 
             - bash: |
                 bash build_x86_64_linux_release.sh
-              workingDirectory: "./submodules/LuaJIT-builds"
-
-            - bash: |
-                bash build_x86_64_linux_release.sh
               workingDirectory: "./submodules/QuickJSNG-builds"
 
             # The actual build
