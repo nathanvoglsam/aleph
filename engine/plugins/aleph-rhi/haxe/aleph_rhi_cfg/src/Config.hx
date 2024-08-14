@@ -34,8 +34,13 @@ import aleph_rhi.Config.RhiBackendConfig;
 import aleph_rhi.Config.RhiDebugConfig;
 
 @:expose
-@:keep
 class Config {
+    /**
+     * The config identifier. This is the key into a ConfigTable for where the config should be
+     * stored to/from.
+     */
+    public static var NAME: String = aleph_rhi.Config.NAME;
+
     /**
      * Constructs a default 'RhiConfig' object based on the given target.
      * 
