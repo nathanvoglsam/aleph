@@ -249,11 +249,11 @@ fn generate_module_build_lua_hxml(
     writeln!(hxml, "--dce std")?;
     writeln!(hxml, "-D lua-jit")?;
     writeln!(hxml, "-D lua-ver=5.1")?;
-    writeln!(
-        hxml,
-        "--macro include(\"{}\", true)",
-        module_ctx.module_name
-    )?;
+    {
+        write!(hxml, "--macro include(\"\", true, [], [")?;
+        write!(hxml, "\"{}\", ", path_for_haxe(module_ctx.meta.source_dir))?;
+        writeln!(hxml, "])",)?;
+    }
     writeln!(hxml, "--lua \"{}\"", path_for_haxe(&out_file_name))?;
     writeln!(hxml, "--xml \"{}\"", path_for_haxe(&xml_file_name))?;
 
@@ -302,11 +302,11 @@ fn generate_module_build_js_hxml(
     }
     writeln!(hxml, "--dce std")?;
     writeln!(hxml, "-D js-es=6")?;
-    writeln!(
-        hxml,
-        "--macro include(\"{}\", true)",
-        module_ctx.module_name
-    )?;
+    {
+        write!(hxml, "--macro include(\"\", true, [], [")?;
+        write!(hxml, "\"{}\", ", path_for_haxe(module_ctx.meta.source_dir))?;
+        writeln!(hxml, "])",)?;
+    }
     writeln!(hxml, "--js \"{}\"", path_for_haxe(&out_file_name))?;
     writeln!(hxml, "--xml \"{}\"", path_for_haxe(&xml_file_name))?;
 
