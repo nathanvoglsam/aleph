@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-package aleph_target;
+package aleph_config;
 
 enum abstract PlatformId(String) {
     var WindowsGNU = "windows-gnu";
@@ -43,7 +43,6 @@ enum abstract PlatformId(String) {
 /**
  * A wrapper over 'PlatformId' that provides an array of utility functions.
  */
-@:expose
 class Platform {
     private var v: PlatformId;
 
@@ -51,58 +50,118 @@ class Platform {
         this.v = v;
     }
 
+    /**
+     * [Description]
+     * Checks if 'this' and 'other' represent the same platform.
+     * 
+     * This compares the internal IDs and is not a simple reference equality check.
+     * @param other 
+     * @return Bool
+     */
     public function isSame(other: Platform): Bool {
         return this.v == other.v;
     }
 
+    /**
+     * [Description] Shortcut for comparing against WINDOWS_GNU
+     * @return Bool
+     */
     public function isWindowsGnu(): Bool {
         return this.isSame(Platform.WINDOWS_GNU);
     }
 
+    /**
+     * [Description] Shortcut for comparing against WINDOWS_MSVC
+     * @return Bool
+     */
     public function isWindowsMsvc(): Bool {
         return this.isSame(Platform.WINDOWS_MSVC);
     }
 
+    /**
+     * [Description] Checks if the target is any of the Windows PC targets (gnu or msvc)
+     * @return Bool
+     */
     public function isWin32(): Bool {
         return this.isWindowsGnu() || this.isWindowsMsvc();
     }
 
+    /**
+     * [Description] Shortcut for comparing against UWP_GNU
+     * @return Bool
+     */
     public function isUwpGnu(): Bool {
         return this.isSame(Platform.UWP_GNU);
     }
 
+    /**
+     * [Description] Shortcut for comparing against UWP_MSVC
+     * @return Bool
+     */
     public function isUwpMsvc(): Bool {
         return this.isSame(Platform.UWP_MSVC);
     }
 
+    /**
+     * [Description] Checks if the target is any of the Windows UWP targets (gnu or msvc)
+     * @return Bool
+     */
     public function isUwp(): Bool {
         return this.isUwpGnu() || this.isUwpMsvc();
     }
 
+    /**
+     * [Description] Checks if the target is any of the Windows targets (uwp or pc, gnu or msvc)
+     * @return Bool
+     */
     public function isWindows(): Bool {
         return this.isWin32() || this.isUwp();
     }
 
+    /**
+     * [Description] Checks if the target is any of the Windows GNU targets (uwp or pc)
+     * @return Bool
+     */
     public function isGnu(): Bool {
         return this.isWindowsGnu() || this.isUwpGnu();
     }
 
+    /**
+     * [Description] Checks if the target is any of the Windows MSVC targets (uwp or pc)
+     * @return Bool
+     */
     public function isMsvc(): Bool {
         return this.isWindowsMsvc() || this.isUwpMsvc();
     }
 
+    /**
+     * [Description] Shortcut for comparing against LINUX
+     * @return Bool
+     */
     public function isLinux(): Bool {
         return this.isSame(Platform.LINUX);
     }
 
+    /**
+     * [Description] Shortcut for comparing against MACOS
+     * @return Bool
+     */
     public function isMacos(): Bool {
         return this.isSame(Platform.MACOS);
     }
 
+    /**
+     * [Description] Shortcut for comparing against ANDROID
+     * @return Bool
+     */
     public function isAndroid(): Bool {
         return this.isSame(Platform.ANDROID);
     }
 
+    /**
+     * [Description] Shortcut for comparing against IOS
+     * @return Bool
+     */
     public function isIos(): Bool {
         return this.isSame(Platform.IOS);
     }

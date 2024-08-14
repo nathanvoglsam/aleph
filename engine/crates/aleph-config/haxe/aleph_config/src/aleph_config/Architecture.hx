@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-package aleph_target;
+package aleph_config;
 
 enum abstract ArchitectureId(String) {
     var X8664 = "x86_64";
@@ -37,7 +37,6 @@ enum abstract ArchitectureId(String) {
 /**
  * A wrapper over 'ArchitectureId' that provides an array of utility functions.
  */
-@:expose
 class Architecture {
     private var v: ArchitectureId;
 
@@ -45,14 +44,30 @@ class Architecture {
         this.v = v;
     }
 
+    /**
+     * [Description]
+     * Checks if 'this' and 'other' represent the same architecture.
+     * 
+     * This compares the internal IDs and is not a simple reference equality check.
+     * @param other 
+     * @return Bool
+     */
     public function isSame(other: Architecture): Bool {
         return this.v == other.v;
     }
 
+    /**
+     * [Description] Shortcut for comparing against X8664
+     * @return Bool
+     */
     public function isX8664(): Bool {
         return this.isSame(Architecture.X8664);
     }
 
+    /**
+     * [Description] Shortcut for comparing against AARCH64
+     * @return Bool
+     */
     public function isAArch64(): Bool {
         return this.isSame(Architecture.AARCH64);
     }

@@ -39,9 +39,6 @@ keywords = ["platform-detection", "platform", "build", "build-script", "const"]
 edition.workspace = true
 build = "build.rs"
 
-[package.metadata.aleph]
-haxe = { modules = ["aleph_target"] }
-
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
