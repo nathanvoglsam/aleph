@@ -37,6 +37,7 @@ members = [
     "engine/crates/aleph-any",
     "engine/crates/aleph-arena-drop-list",
     "engine/crates/aleph-compile",
+    "engine/crates/aleph-config",
     "engine/crates/aleph-device-allocators",
     "engine/crates/aleph-dx12-agility-sdk",
     "engine/crates/aleph-dx12-alloc",
@@ -143,6 +144,7 @@ zip = "2"
 aleph-any = { path = "./engine/crates/aleph-any", version = "0.1" }
 aleph-arena-drop-list = { path = "./engine/crates/aleph-arena-drop-list", version = "0.1" }
 aleph-compile = { path = "./engine/crates/aleph-compile", version = "1" }
+aleph-config = { path = "./engine/crates/aleph-config", version = "0.1" }
 aleph-device-allocators = { path = "./engine/crates/aleph-device-allocators", version = "0.1" }
 aleph-dx12-agility-sdk = { path = "./engine/crates/aleph-dx12-agility-sdk", version = "1.711.3" }
 aleph-dx12-alloc = { path = "./engine/crates/aleph-dx12-alloc", version = "0.1" }
