@@ -47,5 +47,8 @@ aleph-interfaces = { workspace = true }
 aleph-rhi-api = { workspace = true }
 log = { workspace = true }
 
+serde = { workspace = true }
+serde_json = { workspace = true }
+
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

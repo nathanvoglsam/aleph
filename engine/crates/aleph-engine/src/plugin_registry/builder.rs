@@ -33,13 +33,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
+use crate::plugin_registry::PluginEntry;
 use crate::plugin_registry::PluginRegistry;
 
 ///
 ///
 ///
 pub struct PluginRegistryBuilder {
-    plugins: Vec<Box<dyn IPlugin>>,
+    plugins: Vec<PluginEntry>,
 }
 
 impl PluginRegistryBuilder {
@@ -52,7 +53,8 @@ impl PluginRegistryBuilder {
 
     /// Add a new plugin
     pub fn plugin(&mut self, plugin: impl IPlugin) -> &mut Self {
-        self.plugins.push(Box::new(plugin));
+        let v = Box::new(plugin);
+        self.plugins.push(PluginEntry { v, config: None });
         self
     }
 
@@ -120,7 +122,7 @@ impl PluginRegistryBuilder {
         // Iterate over each plugin and record its registration info
         self.plugins.iter_mut().for_each(|plugin| {
             // Collect the plugin's registration info
-            plugin.register(&mut registrar);
+            plugin.v.register(&mut registrar);
 
             // Take the dependency lists from the registrar and add them to the lists we're
             // building
@@ -178,7 +180,7 @@ impl PluginRegistryBuilder {
                 .enumerate()
                 .filter(|(i, _v)| !dependencies[*i].is_disjoint(&unprovided_interfaces))
                 .for_each(|(_i, v)| {
-                    let description = v.get_description();
+                    let description = v.v.get_description();
                     log::error!(
                         "  {} - {}.{}.{}",
                         description.name,

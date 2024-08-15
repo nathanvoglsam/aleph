@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use aleph_config::ConfigRunner;
+use aleph_config::RunConfigError;
 pub use interfaces::any;
 
 mod builder;
@@ -45,7 +47,7 @@ use crate::plugin_registry::quit_handle::QuitHandleImpl;
 ///
 pub struct PluginRegistry {
     /// This stores plugins that can only be invoked directly from the main thread
-    plugins: Vec<Box<dyn IPlugin>>,
+    plugins: Vec<PluginEntry>,
 
     quit_handle: AnyArc<QuitHandleImpl>,
 
@@ -72,9 +74,12 @@ impl PluginRegistry {
     pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<BTreeSet<TypeId>>) {
         let mut plugins = std::mem::take(&mut self.plugins);
 
+        Self::load_configs(&mut plugins);
+
         let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
         let mut accessor = RegistryAccessor {
             quit_handle,
+            config: None,
             interfaces: std::mem::take(&mut self.interfaces),
         };
 
@@ -84,7 +89,7 @@ impl PluginRegistry {
             let plugin = &mut plugins[index];
 
             // Log that we're initializing the plugin
-            let description = plugin.get_description();
+            let description = plugin.v.get_description();
             log::info!(
                 "Initializing Plugin [{} - {}.{}.{}]",
                 description.name,
@@ -93,10 +98,14 @@ impl PluginRegistry {
                 description.patch_version
             );
 
-            let mut response = plugin.on_init(&accessor);
+            // Take the config value from the slot in the plugin entry so the plugin can query it
+            // in its functions
+            accessor.config = std::mem::take(&mut plugin.config);
+
+            let mut response = plugin.v.on_init(&accessor);
             response.interfaces().for_each(|(id, object)| {
                 if !provided.remove(&id) {
-                    let description = plugin.get_description();
+                    let description = plugin.v.get_description();
                     let message = format!(
                         "Plugin [{} - {}.{}.{}] tried to provide an interface it didn't declare",
                         description.name,
@@ -109,7 +118,7 @@ impl PluginRegistry {
                 }
 
                 if accessor.interfaces.insert(id, object).is_some() {
-                    let description = plugin.get_description();
+                    let description = plugin.v.get_description();
                     let message = format!(
                         "Plugin [{} - {}.{}.{}] provided an interface provided by another plugin",
                         description.name,
@@ -123,7 +132,7 @@ impl PluginRegistry {
             });
 
             if !provided.is_empty() {
-                let description = plugin.get_description();
+                let description = plugin.v.get_description();
                 let message = format!(
                     "Plugin [{} - {}.{}.{}] failed to provide all the interfaces it declared",
                     description.name,
@@ -134,10 +143,59 @@ impl PluginRegistry {
                 log::error!("{}", &message);
                 panic!("{}", &message);
             }
+
+            // Put the config back in its entry
+            plugin.config = std::mem::take(&mut accessor.config);
         });
 
         self.plugins = plugins;
         self.interfaces = accessor.interfaces;
+    }
+
+    fn load_configs(plugins: &mut [PluginEntry]) {
+        log::info!("Initializing config JS runtime");
+        let mut configs = ConfigRunner::new().expect("Failed to init config runner");
+
+        for plugin in plugins.iter() {
+            let desc = plugin.v.get_description();
+            log::info!(
+                "Running config script for plugin [{} - {}.{}.{}]",
+                &desc.name,
+                desc.major_version,
+                desc.minor_version,
+                desc.patch_version
+            );
+
+            match configs.run_config_by_name(&desc.name) {
+                Ok(_) => {}
+                Err(v) => {
+                    if !matches!(v, RunConfigError::NoConfig) {
+                        log::error!("Failed while running config script. Reason: {:?}", v);
+                        // If the error is for anything other than a missing config then we panic
+                        panic!("Failed while running config script. Reason: {:?}", v);
+                    } else {
+                        log::warn!("No config found for plugin");
+                    }
+                }
+            }
+        }
+
+        match configs.run_override_script() {
+            Ok(_) => {}
+            Err(v) => {
+                log::error!("Failed while running @override script. Reason: {:?}", v);
+                if !matches!(v, RunConfigError::NoConfig) {
+                    // If the error is for anything other than a missing config then we panic
+                    panic!("Failed while running @override script. Reason: {:?}", v);
+                }
+            }
+        }
+        let mut configs = configs.finalize();
+
+        for plugin in plugins.iter_mut() {
+            let desc = plugin.v.get_description();
+            plugin.config = configs.remove(&desc.name);
+        }
     }
 
     ///
@@ -149,8 +207,9 @@ impl PluginRegistry {
         let mut plugins = std::mem::take(&mut self.plugins);
 
         let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
-        let accessor = RegistryAccessor {
+        let mut accessor = RegistryAccessor {
             quit_handle,
+            config: None,
             interfaces: std::mem::take(&mut self.interfaces),
         };
 
@@ -158,7 +217,16 @@ impl PluginRegistry {
             aleph_profile::scope!("aleph::OnUpdate");
 
             for plugin_index in self.update_order.iter().cloned() {
-                plugins[plugin_index].on_update(&accessor);
+                let plugin = &mut plugins[plugin_index];
+
+                // Take the config value from the slot in the plugin entry so the plugin can query
+                // it in its functions
+                accessor.config = std::mem::take(&mut plugin.config);
+
+                plugin.v.on_update(&accessor);
+
+                // Put the config back in its entry
+                plugin.config = std::mem::take(&mut accessor.config);
             }
 
             aleph_profile::finish_frame!();
@@ -174,8 +242,9 @@ impl Drop for PluginRegistry {
         let mut plugins = std::mem::take(&mut self.plugins);
 
         let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
-        let accessor = RegistryAccessor {
+        let mut accessor = RegistryAccessor {
             quit_handle,
+            config: None,
             interfaces: std::mem::take(&mut self.interfaces),
         };
 
@@ -186,8 +255,12 @@ impl Drop for PluginRegistry {
             // If we don't manually handle the OOB case then we'll trigger a double panic, which
             // prevents properly unwinding and adds noise to the output.
             if let Some(plugin) = plugins.get_mut(v) {
+                // Take the config value from the slot in the plugin entry so the plugin can query
+                // it in its functions
+                accessor.config = std::mem::take(&mut plugin.config);
+
                 // Log that we're exiting the plugin
-                let description = plugin.get_description();
+                let description = plugin.v.get_description();
                 log::info!(
                     "Un-initializing Plugin [{} - {}.{}.{}]",
                     description.name,
@@ -196,7 +269,10 @@ impl Drop for PluginRegistry {
                     description.patch_version
                 );
 
-                plugin.on_exit(&accessor);
+                plugin.v.on_exit(&accessor);
+
+                // Put the config back in its entry
+                plugin.config = std::mem::take(&mut accessor.config);
             }
         });
 
@@ -207,6 +283,7 @@ impl Drop for PluginRegistry {
 
 struct RegistryAccessor {
     quit_handle: AnyArc<dyn IQuitHandle>,
+    config: Option<serde_json::Value>,
     interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
 }
 
@@ -218,4 +295,13 @@ impl IRegistryAccessor for RegistryAccessor {
     fn quit_handle(&self) -> AnyArc<dyn IQuitHandle> {
         self.quit_handle.clone()
     }
+
+    fn config(&self) -> Option<&serde_json::Value> {
+        self.config.as_ref()
+    }
+}
+
+pub(crate) struct PluginEntry {
+    pub(crate) v: Box<dyn IPlugin>,
+    pub(crate) config: Option<serde_json::Value>,
 }

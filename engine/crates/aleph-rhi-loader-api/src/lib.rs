@@ -32,29 +32,14 @@ use aleph_rhi_api::*;
 use thiserror::Error;
 
 /// Options provided when a context is created
-#[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
-pub struct ContextOptions<'a> {
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct ContextOptions {
     /// Specifies a preference for a specific API to the loader. `None` denotes no preference.
     ///
     /// When a `preferred_api` is provided the loader will always choose the selected backend if it
     /// is available. If the backend is *not* available then the loader will chose another from the
     /// available backends itself.
-    pub preferred_api: Option<BackendAPI>,
-
-    /// Specifies a list of backends that should not be selected. `None` denotes no backends are
-    /// denied.
-    ///
-    /// When a non-empty list of `denied-backends` is provided the loader is instructed to never
-    /// select those backends under any circumstances. If no backends remain after pruning from the
-    /// deny list then the loader will return with an error.
-    pub denied_backends: Option<&'a [BackendAPI]>,
-
-    /// Specifies the specific backend that the loader must use. `None` denotes no hard requirement.
-    ///
-    /// When a `required_backend` is provided the loader *must* provide a context using the
-    /// requested backend API. If the requested API is not available then the loader *must* return
-    /// an error, even if another backend is available.
-    pub required_backend: Option<BackendAPI>,
+    pub backend: BackendAPI,
 
     /// Whether backend API validation should be enabled.
     ///
@@ -121,14 +106,8 @@ pub enum ContextCreateError {
     #[error("No backends are available from the loader")]
     NoBackendsAvailable,
 
-    #[error("No allowed backends are available. All available backends have been denied")]
-    NoAllowedBackendsAvailable,
-
-    #[error("The specifically requested backend '{0}' is not available")]
+    #[error("The requested backend '{0}' is not available")]
     RequiredBackendUnavailable(BackendAPI),
-
-    #[error("The specifically requested backend '{0}' was denied by the deny list")]
-    RequiredBackendDenied(BackendAPI),
 
     #[error("The context could not be created due to not meeting the minimum feature level")]
     MissingRequiredFeatures,

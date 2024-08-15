@@ -159,6 +159,9 @@ pub trait IRegistryAccessor: 'static {
     /// Registry quit handle which can be freely sent to other threads. The object is used to
     /// request the engine/plugin registry to exit.
     fn quit_handle(&self) -> AnyArc<dyn IQuitHandle>;
+
+    /// Get the plugin's config, if one was found.
+    fn config(&self) -> Option<&serde_json::Value>;
 }
 
 impl dyn IRegistryAccessor {

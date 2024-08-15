@@ -70,8 +70,7 @@ impl ConfigRunner {
     }
 
     pub fn run_config_by_name(&mut self, name: &str) -> Result<(), RunConfigError> {
-        let mut script = self.load_config_script(name)?;
-        script.push('\0');
+        let script = self.load_config_script(name)?;
         let script_nstr = NStr::from_str(&script).unwrap();
 
         let filename = format!("{name}.js\0");
@@ -119,8 +118,7 @@ impl ConfigRunner {
     }
 
     pub fn run_override_script(&mut self) -> Result<(), RunConfigError> {
-        let mut script = self.load_config_script("@overrides")?;
-        script.push('\0');
+        let script = self.load_config_script("@overrides")?;
         let script_nstr = NStr::from_str(&script).unwrap();
 
         let filename = nstr!("@overrides.js");
@@ -154,9 +152,17 @@ impl ConfigRunner {
         Ok(())
     }
 
-    pub fn finalize(self) -> serde_json::Value {
+    pub fn finalize(self) -> serde_json::Map<String, serde_json::Value> {
         let context = self.runtime.new_context().unwrap();
-        unsafe { context.to_json(self.config_object.deref()).unwrap() }
+        let json = unsafe { context.to_json(self.config_object.deref()).unwrap() };
+        match json {
+            serde_json::Value::Null
+            | serde_json::Value::Bool(_)
+            | serde_json::Value::Number(_)
+            | serde_json::Value::String(_)
+            | serde_json::Value::Array(_) => panic!("Unexpected serde_json::Value type"),
+            serde_json::Value::Object(v) => v,
+        }
     }
 }
 
@@ -276,9 +282,17 @@ impl Drop for ConfigRunner {
 
 impl ConfigRunner {
     /// Internal function for loading the config script under the given name from the script folder.
-    fn load_config_script(&self, name: &str) -> io::Result<String> {
+    fn load_config_script(&self, name: &str) -> Result<String, RunConfigError> {
         let config = self.config_dir.join(name).with_extension("js");
-        std::fs::read_to_string(config)
+
+        // Check if the config file exists
+        if !config.is_file() {
+            return Err(RunConfigError::NoConfig);
+        }
+
+        let mut string = std::fs::read_to_string(config)?;
+        string.push('\0');
+        Ok(string)
     }
 }
 
@@ -289,6 +303,9 @@ pub enum RunConfigError {
 
     #[error("A JS error occured: {0}")]
     Js(String),
+
+    #[error("No config with the given name was found")]
+    NoConfig,
 }
 
 ///

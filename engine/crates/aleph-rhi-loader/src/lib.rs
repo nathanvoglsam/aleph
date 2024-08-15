@@ -29,7 +29,7 @@
 
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-pub use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
+pub use aleph_rhi_loader_api::*;
 
 pub struct RhiLoader {
     /// List of backends that are available
@@ -91,64 +91,14 @@ impl RhiLoader {
             return Err(ContextCreateError::NoBackendsAvailable);
         }
 
-        // Filter out any denied backends from the available backend set
-        let allowed_backends: Vec<_> = if let Some(denied) = options.denied_backends {
-            self.backends
-                .iter()
-                .copied()
-                .filter(|v| {
-                    if denied.contains(v) {
-                        log::debug!("Backend '{}' denied by user", *v);
-                        false
-                    } else {
-                        true
-                    }
-                })
-                .collect()
+        let backend = options.backend;
+        if !self.backends.contains(&backend) {
+            return Err(ContextCreateError::RequiredBackendUnavailable(backend));
         } else {
-            self.backends.clone()
-        };
-
-        // First try and create a context with the explicitly required backend (if requested)
-        if let Some(required) = options.required_backend {
-            if !allowed_backends.contains(&required) {
-                let denied = self.backends.contains(&required);
-                return if denied {
-                    Err(ContextCreateError::RequiredBackendDenied(required))
-                } else {
-                    Err(ContextCreateError::RequiredBackendUnavailable(required))
-                };
-            } else {
-                log::debug!("Backend '{required}' chosen by user requirement");
-                let backend = self.select_backend(required);
-                let context = backend.make_context(options)?;
-                return Ok(Self::wrap_with_validation(options, context));
-            }
-        }
-
-        // Next try and create a context with the preferred API. Failing this is a soft fail.
-        if let Some(preferred) = options.preferred_api {
-            if allowed_backends.contains(&preferred) {
-                log::debug!("Backend '{preferred}' chosen by user preference");
-                let backend = self.select_backend(preferred);
-                let context = backend.make_context(options)?;
-                return Ok(Self::wrap_with_validation(options, context));
-            } else {
-                log::debug!("Preferred backend '{preferred}' not available");
-            }
-        }
-
-        // Finally we use the statically preferred API on the current platform.
-        if allowed_backends.contains(&Self::preferred_backend()) {
-            log::debug!(
-                "Backend '{}' chosen as platform default",
-                Self::preferred_backend()
-            );
-            let backend = self.select_backend(Self::preferred_backend());
+            log::debug!("Backend '{backend}' chosen");
+            let backend = self.select_backend(backend);
             let context = backend.make_context(options)?;
-            Ok(Self::wrap_with_validation(options, context))
-        } else {
-            Err(ContextCreateError::NoAllowedBackendsAvailable)
+            return Ok(Self::wrap_with_validation(options, context));
         }
     }
 }
@@ -179,24 +129,6 @@ impl RhiLoader {
             d3d12: None,
             vulkan: None,
         };
-    }
-
-    /// Returns the statically preferred API for the current platform
-    #[cfg(windows)]
-    fn preferred_backend() -> BackendAPI {
-        BackendAPI::D3D12
-    }
-
-    /// Returns the statically preferred API for the current platform
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    fn preferred_backend() -> BackendAPI {
-        BackendAPI::Vulkan
-    }
-
-    /// Returns the statically preferred API for the current platform
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    fn preferred_backend() -> BackendAPI {
-        BackendAPI::Vulkan
     }
 
     /// Internal function that will attempt to load the plugins that the loader has statically
