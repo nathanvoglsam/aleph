@@ -99,6 +99,6 @@ typedef RhiConfig = {
  * @return RhiConfig
  */
 @:access(aleph_config.ConfigTable.get)
-function getConfig(config: aleph_config.ConfigTable): RhiConfig {
+function get(config: aleph_config.ConfigTable): RhiConfig {
     return config.get("aleph-rhi");
 }

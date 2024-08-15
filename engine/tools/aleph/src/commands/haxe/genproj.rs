@@ -78,6 +78,9 @@ impl ISubcommand for GenHaxeProj {
         let library_classpaths = HaxeModuleJob::collect_library_classpaths(&jobs);
         generate_project_build_hxmls(&project_ctx, &library_classpaths)?;
 
+        // Generate the hxml for building the config override script
+        generate_game_config_build_hxml(project, &library_classpaths)?;
+
         let all_classpaths = HaxeModuleJob::collect_all_module_classpaths(&jobs);
         generate_vscode_build_hxml(project, &all_classpaths)?;
 
@@ -87,7 +90,7 @@ impl ISubcommand for GenHaxeProj {
 
 struct HaxeModuleJob<'a> {
     module_ctx: &'a HaxeModuleContext<'a>,
-    module_toml: Option<HaxeModuleDefinitionFile<'static>>,
+    module_toml: Option<HaxeModuleDefinitionFile>,
 }
 
 impl<'a> HaxeModuleJob<'a> {
@@ -271,7 +274,7 @@ fn generate_module_build_js_hxml(
     use std::fmt::Write;
 
     // Early exit if we shouldn't generate a package
-    if !js.package {
+    if !js.config_script {
         return Ok(());
     }
 
@@ -280,10 +283,6 @@ fn generate_module_build_js_hxml(
         crate_ctx.meta.output_name,
         module_ctx.module_name
     );
-
-    let out_dir = module_ctx.meta.output_dir.join("js");
-    let out_file_name = out_dir.join("out.js");
-    let xml_file_name = out_dir.join("out.xml");
 
     let mut hxml = String::with_capacity(1024);
 
@@ -307,8 +306,11 @@ fn generate_module_build_js_hxml(
         write!(hxml, "\"{}\", ", path_for_haxe(module_ctx.meta.source_dir))?;
         writeln!(hxml, "])",)?;
     }
-    writeln!(hxml, "--js \"{}\"", path_for_haxe(&out_file_name))?;
-    writeln!(hxml, "--xml \"{}\"", path_for_haxe(&xml_file_name))?;
+    writeln!(
+        hxml,
+        "--js \"{}\"",
+        path_for_haxe(module_ctx.meta.output_config_script)
+    )?;
 
     std::fs::write(module_ctx.meta.build_js_file, hxml)?;
 
@@ -335,6 +337,45 @@ fn generate_vscode_build_hxml(
     writeln!(hxml, "--js \"{}\"", path_for_haxe(&dummy_output_file))?;
 
     std::fs::write(hxml_file_name, hxml)?;
+
+    Ok(())
+}
+
+fn generate_game_config_build_hxml(
+    project: &AlephProject,
+    classpaths: &ClasspathBundle,
+) -> anyhow::Result<()> {
+    use std::fmt::Write;
+
+    let (game_crate, _) = project.get_game_crate_and_target()?;
+
+    let cfg_classpath = game_crate.manifest_path.parent().unwrap();
+    let cfg_classpath = cfg_classpath.join("config");
+
+    let out_script_file = project.config_build_path().join("@overrides.js");
+    let out_hxml_file = project.haxe_build_path().join("build_cfg_overrides.hxml");
+
+    log::info!(
+        "Generating build.hxml for '{}' config override script",
+        &game_crate.name
+    );
+
+    let mut hxml = String::with_capacity(1024);
+
+    for path in classpaths.js.iter().copied() {
+        writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
+    }
+    writeln!(hxml, "--class-path \"{}\"", path_for_haxe(&cfg_classpath))?;
+    writeln!(hxml, "--dce std")?;
+    writeln!(hxml, "-D js-es=6")?;
+    {
+        write!(hxml, "--macro include(\"\", true, [], [")?;
+        write!(hxml, "\"{}\", ", path_for_haxe(&cfg_classpath))?;
+        writeln!(hxml, "])",)?;
+    }
+    writeln!(hxml, "--js \"{}\"", path_for_haxe(&out_script_file))?;
+
+    std::fs::write(out_hxml_file, hxml)?;
 
     Ok(())
 }

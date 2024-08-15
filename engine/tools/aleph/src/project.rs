@@ -69,6 +69,12 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/shaders' folder for this project
     shader_build_path: Utf8PathBuf,
 
+    /// The path to the '.aleph/config' folder for this project
+    config_build_path: Utf8PathBuf,
+
+    /// The path to the '.aleph/assets' folder for this project
+    assets_build_path: Utf8PathBuf,
+
     /// The path to the '.aleph/haxe' folder for this project
     haxe_build_path: Utf8PathBuf,
 
@@ -143,6 +149,8 @@ impl<'a> AlephProject<'a> {
         let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
         let shader_build_path = dot_aleph_path.join("shaders");
+        let config_build_path = dot_aleph_path.join("data").join("config");
+        let assets_build_path = dot_aleph_path.join("data").join("assets");
         let haxe_build_path = dot_aleph_path.join("haxe");
 
         let mut ndk_path = dot_aleph_path.clone();
@@ -195,6 +203,8 @@ impl<'a> AlephProject<'a> {
             project_root,
             dot_aleph_path,
             shader_build_path,
+            config_build_path,
+            assets_build_path,
             haxe_build_path,
             android_proj_path,
             uwp_x86_64_proj_path,
@@ -239,6 +249,18 @@ impl<'a> AlephProject<'a> {
     /// the output directory for our shader builds
     pub fn shader_build_path(&self) -> &Utf8Path {
         &self.shader_build_path
+    }
+
+    /// Returns the path to the folder that contains the `config` directory that will be used as
+    /// the output directory for our config scripts
+    pub fn config_build_path(&self) -> &Utf8Path {
+        &self.config_build_path
+    }
+
+    /// Returns the path to the folder that contains the `assets` directory that will be used as
+    /// the output directory for our cooked assets
+    pub fn assets_build_path(&self) -> &Utf8Path {
+        &self.assets_build_path
     }
 
     /// Returns the path to the folder that contains the `haxe` directory that will be used as

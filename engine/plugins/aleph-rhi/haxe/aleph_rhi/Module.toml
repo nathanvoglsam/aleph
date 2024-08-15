@@ -27,11 +27,6 @@
 ## SOFTWARE.
 ##
 
-[module]
-
-## The name of the root package in this module
-name = "aleph_rhi"
-
 [lua]
 
 ## Should a lua module be generated for this package

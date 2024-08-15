@@ -70,9 +70,11 @@ impl ISubcommand for BuildHaxeProj {
         let arena = Bump::new();
         let project_ctx = HaxeSubproject::load(&arena, project)?;
 
+        std::fs::create_dir_all(project.config_build_path())?;
         HaxeSubproject::ensure_build_directories(&project_ctx)?;
 
         build_project_hxmls(project.haxe_path(), &project_ctx)?;
+        build_config_override_script_hxml(project)?;
 
         Ok(())
     }
@@ -128,7 +130,7 @@ fn build_module_hxmls(
         build_hxml(haxe_path, module_ctx.meta.build_lua_file)?;
     }
 
-    if js.package {
+    if js.config_script {
         log::info!(
             "Build js module for '{}@{}'",
             crate_ctx.meta.output_name,
@@ -138,6 +140,13 @@ fn build_module_hxmls(
     }
 
     Ok(())
+}
+
+fn build_config_override_script_hxml(project: &AlephProject) -> anyhow::Result<()> {
+    let hxml = project.haxe_build_path().join("build_cfg_overrides.hxml");
+
+    log::info!("Build js module for game config override script");
+    build_hxml(project.haxe_path(), &hxml)
 }
 
 fn build_hxml(haxe_path: &Utf8Path, path: &Utf8Path) -> anyhow::Result<()> {

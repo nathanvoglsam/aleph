@@ -31,14 +31,10 @@ mod subproject;
 
 use camino::Utf8Path;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 pub use subproject::{HaxeCrateContext, HaxeModuleContext, HaxeProjectContext, HaxeSubproject};
 
 #[derive(Default, Serialize, Deserialize)]
-pub struct HaxeModuleDefinitionFile<'a> {
-    /// Top level module definition
-    pub module: HaxeModuleDefinition<'a>,
-
+pub struct HaxeModuleDefinitionFile {
     /// Description of the haxe module for the 'lua' target.
     #[serde(default)]
     pub lua: HaxeLuaDefinition,
@@ -46,12 +42,6 @@ pub struct HaxeModuleDefinitionFile<'a> {
     /// Description of the haxe module for the 'js' target.
     #[serde(default)]
     pub js: HaxeJsDefinition,
-}
-
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct HaxeModuleDefinition<'a> {
-    /// The name of the top-level package in this haxe module.
-    pub name: Cow<'a, str>,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -70,11 +60,11 @@ pub struct HaxeLuaDefinition {
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct HaxeJsDefinition {
-    /// Flags whether this haxe module should be compiled to output a js module. This will output
-    /// a lua file that can be used with 'require' and the generated code will be callable by plain
-    /// lua code.
+    /// Flags whether this haxe module should be added as config script. A compiled JS module will
+    /// be output for this package and it will be included in the config script bundle under the
+    /// name of the crate that owns this haxe module.
     #[serde(default)]
-    pub package: bool,
+    pub config_script: bool,
 
     /// Flags whether this haxe module should be added to the general class path for other haxe
     /// modules so that it can be consumed as a haxe library.

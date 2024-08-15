@@ -27,11 +27,6 @@
 ## SOFTWARE.
 ##
 
-[module]
-
-## The name of the root package in this module
-name = "aleph_rhi_cfg"
-
 [lua]
 
 ## Should a lua module be generated for this package
@@ -42,8 +37,8 @@ library = false
 
 [js]
 
-## Should a lua module be generated for this package
-package = true
+## Should a config script module be emitted for this haxe module
+config_script = true
 
 ## Should this module be included in the general classpath
 library = false

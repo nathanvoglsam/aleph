@@ -106,15 +106,21 @@ impl<'a> ISubproject<'a> for HaxeSubproject {
 
     fn load_module(
         arena: &'a Bump,
-        _ctx: &AlephProject,
+        ctx: &AlephProject,
         _project_ctx: &SubprojectProjectContext<'a, Self>,
         crate_ctx: &SubprojectCrateContext<'a, Self>,
-        _package: &Package,
+        package: &Package,
         _metadata: &AlephCrateMetadata,
         module_name: &str,
     ) -> anyhow::Result<Self::ModuleMeta> {
         let output_dir = crate_ctx.meta.output_dir.join(module_name);
         let output_dir = arena.alloc_utf8_path(&output_dir);
+
+        let output_config_script = ctx
+            .config_build_path()
+            .join(&package.name)
+            .with_extension("js");
+        let output_config_script = arena.alloc_utf8_path(&output_config_script);
 
         let build_lua_file = output_dir.join("build_lua.hxml");
         let build_lua_file = arena.alloc_utf8_path(&build_lua_file);
@@ -132,6 +138,7 @@ impl<'a> ISubproject<'a> for HaxeSubproject {
 
         Ok(HaxeModuleMeta {
             output_dir,
+            output_config_script,
             build_lua_file,
             build_js_file,
             toml_file,
@@ -199,6 +206,9 @@ pub type HaxeModuleContext<'a> = SubprojectModuleContext<'a, HaxeSubproject>;
 pub struct HaxeModuleMeta<'a> {
     /// Path to '.aleph/haxe/{crate}/{module}'
     pub output_dir: &'a Utf8Path,
+
+    /// Path to '.aleph/data/config/{crate}.js'
+    pub output_config_script: &'a Utf8Path,
 
     /// Path to '.aleph/haxe/{crate}/{module}/build_lua.hxml'
     pub build_lua_file: &'a Utf8Path,

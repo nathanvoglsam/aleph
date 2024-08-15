@@ -27,11 +27,6 @@
 ## SOFTWARE.
 ##
 
-[module]
-
-## The name of the root package in this haxe module
-name = "aleph_config"
-
 [lua]
 
 ## Should a lua module be generated for this package
