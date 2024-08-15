@@ -35,8 +35,7 @@ class ConfigOverrides {
     public static function get(env: Environment, config: ConfigTable) {
         var rhi = aleph_rhi.Config.get(config);
 
-        // Force on validation layers
-        rhi.debug.validation = true;
-        rhi.debug.debug = true;
+        // Force vulkan
+        rhi.backend.backend = Vulkan;
     }
 }
