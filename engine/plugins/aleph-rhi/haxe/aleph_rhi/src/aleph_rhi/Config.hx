@@ -90,28 +90,15 @@ typedef RhiConfig = {
 }
 
 /**
- * Utility for fetching the config from the ConfigTable after the config has been initialized.
+ * [Description]
+ * Utility function for fetching the 'RhiConfig' object from the given ConfigTable.
  * 
- * This is intended to be used by config overrides and not the default config logic for a plugin.
+ * This is expected to be used by an ConfigOverride to fetch the current config state so it can
+ * be tweaked.
+ * @param config 
+ * @return RhiConfig
  */
-class Config {
-    /**
-     * The config identifier. This is the key into a ConfigTable for where the config should be
-     * stored to/from.
-     */
-    public static var NAME: String = "aleph_rhi";
-
-    /**
-     * [Description]
-     * Utility function for fetching the 'RhiConfig' object from the given ConfigTable.
-     * 
-     * This is expected to be used by an ConfigOverride to fetch the current config state so it can
-     * be tweaked.
-     * @param config 
-     * @return RhiConfig
-     */
-    @:access(aleph_config.ConfigTable.get)
-    public static function get(config: aleph_config.ConfigTable): RhiConfig {
-        return config.get(NAME);
-    }
+@:access(aleph_config.ConfigTable.get)
+function getConfig(config: aleph_config.ConfigTable): RhiConfig {
+    return config.get("aleph-rhi");
 }

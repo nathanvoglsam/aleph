@@ -36,12 +36,6 @@ import aleph_rhi.Config.RhiDebugConfig;
 @:expose
 class Config {
     /**
-     * The config identifier. This is the key into a ConfigTable for where the config should be
-     * stored to/from.
-     */
-    public static var NAME: String = aleph_rhi.Config.NAME;
-
-    /**
      * Constructs a default 'RhiConfig' object based on the given target.
      * 
      * This function will choose opinionated defaults for the available settings based on the target
@@ -49,7 +43,7 @@ class Config {
      * additional config scripts.
      * @param target
      */
-    public static function get(env: Environment): Dynamic {
+    public static function get(env: Environment): RhiConfig {
         // On Windows we prefer D3D12 for better platform integration (DXGI)
         var backend = if (env.platform.isWindows()) {
             RhiBackend.D3D12;
@@ -67,10 +61,9 @@ class Config {
             debug: false,
         };
 
-        var out: RhiConfig = {
+        return {
             backend: backend,
             debug: debug,
         };
-        return out;
     }
 }

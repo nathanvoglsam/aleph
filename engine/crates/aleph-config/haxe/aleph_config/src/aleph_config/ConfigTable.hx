@@ -52,7 +52,7 @@ abstract ConfigTable(DynamicAccess<Dynamic>) {
         var cfg = this.get(name);
         // Make sure the config is there.
         if (cfg != null) {
-            return cfg;    
+            return cfg;
         } else {
             throw new haxe.Exception('Field for \"$name\" not found in config table');
         }
