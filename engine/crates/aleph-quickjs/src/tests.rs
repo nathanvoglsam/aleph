@@ -31,7 +31,9 @@ use std::collections::HashSet;
 use std::ffi::*;
 use std::ptr::NonNull;
 
+use crate::Context;
 use crate::NumberVariant;
+use crate::RefValue;
 use crate::Runtime;
 
 use aleph_nstr::{nstr, NStr};
@@ -51,6 +53,7 @@ pub fn eval_script_int_add() {
     let filename = nstr!("script.js");
     let script = nstr!("2 + 2");
     let result = context.eval(script, filename, JSEvalOptions::STRICT);
+    let result = check_exception(&context, result);
 
     assert_eq!(result.get_tag(), JSTag::INT);
     assert_eq!(result.get_number(), Some(NumberVariant::Integer(4)));
@@ -64,6 +67,7 @@ pub fn eval_script_float_add() {
     let filename = nstr!("script.js");
     let script = nstr!("2.2 + 2.4");
     let result = context.eval(script, filename, JSEvalOptions::STRICT);
+    let result = check_exception(&context, result);
 
     assert_eq!(result.get_tag(), JSTag::FLOAT64);
     assert_eq!(
@@ -116,6 +120,7 @@ pub fn eval_script_call_c_func() {
         let filename = nstr!("script.js");
         let script = nstr!("call_me_maybe(56);");
         let result = context.eval(script, filename, JSEvalOptions::STRICT);
+        let result = check_exception(&context, result);
 
         assert!(CALLED.load(Ordering::SeqCst));
         assert_eq!(result.get_tag(), JSTag::INT);
@@ -134,8 +139,7 @@ pub fn eval_script_get_property_names() {
                 thingD: "Foo",
                 bar: "baz"
             }
-        };
-        "#
+        };"#
     );
 
     let mut expected_names = HashSet::new();
@@ -149,7 +153,12 @@ pub fn eval_script_get_property_names() {
     unsafe {
         let filename = nstr!("script.js");
         let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
-        assert!(result.is_undefined());
+        let result = check_exception(&context, result);
+        assert!(
+            result.is_undefined(),
+            "Expected 'undefined' got '{:?}'",
+            result.get_tag()
+        );
 
         let global = context.get_global_object();
 
@@ -189,20 +198,18 @@ pub fn eval_script_to_serde() {
                 thingD: "Foo",
                 bar: "baz"
             }
-        };
-        "#
+        };"#
     );
 
     const JSON_EXPECTED: &'static str = r#"
-    {
-        "thingA": "Hello, World!",
-        "thingB": 56.1,
-        "thingC": {
-            "thingD": "Foo",
-            "bar": "baz"
-        }
-    }
-    "#;
+        {
+            "thingA": "Hello, World!",
+            "thingB": 56.1,
+            "thingC": {
+                "thingD": "Foo",
+                "bar": "baz"
+            }
+        }"#;
 
     let runtime = Runtime::new().unwrap();
     let context = runtime.new_context().unwrap();
@@ -210,7 +217,12 @@ pub fn eval_script_to_serde() {
     unsafe {
         let filename = nstr!("script.js");
         let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
-        assert!(result.is_undefined());
+        let result = check_exception(&context, result);
+        assert!(
+            result.is_undefined(),
+            "Expected 'undefined' got '{:?}'",
+            result.get_tag()
+        );
 
         let global = context.get_global_object();
 
@@ -346,5 +358,19 @@ pub fn string_with_internal_null_character() {
 
         let got_string = context.to_c_str(&v).unwrap();
         assert_eq!(string, got_string.as_ref());
+    }
+}
+
+fn check_exception<'a>(ctx: &'a Context, v: RefValue<'a>) -> RefValue<'a> {
+    if v.is_exception() {
+        let exception = ctx.get_exception();
+        let message = unsafe {
+            ctx.to_c_str(&exception)
+                .expect("Failed to get exception message")
+        };
+        let message_str = message.as_ref();
+        panic!("Unhandled JS Exception: {}", message_str);
+    } else {
+        v
     }
 }
