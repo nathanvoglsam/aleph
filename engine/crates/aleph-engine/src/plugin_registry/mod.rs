@@ -190,6 +190,7 @@ impl PluginRegistry {
                 }
             }
         }
+
         let mut configs = configs.finalize();
 
         for plugin in plugins.iter_mut() {

@@ -33,6 +33,7 @@ use std::env::{current_dir, current_exe};
 use std::io;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
+use std::str::FromStr;
 
 use aleph_nstr::nstr;
 use aleph_nstr::NStr;
@@ -155,18 +156,105 @@ impl ConfigRunner {
     pub fn finalize(self) -> serde_json::Map<String, serde_json::Value> {
         let context = self.runtime.new_context().unwrap();
         let json = unsafe { context.to_json(self.config_object.deref()).unwrap() };
-        match json {
+        let mut json = match json {
             serde_json::Value::Null
             | serde_json::Value::Bool(_)
             | serde_json::Value::Number(_)
             | serde_json::Value::String(_)
             | serde_json::Value::Array(_) => panic!("Unexpected serde_json::Value type"),
             serde_json::Value::Object(v) => v,
-        }
+        };
+        Self::command_line_overrides(&mut json);
+
+        json
     }
 }
 
 impl ConfigRunner {
+    fn command_line_overrides(json: &mut serde_json::Map<String, serde_json::Value>) {
+        use serde_json::Map;
+        use serde_json::Value;
+
+        let cfg_arg = clap::Arg::new("cfg")
+            .long("cfg")
+            .short('c')
+            .num_args(2)
+            .value_names(["config", "value"])
+            .action(clap::ArgAction::Append);
+        let command = clap::Command::new("").arg(cfg_arg);
+        let matches = command.get_matches();
+
+        if let Some(cfgs) = matches.get_occurrences("cfg") {
+            let cfgs: Vec<Vec<&String>> = cfgs.map(Iterator::collect).collect();
+            for cfg in cfgs {
+                let (cfg, val) = (cfg[0], cfg[1]);
+
+                // Sanitize for array syntax in case someone tries to get clever
+                if cfg.contains('[') || cfg.contains(']') {
+                    log::error!("Config name invalid '{cfg}'. Array syntax unsupported");
+                    panic!("Config name invalid '{cfg}'. Array syntax unsupported");
+                }
+
+                // Parse the value to a serde_json::Value. We try and parse it directly first so we
+                // can get a typed value (56 = number, true = boolean, etc). Quote handling on the
+                // command line is a bit funny so we have to try this two staged approach as the
+                // user will almost certainly provide unquoted strings.
+                //
+                // Anything that fails to parse directly gets coerced to a string.
+                let value = serde_json::Value::from_str(val)
+                    .unwrap_or_else(|_| serde_json::Value::String(val.clone()));
+
+                // Split the config name path into the invividual segmants
+                let segments: Vec<&str> = cfg.split('.').collect();
+                assert!(!segments.is_empty());
+
+                // Split the segments at the very tail as they need to be handled separately.
+                //
+                // Given 'seg1.seg2.seg3' this should yield path = [seg1, seg2] tail = [seg3]. The
+                // base segments can only refer to objects (tables) as they're simply a set of
+                // directions to find a value identified by 'tail'.
+                let (path, tail) = segments.split_at(segments.len() - 1);
+
+                // Follow our base path to find the object we want. This will create new objects in
+                // the 'json' if they are missing.
+                let mut trace = String::new();
+                let mut current = &mut *json;
+                for seg in path.iter().copied() {
+                    trace.push_str(seg);
+
+                    fn trace_err(cfg: &str, trace: &str, got: &str) -> ! {
+                        log::error!(
+                            "Bad config arg '{cfg}': Expected 'object' at '{trace}', got '{got}'"
+                        );
+                        panic!(
+                            "Bad config arg '{cfg}': Expected 'object' at '{trace}', got '{got}'"
+                        );
+                    }
+
+                    let prop = current
+                        .entry(seg)
+                        .or_insert_with(|| Value::Object(Map::new()));
+                    match prop {
+                        Value::Null => trace_err(cfg, &trace, "null"),
+                        Value::Bool(_) => trace_err(cfg, &trace, "boolean"),
+                        Value::Number(_) => trace_err(cfg, &trace, "number"),
+                        Value::String(_) => trace_err(cfg, &trace, "string"),
+                        Value::Array(_) => trace_err(cfg, &trace, "array"),
+                        Value::Object(v) => current = v,
+                    }
+
+                    // Push the dot after so it doesn't get included in any error messages above
+                    trace.push('.');
+                }
+
+                // Once we've handled the base section of the path then current should be pointing
+                // at the object we want to assign the 'tail' field in. And that's all we have to
+                // do. Assign/replace the key with the value we parsed earlier.
+                current.insert(tail[0].to_string(), value);
+            }
+        }
+    }
+
     fn get_env_create_fn<'a>(
         context: &'a qjs::Context,
     ) -> Result<qjs::RefValue<'a>, RunConfigError> {
