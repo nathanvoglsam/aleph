@@ -343,6 +343,20 @@ impl<'a> RefValue<'a> {
         self.v
     }
 
+    /// Detatches the [`RefValue`] lifetime from the context, giving it a free `'static` lifetime.
+    ///
+    /// This is very unsafe as it can easily allow use-after-free if you hold on to a RefValue after
+    /// the runtime it was created in is destroyed. There are some use-cases for this though so we
+    /// provide this function as a convenience.
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure the resulting [`RefValue`] does not outlive the
+    /// runtime it was created from.
+    pub const unsafe fn detatch(self) -> RefValue<'static> {
+        std::mem::transmute::<Self, RefValue<'static>>(self)
+    }
+
     /// Get a [`Value`] wrapper over this JS value, if this value contains a pure value type.
     pub const fn to_value(&self) -> Option<Value> {
         Value::from_raw(self.v)

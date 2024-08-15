@@ -85,6 +85,33 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Direct wrapper over 'JS_Eval'.
+    #[inline]
+    pub fn call(
+        &self,
+        func: &impl GetRawValue,
+        this: &impl GetRawValue,
+        args: &[RefValue],
+    ) -> RefValue {
+        unsafe {
+            let argc: c_int = args.len().try_into().unwrap();
+            let argv = if !args.is_empty() {
+                args.as_ptr() as *mut RefValue as *mut raw::JSValue
+            } else {
+                std::ptr::null_mut()
+            };
+
+            let v = raw::JS_Call(
+                self.ctx,
+                func.get_raw_value(),
+                this.get_raw_value(),
+                argc,
+                argv,
+            );
+            RefValue::from_raw(v)
+        }
+    }
+
     /// Returns the global object [`Object`] for this context.
     ///
     /// # Memory
