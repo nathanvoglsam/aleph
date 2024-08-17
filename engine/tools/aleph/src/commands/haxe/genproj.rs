@@ -330,10 +330,15 @@ fn generate_vscode_build_hxml(
 
     let mut hxml = String::with_capacity(1024);
 
+    let (game_crate, _) = project.get_game_crate_and_target()?;
+    let cfg_classpath = game_crate.manifest_path.parent().unwrap();
+    let cfg_classpath = cfg_classpath.join("config");
+
     writeln!(hxml, "{}", HAXE_LUA_BUILD_HXML_PREFIX)?;
     for path in classpaths {
         writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
     }
+    writeln!(hxml, "--class-path \"{}\"", path_for_haxe(&cfg_classpath))?;
     writeln!(hxml, "--js \"{}\"", path_for_haxe(&dummy_output_file))?;
 
     std::fs::write(hxml_file_name, hxml)?;
