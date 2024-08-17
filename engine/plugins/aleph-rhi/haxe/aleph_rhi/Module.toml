@@ -38,7 +38,7 @@ library = true
 [js]
 
 ## Should a lua module be generated for this package
-package = false
+config_script = true
 
 ## Should this module be included in the general classpath
 library = true

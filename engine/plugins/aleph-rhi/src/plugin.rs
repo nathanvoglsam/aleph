@@ -91,12 +91,12 @@ impl IPlugin for PluginRHI {
         let context = self
             .rhi_loader
             .make_context(&ContextOptions {
-                backend: config.backend.backend.into(),
-                validation: config.debug.validation,
-                debug: config.debug.debug,
+                backend: config.api.into(),
+                validation: config.validation,
+                debug: config.debug,
                 config: BackendConfigs {
-                    vulkan: config.backend.vulkan.map(|v| v.into()),
-                    d3d12: config.backend.d3d12.map(|v| v.into()),
+                    vulkan: config.vulkan.map(|v| v.into()),
+                    d3d12: config.d3d12.map(|v| v.into()),
                 },
             })
             .unwrap();
@@ -175,7 +175,7 @@ struct VulkanOptions {
 
 impl VulkanOptions {
     pub fn log(&self) {
-        log::info!("Config.backend.vulkan.deny_sync_2 = {}", self.deny_sync_2);
+        log::info!("Config.vulkan.deny_sync_2 = {}", self.deny_sync_2);
     }
 }
 
@@ -201,46 +201,27 @@ impl Into<aleph_rhi_loader::D3D12Config> for D3D12Options {
 }
 
 #[derive(Deserialize)]
-struct BackendConfig {
-    pub backend: Backend,
+struct Config {
+    pub api: Backend,
 
     #[serde(default)]
     pub vulkan: Option<VulkanOptions>,
 
     #[serde(default)]
     pub d3d12: Option<D3D12Options>,
-}
 
-impl BackendConfig {
-    pub fn log(&self) {
-        log::info!("Config.backend.backend = {:?}", self.backend);
-        self.vulkan.as_ref().inspect(|v| v.log());
-        self.d3d12.as_ref().inspect(|v| v.log());
-    }
-}
-
-#[derive(Deserialize)]
-struct DebugConfig {
     pub validation: bool,
     pub debug: bool,
 }
 
-impl DebugConfig {
-    pub fn log(&self) {
-        log::info!("Config.debug.validation = {}", self.validation);
-        log::info!("Config.debug.debug = {}", self.debug);
-    }
-}
-
-#[derive(Deserialize)]
-struct Config {
-    pub backend: BackendConfig,
-    pub debug: DebugConfig,
-}
-
 impl Config {
     pub fn log(&self) {
-        self.backend.log();
-        self.debug.log();
+        log::info!("Config.api = {:?}", self.api);
+
+        self.vulkan.as_ref().inspect(|v| v.log());
+        self.d3d12.as_ref().inspect(|v| v.log());
+
+        log::info!("Config.validation = {}", self.validation);
+        log::info!("Config.debug = {}", self.debug);
     }
 }

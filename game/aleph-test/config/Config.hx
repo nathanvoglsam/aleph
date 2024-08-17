@@ -33,9 +33,9 @@ import aleph_config.ConfigTable;
 @:expose
 class ConfigOverrides {
     public static function get(env: Environment, config: ConfigTable) {
-        var rhi = aleph_rhi.Config.get(config);
+        var rhi = aleph_rhi.Config.fetch(config);
 
         // Force vulkan
-        rhi.backend.backend = Vulkan;
+        rhi.api = Vulkan;
     }
 }

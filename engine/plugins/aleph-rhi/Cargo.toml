@@ -39,7 +39,7 @@ documentation = "https://docs.rs/aleph-rhi/"
 edition.workspace = true
 
 [package.metadata.aleph]
-haxe = { modules = ["aleph_rhi", "aleph_rhi_cfg"] }
+haxe = { modules = ["aleph_rhi"] }
 
 [dependencies]
 aleph-rhi-loader = { workspace = true }

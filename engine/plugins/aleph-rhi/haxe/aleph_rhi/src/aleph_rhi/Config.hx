@@ -29,6 +29,8 @@
 
 package aleph_rhi;
 
+import aleph_config.Environment;
+
 /**
  * All the supported RHI backends.
  */
@@ -54,23 +56,18 @@ typedef VulkanOptions = {
 }
 
 /**
- * Options for configuring the RHI backend selection.
+ * Collection of all options for configuring the RHI.
  */
-typedef RhiBackendConfig = {
+typedef RhiConfig = {
     /** The backend that should be used **/
-    var backend: RhiBackend;
+    var api: RhiBackend;
 
     /** Any options to configure the Vulkan backend, if it is loaded. **/
     var ?vulkan: VulkanOptions;
 
     /** Any options to configure the D3D12 backend, if it is loaded. **/
     var ?d3d12: D3D12Options;
-}
 
-/**
- * Options for configuring debugging options in the RHI.
- */
-typedef RhiDebugConfig = {
     /** Whether to enable RHI and platform validation layers if they are available. **/
     var validation: Bool;
 
@@ -81,24 +78,44 @@ typedef RhiDebugConfig = {
     var debug: Bool;
 }
 
-/**
- * Collection of all options for configuring the RHI.
- */
-typedef RhiConfig = {
-    var backend: RhiBackendConfig;
-    var debug: RhiDebugConfig;
-}
+class Config {
+    /**
+     * Constructs a default 'RhiConfig' object based on the given target.
+     * 
+     * This function will choose opinionated defaults for the available settings based on the target
+     * platform and architecture. These may be override though command line flags or through
+     * additional config scripts.
+     * @param target
+     */
+    @:expose
+    private static function get(env: Environment): RhiConfig {
+        // On Windows we prefer D3D12 for better platform integration (DXGI)
+        var api = if (env.platform.isWindows()) {
+            RhiBackend.D3D12;
+        } else {
+            RhiBackend.Vulkan;
+        };
 
-/**
- * [Description]
- * Utility function for fetching the 'RhiConfig' object from the given ConfigTable.
- * 
- * This is expected to be used by an ConfigOverride to fetch the current config state so it can
- * be tweaked.
- * @param config 
- * @return RhiConfig
- */
-@:access(aleph_config.ConfigTable.get)
-function get(config: aleph_config.ConfigTable): RhiConfig {
-    return config.get("aleph-rhi");
+        return {
+            api: api,
+
+            // We'll never want validation or debug by default. Leave that to an override
+            validation: false,
+            debug: false,
+        };
+    }
+
+    /**
+     * [Description]
+     * Utility function for fetching the 'RhiConfig' object from the given ConfigTable.
+     * 
+     * This is expected to be used by an ConfigOverride to fetch the current config state so it can
+     * be tweaked.
+     * @param config 
+     * @return RhiConfig
+     */
+    @:access(aleph_config.ConfigTable.get)
+    public static function fetch(config: aleph_config.ConfigTable): RhiConfig {
+        return config.get("aleph-rhi");
+    }
 }
