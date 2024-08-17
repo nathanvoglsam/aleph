@@ -5,7 +5,6 @@
     <mapping directory="$PROJECT_DIR$/submodules/D3D12MemoryAllocator" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/DirectX-Headers" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/DirectX12AgilitySDK" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/LuaJIT-builds" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/QuickJSNG-builds" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/QuickJSNG-builds/quickjs" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/QuickJSNG-builds/quickjs/test262" vcs="Git" />
