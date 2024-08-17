@@ -35,14 +35,14 @@ pub struct DescriptorHeapInfo {
     /// Descriptor increment for shader resource views
     pub resource_inc: u32,
 
-    /// Descriptor increment for unordered access views
-    pub rtv_inc: u32,
-
-    /// Descriptor increment for constant buffer views
-    pub dsv_inc: u32,
-
-    /// Descriptor increment for samplers
-    pub sampler_inc: u32,
+    // /// Descriptor increment for unordered access views
+    // pub rtv_inc: u32,
+    // 
+    // /// Descriptor increment for constant buffer views
+    // pub dsv_inc: u32,
+    // 
+    // /// Descriptor increment for samplers
+    // pub sampler_inc: u32,
 }
 
 impl DescriptorHeapInfo {
@@ -53,10 +53,10 @@ impl DescriptorHeapInfo {
             Self {
                 resource_inc: device
                     .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),
-                rtv_inc: device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV),
-                dsv_inc: device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV),
-                sampler_inc: device
-                    .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),
+                // rtv_inc: device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV),
+                // dsv_inc: device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV),
+                // sampler_inc: device
+                //     .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),
             }
         }
     }

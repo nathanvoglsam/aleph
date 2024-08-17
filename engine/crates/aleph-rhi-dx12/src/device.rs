@@ -534,7 +534,7 @@ impl IDevice for Device {
                     ShaderVisibility: shader_visibility_to_dx12(block.visibility),
                 };
                 push_constant_blocks.push(PushConstantBlockInfo {
-                    size: num32_bit_values * 4,
+                    _size: num32_bit_values * 4,
                     root_parameter_index: parameters.len() as u32,
                 });
                 parameters.push(range);
@@ -1351,11 +1351,11 @@ impl Device {
             let base_shader_register = item.binding_num;
 
             let info = DescriptorBindingInfo {
-                r#type: item.binding_type,
-                is_static_sampler: false,
+                _type: item.binding_type,
+                _is_static_sampler: false,
                 layout: DescriptorBindingLayout {
                     base: base_shader_register,
-                    num_descriptors,
+                    _num_descriptors: num_descriptors,
                 },
             };
             binding_info.insert(item.binding_num, info);
@@ -1416,11 +1416,11 @@ impl Device {
             let base_shader_register = item.binding_num;
 
             let info = DescriptorBindingInfo {
-                r#type: item.binding_type,
-                is_static_sampler: item.static_samplers.is_some(),
+                _type: item.binding_type,
+                _is_static_sampler: item.static_samplers.is_some(),
                 layout: DescriptorBindingLayout {
                     base: offset,
-                    num_descriptors,
+                    _num_descriptors: num_descriptors,
                 },
             };
             binding_info.insert(item.binding_num, info);
@@ -1488,11 +1488,11 @@ impl Device {
                 let base_shader_register = item.binding_num;
 
                 let info = DescriptorBindingInfo {
-                    r#type: item.binding_type,
-                    is_static_sampler: item.static_samplers.is_some(),
+                    _type: item.binding_type,
+                    _is_static_sampler: item.static_samplers.is_some(),
                     layout: DescriptorBindingLayout {
                         base: base_shader_register,
-                        num_descriptors,
+                        _num_descriptors: num_descriptors,
                     },
                 };
                 binding_info.insert(item.binding_num, info);

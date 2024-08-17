@@ -90,10 +90,10 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
 #[derive(Clone)]
 pub struct DescriptorBindingInfo {
     /// The type of descriptor this binding contains
-    pub r#type: DescriptorType,
+    pub _type: DescriptorType,
 
     /// Whether this binding is a static sampler.
-    pub is_static_sampler: bool,
+    pub _is_static_sampler: bool,
 
     /// The layout of the binding in descriptor memory
     pub layout: DescriptorBindingLayout,
@@ -106,5 +106,5 @@ pub struct DescriptorBindingLayout {
     pub base: u32,
 
     /// The number of descriptors in this binding (dictates the size)
-    pub num_descriptors: u32,
+    pub _num_descriptors: u32,
 }

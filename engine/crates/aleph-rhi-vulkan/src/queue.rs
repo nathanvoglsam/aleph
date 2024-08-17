@@ -471,8 +471,8 @@ impl IQueueDebug for Queue {
 pub struct QueueInfo {
     pub family_index: u32,
     pub min_image_transfer_granularity: vk::Extent3D,
-    pub timestamp_valid_bits: u32,
-    pub sparse_binding: bool,
+    pub _timestamp_valid_bits: u32,
+    pub _sparse_binding: bool,
 }
 
 impl QueueInfo {
@@ -480,8 +480,8 @@ impl QueueInfo {
         Self {
             family_index,
             min_image_transfer_granularity: family.min_image_transfer_granularity,
-            timestamp_valid_bits: family.timestamp_valid_bits,
-            sparse_binding: family.queue_flags.contains(vk::QueueFlags::SPARSE_BINDING),
+            _timestamp_valid_bits: family.timestamp_valid_bits,
+            _sparse_binding: family.queue_flags.contains(vk::QueueFlags::SPARSE_BINDING),
         }
     }
 }

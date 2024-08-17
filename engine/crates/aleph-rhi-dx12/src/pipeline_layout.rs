@@ -70,6 +70,6 @@ impl IPipelineLayout for PipelineLayout {
 
 /// Internal struct for caching information necessary for implementing command recording
 pub struct PushConstantBlockInfo {
-    pub size: u32,
+    pub _size: u32,
     pub root_parameter_index: u32,
 }

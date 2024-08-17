@@ -66,10 +66,8 @@ impl IGetPlatformInterface for SwapChain {
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub current: i32,
     pub textures: Vec<AnyArc<Texture>>,
     pub dxgi_format: DXGI_FORMAT,
-    pub dxgi_view_format: DXGI_FORMAT,
     pub dxgi_flags: DXGI_SWAP_CHAIN_FLAG,
 }
 

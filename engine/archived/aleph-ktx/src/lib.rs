@@ -41,7 +41,7 @@ pub use data_format_descriptor::{
     PVRTCChannelType, RGBSDAChannelType, SampleFlags, SampleInfo, SampleInfoIterator,
     TransferFunction,
 };
-pub use document::{KTXDocument, KTXReadError, SuperCompressionScheme};
+pub use document::{FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme};
 pub use format::{
     format_alpha_bits, format_blue_bits, format_bytes_for_image, format_bytes_per_block,
     format_depth_bits, format_exponent_bits, format_green_bits, format_pack_bits, format_red_bits,

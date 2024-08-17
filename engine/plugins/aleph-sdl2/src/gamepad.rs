@@ -103,7 +103,7 @@ impl GamepadsImpl {
                     log::info!("Controller Opened: instance_id = {instance_id}");
 
                     let entry = GamepadEntry {
-                        device_index: which,
+                        _device_index: which,
                         pad,
                         state: Default::default(),
                     };
@@ -251,7 +251,7 @@ impl IGamepads for GamepadsImpl {
 }
 
 pub struct GamepadEntry {
-    pub device_index: u32,
+    pub _device_index: u32,
     pub pad: GameController,
     pub state: GamepadState,
 }

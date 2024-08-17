@@ -334,6 +334,8 @@ pub trait IIRNode: Clone + core::fmt::Debug {
     fn set_next(&mut self, v: NonNull<[usize]>);
     fn is_render_pass(&self) -> bool;
     fn is_barrier(&self) -> bool;
+
+    #[allow(unused)]
     fn is_layout_transition(&self) -> bool;
 
     fn resource_id(&self) -> ResourceId {
@@ -344,14 +346,17 @@ pub trait IIRNode: Clone + core::fmt::Debug {
         Default::default()
     }
 
+    #[allow(unused)]
     fn barrier_type(&self) -> IRBarrierType {
         Default::default()
     }
 
+    #[allow(unused)]
     fn before_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
         (Default::default(), Default::default(), Default::default())
     }
 
+    #[allow(unused)]
     fn after_scope(&self) -> (BarrierSync, BarrierAccess, ImageLayout) {
         (Default::default(), Default::default(), Default::default())
     }

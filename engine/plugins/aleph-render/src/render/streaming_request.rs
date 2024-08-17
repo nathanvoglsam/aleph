@@ -328,8 +328,7 @@ impl RequestError {
 #[cfg(test)]
 mod tests {
     use crate::render::streaming_request::RequestError;
-    use crate::render::{RequestData, StreamingRequest};
-    use std::sync::Arc;
+    use crate::render::StreamingRequest;
 
     fn make_request() -> StreamingRequest<u64> {
         StreamingRequest::new()
