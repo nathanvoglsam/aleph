@@ -39,7 +39,7 @@ use rayon::prelude::*;
 
 use crate::commands::{config_arg, ISubcommand};
 use crate::haxe::{
-    ClasspathBundle, HaxeCrateContext, HaxeJsDefinition, HaxeLuaDefinition, HaxeModuleContext,
+    ClasspathBundle, HaxeCrateContext, HaxeHlDefinition, HaxeJsDefinition, HaxeModuleContext,
     HaxeModuleDefinitionFile, HaxeProjectContext, HaxeSubproject,
 };
 use crate::project::AlephProject;
@@ -135,8 +135,8 @@ impl<'a> HaxeModuleJob<'a> {
         for j in jobs {
             let module = &j.module_toml.as_ref().unwrap();
 
-            if module.lua.library {
-                bundle.lua.push(j.module_ctx.meta.source_dir);
+            if module.hl.library {
+                bundle.hl.push(j.module_ctx.meta.source_dir);
             }
             if module.js.library {
                 bundle.js.push(j.module_ctx.meta.source_dir);
@@ -144,7 +144,7 @@ impl<'a> HaxeModuleJob<'a> {
 
             // If any module target is a library then add it to the 'all' classpath too. This is
             // used for generating a dummy hxml file for intellisense.
-            if module.lua.library || module.js.library {
+            if module.hl.library || module.js.library {
                 bundle.all.push(j.module_ctx.meta.source_dir);
             }
         }
@@ -206,19 +206,19 @@ fn generate_module_build_hxmls(
     classpaths: &ClasspathBundle,
 ) -> anyhow::Result<()> {
     let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
-    let HaxeModuleDefinitionFile { lua, js, .. } = toml::from_str(&module_toml)?;
+    let HaxeModuleDefinitionFile { hl, js, .. } = toml::from_str(&module_toml)?;
 
-    generate_module_build_lua_hxml(crate_ctx, module_ctx, classpaths, &lua)?;
+    generate_module_build_hl_hxml(crate_ctx, module_ctx, classpaths, &hl)?;
     generate_module_build_js_hxml(crate_ctx, module_ctx, classpaths, &js)?;
 
     Ok(())
 }
 
-fn generate_module_build_lua_hxml(
+fn generate_module_build_hl_hxml(
     crate_ctx: &HaxeCrateContext,
     module_ctx: &HaxeModuleContext,
     classpaths: &ClasspathBundle,
-    lua: &HaxeLuaDefinition,
+    lua: &HaxeHlDefinition,
 ) -> anyhow::Result<()> {
     use std::fmt::Write;
 
@@ -233,13 +233,13 @@ fn generate_module_build_lua_hxml(
         module_ctx.module_name
     );
 
-    let out_dir = module_ctx.meta.output_dir.join("lua");
-    let out_file_name = out_dir.join("out.lua");
+    let out_dir = module_ctx.meta.output_dir.join("hl");
+    let out_file_name = out_dir.join("out.hl");
     let xml_file_name = out_dir.join("out.xml");
 
     let mut hxml = String::with_capacity(1024);
 
-    for path in classpaths.lua.iter().copied() {
+    for path in classpaths.hl.iter().copied() {
         writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
     }
     if !lua.library {
@@ -253,17 +253,16 @@ fn generate_module_build_lua_hxml(
         )?;
     }
     writeln!(hxml, "--dce std")?;
-    writeln!(hxml, "-D lua-jit")?;
-    writeln!(hxml, "-D lua-ver=5.1")?;
+    writeln!(hxml, "-D hl-ver=1.14.0")?;
     {
         write!(hxml, "--macro include(\"\", true, [], [")?;
         write!(hxml, "\"{}\", ", path_for_haxe(module_ctx.meta.source_dir))?;
         writeln!(hxml, "])",)?;
     }
-    writeln!(hxml, "--lua \"{}\"", path_for_haxe(&out_file_name))?;
+    writeln!(hxml, "--hl \"{}\"", path_for_haxe(&out_file_name))?;
     writeln!(hxml, "--xml \"{}\"", path_for_haxe(&xml_file_name))?;
 
-    std::fs::write(module_ctx.meta.build_lua_file, hxml)?;
+    std::fs::write(module_ctx.meta.build_hl_file, hxml)?;
 
     Ok(())
 }

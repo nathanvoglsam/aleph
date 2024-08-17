@@ -29,16 +29,8 @@
 
 [hl]
 
-## Should a lua module be generated for this package
-package = false
+## Should a hl module be generated for this package
+package = true
 
 ## Should this module be included in the general classpath
-library = true
-
-[js]
-
-## Should a lua module be generated for this package
-config_script = false
-
-## Should this module be included in the general classpath
-library = true
+library = false

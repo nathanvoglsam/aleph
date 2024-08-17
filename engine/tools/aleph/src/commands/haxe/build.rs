@@ -119,15 +119,15 @@ fn build_module_hxmls(
     module_ctx: &HaxeModuleContext,
 ) -> anyhow::Result<()> {
     let module_toml = std::fs::read_to_string(module_ctx.meta.toml_file)?;
-    let HaxeModuleDefinitionFile { lua, js, .. } = toml::from_str(&module_toml)?;
+    let HaxeModuleDefinitionFile { hl, js, .. } = toml::from_str(&module_toml)?;
 
-    if lua.package {
+    if hl.package {
         log::info!(
-            "Build lua module for '{}@{}'",
+            "Build hl module for '{}@{}'",
             crate_ctx.meta.output_name,
             module_ctx.module_name
         );
-        build_hxml(haxe_path, module_ctx.meta.build_lua_file)?;
+        build_hxml(haxe_path, module_ctx.meta.build_hl_file)?;
     }
 
     if js.config_script {

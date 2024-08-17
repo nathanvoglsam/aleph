@@ -122,8 +122,8 @@ impl<'a> ISubproject<'a> for HaxeSubproject {
             .with_extension("js");
         let output_config_script = arena.alloc_utf8_path(&output_config_script);
 
-        let build_lua_file = output_dir.join("build_lua.hxml");
-        let build_lua_file = arena.alloc_utf8_path(&build_lua_file);
+        let build_hl_file = output_dir.join("build_hl.hxml");
+        let build_hl_file = arena.alloc_utf8_path(&build_hl_file);
 
         let build_js_file = output_dir.join("build_js.hxml");
         let build_js_file = arena.alloc_utf8_path(&build_js_file);
@@ -137,7 +137,7 @@ impl<'a> ISubproject<'a> for HaxeSubproject {
         Ok(HaxeModuleMeta {
             output_dir,
             output_config_script,
-            build_lua_file,
+            build_hl_file,
             build_js_file,
             toml_file,
             source_dir,
@@ -208,8 +208,8 @@ pub struct HaxeModuleMeta<'a> {
     /// Path to '.aleph/data/config/{crate}.js'
     pub output_config_script: &'a Utf8Path,
 
-    /// Path to '.aleph/haxe/{crate}/{module}/build_lua.hxml'
-    pub build_lua_file: &'a Utf8Path,
+    /// Path to '.aleph/haxe/{crate}/{module}/build_hl.hxml'
+    pub build_hl_file: &'a Utf8Path,
 
     /// Path to '.aleph/haxe/{crate}/{module}/build_js.hxml'
     pub build_js_file: &'a Utf8Path,

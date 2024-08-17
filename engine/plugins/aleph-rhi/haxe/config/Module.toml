@@ -27,14 +27,6 @@
 ## SOFTWARE.
 ##
 
-[lua]
-
-## Should a lua module be generated for this package
-package = false
-
-## Should this module be included in the general classpath
-library = false
-
 [js]
 
 ## Should a lua module be generated for this package

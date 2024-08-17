@@ -27,7 +27,7 @@
 ## SOFTWARE.
 ##
 
-[lua]
+[hl]
 
 ## Should a lua module be generated for this package
 package = false

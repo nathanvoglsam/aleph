@@ -37,6 +37,9 @@ license.workspace = true
 edition.workspace = true
 publish = false
 
+[package.metadata.aleph]
+haxe = { modules = ["script"] }
+
 [lib]
 crate-type = ["cdylib"]
 name = "aleph_test_lib"

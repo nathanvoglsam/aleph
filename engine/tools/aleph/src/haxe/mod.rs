@@ -35,9 +35,9 @@ pub use subproject::{HaxeCrateContext, HaxeModuleContext, HaxeProjectContext, Ha
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct HaxeModuleDefinitionFile {
-    /// Description of the haxe module for the 'lua' target.
+    /// Description of the haxe module for the 'hl' target.
     #[serde(default)]
-    pub lua: HaxeLuaDefinition,
+    pub hl: HaxeHlDefinition,
 
     /// Description of the haxe module for the 'js' target.
     #[serde(default)]
@@ -45,10 +45,9 @@ pub struct HaxeModuleDefinitionFile {
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct HaxeLuaDefinition {
-    /// Flags whether this haxe module should be compiled to output a lua module. This will output
-    /// a lua file that can be used with 'require' and the generated code will be callable by plain
-    /// lua code.
+pub struct HaxeHlDefinition {
+    /// Flags whether this haxe module should be compiled to output a hl module. This will output
+    /// a hl file that can be used with hashlink.
     #[serde(default)]
     pub package: bool,
 
@@ -75,7 +74,6 @@ pub struct HaxeJsDefinition {
 #[derive(Default, Debug)]
 pub struct ClasspathBundle<'a> {
     pub all: Vec<&'a Utf8Path>,
+    pub hl: Vec<&'a Utf8Path>,
     pub js: Vec<&'a Utf8Path>,
-    pub lua: Vec<&'a Utf8Path>,
-    pub _hl: Vec<&'a Utf8Path>,
 }
