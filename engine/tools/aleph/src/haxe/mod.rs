@@ -73,7 +73,6 @@ pub struct HaxeJsDefinition {
 
 #[derive(Default, Debug)]
 pub struct ClasspathBundle<'a> {
-    pub all: Vec<&'a Utf8Path>,
     pub hl: Vec<&'a Utf8Path>,
     pub js: Vec<&'a Utf8Path>,
 }

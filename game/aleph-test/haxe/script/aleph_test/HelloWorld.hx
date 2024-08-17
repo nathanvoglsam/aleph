@@ -29,8 +29,12 @@
 
 package aleph_test;
 
+import hl.I64;
+
 class HelloWorld {
     public static function helloWorld() {
-        trace("Hello, World!");
+        var x: I64 = 2;
+        Sys.println("Hello, World!");
+        Sys.println(x);
     }
 }

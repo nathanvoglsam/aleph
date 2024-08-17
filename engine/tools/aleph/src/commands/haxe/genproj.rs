@@ -43,7 +43,7 @@ use crate::haxe::{
     HaxeModuleDefinitionFile, HaxeProjectContext, HaxeSubproject,
 };
 use crate::project::AlephProject;
-use crate::templates::HAXE_LUA_BUILD_HXML_PREFIX;
+use crate::templates::HAXE_VS_CODE_BUILD_HXML_PREFIX;
 use crate::utils::dunce_utf8;
 
 pub struct GenHaxeProj {}
@@ -82,8 +82,9 @@ impl ISubcommand for GenHaxeProj {
         // Generate the hxml for building the config override script
         generate_game_config_build_hxml(project, &library_classpaths)?;
 
-        let all_classpaths = HaxeModuleJob::collect_all_module_classpaths(&jobs);
-        generate_vscode_build_hxml(project, &all_classpaths)?;
+        let all_classpaths = HaxeModuleJob::collect_all_classpaths(&jobs);
+        generate_vscode_build_hxml(project, &all_classpaths, HaxeTarget::JavaScript)?;
+        generate_vscode_build_hxml(project, &all_classpaths, HaxeTarget::HashLink)?;
 
         Ok(())
     }
@@ -126,8 +127,23 @@ impl<'a> HaxeModuleJob<'a> {
         Ok(())
     }
 
-    pub fn collect_all_module_classpaths(jobs: &[HaxeModuleJob<'a>]) -> Vec<&'a Utf8Path> {
-        jobs.iter().map(|v| v.module_ctx.meta.source_dir).collect()
+    pub fn collect_all_classpaths(jobs: &[HaxeModuleJob<'a>]) -> ClasspathBundle<'a> {
+        let mut bundle = ClasspathBundle::default();
+        for j in jobs {
+            let module = &j.module_toml.as_ref().unwrap();
+
+            let in_hl_classpath = module.hl.library || module.hl.package;
+            let in_js_classpath = module.js.library || module.js.config_script;
+
+            if in_hl_classpath {
+                bundle.hl.push(j.module_ctx.meta.source_dir);
+            }
+
+            if in_js_classpath {
+                bundle.js.push(j.module_ctx.meta.source_dir);
+            }
+        }
+        bundle
     }
 
     pub fn collect_library_classpaths(jobs: &[HaxeModuleJob<'a>]) -> ClasspathBundle<'a> {
@@ -140,12 +156,6 @@ impl<'a> HaxeModuleJob<'a> {
             }
             if module.js.library {
                 bundle.js.push(j.module_ctx.meta.source_dir);
-            }
-
-            // If any module target is a library then add it to the 'all' classpath too. This is
-            // used for generating a dummy hxml file for intellisense.
-            if module.hl.library || module.js.library {
-                bundle.all.push(j.module_ctx.meta.source_dir);
             }
         }
         bundle
@@ -319,30 +329,98 @@ fn generate_module_build_js_hxml(
     Ok(())
 }
 
+enum HaxeTarget {
+    JavaScript,
+    HashLink,
+}
+
+impl HaxeTarget {
+    fn select_classpath_from_bundle<'a>(
+        &self,
+        bundle: &'a ClasspathBundle<'a>,
+    ) -> &'a [&'a Utf8Path] {
+        match self {
+            HaxeTarget::JavaScript => bundle.js.as_slice(),
+            HaxeTarget::HashLink => bundle.hl.as_slice(),
+        }
+    }
+
+    fn append_target_args_to_hxml(&self, target: &mut String) -> std::fmt::Result {
+        use std::fmt::Write;
+
+        match self {
+            HaxeTarget::JavaScript => {
+                writeln!(target, "-D js-es=6")?;
+            }
+            HaxeTarget::HashLink => {
+                writeln!(target, "-D hl-ver=1.14.0")?;
+            }
+        }
+        Ok(())
+    }
+
+    const fn out_file_ext(&self) -> &'static str {
+        match self {
+            HaxeTarget::JavaScript => "js",
+            HaxeTarget::HashLink => "hl",
+        }
+    }
+
+    const fn out_arg_name(&self) -> &'static str {
+        match self {
+            HaxeTarget::JavaScript => "js",
+            HaxeTarget::HashLink => "hl",
+        }
+    }
+
+    const fn vscode_hxml_name(&self) -> &'static str {
+        match self {
+            HaxeTarget::JavaScript => "build_js.hxml",
+            HaxeTarget::HashLink => "build_hl.hxml",
+        }
+    }
+}
+
 fn generate_vscode_build_hxml(
     project: &AlephProject,
-    classpaths: &[&Utf8Path],
+    classpaths: &ClasspathBundle,
+    target: HaxeTarget,
 ) -> anyhow::Result<()> {
     use std::fmt::Write;
 
-    log::info!("Generating 'build.xml' for language server");
+    log::info!(
+        "Generating '{}' for language server",
+        target.vscode_hxml_name()
+    );
 
-    let dummy_output_file = project.haxe_build_path().join("dummy.js");
-    let hxml_file_name = project.project_root().join("build.hxml");
+    // Stamp out the prefix and any target specific args
+    let mut hxml = HAXE_VS_CODE_BUILD_HXML_PREFIX.to_string();
+    target.append_target_args_to_hxml(&mut hxml)?;
 
-    let mut hxml = String::with_capacity(1024);
+    // Write out the library class paths first
+    let target_classpaths = target.select_classpath_from_bundle(classpaths);
+    for path in target_classpaths.iter().copied() {
+        writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
+    }
 
+    // Write out the class path for the game's config override
     let (game_crate, _) = project.get_game_crate_and_target()?;
     let cfg_classpath = game_crate.manifest_path.parent().unwrap();
     let cfg_classpath = cfg_classpath.join("config");
-
-    writeln!(hxml, "{}", HAXE_LUA_BUILD_HXML_PREFIX)?;
-    for path in classpaths {
-        writeln!(hxml, "--class-path \"{}\"", path_for_haxe(path))?;
-    }
     writeln!(hxml, "--class-path \"{}\"", path_for_haxe(&cfg_classpath))?;
-    writeln!(hxml, "--js \"{}\"", path_for_haxe(&dummy_output_file))?;
 
+    // Write out the dummy target output declaration. This is how the language server knows what
+    // haxe target we're using
+    let dummy_output_file = project
+        .haxe_build_path()
+        .join("dummy")
+        .with_extension(target.out_file_ext());
+    let dummy_output_file = path_for_haxe(&dummy_output_file);
+    let dummy_target = target.out_arg_name();
+    writeln!(hxml, "--{dummy_target} \"{dummy_output_file}\"")?;
+
+    // And finally write the file out
+    let hxml_file_name = project.project_root().join(target.vscode_hxml_name());
     std::fs::write(hxml_file_name, hxml)?;
 
     Ok(())

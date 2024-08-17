@@ -34,13 +34,12 @@ use windows::Win32::Graphics::Direct3D12::*;
 pub struct DescriptorHeapInfo {
     /// Descriptor increment for shader resource views
     pub resource_inc: u32,
-
     // /// Descriptor increment for unordered access views
     // pub rtv_inc: u32,
-    // 
+    //
     // /// Descriptor increment for constant buffer views
     // pub dsv_inc: u32,
-    // 
+    //
     // /// Descriptor increment for samplers
     // pub sampler_inc: u32,
 }

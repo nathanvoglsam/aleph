@@ -13,7 +13,8 @@
 		"slang.searchInAllWorkspaceDirectories": false,
 		"haxe.executable": ".aleph/sdks/haxe/haxe",
 		"haxe.configurations": [
-			["build.hxml"]
+			["build_js.hxml"],
+			["build_hl.hxml"]
 		],
 		"rust-analyzer.cargo.targetDir": true,
 	}
