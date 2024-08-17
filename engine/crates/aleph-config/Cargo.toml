@@ -42,7 +42,7 @@ edition.workspace = true
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [package.metadata.aleph]
-haxe = { modules = ["aleph_config"] }
+haxe = { modules = ["script"] }
 
 [dependencies]
 aleph-target = { workspace = true }

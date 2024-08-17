@@ -33,7 +33,7 @@
 package = false
 
 ## Should this module be included in the general classpath
-library = true
+library = false
 
 [js]
 
@@ -41,4 +41,4 @@ library = true
 config_script = true
 
 ## Should this module be included in the general classpath
-library = true
+library = false

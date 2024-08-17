@@ -29,8 +29,6 @@
 
 package aleph_rhi;
 
-import aleph_config.Environment;
-
 /**
  * All the supported RHI backends.
  */
@@ -79,32 +77,6 @@ typedef RhiConfig = {
 }
 
 class Config {
-    /**
-     * Constructs a default 'RhiConfig' object based on the given target.
-     * 
-     * This function will choose opinionated defaults for the available settings based on the target
-     * platform and architecture. These may be override though command line flags or through
-     * additional config scripts.
-     * @param target
-     */
-    @:expose
-    private static function get(env: Environment): RhiConfig {
-        // On Windows we prefer D3D12 for better platform integration (DXGI)
-        var api = if (env.platform.isWindows()) {
-            RhiBackend.D3D12;
-        } else {
-            RhiBackend.Vulkan;
-        };
-
-        return {
-            api: api,
-
-            // We'll never want validation or debug by default. Leave that to an override
-            validation: false,
-            debug: false,
-        };
-    }
-
     /**
      * [Description]
      * Utility function for fetching the 'RhiConfig' object from the given ConfigTable.

@@ -31,6 +31,7 @@ use std::borrow::Cow;
 
 use aleph_target::Profile;
 use anyhow::anyhow;
+use anyhow::Context;
 use bumpalo::Bump;
 use camino::Utf8Path;
 use clap::ArgMatches;
@@ -117,7 +118,7 @@ impl<'a> HaxeModuleJob<'a> {
 
         if !error_recv.is_empty() {
             while let Ok(error) = error_recv.try_recv() {
-                log::error!("Error while loading haxe module toml!: {}", error);
+                log::error!("{} {}", error, error.root_cause());
             }
             return Err(anyhow!("'load_toml_for_jobs' failed!'"));
         }
@@ -151,7 +152,9 @@ impl<'a> HaxeModuleJob<'a> {
     }
 
     pub fn load_toml(&mut self) -> anyhow::Result<()> {
-        let module_toml = std::fs::read_to_string(self.module_ctx.meta.toml_file)?;
+        let path = self.module_ctx.meta.toml_file;
+        let module_toml = std::fs::read_to_string(path)
+            .with_context(|| format!("Failed loading '{}'.", dunce_utf8::simplified(path)))?;
         let module_toml = toml::from_str(&module_toml)?;
         self.module_toml = Some(module_toml);
         Ok(())

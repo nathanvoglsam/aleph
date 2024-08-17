@@ -27,28 +27,18 @@
 ## SOFTWARE.
 ##
 
+[lua]
 
-[package]
-name = "aleph-rhi"
-version = "0.1.0"
-authors.workspace = true
-description = "Aleph's RHI plugin"
-license.workspace = true
-repository.workspace = true
-documentation = "https://docs.rs/aleph-rhi/"
-edition.workspace = true
+## Should a lua module be generated for this package
+package = false
 
-[package.metadata.aleph]
-haxe = { modules = ["config", "script"] }
+## Should this module be included in the general classpath
+library = true
 
-[dependencies]
-aleph-rhi-loader = { workspace = true }
-aleph-interfaces = { workspace = true }
-aleph-rhi-api = { workspace = true }
-log = { workspace = true }
+[js]
 
-serde = { workspace = true }
-serde_json = { workspace = true }
+## Should a lua module be generated for this package
+config_script = false
 
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
+## Should this module be included in the general classpath
+library = true

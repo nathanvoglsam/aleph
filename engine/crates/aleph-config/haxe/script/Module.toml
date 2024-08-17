@@ -37,7 +37,7 @@ library = true
 
 [js]
 
-## Should a lua module be generated for this package
+## Should a js module be generated for this package
 package = false
 
 ## Should this module be included in the general haxe classpath as a library

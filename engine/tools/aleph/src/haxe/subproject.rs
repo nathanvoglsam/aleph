@@ -128,13 +128,11 @@ impl<'a> ISubproject<'a> for HaxeSubproject {
         let build_js_file = output_dir.join("build_js.hxml");
         let build_js_file = arena.alloc_utf8_path(&build_js_file);
 
-        let haxe_dir = crate_ctx.meta.haxe_dir.join(module_name);
-
-        let toml_file = haxe_dir.join("Module.toml");
-        let toml_file = arena.alloc_utf8_path(&toml_file);
-
-        let source_dir = haxe_dir.join("src");
+        let source_dir = crate_ctx.meta.haxe_dir.join(module_name);
         let source_dir = arena.alloc_utf8_path(&source_dir);
+
+        let toml_file = source_dir.join("Module.toml");
+        let toml_file = arena.alloc_utf8_path(&toml_file);
 
         Ok(HaxeModuleMeta {
             output_dir,
