@@ -37,7 +37,8 @@ mod params;
 mod tone_map_pass;
 
 use crate::render::{
-    TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureUploadSource,
+    TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureStreamingRequest,
+    TextureUploadSource,
 };
 use crate::renderer::backbuffer_import_pass::BackBufferHandle;
 use crate::renderer::egui_pass::EguiPassContext;
@@ -183,6 +184,10 @@ impl EguiRenderer {
         texture: &dyn ITexture,
         render_data: RenderData,
     ) -> Box<dyn ICommandList> {
+        // Recording frame 'index' means 'index' must have completed on the GPU time so this should
+        // be safe
+        self.frames[index].texture_deletion_pool.purge();
+
         // Begin recording commands into the command list
         let mut list = self
             .device
@@ -197,6 +202,7 @@ impl EguiRenderer {
 
             self.texture_loader.upload_requests(
                 &mut self.texture_pool,
+                &mut self.frames[index].texture_deletion_pool,
                 self.device.as_ref(),
                 encoder.as_mut(),
                 usize::MAX,
@@ -260,8 +266,15 @@ impl EguiRenderer {
                         staging_buffer.data.len(),
                     );
 
+                staging_buffer.unmap();
+
                 self.texture_loader
-                    .immediate_upload(self.font_handle, staging_buffer);
+                    .immediate_upload(
+                        TextureStreamingRequest::new(),
+                        self.font_handle,
+                        staging_buffer,
+                    )
+                    .unwrap();
             }
         }
     }

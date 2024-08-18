@@ -27,11 +27,14 @@
 // SOFTWARE.
 //
 
+use std::fmt::Formatter;
+use std::mem::ManuallyDrop;
+
 use crate::render::{TextureHandle, TexturePool, TextureStreamingRequest, TextureUploadSource};
+
 use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 use interfaces::any::AnyArc;
-use std::mem;
 use thiserror::Error;
 
 pub struct TextureLoader {
@@ -57,28 +60,62 @@ impl TextureLoader {
         }
     }
 
-    pub fn immediate_upload(&self, handle: TextureHandle, data: TextureUploadSource) {
+    /// Enqueues a request that is guaranteed to have upload attempted within the frame it was
+    /// enqueued in. Any call to [`TextureLoader::immediate_upload`] _must_ be processed and
+    /// uploaded when the renderer processes the next batch of upload requests.
+    ///
+    /// This function is distinct from the [`TextureLoader::enqueue_new_upload`], etc functions in
+    /// that it side-steps all upload pacing and budgetting systems. This is expected to be used
+    /// very sparingly, and only for textures which absolutely must be available for some component
+    /// to work.
+    ///
+    /// # Info
+    ///
+    /// You will note that this still takes a [`TextureStreamingRequest`] handle. The happy path
+    /// for this function doesn't actually require one as typically this is a fire-and-forget
+    /// function. However there is still a catch that means we need one.
+    ///
+    /// Uploads are deferred. This means the renderer won't actually _do_ anything until
+    /// (potentially much) later in the frame. There's no guarantee that the [`TextureUploadSource`]
+    /// data is well-formed and no guarantee that the upload won't _fail_. Without a request handle
+    /// there would be no way for the caller to know if their upload failed.
+    ///
+    /// You're free to ignore the request handle, but you're going to ignore errors.
+    pub fn immediate_upload(
+        &self,
+        request: TextureStreamingRequest,
+        handle: TextureHandle,
+        data: TextureUploadSource,
+    ) -> Result<(), EnqueueError<TextureUploadSource>> {
+        match request.try_take_ownership() {
+            Some(_) => (),
+            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+        }
+
         let load = LoadRequest {
             target: Some(handle),
-            request: None,
+            request,
             data,
         };
 
         self.immediate_queue.push(load);
+
+        Ok(())
     }
 
     pub fn enqueue_new_upload(
         &self,
-        request: &TextureStreamingRequest,
+        request: TextureStreamingRequest,
         data: TextureUploadSource,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
-        request
-            .try_take_ownership()
-            .ok_or(EnqueueError::RequestAlreadyQueued)?;
+        match request.try_take_ownership() {
+            Some(_) => (),
+            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+        }
 
         let load = LoadRequest {
             target: None,
-            request: Some(request.clone()),
+            request,
             data,
         };
 
@@ -87,17 +124,18 @@ impl TextureLoader {
 
     pub fn enqueue_update_upload(
         &self,
-        request: &TextureStreamingRequest,
+        request: TextureStreamingRequest,
         target: TextureHandle,
         data: TextureUploadSource,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
-        request
-            .try_take_ownership()
-            .ok_or(EnqueueError::RequestAlreadyQueued)?;
+        match request.try_take_ownership() {
+            Some(_) => (),
+            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+        }
 
         let load = LoadRequest {
             target: Some(target),
-            request: Some(request.clone()),
+            request,
             data,
         };
 
@@ -110,13 +148,14 @@ impl TextureLoader {
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
         match self.load_queue.push(load) {
             Ok(_) => Ok(()),
-            Err(v) => Err(EnqueueError::QueueFull(v.data)),
+            Err(v) => Err(EnqueueErrorKind::QueueFull.with_data(v.data)),
         }
     }
 
     pub(crate) unsafe fn upload_requests(
         &self,
         pool: &mut TexturePool,
+        deletion_pool: &mut TextureLoaderDeletionPool,
         device: &dyn IDevice,
         encoder: &mut dyn IGeneralEncoder,
         count: usize,
@@ -130,6 +169,7 @@ impl TextureLoader {
         while let Some(request) = self.immediate_queue.pop() {
             Self::process_request(
                 pool,
+                deletion_pool,
                 device,
                 &mut discard_barriers,
                 &mut textures,
@@ -149,6 +189,7 @@ impl TextureLoader {
 
             Self::process_request(
                 pool,
+                deletion_pool,
                 device,
                 &mut discard_barriers,
                 &mut textures,
@@ -178,14 +219,12 @@ impl TextureLoader {
                 &[region],
             );
 
-            if let Some(request) = upload.load.request.as_ref() {
-                request.mark_complete(upload.load.target.unwrap());
-            }
+            upload
+                .load
+                .request
+                .mark_complete(upload.load.target.unwrap());
 
-            // TODO: we leak the upload memory here because it needs to have destruction deferred
-            //       somehow. work that out later.
-            let data = upload.load.data;
-            mem::forget(data);
+            deletion_pool.push_upload(upload.load.data);
         }
 
         // Sync our uploaded resources with the access scopes we consider them safe to use
@@ -194,28 +233,24 @@ impl TextureLoader {
 
     unsafe fn process_request(
         pool: &mut TexturePool,
+        deletion_pool: &mut TextureLoaderDeletionPool,
         device: &dyn IDevice,
         discard_barriers: &mut Vec<TextureBarrier>,
         textures: &mut Vec<Upload>,
         release_barriers: &mut Vec<TextureBarrier>,
         request: LoadRequest,
     ) {
-        let (handle, texture) = match Self::create_texture(pool, device, &request) {
+        let result = Self::create_texture(pool, deletion_pool, device, &request);
+        let (handle, texture) = match result {
             Ok(v) => v,
             Err(err) => {
-                match request.request {
-                    None => {
-                        // TODO: Is there a sane way to _not_ panic here?
-                        panic!("Failed to create texture for immediate upload request. Reason: {err:?}");
-                    }
-                    Some(v) => {
-                        // If we fail to create the texture then we mark the request as a failure and
-                        // go to the next one in the queue
-                        log::error!("Failed to create texture for upload request. Reason: {err:?}");
-                        v.mark_failed();
-                        return;
-                    }
-                }
+                // TODO: do we want to push errors into the texture object so you can query the
+                //       error with the texture handle too?
+                // If we fail to create the texture then we mark the request as a failure and
+                // go to the next one in the queue
+                log::error!("Failed to create texture for upload request. Reason: {err:?}");
+                request.request.mark_failed();
+                return;
             }
         };
 
@@ -265,6 +300,7 @@ impl TextureLoader {
 
     fn create_texture<'a>(
         pool: &'a mut TexturePool,
+        deletion_pool: &mut TextureLoaderDeletionPool,
         device: &dyn IDevice,
         load: &LoadRequest,
     ) -> Result<(TextureHandle, AnyArc<dyn ITexture>), TextureCreateError> {
@@ -285,9 +321,9 @@ impl TextureLoader {
         let texture = device.create_texture(&desc)?;
         match load.target {
             Some(handle) => {
-                // TODO: deferred deletion of old texture
-                let _old_texture = pool.update_texture(handle, texture.clone());
-                mem::forget(_old_texture);
+                if let Some(old) = pool.update_texture(handle, texture.clone()) {
+                    deletion_pool.push_texture(old);
+                }
                 Ok((handle, texture))
             }
             None => {
@@ -300,18 +336,170 @@ impl TextureLoader {
     }
 }
 
-#[derive(Error)]
-pub enum EnqueueError<T> {
+/// Deletion pool that will hold texture and upload data handles that must have their lifetime
+/// extended to meet GPU timeline requirements.
+///
+/// # Leaking
+///
+/// If an instance of [`TextureLoaderDeletionPool`] is dropped while still containing items
+/// inside any of its internal pools, those pools will be
+#[derive(Default)]
+pub struct TextureLoaderDeletionPool {
+    textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
+    uploads: Vec<ManuallyDrop<TextureUploadSource>>,
+}
+
+impl TextureLoaderDeletionPool {
+    pub const fn new() -> Self {
+        Self {
+            textures: Vec::new(),
+            uploads: Vec::new(),
+        }
+    }
+
+    #[inline]
+    pub fn push_texture(&mut self, texture: AnyArc<dyn ITexture>) {
+        self.textures.push(ManuallyDrop::new(texture))
+    }
+
+    #[inline]
+    pub fn push_upload(&mut self, upload: TextureUploadSource) {
+        self.uploads.push(ManuallyDrop::new(upload))
+    }
+
+    /// This function will purge the internal pools and _will_ drop the resources being held inside.
+    ///
+    /// # Safety
+    ///
+    /// This is unsafe as the entire purpose of this tool is to extend the lifetime of resources
+    /// to satisfy the GPU timeline. It is not possible to do this safely in the general case. This
+    /// function forms part of the safe abstraction you use to allow someone _else_ to do this
+    /// safely at a higher level.
+    ///
+    /// To that end. This is unsafe as we have no way of guaranteeing that it is truly safe to drop
+    /// any of the resources in this pool without system level coordination that Rust can't prove
+    /// is happening.
+    ///
+    /// It is the caller's responsibility to ensure that all resources in this pool are no longer
+    /// being used on the GPU timeline.
+    #[inline]
+    pub unsafe fn purge(&mut self) {
+        // Drain the pools and explicitly drop the contained elements.
+        self.textures
+            .drain(..)
+            .for_each(|mut v| ManuallyDrop::drop(&mut v));
+        self.uploads
+            .drain(..)
+            .for_each(|mut v| ManuallyDrop::drop(&mut v));
+    }
+
+    /// Alternate version of [`TextureLoaderDeletionPool::purge`] that only purges the
+    /// texture objects.
+    ///
+    /// # Safety
+    ///
+    /// See `purge` for more info, the constraints are the same.
+    #[inline]
+    pub unsafe fn purge_textures(&mut self) {
+        // Drain the pools and explicitly drop the contained elements.
+        self.textures
+            .drain(..)
+            .for_each(|mut v| ManuallyDrop::drop(&mut v));
+    }
+
+    /// Alternate version of [`TextureLoaderDeletionPool::purge`] that only purges the
+    /// upload data objects.
+    ///
+    /// # Safety
+    ///
+    /// See `purge` for more info, the constraints are the same.
+    #[inline]
+    pub unsafe fn purge_uploads(&mut self) {
+        // Drain the pools and explicitly drop the contained elements.
+        self.uploads
+            .drain(..)
+            .for_each(|mut v| ManuallyDrop::drop(&mut v));
+    }
+}
+
+impl Drop for TextureLoaderDeletionPool {
+    fn drop(&mut self) {
+        if !self.textures.is_empty() {
+            let len = self.textures.len();
+            log::warn!("Deletion Pool dropped with {len} textures! This is leaking memory!");
+        }
+        if !self.uploads.is_empty() {
+            let len = self.uploads.len();
+            log::warn!("Deletion Pool dropped with {len} upload sources! This is leaking memory!");
+        }
+    }
+}
+
+pub struct EnqueueError<T> {
+    /// A slot for returning owned data that was passed into an enqueue function that should not
+    /// be dropped inside the enqueue function. This is used to return ownership back to the caller
+    /// in the event of the owner.
+    ///
+    /// If you don't care just grab the 'err' field and the caller will drop 'data' itself.
+    pub data: T,
+
+    /// The actual error this struct encapsulates
+    pub err: EnqueueErrorKind,
+}
+
+impl<T> EnqueueError<T> {
+    pub const fn new(err: EnqueueErrorKind, data: T) -> Self {
+        Self { data, err }
+    }
+}
+
+impl<T> std::error::Error for EnqueueError<T> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.err.source()
+    }
+
+    fn description(&self) -> &str {
+        #[allow(deprecated)]
+        self.err.description()
+    }
+
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        #[allow(deprecated)]
+        self.err.cause()
+    }
+}
+
+impl<T> std::fmt::Debug for EnqueueError<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&self.err, f)
+    }
+}
+
+impl<T> std::fmt::Display for EnqueueError<T> {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.err, f)
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum EnqueueErrorKind {
     #[error("The queue is full and the request could not be placed into the queue.")]
-    QueueFull(T),
+    QueueFull,
 
     #[error("The request object is already enqueued.")]
     RequestAlreadyQueued,
 }
 
+impl EnqueueErrorKind {
+    pub const fn with_data<T>(self, data: T) -> EnqueueError<T> {
+        EnqueueError::new(self, data)
+    }
+}
+
 struct LoadRequest {
     target: Option<TextureHandle>,
-    request: Option<TextureStreamingRequest>,
+    request: TextureStreamingRequest,
     data: TextureUploadSource,
 }
 
