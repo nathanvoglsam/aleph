@@ -29,6 +29,13 @@
 
 use aleph_rhi_api::*;
 
+pub mod backbuffer_import;
+pub mod copy_texture;
+pub mod egui_draw;
+pub mod lighting_resolve;
+pub mod main_gbuffer;
+pub mod tone_map;
+
 pub struct BackBufferInfo {
     pub desc: TextureDesc<'static>,
     pub pixels_per_point: f32,

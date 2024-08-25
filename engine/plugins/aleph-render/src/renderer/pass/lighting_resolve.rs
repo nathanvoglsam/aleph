@@ -33,8 +33,8 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
-use crate::renderer::main_gbuffer_pass::{CameraLayout, MainGBufferPassOutput};
-use crate::renderer::params::BackBufferInfo;
+use crate::renderer::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
+use crate::renderer::pass::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 

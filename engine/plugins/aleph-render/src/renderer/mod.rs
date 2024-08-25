@@ -27,22 +27,16 @@
 // SOFTWARE.
 //
 
-mod backbuffer_import_pass;
-mod copy_texture_pass;
-mod egui_pass;
 mod frame;
-mod lighting_resolve_pass;
-mod main_gbuffer_pass;
-mod params;
-mod tone_map_pass;
+mod pass;
 
 use crate::render::{
     TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureStreamingRequest,
     TextureUploadSource,
 };
-use crate::renderer::backbuffer_import_pass::BackBufferHandle;
-use crate::renderer::egui_pass::EguiPassContext;
-use crate::renderer::params::BackBufferInfo;
+use crate::renderer::pass::backbuffer_import::BackBufferHandle;
+use crate::renderer::pass::egui_draw::EguiPassContext;
+use crate::renderer::pass::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 
 use std::num::NonZeroU8;
@@ -161,12 +155,12 @@ impl EguiRenderer {
         shader_db: &ShaderDatabaseAccessor,
     ) -> FrameGraph {
         let mut frame_graph = FrameGraph::builder();
-        backbuffer_import_pass::pass(&mut frame_graph, device, pin_board, shader_db);
-        main_gbuffer_pass::pass(&mut frame_graph, device, pin_board, shader_db);
-        lighting_resolve_pass::pass(&mut frame_graph, device, pin_board, shader_db);
-        tone_map_pass::pass(&mut frame_graph, device, pin_board, shader_db);
-        copy_texture_pass::pass(&mut frame_graph, device, pin_board, shader_db);
-        egui_pass::pass(&mut frame_graph, device, pin_board, shader_db);
+        pass::backbuffer_import::pass(&mut frame_graph, device, pin_board, shader_db);
+        pass::main_gbuffer::pass(&mut frame_graph, device, pin_board, shader_db);
+        pass::lighting_resolve::pass(&mut frame_graph, device, pin_board, shader_db);
+        pass::tone_map::pass(&mut frame_graph, device, pin_board, shader_db);
+        pass::copy_texture::pass(&mut frame_graph, device, pin_board, shader_db);
+        pass::egui_draw::pass(&mut frame_graph, device, pin_board, shader_db);
         let mut frame_graph = frame_graph.build(device);
 
         // Safety: We _just_ created this graph. There's no way any transient allocations exist

@@ -32,7 +32,7 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
-use crate::renderer::params::BackBufferInfo;
+use crate::renderer::pass::BackBufferInfo;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 
 pub struct BackBufferHandle {

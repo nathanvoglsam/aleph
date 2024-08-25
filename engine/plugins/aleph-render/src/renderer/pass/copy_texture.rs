@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::renderer::backbuffer_import_pass::BackBufferHandle;
-use crate::renderer::tone_map_pass::TonemapPassOutput;
+use crate::renderer::pass::backbuffer_import::BackBufferHandle;
+use crate::renderer::pass::tone_map::TonemapPassOutput;
 use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 use aleph_frame_graph::*;

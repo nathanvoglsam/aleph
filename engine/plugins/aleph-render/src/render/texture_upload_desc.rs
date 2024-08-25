@@ -261,14 +261,14 @@ impl TextureUploadSource {
     }
 
     /// Calls [`IBuffer::unmap`] the internal buffer.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// It is the caller's responsibility to ensure this even makes sense to call.
     /// A [`TextureUploadSource`] is not guaranteed to be the 'owner' of the buffer. The internal
     /// buffer could be shared between multiple upload source instances as a staging sub-allocation
     /// scheme and so unmapping this buffer could unmap the address range underneath other callers.
-    /// 
+    ///
     /// In general it's only correct to call this on [`TextureUploadSource`] instances that were
     /// constructed via the [`TextureUploadSource::new_owned`] function.
     pub unsafe fn unmap(&self) {
