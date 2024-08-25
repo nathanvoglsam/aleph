@@ -27,16 +27,18 @@
 // SOFTWARE.
 //
 
-use crate::project::AlephProject;
-use crate::utils::dunce_utf8::simplified;
+use std::fmt::{Display, Formatter};
+use std::io::{Read, Seek};
+
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
 use anyhow::anyhow;
 use bumpalo::Bump;
 use camino::{Utf8Path, Utf8PathBuf};
-use std::fmt::{Display, Formatter};
-use std::io::{Read, Seek};
 use zip::ZipArchive;
+
+use crate::project::AlephProject;
+use crate::utils::dunce_utf8::simplified;
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Target {

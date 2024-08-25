@@ -32,11 +32,10 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 pub use aleph_ecs::scheduler::*;
+use label::make_label;
 
 use crate::any::IAny;
 use crate::label::Label;
-
-use label::make_label;
 
 ///
 /// This trait is used to provide the engine with a central [Schedule] object to schedule work onto.

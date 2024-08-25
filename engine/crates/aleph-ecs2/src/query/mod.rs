@@ -29,10 +29,9 @@
 
 pub mod query_filter;
 
-use crate::ArchetypeIndex;
 use crate::{
-    ComponentQuery, ComponentQueryItem, EntityId, EntityLayout, EntityLayoutBuf, Fetch,
-    QueryFilter, World,
+    ArchetypeIndex, ComponentQuery, ComponentQueryItem, EntityId, EntityLayout, EntityLayoutBuf,
+    Fetch, QueryFilter, World,
 };
 
 pub struct Query<'world, Q: ComponentQuery, const CHECKED: bool> {

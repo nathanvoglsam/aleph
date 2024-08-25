@@ -32,13 +32,11 @@ use bumpalo::Bump;
 use camino::Utf8Path;
 use cargo_metadata::Package;
 
-use crate::crate_metadata::AlephCrateMetadata;
-use crate::crate_metadata::ProjectCrateMetadata;
+use crate::crate_metadata::{AlephCrateMetadata, ProjectCrateMetadata};
 use crate::project::AlephProject;
-use crate::subproject::ISubproject;
-use crate::subproject::SubprojectCrateContext;
-use crate::subproject::SubprojectModuleContext;
-use crate::subproject::SubprojectProjectContext;
+use crate::subproject::{
+    ISubproject, SubprojectCrateContext, SubprojectModuleContext, SubprojectProjectContext,
+};
 use crate::utils::BumpExt;
 
 #[derive(Debug)]

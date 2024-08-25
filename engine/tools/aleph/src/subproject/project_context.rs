@@ -31,9 +31,7 @@ use bumpalo::Bump;
 
 use crate::crate_metadata::ProjectCrateMetadata;
 use crate::project::AlephProject;
-use crate::subproject::ISubproject;
-use crate::subproject::SubprojectCrateContext;
-use crate::subproject::SubprojectModuleContext;
+use crate::subproject::{ISubproject, SubprojectCrateContext, SubprojectModuleContext};
 
 #[derive(Clone, Debug)]
 pub struct SubprojectProjectContext<'a, T: ISubproject<'a>> {

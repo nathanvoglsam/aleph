@@ -185,8 +185,9 @@ pub use nan_boxed::*;
 
 #[cfg(target_pointer_width = "64")]
 mod non_nan_boxed {
-    use crate::JSTag;
     use std::ffi::*;
+
+    use crate::JSTag;
 
     #[repr(C)]
     #[derive(Copy, Clone)]

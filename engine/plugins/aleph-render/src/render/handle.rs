@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::render::IntoPayload;
 use std::fmt::{Debug, Formatter};
 use std::num::NonZeroU64;
+
+use crate::render::IntoPayload;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[repr(transparent)]

@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use std::ptr::NonNull;
+
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
-use std::ptr::NonNull;
 
 /// This describes the size and format of a texture upload payload.
 ///

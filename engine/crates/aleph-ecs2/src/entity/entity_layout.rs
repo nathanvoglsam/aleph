@@ -32,10 +32,8 @@ use std::convert::TryFrom;
 use std::iter::FromIterator;
 use std::ops::Deref;
 
-use allocator_api2::alloc::Allocator;
-use allocator_api2::alloc::Global;
-use allocator_api2::vec::IntoIter as AIntoIter;
-use allocator_api2::vec::Vec as AVec;
+use allocator_api2::alloc::{Allocator, Global};
+use allocator_api2::vec::{IntoIter as AIntoIter, Vec as AVec};
 
 use crate::ComponentTypeId;
 

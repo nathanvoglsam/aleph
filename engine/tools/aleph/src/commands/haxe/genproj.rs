@@ -30,8 +30,7 @@
 use std::borrow::Cow;
 
 use aleph_target::Profile;
-use anyhow::anyhow;
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use bumpalo::Bump;
 use camino::Utf8Path;
 use clap::ArgMatches;

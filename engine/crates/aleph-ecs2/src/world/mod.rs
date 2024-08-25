@@ -30,11 +30,11 @@
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 
-use crate::ComponentQueryItem;
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
-    ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId, EntityId,
-    EntityLayout, EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, Query,
+    ComponentQueryItem, ComponentRegistry, ComponentSource, ComponentTypeDescription,
+    ComponentTypeId, EntityId, EntityLayout, EntityLayoutBuf, EntityLocation, EntityStorage,
+    IntoComponentSource, Query,
 };
 
 ///

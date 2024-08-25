@@ -94,9 +94,11 @@ macro_rules! finish_frame {
 //
 #[doc(hidden)]
 pub mod detail {
-    use crate::ProfileDataParam;
-    use aleph_pix::raw;
     use core::ffi::CStr;
+
+    use aleph_pix::raw;
+
+    use crate::ProfileDataParam;
 
     pub struct Guard;
 

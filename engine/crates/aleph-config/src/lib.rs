@@ -35,11 +35,8 @@ use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::str::FromStr;
 
-use aleph_nstr::nstr;
-use aleph_nstr::NStr;
-use aleph_target::build::target_architecture;
-use aleph_target::build::target_build_type;
-use aleph_target::build::target_platform;
+use aleph_nstr::{nstr, NStr};
+use aleph_target::build::{target_architecture, target_build_type, target_platform};
 use camino::{Utf8Path, Utf8PathBuf};
 use qjs::ToRefValue;
 use thiserror::Error;
@@ -172,8 +169,7 @@ impl ConfigRunner {
 
 impl ConfigRunner {
     fn command_line_overrides(json: &mut serde_json::Map<String, serde_json::Value>) {
-        use serde_json::Map;
-        use serde_json::Value;
+        use serde_json::{Map, Value};
 
         let cfg_arg = clap::Arg::new("cfg")
             .long("cfg")

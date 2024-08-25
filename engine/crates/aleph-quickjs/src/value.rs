@@ -30,8 +30,7 @@
 use std::ffi::c_int;
 use std::marker::PhantomData;
 
-use raw::JSTag;
-use raw::JSValue;
+use raw::{JSTag, JSValue};
 
 use crate::Context;
 

@@ -29,19 +29,15 @@
 
 mod subproject;
 
-pub use subproject::{
-    ShaderCrateContext, ShaderModuleContext, ShaderProjectContext, ShaderSubproject,
-};
-
-use camino::Utf8PathBuf;
-
 use std::borrow::Cow;
 use std::collections::HashMap;
 
 use anyhow::anyhow;
-use camino::Utf8Path;
-use serde::Deserialize;
-use serde::Serialize;
+use camino::{Utf8Path, Utf8PathBuf};
+use serde::{Deserialize, Serialize};
+pub use subproject::{
+    ShaderCrateContext, ShaderModuleContext, ShaderProjectContext, ShaderSubproject,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ShaderType {

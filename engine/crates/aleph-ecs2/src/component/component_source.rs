@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::ComponentTypeId;
-use crate::EntityLayout;
+use crate::{ComponentTypeId, EntityLayout};
 
 /// Interface for converting one type into a type that implements `ComponentSource`.
 ///

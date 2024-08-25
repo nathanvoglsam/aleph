@@ -51,10 +51,11 @@ pub mod any {
 // Modules
 // =================================================================================================
 
-use crate::interfaces::plugin::IPlugin;
-use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 use std::env::current_dir;
 use std::path::Path;
+
+use crate::interfaces::plugin::IPlugin;
+use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
     registry: PluginRegistryBuilder,

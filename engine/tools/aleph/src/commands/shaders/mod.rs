@@ -33,8 +33,7 @@ mod genproj;
 use crate::commands::shaders::build::BuildShaderProj;
 use crate::commands::shaders::genproj::GenShaderProj;
 use crate::commands::SubcommandSet;
-use crate::shader_system::ShaderFile;
-use crate::shader_system::ShaderModuleContext;
+use crate::shader_system::{ShaderFile, ShaderModuleContext};
 
 pub fn make() -> SubcommandSet {
     let mut subcommands = SubcommandSet::new("shaders")

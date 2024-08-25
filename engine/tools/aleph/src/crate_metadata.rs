@@ -30,8 +30,7 @@
 use std::borrow::Cow;
 
 use cargo_metadata::Package;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::project::AlephProject;
 

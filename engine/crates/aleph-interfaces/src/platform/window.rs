@@ -27,10 +27,11 @@
 // SOFTWARE.
 //
 
-use any::*;
-use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use std::ffi::c_void;
 use std::ptr::NonNull;
+
+use any::*;
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 /// An enum of window events.
 #[derive(Clone, Debug)]

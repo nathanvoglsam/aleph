@@ -1,9 +1,9 @@
 ## TODO: Use this when stable
 ## Run with cargo +nightly fmt for now
-## imports_granularity = "Item"
-## reorder_imports = true
-## reorder_modules = true
-## group_imports = "StdExternalCrate"
+##imports_granularity = "Module"
+reorder_imports = true
+reorder_modules = true
+##group_imports = "StdExternalCrate"
 ##
 ## use_small_heuristics = "Max"
 ## max_width = 120

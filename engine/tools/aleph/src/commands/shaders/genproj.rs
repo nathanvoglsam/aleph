@@ -33,8 +33,7 @@ use std::io::Write;
 use aleph_target::Profile;
 use anyhow::anyhow;
 use bumpalo::Bump;
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 use rayon::prelude::*;
 
@@ -45,9 +44,7 @@ use crate::shader_system::{
     ShaderModuleDefinition, ShaderModuleDefinitionFile, ShaderProjectContext, ShaderSubproject,
     ShaderTargetLanguage,
 };
-use crate::utils::dunce_utf8;
-use crate::utils::ninja;
-use crate::utils::BuildPlatform;
+use crate::utils::{dunce_utf8, ninja, BuildPlatform};
 
 pub struct GenShaderProj {}
 

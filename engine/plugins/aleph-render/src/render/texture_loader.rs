@@ -30,12 +30,12 @@
 use std::fmt::Formatter;
 use std::mem::ManuallyDrop;
 
-use crate::render::{TextureHandle, TexturePool, TextureStreamingRequest, TextureUploadSource};
-
 use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 use interfaces::any::AnyArc;
 use thiserror::Error;
+
+use crate::render::{TextureHandle, TexturePool, TextureStreamingRequest, TextureUploadSource};
 
 pub struct TextureLoader {
     load_queue: ArrayQueue<LoadRequest>,

@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::subproject::ISubproject;
-use crate::subproject::SubprojectModuleContext;
+use crate::subproject::{ISubproject, SubprojectModuleContext};
 
 #[derive(Clone, Debug)]
 pub struct SubprojectCrateContext<'a, T: ISubproject<'a>> {

@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+
 use aleph_label::{make_label, Label};
 use interfaces::any::{AnyArc, IAny};
 use interfaces::make_plugin_description_for_crate;
@@ -36,7 +38,6 @@ use interfaces::plugin::{
 use interfaces::schedule::{CoreStage, IScheduleProvider, Schedule, Stage, SystemSchedule};
 use interfaces::world::IWorldProvider;
 use log::LevelFilter;
-use std::any::TypeId;
 
 use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;

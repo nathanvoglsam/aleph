@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::render::handle::{Generation, HandleFields};
-use crate::render::Handle;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
+
 use thiserror::Error;
+
+use crate::render::handle::{Generation, HandleFields};
+use crate::render::Handle;
 
 /// A generic generational arena handle allocator.
 pub struct HandlePool<T> {

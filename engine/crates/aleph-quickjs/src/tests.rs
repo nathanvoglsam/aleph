@@ -31,13 +31,10 @@ use std::collections::HashSet;
 use std::ffi::*;
 use std::ptr::NonNull;
 
-use crate::Context;
-use crate::NumberVariant;
-use crate::RefValue;
-use crate::Runtime;
-
 use aleph_nstr::{nstr, NStr};
 use raw::*;
+
+use crate::{Context, NumberVariant, RefValue, Runtime};
 
 #[test]
 pub fn create_and_destroy_runtime_plus_context() {
@@ -78,8 +75,7 @@ pub fn eval_script_float_add() {
 
 #[test]
 pub fn eval_script_call_c_func() {
-    use std::sync::atomic::AtomicBool;
-    use std::sync::atomic::Ordering;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     static CALLED: AtomicBool = AtomicBool::new(false);
 

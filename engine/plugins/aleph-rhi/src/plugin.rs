@@ -37,8 +37,7 @@ use aleph_interfaces::plugin::{
 };
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::{AdapterRequestOptions, BackendAPI};
-use aleph_rhi_loader::BackendConfigs;
-use aleph_rhi_loader::{ContextOptions, RhiLoader};
+use aleph_rhi_loader::{BackendConfigs, ContextOptions, RhiLoader};
 use serde::Deserialize;
 
 use crate::rhi_provider::RhiProvider;

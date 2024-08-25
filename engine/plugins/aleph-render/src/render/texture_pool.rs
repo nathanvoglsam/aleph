@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::render::{ObjectPool, TextureHandle};
+use std::num::NonZeroU8;
+
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
-use std::num::NonZeroU8;
+
+use crate::render::{ObjectPool, TextureHandle};
 
 pub struct TexturePool {
     pool: ObjectPool<TextureObject>,

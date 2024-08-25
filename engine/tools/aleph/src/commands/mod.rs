@@ -35,9 +35,8 @@ pub mod shaders;
 
 pub use build::Build;
 pub use bundle::Bundle;
-pub use genproj::GenProj;
-
 use clap::{Arg, ArgMatches, Command};
+pub use genproj::GenProj;
 
 use crate::project::AlephProject;
 

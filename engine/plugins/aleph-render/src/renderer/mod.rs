@@ -30,15 +30,6 @@
 mod frame;
 mod pass;
 
-use crate::render::{
-    TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureStreamingRequest,
-    TextureUploadSource,
-};
-use crate::renderer::pass::backbuffer_import::BackBufferHandle;
-use crate::renderer::pass::egui_draw::EguiPassContext;
-use crate::renderer::pass::BackBufferInfo;
-use crate::shader_db_accessor::ShaderDatabaseAccessor;
-
 use std::num::NonZeroU8;
 use std::ops::{BitAnd, Deref};
 
@@ -48,10 +39,18 @@ use aleph_rhi_api::*;
 use aleph_shader_db::ShaderDatabase;
 use egui::epaint::ImageDelta;
 use egui::{FontImage, ImageData, RenderData};
+pub(crate) use frame::PerFrameObjects;
 use interfaces::any::AnyArc;
 use wide::{f32x8, i32x8, CmpEq};
 
-pub(crate) use frame::PerFrameObjects;
+use crate::render::{
+    TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureStreamingRequest,
+    TextureUploadSource,
+};
+use crate::renderer::pass::backbuffer_import::BackBufferHandle;
+use crate::renderer::pass::egui_draw::EguiPassContext;
+use crate::renderer::pass::BackBufferInfo;
+use crate::shader_db_accessor::ShaderDatabaseAccessor;
 
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,

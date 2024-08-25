@@ -28,19 +28,17 @@
 //
 
 use core::str;
-use std::ffi::c_char;
-use std::ffi::c_int;
+use std::ffi::{c_char, c_int};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 
-use crate::PropertyEnum;
-use crate::{
-    Atom, CtxString, DupRawValue, GetRawValue, Object, OwnPropertyNames, RefValue, Runtime,
-    ToRefValue,
-};
-
 use aleph_nstr::NStr;
+
+use crate::{
+    Atom, CtxString, DupRawValue, GetRawValue, Object, OwnPropertyNames, PropertyEnum, RefValue,
+    Runtime, ToRefValue,
+};
 
 pub struct Context<'a> {
     pub(crate) ctx: NonNull<raw::JSContext>,

@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::render::{BufferHandle, MeshHandle, TextureHandle};
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+
 use thiserror::Error;
+
+use crate::render::{BufferHandle, MeshHandle, TextureHandle};
 
 pub type TextureStreamingRequest = StreamingRequest<TextureHandle>;
 pub type BufferStreamingRequest = StreamingRequest<BufferHandle>;

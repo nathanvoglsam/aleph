@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
+use std::ffi::c_void;
+use std::ptr::NonNull;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
-use std::ffi::c_void;
-use std::ptr::NonNull;
 
 use crate::{NullAdapter, NullSurface};
 

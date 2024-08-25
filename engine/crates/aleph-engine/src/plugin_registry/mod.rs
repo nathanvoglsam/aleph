@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_config::ConfigRunner;
-use aleph_config::RunConfigError;
+use aleph_config::{ConfigRunner, RunConfigError};
 pub use interfaces::any;
 
 mod builder;

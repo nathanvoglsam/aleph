@@ -91,10 +91,11 @@ macro_rules! finish_frame {
 //
 #[doc(hidden)]
 pub mod detail {
+    use std::ffi::CStr;
+
     use superluminal_perf_sys as ffi;
 
     use crate::ProfileDataParam;
-    use std::ffi::CStr;
 
     pub struct Guard;
 

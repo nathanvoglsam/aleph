@@ -31,18 +31,15 @@ use aleph_target::build::target_platform;
 use aleph_target::Profile;
 use anyhow::anyhow;
 use bumpalo::Bump;
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 
 use crate::commands::{config_arg, platform_arg, ISubcommand};
 use crate::project::AlephProject;
-use crate::shader_system::ShaderCrateContext;
-use crate::shader_system::ShaderFile;
-use crate::shader_system::ShaderProjectContext;
-use crate::shader_system::ShaderSubproject;
-use crate::utils::dunce_utf8;
-use crate::utils::BuildPlatform;
+use crate::shader_system::{
+    ShaderCrateContext, ShaderFile, ShaderProjectContext, ShaderSubproject,
+};
+use crate::utils::{dunce_utf8, BuildPlatform};
 
 pub struct BuildShaderProj {}
 
