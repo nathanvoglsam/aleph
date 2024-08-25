@@ -50,7 +50,7 @@ use crate::render::{
 use crate::renderer::pass::backbuffer_import::BackBufferHandle;
 use crate::renderer::pass::egui_draw::EguiPassContext;
 use crate::renderer::pass::BackBufferInfo;
-use crate::shader_db_accessor::ShaderDatabaseAccessor;
+use crate::render::ShaderDatabaseAccessor;
 
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,
@@ -463,6 +463,11 @@ fn coverage_mapper_simd_256(v: f32x8) -> [u8; 8] {
         // This does lose precision though as we effectively do the powf after rounding to the
         // values representable by an 8-bit unorm. We find the quality loss acceptable, considering
         // that this makes the function ~5x faster on average.
+        //
+        // TODO: could this be improved (do we need to?)
+        //
+        // We _could_ improve the quality by doing linear interpolation of the LUT to get a better
+        // approximation of the gamma curve. What would it cost? Is the quality needed?
         let v = v * f32x8::splat(255.0);
         let v = v.fast_round_int();
         let v = v.bitand(i32x8::splat(0xFF));

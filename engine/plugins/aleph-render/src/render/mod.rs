@@ -30,6 +30,7 @@
 mod handle;
 mod handle_pool;
 mod object_pool;
+mod shader_db_accessor;
 mod streaming_request;
 mod texture_loader;
 mod texture_pool;
@@ -38,6 +39,7 @@ mod texture_upload_desc;
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
 pub use object_pool::ObjectPool;
+pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use streaming_request::{
     BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestState,
     StreamingRequest, TextureStreamingRequest,

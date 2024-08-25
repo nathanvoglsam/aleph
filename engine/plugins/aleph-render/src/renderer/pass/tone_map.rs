@@ -32,9 +32,9 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::render::ShaderDatabaseAccessor;
 use crate::renderer::pass::lighting_resolve::LightingResolvePassOutput;
 use crate::renderer::pass::BackBufferInfo;
-use crate::shader_db_accessor::ShaderDatabaseAccessor;
 use crate::shaders;
 
 struct TonemapPassPayload {
