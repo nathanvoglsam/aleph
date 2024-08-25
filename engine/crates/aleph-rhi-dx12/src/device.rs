@@ -30,7 +30,8 @@
 use std::any::TypeId;
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::mem::{size_of, transmute_copy};
+use std::mem::{size_of, transmute_copy, ManuallyDrop};
+use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
 
@@ -93,6 +94,7 @@ pub struct Device {
     pub(crate) _context: AnyArc<Context>,
     pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: ID3D12Device10,
+    pub(crate) allocator: d3d12ma::Allocator,
     pub(crate) debug_message_cookie: Option<u32>,
     pub(crate) descriptor_heap_info: DescriptorHeapInfo,
     pub(crate) descriptor_heaps: DescriptorHeaps,
@@ -612,27 +614,22 @@ impl IDevice for Device {
             CpuAccessMode::Write => D3D12_HEAP_TYPE_UPLOAD,
         };
 
-        let heap_properties = D3D12_HEAP_PROPERTIES {
-            Type: heap_type,
-            CPUPageProperty: Default::default(),
-            MemoryPoolPreference: Default::default(),
-            CreationNodeMask: 0,
-            VisibleNodeMask: 0,
+        let allocation_desc = d3d12ma::ALLOCATION_DESC {
+            Flags: d3d12ma::ALLOCATION_FLAGS::empty(),
+            HeapType: heap_type,
+            ExtraHeapFlags: Default::default(),
+            Pool: std::ptr::null_mut(),
+            pPrivateData: std::ptr::null_mut(),
         };
-        let resource = unsafe {
-            let mut resource: Option<ID3D12Resource> = None;
-            self.device
-                .CreateCommittedResource3::<_, ID3D12Resource>(
-                    &heap_properties,
-                    Default::default(),
+        let (allocation, resource) = unsafe {
+            self.allocator
+                .CreateResource3::<ID3D12Resource>(
+                    &allocation_desc,
                     &resource_desc,
                     D3D12_BARRIER_LAYOUT_UNDEFINED,
                     None,
-                    None,
-                    None,
-                    &mut resource,
+                    &[],
                 )
-                .map(|_| resource.unwrap())
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
         let base_address =
@@ -648,7 +645,8 @@ impl IDevice for Device {
         let buffer = AnyArc::new_cyclic(move |v| Buffer {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
-            resource,
+            allocation: ManuallyDrop::new(allocation),
+            resource: ManuallyDrop::new(resource),
             base_address,
             desc,
             name,
@@ -663,35 +661,25 @@ impl IDevice for Device {
         &self,
         desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
-        let heap_properties = D3D12_HEAP_PROPERTIES {
-            Type: D3D12_HEAP_TYPE_DEFAULT,
-            CPUPageProperty: Default::default(),
-            MemoryPoolPreference: Default::default(),
-            CreationNodeMask: 0,
-            VisibleNodeMask: 0,
+        let alloc_desc = d3d12ma::ALLOCATION_DESC {
+            Flags: d3d12ma::ALLOCATION_FLAGS::empty(),
+            HeapType: D3D12_HEAP_TYPE_DEFAULT,
+            ExtraHeapFlags: Default::default(),
+            Pool: std::ptr::null_mut(),
+            pPrivateData: std::ptr::null_mut(),
         };
         let resource_desc = texture_create_desc_to_dx12(desc)?;
         let optimized_clear_value = texture_create_clear_value_to_dx12(desc, resource_desc.Format)?;
 
-        let resource = unsafe {
-            let optimized_clear_value = optimized_clear_value.map(D3D12_CLEAR_VALUE::from);
-            let optimized_clear_value_ref = optimized_clear_value
-                .as_ref()
-                .map(|v| v as *const D3D12_CLEAR_VALUE);
-
-            let mut resource: Option<ID3D12Resource> = None;
-            self.device
-                .CreateCommittedResource3::<_, ID3D12Resource>(
-                    &heap_properties,
-                    Default::default(),
+        let (allocation, resource) = unsafe {
+            self.allocator
+                .CreateResource3::<ID3D12Resource>(
+                    &alloc_desc,
                     &resource_desc,
                     D3D12_BARRIER_LAYOUT_UNDEFINED,
-                    optimized_clear_value_ref,
-                    None,
-                    None, // TODO: We could use this maybe?
-                    &mut resource,
+                    optimized_clear_value.as_ref(),
+                    &[],
                 )
-                .map(|_| resource.unwrap())
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
@@ -705,7 +693,8 @@ impl IDevice for Device {
         let texture = AnyArc::new_cyclic(move |v| Texture {
             this: v.clone(),
             device: self.this.upgrade().unwrap(),
-            resource,
+            allocation: Some(ManuallyDrop::new(allocation)),
+            resource: ManuallyDrop::new(resource),
             desc,
             name,
             dxgi_format: resource_desc.Format,
@@ -1795,7 +1784,7 @@ impl Device {
             },
         };
         self.device
-            .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
+            .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
     }
 
     // ========================================================================================== //
@@ -1822,8 +1811,12 @@ impl Device {
                 },
             },
         };
-        self.device
-            .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
+        self.device.CreateUnorderedAccessView(
+            buffer.resource.deref(),
+            None,
+            Some(&view),
+            dst.into(),
+        );
     }
 
     // ========================================================================================== //
@@ -1853,7 +1846,7 @@ impl Device {
             },
         };
         self.device
-            .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
+            .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
     }
 
     // ========================================================================================== //
@@ -1882,8 +1875,12 @@ impl Device {
                 },
             },
         };
-        self.device
-            .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
+        self.device.CreateUnorderedAccessView(
+            buffer.resource.deref(),
+            None,
+            Some(&view),
+            dst.into(),
+        );
     }
 
     // ========================================================================================== //
@@ -1915,7 +1912,7 @@ impl Device {
             },
         };
         self.device
-            .CreateShaderResourceView(&buffer.resource, Some(&view), dst.into());
+            .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
     }
 
     // ========================================================================================== //
@@ -1946,8 +1943,12 @@ impl Device {
                 },
             },
         };
-        self.device
-            .CreateUnorderedAccessView(&buffer.resource, None, Some(&view), dst.into());
+        self.device.CreateUnorderedAccessView(
+            buffer.resource.deref(),
+            None,
+            Some(&view),
+            dst.into(),
+        );
     }
 
     // ========================================================================================== //

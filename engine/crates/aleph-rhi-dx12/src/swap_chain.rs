@@ -99,7 +99,8 @@ impl SwapChain {
             let texture = AnyArc::new_cyclic(move |v| Texture {
                 this: v.clone(),
                 device: self.device.clone(),
-                resource,
+                allocation: None,
+                resource: ManuallyDrop::new(resource),
                 desc,
                 name: None,
                 dxgi_format,

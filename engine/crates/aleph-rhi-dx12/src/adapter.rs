@@ -117,6 +117,16 @@ impl IAdapter for Adapter {
         let device = create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0)
             .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
+        let allocator = d3d12ma::Allocator::new(&d3d12ma::ALLOCATOR_DESC {
+            Flags: d3d12ma::ALLOCATOR_FLAGS::MSAA_TEXTURES_ALWAYS_COMMITTED
+                | d3d12ma::ALLOCATOR_FLAGS::DEFAULT_POOLS_NOT_ZEROED,
+            pDevice: Some(device.clone().into()),
+            PreferredBlockSize: 0,
+            pAllocationCallbacks: std::ptr::null(),
+            pAdapter: Some(adapter.clone().into()),
+        })
+        .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+
         let debug_queue = self.context.debug.is_some() && pix::is_library_available();
 
         fn create_queues(v: &mut Device, debug_queue: bool) {
@@ -168,6 +178,7 @@ impl IAdapter for Adapter {
                 descriptor_heap_info: DescriptorHeapInfo::new(&device),
                 descriptor_heaps,
                 device,
+                allocator,
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,

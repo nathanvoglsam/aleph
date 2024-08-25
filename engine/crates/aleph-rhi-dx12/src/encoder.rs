@@ -30,6 +30,7 @@
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::mem::transmute_copy;
+use std::ops::Deref;
 use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
@@ -526,9 +527,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
         for region in regions {
             self._list.CopyBufferRegion(
-                &dst.resource,
+                dst.resource.deref(),
                 region.dst_offset,
-                &src.resource,
+                src.resource.deref(),
                 region.src_offset,
                 region.size,
             );

@@ -29,7 +29,7 @@
 
 #![cfg(windows)]
 
-pub extern crate aleph_dx12_alloc as dx12_alloc;
+pub extern crate aleph_dx12_alloc as d3d12ma;
 pub extern crate aleph_pix as pix;
 pub extern crate aleph_windows as windows;
 

@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -41,7 +42,8 @@ use crate::device::Device;
 pub struct Buffer {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) resource: ID3D12Resource,
+    pub(crate) allocation: ManuallyDrop<d3d12ma::Allocation>,
+    pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) base_address: GPUDescriptorHandle,
     pub(crate) desc: BufferDesc<'static>,
     pub(crate) name: Option<String>,
@@ -52,6 +54,15 @@ declare_interfaces!(Buffer, [IBuffer]);
 impl IGetPlatformInterface for Buffer {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
         try_clone_value_into_slot(&self.resource, out, target)
+    }
+}
+
+impl Drop for Buffer {
+    fn drop(&mut self) {
+        unsafe {
+            ManuallyDrop::drop(&mut self.resource);
+            ManuallyDrop::drop(&mut self.allocation);
+        }
     }
 }
 

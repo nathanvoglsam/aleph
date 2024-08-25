@@ -29,6 +29,8 @@
 
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
+use std::ops::Deref;
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -49,7 +51,8 @@ use crate::internal::{
 pub struct Texture {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
-    pub(crate) resource: ID3D12Resource,
+    pub(crate) allocation: Option<ManuallyDrop<d3d12ma::Allocation>>,
+    pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
     pub(crate) dxgi_format: DXGI_FORMAT,
@@ -452,7 +455,7 @@ impl ITexture for Texture {
                 let desc = Self::make_uav_desc_for_view_desc(desc);
                 unsafe {
                     self.device.device.CreateUnorderedAccessView(
-                        &self.resource,
+                        self.resource.deref(),
                         None,
                         Some(&desc),
                         view.into(),
@@ -463,7 +466,7 @@ impl ITexture for Texture {
                 let desc = Self::make_srv_desc_for_view_desc(desc);
                 unsafe {
                     self.device.device.CreateShaderResourceView(
-                        &self.resource,
+                        self.resource.deref(),
                         Some(&desc),
                         view.into(),
                     );
@@ -495,7 +498,7 @@ impl ITexture for Texture {
             let t_desc = Self::make_rtv_desc_for_view_desc(desc);
             unsafe {
                 self.device.device.CreateRenderTargetView(
-                    &self.resource,
+                    self.resource.deref(),
                     Some(&t_desc),
                     view.into(),
                 );
@@ -525,7 +528,7 @@ impl ITexture for Texture {
             let t_desc = Self::make_dsv_desc_for_view_desc(desc);
             unsafe {
                 self.device.device.CreateDepthStencilView(
-                    &self.resource,
+                    self.resource.deref(),
                     Some(&t_desc),
                     view.into(),
                 );
@@ -574,6 +577,13 @@ impl Drop for Texture {
         for (_, dsv) in self.dsvs.get_mut().drain() {
             let dsv = unsafe { dsv.as_ref().handle };
             self.device.descriptor_heaps.cpu_dsv_heap().free(dsv);
+        }
+
+        unsafe {
+            ManuallyDrop::drop(&mut self.resource);
+            if let Some(v) = &mut self.allocation {
+                ManuallyDrop::drop(v)
+            }
         }
     }
 }
