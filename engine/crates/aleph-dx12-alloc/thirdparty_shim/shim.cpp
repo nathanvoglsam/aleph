@@ -69,11 +69,6 @@ LPCWSTR D3D12MA_Allocation_GetName(const D3D12MA::Allocation* self) {
     return self->GetName();
 }
 
-// Allocation::WasZeroInitialized
-BOOL D3D12MA_Allocation_WasZeroInitialized(const D3D12MA::Allocation* self) {
-    return self->WasZeroInitialized();
-}
-
 // =====================================================================================================================
 // POOL
 // =====================================================================================================================
@@ -155,6 +150,13 @@ BOOL D3D12MA_Allocator_IsCacheCoherentUMA(
     return self->IsCacheCoherentUMA();
 }
 
+// Allocator::IsGPUUploadHeapSupported
+BOOL D3D12MA_Allocator_IsGPUUploadHeapSupported(
+    const D3D12MA::Allocator* self
+) {
+    return self->IsGPUUploadHeapSupported();
+}
+
 // Allocator::GetMemoryCapacity
 UINT64 D3D12MA_Allocator_GetMemoryCapacity(
     const D3D12MA::Allocator* self,
@@ -209,6 +211,34 @@ HRESULT D3D12MA_Allocator_CreateResource2(
 }
 #endif // #ifdef __ID3D12Device8_INTERFACE_DEFINED__
 
+#ifdef __ID3D12Device10_INTERFACE_DEFINED__
+// Allocator::CreateResource3
+HRESULT D3D12MA_Allocator_CreateResource3(
+    D3D12MA::Allocator* self,
+    const D3D12MA::ALLOCATION_DESC* pAllocDesc,
+    const D3D12_RESOURCE_DESC1* pResourceDesc,
+    D3D12_BARRIER_LAYOUT InitialLayout,
+    const D3D12_CLEAR_VALUE* pOptimizedClearValue,
+    UINT32 NumCastableFormats,
+    DXGI_FORMAT* pCastableFormats,
+    D3D12MA::Allocation** ppAllocation,
+    REFIID riidResource,
+    void** ppvResource
+) {
+    return self->CreateResource3(
+        pAllocDesc,
+        pResourceDesc,
+        InitialLayout,
+        pOptimizedClearValue,
+        NumCastableFormats,
+        pCastableFormats,
+        ppAllocation,
+        riidResource,
+        ppvResource
+    );
+}
+#endif  // #ifdef __ID3D12Device10_INTERFACE_DEFINED__
+
 // Allocator::AllocateMemory
 HRESULT D3D12MA_Allocator_AllocateMemory(
     D3D12MA::Allocator* self,
@@ -240,6 +270,54 @@ HRESULT D3D12MA_Allocator_CreateAliasingResource(
         pResourceDesc,
         InitialResourceState,
         pOptimizedClearValue,
+        riidResource,
+        ppvResource
+    );
+}
+
+// Allocator::CreateAliasingResource1
+HRESULT D3D12MA_Allocator_CreateAliasingResource1(
+    D3D12MA::Allocator* self,
+    D3D12MA::Allocation* pAllocation,
+    UINT64 AllocationLocalOffset,
+    const D3D12_RESOURCE_DESC1* pResourceDesc,
+    D3D12_RESOURCE_STATES InitialResourceState,
+    const D3D12_CLEAR_VALUE* pOptimizedClearValue,
+    REFIID riidResource,
+    void** ppvResource
+) {
+    return self->CreateAliasingResource1(
+        pAllocation,
+        AllocationLocalOffset,
+        pResourceDesc,
+        InitialResourceState,
+        pOptimizedClearValue,
+        riidResource,
+        ppvResource
+    );
+}
+
+// Allocator::CreateAliasingResource2
+HRESULT D3D12MA_Allocator_CreateAliasingResource2(
+    D3D12MA::Allocator* self,
+    D3D12MA::Allocation* pAllocation,
+    UINT64 AllocationLocalOffset,
+    const D3D12_RESOURCE_DESC1* pResourceDesc,
+    D3D12_BARRIER_LAYOUT InitialLayout,
+    const D3D12_CLEAR_VALUE* pOptimizedClearValue,
+    UINT32 NumCastableFormats,
+    DXGI_FORMAT* pCastableFormats,
+    REFIID riidResource,
+    void** ppvResource
+) {
+    return self->CreateAliasingResource2(
+        pAllocation,
+        AllocationLocalOffset,
+        pResourceDesc,
+        InitialLayout,
+        pOptimizedClearValue,
+        NumCastableFormats,
+        pCastableFormats,
         riidResource,
         ppvResource
     );

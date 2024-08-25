@@ -40,11 +40,13 @@ use crate::raw::{
     D3D12MA_Allocation_GetOffset, D3D12MA_Allocation_GetPrivateData,
     D3D12MA_Allocation_GetResource, D3D12MA_Allocation_GetSize, D3D12MA_Allocation_Release,
     D3D12MA_Allocation_SetName, D3D12MA_Allocation_SetPrivateData, D3D12MA_Allocation_SetResource,
-    D3D12MA_Allocation_WasZeroInitialized,
 };
 
 #[repr(transparent)]
 pub struct Allocation(pub(crate) NonNull<c_void>);
+
+unsafe impl Send for Allocation {}
+unsafe impl Sync for Allocation {}
 
 impl Allocation {
     #[inline(always)]
@@ -100,11 +102,6 @@ impl Allocation {
     #[inline(always)]
     pub fn GetName(&self) -> *const u16 {
         unsafe { D3D12MA_Allocation_GetName(self.0.as_ptr()) }
-    }
-
-    #[inline(always)]
-    pub fn WasZeroInitialized(&self) -> bool {
-        unsafe { D3D12MA_Allocation_WasZeroInitialized(self.0.as_ptr()).as_bool() }
     }
 }
 

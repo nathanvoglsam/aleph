@@ -35,16 +35,19 @@ use std::sync::Arc;
 
 use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 use windows::Win32::Graphics::Dxgi::DXGI_MEMORY_SEGMENT_GROUP;
 
 use crate::raw::{
     D3D12MA_Allocator_AllocateMemory, D3D12MA_Allocator_BeginDefragmentation,
     D3D12MA_Allocator_CalculateStatistics, D3D12MA_Allocator_CreateAliasingResource,
+    D3D12MA_Allocator_CreateAliasingResource1, D3D12MA_Allocator_CreateAliasingResource2,
     D3D12MA_Allocator_CreateAllocator, D3D12MA_Allocator_CreatePool,
     D3D12MA_Allocator_CreateResource, D3D12MA_Allocator_CreateResource2,
-    D3D12MA_Allocator_GetBudget, D3D12MA_Allocator_GetD3D12Options,
-    D3D12MA_Allocator_GetMemoryCapacity, D3D12MA_Allocator_IsCacheCoherentUMA,
-    D3D12MA_Allocator_IsUMA, D3D12MA_Allocator_Release, D3D12MA_Allocator_SetCurrentFrameIndex,
+    D3D12MA_Allocator_CreateResource3, D3D12MA_Allocator_GetBudget,
+    D3D12MA_Allocator_GetD3D12Options, D3D12MA_Allocator_GetMemoryCapacity,
+    D3D12MA_Allocator_IsCacheCoherentUMA, D3D12MA_Allocator_IsUMA, D3D12MA_Allocator_Release,
+    D3D12MA_Allocator_SetCurrentFrameIndex,
 };
 use crate::{
     Allocation, Budget, Pool, TotalStatistics, ALLOCATION_DESC, ALLOCATOR_DESC, ALLOCATOR_FLAGS,
@@ -112,7 +115,7 @@ impl Allocator {
         }
     }
 
-    pub fn CreateResource<T: Interface>(
+    pub unsafe fn CreateResource<T: Interface>(
         &self,
         pAllocDesc: &ALLOCATION_DESC,
         pResourceDesc: &D3D12_RESOURCE_DESC,
@@ -146,59 +149,95 @@ impl Allocator {
         }
     }
 
-    pub fn CreateResource2<T: Interface>(
+    pub unsafe fn CreateResource2<T: Interface>(
         &self,
         pAllocDesc: &ALLOCATION_DESC,
         pResourceDesc: &D3D12_RESOURCE_DESC1,
         InitialResourceState: D3D12_RESOURCE_STATES,
         pOptimizedClearValue: Option<&D3D12_CLEAR_VALUE>,
     ) -> windows::core::Result<(Allocation, T)> {
-        unsafe {
-            let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
-                v as *const _
-            } else {
-                std::ptr::null()
-            };
+        let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
+            v as *const _
+        } else {
+            std::ptr::null()
+        };
 
-            let mut allocation = std::ptr::null_mut();
-            let mut resource = std::ptr::null_mut();
-            D3D12MA_Allocator_CreateResource2(
-                self.0 .0.as_ptr(),
-                pAllocDesc,
-                pResourceDesc,
-                InitialResourceState,
-                pOptimizedClearValue,
-                &mut allocation,
-                &<T as Interface>::IID,
-                &mut resource,
-            )
-            .map(|| {
-                assert!(!resource.is_null());
-                T::from_raw(resource)
-            })
-            .map(|v| (Allocation(NonNull::new(allocation).unwrap()), v))
-        }
+        let mut allocation = std::ptr::null_mut();
+        let mut resource = std::ptr::null_mut();
+        D3D12MA_Allocator_CreateResource2(
+            self.0 .0.as_ptr(),
+            pAllocDesc,
+            pResourceDesc,
+            InitialResourceState,
+            pOptimizedClearValue,
+            &mut allocation,
+            &<T as Interface>::IID,
+            &mut resource,
+        )
+        .map(|| {
+            assert!(!resource.is_null());
+            T::from_raw(resource)
+        })
+        .map(|v| (Allocation(NonNull::new(allocation).unwrap()), v))
     }
 
-    pub fn AllocateMemory(
+    pub unsafe fn CreateResource3<T: Interface>(
+        &self,
+        pAllocDesc: &ALLOCATION_DESC,
+        pResourceDesc: &D3D12_RESOURCE_DESC1,
+        InitialLayout: D3D12_BARRIER_LAYOUT,
+        pOptimizedClearValue: Option<&D3D12_CLEAR_VALUE>,
+        pCastableFormats: &[DXGI_FORMAT],
+    ) -> windows::core::Result<(Allocation, T)> {
+        let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
+            v as *const _
+        } else {
+            std::ptr::null()
+        };
+        let (NumCastableFormats, pCastableFormats) = if pCastableFormats.is_empty() {
+            (0, std::ptr::null())
+        } else {
+            (pCastableFormats.len() as u32, pCastableFormats.as_ptr())
+        };
+
+        let mut allocation = std::ptr::null_mut();
+        let mut resource = std::ptr::null_mut();
+        D3D12MA_Allocator_CreateResource3(
+            self.0 .0.as_ptr(),
+            pAllocDesc,
+            pResourceDesc,
+            InitialLayout,
+            pOptimizedClearValue,
+            NumCastableFormats,
+            pCastableFormats,
+            &mut allocation,
+            &<T as Interface>::IID,
+            &mut resource,
+        )
+        .map(|| {
+            assert!(!resource.is_null());
+            T::from_raw(resource)
+        })
+        .map(|v| (Allocation(NonNull::new(allocation).unwrap()), v))
+    }
+
+    pub unsafe fn AllocateMemory(
         &self,
         pAllocDesc: &ALLOCATION_DESC,
         pAllocInfo: &D3D12_RESOURCE_ALLOCATION_INFO,
     ) -> windows::core::Result<Allocation> {
-        unsafe {
-            let mut allocation = std::ptr::null_mut();
-            D3D12MA_Allocator_AllocateMemory(
-                self.0 .0.as_ptr(),
-                pAllocDesc,
-                pAllocInfo,
-                &mut allocation,
-            )
-            .ok()
-            .map(|_| Allocation(NonNull::new(allocation).unwrap()))
-        }
+        let mut allocation = std::ptr::null_mut();
+        D3D12MA_Allocator_AllocateMemory(
+            self.0 .0.as_ptr(),
+            pAllocDesc,
+            pAllocInfo,
+            &mut allocation,
+        )
+        .ok()
+        .map(|_| Allocation(NonNull::new(allocation).unwrap()))
     }
 
-    pub fn CreateAliasingResource<T: Interface>(
+    pub unsafe fn CreateAliasingResource<T: Interface>(
         &self,
         pAllocation: Allocation,
         AllocationLocalOffset: u64,
@@ -206,29 +245,97 @@ impl Allocator {
         InitialResourceState: D3D12_RESOURCE_STATES,
         pOptimizedClearValue: Option<&D3D12_CLEAR_VALUE>,
     ) -> windows::core::Result<T> {
-        unsafe {
-            let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
-                v as *const _
-            } else {
-                std::ptr::null()
-            };
+        let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
+            v as *const _
+        } else {
+            std::ptr::null()
+        };
 
-            let mut resource = std::ptr::null_mut();
-            D3D12MA_Allocator_CreateAliasingResource(
-                self.0 .0.as_ptr(),
-                pAllocation.0.as_ptr(),
-                AllocationLocalOffset,
-                pResourceDesc,
-                InitialResourceState,
-                pOptimizedClearValue,
-                &<T as Interface>::IID,
-                &mut resource,
-            )
-            .map(|| {
-                assert!(!resource.is_null());
-                T::from_raw(resource)
-            })
-        }
+        let mut resource = std::ptr::null_mut();
+        D3D12MA_Allocator_CreateAliasingResource(
+            self.0 .0.as_ptr(),
+            pAllocation.0.as_ptr(),
+            AllocationLocalOffset,
+            pResourceDesc,
+            InitialResourceState,
+            pOptimizedClearValue,
+            &<T as Interface>::IID,
+            &mut resource,
+        )
+        .map(|| {
+            assert!(!resource.is_null());
+            T::from_raw(resource)
+        })
+    }
+
+    pub unsafe fn CreateAliasingResource1<T: Interface>(
+        &self,
+        pAllocation: Allocation,
+        AllocationLocalOffset: u64,
+        pResourceDesc: &D3D12_RESOURCE_DESC1,
+        InitialResourceState: D3D12_RESOURCE_STATES,
+        pOptimizedClearValue: Option<&D3D12_CLEAR_VALUE>,
+    ) -> windows::core::Result<T> {
+        let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
+            v as *const _
+        } else {
+            std::ptr::null()
+        };
+
+        let mut resource = std::ptr::null_mut();
+        D3D12MA_Allocator_CreateAliasingResource1(
+            self.0 .0.as_ptr(),
+            pAllocation.0.as_ptr(),
+            AllocationLocalOffset,
+            pResourceDesc,
+            InitialResourceState,
+            pOptimizedClearValue,
+            &<T as Interface>::IID,
+            &mut resource,
+        )
+        .map(|| {
+            assert!(!resource.is_null());
+            T::from_raw(resource)
+        })
+    }
+
+    pub unsafe fn CreateAliasingResource2<T: Interface>(
+        &self,
+        pAllocation: Allocation,
+        AllocationLocalOffset: u64,
+        pResourceDesc: &D3D12_RESOURCE_DESC1,
+        InitialLayout: D3D12_BARRIER_LAYOUT,
+        pOptimizedClearValue: Option<&D3D12_CLEAR_VALUE>,
+        pCastableFormats: &[DXGI_FORMAT],
+    ) -> windows::core::Result<T> {
+        let pOptimizedClearValue = if let Some(v) = pOptimizedClearValue {
+            v as *const _
+        } else {
+            std::ptr::null()
+        };
+        let (NumCastableFormats, pCastableFormats) = if pCastableFormats.is_empty() {
+            (0, std::ptr::null())
+        } else {
+            (pCastableFormats.len() as u32, pCastableFormats.as_ptr())
+        };
+
+        let mut resource = std::ptr::null_mut();
+        D3D12MA_Allocator_CreateAliasingResource2(
+            self.0 .0.as_ptr(),
+            pAllocation.0.as_ptr(),
+            AllocationLocalOffset,
+            pResourceDesc,
+            InitialLayout,
+            pOptimizedClearValue,
+            NumCastableFormats,
+            pCastableFormats,
+            &<T as Interface>::IID,
+            &mut resource,
+        )
+        .map(|| {
+            assert!(!resource.is_null());
+            T::from_raw(resource)
+        })
     }
 
     pub fn CreatePool(&self, pPoolDesc: &POOL_DESC) -> windows::core::Result<Pool> {
@@ -267,7 +374,7 @@ impl Allocator {
     // );
     // pub fn D3D12MA_Allocator_FreeStatsString(&self, pStatsString: *mut u16);
 
-    pub fn D3D12MA_Allocator_BeginDefragmentation(
+    pub unsafe fn D3D12MA_Allocator_BeginDefragmentation(
         &mut self,
         pDesc: &DEFRAGMENTATION_DESC,
         ppContext: *mut *mut c_void,

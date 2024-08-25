@@ -38,6 +38,7 @@ use windows::core::{GUID, HRESULT};
 use windows::utils::WeakRef;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
 use windows::Win32::Graphics::Dxgi::IDXGIAdapter;
 
 use crate::Allocation;
@@ -201,6 +202,18 @@ bitflags! {
         /// to create its heaps on smaller alignment not suitable for MSAA textures.
         ///
         const MSAA_TEXTURES_ALWAYS_COMMITTED = 0x8;
+
+        /// Disable optimization that prefers creating small buffers as committed to avoid 64 KB
+        /// alignment.
+        ///
+        /// By default, the library prefers creating small buffers <= 32 KB as committed, because
+        /// drivers tend to pack them better, while placed buffers require 64 KB alignment. This,
+        /// however, may decrease performance, as creating committed resources involves allocation
+        /// of implicit heaps, which may take longer than creating placed resources in existing
+        /// heaps. Passing this flag will disable this committed preference globally for the
+        /// allocator. It can also be disabled for a single allocation by using
+        /// #ALLOCATION_FLAG_STRATEGY_MIN_TIME.
+        const ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED = 0x10;
     }
 }
 
@@ -347,6 +360,29 @@ pub struct POOL_DESC {
     ///
     /// If not null then all the heaps and committed resources will be created with this parameter.
     pub pProtectedSession: Option<ID3D12ProtectedResourceSession>,
+
+    /// Residency priority to be set for all allocations made in this pool. Optional.
+    ///
+    /// Set this parameter to one of the possible enum values e.g. `D3D12_RESIDENCY_PRIORITY_HIGH`
+    /// to apply specific residency priority to all allocations made in this pool:
+    /// `ID3D12Heap` memory blocks used to sub-allocate for placed resources, as well as
+    /// committed resources or heaps created when D3D12MA::ALLOCATION_FLAG_COMMITTED is used.
+    /// This can increase/decrease chance that the memory will be pushed out from VRAM
+    /// to system RAM when the system runs out of memory, which is invisible to the developer
+    /// using D3D12 API while it can degrade performance.
+    ///
+    /// Priority is set using function `ID3D12Device1::SetResidencyPriority`.
+    /// It is performed only when `ID3D12Device1` interface is defined and successfully obtained.
+    /// Otherwise, this parameter is ignored.
+    ///
+    /// This parameter is optional. If you set it to `D3D12_RESIDENCY_PRIORITY(0)`,
+    /// residency priority will not be set for allocations made in this pool.
+    ///
+    /// There is no equivalent parameter for allocations made in default pools.
+    /// If you want to set residency priority for such allocation, you need to do it manually:
+    /// allocate with D3D12MA::ALLOCATION_FLAG_COMMITTED and call
+    /// `ID3D12Device1::SetResidencyPriority`, passing `allocation->GetResource()`.
+    ResidencyPriority: D3D12_RESIDENCY_PRIORITY,
 }
 
 // ============================================================================================== //
@@ -589,7 +625,8 @@ pub struct TotalStatistics {
     /// - 1 = `D3D12_HEAP_TYPE_UPLOAD`
     /// - 2 = `D3D12_HEAP_TYPE_READBACK`
     /// - 3 = `D3D12_HEAP_TYPE_CUSTOM`
-    pub HeapType: [DetailedStatistics; 4],
+    /// - 4 = `D3D12_HEAP_TYPE_GPU_UPLOAD`
+    pub HeapType: [DetailedStatistics; 5],
 
     /// One element for each memory segment group located at the following indices:
     ///
@@ -788,7 +825,6 @@ extern "C" {
     pub fn D3D12MA_Allocation_GetPrivateData(this: ThisPtrConst) -> *mut c_void;
     pub fn D3D12MA_Allocation_SetName(this: ThisPtr, Name: *const u16);
     pub fn D3D12MA_Allocation_GetName(this: ThisPtrConst) -> *const u16;
-    pub fn D3D12MA_Allocation_WasZeroInitialized(this: ThisPtrConst) -> BOOL;
 
     //
     // POOL
@@ -818,6 +854,7 @@ extern "C" {
     ) -> *const D3D12_FEATURE_DATA_D3D12_OPTIONS;
     pub fn D3D12MA_Allocator_IsUMA(this: ThisPtrConst) -> BOOL;
     pub fn D3D12MA_Allocator_IsCacheCoherentUMA(this: ThisPtrConst) -> BOOL;
+    pub fn D3D12MA_Allocator_IsGPUUploadHeapSupported(this: ThisPtrConst) -> BOOL;
     pub fn D3D12MA_Allocator_GetMemoryCapacity(this: ThisPtrConst, memorySegmentGroup: u32) -> u64;
     pub fn D3D12MA_Allocator_CreateResource(
         this: ThisPtr,
@@ -839,6 +876,18 @@ extern "C" {
         riidResource: *const GUID,
         ppvResource: *mut *mut c_void,
     ) -> HRESULT;
+    pub fn D3D12MA_Allocator_CreateResource3(
+        this: ThisPtr,
+        pAllocDesc: *const ALLOCATION_DESC,
+        pResourceDesc: *const D3D12_RESOURCE_DESC1,
+        InitialLayout: D3D12_BARRIER_LAYOUT,
+        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        NumCastableFormats: u32,
+        pCastableFormats: *const DXGI_FORMAT,
+        ppAllocation: *mut *mut c_void,
+        riidResource: *const GUID,
+        ppvResource: *mut *mut c_void,
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_AllocateMemory(
         this: ThisPtr,
         pAllocDesc: *const ALLOCATION_DESC,
@@ -852,6 +901,28 @@ extern "C" {
         pResourceDesc: *const D3D12_RESOURCE_DESC,
         InitialResourceState: D3D12_RESOURCE_STATES,
         pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        riidResource: *const GUID,
+        ppvResource: *mut *mut c_void,
+    ) -> HRESULT;
+    pub fn D3D12MA_Allocator_CreateAliasingResource1(
+        this: ThisPtr,
+        pAllocation: *mut c_void,
+        AllocationLocalOffset: u64,
+        pResourceDesc: *const D3D12_RESOURCE_DESC1,
+        InitialResourceState: D3D12_RESOURCE_STATES,
+        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        riidResource: *const GUID,
+        ppvResource: *mut *mut c_void,
+    ) -> HRESULT;
+    pub fn D3D12MA_Allocator_CreateAliasingResource2(
+        this: ThisPtr,
+        pAllocation: *mut c_void,
+        AllocationLocalOffset: u64,
+        pResourceDesc: *const D3D12_RESOURCE_DESC1,
+        InitialLayout: D3D12_BARRIER_LAYOUT,
+        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        NumCastableFormats: u32,
+        pCastableFormats: *const DXGI_FORMAT,
         riidResource: *const GUID,
         ppvResource: *mut *mut c_void,
     ) -> HRESULT;

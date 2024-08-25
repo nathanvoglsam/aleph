@@ -32,6 +32,7 @@ fn main() {
     use aleph_target_build::build::target_platform;
 
     if target_platform().is_windows() && target_platform().is_gnu() {
+        println!("cargo::rustc-link-lib=uuid");
         cc::Build::new()
             .cpp(true)
             .link_lib_modifier("-bundle")
@@ -40,8 +41,8 @@ fn main() {
             .flag("-fpermissive")
             .flag("-w")
             .define("__REQUIRED_RPCNDR_H_VERSION__", "475")
+            .define("D3D12MA_USING_DIRECTX_HEADERS", None)
             .include("DirectX-Headers/include")
-            .include("DirectX-Headers/include/directx")
             .include("thirdparty/include")
             .include("thirdparty/src")
             .compile("d3d12ma");
@@ -51,8 +52,8 @@ fn main() {
             .link_lib_modifier("-bundle")
             .file("thirdparty/src/D3D12MemAlloc.cpp")
             .file("thirdparty_shim/shim.cpp")
+            .define("D3D12MA_USING_DIRECTX_HEADERS", None)
             .include("DirectX-Headers/include")
-            .include("DirectX-Headers/include/directx")
             .include("thirdparty/include")
             .include("thirdparty/src")
             .compile("d3d12ma");
