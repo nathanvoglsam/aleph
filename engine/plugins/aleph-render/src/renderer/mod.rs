@@ -43,6 +43,7 @@ pub(crate) use frame::PerFrameObjects;
 use interfaces::any::AnyArc;
 use wide::{f32x8, i32x8, CmpEq};
 
+use crate::render::ShaderDatabaseAccessor;
 use crate::render::{
     TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureStreamingRequest,
     TextureUploadSource,
@@ -50,7 +51,6 @@ use crate::render::{
 use crate::renderer::pass::backbuffer_import::BackBufferHandle;
 use crate::renderer::pass::egui_draw::EguiPassContext;
 use crate::renderer::pass::BackBufferInfo;
-use crate::render::ShaderDatabaseAccessor;
 
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,
@@ -100,9 +100,8 @@ impl EguiRenderer {
 
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
-        let frames = (0..2)
-            .map(|_| PerFrameObjects::new(device.deref()))
-            .collect();
+        let mut frames = Vec::new();
+        frames.resize_with(2, || PerFrameObjects::new(device.deref()));
 
         let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
         let texture_loader = TextureLoader::new();
@@ -139,9 +138,8 @@ impl EguiRenderer {
 
         let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
 
-        let frames: Vec<_> = (0..2)
-            .map(|_| PerFrameObjects::new(self.device.as_ref()))
-            .collect();
+        let mut frames = Vec::new();
+        frames.resize_with(2, || PerFrameObjects::new(self.device.deref()));
 
         self.frames = frames;
         self.frame_graph = frame_graph;
