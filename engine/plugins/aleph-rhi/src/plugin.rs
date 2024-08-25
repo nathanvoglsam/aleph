@@ -150,10 +150,10 @@ declare_interfaces!(PluginRHI, [IPlugin]);
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 enum Backend {
-    #[serde(rename = "d3d12")]
+    #[serde(alias = "d3d12")]
     D3D12,
 
-    #[serde(rename = "vulkan")]
+    #[serde(alias = "vulkan", alias = "VULKAN")]
     Vulkan,
 }
 
@@ -174,7 +174,7 @@ struct VulkanOptions {
 
 impl VulkanOptions {
     pub fn log(&self) {
-        log::info!("Config.vulkan.deny_sync_2 = {}", self.deny_sync_2);
+        log::info!("aleph-rhi.vulkan.deny_sync_2 = {}", self.deny_sync_2);
     }
 }
 
@@ -215,12 +215,12 @@ struct Config {
 
 impl Config {
     pub fn log(&self) {
-        log::info!("Config.api = {:?}", self.api);
+        log::info!("aleph-rhi.api = {:?}", self.api);
 
         self.vulkan.as_ref().inspect(|v| v.log());
         self.d3d12.as_ref().inspect(|v| v.log());
 
-        log::info!("Config.validation = {}", self.validation);
-        log::info!("Config.debug = {}", self.debug);
+        log::info!("aleph-rhi.validation = {}", self.validation);
+        log::info!("aleph-rhi.debug = {}", self.debug);
     }
 }
