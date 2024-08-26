@@ -163,7 +163,7 @@ impl EguiRenderer {
         // Safety: We _just_ created this graph. There's no way any transient allocations exist
         //         yet.
         unsafe {
-            frame_graph.allocate_transients(3);
+            frame_graph.allocate_transients(2);
         }
 
         frame_graph
