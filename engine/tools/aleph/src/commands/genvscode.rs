@@ -27,32 +27,37 @@
 // SOFTWARE.
 //
 
-use crate::commands::{Build, Bundle, GenProj, GenVsCode, SubcommandSet};
+use clap::{ArgMatches, Command};
 
-mod commands;
-mod crate_metadata;
-mod haxe;
-mod project;
-mod project_schema;
-mod shader_system;
-mod subproject;
-mod templates;
-mod utils;
-mod vscode_settings;
+use crate::commands::ISubcommand;
+use crate::project::AlephProject;
 
-// TODO: refactor the shader context stuff to use arenas and violently eject all the Cow crap from
-//       the whole thing because it's fucking awful. Should heavily simplify sharing the shader
-//       context around.
-//
-//       ideally we also end up with a framework for future project systems (haxe *cough*)
 
-fn main() -> anyhow::Result<()> {
-    let mut subcommands = SubcommandSet::new(env!("CARGO_PKG_NAME"));
-    subcommands.register_subcommand(GenProj {});
-    subcommands.register_subcommand(GenVsCode {});
-    subcommands.register_subcommand(Build {});
-    subcommands.register_subcommand(Bundle {});
-    subcommands.register_subcommand(commands::shaders::make());
-    subcommands.register_subcommand(commands::haxe::make());
-    subcommands.exec_as_root()
+use crate::vscode_settings::CodeWorkspace;
+
+pub struct GenVsCode {}
+
+impl ISubcommand for GenVsCode {
+    fn name(&self) -> &'static str {
+        "genvscode"
+    }
+
+    fn description(&mut self) -> Command {
+        Command::new(self.name())
+            .about("Generate vscode workspace for the project")
+            .long_about("Tool for generating a vscode workspace for the project. This includes pre-filled settings and other options set for autocomplete for various langauges.")
+    }
+
+    fn exec(&mut self, project: &AlephProject, mut _matches: ArgMatches) -> anyhow::Result<()> {
+        let file_path = project.vscode_workspace_file();
+        let file = CodeWorkspace::from_project(project)?;
+
+        log::info!("Generating workspace file");
+        let file_text = serde_json::to_string_pretty(&file)?;
+
+        log::info!("Writing workspace file '{}'", file_path.as_str());
+        std::fs::write(file_path, file_text)?;
+
+        Ok(())
+    }
 }

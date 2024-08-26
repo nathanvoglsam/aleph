@@ -36,5 +36,8 @@ shader_cache.bin
 /build_hl.hxml
 /build_js.hxml
 
+# Ignore Generated VSCode Workspaces
+/aleph.code-workspace
+
 # .aleph project dirs should be ignored
 .aleph

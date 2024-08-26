@@ -90,20 +90,24 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/sdks/ndk' folder for this project
     ndk_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/dxc' bin folder for this project
+    /// The path to the '.aleph/sdks/dxc/bin/{platform}/dxc' executable for this project
     dxc_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/slang' bin folder for this project
+    /// The path to the '.aleph/sdks/slang/bin/{platform}/release/slangc' executable for this
+    /// project
     slang_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/ninja' bin folder for this project
+    /// The path to the '.aleph/sdks/ninja/ninja' executable for this project
     ninja_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/sdks/haxe' bin folder for this project
+    /// The path to the '.aleph/sdks/haxe/haxe' executable for this project
     haxe_path: Utf8PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
     cargo_toml_file: Utf8PathBuf,
+
+    /// The path to the aleph.code-workspace file in the root of the workspace
+    vscode_workspace_file: Utf8PathBuf,
 
     /// The cargo target directory
     cargo_target_dir: Utf8PathBuf,
@@ -139,6 +143,7 @@ impl<'a> AlephProject<'a> {
         let project_root = project_file.parent().unwrap().to_path_buf();
         let dot_aleph_path = project_root.join(".aleph");
         let cargo_toml_file = project_root.join("Cargo.toml");
+        let vscode_workspace_file = project_root.join("aleph.code-workspace");
         let cargo_target_dir = project_root.join("target");
 
         let target = Target::new(Architecture::Unknown, BuildPlatform::Android);
@@ -215,6 +220,7 @@ impl<'a> AlephProject<'a> {
             ninja_path,
             haxe_path,
             cargo_toml_file,
+            vscode_workspace_file,
             cargo_target_dir,
             cargo_metadata: Default::default(),
             // crate_table: Default::default(),
@@ -312,6 +318,12 @@ impl<'a> AlephProject<'a> {
         &self.cargo_toml_file
     }
 
+    /// Returns the path to the code-workspace file that the project is using, adjacent to the
+    /// 'aleph-project.toml'
+    pub fn vscode_workspace_file(&self) -> &Utf8Path {
+        &self.vscode_workspace_file
+    }
+
     /// Returns the path to the cargo target directory root, which will be adjacent to the
     /// 'aleph-project.toml' and 'Cargo.toml'
     pub fn cargo_target_dir(&self) -> &Utf8Path {
@@ -324,26 +336,27 @@ impl<'a> AlephProject<'a> {
         &self.ndk_path
     }
 
-    /// Returns the path to the project's bundled dxc, in '.aleph/sdks/dxc'. This path may not exist
-    /// so check before using!
+    /// Returns the path to the project's bundled dxc, in '.aleph/sdks/dxc/bin/{platform}/dxc'. This
+    /// path may not exist so check before using!
     pub fn dxc_path(&self) -> &Utf8Path {
         &self.dxc_path
     }
 
-    /// Returns the path to the project's bundled dxc, in '.aleph/sdks/slang'. This path may not
-    /// exist so check before using!
+    /// Returns the path to the project's bundled dxc, in
+    /// '.aleph/sdks/slang/bin/{platform}/release/slang'. This path may not exist so check before
+    /// using!
     pub fn slang_path(&self) -> &Utf8Path {
         &self.slang_path
     }
 
-    /// Returns the path to the project's bundled ninja, in '.aleph/sdks/ninja'. This path may not
-    /// exist so check before using!
+    /// Returns the path to the project's bundled ninja, in '.aleph/sdks/ninja/ninja'. This path may
+    /// not exist so check before using!
     pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
     }
 
-    /// Returns the path to the project's bundled haxe, in '.aleph/sdks/ninja'. This path may not
-    /// exist so check before using!
+    /// Returns the path to the project's bundled haxe, in '.aleph/sdks/haxe/haxe'. This path may
+    /// not exist so check before using!
     pub fn haxe_path(&self) -> &Utf8Path {
         &self.haxe_path
     }

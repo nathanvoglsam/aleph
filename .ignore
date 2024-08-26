@@ -1,11 +1,11 @@
-lib/crates/aleph-vulkan-alloc/Vulkan-Headers/
-lib/crates/aleph-vulkan-alloc/VulkanMemoryAllocator/
-lib/crates/aleph-pix-raw/thirdparty
-lib/crates/aleph-dx12-alloc/thirdparty
-lib/crates/aleph-dx12-alloc/DirectX-Headers
-lib/crates/aleph-dx12-agility-sdk/thirdparty
+engine/crates/aleph-vulkan-alloc/Vulkan-Headers/
+engine/crates/aleph-vulkan-alloc/VulkanMemoryAllocator/
+engine/crates/aleph-pix-raw/thirdparty
+engine/crates/aleph-dx12-alloc/thirdparty
+engine/crates/aleph-dx12-alloc/DirectX-Headers
+engine/crates/aleph-dx12-agility-sdk/thirdparty
 
-lib/plugins/aleph-sdl2/thirdparty
+engine/plugins/aleph-sdl2/thirdparty
 
 submodules/D3D12MemoryAllocator/
 submodules/DirectX-Headers/

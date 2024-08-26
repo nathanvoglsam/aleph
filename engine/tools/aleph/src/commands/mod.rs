@@ -30,6 +30,7 @@
 mod build;
 mod bundle;
 mod genproj;
+mod genvscode;
 pub mod haxe;
 pub mod shaders;
 
@@ -37,6 +38,7 @@ pub use build::Build;
 pub use bundle::Bundle;
 use clap::{Arg, ArgMatches, Command};
 pub use genproj::GenProj;
+pub use genvscode::GenVsCode;
 
 use crate::project::AlephProject;
 
