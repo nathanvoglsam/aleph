@@ -98,7 +98,7 @@ fn pkg_location() -> PathBuf {
 ///
 /// They will be defined with the following values
 ///
-/// - `D3D12SDKVersion` = 711
+/// - `D3D12SDKVersion` = 614
 ///     - This is the version identifier of the SDK version bundled with this crate
 /// - `D3D12SDKPath` = ".\"
 ///     - This allows 'D3D12Core.dll' to be next to the app executable and is compatible with the
@@ -111,8 +111,8 @@ fn pkg_location() -> PathBuf {
 /// #[used]
 /// #[no_mangle]
 /// #[allow(non_upper_case_globals)]
-/// /// Replace 706 with your minimum required SDK version
-/// pub static D3D12SDKVersion: u32 = 711;
+/// /// Replace 614 with your minimum required SDK version
+/// pub static D3D12SDKVersion: u32 = 614;
 ///
 /// #[used]
 /// #[no_mangle]
@@ -130,7 +130,7 @@ macro_rules! export_standard_agility_sdk_symbols {
         #[used]
         #[no_mangle]
         #[allow(non_upper_case_globals)]
-        pub static D3D12SDKVersion: u32 = 711;
+        pub static D3D12SDKVersion: u32 = 614;
 
         #[used]
         #[no_mangle]
