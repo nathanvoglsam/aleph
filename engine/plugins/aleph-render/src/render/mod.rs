@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
+mod buffer_pool;
 mod buffer_upload_desc;
 mod handle;
 mod handle_pool;
+mod loader_deletion_pool;
 mod object_pool;
 mod shader_db_accessor;
 mod streaming_request;
@@ -37,16 +39,18 @@ mod texture_loader;
 mod texture_pool;
 mod texture_upload_desc;
 
+pub use buffer_pool::{BufferObject, BufferPool};
 pub use buffer_upload_desc::BufferUploadSource;
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
+pub use loader_deletion_pool::LoaderDeletionPool;
 pub use object_pool::ObjectPool;
 pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use streaming_request::{
     BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestState,
     StreamingRequest, TextureStreamingRequest,
 };
-pub use texture_loader::{TextureLoader, TextureLoaderDeletionPool};
+pub use texture_loader::TextureLoader;
 pub use texture_pool::{TextureObject, TexturePool};
 pub use texture_upload_desc::{TextureMipUploadDesc, TextureUploadSource};
 

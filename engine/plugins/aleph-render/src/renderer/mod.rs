@@ -177,7 +177,7 @@ impl EguiRenderer {
     ) -> Box<dyn ICommandList> {
         // Recording frame 'index' means 'index' must have completed on the GPU time so this should
         // be safe
-        self.frames[index].texture_deletion_pool.purge();
+        self.frames[index].deletion_pool.purge();
 
         // Begin recording commands into the command list
         let mut list = self
@@ -193,7 +193,7 @@ impl EguiRenderer {
 
             self.texture_loader.upload_requests(
                 &mut self.texture_pool,
-                &mut self.frames[index].texture_deletion_pool,
+                &mut self.frames[index].deletion_pool,
                 self.device.as_ref(),
                 encoder.as_mut(),
                 usize::MAX,

@@ -28,14 +28,15 @@
 //
 
 use std::fmt::Formatter;
-use std::mem::ManuallyDrop;
 
 use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 use interfaces::any::AnyArc;
 use thiserror::Error;
 
-use crate::render::{TextureHandle, TexturePool, TextureStreamingRequest, TextureUploadSource};
+use crate::render::{
+    LoaderDeletionPool, TextureHandle, TexturePool, TextureStreamingRequest, TextureUploadSource,
+};
 
 pub struct TextureLoader {
     load_queue: ArrayQueue<LoadRequest>,
@@ -155,7 +156,7 @@ impl TextureLoader {
     pub(crate) unsafe fn upload_requests(
         &self,
         pool: &mut TexturePool,
-        deletion_pool: &mut TextureLoaderDeletionPool,
+        deletion_pool: &mut LoaderDeletionPool,
         device: &dyn IDevice,
         encoder: &mut dyn IGeneralEncoder,
         count: usize,
@@ -229,7 +230,7 @@ impl TextureLoader {
 
     unsafe fn process_request(
         pool: &mut TexturePool,
-        deletion_pool: &mut TextureLoaderDeletionPool,
+        deletion_pool: &mut LoaderDeletionPool,
         device: &dyn IDevice,
         discard_barriers: &mut Vec<TextureBarrier>,
         textures: &mut Vec<Upload>,
@@ -296,7 +297,7 @@ impl TextureLoader {
 
     fn create_texture<'a>(
         pool: &'a mut TexturePool,
-        deletion_pool: &mut TextureLoaderDeletionPool,
+        deletion_pool: &mut LoaderDeletionPool,
         device: &dyn IDevice,
         load: &LoadRequest,
     ) -> Result<(TextureHandle, AnyArc<dyn ITexture>), TextureCreateError> {
@@ -328,105 +329,6 @@ impl TextureLoader {
                     .unwrap_or_else(|| pool.create_texture(texture.clone()));
                 Ok((handle, texture))
             }
-        }
-    }
-}
-
-/// Deletion pool that will hold texture and upload data handles that must have their lifetime
-/// extended to meet GPU timeline requirements.
-///
-/// # Leaking
-///
-/// If an instance of [`TextureLoaderDeletionPool`] is dropped while still containing items
-/// inside any of its internal pools, those pools will be
-#[derive(Default)]
-pub struct TextureLoaderDeletionPool {
-    textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
-    uploads: Vec<ManuallyDrop<TextureUploadSource>>,
-}
-
-impl TextureLoaderDeletionPool {
-    pub const fn new() -> Self {
-        Self {
-            textures: Vec::new(),
-            uploads: Vec::new(),
-        }
-    }
-
-    #[inline]
-    pub fn push_texture(&mut self, texture: AnyArc<dyn ITexture>) {
-        self.textures.push(ManuallyDrop::new(texture))
-    }
-
-    #[inline]
-    pub fn push_upload(&mut self, upload: TextureUploadSource) {
-        self.uploads.push(ManuallyDrop::new(upload))
-    }
-
-    /// This function will purge the internal pools and _will_ drop the resources being held inside.
-    ///
-    /// # Safety
-    ///
-    /// This is unsafe as the entire purpose of this tool is to extend the lifetime of resources
-    /// to satisfy the GPU timeline. It is not possible to do this safely in the general case. This
-    /// function forms part of the safe abstraction you use to allow someone _else_ to do this
-    /// safely at a higher level.
-    ///
-    /// To that end. This is unsafe as we have no way of guaranteeing that it is truly safe to drop
-    /// any of the resources in this pool without system level coordination that Rust can't prove
-    /// is happening.
-    ///
-    /// It is the caller's responsibility to ensure that all resources in this pool are no longer
-    /// being used on the GPU timeline.
-    #[inline]
-    pub unsafe fn purge(&mut self) {
-        // Drain the pools and explicitly drop the contained elements.
-        self.textures
-            .drain(..)
-            .for_each(|mut v| ManuallyDrop::drop(&mut v));
-        self.uploads
-            .drain(..)
-            .for_each(|mut v| ManuallyDrop::drop(&mut v));
-    }
-
-    /// Alternate version of [`TextureLoaderDeletionPool::purge`] that only purges the
-    /// texture objects.
-    ///
-    /// # Safety
-    ///
-    /// See `purge` for more info, the constraints are the same.
-    #[inline]
-    pub unsafe fn purge_textures(&mut self) {
-        // Drain the pools and explicitly drop the contained elements.
-        self.textures
-            .drain(..)
-            .for_each(|mut v| ManuallyDrop::drop(&mut v));
-    }
-
-    /// Alternate version of [`TextureLoaderDeletionPool::purge`] that only purges the
-    /// upload data objects.
-    ///
-    /// # Safety
-    ///
-    /// See `purge` for more info, the constraints are the same.
-    #[inline]
-    pub unsafe fn purge_uploads(&mut self) {
-        // Drain the pools and explicitly drop the contained elements.
-        self.uploads
-            .drain(..)
-            .for_each(|mut v| ManuallyDrop::drop(&mut v));
-    }
-}
-
-impl Drop for TextureLoaderDeletionPool {
-    fn drop(&mut self) {
-        if !self.textures.is_empty() {
-            let len = self.textures.len();
-            log::warn!("Deletion Pool dropped with {len} textures! This is leaking memory!");
-        }
-        if !self.uploads.is_empty() {
-            let len = self.uploads.len();
-            log::warn!("Deletion Pool dropped with {len} upload sources! This is leaking memory!");
         }
     }
 }

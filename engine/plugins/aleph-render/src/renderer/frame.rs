@@ -30,13 +30,13 @@
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
-use crate::render::TextureLoaderDeletionPool;
+use crate::render::LoaderDeletionPool;
 
 pub struct PerFrameObjects {
     pub acquire_semaphore: AnyArc<dyn ISemaphore>,
     pub present_semaphore: AnyArc<dyn ISemaphore>,
 
-    pub texture_deletion_pool: TextureLoaderDeletionPool,
+    pub deletion_pool: LoaderDeletionPool,
 
     pub uniform_buffer: AnyArc<dyn IBuffer>,
 
@@ -57,7 +57,7 @@ impl PerFrameObjects {
         Self {
             acquire_semaphore: device.create_semaphore().unwrap(),
             present_semaphore: device.create_semaphore().unwrap(),
-            texture_deletion_pool: Default::default(),
+            deletion_pool: Default::default(),
             uniform_buffer,
             done_fence: device.create_fence(true).unwrap(),
         }

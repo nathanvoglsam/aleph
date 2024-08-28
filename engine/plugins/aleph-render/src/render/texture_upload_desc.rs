@@ -212,6 +212,17 @@ impl TextureUploadSource {
         Ok(out)
     }
 
+    /// Discard any texture specific info and decay this [`TextureUploadSource`] into the underlying
+    /// [`BufferUploadSource`].
+    ///
+    /// Useful for unifying the types for deferred deletion when all you care about is the rhi
+    /// buffer handle.
+    #[inline]
+    pub fn into_buffer_source(self) -> BufferUploadSource {
+        let TextureUploadSource { source, .. } = self;
+        source
+    }
+
     /// Calls [`IBuffer::unmap`] the internal buffer.
     ///
     /// # Safety
@@ -307,5 +318,11 @@ impl TextureUploadSource {
         // Safety: It is guaranteed by the implementation that this should be uniquely owned by the
         //         request and valid for access as long as the upload request object is available.
         unsafe { self.source.data.as_mut() }
+    }
+}
+
+impl Into<BufferUploadSource> for TextureUploadSource {
+    fn into(self) -> BufferUploadSource {
+        self.into_buffer_source()
     }
 }
