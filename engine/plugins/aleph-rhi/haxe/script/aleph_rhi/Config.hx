@@ -33,11 +33,8 @@ package aleph_rhi;
  * All the supported RHI backends.
  */
 enum abstract RhiBackend(String) {
-    /** Direct3D 12 **/
     var D3D12 = "d3d12";
-
-    /** Vulkan **/
-    var Vulkan = "vulkan";
+    var VULKAN = "vulkan";
 }
 
 /**

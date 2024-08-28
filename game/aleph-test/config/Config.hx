@@ -36,6 +36,6 @@ class ConfigOverrides {
         var rhi = aleph_rhi.Config.fetch(config);
 
         // Force vulkan
-        rhi.api = Vulkan;
+        rhi.api = VULKAN;
     }
 }

@@ -46,7 +46,7 @@ class Config {
         var api = if (env.platform.isWindows()) {
             RhiBackend.D3D12;
         } else {
-            RhiBackend.Vulkan;
+            RhiBackend.VULKAN;
         };
 
         return {
