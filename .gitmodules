@@ -6,7 +6,7 @@
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "submodules/WinPixEventRuntime"]
 	path = submodules/WinPixEventRuntime
-	url = https://gitea.hmmr-cloud.com.au:5669/MindSpunk/WinPixEventRuntime.git
+	url = https://gitlab.com/MindSpunk/WinPixEventRuntime.git
 [submodule "submodules/DirectX12AgilitySDK"]
 	path = submodules/DirectX12AgilitySDK
 	url = https://gitea.hmmr-cloud.com.au:5669/MindSpunk/DirectX12AgilitySDK.git
