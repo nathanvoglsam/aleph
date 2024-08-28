@@ -240,7 +240,7 @@ impl EguiRenderer {
                 let desc =
                     TextureMipUploadDesc::new(dimensions.0, dimensions.1, 1, Format::R8Unorm);
                 let staging_buffer =
-                    TextureUploadSource::new_owned(self.device.as_ref(), desc).unwrap();
+                    TextureUploadSource::new_owned(self.device.as_ref(), desc.clone()).unwrap();
 
                 assert_eq!(
                     staging_buffer.desc.aligned_width(),
@@ -248,14 +248,11 @@ impl EguiRenderer {
                     "Currently we don't handle row pitch here"
                 );
 
-                staging_buffer
-                    .data
-                    .cast::<u8>()
-                    .as_ptr()
-                    .copy_from_nonoverlapping(
-                        self.font_texture.bytes.as_ptr(),
-                        staging_buffer.data.len(),
-                    );
+                let data = staging_buffer.data_ptr().cast::<u8>();
+                data.as_ptr().copy_from_nonoverlapping(
+                    self.font_texture.bytes.as_ptr(),
+                    desc.size_requirement(),
+                );
 
                 staging_buffer.unmap();
 

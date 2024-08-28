@@ -32,6 +32,8 @@ use std::ptr::NonNull;
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
+use crate::render::BufferUploadSource;
+
 /// This describes the size and format of a texture upload payload.
 ///
 /// # Important
@@ -68,7 +70,7 @@ impl TextureMipUploadDesc {
     /// Computes the number of bytes needed to store the texture slice described by this
     /// [TextureMipUploadDesc] in a format compatible with being uploaded using a buffer to texture
     /// copy.
-    pub const fn size_requirement(&self) -> u32 {
+    pub const fn size_requirement(&self) -> usize {
         debug_assert!(self.width > 0);
         debug_assert!(self.height > 0);
         debug_assert!(self.depth > 0);
@@ -80,7 +82,7 @@ impl TextureMipUploadDesc {
         let texel_count = aligned_width * self.height * self.depth;
         let bytes = self.format.bytes_per_element() * texel_count;
 
-        bytes
+        bytes as usize
     }
 
     /// Returns the width of the texture expanded to the width required to satisfy row pitch
@@ -115,33 +117,12 @@ impl TextureMipUploadDesc {
 ///
 /// It is highly recommended to only write to this memory once, sequentially.
 pub struct TextureUploadSource {
-    /// A tracking handle for the buffer that the upload data is going to be stored in. This may be
-    /// an owned buffer (the request is the only holder of the refcount) or a shared buffer where
-    /// the data is a suballocated region from this buffer.
-    ///
-    /// Importantly the underlying mapped buffer memory will never be accessed through this
-    /// reference. This is simply stored to keep the buffer alive.
-    pub(crate) buffer: AnyArc<dyn IBuffer>,
+    /// The inner [`BufferUploadSource`] that we abstract over to create a [`TextureUploadSource`].
+    pub(crate) source: BufferUploadSource,
 
     /// A description of the texture data we will store in this upload memory block. The size of the
     /// staging memory block will have been derived from this description.
     pub(crate) desc: TextureMipUploadDesc,
-
-    /// An offset in bytes from the start of the buffer for where the upload data starts. This
-    /// is needed as the upload commands use an offset+len and not a raw ptr+len pair.
-    pub(crate) offset: u64,
-
-    /// A pointer to a slice of memory for where the upload data should be written into for the
-    /// specific image mip that is being uploaded by this request. This will be appropriately sized
-    /// and aligned for the texture's upload parameters.
-    ///
-    /// This memory is considered owned by this [TextureUploadSource] object but must be stored as
-    /// a pointer as a reference would be self-referential. It is up to the upload system to ensure
-    /// that we never hand out the same region to multiple upload requests.
-    ///
-    /// This slice will be mapped in an upload heap which is likely to be write-combined or uncached
-    /// memory. Reads to this region may be very expensive, and random writes may also be slow.
-    pub(crate) data: NonNull<[u8]>,
 }
 
 // TODO: Block Formats like DXT/BCn
@@ -174,18 +155,18 @@ impl TextureUploadSource {
         offset: u64,
         data: NonNull<[u8]>,
     ) -> Self {
+        let required_size = desc.size_requirement() as usize;
+
         #[cfg(debug_assertions)]
         {
             debug_assert!(desc.width > 0, "Width must be > 0");
             debug_assert!(desc.height > 0, "Height must be > 0");
             debug_assert!(desc.depth > 0, "Depth must be > 0");
 
-            let required_size = desc.size_requirement() as usize;
-            let actual_size = data.len();
             debug_assert!(
-                required_size >= actual_size,
+                data.len() >= required_size,
                 "data.len() is {} but must be >= {}",
-                actual_size,
+                data.len(),
                 required_size
             );
 
@@ -194,36 +175,10 @@ impl TextureUploadSource {
                 0,
                 "Offset must be aligned to 512 bytes within the buffer"
             );
-
-            let buffer_desc = buffer.desc_ref();
-            debug_assert!(
-                buffer_desc.cpu_access == CpuAccessMode::Write,
-                "'data' must be from an upload heap"
-            );
-
-            debug_assert!(
-                buffer_desc.size >= offset,
-                "'offset' ({}) is outside of the buffer (size {})",
-                offset,
-                buffer_desc.size
-            );
-
-            let bytes_after_offset = buffer_desc.size - offset;
-            debug_assert!(
-                bytes_after_offset >= required_size as u64,
-                "'buffer' is to small. [{}+{}] overruns the upload buffer (size {})",
-                offset,
-                data.len(),
-                buffer_desc.size
-            );
         }
 
-        Self {
-            buffer,
-            desc,
-            offset,
-            data,
-        }
+        let source = BufferUploadSource::new(buffer, offset, data);
+        Self { source, desc }
     }
 
     /// Constructs a new owned [TextureUploadSource] for the given texture upload description.
@@ -251,13 +206,9 @@ impl TextureUploadSource {
         })?;
 
         let ptr = buffer.map().unwrap();
+        let data = NonNull::slice_from_raw_parts(ptr, size_requirement as usize);
+        let out = Self::new(buffer, desc, 0, data);
 
-        let out = Self::new(
-            buffer,
-            desc,
-            0,
-            NonNull::slice_from_raw_parts(ptr, size_requirement as usize),
-        );
         Ok(out)
     }
 
@@ -265,15 +216,20 @@ impl TextureUploadSource {
     ///
     /// # Safety
     ///
-    /// It is the caller's responsibility to ensure this even makes sense to call.
-    /// A [`TextureUploadSource`] is not guaranteed to be the 'owner' of the buffer. The internal
-    /// buffer could be shared between multiple upload source instances as a staging sub-allocation
-    /// scheme and so unmapping this buffer could unmap the address range underneath other callers.
-    ///
-    /// In general it's only correct to call this on [`TextureUploadSource`] instances that were
-    /// constructed via the [`TextureUploadSource::new_owned`] function.
+    /// See [`BufferUploadSource::unmap`] for more info.
+    #[inline(always)]
     pub unsafe fn unmap(&self) {
-        self.buffer.unmap();
+        self.source.unmap();
+    }
+
+    /// Returns a handle to the [`IBuffer`] object that backs our staging buffer.
+    ///
+    /// # Warning
+    ///
+    /// See [`BufferUploadSource::buffer`] for more info.
+    #[inline(always)]
+    pub fn buffer(&self) -> &dyn IBuffer {
+        self.source.buffer()
     }
 
     /// Constructs a [BufferToTextureCopyRegion] that encodes a valid copy command to copy from the
@@ -282,8 +238,6 @@ impl TextureUploadSource {
     /// # Info
     ///
     /// We make some assumptions.
-    /// - We only allow uploading color images so the image aspect is always
-    ///   [TextureCopyAspect::Color].
     /// - We only allow uploading entire mip levels and/or array layers so the origin is always
     ///   `(0, 0)` and the extent is assumed to cover the entire subresource.
     pub const fn get_copy_region(
@@ -294,7 +248,7 @@ impl TextureUploadSource {
     ) -> BufferToTextureCopyRegion {
         BufferToTextureCopyRegion {
             src: ImageDataLayout {
-                offset: self.offset,
+                offset: self.source.offset,
                 row_pitch: self.desc.aligned_width(),
                 extent: self.desc.extent(),
             },
@@ -332,7 +286,7 @@ impl TextureUploadSource {
         }
 
         // Make our sub-slice with the new offset+len pair.
-        let base_ptr = self.data.cast::<u8>().as_ptr();
+        let base_ptr = self.source.data.cast::<u8>().as_ptr();
         let ptr = base_ptr.add(row_offset);
         let ptr = NonNull::new(ptr as _).unwrap_unchecked();
         NonNull::slice_from_raw_parts(ptr, aligned_width)
@@ -340,32 +294,18 @@ impl TextureUploadSource {
 
     /// Get the upload block as a raw pointer.
     ///
-    /// # Performance Warning
-    ///
-    /// The upload memory may be write-combined or uncached memory as it will be mapped for upload
-    /// to the GPU. Reads should be treated as *very* expensive for these mapped regions.
-    ///
-    /// It is recommended to use write-only accessors to prevent accidental reads. It is also
-    /// heavily recommended to only perform sequential writes to these regions.
-    pub fn data_ptr(&self) -> NonNull<[u8]> {
-        self.data
+    /// See [`BufferUploadSource::data_ptr`] for more info.
+    pub const fn data_ptr(&self) -> NonNull<[u8]> {
+        self.source.data
     }
 
     /// Get the upload block as a slice.
     ///
-    /// # Performance Warning
-    ///
-    /// The upload memory may be write-combined or uncached memory as it will be mapped for upload
-    /// to the GPU. Reads should be treated as *very* expensive for these mapped regions.
-    ///
-    /// It is recommended to use write-only accessors to prevent accidental reads. It is also
-    /// heavily recommended to only perform sequential writes to these regions.
-    ///
-    /// This is provided as it is technically valid usage but should be handled with care. Avoid
-    /// reading from this slice.
+    /// See [`BufferUploadSource::data_mut`] for more info.
+    #[inline(always)]
     pub fn data_mut(&mut self) -> &mut [u8] {
         // Safety: It is guaranteed by the implementation that this should be uniquely owned by the
         //         request and valid for access as long as the upload request object is available.
-        unsafe { self.data.as_mut() }
+        unsafe { self.source.data.as_mut() }
     }
 }

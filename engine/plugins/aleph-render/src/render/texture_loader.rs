@@ -213,11 +213,7 @@ impl TextureLoader {
                 .load
                 .data
                 .get_copy_region(0, 0, TextureCopyAspect::Color);
-            encoder.copy_buffer_to_texture(
-                upload.load.data.buffer.as_ref(),
-                texture.as_ref(),
-                &[region],
-            );
+            encoder.copy_buffer_to_texture(upload.load.data.buffer(), texture.as_ref(), &[region]);
 
             upload
                 .load

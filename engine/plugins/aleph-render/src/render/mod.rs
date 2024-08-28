@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+mod buffer_upload_desc;
 mod handle;
 mod handle_pool;
 mod object_pool;
@@ -36,6 +37,7 @@ mod texture_loader;
 mod texture_pool;
 mod texture_upload_desc;
 
+pub use buffer_upload_desc::BufferUploadSource;
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
 pub use object_pool::ObjectPool;
