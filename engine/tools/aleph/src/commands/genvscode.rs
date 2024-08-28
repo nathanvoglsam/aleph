@@ -31,8 +31,6 @@ use clap::{ArgMatches, Command};
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
-
-
 use crate::vscode_settings::CodeWorkspace;
 
 pub struct GenVsCode {}
