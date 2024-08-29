@@ -32,6 +32,7 @@ mod buffer_upload_desc;
 mod handle;
 mod handle_pool;
 mod loader_deletion_pool;
+mod mesh_layout;
 mod object_pool;
 mod shader_db_accessor;
 mod streaming_request;
@@ -44,6 +45,9 @@ pub use buffer_upload_desc::BufferUploadSource;
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
 pub use loader_deletion_pool::LoaderDeletionPool;
+pub use mesh_layout::{
+    MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
+};
 pub use object_pool::ObjectPool;
 pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use streaming_request::{

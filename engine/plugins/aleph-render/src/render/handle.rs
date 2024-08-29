@@ -140,25 +140,6 @@ pub struct HandleFields {
     pub slot_index: u32,
 }
 
-/// This trait is implemented by some object that can take a typed resource handle and de-virtualize
-/// it into the underlying RHI resource object.
-///
-/// # Info
-///
-/// This trait is intended to be implemented by objects that represent an accessor into a resource
-/// pool. The renderer may use this to take resource handles in a scene description and fetch the
-/// concrete GPU resources in order to encode GPU commands to render the scene.
-///
-/// `HandleType` is expected to be some newtype wrapper of [Handle] but could be something else.
-/// `ResultType` can be anything. An `Arc<ITexture>`, or a composite payload, or something else.
-pub trait HandleDevirtualizer {
-    type HandleType: Copy;
-    type ResultType;
-
-    /// Takes the given handle 'h' and maps that to the resulting value.
-    fn fetch_for_handle(&self, h: Self::HandleType) -> Option<Self::ResultType>;
-}
-
 /// Trait implemented by anything that is trivially convertible into a handle. Intended to be used
 /// by handle newtype wrappers to generically unwrap to the inner handle type.
 pub trait IntoHandle {
