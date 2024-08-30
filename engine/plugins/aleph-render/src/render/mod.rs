@@ -29,6 +29,7 @@
 
 mod buffer_pool;
 mod buffer_upload_desc;
+mod enqueue_error;
 mod handle;
 mod handle_pool;
 mod loader_deletion_pool;
@@ -42,6 +43,7 @@ mod texture_upload_desc;
 
 pub use buffer_pool::{BufferObject, BufferPool};
 pub use buffer_upload_desc::BufferUploadSource;
+pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
 pub use loader_deletion_pool::LoaderDeletionPool;

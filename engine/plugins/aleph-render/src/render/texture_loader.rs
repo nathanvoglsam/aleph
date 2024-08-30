@@ -27,15 +27,13 @@
 // SOFTWARE.
 //
 
-use std::fmt::Formatter;
-
 use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 use interfaces::any::AnyArc;
-use thiserror::Error;
 
 use crate::render::{
-    LoaderDeletionPool, TextureHandle, TexturePool, TextureStreamingRequest, TextureUploadSource,
+    EnqueueError, EnqueueErrorKind, LoaderDeletionPool, TextureHandle, TexturePool,
+    TextureStreamingRequest, TextureUploadSource,
 };
 
 pub struct TextureLoader {
@@ -330,68 +328,6 @@ impl TextureLoader {
                 Ok((handle, texture))
             }
         }
-    }
-}
-
-pub struct EnqueueError<T> {
-    /// A slot for returning owned data that was passed into an enqueue function that should not
-    /// be dropped inside the enqueue function. This is used to return ownership back to the caller
-    /// in the event of the owner.
-    ///
-    /// If you don't care just grab the 'err' field and the caller will drop 'data' itself.
-    pub data: T,
-
-    /// The actual error this struct encapsulates
-    pub err: EnqueueErrorKind,
-}
-
-impl<T> EnqueueError<T> {
-    pub const fn new(err: EnqueueErrorKind, data: T) -> Self {
-        Self { data, err }
-    }
-}
-
-impl<T> std::error::Error for EnqueueError<T> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.err.source()
-    }
-
-    fn description(&self) -> &str {
-        #[allow(deprecated)]
-        self.err.description()
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        #[allow(deprecated)]
-        self.err.cause()
-    }
-}
-
-impl<T> std::fmt::Debug for EnqueueError<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(&self.err, f)
-    }
-}
-
-impl<T> std::fmt::Display for EnqueueError<T> {
-    #[inline]
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        std::fmt::Display::fmt(&self.err, f)
-    }
-}
-
-#[derive(Error, Debug)]
-pub enum EnqueueErrorKind {
-    #[error("The queue is full and the request could not be placed into the queue.")]
-    QueueFull,
-
-    #[error("The request object is already enqueued.")]
-    RequestAlreadyQueued,
-}
-
-impl EnqueueErrorKind {
-    pub const fn with_data<T>(self, data: T) -> EnqueueError<T> {
-        EnqueueError::new(self, data)
     }
 }
 
