@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+mod buffer_loader;
 mod buffer_pool;
 mod buffer_upload_desc;
 mod enqueue_error;
@@ -41,6 +42,7 @@ mod texture_loader;
 mod texture_pool;
 mod texture_upload_desc;
 
+pub use buffer_loader::BufferLoader;
 pub use buffer_pool::{BufferObject, BufferPool};
 pub use buffer_upload_desc::BufferUploadSource;
 pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
