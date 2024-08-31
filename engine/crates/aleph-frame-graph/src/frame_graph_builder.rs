@@ -58,7 +58,6 @@ use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
 use thiserror::Error;
 
-use crate::access::ResourceUsageFlagsExt;
 use crate::internal::*;
 use crate::render_pass::CallbackRenderPass;
 use crate::resource::ResourceId;

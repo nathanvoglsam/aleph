@@ -128,7 +128,6 @@
 //! This is 100% just a stream of thinking and not a concrete plan. I need some _deep_ thought time
 //! on this to work out a concrete implementation.
 
-mod access;
 mod frame_graph;
 mod frame_graph_builder;
 mod import_bundle;

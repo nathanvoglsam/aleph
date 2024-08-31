@@ -2439,6 +2439,191 @@ impl Default for ResourceUsageFlags {
     }
 }
 
+impl ResourceUsageFlags {
+    /// Gets the image layout that is compatible with the specified access flags
+    /// 
+    /// - `read_only` Declares whether the access is read only.
+    /// - `format` Provides a texture format for texture usages that need a format to resolve.
+    ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
+    pub const fn image_layout(&self, read_only: bool, format: Format) -> ImageLayout {
+        debug_assert!(self.is_valid_texture_usage());
+
+        if self.contains(Self::COPY_SOURCE) {
+            return ImageLayout::CopySrc;
+        }
+        if self.contains(Self::COPY_DEST) {
+            return ImageLayout::CopyDst;
+        }
+        if self.contains(Self::SHADER_RESOURCE) {
+            return ImageLayout::ShaderReadOnly;
+        }
+        if self.contains(Self::UNORDERED_ACCESS) {
+            return ImageLayout::UnorderedAccess;
+        }
+        if self.contains(Self::RENDER_TARGET) {
+            return if format.is_depth_stencil() {
+                if read_only {
+                    ImageLayout::DepthStencilReadOnly
+                } else {
+                    ImageLayout::DepthStencilAttachment
+                }
+            } else {
+                ImageLayout::ColorAttachment
+            };
+        }
+        ImageLayout::Undefined
+    }
+
+    /// Returns the barrier sync stages that are valid for the given set of [`ResourceUsageFlags`].
+    /// 
+    /// - `read_only` Declares whether the access is read only.
+    /// - `format` Provides a texture format for texture usages that need a format to resolve.
+    ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
+    #[inline]
+    pub fn default_barrier_sync(&self, read_only: bool, format: Format) -> BarrierSync {
+        let mut sync = BarrierSync::NONE;
+        if self.contains(Self::COPY_SOURCE) {
+            sync |= BarrierSync::COPY;
+        }
+        if self.contains(Self::COPY_DEST) {
+            sync |= BarrierSync::COPY;
+        }
+        if self.contains(Self::VERTEX_BUFFER) {
+            sync |= BarrierSync::VERTEX_SHADING;
+        }
+        if self.contains(Self::INDEX_BUFFER) {
+            sync |= BarrierSync::INDEX_INPUT;
+        }
+        if self.contains(Self::CONSTANT_BUFFER) {
+            sync |= BarrierSync::PIXEL_SHADING
+                | BarrierSync::VERTEX_SHADING
+                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
+                | BarrierSync::COMPUTE_SHADING;
+        }
+        if self.contains(Self::SHADER_RESOURCE) {
+            sync |= BarrierSync::PIXEL_SHADING
+                | BarrierSync::VERTEX_SHADING
+                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
+                | BarrierSync::COMPUTE_SHADING;
+        }
+        if self.contains(Self::UNORDERED_ACCESS) {
+            sync |= BarrierSync::PIXEL_SHADING
+                | BarrierSync::VERTEX_SHADING
+                // | BarrierSync::RAYTRACING // TODO: Validation on D3D12 flags this possibly erroneously
+                | BarrierSync::COMPUTE_SHADING;
+        }
+        if self.contains(Self::INDIRECT_DRAW_ARGS) {
+            sync |= BarrierSync::EXECUTE_INDIRECT;
+        }
+        if self.contains(Self::ACCELERATION_STRUCTURE_BUILD_INPUT) {
+            sync |= BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+        }
+        if self.contains(Self::ACCELERATION_STRUCTURE_STORAGE) {
+            sync |= BarrierSync::RAYTRACING;
+            if !read_only {
+                sync |= BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE;
+            }
+        }
+        if self.contains(Self::RENDER_TARGET) {
+            if format.is_depth_stencil() {
+                sync |= BarrierSync::DEPTH_STENCIL;
+            } else {
+                sync |= BarrierSync::RENDER_TARGET;
+            }
+        }
+        sync
+    }
+
+    /// Returns the set of [`BarrierAccess`] flags that covers all possible accesses applicable for
+    /// the given set of [`ResourceUsageFlags`] assuming read-only access.
+    /// 
+    /// - `format` Provides a texture format for texture usages that need a format to resolve.
+    ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
+    #[inline]
+    pub fn barrier_access_for_read(&self, format: Format) -> BarrierAccess {
+        let mut out = BarrierAccess::NONE;
+        if self.contains(Self::COPY_SOURCE) {
+            out |= BarrierAccess::COPY_READ
+        }
+        if self.contains(Self::VERTEX_BUFFER) {
+            out |= BarrierAccess::VERTEX_BUFFER_READ
+        }
+        if self.contains(Self::INDEX_BUFFER) {
+            out |= BarrierAccess::INDEX_BUFFER_READ
+        }
+        if self.contains(Self::CONSTANT_BUFFER) {
+            out |= BarrierAccess::CONSTANT_BUFFER_READ
+        }
+        if self.contains(Self::INDIRECT_DRAW_ARGS) {
+            out |= BarrierAccess::INDIRECT_COMMAND_READ
+        }
+        if self.contains(Self::ACCELERATION_STRUCTURE_BUILD_INPUT) {
+            out |= BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ
+        }
+        if self.contains(Self::ACCELERATION_STRUCTURE_STORAGE) {
+            out |= BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ
+        }
+        if self.contains(Self::SHADER_RESOURCE) {
+            out |= BarrierAccess::SHADER_READ
+        }
+        if self.contains(Self::RENDER_TARGET) {
+            if format.is_depth_stencil() {
+                out |= BarrierAccess::DEPTH_STENCIL_READ
+            } else {
+                out |= BarrierAccess::RENDER_TARGET_READ
+            }
+        }
+        out
+    }
+
+    /// Returns the set of [`BarrierAccess`] flags that covers all possible accesses applicable for
+    /// the given set of [`ResourceUsageFlags`] assuming writable access.
+    /// 
+    /// - `format` Provides a texture format for texture usages that need a format to resolve.
+    ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
+    #[inline]
+    pub fn barrier_access_for_write(&self, format: Format) -> BarrierAccess {
+        let mut out = BarrierAccess::NONE;
+        if self.contains(Self::COPY_DEST) {
+            out |= BarrierAccess::COPY_WRITE
+        }
+        if self.contains(Self::ACCELERATION_STRUCTURE_STORAGE) {
+            out |= BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE
+        }
+        if self.contains(Self::UNORDERED_ACCESS) {
+            out |= BarrierAccess::SHADER_WRITE
+        }
+        if self.contains(Self::RENDER_TARGET) {
+            if format.is_depth_stencil() {
+                out |= BarrierAccess::DEPTH_STENCIL_WRITE
+            } else {
+                out |= BarrierAccess::RENDER_TARGET_WRITE
+            }
+        }
+        out
+    }
+
+    /// Returns whether 'self' is a valid texture usage.
+    /// 
+    /// That is, whether it is a subset of [`ResourceUsageFlags::TEXTURE_USAGE_MASK`] and does not
+    /// contain [`ResourceUsageFlags::CUBE_FACE`].
+    pub const fn is_valid_texture_usage(&self) -> bool {
+        if !ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(*self) {
+            return false;
+        }
+
+        // We need to filter out any non-synchronizing access flags to allow this debug check
+        // to make sense. We need to check that only a single usage has been specified as an
+        // image within a pass can only be in a single image layout.
+        let access_flags = self.bits() & (!Self::CUBE_FACE.bits());
+        if access_flags.count_ones() > 1 {
+            return false;
+        }
+
+        true
+    }
+}
+
 //
 //
 // _________________________________________________________________________________________________
