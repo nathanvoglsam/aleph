@@ -59,6 +59,12 @@ pub struct BufferUploadSource {
     /// is needed as the upload commands use an offset+len and not a raw ptr+len pair.
     pub(crate) offset: u64,
 
+    /// The set of resource flags that the resource is allowed to be used as once uploaded.
+    ///
+    /// The scope of what is alloed depends on whether we're creating a buffer resource or texture
+    /// resource.
+    pub(crate) usage: ResourceUsageFlags,
+
     /// A pointer to a slice of memory for where the upload data should be written into for the
     /// specific image mip that is being uploaded by this request. This will be appropriately sized
     /// and aligned for the texture's upload parameters.
@@ -90,11 +96,17 @@ impl BufferUploadSource {
     /// - 'data.len()' combined with 'offset' must not overrun the end of the buffer
     /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
     ///   textures.
+    /// - 'usage' must be read-only and a valid buffer usage mask
     ///
     /// There are a bunch of debug asserts for these which are only enabled on debug builds, check
     /// those to see all the requirements. Do not violate these requirements as they will not be
     /// checked in a release build.
-    pub unsafe fn new(buffer: AnyArc<dyn IBuffer>, offset: u64, data: NonNull<[u8]>) -> Self {
+    pub unsafe fn new(
+        buffer: AnyArc<dyn IBuffer>,
+        offset: u64,
+        usage: ResourceUsageFlags,
+        data: NonNull<[u8]>,
+    ) -> Self {
         #[cfg(debug_assertions)]
         {
             debug_assert!(data.len() > 0, "len must be > 0");
@@ -120,11 +132,14 @@ impl BufferUploadSource {
                 data.len(),
                 buffer_desc.size
             );
+
+            debug_assert!(usage.is_read_usage() && usage.is_buffer_usage())
         }
 
         Self {
             buffer,
             offset,
+            usage,
             data,
         }
     }
@@ -141,7 +156,11 @@ impl BufferUploadSource {
     ///
     /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
     ///   textures.
-    pub unsafe fn new_owned(device: &dyn IDevice, len: usize) -> Result<Self, BufferCreateError> {
+    pub unsafe fn new_owned(
+        device: &dyn IDevice,
+        len: usize,
+        usage: ResourceUsageFlags,
+    ) -> Result<Self, BufferCreateError> {
         let buffer = device.create_buffer(&BufferDesc {
             size: len as u64,
             cpu_access: CpuAccessMode::Write,
@@ -151,7 +170,7 @@ impl BufferUploadSource {
 
         let ptr = buffer.map().unwrap();
 
-        let out = Self::new(buffer, 0, NonNull::slice_from_raw_parts(ptr, len));
+        let out = Self::new(buffer, 0, usage, NonNull::slice_from_raw_parts(ptr, len));
         Ok(out)
     }
 

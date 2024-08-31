@@ -257,6 +257,7 @@ impl BufferLoader {
         // - The address is stable
         let buffer = AnyArc::into_raw(buffer);
         let size = request.data.data_ptr().len();
+        let usage = request.data.usage;
 
         let mut load = request;
         load.target = Some(handle);
@@ -278,11 +279,9 @@ impl BufferLoader {
             offset: 0,
             size: size as u64,
             before_sync: BarrierSync::COPY,
-            after_sync: BarrierSync::PIXEL_SHADING
-                | BarrierSync::VERTEX_SHADING
-                | BarrierSync::COMPUTE_SHADING,
+            after_sync: usage.default_barrier_sync(true, Format::R8Unorm),
             before_access: BarrierAccess::COPY_WRITE,
-            after_access: BarrierAccess::SHADER_READ,
+            after_access: usage.barrier_access_for_read(Format::R8Unorm),
             queue_transition: None,
         });
     }

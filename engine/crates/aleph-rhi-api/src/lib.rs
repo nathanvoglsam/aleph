@@ -2440,8 +2440,24 @@ impl Default for ResourceUsageFlags {
 }
 
 impl ResourceUsageFlags {
+    pub const fn is_buffer_usage(&self) -> bool {
+        ResourceUsageFlags::BUFFER_USAGE_MASK.contains(*self)
+    }
+
+    pub const fn is_texture_usage(&self) -> bool {
+        ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(*self)
+    }
+
+    pub const fn is_read_usage(&self) -> bool {
+        ResourceUsageFlags::READ_USAGE_MASK.contains(*self)
+    }
+
+    pub const fn is_writable_usage(&self) -> bool {
+        ResourceUsageFlags::WRITE_USAGE_MASK.contains(*self)
+    }
+
     /// Gets the image layout that is compatible with the specified access flags
-    /// 
+    ///
     /// - `read_only` Declares whether the access is read only.
     /// - `format` Provides a texture format for texture usages that need a format to resolve.
     ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
@@ -2475,7 +2491,7 @@ impl ResourceUsageFlags {
     }
 
     /// Returns the barrier sync stages that are valid for the given set of [`ResourceUsageFlags`].
-    /// 
+    ///
     /// - `read_only` Declares whether the access is read only.
     /// - `format` Provides a texture format for texture usages that need a format to resolve.
     ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
@@ -2536,7 +2552,7 @@ impl ResourceUsageFlags {
 
     /// Returns the set of [`BarrierAccess`] flags that covers all possible accesses applicable for
     /// the given set of [`ResourceUsageFlags`] assuming read-only access.
-    /// 
+    ///
     /// - `format` Provides a texture format for texture usages that need a format to resolve.
     ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
     #[inline]
@@ -2578,7 +2594,7 @@ impl ResourceUsageFlags {
 
     /// Returns the set of [`BarrierAccess`] flags that covers all possible accesses applicable for
     /// the given set of [`ResourceUsageFlags`] assuming writable access.
-    /// 
+    ///
     /// - `format` Provides a texture format for texture usages that need a format to resolve.
     ///     - `format` is only needed if 'self' contains [`ResourceUsageFlags::RENDER_TARGET`]
     #[inline]
@@ -2604,7 +2620,7 @@ impl ResourceUsageFlags {
     }
 
     /// Returns whether 'self' is a valid texture usage.
-    /// 
+    ///
     /// That is, whether it is a subset of [`ResourceUsageFlags::TEXTURE_USAGE_MASK`] and does not
     /// contain [`ResourceUsageFlags::CUBE_FACE`].
     pub const fn is_valid_texture_usage(&self) -> bool {

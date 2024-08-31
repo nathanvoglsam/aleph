@@ -240,8 +240,12 @@ impl EguiRenderer {
 
                 let desc =
                     TextureMipUploadDesc::new(dimensions.0, dimensions.1, 1, Format::R8Unorm);
-                let staging_buffer =
-                    TextureUploadSource::new_owned(self.device.as_ref(), desc.clone()).unwrap();
+                let staging_buffer = TextureUploadSource::new_owned(
+                    self.device.as_ref(),
+                    desc.clone(),
+                    ResourceUsageFlags::SHADER_RESOURCE,
+                )
+                .unwrap();
 
                 assert_eq!(
                     staging_buffer.desc.aligned_width(),

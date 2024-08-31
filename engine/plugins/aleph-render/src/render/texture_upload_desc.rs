@@ -145,6 +145,7 @@ impl TextureUploadSource {
     /// - 'data.len()' combined with 'offset' must not overrun the end of the buffer
     /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
     ///   textures.
+    /// - 'usage' must be read-only and a valid texture usage flag
     ///
     /// There are a bunch of debug asserts for these which are only enabled on debug builds, check
     /// those to see all the requirements. Do not violate these requirements as they will not be
@@ -153,6 +154,7 @@ impl TextureUploadSource {
         buffer: AnyArc<dyn IBuffer>,
         desc: TextureMipUploadDesc,
         offset: u64,
+        usage: ResourceUsageFlags,
         data: NonNull<[u8]>,
     ) -> Self {
         let required_size = desc.size_requirement() as usize;
@@ -175,9 +177,11 @@ impl TextureUploadSource {
                 0,
                 "Offset must be aligned to 512 bytes within the buffer"
             );
+
+            debug_assert!(usage.is_read_usage() && usage.is_texture_usage())
         }
 
-        let source = BufferUploadSource::new(buffer, offset, data);
+        let source = BufferUploadSource::new(buffer, offset, usage, data);
         Self { source, desc }
     }
 
@@ -196,6 +200,7 @@ impl TextureUploadSource {
     pub unsafe fn new_owned(
         device: &dyn IDevice,
         desc: TextureMipUploadDesc,
+        usage: ResourceUsageFlags,
     ) -> Result<Self, BufferCreateError> {
         let size_requirement = desc.size_requirement();
         let buffer = device.create_buffer(&BufferDesc {
@@ -207,7 +212,7 @@ impl TextureUploadSource {
 
         let ptr = buffer.map().unwrap();
         let data = NonNull::slice_from_raw_parts(ptr, size_requirement as usize);
-        let out = Self::new(buffer, desc, 0, data);
+        let out = Self::new(buffer, desc, 0, usage, data);
 
         Ok(out)
     }

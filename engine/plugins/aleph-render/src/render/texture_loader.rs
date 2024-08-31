@@ -251,6 +251,9 @@ impl TextureLoader {
 
         let subresources = TextureSubResourceSet::all(texture.desc_ref());
 
+        let usage = request.data.source.usage;
+        let format = texture.desc_ref().format;
+
         // Need to drop to raw pointers because the borrow checker won't be able to prove what
         // we're doing is safe.
         //
@@ -282,13 +285,11 @@ impl TextureLoader {
             texture: texture.as_ref(),
             subresource_range: subresources,
             before_sync: BarrierSync::COPY,
-            after_sync: BarrierSync::PIXEL_SHADING
-                | BarrierSync::VERTEX_SHADING
-                | BarrierSync::COMPUTE_SHADING,
+            after_sync: usage.default_barrier_sync(true, format),
             before_access: BarrierAccess::COPY_WRITE,
-            after_access: BarrierAccess::SHADER_READ,
+            after_access: usage.barrier_access_for_read(format),
             before_layout: ImageLayout::CopyDst,
-            after_layout: ImageLayout::ShaderReadOnly,
+            after_layout: usage.image_layout(true, format),
             queue_transition: None,
         });
     }
@@ -299,6 +300,9 @@ impl TextureLoader {
         device: &dyn IDevice,
         load: &LoadRequest,
     ) -> Result<(TextureHandle, AnyArc<dyn ITexture>), TextureCreateError> {
+        // We require copy dest so we can initialize the resource
+        let combined_usage = load.data.source.usage | ResourceUsageFlags::COPY_DEST;
+
         let desc = TextureDesc {
             width: load.data.desc.width,
             height: load.data.desc.height,
@@ -310,10 +314,11 @@ impl TextureLoader {
             mip_levels: 1,
             sample_count: 1,
             sample_quality: 0,
-            usage: ResourceUsageFlags::SHADER_RESOURCE | ResourceUsageFlags::COPY_DEST,
+            usage: combined_usage,
             name: None,
         };
         let texture = device.create_texture(&desc)?;
+
         match load.target {
             Some(handle) => {
                 if let Some(old) = pool.update_texture(handle, texture.clone()) {
