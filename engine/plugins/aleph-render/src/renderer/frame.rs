@@ -30,13 +30,13 @@
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
-use crate::render::LoaderDeletionPool;
+use crate::render::DeletionPool;
 
 pub struct PerFrameObjects {
     pub acquire_semaphore: AnyArc<dyn ISemaphore>,
     pub present_semaphore: AnyArc<dyn ISemaphore>,
 
-    pub deletion_pool: LoaderDeletionPool,
+    pub deletion_pool: DeletionPool,
 
     pub uniform_buffer: AnyArc<dyn IBuffer>,
 

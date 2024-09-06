@@ -32,7 +32,7 @@ use crossbeam::queue::{ArrayQueue, SegQueue};
 use interfaces::any::AnyArc;
 
 use crate::render::{
-    EnqueueError, EnqueueErrorKind, LoaderDeletionPool, TextureHandle, TexturePool,
+    DeletionPool, EnqueueError, EnqueueErrorKind, TextureHandle, TexturePool,
     TextureStreamingRequest, TextureUploadSource,
 };
 
@@ -154,7 +154,7 @@ impl TextureLoader {
     pub(crate) unsafe fn upload_requests(
         &self,
         pool: &mut TexturePool,
-        deletion_pool: &mut LoaderDeletionPool,
+        deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
         encoder: &mut dyn IGeneralEncoder,
         count: usize,
@@ -228,7 +228,7 @@ impl TextureLoader {
 
     unsafe fn process_request(
         pool: &mut TexturePool,
-        deletion_pool: &mut LoaderDeletionPool,
+        deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
         discard_barriers: &mut Vec<TextureBarrier>,
         textures: &mut Vec<Upload>,
@@ -296,7 +296,7 @@ impl TextureLoader {
 
     fn create_texture<'a>(
         pool: &'a mut TexturePool,
-        deletion_pool: &mut LoaderDeletionPool,
+        deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
         load: &LoadRequest,
     ) -> Result<(TextureHandle, AnyArc<dyn ITexture>), TextureCreateError> {

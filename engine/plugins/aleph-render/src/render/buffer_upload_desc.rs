@@ -218,6 +218,12 @@ impl BufferUploadSource {
         self.buffer.as_ref()
     }
 
+    /// Get the inner buffer object, discarding the upload wrapper.
+    #[inline(always)]
+    pub fn into_buffer(self) -> AnyArc<dyn IBuffer> {
+        self.buffer
+    }
+
     /// Get the upload block as a raw pointer.
     ///
     /// # Performance Warning

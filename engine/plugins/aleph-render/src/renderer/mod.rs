@@ -35,6 +35,7 @@ use std::num::NonZeroU8;
 use std::ops::Deref;
 
 use aleph_frame_graph::*;
+use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ShaderDatabase;
@@ -43,10 +44,9 @@ use egui::{ImageData, RenderData};
 pub(crate) use frame::PerFrameObjects;
 use interfaces::any::AnyArc;
 
-use crate::render::ShaderDatabaseAccessor;
 use crate::render::{
-    TextureHandle, TextureLoader, TextureMipUploadDesc, TexturePool, TextureStreamingRequest,
-    TextureUploadSource,
+    BufferLoader, BufferPool, ShaderDatabaseAccessor, TextureHandle, TextureLoader,
+    TextureMipUploadDesc, TexturePool, TextureStreamingRequest, TextureUploadSource,
 };
 use crate::renderer::egui_font_texture::FontTexture;
 use crate::renderer::pass::backbuffer_import::BackBufferHandle;
@@ -56,6 +56,9 @@ use crate::renderer::pass::BackBufferInfo;
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,
     pub frames: Vec<PerFrameObjects>,
+
+    pub buffer_pool: BufferPool,
+    pub buffer_loader: BufferLoader,
 
     pub texture_pool: TexturePool,
     pub texture_loader: TextureLoader,
@@ -104,6 +107,9 @@ impl EguiRenderer {
         let mut frames = Vec::new();
         frames.resize_with(2, || PerFrameObjects::new(device.deref()));
 
+        let buffer_pool = BufferPool::new(NonZeroU8::new(2).unwrap());
+        let buffer_loader = BufferLoader::new();
+
         let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
         let texture_loader = TextureLoader::new();
 
@@ -112,6 +118,8 @@ impl EguiRenderer {
         Self {
             device,
             frames,
+            buffer_pool,
+            buffer_loader,
             texture_pool,
             texture_loader,
             frame_graph,
@@ -192,13 +200,30 @@ impl EguiRenderer {
         {
             let mut encoder = list.begin_general().unwrap();
 
-            self.texture_loader.upload_requests(
-                &mut self.texture_pool,
-                &mut self.frames[index].deletion_pool,
-                self.device.as_ref(),
-                encoder.as_mut(),
-                usize::MAX,
-            );
+            {
+                encoder.begin_event(Color::BLUE, nstr!("Upload Streaming Requests"));
+
+                // TODO: we want to batch all of these, so we need a better interface so we can bundle
+                //       the barriers and copy commands for all our loaders into a single batch.
+                //
+                //       either that or we unify to a single loader type.
+                self.buffer_loader.upload_requests(
+                    &mut self.buffer_pool,
+                    &mut self.frames[index].deletion_pool,
+                    self.device.as_ref(),
+                    encoder.as_mut(),
+                    usize::MAX,
+                );
+                self.texture_loader.upload_requests(
+                    &mut self.texture_pool,
+                    &mut self.frames[index].deletion_pool,
+                    self.device.as_ref(),
+                    encoder.as_mut(),
+                    usize::MAX,
+                );
+
+                encoder.end_event();
+            }
 
             let mut import_bundle = ImportBundle::default();
             import_bundle.add_resource(self.back_buffer_id, texture);

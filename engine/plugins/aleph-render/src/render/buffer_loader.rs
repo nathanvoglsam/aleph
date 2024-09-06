@@ -32,8 +32,8 @@ use crossbeam::queue::{ArrayQueue, SegQueue};
 use interfaces::any::AnyArc;
 
 use crate::render::{
-    BufferHandle, BufferPool, BufferStreamingRequest, BufferUploadSource, EnqueueError,
-    EnqueueErrorKind, LoaderDeletionPool,
+    BufferHandle, BufferPool, BufferStreamingRequest, BufferUploadSource, DeletionPool,
+    EnqueueError, EnqueueErrorKind,
 };
 
 pub struct BufferLoader {
@@ -154,7 +154,7 @@ impl BufferLoader {
     pub(crate) unsafe fn upload_requests(
         &self,
         pool: &mut BufferPool,
-        deletion_pool: &mut LoaderDeletionPool,
+        deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
         encoder: &mut dyn IGeneralEncoder,
         count: usize,
@@ -225,7 +225,7 @@ impl BufferLoader {
 
     unsafe fn process_request(
         pool: &mut BufferPool,
-        deletion_pool: &mut LoaderDeletionPool,
+        deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
         discard_barriers: &mut Vec<BufferBarrier>,
         buffers: &mut Vec<Upload>,
@@ -288,7 +288,7 @@ impl BufferLoader {
 
     fn create_buffer<'a>(
         pool: &'a mut BufferPool,
-        deletion_pool: &mut LoaderDeletionPool,
+        deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
         load: &LoadRequest,
     ) -> Result<(BufferHandle, AnyArc<dyn IBuffer>), BufferCreateError> {

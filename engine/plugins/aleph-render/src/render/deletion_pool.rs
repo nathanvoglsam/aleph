@@ -39,21 +39,19 @@ use crate::render::BufferUploadSource;
 ///
 /// # Leaking
 ///
-/// If an instance of [`LoaderDeletionPool`] is dropped while still containing items
+/// If an instance of [`DeletionPool`] is dropped while still containing items
 /// inside any of its internal pools, those items will be leaked.
 #[derive(Default)]
-pub struct LoaderDeletionPool {
+pub struct DeletionPool {
     textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
     buffers: Vec<ManuallyDrop<AnyArc<dyn IBuffer>>>,
-    uploads: Vec<ManuallyDrop<BufferUploadSource>>,
 }
 
-impl LoaderDeletionPool {
+impl DeletionPool {
     pub const fn new() -> Self {
         Self {
             textures: Vec::new(),
             buffers: Vec::new(),
-            uploads: Vec::new(),
         }
     }
 
@@ -69,7 +67,8 @@ impl LoaderDeletionPool {
 
     #[inline]
     pub fn push_upload(&mut self, upload: impl Into<BufferUploadSource>) {
-        self.uploads.push(ManuallyDrop::new(upload.into()))
+        let upload = upload.into().into_buffer();
+        self.buffers.push(ManuallyDrop::new(upload))
     }
 
     /// This function will purge the internal pools and _will_ drop the resources being held inside.
@@ -92,10 +91,9 @@ impl LoaderDeletionPool {
         // Drain the pools and explicitly drop the contained elements.
         self.purge_textures();
         self.purge_buffers();
-        self.purge_uploads();
     }
 
-    /// Alternate version of [`LoaderDeletionPool::purge`] that only purges the
+    /// Alternate version of [`DeletionPool::purge`] that only purges the
     /// texture objects.
     ///
     /// # Safety
@@ -109,7 +107,7 @@ impl LoaderDeletionPool {
             .for_each(|mut v| ManuallyDrop::drop(&mut v));
     }
 
-    /// Alternate version of [`LoaderDeletionPool::purge`] that only purges the
+    /// Alternate version of [`DeletionPool::purge`] that only purges the
     /// buffer objects.
     ///
     /// # Safety
@@ -122,23 +120,9 @@ impl LoaderDeletionPool {
             .drain(..)
             .for_each(|mut v| ManuallyDrop::drop(&mut v));
     }
-
-    /// Alternate version of [`LoaderDeletionPool::purge`] that only purges the
-    /// upload data objects.
-    ///
-    /// # Safety
-    ///
-    /// See `purge` for more info, the constraints are the same.
-    #[inline]
-    pub unsafe fn purge_uploads(&mut self) {
-        // Drain the pools and explicitly drop the contained elements.
-        self.uploads
-            .drain(..)
-            .for_each(|mut v| ManuallyDrop::drop(&mut v));
-    }
 }
 
-impl Drop for LoaderDeletionPool {
+impl Drop for DeletionPool {
     fn drop(&mut self) {
         if !self.textures.is_empty() {
             let len = self.textures.len();
@@ -147,10 +131,6 @@ impl Drop for LoaderDeletionPool {
         if !self.buffers.is_empty() {
             let len = self.buffers.len();
             log::warn!("Deletion Pool dropped with {len} buffers! This is leaking memory!");
-        }
-        if !self.uploads.is_empty() {
-            let len = self.uploads.len();
-            log::warn!("Deletion Pool dropped with {len} upload sources! This is leaking memory!");
         }
     }
 }

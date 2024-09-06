@@ -30,10 +30,10 @@
 mod buffer_loader;
 mod buffer_pool;
 mod buffer_upload_desc;
+mod deletion_pool;
 mod enqueue_error;
 mod handle;
 mod handle_pool;
-mod loader_deletion_pool;
 mod mesh_layout;
 mod object_pool;
 mod shader_db_accessor;
@@ -45,10 +45,10 @@ mod texture_upload_desc;
 pub use buffer_loader::BufferLoader;
 pub use buffer_pool::{BufferObject, BufferPool};
 pub use buffer_upload_desc::BufferUploadSource;
+pub use deletion_pool::DeletionPool;
 pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
-pub use loader_deletion_pool::LoaderDeletionPool;
 pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
