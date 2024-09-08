@@ -344,7 +344,7 @@ fn generate_shader_name_bindings_for_module(
                 writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
                 writeln!(
                     &mut module_output_file,
-                    "{indent}pub fn {file_stem_no_dots}() -> {} {{",
+                    "{indent}pub const fn {file_stem_no_dots}() -> {} {{",
                     shader_file.shader_type.shader_db_name_type()
                 )?;
 

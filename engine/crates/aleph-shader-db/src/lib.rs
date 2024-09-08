@@ -80,7 +80,7 @@ impl<'a, T: ShaderStage> ShaderName<'a, T> {
     /// # Safety
     /// It is required that the shader referred to by the provided name _must_ be of the type
     /// specified by the `T` type parameter. It is up to the caller to ensure this.
-    pub unsafe fn new(v: &'a str) -> Self {
+    pub const unsafe fn new(v: &'a str) -> Self {
         Self {
             v,
             _phantom: PhantomData,
@@ -105,11 +105,11 @@ impl ShaderDatabase {
     const MAGIC_NUMBER: u64 = 569420;
     const EXPECTED_VERSION: u64 = 1;
 
-    pub fn is_header_valid(&self) -> bool {
+    pub const fn is_header_valid(&self) -> bool {
         self.magic_number == Self::MAGIC_NUMBER && self.format_version == Self::EXPECTED_VERSION
     }
 
-    pub fn validate_header(&self) {
+    pub const fn validate_header(&self) {
         assert!(
             self.is_header_valid(),
             "Invalid header detected, incompatible shader db"
@@ -118,12 +118,12 @@ impl ShaderDatabase {
 }
 
 impl ArchivedShaderDatabase {
-    pub fn is_header_valid(&self) -> bool {
+    pub const fn is_header_valid(&self) -> bool {
         self.magic_number == ShaderDatabase::MAGIC_NUMBER
             && self.format_version == ShaderDatabase::EXPECTED_VERSION
     }
 
-    pub fn validate_header(&self) {
+    pub const fn validate_header(&self) {
         assert!(
             self.is_header_valid(),
             "Invalid header detected, incompatible shader db"
