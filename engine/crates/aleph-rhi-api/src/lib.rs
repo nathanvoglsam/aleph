@@ -5584,6 +5584,10 @@ error_enum_from_unit_type!(SwapChainRebuildError);
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum ImageAcquireError {
+    /// This error occurs when the underlying surface has changed state in a way that the swap-chain
+    /// object is no longer compatible with and the swap-chain needs to be rebuilt to represent the
+    /// new state. It is impossible to hand out swap-chain images in this case and so the caller
+    /// must rebuild the swap-chain before images can be acquired again.
     #[error("The swap chain is out of date and needs to be rebuilt")]
     OutOfDate,
 
