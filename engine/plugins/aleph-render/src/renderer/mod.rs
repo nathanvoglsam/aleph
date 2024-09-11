@@ -29,7 +29,6 @@
 
 mod egui_font_texture;
 mod frame;
-mod pass;
 
 use std::num::NonZeroU8;
 use std::ops::Deref;
@@ -44,14 +43,14 @@ use egui::{ImageData, RenderData};
 pub(crate) use frame::PerFrameObjects;
 use interfaces::any::AnyArc;
 
+use crate::pass::backbuffer_import::BackBufferHandle;
+use crate::pass::egui_draw::EguiPassContext;
+use crate::pass::BackBufferInfo;
 use crate::render::{
     BufferLoader, BufferPool, ShaderDatabaseAccessor, TextureHandle, TextureLoader,
-    TextureMipUploadDesc, TexturePool, TextureStreamingRequest, TextureUploadSource,
+    TextureMipUploadDesc, TexturePool, TextureUploadSource,
 };
 use crate::renderer::egui_font_texture::FontTexture;
-use crate::renderer::pass::backbuffer_import::BackBufferHandle;
-use crate::renderer::pass::egui_draw::EguiPassContext;
-use crate::renderer::pass::BackBufferInfo;
 
 pub struct EguiRenderer {
     pub device: AnyArc<dyn IDevice>,
@@ -160,6 +159,8 @@ impl EguiRenderer {
         pin_board: &PinBoard,
         shader_db: &ShaderDatabaseAccessor,
     ) -> FrameGraph {
+        use crate::pass;
+
         let mut frame_graph = FrameGraph::builder();
         pass::backbuffer_import::pass(&mut frame_graph, device, pin_board, shader_db);
         pass::main_gbuffer::pass(&mut frame_graph, device, pin_board, shader_db);
@@ -287,11 +288,7 @@ impl EguiRenderer {
                 staging_buffer.unmap();
 
                 self.texture_loader
-                    .immediate_upload(
-                        TextureStreamingRequest::new(),
-                        self.font_handle,
-                        staging_buffer,
-                    )
+                    .immediate_upload(None, self.font_handle, staging_buffer)
                     .unwrap();
             }
         }

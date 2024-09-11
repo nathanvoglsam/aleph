@@ -35,9 +35,9 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use egui::RenderData;
 
+use crate::pass::backbuffer_import::BackBufferHandle;
+use crate::pass::BackBufferInfo;
 use crate::render::ShaderDatabaseAccessor;
-use crate::renderer::pass::backbuffer_import::BackBufferHandle;
-use crate::renderer::pass::BackBufferInfo;
 use crate::shaders;
 
 struct EguiPassPayload {
@@ -79,14 +79,14 @@ pub fn pass(
         let vtx_buffer = resources.create_buffer(
             &BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
                 .cpu_write()
-                .with_name("Egui Vertex Buffer"),
+                .with_name(obj_name!("VertexBuffer")),
             ResourceUsageFlags::VERTEX_BUFFER,
         );
 
         let idx_buffer = resources.create_buffer(
             &BufferDesc::new(INDEX_BUFFER_SIZE as u64)
                 .cpu_write()
-                .with_name("Egui Index Buffer"),
+                .with_name(obj_name!("IndexBuffer")),
             ResourceUsageFlags::INDEX_BUFFER,
         );
 
@@ -321,7 +321,7 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
             DescriptorType::Texture.binding(1),
             DescriptorType::Sampler.binding(2),
         ],
-        name: Some("egui::DescriptorSetLayout"),
+        name: obj_name_opt!("DescriptorSetLayout"),
     };
     device
         .create_descriptor_set_layout(&descriptor_set_layout_desc)
@@ -335,7 +335,7 @@ fn create_root_signature(
     let pipeline_layout_desc = PipelineLayoutDesc {
         set_layouts: &[descriptor_set_layout],
         push_constant_blocks: &[],
-        name: Some("egui::RootSignature"),
+        name: obj_name_opt!("RootSignature"),
     };
     device
         .create_pipeline_layout(&pipeline_layout_desc)
@@ -423,7 +423,7 @@ fn create_pipeline_state(
         blend_state: &blend_state_new,
         render_target_formats: &[Format::Bgra8UnormSrgb],
         depth_stencil_format: None,
-        name: Some("egui::GraphicsPipelineState"),
+        name: obj_name_opt!("GraphicsPipelineState"),
     };
 
     device

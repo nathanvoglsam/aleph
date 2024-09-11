@@ -28,14 +28,18 @@
 //
 
 use std::any::Any;
+use std::num::NonZeroU8;
 use std::sync::Arc;
 
+use aleph_frame_graph::{FrameGraph, FrameGraphBuilder, ImportBundle, ResourceMut, ResourceRef};
 use aleph_nstr::nstr;
+use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
 use crate::render::{
-    BufferHandle, BufferLoader, BufferPool, DeletionPool, TextureHandle, TextureLoader, TexturePool,
+    BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
+    ShaderDatabaseAccessor, TextureHandle, TextureLoader, TexturePool, TextureUploadSource,
 };
 
 pub trait IRenderSurface: Any {
@@ -44,7 +48,134 @@ pub trait IRenderSurface: Any {
     fn needs_rebuild(&self) -> bool;
 }
 
+pub trait IRenderPlane: Any {
+    fn register_passes(
+        &self,
+        frame_graph: &mut FrameGraphBuilder,
+        device: &dyn IDevice,
+        pin_board: &PinBoard,
+    );
+}
+
+pub struct RenderPlaneOutput {
+    /// Readable handle to the final (texture) resource that can be considered the output of this
+    /// render plane. This will be composited together with the other planes before being presented
+    /// to the screen.
+    pub id: ResourceRef,
+
+    /// A description of the texture resource. We need this so we know the format/size/etc of the
+    /// image so we can correctly handle and validate when performing the merge pass.
+    pub desc: TextureDesc<'static>,
+}
+
+pub struct DefaultRenderPlane {
+    shader_db: Arc<ShaderDatabaseAccessor<'static>>,
+}
+
+impl IRenderPlane for DefaultRenderPlane {
+    fn register_passes(
+        &self,
+        frame_graph: &mut FrameGraphBuilder,
+        device: &dyn IDevice,
+        pin_board: &PinBoard,
+    ) {
+        use crate::pass;
+
+        let shader_db = self.shader_db.as_ref();
+
+        pass::backbuffer_import::pass(frame_graph, device, pin_board, shader_db);
+        pass::main_gbuffer::pass(frame_graph, device, pin_board, shader_db);
+        pass::lighting_resolve::pass(frame_graph, device, pin_board, shader_db);
+        pass::tone_map::pass(frame_graph, device, pin_board, shader_db);
+        pass::copy_texture::pass(frame_graph, device, pin_board, shader_db);
+        // pass::egui_draw::pass(&mut frame_graph, device, pin_board, shader_db);
+    }
+}
+
+pub struct RendererBuilder {
+    device: Option<AnyArc<dyn IDevice>>,
+    surface: Option<Box<dyn IRenderSurface>>,
+    frames_in_flight: usize,
+    render_planes: Vec<Box<dyn IRenderPlane>>,
+}
+
+impl Default for RendererBuilder {
+    fn default() -> Self {
+        Self {
+            device: None,
+            surface: None,
+            frames_in_flight: 2,
+            render_planes: Vec::new(),
+        }
+    }
+}
+
+impl RendererBuilder {
+    pub fn device(&mut self, device: AnyArc<dyn IDevice>) -> &mut Self {
+        self.device = Some(device);
+        self
+    }
+
+    pub fn surface(&mut self, surface: impl IRenderSurface) -> &mut Self {
+        self.surface = Some(Box::new(surface));
+        self
+    }
+
+    pub fn frames_in_flight(&mut self, frames_in_flight: usize) -> &mut Self {
+        self.frames_in_flight = frames_in_flight;
+        self
+    }
+
+    pub fn render_plane(&mut self, plane: impl IRenderPlane) -> &mut Self {
+        self.render_planes.push(Box::new(plane));
+        self
+    }
+
+    pub fn build(self) -> Option<Renderer> {
+        let device = self.device.expect("Device missing!");
+        let queue = device.get_queue(QueueType::General).unwrap();
+
+        let swap_manager = SwapManager {
+            surface: self.surface.expect("RenderSurface missing!"),
+            images: Vec::new(),
+            desc: TextureDesc::default(),
+            needs_rebuild: true,
+        };
+
+        let mut frames = Vec::new();
+        frames.resize_with(self.frames_in_flight, || {
+            FrameResources::new(device.as_ref())
+        });
+        let frame_manager = FrameManager { frames, current: 0 };
+
+        let render_planes = self.render_planes;
+        let graph_manager = GraphManager {
+            frame_graph: None,
+            pin_board: PinBoard::new(),
+            render_planes,
+            swap_image_id: None,
+        };
+
+        let out = Renderer {
+            config: RendererConfig {
+                frames_in_flight: self.frames_in_flight,
+            },
+            device,
+            queue,
+            swap_manager,
+            texture_loader: Arc::new(TextureLoader::new()),
+            buffer_loader: Arc::new(BufferLoader::new()),
+            texture_pool: TexturePool::new(NonZeroU8::new(1).unwrap()),
+            buffer_pool: BufferPool::new(NonZeroU8::new(2).unwrap()),
+            frame_manager,
+            graph_manager,
+        };
+        Some(out)
+    }
+}
+
 pub struct Renderer {
+    config: RendererConfig,
     device: AnyArc<dyn IDevice>,
     queue: AnyArc<dyn IQueue>,
     swap_manager: SwapManager,
@@ -53,6 +184,7 @@ pub struct Renderer {
     texture_pool: TexturePool,
     buffer_pool: BufferPool,
     frame_manager: FrameManager,
+    graph_manager: GraphManager,
 }
 
 impl Renderer {
@@ -64,16 +196,29 @@ impl Renderer {
         self.buffer_loader.clone()
     }
 
-    pub fn create_texture(&mut self) -> Option<TextureHandle> {
-        unimplemented!()
+    pub fn create_texture(&mut self, data: TextureUploadSource) -> Option<TextureHandle> {
+        let handle = self.texture_pool.create_texture(None);
+
+        self.texture_loader
+            .immediate_upload(None, handle, data)
+            .ok()?;
+
+        Some(handle)
     }
 
-    pub fn create_buffer(&mut self) -> Option<BufferHandle> {
-        unimplemented!()
+    pub fn create_buffer(&mut self, data: BufferUploadSource) -> Option<BufferHandle> {
+        let handle = self.buffer_pool.create_buffer(None);
+
+        self.buffer_loader
+            .immediate_upload(None, handle, data)
+            .ok()?;
+
+        Some(handle)
     }
 
     pub unsafe fn draw_next_frame(&mut self) {
-        let FrameResources {
+        let CurrentFrameResources {
+            frame_index,
             acquire_semaphore,
             present_semaphore,
             done_fence,
@@ -87,20 +232,31 @@ impl Renderer {
         // This will stall until the oldest frame is complete, applying back pressure up the
         // pipeline.
         assert_eq!(
-            self.device
-                .wait_fences(&[done_fence.as_ref()], true, u32::MAX),
+            self.device.wait_fences(&[done_fence], true, u32::MAX),
             FenceWaitResult::Complete
         );
-        self.device.reset_fences(&[done_fence.as_ref()]);
+        self.device.reset_fences(&[done_fence]);
 
         // We are now definitely recording the frame, we've proven it has been retired on the GPU
         // timeline and that means we can purge anything that was being held alive for that GPU
         // frame in the deletion pool.
         deletion_pool.purge();
 
-        let acquired_image = self
-            .swap_manager
-            .acquire_next_image(acquire_semaphore.as_ref());
+        // Acquire the next image from the swap chain. This will also trigger rebuilding the swap
+        // chain if it is out of date.
+        //
+        // If the swap chain is rebuilt we will acquire an image from the swap chain after we have
+        // rebuilt it and hand that out, this papers over rebuilds.
+        //
+        // If we rebuild we do need to rebuild the swap chain though!
+        let acquired_image = self.swap_manager.acquire_next_image(acquire_semaphore);
+
+        // If the swap chain was rebuilt (or this is the first frame and we haven't built the frame
+        // graph yet) we need to (re)build the frame graph!
+        if self.graph_manager.frame_graph.is_none() || acquired_image.rebuilt {
+            self.graph_manager
+                .build_graph(self.device.as_ref(), &self.config, &self.swap_manager);
+        }
 
         let mut list = self
             .device
@@ -133,46 +289,58 @@ impl Renderer {
                 usize::MAX,
             );
             encoder.end_event();
+
+            let mut import_bundle = ImportBundle::default();
+
+            import_bundle.add_resource(
+                self.graph_manager.swap_image_id.clone().unwrap(),
+                acquired_image.image.as_ref(),
+            );
+
+            self.graph_manager
+                .execute_graph(frame_index, &import_bundle, encoder.as_mut());
         }
 
         self.queue
             .submit(&QueueSubmitDesc {
                 command_lists: &[Some(list).into()],
-                wait_semaphores: &[acquire_semaphore.as_ref()],
-                signal_semaphores: &[present_semaphore.as_ref()],
-                fence: Some(done_fence.as_ref()),
+                wait_semaphores: &[acquire_semaphore],
+                signal_semaphores: &[present_semaphore],
+                fence: Some(done_fence),
             })
             .unwrap();
 
-        self.swap_manager.present(
-            self.queue.as_ref(),
-            &[present_semaphore.as_ref()],
-            acquired_image,
-        );
+        self.swap_manager
+            .present(self.queue.as_ref(), &[present_semaphore], acquired_image);
     }
+}
+
+struct RendererConfig {
+    /// Maximum number of frames in flight
+    frames_in_flight: usize,
 }
 
 struct SwapManager {
     surface: Box<dyn IRenderSurface>,
     images: Vec<AnyArc<dyn ITexture>>,
+    desc: TextureDesc<'static>,
     needs_rebuild: bool,
 }
 
 impl SwapManager {
-    pub unsafe fn acquire_next_image(
-        &mut self,
-        signal_semaphore: &dyn ISemaphore,
-    ) -> AcquiredImage {
+    unsafe fn acquire_next_image(&mut self, signal_semaphore: &dyn ISemaphore) -> AcquiredImage {
         // Query if the surface wants to rebuild this frame and coerce the 'needs_rebuild' flag to
         // true if it wasn't already flagged.
         self.needs_rebuild = self.needs_rebuild || self.surface.needs_rebuild();
 
+        let mut rebuilt = false;
         let mut attempts_remaining = 2;
         while attempts_remaining != 0 {
             attempts_remaining -= 1;
 
             if self.needs_rebuild {
                 self.rebuild();
+                rebuilt = true; // Flag if we had to rebuild before giving out the image.
             }
 
             let acquired_index = match self
@@ -205,12 +373,13 @@ impl SwapManager {
             return AcquiredImage {
                 image: acquired_image,
                 index: acquired_index as usize,
+                rebuilt,
             };
         }
         panic!("Unable to acquire swap chain image!");
     }
 
-    pub unsafe fn present(
+    unsafe fn present(
         &mut self,
         queue: &dyn IQueue,
         wait_semaphores: &[&dyn ISemaphore],
@@ -242,6 +411,7 @@ impl SwapManager {
         swap_chain.get_images(&mut images);
 
         self.images = images.into_iter().map(|v| v.unwrap()).collect();
+        self.desc = self.images[0].desc().strip_name();
         self.needs_rebuild = false;
     }
 }
@@ -252,6 +422,9 @@ struct AcquiredImage {
 
     /// The image index of the image we acquired
     index: usize,
+
+    /// Flags whether the swap chain was rebuilt in order to acquire this image
+    rebuilt: bool,
 }
 
 struct FrameManager {
@@ -260,9 +433,16 @@ struct FrameManager {
 }
 
 impl FrameManager {
-    pub fn get_next_frame(&mut self) -> &mut FrameResources {
+    fn get_next_frame(&mut self) -> CurrentFrameResources {
         self.current = (self.current + 1) % self.frames.len();
-        &mut self.frames[self.current]
+        let frame = &mut self.frames[self.current];
+        CurrentFrameResources {
+            frame_index: self.current,
+            acquire_semaphore: frame.acquire_semaphore.as_ref(),
+            present_semaphore: frame.present_semaphore.as_ref(),
+            done_fence: frame.done_fence.as_ref(),
+            deletion_pool: &mut frame.deletion_pool,
+        }
     }
 }
 
@@ -279,4 +459,94 @@ struct FrameResources {
     /// Pool for placing any resource that was deleted within the frame but must remain alive until
     /// that frame is finally retired on the GPU.
     deletion_pool: DeletionPool,
+}
+
+impl FrameResources {
+    fn new(device: &dyn IDevice) -> Self {
+        Self {
+            acquire_semaphore: device.create_semaphore().unwrap(),
+            present_semaphore: device.create_semaphore().unwrap(),
+            done_fence: device.create_fence(true).unwrap(),
+            deletion_pool: DeletionPool::new(),
+        }
+    }
+}
+
+struct CurrentFrameResources<'a> {
+    frame_index: usize,
+    acquire_semaphore: &'a dyn ISemaphore,
+    present_semaphore: &'a dyn ISemaphore,
+    done_fence: &'a dyn IFence,
+    deletion_pool: &'a mut DeletionPool,
+}
+
+struct GraphManager {
+    /// The frame graph object itself. Can be `None` if it has not yet been built for the first
+    /// time.
+    frame_graph: Option<FrameGraph>,
+
+    /// Pin-board used (and re-used) for both building the frame graph, and when executing the frame
+    /// graph.
+    pin_board: PinBoard,
+
+    /// Ordered list of render plane objects that make up the frame graph we'll be building and
+    /// executing
+    render_planes: Vec<Box<dyn IRenderPlane>>,
+
+    /// The ID of the swap chain image resource inside the frame graph. This is needed so that you
+    /// can import the swap chain image into the frame graph.
+    swap_image_id: Option<ResourceMut>,
+}
+
+impl GraphManager {
+    unsafe fn build_graph(
+        &mut self,
+        device: &dyn IDevice,
+        config: &RendererConfig,
+        swap_manager: &SwapManager,
+    ) {
+        self.pin_board.clear();
+
+        self.pin_board.publish(GraphSwapImageInfo {
+            desc: swap_manager.desc.clone(),
+        });
+
+        let mut frame_graph = FrameGraph::builder();
+
+        for plane in self.render_planes.iter_mut() {
+            plane.register_passes(&mut frame_graph, device, &self.pin_board);
+        }
+
+        let mut frame_graph = frame_graph.build(device);
+        frame_graph.allocate_transients(config.frames_in_flight);
+
+        self.frame_graph = Some(frame_graph);
+
+        let SwapImageId { id } = self.pin_board.get().unwrap();
+
+        self.swap_image_id = Some(*id);
+    }
+
+    unsafe fn execute_graph(
+        &mut self,
+        frame_index: usize,
+        import_bundle: &ImportBundle,
+        encoder: &mut dyn IGeneralEncoder,
+    ) {
+        self.pin_board.clear();
+
+        let fg = self.frame_graph.as_mut().unwrap();
+        fg.execute(frame_index, import_bundle, encoder, &self.pin_board)
+    }
+}
+
+/// Representative description of the target swap chain
+struct GraphSwapImageInfo {
+    desc: TextureDesc<'static>,
+}
+
+/// The ID of the most recent state of the swap image. This will be updated by any pass that writes
+/// to the swap image.
+struct SwapImageId {
+    id: ResourceMut,
 }

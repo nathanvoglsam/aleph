@@ -36,8 +36,8 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::pass::BackBufferInfo;
 use crate::render::ShaderDatabaseAccessor;
-use crate::renderer::pass::BackBufferInfo;
 use crate::shaders;
 
 struct MainGBufferPassPayload {
@@ -66,13 +66,13 @@ pub fn pass(
     let desc = BufferDesc::new(4 * 1024u64)
         .cpu_write()
         .with_usage(ResourceUsageFlags::VERTEX_BUFFER)
-        .with_name("Test Vertex Buffer");
+        .with_name(obj_name!("TestVertexBuffer"));
     let vtx_buffer = device.create_buffer(&desc).unwrap();
 
     let desc = BufferDesc::new(4 * 1024u64)
         .cpu_write()
         .with_usage(ResourceUsageFlags::INDEX_BUFFER)
-        .with_name("Test Index Buffer");
+        .with_name(obj_name!("TestIndexBuffer"));
     let idx_buffer = device.create_buffer(&desc).unwrap();
 
     unsafe {
@@ -129,7 +129,7 @@ pub fn pass(
         let uniform_buffer = resources.create_buffer(
             &BufferDesc::new(4 * 1024u64)
                 .cpu_write()
-                .with_name("Test Uniform Buffer"),
+                .with_name(obj_name!("TestUniformBuffer")),
             ResourceUsageFlags::CONSTANT_BUFFER,
         );
 
@@ -275,7 +275,7 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
             DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
                 .with_binding_num(1),
         ],
-        name: Some("main_gbuffer_pass::DescriptorSetLayout"),
+        name: obj_name_opt!("DescriptorSetLayout"),
     };
     device
         .create_descriptor_set_layout(&descriptor_set_layout_desc)
@@ -289,7 +289,7 @@ fn create_root_signature(
     let pipeline_layout_desc = PipelineLayoutDesc {
         set_layouts: &[descriptor_set_layout],
         push_constant_blocks: &[],
-        name: Some("main_gbuffer_pass::RootSignature"),
+        name: obj_name_opt!("RootSignature"),
     };
     device
         .create_pipeline_layout(&pipeline_layout_desc)
@@ -398,7 +398,7 @@ fn create_pipeline_state(
             Format::Rg8Unorm,
         ],
         depth_stencil_format: Some(Format::Depth32Float),
-        name: Some("main_gbuffer_pass::GraphicsPipelineState"),
+        name: obj_name_opt!("GraphicsPipeline"),
     };
 
     device

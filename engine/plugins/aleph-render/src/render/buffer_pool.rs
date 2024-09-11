@@ -62,10 +62,8 @@ impl BufferPool {
 
     /// Creates a new buffer object from the given buffer and returns a [BufferHandle] that can
     /// be used to retreive the buffer from the pool in the future.
-    pub fn create_buffer(&mut self, buffer: AnyArc<dyn IBuffer>) -> BufferHandle {
-        let object = BufferObject {
-            buffer: Some(buffer),
-        };
+    pub fn create_buffer(&mut self, buffer: Option<AnyArc<dyn IBuffer>>) -> BufferHandle {
+        let object = BufferObject { buffer };
 
         self.alloc(object)
     }

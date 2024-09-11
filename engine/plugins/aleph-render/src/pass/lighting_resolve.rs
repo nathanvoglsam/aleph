@@ -33,9 +33,9 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
+use crate::pass::BackBufferInfo;
 use crate::render::ShaderDatabaseAccessor;
-use crate::renderer::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
-use crate::renderer::pass::BackBufferInfo;
 use crate::shaders;
 
 struct LightingResolvePassPayload {
@@ -67,14 +67,14 @@ pub fn pass(
                 DescriptorType::TextureRW.binding(4),
                 DescriptorType::UniformBuffer.binding(5),
             ],
-            name: Some("DeferredLightingDescriptorSetLayout"),
+            name: obj_name_opt!("DescriptorSetLayout"),
         })
         .unwrap();
     let pipeline_layout = device
         .create_pipeline_layout(
             &PipelineLayoutDesc::new()
                 .with_set_layouts(&[set_layout.as_ref()])
-                .with_name("DeferredLightingPipelineLayout"),
+                .with_name(obj_name!("PipelineLayout")),
         )
         .unwrap();
 
@@ -86,7 +86,7 @@ pub fn pass(
         .create_compute_pipeline(&ComputePipelineDesc {
             shader_module,
             pipeline_layout: pipeline_layout.as_ref(),
-            name: Some("DeferredLightingPipeline"),
+            name: obj_name_opt!("ComputePipeline"),
         })
         .unwrap();
 
@@ -115,13 +115,13 @@ pub fn pass(
             &TextureDesc::texture_2d(b_desc.width, b_desc.height)
                 .with_format(Format::Rgba16Float)
                 .with_clear_value(OptimalClearValue::ColorInt(0x000000FF))
-                .with_name("OutputLighting"),
+                .with_name(obj_name!("OutputLighting")),
             ResourceUsageFlags::UNORDERED_ACCESS,
         );
         let uniform_buffer = resources.create_buffer(
             &BufferDesc::new(1024u64)
                 .cpu_write()
-                .with_name("Test Uniform Buffer"),
+                .with_name(obj_name!("TestUniformBuffer")),
             ResourceUsageFlags::CONSTANT_BUFFER,
         );
 

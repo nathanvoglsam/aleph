@@ -33,9 +33,9 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
+use crate::pass::backbuffer_import::BackBufferHandle;
+use crate::pass::tone_map::TonemapPassOutput;
 use crate::render::ShaderDatabaseAccessor;
-use crate::renderer::pass::backbuffer_import::BackBufferHandle;
-use crate::renderer::pass::tone_map::TonemapPassOutput;
 use crate::shaders;
 
 struct CopyTexturePassPayload {
@@ -156,7 +156,7 @@ fn create_descriptor_set_layout(
                 .binding(1)
                 .with_static_samplers(&sampler),
         ],
-        name: Some("egui::DescriptorSetLayout"),
+        name: obj_name_opt!("DescriptorSetLayout"),
     };
     device
         .create_descriptor_set_layout(&descriptor_set_layout_desc)
@@ -170,7 +170,7 @@ fn create_root_signature(
     let pipeline_layout_desc = PipelineLayoutDesc {
         set_layouts: &[descriptor_set_layout],
         push_constant_blocks: &[],
-        name: Some("copy::RootSignature"),
+        name: obj_name_opt!("RootSignature"),
     };
     device
         .create_pipeline_layout(&pipeline_layout_desc)
@@ -227,7 +227,7 @@ fn create_pipeline_state(
         blend_state: &blend_state_new,
         render_target_formats: &[format],
         depth_stencil_format: None,
-        name: Some("copy::GraphicsPipelineState"),
+        name: obj_name_opt!("GraphicsPipelineState"),
     };
 
     device

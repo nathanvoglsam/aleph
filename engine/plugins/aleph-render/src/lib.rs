@@ -33,9 +33,10 @@ extern crate aleph_interfaces as interfaces;
 pub mod render;
 
 mod api;
+mod pass;
 mod plugin;
 mod renderer;
 mod shaders;
 
-pub use api::{IRenderSurface, Renderer};
+pub use api::{IRenderPlane, IRenderSurface, Renderer, RendererBuilder};
 pub use plugin::PluginRender;

@@ -42,23 +42,6 @@ pub struct TextureLoader {
 }
 
 impl TextureLoader {
-    /// The default queue size, used by [TextureLoader::new].
-    pub const DEFAULT_QUEUE_SIZE: usize = 512;
-
-    /// Creates a new [TextureLoader] with a default queue size. The current default is
-    /// [TextureLoader::DEFAULT_QUEUE_SIZE].
-    pub fn new() -> Self {
-        Self::new_with_queue_size(Self::DEFAULT_QUEUE_SIZE)
-    }
-
-    /// Creates a new [TextureLoader] with the given queue size.
-    pub fn new_with_queue_size(n: usize) -> Self {
-        Self {
-            load_queue: ArrayQueue::new(n),
-            immediate_queue: SegQueue::new(),
-        }
-    }
-
     /// Enqueues a request that is guaranteed to have upload attempted within the frame it was
     /// enqueued in. Any call to [`TextureLoader::immediate_upload`] _must_ be processed and
     /// uploaded when the renderer processes the next batch of upload requests.
@@ -82,13 +65,15 @@ impl TextureLoader {
     /// You're free to ignore the request handle, but you're going to ignore errors.
     pub fn immediate_upload(
         &self,
-        request: TextureStreamingRequest,
+        request: Option<TextureStreamingRequest>,
         handle: TextureHandle,
         data: TextureUploadSource,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
-        match request.try_take_ownership() {
-            Some(_) => (),
-            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+        if let Some(req) = request.as_ref() {
+            match req.try_take_ownership() {
+                Some(_) => (),
+                None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+            }
         }
 
         let load = LoadRequest {
@@ -114,7 +99,7 @@ impl TextureLoader {
 
         let load = LoadRequest {
             target: None,
-            request,
+            request: Some(request),
             data,
         };
 
@@ -134,11 +119,30 @@ impl TextureLoader {
 
         let load = LoadRequest {
             target: Some(target),
-            request,
+            request: Some(request),
             data,
         };
 
         self.enqueue_deferred_request(load)
+    }
+}
+
+impl TextureLoader {
+    /// The default queue size, used by [TextureLoader::new].
+    pub(crate) const DEFAULT_QUEUE_SIZE: usize = 512;
+
+    /// Creates a new [TextureLoader] with a default queue size. The current default is
+    /// [TextureLoader::DEFAULT_QUEUE_SIZE].
+    pub(crate) fn new() -> Self {
+        Self::new_with_queue_size(Self::DEFAULT_QUEUE_SIZE)
+    }
+
+    /// Creates a new [TextureLoader] with the given queue size.
+    pub(crate) fn new_with_queue_size(n: usize) -> Self {
+        Self {
+            load_queue: ArrayQueue::new(n),
+            immediate_queue: SegQueue::new(),
+        }
     }
 
     fn enqueue_deferred_request(
@@ -214,10 +218,9 @@ impl TextureLoader {
                 .get_copy_region(0, 0, TextureCopyAspect::Color);
             encoder.copy_buffer_to_texture(upload.load.data.buffer(), texture.as_ref(), &[region]);
 
-            upload
-                .load
-                .request
-                .mark_complete(upload.load.target.unwrap());
+            if let Some(req) = upload.load.request.as_ref() {
+                req.mark_complete(upload.load.target.unwrap());
+            }
 
             deletion_pool.push_upload(upload.load.data);
         }
@@ -244,7 +247,9 @@ impl TextureLoader {
                 // If we fail to create the texture then we mark the request as a failure and
                 // go to the next one in the queue
                 log::error!("Failed to create texture for upload request. Reason: {err:?}");
-                request.request.mark_failed();
+                if let Some(req) = request.request.as_ref() {
+                    req.mark_failed();
+                }
                 return;
             }
         };
@@ -329,7 +334,7 @@ impl TextureLoader {
             None => {
                 let handle = load
                     .target
-                    .unwrap_or_else(|| pool.create_texture(texture.clone()));
+                    .unwrap_or_else(|| pool.create_texture(Some(texture.clone())));
                 Ok((handle, texture))
             }
         }
@@ -337,8 +342,14 @@ impl TextureLoader {
 }
 
 struct LoadRequest {
+    /// Target resource for the upload operation. If this is `None` then we should make a new one.
     target: Option<TextureHandle>,
-    request: TextureStreamingRequest,
+
+    /// Target request object to send request notifications through. If `None` then all
+    /// notifications will be dropped.
+    request: Option<TextureStreamingRequest>,
+
+    /// The actual data source for the upload.
     data: TextureUploadSource,
 }
 

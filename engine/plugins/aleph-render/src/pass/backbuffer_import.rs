@@ -32,8 +32,8 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::pass::BackBufferInfo;
 use crate::render::ShaderDatabaseAccessor;
-use crate::renderer::pass::BackBufferInfo;
 
 pub struct BackBufferHandle {
     pub back_buffer: ResourceMut,
@@ -50,7 +50,10 @@ pub fn pass(
         resources.skip_execution();
 
         let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
-        let back_buffer_desc = back_buffer_info.desc.clone().with_name("Swap Chain Image");
+        let back_buffer_desc = back_buffer_info
+            .desc
+            .clone()
+            .with_name(obj_name!("SwapImage"));
         let back_buffer = resources.import_texture(
             &TextureImportDesc {
                 desc: &back_buffer_desc,

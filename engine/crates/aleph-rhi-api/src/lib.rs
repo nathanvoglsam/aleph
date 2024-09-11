@@ -91,6 +91,35 @@ macro_rules! error_enum_from_unit_type {
     };
 }
 
+/// Utility macro that can be (optionally) used to construct a name for an RHI object. This macro
+/// will yield a bare string literal and is intended to be used with the `with_name` builder
+/// functions.
+///
+/// For use with raw object descriptions [`obj_name_opt`] is available.
+///
+/// This macro will concatenate the given name with the callsite's [`module_path`]. This is simply
+/// nice convention and we provide this macro to encourage using this convention where possible.
+#[macro_export]
+macro_rules! obj_name {
+    ($v: literal) => {
+        concat!(module_path!(), "::", $v)
+    };
+}
+
+/// Utility macro that can be (optionally) used to construct a name for an RHI object.
+///
+/// This is an extension over [`obj_name`] that yields `Some(obj_name!(name))` for use when creating
+/// a bare object description instead of via the `with_name` builder utilities.
+///
+/// This macro will concatenate the given name with the callsite's [`module_path`]. This is simply
+/// nice convention and we provide this macro to encourage using this convention where possible.
+#[macro_export]
+macro_rules! obj_name_opt {
+    ($v: literal) => {
+        ::core::option::Option::Some($crate::obj_name!($v))
+    };
+}
+
 //
 // =================================================================================================
 // INTERFACES

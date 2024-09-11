@@ -65,9 +65,9 @@ impl TexturePool {
 
     /// Creates a new texture object from the given texture and returns a [TextureHandle] that can
     /// be used to retreive the texture from the pool in the future.
-    pub fn create_texture(&mut self, texture: AnyArc<dyn ITexture>) -> TextureHandle {
+    pub fn create_texture(&mut self, texture: Option<AnyArc<dyn ITexture>>) -> TextureHandle {
         let mut object = TextureObject {
-            texture: Some(texture),
+            texture,
             default_view: None,
         };
         object.create_default_view();
