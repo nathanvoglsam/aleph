@@ -244,9 +244,14 @@ fn create_pipeline_state(
 
     let blend_state_new = BlendStateDesc {
         attachments: &[AttachmentBlendState {
-            blend_enabled: false,
+            blend_enabled: true,
+            src_factor: BlendFactor::One,
+            dst_factor: BlendFactor::OneMinusSrcAlpha,
+            blend_op: BlendOp::Add,
+            alpha_src_factor: BlendFactor::OneMinusDstAlpha,
+            alpha_dst_factor: BlendFactor::One,
+            alpha_blend_op: BlendOp::Add,
             color_write_mask: ColorComponentFlags::all(),
-            ..Default::default()
         }],
     };
 
