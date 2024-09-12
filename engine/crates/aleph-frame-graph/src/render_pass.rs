@@ -33,21 +33,21 @@ use aleph_rhi_api::*;
 
 use crate::FrameGraphResources;
 
-pub trait IRenderPass: Send + 'static {
-    fn execute(&mut self, encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources);
+pub trait IRenderPass<A>: Send + 'static {
+    fn execute(
+        &mut self,
+        encoder: &mut dyn IGeneralEncoder,
+        resources: &FrameGraphResources,
+        args: &A,
+    );
 }
 
-pub(crate) struct CallbackRenderPass<
-    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
-> {
+pub(crate) struct CallbackRenderPass<ExecFn> {
     /// The function that will be called on execute
     exec_fn: ExecFn,
 }
 
-impl<ExecFn> CallbackRenderPass<ExecFn>
-where
-    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
-{
+impl<ExecFn> CallbackRenderPass<ExecFn> {
     pub fn new(exec_fn: ExecFn) -> Self {
         assert!(
             size_of_val(&exec_fn) < 1024,
@@ -57,16 +57,16 @@ where
     }
 }
 
-impl<ExecFn> IRenderPass for CallbackRenderPass<ExecFn>
+impl<A, ExecFn> IRenderPass<A> for CallbackRenderPass<ExecFn>
 where
-    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
+    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A) + Send + 'static,
 {
-    fn execute(&mut self, encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources) {
-        (self.exec_fn)(encoder, resources)
+    fn execute(
+        &mut self,
+        encoder: &mut dyn IGeneralEncoder,
+        resources: &FrameGraphResources,
+        args: &A,
+    ) {
+        (self.exec_fn)(encoder, resources, args)
     }
-}
-
-unsafe impl<ExecFn> Send for CallbackRenderPass<ExecFn> where
-    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static
-{
 }

@@ -34,7 +34,6 @@ use aleph_any::AnyArc;
 use aleph_arena_drop_list::DropLink;
 use aleph_device_allocators::LinearDescriptorPool;
 use aleph_nstr::nstr;
-use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use bumpalo::Bump;
 
@@ -44,7 +43,7 @@ use crate::internal::{
 };
 use crate::{FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, Result};
 
-pub struct FrameGraph {
+pub struct FrameGraph<A> {
     /// The bump allocation arena that provides the backing memory for the render passes and any
     /// other memory that's needed for them.
     ///
@@ -72,7 +71,7 @@ pub struct FrameGraph {
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: Vec<RenderPass>,
+    pub(crate) render_passes: Vec<RenderPass<A>>,
 
     /// The backing storage used for all of the root resourcs objects. A root resource represents
     /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
@@ -107,9 +106,9 @@ pub struct FrameGraph {
     pub(crate) drop_head: Option<NonNull<DropLink>>,
 }
 
-impl FrameGraph {
-    pub fn builder() -> FrameGraphBuilder {
-        FrameGraphBuilder::new()
+impl<A> FrameGraph<A> {
+    pub fn builder() -> FrameGraphBuilder<A> {
+        FrameGraphBuilder::<A>::new()
     }
 
     /// # Safety
@@ -143,7 +142,7 @@ impl FrameGraph {
         frame_index: usize,
         import_bundle: &ImportBundle,
         encoder: &mut dyn IGeneralEncoder,
-        context: &PinBoard,
+        args: &A,
     ) {
         // TODO: parallel encode
         //
@@ -165,7 +164,6 @@ impl FrameGraph {
             import_bundle,
             transient_bundle,
             linear_descriptor_pool,
-            context,
         };
 
         encoder.begin_event(Color::BLUE, nstr!("FrameGraph::execute"));
@@ -240,7 +238,9 @@ impl FrameGraph {
                 encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
                 {
                     aleph_profile::scope!("frame-graph::Pass", render_pass.name.as_ref());
-                    render_pass.pass.as_mut().execute(encoder, &resources);
+
+                    // Safety: We're calling a type erased function here.
+                    (render_pass.abi.func)(render_pass.abi.pass.as_mut(), encoder, &resources, args);
                 }
                 encoder.end_event();
             }
@@ -370,7 +370,7 @@ impl FrameGraph {
     }
 }
 
-impl FrameGraph {
+impl<A> FrameGraph<A> {
     /// Internal function that implements the debug assertions that run prior to the main execute
     /// pass in the frame graph.
     unsafe fn execute_pre_assertions(&self, frame_index: usize, import_bundle: &ImportBundle) {
@@ -535,7 +535,7 @@ impl FrameGraph {
     }
 }
 
-impl Drop for FrameGraph {
+impl<A> Drop for FrameGraph<A> {
     fn drop(&mut self) {
         // Safety: implementation and API guarantees that dropper only gets called once per
         //         object, and always on the correct type.
@@ -550,7 +550,6 @@ pub struct FrameGraphResources<'a> {
     import_bundle: &'a ImportBundle,
     transient_bundle: &'a TransientResourceBundle,
     linear_descriptor_pool: &'a LinearDescriptorPool,
-    context: &'a PinBoard,
 }
 
 impl<'a> FrameGraphResources<'a> {
@@ -584,9 +583,5 @@ impl<'a> FrameGraphResources<'a> {
 
     pub const fn descriptor_arena(&self) -> &'a LinearDescriptorPool {
         self.linear_descriptor_pool
-    }
-
-    pub const fn context(&self) -> &PinBoard {
-        self.context
     }
 }

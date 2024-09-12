@@ -151,14 +151,14 @@ impl GraphVizOutputOptions {
 }
 
 #[derive(Default)]
-pub struct FrameGraphBuilder {
+pub struct FrameGraphBuilder<A> {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
     /// used to store anything that persists to the fully constructed graph.
     pub(crate) arena: Bump,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
-    pub(crate) render_passes: Vec<RenderPass>,
+    pub(crate) render_passes: Vec<RenderPass<A>>,
 
     /// The backing storage used for all of the root resourcs objects. A root resource represents
     /// a concrete [ITexture] or [IBuffer] as created by the graph. This includes both the created
@@ -187,15 +187,22 @@ pub struct FrameGraphBuilder {
     pub(crate) drop_head: Option<NonNull<DropLink>>,
 }
 
-impl FrameGraphBuilder {
+impl<A> FrameGraphBuilder<A> {
     /// Creates a new, empty [FrameGraphBuilder]
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            arena: Default::default(),
+            render_passes: Default::default(),
+            root_resources: Default::default(),
+            resource_versions: Default::default(),
+            imported_resources: Default::default(),
+            drop_head: Default::default(),
+        }
     }
 
     pub fn add_pass<
-        ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources) + Send + 'static,
-        SetupFn: FnOnce(&mut ResourceRegistry) -> ExecFn,
+        ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A) + Send + 'static,
+        SetupFn: FnOnce(&mut ResourceRegistry<A>) -> ExecFn,
     >(
         &mut self,
         name: &NStr,
@@ -225,7 +232,7 @@ impl FrameGraphBuilder {
     /// passes constructed earlier. This function is expected to be expensive, so don't build new
     /// graphs often. It is intended for a graph to be built once and run many times and invalidated
     /// rarely for extenuating circum stances like the size of the backbuffer changing.
-    pub fn build(self, device: &dyn IDevice) -> FrameGraph {
+    pub fn build(self, device: &dyn IDevice) -> FrameGraph<A> {
         // We have to constrain the type of the writer even though we don't use it here, so we just
         // use Sink.
         //
@@ -245,7 +252,7 @@ impl FrameGraphBuilder {
         graph_name: &str,
         writer: &mut impl std::io::Write,
         options: &GraphVizOutputOptions,
-    ) -> Result<FrameGraph> {
+    ) -> Result<FrameGraph<A>> {
         self.build_internal(device, graph_name, Some((writer, options)))
     }
 
@@ -254,7 +261,7 @@ impl FrameGraphBuilder {
         device: &dyn IDevice,
         graph_name: &str,
         writer: Option<(&mut T, &GraphVizOutputOptions)>,
-    ) -> Result<FrameGraph> {
+    ) -> Result<FrameGraph<A>> {
         // An arena allocator used for allocating resources that only live as long as the graph is
         // being built
         let build_arena = Bump::new();
@@ -352,13 +359,13 @@ impl FrameGraphBuilder {
 
 /// An interface constrained way to access the frame graph builder for collecting information from
 /// render pass setup callbacks.
-pub struct ResourceRegistry<'a> {
-    builder: &'a mut FrameGraphBuilder,
+pub struct ResourceRegistry<'a, A> {
+    builder: &'a mut FrameGraphBuilder<A>,
     render_pass: usize,
     skip: bool,
 }
 
-impl<'a> ResourceRegistry<'a> {
+impl<'a, A> ResourceRegistry<'a, A> {
     /// Declares that this pass would like to import the given resource into the frame graph with
     /// the given parameters.
     ///
@@ -672,22 +679,20 @@ impl<'a> ResourceRegistry<'a> {
 // =================================================================================================
 
 // Internal functions exposed through ResourceRegistry
-impl FrameGraphBuilder {
-    pub(crate) fn add_pass_internal<T: IRenderPass>(&mut self, name: &NStr, pass: T, skip: bool) {
+impl<A> FrameGraphBuilder<A> {
+    pub(crate) fn add_pass_internal<T: IRenderPass<A>>(&mut self, name: &NStr, pass: T, skip: bool) {
         let name = self.arena.alloc_slice_copy(name.to_bytes());
         let name = NStr::from_bytes(name).unwrap();
         let name = NonNull::from(name);
 
         let pass = self.arena.alloc(pass);
-        let mut pass = NonNull::from(pass);
+        let pass = NonNull::from(pass);
 
         DropLink::append_drop_list(&self.arena, &mut self.drop_head, pass);
 
-        unsafe {
-            let pass = NonNull::from(pass.as_mut() as &mut dyn IRenderPass);
-            let pass = RenderPass { pass, name, skip };
-            self.render_passes.push(pass);
-        }
+        let abi = RenderPassAbi::new(pass);
+        let pass = RenderPass { abi, name, skip };
+        self.render_passes.push(pass);
     }
 
     pub(crate) fn import_texture_internal(
@@ -1173,7 +1178,7 @@ impl FrameGraphBuilder {
     }
 }
 
-impl Drop for FrameGraphBuilder {
+impl<A> Drop for FrameGraphBuilder<A> {
     fn drop(&mut self) {
         // Safety: implementation and API guarantees that dropper only gets called once per
         //         object, and always on the correct type.
@@ -1245,7 +1250,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         }
     }
 
-    pub fn build(&mut self, builder: &FrameGraphBuilder, graph_name: &str) -> Result<()> {
+    pub fn build<A>(&mut self, builder: &FrameGraphBuilder<A>, graph_name: &str) -> Result<()> {
         self.emit_graph_viz_start(graph_name)?;
 
         // The first step is to emit all the barriers and graph edges by iterating through our
@@ -1392,9 +1397,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         Ok(())
     }
 
-    fn build_emit_barriers_for_buffer_version(
+    fn build_emit_barriers_for_buffer_version<A>(
         &mut self,
-        builder: &FrameGraphBuilder,
+        builder: &FrameGraphBuilder<A>,
         version: &ResourceVersion,
         resource_id: ResourceId,
         root: &ResourceRoot,
@@ -1567,9 +1572,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         Ok(())
     }
 
-    fn build_emit_barriers_for_texture_version(
+    fn build_emit_barriers_for_texture_version<A>(
         &mut self,
-        builder: &FrameGraphBuilder,
+        builder: &FrameGraphBuilder<A>,
         version: &ResourceVersion,
         resource_id: ResourceId,
         root: &ResourceRoot,
@@ -1981,9 +1986,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         Ok(())
     }
 
-    fn get_resource_name_for_resource_id(
+    fn get_resource_name_for_resource_id<A>(
         &self,
-        builder: &FrameGraphBuilder,
+        builder: &FrameGraphBuilder<A>,
         resource_id: ResourceId,
     ) -> &str {
         let root_index = resource_id.root as usize;
@@ -2002,10 +2007,10 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         }
     }
 
-    fn emit_graph_viz_for_node(
+    fn emit_graph_viz_for_node<A>(
         &self,
         writer: &'b mut T,
-        builder: &FrameGraphBuilder,
+        builder: &FrameGraphBuilder<A>,
         node_index: usize,
         ir_node: &impl IIRNode,
     ) -> Result<()> {
@@ -2083,9 +2088,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     ///
     /// There is a _single_ exception, the empty array. The empty array will not dereference the
     /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
-    fn emit_layout_change_ir_node(
+    fn emit_layout_change_ir_node<A>(
         &mut self,
-        builder: &FrameGraphBuilder,
+        builder: &FrameGraphBuilder<A>,
         barrier_type: IRBarrierType,
         barrier_prev: &[usize],
         barrier_next: &[usize],
@@ -2318,9 +2323,9 @@ impl<'arena> PassOrderBuilder<'arena> {
         }
     }
 
-    pub fn build<T: std::io::Write>(
+    pub fn build<T: std::io::Write, A>(
         &mut self,
-        graph_builder: &FrameGraphBuilder,
+        graph_builder: &FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
     ) -> std::result::Result<(), Vec<usize>> {
         let (roots, leafs) = self.find_root_and_leaf_nodes(graph_builder, ir);
@@ -2351,9 +2356,9 @@ impl<'arena> PassOrderBuilder<'arena> {
         Ok(())
     }
 
-    fn schedule_passes<T: std::io::Write>(
+    fn schedule_passes<T: std::io::Write, A>(
         &mut self,
-        graph_builder: &FrameGraphBuilder,
+        graph_builder: &FrameGraphBuilder<A>,
         ir: &IRBuilder<'_, '_, '_, T>,
     ) -> std::result::Result<(), Vec<usize>> {
         // List that stores the candidates we should consider in a loop iteration. This is
@@ -2547,9 +2552,9 @@ impl<'arena> PassOrderBuilder<'arena> {
         }
     }
 
-    fn schedule_import_and_export_barriers<'graph, T: std::io::Write>(
+    fn schedule_import_and_export_barriers<'graph, T: std::io::Write, A>(
         &mut self,
-        graph_builder: &'graph FrameGraphBuilder,
+        graph_builder: &'graph FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
         barrier_type_counts: &[usize; 8],
         roots: &[usize],
@@ -2660,9 +2665,9 @@ impl<'arena> PassOrderBuilder<'arena> {
         barrier_type_counts
     }
 
-    fn find_root_and_leaf_nodes<T: std::io::Write>(
+    fn find_root_and_leaf_nodes<T: std::io::Write, A>(
         &mut self,
-        graph_builder: &FrameGraphBuilder,
+        graph_builder: &FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
     ) -> (BVec<'arena, usize>, BVec<'arena, usize>) {
         // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
@@ -2703,9 +2708,9 @@ impl<'arena> PassOrderBuilder<'arena> {
         (roots, leafs)
     }
 
-    fn validate_bundles<T: std::io::Write>(
+    fn validate_bundles<T: std::io::Write, A>(
         &mut self,
-        _graph_builder: &FrameGraphBuilder,
+        _graph_builder: &FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
     ) {
         if !cfg!(debug_assertions) {

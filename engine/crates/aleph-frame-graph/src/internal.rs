@@ -38,10 +38,31 @@ use aleph_nstr::NStr;
 use aleph_rhi_api::*;
 
 use crate::resource::ResourceId;
-use crate::{IRenderPass, ResourceVariant, Result};
+use crate::{FrameGraphResources, IRenderPass, ResourceVariant, Result};
 
-pub(crate) struct RenderPass {
-    pub pass: NonNull<dyn IRenderPass>,
+pub type RenderPassAbiFn<A> = unsafe fn(this: &mut (), encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources, args: &A);
+
+pub(crate) struct RenderPassAbi<A> {
+    pub pass: NonNull<()>,
+    pub func: RenderPassAbiFn<A>,
+}
+
+impl<A> RenderPassAbi<A> {
+    pub fn new<T: IRenderPass<A>>(v: NonNull<T>) -> Self {
+        unsafe fn runner<A, T: IRenderPass<A>>(this: &mut (), encoder: &mut dyn IGeneralEncoder, resources: &FrameGraphResources, args: &A) {
+            let mut ptr = NonNull::from(this).cast::<T>();
+            ptr.as_mut().execute(encoder, resources, args)
+        }
+        
+        Self {
+            pass: v.cast(),
+            func: runner::<A, T>,
+        }
+    }
+}
+
+pub(crate) struct RenderPass<A> {
+    pub abi: RenderPassAbi<A>,
     pub name: NonNull<NStr>,
     pub skip: bool,
 }
