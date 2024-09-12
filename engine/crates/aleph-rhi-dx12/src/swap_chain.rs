@@ -42,6 +42,7 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
 
 use crate::device::Device;
+use crate::internal::set_name::set_name;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use crate::texture::{ImageViewObject, Texture};
@@ -81,6 +82,7 @@ impl SwapChain {
         state.textures.clear();
         for i in 0..count {
             let resource = self.swap_chain.GetBuffer::<ID3D12Resource>(i)?;
+            set_name(&resource, &format!("SwapImage-{i}"))?;
             let desc = TextureDesc {
                 width: state.config.width,
                 height: state.config.height,

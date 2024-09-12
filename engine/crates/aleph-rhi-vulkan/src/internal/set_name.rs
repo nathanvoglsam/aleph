@@ -30,6 +30,7 @@
 use std::ffi::CStr;
 use std::iter;
 
+use aleph_nstr::NStr;
 use ash::vk;
 use bumpalo::Bump;
 
@@ -53,6 +54,25 @@ pub fn set_name<T: vk::Handle>(
             let info = vk::DebugUtilsObjectNameInfoEXT::default()
                 .object_handle(handle)
                 .object_name(name);
+            unsafe {
+                loader.set_debug_utils_object_name(&info).unwrap();
+            }
+        }
+    }
+}
+
+pub fn set_name_nstr<T: vk::Handle>(
+    loader: Option<&ash::ext::debug_utils::Device>,
+    handle: T,
+    name: Option<&NStr>,
+) {
+    // Do nothing if needed extension isn't loaded
+    if let Some(loader) = loader {
+        // Can only set a name if one is provided
+        if let Some(name) = name {
+            let info = vk::DebugUtilsObjectNameInfoEXT::default()
+                .object_handle(handle)
+                .object_name(name.to_cstr());
             unsafe {
                 loader.set_debug_utils_object_name(&info).unwrap();
             }

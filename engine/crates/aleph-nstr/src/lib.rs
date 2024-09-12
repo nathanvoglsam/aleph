@@ -36,7 +36,7 @@ use std::hash::{Hash, Hasher};
 /// terminator was provided and inserts one on the caller's behalf
 #[macro_export]
 macro_rules! nstr {
-    ($v:literal) => {
+    ($v:expr) => {
         $crate::NStr::new_str(concat!($v, "\0"))
     };
 }

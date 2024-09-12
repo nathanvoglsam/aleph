@@ -101,7 +101,7 @@ macro_rules! error_enum_from_unit_type {
 /// nice convention and we provide this macro to encourage using this convention where possible.
 #[macro_export]
 macro_rules! obj_name {
-    ($v: literal) => {
+    ($v: expr) => {
         concat!(module_path!(), "::", $v)
     };
 }
@@ -115,7 +115,7 @@ macro_rules! obj_name {
 /// nice convention and we provide this macro to encourage using this convention where possible.
 #[macro_export]
 macro_rules! obj_name_opt {
-    ($v: literal) => {
+    ($v: expr) => {
         ::core::option::Option::Some($crate::obj_name!($v))
     };
 }

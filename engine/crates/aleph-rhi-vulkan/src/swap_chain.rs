@@ -30,6 +30,7 @@
 use std::any::TypeId;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_nstr::{nstr, NStr};
 use aleph_rhi_api::*;
 use ash::vk;
 use parking_lot::Mutex;
@@ -38,6 +39,7 @@ use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
+use crate::internal::set_name::set_name_nstr;
 use crate::internal::unwrap;
 use crate::surface::Surface;
 use crate::texture::Texture;
@@ -232,10 +234,28 @@ impl SwapChain {
             .get_swapchain_images(inner.swap_chain)
             .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
 
+        const SWAP_NAMES: [&'static NStr; 8] = [
+            nstr!(obj_name!("SwapImage-0")),
+            nstr!(obj_name!("SwapImage-1")),
+            nstr!(obj_name!("SwapImage-2")),
+            nstr!(obj_name!("SwapImage-3")),
+            nstr!(obj_name!("SwapImage-4")),
+            nstr!(obj_name!("SwapImage-5")),
+            nstr!(obj_name!("SwapImage-6")),
+            nstr!(obj_name!("SwapImage-7")),
+        ];
         let images: Vec<_> = images
             .iter()
-            .map(|image| {
+            .enumerate()
+            .map(|(i, image)| {
                 use ResourceUsageFlags as F;
+
+                // Apply name to swap images when we query them
+                set_name_nstr(
+                    self.device.debug_loader.as_ref(),
+                    *image,
+                    Some(SWAP_NAMES[i]),
+                );
 
                 // This shadows swap_create_info to a reference to itself so the new_cyclic move
                 // closure moves the reference and not the object itself
