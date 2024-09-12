@@ -31,6 +31,8 @@ use aleph_frame_graph::PassArgs;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::render::{BufferPool, TexturePool};
+
 pub mod composite_planes;
 pub mod egui_draw;
 pub mod lighting_resolve;
@@ -42,13 +44,10 @@ pub struct GraphSwapImageInfo {
     pub desc: TextureDesc<'static>,
 }
 
-#[derive(Copy, Clone)]
-pub struct EguiDPI {
-    pub pixels_per_point: f32,
-}
-
 pub struct GraphArgsLayout<'a> {
     pub board: &'a PinBoard,
+    pub texture_pool: &'a TexturePool,
+    pub buffer_pool: &'a BufferPool,
 }
 
 pub struct GraphArgs();

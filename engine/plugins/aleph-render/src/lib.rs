@@ -35,7 +35,6 @@ pub mod render;
 mod api;
 mod pass;
 mod plugin;
-mod renderer;
 mod shaders;
 
 pub use api::{

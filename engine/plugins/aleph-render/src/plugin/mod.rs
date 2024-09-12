@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+mod egui_font_texture;
+
 use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
@@ -41,7 +43,9 @@ use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 
-use crate::pass::{GraphArgs, GraphArgsLayout};
+use crate::pass::egui_draw::EguiPassContext;
+use crate::pass::GraphArgs;
+use crate::plugin::egui_font_texture::EguiFontTexture;
 use crate::render::ShaderDatabaseAccessor;
 use crate::{pass, DefaultRenderPlane, IRenderPlane, IRenderSurface, RendererBuilder};
 
@@ -111,7 +115,10 @@ impl IPlugin for PluginRender {
         let swap_chain = surface.create_swap_chain(device.deref(), &config).unwrap();
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
-        let surface = RenderSurface { window, swap_chain };
+        let surface = RenderSurface {
+            window: window.clone(),
+            swap_chain,
+        };
 
         // Try load the shader db, first from the immediate working directory and then from the
         // potential aleph project's .aleph/shaders directory.
@@ -129,7 +136,7 @@ impl IPlugin for PluginRender {
         renderer.surface(surface);
         renderer.shader_db(shader_db);
         renderer.render_plane(DefaultRenderPlane::default());
-        renderer.render_plane(EguiRenderPlane());
+        renderer.render_plane(EguiRenderPlane::new(window));
         renderer.frames_in_flight(2);
 
         let renderer = renderer.build().unwrap();
@@ -141,6 +148,7 @@ impl IPlugin for PluginRender {
         let mut schedule = schedule_cell.get();
 
         let mut renderer = renderer;
+        let mut font_texture = EguiFontTexture::new();
         let mut board = PinBoard::new();
         schedule.add_exclusive_at_start_system_to_stage(
             CoreStage::Render.into(),
@@ -148,21 +156,24 @@ impl IPlugin for PluginRender {
             move || {
                 device.garbage_collect();
 
-                let _render_data = render_data.take();
+                let render_data = render_data.take();
 
-                // // Filter the deltas to only those that affect the font texture
-                // let font_updates = render_data
-                //     .textures_delta
-                //     .set
-                //     .iter()
-                //     .filter(|(id, _)| *id == egui::TextureId::Managed(0))
-                //     .map(|(_, delta)| delta);
-                // data.renderer.update_font_texture(font_updates);
+                // Filter the deltas to only those that affect the font texture
+                let font_updates = render_data
+                    .textures_delta
+                    .set
+                    .iter()
+                    .filter(|(id, _)| *id == egui::TextureId::Managed(0))
+                    .map(|(_, delta)| delta);
+                font_texture.update_font_texture(&mut renderer, font_updates);
 
                 unsafe {
                     board.clear();
-                    let args = GraphArgsLayout { board: &board };
-                    renderer.draw_next_frame(&args);
+                    board.publish(EguiPassContext {
+                        font_handle: font_texture.font_handle.unwrap(),
+                        render_data,
+                    });
+                    renderer.draw_next_frame(&board);
                 }
             },
         );
@@ -232,7 +243,15 @@ impl IRenderSurface for RenderSurface {
     }
 }
 
-struct EguiRenderPlane();
+struct EguiRenderPlane {
+    window: AnyArc<dyn IWindow>,
+}
+
+impl EguiRenderPlane {
+    fn new(window: AnyArc<dyn IWindow>) -> Self {
+        Self { window }
+    }
+}
 
 impl IRenderPlane for EguiRenderPlane {
     fn register_passes(
@@ -242,6 +261,7 @@ impl IRenderPlane for EguiRenderPlane {
         pin_board: &aleph_pin_board::PinBoard,
         shader_db: &ShaderDatabaseAccessor,
     ) -> crate::RenderPlaneOutput {
-        pass::egui_draw::pass(frame_graph, device, pin_board, shader_db)
+        let pixels_per_point = self.window.current_display_scale();
+        pass::egui_draw::pass(frame_graph, device, pin_board, shader_db, pixels_per_point)
     }
 }

@@ -29,8 +29,102 @@
 
 use std::ops::BitAnd;
 
-use egui::FontImage;
+use aleph_rhi_api::*;
+use egui::epaint::ImageDelta;
+use egui::{FontImage, ImageData};
 use wide::{f32x8, i32x8, CmpEq};
+
+use crate::render::{TextureHandle, TextureMipUploadDesc, TextureUploadSource};
+use crate::Renderer;
+
+pub struct EguiFontTexture {
+    pub font_texture: FontTexture,
+    pub font_handle: Option<TextureHandle>,
+}
+
+impl EguiFontTexture {
+    pub fn new() -> Self {
+        Self {
+            font_texture: FontTexture::new(),
+            font_handle: None,
+        }
+    }
+
+    pub fn update_font_texture<'a>(
+        &mut self,
+        renderer: &mut Renderer,
+        deltas: impl Iterator<Item = &'a ImageDelta>,
+    ) {
+        let mut updated = false;
+        for delta in deltas {
+            updated = true;
+            self.apply_delta_to_font_texture(delta);
+        }
+
+        if updated {
+            unsafe {
+                let dimensions = (
+                    self.font_texture.width as u32,
+                    self.font_texture.height as u32,
+                );
+
+                let desc =
+                    TextureMipUploadDesc::new(dimensions.0, dimensions.1, 1, Format::R8Unorm);
+                let staging_buffer = TextureUploadSource::new_owned(
+                    renderer.device(),
+                    desc.clone(),
+                    ResourceUsageFlags::SHADER_RESOURCE,
+                )
+                .unwrap();
+
+                assert_eq!(
+                    staging_buffer.desc.aligned_width(),
+                    staging_buffer.desc.width,
+                    "Currently we don't handle row pitch here"
+                );
+
+                let data = staging_buffer.data_ptr().cast::<u8>();
+                data.as_ptr().copy_from_nonoverlapping(
+                    self.font_texture.bytes.as_ptr(),
+                    desc.size_requirement(),
+                );
+
+                staging_buffer.unmap();
+
+                if let Some(handle) = self.font_handle {
+                    renderer
+                        .get_texture_loader()
+                        .immediate_upload(None, handle, staging_buffer)
+                        .unwrap();
+                } else {
+                    let result = renderer.create_texture(staging_buffer);
+                    self.font_handle = Some(result.unwrap());
+                }
+            }
+        }
+    }
+
+    pub fn apply_delta_to_font_texture(&mut self, delta: &ImageDelta) {
+        // We only support font images here so we panic if we get something else
+        match &delta.image {
+            ImageData::Font(font) => {
+                // In the event of a whole update we need to re-allocate the texture as the size may have
+                // increased.
+                //
+                // Partial updates patch the data in place
+                if let Some(position) = &delta.pos {
+                    let pos = (position[0], position[1]);
+                    self.font_texture.apply_patch_to_font_texture(font, pos);
+                } else {
+                    self.font_texture.apply_whole_to_font_texture(font);
+                }
+            }
+            _ => {
+                unimplemented!()
+            }
+        }
+    }
+}
 
 pub struct FontTexture {
     /// Width in pixels of the texture

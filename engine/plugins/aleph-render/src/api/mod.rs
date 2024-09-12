@@ -201,12 +201,24 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn get_texture_loader(&self) -> Arc<TextureLoader> {
+    pub fn device(&self) -> &dyn IDevice {
+        self.device.as_ref()
+    }
+
+    pub fn get_texture_loader_handle(&self) -> Arc<TextureLoader> {
         self.texture_loader.clone()
     }
 
-    pub fn get_buffer_loader(&self) -> Arc<BufferLoader> {
+    pub fn get_texture_loader(&self) -> &TextureLoader {
+        self.texture_loader.as_ref()
+    }
+
+    pub fn get_buffer_loader_handle(&self) -> Arc<BufferLoader> {
         self.buffer_loader.clone()
+    }
+
+    pub fn get_buffer_loader(&self) -> &BufferLoader {
+        self.buffer_loader.as_ref()
     }
 
     pub fn create_texture(&mut self, data: TextureUploadSource) -> Option<TextureHandle> {
@@ -229,7 +241,7 @@ impl Renderer {
         Some(handle)
     }
 
-    pub unsafe fn draw_next_frame(&mut self, args: &GraphArgsLayout) {
+    pub unsafe fn draw_next_frame(&mut self, board: &PinBoard) {
         let CurrentFrameResources {
             frame_index,
             acquire_semaphore,
@@ -314,12 +326,17 @@ impl Renderer {
                 acquired_image.image.as_ref(),
             );
 
-            args.board.publish(GraphSwapImageInfo {
+            board.publish(GraphSwapImageInfo {
                 desc: self.swap_manager.desc.clone(),
             });
+            let args = GraphArgsLayout {
+                board,
+                texture_pool: &self.texture_pool,
+                buffer_pool: &self.buffer_pool,
+            };
 
             self.graph_manager
-                .execute_graph(frame_index, &import_bundle, encoder.as_mut(), args);
+                .execute_graph(frame_index, &import_bundle, encoder.as_mut(), &args);
         }
 
         self.queue

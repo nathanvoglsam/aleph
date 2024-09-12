@@ -30,13 +30,14 @@
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_interfaces::any::AnyArc;
+use aleph_math::Vec2;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use egui::RenderData;
 
-use crate::pass::{EguiDPI, GraphArgs, GraphSwapImageInfo};
-use crate::render::ShaderDatabaseAccessor;
+use crate::pass::{GraphArgs, GraphSwapImageInfo};
+use crate::render::{ShaderDatabaseAccessor, TextureHandle};
 use crate::{shaders, RenderPlaneOutput};
 
 struct EguiPassPayload {
@@ -47,8 +48,7 @@ struct EguiPassPayload {
 
 /// The input the pass expects in the execute phase, to be pulled from the context pin board.
 pub struct EguiPassContext {
-    pub buffer: AnyArc<dyn IBuffer>,
-    pub font_view: ImageView,
+    pub font_handle: TextureHandle,
     pub render_data: RenderData,
 }
 
@@ -57,12 +57,12 @@ pub fn pass(
     device: &dyn IDevice,
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
+    pixels_per_point: f32,
 ) -> RenderPlaneOutput {
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
     const INDEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
 
     let b_desc = &pin_board.get::<GraphSwapImageInfo>().unwrap().desc;
-    let EguiDPI { pixels_per_point } = pin_board.get().cloned().unwrap();
 
     let sampler = create_sampler(device);
 
@@ -74,7 +74,7 @@ pub fn pass(
     let mut result = None;
     frame_graph.add_pass(nstr!("EguiPass"), |resources| {
         let render_target_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-            .with_format(Format::Rgba8UnormSrgb)
+            .with_format(Format::Bgra8UnormSrgb)
             .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
             .with_name(obj_name!("RenderTarget"));
         let render_target =
@@ -104,8 +104,6 @@ pub fn pass(
             idx_buffer,
         };
 
-        // pin_board.publish(BackBufferHandle { back_buffer });
-
         move |encoder, resources, args| unsafe {
             let sampler = sampler.as_ref();
             let descriptor_arena = resources.descriptor_arena();
@@ -117,22 +115,18 @@ pub fn pass(
             let extent = render_target.desc_ref().get_extent_2d();
 
             let EguiPassContext {
-                buffer,
-                font_view,
+                font_handle,
                 render_data,
             } = args.board.get().unwrap();
+
+            let font_view = args.texture_pool.get_default_view(*font_handle).unwrap();
 
             let set = descriptor_arena
                 .allocate_set(descriptor_set_layout.as_ref())
                 .unwrap();
             resources.device().update_descriptor_sets(&[
-                DescriptorWriteDesc::uniform_buffer(
-                    set,
-                    0,
-                    &BufferDescriptorWrite::uniform_buffer(buffer.as_ref(), 256),
-                ),
-                DescriptorWriteDesc::texture(set, 1, &font_view.srv_write()),
-                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite { sampler }),
+                DescriptorWriteDesc::texture(set, 0, &font_view.srv_write()),
+                DescriptorWriteDesc::sampler(set, 1, &SamplerDescriptorWrite { sampler }),
             ]);
 
             // Map and calculate our begin/end pointers for the mapped vertex and index buffer
@@ -159,7 +153,7 @@ pub fn pass(
                 color_attachments: &[RenderingColorAttachmentInfo {
                     image_view,
                     image_layout: ImageLayout::ColorAttachment,
-                    load_op: AttachmentLoadOp::Load,
+                    load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
                     store_op: AttachmentStoreOp::Store,
                 }],
                 depth_stencil_attachment: None,
@@ -167,6 +161,13 @@ pub fn pass(
             });
 
             encoder.bind_graphics_pipeline(pipeline.as_ref());
+            encoder.bind_descriptor_sets(
+                pipeline_layout.as_ref(),
+                PipelineBindPoint::Graphics,
+                0,
+                &[set],
+                &[],
+            );
 
             //
             // Push screen size via root constants
@@ -175,20 +176,8 @@ pub fn pass(
             let height_pixels = extent.height as f32;
             let width_points = width_pixels / pixels_per_point;
             let height_points = height_pixels / pixels_per_point;
-            let values_data = [width_points, height_points];
-
-            let ptr = buffer.map().unwrap();
-            let mut ptr = ptr.cast::<[f32; 2]>();
-            *ptr.as_mut() = values_data;
-            buffer.unmap();
-
-            encoder.bind_descriptor_sets(
-                pipeline_layout.as_ref(),
-                PipelineBindPoint::Graphics,
-                0,
-                &[set],
-                &[],
-            );
+            let size = Vec2::new(width_points, height_points);
+            encoder.set_push_constant_block(0, size.as_byte_slice());
 
             //
             // Bind the vertex and index buffers to render with
@@ -327,9 +316,8 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
     let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
         visibility: DescriptorShaderVisibility::All,
         items: &[
-            DescriptorType::UniformBuffer.binding(0),
-            DescriptorType::Texture.binding(1),
-            DescriptorType::Sampler.binding(2),
+            DescriptorType::Texture.binding(0),
+            DescriptorType::Sampler.binding(1),
         ],
         name: obj_name_opt!("DescriptorSetLayout"),
     };
@@ -344,7 +332,11 @@ fn create_root_signature(
 ) -> AnyArc<dyn IPipelineLayout> {
     let pipeline_layout_desc = PipelineLayoutDesc {
         set_layouts: &[descriptor_set_layout],
-        push_constant_blocks: &[],
+        push_constant_blocks: &[PushConstantBlock {
+            binding: 0,
+            visibility: DescriptorShaderVisibility::All,
+            size: 16,
+        }],
         name: obj_name_opt!("RootSignature"),
     };
     device

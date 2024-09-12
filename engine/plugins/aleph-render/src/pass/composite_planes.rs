@@ -95,17 +95,6 @@ pub fn pass(
             let output = resources.get_texture(data.target).unwrap();
             let dst_desc = output.desc_ref();
 
-            let plane = resources.get_texture(data.planes[0]).unwrap();
-            let src_desc = plane.desc_ref();
-
-            let src_view = plane
-                .get_view(&ImageViewDesc {
-                    format: src_desc.format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::all(src_desc),
-                    writable: false,
-                })
-                .unwrap();
             let dst_view = output
                 .get_rtv(&ImageViewDesc {
                     format: dst_desc.format,
@@ -114,19 +103,6 @@ pub fn pass(
                     writable: false,
                 })
                 .unwrap();
-
-            let set = resources
-                .descriptor_arena()
-                .allocate_set(descriptor_set_layout.as_ref())
-                .unwrap();
-            resources
-                .device()
-                .update_descriptor_sets(&[DescriptorWriteDesc {
-                    set,
-                    binding: 0,
-                    array_element: 0,
-                    writes: DescriptorWrites::Texture(&[ImageDescriptorWrite::srv(src_view)]),
-                }]);
 
             encoder.begin_rendering(&BeginRenderingInfo {
                 layer_count: 1,
@@ -141,13 +117,6 @@ pub fn pass(
                 allow_uav_writes: false,
             });
             encoder.bind_graphics_pipeline(pipeline.as_ref());
-            encoder.bind_descriptor_sets(
-                pipeline_layout.as_ref(),
-                PipelineBindPoint::Graphics,
-                0,
-                &[set],
-                &[],
-            );
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
                 y: 0.0,
@@ -162,7 +131,43 @@ pub fn pass(
                 w: dst_desc.width,
                 h: dst_desc.height,
             }]);
-            encoder.draw(3, 1, 0, 0);
+
+            for plane in data.planes.iter().copied() {
+                let plane = resources.get_texture(plane).unwrap();
+                let src_desc = plane.desc_ref();
+
+                let src_view = plane
+                    .get_view(&ImageViewDesc {
+                        format: src_desc.format,
+                        view_type: ImageViewType::Tex2D,
+                        sub_resources: TextureSubResourceSet::all(src_desc),
+                        writable: false,
+                    })
+                    .unwrap();
+                let set = resources
+                    .descriptor_arena()
+                    .allocate_set(descriptor_set_layout.as_ref())
+                    .unwrap();
+                resources
+                    .device()
+                    .update_descriptor_sets(&[DescriptorWriteDesc {
+                        set,
+                        binding: 0,
+                        array_element: 0,
+                        writes: DescriptorWrites::Texture(&[ImageDescriptorWrite::srv(src_view)]),
+                    }]);
+
+                encoder.bind_descriptor_sets(
+                    pipeline_layout.as_ref(),
+                    PipelineBindPoint::Graphics,
+                    0,
+                    &[set],
+                    &[],
+                );
+
+                encoder.draw(3, 1, 0, 0);
+            }
+
             encoder.end_rendering();
         }
     });
