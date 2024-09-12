@@ -33,12 +33,20 @@ use aleph_rhi_api::*;
 
 use crate::FrameGraphResources;
 
-pub trait IRenderPass<A>: Send + 'static {
+pub trait PassArgs {
+    type Args<'a>;
+}
+
+impl PassArgs for () {
+    type Args<'a> = ();
+}
+
+pub trait IRenderPass<A: PassArgs>: Send + 'static {
     fn execute(
         &mut self,
         encoder: &mut dyn IGeneralEncoder,
         resources: &FrameGraphResources,
-        args: &A,
+        args: &A::Args<'_>,
     );
 }
 
@@ -57,15 +65,15 @@ impl<ExecFn> CallbackRenderPass<ExecFn> {
     }
 }
 
-impl<A, ExecFn> IRenderPass<A> for CallbackRenderPass<ExecFn>
+impl<A: PassArgs, ExecFn> IRenderPass<A> for CallbackRenderPass<ExecFn>
 where
-    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A) + Send + 'static,
+    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A::Args<'_>) + Send + 'static,
 {
-    fn execute(
+    fn execute<'a>(
         &mut self,
         encoder: &mut dyn IGeneralEncoder,
         resources: &FrameGraphResources,
-        args: &A,
+        args: &'a A::Args<'_>,
     ) {
         (self.exec_fn)(encoder, resources, args)
     }

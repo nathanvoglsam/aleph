@@ -41,9 +41,10 @@ use crate::internal::{
     FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle, RenderPass,
     ResourceRoot, ResourceVersion, TransientResourceBundle,
 };
+use crate::render_pass::PassArgs;
 use crate::{FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, Result};
 
-pub struct FrameGraph<A> {
+pub struct FrameGraph<A: PassArgs = ()> {
     /// The bump allocation arena that provides the backing memory for the render passes and any
     /// other memory that's needed for them.
     ///
@@ -106,7 +107,7 @@ pub struct FrameGraph<A> {
     pub(crate) drop_head: Option<NonNull<DropLink>>,
 }
 
-impl<A> FrameGraph<A> {
+impl<A: PassArgs> FrameGraph<A> {
     pub fn builder() -> FrameGraphBuilder<A> {
         FrameGraphBuilder::<A>::new()
     }
@@ -142,7 +143,7 @@ impl<A> FrameGraph<A> {
         frame_index: usize,
         import_bundle: &ImportBundle,
         encoder: &mut dyn IGeneralEncoder,
-        args: &A,
+        args: &A::Args<'_>,
     ) {
         // TODO: parallel encode
         //
@@ -240,7 +241,12 @@ impl<A> FrameGraph<A> {
                     aleph_profile::scope!("frame-graph::Pass", render_pass.name.as_ref());
 
                     // Safety: We're calling a type erased function here.
-                    (render_pass.abi.func)(render_pass.abi.pass.as_mut(), encoder, &resources, args);
+                    (render_pass.abi.func)(
+                        render_pass.abi.pass.as_mut(),
+                        encoder,
+                        &resources,
+                        args,
+                    );
                 }
                 encoder.end_event();
             }
@@ -370,7 +376,7 @@ impl<A> FrameGraph<A> {
     }
 }
 
-impl<A> FrameGraph<A> {
+impl<A: PassArgs> FrameGraph<A> {
     /// Internal function that implements the debug assertions that run prior to the main execute
     /// pass in the frame graph.
     unsafe fn execute_pre_assertions(&self, frame_index: usize, import_bundle: &ImportBundle) {
@@ -535,7 +541,7 @@ impl<A> FrameGraph<A> {
     }
 }
 
-impl<A> Drop for FrameGraph<A> {
+impl<A: PassArgs> Drop for FrameGraph<A> {
     fn drop(&mut self) {
         // Safety: implementation and API guarantees that dropper only gets called once per
         //         object, and always on the correct type.

@@ -34,6 +34,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_null::NullContext;
 
 use crate::frame_graph_builder::GraphBuildError;
+use crate::render_pass::PassArgs;
 use crate::{
     BufferImportDesc, FrameGraph, ImportBundle, ResourceMut, ResourceRef, TextureImportDesc,
 };
@@ -47,6 +48,12 @@ fn make_null_device() -> AnyArc<dyn IDevice> {
 struct Import(ResourceMut);
 struct Write(ResourceMut);
 // struct Read(ResourceRef);
+
+struct PinBoardArg();
+
+impl PassArgs for PinBoardArg {
+    type Args<'a> = PinBoard;
+}
 
 #[test]
 pub fn test_builder() {
@@ -72,7 +79,7 @@ pub fn test_builder() {
     let mut out_write = None;
     let mut out_read = None;
 
-    let mut builder = FrameGraph::<PinBoard>::builder();
+    let mut builder = FrameGraph::<PinBoardArg>::builder();
 
     builder.add_pass(nstr!("test-pass-0"), |resources| {
         let payload = TestPassData {
@@ -176,7 +183,7 @@ pub fn test_handle_equality() {
     let mut out_write_transient = None;
     let mut out_read_transient = None;
 
-    let mut builder = FrameGraph::builder();
+    let mut builder = FrameGraph::<()>::builder();
 
     let mut imported_resource = None;
     builder.add_pass(nstr!("test-pass-0"), |resources| {
@@ -296,7 +303,7 @@ pub fn test_usage_collection() {
     let mut out_write_import = None;
     let mut out_write_transient = None;
 
-    let mut builder = FrameGraph::builder();
+    let mut builder = FrameGraph::<()>::builder();
 
     let mut imported_resource = None;
     builder.add_pass(nstr!("test-pass-0"), |resources| {
@@ -431,7 +438,7 @@ pub fn test_usage_schedule() {
         .unwrap();
     let mock_texture_desc = mock_texture.desc();
 
-    let mut builder = FrameGraph::builder();
+    let mut builder = FrameGraph::<()>::builder();
 
     struct Pass0 {
         import: ResourceMut,
