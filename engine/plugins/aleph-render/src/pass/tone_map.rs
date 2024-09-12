@@ -33,25 +33,21 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::lighting_resolve::LightingResolvePassOutput;
-use crate::pass::BackBufferInfo;
+use crate::pass::{GraphArgs, GraphSwapImageInfo};
 use crate::render::ShaderDatabaseAccessor;
-use crate::shaders;
+use crate::{shaders, RenderPlaneOutput};
 
 struct TonemapPassPayload {
     input: ResourceRef,
     output: ResourceMut,
 }
 
-pub struct TonemapPassOutput {
-    pub output: ResourceMut,
-}
-
 pub fn pass(
-    frame_graph: &mut FrameGraphBuilder,
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
-) {
+) -> RenderPlaneOutput {
     let set_layout = device
         .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::Compute,
@@ -82,25 +78,34 @@ pub fn pass(
         })
         .unwrap();
 
+    let mut result = None;
+
     frame_graph.add_pass(nstr!("TonemapPass"), |resources| {
-        let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+        let back_buffer_info: &GraphSwapImageInfo = pin_board.get().unwrap();
         let b_desc = &back_buffer_info.desc;
 
         let lighting_resolve_pass: &LightingResolvePassOutput = pin_board.get().unwrap();
-
         let input = resources.read_texture(
             lighting_resolve_pass.lighting,
             ResourceUsageFlags::SHADER_RESOURCE,
         );
+
         let output_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
             .with_format(Format::Bgra8Unorm)
             .with_name("TonemapOutput");
-        let output = resources.create_texture(&output_desc, ResourceUsageFlags::UNORDERED_ACCESS);
+        let output = resources.create_texture(
+            &output_desc,
+            // BarrierSync::COMPUTE_SHADING,
+            ResourceUsageFlags::UNORDERED_ACCESS,
+        );
+        result = Some(RenderPlaneOutput {
+            id: output.into(),
+            desc: output_desc.strip_name(),
+        });
 
         let data = TonemapPassPayload { input, output };
-        pin_board.publish(TonemapPassOutput { output });
 
-        move |encoder, resources| unsafe {
+        move |encoder, resources, _args| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
 
@@ -130,4 +135,6 @@ pub fn pass(
             encoder.dispatch(group_count_x, group_count_y, 1);
         }
     });
+
+    result.unwrap()
 }

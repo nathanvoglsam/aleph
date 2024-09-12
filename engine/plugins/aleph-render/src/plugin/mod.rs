@@ -29,7 +29,10 @@
 
 use std::ops::Deref;
 
+use aleph_frame_graph::FrameGraphBuilder;
+use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
+use aleph_shader_db::ShaderDatabase;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
@@ -38,17 +41,9 @@ use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 
-use crate::renderer::EguiRenderer;
-
-struct Data {
-    index: usize,
-    should_resize: bool,
-    window: AnyArc<dyn IWindow>,
-    render_data: AnyArc<dyn egui::IEguiRenderData>,
-    swap_chain: AnyArc<dyn ISwapChain>,
-    renderer: EguiRenderer,
-    swap_images: Vec<AnyArc<dyn ITexture>>,
-}
+use crate::pass::{GraphArgs, GraphArgsLayout};
+use crate::render::ShaderDatabaseAccessor;
+use crate::{pass, DefaultRenderPlane, IRenderPlane, IRenderSurface, RendererBuilder};
 
 pub struct PluginRender {
     device: Option<AnyArc<dyn IDevice>>,
@@ -99,8 +94,6 @@ impl IPlugin for PluginRender {
 
         self.device = Some(device.clone());
 
-        let queue = device.get_queue(QueueType::General).unwrap();
-
         Self::log_gpu_info(
             device.deref().query_interface::<dyn IDevice>().unwrap(),
             adapter.deref(),
@@ -116,17 +109,30 @@ impl IPlugin for PluginRender {
             present_queue: QueueType::General,
         };
         let swap_chain = surface.create_swap_chain(device.deref(), &config).unwrap();
-
-        let config = swap_chain.get_config();
-        let mut swap_images: Vec<_> = (0..config.buffer_count).map(|_| None).collect();
-        swap_chain.get_images(&mut swap_images);
-        let swap_images: Vec<_> = swap_images.into_iter().map(|v| v.unwrap()).collect();
-        let back_buffer_desc = swap_images[0].desc();
-
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
-        let pixels_per_point = window.current_display_scale();
-        let renderer = EguiRenderer::new(device.clone(), &back_buffer_desc, pixels_per_point);
+        let surface = RenderSurface { window, swap_chain };
+
+        // Try load the shader db, first from the immediate working directory and then from the
+        // potential aleph project's .aleph/shaders directory.
+        // TODO: we need a better way of managing and configuring where we get our shader db from
+        let shader_db_bin = std::fs::read("shaders.shaderdb")
+            .or_else(|_| std::fs::read(".aleph/shaders/shaders.shaderdb"))
+            .unwrap()
+            .leak(); // Leak so we get a static lifetime
+        let shader_db = unsafe { rkyv::archived_root::<ShaderDatabase>(shader_db_bin) };
+        shader_db.validate_header();
+        let shader_db = ShaderDatabaseAccessor::new(device.as_ref(), shader_db);
+
+        let mut renderer = RendererBuilder::new();
+        renderer.device(device.clone());
+        renderer.surface(surface);
+        renderer.shader_db(shader_db);
+        renderer.render_plane(DefaultRenderPlane::default());
+        renderer.render_plane(EguiRenderPlane());
+        renderer.frames_in_flight(2);
+
+        let renderer = renderer.build().unwrap();
 
         let schedule_cell = registry
             .get_interface::<dyn IScheduleProvider>()
@@ -134,109 +140,29 @@ impl IPlugin for PluginRender {
             .get();
         let mut schedule = schedule_cell.get();
 
-        let mut data = Data {
-            index: 0,
-            should_resize: false,
-            window,
-            render_data,
-            swap_chain,
-            renderer,
-            swap_images,
-        };
+        let mut renderer = renderer;
+        let mut board = PinBoard::new();
         schedule.add_exclusive_at_start_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
             move || {
                 device.garbage_collect();
 
-                let data = &mut data;
+                let _render_data = render_data.take();
 
-                if data.window.resized() || data.should_resize {
-                    data.swap_images.clear();
-                    let drawable_size = data.window.drawable_size();
-                    let new_config = data
-                        .swap_chain
-                        .rebuild(Some(Extent2D::new(drawable_size.0, drawable_size.1)))
-                        .unwrap();
-
-                    let mut swap_images: Vec<_> =
-                        (0..new_config.buffer_count).map(|_| None).collect();
-                    data.swap_chain.get_images(&mut swap_images);
-                    data.swap_images = swap_images.into_iter().map(|v| v.unwrap()).collect();
-
-                    let back_buffer_desc = data.swap_images[0].desc();
-                    let pixels_per_point = data.window.current_display_scale();
-                    data.renderer
-                        .rebuild_after_resize(&back_buffer_desc, pixels_per_point);
-
-                    data.should_resize = false;
-                }
-
-                let render_data = data.render_data.take();
-
-                // Filter the deltas to only those that affect the font texture
-                let font_updates = render_data
-                    .textures_delta
-                    .set
-                    .iter()
-                    .filter(|(id, _)| *id == egui::TextureId::Managed(0))
-                    .map(|(_, delta)| delta);
-                data.renderer.update_font_texture(font_updates);
+                // // Filter the deltas to only those that affect the font texture
+                // let font_updates = render_data
+                //     .textures_delta
+                //     .set
+                //     .iter()
+                //     .filter(|(id, _)| *id == egui::TextureId::Managed(0))
+                //     .map(|(_, delta)| delta);
+                // data.renderer.update_font_texture(font_updates);
 
                 unsafe {
-                    data.index = (data.index + 1) % 2;
-                    let acquire_semaphore =
-                        data.renderer.frames[data.index].acquire_semaphore.clone();
-                    let present_semaphore =
-                        data.renderer.frames[data.index].present_semaphore.clone();
-                    let fence = data.renderer.frames[data.index].done_fence.clone();
-
-                    assert_eq!(
-                        device.wait_fences(&[fence.as_ref()], true, u32::MAX),
-                        FenceWaitResult::Complete
-                    );
-                    device.reset_fences(&[fence.as_ref()]);
-
-                    let acquired_index = match data.swap_chain.acquire_next_image(&AcquireDesc {
-                        signal_semaphore: acquire_semaphore.as_ref(),
-                    }) {
-                        Ok(i) => i,
-                        Err(ImageAcquireError::SubOptimal(i)) => {
-                            data.should_resize = true;
-                            i
-                        }
-                        Err(ImageAcquireError::OutOfDate) => {
-                            data.should_resize = true;
-                            return;
-                        }
-                        v => v.unwrap(),
-                    };
-                    let acquired_image = data.swap_images[acquired_index as usize].clone();
-
-                    let command_list =
-                        data.renderer
-                            .record_frame(data.index, acquired_image.deref(), render_data);
-
-                    queue
-                        .submit(&QueueSubmitDesc {
-                            command_lists: &[Some(command_list).into()],
-                            wait_semaphores: &[acquire_semaphore.as_ref()],
-                            signal_semaphores: &[present_semaphore.as_ref()],
-                            fence: Some(fence.as_ref()),
-                        })
-                        .unwrap();
-                    let submit_result = queue.present(&QueuePresentDesc {
-                        swap_chain: data.swap_chain.as_ref(),
-                        image_index: acquired_index,
-                        wait_semaphores: &[present_semaphore.as_ref()],
-                    });
-                    match submit_result {
-                        Ok(_) => {}
-                        Err(QueuePresentError::OutOfDate) | Err(QueuePresentError::SubOptimal) => {
-                            data.should_resize = true;
-                        }
-                        v @ Err(_) => v.unwrap(),
-                    }
+                    board.clear();
+                    let args = GraphArgsLayout { board: &board };
+                    renderer.draw_next_frame(&args);
                 }
             },
         );
@@ -283,5 +209,39 @@ impl PluginRender {
         log::info!("GPU Name      : {}", gpu_name);
         log::info!("Memory        : {}MB | {}MB | {}MB", dvmem, dsmem, ssmem);
         log::info!("Backend:      : {}", device.get_backend_api());
+    }
+}
+
+struct RenderSurface {
+    window: AnyArc<dyn IWindow>,
+    swap_chain: AnyArc<dyn ISwapChain>,
+}
+
+impl IRenderSurface for RenderSurface {
+    fn get_render_extent(&self) -> Extent2D {
+        let size = self.window.drawable_size();
+        Extent2D::new(size.0, size.1)
+    }
+
+    fn get_swap_chain(&self) -> &dyn ISwapChain {
+        self.swap_chain.as_ref()
+    }
+
+    fn needs_rebuild(&self) -> bool {
+        self.window.resized()
+    }
+}
+
+struct EguiRenderPlane();
+
+impl IRenderPlane for EguiRenderPlane {
+    fn register_passes(
+        &self,
+        frame_graph: &mut FrameGraphBuilder<GraphArgs>,
+        device: &dyn IDevice,
+        pin_board: &aleph_pin_board::PinBoard,
+        shader_db: &ShaderDatabaseAccessor,
+    ) -> crate::RenderPlaneOutput {
+        pass::egui_draw::pass(frame_graph, device, pin_board, shader_db)
     }
 }

@@ -27,39 +27,12 @@
 // SOFTWARE.
 //
 
-use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
+#include "fullscreen-tri-copy.inc.hlsl"
 
-use crate::render::DeletionPool;
-
-pub struct PerFrameObjects {
-    pub acquire_semaphore: AnyArc<dyn ISemaphore>,
-    pub present_semaphore: AnyArc<dyn ISemaphore>,
-
-    pub deletion_pool: DeletionPool,
-
-    pub uniform_buffer: AnyArc<dyn IBuffer>,
-
-    pub done_fence: AnyArc<dyn IFence>,
-}
-
-impl PerFrameObjects {
-    pub fn new(device: &dyn IDevice) -> Self {
-        let uniform_buffer = device
-            .create_buffer(&BufferDesc {
-                size: 1024,
-                cpu_access: CpuAccessMode::Write,
-                usage: ResourceUsageFlags::CONSTANT_BUFFER,
-                name: Some("egui::ConstantBuffer"),
-            })
-            .unwrap();
-
-        Self {
-            acquire_semaphore: device.create_semaphore().unwrap(),
-            present_semaphore: device.create_semaphore().unwrap(),
-            deletion_pool: Default::default(),
-            uniform_buffer,
-            done_fence: device.create_fence(true).unwrap(),
-        }
-    }
+PixelInput main(uint id : SV_VertexID)
+{
+	PixelInput output;
+	output.uv = float2((id << 1) & 2, id & 2);
+	output.sv_position = float4(output.uv * float2(2, -2) + float2(-1, 1), 0, 1);
+	return output;
 }

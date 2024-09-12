@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-float4 main( uint id : SV_VertexID ) : SV_Position
-{
-	float2 uv = float2((id << 1) & 2, id & 2);
-	return float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
-}
+struct PixelInput {
+    float4 sv_position : SV_Position;
+    [[vk::location(0)]] float2 uv : A0;
+};

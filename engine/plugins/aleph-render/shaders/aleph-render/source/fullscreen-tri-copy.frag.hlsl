@@ -27,10 +27,7 @@
 // SOFTWARE.
 //
 
-struct PSInput
-{
-    float4 position : SV_Position;
-};
+#include "fullscreen-tri-copy.inc.hlsl"
 
 [[vk::binding(0, 0)]]
 Texture2D Src : register(t0);
@@ -38,7 +35,7 @@ Texture2D Src : register(t0);
 [[vk::binding(1, 0)]]
 SamplerState Sampler : register(s1);
 
-float4 main(PSInput input) : SV_Target
+float4 main(PixelInput input) : SV_Target0
 {
-    return Src.Sample(Sampler, input.position.xy);
+    return Src.Sample(Sampler, input.uv);
 }

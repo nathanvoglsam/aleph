@@ -33,53 +33,72 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
-use crate::pass::backbuffer_import::BackBufferHandle;
-use crate::pass::tone_map::TonemapPassOutput;
+use crate::pass::{GraphArgs, GraphSwapImageInfo};
 use crate::render::ShaderDatabaseAccessor;
-use crate::shaders;
+use crate::{shaders, RenderPlaneOutput};
 
-struct CopyTexturePassPayload {
-    input: ResourceRef,
-    output: ResourceMut,
+struct Payload {
+    planes: Vec<ResourceRef>,
+    target: ResourceMut,
 }
 
 pub fn pass(
-    frame_graph: &mut FrameGraphBuilder,
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
-) {
+    planes: &[RenderPlaneOutput],
+) -> ResourceMut {
+    let desc = pin_board
+        .get::<GraphSwapImageInfo>()
+        .unwrap()
+        .desc
+        .clone()
+        .with_name(obj_name!("SwapImage"));
+
     let sampler = create_sampler(device);
     let descriptor_set_layout = create_descriptor_set_layout(device, sampler.as_ref());
     let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
-    let pipeline = create_pipeline_state(
-        device,
-        pipeline_layout.as_ref(),
-        shader_db,
-        Format::Bgra8UnormSrgb,
-    );
+    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db, desc.format);
 
-    frame_graph.add_pass(nstr!("CopyTexturePass"), |resources| {
-        let tonemap_pass: &TonemapPassOutput = pin_board.get().unwrap();
-        let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
+    let mut result = None;
 
-        let input =
-            resources.read_texture(tonemap_pass.output, ResourceUsageFlags::SHADER_RESOURCE);
-        let output = resources.write_texture(*back_buffer, ResourceUsageFlags::RENDER_TARGET);
+    frame_graph.add_pass(nstr!("CompositePlanes"), |resources| {
+        let planes: Vec<_> = planes
+            .iter()
+            .map(|v| {
+                resources.read_texture(
+                    v.id,
+                    // BarrierSync::PIXEL_SHADING,
+                    ResourceUsageFlags::SHADER_RESOURCE,
+                )
+            })
+            .collect();
 
-        let data = CopyTexturePassPayload { input, output };
-        pin_board.publish(BackBufferHandle {
-            back_buffer: output,
-        });
+        let target = resources.import_texture(
+            &TextureImportDesc {
+                desc: &desc,
+                before_sync: BarrierSync::NONE,
+                before_access: BarrierAccess::NONE,
+                before_layout: ImageLayout::Undefined,
+                after_sync: BarrierSync::NONE,
+                after_access: BarrierAccess::NONE,
+                after_layout: ImageLayout::PresentSrc,
+            },
+            // BarrierSync::PIXEL_SHADING,
+            ResourceUsageFlags::RENDER_TARGET,
+        );
+        result = Some(target);
 
-        move |encoder, resources| unsafe {
-            let input = resources.get_texture(data.input).unwrap();
-            let src_desc = input.desc_ref();
-
-            let output = resources.get_texture(data.output).unwrap();
+        let data = Payload { planes, target };
+        move |encoder, resources, _args| unsafe {
+            let output = resources.get_texture(data.target).unwrap();
             let dst_desc = output.desc_ref();
 
-            let src_view = input
+            let plane = resources.get_texture(data.planes[0]).unwrap();
+            let src_desc = plane.desc_ref();
+
+            let src_view = plane
                 .get_view(&ImageViewDesc {
                     format: src_desc.format,
                     view_type: ImageViewType::Tex2D,
@@ -137,10 +156,18 @@ pub fn pass(
                 min_depth: 0.0,
                 max_depth: 1.0,
             }]);
+            encoder.set_scissor_rects(&[Rect {
+                x: 0,
+                y: 0,
+                w: dst_desc.width,
+                h: dst_desc.height,
+            }]);
             encoder.draw(3, 1, 0, 0);
             encoder.end_rendering();
         }
     });
+
+    result.unwrap()
 }
 
 fn create_descriptor_set_layout(
@@ -184,7 +211,7 @@ fn create_pipeline_state(
     format: Format,
 ) -> AnyArc<dyn IGraphicsPipeline> {
     let vertex_shader = shader_db
-        .load_stage(shaders::aleph_render::fullscreen_tri_vert())
+        .load_stage(shaders::aleph_render::fullscreen_tri_copy_vert())
         .unwrap();
     let fragment_shader = shader_db
         .load_stage(shaders::aleph_render::fullscreen_tri_copy_frag())
@@ -213,6 +240,7 @@ fn create_pipeline_state(
     let blend_state_new = BlendStateDesc {
         attachments: &[AttachmentBlendState {
             blend_enabled: false,
+            color_write_mask: ColorComponentFlags::all(),
             ..Default::default()
         }],
     };

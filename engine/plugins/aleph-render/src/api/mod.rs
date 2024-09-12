@@ -37,6 +37,7 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use interfaces::any::AnyArc;
 
+use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::render::{
     BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
     ShaderDatabaseAccessor, TextureHandle, TextureLoader, TexturePool, TextureUploadSource,
@@ -51,10 +52,11 @@ pub trait IRenderSurface: Any {
 pub trait IRenderPlane: Any {
     fn register_passes(
         &self,
-        frame_graph: &mut FrameGraphBuilder,
+        frame_graph: &mut FrameGraphBuilder<GraphArgs>,
         device: &dyn IDevice,
         pin_board: &PinBoard,
-    );
+        shader_db: &ShaderDatabaseAccessor,
+    ) -> RenderPlaneOutput;
 }
 
 pub struct RenderPlaneOutput {
@@ -68,27 +70,24 @@ pub struct RenderPlaneOutput {
     pub desc: TextureDesc<'static>,
 }
 
-pub struct DefaultRenderPlane {
-    shader_db: Arc<ShaderDatabaseAccessor<'static>>,
-}
+#[derive(Default)]
+pub struct DefaultRenderPlane();
 
 impl IRenderPlane for DefaultRenderPlane {
     fn register_passes(
         &self,
-        frame_graph: &mut FrameGraphBuilder,
+        frame_graph: &mut FrameGraphBuilder<GraphArgs>,
         device: &dyn IDevice,
         pin_board: &PinBoard,
-    ) {
+        shader_db: &ShaderDatabaseAccessor,
+    ) -> RenderPlaneOutput {
         use crate::pass;
 
-        let shader_db = self.shader_db.as_ref();
-
-        pass::backbuffer_import::pass(frame_graph, device, pin_board, shader_db);
         pass::main_gbuffer::pass(frame_graph, device, pin_board, shader_db);
         pass::lighting_resolve::pass(frame_graph, device, pin_board, shader_db);
-        pass::tone_map::pass(frame_graph, device, pin_board, shader_db);
-        pass::copy_texture::pass(frame_graph, device, pin_board, shader_db);
-        // pass::egui_draw::pass(&mut frame_graph, device, pin_board, shader_db);
+        let result = pass::tone_map::pass(frame_graph, device, pin_board, shader_db);
+
+        result
     }
 }
 
@@ -96,6 +95,7 @@ pub struct RendererBuilder {
     device: Option<AnyArc<dyn IDevice>>,
     surface: Option<Box<dyn IRenderSurface>>,
     frames_in_flight: usize,
+    shader_db: Option<ShaderDatabaseAccessor<'static>>,
     render_planes: Vec<Box<dyn IRenderPlane>>,
 }
 
@@ -105,12 +105,17 @@ impl Default for RendererBuilder {
             device: None,
             surface: None,
             frames_in_flight: 2,
+            shader_db: None,
             render_planes: Vec::new(),
         }
     }
 }
 
 impl RendererBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn device(&mut self, device: AnyArc<dyn IDevice>) -> &mut Self {
         self.device = Some(device);
         self
@@ -126,14 +131,20 @@ impl RendererBuilder {
         self
     }
 
+    pub fn shader_db(&mut self, shader_db: ShaderDatabaseAccessor<'static>) -> &mut Self {
+        self.shader_db = Some(shader_db);
+        self
+    }
+
     pub fn render_plane(&mut self, plane: impl IRenderPlane) -> &mut Self {
         self.render_planes.push(Box::new(plane));
         self
     }
 
-    pub fn build(self) -> Option<Renderer> {
+    pub fn build<'a>(self) -> Option<Renderer> {
         let device = self.device.expect("Device missing!");
         let queue = device.get_queue(QueueType::General).unwrap();
+        let shader_db = self.shader_db.expect("Shader DB missing!");
 
         let swap_manager = SwapManager {
             surface: self.surface.expect("RenderSurface missing!"),
@@ -162,6 +173,7 @@ impl RendererBuilder {
             },
             device,
             queue,
+            shader_db,
             swap_manager,
             texture_loader: Arc::new(TextureLoader::new()),
             buffer_loader: Arc::new(BufferLoader::new()),
@@ -178,6 +190,7 @@ pub struct Renderer {
     config: RendererConfig,
     device: AnyArc<dyn IDevice>,
     queue: AnyArc<dyn IQueue>,
+    shader_db: ShaderDatabaseAccessor<'static>,
     swap_manager: SwapManager,
     texture_loader: Arc<TextureLoader>,
     buffer_loader: Arc<BufferLoader>,
@@ -216,7 +229,7 @@ impl Renderer {
         Some(handle)
     }
 
-    pub unsafe fn draw_next_frame(&mut self) {
+    pub unsafe fn draw_next_frame(&mut self, args: &GraphArgsLayout) {
         let CurrentFrameResources {
             frame_index,
             acquire_semaphore,
@@ -254,8 +267,12 @@ impl Renderer {
         // If the swap chain was rebuilt (or this is the first frame and we haven't built the frame
         // graph yet) we need to (re)build the frame graph!
         if self.graph_manager.frame_graph.is_none() || acquired_image.rebuilt {
-            self.graph_manager
-                .build_graph(self.device.as_ref(), &self.config, &self.swap_manager);
+            self.graph_manager.build_graph(
+                &self.config,
+                &self.shader_db,
+                self.device.as_ref(),
+                &self.swap_manager,
+            );
         }
 
         let mut list = self
@@ -297,8 +314,12 @@ impl Renderer {
                 acquired_image.image.as_ref(),
             );
 
+            args.board.publish(GraphSwapImageInfo {
+                desc: self.swap_manager.desc.clone(),
+            });
+
             self.graph_manager
-                .execute_graph(frame_index, &import_bundle, encoder.as_mut());
+                .execute_graph(frame_index, &import_bundle, encoder.as_mut(), args);
         }
 
         self.queue
@@ -483,7 +504,7 @@ struct CurrentFrameResources<'a> {
 struct GraphManager {
     /// The frame graph object itself. Can be `None` if it has not yet been built for the first
     /// time.
-    frame_graph: Option<FrameGraph>,
+    frame_graph: Option<FrameGraph<GraphArgs>>,
 
     /// Pin-board used (and re-used) for both building the frame graph, and when executing the frame
     /// graph.
@@ -501,8 +522,9 @@ struct GraphManager {
 impl GraphManager {
     unsafe fn build_graph(
         &mut self,
-        device: &dyn IDevice,
         config: &RendererConfig,
+        shader_db: &ShaderDatabaseAccessor,
+        device: &dyn IDevice,
         swap_manager: &SwapManager,
     ) {
         self.pin_board.clear();
@@ -511,20 +533,28 @@ impl GraphManager {
             desc: swap_manager.desc.clone(),
         });
 
-        let mut frame_graph = FrameGraph::builder();
+        let mut frame_graph = FrameGraph::<GraphArgs>::builder();
 
+        let mut outputs = Vec::with_capacity(self.render_planes.capacity());
         for plane in self.render_planes.iter_mut() {
-            plane.register_passes(&mut frame_graph, device, &self.pin_board);
+            let output =
+                plane.register_passes(&mut frame_graph, device, &self.pin_board, shader_db);
+            outputs.push(output);
         }
+
+        let swap_id = pass::composite_planes::pass(
+            &mut frame_graph,
+            device,
+            &self.pin_board,
+            shader_db,
+            &outputs,
+        );
 
         let mut frame_graph = frame_graph.build(device);
         frame_graph.allocate_transients(config.frames_in_flight);
 
         self.frame_graph = Some(frame_graph);
-
-        let SwapImageId { id } = self.pin_board.get().unwrap();
-
-        self.swap_image_id = Some(*id);
+        self.swap_image_id = Some(swap_id);
     }
 
     unsafe fn execute_graph(
@@ -532,21 +562,9 @@ impl GraphManager {
         frame_index: usize,
         import_bundle: &ImportBundle,
         encoder: &mut dyn IGeneralEncoder,
+        args: &GraphArgsLayout,
     ) {
-        self.pin_board.clear();
-
         let fg = self.frame_graph.as_mut().unwrap();
-        fg.execute(frame_index, import_bundle, encoder, &self.pin_board)
+        fg.execute(frame_index, import_bundle, encoder, args)
     }
-}
-
-/// Representative description of the target swap chain
-struct GraphSwapImageInfo {
-    desc: TextureDesc<'static>,
-}
-
-/// The ID of the most recent state of the swap image. This will be updated by any pass that writes
-/// to the swap image.
-struct SwapImageId {
-    id: ResourceMut,
 }

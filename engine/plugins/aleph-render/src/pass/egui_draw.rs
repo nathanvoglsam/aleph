@@ -35,13 +35,12 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use egui::RenderData;
 
-use crate::pass::backbuffer_import::BackBufferHandle;
-use crate::pass::BackBufferInfo;
+use crate::pass::{EguiDPI, GraphArgs, GraphSwapImageInfo};
 use crate::render::ShaderDatabaseAccessor;
-use crate::shaders;
+use crate::{shaders, RenderPlaneOutput};
 
 struct EguiPassPayload {
-    back_buffer: ResourceMut,
+    render_target: ResourceMut,
     vtx_buffer: ResourceMut,
     idx_buffer: ResourceMut,
 }
@@ -54,16 +53,16 @@ pub struct EguiPassContext {
 }
 
 pub fn pass(
-    frame_graph: &mut FrameGraphBuilder,
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
-) {
+) -> RenderPlaneOutput {
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
     const INDEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
 
-    let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
-    let pixels_per_point = back_buffer_info.pixels_per_point;
+    let b_desc = &pin_board.get::<GraphSwapImageInfo>().unwrap().desc;
+    let EguiDPI { pixels_per_point } = pin_board.get().cloned().unwrap();
 
     let sampler = create_sampler(device);
 
@@ -72,9 +71,18 @@ pub fn pass(
 
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
+    let mut result = None;
     frame_graph.add_pass(nstr!("EguiPass"), |resources| {
-        let BackBufferHandle { back_buffer } = pin_board.get().unwrap();
-        let back_buffer = resources.write_texture(*back_buffer, ResourceUsageFlags::RENDER_TARGET);
+        let render_target_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
+            .with_format(Format::Rgba8UnormSrgb)
+            .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
+            .with_name(obj_name!("RenderTarget"));
+        let render_target =
+            resources.create_texture(&render_target_desc, ResourceUsageFlags::RENDER_TARGET);
+        result = Some(RenderPlaneOutput {
+            id: render_target.into(),
+            desc: render_target_desc.strip_name(),
+        });
 
         let vtx_buffer = resources.create_buffer(
             &BufferDesc::new(VERTEX_BUFFER_SIZE as u64)
@@ -91,28 +99,28 @@ pub fn pass(
         );
 
         let data = EguiPassPayload {
-            back_buffer,
+            render_target,
             vtx_buffer,
             idx_buffer,
         };
 
-        pin_board.publish(BackBufferHandle { back_buffer });
+        // pin_board.publish(BackBufferHandle { back_buffer });
 
-        move |encoder, resources| unsafe {
+        move |encoder, resources, args| unsafe {
             let sampler = sampler.as_ref();
             let descriptor_arena = resources.descriptor_arena();
 
-            let back_buffer = resources.get_texture(data.back_buffer).unwrap();
+            let render_target = resources.get_texture(data.render_target).unwrap();
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
 
-            let extent = back_buffer.desc_ref().get_extent_2d();
+            let extent = render_target.desc_ref().get_extent_2d();
 
             let EguiPassContext {
                 buffer,
                 font_view,
                 render_data,
-            } = resources.context().get().unwrap();
+            } = args.board.get().unwrap();
 
             let set = descriptor_arena
                 .allocate_set(descriptor_set_layout.as_ref())
@@ -140,8 +148,8 @@ pub fn pass(
                     .unwrap();
 
             // Get an RTV from our imported back buffer
-            let image_view = back_buffer
-                .get_rtv(&ImageViewDesc::rtv_for_texture(back_buffer))
+            let image_view = render_target
+                .get_rtv(&ImageViewDesc::rtv_for_texture(render_target))
                 .unwrap();
 
             // Begin a render pass targeting our back buffer
@@ -246,6 +254,8 @@ pub fn pass(
             idx_buffer.unmap();
         }
     });
+
+    result.unwrap()
 }
 
 unsafe fn record_job_commands(

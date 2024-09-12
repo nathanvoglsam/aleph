@@ -34,7 +34,7 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
-use crate::pass::BackBufferInfo;
+use crate::pass::{GraphArgs, GraphSwapImageInfo};
 use crate::render::ShaderDatabaseAccessor;
 use crate::shaders;
 
@@ -51,7 +51,7 @@ pub struct LightingResolvePassOutput {
 }
 
 pub fn pass(
-    frame_graph: &mut FrameGraphBuilder,
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
@@ -92,7 +92,7 @@ pub fn pass(
 
     frame_graph.add_pass(nstr!("DeferredLightingPass"), |resources| {
         let main_gbuffer_pass_output: &MainGBufferPassOutput = pin_board.get().unwrap();
-        let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+        let back_buffer_info: &GraphSwapImageInfo = pin_board.get().unwrap();
         let b_desc = &back_buffer_info.desc;
 
         let depth = resources.read_texture(
@@ -135,7 +135,7 @@ pub fn pass(
         };
         pin_board.publish(LightingResolvePassOutput { lighting });
 
-        move |encoder, resources| unsafe {
+        move |encoder, resources, _args| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
 

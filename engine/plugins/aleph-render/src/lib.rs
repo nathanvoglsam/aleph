@@ -38,5 +38,7 @@ mod plugin;
 mod renderer;
 mod shaders;
 
-pub use api::{IRenderPlane, IRenderSurface, Renderer, RendererBuilder};
+pub use api::{
+    DefaultRenderPlane, IRenderPlane, IRenderSurface, RenderPlaneOutput, Renderer, RendererBuilder,
+};
 pub use plugin::PluginRender;

@@ -40,8 +40,8 @@ pub const fn fullscreen_tri_copy_frag() -> ShaderName<'static, Fragment> {
     unsafe { ShaderName::<Fragment>::new("aleph-render/fullscreen-tri-copy.frag") } // Safety guaranteed by code-gen
 }
 #[allow(unused)]
-pub const fn fullscreen_tri_vert() -> ShaderName<'static, Vertex> {
-    unsafe { ShaderName::<Vertex>::new("aleph-render/fullscreen-tri.vert") } // Safety guaranteed by code-gen
+pub const fn fullscreen_tri_copy_vert() -> ShaderName<'static, Vertex> {
+    unsafe { ShaderName::<Vertex>::new("aleph-render/fullscreen-tri-copy.vert") } // Safety guaranteed by code-gen
 }
 #[allow(unused)]
 pub mod fullscreen_quad {

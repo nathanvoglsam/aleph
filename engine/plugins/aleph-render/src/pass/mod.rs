@@ -27,16 +27,32 @@
 // SOFTWARE.
 //
 
+use aleph_frame_graph::PassArgs;
+use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
-pub mod backbuffer_import;
-pub mod copy_texture;
+pub mod composite_planes;
 pub mod egui_draw;
 pub mod lighting_resolve;
 pub mod main_gbuffer;
 pub mod tone_map;
 
-pub struct BackBufferInfo {
+#[derive(Clone)]
+pub struct GraphSwapImageInfo {
     pub desc: TextureDesc<'static>,
+}
+
+#[derive(Copy, Clone)]
+pub struct EguiDPI {
     pub pixels_per_point: f32,
+}
+
+pub struct GraphArgsLayout<'a> {
+    pub board: &'a PinBoard,
+}
+
+pub struct GraphArgs();
+
+impl PassArgs for GraphArgs {
+    type Args<'a> = GraphArgsLayout<'a>;
 }

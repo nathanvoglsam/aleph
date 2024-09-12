@@ -36,7 +36,7 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
-use crate::pass::BackBufferInfo;
+use crate::pass::{GraphArgs, GraphSwapImageInfo};
 use crate::render::ShaderDatabaseAccessor;
 use crate::shaders;
 
@@ -58,7 +58,7 @@ pub struct MainGBufferPassOutput {
 }
 
 pub fn pass(
-    frame_graph: &mut FrameGraphBuilder,
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
@@ -95,7 +95,7 @@ pub fn pass(
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
     frame_graph.add_pass(nstr!("MainGBufferPass"), |resources| {
-        let back_buffer_info: &BackBufferInfo = pin_board.get().unwrap();
+        let back_buffer_info: &GraphSwapImageInfo = pin_board.get().unwrap();
         let b_desc = &back_buffer_info.desc;
 
         // BaseColor+AO
@@ -149,7 +149,7 @@ pub fn pass(
             depth_buffer,
         });
 
-        move |encoder, resources| unsafe {
+        move |encoder, resources, _args| unsafe {
             let vtx_buffer = data.vtx_buffer.as_ref();
             let idx_buffer = data.idx_buffer.as_ref();
             let set_layout = descriptor_set_layout.as_ref();
