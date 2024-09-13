@@ -472,7 +472,7 @@ impl IDevice for Device {
             // Multiply the pool sizes by our multiplier. We encode the default sizes as the number
             // of descriptors expected per '2' sets so we can do some nice integer math instead of
             // icky float maths with fractional ratios
-            let multiplier = desc.num_sets.div_ceil(2).min(2);
+            let multiplier = desc.num_sets.div_ceil(2).max(2);
             for v in &mut pool_sizes {
                 v.descriptor_count *= multiplier;
             }
