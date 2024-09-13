@@ -27,44 +27,10 @@
 ## SOFTWARE.
 ##
 
+[js]
 
-[package]
-name = "aleph-render"
-version = "0.1.0"
-authors.workspace = true
-description = "The aleph-engine renderer"
-license.workspace = true
-repository.workspace = true
-documentation = "https://docs.rs/aleph-render/"
-keywords = ["engine", "graphics", "vulkan", "game"]
-categories = ["game-engines"]
-edition.workspace = true
+## Should a lua module be generated for this package
+config_script = true
 
-[package.metadata.aleph]
-shaders = { modules = ["aleph-render"] }
-haxe = { modules = ["config", "script"] }
-
-[badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
-[dependencies]
-aleph-device-allocators = { workspace = true }
-aleph-egui = { workspace = true }
-aleph-interfaces = { workspace = true }
-aleph-frame-graph = { workspace = true }
-aleph-math = { workspace = true }
-aleph-pin-board = { workspace = true }
-aleph-rhi-api = { workspace = true }
-aleph-shader-db = { workspace = true }
-aleph-profile = { workspace = true }
-aleph-nstr = { workspace = true }
-
-serde = { workspace = true }
-serde_json = { workspace = true }
-crossbeam = { workspace = true }
-log = { workspace = true }
-once_cell = { workspace = true }
-bytemuck = { workspace = true }
-rkyv = { workspace = true }
-thiserror = { workspace = true }
-wide = { workspace = true }
+## Should this module be included in the general classpath
+library = false

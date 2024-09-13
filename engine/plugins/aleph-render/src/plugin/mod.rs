@@ -42,6 +42,7 @@ use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
+use serde::Deserialize;
 
 use crate::pass::egui_draw::EguiPassContext;
 use crate::pass::GraphArgs;
@@ -79,6 +80,10 @@ impl IPlugin for PluginRender {
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+        let config = registry.config().unwrap();
+        let config: Config = serde_json::from_value(config.clone()).unwrap();
+        config.log();
+
         // Get the handle for the window
         let window = registry
             .get_interface::<dyn IWindowProvider>()
@@ -104,7 +109,7 @@ impl IPlugin for PluginRender {
         );
 
         let drawable_size = window.drawable_size();
-        let config = SwapChainConfiguration {
+        let swap_config = SwapChainConfiguration {
             format: Format::Bgra8UnormSrgb,
             width: drawable_size.0,
             height: drawable_size.1,
@@ -112,7 +117,7 @@ impl IPlugin for PluginRender {
             buffer_count: 3,
             present_queue: QueueType::General,
         };
-        let swap_chain = surface.create_swap_chain(device.deref(), &config).unwrap();
+        let swap_chain = surface.create_swap_chain(device.deref(), &swap_config).unwrap();
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
         let surface = RenderSurface {
@@ -137,7 +142,7 @@ impl IPlugin for PluginRender {
         renderer.shader_db(shader_db);
         renderer.render_plane(DefaultRenderPlane::default());
         renderer.render_plane(EguiRenderPlane::new(window));
-        renderer.frames_in_flight(2);
+        renderer.frames_in_flight(config.frames_in_flight as usize);
 
         let renderer = renderer.build().unwrap();
 
@@ -263,5 +268,17 @@ impl IRenderPlane for EguiRenderPlane {
     ) -> crate::RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
         pass::egui_draw::pass(frame_graph, device, pin_board, shader_db, pixels_per_point)
+    }
+}
+
+#[derive(Deserialize)]
+struct Config {
+    #[serde(rename = "framesInFlight")]
+    pub frames_in_flight: u32,
+}
+
+impl Config {
+    pub fn log(&self) {
+        log::info!("aleph-render.frames_in_flight = {:?}", self.frames_in_flight);
     }
 }
