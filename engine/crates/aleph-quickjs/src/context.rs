@@ -453,10 +453,16 @@ impl<'a> Context<'a> {
             raw::JSTag::UNINITIALIZED => unimplemented!(),
             raw::JSTag::CATCH_OFFSET => unimplemented!(),
             raw::JSTag::EXCEPTION => return None,
-            raw::JSTag::INT | raw::JSTag::FLOAT64 => {
-                let number = v.get_number().unwrap_unchecked().normalize();
-                let number = serde_json::Number::from_f64(number)?;
-                serde_json::Value::Number(number)
+            raw::JSTag::INT => {
+                let number = v.get_number().unwrap_unchecked().get_int().unwrap_unchecked();
+                let number = serde_json::to_value(number).unwrap();
+                assert!(number.is_i64() || number.is_u64());
+                number
+            }
+            raw::JSTag::FLOAT64 => {
+                let number = v.get_number().unwrap_unchecked().get_double().unwrap_unchecked();
+                let number = serde_json::to_value(number).unwrap();
+                number
             }
             _ => unimplemented!(),
         };
