@@ -31,10 +31,9 @@ use aleph_frame_graph::PassArgs;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
-use crate::render::{BufferPool, TexturePool};
+use crate::{BufferPool, TexturePool};
 
 pub mod composite_planes;
-pub mod egui_draw;
 pub mod lighting_resolve;
 pub mod main_gbuffer;
 pub mod tone_map;

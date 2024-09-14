@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
-use interfaces::any::AnyArc;
 
-use crate::render::{
+use crate::{
     BufferHandle, BufferPool, BufferStreamingRequest, BufferUploadSource, DeletionPool,
     EnqueueError, EnqueueErrorKind,
 };

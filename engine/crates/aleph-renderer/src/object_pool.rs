@@ -29,7 +29,7 @@
 
 use std::num::NonZeroU8;
 
-use crate::render::{Handle, HandlePool};
+use crate::{Handle, HandlePool};
 
 pub struct ObjectPool<T> {
     /// A pool_id nonce that gets included in the handle, helps verify if the handle came from this
@@ -148,8 +148,8 @@ impl<T: Copy> ObjectPool<T> {
 mod tests {
     use std::num::NonZeroU8;
 
-    use crate::render::test_utils::DropCanary;
-    use crate::render::ObjectPool;
+    use crate::test_utils::DropCanary;
+    use crate::ObjectPool;
 
     #[test]
     pub fn test_object_pool_alloc_free() {

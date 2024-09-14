@@ -29,16 +29,16 @@
 
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
-use aleph_interfaces::any::AnyArc;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
+use aleph_renderer::pass::{GraphArgs, GraphSwapImageInfo};
+use aleph_renderer::{RenderPlaneOutput, ShaderDatabaseAccessor, TextureHandle};
 use aleph_rhi_api::*;
 use egui::RenderData;
+use interfaces::any::AnyArc;
 
-use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::render::{ShaderDatabaseAccessor, TextureHandle};
-use crate::{shaders, RenderPlaneOutput};
+use crate::shaders;
 
 struct EguiPassPayload {
     render_target: ResourceMut,
@@ -408,12 +408,8 @@ fn create_pipeline_state(
         }],
     };
 
-    let vertex_shader = shader_db
-        .load_stage(shaders::aleph_render::egui::egui_vert())
-        .unwrap();
-    let fragment_shader = shader_db
-        .load_stage(shaders::aleph_render::egui::egui_frag())
-        .unwrap();
+    let vertex_shader = shader_db.load_stage(shaders::egui::egui_vert()).unwrap();
+    let fragment_shader = shader_db.load_stage(shaders::egui::egui_frag()).unwrap();
 
     let graphics_pipeline_desc_new = GraphicsPipelineDesc {
         shader_stages: &[vertex_shader, fragment_shader],

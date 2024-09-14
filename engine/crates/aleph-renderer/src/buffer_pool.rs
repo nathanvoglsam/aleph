@@ -29,10 +29,10 @@
 
 use std::num::NonZeroU8;
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
 
-use crate::render::{BufferHandle, ObjectPool};
+use crate::{BufferHandle, ObjectPool};
 
 pub struct BufferPool {
     pool: ObjectPool<BufferObject>,

@@ -35,8 +35,8 @@ use aleph_rhi_api::*;
 
 use crate::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::render::ShaderDatabaseAccessor;
 use crate::shaders;
+use crate::ShaderDatabaseAccessor;
 
 struct LightingResolvePassPayload {
     depth: ResourceRef,
@@ -79,7 +79,7 @@ pub fn pass(
         .unwrap();
 
     let shader_module = shader_db
-        .load_data(shaders::aleph_render::deferred::deferred_lighting_cs())
+        .load_data(shaders::deferred::deferred_lighting_cs())
         .unwrap();
 
     let pipeline = device

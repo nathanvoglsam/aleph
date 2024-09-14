@@ -29,8 +29,8 @@
 
 use std::ptr::NonNull;
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
 
 /// A data source for a buffer upload request. Represents an annotated block of upload memory that
 /// pairs the memory block with a description of the buffer that it contains.

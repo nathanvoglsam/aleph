@@ -29,10 +29,10 @@
 
 use std::num::NonZeroU8;
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
 
-use crate::render::{ObjectPool, TextureHandle};
+use crate::{ObjectPool, TextureHandle};
 
 pub struct TexturePool {
     pool: ObjectPool<TextureObject>,

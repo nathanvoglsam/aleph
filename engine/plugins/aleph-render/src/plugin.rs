@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-mod egui_font_texture;
-
 use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
@@ -44,11 +42,14 @@ use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 use serde::Deserialize;
 
-use crate::pass::egui_draw::EguiPassContext;
-use crate::pass::GraphArgs;
-use crate::plugin::egui_font_texture::EguiFontTexture;
-use crate::render::ShaderDatabaseAccessor;
-use crate::{pass, DefaultRenderPlane, IRenderPlane, IRenderSurface, RendererBuilder};
+use aleph_renderer::pass::GraphArgs;
+use aleph_renderer::{
+    pass, DefaultRenderPlane, IRenderPlane, IRenderSurface, RenderPlaneOutput, RendererBuilder,
+    ShaderDatabaseAccessor,
+};
+
+use crate::egui_draw::EguiPassContext;
+use crate::egui_font_texture::EguiFontTexture;
 
 pub struct PluginRender {
     device: Option<AnyArc<dyn IDevice>>,
@@ -117,7 +118,9 @@ impl IPlugin for PluginRender {
             buffer_count: 3,
             present_queue: QueueType::General,
         };
-        let swap_chain = surface.create_swap_chain(device.deref(), &swap_config).unwrap();
+        let swap_chain = surface
+            .create_swap_chain(device.deref(), &swap_config)
+            .unwrap();
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
         let surface = RenderSurface {
@@ -265,9 +268,9 @@ impl IRenderPlane for EguiRenderPlane {
         device: &dyn IDevice,
         pin_board: &aleph_pin_board::PinBoard,
         shader_db: &ShaderDatabaseAccessor,
-    ) -> crate::RenderPlaneOutput {
+    ) -> RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
-        pass::egui_draw::pass(frame_graph, device, pin_board, shader_db, pixels_per_point)
+        crate::egui_draw::pass(frame_graph, device, pin_board, shader_db, pixels_per_point)
     }
 }
 
@@ -279,6 +282,9 @@ struct Config {
 
 impl Config {
     pub fn log(&self) {
-        log::info!("aleph-render.frames_in_flight = {:?}", self.frames_in_flight);
+        log::info!(
+            "aleph-render.frames_in_flight = {:?}",
+            self.frames_in_flight
+        );
     }
 }

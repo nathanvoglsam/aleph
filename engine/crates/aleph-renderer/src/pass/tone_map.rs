@@ -34,7 +34,7 @@ use aleph_rhi_api::*;
 
 use crate::pass::lighting_resolve::LightingResolvePassOutput;
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::render::ShaderDatabaseAccessor;
+use crate::ShaderDatabaseAccessor;
 use crate::{shaders, RenderPlaneOutput};
 
 struct TonemapPassPayload {
@@ -67,7 +67,7 @@ pub fn pass(
         .unwrap();
 
     let shader_module = shader_db
-        .load_data(shaders::aleph_render::postprocess::tonemapping_cs())
+        .load_data(shaders::postprocess::tonemapping_cs())
         .unwrap();
 
     let pipeline = device

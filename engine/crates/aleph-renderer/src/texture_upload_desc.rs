@@ -29,10 +29,10 @@
 
 use std::ptr::NonNull;
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
 
-use crate::render::BufferUploadSource;
+use crate::BufferUploadSource;
 
 /// This describes the size and format of a texture upload payload.
 ///
@@ -226,6 +226,12 @@ impl TextureUploadSource {
     pub fn into_buffer_source(self) -> BufferUploadSource {
         let TextureUploadSource { source, .. } = self;
         source
+    }
+
+    /// Get the [`TextureMipUploadDesc`] this upload request was created with.
+    #[inline]
+    pub const fn desc(&self) -> &TextureMipUploadDesc {
+        &self.desc
     }
 
     /// Calls [`IBuffer::unmap`] the internal buffer.

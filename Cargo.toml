@@ -58,6 +58,7 @@ members = [
     "engine/crates/aleph-profile-procmacros",
     "engine/crates/aleph-quickjs",
     "engine/crates/aleph-quickjs-sys",
+    "engine/crates/aleph-renderer",
     "engine/crates/aleph-rhi-api",
     "engine/crates/aleph-rhi-dx12",
     "engine/crates/aleph-rhi-impl-utils",
@@ -165,6 +166,7 @@ aleph-profile = { path = "./engine/crates/aleph-profile", version = "0.1" }
 aleph-profile-procmacros = { path = "./engine/crates/aleph-profile-procmacros", version = "0.1" }
 aleph-quickjs = { path = "./engine/crates/aleph-quickjs", version = "0.1" }
 aleph-quickjs-sys = { path = "./engine/crates/aleph-quickjs-sys", version = "0.1" }
+aleph-renderer = { path = "./engine/crates/aleph-renderer", version = "0.1" }
 aleph-rhi-api = { path = "./engine/crates/aleph-rhi-api", version = "0.1" }
 aleph-rhi-dx12 = { path = "./engine/crates/aleph-rhi-dx12", version = "0.1" }
 aleph-rhi-impl-utils = { path = "./engine/crates/aleph-rhi-impl-utils", version = "0.1" }

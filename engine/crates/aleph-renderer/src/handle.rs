@@ -30,7 +30,7 @@
 use std::fmt::{Debug, Formatter};
 use std::num::NonZeroU64;
 
-use crate::render::IntoPayload;
+use crate::IntoPayload;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[repr(transparent)]
@@ -151,16 +151,16 @@ macro_rules! handle_newtype {
     ($name:ident) => {
         #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
         #[repr(transparent)]
-        pub struct $name($crate::render::Handle);
+        pub struct $name($crate::Handle);
 
         impl $name {
             /// Wraps the given handle in our newtype wrapper
-            pub const unsafe fn from_handle(v: $crate::render::Handle) -> Self {
+            pub const unsafe fn from_handle(v: $crate::Handle) -> Self {
                 Self(v)
             }
 
             /// Unwraps the given newtype handle to the underlying handle data
-            pub const fn to_handle(&self) -> $crate::render::Handle {
+            pub const fn to_handle(&self) -> $crate::Handle {
                 self.0
             }
         }
@@ -171,13 +171,13 @@ macro_rules! handle_newtype {
             }
         }
 
-        impl $crate::render::IntoHandle for $name {
-            fn into_handle(self) -> $crate::render::Handle {
+        impl $crate::IntoHandle for $name {
+            fn into_handle(self) -> $crate::Handle {
                 self.to_handle()
             }
         }
 
-        unsafe impl $crate::render::IntoPayload for $name {
+        unsafe impl $crate::IntoPayload for $name {
             unsafe fn from_payload(v: u64) -> Self {
                 let payload: Option<$name> = std::mem::transmute(v);
                 payload.unwrap_unchecked()

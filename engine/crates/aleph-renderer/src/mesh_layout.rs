@@ -182,7 +182,7 @@ impl MeshLayoutIdFields {
 
 #[cfg(test)]
 mod tests {
-    use crate::render::MeshLayoutDesc;
+    use crate::MeshLayoutDesc;
 
     #[test]
     pub fn test_standard_static_layout_valid() {

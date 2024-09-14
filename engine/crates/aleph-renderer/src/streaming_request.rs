@@ -34,7 +34,7 @@ use std::sync::Arc;
 
 use thiserror::Error;
 
-use crate::render::{BufferHandle, MeshHandle, TextureHandle};
+use crate::{BufferHandle, MeshHandle, TextureHandle};
 
 pub type TextureStreamingRequest = StreamingRequest<TextureHandle>;
 pub type BufferStreamingRequest = StreamingRequest<BufferHandle>;
@@ -329,8 +329,8 @@ impl RequestError {
 
 #[cfg(test)]
 mod tests {
-    use crate::render::streaming_request::RequestError;
-    use crate::render::StreamingRequest;
+    use crate::streaming_request::RequestError;
+    use crate::StreamingRequest;
 
     fn make_request() -> StreamingRequest<u64> {
         StreamingRequest::new()

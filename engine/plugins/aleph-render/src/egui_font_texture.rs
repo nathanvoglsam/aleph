@@ -34,8 +34,7 @@ use egui::epaint::ImageDelta;
 use egui::{FontImage, ImageData};
 use wide::{f32x8, i32x8, CmpEq};
 
-use crate::render::{TextureHandle, TextureMipUploadDesc, TextureUploadSource};
-use crate::Renderer;
+use aleph_renderer::{Renderer, TextureHandle, TextureMipUploadDesc, TextureUploadSource};
 
 pub struct EguiFontTexture {
     pub font_texture: FontTexture,
@@ -78,8 +77,8 @@ impl EguiFontTexture {
                 .unwrap();
 
                 assert_eq!(
-                    staging_buffer.desc.aligned_width(),
-                    staging_buffer.desc.width,
+                    desc.aligned_width(),
+                    desc.width,
                     "Currently we don't handle row pitch here"
                 );
 

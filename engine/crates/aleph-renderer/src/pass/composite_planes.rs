@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
+use aleph_any::AnyArc;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::render::ShaderDatabaseAccessor;
+use crate::ShaderDatabaseAccessor;
 use crate::{shaders, RenderPlaneOutput};
 
 struct Payload {
@@ -216,10 +216,10 @@ fn create_pipeline_state(
     format: Format,
 ) -> AnyArc<dyn IGraphicsPipeline> {
     let vertex_shader = shader_db
-        .load_stage(shaders::aleph_render::fullscreen_tri_copy_vert())
+        .load_stage(shaders::fullscreen_tri_copy_vert())
         .unwrap();
     let fragment_shader = shader_db
-        .load_stage(shaders::aleph_render::fullscreen_tri_copy_frag())
+        .load_stage(shaders::fullscreen_tri_copy_frag())
         .unwrap();
 
     let vertex_layout = VertexInputStateDesc::default();

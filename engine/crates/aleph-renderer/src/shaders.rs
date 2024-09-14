@@ -27,12 +27,4 @@
 // SOFTWARE.
 //
 
-extern crate aleph_egui as egui;
-extern crate aleph_interfaces as interfaces;
-
-mod egui_draw;
-mod egui_font_texture;
-mod plugin;
-mod shaders;
-
-pub use plugin::PluginRender;
+include!("../shaders/aleph_renderer.rs");

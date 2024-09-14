@@ -31,14 +31,14 @@ use std::any::Any;
 use std::num::NonZeroU8;
 use std::sync::Arc;
 
+use aleph_any::AnyArc;
 use aleph_frame_graph::{FrameGraph, FrameGraphBuilder, ImportBundle, ResourceMut, ResourceRef};
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
 
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
-use crate::render::{
+use crate::{
     BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
     ShaderDatabaseAccessor, TextureHandle, TextureLoader, TexturePool, TextureUploadSource,
 };

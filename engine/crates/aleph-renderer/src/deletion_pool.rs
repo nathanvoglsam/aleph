@@ -29,10 +29,10 @@
 
 use std::mem::ManuallyDrop;
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-use interfaces::any::AnyArc;
 
-use crate::render::BufferUploadSource;
+use crate::BufferUploadSource;
 
 /// Deletion pool that will hold textures, buffers and upload data handles that must have their
 /// lifetime extended to meet GPU timeline requirements.

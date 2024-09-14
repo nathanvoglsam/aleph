@@ -32,8 +32,8 @@ use std::ops::{Deref, DerefMut};
 
 use thiserror::Error;
 
-use crate::render::handle::{Generation, HandleFields};
-use crate::render::Handle;
+use crate::handle::{Generation, HandleFields};
+use crate::Handle;
 
 /// A generic generational arena handle allocator.
 pub struct HandlePool<T> {
@@ -236,8 +236,8 @@ struct HandleData<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::render::test_utils::DropCanary;
-    use crate::render::HandlePool;
+    use crate::test_utils::DropCanary;
+    use crate::HandlePool;
 
     #[test]
     pub fn test_handle_pool_alloc_free() {

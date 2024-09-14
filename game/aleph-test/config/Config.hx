@@ -37,5 +37,7 @@ class ConfigOverrides {
 
         // Force vulkan
         rhi.api = VULKAN;
+        rhi.validation = true;
+        rhi.debug = true;
     }
 }

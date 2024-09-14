@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
-use aleph_interfaces::any::AnyArc;
 use aleph_math::projection::perspective_reversed_infinite_z_wgpu_dx_gl;
 use aleph_math::{Mat4, Vec3};
 use aleph_nstr::nstr;
@@ -37,8 +37,8 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::render::ShaderDatabaseAccessor;
 use crate::shaders;
+use crate::ShaderDatabaseAccessor;
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,
@@ -378,10 +378,10 @@ fn create_pipeline_state(
     };
 
     let vertex_shader = shader_db
-        .load_stage(shaders::aleph_render::deferred::main_gbuffer_vert())
+        .load_stage(shaders::deferred::main_gbuffer_vert())
         .unwrap();
     let fragment_shader = shader_db
-        .load_stage(shaders::aleph_render::deferred::main_gbuffer_frag())
+        .load_stage(shaders::deferred::main_gbuffer_frag())
         .unwrap();
 
     let graphics_pipeline_desc_new = GraphicsPipelineDesc {
