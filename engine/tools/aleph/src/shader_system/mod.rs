@@ -254,28 +254,62 @@ impl<'a> ShaderFile<'a> {
         // We need to know part of the rest of the name so we can reject files like
         // 'frag.hlsl' as it is effectively a nameless shader.
         let mut dot_segments = file_name.split('.').rev();
-        let file_ext_str = dot_segments.next()?;
-        let shader_type_str = dot_segments.next()?;
-        let _name_segment = dot_segments.next()?;
+        let seg0 = dot_segments.next()?;
+        let seg1 = dot_segments.next()?;
 
-        let shader_type = ShaderType::from_ext(shader_type_str)?;
-        let file_ext = ext_mapper(file_ext_str)?;
+        match dot_segments.next() {
+            // On this branch we have a file with at least 3 segments (i.e. a.frag.hlsl) and so we
+            // use parsing logic for that form. It's mostly the same, but the meaning of each
+            // segment is slightly different.
+            Some(seg2) => {
+                let file_ext_str = seg0;
+                let shader_type_str = seg1;
+                let _file_name = seg2;
 
-        // This _can't_ fail as we've already proven that these are the last segments of the file
-        // name above.
-        let file_name_no_ext = file_name.strip_suffix(file_ext_str).unwrap();
-        let file_name_no_ext = file_name_no_ext.strip_suffix('.').unwrap();
-        // let file_name_no_s_type = file_name_no_ext.strip_suffix(shader_type_str).unwrap();
-        // let file_name_no_s_type = file_name_no_s_type.strip_suffix('.').unwrap();
+                let shader_type = ShaderType::from_ext(shader_type_str)?;
+                let file_ext = ext_mapper(file_ext_str)?;
 
-        Some(Self {
-            path,
-            // file_name,
-            file_ext,
-            shader_type,
-            // name: file_name_no_s_type,
-            name_with_type: file_name_no_ext,
-        })
+                // This _can't_ fail as we've already proven that these are the last segments of the
+                // file name above.
+                let file_name_no_ext = file_name.strip_suffix(file_ext_str).unwrap();
+                let file_name_no_ext = file_name_no_ext.strip_suffix('.').unwrap();
+                // let file_name_no_s_type = file_name_no_ext.strip_suffix(shader_type_str).unwrap();
+                // let file_name_no_s_type = file_name_no_s_type.strip_suffix('.').unwrap();
+
+                Some(Self {
+                    path,
+                    // file_name,
+                    file_ext,
+                    shader_type,
+                    // name: file_name_no_s_type,
+                    name_with_type: file_name_no_ext,
+                })
+            }
+            // On this branch we have a file with only 2 segments (i.e. a.hlsl) and so we use a
+            // unique parser for those file name types. In these cases the name portion of the
+            // shader _is_ the shader type, as well as the name.
+            None => {
+                let file_ext_str = seg0;
+                let shader_type_file_name_str = seg1;
+
+                let shader_type = ShaderType::from_ext(shader_type_file_name_str)?;
+                let file_ext = ext_mapper(file_ext_str)?;
+
+                // This _can't_ fail as we've already proven that these are the last segments of the
+                // file name above.
+                let file_name_no_ext = file_name.strip_suffix(file_ext_str).unwrap();
+                let file_name_no_ext = file_name_no_ext.strip_suffix('.').unwrap();
+
+                Some(Self {
+                    path,
+                    // file_name,
+                    file_ext,
+                    shader_type,
+                    // name: file_name_no_s_type,
+                    name_with_type: file_name_no_ext,
+                })
+            }
+        }
     }
 
     pub fn ninja_rule(&self) -> &'static str {
