@@ -102,27 +102,27 @@ pub fn pass(
         let gbuffer0_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
             .with_format(Format::Rgba8UnormSrgb)
             .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
-            .with_name("Gbuffer0");
+            .with_name(obj_name!("Gbuffer0"));
         let gbuffer0 = resources.create_texture(&gbuffer0_desc, ResourceUsageFlags::RENDER_TARGET);
 
         // WorldNormal
         let gbuffer1_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
             .with_format(Format::Rgba32Float)
             .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
-            .with_name("Gbuffer1");
+            .with_name(obj_name!("Gbuffer1"));
         let gbuffer1 = resources.create_texture(&gbuffer1_desc, ResourceUsageFlags::RENDER_TARGET);
 
         // Metal+Roughnes
         let gbuffer2_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
             .with_format(Format::Rg8Unorm)
             .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
-            .with_name("Gbuffer2");
+            .with_name(obj_name!("Gbuffer2"));
         let gbuffer2 = resources.create_texture(&gbuffer2_desc, ResourceUsageFlags::RENDER_TARGET);
 
         let depth_buffer_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
             .with_format(Format::Depth32Float)
             .with_clear_value(OptimalClearValue::DepthStencil(0.0, 0))
-            .with_name("DepthBuffer");
+            .with_name(obj_name!("DepthBuffer"));
         let depth_buffer =
             resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
 

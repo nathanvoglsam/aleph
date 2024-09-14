@@ -55,14 +55,14 @@ pub fn pass(
                 DescriptorType::Texture.binding(0),
                 DescriptorType::TextureRW.binding(1),
             ],
-            name: Some("TonemapDescriptorSetLayout"),
+            name: obj_name_opt!("TonemapDescriptorSetLayout"),
         })
         .unwrap();
     let pipeline_layout = device
         .create_pipeline_layout(
             &PipelineLayoutDesc::new()
                 .with_set_layouts(&[set_layout.as_ref()])
-                .with_name("TonemapLightingPipelineLayout"),
+                .with_name(obj_name!("TonemapLightingPipelineLayout")),
         )
         .unwrap();
 
@@ -74,7 +74,7 @@ pub fn pass(
         .create_compute_pipeline(&ComputePipelineDesc {
             shader_module,
             pipeline_layout: pipeline_layout.as_ref(),
-            name: Some("TonemapPipeline"),
+            name: obj_name_opt!("TonemapPipeline"),
         })
         .unwrap();
 
@@ -92,7 +92,7 @@ pub fn pass(
 
         let output_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
             .with_format(Format::Bgra8Unorm)
-            .with_name("TonemapOutput");
+            .with_name(obj_name!("TonemapOutput"));
         let output = resources.create_texture(
             &output_desc,
             // BarrierSync::COMPUTE_SHADING,
