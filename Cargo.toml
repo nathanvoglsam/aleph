@@ -68,6 +68,7 @@ members = [
     "engine/crates/aleph-rhi-validation",
     "engine/crates/aleph-rhi-vulkan",
     "engine/crates/aleph-shader-db",
+    "engine/crates/aleph-superluminal-sys",
     "engine/crates/aleph-sys-info",
     "engine/crates/aleph-target",
     "engine/crates/aleph-target-build",
@@ -130,7 +131,6 @@ sdl2 = { version = "0.37", features = ["raw-window-handle"] }
 sdl2-sys = { version = "^0.37" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-superluminal-perf-sys = { git = "https://github.com/nathanvoglsam/superluminal-perf-rs.git" }
 sysinfo = "0.30"
 tera = "1"
 thiserror = "1"
@@ -176,6 +176,7 @@ aleph-rhi-null = { path = "./engine/crates/aleph-rhi-null", version = "0.1" }
 aleph-rhi-validation = { path = "./engine/crates/aleph-rhi-validation", version = "0.1" }
 aleph-rhi-vulkan = { path = "./engine/crates/aleph-rhi-vulkan", version = "0.1" }
 aleph-shader-db = { path = "./engine/crates/aleph-shader-db", version = "0.1" }
+aleph-superluminal-sys = { path = "./engine/crates/aleph-superluminal-sys", version = "0.3" }
 aleph-sys-info = { path = "./engine/crates/aleph-sys-info", version = "0.1" }
 aleph-target = { path = "./engine/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./engine/crates/aleph-target-build", version = "2" }

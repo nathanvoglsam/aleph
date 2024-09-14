@@ -93,7 +93,7 @@ macro_rules! finish_frame {
 pub mod detail {
     use std::ffi::CStr;
 
-    use superluminal_perf_sys as ffi;
+    use aleph_superluminal_sys as ffi;
 
     use crate::ProfileDataParam;
 

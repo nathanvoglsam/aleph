@@ -60,7 +60,7 @@ pub use aleph_profile_procmacros::function;
 #[cfg(feature = "procmacros")]
 pub use aleph_profile_procmacros::skip;
 #[cfg(feature = "profile-with-superluminal")]
-pub use superluminal_perf_sys;
+pub use aleph_superluminal_sys;
 #[cfg(feature = "profile-with-tracy")]
 pub use tracy_client;
 

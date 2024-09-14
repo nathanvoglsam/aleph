@@ -12,14 +12,14 @@ edition.workspace = true
 
 [dependencies]
 tracy-client = { workspace = true, optional = true }
-superluminal-perf-sys = { workspace = true, optional = true }
+aleph-superluminal-sys = { workspace = true, optional = true }
 aleph-profile-procmacros = { workspace = true, optional = true }
 aleph-pix = { workspace = true, optional = true }
 
 [features]
 default = ["procmacros"]
 profile-with-superluminal = [
-    "superluminal-perf-sys",
+    "aleph-superluminal-sys",
     "aleph-profile-procmacros?/profile-with-superluminal",
 ]
 profile-with-tracy = [
