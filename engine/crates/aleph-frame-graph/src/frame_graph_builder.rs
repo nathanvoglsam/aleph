@@ -1564,14 +1564,17 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     .barrier_access_for_write(Default::default()),
             )?;
         } else {
+            let (before_sync, before_access) =
+                Self::get_before_scope_for_init_barrier(builder, root, Default::default());
+
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_barrier_ir_node(
                 IRBarrierType::Initialization,
                 &[],
                 barrier_next,
                 resource_id,
-                BarrierSync::NONE,
-                BarrierAccess::NONE,
+                before_sync,
+                before_access,
                 version.creator_sync,
                 version
                     .creator_access
@@ -1937,6 +1940,9 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     .image_layout(false, root_variant.desc.format),
             )?;
         } else {
+            let (before_sync, before_access) =
+                Self::get_before_scope_for_init_barrier(builder, root, root_variant.desc.format);
+
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_layout_change_ir_node(
                 builder,
@@ -1944,8 +1950,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 &[],
                 barrier_next,
                 resource_id,
-                BarrierSync::NONE,
-                BarrierAccess::NONE,
+                before_sync,
+                before_access,
                 ImageLayout::Undefined,
                 version.creator_sync,
                 version
@@ -2286,6 +2292,53 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
         // Goal not reachable
         None
+    }
+
+    fn get_before_scope_for_init_barrier<A: PassArgs>(
+        builder: &FrameGraphBuilder<A>,
+        root: &ResourceRoot,
+        format: Format,
+    ) -> (BarrierSync, BarrierAccess) {
+        // When emitting 'Initialization' barriers we have to synchronize with the last usage of
+        // the resource in the previous frame. If we don't we may end up with sync issues as we
+        // never encode a sync scope between the resource's final use in the last frame and the
+        // first use in the current frame.
+        //
+        // Thankfully we're a frame graph and we know exactly how transient resources were used!
+        // We just have to look at how the final version of the resource was used and grab our
+        // before scope from that.
+        let final_version = &builder.resource_versions[root.final_version.0 as usize];
+        let (before_sync, before_access) = if final_version.read_count > 0 {
+            // If the (final) version has any reads then that means the writes have already
+            // been synchronized in order for the reads to have the results of the write made
+            // available.
+            //
+            // This means we only need to sync with the read accesses when initializing the
+            // resource.
+            //
+            // Strictly speaking for textures we only need to sync with the final batch of reads.
+            // However the implementation for that would be more complex and likely wouldn't make
+            // any improvement in practice so we keep the code simple and sync with the combination
+            // of all read accesses to the final resource.
+            //
+            // We don't have to handle image layouts for textures here as an init barrier will
+            // always use 'Undefined' as a discard barrier.
+            let mut read_sync = BarrierSync::empty();
+            final_version.reads_iter().for_each(|v| {
+                read_sync |= v.sync;
+            });
+            (read_sync, BarrierAccess::NONE)
+        } else {
+            // If the (final) version has no reads then that means the writes have _not_ been
+            // flushed with a barrier. That means to prepare the resource and correctly sync
+            // with the previous frame we must do that flush now.
+            //
+            // If we don't do this then we will have an x-after-write hazard as the results of
+            // the final writes were never synchronized (on the gpu timeline)
+            let create_sync = final_version.creator_sync;
+            (create_sync, BarrierAccess::NONE)
+        };
+        (before_sync, before_access)
     }
 }
 
