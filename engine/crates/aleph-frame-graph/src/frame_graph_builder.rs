@@ -1565,7 +1565,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             )?;
         } else {
             let (before_sync, before_access) =
-                Self::get_before_scope_for_init_barrier(builder, root, Default::default());
+                Self::get_before_scope_for_init_barrier(builder, root);
 
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_barrier_ir_node(
@@ -1941,7 +1941,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             )?;
         } else {
             let (before_sync, before_access) =
-                Self::get_before_scope_for_init_barrier(builder, root, root_variant.desc.format);
+                Self::get_before_scope_for_init_barrier(builder, root);
 
             let barrier_next = self.alloc_single_edge_list(version.creator_pass);
             self.emit_layout_change_ir_node(
@@ -2297,7 +2297,6 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     fn get_before_scope_for_init_barrier<A: PassArgs>(
         builder: &FrameGraphBuilder<A>,
         root: &ResourceRoot,
-        format: Format,
     ) -> (BarrierSync, BarrierAccess) {
         // When emitting 'Initialization' barriers we have to synchronize with the last usage of
         // the resource in the previous frame. If we don't we may end up with sync issues as we
