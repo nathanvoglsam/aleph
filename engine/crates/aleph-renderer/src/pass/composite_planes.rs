@@ -216,10 +216,10 @@ fn create_pipeline_state(
     format: Format,
 ) -> AnyArc<dyn IGraphicsPipeline> {
     let vertex_shader = shader_db
-        .load_stage(shaders::fullscreen_tri_copy_vert())
+        .load_stage(shaders::composite_planes::vert())
         .unwrap();
     let fragment_shader = shader_db
-        .load_stage(shaders::fullscreen_tri_copy_frag())
+        .load_stage(shaders::composite_planes::frag())
         .unwrap();
 
     let vertex_layout = VertexInputStateDesc::default();

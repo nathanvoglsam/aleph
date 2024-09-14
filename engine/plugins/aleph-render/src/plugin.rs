@@ -44,7 +44,7 @@ use serde::Deserialize;
 
 use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
-    pass, DefaultRenderPlane, IRenderPlane, IRenderSurface, RenderPlaneOutput, RendererBuilder,
+    DefaultRenderPlane, IRenderPlane, IRenderSurface, RenderPlaneOutput, RendererBuilder,
     ShaderDatabaseAccessor,
 };
 

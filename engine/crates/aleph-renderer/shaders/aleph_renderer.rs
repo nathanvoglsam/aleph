@@ -4,6 +4,20 @@
 use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
 
 #[allow(unused)]
+pub mod composite_planes {
+    #[allow(unused)]
+    use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
+
+    #[allow(unused)]
+    pub const fn frag() -> ShaderName<'static, Fragment> {
+        unsafe { ShaderName::<Fragment>::new("aleph-renderer/composite_planes/frag") } // Safety guaranteed by code-gen
+    }
+    #[allow(unused)]
+    pub const fn vert() -> ShaderName<'static, Vertex> {
+        unsafe { ShaderName::<Vertex>::new("aleph-renderer/composite_planes/vert") } // Safety guaranteed by code-gen
+    }
+}
+#[allow(unused)]
 pub mod deferred {
     #[allow(unused)]
     use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
@@ -20,14 +34,6 @@ pub mod deferred {
     pub const fn main_gbuffer_vert() -> ShaderName<'static, Vertex> {
         unsafe { ShaderName::<Vertex>::new("aleph-renderer/deferred/main_gbuffer.vert") } // Safety guaranteed by code-gen
     }
-}
-#[allow(unused)]
-pub const fn fullscreen_tri_copy_frag() -> ShaderName<'static, Fragment> {
-    unsafe { ShaderName::<Fragment>::new("aleph-renderer/fullscreen-tri-copy.frag") } // Safety guaranteed by code-gen
-}
-#[allow(unused)]
-pub const fn fullscreen_tri_copy_vert() -> ShaderName<'static, Vertex> {
-    unsafe { ShaderName::<Vertex>::new("aleph-renderer/fullscreen-tri-copy.vert") } // Safety guaranteed by code-gen
 }
 #[allow(unused)]
 pub mod fullscreen_quad {

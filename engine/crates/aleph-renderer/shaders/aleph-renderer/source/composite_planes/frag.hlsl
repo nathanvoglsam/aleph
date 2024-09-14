@@ -27,12 +27,15 @@
 // SOFTWARE.
 //
 
-#include "fullscreen-tri-copy.inc.hlsl"
+#include "payload.hlsl"
 
-PixelInput main(uint id : SV_VertexID)
+[[vk::binding(0, 0)]]
+Texture2D Src : register(t0);
+
+[[vk::binding(1, 0)]]
+SamplerState Sampler : register(s1);
+
+float4 main(PixelInput input) : SV_Target0
 {
-	PixelInput output;
-	output.uv = float2((id << 1) & 2, id & 2);
-	output.sv_position = float4(output.uv * float2(2, -2) + float2(-1, 1), 0, 1);
-	return output;
+    return Src.Sample(Sampler, input.uv);
 }
