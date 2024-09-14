@@ -32,7 +32,7 @@ use std::ops::Deref;
 use aleph_frame_graph::FrameGraphBuilder;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
-use aleph_shader_db::ShaderDatabase;
+use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
@@ -135,7 +135,7 @@ impl IPlugin for PluginRender {
             .or_else(|_| std::fs::read(".aleph/shaders/shaders.shaderdb"))
             .unwrap()
             .leak(); // Leak so we get a static lifetime
-        let shader_db = unsafe { rkyv::archived_root::<ShaderDatabase>(shader_db_bin) };
+        let shader_db = unsafe { rkyv::access_unchecked::<ArchivedShaderDatabase>(shader_db_bin) };
         shader_db.validate_header();
         let shader_db = ShaderDatabaseAccessor::new(device.as_ref(), shader_db);
 

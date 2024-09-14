@@ -151,7 +151,7 @@ fn archive_shaders(project_ctx: &ShaderProjectContext) -> anyhow::Result<()> {
         archive_shaders_for_package(&mut shader_db, crate_ctx)?;
     }
 
-    let bytes = rkyv::to_bytes::<_, 1_048_576>(&shader_db).unwrap();
+    let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&shader_db).unwrap();
 
     std::fs::write(shader_db_file, bytes)?;
 

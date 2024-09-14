@@ -119,8 +119,8 @@ impl ShaderDatabase {
 
 impl ArchivedShaderDatabase {
     pub const fn is_header_valid(&self) -> bool {
-        self.magic_number == ShaderDatabase::MAGIC_NUMBER
-            && self.format_version == ShaderDatabase::EXPECTED_VERSION
+        self.magic_number.to_native() == ShaderDatabase::MAGIC_NUMBER
+            && self.format_version.to_native() == ShaderDatabase::EXPECTED_VERSION
     }
 
     pub const fn validate_header(&self) {
@@ -187,7 +187,7 @@ impl IShaderDatabase for ShaderDatabase {
 impl IShaderDatabase for ArchivedShaderDatabase {
     fn get_by_name(&self, name: &str) -> Option<ShaderEntryRef> {
         self.shaders.get(name).map(|v| ShaderEntryRef {
-            shader_type: v.shader_type.deserialize(&mut rkyv::Infallible).unwrap(),
+            shader_type: rkyv::deserialize::<_, rkyv::rancor::Infallible>(&v.shader_type).unwrap(),
             spirv: &v.spirv,
             dxil: &v.dxil,
         })

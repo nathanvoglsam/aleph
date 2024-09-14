@@ -51,6 +51,8 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/plugins/aleph-sdl2/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/tools/aleph/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/game/aleph-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-renderer/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-superluminal-sys/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
