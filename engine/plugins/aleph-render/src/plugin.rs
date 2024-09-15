@@ -30,6 +30,7 @@
 use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
+use aleph_math::{Mat4, Rotor3, Vec3};
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
@@ -44,8 +45,8 @@ use serde::Deserialize;
 
 use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
-    DefaultRenderPlane, IRenderPlane, IRenderSurface, RenderPlaneOutput, RendererBuilder,
-    ShaderDatabaseAccessor,
+    CameraInfo, DefaultRenderPlane, IRenderPlane, IRenderSurface, PerspectiveInfo,
+    RenderPlaneOutput, RendererBuilder, ShaderDatabaseAccessor,
 };
 
 use crate::egui_draw::EguiPassContext;
@@ -144,7 +145,7 @@ impl IPlugin for PluginRender {
         renderer.surface(surface);
         renderer.shader_db(shader_db);
         renderer.render_plane(DefaultRenderPlane::default());
-        renderer.render_plane(EguiRenderPlane::new(window));
+        renderer.render_plane(EguiRenderPlane::new(window.clone()));
         renderer.frames_in_flight(config.frames_in_flight as usize);
 
         let renderer = renderer.build().unwrap();
@@ -177,6 +178,19 @@ impl IPlugin for PluginRender {
 
                 unsafe {
                     board.clear();
+
+                    let position = Vec3::new(2.0, 0.0, 0.0);
+                    let target = Vec3::new(0.0, 0.0, -3.0);
+                    let view = Mat4::look_at(position, target, Vec3::unit_y());
+
+                    let size = window.drawable_size();
+                    let aspect = size.0 as f32 / size.1 as f32;
+                    board.publish(CameraInfo {
+                        position: -view.extract_translation(),
+                        orientation: view.extract_rotation().reversed(),
+                        projection: PerspectiveInfo::default_with_aspect(aspect),
+                    });
+
                     board.publish(EguiPassContext {
                         font_handle: font_texture.font_handle.unwrap(),
                         render_data,

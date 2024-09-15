@@ -30,15 +30,14 @@
 use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
-use aleph_math::projection::perspective_reversed_infinite_z_wgpu_dx_gl;
 use aleph_math::{Mat4, Vec3};
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::shaders;
 use crate::ShaderDatabaseAccessor;
+use crate::{shaders, CameraInfo};
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,
@@ -149,12 +148,13 @@ pub fn pass(
             depth_buffer,
         });
 
-        move |encoder, resources, _args| unsafe {
+        move |encoder, resources, args| unsafe {
             let vtx_buffer = data.vtx_buffer.as_ref();
             let idx_buffer = data.idx_buffer.as_ref();
             let set_layout = descriptor_set_layout.as_ref();
             let device = resources.device();
             let descriptor_arena = resources.descriptor_arena();
+            let camera_info: &CameraInfo = args.board.get().unwrap();
 
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
@@ -167,11 +167,26 @@ pub fn pass(
                 UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
 
             let extent = gbuffer0.desc_ref().get_extent_2d();
-            let aspect_ratio = extent.width as f32 / extent.height as f32;
+            // let aspect_ratio = extent.width as f32 / extent.height as f32;
 
-            let camera_offset = u_alloc
-                .allocate_object(CameraLayout::init(aspect_ratio))
-                .device_offset;
+            let camera_layout = CameraLayout {
+                view_matrix: camera_info
+                    .get_view_matrix()
+                    .transposed()
+                    .as_array()
+                    .clone(),
+                proj_matrix: camera_info
+                    .get_proj_matrix()
+                    .transposed()
+                    .as_array()
+                    .clone(),
+                position: camera_info
+                    .position
+                    .into_homogeneous_point()
+                    .as_array()
+                    .clone(),
+            };
+            let camera_offset = u_alloc.allocate_object(camera_layout).device_offset;
             let model_offset = u_alloc.allocate_object(ModelLayout::init()).device_offset;
 
             uniform_buffer.unmap();
@@ -406,57 +421,28 @@ fn create_pipeline_state(
         .unwrap()
 }
 
-fn proj_matrix(aspect_ratio: f32) -> [f32; 16] {
-    *perspective_reversed_infinite_z_wgpu_dx_gl(90.0f32.to_radians(), aspect_ratio, 0.1)
-        .transposed()
-        .as_array()
-}
-
-fn view_matrix() -> [f32; 16] {
-    let camera_position = camera_position();
-    let pos = Vec3::new(camera_position[0], camera_position[1], camera_position[2]);
-    let at = Vec3::new(0., 0., -3.);
-    *Mat4::look_at(pos, at, Vec3::new(0., 1., 0.))
-        .transposed()
-        .as_array()
-}
-
-fn camera_position() -> [f32; 4] {
-    [2., 0., 0., 0.]
-}
-
 #[repr(align(256))]
 #[derive(Default, Debug)]
 pub struct CameraLayout {
-    _view_matrix: [f32; 16],
-    _proj_matrix: [f32; 16],
-    _position: [f32; 4],
-}
-
-impl CameraLayout {
-    pub fn init(aspect_ratio: f32) -> Self {
-        Self {
-            _view_matrix: view_matrix(),
-            _proj_matrix: proj_matrix(aspect_ratio),
-            _position: camera_position(),
-        }
-    }
+    pub view_matrix: [f32; 16],
+    pub proj_matrix: [f32; 16],
+    pub position: [f32; 4],
 }
 
 #[repr(align(256))]
 #[derive(Default, Debug)]
-struct ModelLayout {
-    _model_matrix: [f32; 16],
-    _normal_matrix: [f32; 16],
+pub struct ModelLayout {
+    pub model_matrix: [f32; 16],
+    pub normal_matrix: [f32; 16],
 }
 
 impl ModelLayout {
     pub fn init() -> Self {
         Self {
-            _model_matrix: *Mat4::from_translation(Vec3::new(0., 0., -3.))
+            model_matrix: *Mat4::from_translation(Vec3::new(0., 0., -3.))
                 .transposed()
                 .as_array(),
-            _normal_matrix: *Mat4::identity().as_array(),
+            normal_matrix: *Mat4::identity().as_array(),
         }
     }
 }

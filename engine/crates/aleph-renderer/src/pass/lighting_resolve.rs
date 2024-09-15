@@ -35,8 +35,8 @@ use aleph_rhi_api::*;
 
 use crate::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::shaders;
 use crate::ShaderDatabaseAccessor;
+use crate::{shaders, CameraInfo};
 
 struct LightingResolvePassPayload {
     depth: ResourceRef,
@@ -135,9 +135,10 @@ pub fn pass(
         };
         pin_board.publish(LightingResolvePassOutput { lighting });
 
-        move |encoder, resources, _args| unsafe {
+        move |encoder, resources, args| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
+            let camera_info: &CameraInfo = args.board.get().unwrap();
 
             let depth = resources.get_texture(data.depth).unwrap();
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
@@ -151,13 +152,30 @@ pub fn pass(
             let gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
             let lighting_uav = ImageView::get_uav_for(lighting).unwrap();
 
-            let gbuffer0_desc = gbuffer0.desc_ref();
-            let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
-
             let u_ptr = uniform_buffer.map().unwrap();
             let u_alloc =
                 UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
-            u_alloc.allocate_object(CameraLayout::init(aspect_ratio));
+
+            // let gbuffer0_desc = gbuffer0.desc_ref();
+            // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
+            let camera_layout = CameraLayout {
+                view_matrix: camera_info
+                    .get_view_matrix()
+                    .transposed()
+                    .as_array()
+                    .clone(),
+                proj_matrix: camera_info
+                    .get_proj_matrix()
+                    .transposed()
+                    .as_array()
+                    .clone(),
+                position: camera_info
+                    .position
+                    .into_homogeneous_point()
+                    .as_array()
+                    .clone(),
+            };
+            u_alloc.allocate_object(camera_layout);
             uniform_buffer.unmap();
 
             let set = arena.allocate_set(set_layout.as_ref()).unwrap();
