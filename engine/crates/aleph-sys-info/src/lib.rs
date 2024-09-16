@@ -62,7 +62,12 @@ pub fn cpu_vendor() -> &'static str {
 
     #[cfg(target_arch = "aarch64")]
     {
-        return sys_info::SYSTEM_INFO.global_cpu_info().vendor_id();
+        // Just assume the info is the same for all CPUs. CPUs may be a list of all the cores in
+        // a system, we just assume they will all have the same brand and vendor id.
+        //
+        // Heterogeneous systems should still have the same info, and multi-socket systems will just
+        // have multiple of the same CPU so this assumption is probable fine for what we use it for.
+        return sys_info::SYSTEM_INFO.cpus()[0].vendor_id();
     }
 
     unimplemented!()
@@ -85,7 +90,12 @@ pub fn cpu_brand() -> &'static str {
 
     #[cfg(target_arch = "aarch64")]
     {
-        return sys_info::SYSTEM_INFO.global_cpu_info().brand();
+        // Just assume the info is the same for all CPUs. CPUs may be a list of all the cores in
+        // a system, we just assume they will all have the same brand and vendor id.
+        //
+        // Heterogeneous systems should still have the same info, and multi-socket systems will just
+        // have multiple of the same CPU so this assumption is probable fine for what we use it for.
+        return sys_info::SYSTEM_INFO.cpus()[0].brand();
     }
 
     unimplemented!()
