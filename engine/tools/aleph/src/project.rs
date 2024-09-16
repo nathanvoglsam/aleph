@@ -182,7 +182,11 @@ impl<'a> AlephProject<'a> {
         slang_path.push("sdks");
         slang_path.push("slang");
         slang_path.push("bin");
-        push_platform_slang_path(&mut slang_path)?;
+        if target_platform().is_windows() {
+            slang_path.push("slangc.exe");
+        } else {
+            slang_path.push("slangc");
+        }
 
         let mut ninja_path = dot_aleph_path.clone();
         ninja_path.push("sdks");
@@ -682,62 +686,4 @@ impl<'a> AlephProject<'a> {
             )),
         }
     }
-}
-
-fn push_platform_slang_path(slang_path: &mut Utf8PathBuf) -> anyhow::Result<()> {
-    match target_platform() {
-        p @ aleph_target::Platform::WindowsGNU | p @ aleph_target::Platform::WindowsMSVC => {
-            match target_architecture() {
-                Architecture::X8664 => slang_path.push("windows-x64"),
-                Architecture::AARCH64 => slang_path.push("windows-arm64"),
-                v @ Architecture::Unknown => {
-                    return Err(anyhow!(
-                        "Unsupported build host arch '{}' for platform '{}'",
-                        v,
-                        p
-                    ));
-                }
-            };
-            slang_path.push("release");
-            slang_path.push("slangc.exe");
-        }
-        p @ aleph_target::Platform::Linux => {
-            match target_architecture() {
-                Architecture::X8664 => slang_path.push("linux-x64"),
-                Architecture::AARCH64 => slang_path.push("linux-arm64"),
-                v @ Architecture::Unknown => {
-                    return Err(anyhow!(
-                        "Unsupported build host arch '{}' for platform '{}'",
-                        v,
-                        p
-                    ));
-                }
-            };
-            slang_path.push("release");
-            slang_path.push("slangc");
-        }
-        p @ aleph_target::Platform::MacOS => {
-            match target_architecture() {
-                Architecture::X8664 => slang_path.push("macosx-x64"),
-                Architecture::AARCH64 => slang_path.push("macosx-aarch64"),
-                v @ Architecture::Unknown => {
-                    return Err(anyhow!(
-                        "Unsupported build host arch '{}' for platform '{}'",
-                        v,
-                        p
-                    ));
-                }
-            };
-            slang_path.push("release");
-            slang_path.push("slangc");
-        }
-        v @ aleph_target::Platform::UniversalWindowsGNU
-        | v @ aleph_target::Platform::UniversalWindowsMSVC
-        | v @ aleph_target::Platform::Android
-        | v @ aleph_target::Platform::IOS
-        | v @ aleph_target::Platform::Unknown => {
-            return Err(anyhow!("Unsupported build host platform '{}'", v));
-        }
-    }
-    Ok(())
 }
