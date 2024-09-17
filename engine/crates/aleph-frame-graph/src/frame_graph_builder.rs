@@ -232,6 +232,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     /// passes constructed earlier. This function is expected to be expensive, so don't build new
     /// graphs often. It is intended for a graph to be built once and run many times and invalidated
     /// rarely for extenuating circum stances like the size of the backbuffer changing.
+    #[aleph_profile::function]
     pub fn build(self, device: &dyn IDevice) -> FrameGraph<A> {
         // We have to constrain the type of the writer even though we don't use it here, so we just
         // use Sink.
@@ -246,6 +247,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     /// builder to output a DOT format graph into while constructing the graph. This graph will
     /// represent the computed execution dependencies of the graph (i.e. what pass depends on what
     /// other passes).
+    #[aleph_profile::function]
     pub fn build_with_graph_viz(
         self,
         device: &dyn IDevice,

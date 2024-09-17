@@ -117,6 +117,7 @@ impl<A: PassArgs> FrameGraph<A> {
     /// It is the caller's responsibility to ensure that none of the resources referenced by the
     /// frame graph are in use on the host or device when calling this funciton. This will free any
     /// existing transient allocations, leaving them dangling if they are still in use anywhere.
+    #[aleph_profile::function]
     pub unsafe fn allocate_transients(&mut self, num_frames: usize) {
         self.transient_bundles.clear();
         self.linear_descriptor_pools.clear();
@@ -138,6 +139,7 @@ impl<A: PassArgs> FrameGraph<A> {
     /// the platform GPU API and ensuring that is safe is up to the caller. As such, to pretend this
     /// function is safe to call in anything but the most trivial examples would be incorrect. This
     /// can be used as _part_ of a safe renderer API though, just not at this level of abstraction.
+    #[aleph_profile::function]
     pub unsafe fn execute(
         &mut self,
         frame_index: usize,
@@ -542,6 +544,7 @@ impl<A: PassArgs> FrameGraph<A> {
 }
 
 impl<A: PassArgs> Drop for FrameGraph<A> {
+    #[aleph_profile::function]
     fn drop(&mut self) {
         // Safety: implementation and API guarantees that dropper only gets called once per
         //         object, and always on the correct type.

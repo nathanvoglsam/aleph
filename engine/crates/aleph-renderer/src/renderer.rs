@@ -561,6 +561,7 @@ struct GraphManager {
 }
 
 impl GraphManager {
+    #[aleph_profile::function]
     unsafe fn build_graph(
         &mut self,
         config: &RendererConfig,
@@ -574,6 +575,21 @@ impl GraphManager {
             desc: swap_manager.desc.clone(),
         });
 
+        let (builder, swap_id) = self.register_graph_passes(shader_db, device);
+
+        let mut frame_graph = builder.build(device);
+        frame_graph.allocate_transients(config.frames_in_flight);
+
+        self.frame_graph = Some(frame_graph);
+        self.swap_image_id = Some(swap_id);
+    }
+
+    #[aleph_profile::function]
+    unsafe fn register_graph_passes(
+        &mut self,
+        shader_db: &ShaderDatabaseAccessor,
+        device: &dyn IDevice,
+    ) -> (FrameGraphBuilder<GraphArgs>, ResourceMut) {
         let mut frame_graph = FrameGraph::<GraphArgs>::builder();
 
         let mut outputs = Vec::with_capacity(self.render_planes.capacity());
@@ -590,12 +606,7 @@ impl GraphManager {
             shader_db,
             &outputs,
         );
-
-        let mut frame_graph = frame_graph.build(device);
-        frame_graph.allocate_transients(config.frames_in_flight);
-
-        self.frame_graph = Some(frame_graph);
-        self.swap_image_id = Some(swap_id);
+        (frame_graph, swap_id)
     }
 
     unsafe fn execute_graph(
