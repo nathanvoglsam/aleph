@@ -77,7 +77,7 @@ impl IPlugin for PluginRender {
         registrar.depends_on::<dyn IScheduleProvider>();
         registrar.must_init_after::<dyn IScheduleProvider>();
 
-        registrar.depends_on::<dyn egui::IEguiRenderData>();
+        // registrar.depends_on::<dyn egui::IEguiRenderData>();
         registrar.must_init_after::<dyn egui::IEguiRenderData>();
     }
 
@@ -94,9 +94,7 @@ impl IPlugin for PluginRender {
             .unwrap();
 
         // Get the render data slot for egui and the egui provider
-        let render_data = registry
-            .get_interface::<dyn egui::IEguiRenderData>()
-            .unwrap();
+        let render_data = registry.get_interface::<dyn egui::IEguiRenderData>();
 
         let rhi_provider = registry.get_interface::<dyn IRhiProvider>().unwrap();
         let surface = rhi_provider.surface().unwrap();
@@ -145,7 +143,9 @@ impl IPlugin for PluginRender {
         renderer.surface(surface);
         renderer.shader_db(shader_db);
         renderer.render_plane(DefaultRenderPlane::default());
-        renderer.render_plane(EguiRenderPlane::new(window.clone()));
+        if render_data.is_some() {
+            renderer.render_plane(EguiRenderPlane::new(window.clone()));
+        }
         renderer.frames_in_flight(config.frames_in_flight as usize);
 
         let renderer = renderer.build().unwrap();
@@ -157,24 +157,16 @@ impl IPlugin for PluginRender {
         let mut schedule = schedule_cell.get();
 
         let mut renderer = renderer;
-        let mut font_texture = EguiFontTexture::new();
+        let mut egui_data = render_data.map(|v| EguiData {
+            font_texture: EguiFontTexture::new(),
+            render_data: v,
+        });
         let mut board = PinBoard::new();
         schedule.add_exclusive_at_start_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
             move || {
                 device.garbage_collect();
-
-                let render_data = render_data.take();
-
-                // Filter the deltas to only those that affect the font texture
-                let font_updates = render_data
-                    .textures_delta
-                    .set
-                    .iter()
-                    .filter(|(id, _)| *id == egui::TextureId::Managed(0))
-                    .map(|(_, delta)| delta);
-                font_texture.update_font_texture(&mut renderer, font_updates);
 
                 unsafe {
                     board.clear();
@@ -191,10 +183,25 @@ impl IPlugin for PluginRender {
                         projection: PerspectiveInfo::default_with_aspect(aspect),
                     });
 
-                    board.publish(EguiPassContext {
-                        font_handle: font_texture.font_handle.unwrap(),
-                        render_data,
-                    });
+                    if let Some(e) = egui_data.as_mut() {
+                        let render_data = e.render_data.take();
+
+                        // Filter the deltas to only those that affect the font texture
+                        let font_updates = render_data
+                            .textures_delta
+                            .set
+                            .iter()
+                            .filter(|(id, _)| *id == egui::TextureId::Managed(0))
+                            .map(|(_, delta)| delta);
+                        e.font_texture
+                            .update_font_texture(&mut renderer, font_updates);
+
+                        board.publish(EguiPassContext {
+                            font_handle: e.font_texture.font_handle.unwrap(),
+                            render_data,
+                        });
+                    }
+
                     renderer.draw_next_frame(
                         &DrawOptions {
                             force_rebuild_frame_graph: config.force_graph_rebuild,
@@ -310,4 +317,9 @@ impl Config {
             self.force_graph_rebuild
         );
     }
+}
+
+struct EguiData {
+    font_texture: EguiFontTexture,
+    render_data: AnyArc<dyn egui::IEguiRenderData>,
 }
