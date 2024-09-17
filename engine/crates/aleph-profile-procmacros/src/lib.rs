@@ -59,7 +59,15 @@ use syn::{parse_macro_input, parse_quote, ImplItem, ItemFn, ItemImpl};
 #[proc_macro_attribute]
 pub fn function(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut function = parse_macro_input!(item as ItemFn);
-    let instrumented_function_name = function.sig.ident.to_string();
+    let mut instrumented_function_name = function.sig.ident.to_string();
+
+    if cfg!(any(
+        feature = "profile-with-pix",
+        feature = "profile-with-superluminal"
+    )) {
+        // Pix can only accept null-terminated strings, so we have to add one
+        instrumented_function_name.push('\0');
+    }
 
     let body = &function.block;
     let new_body: syn::Block = impl_block(body, &instrumented_function_name);
