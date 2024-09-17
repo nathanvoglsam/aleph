@@ -32,7 +32,7 @@ use std::cell::Cell;
 use std::ffi::c_void;
 use std::fmt::{Debug, Display, Formatter};
 use std::mem::MaybeUninit;
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroU64};
 use std::ptr::NonNull;
 
 use aleph_any::{AnyArc, IAny};
@@ -611,6 +611,10 @@ pub trait ISwapChain: IAny + IGetPlatformInterface {
 pub trait IBuffer: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IBuffer);
 
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IBuffer`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_id(&self) -> NonZeroU64;
+
     /// Returns a [BufferDesc] that describes this [IBuffer]
     fn desc(&self) -> BufferDesc;
 
@@ -654,6 +658,10 @@ pub trait IBuffer: IAny + IGetPlatformInterface + Send + Sync {
 pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ITexture);
 
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`ITexture`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_id(&self) -> NonZeroU64;
+
     /// Returns a [TextureDesc] that describes this [ITexture]
     fn desc(&self) -> TextureDesc;
 
@@ -670,6 +678,10 @@ pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
 
 pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ISampler);
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`ISampler`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_id(&self) -> NonZeroU64;
 
     /// Returns a [SamplerDesc] that describes this [ISampler]
     fn desc(&self) -> SamplerDesc;
@@ -1031,6 +1043,10 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
 
 pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IDescriptorSetLayout);
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IDescriptorSetLayout`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_id(&self) -> NonZeroU64;
 }
 
 //
@@ -1040,14 +1056,26 @@ pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + Send + Sync {
 
 pub trait IPipelineLayout: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IPipelineLayout);
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IPipelineLayout`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_id(&self) -> NonZeroU64;
 }
 
 pub trait IGraphicsPipeline: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IGraphicsPipeline);
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IGraphicsPipeline`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_id(&self) -> NonZeroU64;
 }
 
 pub trait IComputePipeline: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IComputePipeline);
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IComputePipeline`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_id(&self) -> NonZeroU64;
 }
 
 //

@@ -42,6 +42,7 @@ pub mod macros;
 pub mod manually_drop;
 pub mod offset_allocator;
 pub mod unwrap;
+pub mod object_counter;
 
 /// Converts a raw pointer+len pair into a slice, accounting for cases where the pointer is null.
 ///

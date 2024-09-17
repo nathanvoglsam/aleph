@@ -31,6 +31,7 @@ use std::cell::Cell;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 
 use crate::{
     NullAdapter, NullBuffer, NullCommandList, NullComputePipeline, NullContext,
@@ -45,6 +46,7 @@ pub struct NullDevice {
     pub(crate) general_queue: Option<AnyArc<NullQueue>>,
     pub(crate) compute_queue: Option<AnyArc<NullQueue>>,
     pub(crate) transfer_queue: Option<AnyArc<NullQueue>>,
+    pub(crate) object_counter: ObjectCounter,
 }
 
 declare_interfaces!(NullDevice, [IDevice]);
@@ -99,6 +101,7 @@ impl IDevice for NullDevice {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            id: self.object_counter.next_compute_pipeline(),
         });
         Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
     }
@@ -119,6 +122,7 @@ impl IDevice for NullDevice {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            id: self.object_counter.next_compute_pipeline(),
         });
         Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
     }
@@ -133,6 +137,7 @@ impl IDevice for NullDevice {
         let layout = AnyArc::new_cyclic(move |v| NullDescriptorSetLayout {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
+            id: self.object_counter.next_set_layout(),
         });
         Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(layout, |v| v))
     }
@@ -186,6 +191,7 @@ impl IDevice for NullDevice {
         let layout = AnyArc::new_cyclic(move |v| NullPipelineLayout {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
+            id: self.object_counter.next_pipeline_layout(),
         });
         Ok(AnyArc::map::<dyn IPipelineLayout, _>(layout, |v| v))
     }
@@ -199,6 +205,7 @@ impl IDevice for NullDevice {
         let layout = AnyArc::new_cyclic(move |v| NullBuffer {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
+            id: self.object_counter.next_buffer(),
             desc,
             name,
         });
@@ -221,6 +228,7 @@ impl IDevice for NullDevice {
         let texture = AnyArc::new_cyclic(move |v| NullTexture {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
+            id: self.object_counter.next_texture(),
             desc,
             name,
         });
@@ -239,6 +247,7 @@ impl IDevice for NullDevice {
         let sampler = AnyArc::new_cyclic(move |v| NullSampler {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
+            id: self.object_counter.next_sampler(),
             desc,
             name,
         });

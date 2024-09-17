@@ -61,6 +61,10 @@ impl ITexture for ValidationTexture {
         self._this.weak_count()
     }
 
+    fn get_id(&self) -> std::num::NonZeroU64 {
+        self.inner.get_id()
+    }
+
     fn desc(&self) -> TextureDesc {
         self.inner.desc()
     }

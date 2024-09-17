@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -37,6 +38,7 @@ use crate::NullDevice;
 pub struct NullBuffer {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) id: NonZeroU64,
     pub(crate) desc: BufferDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -56,6 +58,10 @@ impl IBuffer for NullBuffer {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 
     fn desc(&self) -> BufferDesc {

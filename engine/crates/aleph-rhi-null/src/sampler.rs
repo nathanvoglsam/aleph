@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::num::NonZeroU64;
+
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 
@@ -35,6 +37,7 @@ use crate::NullDevice;
 pub struct NullSampler {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
+    pub(crate) id: NonZeroU64,
     pub(crate) desc: SamplerDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -54,6 +57,10 @@ impl ISampler for NullSampler {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 
     fn desc(&self) -> SamplerDesc {

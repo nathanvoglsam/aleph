@@ -29,6 +29,7 @@
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 
 use crate::{NullContext, NullDevice, NullQueue};
 
@@ -80,6 +81,7 @@ impl IAdapter for NullAdapter {
                 general_queue: Some(general_queue),
                 compute_queue: Some(compute_queue),
                 transfer_queue: Some(transfer_queue),
+                object_counter: ObjectCounter::new(),
             }
         });
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))

@@ -55,6 +55,10 @@ impl IGraphicsPipeline for ValidationGraphicsPipeline {
     fn weak_count(&self) -> usize {
         self._this.weak_count()
     }
+
+    fn get_id(&self) -> std::num::NonZeroU64 {
+        self.inner.get_id()
+    }
 }
 
 pub struct ValidationComputePipeline {
@@ -79,5 +83,9 @@ impl IComputePipeline for ValidationComputePipeline {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> std::num::NonZeroU64 {
+        self.inner.get_id()
     }
 }
