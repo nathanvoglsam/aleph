@@ -35,6 +35,7 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::cstr;
+use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use allocator_api2::alloc::Allocator;
 use ash::vk;
 use bumpalo::collections::Vec as BVec;
@@ -78,6 +79,7 @@ pub struct Device {
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
     pub(crate) command_list_pool: CommandListPool,
+    pub(crate) object_counter: ObjectCounter,
 }
 
 declare_interfaces!(Device, [IDevice]);
@@ -241,6 +243,7 @@ impl IDevice for Device {
                 _this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
                 _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+                id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
             });
             Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(out, |v| v))
@@ -298,6 +301,7 @@ impl IDevice for Device {
                 _this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
                 _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+                id: self.object_counter.next_compute_pipeline(),
                 pipeline,
             });
             Ok(AnyArc::map::<dyn IComputePipeline, _>(out, |v| v))
@@ -384,6 +388,7 @@ impl IDevice for Device {
                 _this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
                 _samplers,
+                id: self.object_counter.next_set_layout(),
                 descriptor_set_layout,
                 pool_sizes,
             });
@@ -559,6 +564,7 @@ impl IDevice for Device {
             let out = AnyArc::new_cyclic(move |v| PipelineLayout {
                 _this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_pipeline_layout(),
                 pipeline_layout,
                 push_constant_blocks: ranges,
             });
@@ -638,6 +644,7 @@ impl IDevice for Device {
         let out = AnyArc::new_cyclic(move |v| Buffer {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_buffer(),
             buffer,
             allocation,
             desc,
@@ -729,6 +736,7 @@ impl IDevice for Device {
         let out = AnyArc::new_cyclic(move |v| Texture {
             _this: v.clone(),
             _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_texture(),
             image,
             // creation_flags: create_info.flags,
             // created_usage: create_info.usage,
@@ -786,6 +794,7 @@ impl IDevice for Device {
             let out = AnyArc::new_cyclic(move |v| Sampler {
                 _this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_sampler(),
                 sampler,
                 desc: desc.clone().strip_name(),
                 name,

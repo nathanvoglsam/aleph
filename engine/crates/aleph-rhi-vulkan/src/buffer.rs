@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -41,6 +42,7 @@ use crate::device::Device;
 pub struct Buffer {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) id: NonZeroU64,
     pub(crate) buffer: vk::Buffer,
     pub(crate) allocation: vma::Allocation,
     pub(crate) desc: BufferDesc<'static>,
@@ -89,6 +91,10 @@ impl IBuffer for Buffer {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 
     fn desc(&self) -> BufferDesc {

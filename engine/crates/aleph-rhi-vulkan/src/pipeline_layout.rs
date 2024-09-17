@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::num::NonZeroU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -39,6 +40,7 @@ use crate::device::Device;
 pub struct PipelineLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) id: NonZeroU64,
     pub(crate) pipeline_layout: vk::PipelineLayout,
     pub(crate) push_constant_blocks: Vec<vk::PushConstantRange>,
 }
@@ -62,6 +64,10 @@ impl IPipelineLayout for PipelineLayout {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 }
 

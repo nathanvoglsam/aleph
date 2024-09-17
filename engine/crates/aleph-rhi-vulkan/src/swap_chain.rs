@@ -277,6 +277,7 @@ impl SwapChain {
                 AnyArc::new_cyclic(move |v| Texture {
                     _this: v.clone(),
                     _device: self.device.clone(),
+                    id: self.device.object_counter.next_texture(),
                     image: *image,
                     // creation_flags: Default::default(),
                     // created_usage: swap_create_info.image_usage,

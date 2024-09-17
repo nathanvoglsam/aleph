@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::num::NonZeroU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -41,6 +42,7 @@ pub struct DescriptorSetLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) _samplers: Vec<AnyArc<Sampler>>,
+    pub(crate) id: NonZeroU64,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
     pub(crate) pool_sizes: Vec<vk::DescriptorPoolSize>,
 }
@@ -68,6 +70,10 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 }
 

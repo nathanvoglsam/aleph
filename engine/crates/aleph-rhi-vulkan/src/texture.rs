@@ -29,6 +29,7 @@
 
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::num::NonZeroU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -43,6 +44,7 @@ use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, text
 pub struct Texture {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) id: NonZeroU64,
     pub(crate) image: vk::Image,
     // pub(crate) creation_flags: vk::ImageCreateFlags,
     // pub(crate) created_usage: vk::ImageUsageFlags,
@@ -74,6 +76,10 @@ impl ITexture for Texture {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 
     fn desc(&self) -> TextureDesc {

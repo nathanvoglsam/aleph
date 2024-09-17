@@ -33,6 +33,7 @@ use std::mem::ManuallyDrop;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use vulkan_alloc::vma;
@@ -335,6 +336,7 @@ impl IAdapter for Adapter {
                 compute_queue: None,
                 transfer_queue: None,
                 command_list_pool: CommandListPool::new(),
+                object_counter: ObjectCounter::new(),
             };
 
             unsafe { found_families.build_queue_objects(&mut device) };

@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::num::NonZeroU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -41,6 +42,7 @@ pub struct GraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) id: NonZeroU64,
     pub(crate) pipeline: vk::Pipeline,
 }
 
@@ -64,6 +66,10 @@ impl IGraphicsPipeline for GraphicsPipeline {
     fn weak_count(&self) -> usize {
         self._this.weak_count()
     }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
+    }
 }
 
 impl Drop for GraphicsPipeline {
@@ -78,6 +84,7 @@ pub struct ComputePipeline {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) id: NonZeroU64,
     pub(crate) pipeline: vk::Pipeline,
 }
 
@@ -100,6 +107,10 @@ impl IComputePipeline for ComputePipeline {
 
     fn weak_count(&self) -> usize {
         self._this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 }
 
