@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::fs::File;
 use std::io::Write;
 
 use aleph_target::Profile;
@@ -305,26 +304,13 @@ fn generate_shader_name_bindings_for_module(
     crate_ctx: &ShaderCrateContext,
     module_ctx: &ShaderModuleContext,
 ) -> anyhow::Result<()> {
-    let module_name = module_ctx.module_name.replace(&['.', '-'], "_");
-    let module_output_file = crate_ctx
-        .meta
-        .shader_dir
-        .join(module_name)
-        .with_extension("rs")
-        .to_string();
-    let mut module_output_file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(module_output_file)?;
+    use std::fmt::Write;
+    let mut output = String::new();
 
-    writeln!(
-        &mut module_output_file,
-        "// Do not edit manually! File is GENERATED!"
-    )?;
-    writeln!(&mut module_output_file)?;
+    writeln!(&mut output, "// Do not edit manually! File is GENERATED!")?;
+    writeln!(&mut output)?;
 
-    write_imports(&mut module_output_file, "")?;
+    write_imports(&mut output, "")?;
 
     let mut indent = String::with_capacity(32);
     let mut stack = Vec::new();
@@ -341,9 +327,9 @@ fn generate_shader_name_bindings_for_module(
 
                 // Output the function declaration
                 let file_stem_no_dots = shader_file.name_with_type.replace(&['.', '-'], "_");
-                writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
+                writeln!(&mut output, "{indent}#[allow(unused)]")?;
                 writeln!(
-                    &mut module_output_file,
+                    &mut output,
                     "{indent}pub const fn {file_stem_no_dots}() -> {} {{",
                     shader_file.shader_type.shader_db_name_type()
                 )?;
@@ -352,13 +338,13 @@ fn generate_shader_name_bindings_for_module(
                 let shader_name =
                     super::shader_name_for_src_file_in_module(module_ctx, &shader_file)?;
                 writeln!(
-                    &mut module_output_file,
+                    &mut output,
                     "{indent}    unsafe {{ {}(\"{shader_name}\") }} // Safety guaranteed by code-gen",
                     shader_file.shader_type.shader_db_name_constructor(),
                 )?;
 
                 // Close the function block
-                writeln!(&mut module_output_file, "{indent}}}")?;
+                writeln!(&mut output, "{indent}}}")?;
 
                 log::trace!("{}", shader_name);
             } else if item_type.is_dir() {
@@ -367,16 +353,13 @@ fn generate_shader_name_bindings_for_module(
 
                 // Open the new module in the file
                 let sanitized_dir_name = file_name.replace(&['.', '-'], "_");
-                writeln!(&mut module_output_file, "{indent}#[allow(unused)]")?;
-                writeln!(
-                    &mut module_output_file,
-                    "{indent}pub mod {sanitized_dir_name} {{"
-                )?;
+                writeln!(&mut output, "{indent}#[allow(unused)]")?;
+                writeln!(&mut output, "{indent}pub mod {sanitized_dir_name} {{")?;
 
                 // Increase our indent level
                 indent.push_str("    ");
 
-                write_imports(&mut module_output_file, &indent)?;
+                write_imports(&mut output, &indent)?;
 
                 // Store our progress through the current directory and then push the newly found
                 // child directory as the next element to process onto the stack.
@@ -393,7 +376,34 @@ fn generate_shader_name_bindings_for_module(
             // If we hit here we've finished iterating a dir, so for every level except the very
             // bottom level we close an (assumed to be open) module and decrease the indent level.
             indent.truncate(indent.len() - 4);
-            writeln!(&mut module_output_file, "{indent}}}",)?;
+            writeln!(&mut output, "{indent}}}",)?;
+        }
+    }
+
+    let module_name = module_ctx.module_name.replace(&['.', '-'], "_");
+    let module_output_file = crate_ctx
+        .meta
+        .shader_dir
+        .join(module_name)
+        .with_extension("rs")
+        .to_string();
+    match std::fs::read_to_string(&module_output_file) {
+        Ok(existing_text) => {
+            // Only write the file if the new output is different than the existing contents of the
+            // file. This prevents the mtime from being updated. If we re-write the contents of the
+            // file it will trigger cargo to rebuild the crate, which we want to avoid if we know
+            // the file is unchanged.
+            if existing_text != output {
+                std::fs::write(&module_output_file, output)?;
+            }
+        }
+        Err(e) => {
+            // If there's no file we just create it, otherwise throw the error out to the caller.
+            if e.kind() == std::io::ErrorKind::NotFound {
+                std::fs::write(&module_output_file, output)?;
+            } else {
+                Err(e)?;
+            }
         }
     }
 
@@ -421,11 +431,11 @@ fn sorted_dir_listing(item: &Utf8Path) -> std::io::Result<SortedDirListingIter> 
     Ok(dir_items.into_iter())
 }
 
-fn write_imports(module_output_file: &mut File, indent: &str) -> std::io::Result<()> {
-    writeln!(module_output_file, "{indent}#[allow(unused)]")?;
-    writeln!(module_output_file,
+fn write_imports(output: &mut impl std::fmt::Write, indent: &str) -> std::fmt::Result {
+    writeln!(output, "{indent}#[allow(unused)]")?;
+    writeln!(output,
         "{indent}use aleph_shader_db::{{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex }};"
     )?;
-    writeln!(module_output_file)?;
+    writeln!(output)?;
     Ok(())
 }
