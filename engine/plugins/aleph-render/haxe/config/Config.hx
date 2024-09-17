@@ -43,6 +43,7 @@ class Config {
     private static function get(env: Environment): RenderConfig {
         return {
             framesInFlight: 2,
+            forceGraphRebuild: false,
         };
     }
 }

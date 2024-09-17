@@ -60,7 +60,8 @@ pub use mesh_layout::{
 };
 pub use object_pool::ObjectPool;
 pub use renderer::{
-    DefaultRenderPlane, IRenderPlane, IRenderSurface, RenderPlaneOutput, Renderer, RendererBuilder,
+    DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, RenderPlaneOutput, Renderer,
+    RendererBuilder,
 };
 pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use streaming_request::{

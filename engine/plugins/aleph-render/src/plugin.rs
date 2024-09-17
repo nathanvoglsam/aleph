@@ -45,7 +45,7 @@ use serde::Deserialize;
 
 use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
-    CameraInfo, DefaultRenderPlane, IRenderPlane, IRenderSurface, PerspectiveInfo,
+    CameraInfo, DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, PerspectiveInfo,
     RenderPlaneOutput, RendererBuilder, ShaderDatabaseAccessor,
 };
 
@@ -195,7 +195,12 @@ impl IPlugin for PluginRender {
                         font_handle: font_texture.font_handle.unwrap(),
                         render_data,
                     });
-                    renderer.draw_next_frame(&board);
+                    renderer.draw_next_frame(
+                        &DrawOptions {
+                            force_rebuild_frame_graph: config.force_graph_rebuild,
+                        },
+                        &board,
+                    );
                 }
             },
         );
@@ -292,13 +297,20 @@ impl IRenderPlane for EguiRenderPlane {
 struct Config {
     #[serde(rename = "framesInFlight")]
     pub frames_in_flight: u32,
+
+    #[serde(rename = "forceGraphRebuild")]
+    pub force_graph_rebuild: bool,
 }
 
 impl Config {
     pub fn log(&self) {
         log::info!(
-            "aleph-render.frames_in_flight = {:?}",
+            "aleph-render.framesInFlight = {}",
             self.frames_in_flight
+        );
+        log::info!(
+            "aleph-render.forceGraphRebuild = {}",
+            self.force_graph_rebuild
         );
     }
 }

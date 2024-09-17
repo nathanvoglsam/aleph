@@ -241,7 +241,7 @@ impl Renderer {
         Some(handle)
     }
 
-    pub unsafe fn draw_next_frame(&mut self, board: &PinBoard) {
+    pub unsafe fn draw_next_frame(&mut self, options: &DrawOptions, board: &PinBoard) {
         let CurrentFrameResources {
             frame_index,
             acquire_semaphore,
@@ -278,7 +278,13 @@ impl Renderer {
 
         // If the swap chain was rebuilt (or this is the first frame and we haven't built the frame
         // graph yet) we need to (re)build the frame graph!
-        if self.graph_manager.frame_graph.is_none() || acquired_image.rebuilt {
+        if self.graph_manager.frame_graph.is_none()
+            || acquired_image.rebuilt
+            || options.force_rebuild_frame_graph
+        {
+            if options.force_rebuild_frame_graph {
+                self.device.wait_idle();
+            }
             self.graph_manager.build_graph(
                 &self.config,
                 &self.shader_db,
@@ -350,6 +356,24 @@ impl Renderer {
 
         self.swap_manager
             .present(self.queue.as_ref(), &[present_semaphore], acquired_image);
+    }
+}
+
+/// A collection of tweakable options that can be provided ad-hoc on any call to
+/// [`Renderer::draw_next_frame`].
+#[derive(Clone, Debug)]
+pub struct DrawOptions {
+    /// Force the frame-graph to be rebuilt every frame, even if it wouldn't need to be otherwise.
+    ///
+    /// This is primarily intended to be used for profiling the cost of a frame-graph rebuild.
+    pub force_rebuild_frame_graph: bool,
+}
+
+impl Default for DrawOptions {
+    fn default() -> Self {
+        Self {
+            force_rebuild_frame_graph: false,
+        }
     }
 }
 

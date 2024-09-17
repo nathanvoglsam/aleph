@@ -38,6 +38,14 @@ typedef RenderConfig = {
      * tools only available on dev machines.
      */
     var framesInFlight: Int;
+
+    /**
+     * When enabled, the renderer is forced to rebuild the frame graph every frame regardless of
+     * whether it otherwise would've needed to.
+     * 
+     * Useful for profiling.
+     */
+    var forceGraphRebuild: Bool;
 }
 
 class Config {
