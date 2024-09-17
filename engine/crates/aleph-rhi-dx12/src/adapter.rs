@@ -32,6 +32,7 @@ use std::ops::Deref;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
 use windows::Win32::Graphics::Direct3D::*;
@@ -183,6 +184,7 @@ impl IAdapter for Adapter {
                 compute_queue: None,
                 transfer_queue: None,
                 command_list_pool: CommandListPool::new(),
+                object_counter: ObjectCounter::new(),
             };
             create_queues(&mut v, debug_queue);
             v

@@ -304,10 +304,7 @@ struct Config {
 
 impl Config {
     pub fn log(&self) {
-        log::info!(
-            "aleph-render.framesInFlight = {}",
-            self.frames_in_flight
-        );
+        log::info!("aleph-render.framesInFlight = {}", self.frames_in_flight);
         log::info!(
             "aleph-render.forceGraphRebuild = {}",
             self.force_graph_rebuild

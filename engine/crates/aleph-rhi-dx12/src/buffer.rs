@@ -29,6 +29,7 @@
 
 use std::any::TypeId;
 use std::mem::ManuallyDrop;
+use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -42,6 +43,7 @@ use crate::device::Device;
 pub struct Buffer {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) id: NonZeroU64,
     pub(crate) allocation: ManuallyDrop<d3d12ma::Allocation>,
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) base_address: GPUDescriptorHandle,
@@ -102,6 +104,10 @@ impl IBuffer for Buffer {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 
     fn desc(&self) -> BufferDesc {

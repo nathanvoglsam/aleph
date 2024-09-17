@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::num::NonZeroU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -39,6 +40,7 @@ use crate::device::Device;
 pub struct Sampler {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) id: NonZeroU64,
     pub(crate) desc: SamplerDesc<'static>,
     pub(crate) name: Option<String>,
     pub(crate) gpu_handle: GPUDescriptorHandle,
@@ -67,6 +69,10 @@ impl ISampler for Sampler {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 
     fn desc(&self) -> SamplerDesc {

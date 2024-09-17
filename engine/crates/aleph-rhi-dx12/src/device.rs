@@ -38,6 +38,7 @@ use std::sync::atomic::AtomicU64;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
+use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
 use blink_alloc::BlinkAlloc;
@@ -102,6 +103,7 @@ pub struct Device {
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
     pub(crate) command_list_pool: CommandListPool,
+    pub(crate) object_counter: ObjectCounter,
 }
 
 unsafe impl Send for Device {}
@@ -244,6 +246,7 @@ impl IDevice for Device {
             let pipeline = AnyArc::new_cyclic(move |v| GraphicsPipeline {
                 this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
                 pipeline_layout,
                 primitive_topology,
@@ -299,6 +302,8 @@ impl IDevice for Device {
 
         let pipeline = AnyArc::new_cyclic(move |v| ComputePipeline {
             this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_compute_pipeline(),
             pipeline,
             pipeline_layout,
         });
@@ -330,6 +335,7 @@ impl IDevice for Device {
         let descriptor_set_layout = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_set_layout(),
             binding_info,
             visibility,
             dynamic_constant_buffers,
@@ -571,6 +577,7 @@ impl IDevice for Device {
             let pipeline_layout = AnyArc::new_cyclic(move |v| PipelineLayout {
                 this: v.clone(),
                 _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_pipeline_layout(),
                 root_signature,
                 push_constant_blocks,
                 set_root_param_indices,
@@ -647,6 +654,7 @@ impl IDevice for Device {
         let buffer = AnyArc::new_cyclic(move |v| Buffer {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_buffer(),
             allocation: ManuallyDrop::new(allocation),
             resource: ManuallyDrop::new(resource),
             base_address,
@@ -695,6 +703,7 @@ impl IDevice for Device {
         let texture = AnyArc::new_cyclic(move |v| Texture {
             this: v.clone(),
             device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_texture(),
             allocation: Some(ManuallyDrop::new(allocation)),
             resource: ManuallyDrop::new(resource),
             desc,
@@ -754,6 +763,7 @@ impl IDevice for Device {
         let sampler = AnyArc::new_cyclic(move |v| Sampler {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_sampler(),
             desc,
             name,
             gpu_handle,

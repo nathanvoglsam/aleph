@@ -30,6 +30,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::mem::ManuallyDrop;
+use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::ptr::NonNull;
 
@@ -51,6 +52,7 @@ use crate::internal::{
 pub struct Texture {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
+    pub(crate) id: NonZeroU64,
     pub(crate) allocation: Option<ManuallyDrop<d3d12ma::Allocation>>,
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) desc: TextureDesc<'static>,
@@ -426,6 +428,10 @@ impl ITexture for Texture {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 
     fn desc(&self) -> TextureDesc {

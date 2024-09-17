@@ -36,6 +36,7 @@
 
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::num::NonZeroU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -46,6 +47,7 @@ use crate::device::Device;
 pub struct DescriptorSetLayout {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) id: NonZeroU64,
     pub(crate) binding_info: HashMap<u32, DescriptorBindingInfo>,
     pub(crate) visibility: D3D12_SHADER_VISIBILITY,
     pub(crate) dynamic_constant_buffers: Vec<D3D12_ROOT_DESCRIPTOR1>,
@@ -83,6 +85,10 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 }
 

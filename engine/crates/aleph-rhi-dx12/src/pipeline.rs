@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::num::NonZeroU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -42,6 +43,7 @@ pub struct GraphicsPipeline {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) id: NonZeroU64,
     pub(crate) pipeline: ID3D12PipelineState,
 
     /// Vulkan bakes this into the pipeline, d3d12 doesn't. We have to behave like vulkan as vulkan
@@ -78,11 +80,17 @@ impl IGraphicsPipeline for GraphicsPipeline {
     fn weak_count(&self) -> usize {
         self.this.weak_count()
     }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
+    }
 }
 
 pub struct ComputePipeline {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) id: NonZeroU64,
     pub(crate) pipeline: ID3D12PipelineState,
 }
 
@@ -105,5 +113,9 @@ impl IComputePipeline for ComputePipeline {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 }
