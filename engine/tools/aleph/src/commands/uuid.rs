@@ -27,33 +27,29 @@
 // SOFTWARE.
 //
 
-use crate::commands::{Build, Bundle, GenProj, GenVsCode, SubcommandSet, Uuid};
+use clap::{ArgMatches, Command};
 
-mod commands;
-mod crate_metadata;
-mod haxe;
-mod project;
-mod project_schema;
-mod shader_system;
-mod subproject;
-mod templates;
-mod utils;
-mod vscode_settings;
+use crate::commands::ISubcommand;
+use crate::project::AlephProject;
 
-// TODO: refactor the shader context stuff to use arenas and violently eject all the Cow crap from
-//       the whole thing because it's fucking awful. Should heavily simplify sharing the shader
-//       context around.
-//
-//       ideally we also end up with a framework for future project systems (haxe *cough*)
+pub struct Uuid {}
 
-fn main() -> anyhow::Result<()> {
-    let mut subcommands = SubcommandSet::new(env!("CARGO_PKG_NAME"));
-    subcommands.register_subcommand(Uuid {});
-    subcommands.register_subcommand(GenProj {});
-    subcommands.register_subcommand(GenVsCode {});
-    subcommands.register_subcommand(Build {});
-    subcommands.register_subcommand(Bundle {});
-    subcommands.register_subcommand(commands::shaders::make());
-    subcommands.register_subcommand(commands::haxe::make());
-    subcommands.exec_as_root()
+impl ISubcommand for Uuid {
+    fn name(&self) -> &'static str {
+        "uuid"
+    }
+
+    fn description(&mut self) -> Command {
+        Command::new(self.name()).about("Generate a UUIDv7 and write it out to stdout")
+    }
+
+    fn exec(&mut self, _project: &AlephProject, _matches: ArgMatches) -> anyhow::Result<()> {
+        let id = uuid::Uuid::now_v7();
+        println!("{}", id);
+        Ok(())
+    }
+
+    fn dont_log(&self) -> bool {
+        true
+    }
 }

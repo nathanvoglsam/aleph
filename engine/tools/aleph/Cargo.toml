@@ -59,6 +59,7 @@ camino = { workspace = true }
 parking_lot = { workspace = true }
 crossbeam = { workspace = true }
 rkyv = { workspace = true }
+uuid = { workspace = true }
 
 aleph-target = { workspace = true }
 aleph-shader-db = { workspace = true }

@@ -33,12 +33,14 @@ mod genproj;
 mod genvscode;
 pub mod haxe;
 pub mod shaders;
+mod uuid;
 
 pub use build::Build;
 pub use bundle::Bundle;
 use clap::{Arg, ArgMatches, Command};
 pub use genproj::GenProj;
 pub use genvscode::GenVsCode;
+pub use uuid::Uuid;
 
 use crate::project::AlephProject;
 
@@ -48,6 +50,12 @@ pub trait ISubcommand {
     fn description(&mut self) -> Command;
 
     fn exec(&mut self, project: &AlephProject, matches: ArgMatches) -> anyhow::Result<()>;
+
+    /// Allows a subcommand to request the subcommand processing system to not log anything so as
+    /// to not pollute stdout. Useful for tools that write to stdout as their primary output.
+    fn dont_log(&self) -> bool {
+        false
+    }
 }
 
 pub struct SubcommandSet {
@@ -88,11 +96,17 @@ impl SubcommandSet {
         let matches = command.get_matches();
         if let Some((subcommand_name, matches)) = matches.subcommand() {
             if let Some(subcommand) = self.subcommands.get_mut(subcommand_name) {
-                // We only want to initialize the logger until _after_ we've started handling subcommands
-                // so we don't get people (somehow) logging in the middle of the command info dump.
-                env_logger::builder()
-                    .filter_level(log::LevelFilter::Trace)
-                    .init();
+                if !subcommand.dont_log() {
+                    // We only want to initialize the logger until _after_ we've started handling
+                    // subcommands so we don't get people (somehow) logging in the middle of the
+                    // command info dump.
+                    //
+                    // We also only want to enable the logger when the subcommand allows it in case
+                    // the subcommand wants to output stuff to stdout.
+                    env_logger::builder()
+                        .filter_level(log::LevelFilter::Trace)
+                        .init();
+                }
 
                 let arena = bumpalo::Bump::new();
 

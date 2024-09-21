@@ -139,6 +139,7 @@ tracy-client = "0.17"
 ultraviolet = { version = "0.9", features = ["f64", "int"] }
 wide = { version = "0.7" }
 utf16_lit = "2"
+uuid = { version = "1", features = ["v7"] }
 zip = "2"
 
 # Aleph Crates
