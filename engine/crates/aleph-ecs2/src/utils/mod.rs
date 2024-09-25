@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-mod atomic_borrow;
 mod generation;
 
-pub use atomic_borrow::AtomicBorrow;
 pub use generation::Generation;

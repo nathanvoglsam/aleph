@@ -30,9 +30,9 @@
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
+use aleph_atomic_borrow::AtomicBorrow;
 use virtual_buffer::VirtualVec;
 
-use crate::utils::AtomicBorrow;
 use crate::{
     ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId,
     EntityId, EntityLayout, EntityLayoutBuf,
