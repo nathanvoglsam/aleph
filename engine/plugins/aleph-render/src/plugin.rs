@@ -30,7 +30,7 @@
 use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
-use aleph_math::{Mat4, Rotor3, Vec3};
+use aleph_math::{Mat4, Vec3};
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
@@ -71,6 +71,9 @@ impl IPlugin for PluginRender {
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
 
+        registrar.depends_on::<dyn IFrameTimerProvider>();
+        registrar.must_init_after::<dyn IFrameTimerProvider>();
+
         registrar.depends_on::<dyn IRhiProvider>();
         registrar.must_init_after::<dyn IRhiProvider>();
 
@@ -93,6 +96,12 @@ impl IPlugin for PluginRender {
             .get_window()
             .unwrap();
 
+        let frame_timer = registry
+            .get_interface::<dyn IFrameTimerProvider>()
+            .unwrap()
+            .get_frame_timer()
+            .unwrap();
+
         // Get the render data slot for egui and the egui provider
         let render_data = registry.get_interface::<dyn egui::IEguiRenderData>();
 
@@ -113,7 +122,7 @@ impl IPlugin for PluginRender {
             format: Format::Bgra8UnormSrgb,
             width: drawable_size.0,
             height: drawable_size.1,
-            present_mode: PresentationMode::Immediate,
+            present_mode: PresentationMode::Fifo,
             buffer_count: 3,
             present_queue: QueueType::General,
         };
@@ -171,7 +180,10 @@ impl IPlugin for PluginRender {
                 unsafe {
                     board.clear();
 
-                    let position = Vec3::new(2.0, 0.0, 0.0);
+                    let elapsed = frame_timer.elapsed_time();
+                    let x = elapsed.sin() * 5.0;
+
+                    let position = Vec3::new(x as f32, 0.0, 0.0);
                     let target = Vec3::new(0.0, 0.0, -3.0);
                     let view = Mat4::look_at(position, target, Vec3::unit_y());
 
