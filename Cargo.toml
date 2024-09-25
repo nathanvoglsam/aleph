@@ -52,6 +52,7 @@ members = [
     "engine/crates/aleph-label",
     "engine/crates/aleph-math",
     "engine/crates/aleph-nstr",
+    "engine/crates/aleph-object-system",
     "engine/crates/aleph-pin-board",
     "engine/crates/aleph-pix",
     "engine/crates/aleph-pix-raw",
@@ -162,6 +163,7 @@ aleph-label = { path = "./engine/crates/aleph-label", version = "1" }
 aleph-math = { path = "./engine/crates/aleph-math", version = "0.1" }
 aleph-luajit-sys = { path = "./engine/crates/aleph-luajit-sys", version = "0.1" }
 aleph-nstr = { path = "./engine/crates/aleph-nstr", version = "0.1" }
+aleph-object-system = { path = "./engine/crates/aleph-object-system", version = "0.1" }
 aleph-pin-board = { path = "./engine/crates/aleph-pin-board", version = "0.1" }
 aleph-pix = { path = "./engine/crates/aleph-pix", version = "0.1" }
 aleph-pix-raw = { path = "./engine/crates/aleph-pix-raw", version = "0.1" }

@@ -39,6 +39,7 @@ mod handle;
 mod handle_pool;
 mod mesh_layout;
 mod object_pool;
+mod render_scene;
 mod renderer;
 mod shader_db_accessor;
 mod shaders;
@@ -59,6 +60,7 @@ pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
 pub use object_pool::ObjectPool;
+pub use render_scene::{RenderScene, RenderTransform, StorageMut, StorageRef};
 pub use renderer::{
     DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, RenderPlaneOutput, Renderer,
     RendererBuilder,

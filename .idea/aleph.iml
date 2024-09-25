@@ -53,6 +53,8 @@
       <sourceFolder url="file://$MODULE_DIR$/game/aleph-test/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-renderer/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-superluminal-sys/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-atomic-borrow/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-object-system/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

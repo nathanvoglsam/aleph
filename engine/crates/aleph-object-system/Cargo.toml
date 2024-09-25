@@ -29,41 +29,17 @@
 
 
 [package]
-name = "aleph-renderer"
+name = "aleph-object-system"
 version = "0.1.0"
 authors.workspace = true
-description = "A games focused 3D renderer library"
+description = "A object type-id system more compatible with FFI"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-renderer/"
+documentation = "https://docs.rs/aleph-object-system/"
 edition.workspace = true
-
-[package.metadata.aleph]
-shaders = { modules = ["aleph-renderer"] }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-device-allocators = { workspace = true }
-aleph-any = { workspace = true }
-aleph-atomic-borrow = { workspace = true }
-aleph-frame-graph = { workspace = true }
-aleph-math = { workspace = true }
-aleph-pin-board = { workspace = true }
-aleph-rhi-api = { workspace = true }
-aleph-shader-db = { workspace = true }
-aleph-profile = { workspace = true }
-aleph-nstr = { workspace = true }
-aleph-object-system = { workspace = true }
-
-serde = { workspace = true }
-serde_json = { workspace = true }
-crossbeam = { workspace = true }
-log = { workspace = true }
-once_cell = { workspace = true }
-bytemuck = { workspace = true }
-rkyv = { workspace = true }
-thiserror = { workspace = true }
-wide = { workspace = true }
-allocator-api2 = { workspace = true }
+uuid = { workspace = true }
