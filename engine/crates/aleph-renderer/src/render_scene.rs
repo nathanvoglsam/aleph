@@ -206,7 +206,7 @@ struct Storage {
     borrow: AtomicBorrow,
     t_id: Uuid,
     t_size: usize,
-    t_destructor: unsafe extern "C" fn(NonNull<()>, count: u64),
+    t_destructor: Option<unsafe extern "C" fn(NonNull<()>, count: u64)>,
 }
 
 impl Storage {
@@ -276,8 +276,11 @@ impl Storage {
             // - The byte buffer is guaranteed to contain 'self.len' objects of the correct type for
             //   self.desc.destructor.
             unsafe {
-                let ptr = self.bytes.as_ptr();
-                (self.t_destructor)(ptr.cast(), self.len() as u64);
+                if let Some(f) = self.t_destructor {
+                    let ptr = self.bytes.as_ptr();
+                    (f)(ptr.cast(), self.len() as u64);
+                }
+
                 self.transforms.clear();
             }
         }

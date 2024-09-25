@@ -29,6 +29,7 @@
 
 pub extern crate uuid;
 
+use std::mem::needs_drop;
 use std::ptr::NonNull;
 
 /// This trait represents the capability of a type to interact with the 'object system'
@@ -81,23 +82,30 @@ pub const fn object_name<T: IObject>() -> &'static str {
 /// FFI portable object description table. Contains all the information exposed by [`IObject`]
 /// wrapped in a neat little struct that can be safely sent across FFI boundaries.
 #[repr(C)]
+#[derive(Clone)]
 pub struct ObjectDescription {
     pub id: uuid::Uuid,
     pub size: usize,
     pub align: usize,
     pub name: &'static str,
-    pub destructor: unsafe extern "C" fn(NonNull<()>, count: u64),
+    pub destructor: Option<unsafe extern "C" fn(NonNull<()>, count: u64)>,
 }
 
 impl ObjectDescription {
     /// Constructs a [`ObjectDescription`] for a given type `T`
     pub const fn get<T: IObject>() -> Self {
+        let destructor: Option<unsafe extern "C" fn(NonNull<()>, u64)> = if needs_drop::<T>() {
+            Some(T::destructor)
+        } else {
+            None
+        };
+
         Self {
             id: T::ID,
             size: T::SIZE,
             align: T::ALIGN,
             name: T::NAME,
-            destructor: T::destructor,
+            destructor,
         }
     }
 }
