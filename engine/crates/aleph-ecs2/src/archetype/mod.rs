@@ -31,11 +31,12 @@ use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
 use aleph_atomic_borrow::AtomicBorrow;
+use aleph_object_system::uuid::Uuid;
+use aleph_object_system::ObjectDescription;
 use virtual_buffer::VirtualVec;
 
 use crate::{
-    ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId,
-    EntityId, EntityLayout, EntityLayoutBuf,
+    ComponentIdMap, ComponentRegistry, ComponentSource, EntityId, EntityLayout, EntityLayoutBuf,
 };
 
 ///
@@ -83,22 +84,22 @@ pub struct ComponentStorage {
     pub guard: AtomicBorrow,
 
     /// A description of the type being stored
-    pub type_description: ComponentTypeDescription,
+    pub desc: ObjectDescription,
 }
 
 impl ComponentStorage {
-    pub fn with_capacity(type_description: ComponentTypeDescription, capacity: usize) -> Self {
-        let capacity = type_description.type_size * capacity;
+    pub fn with_capacity(desc: ObjectDescription, capacity: usize) -> Self {
+        let capacity = desc.size * capacity;
         let mut data =
             VirtualVec::new(capacity).expect("Failed to reserve address space for components");
 
         // Pre-fill the first slot with zeroes, it will never be accessed
-        data.resize(type_description.type_size, 0);
+        data.resize(desc.size, 0);
 
         Self {
             data,
             guard: AtomicBorrow::new(),
-            type_description,
+            desc,
         }
     }
 }
@@ -196,7 +197,7 @@ impl Archetype {
 
         // Produce the index map from the layout
         let storage_indices: ComponentIdMap<usize> =
-            layout.iter().enumerate().map(|v| (v.1, v.0)).collect();
+            layout.iter().enumerate().map(|v| (*v.1, v.0)).collect();
 
         // Create a virtual memory reservation for each component's storage
         let storages = layout
@@ -246,7 +247,7 @@ impl Archetype {
         }
 
         for storage in self.storages.iter_mut() {
-            let bytes = count as usize * storage.type_description.type_size;
+            let bytes = count as usize * storage.desc.size;
             storage.data.resize(storage.data.len() + bytes, 0);
         }
 
@@ -276,7 +277,7 @@ impl Archetype {
             let source = source.data_for(comp);
 
             // Get the size of the type we're copying from the buffers
-            let type_size = self.storages[i].type_description.type_size;
+            let type_size = self.storages[i].desc.size;
 
             // Calculate the base index for where to start copying into the buffer
             let base = base.0.get() as usize;
@@ -299,12 +300,12 @@ impl Archetype {
     pub(crate) fn copy_component_data_into_slot(
         &mut self,
         slot: ArchetypeEntityIndex,
-        component_type: ComponentTypeId,
+        component_type: &Uuid,
         data: &[u8],
     ) {
         // Get the index of the type inside the archetype and lookup the size of the type
-        let type_index = self.storage_indices.get(&component_type).copied().unwrap();
-        let type_size = self.storages[type_index].type_description.type_size;
+        let type_index = self.storage_indices.get(component_type).copied().unwrap();
+        let type_size = self.storages[type_index].desc.size;
 
         // Get the bounds of the component's data
         let dest_base = slot.0.get() as usize;
@@ -323,39 +324,36 @@ impl Archetype {
     pub(crate) unsafe fn drop_component_in_slot(
         &mut self,
         slot: ArchetypeEntityIndex,
-        component_type: ComponentTypeId,
+        component_type: &Uuid,
     ) {
-        let type_index = self.storage_indices.get(&component_type).copied().unwrap();
-        let type_size = self.storages[type_index].type_description.type_size;
-        let drop_fn = self.storages[type_index].type_description.fn_drop;
+        let type_index = self.storage_indices.get(component_type).copied().unwrap();
+        let type_size = self.storages[type_index].desc.size;
+        let drop_fn = self.storages[type_index].desc.destructor;
 
         if let Some(drop_fn) = drop_fn {
             let slot = slot.0.get() as usize;
             let component = &mut self.storages[type_index].data[slot * type_size];
 
-            drop_fn(component);
+            drop_fn(NonNull::from(component).cast(), 1);
         }
     }
 
-    pub(crate) fn get_component_guard(
-        &self,
-        component_type: ComponentTypeId,
-    ) -> Option<&AtomicBorrow> {
+    pub(crate) fn get_component_guard(&self, component_type: &Uuid) -> Option<&AtomicBorrow> {
         // Lookup the storage index for the borrow guard
-        let storage_index = self.storage_indices.get(&component_type).copied()?;
+        let storage_index = self.storage_indices.get(component_type).copied()?;
         Some(&self.storages[storage_index].guard)
     }
 
     pub(crate) fn get_component_ptr(
         &self,
         slot: ArchetypeEntityIndex,
-        component_type: ComponentTypeId,
+        component_type: &Uuid,
     ) -> Option<NonNull<u8>> {
         // Lookup the storage index, load the size of the type and get the storage pointer
-        let storage_index = self.storage_indices.get(&component_type).copied()?;
+        let storage_index = self.storage_indices.get(component_type).copied()?;
         let storage = &self.storages[storage_index];
 
-        let type_size = storage.type_description.type_size;
+        let type_size = storage.desc.size;
         let data = storage.data.as_slice();
 
         let slot = slot.0.get() as usize;
@@ -421,10 +419,10 @@ impl Archetype {
             self.pop_for_storage::<DROP>(storage_index);
         } else {
             let storage = &mut self.storages[storage_index];
-            let desc = &storage.type_description;
+            let desc = &storage.desc;
 
-            let remove_offset = index * desc.type_size;
-            let last_offset = last_index * desc.type_size;
+            let remove_offset = index * desc.size;
+            let last_offset = last_index * desc.size;
 
             let (remove, last) = storage.data.split_at_mut(last_offset);
             let remove = &mut remove[remove_offset..];
@@ -444,12 +442,12 @@ impl Archetype {
     pub(crate) fn pop_for_storage<const DROP: bool>(&mut self, storage_index: usize) {
         if self.len != 0 {
             let storage = &mut self.storages[storage_index];
-            let desc = &storage.type_description;
+            let desc = &storage.desc;
 
             if DROP {
-                if let Some(fn_drop) = desc.fn_drop {
+                if let Some(fn_drop) = desc.destructor {
                     let last_index = (self.len - 1) as usize;
-                    let last_ptr = &mut storage.data[last_index * desc.type_size];
+                    let last_ptr = &mut storage.data[last_index * desc.size];
 
                     // SAFETY: This handles calling the drop function for a component through a raw
                     //         pointer. The signature is type erased so the interface is unsafe.
@@ -464,7 +462,7 @@ impl Archetype {
                     //         incorrect by providing an incorrect ComponentTypeDescription using an
                     //         unsafe function.
                     unsafe {
-                        fn_drop(last_ptr);
+                        fn_drop(NonNull::from(last_ptr).cast(), 1);
                     }
                 }
             }
@@ -484,7 +482,7 @@ impl Archetype {
 
         for (source_index, source_id) in self.entity_layout.iter().enumerate() {
             // Get the size of the component to copy
-            let type_size = self.storages[source_index].type_description.type_size;
+            let type_size = self.storages[source_index].desc.size;
 
             // Get the bounds of the data to copy
             let source_base = target.0.get() as usize;
@@ -540,24 +538,25 @@ impl Archetype {
 
 impl Drop for Archetype {
     fn drop(&mut self) {
+        // Early exit if we don't contain any entities in this archetype
+        if self.len == 0 {
+            return;
+        }
+
         // Iterate over every component storage and call the drop function on all components
         for storage in self.storages.iter_mut() {
             // Lookup the size and drop fn so we can iterate over the components in the storage
-            let desc = &storage.type_description;
-            let type_size = desc.type_size;
-            let drop_fn = desc.fn_drop;
+            let desc = &storage.desc;
+            let type_size = desc.size;
 
             // Only need to iterate if the drop function is actually defined
-            if let Some(drop_fn) = drop_fn {
+            if let Some(drop_fn) = desc.destructor {
                 // SAFETY: This just iterates over each item in the storage while type erased, which
                 //         is a sound operation. The drop function will never be invalid to call if
                 //         there is no unsafe code interfacing with the world.
                 unsafe {
-                    let mut current = storage.data.as_mut_ptr().add(type_size);
-                    for _ in 0..self.len {
-                        drop_fn(current);
-                        current = current.add(type_size);
-                    }
+                    let current = storage.data.as_mut_ptr().add(type_size);
+                    drop_fn(NonNull::new_unchecked(current).cast(), self.len as _);
                 }
             }
         }

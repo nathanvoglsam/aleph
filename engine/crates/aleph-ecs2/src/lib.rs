@@ -29,6 +29,8 @@
 
 extern crate aleph_virtual_buffer as virtual_buffer;
 
+pub extern crate aleph_object_system as object_system;
+
 mod archetype;
 mod component;
 mod entity;
@@ -43,9 +45,7 @@ pub use self::component::component_query::{
 };
 pub use self::component::component_registry::ComponentRegistry;
 pub use self::component::component_source::{ComponentSource, IntoComponentSource};
-pub use self::component::{
-    Component, ComponentIdMap, ComponentSet, ComponentTypeDescription, ComponentTypeId,
-};
+pub use self::component::{Component, ComponentIdMap};
 pub use self::entity::entity_layout::{EntityLayout, EntityLayoutBuf};
 pub use self::entity::entity_storage::{
     EntityEntry, EntityEntryData, EntityFreeListLink, EntityLocation, EntityStorage,

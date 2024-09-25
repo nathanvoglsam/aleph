@@ -30,11 +30,13 @@
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 
+use aleph_object_system::uuid::Uuid;
+use aleph_object_system::ObjectDescription;
+
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
-    ComponentQueryItem, ComponentRegistry, ComponentSource, ComponentTypeDescription,
-    ComponentTypeId, EntityId, EntityLayout, EntityLayoutBuf, EntityLocation, EntityStorage,
-    IntoComponentSource, Query,
+    ComponentQueryItem, ComponentRegistry, ComponentSource, EntityId, EntityLayout,
+    EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, Query,
 };
 
 ///
@@ -178,7 +180,7 @@ impl World {
     }
 
     /// Register's a rust component type with this ECS world so that it can be used as a component
-    pub fn register<T: Component>(&mut self) -> ComponentTypeDescription {
+    pub fn register<T: Component>(&mut self) -> ObjectDescription {
         self.component_registry.register::<T>()
     }
 
@@ -202,19 +204,19 @@ impl World {
                 (desc, buffer)
             });
             for (desc, buffer) in descs {
-                let required_bytes = ids.len() * desc.type_size;
+                let required_bytes = ids.len() * desc.size;
                 let actual_bytes = buffer.len();
                 debug_assert_eq!(
                     required_bytes, actual_bytes,
                     "The buffer provided for component {} was the wrong size",
-                    desc.type_name
+                    desc.name
                 );
 
                 let buffer_base = buffer.as_ptr() as usize;
                 debug_assert!(
-                    buffer_base & (desc.type_align - 1) == 0,
+                    buffer_base & (desc.align - 1) == 0,
                     "The buffer provided for component {} was not sufficiently aligned",
-                    desc.type_name
+                    desc.name
                 );
             }
         }
@@ -277,7 +279,7 @@ impl World {
         // Perform the call, using mem::forget to not drop the component if ownership was
         // successfully transferred into the archetype
         unsafe {
-            if self.add_component_dynamic(entity, ComponentTypeId::of::<T>(), data) {
+            if self.add_component_dynamic(entity, &T::ID, data) {
                 std::mem::forget(component);
                 true
             } else {
@@ -290,7 +292,7 @@ impl World {
     ///
     /// Returns true if the component is successfully removed, otherwise returns false.
     pub fn remove_component<T: Component>(&mut self, entity: EntityId) -> bool {
-        unsafe { self.remove_component_dynamic(entity, ComponentTypeId::of::<T>()) }
+        unsafe { self.remove_component_dynamic(entity, &T::ID) }
     }
 
     /// Erases the entity with the ID from the ECS.
@@ -323,7 +325,7 @@ impl World {
 
     /// Returns whether the specified component has the component `T`.
     pub fn has_component<T: Component>(&self, entity: EntityId) -> bool {
-        self.has_component_dynamic(entity, ComponentTypeId::of::<T>())
+        self.has_component_dynamic(entity, &T::ID)
     }
 
     #[inline]
@@ -413,7 +415,7 @@ impl World {
     /// This function is unsafe because there is no way to guarantee that the memory layout provided
     /// is valid for the provided ID. It is possible to provide the ID for a rust type but give an
     /// incorrect size and trigger UB.
-    pub unsafe fn register_dynamic(&mut self, description: &ComponentTypeDescription) -> bool {
+    pub unsafe fn register_dynamic(&mut self, description: &ObjectDescription) -> bool {
         self.component_registry.register_dynamic(description)
     }
 
@@ -427,7 +429,7 @@ impl World {
     pub unsafe fn add_component_dynamic(
         &mut self,
         entity: EntityId,
-        component: ComponentTypeId,
+        component: &Uuid,
         data: &[u8],
     ) -> bool {
         // Lookup the entity location by the provided ID, returning false if the ID is invalid
@@ -472,11 +474,7 @@ impl World {
     ///
     /// Marked unsafe until the function is proven to be safe, as it currently ambiguous whether
     /// this is safe to call.
-    pub unsafe fn remove_component_dynamic(
-        &mut self,
-        entity: EntityId,
-        component: ComponentTypeId,
-    ) -> bool {
+    pub unsafe fn remove_component_dynamic(&mut self, entity: EntityId, component: &Uuid) -> bool {
         // Lookup the entity location by the provided ID, returning false if the ID is invalid
         let location = if let Some(location) = self.entities.lookup(entity) {
             location
@@ -514,7 +512,7 @@ impl World {
     /// This function provides a raw, untyped interface for looking up an individual component for
     /// a given entity.
     #[inline]
-    pub fn has_component_dynamic(&self, entity: EntityId, component: ComponentTypeId) -> bool {
+    pub fn has_component_dynamic(&self, entity: EntityId, component: &Uuid) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
             self.archetypes[location.archetype.0.get() as usize]
                 .entity_layout()
@@ -530,12 +528,12 @@ impl World {
     fn follow_archetype_link<const ADD: bool>(
         &mut self,
         source: ArchetypeIndex,
-        component: ComponentTypeId,
+        component: &Uuid,
     ) -> Option<ArchetypeIndex> {
         let source = source.0.get() as usize;
 
         // First check for an existing link in the graph
-        if let Some(edge) = self.archetype_edges[source].get_mut(&component) {
+        if let Some(edge) = self.archetype_edges[source].get_mut(component) {
             // Const switch between add or remove
             if ADD {
                 if let Some(index) = edge.add {
@@ -558,18 +556,18 @@ impl World {
         let source_layout = self.archetypes[source].entity_layout().to_owned();
         let mut destination_layout = source_layout;
         if ADD {
-            if destination_layout.add_component_type(component) {
+            if destination_layout.add_component_type(*component) {
                 return None;
             }
         } else {
-            if !destination_layout.remove_component_type(component) {
+            if !destination_layout.remove_component_type(*component) {
                 return None;
             }
         }
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(&destination_layout);
-        let edge = self.archetype_edges[source].entry(component).or_default();
+        let edge = self.archetype_edges[source].entry(*component).or_default();
         if ADD {
             edge.add = Some(index);
         } else {

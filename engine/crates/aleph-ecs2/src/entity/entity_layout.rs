@@ -32,10 +32,9 @@ use std::convert::TryFrom;
 use std::iter::FromIterator;
 use std::ops::Deref;
 
+use aleph_object_system::uuid::Uuid;
 use allocator_api2::alloc::{Allocator, Global};
 use allocator_api2::vec::{IntoIter as AIntoIter, Vec as AVec};
-
-use crate::ComponentTypeId;
 
 ///
 /// A wrapper over a slice of an EntityLayoutBuf
@@ -43,7 +42,7 @@ use crate::ComponentTypeId;
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug, Hash)]
 pub struct EntityLayout {
-    components: [ComponentTypeId],
+    components: [Uuid],
 }
 
 impl EntityLayout {
@@ -55,10 +54,10 @@ impl EntityLayout {
     /// It is up to the caller to check the constraints documented on [EntityLayout::from_inner].
     ///
     #[inline]
-    pub unsafe fn from_inner_unchecked(components: &[ComponentTypeId]) -> &Self {
+    pub unsafe fn from_inner_unchecked(components: &[Uuid]) -> &Self {
         // SAFETY: EntityLayout is just a wrapper of [ComponentTypeId],
         // therefore converting &[ComponentTypeId] to &EntityLayout is safe.
-        &*(components as *const [ComponentTypeId] as *const EntityLayout)
+        &*(components as *const [Uuid] as *const EntityLayout)
     }
 
     /// Creates an EntityLayout wrapper over the given slice by first checking that the slice meets
@@ -72,7 +71,7 @@ impl EntityLayout {
     ///
     /// If these requirements are not met then the function will return None.
     #[inline]
-    pub fn from_inner(components: &[ComponentTypeId]) -> Option<&Self> {
+    pub fn from_inner(components: &[Uuid]) -> Option<&Self> {
         // First we check if the given list is sorted
         let is_sorted = components.windows(2).all(|w| w[0] <= w[1]);
         if !is_sorted {
@@ -95,7 +94,7 @@ impl EntityLayout {
 
     /// A utility that returns an empty EntityLayout. That is, a layout with no components.
     pub fn empty() -> &'static EntityLayout {
-        static EMPTY: [ComponentTypeId; 0] = [];
+        static EMPTY: [Uuid; 0] = [];
 
         // SAFETY: The list is empty so there is nothing to actually check so this is safe.
         unsafe { Self::from_inner_unchecked(&EMPTY) }
@@ -103,14 +102,14 @@ impl EntityLayout {
 
     /// Returns whether the given component type is present in the `EntityLayout`.
     #[inline]
-    pub fn contains_component_type(&self, id: ComponentTypeId) -> bool {
-        self.components.binary_search(&id).is_ok()
+    pub fn contains_component_type(&self, id: &Uuid) -> bool {
+        self.components.binary_search(id).is_ok()
     }
 
     /// Returns the index of the component type in the `EntityLayout`, if it exists in the layout
     #[inline]
-    pub fn index_of_component_type(&self, id: ComponentTypeId) -> Option<usize> {
-        self.components.binary_search(&id).ok()
+    pub fn index_of_component_type(&self, id: &Uuid) -> Option<usize> {
+        self.components.binary_search(id).ok()
     }
 
     /// Returns if the `EntityLayoutBuf` has no member component types.
@@ -135,13 +134,13 @@ impl EntityLayout {
 
         // Create an iterator we can manually iterate over for checking if elements are present in
         // the other set.
-        let mut self_iter = self.iter();
+        let mut self_iter = self.iter().copied();
 
         // Need to hold onto the current component to check between iterations over the other set.
-        let mut current: ComponentTypeId = self_iter.next().unwrap();
+        let mut current: Uuid = self_iter.next().unwrap();
 
         // Now to check if every element of self can be found inside other
-        for other_item in other.iter() {
+        for other_item in other.iter().copied() {
             // Check the other_item with current to see if current can be found in the other set.
             // If it is found in the other set we then move current to the next element in self.
             if current == other_item {
@@ -186,13 +185,13 @@ impl EntityLayout {
 
     /// An iterator over the components in this layout
     #[inline]
-    pub fn iter(&'_ self) -> impl Iterator<Item = ComponentTypeId> + '_ {
-        self.components.iter().cloned()
+    pub fn iter(&'_ self) -> impl Iterator<Item = &'_ Uuid> + '_ {
+        self.components.iter()
     }
 
     /// Returns the wrapped slice directly
     #[inline]
-    pub fn as_inner(&self) -> &[ComponentTypeId] {
+    pub fn as_inner(&self) -> &[Uuid] {
         &self.components
     }
 }
@@ -232,7 +231,7 @@ impl ToOwned for EntityLayout {
 ///
 #[derive(Debug)]
 pub struct EntityLayoutBuf<A: Allocator = Global> {
-    components: AVec<ComponentTypeId, A>,
+    components: AVec<Uuid, A>,
 }
 
 impl EntityLayoutBuf<Global> {
@@ -274,7 +273,7 @@ impl<A: Allocator> EntityLayoutBuf<A> {
     ///
     /// Returns true if the component is already present in the `EntityLayoutBuf`, and false if it is not.
     #[inline]
-    pub fn add_component_type(&mut self, id: ComponentTypeId) -> bool {
+    pub fn add_component_type(&mut self, id: Uuid) -> bool {
         match self.components.binary_search(&id) {
             Ok(_) => true,
             Err(index) => {
@@ -289,7 +288,7 @@ impl<A: Allocator> EntityLayoutBuf<A> {
     /// Returns true if the component was present in the `EntityLayoutBuf` and was removed, or false if
     /// the component was not present in the `EntityLayoutBuf`.
     #[inline]
-    pub fn remove_component_type(&mut self, id: ComponentTypeId) -> bool {
+    pub fn remove_component_type(&mut self, id: Uuid) -> bool {
         match self.components.binary_search(&id) {
             Ok(index) => {
                 self.components.remove(index);
@@ -327,9 +326,9 @@ impl<A: Allocator> Borrow<EntityLayout> for EntityLayoutBuf<A> {
 }
 
 impl<A: Allocator> IntoIterator for EntityLayoutBuf<A> {
-    type Item = ComponentTypeId;
+    type Item = Uuid;
 
-    type IntoIter = AIntoIter<ComponentTypeId, A>;
+    type IntoIter = AIntoIter<Uuid, A>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -337,19 +336,19 @@ impl<A: Allocator> IntoIterator for EntityLayoutBuf<A> {
     }
 }
 
-impl FromIterator<ComponentTypeId> for EntityLayoutBuf<Global> {
+impl FromIterator<Uuid> for EntityLayoutBuf<Global> {
     #[inline]
-    fn from_iter<T: IntoIterator<Item = ComponentTypeId>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = Uuid>>(iter: T) -> Self {
         let mut components = AVec::from_iter(iter);
         components.sort();
         Self { components }
     }
 }
 
-impl<A: Allocator> TryFrom<AVec<ComponentTypeId, A>> for EntityLayoutBuf<A> {
+impl<A: Allocator> TryFrom<AVec<Uuid, A>> for EntityLayoutBuf<A> {
     type Error = ();
 
-    fn try_from(components: AVec<ComponentTypeId, A>) -> Result<Self, Self::Error> {
+    fn try_from(components: AVec<Uuid, A>) -> Result<Self, Self::Error> {
         if EntityLayout::from_inner(&components).is_some() {
             Ok(Self { components })
         } else {

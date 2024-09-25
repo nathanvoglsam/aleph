@@ -30,6 +30,8 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
+use object_system::unsafe_impl_iobject;
+
 use crate::World;
 
 #[derive(Default, PartialEq, Debug)]
@@ -37,6 +39,7 @@ struct Position {
     pub x: f32,
     pub y: f32,
 }
+unsafe_impl_iobject!(Position, "01922977-e48a-7f00-83a5-d78e50e77567");
 
 impl Position {
     pub fn new(x: f32, y: f32) -> Self {
@@ -49,6 +52,7 @@ struct Scale {
     pub x: f32,
     pub y: f32,
 }
+unsafe_impl_iobject!(Scale, "01922978-21d5-7c83-aa72-025c9daae51c");
 
 impl Scale {
     pub fn new(x: f32, y: f32) -> Self {
@@ -60,6 +64,7 @@ impl Scale {
 struct Mesh {
     pub a: usize,
 }
+unsafe_impl_iobject!(Mesh, "01922978-231e-7381-b173-6ecff48c4774");
 
 impl Mesh {
     pub fn new(a: usize) -> Self {
@@ -71,6 +76,7 @@ impl Mesh {
 struct Dropper {
     pub counter: Arc<AtomicU32>,
 }
+unsafe_impl_iobject!(Dropper, "01922979-2550-7d31-b91a-6c05bab9bb3b");
 
 impl Dropper {
     pub fn new(counter: &Arc<AtomicU32>) -> Self {

@@ -30,7 +30,7 @@
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
-use crate::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, EntityLayoutBuf};
+use crate::{Archetype, ArchetypeEntityIndex, Component, EntityLayoutBuf};
 
 pub trait ComponentQuery: Send + Sync {
     type Fetch: for<'a> Fetch<'a>;
@@ -92,7 +92,7 @@ impl<'a, T: Component> ComponentQuery for &'a T {
 
     #[inline]
     fn add_to_layout(layout: &mut EntityLayoutBuf) {
-        if layout.add_component_type(ComponentTypeId::of::<T>()) {
+        if layout.add_component_type(T::ID) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
     }
@@ -111,9 +111,7 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
 
     #[inline]
     fn acquire_borrow(archetype: &Archetype) {
-        let guard = archetype
-            .get_component_guard(ComponentTypeId::of::<T>())
-            .unwrap();
+        let guard = archetype.get_component_guard(&T::ID).unwrap();
         assert!(
             guard.borrow(),
             "Colliding shared access to component type '{}' in query",
@@ -123,16 +121,14 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
 
     #[inline]
     fn release_borrow(archetype: &Archetype) {
-        let guard = archetype
-            .get_component_guard(ComponentTypeId::of::<T>())
-            .unwrap();
+        let guard = archetype.get_component_guard(&T::ID).unwrap();
         guard.release();
     }
 
     #[inline]
     fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         let ptr = archetype
-            .get_component_ptr(entity, ComponentTypeId::of::<T>())
+            .get_component_ptr(entity, &T::ID)
             .unwrap()
             .cast::<T>();
         Self(ptr)
@@ -154,7 +150,7 @@ impl<'a, T: Component> ComponentQuery for &'a mut T {
 
     #[inline]
     fn add_to_layout(layout: &mut EntityLayoutBuf) {
-        if layout.add_component_type(ComponentTypeId::of::<T>()) {
+        if layout.add_component_type(T::ID) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
     }
@@ -173,9 +169,7 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
 
     #[inline]
     fn acquire_borrow(archetype: &Archetype) {
-        let guard = archetype
-            .get_component_guard(ComponentTypeId::of::<T>())
-            .unwrap();
+        let guard = archetype.get_component_guard(&T::ID).unwrap();
         assert!(
             guard.borrow_mut(),
             "Colliding exclusive access to component type '{}' in query",
@@ -185,16 +179,14 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
 
     #[inline]
     fn release_borrow(archetype: &Archetype) {
-        let guard = archetype
-            .get_component_guard(ComponentTypeId::of::<T>())
-            .unwrap();
+        let guard = archetype.get_component_guard(&T::ID).unwrap();
         guard.release_mut();
     }
 
     #[inline]
     fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         let ptr = archetype
-            .get_component_ptr(entity, ComponentTypeId::of::<T>())
+            .get_component_ptr(entity, &T::ID)
             .unwrap()
             .cast::<T>();
         Self(ptr)
