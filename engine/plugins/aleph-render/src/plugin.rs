@@ -31,7 +31,7 @@ use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
 use aleph_math::{Mat4, Vec3};
-use aleph_pin_board::PinBoard;
+use aleph_pin_board::ScopedParamBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
@@ -170,16 +170,14 @@ impl IPlugin for PluginRender {
             font_texture: EguiFontTexture::new(),
             render_data: v,
         });
-        let mut board = PinBoard::new();
+        let mut board = ScopedParamBoard::new();
         schedule.add_exclusive_at_start_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
             move || {
                 device.garbage_collect();
 
-                unsafe {
-                    board.clear();
-
+                board.scope(|board| {
                     let elapsed = frame_timer.elapsed_time();
                     let x = elapsed.sin() * 5.0;
 
@@ -189,7 +187,7 @@ impl IPlugin for PluginRender {
 
                     let size = window.drawable_size();
                     let aspect = size.0 as f32 / size.1 as f32;
-                    board.publish(CameraInfo {
+                    board.publish::<CameraInfo>(CameraInfo {
                         position: -view.extract_translation(),
                         orientation: view.extract_rotation().reversed(),
                         projection: PerspectiveInfo::default_with_aspect(aspect),
@@ -208,19 +206,19 @@ impl IPlugin for PluginRender {
                         e.font_texture
                             .update_font_texture(&mut renderer, font_updates);
 
-                        board.publish(EguiPassContext {
+                        board.publish::<EguiPassContext>(EguiPassContext {
                             font_handle: e.font_texture.font_handle.unwrap(),
                             render_data,
                         });
                     }
 
-                    renderer.draw_next_frame(
-                        &DrawOptions {
+                    unsafe {
+                        let options = DrawOptions {
                             force_rebuild_frame_graph: config.force_graph_rebuild,
-                        },
-                        &board,
-                    );
-                }
+                        };
+                        renderer.draw_next_frame(&options, board);
+                    }
+                });
             },
         );
 

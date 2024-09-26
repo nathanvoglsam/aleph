@@ -28,7 +28,7 @@
 //
 
 use aleph_frame_graph::PassArgs;
-use aleph_pin_board::PinBoard;
+use aleph_pin_board::{BoardScope, ItemIdentifier};
 use aleph_rhi_api::*;
 
 use crate::{BufferPool, TexturePool};
@@ -43,8 +43,12 @@ pub struct GraphSwapImageInfo {
     pub desc: TextureDesc<'static>,
 }
 
+impl ItemIdentifier for GraphSwapImageInfo {
+    type Output<'a> = Self;
+}
+
 pub struct GraphArgsLayout<'a> {
-    pub board: &'a PinBoard,
+    pub board: &'a BoardScope<'a>,
     pub texture_pool: &'a TexturePool,
     pub buffer_pool: &'a BufferPool,
 }

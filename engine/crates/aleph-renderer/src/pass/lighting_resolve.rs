@@ -138,7 +138,7 @@ pub fn pass(
         move |encoder, resources, args| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
-            let camera_info: &CameraInfo = args.board.get().unwrap();
+            let camera_info = args.board.get::<CameraInfo>().unwrap();
 
             let depth = resources.get_texture(data.depth).unwrap();
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();

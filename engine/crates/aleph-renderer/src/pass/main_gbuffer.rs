@@ -154,7 +154,7 @@ pub fn pass(
             let set_layout = descriptor_set_layout.as_ref();
             let device = resources.device();
             let descriptor_arena = resources.descriptor_arena();
-            let camera_info: &CameraInfo = args.board.get().unwrap();
+            let camera_info = args.board.get::<CameraInfo>().unwrap();
 
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();

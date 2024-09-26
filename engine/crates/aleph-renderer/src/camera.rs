@@ -29,6 +29,7 @@
 
 use aleph_math::projection::perspective_reversed_infinite_z_wgpu_dx_gl;
 use aleph_math::{Mat4, Rotor3, Vec3};
+use aleph_pin_board::ItemIdentifier;
 
 /// A description of a camera as a combination of a pos+rot transform and a description of the
 /// projection parameters.
@@ -42,6 +43,10 @@ pub struct CameraInfo {
 
     /// The projection that the camera is using
     pub projection: PerspectiveInfo,
+}
+
+impl ItemIdentifier for CameraInfo {
+    type Output<'a> = Self;
 }
 
 impl CameraInfo {

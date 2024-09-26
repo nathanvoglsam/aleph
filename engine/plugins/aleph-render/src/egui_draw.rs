@@ -31,7 +31,7 @@ use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
-use aleph_pin_board::PinBoard;
+use aleph_pin_board::{ItemIdentifier, PinBoard};
 use aleph_renderer::pass::{GraphArgs, GraphSwapImageInfo};
 use aleph_renderer::{RenderPlaneOutput, ShaderDatabaseAccessor, TextureHandle};
 use aleph_rhi_api::*;
@@ -50,6 +50,10 @@ struct EguiPassPayload {
 pub struct EguiPassContext {
     pub font_handle: TextureHandle,
     pub render_data: RenderData,
+}
+
+impl ItemIdentifier for EguiPassContext {
+    type Output<'a> = Self;
 }
 
 pub fn pass(
@@ -117,7 +121,7 @@ pub fn pass(
             let EguiPassContext {
                 font_handle,
                 render_data,
-            } = args.board.get().unwrap();
+            } = args.board.get::<EguiPassContext>().unwrap();
 
             let font_view = args.texture_pool.get_default_view(*font_handle).unwrap();
 

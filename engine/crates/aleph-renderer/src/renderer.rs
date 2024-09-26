@@ -34,7 +34,7 @@ use std::sync::Arc;
 use aleph_any::AnyArc;
 use aleph_frame_graph::{FrameGraph, FrameGraphBuilder, ImportBundle, ResourceMut, ResourceRef};
 use aleph_nstr::nstr;
-use aleph_pin_board::PinBoard;
+use aleph_pin_board::{BoardScope, PinBoard};
 use aleph_rhi_api::*;
 
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
@@ -241,7 +241,7 @@ impl Renderer {
         Some(handle)
     }
 
-    pub unsafe fn draw_next_frame(&mut self, options: &DrawOptions, board: &PinBoard) {
+    pub unsafe fn draw_next_frame(&mut self, options: &DrawOptions, board: &mut BoardScope) {
         let CurrentFrameResources {
             frame_index,
             acquire_semaphore,
@@ -332,7 +332,7 @@ impl Renderer {
                 acquired_image.image.as_ref(),
             );
 
-            board.publish(GraphSwapImageInfo {
+            board.publish::<GraphSwapImageInfo>(GraphSwapImageInfo {
                 desc: self.swap_manager.desc.clone(),
             });
             let args = GraphArgsLayout {
