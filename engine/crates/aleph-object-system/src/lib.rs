@@ -27,10 +27,13 @@
 // SOFTWARE.
 //
 
+pub extern crate aleph_nstr as nstr;
 pub extern crate uuid;
 
 use std::mem::needs_drop;
 use std::ptr::NonNull;
+
+use aleph_nstr::NStr;
 
 /// This trait represents the capability of a type to interact with the 'object system'
 pub unsafe trait IObject: Sized {
@@ -48,7 +51,7 @@ pub unsafe trait IObject: Sized {
     /// A name that can be used to identify the type implementing [`IObject`]. This name is not
     /// guaranteed to uniquely identify the type, only the ID may do that. This name should only
     /// be used for logging or other human visible use cases.
-    const NAME: &'static str;
+    const NAME: &'static NStr;
 
     /// A type-erased destructor function that can be called on a pointer that is expected to be
     /// pointing to a non-aliased, owned instance of the type implementing [`IObject`].
@@ -75,7 +78,7 @@ pub const fn object_id<T: IObject>() -> uuid::Uuid {
 }
 
 /// Short-hand for getting the name of an object of type `T`
-pub const fn object_name<T: IObject>() -> &'static str {
+pub const fn object_name<T: IObject>() -> &'static NStr {
     T::NAME
 }
 
@@ -87,7 +90,7 @@ pub struct ObjectDescription {
     pub id: uuid::Uuid,
     pub size: usize,
     pub align: usize,
-    pub name: &'static str,
+    pub name: &'static NStr,
     pub destructor: Option<unsafe extern "C" fn(NonNull<()>, count: u64)>,
 }
 
@@ -123,7 +126,8 @@ macro_rules! unsafe_impl_iobject {
     ($t: path, $id: literal) => {
         unsafe impl $crate::IObject for $t {
             const ID: $crate::uuid::Uuid = $crate::uuid::uuid!($id);
-            const NAME: &'static str = concat!(module_path!(), "::", stringify!($t));
+            const NAME: &'static $crate::nstr::NStr =
+                $crate::nstr::nstr!(concat!(module_path!(), "::", stringify!($t)));
         }
     };
 }
