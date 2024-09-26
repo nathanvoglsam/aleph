@@ -46,6 +46,7 @@ mod transform {
         /// precision would be wasted here so f32 is chosen instead.
         pub scale: aleph_math::Vec3,
     }
+    object_system::unsafe_impl_iobject!(Transform, "01922c0e-dde9-72f0-b62f-dd9748e29f92");
 }
 
 mod camera {
@@ -69,6 +70,7 @@ mod camera {
         /// The z distance of the far plane. Must be > 0 and > [`Camera::near`].
         pub far: f32,
     }
+    object_system::unsafe_impl_iobject!(Camera, "01922c0e-dde9-72f0-b62f-dd78b074ed54");
 }
 
 mod lights {
@@ -81,6 +83,7 @@ mod lights {
         /// The intensity of the light in lumens
         pub intensity: f32,
     }
+    object_system::unsafe_impl_iobject!(PointLight, "01922c0e-dde9-72f0-b62f-dd8a96c3f21c");
 }
 
 pub use camera::Camera;

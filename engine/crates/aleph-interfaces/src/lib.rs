@@ -29,6 +29,7 @@
 
 pub extern crate aleph_any as any;
 pub extern crate aleph_label as label;
+pub extern crate aleph_object_system as object_system;
 
 pub mod components;
 pub mod platform;

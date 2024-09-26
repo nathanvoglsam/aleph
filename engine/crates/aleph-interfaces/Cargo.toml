@@ -47,6 +47,7 @@ aleph-label = { workspace = true }
 aleph-math = { workspace = true }
 aleph-any = { workspace = true }
 aleph-rhi-api = { workspace = true }
+aleph-object-system = { workspace = true }
 raw-window-handle = { workspace = true }
 thiserror = { workspace = true }
 bitflags = { workspace = true }
