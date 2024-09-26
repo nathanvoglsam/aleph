@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use clap::{ArgMatches, Command};
+use clap::{Arg, ArgMatches, Command};
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
@@ -40,12 +40,25 @@ impl ISubcommand for Uuid {
     }
 
     fn description(&mut self) -> Command {
-        Command::new(self.name()).about("Generate a UUIDv7 and write it out to stdout")
+        let count = Arg::new("count")
+            .index(1)
+            .help("The number of UUIDs to generate")
+            .default_value("1")
+            .required(false);
+        Command::new(self.name())
+            .about("Generate a UUIDv7 and write it out to stdout")
+            .arg(count)
     }
 
-    fn exec(&mut self, _project: &AlephProject, _matches: ArgMatches) -> anyhow::Result<()> {
-        let id = uuid::Uuid::now_v7();
-        println!("{}", id);
+    fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
+        let count: String = matches.remove_one("count").expect("count is required");
+        let count: usize = count.parse().expect("Unable to parse 'count' argument");
+
+        for _ in 0..count {
+            let id = uuid::Uuid::now_v7();
+            println!("{}", id);
+        }
+
         Ok(())
     }
 
