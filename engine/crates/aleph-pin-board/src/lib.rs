@@ -27,14 +27,15 @@
 // SOFTWARE.
 //
 
+mod scoped;
+
+pub use scoped::{BoardScope, ItemIdentifier, ScopedParamBoard};
+
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
-use std::mem::needs_drop;
 use std::ptr::NonNull;
 
-use aleph_arena_drop_list::DropLink;
 use aleph_identity_hasher::IdentityHasher;
-use bumpalo::Bump;
 use parking_lot::Mutex;
 
 /// A data structure for publishing data keyed by type that can be shared among a group of threads
@@ -99,22 +100,11 @@ impl PinBoard {
 
         // Store the object we're storing into the arena and get the reference as a type-erased
         // pointer
-        let v = i.arena.alloc(v);
+        let v = i.arena.put(v);
         let v = NonNull::from(v);
 
         // Insert the reference to our object into the ID -> ptr table
         i.table.insert(TypeId::of::<T>(), v.cast());
-
-        // Only append to the drop list if we actually need to drop the object
-        if needs_drop::<T>() {
-            // Create and store the link in the dropper linked list for this object
-            let mut v_dropper = DropLink::new::<T>(v);
-            v_dropper.prev = i.drop_head;
-            let v_dropper = i.arena.alloc(v_dropper);
-
-            // Update the linked-list head for this table
-            i.drop_head = Some(NonNull::from(v_dropper));
-        }
     }
 
     /// Look up a published item by its type. May return None if no value has been published yet.
@@ -150,19 +140,6 @@ impl PinBoard {
         for i in self.tables.iter_mut() {
             let i = i.get_mut();
             i.table.clear();
-
-            // Call drop on all the inserted objects
-            let mut current = i.drop_head;
-            while let Some(v) = current {
-                // Safety: implementation and API guarantees that dropper only gets called once per
-                //         object, and always on the correct type.
-                unsafe {
-                    let v = v.as_ref();
-                    current = v.drop_object();
-                }
-            }
-            i.drop_head = None;
-
             i.arena.reset();
         }
     }
@@ -176,20 +153,6 @@ impl PinBoard {
         // collide on hash maps between threads and reduce lock contention.
         let t_hash = IdentityHasher::hash(t);
         (t_hash % 256) as usize
-    }
-}
-
-impl Drop for PinBoard {
-    fn drop(&mut self) {
-        for i in self.tables.drain(..) {
-            let mut i = i.into_inner();
-
-            // Safety: implementation and API guarantees that dropper only gets called once per
-            //         object, and always on the correct type.
-            unsafe {
-                DropLink::drop_and_null(&mut i.drop_head);
-            }
-        }
     }
 }
 
@@ -220,14 +183,10 @@ impl<'a> From<&'a PinBoard> for ImmutablePinBoardRef<'a> {
 
 struct Table {
     /// The bump allocator arena used to allocate any newly inserted object
-    pub arena: Bump,
+    pub arena: blink_alloc::Blink,
 
     /// The table that maps TypeId -> object
     pub table: HashMap<TypeId, NonNull<()>>,
-
-    /// The head of a linked list that contains a list of 'ptr + dropper' pairs used for dropping
-    /// the objects stored inside this table (need virtual dispatch as they're stored type erased).
-    pub drop_head: Option<NonNull<DropLink>>,
 }
 
 impl Table {
@@ -235,7 +194,6 @@ impl Table {
         Self {
             arena: Default::default(),
             table: Default::default(),
-            drop_head: Default::default(),
         }
     }
 }
