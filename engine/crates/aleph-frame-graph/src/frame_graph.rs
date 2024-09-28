@@ -28,14 +28,12 @@
 //
 
 use std::collections::HashMap;
-use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
-use aleph_arena_drop_list::DropLink;
 use aleph_device_allocators::LinearDescriptorPool;
 use aleph_nstr::nstr;
 use aleph_rhi_api::*;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 
 use crate::internal::{
     FrameGraphBufferDesc, FrameGraphTextureDesc, IIRNode, IRNode, PassOrderBundle, RenderPass,
@@ -53,7 +51,7 @@ pub struct FrameGraph<A: PassArgs = ()> {
     ///
     /// This won't be directly used by a constructed graph but must be stored inside the graph in
     /// order to keep the allocations for all the render passes alive.
-    pub(crate) _arena: Bump,
+    pub(crate) _arena: Blink,
 
     /// The device object that this frame graph is created to work with
     pub(crate) device: AnyArc<dyn IDevice>,
@@ -101,10 +99,6 @@ pub struct FrameGraph<A: PassArgs = ()> {
 
     /// Another 'transient pool' of sorts, but used for descriptors.
     pub(crate) linear_descriptor_pools: Vec<LinearDescriptorPool>,
-
-    /// The head of the dropper linked-list that contains all the drop functions for objects
-    /// allocated from the graph arena
-    pub(crate) drop_head: Option<NonNull<DropLink>>,
 }
 
 impl<A: PassArgs> FrameGraph<A> {
@@ -540,17 +534,6 @@ impl<A: PassArgs> FrameGraph<A> {
             "Texture '{}' not expected sample_quality",
             name
         );
-    }
-}
-
-impl<A: PassArgs> Drop for FrameGraph<A> {
-    #[aleph_profile::function]
-    fn drop(&mut self) {
-        // Safety: implementation and API guarantees that dropper only gets called once per
-        //         object, and always on the correct type.
-        unsafe {
-            DropLink::drop_and_null(&mut self.drop_head);
-        }
     }
 }
 

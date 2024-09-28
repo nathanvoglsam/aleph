@@ -54,8 +54,8 @@ use std::ptr::NonNull;
 use aleph_arena_drop_list::DropLink;
 use aleph_nstr::NStr;
 use aleph_rhi_api::*;
-use bumpalo::collections::Vec as BVec;
-use bumpalo::Bump;
+use allocator_api2::vec::Vec as BVec;
+use blink_alloc::{Blink, BlinkAlloc};
 use thiserror::Error;
 
 use crate::internal::*;
@@ -154,7 +154,7 @@ impl GraphVizOutputOptions {
 pub struct FrameGraphBuilder<A: PassArgs = ()> {
     /// An arena that will be moved into the FrameGraph once the graph is finalized. This can be
     /// used to store anything that persists to the fully constructed graph.
-    pub(crate) arena: Bump,
+    pub(crate) arena: Blink,
 
     /// The list of all the render passes in the graph. The index of the pass in this list is the
     /// identity of the pass and is used to key to a number of different names
@@ -266,7 +266,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     ) -> Result<FrameGraph<A>> {
         // An arena allocator used for allocating resources that only live as long as the graph is
         // being built
-        let build_arena = Bump::new();
+        let build_arena = Blink::new();
 
         self.validate_imported_resource_usages();
 
@@ -341,7 +341,6 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let root_resources = std::mem::take(&mut self.root_resources);
         let resource_versions = std::mem::take(&mut self.resource_versions);
         let imported_resources = std::mem::take(&mut self.imported_resources);
-        let drop_head = std::mem::take(&mut self.drop_head);
 
         Ok(FrameGraph {
             _arena: arena,
@@ -354,7 +353,6 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             imported_resources,
             transient_bundles: Vec::new(),
             linear_descriptor_pools: Vec::new(),
-            drop_head,
         })
     }
 }
@@ -727,7 +725,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             after_access: desc.after_access,
             after_layout: desc.after_layout,
         };
-        let name = desc.desc.name.map(|v| self.arena.alloc_str(v));
+        let name = desc.desc.name.map(|v| self.arena.copy_str(v));
         let name = name.map(NonNull::from);
         let r_type = ResourceTypeTexture {
             import: Some(imported),
@@ -777,7 +775,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             after_access: desc.after_access,
             after_layout: Default::default(),
         };
-        let name = desc.desc.name.map(|v| self.arena.alloc_str(v));
+        let name = desc.desc.name.map(|v| self.arena.copy_str(v));
         let name = name.map(NonNull::from);
         let r_type = ResourceTypeBuffer {
             import: Some(imported),
@@ -907,7 +905,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
 
         let format = desc.format;
         let sync = get_given_or_default_sync_flags_for(access, sync, true, format);
-        let name = desc.name.map(|v| self.arena.alloc_str(v));
+        let name = desc.name.map(|v| self.arena.copy_str(v));
         let name = name.map(NonNull::from);
         let create_desc = FrameGraphTextureDesc {
             width: desc.width,
@@ -952,7 +950,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         );
 
         let sync = get_given_or_default_sync_flags_for(access, sync, false, Default::default());
-        let name = desc.name.map(|v| self.arena.alloc_str(v));
+        let name = desc.name.map(|v| self.arena.copy_str(v));
         let name = name.map(NonNull::from);
         let create_desc = FrameGraphBufferDesc {
             size: desc.size,
@@ -1015,14 +1013,13 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let r = r.into();
         let version_id = r.0.version_id();
         let previous_read = self.resource_versions[version_id as usize].reads;
-        let read = self.arena.alloc(VersionReaderLink {
+        let read = self.arena.put(VersionReaderLink {
             next: previous_read,
             render_pass,
             sync,
             access,
         });
         let read = NonNull::from(read);
-        DropLink::append_drop_list(&self.arena, &mut self.drop_head, read);
         self.resource_versions[version_id as usize].reads = Some(read);
         self.resource_versions[version_id as usize].read_count += 1;
     }
@@ -1200,7 +1197,7 @@ struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
     /// allocations that will not outlive the full frame graph build operation.
     ///
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
-    arena: &'arena Bump,
+    arena: &'arena Blink,
 
     /// Our target writter for our graphviz output, if we have one.
     writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
@@ -1222,16 +1219,16 @@ struct IRBuilder<'arena, 'b, 'c, T: std::io::Write> {
     /// pass node in the IR graph. Each entry in this list is another Vec (arena allocated) that
     /// will be used to accumulate the 'prev' edges of the render pass IR nodes before they get
     /// patched onto their IR nodes at the end of the build phase.
-    pass_prevs: &'arena mut [BVec<'arena, usize>],
+    pass_prevs: &'arena mut [BVec<usize, &'arena BlinkAlloc>],
 
     /// See [IRBuilder::pass_prevs]. This is logically the same list, but instead used for storing
     /// the 'next' edges.
-    pass_nexts: &'arena mut [BVec<'arena, usize>],
+    pass_nexts: &'arena mut [BVec<usize, &'arena BlinkAlloc>],
 }
 
 impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     pub fn new(
-        arena: &'arena Bump,
+        arena: &'arena Blink,
         writer: Option<(&'b mut T, &'c GraphVizOutputOptions)>,
         num_passes: usize,
     ) -> Self {
@@ -1245,15 +1242,18 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             ir_nodes.push(ir_node.into());
         }
 
-        let pass_prevs = arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(arena));
-        let pass_nexts = arena.alloc_slice_fill_with(num_passes, |_| BVec::new_in(arena));
+        let mut pass_prevs = BVec::new_in(arena.allocator());
+        pass_prevs.resize(num_passes, BVec::new_in(arena.allocator()));
+
+        let mut pass_nexts = BVec::new_in(arena.allocator());
+        pass_nexts.resize(num_passes, BVec::new_in(arena.allocator()));
 
         Self {
             arena,
             writer,
             nodes: ir_nodes,
-            pass_prevs,
-            pass_nexts,
+            pass_prevs: pass_prevs.leak(),
+            pass_nexts: pass_nexts.leak(),
         }
     }
 
@@ -1445,7 +1445,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     // barrier.
                     // We take a copy of the slice to avoid any potential surprises with two nodes
                     // sharing the same edge array.
-                    let barrier_prev = self.arena.alloc_slice_copy(barrier_next);
+                    let barrier_prev = self.arena.copy_slice(barrier_next);
                     self.emit_barrier_ir_node(
                         IRBarrierType::ExportAfterRead,
                         barrier_prev,
@@ -1638,14 +1638,16 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             // Every time a barrier is emitted we drain 'pending_reads' into
             // 'previous_reads' as, obviously, what was the 'pending_reads' are now the
             // 'previous_reads'.
-            let mut previous_reads: BVec<usize> = BVec::with_capacity_in(reads.len(), self.arena);
+            let mut previous_reads: BVec<usize, _> =
+                BVec::with_capacity_in(reads.len(), self.arena.allocator());
 
             // This list is used to accumulate the pending reads when we're still
             // searching for layout edges. Once a layout edge is found this will contain
             // the set of reads that form a read batch to emit a barrier for.
             //
             // Once a barrier is emitted we flush this into 'previous_reads'
-            let mut pending_reads: BVec<usize> = BVec::with_capacity_in(reads.len(), self.arena);
+            let mut pending_reads: BVec<usize, _> =
+                BVec::with_capacity_in(reads.len(), self.arena.allocator());
 
             let mut iter = reads.iter().enumerate().peekable();
             while let Some((read_i, (_, layout))) = iter.next() {
@@ -1676,7 +1678,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     // add 'next' edges for the reading passes to our barrier.
                     let mut pending_read_sync = BarrierSync::NONE;
                     let mut pending_read_access = ResourceUsageFlags::NONE;
-                    let barrier_next = self.arena.alloc_slice_fill_copy(pending_reads.len(), 0);
+                    let mut barrier_next = BVec::new_in(self.arena.allocator());
+                    barrier_next.resize(pending_reads.len(), 0);
                     for (pending_read_i, next) in
                         pending_reads.iter().copied().zip(barrier_next.iter_mut())
                     {
@@ -1697,13 +1700,13 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     // first batch.
                     let barrier_prev = if previous_reads.is_empty() {
                         // Single link to creator render pass
-                        self.arena.alloc_slice_copy(&[version.creator_pass])
+                        self.arena.copy_slice(&[version.creator_pass])
                     } else {
                         // Link to every read access scheduled in the previous read
                         // batch
-                        self.arena.alloc_slice_fill_iter(
-                            previous_reads.drain(..).map(|v| reads[v].0.render_pass),
-                        )
+                        let mut v = BVec::with_capacity_in(previous_reads.len(), self.arena.allocator());
+                        v.extend(previous_reads.drain(..).map(|v| reads[v].0.render_pass));
+                        v.leak()
                     };
 
                     // We now emit the barrier
@@ -1711,7 +1714,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                         builder,
                         barrier_type,
                         barrier_prev,
-                        barrier_next,
+                        &barrier_next,
                         resource_id,
                         before_sync,
                         before_access,
@@ -1755,7 +1758,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 if root.final_version.0 == resource_id.version {
                     // The 'next' for the previous barrier becomes the 'prev' for the export
                     // barrier.
-                    let barrier_prev = self.arena.alloc_slice_fill_iter(previous_reads.drain(..));
+                    let barrier_prev = self.arena.copy_slice(&previous_reads);
+                    previous_reads.clear();
                     self.emit_layout_change_ir_node(
                         builder,
                         IRBarrierType::ExportAfterRead,
@@ -1840,7 +1844,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
 
                 // With the number of reads known we can allocate the barrier_prev array
                 // and fill out the 'prev' links and accumulate the sync flags.
-                let barrier_prev = self.arena.alloc_slice_fill_copy(num_reads_for_prev, 0);
+                let mut barrier_prev = BVec::new_in(self.arena.allocator());
+                barrier_prev.resize(num_reads_for_prev, 0);
                 let mut all_read_sync = BarrierSync::default();
                 let mut all_read_usage = ResourceUsageFlags::default();
                 for ((v, _), prev) in reads
@@ -1862,7 +1867,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 self.emit_layout_change_ir_node(
                     builder,
                     IRBarrierType::WriteAfterRead,
-                    barrier_prev,
+                    barrier_prev.leak(),
                     barrier_next,
                     previous_id,
                     all_read_sync,
@@ -1923,7 +1928,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             // Otherwise the 'before' scope is scooped directly from import desc and the
             // after scope is directly pulled from the importing pass's access
             // declaration.
-            let barrier_next = self.arena.alloc_slice_copy(&[version.creator_pass]);
+            let barrier_next = self.arena.copy_slice(&[version.creator_pass]);
             self.emit_layout_change_ir_node(
                 builder,
                 IRBarrierType::Import,
@@ -1968,7 +1973,7 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     }
 
     fn alloc_single_edge_list(&self, v: usize) -> &'arena mut [usize] {
-        self.arena.alloc_slice_copy(&[v])
+        self.arena.copy_slice(&[v])
     }
 
     fn collect_read_flags_for_version(
@@ -1977,14 +1982,15 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
     ) -> (&'arena mut [usize], BarrierSync, ResourceUsageFlags) {
         let mut sync = BarrierSync::default();
         let mut usage = ResourceUsageFlags::default();
-        let edges = self.arena.alloc_slice_fill_copy(v.read_count, 0);
+        let mut edges = BVec::new_in(self.arena.allocator());
+        edges.resize(v.read_count, 0);
         for (i, read) in v.reads_iter().enumerate() {
             sync |= read.sync;
             usage |= read.access;
             edges[i] = read.render_pass;
         }
 
-        (edges, sync, usage)
+        (edges.leak(), sync, usage)
     }
 
     /// Output the start of the DOT graph if we have a writer
@@ -2348,7 +2354,7 @@ struct PassOrderBuilder<'arena> {
     /// allocations that will not outlive the full frame graph build operation.
     ///
     /// That is: this arena will remain live for the scope of [FrameGraphBuilder::build_internal].
-    arena: &'arena Bump,
+    arena: &'arena Blink,
 
     /// A temporary buffer that associates with ir.nodes that flags whether the matching node has
     /// been scheduled or not.
@@ -2369,19 +2375,21 @@ struct PassOrderBuilder<'arena> {
 }
 
 impl<'arena> PassOrderBuilder<'arena> {
-    pub fn new<T: std::io::Write>(arena: &'arena Bump, ir: &IRBuilder<'_, '_, '_, T>) -> Self {
-        let node_scheduled: &mut [bool] = arena.alloc_slice_fill_default(ir.nodes.len());
+    pub fn new<T: std::io::Write>(arena: &'arena Blink, ir: &IRBuilder<'_, '_, '_, T>) -> Self {
+        let mut node_scheduled = BVec::new_in(arena.allocator());
+        node_scheduled.resize(ir.nodes.len(), false);
 
-        let waiting_on_nums = arena
-            .alloc_slice_fill_iter(ir.nodes.iter().map(|v| unsafe { v.prev().as_ref().len() }));
+        let mut waiting_on_nums = BVec::with_capacity_in(ir.nodes.len(), arena.allocator());
+        waiting_on_nums.extend(ir.nodes.iter().map(|v| unsafe { v.prev().as_ref().len() }));
 
-        let runnable_prev_nums: &mut [usize] = arena.alloc_slice_fill_default(ir.nodes.len());
+        let mut runnable_prev_nums = BVec::new_in(arena.allocator());
+        runnable_prev_nums.resize(ir.nodes.len(), 0);
 
         Self {
             arena,
-            node_scheduled,
-            waiting_on_nums,
-            runnable_prev_nums,
+            node_scheduled: node_scheduled.leak(),
+            waiting_on_nums: waiting_on_nums.leak(),
+            runnable_prev_nums: runnable_prev_nums.leak(),
             bundles: Vec::new(),
         }
     }
@@ -2428,21 +2436,21 @@ impl<'arena> PassOrderBuilder<'arena> {
         // initialized to contain all the remaining unscheduled nodes in the graph. The algorithm
         // works by looping over the candidates and progressively scheduling them as they become
         // executable. We keep looping until the candidates list is empty.
-        let mut candidates = BVec::with_capacity_in(ir.nodes.len(), self.arena);
+        let mut candidates = BVec::with_capacity_in(ir.nodes.len(), self.arena.allocator());
 
         // This list is used to while looping. Instead of erasing from 'candidates' in the loop
         // (slow) we drain from 'candidates' and move into 'next_candidates' selectively. Scheduled
         // nodes aren't added to 'next_candidates' which functionally removes them from the
         // candidate set when we drain back from 'next_candidates' into 'candidates'
-        let mut next_candidates = BVec::with_capacity_in(ir.nodes.len(), self.arena);
+        let mut next_candidates = BVec::with_capacity_in(ir.nodes.len(), self.arena.allocator());
 
         // Temporary buffer we accumulate barriers scheduled in a single loop iteration into. This
         // is drained at the end of the iteration into a execution bundle, forming the barrier half
         // of the execution bundle.
-        let mut barriers = BVec::with_capacity_in(16, self.arena);
+        let mut barriers = BVec::with_capacity_in(16, self.arena.allocator());
 
         // Logically the same as 'barriers', but for
-        let mut passes = BVec::with_capacity_in(8, self.arena);
+        let mut passes = BVec::with_capacity_in(8, self.arena.allocator());
 
         // Add any unscheduled nodes to the candidate set
         for (i, _) in ir.nodes.iter().enumerate() {
@@ -2579,8 +2587,8 @@ impl<'arena> PassOrderBuilder<'arena> {
             // We now take the list of barriers and passes for this iteration and copy them into
             // arrays that are allocated from the frame graph's arena so they're safe to outlive
             // the graph builder.
-            let bundle_barriers = graph_builder.arena.alloc_slice_copy(&barriers);
-            let bundle_passes = graph_builder.arena.alloc_slice_copy(&passes);
+            let bundle_barriers = graph_builder.arena.copy_slice(&barriers);
+            let bundle_passes = graph_builder.arena.copy_slice(&passes);
             self.bundles.push(PassOrderBundle {
                 barriers: NonNull::from(bundle_barriers),
                 passes: NonNull::from(bundle_passes),
@@ -2600,7 +2608,7 @@ impl<'arena> PassOrderBuilder<'arena> {
 
     fn schedule_pass_barriers<T: std::io::Write>(
         &mut self,
-        barriers: &mut BVec<'_, usize>,
+        barriers: &mut BVec<usize, &'_ BlinkAlloc>,
         ir: &IRBuilder<'_, '_, '_, T>,
         node_variant: &RenderPassIRNode,
     ) {
@@ -2622,16 +2630,19 @@ impl<'arena> PassOrderBuilder<'arena> {
         barrier_type_counts: &[usize; 8],
         roots: &[usize],
         leafs: &[usize],
-    ) -> (BVec<'graph, usize>, BVec<'graph, usize>) {
+    ) -> (
+        BVec<usize, &'graph BlinkAlloc>,
+        BVec<usize, &'graph BlinkAlloc>,
+    ) {
         let num_export_barriers = barrier_type_counts[IRBarrierType::ExportAfterRead as usize]
             + barrier_type_counts[IRBarrierType::ExportAfterWrite as usize];
 
-        let mut import_barriers: BVec<usize> = BVec::with_capacity_in(
+        let mut import_barriers: BVec<usize, _> = BVec::with_capacity_in(
             barrier_type_counts[IRBarrierType::Import as usize],
-            &graph_builder.arena,
+            graph_builder.arena.allocator(),
         );
-        let mut export_barriers: BVec<usize> =
-            BVec::with_capacity_in(num_export_barriers, &graph_builder.arena);
+        let mut export_barriers: BVec<usize, _> =
+            BVec::with_capacity_in(num_export_barriers, graph_builder.arena.allocator());
         for node_index in roots.iter().copied() {
             let root_node = &ir.nodes[node_index];
             match root_node {
@@ -2732,7 +2743,10 @@ impl<'arena> PassOrderBuilder<'arena> {
         &mut self,
         graph_builder: &FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
-    ) -> (BVec<'arena, usize>, BVec<'arena, usize>) {
+    ) -> (
+        BVec<usize, &'arena BlinkAlloc>,
+        BVec<usize, &'arena BlinkAlloc>,
+    ) {
         // Find the root and leaf nodes of the graph by iterating all the nodes and filtering them
         // into the apropriate category based on whether they have an previous or next nodes.
         //
@@ -2745,8 +2759,8 @@ impl<'arena> PassOrderBuilder<'arena> {
         // The worst case for leaf nodes is unbounded, so we pick a guess of half the total number
         // of nodes.
         let num_imports = graph_builder.imported_resources.len();
-        let mut roots = BVec::with_capacity_in(num_imports, self.arena);
-        let mut leafs = BVec::with_capacity_in(ir.nodes.len() / 2, self.arena);
+        let mut roots = BVec::with_capacity_in(num_imports, self.arena.allocator());
+        let mut leafs = BVec::with_capacity_in(ir.nodes.len() / 2, self.arena.allocator());
         for (i, v) in ir.nodes.iter().enumerate() {
             let prev = unsafe { v.prev().as_ref() };
             let next = unsafe { v.next().as_ref() };
@@ -2784,7 +2798,8 @@ impl<'arena> PassOrderBuilder<'arena> {
         // predecessors have been executed.
         //
         // This is critical for correct synchronization.
-        let node_executed: &mut [bool] = self.arena.alloc_slice_fill_default(ir.nodes.len());
+        let mut node_executed = BVec::new_in(self.arena.allocator());
+        node_executed.resize(ir.nodes.len(), false);
         for bundle in self.bundles.iter() {
             let barriers = unsafe { bundle.barriers.as_ref() };
             let passes = unsafe { bundle.passes.as_ref() };

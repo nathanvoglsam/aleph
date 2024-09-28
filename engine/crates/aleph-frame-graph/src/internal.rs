@@ -36,6 +36,8 @@ use std::ptr::NonNull;
 
 use aleph_nstr::NStr;
 use aleph_rhi_api::*;
+use allocator_api2::vec::Vec as BVec;
+use blink_alloc::{Blink, BlinkAlloc};
 
 use crate::render_pass::PassArgs;
 use crate::resource::ResourceId;
@@ -158,11 +160,9 @@ impl ResourceVersion {
     pub fn reads_sorted_by_image_layout_in<'a, 'b>(
         &'a self,
         format: Format,
-        bump: &'b bumpalo::Bump,
-    ) -> bumpalo::collections::Vec<'b, (&'a VersionReaderLink, ImageLayout)> {
-        use bumpalo::collections::Vec as BVec;
-
-        let mut reads = BVec::with_capacity_in(self.read_count, bump);
+        bump: &'b Blink,
+    ) -> BVec<(&'a VersionReaderLink, ImageLayout), &'b BlinkAlloc> {
+        let mut reads = BVec::with_capacity_in(self.read_count, bump.allocator());
         reads.extend(
             self.reads_iter()
                 .map(|v| (v, v.access.image_layout(true, format))),
