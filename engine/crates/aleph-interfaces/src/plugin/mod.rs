@@ -30,6 +30,7 @@
 use std::any::TypeId;
 
 use any::IAny;
+use scheduler::{Resources, Schedule};
 
 use crate::any::AnyArc;
 
@@ -77,22 +78,18 @@ pub trait IPlugin: IAny {
 
     /// Called by the plugin registry exactly once so that a plugin can register its execution
     /// dependencies
-    fn register(&mut self, registrar: &mut dyn IPluginRegistrar);
+    fn register(&mut self, registrar: &mut dyn IPluginRegistrar<'_>);
 
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
     #[allow(unused_variables)]
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor<'_>) -> Box<dyn IInitResponse> {
         Box::<Vec<(TypeId, AnyArc<dyn IAny>)>>::default()
     }
 
-    /// Called by the engine runtime exactly once *per iteration* of the main loop
-    #[allow(unused_variables)]
-    fn on_update(&mut self, registry: &dyn IRegistryAccessor) {}
-
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     #[allow(unused_variables)]
-    fn on_exit(&mut self, registry: &dyn IRegistryAccessor) {}
+    fn on_exit(&mut self, registry: &mut dyn IRegistryAccessor<'_>) {}
 }
 
 ///
@@ -152,7 +149,7 @@ impl<T: Iterator<Item = (TypeId, AnyArc<dyn IAny>)>> IInterfaceIterator for T {}
 /// registry. This can be used to retrieve interface implementations, request the main loop exit,
 /// etc.
 ///
-pub trait IRegistryAccessor: 'static {
+pub trait IRegistryAccessor<'a>: 'a {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>>;
 
@@ -162,9 +159,16 @@ pub trait IRegistryAccessor: 'static {
 
     /// Get the plugin's config, if one was found.
     fn config(&self) -> Option<&serde_json::Value>;
+
+    /// Access the engine's core [`Resources`] store to allow the plugin to register resources into
+    /// the scheduler.
+    fn resources(&mut self) -> &mut Resources;
+
+    /// Access the engine's core [`Schedule`] to allow the plugin to register systems.
+    fn schedule(&mut self) -> &mut Schedule;
 }
 
-impl dyn IRegistryAccessor {
+impl<'a> dyn IRegistryAccessor<'a> {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
     pub fn get_interface<T: IAny + ?Sized>(&self) -> Option<AnyArc<T>> {
@@ -223,7 +227,7 @@ pub trait IQuitHandle: IAny + Send + Sync + 'static {
 /// dependency that is generic over arbitrary plugins that provide an abstract interface
 /// (i.e `IWindowProvider`) implementation.
 ///
-pub trait IPluginRegistrar: 'static {
+pub trait IPluginRegistrar<'a>: 'a {
     /// Object safe implementation of `depends_on`. See wrapper for more info.
     fn __depends_on(&mut self, dependency: TypeId);
 
@@ -232,15 +236,9 @@ pub trait IPluginRegistrar: 'static {
 
     /// Object safe implementation of `must_init_after`. See wrapper for more info.
     fn __must_init_after(&mut self, requires: TypeId);
-
-    /// Object safe implementation of `must_update_after`. See wrapper for more info.
-    fn __must_update_after(&mut self, requires: TypeId);
-
-    /// Register that the plugin should have their update function called.
-    fn should_update(&mut self);
 }
 
-impl dyn IPluginRegistrar {
+impl<'a> dyn IPluginRegistrar<'a> {
     /// Declares that the plugin depends on the existence of another plugin given by the type
     /// parameter. This can be used to declare that one plugin requires another plugin, or another
     /// interface to exist without specifying any execution dependencies.
@@ -258,12 +256,6 @@ impl dyn IPluginRegistrar {
     /// its own init function execute.
     pub fn must_init_after<T: IAny + ?Sized>(&mut self) {
         self.__must_init_after(TypeId::of::<T>())
-    }
-
-    /// Declares that the plugin's update function can only execute *after* the given plugin has had
-    /// its own update function execute.
-    pub fn must_update_after<T: IAny + ?Sized>(&mut self) {
-        self.__must_update_after(TypeId::of::<T>())
     }
 }
 

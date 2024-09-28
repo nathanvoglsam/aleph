@@ -41,7 +41,7 @@ use interfaces::platform::{
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
-use interfaces::schedule::{CoreStage, IScheduleProvider};
+use interfaces::schedule::CoreStage;
 
 use crate::traits::{EguiContextProvider, EguiRenderData};
 use crate::{IEguiContextProvider, IEguiRenderData, RenderData};
@@ -65,7 +65,6 @@ impl IPlugin for PluginEgui {
         registrar.provides_interface::<dyn IEguiRenderData>();
 
         // We need to get handles to all these when we initialize to save querying them every frame
-        registrar.must_init_after::<dyn IScheduleProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IMouseProvider>();
         registrar.must_init_after::<dyn IKeyboardProvider>();
@@ -73,7 +72,6 @@ impl IPlugin for PluginEgui {
         registrar.must_init_after::<dyn IEventsProvider>();
         registrar.must_init_after::<dyn IClipboardProvider>();
 
-        registrar.depends_on::<dyn IScheduleProvider>();
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.depends_on::<dyn IMouseProvider>();
         registrar.depends_on::<dyn IKeyboardProvider>();
@@ -82,11 +80,7 @@ impl IPlugin for PluginEgui {
         registrar.depends_on::<dyn IClipboardProvider>();
     }
 
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
-        let schedule_cell = schedule_provider.get();
-        let mut schedule = schedule_cell.get();
-
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let render_data: AnyArc<EguiRenderData> = AnyArc::default();
         let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
 
@@ -126,7 +120,7 @@ impl IPlugin for PluginEgui {
         let pre_update_ctx = context_provider.clone();
         let pre_update_window = window.clone();
         let pre_update_events = events.clone();
-        schedule.add_exclusive_at_start_system_to_stage(
+        registry.schedule().add_exclusive_at_start_system_to_stage(
             CoreStage::PreUpdate.into(),
             make_label!("egui::pre_update"),
             move || {
@@ -144,7 +138,7 @@ impl IPlugin for PluginEgui {
         let post_update_mouse = mouse.clone();
         let post_update_rnd = render_data.clone();
         let post_update_ctx = context_provider.clone();
-        schedule.add_exclusive_at_end_system_to_stage(
+        registry.schedule().add_exclusive_at_end_system_to_stage(
             CoreStage::PostUpdate.into(),
             make_label!("egui::post_update"),
             move || {

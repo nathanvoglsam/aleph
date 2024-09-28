@@ -51,7 +51,6 @@ platform-sdl2 = ["aleph-sdl2"]
 aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }
 aleph-sys-info = { workspace = true }
-aleph-core = { workspace = true }
 aleph-egui = { workspace = true }
 aleph-sdl2 = { workspace = true, optional = true }
 aleph-headless = { workspace = true }

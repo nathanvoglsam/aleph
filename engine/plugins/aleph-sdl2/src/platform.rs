@@ -43,7 +43,7 @@ use interfaces::platform::{
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IQuitHandle, IRegistryAccessor, PluginDescription,
 };
-use interfaces::schedule::{CoreStage, IScheduleProvider};
+use interfaces::schedule::CoreStage;
 use parking_lot::RwLockWriteGuard;
 use sdl2::mouse::SystemCursor;
 
@@ -99,9 +99,6 @@ impl IPlugin for PluginPlatformSDL2 {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.must_init_after::<dyn IScheduleProvider>();
-        registrar.depends_on::<dyn IScheduleProvider>();
-
         registrar.provides_interface::<dyn IFrameTimerProvider>();
         registrar.provides_interface::<dyn IWindowProvider>();
         registrar.provides_interface::<dyn IClipboardProvider>();
@@ -111,7 +108,7 @@ impl IPlugin for PluginPlatformSDL2 {
         registrar.provides_interface::<dyn IEventsProvider>();
     }
 
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let quit_handle = registry.quit_handle();
         ctrlc::set_handler(move || {
             println!();
@@ -224,14 +221,10 @@ impl IPlugin for PluginPlatformSDL2 {
             provider.clipboard = Some(clipboard);
         }
 
-        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
-        let schedule_cell = schedule_provider.get();
-        let mut schedule = schedule_cell.get();
-
         let send_provider = self.provider.clone();
         let send_sdl = self.sdl.clone();
         let send_quit_handle = registry.quit_handle();
-        schedule.add_exclusive_at_start_system_to_stage(
+        registry.schedule().add_exclusive_at_start_system_to_stage(
             CoreStage::InputCollection.into(),
             make_label!("platform_sdl2::input_collection"),
             move || {
@@ -286,7 +279,7 @@ impl IPlugin for PluginPlatformSDL2 {
         Box::new(response)
     }
 
-    fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {
+    fn on_exit(&mut self, _registry: &mut dyn IRegistryAccessor) {
         let mut sdl = self.sdl.take().unwrap();
 
         sdl.on_exit();

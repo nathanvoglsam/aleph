@@ -36,7 +36,7 @@ use interfaces::platform::IFrameTimerProvider;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
-use interfaces::schedule::{CoreStage, IScheduleProvider};
+use interfaces::schedule::CoreStage;
 
 use crate::frame_timer::FrameTimerImpl;
 use crate::provider::ProviderImpl;
@@ -55,13 +55,10 @@ impl IPlugin for PluginPlatformHeadless {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.must_init_after::<dyn IScheduleProvider>();
-        registrar.depends_on::<dyn IScheduleProvider>();
-
         registrar.provides_interface::<dyn IFrameTimerProvider>();
     }
 
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let provider = AnyArc::new(ProviderImpl {
             frame_timer: FrameTimerImpl::new(),
         });
@@ -73,12 +70,8 @@ impl IPlugin for PluginPlatformHeadless {
         })
         .expect("Failed to registr ctrl+c handler");
 
-        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
-        let schedule_cell = schedule_provider.get();
-        let mut schedule = schedule_cell.get();
-
         let send_provider = provider.clone();
-        schedule.add_system_to_stage(
+        registry.schedule().add_system_to_stage(
             CoreStage::InputCollection.into(),
             make_label!("platform_headless::input_collection"),
             move || {

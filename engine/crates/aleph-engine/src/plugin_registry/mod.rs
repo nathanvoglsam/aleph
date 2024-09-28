@@ -29,6 +29,7 @@
 
 use aleph_config::{ConfigRunner, RunConfigError};
 pub use interfaces::any;
+use interfaces::scheduler::{Resources, Schedule, Stage};
 
 mod builder;
 mod quit_handle;
@@ -57,11 +58,14 @@ pub struct PluginRegistry {
     /// The baked init execution sequence
     init_order: Vec<usize>,
 
-    /// The baked update execution sequence
-    update_order: Vec<usize>,
-
     /// The baked exit execution sequence
     exit_order: Vec<usize>,
+
+    /// The scheduler for our update loop run order
+    schedule: Option<Box<Schedule>>,
+
+    /// The resource store, accessed by the scheduler
+    resources: Option<Box<Resources>>,
 }
 
 impl PluginRegistry {
@@ -80,6 +84,8 @@ impl PluginRegistry {
             quit_handle,
             config: None,
             interfaces: std::mem::take(&mut self.interfaces),
+            schedule: self.schedule.take().unwrap(),
+            resources: self.resources.take().unwrap(),
         };
 
         self.init_order.iter().cloned().for_each(|index| {
@@ -101,7 +107,7 @@ impl PluginRegistry {
             // in its functions
             accessor.config = std::mem::take(&mut plugin.config);
 
-            let mut response = plugin.v.on_init(&accessor);
+            let mut response = plugin.v.on_init(&mut accessor);
             response.interfaces().for_each(|(id, object)| {
                 if !provided.remove(&id) {
                     let description = plugin.v.get_description();
@@ -149,6 +155,8 @@ impl PluginRegistry {
 
         self.plugins = plugins;
         self.interfaces = accessor.interfaces;
+        self.schedule = Some(accessor.schedule);
+        self.resources = Some(accessor.resources);
     }
 
     fn load_configs(plugins: &mut [PluginEntry]) {
@@ -204,36 +212,21 @@ impl PluginRegistry {
     /// This function will continuously loop, calling `on_update` for each plugin once per iteration
     /// of its internal loop, until any one of the plugins requests the loop to terminate.
     pub fn run(&mut self) {
-        let mut plugins = std::mem::take(&mut self.plugins);
+        let mut schedule = self.schedule.take().unwrap();
+        let mut resources = self.resources.take().unwrap();
 
-        let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
-        let mut accessor = RegistryAccessor {
-            quit_handle,
-            config: None,
-            interfaces: std::mem::take(&mut self.interfaces),
-        };
-
-        while !accessor.quit_handle.quit_requested() {
+        while !self.quit_handle.quit_requested() {
             aleph_profile::scope!("aleph::OnUpdate");
 
-            for plugin_index in self.update_order.iter().cloned() {
-                let plugin = &mut plugins[plugin_index];
-
-                // Take the config value from the slot in the plugin entry so the plugin can query
-                // it in its functions
-                accessor.config = std::mem::take(&mut plugin.config);
-
-                plugin.v.on_update(&accessor);
-
-                // Put the config back in its entry
-                plugin.config = std::mem::take(&mut accessor.config);
-            }
+            schedule.run(&(), &mut resources);
 
             aleph_profile::finish_frame!();
         }
 
-        self.plugins = plugins;
-        self.interfaces = accessor.interfaces;
+        // self.plugins = plugins;
+        //self.interfaces = accessor.interfaces;
+        self.schedule = Some(schedule);
+        self.resources = Some(resources);
     }
 }
 
@@ -246,6 +239,8 @@ impl Drop for PluginRegistry {
             quit_handle,
             config: None,
             interfaces: std::mem::take(&mut self.interfaces),
+            schedule: self.schedule.take().unwrap(),
+            resources: self.resources.take().unwrap(),
         };
 
         self.exit_order.iter().cloned().for_each(|v| {
@@ -269,7 +264,7 @@ impl Drop for PluginRegistry {
                     description.patch_version
                 );
 
-                plugin.v.on_exit(&accessor);
+                plugin.v.on_exit(&mut accessor);
 
                 // Put the config back in its entry
                 plugin.config = std::mem::take(&mut accessor.config);
@@ -278,6 +273,8 @@ impl Drop for PluginRegistry {
 
         self.plugins = plugins;
         self.interfaces = accessor.interfaces;
+        self.schedule = Some(accessor.schedule);
+        self.resources = Some(accessor.resources);
     }
 }
 
@@ -285,9 +282,11 @@ struct RegistryAccessor {
     quit_handle: AnyArc<dyn IQuitHandle>,
     config: Option<serde_json::Value>,
     interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
+    schedule: Box<Schedule>,
+    resources: Box<Resources>,
 }
 
-impl IRegistryAccessor for RegistryAccessor {
+impl<'a> IRegistryAccessor<'a> for RegistryAccessor {
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>> {
         self.interfaces.get(&interface).cloned()
     }
@@ -298,6 +297,14 @@ impl IRegistryAccessor for RegistryAccessor {
 
     fn config(&self) -> Option<&serde_json::Value> {
         self.config.as_ref()
+    }
+
+    fn resources(&mut self) -> &mut Resources {
+        &mut self.resources
+    }
+
+    fn schedule(&mut self) -> &mut Schedule {
+        &mut self.schedule
     }
 }
 

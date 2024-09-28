@@ -33,14 +33,12 @@ use std::collections::BTreeSet;
 use crate::interfaces::plugin::IPluginRegistrar;
 
 pub struct PluginRegistrar {
-    pub depends_on_list: BTreeSet<TypeId>,
-    pub provided_interfaces: BTreeSet<TypeId>,
-    pub init_after_list: BTreeSet<TypeId>,
-    pub update_stage_dependencies: BTreeSet<TypeId>,
-    pub should_update: bool,
+    pub(crate) depends_on_list: BTreeSet<TypeId>,
+    pub(crate) provided_interfaces: BTreeSet<TypeId>,
+    pub(crate) init_after_list: BTreeSet<TypeId>,
 }
 
-impl IPluginRegistrar for PluginRegistrar {
+impl<'a> IPluginRegistrar<'a> for PluginRegistrar {
     fn __depends_on(&mut self, dependency: TypeId) {
         self.depends_on_list.insert(dependency);
     }
@@ -51,17 +49,5 @@ impl IPluginRegistrar for PluginRegistrar {
 
     fn __must_init_after(&mut self, requires: TypeId) {
         self.init_after_list.insert(requires);
-    }
-
-    fn __must_update_after(&mut self, requires: TypeId) {
-        assert!(
-            self.should_update,
-            "Declared execution dependency for stage plugin not declared to execute in"
-        );
-        self.update_stage_dependencies.insert(requires);
-    }
-
-    fn should_update(&mut self) {
-        self.should_update = true;
     }
 }

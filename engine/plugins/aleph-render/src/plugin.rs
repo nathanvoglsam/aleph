@@ -40,7 +40,7 @@ use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
-use interfaces::schedule::{CoreStage, IScheduleProvider};
+use interfaces::schedule::CoreStage;
 use serde::Deserialize;
 
 use aleph_renderer::pass::GraphArgs;
@@ -78,14 +78,11 @@ impl IPlugin for PluginRender {
         registrar.depends_on::<dyn IRhiProvider>();
         registrar.must_init_after::<dyn IRhiProvider>();
 
-        registrar.depends_on::<dyn IScheduleProvider>();
-        registrar.must_init_after::<dyn IScheduleProvider>();
-
         // registrar.depends_on::<dyn egui::IEguiRenderData>();
         registrar.must_init_after::<dyn egui::IEguiRenderData>();
     }
 
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let config = registry.config().unwrap();
         let config: Config = serde_json::from_value(config.clone()).unwrap();
         config.log();
@@ -202,19 +199,13 @@ impl IPlugin for PluginRender {
             StaticMesh,
         );
 
-        let schedule_cell = registry
-            .get_interface::<dyn IScheduleProvider>()
-            .unwrap()
-            .get();
-        let mut schedule = schedule_cell.get();
-
         let mut renderer = renderer;
         let mut egui_data = render_data.map(|v| EguiData {
             font_texture: EguiFontTexture::new(),
             render_data: v,
         });
         let mut board = ScopedParamBoard::new();
-        schedule.add_exclusive_at_start_system_to_stage(
+        registry.schedule().add_exclusive_at_start_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
             move || {
@@ -269,7 +260,7 @@ impl IPlugin for PluginRender {
         default_response()
     }
 
-    fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {
+    fn on_exit(&mut self, _registry: &mut dyn IRegistryAccessor) {
         if let Some(device) = self.device.take() {
             // When existing we need to flush all still active GPU work and force a GC cycle to
             // release all references being held live by the resource tracking system. The resource

@@ -30,6 +30,9 @@
 use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
 
+use interfaces::schedule::CoreStage;
+use interfaces::scheduler::{Resources, Schedule, SystemSchedule};
+
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
@@ -64,25 +67,21 @@ impl PluginRegistryBuilder {
         let SchedulerState {
             dependencies,
             mut init_dependencies,
-            mut update_dependencies,
             mut provided_interfaces,
-            mut should_update,
         } = self.handle_plugin_registration();
 
         // Then we need a resolution phase
-        self.resolve_dependencies(
-            &dependencies,
-            &mut init_dependencies,
-            &mut update_dependencies,
-            &provided_interfaces,
-        );
+        self.resolve_dependencies(&dependencies, &mut init_dependencies, &provided_interfaces);
 
-        let (init_order, update_order, exit_order) = self.schedule_plugin_execution(
-            &mut init_dependencies,
-            &mut update_dependencies,
-            &mut provided_interfaces,
-            &mut should_update,
-        );
+        let (init_order, exit_order) =
+            self.schedule_plugin_execution(&mut init_dependencies, &mut provided_interfaces);
+
+        let mut schedule = Schedule::default();
+        schedule.add_stage(CoreStage::InputCollection.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::PreUpdate.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::Update.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::PostUpdate.into(), SystemSchedule::default());
+        schedule.add_stage(CoreStage::Render.into(), SystemSchedule::default());
 
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {
@@ -90,8 +89,9 @@ impl PluginRegistryBuilder {
             quit_handle: QuitHandleImpl::new(),
             interfaces: BTreeMap::new(),
             init_order,
-            update_order,
             exit_order,
+            schedule: Some(Box::new(schedule)),
+            resources: Some(Box::new(Resources::default())),
         };
 
         // Initialize the plugins
@@ -107,16 +107,12 @@ impl PluginRegistryBuilder {
             depends_on_list: Default::default(),
             provided_interfaces: Default::default(),
             init_after_list: BTreeSet::default(),
-            update_stage_dependencies: BTreeSet::default(),
-            should_update: false,
         };
 
         // SoA storage for the plugin's execution dependencies for each execution stage
         let mut dependencies: Vec<BTreeSet<TypeId>> = Vec::new();
         let mut init_dependencies: Vec<BTreeSet<TypeId>> = Vec::new();
-        let mut update_dependencies: Vec<BTreeSet<TypeId>> = Vec::new();
         let mut provided_interfaces: Vec<BTreeSet<TypeId>> = Vec::new();
-        let mut should_update: Vec<bool> = Vec::new();
 
         // Iterate over each plugin and record its registration info
         self.plugins.iter_mut().for_each(|plugin| {
@@ -127,16 +123,12 @@ impl PluginRegistryBuilder {
             // building
             dependencies.push(std::mem::take(&mut registrar.depends_on_list));
             init_dependencies.push(std::mem::take(&mut registrar.init_after_list));
-            update_dependencies.push(std::mem::take(&mut registrar.update_stage_dependencies));
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
-            should_update.push(registrar.should_update);
         });
         SchedulerState {
             dependencies,
             init_dependencies,
-            update_dependencies,
             provided_interfaces,
-            should_update,
         }
     }
 
@@ -144,7 +136,6 @@ impl PluginRegistryBuilder {
         &self,
         dependencies: &[BTreeSet<TypeId>],
         init_dependencies: &mut [BTreeSet<TypeId>],
-        update_dependencies: &mut [BTreeSet<TypeId>],
         provided_interfaces: &[BTreeSet<TypeId>],
     ) {
         // Collect a flattened set of all interfaces that are mandatory for the full set of plugins
@@ -203,16 +194,13 @@ impl PluginRegistryBuilder {
             *v = set;
         };
         init_dependencies.iter_mut().for_each(&resolver_fn);
-        update_dependencies.iter_mut().for_each(&resolver_fn);
     }
 
     fn schedule_plugin_execution(
         &self,
         init_dependencies: &mut [BTreeSet<TypeId>],
-        update_dependencies: &mut [BTreeSet<TypeId>],
         provided_interfaces: &mut [BTreeSet<TypeId>],
-        should_update: &mut [bool],
-    ) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
+    ) -> (Vec<usize>, Vec<usize>) {
         // Build a hash set populated with the number 0..n where n is the number of plugins.
         let unscheduled: BTreeSet<usize> = (0..self.plugins.len()).collect();
 
@@ -223,9 +211,6 @@ impl PluginRegistryBuilder {
         let init_order =
             self.build_execution_order(unscheduled, init_dependencies, provided_interfaces);
 
-        let update_orders =
-            self.build_update_exec_orders(update_dependencies, provided_interfaces, should_update);
-
         // Build the exit execution order
         //
         // The exit order is defined as the reverse of init order, so just reverse the init order.
@@ -234,27 +219,7 @@ impl PluginRegistryBuilder {
             order.reverse();
             order
         };
-        (init_order, update_orders, exit_order)
-    }
-
-    fn build_update_exec_orders(
-        &self,
-        execution_dependencies: &[BTreeSet<TypeId>],
-        provided_implementations: &[BTreeSet<TypeId>],
-        should_update: &[bool],
-    ) -> Vec<usize> {
-        let unscheduled: BTreeSet<usize> = self
-            .plugins
-            .iter()
-            .enumerate()
-            .filter(|(index, _)| should_update[*index])
-            .map(|v| v.0)
-            .collect();
-        self.build_execution_order(
-            unscheduled,
-            execution_dependencies,
-            provided_implementations,
-        )
+        (init_order, exit_order)
     }
 
     fn build_execution_order(
@@ -322,9 +287,7 @@ impl PluginRegistryBuilder {
 struct SchedulerState {
     dependencies: Vec<BTreeSet<TypeId>>,
     init_dependencies: Vec<BTreeSet<TypeId>>,
-    update_dependencies: Vec<BTreeSet<TypeId>>,
     provided_interfaces: Vec<BTreeSet<TypeId>>,
-    should_update: Vec<bool>,
 }
 
 impl Default for PluginRegistryBuilder {

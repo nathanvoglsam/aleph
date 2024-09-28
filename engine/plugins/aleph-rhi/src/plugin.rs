@@ -75,7 +75,7 @@ impl IPlugin for PluginRHI {
         }
     }
 
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         // If there are no GPU backends available we early exit and yield no provider as there's
         // nothing to provide
         if self.rhi_loader.backends().is_empty() {

@@ -32,16 +32,11 @@
 // =================================================================================================
 
 // Re-export useful crates
-extern crate aleph_core;
 pub extern crate aleph_egui as egui;
 pub extern crate aleph_interfaces as interfaces;
 pub extern crate aleph_target as target;
 
 pub mod plugin_registry;
-
-pub mod core {
-    pub use aleph_core::*;
-}
 
 pub mod any {
     pub use interfaces::any::*;
@@ -118,8 +113,6 @@ impl EngineBuilder {
     }
 
     pub fn default_plugins(&mut self) -> &mut Self {
-        self.plugin(core::PluginCore::new());
-
         if !self.headless {
             self.plugin(aleph_rhi::PluginRHI::new());
         }
@@ -144,13 +137,6 @@ impl EngineBuilder {
     }
 
     pub fn build(mut self, cont: impl FnOnce(Engine)) {
-        // let mut schedule = Schedule::default();
-        // schedule.add_stage(CoreStage::InputCollection.into(), SystemSchedule::default());
-        // schedule.add_stage(CoreStage::PreUpdate.into(), SystemSchedule::default());
-        // schedule.add_stage(CoreStage::Update.into(), SystemSchedule::default());
-        // schedule.add_stage(CoreStage::PostUpdate.into(), SystemSchedule::default());
-        // schedule.add_stage(CoreStage::Render.into(), SystemSchedule::default());
-
         if self.headless {
             self.plugin(aleph_headless::PluginPlatformHeadless::new());
             let engine = self.init();

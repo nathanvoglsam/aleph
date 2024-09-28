@@ -35,7 +35,7 @@ use aleph::interfaces::make_plugin_description_for_crate;
 use aleph::interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
-use aleph::interfaces::schedule::{CoreStage, IScheduleProvider};
+use aleph::interfaces::schedule::CoreStage;
 use aleph::Engine;
 use aleph_engine::interfaces::label::make_label;
 
@@ -53,24 +53,17 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.depends_on::<dyn IScheduleProvider>();
-        registrar.must_init_after::<dyn IScheduleProvider>();
-
         //registrar.depends_on::<dyn IEguiContextProvider>();
         registrar.must_init_after::<dyn IEguiContextProvider>();
     }
 
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let mut demo_window = egui_demo_lib::DemoWindows::default();
         let mut colour_test = egui_demo_lib::ColorTest::default();
 
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
 
-        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
-        let schedule_cell = schedule_provider.get();
-        let mut schedule = schedule_cell.get();
-
-        schedule.add_exclusive_at_start_system_to_stage(
+        registry.schedule().add_exclusive_at_start_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
             move || {
