@@ -67,15 +67,19 @@ impl RingBuffer {
     ///
     /// `capacity` must be < [RingBuffer::MAX_CAPACITY] and must also be a power of two. This
     /// function will return [None] if those conditions are not met.
-    pub fn new(capacity: usize) -> Option<Self> {
+    pub const fn new(capacity: usize) -> Option<Self> {
         if !capacity.is_power_of_two() || capacity > Self::MAX_CAPACITY {
             None
         } else {
-            NonZeroUsize::new(capacity).map(|capacity| Self {
-                capacity,
-                head: Cell::new(0),
-                size: Cell::new(0),
-            })
+            if let Some(capacity) = NonZeroUsize::new(capacity) {
+                Some(Self {
+                    capacity,
+                    head: Cell::new(0),
+                    size: Cell::new(0),
+                })
+            } else {
+                None
+            }
         }
     }
 
@@ -122,11 +126,15 @@ impl RingBuffer {
     #[inline]
     #[must_use = "Do not ignore allocation failure"]
     pub fn allocate(&self, size: usize) -> Option<AllocationResult> {
-        // Check we have enough space for the allocation
-        if size > self.size_remaining() {
+        // These checks are _critical_ for safety. The size and align must be smaller than capacity,
+        // and capacity must be no greater than MAX_CAPACITY. MAX_CAPACITY is constructed so that
+        // size + align + capacity _can't_ overflow, and as such we don't need any overflow checks
+        // inside the allocation logic beyond these.
+        if size > self.capacity.get() {
             return None;
         }
 
+        // No zero-sized allocations
         let size = NonZeroUsize::new(size)?;
 
         let old_head = self.head.get();
@@ -136,14 +144,14 @@ impl RingBuffer {
         if new_head <= self.capacity.get() {
             // If we aren't stradling the edge of the end of the ring buffer we can just consume
             // the given number of bytes and exit
-            self.size.set(size.get() + old_size);
+            self.size.set(old_size + size.get());
             self.head.set(new_head);
             Some(AllocationResult {
                 offset: old_head,
                 allocated: size,
             })
         } else {
-            self.allocate_over_buffer_edge(size)
+            self.allocate_over_buffer_edge(old_head, old_size, size)
         }
     }
 
@@ -163,7 +171,10 @@ impl RingBuffer {
     pub fn allocate_aligned(&self, size: usize, align: usize) -> Option<AllocationResult> {
         debug_assert!(align.is_power_of_two());
 
-        // Check if the allocation is larger than the maximum size we could serve
+        // These checks are _critical_ for safety. The size and align must be smaller than capacity,
+        // and capacity must be no greater than MAX_CAPACITY. MAX_CAPACITY is constructed so that
+        // size + align + capacity _can't_ overflow, and as such we don't need any overflow checks
+        // inside the allocation logic beyond these.
         if size > self.capacity.get() {
             return None;
         }
@@ -171,6 +182,7 @@ impl RingBuffer {
             return None;
         }
 
+        // No zero-sized allocations
         let size = NonZeroUsize::new(size)?;
 
         let old_head = self.head.get();
@@ -178,12 +190,17 @@ impl RingBuffer {
 
         // Forward align the head pointer to the required alignment, keeping it in place if it's
         // already aligned
-        let aligned_head = forward_align_offset(self.head.get(), align);
-
+        let aligned_head = forward_align_offset(old_head, align);
         let new_head = aligned_head + size.get();
+
         if new_head <= self.capacity.get() {
             // Check we have enough space for the allocation
-            let total_size = NonZeroUsize::new(new_head - old_head)?;
+            // Safety: unwrap_unchecked is safe here as it's impossible for the result to be zero as
+            //         new_head = old_head + size where size is guaranteed to be non zero due to an
+            //         earlier check. This will always be > 0. We also can't overflow as we
+            //         constrain size and capacity so that adding the largest alloed values can
+            //         never overflow.
+            let total_size = unsafe { NonZeroUsize::new(new_head - old_head).unwrap_unchecked() };
             if total_size.get() > self.size_remaining() {
                 return None;
             }
@@ -197,7 +214,7 @@ impl RingBuffer {
                 allocated: total_size,
             })
         } else {
-            self.allocate_over_buffer_edge(size)
+            self.allocate_over_buffer_edge(old_head, old_size, size)
         }
     }
 
@@ -248,12 +265,18 @@ impl RingBuffer {
     #[track_caller]
     #[inline(always)]
     #[must_use = "Do not ignore allocation failure"]
-    fn allocate_over_buffer_edge(&self, size: NonZeroUsize) -> Option<AllocationResult> {
-        let old_head = self.head.get();
-        let old_size = self.size.get();
-
+    fn allocate_over_buffer_edge(
+        &self,
+        old_head: usize,
+        old_size: usize,
+        size: NonZeroUsize,
+    ) -> Option<AllocationResult> {
         let new_head = self.capacity.get() + size.get();
-        let total_size = NonZeroUsize::new(new_head - old_head)?;
+        // Safety: unwrap_unchecked is safe here as it's impossible for the result to be zero as
+        //         new_head = old_head + size where size is guaranteed to be non zero due to an
+        //         earlier check. This will always be > 0. We also can't overflow as we constrain
+        //         size and capacity so that adding the largest alloed values can never overflow.
+        let total_size = unsafe { NonZeroUsize::new(new_head - old_head).unwrap_unchecked() };
 
         // Check we have enough space for our larger allocation
         if total_size.get() > self.size_remaining() {

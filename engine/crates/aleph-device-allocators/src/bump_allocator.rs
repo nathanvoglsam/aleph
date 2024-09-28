@@ -59,12 +59,16 @@ impl BumpAllocator {
     /// # Info
     ///
     /// Will return [None] if `capacity` is > [BumpAllocator::MAX_CAPACITY].
-    pub fn new(capacity: usize) -> Option<Self> {
+    pub const fn new(capacity: usize) -> Option<Self> {
         if capacity <= Self::MAX_CAPACITY {
-            NonZeroUsize::new(capacity).map(|capacity| Self {
-                head: Cell::new(0),
-                capacity,
-            })
+            if let Some(capacity) = NonZeroUsize::new(capacity) {
+                Some(Self {
+                    head: Cell::new(0),
+                    capacity,
+                })
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -87,9 +91,14 @@ impl BumpAllocator {
     /// It is also important to note that the allocator can't provide alignment higher than the
     /// alignment of the block you're allocating from (and creating the pointers from) as there's
     /// no way for this utility to know that alignment.
+    #[inline]
     #[must_use = "Do not ignore allocation failure"]
     pub fn allocate(&self, size: usize) -> Option<AllocationResult> {
-        if size > self.size_remaining() {
+        // These checks are _critical_ for safety. The size and align must be smaller than capacity,
+        // and capacity must be no greater than MAX_CAPACITY. MAX_CAPACITY is constructed so that
+        // size + align + capacity _can't_ overflow, and as such we don't need any overflow checks
+        // inside the allocation logic beyond these.
+        if size > self.capacity.get() {
             return None;
         }
 
@@ -115,10 +124,15 @@ impl BumpAllocator {
     /// because an incorrect alignment can't do anything memory unsafe, only the caller can. It's
     /// the caller's responsibility to ensure 'align' is a power of two and it's the caller's
     /// responsibility to not do anything unsafe with the offsets this allocator yields.
+    #[inline]
     #[must_use = "Do not ignore allocation failure"]
     pub fn allocate_aligned(&self, size: usize, align: usize) -> Option<AllocationResult> {
         debug_assert!(align.is_power_of_two());
 
+        // These checks are _critical_ for safety. The size and align must be smaller than capacity,
+        // and capacity must be no greater than MAX_CAPACITY. MAX_CAPACITY is constructed so that
+        // size + align + capacity _can't_ overflow, and as such we don't need any overflow checks
+        // inside the allocation logic beyond these.
         if size > self.capacity.get() {
             return None;
         }
@@ -129,12 +143,17 @@ impl BumpAllocator {
         let head = self.head.get();
         let aligned_head = forward_align_offset(head, align);
         let new_head = aligned_head + size;
-        let total_size = NonZeroUsize::new(new_head - head)?;
 
-        if total_size.get() > self.size_remaining() {
+        // Check if we actually have enough space to allocate the requested block
+        if new_head > self.capacity.get() {
             return None;
         }
 
+        // We don't allow zero-sized allocations. This will catch such allocations and error before
+        // we've commited the allocation below.
+        let total_size = NonZeroUsize::new(new_head - head)?;
+
+        // Finally update our head offset now we've decided this allocation is okay.
         self.head.set(new_head);
 
         Some(AllocationResult {
@@ -144,6 +163,7 @@ impl BumpAllocator {
     }
 
     /// Clear the bump allocator, resetting it to the empty state
+    #[inline]
     pub fn clear(&self) {
         self.head.set(0);
     }
