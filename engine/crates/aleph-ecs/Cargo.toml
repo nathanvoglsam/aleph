@@ -43,11 +43,13 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-arena-drop-list = { workspace = true }
+aleph-object-system = { workspace = true }
+aleph-atomic-borrow = { workspace = true }
 aleph-identity-hasher = { workspace = true }
 aleph-virtual-buffer = { workspace = true }
 aleph-label = { workspace = true }
-aleph-profile = { workspace = true }
-
-bumpalo = { workspace = true }
+allocator-api2 = { workspace = true }
+blink-alloc = { workspace = true }
 crossbeam = { workspace = true }
 rayon = { workspace = true }
+

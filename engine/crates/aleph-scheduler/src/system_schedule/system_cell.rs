@@ -31,9 +31,9 @@ use std::cell::Cell;
 
 use crossbeam::atomic::AtomicCell;
 
-use crate::scheduler::system_schedule::access_descriptor::SystemAccessDescriptor;
 use crate::system::System;
-use crate::world::World;
+use crate::system_schedule::access_descriptor::SystemAccessDescriptor;
+use crate::Resources;
 
 /// Type alias for a boxed system trait object
 pub type BoxedSystem = Box<dyn System<In = (), Out = ()> + Send + Sync>;
@@ -57,9 +57,9 @@ pub type ExclusiveSystemCell = Cell<Option<Box<BoxedExclusiveSystem>>>;
 pub trait GenericSystemCell {
     fn declare_access(&self, access: &mut SystemAccessDescriptor);
 
-    unsafe fn execute(&self, world: &World);
+    unsafe fn execute(&self, resources: &Resources);
 
-    fn execute_safe(&self, world: &mut World);
+    fn execute_safe(&self, resources: &mut Resources);
 }
 
 impl GenericSystemCell for SystemCell {
@@ -69,15 +69,15 @@ impl GenericSystemCell for SystemCell {
         self.store(Some(system));
     }
 
-    unsafe fn execute(&self, world: &World) {
+    unsafe fn execute(&self, resources: &Resources) {
         let mut system = self.take().unwrap();
-        system.execute((), world);
+        system.execute((), resources);
         self.store(Some(system));
     }
 
-    fn execute_safe(&self, world: &mut World) {
+    fn execute_safe(&self, resources: &mut Resources) {
         let mut system = self.take().unwrap();
-        system.execute_safe((), world);
+        system.execute_safe((), resources);
         self.store(Some(system));
     }
 }
@@ -89,15 +89,15 @@ impl GenericSystemCell for ExclusiveSystemCell {
         self.set(Some(system))
     }
 
-    unsafe fn execute(&self, world: &World) {
+    unsafe fn execute(&self, resources: &Resources) {
         let mut system = self.take().unwrap();
-        system.execute((), world);
+        system.execute((), resources);
         self.set(Some(system));
     }
 
-    fn execute_safe(&self, world: &mut World) {
+    fn execute_safe(&self, resources: &mut Resources) {
         let mut system = self.take().unwrap();
-        system.execute_safe((), world);
+        system.execute_safe((), resources);
         self.set(Some(system));
     }
 }

@@ -43,7 +43,6 @@ members = [
     "engine/crates/aleph-dx12-agility-sdk",
     "engine/crates/aleph-dx12-alloc",
     "engine/crates/aleph-ecs",
-    "engine/crates/aleph-ecs2",
     "engine/crates/aleph-engine",
     "engine/crates/aleph-engine-build",
     "engine/crates/aleph-frame-graph",
@@ -69,6 +68,7 @@ members = [
     "engine/crates/aleph-rhi-null",
     "engine/crates/aleph-rhi-validation",
     "engine/crates/aleph-rhi-vulkan",
+    "engine/crates/aleph-scheduler",
     "engine/crates/aleph-shader-db",
     "engine/crates/aleph-superluminal-sys",
     "engine/crates/aleph-sys-info",
@@ -180,6 +180,7 @@ aleph-rhi-loader-api = { path = "./engine/crates/aleph-rhi-loader-api", version 
 aleph-rhi-null = { path = "./engine/crates/aleph-rhi-null", version = "0.1" }
 aleph-rhi-validation = { path = "./engine/crates/aleph-rhi-validation", version = "0.1" }
 aleph-rhi-vulkan = { path = "./engine/crates/aleph-rhi-vulkan", version = "0.1" }
+aleph-scheduler = { path = "./engine/crates/aleph-scheduler", version = "0.1" }
 aleph-shader-db = { path = "./engine/crates/aleph-shader-db", version = "0.1" }
 aleph-superluminal-sys = { path = "./engine/crates/aleph-superluminal-sys", version = "0.3" }
 aleph-sys-info = { path = "./engine/crates/aleph-sys-info", version = "0.1" }

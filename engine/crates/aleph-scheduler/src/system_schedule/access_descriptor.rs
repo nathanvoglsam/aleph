@@ -30,9 +30,9 @@
 use std::collections::HashSet;
 
 use aleph_label::Label;
+use aleph_object_system::uuid::Uuid;
 
-use crate::scheduler::AccessDescriptor;
-use crate::world::{ComponentTypeId, ResourceId};
+use crate::AccessDescriptor;
 
 ///
 /// Internal container for storing the sets of resource accesses of a system
@@ -41,17 +41,11 @@ pub struct SystemAccessDescriptor {
     /// The label of the system we're collecting access for currently
     pub label: Label,
 
-    /// Stores all component types that are read by a given system
-    pub component_reads: HashSet<ComponentTypeId>,
-
-    /// Stores all component types that are written by a given system
-    pub component_writes: HashSet<ComponentTypeId>,
-
     /// Stores all resources that are read by a given system
-    pub resource_reads: HashSet<ResourceId>,
+    pub resource_reads: HashSet<Uuid>,
 
     /// Stores all resources that are written by a given system
-    pub resource_writes: HashSet<ResourceId>,
+    pub resource_writes: HashSet<Uuid>,
 
     /// Stores the labels of all systems that must run before the system this descriptor is for
     pub runs_before: HashSet<Label>,
@@ -64,8 +58,6 @@ impl SystemAccessDescriptor {
     pub fn new(label: Label) -> Self {
         Self {
             label,
-            component_reads: Default::default(),
-            component_writes: Default::default(),
             resource_reads: Default::default(),
             resource_writes: Default::default(),
             runs_before: Default::default(),
@@ -74,8 +66,6 @@ impl SystemAccessDescriptor {
     }
 
     pub fn clear(&mut self) {
-        self.component_reads.clear();
-        self.component_writes.clear();
         self.resource_reads.clear();
         self.resource_writes.clear();
         self.runs_before.clear();
@@ -84,37 +74,7 @@ impl SystemAccessDescriptor {
 }
 
 impl AccessDescriptor for SystemAccessDescriptor {
-    fn reads_component_with_id(&mut self, component: ComponentTypeId) {
-        assert!(
-            !self.component_writes.contains(&component),
-            "System \"{:#?}\" wants shared for component \"{:?}\" that is already being used",
-            self.label,
-            component
-        );
-        assert!(
-            self.component_reads.insert(component),
-            "System \"{:#?}\" requested shared access for component \"{:?}\" more than once",
-            self.label,
-            component
-        );
-    }
-
-    fn writes_component_with_id(&mut self, component: ComponentTypeId) {
-        assert!(
-            !self.component_reads.contains(&component),
-            "System \"{:#?}\" wants exclusive for component \"{:?}\" that is already being used",
-            self.label,
-            component
-        );
-        assert!(
-            self.component_writes.insert(component),
-            "System \"{:#?}\" requested exclusive access for component \"{:?}\" more than once",
-            self.label,
-            component
-        );
-    }
-
-    fn reads_resource_with_id(&mut self, resource: ResourceId) {
+    fn reads_resource_with_id(&mut self, resource: Uuid) {
         assert!(
             !self.resource_writes.contains(&resource),
             "System \"{:#?}\" wants shared for resource \"{:?}\" that is already being used",
@@ -129,7 +89,7 @@ impl AccessDescriptor for SystemAccessDescriptor {
         );
     }
 
-    fn writes_resource_with_id(&mut self, resource: ResourceId) {
+    fn writes_resource_with_id(&mut self, resource: Uuid) {
         assert!(
             !self.resource_reads.contains(&resource),
             "System \"{:#?}\" wants exclusive for resource \"{:?}\" that is already being used",

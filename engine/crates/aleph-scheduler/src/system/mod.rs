@@ -29,16 +29,16 @@
 
 mod system_access;
 
-use std::any::Any;
-
-use aleph_label::Label;
 pub use system_access::{
-    QueryState, Res, ResMut, ResMutState, ResState, SystemParam, SystemParamFetch,
-    SystemParamFunction, SystemParamState,
+    Res, ResMut, ResMutState, ResState, SystemParam, SystemParamFetch, SystemParamFunction,
+    SystemParamState,
 };
 
-use crate::scheduler::AccessDescriptor;
-use crate::world::World;
+use std::any::Any;
+
+use crate::{AccessDescriptor, Resources};
+
+use aleph_label::Label;
 
 // ============================================================================================== //
 
@@ -79,7 +79,7 @@ pub trait System: Any + 'static {
     // /// dangling if the [`World`] is mutated and internal structures need to reallocate.
     // ///
     // /// [`System::build`] also **must not** mutate the [`World`] either.
-    // fn build(&mut self, world: &mut World);
+    // fn build(&mut self, resources: &mut World);
 
     /// This function will be called by a scheduler during the scheduler's execution cycle at a
     /// point the scheduler decides. This function is where the system's actual code should go.
@@ -99,14 +99,14 @@ pub trait System: Any + 'static {
     /// It is an error for [`System::execute`] to access data in any way that does not match what
     /// was declared with [`System::declare_access`]. Doing so will almost certainly cause undefined
     /// behavior.
-    unsafe fn execute(&mut self, input: Self::In, world: &World) -> Self::Out;
+    unsafe fn execute(&mut self, input: Self::In, resources: &Resources) -> Self::Out;
 
     /// A wrapper around [`System::execute`] that allows calling execute safely by enforcing that
     /// `world` is accessed through an exclusive borrow.
-    fn execute_safe(&mut self, input: Self::In, world: &mut World) -> Self::Out {
+    fn execute_safe(&mut self, input: Self::In, resources: &mut Resources) -> Self::Out {
         // SAFETY: This is safe per the requirements of context 1 as documented on the execute
         //         function. See the documentation of System::execute for more info.
-        unsafe { self.execute(input, world) }
+        unsafe { self.execute(input, resources) }
     }
 }
 
@@ -124,7 +124,10 @@ pub trait IntoSystem<In, Out, Params> {
 pub struct AlreadyWasSystem;
 
 // Systems implicitly implement IntoSystem
-impl<In, Out, Sys: System<In = In, Out = Out>> IntoSystem<In, Out, AlreadyWasSystem> for Sys {
+impl<In, Out, Sys> IntoSystem<In, Out, AlreadyWasSystem> for Sys
+where
+    Sys: System<In = In, Out = Out>,
+{
     type System = Sys;
 
     #[inline]
@@ -189,8 +192,8 @@ impl<S: System> System for RunsBeforeSystem<S> {
     }
 
     #[inline]
-    unsafe fn execute(&mut self, input: Self::In, world: &World) -> Self::Out {
-        self.s.execute(input, world)
+    unsafe fn execute(&mut self, input: Self::In, resources: &Resources) -> Self::Out {
+        self.s.execute(input, resources)
     }
 }
 
@@ -214,8 +217,8 @@ impl<S: System> System for RunsAfterSystem<S> {
     }
 
     #[inline]
-    unsafe fn execute(&mut self, input: Self::In, world: &World) -> Self::Out {
-        self.s.execute(input, world)
+    unsafe fn execute(&mut self, input: Self::In, resources: &Resources) -> Self::Out {
+        self.s.execute(input, resources)
     }
 }
 

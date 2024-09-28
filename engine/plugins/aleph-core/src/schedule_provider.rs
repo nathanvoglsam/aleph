@@ -30,7 +30,8 @@
 use std::sync::Arc;
 
 use crossbeam::atomic::AtomicCell;
-use interfaces::schedule::{IScheduleCell, IScheduleProvider, Schedule, ScheduleScope};
+use interfaces::schedule::{IScheduleCell, IScheduleProvider, ScheduleScope};
+use interfaces::scheduler::Schedule;
 
 pub struct ScheduleProvider {
     schedule: Arc<dyn IScheduleCell>,

@@ -35,9 +35,9 @@ use interfaces::make_plugin_description_for_crate;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
-use interfaces::schedule::{CoreStage, IScheduleProvider, Schedule, Stage, SystemSchedule};
+use interfaces::schedule::{CoreStage, IScheduleProvider};
+use interfaces::scheduler::{Resources, Schedule, Stage, SystemSchedule};
 use interfaces::world::IWorldProvider;
-use log::LevelFilter;
 
 use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;
@@ -49,32 +49,6 @@ pub struct PluginCore {
 
 impl PluginCore {
     pub fn new() -> Self {
-        #[cfg(not(target_os = "android"))]
-        fn create_logger() -> env_logger::Logger {
-            env_logger::Builder::from_default_env()
-                .filter_level(log::LevelFilter::Trace)
-                .build()
-        }
-
-        #[cfg(target_os = "android")]
-        fn create_logger() -> android_logger::AndroidLogger {
-            let config = android_logger::Config::default().with_max_level(log::LevelFilter::Trace);
-            android_logger::AndroidLogger::new(config)
-        }
-
-        // This will be one of the earliest pieces of code to run in aleph engine so initialize the
-        // logger here. By initializing it here then this plugin remains optional (technically)
-        let logger = create_logger();
-        log::set_boxed_logger(Box::new(logger)).expect("Attempting to install logger");
-        log::set_max_level(LevelFilter::Trace);
-
-        // Android won't log panics properly afaik? We re-route to log so we can see it in logcat.
-        if cfg!(target_os = "android") {
-            std::panic::set_hook(Box::new(|v| {
-                log::error!("{}", v);
-            }));
-        }
-
         let core_schedule = SystemSchedule::default();
 
         let mut schedule = Schedule::default();
@@ -129,12 +103,13 @@ impl IPlugin for PluginCore {
     }
 
     fn on_update(&mut self, _: &dyn IRegistryAccessor) {
-        let world_cell = self.world_provider.get();
+        // let world_cell = self.world_provider.get();
         let schedule_cell = self.schedule_provider.get();
-        let mut world = world_cell.get();
+        // let mut world = world_cell.get();
         let mut schedule = schedule_cell.get();
 
-        schedule.run(&mut world);
+        let mut resources = Resources::new();
+        schedule.run(&mut resources);
     }
 }
 

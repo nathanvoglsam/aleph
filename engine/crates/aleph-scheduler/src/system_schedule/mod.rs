@@ -34,11 +34,10 @@ mod system_channel;
 
 use aleph_label::Label;
 
-use crate::scheduler::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
-use crate::scheduler::system_schedule::system_channel::SystemChannel;
-use crate::scheduler::Stage;
 use crate::system::{IntoSystem, System};
-use crate::world::World;
+use crate::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
+use crate::system_schedule::system_channel::SystemChannel;
+use crate::{Resources, Stage};
 
 #[derive(Default)]
 pub struct SystemSchedule {
@@ -98,17 +97,17 @@ impl SystemSchedule {
         self
     }
 
-    pub fn run_once(&mut self, world: &mut World) {
+    pub fn run_once(&mut self, resources: &mut Resources) {
         self.check_dirty();
-        self.exclusive_at_start.execute_exclusive(world);
-        self.parallel_systems.execute_parallel(world);
-        self.exclusive_at_end.execute_exclusive(world);
+        self.exclusive_at_start.execute_exclusive(resources);
+        self.parallel_systems.execute_parallel(resources);
+        self.exclusive_at_end.execute_exclusive(resources);
     }
 }
 
 impl Stage for SystemSchedule {
-    fn run(&mut self, world: &mut World) {
-        self.run_once(world)
+    fn run(&mut self, resources: &mut Resources) {
+        self.run_once(resources)
     }
 }
 

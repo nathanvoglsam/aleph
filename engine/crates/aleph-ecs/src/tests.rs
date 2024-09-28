@@ -30,17 +30,16 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
-use aleph_label::make_label;
+use object_system::unsafe_impl_iobject;
 
-use crate::scheduler::SystemSchedule;
-use crate::system::{ExplicitDependencies, IntoSystem, Res, ResMut};
-use crate::world::{Query, World};
+use crate::World;
 
 #[derive(Default, PartialEq, Debug)]
 struct Position {
     pub x: f32,
     pub y: f32,
 }
+unsafe_impl_iobject!(Position, "01922977-e48a-7f00-83a5-d78e50e77567");
 
 impl Position {
     pub fn new(x: f32, y: f32) -> Self {
@@ -53,6 +52,7 @@ struct Scale {
     pub x: f32,
     pub y: f32,
 }
+unsafe_impl_iobject!(Scale, "01922978-21d5-7c83-aa72-025c9daae51c");
 
 impl Scale {
     pub fn new(x: f32, y: f32) -> Self {
@@ -64,6 +64,7 @@ impl Scale {
 struct Mesh {
     pub a: usize,
 }
+unsafe_impl_iobject!(Mesh, "01922978-231e-7381-b173-6ecff48c4774");
 
 impl Mesh {
     pub fn new(a: usize) -> Self {
@@ -75,6 +76,7 @@ impl Mesh {
 struct Dropper {
     pub counter: Arc<AtomicU32>,
 }
+unsafe_impl_iobject!(Dropper, "01922979-2550-7d31-b91a-6c05bab9bb3b");
 
 impl Dropper {
     pub fn new(counter: &Arc<AtomicU32>) -> Self {
@@ -108,19 +110,19 @@ fn extend_test_vec() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids[0]).unwrap(),
+        world.query_one::<&Position>(ids[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids[1]).unwrap(),
+        world.query_one::<&Position>(ids[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[0]).unwrap(),
+        world.query_one::<&Scale>(ids[0]).unwrap(),
         &Scale::new(5.0, 6.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[1]).unwrap(),
+        world.query_one::<&Scale>(ids[1]).unwrap(),
         &Scale::new(7.0, 8.0)
     );
 
@@ -145,19 +147,19 @@ fn extend_test_array() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids[0]).unwrap(),
+        world.query_one::<&Position>(ids[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids[1]).unwrap(),
+        world.query_one::<&Position>(ids[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[0]).unwrap(),
+        world.query_one::<&Scale>(ids[0]).unwrap(),
         &Scale::new(5.0, 6.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids[1]).unwrap(),
+        world.query_one::<&Scale>(ids[1]).unwrap(),
         &Scale::new(7.0, 8.0)
     );
 
@@ -182,19 +184,19 @@ fn remove_entity_array() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids_a[0]).unwrap(),
+        world.query_one::<&Position>(ids_a[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids_a[1]).unwrap(),
+        world.query_one::<&Position>(ids_a[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids_a[0]).unwrap(),
+        world.query_one::<&Scale>(ids_a[0]).unwrap(),
         &Scale::new(5.0, 6.0)
     );
     assert_eq!(
-        world.get_component_ref::<Scale>(ids_a[1]).unwrap(),
+        world.query_one::<&Scale>(ids_a[1]).unwrap(),
         &Scale::new(7.0, 8.0)
     );
 
@@ -222,21 +224,15 @@ fn remove_entity_array() {
     assert_eq!(world.len(), 2);
 
     assert_eq!(
-        world.get_component_ref::<Position>(ids_b[0]).unwrap(),
+        world.query_one::<&Position>(ids_b[0]).unwrap(),
         &Position::new(1.0, 2.0)
     );
     assert_eq!(
-        world.get_component_ref::<Position>(ids_b[1]).unwrap(),
+        world.query_one::<&Position>(ids_b[1]).unwrap(),
         &Position::new(3.0, 4.0)
     );
-    assert_eq!(
-        world.get_component_ref::<Mesh>(ids_b[0]).unwrap(),
-        &Mesh::new(9)
-    );
-    assert_eq!(
-        world.get_component_ref::<Mesh>(ids_b[1]).unwrap(),
-        &Mesh::new(10)
-    );
+    assert_eq!(world.query_one::<&Mesh>(ids_b[0]).unwrap(), &Mesh::new(9));
+    assert_eq!(world.query_one::<&Mesh>(ids_b[1]).unwrap(), &Mesh::new(10));
 
     assert!(!world.has_component::<Scale>(ids_b[0]));
     assert!(!world.has_component::<Scale>(ids_b[1]));
@@ -323,10 +319,10 @@ fn drop_test() {
     assert_eq!(ids.len(), 2);
     assert_eq!(world.len(), 2);
 
-    let comp = world.get_component_ref::<Dropper>(ids[0]).unwrap();
+    let comp = world.query_one::<&Dropper>(ids[0]).unwrap();
     assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
 
-    let comp = world.get_component_ref::<Dropper>(ids[1]).unwrap();
+    let comp = world.query_one::<&Dropper>(ids[1]).unwrap();
     assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
 
     assert!(world.remove_entity(ids[0]));
@@ -360,7 +356,7 @@ fn query_test() {
         assert!(scale_ids.contains(&id));
     }
 
-    for (id, (_pos, _mesh)) in world.query::<(&Position, &mut Mesh)>() {
+    for (id, (_pos, _mesh)) in world.query_mut::<(&Position, &mut Mesh)>() {
         assert!(mesh_ids.contains(&id));
     }
 
@@ -374,18 +370,11 @@ fn query_test() {
         assert!(scale_ids.contains(&second));
 
         assert!(query.next().is_none());
-
-        let first = query.next().unwrap().0;
-        assert!(scale_ids.contains(&first));
-
-        let second = query.next().unwrap().0;
-        assert!(scale_ids.contains(&second));
-
         assert!(query.next().is_none());
     }
 
     {
-        let mut query = world.query::<(&Position, &mut Mesh)>();
+        let mut query = world.query_mut::<(&Position, &mut Mesh)>();
 
         let first = query.next().unwrap().0;
         assert!(mesh_ids.contains(&first));
@@ -394,81 +383,68 @@ fn query_test() {
         assert!(mesh_ids.contains(&second));
 
         assert!(query.next().is_none());
-
-        let first = query.next().unwrap().0;
-        assert!(mesh_ids.contains(&first));
-
-        let second = query.next().unwrap().0;
-        assert!(mesh_ids.contains(&second));
-
         assert!(query.next().is_none());
     }
 }
 
 #[test]
-fn system_schedule_test() {
+#[should_panic]
+fn query_checked_test_colliding_access() {
     let mut world = World::new(Default::default()).unwrap();
 
     world.register::<Position>();
     world.register::<Scale>();
     world.register::<Mesh>();
 
-    world.add_resource::<usize>(21);
-
-    let scale_ids = world.extend((
+    let _scale_ids = world.extend((
         [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
         [Scale::new(5.0, 6.0), Scale::new(7.0, 8.0)],
     ));
 
-    let mesh_ids = world.extend((
+    let _mesh_ids = world.extend((
         [Position::new(1.5, 2.5), Position::new(3.5, 4.5)],
         [Mesh::new(5), Mesh::new(6)],
     ));
 
-    fn system_fn_1(v: (Query<(&Position, &Scale)>,)) {
-        for (id, (_pos, _scale)) in v.0 {
-            assert!(!id.is_null());
-        }
+    let query_a = world.query_checked::<&mut Position>();
+    let query_b = world.query_checked::<(&Position, &mut Mesh)>();
+
+    let iter = query_a.zip(query_b);
+    assert_eq!(iter.count(), 2);
+}
+
+#[test]
+fn query_checked_test_safe_access() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let _scale_ids = world.extend((
+        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        [Scale::new(5.0, 6.0), Scale::new(7.0, 8.0)],
+    ));
+
+    let _mesh_ids = world.extend((
+        [Position::new(1.5, 2.5), Position::new(3.5, 4.5)],
+        [Mesh::new(5), Mesh::new(6)],
+    ));
+
+    // query_b will iterate the same archetype as query_a, but only query_a will ask for access to
+    // 'Scale' so both queries can run in parallel.
+    let query_a = world.query_checked::<(&Position, &mut Scale)>();
+    let query_b = world.query_checked::<&Position>();
+
+    let iter = query_a.zip(query_b);
+    assert_eq!(iter.count(), 2);
+}
+
+#[test]
+fn is_world_send_and_sync() {
+    fn the_send_sync_filter<T: Send + Sync>(_v: T) {
+        let _do_nothing = ();
     }
-
-    fn system_fn_2(v: Query<(&mut Position, &mut Mesh)>, mut r: ResMut<usize>) {
-        for (id, (_pos, _mesh)) in v {
-            assert!(!id.is_null());
-        }
-        assert_eq!(*r, 21);
-        *r = 56;
-    }
-
-    let system_closure_1 = move |v: Query<(&Position, &Scale)>| {
-        for (id, (_pos, _scale)) in v {
-            assert!(scale_ids.contains(&id));
-        }
-    };
-
-    let system_closure_2 = move |v: (Query<(&Position, &Mesh)>, Res<usize>)| {
-        for (id, (_pos, _mesh)) in v.0 {
-            assert!(mesh_ids.contains(&id));
-        }
-        assert_eq!(*v.1, 56);
-    };
-
-    let system_closure_3 = move |mut v: ResMut<usize>| {
-        *v = 21;
-    };
-
-    let mut system_schedule = SystemSchedule::default();
-    system_schedule.add_system(make_label!("SYSTEM_1"), system_fn_1);
-    system_schedule.add_system(make_label!("SYSTEM_2"), system_fn_2.system());
-    system_schedule.add_system(make_label!("SYSTEM_3"), system_closure_1.system());
-    system_schedule.add_system(make_label!("SYSTEM_4"), system_closure_2);
-    system_schedule.add_system(
-        make_label!("SYSTEM_5"),
-        system_closure_3
-            .system()
-            .runs_after(make_label!("SYSTEM_4")),
-    );
-
-    system_schedule.run_once(&mut world);
-    system_schedule.run_once(&mut world);
-    system_schedule.run_once(&mut world);
+    let world = World::new(Default::default()).unwrap();
+    let _nothing = the_send_sync_filter::<World>(world);
 }

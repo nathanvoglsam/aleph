@@ -30,15 +30,16 @@
 use std::any::{Any, TypeId};
 
 use aleph_label::Label;
+use aleph_object_system::uuid::Uuid;
 
-use crate::world::{Component, ComponentTypeId, Resource, ResourceId, World};
+use crate::{Resource, Resources};
 
 ///
 /// The interface expected of an execution stage
 ///
 pub trait Stage: Any + 'static {
     /// This will be called by a scheduler exactly once during an execution cycle.
-    fn run(&mut self, world: &mut World);
+    fn run(&mut self, resources: &mut Resources);
 }
 
 impl dyn Stage {
@@ -90,17 +91,11 @@ impl dyn Stage {
 /// use the declared accesses to schedule tasks in parallel so their access conditions are met.
 ///
 pub trait AccessDescriptor: 'static {
-    /// Caller uses this to declare a shared/read access to the given component type
-    fn reads_component_with_id(&mut self, component: ComponentTypeId);
-
-    /// Caller uses this to declare a exclusive/write access to the given component type
-    fn writes_component_with_id(&mut self, component: ComponentTypeId);
-
     /// Caller uses this to declare a shared/read access to the given resource
-    fn reads_resource_with_id(&mut self, resource: ResourceId);
+    fn reads_resource_with_id(&mut self, resource: Uuid);
 
     /// Caller uses this to declare a exclusive/write access to the given resource
-    fn writes_resource_with_id(&mut self, resource: ResourceId);
+    fn writes_resource_with_id(&mut self, resource: Uuid);
 
     /// Caller uses this to declare the label of another system that `self` should run before
     fn runs_before_label(&mut self, system: Label);
@@ -110,28 +105,16 @@ pub trait AccessDescriptor: 'static {
 }
 
 impl dyn AccessDescriptor {
-    /// Generic wrapper around [`AccessDescriptor::reads_component_with_id`] that uses a generic
-    /// parameter to get the ID.
-    pub fn reads_component<T: Component>(&mut self) {
-        self.reads_component_with_id(ComponentTypeId::of::<T>());
-    }
-
-    /// Generic wrapper around [`AccessDescriptor::writes_component_with_id`] that uses a generic
-    /// parameter to get the ID.
-    pub fn writes_component<T: Component>(&mut self) {
-        self.writes_component_with_id(ComponentTypeId::of::<T>());
-    }
-
     /// Generic wrapper around [`AccessDescriptor::reads_resource_with_id`] that uses a generic
     /// parameter to get the ID.
     pub fn reads_resource<T: Resource>(&mut self) {
-        self.reads_resource_with_id(ResourceId::of::<T>());
+        self.reads_resource_with_id(T::ID);
     }
 
     /// Generic wrapper around [`AccessDescriptor::writes_resource_with_id`] that uses a generic
     /// parameter to get the ID.
     pub fn writes_resource<T: Resource>(&mut self) {
-        self.writes_resource_with_id(ResourceId::of::<T>());
+        self.writes_resource_with_id(T::ID);
     }
 
     /// Generic wrapper around [`AccessDescriptor::runs_before_label`] that handles boxing the label

@@ -31,8 +31,8 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-pub use aleph_ecs::scheduler::*;
 use label::make_label;
+use scheduler::Schedule;
 
 use crate::any::IAny;
 use crate::label::Label;

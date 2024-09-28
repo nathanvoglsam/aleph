@@ -33,16 +33,15 @@ use std::hash::Hash;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_label::Label;
+use aleph_object_system::uuid::Uuid;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;
 
-use crate::scheduler::system_schedule::system_box::SystemBox;
-use crate::scheduler::system_schedule::system_cell::{
-    ExclusiveSystemCell, GenericSystemCell, SystemCell,
-};
 use crate::system::{IntoSystem, System};
-use crate::world::{ComponentTypeId, ResourceId, World};
+use crate::system_schedule::system_box::SystemBox;
+use crate::system_schedule::system_cell::{ExclusiveSystemCell, GenericSystemCell, SystemCell};
+use crate::Resources;
 
 #[derive(Default)]
 pub struct SystemChannel<T: GenericSystemCell> {
@@ -103,7 +102,7 @@ impl SystemChannel<ExclusiveSystemCell> {
 }
 
 impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
-    pub fn execute_parallel(&mut self, world: &mut World) {
+    pub fn execute_parallel(&mut self, resources: &mut Resources) {
         /// Struct that holds data that needs ownership transferred to the thread that executes the
         /// matching system
         struct WorkerPayload {
@@ -141,7 +140,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             systems: &[SystemBox<T>],
             done: &[AtomicBool],
             payloads: &[PayloadCell],
-            world: &World,
+            resources: &Resources,
             system_index: usize,
         ) {
             // Unpack the payload
@@ -162,7 +161,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             unsafe {
                 let system = &systems[system_index];
                 aleph_profile::scope!("aleph::ExecSystem", system.access.label);
-                system.system.execute(world);
+                system.system.execute(resources);
             }
 
             // Update the "done" flag now that the system has executed
@@ -184,7 +183,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
                         .copied()
                         .all(|predecessor| done[predecessor].load(Ordering::Relaxed))
                     {
-                        exec_task(systems, done, payloads, world, successor);
+                        exec_task(systems, done, payloads, resources, successor);
                     }
                 });
 
@@ -199,7 +198,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             .par_iter()
             .copied()
             .for_each(|system_index| {
-                exec_task(&systems, &done, &payloads, world, system_index);
+                exec_task(&systems, &done, &payloads, resources, system_index);
             });
 
         self.systems = systems;
@@ -210,7 +209,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
 }
 
 impl<C: GenericSystemCell> SystemChannel<C> {
-    pub fn execute_exclusive(&mut self, world: &mut World) {
+    pub fn execute_exclusive(&mut self, resources: &mut Resources) {
         // SoA list of flags that denote whether the matching task has completed, indexed in
         // parallel with self.systems
         let mut done: Vec<bool> = (0..self.systems.len()).map(|_| false).collect();
@@ -241,7 +240,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
                 {
                     let system = &self.systems[system_index];
                     aleph_profile::scope!("aleph::ExecSystem", system.access.label);
-                    system.system.execute_safe(world);
+                    system.system.execute_safe(resources);
                 }
 
                 // Update the "done" flag now that the system has executed
@@ -304,23 +303,17 @@ impl<C: GenericSystemCell> SystemChannel<C> {
     }
 
     pub fn build_graph_nodes(&mut self) {
-        let mut last_component_write: HashMap<ComponentTypeId, usize> = HashMap::new();
-        let mut last_component_reads: HashMap<ComponentTypeId, Vec<usize>> = HashMap::new();
-        let mut last_resource_write: HashMap<ResourceId, usize> = HashMap::new();
-        let mut last_resource_reads: HashMap<ResourceId, Vec<usize>> = HashMap::new();
+        let mut last_resource_write: HashMap<Uuid, usize> = HashMap::new();
+        let mut last_resource_reads: HashMap<Uuid, Vec<usize>> = HashMap::new();
 
         for system_index in 0..self.systems.len() {
             self.handle_writes(
-                &mut last_component_write,
-                &mut last_component_reads,
                 &mut last_resource_write,
                 &mut last_resource_reads,
                 system_index,
             );
 
             self.handle_reads(
-                &mut last_component_write,
-                &mut last_component_reads,
                 &mut last_resource_write,
                 &mut last_resource_reads,
                 system_index,
@@ -336,21 +329,10 @@ impl<C: GenericSystemCell> SystemChannel<C> {
 
     pub fn handle_writes(
         &mut self,
-        last_component_write: &mut HashMap<ComponentTypeId, usize>,
-        last_component_reads: &mut HashMap<ComponentTypeId, Vec<usize>>,
-        last_resource_write: &mut HashMap<ResourceId, usize>,
-        last_resource_reads: &mut HashMap<ResourceId, Vec<usize>>,
+        last_resource_write: &mut HashMap<Uuid, usize>,
+        last_resource_reads: &mut HashMap<Uuid, Vec<usize>>,
         system_index: usize,
     ) {
-        let writes = std::mem::take(&mut self.systems[system_index].access.component_writes);
-        self.handle_writes_generic(
-            writes.iter(),
-            last_component_write,
-            last_component_reads,
-            system_index,
-        );
-        self.systems[system_index].access.component_writes = writes;
-
         let writes = std::mem::take(&mut self.systems[system_index].access.resource_writes);
         self.handle_writes_generic(
             writes.iter(),
@@ -392,21 +374,10 @@ impl<C: GenericSystemCell> SystemChannel<C> {
 
     pub fn handle_reads(
         &mut self,
-        last_component_write: &mut HashMap<ComponentTypeId, usize>,
-        last_component_reads: &mut HashMap<ComponentTypeId, Vec<usize>>,
-        last_resource_write: &mut HashMap<ResourceId, usize>,
-        last_resource_reads: &mut HashMap<ResourceId, Vec<usize>>,
+        last_resource_write: &mut HashMap<Uuid, usize>,
+        last_resource_reads: &mut HashMap<Uuid, Vec<usize>>,
         system_index: usize,
     ) {
-        let reads = std::mem::take(&mut self.systems[system_index].access.component_reads);
-        self.handle_reads_generic(
-            reads.iter(),
-            last_component_write,
-            last_component_reads,
-            system_index,
-        );
-        self.systems[system_index].access.component_reads = reads;
-
         let reads = std::mem::take(&mut self.systems[system_index].access.resource_reads);
         self.handle_reads_generic(
             reads.iter(),

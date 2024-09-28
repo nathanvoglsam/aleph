@@ -28,15 +28,16 @@
 //
 
 pub extern crate aleph_any as any;
+pub extern crate aleph_ecs as ecs;
 pub extern crate aleph_label as label;
 pub extern crate aleph_object_system as object_system;
+pub extern crate aleph_scheduler as scheduler;
 
 pub mod components;
 pub mod platform;
 pub mod plugin;
 pub mod rhi;
 pub mod schedule;
-pub mod system;
 pub mod world;
 
 mod utils;

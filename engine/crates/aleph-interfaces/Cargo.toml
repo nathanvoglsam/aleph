@@ -43,6 +43,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-ecs = { workspace = true }
+aleph-scheduler = { workspace = true }
 aleph-label = { workspace = true }
 aleph-math = { workspace = true }
 aleph-any = { workspace = true }

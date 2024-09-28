@@ -68,9 +68,8 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
-use crate::scheduler::AccessDescriptor;
 use crate::system::{IntoSystem, System};
-use crate::world::{ComponentQuery, Query, Resource, World};
+use crate::{AccessDescriptor, Resource, Resources};
 
 // ============================================================================================== //
 
@@ -91,7 +90,7 @@ pub unsafe trait SystemParamState: Send + Sync + 'static {
 pub trait SystemParamFetch<'a>: SystemParamState {
     type Item;
 
-    unsafe fn get_param(state: &'a mut Self, world: &'a World) -> Self::Item;
+    unsafe fn get_param(state: &'a mut Self, resources: &'a Resources) -> Self::Item;
 }
 
 // ============================================================================================== //
@@ -130,10 +129,11 @@ impl<'a, T: Resource> SystemParamFetch<'a> for ResState<T> {
     type Item = Res<'a, T>;
 
     #[inline]
-    unsafe fn get_param(_state: &'a mut Self, world: &'a World) -> Self::Item {
-        Res {
-            value: world.get_resource_ref_unchecked::<T>().unwrap(),
-        }
+    unsafe fn get_param(_state: &'a mut Self, resources: &'a Resources) -> Self::Item {
+        let v = resources.resources.get(&T::ID).unwrap();
+        let v = v.get().as_ref().unwrap_unchecked();
+        let v = v.get_ref::<T>().unwrap();
+        Res { value: v }
     }
 }
 
@@ -180,41 +180,11 @@ impl<'a, T: Resource> SystemParamFetch<'a> for ResMutState<T> {
     type Item = ResMut<'a, T>;
 
     #[inline]
-    unsafe fn get_param(_state: &'a mut Self, world: &'a World) -> Self::Item {
-        ResMut {
-            value: world.get_resource_mut_unchecked::<T>().unwrap(),
-        }
-    }
-}
-
-// ============================================================================================== //
-
-/// An internal type that handles creating the [`Query`] object that is provided to a system
-/// function when it is executed.
-pub struct QueryState<Q: ComponentQuery + 'static>(PhantomData<Q>);
-
-impl<'w, Q: ComponentQuery + 'static> SystemParam for Query<'w, Q> {
-    type Fetch = QueryState<Q>;
-}
-
-unsafe impl<Q: ComponentQuery + 'static> SystemParamState for QueryState<Q> {
-    #[inline]
-    fn init(access: &mut dyn AccessDescriptor) -> Self {
-        Q::declare_access(access);
-        Self(Default::default())
-    }
-}
-
-impl<'w, Q: ComponentQuery + 'static> SystemParamFetch<'w> for QueryState<Q> {
-    type Item = Query<'w, Q>;
-
-    #[inline]
-    unsafe fn get_param(_state: &'w mut Self, world: &'w World) -> Self::Item {
-        // TODO: This is UB but no easy fix
-        #[allow(invalid_reference_casting)]
-        #[allow(invalid_reference_casting)]
-        let world = &mut *(world as *const World as *mut World);
-        Query::new(world)
+    unsafe fn get_param(_state: &'a mut Self, resources: &'a Resources) -> Self::Item {
+        let v = resources.resources.get(&T::ID).unwrap();
+        let v = v.get().as_mut().unwrap_unchecked();
+        let v = v.get_mut::<T>().unwrap();
+        ResMut { value: v }
     }
 }
 
@@ -227,7 +197,7 @@ impl<'w, Q: ComponentQuery + 'static> SystemParamFetch<'w> for QueryState<Q> {
 /// for the underlying function before calling said function.
 #[allow(clippy::missing_safety_doc)]
 pub trait SystemParamFunction<Param: SystemParam>: Send + Sync + 'static {
-    unsafe fn run(&mut self, state: &mut Param::Fetch, world: &World);
+    unsafe fn run(&mut self, state: &mut Param::Fetch, resources: &Resources);
 }
 
 // ============================================================================================== //
@@ -252,8 +222,8 @@ impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> System
     }
 
     #[inline]
-    unsafe fn execute(&mut self, _input: Self::In, world: &World) -> Self::Out {
-        self.f.run(self.state.as_mut().unwrap(), world)
+    unsafe fn execute(&mut self, _input: Self::In, resources: &Resources) -> Self::Out {
+        self.f.run(self.state.as_mut().unwrap(), resources)
     }
 }
 
@@ -277,7 +247,7 @@ impl<T: FnMut() + 'static> System for T {
 
     fn declare_access(&mut self, _access: &mut dyn AccessDescriptor) {}
 
-    unsafe fn execute(&mut self, _input: Self::In, _world: &World) -> Self::Out {
+    unsafe fn execute(&mut self, _input: Self::In, _resources: &Resources) -> Self::Out {
         self()
     }
 }
@@ -288,14 +258,14 @@ impl<T: FnMut() + 'static> System for T {
 macro_rules! impl_system_function {
     ($($param: ident),*) => {
         #[allow(non_snake_case)]
-        impl<Func: ::std::marker::Send + ::std::marker::Sync + 'static, $($param: $crate::system::SystemParam),*> $crate::system::SystemParamFunction<($($param,)*)> for Func
+        impl<Func: ::std::marker::Send + ::std::marker::Sync + 'static, $($param: $crate::SystemParam),*> $crate::SystemParamFunction<($($param,)*)> for Func
         where
         for <'a> &'a mut Func:
                 FnMut($($param),*) +
-                FnMut($(<<$param as $crate::system::SystemParam>::Fetch as $crate::system::SystemParamFetch>::Item),*),
+                FnMut($(<<$param as $crate::SystemParam>::Fetch as $crate::SystemParamFetch>::Item),*),
         {
             #[inline]
-            unsafe fn run(&mut self, state: &mut <($($param,)*) as $crate::system::SystemParam>::Fetch, world: &$crate::world::World) {
+            unsafe fn run(&mut self, state: &mut <($($param,)*) as $crate::SystemParam>::Fetch, resources: &$crate::Resources) {
                 // Yes, this is strange, but rustc fails to compile this impl
                 // without using this function.
                 #[allow(clippy::too_many_arguments)]
@@ -306,7 +276,7 @@ macro_rules! impl_system_function {
                 ) {
                     f($($param,)*)
                 }
-                let ($($param,)*) = <<($($param,)*) as $crate::system::SystemParam>::Fetch as $crate::system::SystemParamFetch>::get_param(state, world);
+                let ($($param,)*) = <<($($param,)*) as $crate::SystemParam>::Fetch as $crate::SystemParamFetch>::get_param(state, resources);
                 call_inner(self, $($param),*)
             }
         }
@@ -332,27 +302,27 @@ impl_system_function!(A, B, C, D, E, F, G, H, I, J, K, L, M);
 #[macro_export]
 macro_rules! impl_param_for_tuple {
     ($($name: ident),*) => {
-        impl<$($name: $crate::system::SystemParam),*> $crate::system::SystemParam for ($($name,)*) {
+        impl<$($name: $crate::system::SystemParam),*> $crate::SystemParam for ($($name,)*) {
             type Fetch = ($($name::Fetch,)*);
         }
 
         #[allow(unused_variables)]
         #[allow(non_snake_case)]
-        impl<'a, $($name: $crate::system::SystemParamFetch<'a>),*> $crate::system::SystemParamFetch<'a> for ($($name,)*) {
+        impl<'a, $($name: $crate::system::SystemParamFetch<'a>),*> $crate::SystemParamFetch<'a> for ($($name,)*) {
             type Item = ($($name::Item,)*);
 
             #[inline]
-            unsafe fn get_param(state: &'a mut Self, world: &'a $crate::world::World) -> Self::Item {
+            unsafe fn get_param(state: &'a mut Self, resources: &'a $crate::Resources) -> Self::Item {
                 let ($($name,)*) = state;
-                ($($name::get_param($name, world),)*)
+                ($($name::get_param($name, resources),)*)
             }
         }
 
         /// SAFE: implementors of each SystemParamState in the tuple have validated their impls
         #[allow(non_snake_case)]
-        unsafe impl<$($name: $crate::system::SystemParamState),*> $crate::system::SystemParamState for ($($name,)*) {
+        unsafe impl<$($name: $crate::SystemParamState),*> $crate::SystemParamState for ($($name,)*) {
             #[inline]
-            fn init(access: &mut dyn $crate::scheduler::AccessDescriptor) -> Self {
+            fn init(access: &mut dyn $crate::AccessDescriptor) -> Self {
                 (($($name::init(access),)*))
             }
         }

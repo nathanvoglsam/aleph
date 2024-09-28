@@ -30,7 +30,8 @@
 use std::sync::Arc;
 
 use crossbeam::atomic::AtomicCell;
-use interfaces::world::{IWorldCell, IWorldProvider, World, WorldOptions, WorldScope};
+use interfaces::ecs::{World, WorldOptions};
+use interfaces::world::{IWorldCell, IWorldProvider, WorldScope};
 
 pub struct WorldProvider {
     world: Arc<dyn IWorldCell>,

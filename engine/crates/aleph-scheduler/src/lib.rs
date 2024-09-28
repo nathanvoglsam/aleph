@@ -54,7 +54,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+mod resources;
 mod stage;
+mod system;
 mod system_schedule;
 
 use std::collections::HashMap;
@@ -63,12 +65,17 @@ use std::ptr::NonNull;
 
 use aleph_arena_drop_list::DropLink;
 use aleph_label::Label;
+use aleph_object_system::IObject;
 use bumpalo::Bump;
+
+pub use crate::system::{
+    AlreadyWasSystem, ExplicitDependencies, IntoSystem, Res, ResMut, ResMutState, ResState,
+    RunsAfterSystem, RunsBeforeSystem, System, SystemParam, SystemParamFetch, SystemParamFunction,
+    SystemParamState,
+};
+pub use resources::Resources;
 pub use stage::{AccessDescriptor, Stage};
 pub use system_schedule::SystemSchedule;
-
-use crate::system::{IntoSystem, System};
-use crate::world::World;
 
 ///
 /// Provides an interface for dynamically composing a set of executable code blocks into a sequence
@@ -79,7 +86,6 @@ use crate::world::World;
 /// The API and most of the implementation of this struct is ripped from `bevy_ecs`. I don't think
 /// I can beat the API that `bevy_ecs` designed, so rather than trying to I just use it for myself.
 ///
-#[derive(Default)]
 pub struct Schedule {
     /// A bump allocated arena used for storing the labels and stages.
     arena: Bump,
@@ -99,6 +105,18 @@ pub struct Schedule {
     ///
     /// Functions as a dynamically slot for a run precondition function.
     run_criteria: RunCriteriaBox,
+}
+
+impl Default for Schedule {
+    fn default() -> Self {
+        Self {
+            arena: Default::default(),
+            stages: Default::default(),
+            drop_head: Default::default(),
+            stage_order: Default::default(),
+            run_criteria: Default::default(),
+        }
+    }
 }
 
 impl Schedule {
@@ -308,12 +326,12 @@ impl Schedule {
     /// Unconditionally (i.e, the run criteria system is **not** called) performs a single execution
     /// run of the [`Schedule`]
     #[inline]
-    pub fn run_once(&mut self, world: &mut World) {
+    pub fn run_once(&mut self, resources: &mut Resources) {
         for label in self.stage_order.iter() {
             let stage = self.stages.get_mut(label).unwrap();
             unsafe {
                 aleph_profile::scope!("aleph::ExecScope", label);
-                stage.as_mut().run(world);
+                stage.as_mut().run(resources);
             }
         }
     }
@@ -325,10 +343,7 @@ impl Schedule {
             .iter()
             .map(move |label| unsafe { (*label, self.stages[&label].as_ref()) })
     }
-}
 
-/// Internal utility functions
-impl Schedule {
     fn index_from_label(&self, target: Label) -> usize {
         self.stage_order
             .iter()
@@ -340,24 +355,24 @@ impl Schedule {
 }
 
 impl Stage for Schedule {
-    fn run(&mut self, world: &mut World) {
+    fn run(&mut self, resources: &mut Resources) {
         // First we need to check if the schedule's run criteria is met
         if let Some(system) = self.run_criteria.system.as_mut() {
             // Initialize the criteria system if it hasn't already been
             if !self.run_criteria.initialized {
-                //system.build(world);
+                //system.build(resources);
                 self.run_criteria.initialized = true;
             }
 
             // Execute the system and bail if it decides we should not run the schedule
             let system = unsafe { system.as_mut() };
-            if system.execute_safe((), world) == ShouldRun::No {
+            if system.execute_safe((), resources) == ShouldRun::No {
                 return;
             }
         }
 
         // If we pass the above check then we can continue on and execute the schedule
-        self.run_once(world);
+        self.run_once(resources);
     }
 }
 
@@ -380,8 +395,19 @@ pub enum ShouldRun {
     No,
 }
 
-#[derive(Default)]
 struct RunCriteriaBox {
     system: Option<NonNull<dyn System<In = (), Out = ShouldRun>>>,
     initialized: bool,
 }
+
+impl Default for RunCriteriaBox {
+    fn default() -> Self {
+        Self {
+            system: Default::default(),
+            initialized: Default::default(),
+        }
+    }
+}
+
+pub trait Resource: IObject + Send + Sync + 'static {}
+impl<T: IObject + Send + Sync + 'static> Resource for T {}

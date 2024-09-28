@@ -54,6 +54,10 @@ pub mod any {
 use std::env::current_dir;
 use std::path::Path;
 
+// use interfaces::schedule::CoreStage;
+// use interfaces::scheduler::{Schedule, SystemSchedule};
+use log::LevelFilter;
+
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
@@ -74,6 +78,32 @@ impl EngineBuilder {
         #[cfg(target_os = "windows")]
         unsafe {
             aleph_windows::name_current_thread(&utf16_lit::utf16_null!("MainThread")).unwrap();
+        }
+
+        #[cfg(not(target_os = "android"))]
+        fn create_logger() -> env_logger::Logger {
+            env_logger::Builder::from_default_env()
+                .filter_level(log::LevelFilter::Trace)
+                .build()
+        }
+
+        #[cfg(target_os = "android")]
+        fn create_logger() -> android_logger::AndroidLogger {
+            let config = android_logger::Config::default().with_max_level(log::LevelFilter::Trace);
+            android_logger::AndroidLogger::new(config)
+        }
+
+        // This will be one of the earliest pieces of code to run in aleph engine so initialize the
+        // logger here. By initializing it here then this plugin remains optional (technically)
+        let logger = create_logger();
+        log::set_boxed_logger(Box::new(logger)).expect("Attempting to install logger");
+        log::set_max_level(LevelFilter::Trace);
+
+        // Android won't log panics properly afaik? We re-route to log so we can see it in logcat.
+        if cfg!(target_os = "android") {
+            std::panic::set_hook(Box::new(|v| {
+                log::error!("{}", v);
+            }));
         }
 
         Self {
@@ -114,6 +144,13 @@ impl EngineBuilder {
     }
 
     pub fn build(mut self, cont: impl FnOnce(Engine)) {
+        // let mut schedule = Schedule::default();
+        // schedule.add_stage(CoreStage::InputCollection.into(), SystemSchedule::default());
+        // schedule.add_stage(CoreStage::PreUpdate.into(), SystemSchedule::default());
+        // schedule.add_stage(CoreStage::Update.into(), SystemSchedule::default());
+        // schedule.add_stage(CoreStage::PostUpdate.into(), SystemSchedule::default());
+        // schedule.add_stage(CoreStage::Render.into(), SystemSchedule::default());
+
         if self.headless {
             self.plugin(aleph_headless::PluginPlatformHeadless::new());
             let engine = self.init();
