@@ -36,7 +36,20 @@ use aleph_atomic_borrow::AtomicBorrow;
 use aleph_math::{DVec3, Rotor3, Vec3};
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::{IObject, ObjectDescription};
+use aleph_pin_board::BoardParamId;
 use allocator_api2::alloc::{Allocator, Global};
+
+#[derive(Clone, PartialEq, Default, Debug)]
+pub struct RenderTransform {
+    pub position: DVec3,
+    pub rotation: Rotor3,
+    pub scale: Vec3,
+}
+
+pub struct RenderSceneParam;
+impl BoardParamId for RenderSceneParam {
+    type Output<'a> = &'a RenderScene;
+}
 
 pub struct RenderScene {
     components: HashMap<Uuid, Storage>,
@@ -425,6 +438,9 @@ struct RawBytes<A: Allocator = Global> {
     a: A,
 }
 
+unsafe impl Send for RawBytes {}
+unsafe impl Sync for RawBytes {}
+
 impl RawBytes {
     fn new(align: usize) -> Self {
         Self::new_in(align, Global)
@@ -484,13 +500,6 @@ impl<A: Allocator> Drop for RawBytes<A> {
     }
 }
 
-#[derive(Clone, PartialEq, Default, Debug)]
-pub struct RenderTransform {
-    pub pos: DVec3,
-    pub rot: Rotor3,
-    pub scl: Vec3,
-}
-
 #[cfg(test)]
 mod tests {
     use std::fmt::Debug;
@@ -524,19 +533,19 @@ mod tests {
         (
             [
                 RenderTransform {
-                    pos: DVec3::new(1., 2., 3.),
-                    rot: Rotor3::identity(),
-                    scl: Vec3::new(1.0, 2.0, 3.0),
+                    position: DVec3::new(1., 2., 3.),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::new(1.0, 2.0, 3.0),
                 },
                 RenderTransform {
-                    pos: DVec3::new(4., 5., 6.),
-                    rot: Rotor3::identity(),
-                    scl: Vec3::new(1123.0, 762.0, 312.0),
+                    position: DVec3::new(4., 5., 6.),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::new(1123.0, 762.0, 312.0),
                 },
                 RenderTransform {
-                    pos: DVec3::new(1., 2., 3.),
-                    rot: Rotor3::from_euler_angles(1., 2., 3.),
-                    scl: Vec3::new(113.0, 62.0, 31.0),
+                    position: DVec3::new(1., 2., 3.),
+                    rotation: Rotor3::from_euler_angles(1., 2., 3.),
+                    scale: Vec3::new(113.0, 62.0, 31.0),
                 },
             ],
             [A(21), A(22), A(23)],
@@ -547,29 +556,29 @@ mod tests {
         (
             [
                 RenderTransform {
-                    pos: DVec3::new(56., 21., 3.),
-                    rot: Rotor3::from_euler_angles(1.8, 2.2, 3.6),
-                    scl: Vec3::new(113.0, 62.0, 31.0),
+                    position: DVec3::new(56., 21., 3.),
+                    rotation: Rotor3::from_euler_angles(1.8, 2.2, 3.6),
+                    scale: Vec3::new(113.0, 62.0, 31.0),
                 },
                 RenderTransform {
-                    pos: DVec3::new(41., 51., 65.),
-                    rot: Rotor3::identity(),
-                    scl: Vec3::new(1123.0, 762.0, 312.0),
+                    position: DVec3::new(41., 51., 65.),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::new(1123.0, 762.0, 312.0),
                 },
                 RenderTransform {
-                    pos: DVec3::new(14., 27., 32.),
-                    rot: Rotor3::from_euler_angles(1.2, 2.1, 3.3),
-                    scl: Vec3::new(1.0, 2.0, 3.0),
+                    position: DVec3::new(14., 27., 32.),
+                    rotation: Rotor3::from_euler_angles(1.2, 2.1, 3.3),
+                    scale: Vec3::new(1.0, 2.0, 3.0),
                 },
                 RenderTransform {
-                    pos: DVec3::new(141., 51., 65.),
-                    rot: Rotor3::identity(),
-                    scl: Vec3::new(1.0, 2.0, 3.0),
+                    position: DVec3::new(141., 51., 65.),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::new(1.0, 2.0, 3.0),
                 },
                 RenderTransform {
-                    pos: DVec3::new(514., 277., 32.),
-                    rot: Rotor3::from_euler_angles(1.2, 2.5, 1.3),
-                    scl: Vec3::new(1.0, 2.0, 3.0),
+                    position: DVec3::new(514., 277., 32.),
+                    rotation: Rotor3::from_euler_angles(1.2, 2.5, 1.3),
+                    scale: Vec3::new(1.0, 2.0, 3.0),
                 },
             ],
             [B(569.0), B(12345.0), B(54321.0), B(1956.0), B(2024.21)],
