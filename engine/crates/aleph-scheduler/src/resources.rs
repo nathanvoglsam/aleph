@@ -57,6 +57,11 @@ impl Resources {
             .insert(T::ID, UnsafeCell::new(ResourceBox::new(v)));
     }
 
+    pub fn take<T: Resource>(&mut self) -> Option<T> {
+        let cell = self.resources.remove(&T::ID)?;
+        cell.into_inner().into_inner::<T>()
+    }
+
     pub fn clear(&mut self) {
         self.resources.clear();
     }
@@ -89,6 +94,17 @@ impl ResourceBox {
             },
             Err(_) => handle_alloc_error(layout),
         }
+    }
+
+    pub(crate) fn into_inner<T: Resource>(mut self) -> Option<T> {
+        let object = self.get_ptr::<T>()?;
+        let out = unsafe { object.read() };
+
+        // Prevent the box from calling a drop function by nulling the drop fn. Leave freeing the
+        // buffer to the drop implementation
+        self.desc.destructor = None;
+
+        Some(out)
     }
 
     pub(crate) fn get_ref<T: Resource>(&self) -> Option<&T> {

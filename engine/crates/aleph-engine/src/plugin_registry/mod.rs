@@ -29,6 +29,8 @@
 
 use aleph_config::{ConfigRunner, RunConfigError};
 pub use interfaces::any;
+use interfaces::ecs::World;
+use interfaces::schedule::WorldResource;
 use interfaces::scheduler::{Resources, Schedule, Stage};
 
 mod builder;
@@ -66,6 +68,9 @@ pub struct PluginRegistry {
 
     /// The resource store, accessed by the scheduler
     resources: Option<Box<Resources>>,
+
+    /// The core ECS world that constitures the 'game world'
+    world: Option<Box<World>>,
 }
 
 impl PluginRegistry {
@@ -86,6 +91,7 @@ impl PluginRegistry {
             interfaces: std::mem::take(&mut self.interfaces),
             schedule: self.schedule.take().unwrap(),
             resources: self.resources.take().unwrap(),
+            world: self.world.take().unwrap(),
         };
 
         self.init_order.iter().cloned().for_each(|index| {
@@ -157,6 +163,7 @@ impl PluginRegistry {
         self.interfaces = accessor.interfaces;
         self.schedule = Some(accessor.schedule);
         self.resources = Some(accessor.resources);
+        self.world = Some(accessor.world);
     }
 
     fn load_configs(plugins: &mut [PluginEntry]) {
@@ -214,6 +221,9 @@ impl PluginRegistry {
     pub fn run(&mut self) {
         let mut schedule = self.schedule.take().unwrap();
         let mut resources = self.resources.take().unwrap();
+        let world = self.world.take().unwrap();
+
+        resources.insert::<WorldResource>(WorldResource(*world));
 
         while !self.quit_handle.quit_requested() {
             aleph_profile::scope!("aleph::OnUpdate");
@@ -223,10 +233,14 @@ impl PluginRegistry {
             aleph_profile::finish_frame!();
         }
 
+        let world = resources.take::<WorldResource>().unwrap();
+        let world = Box::new(world.0); // Re-box for compatibility. Perf isn't too important here
+
         // self.plugins = plugins;
         //self.interfaces = accessor.interfaces;
         self.schedule = Some(schedule);
         self.resources = Some(resources);
+        self.world = Some(world);
     }
 }
 
@@ -241,6 +255,7 @@ impl Drop for PluginRegistry {
             interfaces: std::mem::take(&mut self.interfaces),
             schedule: self.schedule.take().unwrap(),
             resources: self.resources.take().unwrap(),
+            world: self.world.take().unwrap(),
         };
 
         self.exit_order.iter().cloned().for_each(|v| {
@@ -284,6 +299,7 @@ struct RegistryAccessor {
     interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
     schedule: Box<Schedule>,
     resources: Box<Resources>,
+    world: Box<World>,
 }
 
 impl<'a> IRegistryAccessor<'a> for RegistryAccessor {
@@ -305,6 +321,10 @@ impl<'a> IRegistryAccessor<'a> for RegistryAccessor {
 
     fn schedule(&mut self) -> &mut Schedule {
         &mut self.schedule
+    }
+
+    fn world(&mut self) -> &mut World {
+        &mut self.world
     }
 }
 

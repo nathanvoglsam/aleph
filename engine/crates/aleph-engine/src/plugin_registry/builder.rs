@@ -30,6 +30,8 @@
 use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
 
+use interfaces::components;
+use interfaces::ecs::{World, WorldOptions};
 use interfaces::schedule::CoreStage;
 use interfaces::scheduler::{Resources, Schedule, SystemSchedule};
 
@@ -83,6 +85,11 @@ impl PluginRegistryBuilder {
         schedule.add_stage(CoreStage::PostUpdate.into(), SystemSchedule::default());
         schedule.add_stage(CoreStage::Render.into(), SystemSchedule::default());
 
+        let mut world = Box::new(World::new(WorldOptions::default())).unwrap();
+        world.register::<components::Transform>();
+        world.register::<components::Camera>();
+        world.register::<components::PointLight>();
+
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {
             plugins: self.plugins,
@@ -92,6 +99,7 @@ impl PluginRegistryBuilder {
             exit_order,
             schedule: Some(Box::new(schedule)),
             resources: Some(Box::new(Resources::default())),
+            world: Some(Box::new(world)),
         };
 
         // Initialize the plugins

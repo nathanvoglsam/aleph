@@ -27,7 +27,12 @@
 // SOFTWARE.
 //
 
+use ecs::World;
 use label::{make_label, Label};
+use object_system::unsafe_impl_iobject;
+
+pub struct WorldResource(pub World);
+unsafe_impl_iobject!(WorldResource, "019237c4-a130-7c61-9671-b99ba8563f22");
 
 /// This enum provides a [`Label`] type that names the core engine execution stages.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]

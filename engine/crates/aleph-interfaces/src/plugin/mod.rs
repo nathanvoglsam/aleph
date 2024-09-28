@@ -30,6 +30,7 @@
 use std::any::TypeId;
 
 use any::IAny;
+use ecs::World;
 use scheduler::{Resources, Schedule};
 
 use crate::any::AnyArc;
@@ -166,6 +167,9 @@ pub trait IRegistryAccessor<'a>: 'a {
 
     /// Access the engine's core [`Schedule`] to allow the plugin to register systems.
     fn schedule(&mut self) -> &mut Schedule;
+
+    /// Access the engine's core [`Schedule`] to allow the plugin to register systems.
+    fn world(&mut self) -> &mut World;
 }
 
 impl<'a> dyn IRegistryAccessor<'a> {
