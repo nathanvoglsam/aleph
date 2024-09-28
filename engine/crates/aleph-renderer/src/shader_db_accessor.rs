@@ -33,11 +33,11 @@ use aleph_shader_db::*;
 // A wrapper struct
 pub struct ShaderDatabaseAccessor<'a> {
     loader: fn(shader_db: &'a dyn IShaderDatabase, &str) -> Option<ApiShaderEntry<'a>>,
-    shader_db: &'a dyn IShaderDatabase,
+    shader_db: &'a (dyn IShaderDatabase + Send + Sync),
 }
 
 impl<'a> ShaderDatabaseAccessor<'a> {
-    pub fn new(device: &dyn IDevice, shader_db: &'a dyn IShaderDatabase) -> Self {
+    pub fn new(device: &dyn IDevice, shader_db: &'a (dyn IShaderDatabase + Send + Sync)) -> Self {
         let backend = device.get_backend_api();
         let loader = match backend {
             BackendAPI::Vulkan => vulkan_loader,

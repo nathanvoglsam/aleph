@@ -43,13 +43,13 @@ use crate::{
     ShaderDatabaseAccessor, TextureHandle, TextureLoader, TexturePool, TextureUploadSource,
 };
 
-pub trait IRenderSurface: Any {
+pub trait IRenderSurface: Any + Send + Sync {
     fn get_render_extent(&self) -> Extent2D;
     fn get_swap_chain(&self) -> &dyn ISwapChain;
     fn needs_rebuild(&self) -> bool;
 }
 
-pub trait IRenderPlane: Any {
+pub trait IRenderPlane: Any + Send + Sync {
     fn register_passes(
         &self,
         frame_graph: &mut FrameGraphBuilder<GraphArgs>,
@@ -383,7 +383,7 @@ struct RendererConfig {
 }
 
 struct SwapManager {
-    surface: Box<dyn IRenderSurface>,
+    surface: Box<dyn IRenderSurface + Send + Sync>,
     images: Vec<AnyArc<dyn ITexture>>,
     desc: TextureDesc<'static>,
     needs_rebuild: bool,

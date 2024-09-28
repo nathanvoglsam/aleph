@@ -77,7 +77,7 @@ interfaces::any::declare_interfaces!(EguiContextProvider, [IEguiContextProvider]
 /// A renderer can choose to support egui by checking for this interface, and using it to get the
 /// current frame's paint jobs.
 ///
-pub trait IEguiRenderData: IAny {
+pub trait IEguiRenderData: IAny + Send + Sync {
     /// Replace the old paint job data with the newly provided data.
     fn put(&self, data: RenderData);
 
