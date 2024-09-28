@@ -30,17 +30,19 @@
 use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
-use aleph_math::{DVec3, Mat4, Rotor3, Vec3};
+use aleph_math::{Mat4, Vec3};
 use aleph_pin_board::ScopedParamBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
+use interfaces::components::Transform;
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
-use interfaces::schedule::CoreStage;
+use interfaces::schedule::{CoreStage, WorldResource};
+use interfaces::scheduler::Res;
 use serde::Deserialize;
 
 use aleph_renderer::pass::GraphArgs;
@@ -155,51 +157,8 @@ impl IPlugin for PluginRender {
         }
         renderer.frames_in_flight(config.frames_in_flight as usize);
 
-        let renderer = renderer.build().unwrap();
-
         let mut render_scene = RenderScene::new();
-        render_scene.push(
-            RenderTransform {
-                position: DVec3::new(0.0, 0.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            StaticMesh,
-        );
-        render_scene.push(
-            RenderTransform {
-                position: DVec3::new(-3.0, 0.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            StaticMesh,
-        );
-        render_scene.push(
-            RenderTransform {
-                position: DVec3::new(3.0, 0.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            StaticMesh,
-        );
-        render_scene.push(
-            RenderTransform {
-                position: DVec3::new(0.0, 3.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            StaticMesh,
-        );
-        render_scene.push(
-            RenderTransform {
-                position: DVec3::new(0.0, -3.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            StaticMesh,
-        );
-
-        let mut renderer = renderer;
+        let mut renderer = renderer.build().unwrap();
         let mut egui_data = render_data.map(|v| EguiData {
             font_texture: EguiFontTexture::new(),
             render_data: v,
@@ -208,8 +167,22 @@ impl IPlugin for PluginRender {
         registry.schedule().add_exclusive_at_start_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
-            move || {
+            move |world: Res<WorldResource>| {
                 device.garbage_collect();
+
+                render_scene.clear();
+
+                let query = world.0.query_checked::<&Transform>();
+                for (_id, c) in query {
+                    render_scene.push(
+                        RenderTransform {
+                            position: c.position,
+                            rotation: c.rotation,
+                            scale: c.scale,
+                        },
+                        StaticMesh,
+                    );
+                }
 
                 board.scope(|board| {
                     let elapsed = frame_timer.elapsed_time();

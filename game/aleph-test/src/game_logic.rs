@@ -37,7 +37,9 @@ use aleph::interfaces::plugin::{
 };
 use aleph::interfaces::schedule::CoreStage;
 use aleph::Engine;
+use aleph_engine::interfaces::components::Transform;
 use aleph_engine::interfaces::label::make_label;
+use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
 
 struct PluginGameLogic();
 
@@ -62,6 +64,33 @@ impl IPlugin for PluginGameLogic {
         let mut colour_test = egui_demo_lib::ColorTest::default();
 
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
+
+        let world = registry.world();
+        let _id = world.extend(([Transform {
+            position: DVec3::new(0.0, 0.0, -4.0),
+            rotation: Rotor3::identity(),
+            scale: Vec3::one(),
+        }],));
+        let _id = world.extend(([Transform {
+            position: DVec3::new(-3.0, 0.0, -3.0),
+            rotation: Rotor3::identity(),
+            scale: Vec3::one(),
+        }],));
+        let _id = world.extend(([Transform {
+            position: DVec3::new(3.0, 0.0, -3.0),
+            rotation: Rotor3::identity(),
+            scale: Vec3::one(),
+        }],));
+        let _id = world.extend(([Transform {
+            position: DVec3::new(0.0, 3.0, -3.0),
+            rotation: Rotor3::identity(),
+            scale: Vec3::one(),
+        }],));
+        let _id = world.extend(([Transform {
+            position: DVec3::new(0.0, -3.0, -3.0),
+            rotation: Rotor3::identity(),
+            scale: Vec3::one(),
+        }],));
 
         registry.schedule().add_exclusive_at_start_system_to_stage(
             CoreStage::Update.into(),
