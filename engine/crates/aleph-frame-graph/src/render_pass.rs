@@ -34,7 +34,7 @@ use aleph_rhi_api::*;
 use crate::FrameGraphResources;
 
 pub trait PassArgs {
-    type Args<'a>;
+    type Args<'a>: Send + Sync;
 }
 
 impl PassArgs for () {
