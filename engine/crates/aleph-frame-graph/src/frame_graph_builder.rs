@@ -201,7 +201,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     }
 
     pub fn add_pass<
-        ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A::Args<'_>) + Send + 'static,
+        ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A::Args<'_>) + Send + Sync + 'static,
         SetupFn: FnOnce(&mut ResourceRegistry<A>) -> ExecFn,
     >(
         &mut self,

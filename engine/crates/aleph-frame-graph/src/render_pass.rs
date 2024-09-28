@@ -41,7 +41,7 @@ impl PassArgs for () {
     type Args<'a> = ();
 }
 
-pub trait IRenderPass<A: PassArgs>: Send + 'static {
+pub trait IRenderPass<A: PassArgs>: Send + Sync + 'static {
     fn execute(
         &mut self,
         encoder: &mut dyn IGeneralEncoder,
@@ -67,7 +67,8 @@ impl<ExecFn> CallbackRenderPass<ExecFn> {
 
 impl<A: PassArgs, ExecFn> IRenderPass<A> for CallbackRenderPass<ExecFn>
 where
-    ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A::Args<'_>) + Send + 'static,
+    ExecFn:
+        FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A::Args<'_>) + Send + Sync + 'static,
 {
     fn execute<'a>(
         &mut self,
