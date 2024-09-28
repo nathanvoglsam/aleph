@@ -78,6 +78,13 @@ pub struct BufferUploadSource {
     pub(crate) data: NonNull<[u8]>,
 }
 
+// Safety: It's unsafe to construct a `BufferUploadSource` where 'data' aliases. We only need the
+//         ptr because the struct is, as far as Rust can tell, self-referential. The address is in
+//         mapped buffer memory and not in the struct itself, but the lifetime is tied to the
+//         IBuffer.
+unsafe impl Send for BufferUploadSource {}
+unsafe impl Sync for BufferUploadSource {}
+
 impl BufferUploadSource {
     /// Constructs a new upload source from the given parameters. Includes some debug validation to
     /// try and detect mistakes.
