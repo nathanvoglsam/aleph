@@ -686,14 +686,12 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         pass: T,
         skip: bool,
     ) {
-        let name = self.arena.alloc_slice_copy(name.to_bytes());
+        let name = self.arena.copy_slice(name.to_bytes());
         let name = NStr::from_bytes(name).unwrap();
         let name = NonNull::from(name);
 
-        let pass = self.arena.alloc(pass);
+        let pass = self.arena.put(pass);
         let pass = NonNull::from(pass);
-
-        DropLink::append_drop_list(&self.arena, &mut self.drop_head, pass);
 
         let abi = RenderPassAbi::new(pass);
         let pass = RenderPass { abi, name, skip };
@@ -1704,7 +1702,8 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                     } else {
                         // Link to every read access scheduled in the previous read
                         // batch
-                        let mut v = BVec::with_capacity_in(previous_reads.len(), self.arena.allocator());
+                        let mut v =
+                            BVec::with_capacity_in(previous_reads.len(), self.arena.allocator());
                         v.extend(previous_reads.drain(..).map(|v| reads[v].0.render_pass));
                         v.leak()
                     };
