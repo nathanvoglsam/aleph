@@ -34,6 +34,7 @@ use aleph_label::Label;
 use crate::system::System;
 use crate::system_schedule::access_descriptor::SystemAccessDescriptor;
 use crate::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
+use crate::ScheduleArgs;
 
 ///
 /// Internal container for pairing a boxed system with some metadata used to schedule the system
@@ -49,9 +50,9 @@ pub struct SystemBox<T> {
     pub edges: GraphEdges,
 }
 
-impl SystemBox<SystemCell> {
-    pub fn new<S: System<In = (), Out = ()> + Send + Sync>(label: Label, system: S) -> Self {
-        assert!(SystemCell::is_lock_free());
+impl<A: ScheduleArgs> SystemBox<SystemCell<A>> {
+    pub fn new<S: System<In = A, Out = ()> + Send + Sync>(label: Label, system: S) -> Self {
+        assert!(SystemCell::<A>::is_lock_free());
         Self {
             system: SystemCell::new(Some(Box::new(Box::new(system)))),
             access: SystemAccessDescriptor::new(label),
@@ -60,8 +61,8 @@ impl SystemBox<SystemCell> {
     }
 }
 
-impl SystemBox<ExclusiveSystemCell> {
-    pub fn new_exclusive<S: System<In = (), Out = ()>>(label: Label, system: S) -> Self {
+impl<A: ScheduleArgs> SystemBox<ExclusiveSystemCell<A>> {
+    pub fn new_exclusive<S: System<In = A, Out = ()>>(label: Label, system: S) -> Self {
         Self {
             system: ExclusiveSystemCell::new(Some(Box::new(Box::new(system)))),
             access: SystemAccessDescriptor::new(label),

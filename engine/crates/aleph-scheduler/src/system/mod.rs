@@ -36,7 +36,7 @@ pub use system_access::{
 
 use std::any::Any;
 
-use crate::{AccessDescriptor, Resources};
+use crate::{AccessDescriptor, Resources, ScheduleArgs};
 
 use aleph_label::Label;
 
@@ -47,7 +47,7 @@ use aleph_label::Label;
 ///
 pub trait System: Any + 'static {
     /// An arbitrary type that can be passed into [`System::execute`].
-    type In;
+    type In: ScheduleArgs;
 
     /// The return type of the [`System::execute`] function.
     type Out;
@@ -99,11 +99,19 @@ pub trait System: Any + 'static {
     /// It is an error for [`System::execute`] to access data in any way that does not match what
     /// was declared with [`System::declare_access`]. Doing so will almost certainly cause undefined
     /// behavior.
-    unsafe fn execute(&mut self, input: Self::In, resources: &Resources) -> Self::Out;
+    unsafe fn execute(
+        &mut self,
+        input: &<Self::In as ScheduleArgs>::Args<'_>,
+        resources: &Resources,
+    ) -> Self::Out;
 
     /// A wrapper around [`System::execute`] that allows calling execute safely by enforcing that
     /// `world` is accessed through an exclusive borrow.
-    fn execute_safe(&mut self, input: Self::In, resources: &mut Resources) -> Self::Out {
+    fn execute_safe(
+        &mut self,
+        input: &<Self::In as ScheduleArgs>::Args<'_>,
+        resources: &mut Resources,
+    ) -> Self::Out {
         // SAFETY: This is safe per the requirements of context 1 as documented on the execute
         //         function. See the documentation of System::execute for more info.
         unsafe { self.execute(input, resources) }
@@ -192,7 +200,11 @@ impl<S: System> System for RunsBeforeSystem<S> {
     }
 
     #[inline]
-    unsafe fn execute(&mut self, input: Self::In, resources: &Resources) -> Self::Out {
+    unsafe fn execute(
+        &mut self,
+        input: &<Self::In as ScheduleArgs>::Args<'_>,
+        resources: &Resources,
+    ) -> Self::Out {
         self.s.execute(input, resources)
     }
 }
@@ -217,7 +229,11 @@ impl<S: System> System for RunsAfterSystem<S> {
     }
 
     #[inline]
-    unsafe fn execute(&mut self, input: Self::In, resources: &Resources) -> Self::Out {
+    unsafe fn execute(
+        &mut self,
+        input: &<Self::In as ScheduleArgs>::Args<'_>,
+        resources: &Resources,
+    ) -> Self::Out {
         self.s.execute(input, resources)
     }
 }

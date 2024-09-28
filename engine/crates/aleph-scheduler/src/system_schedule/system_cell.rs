@@ -33,71 +33,71 @@ use crossbeam::atomic::AtomicCell;
 
 use crate::system::System;
 use crate::system_schedule::access_descriptor::SystemAccessDescriptor;
-use crate::Resources;
+use crate::{Resources, ScheduleArgs};
 
 /// Type alias for a boxed system trait object
-pub type BoxedSystem = Box<dyn System<In = (), Out = ()> + Send + Sync>;
+pub type BoxedSystem<A> = Box<dyn System<In = A, Out = ()> + Send + Sync>;
 
 /// Type alias for a boxed system trait object
-pub type BoxedExclusiveSystem = Box<dyn System<In = (), Out = ()>>;
+pub type BoxedExclusiveSystem<A> = Box<dyn System<In = A, Out = ()>>;
 
 /// Type alias for the thread safe slot a system is stored in. The type is very verbose to write.
 ///
 /// We need to double box the system to make sizeof(Option<Box<BoxedSystem>>) == 8 so atomics can
 /// be used. Otherwise global locks would be used to send the systems and that's bad
-pub type SystemCell = AtomicCell<Option<Box<BoxedSystem>>>;
+pub type SystemCell<A> = AtomicCell<Option<Box<BoxedSystem<A>>>>;
 
 /// Type alias for the thread safe slot a system is stored in. The type is very verbose to write.
 ///
 /// We need to double box the system to make sizeof(Option<Box<BoxedSystem>>) == 8 so atomics can
 /// be used. Otherwise global locks would be used to send the systems and that's bad
-pub type ExclusiveSystemCell = Cell<Option<Box<BoxedExclusiveSystem>>>;
+pub type ExclusiveSystemCell<A> = Cell<Option<Box<BoxedExclusiveSystem<A>>>>;
 
 /// Generic wrapper for allowing to schedule different system streams with the same implementations
-pub trait GenericSystemCell {
+pub trait GenericSystemCell<A: ScheduleArgs> {
     fn declare_access(&self, access: &mut SystemAccessDescriptor);
 
-    unsafe fn execute(&self, resources: &Resources);
+    unsafe fn execute(&self, args: &A::Args<'_>, resources: &Resources);
 
-    fn execute_safe(&self, resources: &mut Resources);
+    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut Resources);
 }
 
-impl GenericSystemCell for SystemCell {
+impl<A: ScheduleArgs> GenericSystemCell<A> for SystemCell<A> {
     fn declare_access(&self, access: &mut SystemAccessDescriptor) {
         let mut system = self.take().unwrap();
         system.declare_access(access);
         self.store(Some(system));
     }
 
-    unsafe fn execute(&self, resources: &Resources) {
+    unsafe fn execute(&self, args: &A::Args<'_>, resources: &Resources) {
         let mut system = self.take().unwrap();
-        system.execute((), resources);
+        system.execute(args, resources);
         self.store(Some(system));
     }
 
-    fn execute_safe(&self, resources: &mut Resources) {
+    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut Resources) {
         let mut system = self.take().unwrap();
-        system.execute_safe((), resources);
+        system.execute_safe(args, resources);
         self.store(Some(system));
     }
 }
 
-impl GenericSystemCell for ExclusiveSystemCell {
+impl<A: ScheduleArgs> GenericSystemCell<A> for ExclusiveSystemCell<A> {
     fn declare_access(&self, access: &mut SystemAccessDescriptor) {
         let mut system = self.take().unwrap();
         system.declare_access(access);
         self.set(Some(system))
     }
 
-    unsafe fn execute(&self, resources: &Resources) {
+    unsafe fn execute(&self, args: &A::Args<'_>, resources: &Resources) {
         let mut system = self.take().unwrap();
-        system.execute((), resources);
+        system.execute(args, resources);
         self.set(Some(system));
     }
 
-    fn execute_safe(&self, resources: &mut Resources) {
+    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut Resources) {
         let mut system = self.take().unwrap();
-        system.execute_safe((), resources);
+        system.execute_safe(args, resources);
         self.set(Some(system));
     }
 }

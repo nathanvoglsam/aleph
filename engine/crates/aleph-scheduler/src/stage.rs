@@ -32,20 +32,20 @@ use std::any::{Any, TypeId};
 use aleph_label::Label;
 use aleph_object_system::uuid::Uuid;
 
-use crate::{Resource, Resources};
+use crate::{Resource, Resources, ScheduleArgs};
 
 ///
 /// The interface expected of an execution stage
 ///
-pub trait Stage: Any + 'static {
+pub trait Stage<A: ScheduleArgs>: Any + 'static {
     /// This will be called by a scheduler exactly once during an execution cycle.
-    fn run(&mut self, resources: &mut Resources);
+    fn run(&mut self, args: &A::Args<'_>, resources: &mut Resources);
 }
 
-impl dyn Stage {
+impl<A: ScheduleArgs> dyn Stage<A> {
     /// A vendored in version of [`Any::is`]
     #[inline]
-    pub fn is<T: Stage>(&self) -> bool {
+    pub fn is<T: Stage<A>>(&self) -> bool {
         // Get `TypeId` of the type this function is instantiated with.
         let t = TypeId::of::<T>();
 
@@ -58,12 +58,12 @@ impl dyn Stage {
 
     /// A vendored in version of [`Any::downcast_ref`]
     #[inline]
-    pub fn downcast_ref<T: Stage>(&self) -> Option<&T> {
+    pub fn downcast_ref<T: Stage<A>>(&self) -> Option<&T> {
         if self.is::<T>() {
             // SAFETY: just checked whether we are pointing to the correct type, and we can rely on
             // that check for memory safety because we have implemented Any for all types; no other
             // impls can exist as they would conflict with our impl.
-            unsafe { Some(&*(self as *const dyn Stage as *const T)) }
+            unsafe { Some(&*(self as *const dyn Stage<A> as *const T)) }
         } else {
             None
         }
@@ -71,12 +71,12 @@ impl dyn Stage {
 
     /// A vendored in version of [`Any::downcast_mut`]
     #[inline]
-    pub fn downcast_mut<T: Stage>(&mut self) -> Option<&mut T> {
+    pub fn downcast_mut<T: Stage<A>>(&mut self) -> Option<&mut T> {
         if self.is::<T>() {
             // SAFETY: just checked whether we are pointing to the correct type, and we can rely on
             // that check for memory safety because we have implemented Any for all types; no other
             // impls can exist as they would conflict with our impl.
-            unsafe { Some(&mut *(self as *mut dyn Stage as *mut T)) }
+            unsafe { Some(&mut *(self as *mut dyn Stage<A> as *mut T)) }
         } else {
             None
         }

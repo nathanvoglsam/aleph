@@ -77,6 +77,14 @@ pub use resources::Resources;
 pub use stage::{AccessDescriptor, Stage};
 pub use system_schedule::SystemSchedule;
 
+pub trait ScheduleArgs: std::any::Any {
+    type Args<'a>: Send + Sync;
+}
+
+impl ScheduleArgs for () {
+    type Args<'a> = ();
+}
+
 ///
 /// Provides an interface for dynamically composing a set of executable code blocks into a sequence
 /// of stages. The order these stages are executed in is configurable at runtime.
@@ -86,12 +94,12 @@ pub use system_schedule::SystemSchedule;
 /// The API and most of the implementation of this struct is ripped from `bevy_ecs`. I don't think
 /// I can beat the API that `bevy_ecs` designed, so rather than trying to I just use it for myself.
 ///
-pub struct Schedule {
+pub struct Schedule<A: ScheduleArgs = ()> {
     /// A bump allocated arena used for storing the labels and stages.
     arena: Bump,
 
     /// Stores the execution stages along with the label they were registered with
-    stages: HashMap<Label, NonNull<dyn Stage>>,
+    stages: HashMap<Label, NonNull<dyn Stage<A>>>,
 
     /// The head of a linked list of all objects stored in the schedule's bump arena that need to
     /// be dropped when the Schedule is destroyed. This includes all the labels, stages and systems.
@@ -107,7 +115,7 @@ pub struct Schedule {
     run_criteria: RunCriteriaBox,
 }
 
-impl Default for Schedule {
+impl<A: ScheduleArgs> Default for Schedule<A> {
     fn default() -> Self {
         Self {
             arena: Default::default(),
@@ -119,7 +127,7 @@ impl Default for Schedule {
     }
 }
 
-impl Schedule {
+impl<A: ScheduleArgs> Schedule<A> {
     /// Sets the run criteria system for this schedule, replacing the old one if it existed.
     ///
     /// The run criteria system will be called when [`Schedule`] is used as a [`Stage`] inside
@@ -148,7 +156,7 @@ impl Schedule {
     /// This adds a single execution stage to the [`Schedule`] with the provided [`Label`]. The
     /// stage will be appended to the very end of the execution order, so it will run last.
     #[inline]
-    pub fn add_stage<S: Stage>(&mut self, label: Label, stage: S) -> &mut Self {
+    pub fn add_stage<S: Stage<A>>(&mut self, label: Label, stage: S) -> &mut Self {
         self.stage_order.push(label);
 
         let stage = self.arena.alloc(stage);
@@ -164,7 +172,7 @@ impl Schedule {
     /// This adds a single execution stage to the [`Schedule`] with the provided [`Label`]. The
     /// stage will be inserted into the execution immediately after the `target` stage.
     #[inline]
-    pub fn add_stage_after<S: Stage>(
+    pub fn add_stage_after<S: Stage<A>>(
         &mut self,
         target: Label,
         label: Label,
@@ -194,7 +202,7 @@ impl Schedule {
     /// This adds a single execution stage to the [`Schedule`] with the provided [`Label`]. The
     /// stage will be inserted into the execution immediately before the `target` stage.
     #[inline]
-    pub fn add_stage_before<S: Stage>(
+    pub fn add_stage_before<S: Stage<A>>(
         &mut self,
         target: Label,
         label: Label,
@@ -231,15 +239,15 @@ impl Schedule {
     #[inline]
     pub fn add_system_to_stage<
         Param,
-        T: System<In = (), Out = ()> + Send + Sync,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()> + Send + Sync,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         target: Label,
         label: Label,
         system: S,
     ) -> &mut Self {
-        self.stage(target, move |v: &mut SystemSchedule| {
+        self.stage(target, move |v: &mut SystemSchedule<A>| {
             v.add_system(label, system)
         })
     }
@@ -253,15 +261,15 @@ impl Schedule {
     #[inline]
     pub fn add_exclusive_at_start_system_to_stage<
         Param,
-        T: System<In = (), Out = ()>,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()>,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         target: Label,
         label: Label,
         system: S,
     ) -> &mut Self {
-        self.stage(target, move |v: &mut SystemSchedule| {
+        self.stage(target, move |v: &mut SystemSchedule<A>| {
             v.add_exclusive_at_start_system(label, system)
         })
     }
@@ -275,15 +283,15 @@ impl Schedule {
     #[inline]
     pub fn add_exclusive_at_end_system_to_stage<
         Param,
-        T: System<In = (), Out = ()>,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()>,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         target: Label,
         label: Label,
         system: S,
     ) -> &mut Self {
-        self.stage(target, move |v: &mut SystemSchedule| {
+        self.stage(target, move |v: &mut SystemSchedule<A>| {
             v.add_exclusive_at_end_system(label, system)
         })
     }
@@ -295,7 +303,7 @@ impl Schedule {
     ///
     /// Will panic if the stage is not present or does not match the type `T`
     #[inline]
-    pub fn stage<T: Stage, F: FnOnce(&mut T) -> &mut T>(
+    pub fn stage<T: Stage<A>, F: FnOnce(&mut T) -> &mut T>(
         &mut self,
         label: Label,
         func: F,
@@ -309,7 +317,7 @@ impl Schedule {
 
     /// Get's a down-casted reference to the stage registered with the [`Label`] provided in `label`
     #[inline]
-    pub fn get_stage<T: Stage>(&self, label: Label) -> Option<&T> {
+    pub fn get_stage<T: Stage<A>>(&self, label: Label) -> Option<&T> {
         self.stages
             .get(&label)
             .and_then(|stage| unsafe { stage.as_ref().downcast_ref::<T>() })
@@ -317,7 +325,7 @@ impl Schedule {
 
     /// Get's a down-casted reference to the stage registered with the [`Label`] provided in `label`
     #[inline]
-    pub fn get_stage_mut<T: Stage>(&mut self, label: Label) -> Option<&mut T> {
+    pub fn get_stage_mut<T: Stage<A>>(&mut self, label: Label) -> Option<&mut T> {
         self.stages
             .get_mut(&label)
             .and_then(|stage| unsafe { stage.as_mut().downcast_mut::<T>() })
@@ -326,19 +334,19 @@ impl Schedule {
     /// Unconditionally (i.e, the run criteria system is **not** called) performs a single execution
     /// run of the [`Schedule`]
     #[inline]
-    pub fn run_once(&mut self, resources: &mut Resources) {
+    pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
         for label in self.stage_order.iter() {
             let stage = self.stages.get_mut(label).unwrap();
             unsafe {
                 aleph_profile::scope!("aleph::ExecScope", label);
-                stage.as_mut().run(resources);
+                stage.as_mut().run(args, resources);
             }
         }
     }
 
     /// Iterates over all of schedule's stages and their labels, in execution order.
     #[inline]
-    pub fn iter_stages(&self) -> impl Iterator<Item = (Label, &dyn Stage)> {
+    pub fn iter_stages(&self) -> impl Iterator<Item = (Label, &dyn Stage<A>)> {
         self.stage_order
             .iter()
             .map(move |label| unsafe { (*label, self.stages[&label].as_ref()) })
@@ -354,8 +362,8 @@ impl Schedule {
     }
 }
 
-impl Stage for Schedule {
-    fn run(&mut self, resources: &mut Resources) {
+impl<A: ScheduleArgs> Stage<A> for Schedule<A> {
+    fn run(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
         // First we need to check if the schedule's run criteria is met
         if let Some(system) = self.run_criteria.system.as_mut() {
             // Initialize the criteria system if it hasn't already been
@@ -366,17 +374,17 @@ impl Stage for Schedule {
 
             // Execute the system and bail if it decides we should not run the schedule
             let system = unsafe { system.as_mut() };
-            if system.execute_safe((), resources) == ShouldRun::No {
+            if system.execute_safe(&(), resources) == ShouldRun::No {
                 return;
             }
         }
 
         // If we pass the above check then we can continue on and execute the schedule
-        self.run_once(resources);
+        self.run_once(args, resources);
     }
 }
 
-impl Drop for Schedule {
+impl<A: ScheduleArgs> Drop for Schedule<A> {
     fn drop(&mut self) {
         // Safety: Drops all the objects that were allocated from the bump arena by walking the
         //         linked list we build while adding them to the schedule.

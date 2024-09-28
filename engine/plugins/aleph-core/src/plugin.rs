@@ -109,7 +109,7 @@ impl IPlugin for PluginCore {
         let mut schedule = schedule_cell.get();
 
         let mut resources = Resources::new();
-        schedule.run(&mut resources);
+        schedule.run(&(), &mut resources);
     }
 }
 

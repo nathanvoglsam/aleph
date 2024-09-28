@@ -30,6 +30,7 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_label::Label;
@@ -41,10 +42,9 @@ use rayon::prelude::*;
 use crate::system::{IntoSystem, System};
 use crate::system_schedule::system_box::SystemBox;
 use crate::system_schedule::system_cell::{ExclusiveSystemCell, GenericSystemCell, SystemCell};
-use crate::Resources;
+use crate::{Resources, ScheduleArgs};
 
-#[derive(Default)]
-pub struct SystemChannel<T: GenericSystemCell> {
+pub struct SystemChannel<A, T> {
     /// Stores all systems in the schedule
     pub systems: Vec<SystemBox<T>>,
 
@@ -54,13 +54,26 @@ pub struct SystemChannel<T: GenericSystemCell> {
 
     /// This caches the list of root tasks where execution should start from
     pub root_systems: Vec<usize>,
+
+    _phantom: PhantomData<A>,
 }
 
-impl SystemChannel<SystemCell> {
+impl<A, T> Default for SystemChannel<A, T> {
+    fn default() -> Self {
+        Self {
+            systems: Default::default(),
+            system_label_map: Default::default(),
+            root_systems: Default::default(),
+            _phantom: Default::default(),
+        }
+    }
+}
+
+impl<A: ScheduleArgs> SystemChannel<A, SystemCell<A>> {
     pub fn add_system<
         Param,
-        T: System<In = (), Out = ()> + Send + Sync,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()> + Send + Sync,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         label: Label,
@@ -78,11 +91,11 @@ impl SystemChannel<SystemCell> {
     }
 }
 
-impl SystemChannel<ExclusiveSystemCell> {
+impl<A: ScheduleArgs> SystemChannel<A, ExclusiveSystemCell<A>> {
     pub fn add_system<
         Param,
-        T: System<In = (), Out = ()>,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()>,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         label: Label,
@@ -101,8 +114,8 @@ impl SystemChannel<ExclusiveSystemCell> {
     }
 }
 
-impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
-    pub fn execute_parallel(&mut self, resources: &mut Resources) {
+impl<A: ScheduleArgs, C: GenericSystemCell<A> + Send + Sync> SystemChannel<A, C> {
+    pub fn execute_parallel(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
         /// Struct that holds data that needs ownership transferred to the thread that executes the
         /// matching system
         struct WorkerPayload {
@@ -136,7 +149,8 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             .collect();
 
         // This handles executing a system, then recursively executing the successive tasks
-        fn exec_task<T: GenericSystemCell + Send + Sync>(
+        fn exec_task<A: ScheduleArgs, T: GenericSystemCell<A> + Send + Sync>(
+            args: &A::Args<'_>,
             systems: &[SystemBox<T>],
             done: &[AtomicBool],
             payloads: &[PayloadCell],
@@ -161,7 +175,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             unsafe {
                 let system = &systems[system_index];
                 aleph_profile::scope!("aleph::ExecSystem", system.access.label);
-                system.system.execute(resources);
+                system.system.execute(args, resources);
             }
 
             // Update the "done" flag now that the system has executed
@@ -183,7 +197,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
                         .copied()
                         .all(|predecessor| done[predecessor].load(Ordering::Relaxed))
                     {
-                        exec_task(systems, done, payloads, resources, successor);
+                        exec_task(args, systems, done, payloads, resources, successor);
                     }
                 });
 
@@ -198,7 +212,7 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
             .par_iter()
             .copied()
             .for_each(|system_index| {
-                exec_task(&systems, &done, &payloads, resources, system_index);
+                exec_task(args, &systems, &done, &payloads, resources, system_index);
             });
 
         self.systems = systems;
@@ -208,8 +222,8 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
     }
 }
 
-impl<C: GenericSystemCell> SystemChannel<C> {
-    pub fn execute_exclusive(&mut self, resources: &mut Resources) {
+impl<A: ScheduleArgs, C: GenericSystemCell<A>> SystemChannel<A, C> {
+    pub fn execute_exclusive(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
         // SoA list of flags that denote whether the matching task has completed, indexed in
         // parallel with self.systems
         let mut done: Vec<bool> = (0..self.systems.len()).map(|_| false).collect();
@@ -240,7 +254,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
                 {
                     let system = &self.systems[system_index];
                     aleph_profile::scope!("aleph::ExecSystem", system.access.label);
-                    system.system.execute_safe(resources);
+                    system.system.execute_safe(args, resources);
                 }
 
                 // Update the "done" flag now that the system has executed

@@ -69,7 +69,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
 use crate::system::{IntoSystem, System};
-use crate::{AccessDescriptor, Resource, Resources};
+use crate::{AccessDescriptor, Resource, Resources, ScheduleArgs};
 
 // ============================================================================================== //
 
@@ -222,7 +222,11 @@ impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> System
     }
 
     #[inline]
-    unsafe fn execute(&mut self, _input: Self::In, resources: &Resources) -> Self::Out {
+    unsafe fn execute(
+        &mut self,
+        _input: &<Self::In as ScheduleArgs>::Args<'_>,
+        resources: &Resources,
+    ) -> Self::Out {
         self.f.run(self.state.as_mut().unwrap(), resources)
     }
 }
@@ -247,7 +251,11 @@ impl<T: FnMut() + 'static> System for T {
 
     fn declare_access(&mut self, _access: &mut dyn AccessDescriptor) {}
 
-    unsafe fn execute(&mut self, _input: Self::In, _resources: &Resources) -> Self::Out {
+    unsafe fn execute(
+        &mut self,
+        _input: &<Self::In as ScheduleArgs>::Args<'_>,
+        _resources: &Resources,
+    ) -> Self::Out {
         self()
     }
 }

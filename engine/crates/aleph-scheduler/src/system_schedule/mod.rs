@@ -37,28 +37,38 @@ use aleph_label::Label;
 use crate::system::{IntoSystem, System};
 use crate::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
 use crate::system_schedule::system_channel::SystemChannel;
-use crate::{Resources, Stage};
+use crate::{Resources, ScheduleArgs, Stage};
 
-#[derive(Default)]
-pub struct SystemSchedule {
+pub struct SystemSchedule<A: ScheduleArgs> {
     /// Systems and graph for single threaded systems that runs before the parallel phase
-    exclusive_at_start: SystemChannel<ExclusiveSystemCell>,
+    exclusive_at_start: SystemChannel<A, ExclusiveSystemCell<A>>,
 
     /// Systems and graph for the main parallel system phase
-    parallel_systems: SystemChannel<SystemCell>,
+    parallel_systems: SystemChannel<A, SystemCell<A>>,
 
     /// Systems and graph for the single threaded systems that runs after the parallel phase
-    exclusive_at_end: SystemChannel<ExclusiveSystemCell>,
+    exclusive_at_end: SystemChannel<A, ExclusiveSystemCell<A>>,
 
     /// A flag used to declare if the
     dirty: bool,
 }
 
-impl SystemSchedule {
+impl<A: ScheduleArgs> Default for SystemSchedule<A> {
+    fn default() -> Self {
+        Self {
+            exclusive_at_start: Default::default(),
+            parallel_systems: Default::default(),
+            exclusive_at_end: Default::default(),
+            dirty: Default::default(),
+        }
+    }
+}
+
+impl<A: ScheduleArgs> SystemSchedule<A> {
     pub fn add_exclusive_at_end_system<
         Param,
-        T: System<In = (), Out = ()>,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()>,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         label: Label,
@@ -71,8 +81,8 @@ impl SystemSchedule {
 
     pub fn add_exclusive_at_start_system<
         Param,
-        T: System<In = (), Out = ()>,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()>,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         label: Label,
@@ -85,8 +95,8 @@ impl SystemSchedule {
 
     pub fn add_system<
         Param,
-        T: System<In = (), Out = ()> + Send + Sync,
-        S: IntoSystem<(), (), Param, System = T>,
+        T: System<In = A, Out = ()> + Send + Sync,
+        S: IntoSystem<A, (), Param, System = T>,
     >(
         &mut self,
         label: Label,
@@ -97,21 +107,21 @@ impl SystemSchedule {
         self
     }
 
-    pub fn run_once(&mut self, resources: &mut Resources) {
+    pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
         self.check_dirty();
-        self.exclusive_at_start.execute_exclusive(resources);
-        self.parallel_systems.execute_parallel(resources);
-        self.exclusive_at_end.execute_exclusive(resources);
+        self.exclusive_at_start.execute_exclusive(args, resources);
+        self.parallel_systems.execute_parallel(args, resources);
+        self.exclusive_at_end.execute_exclusive(args, resources);
     }
 }
 
-impl Stage for SystemSchedule {
-    fn run(&mut self, resources: &mut Resources) {
-        self.run_once(resources)
+impl<A: ScheduleArgs> Stage<A> for SystemSchedule<A> {
+    fn run(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
+        self.run_once(args, resources)
     }
 }
 
-impl SystemSchedule {
+impl<A: ScheduleArgs> SystemSchedule<A> {
     /// Checks if the system set is marked as dirty. If so it will automatically rebuild the
     /// execution graph as it will now be out of date compared to the
     fn check_dirty(&mut self) {
