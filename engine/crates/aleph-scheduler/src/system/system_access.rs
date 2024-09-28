@@ -196,7 +196,7 @@ impl<'a, T: Resource> SystemParamFetch<'a> for ResMutState<T> {
 /// This is essentially just a wrapper around `FnMut(Params)` that allows setting up the parameters
 /// for the underlying function before calling said function.
 #[allow(clippy::missing_safety_doc)]
-pub trait SystemParamFunction<Param: SystemParam>: Send + Sync + 'static {
+pub trait SystemParamFunction<Param: SystemParam>: 'static {
     unsafe fn run(&mut self, state: &mut Param::Fetch, resources: &Resources);
 }
 
@@ -266,7 +266,7 @@ impl<T: FnMut() + 'static> System for T {
 macro_rules! impl_system_function {
     ($($param: ident),*) => {
         #[allow(non_snake_case)]
-        impl<Func: ::std::marker::Send + ::std::marker::Sync + 'static, $($param: $crate::SystemParam),*> $crate::SystemParamFunction<($($param,)*)> for Func
+        impl<Func: 'static, $($param: $crate::SystemParam),*> $crate::SystemParamFunction<($($param,)*)> for Func
         where
         for <'a> &'a mut Func:
                 FnMut($($param),*) +
