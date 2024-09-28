@@ -31,7 +31,7 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::ptr::NonNull;
 
-pub trait ItemIdentifier: Any {
+pub trait BoardParamId: Any {
     type Output<'a>: Send + Sync + 'a;
 }
 
@@ -73,7 +73,7 @@ pub struct BoardScope<'a> {
 impl<'a> BoardScope<'a> {
     /// Publishes a new item into the [PinBoard]. Once published all future calls to [PinBoard::get]
     /// will yield the item we just published, until another item is published in its place.
-    pub fn publish<'s, 'i: 's, T: ItemIdentifier>(&'s mut self, v: T::Output<'i>) {
+    pub fn publish<'s, 'i: 's, T: BoardParamId>(&'s mut self, v: T::Output<'i>) {
         // Store the object we're storing into the arena and get the reference as a type-erased
         // pointer
         let v = unsafe { self.v.arena.emplace_unchecked::<T::Output<'i>>().value(v) };
@@ -84,7 +84,7 @@ impl<'a> BoardScope<'a> {
     }
 
     /// Look up a published item by its type. May return None if no value has been published yet.
-    pub fn get<'s, T: ItemIdentifier>(&'s self) -> Option<&T::Output<'s>> {
+    pub fn get<'s, T: BoardParamId>(&'s self) -> Option<&T::Output<'s>> {
         let t = TypeId::of::<T>();
         let ptr = self.v.table.get(&t).copied();
 
@@ -108,26 +108,26 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
 
-    use crate::scoped::ItemIdentifier;
+    use crate::scoped::BoardParamId;
     use crate::scoped::ScopedParamBoard;
 
     struct IdentA;
-    impl ItemIdentifier for IdentA {
+    impl BoardParamId for IdentA {
         type Output<'a> = usize;
     }
 
     struct IdentB;
-    impl ItemIdentifier for IdentB {
+    impl BoardParamId for IdentB {
         type Output<'a> = &'a usize;
     }
 
     struct IdentC;
-    impl ItemIdentifier for IdentC {
+    impl BoardParamId for IdentC {
         type Output<'a> = &'a mut usize;
     }
 
     struct IdentD;
-    impl ItemIdentifier for IdentD {
+    impl BoardParamId for IdentD {
         type Output<'a> = D;
     }
 

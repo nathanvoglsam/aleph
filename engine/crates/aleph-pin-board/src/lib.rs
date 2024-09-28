@@ -29,7 +29,7 @@
 
 mod scoped;
 
-pub use scoped::{BoardScope, ItemIdentifier, ScopedParamBoard};
+pub use scoped::{BoardParamId, BoardScope, ScopedParamBoard};
 
 use std::any::{Any, TypeId};
 use std::collections::HashMap;

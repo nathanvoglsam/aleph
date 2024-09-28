@@ -31,7 +31,7 @@ use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
-use aleph_pin_board::{ItemIdentifier, PinBoard};
+use aleph_pin_board::{BoardParamId, PinBoard};
 use aleph_renderer::pass::{GraphArgs, GraphSwapImageInfo};
 use aleph_renderer::{RenderPlaneOutput, ShaderDatabaseAccessor, TextureHandle};
 use aleph_rhi_api::*;
@@ -52,7 +52,7 @@ pub struct EguiPassContext {
     pub render_data: RenderData,
 }
 
-impl ItemIdentifier for EguiPassContext {
+impl BoardParamId for EguiPassContext {
     type Output<'a> = Self;
 }
 
