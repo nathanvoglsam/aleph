@@ -521,7 +521,7 @@ pub trait IQueueDebug: IQueue {
 // _________________________________________________________________________________________________
 // SwapChain
 
-pub trait ISwapChain: IAny + IGetPlatformInterface {
+pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ISwapChain);
 
     /// Returns whether support operations are supported on the given queue.
