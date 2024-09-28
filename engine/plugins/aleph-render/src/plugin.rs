@@ -30,7 +30,7 @@
 use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
-use aleph_math::{Mat4, Vec3};
+use aleph_math::{DVec3, Mat4, Rotor3, Vec3};
 use aleph_pin_board::ScopedParamBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
@@ -46,7 +46,8 @@ use serde::Deserialize;
 use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
     CameraInfo, DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, PerspectiveInfo,
-    RenderPlaneOutput, RendererBuilder, ShaderDatabaseAccessor,
+    RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, RendererBuilder,
+    ShaderDatabaseAccessor, StaticMesh,
 };
 
 use crate::egui_draw::EguiPassContext;
@@ -159,6 +160,48 @@ impl IPlugin for PluginRender {
 
         let renderer = renderer.build().unwrap();
 
+        let mut render_scene = RenderScene::new();
+        render_scene.push(
+            RenderTransform {
+                position: DVec3::new(0.0, 0.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            StaticMesh,
+        );
+        render_scene.push(
+            RenderTransform {
+                position: DVec3::new(-3.0, 0.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            StaticMesh,
+        );
+        render_scene.push(
+            RenderTransform {
+                position: DVec3::new(3.0, 0.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            StaticMesh,
+        );
+        render_scene.push(
+            RenderTransform {
+                position: DVec3::new(0.0, 3.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            StaticMesh,
+        );
+        render_scene.push(
+            RenderTransform {
+                position: DVec3::new(0.0, -3.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            StaticMesh,
+        );
+
         let schedule_cell = registry
             .get_interface::<dyn IScheduleProvider>()
             .unwrap()
@@ -192,6 +235,7 @@ impl IPlugin for PluginRender {
                         orientation: view.extract_rotation().reversed(),
                         projection: PerspectiveInfo::default_with_aspect(aspect),
                     });
+                    board.publish::<RenderSceneParam>(&render_scene);
 
                     if let Some(e) = egui_data.as_mut() {
                         let render_data = e.render_data.take();

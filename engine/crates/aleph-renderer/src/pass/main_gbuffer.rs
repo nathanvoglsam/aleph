@@ -36,8 +36,8 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::ShaderDatabaseAccessor;
 use crate::{shaders, CameraInfo};
+use crate::{RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StaticMesh};
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,
@@ -155,6 +155,7 @@ pub fn pass(
             let device = resources.device();
             let descriptor_arena = resources.descriptor_arena();
             let camera_info = args.board.get::<CameraInfo>().unwrap();
+            let scene = args.board.get::<RenderSceneParam>().copied().unwrap();
 
             let gbuffer0 = resources.get_texture(data.gbuffer0).unwrap();
             let gbuffer1 = resources.get_texture(data.gbuffer1).unwrap();
@@ -186,10 +187,25 @@ pub fn pass(
                     .as_array()
                     .clone(),
             };
-            let camera_offset = u_alloc.allocate_object(camera_layout).device_offset;
-            let model_offset = u_alloc.allocate_object(ModelLayout::init()).device_offset;
+            let camera_offset = u_alloc
+                .allocate_object(camera_layout)
+                .unwrap()
+                .device_offset;
 
-            uniform_buffer.unmap();
+            let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
+            let write = BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256);
+            device.update_descriptor_sets(&[
+                DescriptorWriteDesc::uniform_buffer(
+                    descriptor_set,
+                    0,
+                    &write.clone().with_offset(camera_offset as u64),
+                ),
+                DescriptorWriteDesc::uniform_buffer_dynamic(
+                    descriptor_set,
+                    1,
+                    &write.clone().with_offset(0),
+                ),
+            ]);
 
             let gbuffer0_rtv = gbuffer0
                 .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer0))
@@ -232,29 +248,6 @@ pub fn pass(
 
             encoder.bind_graphics_pipeline(pipeline.as_ref());
 
-            let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
-            let write = BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256);
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc::uniform_buffer(
-                    descriptor_set,
-                    0,
-                    &write.clone().with_offset(camera_offset as u64),
-                ),
-                DescriptorWriteDesc::uniform_buffer(
-                    descriptor_set,
-                    1,
-                    &write.clone().with_offset(model_offset as u64),
-                ),
-            ]);
-
-            encoder.bind_descriptor_sets(
-                pipeline_layout.as_ref(),
-                PipelineBindPoint::Graphics,
-                0,
-                &[descriptor_set],
-                &[],
-            );
-
             encoder.bind_vertex_buffers(0, &[InputAssemblyBufferBinding::new(vtx_buffer)]);
             encoder.bind_index_buffer(IndexType::U32, &InputAssemblyBufferBinding::new(idx_buffer));
 
@@ -274,9 +267,26 @@ pub fn pass(
                 h: extent.height,
             }]);
 
-            encoder.draw_indexed(INDICES.len() as _, 1, 0, 0, 0);
+            let objects = scene.get_storage_ref::<StaticMesh>().unwrap();
+            for (t, _o) in objects.iter() {
+                let model_offset = u_alloc
+                    .allocate_object(ModelLayout::from_transform(t))
+                    .unwrap()
+                    .device_offset;
+                encoder.bind_descriptor_sets(
+                    pipeline_layout.as_ref(),
+                    PipelineBindPoint::Graphics,
+                    0,
+                    &[descriptor_set],
+                    &[model_offset as u32],
+                );
+
+                encoder.draw_indexed(INDICES.len() as _, 1, 0, 0, 0);
+            }
 
             encoder.end_rendering();
+
+            uniform_buffer.unmap();
         }
     });
 }
@@ -287,7 +297,7 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
         items: &[
             DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
                 .with_binding_num(0),
-            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
+            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBufferDynamic)
                 .with_binding_num(1),
         ],
         name: obj_name_opt!("DescriptorSetLayout"),
@@ -437,12 +447,22 @@ pub struct ModelLayout {
 }
 
 impl ModelLayout {
-    pub fn init() -> Self {
+    pub fn from_transform(v: &RenderTransform) -> Self {
+        let pos = Vec3::new(
+            v.position.x as f32,
+            v.position.y as f32,
+            v.position.z as f32,
+        );
+
+        let t = Mat4::from_translation(pos);
+        let r = v.rotation.into_matrix().into_homogeneous();
+        let s = Mat4::from_nonuniform_scale(v.scale);
+
+        let model_matrix = t * r * s;
+        let normal_matrix = model_matrix.truncate().inversed().transposed();
         Self {
-            model_matrix: *Mat4::from_translation(Vec3::new(0., 0., -3.))
-                .transposed()
-                .as_array(),
-            normal_matrix: *Mat4::identity().as_array(),
+            model_matrix: *model_matrix.transposed().as_array(),
+            normal_matrix: *normal_matrix.transposed().into_homogeneous().as_array(),
         }
     }
 }
