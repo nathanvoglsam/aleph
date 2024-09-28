@@ -51,6 +51,11 @@ impl BoardParamId for RenderSceneParam {
     type Output<'a> = &'a RenderScene;
 }
 
+/// Marker trait 'alias' for `IObject + Send + Sync + 'static` which constrains the types we can
+/// store in a [`RenderScene`].
+pub trait ISceneObject: IObject + Send + Sync + 'static {}
+impl<T: IObject + Send + Sync + 'static> ISceneObject for T {}
+
 pub struct RenderScene {
     components: HashMap<Uuid, Storage>,
 }
@@ -62,7 +67,10 @@ impl RenderScene {
         }
     }
 
-    pub fn push<T: IObject>(&mut self, transform: RenderTransform, object: T) {
+    pub fn push<T>(&mut self, transform: RenderTransform, object: T)
+    where
+        T: ISceneObject,
+    {
         let table = self
             .components
             .entry(T::ID)
@@ -75,14 +83,20 @@ impl RenderScene {
         }
     }
 
-    pub fn reserve_storage<T: IObject>(&mut self) {
+    pub fn reserve_storage<T>(&mut self)
+    where
+        T: ISceneObject,
+    {
         let _ = self
             .components
             .entry(T::ID)
             .or_insert_with(|| Storage::new::<T>());
     }
 
-    pub fn reserve_storage_with_capacity<T: IObject>(&mut self, capacity: usize) {
+    pub fn reserve_storage_with_capacity<T>(&mut self, capacity: usize)
+    where
+        T: ISceneObject,
+    {
         let _ = self
             .components
             .entry(T::ID)
@@ -95,7 +109,10 @@ impl RenderScene {
         }
     }
 
-    pub fn get_storage_ref<T: IObject>(&self) -> Option<StorageRef<T>> {
+    pub fn get_storage_ref<T>(&self) -> Option<StorageRef<T>>
+    where
+        T: ISceneObject,
+    {
         if let Some(storage) = self.components.get(&T::ID) {
             if !storage.borrow.borrow() {
                 return None;
@@ -111,7 +128,10 @@ impl RenderScene {
         }
     }
 
-    pub fn get_storage_mut<T: IObject>(&self) -> Option<StorageMut<T>> {
+    pub fn get_storage_mut<T>(&self) -> Option<StorageMut<T>>
+    where
+        T: ISceneObject,
+    {
         if let Some(storage) = self.components.get(&T::ID) {
             if !storage.borrow.borrow_mut() {
                 return None;
@@ -134,10 +154,19 @@ pub struct StorageRef<'a, T> {
     _phantom_t: PhantomData<&'a T>,
 }
 
-impl<'a, T: IObject> StorageRef<'a, T> {
+impl<'a, T> StorageRef<'a, T>
+where
+    T: ISceneObject,
+{
     #[inline]
     pub fn as_slice_ref(&self) -> (&[RenderTransform], &[T]) {
         unsafe { self.s.as_ref().as_slice_ref() }
+    }
+
+    #[inline]
+    pub fn iter(&self) -> impl ExactSizeIterator<Item = (&RenderTransform, &T)> {
+        let (t, o) = self.as_slice_ref();
+        t.iter().zip(o.iter())
     }
 }
 
@@ -155,15 +184,30 @@ pub struct StorageMut<'a, T> {
     _phantom_t: PhantomData<&'a T>,
 }
 
-impl<'a, T: IObject> StorageMut<'a, T> {
+impl<'a, T> StorageMut<'a, T>
+where
+    T: ISceneObject,
+{
     #[inline]
     pub fn as_slice_ref(&self) -> (&[RenderTransform], &[T]) {
         unsafe { self.s.as_ref().as_slice_ref() }
     }
 
     #[inline]
+    pub fn iter(&self) -> impl ExactSizeIterator<Item = (&RenderTransform, &T)> {
+        let (t, o) = self.as_slice_ref();
+        t.iter().zip(o.iter())
+    }
+
+    #[inline]
     pub fn as_slice_mut(&mut self) -> (&mut [RenderTransform], &mut [T]) {
         unsafe { self.s.as_mut().as_slice_mut() }
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> impl ExactSizeIterator<Item = (&mut RenderTransform, &mut T)> {
+        let (t, o) = self.as_slice_mut();
+        t.iter_mut().zip(o.iter_mut())
     }
 
     #[inline]
@@ -194,7 +238,10 @@ impl<'a, T: IObject> StorageMut<'a, T> {
     }
 }
 
-impl<'a, T: IObject + Clone> StorageMut<'a, T> {
+impl<'a, T> StorageMut<'a, T>
+where
+    T: ISceneObject + Clone,
+{
     #[inline]
     pub fn extend_from_slice(&mut self, transforms: &[RenderTransform], source: &[T]) {
         unsafe {
@@ -223,7 +270,10 @@ struct Storage {
 }
 
 impl Storage {
-    fn new<T: IObject>() -> Self {
+    fn new<T>() -> Self
+    where
+        T: ISceneObject,
+    {
         Self::new_for(ObjectDescription::get::<T>())
     }
 
@@ -238,7 +288,7 @@ impl Storage {
         }
     }
 
-    fn with_capacity<T: IObject>(capacity: usize) -> Self {
+    fn with_capacity<T: ISceneObject>(capacity: usize) -> Self {
         Self::with_capacity_for(ObjectDescription::get::<T>(), capacity)
     }
 
@@ -332,11 +382,10 @@ impl Storage {
         source.transforms.clear();
     }
 
-    fn extend_from_slice<T: IObject + Clone>(
-        &mut self,
-        transforms: &[RenderTransform],
-        source: &[T],
-    ) {
+    fn extend_from_slice<T>(&mut self, transforms: &[RenderTransform], source: &[T])
+    where
+        T: ISceneObject + Clone,
+    {
         assert_eq!(self.t_id, T::ID);
         assert_eq!(self.t_size, T::SIZE);
         assert_eq!(self.bytes.align, T::ALIGN);
@@ -361,10 +410,10 @@ impl Storage {
         }
     }
 
-    fn extend_from_iter<T: IObject>(
-        &mut self,
-        iter: impl ExactSizeIterator<Item = (RenderTransform, T)>,
-    ) {
+    fn extend_from_iter<T>(&mut self, iter: impl ExactSizeIterator<Item = (RenderTransform, T)>)
+    where
+        T: ISceneObject,
+    {
         assert_eq!(self.t_id, T::ID);
         assert_eq!(self.t_size, T::SIZE);
         assert_eq!(self.bytes.align, T::ALIGN);
@@ -399,7 +448,10 @@ impl Storage {
         }
     }
 
-    fn as_slice_ref<T: IObject>(&self) -> (&[RenderTransform], &[T]) {
+    fn as_slice_ref<T>(&self) -> (&[RenderTransform], &[T])
+    where
+        T: ISceneObject,
+    {
         assert_eq!(T::ID, self.t_id);
         if !self.is_empty() {
             unsafe {
@@ -412,7 +464,10 @@ impl Storage {
         }
     }
 
-    fn as_slice_mut<T: IObject>(&mut self) -> (&mut [RenderTransform], &mut [T]) {
+    fn as_slice_mut<T>(&mut self) -> (&mut [RenderTransform], &mut [T])
+    where
+        T: ISceneObject,
+    {
         assert_eq!(T::ID, self.t_id);
         if !self.is_empty() {
             unsafe {
