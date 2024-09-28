@@ -67,19 +67,19 @@ impl IUploadAllocator for UploadRingBuffer {
     ///
     /// See [RingBuffer::allocate] for more in-depth information on the algorithm.
     #[inline]
-    fn allocate(&self, size: usize) -> RawDeviceAllocationResult {
-        let allocation = self.state.allocate(size);
-        self.convert_result(allocation)
+    fn allocate(&self, size: usize) -> Option<RawDeviceAllocationResult> {
+        let allocation = self.state.allocate(size)?;
+        Some(self.convert_result(allocation))
     }
 
     /// Allocate the number of bytes from the ring buffer, accounting for the requested alignment.
     ///
     /// See [RingBuffer::allocate_aligned] for more in-depth information.
     #[inline]
-    fn allocate_aligned(&self, size: usize, align: usize) -> RawDeviceAllocationResult {
-        let allocation = self.state.allocate_aligned(size, align);
+    fn allocate_aligned(&self, size: usize, align: usize) -> Option<RawDeviceAllocationResult> {
+        let allocation = self.state.allocate_aligned(size, align)?;
         debug_assert!(allocation.offset & (align - 1) == 0);
-        self.convert_result(allocation)
+        Some(self.convert_result(allocation))
     }
 }
 
@@ -118,8 +118,8 @@ impl UploadRingBuffer {
         &self,
         size: usize,
         align: usize,
-    ) -> SubAllocatorResult<UploadBumpAllocator> {
-        let allocation = self.state.allocate_aligned(size, align);
+    ) -> Option<SubAllocatorResult<UploadBumpAllocator>> {
+        let allocation = self.state.allocate_aligned(size, align)?;
         debug_assert!(allocation.offset & (align - 1) == 0);
 
         // Safety: all preconditions are met implicitly here. The allocate functions can't give us
@@ -135,10 +135,10 @@ impl UploadRingBuffer {
             .unwrap()
         };
 
-        SubAllocatorResult {
+        Some(SubAllocatorResult {
             allocator,
             allocated: allocation.allocated,
-        }
+        })
     }
 
     /// Free the given number of bytes from the ring buffer.

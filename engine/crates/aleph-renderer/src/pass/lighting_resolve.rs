@@ -175,7 +175,7 @@ pub fn pass(
                     .as_array()
                     .clone(),
             };
-            u_alloc.allocate_object(camera_layout);
+            u_alloc.allocate_object(camera_layout).unwrap();
             uniform_buffer.unmap();
 
             let set = arena.allocate_set(set_layout.as_ref()).unwrap();

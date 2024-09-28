@@ -120,34 +120,28 @@ impl RingBuffer {
     /// alignment of the block you're allocating from (and creating the pointers from) as there's
     /// no way for this utility to know that alignment.
     #[inline]
-    pub fn allocate(&self, size: usize) -> AllocationResult {
-        assert!(
-            size <= self.capacity.get(),
-            "Requested allocation larger than buffer capacity '{}'",
-            self.capacity
-        );
-
+    #[must_use = "Do not ignore allocation failure"]
+    pub fn allocate(&self, size: usize) -> Option<AllocationResult> {
         // Check we have enough space for the allocation
-        assert!(
-            size <= self.size_remaining(),
-            "(size) {} > (size_remaining) {}: OOM",
-            size,
-            self.size_remaining()
-        );
+        if size > self.size_remaining() {
+            return None;
+        }
+
+        let size = NonZeroUsize::new(size)?;
 
         let old_head = self.head.get();
         let old_size = self.size.get();
-        let new_head = old_head + size;
+        let new_head = old_head + size.get();
 
         if new_head <= self.capacity.get() {
             // If we aren't stradling the edge of the end of the ring buffer we can just consume
             // the given number of bytes and exit
-            self.size.set(size + old_size);
+            self.size.set(size.get() + old_size);
             self.head.set(new_head);
-            AllocationResult {
+            Some(AllocationResult {
                 offset: old_head,
                 allocated: size,
-            }
+            })
         } else {
             self.allocate_over_buffer_edge(size)
         }
@@ -165,21 +159,19 @@ impl RingBuffer {
     /// the caller's responsibility to ensure 'align' is a power of two and it's the caller's
     /// responsibility to not do anything unsafe with the offsets this allocator yields.
     #[inline]
-    pub fn allocate_aligned(&self, size: usize, align: usize) -> AllocationResult {
+    #[must_use = "Do not ignore allocation failure"]
+    pub fn allocate_aligned(&self, size: usize, align: usize) -> Option<AllocationResult> {
         debug_assert!(align.is_power_of_two());
 
         // Check if the allocation is larger than the maximum size we could serve
-        assert!(
-            size <= self.capacity.get(),
-            "Requested allocation larger than buffer capacity '{}'",
-            self.capacity
-        );
+        if size > self.capacity.get() {
+            return None;
+        }
+        if align > self.capacity.get() {
+            return None;
+        }
 
-        assert!(
-            align <= self.capacity.get(),
-            "Requested alignment larger than buffer capacity '{}'",
-            self.capacity
-        );
+        let size = NonZeroUsize::new(size)?;
 
         let old_head = self.head.get();
         let old_size = self.size.get();
@@ -188,25 +180,22 @@ impl RingBuffer {
         // already aligned
         let aligned_head = forward_align_offset(self.head.get(), align);
 
-        let new_head = aligned_head + size;
+        let new_head = aligned_head + size.get();
         if new_head <= self.capacity.get() {
             // Check we have enough space for the allocation
-            let total_size = new_head - old_head;
-            assert!(
-                total_size <= self.size_remaining(),
-                "(total_size) {} > (size_remaining) {}: OOM",
-                total_size,
-                self.size_remaining()
-            );
+            let total_size = NonZeroUsize::new(new_head - old_head)?;
+            if total_size.get() > self.size_remaining() {
+                return None;
+            }
 
             // If we aren't stradling the edge of the end of the ring buffer we can just consume
             // the total number of bytes and exit
-            self.size.set(old_size + total_size);
+            self.size.set(old_size + total_size.get());
             self.head.set(new_head);
-            AllocationResult {
+            Some(AllocationResult {
                 offset: aligned_head,
                 allocated: total_size,
-            }
+            })
         } else {
             self.allocate_over_buffer_edge(size)
         }
@@ -258,30 +247,28 @@ impl RingBuffer {
 
     #[track_caller]
     #[inline(always)]
-    fn allocate_over_buffer_edge(&self, size: usize) -> AllocationResult {
+    #[must_use = "Do not ignore allocation failure"]
+    fn allocate_over_buffer_edge(&self, size: NonZeroUsize) -> Option<AllocationResult> {
         let old_head = self.head.get();
         let old_size = self.size.get();
 
-        let new_head = self.capacity.get() + size;
-        let total_size = new_head - old_head;
+        let new_head = self.capacity.get() + size.get();
+        let total_size = NonZeroUsize::new(new_head - old_head)?;
 
         // Check we have enough space for our larger allocation
-        assert!(
-            total_size <= self.size_remaining(),
-            "(total_size) {} > (size_remaining) {}: OOM",
-            total_size,
-            self.size_remaining()
-        );
+        if total_size.get() > self.size_remaining() {
+            return None;
+        }
 
         // Perform our allocation with the new inflated size and wrap the head pointer around
         let new_head = new_head & self.mask();
-        self.size.set(old_size + total_size);
+        self.size.set(old_size + total_size.get());
         self.head.set(new_head);
 
-        AllocationResult {
+        Some(AllocationResult {
             offset: 0,
             allocated: total_size,
-        }
+        })
     }
 }
 
@@ -315,15 +302,15 @@ mod tests {
     fn test_ring_buffer_allocate_free() {
         let rb = RingBuffer::new(16).unwrap();
 
-        let allocation = rb.allocate(4);
+        let allocation = rb.allocate(4).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 4);
+        assert_eq!(allocation.allocated.get(), 4);
         assert_eq!(rb.size(), 4);
         assert_eq!(rb.size_remaining(), 12);
 
-        let allocation = rb.allocate(2);
+        let allocation = rb.allocate(2).unwrap();
         assert_eq!(allocation.offset, 4);
-        assert_eq!(allocation.allocated, 2);
+        assert_eq!(allocation.allocated.get(), 2);
         assert_eq!(rb.size(), 6);
         assert_eq!(rb.size_remaining(), 10);
 
@@ -336,9 +323,9 @@ mod tests {
     fn test_ring_buffer_allocate_roll_over() {
         let rb = RingBuffer::new(16).unwrap();
 
-        let allocation = rb.allocate(12);
+        let allocation = rb.allocate(12).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 12);
+        assert_eq!(allocation.allocated.get(), 12);
         assert_eq!(rb.size(), 12);
         assert_eq!(rb.size_remaining(), 4);
 
@@ -346,15 +333,15 @@ mod tests {
         assert_eq!(rb.size(), 0);
         assert_eq!(rb.size_remaining(), 16);
 
-        let allocation = rb.allocate(6);
+        let allocation = rb.allocate(6).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 10);
+        assert_eq!(allocation.allocated.get(), 10);
         assert_eq!(rb.size(), 10);
         assert_eq!(rb.size_remaining(), 6);
 
-        let allocation = rb.allocate(6);
+        let allocation = rb.allocate(6).unwrap();
         assert_eq!(allocation.offset, 6);
-        assert_eq!(allocation.allocated, 6);
+        assert_eq!(allocation.allocated.get(), 6);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
     }
@@ -363,9 +350,9 @@ mod tests {
     fn test_ring_buffer_allocate_roll_over_to_full() {
         let rb = RingBuffer::new(16).unwrap();
 
-        let allocation = rb.allocate(12);
+        let allocation = rb.allocate(12).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 12);
+        assert_eq!(allocation.allocated.get(), 12);
         assert_eq!(rb.size(), 12);
         assert_eq!(rb.size_remaining(), 4);
 
@@ -373,9 +360,9 @@ mod tests {
         assert_eq!(rb.size(), 0);
         assert_eq!(rb.size_remaining(), 16);
 
-        let allocation = rb.allocate(12);
+        let allocation = rb.allocate(12).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 16);
+        assert_eq!(allocation.allocated.get(), 16);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
     }
@@ -384,17 +371,17 @@ mod tests {
     fn test_ring_buffer_allocate_max_size() {
         let rb = RingBuffer::new(16).unwrap();
 
-        let allocation = rb.allocate(16);
+        let allocation = rb.allocate(16).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 16);
+        assert_eq!(allocation.allocated.get(), 16);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
 
         rb.free(16);
 
-        let allocation = rb.allocate(16);
+        let allocation = rb.allocate(16).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 16);
+        assert_eq!(allocation.allocated.get(), 16);
         assert_eq!(rb.size(), 16);
         assert_eq!(rb.size_remaining(), 0);
     }
@@ -404,28 +391,28 @@ mod tests {
     fn test_ring_buffer_allocate_oom() {
         let rb = RingBuffer::new(16).unwrap();
 
-        let allocation = rb.allocate(8);
+        let allocation = rb.allocate(8).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 8);
+        assert_eq!(allocation.allocated.get(), 8);
         assert_eq!(rb.size(), 8);
         assert_eq!(rb.size_remaining(), 8);
 
-        let _allocation = rb.allocate(10);
+        let _allocation = rb.allocate(10).unwrap();
     }
 
     #[test]
     fn test_ring_buffer_allocate_aligned() {
         let rb = RingBuffer::new(64).unwrap();
 
-        let allocation = rb.allocate(12);
+        let allocation = rb.allocate(12).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 12);
+        assert_eq!(allocation.allocated.get(), 12);
         assert_eq!(rb.size(), 12);
         assert_eq!(rb.size_remaining(), 52);
 
-        let allocation = rb.allocate_aligned(6, 16);
+        let allocation = rb.allocate_aligned(6, 16).unwrap();
         assert_eq!(allocation.offset, 16);
-        assert_eq!(allocation.allocated, 10);
+        assert_eq!(allocation.allocated.get(), 10);
         assert_eq!(rb.size(), 22);
         assert_eq!(rb.size_remaining(), 42);
     }
@@ -434,17 +421,17 @@ mod tests {
     fn test_ring_buffer_allocate_aligned_over_edge() {
         let rb = RingBuffer::new(64).unwrap();
 
-        let allocation = rb.allocate(48);
+        let allocation = rb.allocate(48).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 48);
+        assert_eq!(allocation.allocated.get(), 48);
         assert_eq!(rb.size(), 48);
         assert_eq!(rb.size_remaining(), 16);
 
         rb.free(32);
 
-        let allocation = rb.allocate_aligned(8, 32);
+        let allocation = rb.allocate_aligned(8, 32).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 24);
+        assert_eq!(allocation.allocated.get(), 24);
         assert_eq!(rb.size(), 40);
         assert_eq!(rb.size_remaining(), 24);
     }

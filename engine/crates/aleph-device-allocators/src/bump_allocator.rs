@@ -87,16 +87,21 @@ impl BumpAllocator {
     /// It is also important to note that the allocator can't provide alignment higher than the
     /// alignment of the block you're allocating from (and creating the pointers from) as there's
     /// no way for this utility to know that alignment.
-    pub fn allocate(&self, size: usize) -> AllocationResult {
-        assert!(size <= self.size_remaining(), "OOM");
+    #[must_use = "Do not ignore allocation failure"]
+    pub fn allocate(&self, size: usize) -> Option<AllocationResult> {
+        if size > self.size_remaining() {
+            return None;
+        }
+
+        let size = NonZeroUsize::new(size)?;
 
         let head = self.head.get();
-        self.head.set(head + size);
+        self.head.set(head + size.get());
 
-        AllocationResult {
+        Some(AllocationResult {
             offset: head,
             allocated: size,
-        }
+        })
     }
 
     /// An extended form of [BumpAllocator::allocate] that also handles aligning the resulting block
@@ -110,38 +115,32 @@ impl BumpAllocator {
     /// because an incorrect alignment can't do anything memory unsafe, only the caller can. It's
     /// the caller's responsibility to ensure 'align' is a power of two and it's the caller's
     /// responsibility to not do anything unsafe with the offsets this allocator yields.
-    pub fn allocate_aligned(&self, size: usize, align: usize) -> AllocationResult {
+    #[must_use = "Do not ignore allocation failure"]
+    pub fn allocate_aligned(&self, size: usize, align: usize) -> Option<AllocationResult> {
         debug_assert!(align.is_power_of_two());
 
-        assert!(
-            size <= self.capacity.get(),
-            "Requested allocation larger than buffer capacity '{}'",
-            self.capacity
-        );
-        assert!(
-            align <= self.capacity.get(),
-            "Requested alignment larger than buffer capacity '{}'",
-            self.capacity
-        );
+        if size > self.capacity.get() {
+            return None;
+        }
+        if align > self.capacity.get() {
+            return None;
+        }
 
         let head = self.head.get();
         let aligned_head = forward_align_offset(head, align);
         let new_head = aligned_head + size;
-        let total_size = new_head - head;
+        let total_size = NonZeroUsize::new(new_head - head)?;
 
-        assert!(
-            total_size <= self.size_remaining(),
-            "(total_size) {} > (size_remaining) {}: OOM",
-            total_size,
-            self.size_remaining()
-        );
+        if total_size.get() > self.size_remaining() {
+            return None;
+        }
 
         self.head.set(new_head);
 
-        AllocationResult {
+        Some(AllocationResult {
             offset: aligned_head,
             allocated: total_size,
-        }
+        })
     }
 
     /// Clear the bump allocator, resetting it to the empty state
@@ -191,15 +190,15 @@ mod tests {
     fn test_bump_allocator_allocate() {
         let ba = BumpAllocator::new(16).unwrap();
 
-        let allocation = ba.allocate(4);
+        let allocation = ba.allocate(4).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 4);
+        assert_eq!(allocation.allocated.get(), 4);
         assert_eq!(ba.size(), 4);
         assert_eq!(ba.size_remaining(), 12);
 
-        let allocation = ba.allocate(2);
+        let allocation = ba.allocate(2).unwrap();
         assert_eq!(allocation.offset, 4);
-        assert_eq!(allocation.allocated, 2);
+        assert_eq!(allocation.allocated.get(), 2);
         assert_eq!(ba.size(), 6);
         assert_eq!(ba.size_remaining(), 10);
     }
@@ -208,17 +207,17 @@ mod tests {
     fn test_bump_allocator_allocate_max_size() {
         let ba = BumpAllocator::new(16).unwrap();
 
-        let allocation = ba.allocate(16);
+        let allocation = ba.allocate(16).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 16);
+        assert_eq!(allocation.allocated.get(), 16);
         assert_eq!(ba.size(), 16);
         assert_eq!(ba.size_remaining(), 0);
 
         ba.clear();
 
-        let allocation = ba.allocate(16);
+        let allocation = ba.allocate(16).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 16);
+        assert_eq!(allocation.allocated.get(), 16);
         assert_eq!(ba.size(), 16);
         assert_eq!(ba.size_remaining(), 0);
     }
@@ -228,28 +227,28 @@ mod tests {
     fn test_bump_allocator_allocate_oom() {
         let ba = BumpAllocator::new(16).unwrap();
 
-        let allocation = ba.allocate(8);
+        let allocation = ba.allocate(8).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 8);
+        assert_eq!(allocation.allocated.get(), 8);
         assert_eq!(ba.size(), 8);
         assert_eq!(ba.size_remaining(), 8);
 
-        let _allocation = ba.allocate(10);
+        let _allocation = ba.allocate(10).unwrap();
     }
 
     #[test]
     fn test_bump_allocator_allocate_aligned() {
         let ba = BumpAllocator::new(64).unwrap();
 
-        let allocation = ba.allocate(12);
+        let allocation = ba.allocate(12).unwrap();
         assert_eq!(allocation.offset, 0);
-        assert_eq!(allocation.allocated, 12);
+        assert_eq!(allocation.allocated.get(), 12);
         assert_eq!(ba.size(), 12);
         assert_eq!(ba.size_remaining(), 52);
 
-        let allocation = ba.allocate_aligned(6, 16);
+        let allocation = ba.allocate_aligned(6, 16).unwrap();
         assert_eq!(allocation.offset, 16);
-        assert_eq!(allocation.allocated, 10);
+        assert_eq!(allocation.allocated.get(), 10);
         assert_eq!(ba.size(), 22);
         assert_eq!(ba.size_remaining(), 42);
     }

@@ -34,6 +34,8 @@ mod ring_buffer;
 mod upload_bump_allocator;
 mod upload_ring_buffer;
 
+use std::num::NonZeroUsize;
+
 pub use allocator_interface::IUploadAllocator;
 pub use bump_allocator::BumpAllocator;
 pub use linear_descriptor_pool::LinearDescriptorPool;
@@ -48,7 +50,7 @@ pub struct AllocationResult {
 
     /// The number of bytes that were _actually_ allocated, including any wastage spent wrapping
     /// the head ptr around the end of the buffer to provide a contiguous allocation.
-    pub allocated: usize,
+    pub allocated: NonZeroUsize,
 }
 
 pub type RawDeviceAllocationResult = DeviceAllocationResult<std::ptr::NonNull<u8>>;
@@ -65,7 +67,7 @@ pub struct DeviceAllocationResult<T> {
 
     /// The actual number of bytes allocated for the block, including any padding bytes needed to
     /// wrap over the end of the ring buffer.
-    pub allocated: usize,
+    pub allocated: NonZeroUsize,
 }
 
 #[derive(Debug)]
@@ -74,7 +76,7 @@ pub struct SubAllocatorResult<T> {
     pub allocator: T,
 
     /// The actual number of bytes consumed to meet the allocation request.
-    pub allocated: usize,
+    pub allocated: NonZeroUsize,
 }
 
 pub(crate) fn forward_align_offset(v: usize, align: usize) -> usize {

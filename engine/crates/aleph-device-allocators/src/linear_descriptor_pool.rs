@@ -77,6 +77,7 @@ impl LinearDescriptorPool {
     /// Vulkan requires this behavior for valid API usage. Other implementations may re-use
     /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
     /// stale descriptors.
+    #[must_use = "Do not ignore allocation failure"]
     pub fn allocate_set(
         &self,
         layout: &dyn IDescriptorSetLayout,
@@ -106,6 +107,7 @@ impl LinearDescriptorPool {
     /// # Warning
     ///
     /// See [IDescriptorArena::allocate_set] for some pitfalls and warnings to check for.
+    #[must_use = "Do not ignore allocation failure"]
     pub fn allocate_sets(
         &self,
         layout: &dyn IDescriptorSetLayout,

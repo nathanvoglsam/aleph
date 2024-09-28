@@ -223,9 +223,9 @@ pub fn pass(
                     }
 
                     let v_slice = triangles.vertices.as_slice();
-                    let _ = vtx_alloc.allocate_objects_clone(v_slice);
+                    vtx_alloc.allocate_objects_clone(v_slice).unwrap();
                     let i_slice = triangles.indices.as_slice();
-                    let _ = idx_alloc.allocate_objects_copy(i_slice);
+                    idx_alloc.allocate_objects_copy(i_slice).unwrap();
 
                     record_job_commands(
                         encoder,

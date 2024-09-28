@@ -78,13 +78,13 @@ pub fn pass(
         let v_ptr = vtx_buffer.map().unwrap();
         let v_alloc =
             UploadBumpAllocator::new_from_block(vtx_buffer.as_ref(), v_ptr, 0, 4 * 1024).unwrap();
-        v_alloc.allocate_objects_clone(&VERTS);
+        v_alloc.allocate_objects_clone(&VERTS).unwrap();
         vtx_buffer.unmap();
 
         let i_ptr = idx_buffer.map().unwrap();
         let i_alloc =
             UploadBumpAllocator::new_from_block(idx_buffer.as_ref(), i_ptr, 0, 4 * 1024).unwrap();
-        i_alloc.allocate_objects_copy(&INDICES);
+        i_alloc.allocate_objects_copy(&INDICES).unwrap();
         idx_buffer.unmap();
     }
 
