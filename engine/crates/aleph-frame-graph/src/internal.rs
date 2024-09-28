@@ -58,6 +58,12 @@ pub(crate) struct RenderPassAbi<A: PassArgs> {
     ),
 }
 
+// Safety: This wraps an allocated IRenderPass, assuming the pass has been allocated in the graph's
+//         arena. PassArgs and IRenderPass require Send+Sync but it isn't auto derived because of
+//         the pointer. We know this is safe though.
+unsafe impl<A: PassArgs> Send for RenderPassAbi<A> {}
+unsafe impl<A: PassArgs> Sync for RenderPassAbi<A> {}
+
 impl<A: PassArgs> RenderPassAbi<A> {
     pub fn new<T: IRenderPass<A>>(v: NonNull<T>) -> Self {
         unsafe fn runner<A: PassArgs, T: IRenderPass<A>>(
@@ -82,6 +88,11 @@ pub(crate) struct RenderPass<A: PassArgs> {
     pub name: NonNull<NStr>,
     pub skip: bool,
 }
+
+// Safety: 'name' is a pointer into an arena on the graph, perfectly safe to share across threads as
+//         it's never written to.
+unsafe impl<A: PassArgs> Send for RenderPass<A> {}
+unsafe impl<A: PassArgs> Sync for RenderPass<A> {}
 
 pub(crate) struct ResourceRoot {
     /// The type of this resource
@@ -136,6 +147,11 @@ pub(crate) struct ResourceVersion {
     /// detect when multiple passes try and write to the same resource version.
     pub debug_written: bool,
 }
+
+// Safety: This is safe because 'reads' is allocated from the graph arena. It's only a pointer
+//         because rust can't understand the lifetime semantics we use.
+unsafe impl Send for ResourceVersion {}
+unsafe impl Sync for ResourceVersion {}
 
 impl ResourceVersion {
     pub fn mark_written(&mut self) {
@@ -267,6 +283,12 @@ pub(crate) struct FrameGraphBufferDesc {
     pub name: Option<NonNull<str>>,
 }
 
+// Safety: 'name' is just a string backed by the graph's arena. Safe to pass around by but needs to
+//         be a pointer because it's a self reference. This is safe because the address is stable
+//         as it's on the heap
+unsafe impl Send for FrameGraphBufferDesc {}
+unsafe impl Sync for FrameGraphBufferDesc {}
+
 /// An internal mirror of [TextureDesc] that removes the 'usage' field (it's automatically deduced)
 /// and replaces the name reference with a pointer so that it can store a pointer into an internal
 /// arena
@@ -315,6 +337,12 @@ pub(crate) struct FrameGraphTextureDesc {
     /// caller must ensure the relevant arena is still live.
     pub name: Option<NonNull<str>>,
 }
+
+// Safety: 'name' is just a string backed by the graph's arena. Safe to pass around by but needs to
+//         be a pointer because it's a self reference. This is safe because the address is stable
+//         as it's on the heap
+unsafe impl Send for FrameGraphTextureDesc {}
+unsafe impl Sync for FrameGraphTextureDesc {}
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Default, Debug)]
 pub(crate) struct VersionIndex(pub u32);
@@ -563,6 +591,11 @@ pub(crate) struct RenderPassIRNode {
     pub render_pass: usize,
 }
 
+// Safety: 'prev' and 'next' are backed by the graph arena.
+//         Self referential stuff needs to be a pointer as Rust can't do this in safe code.
+unsafe impl Send for RenderPassIRNode {}
+unsafe impl Sync for RenderPassIRNode {}
+
 #[derive(Clone, Debug)]
 pub(crate) struct BarrierIRNode {
     pub prev: NonNull<[usize]>,
@@ -579,6 +612,11 @@ pub(crate) struct BarrierIRNode {
     pub after_sync: BarrierSync,
     pub after_access: BarrierAccess,
 }
+
+// Safety: 'prev' and 'next' are backed by the graph arena.
+//         Self referential stuff needs to be a pointer as Rust can't do this in safe code.
+unsafe impl Send for BarrierIRNode {}
+unsafe impl Sync for BarrierIRNode {}
 
 #[derive(Clone, Debug)]
 pub(crate) struct LayoutChangeIRNode {
@@ -601,6 +639,11 @@ pub(crate) struct LayoutChangeIRNode {
     pub after_access: BarrierAccess,
     pub after_layout: ImageLayout,
 }
+
+// Safety: 'prev' and 'next' are backed by the graph arena.
+//         Self referential stuff needs to be a pointer as Rust can't do this in safe code.
+unsafe impl Send for LayoutChangeIRNode {}
+unsafe impl Sync for LayoutChangeIRNode {}
 
 impl IIRNode for RenderPassIRNode {
     #[inline(always)]
@@ -880,6 +923,9 @@ pub(crate) struct PassOrderBundle {
     /// [PassOrderBundle::barriers]. These store indices into the ir.nodes array.
     pub passes: NonNull<[usize]>,
 }
+
+unsafe impl Send for PassOrderBundle {}
+unsafe impl Sync for PassOrderBundle {}
 
 impl core::fmt::Debug for PassOrderBundle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
