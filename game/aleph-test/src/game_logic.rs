@@ -228,6 +228,7 @@ impl IPlugin for PluginGameLogic {
                     .query_one_mut::<(&mut Transform, &StaticMesh)>(throbber)
                     .unwrap();
                 transform.position = DVec3::new(0.0, y, -5.0);
+                transform.rotation = Rotor3::from_rotation_xz(elapsed as f32);
             },
         );
 
