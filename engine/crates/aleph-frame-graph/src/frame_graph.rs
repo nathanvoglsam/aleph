@@ -32,7 +32,7 @@ use std::sync::Arc;
 
 use aleph_any::AnyArc;
 use aleph_device_allocators::{
-    AllocatorPool, Grave, LinearDescriptorPool, LinearDescriptorPoolFactory,
+    AllocatorPool, AllocatorPoolItem, Grave, LinearDescriptorPool, LinearDescriptorPoolFactory,
 };
 use aleph_nstr::nstr;
 use aleph_rhi_api::*;
@@ -100,6 +100,10 @@ pub struct FrameGraph<A: PassArgs = ()> {
     /// The transient resource bundles that the user requested by allocated for N frames in flight.
     pub(crate) transient_bundles: Vec<TransientResourceBundle>,
 
+    /// Per-frame deletion pool for extending the lifetime of internally managed resources like
+    /// command buffers or descriptor pool.
+    pub(crate) deletion_pools: Vec<DeletionPool>,
+
     /// Another 'transient pool' of sorts, but used for descriptors.
     pub(crate) linear_descriptor_pools: Arc<AllocatorPool<LinearDescriptorPoolFactory>>,
 }
@@ -120,6 +124,7 @@ impl<A: PassArgs> FrameGraph<A> {
         for _ in 0..num_frames {
             self.transient_bundles
                 .push(self.allocate_transient_resource_bundle());
+            self.deletion_pools.push(DeletionPool::default());
         }
     }
 
@@ -248,7 +253,11 @@ impl<A: PassArgs> FrameGraph<A> {
             }
         }
 
-        encoder.end_event()
+        encoder.end_event();
+
+        self.deletion_pools[frame_index]
+            .descriptor_pools
+            .push(linear_descriptor_pool.into());
     }
 
     fn allocate_transient_resource_bundle(&self) -> TransientResourceBundle {
@@ -576,4 +585,9 @@ impl<'a> FrameGraphResources<'a> {
     pub const fn descriptor_arena(&self) -> &'a LinearDescriptorPool {
         self.linear_descriptor_pool
     }
+}
+
+#[derive(Default)]
+pub(crate) struct DeletionPool {
+    pub descriptor_pools: Vec<Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>>,
 }

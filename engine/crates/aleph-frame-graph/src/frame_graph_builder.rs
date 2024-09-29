@@ -353,6 +353,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             resource_versions,
             imported_resources,
             transient_bundles: Vec::new(),
+            deletion_pools: Vec::new(),
             linear_descriptor_pools: AllocatorPool::new(
                 LinearDescriptorPoolFactory::new(device.upgrade(), 1024),
                 64,
