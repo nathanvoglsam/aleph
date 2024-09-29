@@ -44,7 +44,9 @@ pub use self::component::component_query::{
     ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,
 };
 pub use self::component::component_registry::ComponentRegistry;
-pub use self::component::component_source::{ComponentSource, IntoComponentSource};
+pub use self::component::component_source::{
+    ComponentSource, IntoComponentSource, IntoOneComponentSource, OneComponentSource,
+};
 pub use self::component::{Component, ComponentIdMap};
 pub use self::entity::entity_layout::{EntityLayout, EntityLayoutBuf};
 pub use self::entity::entity_storage::{

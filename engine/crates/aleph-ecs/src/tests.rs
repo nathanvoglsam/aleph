@@ -168,6 +168,42 @@ fn extend_test_array() {
 }
 
 #[test]
+fn extend_test_one() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let mut ids = Vec::new();
+    ids.push(world.extend_one((Position::new(1.0, 2.0), Scale::new(5.0, 6.0))));
+    ids.push(world.extend_one((Position::new(3.0, 4.0), Scale::new(7.0, 8.0))));
+
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
+
+    assert_eq!(
+        world.query_one::<&Position>(ids[0]).unwrap(),
+        &Position::new(1.0, 2.0)
+    );
+    assert_eq!(
+        world.query_one::<&Position>(ids[1]).unwrap(),
+        &Position::new(3.0, 4.0)
+    );
+    assert_eq!(
+        world.query_one::<&Scale>(ids[0]).unwrap(),
+        &Scale::new(5.0, 6.0)
+    );
+    assert_eq!(
+        world.query_one::<&Scale>(ids[1]).unwrap(),
+        &Scale::new(7.0, 8.0)
+    );
+
+    assert!(!world.has_component::<Mesh>(ids[0]));
+    assert!(!world.has_component::<Mesh>(ids[1]));
+}
+
+#[test]
 fn remove_entity_array() {
     let mut world = World::new(Default::default()).unwrap();
 

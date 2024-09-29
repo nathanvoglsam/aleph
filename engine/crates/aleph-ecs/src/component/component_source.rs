@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
+use std::mem::ManuallyDrop;
+
 use object_system::uuid::Uuid;
 
-use crate::EntityLayout;
+use crate::{Component, EntityLayout, EntityLayoutBuf};
 
 /// Interface for converting one type into a type that implements `ComponentSource`.
 ///
@@ -42,6 +44,43 @@ pub unsafe trait IntoComponentSource {
     type Source: ComponentSource;
 
     fn into_component_source(self) -> Self::Source;
+}
+
+unsafe impl<T: ComponentSource> IntoComponentSource for T {
+    type Source = T;
+
+    fn into_component_source(self) -> Self::Source {
+        self
+    }
+}
+
+/// Specialization of [`IntoComponentSource`] that only contains components for a single entity
+pub unsafe trait IntoOneComponentSource {
+    type Source: OneComponentSource;
+
+    fn into_one_component_source(self) -> Self::Source;
+}
+
+// unsafe impl<T: OneComponentSource> IntoOneComponentSource for T {
+//     type Source = T;
+//
+//     fn into_one_component_source(self) -> Self::Source {
+//         self
+//     }
+// }
+
+unsafe impl<T: OneComponentSource> ComponentSource for T {
+    fn entity_layout(&self) -> &EntityLayout {
+        self.entity_layout()
+    }
+
+    fn data_for(&self, component: &Uuid) -> &[u8] {
+        self.data_for(component)
+    }
+
+    fn count(&self) -> u32 {
+        1
+    }
 }
 
 /// Interface expected of a type that is a source of component data for inserting entities into
@@ -77,6 +116,25 @@ pub unsafe trait ComponentSource {
     /// size of the buffers returned by [ComponentSource::data_for] as
     /// `entity_count' * size_of_component_type`.
     fn count(&self) -> u32;
+}
+
+/// Specialization of [`ComponentSource`] that only contains components for a single entity
+pub unsafe trait OneComponentSource {
+    /// The entity layout that describes the set of components the entities we're trying to insert
+    /// have.
+    ///
+    /// It is the responsibility of the [ComponentSource] implementation to provide a buffer of
+    /// [ComponentSource::count] components of each type specified here on request via
+    /// [ComponentSource::data_for].
+    fn entity_layout(&self) -> &EntityLayout;
+
+    /// Returns a type erased data buffer that is valid storage for [ComponentSource::count]
+    /// components of the requested type. That means valid size and alignment.
+    ///
+    /// The objects will be copied into the destination buffer. This is logically a move operation
+    /// and the source objects should _not_ be dropped by the [ComponentSource] implementation as
+    /// the caller of [ComponentSource::data_for] has taken ownership of these objects.
+    fn data_for(&self, component: &Uuid) -> &[u8];
 }
 
 #[macro_export]
@@ -135,6 +193,29 @@ macro_rules! impl_component_source_for_tuple {
             #[inline(always)]
             fn count(&self) -> u32 {
                 SIZE as u32
+            }
+        }
+
+        #[allow(non_snake_case)]
+        unsafe impl<$($t: $crate::Component),+> $crate::OneComponentSource for ($crate::EntityLayoutBuf, $(::std::mem::ManuallyDrop<$t>,)+) {
+            #[inline]
+            fn entity_layout(&self) -> &$crate::EntityLayout {
+                &self.0
+            }
+
+            #[inline(always)]
+            fn data_for(&self, component: &$crate::object_system::uuid::Uuid) -> &[u8] {
+                let (_, $($t,)+) = self;
+                $(
+                    if *component == $crate::object_system::object_id::<$t>() {
+                        let data = $t as *const ::std::mem::ManuallyDrop<$t> as *const u8;
+                        let len = ::std::mem::size_of::<$t>();
+                        return unsafe {
+                            ::std::slice::from_raw_parts(data, len)
+                        };
+                    }
+                )+
+                panic!()
             }
         }
     }
@@ -203,20 +284,33 @@ macro_rules! impl_into_component_source_for_tuple {
                     layout.add_component_type($crate::object_system::object_id::<$t>());
                 )+
 
-                let $t0 = unsafe {
-                    let ptr = &$t0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
-                    let value = ptr.read();
-                    ::std::mem::forget($t0);
-                    value
-                };
+                let $t0: [::std::mem::ManuallyDrop<$t0>; SIZE] = $t0.map(|v| ::std::mem::ManuallyDrop::new(v));
 
                 $(
-                    let $t = unsafe {
-                        let ptr = &$t as *const [$t; SIZE] as *const [::std::mem::ManuallyDrop<$t>; SIZE];
-                        let value = ptr.read();
-                        ::std::mem::forget($t);
-                        value
-                    };
+                    let $t: [::std::mem::ManuallyDrop<$t>; SIZE] = $t.map(|v| ::std::mem::ManuallyDrop::new(v));
+                )+
+
+                (layout, $t0, $($t,)+)
+            }
+        }
+
+        #[allow(non_snake_case)]
+        unsafe impl<$t0: $crate::Component, $($t: $crate::Component),+> $crate::IntoOneComponentSource for ($t0, $($t,)+) {
+            type Source = ($crate::EntityLayoutBuf, ::std::mem::ManuallyDrop<$t0>, $(::std::mem::ManuallyDrop<$t>,)+);
+
+            fn into_one_component_source(self) -> Self::Source {
+                let ($t0, $($t,)+) = self;
+
+                let mut layout = $crate::EntityLayoutBuf::new();
+                layout.add_component_type($crate::object_system::object_id::<$t0>());
+                $(
+                    layout.add_component_type($crate::object_system::object_id::<$t>());
+                )+
+
+                let $t0: ::std::mem::ManuallyDrop<$t0> = ::std::mem::ManuallyDrop::new($t0);
+
+                $(
+                    let $t: ::std::mem::ManuallyDrop<$t> = ::std::mem::ManuallyDrop::new($t);
                 )+
 
                 (layout, $t0, $($t,)+)
@@ -226,29 +320,12 @@ macro_rules! impl_into_component_source_for_tuple {
 
     ($t0: ident) => {
         #[allow(non_snake_case)]
-        unsafe impl<$t0: $crate::Component, > $crate::IntoComponentSource for (::std::vec::Vec<$t0>, ) {
+        unsafe impl<$t0: $crate::Component> $crate::IntoComponentSource for (::std::vec::Vec<$t0>, ) {
             type Source = (u32, $crate::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>);
 
             fn into_component_source(self) -> Self::Source {
-                let (mut $t0, ) = self;
-
-                let len = $t0.len();
-
-                assert!(len < (u32::MAX - 1) as usize);
-                let len = len as u32;
-
-                let mut layout = $crate::EntityLayoutBuf::new();
-                layout.add_component_type($crate::object_system::object_id::<$t0>());
-
-                let $t0 = unsafe {
-                    let ptr = $t0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
-                    let length = $t0.len();
-                    let capacity = $t0.capacity();
-                    ::std::mem::forget($t0);
-                    ::std::vec::Vec::from_raw_parts(ptr, length, capacity)
-                };
-
-                (len, layout, $t0)
+                let ($t0, ) = self;
+                $crate::IntoComponentSource::into_component_source($t0)
             }
         }
 
@@ -258,22 +335,56 @@ macro_rules! impl_into_component_source_for_tuple {
 
             fn into_component_source(self) -> Self::Source {
                 let ($t0, ) = self;
+                $crate::IntoComponentSource::into_component_source($t0)
+            }
+        }
 
-                assert!(SIZE < (u32::MAX - 1) as usize);
+        #[allow(non_snake_case)]
+        unsafe impl<$t0: $crate::Component> $crate::IntoOneComponentSource for ($t0,) {
+            type Source = ($crate::EntityLayoutBuf, ::std::mem::ManuallyDrop<$t0>);
 
+            fn into_one_component_source(self) -> Self::Source {
+                let ($t0, ) = self;
                 let mut layout = $crate::EntityLayoutBuf::new();
-                layout.add_component_type($crate::object_system::object_id::<$t0>());
+                layout.add_component_type($crate::object_system::object_id::<A>());
 
-                let $t0 = unsafe {
-                    let ptr = &$t0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
-                    let value = ptr.read();
-                    ::std::mem::forget($t0);
-                    value
-                };
-
+                let $t0: ::std::mem::ManuallyDrop<$t0> = ::std::mem::ManuallyDrop::new($t0);
                 (layout, $t0)
             }
         }
+    }
+}
+
+unsafe impl<A: Component> IntoComponentSource for Vec<A> {
+    type Source = (u32, EntityLayoutBuf, Vec<ManuallyDrop<A>>);
+    fn into_component_source(mut self) -> Self::Source {
+        assert!(self.len() < (u32::MAX - 1) as usize);
+
+        let len = self.len() as u32;
+        let mut layout = EntityLayoutBuf::new();
+        layout.add_component_type(crate::object_system::object_id::<A>());
+
+        let out = unsafe {
+            let ptr = self.as_mut_ptr() as *mut ManuallyDrop<A>;
+            let length = self.len();
+            let capacity = self.capacity();
+            std::mem::forget(self);
+            Vec::from_raw_parts(ptr, length, capacity)
+        };
+        (len, layout, out)
+    }
+}
+
+unsafe impl<A: Component, const SIZE: usize> IntoComponentSource for [A; SIZE] {
+    type Source = (EntityLayoutBuf, [ManuallyDrop<A>; SIZE]);
+    fn into_component_source(self) -> Self::Source {
+        assert!(SIZE < (u32::MAX - 1) as usize);
+
+        let mut layout = EntityLayoutBuf::new();
+        layout.add_component_type(crate::object_system::object_id::<A>());
+
+        let out: [ManuallyDrop<A>; SIZE] = self.map(|v| ManuallyDrop::new(v));
+        (layout, out)
     }
 }
 

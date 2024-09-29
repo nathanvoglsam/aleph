@@ -38,7 +38,8 @@ use allocator_api2::vec;
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
     ComponentQueryItem, ComponentRegistry, ComponentSource, EntityId, EntityLayout,
-    EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, Query,
+    EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, IntoOneComponentSource,
+    OneComponentSource, Query,
 };
 
 ///
@@ -186,45 +187,50 @@ impl World {
         self.component_registry.register::<T>()
     }
 
-    pub fn extend_in<T: IntoComponentSource, A: Allocator>(&mut self, source: T, a: A) -> vec::Vec<EntityId, A> {
+    pub fn extend_one<T: IntoOneComponentSource>(&mut self, source: T) -> EntityId {
+        let source = source.into_one_component_source();
+        let layout = OneComponentSource::entity_layout(&source);
+
+        self.component_source_debug_assertions(&source);
+
+        assert!(
+            !layout.is_empty(),
+            "Tried to insert entity with 0 components"
+        );
+
+        // Locate the archetype and allocate space in the archetype for the new entities
+        let archetype_index = self.find_or_create_archetype(layout);
+        let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
+        let archetype_entity_base = archetype.allocate_entities(1);
+
+        // Copy the component data into the archetype buffers
+        archetype.copy_from_source(archetype_entity_base, source);
+
+        // Allocate the entity IDs and write them into the output slice
+        let location = EntityLocation {
+            archetype: archetype_index,
+            entity: archetype_entity_base,
+        };
+
+        // Allocate the ID
+        let id = self.entities.create(location);
+
+        // Write the ID to the archetype and the output ID list
+        archetype.update_entity_id(archetype_entity_base, id);
+
+        id
+    }
+
+    pub fn extend_discard<T: IntoComponentSource>(&mut self, source: T) {
         let source = source.into_component_source();
         let layout = source.entity_layout();
 
-        let mut ids = vec::Vec::new_in(a);
-        ids.resize(source.count() as usize, EntityId::null());
+        self.component_source_debug_assertions(&source);
 
-        #[cfg(debug_assertions)]
-        {
-            // Debug assertion that checks that the buffer sizes for each component are exactly the
-            // size and alignment needed.
-            let descs = layout.iter().map(|v| {
-                let desc = self
-                    .component_registry
-                    .lookup(v)
-                    .expect("Tried to insert an unregistered component type");
-                let buffer = source.data_for(v);
-                (desc, buffer)
-            });
-            for (desc, buffer) in descs {
-                let required_bytes = ids.len() * desc.size;
-                let actual_bytes = buffer.len();
-                debug_assert_eq!(
-                    required_bytes, actual_bytes,
-                    "The buffer provided for component {} was the wrong size",
-                    desc.name
-                );
-
-                let buffer_base = buffer.as_ptr() as usize;
-                debug_assert!(
-                    buffer_base & (desc.align - 1) == 0,
-                    "The buffer provided for component {} was not sufficiently aligned",
-                    desc.name
-                );
-            }
-        }
+        let count = source.count();
 
         assert!(
-            ids.len() < (u32::MAX - 1) as usize,
+            count < (u32::MAX - 1),
             "Can't allocate more than {} entities",
             u32::MAX - 1
         );
@@ -237,16 +243,16 @@ impl World {
         // Locate the archetype and allocate space in the archetype for the new entities
         let archetype_index = self.find_or_create_archetype(layout);
         let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
-        let archetype_entity_base = archetype.allocate_entities(ids.len() as u32);
+        let archetype_entity_base = archetype.allocate_entities(count);
 
         // Copy the component data into the archetype buffers
         archetype.copy_from_source(archetype_entity_base, source);
 
-        // Allocate the entity IDs and write them into the output slice
-        for (i, v) in ids.iter_mut().enumerate() {
+        // Allocate the entity IDs
+        for i in 0..count {
             // Calculate the final EntityLocation
-            let entity = archetype_entity_base.0.get() + i as u32;
-            let entity = ArchetypeEntityIndex(NonZeroU32::new(entity).unwrap());
+            let entity = archetype_entity_base.0.saturating_add(i);
+            let entity = ArchetypeEntityIndex(entity);
             let location = EntityLocation {
                 archetype: archetype_index,
                 entity,
@@ -254,10 +260,58 @@ impl World {
 
             // Allocate the ID
             let id = self.entities.create(location);
-
-            // Write the ID to the archetype and the output ID list
-            *v = id;
             archetype.update_entity_id(entity, id);
+        }
+    }
+
+    pub fn extend_in<T: IntoComponentSource, A: Allocator>(
+        &mut self,
+        source: T,
+        a: A,
+    ) -> vec::Vec<EntityId, A> {
+        let source = source.into_component_source();
+        let layout = source.entity_layout();
+
+        self.component_source_debug_assertions(&source);
+
+        let count = source.count();
+        let mut ids = vec::Vec::with_capacity_in(count as usize, a);
+
+        assert!(
+            count < (u32::MAX - 1),
+            "Can't allocate more than {} entities",
+            u32::MAX - 1
+        );
+
+        assert!(
+            !layout.is_empty(),
+            "Tried to insert entity with 0 components"
+        );
+
+        // Locate the archetype and allocate space in the archetype for the new entities
+        let archetype_index = self.find_or_create_archetype(layout);
+        let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
+        let archetype_entity_base = archetype.allocate_entities(count);
+
+        // Copy the component data into the archetype buffers
+        archetype.copy_from_source(archetype_entity_base, source);
+
+        // Allocate the entity IDs and write them into the output slice
+
+        for i in 0..count {
+            // Calculate the final EntityLocation
+            let entity = archetype_entity_base.0.saturating_add(i);
+            let entity = ArchetypeEntityIndex(entity);
+            let location = EntityLocation {
+                archetype: archetype_index,
+                entity,
+            };
+
+            // Allocate the ID
+            let id = self.entities.create(location);
+            archetype.update_entity_id(entity, id);
+
+            ids.push(id);
         }
 
         ids
@@ -521,6 +575,39 @@ impl World {
 
 /// Private function implementations
 impl World {
+    fn component_source_debug_assertions<T: ComponentSource>(&self, source: &T) {
+        #[cfg(debug_assertions)]
+        {
+            let layout = source.entity_layout();
+            // Debug assertion that checks that the buffer sizes for each component are exactly the
+            // size and alignment needed.
+            let descs = layout.iter().map(|v| {
+                let desc = self
+                    .component_registry
+                    .lookup(v)
+                    .expect("Tried to insert an unregistered component type");
+                let buffer = source.data_for(v);
+                (desc, buffer)
+            });
+            for (desc, buffer) in descs {
+                let required_bytes = source.count() as usize * desc.size;
+                let actual_bytes = buffer.len();
+                debug_assert_eq!(
+                    required_bytes, actual_bytes,
+                    "The buffer provided for component {} was the wrong size",
+                    desc.name
+                );
+
+                let buffer_base = buffer.as_ptr() as usize;
+                debug_assert!(
+                    buffer_base & (desc.align - 1) == 0,
+                    "The buffer provided for component {} was not sufficiently aligned",
+                    desc.name
+                );
+            }
+        }
+    }
+
     fn follow_archetype_link<const ADD: bool>(
         &mut self,
         source: ArchetypeIndex,
