@@ -64,6 +64,13 @@ impl<T> Grave<T> {
     }
 }
 
+impl<T> From<T> for Grave<T> {
+    #[inline(always)]
+    fn from(value: T) -> Self {
+        Self(value)
+    }
+}
+
 // Safety: We can never give out a shared reference to the inner type so it's safe to share this
 //         type across threads as we can never get to the inner T that can't be.
 unsafe impl<T: Send> Sync for Grave<T> {}
