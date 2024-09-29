@@ -174,6 +174,30 @@ impl<'world, Q: ComponentQuery, const CHECKED: bool> Iterator for Query<'world, 
     }
 }
 
+impl<'world, Q: ComponentQuery, const CHECKED: bool> Drop for Query<'world, Q, CHECKED> {
+    fn drop(&mut self) {
+        // If we drop a Query while partially through iterating an archetype we have to release the
+        // dynamic borrows on that archetype. If we don't it will leave the borrows active and we'll
+        // never be able to access that archetype mutably again (or at all if it was already a
+        // mutable borrow)
+        match &mut self.state {
+            QueryState::Entry => {}
+            QueryState::FindingArchetype(_) => {}
+            QueryState::IteratingArchetype(index, _ids, _ids_end, _fetch) => {
+                // Safety: We never construct this state with an out of bounds index so this
+                //         unchecked index is safe to perform if the remains true.
+                let archetype =
+                    unsafe { self.world.archetypes.get_unchecked(index.0.get() as usize) };
+
+                if CHECKED {
+                    Q::Fetch::release_borrow(archetype)
+                }
+            }
+            QueryState::Terminal => {}
+        }
+    }
+}
+
 fn bounds_check_archetype_index_increment(
     world: &World,
     i: ArchetypeIndex,

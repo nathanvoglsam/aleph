@@ -406,8 +406,8 @@ fn query_checked_test_colliding_access() {
         [Mesh::new(5), Mesh::new(6)],
     ));
 
-    let query_a = world.query_checked::<&mut Position>();
-    let query_b = world.query_checked::<(&Position, &mut Mesh)>();
+    let query_a = world.query::<&mut Position>();
+    let query_b = world.query::<(&Position, &mut Mesh)>();
 
     let iter = query_a.zip(query_b);
     assert_eq!(iter.count(), 2);
@@ -433,8 +433,8 @@ fn query_checked_test_safe_access() {
 
     // query_b will iterate the same archetype as query_a, but only query_a will ask for access to
     // 'Scale' so both queries can run in parallel.
-    let query_a = world.query_checked::<(&Position, &mut Scale)>();
-    let query_b = world.query_checked::<&Position>();
+    let query_a = world.query::<(&Position, &mut Scale)>();
+    let query_b = world.query::<&Position>();
 
     let iter = query_a.zip(query_b);
     assert_eq!(iter.count(), 2);

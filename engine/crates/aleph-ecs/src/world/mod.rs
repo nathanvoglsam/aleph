@@ -374,23 +374,13 @@ impl World {
 
     /// Constructs a safe query that performs no runtime borrow checking, but will only allow shared
     /// access to any component in the query.
-    pub fn query<Q: ComponentQuery>(&self) -> Query<Q, false> {
-        assert!(
-            !Q::wants_any_mutable_access(),
-            "Tried to execute a query with mutable access without mutable world"
-        );
+    pub fn query<Q: ComponentQuery>(&self) -> Query<Q, true> {
         Query::new(self)
     }
 
     /// Constructs a safe query that performs no runtime borrow checking, and allows mutable access
     /// to components in the query, but requires exclusive access to the world.
     pub fn query_mut<Q: ComponentQuery>(&mut self) -> Query<Q, false> {
-        Query::new(self)
-    }
-
-    /// Constructs a query that allows mutable access to components via a shared reference to the
-    /// world. Safe access is enforced by runtime borrow checking.
-    pub fn query_checked<Q: ComponentQuery>(&self) -> Query<Q, true> {
         Query::new(self)
     }
 
