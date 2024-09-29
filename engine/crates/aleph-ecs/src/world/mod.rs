@@ -32,6 +32,8 @@ use std::num::NonZeroU32;
 
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
+use allocator_api2::alloc::{Allocator, Global};
+use allocator_api2::vec;
 
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
@@ -184,11 +186,11 @@ impl World {
         self.component_registry.register::<T>()
     }
 
-    pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> Vec<EntityId> {
+    pub fn extend_in<T: IntoComponentSource, A: Allocator>(&mut self, source: T, a: A) -> vec::Vec<EntityId, A> {
         let source = source.into_component_source();
         let layout = source.entity_layout();
 
-        let mut ids = Vec::new();
+        let mut ids = vec::Vec::new_in(a);
         ids.resize(source.count() as usize, EntityId::null());
 
         #[cfg(debug_assertions)]
@@ -259,6 +261,10 @@ impl World {
         }
 
         ids
+    }
+
+    pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> vec::Vec<EntityId> {
+        self.extend_in(source, Global)
     }
 
     /// Adds the given component to the entity pointed to by the provided ID.
