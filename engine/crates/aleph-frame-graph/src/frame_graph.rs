@@ -28,9 +28,12 @@
 //
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use aleph_any::AnyArc;
-use aleph_device_allocators::LinearDescriptorPool;
+use aleph_device_allocators::{
+    AllocatorPool, Grave, LinearDescriptorPool, LinearDescriptorPoolFactory,
+};
 use aleph_nstr::nstr;
 use aleph_rhi_api::*;
 use blink_alloc::Blink;
@@ -51,7 +54,7 @@ pub struct FrameGraph<A: PassArgs = ()> {
     ///
     /// This won't be directly used by a constructed graph but must be stored inside the graph in
     /// order to keep the allocations for all the render passes alive.
-    pub(crate) _arena: Blink,
+    pub(crate) _arena: Grave<Blink>,
 
     /// The device object that this frame graph is created to work with
     pub(crate) device: AnyArc<dyn IDevice>,
@@ -98,7 +101,7 @@ pub struct FrameGraph<A: PassArgs = ()> {
     pub(crate) transient_bundles: Vec<TransientResourceBundle>,
 
     /// Another 'transient pool' of sorts, but used for descriptors.
-    pub(crate) linear_descriptor_pools: Vec<LinearDescriptorPool>,
+    pub(crate) linear_descriptor_pools: Arc<AllocatorPool<LinearDescriptorPoolFactory>>,
 }
 
 impl<A: PassArgs> FrameGraph<A> {
@@ -114,12 +117,9 @@ impl<A: PassArgs> FrameGraph<A> {
     #[aleph_profile::function]
     pub unsafe fn allocate_transients(&mut self, num_frames: usize) {
         self.transient_bundles.clear();
-        self.linear_descriptor_pools.clear();
         for _ in 0..num_frames {
             self.transient_bundles
                 .push(self.allocate_transient_resource_bundle());
-            self.linear_descriptor_pools
-                .push(LinearDescriptorPool::new(self.device.as_ref(), 1024).unwrap())
         }
     }
 
@@ -148,7 +148,7 @@ impl<A: PassArgs> FrameGraph<A> {
         self.execute_pre_assertions(frame_index, import_bundle);
 
         let transient_bundle = &self.transient_bundles[frame_index];
-        let linear_descriptor_pool = &self.linear_descriptor_pools[frame_index];
+        let linear_descriptor_pool = self.linear_descriptor_pools.get();
 
         // Reset the pool, ready to allocate fresh descriptors.
         //
@@ -160,7 +160,7 @@ impl<A: PassArgs> FrameGraph<A> {
             device: self.device.as_ref(),
             import_bundle,
             transient_bundle,
-            linear_descriptor_pool,
+            linear_descriptor_pool: linear_descriptor_pool.as_ref(),
         };
 
         encoder.begin_event(Color::BLUE, nstr!("FrameGraph::execute"));

@@ -52,6 +52,7 @@
 use std::ptr::NonNull;
 
 use aleph_arena_drop_list::DropLink;
+use aleph_device_allocators::{AllocatorPool, Grave, LinearDescriptorPoolFactory};
 use aleph_nstr::NStr;
 use aleph_rhi_api::*;
 use allocator_api2::vec::Vec as BVec;
@@ -343,7 +344,7 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let imported_resources = std::mem::take(&mut self.imported_resources);
 
         Ok(FrameGraph {
-            _arena: arena,
+            _arena: Grave::new(arena),
             device: device.upgrade(),
             execution_bundles,
             ir_nodes,
@@ -352,7 +353,10 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             resource_versions,
             imported_resources,
             transient_bundles: Vec::new(),
-            linear_descriptor_pools: Vec::new(),
+            linear_descriptor_pools: AllocatorPool::new(
+                LinearDescriptorPoolFactory::new(device.upgrade(), 1024),
+                64,
+            ),
         })
     }
 }
