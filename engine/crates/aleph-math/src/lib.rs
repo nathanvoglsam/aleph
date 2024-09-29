@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+pub use to_double::ToDouble;
+pub use to_single::ToSingle;
 pub use ultraviolet::*;
 
 pub mod unprojection {
@@ -97,5 +99,149 @@ pub mod unprojection {
         let b = proj.cols[1][1];
         let near = dbg!(proj.cols[3][2]);
         unproject_point(a, b, near, point)
+    }
+}
+
+mod to_double {
+    use ultraviolet::*;
+
+    pub trait ToDouble {
+        type Target;
+        fn to_double(self) -> Self::Target;
+    }
+
+    impl ToDouble for Vec2 {
+        type Target = DVec2;
+
+        #[inline(always)]
+        fn to_double(self) -> Self::Target {
+            DVec2::new(self.x as f64, self.y as f64)
+        }
+    }
+
+    impl ToDouble for Vec3 {
+        type Target = DVec3;
+
+        #[inline(always)]
+        fn to_double(self) -> Self::Target {
+            DVec3::new(self.x as f64, self.y as f64, self.z as f64)
+        }
+    }
+
+    impl ToDouble for Vec4 {
+        type Target = DVec4;
+
+        #[inline(always)]
+        fn to_double(self) -> Self::Target {
+            DVec4::new(self.x as f64, self.y as f64, self.z as f64, self.w as f64)
+        }
+    }
+
+    impl ToDouble for Bivec2 {
+        type Target = DBivec2;
+
+        #[inline(always)]
+        fn to_double(self) -> Self::Target {
+            DBivec2::new(self.xy as f64)
+        }
+    }
+
+    impl ToDouble for Bivec3 {
+        type Target = DBivec3;
+
+        #[inline(always)]
+        fn to_double(self) -> Self::Target {
+            DBivec3::new(self.xy as f64, self.xz as f64, self.yz as f64)
+        }
+    }
+
+    impl ToDouble for Rotor2 {
+        type Target = DRotor2;
+
+        #[inline(always)]
+        fn to_double(self) -> Self::Target {
+            DRotor2::new(self.s as f64, self.bv.to_double())
+        }
+    }
+
+    impl ToDouble for Rotor3 {
+        type Target = DRotor3;
+
+        #[inline(always)]
+        fn to_double(self) -> Self::Target {
+            DRotor3::new(self.s as f64, self.bv.to_double())
+        }
+    }
+}
+
+mod to_single {
+    use ultraviolet::*;
+
+    pub trait ToSingle {
+        type Target;
+        fn to_single(self) -> Self::Target;
+    }
+
+    impl ToSingle for DVec2 {
+        type Target = Vec2;
+
+        #[inline(always)]
+        fn to_single(self) -> Self::Target {
+            Vec2::new(self.x as f32, self.y as f32)
+        }
+    }
+
+    impl ToSingle for DVec3 {
+        type Target = Vec3;
+
+        #[inline(always)]
+        fn to_single(self) -> Self::Target {
+            Vec3::new(self.x as f32, self.y as f32, self.z as f32)
+        }
+    }
+
+    impl ToSingle for DVec4 {
+        type Target = Vec4;
+
+        #[inline(always)]
+        fn to_single(self) -> Self::Target {
+            Vec4::new(self.x as f32, self.y as f32, self.z as f32, self.w as f32)
+        }
+    }
+
+    impl ToSingle for DBivec2 {
+        type Target = Bivec2;
+
+        #[inline(always)]
+        fn to_single(self) -> Self::Target {
+            Bivec2::new(self.xy as f32)
+        }
+    }
+
+    impl ToSingle for DBivec3 {
+        type Target = Bivec3;
+
+        #[inline(always)]
+        fn to_single(self) -> Self::Target {
+            Bivec3::new(self.xy as f32, self.xz as f32, self.yz as f32)
+        }
+    }
+
+    impl ToSingle for DRotor2 {
+        type Target = Rotor2;
+
+        #[inline(always)]
+        fn to_single(self) -> Self::Target {
+            Rotor2::new(self.s as f32, self.bv.to_single())
+        }
+    }
+
+    impl ToSingle for DRotor3 {
+        type Target = Rotor3;
+
+        #[inline(always)]
+        fn to_single(self) -> Self::Target {
+            Rotor3::new(self.s as f32, self.bv.to_single())
+        }
     }
 }
