@@ -44,7 +44,7 @@ RWTexture2D<float4> g_output : register(u4, space0);
 struct CameraLayout {
     float4x4 view_matrix;
     float4x4 proj_matrix;
-    float3 position;
+    float4 position;
 };
 
 [[vk::binding(5, 0)]]
