@@ -184,8 +184,8 @@ impl IPlugin for PluginRender {
                     let size = window.drawable_size();
                     let aspect = size.0 as f32 / size.1 as f32;
                     let camera_info = CameraInfo {
-                        position: -t.position.to_single(),
-                        orientation: t.rotation.reversed(),
+                        position: t.position.to_single(),
+                        orientation: t.rotation,
                         projection: PerspectiveInfo::new(c.vertical_fov, c.z_near, aspect),
                     };
                     board.publish::<CameraInfo>(camera_info);
