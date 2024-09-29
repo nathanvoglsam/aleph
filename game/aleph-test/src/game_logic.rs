@@ -142,7 +142,7 @@ impl IPlugin for PluginGameLogic {
             Transform {
                 position: DVec3::zero(),
                 rotation: Rotor3::identity(),
-                scale: Vec3::one(),
+                scale: Vec3::one() * 2.0,
             },
             StaticMesh(0),
         ));
