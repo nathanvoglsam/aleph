@@ -82,7 +82,7 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         let normal = mul(ws_normal, float3x3(g_camera.view_matrix));
 
         // Camera and light vectors
-        let frag_to_camera = g_camera.position - viewspacePoint;
+        let frag_to_camera = -viewspacePoint;
         let frag_to_light = light_pos.xyz - viewspacePoint;
 
         // Derived material parameters
