@@ -127,6 +127,15 @@ impl IPlugin for PluginGameLogic {
             },
         ));
 
+        let throbber = world.extend_one((
+            Transform {
+                position: DVec3::zero(),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            StaticMesh(0),
+        ));
+
         registry.schedule().add_exclusive_at_end_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
@@ -158,6 +167,7 @@ impl IPlugin for PluginGameLogic {
             make_label!("aleph_test::logic"),
             move |mut world: ResMut<WorldResource>| {
                 let elapsed = frame_timer.elapsed_time();
+
                 let x = elapsed.sin() * 5.0;
                 let position = Vec3::new(x as f32, 0.0, 0.0);
                 let target = Vec3::new(0.0, 0.0, -3.0);
@@ -169,6 +179,13 @@ impl IPlugin for PluginGameLogic {
                     .unwrap();
                 transform.position = view.extract_translation().to_double();
                 transform.rotation = view.extract_rotation();
+
+                let y = (elapsed * 0.5).sin() * 10.0;
+                let (transform, _camera) = world
+                    .0
+                    .query_one_mut::<(&mut Transform, &StaticMesh)>(throbber)
+                    .unwrap();
+                transform.position = DVec3::new(0.0, y, -5.0);
             },
         );
 
