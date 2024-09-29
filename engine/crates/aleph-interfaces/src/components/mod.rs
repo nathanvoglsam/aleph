@@ -61,14 +61,12 @@ mod camera {
     #[derive(Clone, PartialEq, Debug, Default)]
     #[repr(C)]
     pub struct Camera {
-        /// The field of view of the camera.
-        pub fov: f32,
+        /// The vertical field-of-view of the perspective projection, in _degrees_.
+        pub vertical_fov: f32,
 
-        /// The z distance of the near plane. Must be > 0 and < [`Camera::far`].
-        pub near: f32,
-
-        /// The z distance of the far plane. Must be > 0 and > [`Camera::near`].
-        pub far: f32,
+        /// The near plane distance from the camera. We always use a reversed-z infinite perspective
+        /// projection so there is no far plane to specify.
+        pub z_near: f32,
     }
     object_system::unsafe_impl_iobject!(Camera, "01922c0e-dde9-72f0-b62f-dd78b074ed54");
 }
@@ -86,6 +84,17 @@ mod lights {
     object_system::unsafe_impl_iobject!(PointLight, "01922c0e-dde9-72f0-b62f-dd8a96c3f21c");
 }
 
+mod static_mesh {
+    ///
+    ///
+    ///
+    #[derive(Clone, PartialEq, Debug, Default)]
+    #[repr(C)]
+    pub struct StaticMesh(pub u32);
+    object_system::unsafe_impl_iobject!(StaticMesh, "01923c3a-624e-7100-b97a-50e9baaa5ca0");
+}
+
 pub use camera::Camera;
 pub use lights::PointLight;
+pub use static_mesh::StaticMesh;
 pub use transform::Transform;

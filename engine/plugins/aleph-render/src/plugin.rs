@@ -30,12 +30,12 @@
 use std::ops::Deref;
 
 use aleph_frame_graph::FrameGraphBuilder;
-use aleph_math::{Mat4, Vec3};
+use aleph_math::ToSingle;
 use aleph_pin_board::ScopedParamBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
-use interfaces::components::Transform;
+use interfaces::components::{self, Camera, Transform};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
@@ -49,7 +49,7 @@ use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
     CameraInfo, DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, PerspectiveInfo,
     RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, RendererBuilder,
-    ShaderDatabaseAccessor, StaticMesh,
+    ShaderDatabaseAccessor,
 };
 
 use crate::egui_draw::EguiPassContext;
@@ -74,9 +74,6 @@ impl IPlugin for PluginRender {
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
 
-        registrar.depends_on::<dyn IFrameTimerProvider>();
-        registrar.must_init_after::<dyn IFrameTimerProvider>();
-
         registrar.depends_on::<dyn IRhiProvider>();
         registrar.must_init_after::<dyn IRhiProvider>();
 
@@ -94,12 +91,6 @@ impl IPlugin for PluginRender {
             .get_interface::<dyn IWindowProvider>()
             .unwrap()
             .get_window()
-            .unwrap();
-
-        let frame_timer = registry
-            .get_interface::<dyn IFrameTimerProvider>()
-            .unwrap()
-            .get_frame_timer()
             .unwrap();
 
         // Get the render data slot for egui and the egui provider
@@ -172,34 +163,32 @@ impl IPlugin for PluginRender {
 
                 render_scene.clear();
 
-                let query = world.0.query::<&Transform>();
-                for (_id, c) in query {
+                let query = world.0.query::<(&Transform, &components::StaticMesh)>();
+                for (_id, (t, _)) in query {
                     render_scene.push(
                         RenderTransform {
-                            position: c.position,
-                            rotation: c.rotation,
-                            scale: c.scale,
+                            position: t.position,
+                            rotation: t.rotation,
+                            scale: t.scale,
                         },
-                        StaticMesh,
+                        aleph_renderer::StaticMesh,
                     );
                 }
 
                 board.scope(|board| {
-                    let elapsed = frame_timer.elapsed_time();
-                    let x = elapsed.sin() * 5.0;
+                    board.publish::<RenderSceneParam>(&render_scene);
 
-                    let position = Vec3::new(x as f32, 0.0, 0.0);
-                    let target = Vec3::new(0.0, 0.0, -3.0);
-                    let view = Mat4::look_at(position, target, Vec3::unit_y());
+                    let mut query = world.0.query::<(&Transform, &Camera)>();
+                    let (_, (t, c)) = query.next().unwrap();
 
                     let size = window.drawable_size();
                     let aspect = size.0 as f32 / size.1 as f32;
-                    board.publish::<CameraInfo>(CameraInfo {
-                        position: -view.extract_translation(),
-                        orientation: view.extract_rotation().reversed(),
-                        projection: PerspectiveInfo::default_with_aspect(aspect),
-                    });
-                    board.publish::<RenderSceneParam>(&render_scene);
+                    let camera_info = CameraInfo {
+                        position: -t.position.to_single(),
+                        orientation: t.rotation.reversed(),
+                        projection: PerspectiveInfo::new(c.vertical_fov, c.z_near, aspect),
+                    };
+                    board.publish::<CameraInfo>(camera_info);
 
                     if let Some(e) = egui_data.as_mut() {
                         let render_data = e.render_data.take();

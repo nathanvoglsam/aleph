@@ -189,7 +189,7 @@ impl World {
 
     /// Add a new entity to the world directly into the target archetype declared on the generic
     /// component source provided.
-    /// 
+    ///
     /// This is a specialization of [`World::extend`] that excepts a constrained [`ComponentSource`]
     /// that only contains components for a single entity. This allows us to return a single ID
     /// instead of a list.
@@ -228,7 +228,7 @@ impl World {
     }
 
     /// A specialization of [`World::extend`] that does not yield the IDs of the created entities.
-    /// 
+    ///
     /// Useful if you don't need them and want to avoid allocating the list for returning them.
     pub fn extend_discard<T: IntoComponentSource>(&mut self, source: T) {
         let source = source.into_component_source();
@@ -276,7 +276,7 @@ impl World {
     /// A specialization of [`World::extend`] that takes an allocator. The returned list will
     /// contain the IDs of the created entities, but this list will be backed by the given
     /// allocator.
-    /// 
+    ///
     /// Useful if you have an arena handy and want cheap allocation.
     pub fn extend_in<T: IntoComponentSource, A: Allocator>(
         &mut self,

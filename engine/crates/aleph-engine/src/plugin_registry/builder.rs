@@ -89,6 +89,7 @@ impl PluginRegistryBuilder {
         world.register::<components::Transform>();
         world.register::<components::Camera>();
         world.register::<components::PointLight>();
+        world.register::<components::StaticMesh>();
 
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {

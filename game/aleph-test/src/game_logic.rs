@@ -37,9 +37,12 @@ use aleph::interfaces::plugin::{
 };
 use aleph::interfaces::schedule::CoreStage;
 use aleph::Engine;
-use aleph_engine::interfaces::components::Transform;
+use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform};
 use aleph_engine::interfaces::label::make_label;
-use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
+use aleph_engine::interfaces::math::{DVec3, Mat4, Rotor3, ToDouble, Vec3};
+use aleph_engine::interfaces::platform::IFrameTimerProvider;
+use aleph_engine::interfaces::schedule::WorldResource;
+use aleph_engine::interfaces::scheduler::ResMut;
 
 struct PluginGameLogic();
 
@@ -55,6 +58,9 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.depends_on::<dyn IFrameTimerProvider>();
+        registrar.must_init_after::<dyn IFrameTimerProvider>();
+
         //registrar.depends_on::<dyn IEguiContextProvider>();
         registrar.must_init_after::<dyn IEguiContextProvider>();
     }
@@ -63,38 +69,65 @@ impl IPlugin for PluginGameLogic {
         let mut demo_window = egui_demo_lib::DemoWindows::default();
         let mut colour_test = egui_demo_lib::ColorTest::default();
 
+        let frame_timer = registry
+            .get_interface::<dyn IFrameTimerProvider>()
+            .unwrap()
+            .get_frame_timer()
+            .unwrap();
+
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
 
         let world = registry.world();
-        world.extend_discard([
-            Transform {
-                position: DVec3::new(0.0, 0.0, -4.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            Transform {
-                position: DVec3::new(-3.0, 0.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            Transform {
-                position: DVec3::new(-3.0, 0.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            Transform {
-                position: DVec3::new(0.0, 3.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            Transform {
-                position: DVec3::new(0.0, -3.0, -3.0),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-        ]);
+        world.extend_discard((
+            [
+                Transform {
+                    position: DVec3::new(0.0, 0.0, -3.0),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::one(),
+                },
+                Transform {
+                    position: DVec3::new(-3.0, 0.0, -3.0),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::one(),
+                },
+                Transform {
+                    position: DVec3::new(3.0, 0.0, -3.0),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::one(),
+                },
+                Transform {
+                    position: DVec3::new(0.0, 3.0, -3.0),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::one(),
+                },
+                Transform {
+                    position: DVec3::new(0.0, -3.0, -3.0),
+                    rotation: Rotor3::identity(),
+                    scale: Vec3::one(),
+                },
+            ],
+            [
+                StaticMesh(0),
+                StaticMesh(0),
+                StaticMesh(0),
+                StaticMesh(0),
+                StaticMesh(0),
+            ],
+        ));
 
-        registry.schedule().add_exclusive_at_start_system_to_stage(
+        let camera = world.extend_one((
+            Transform {
+                position: DVec3::zero(),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            Camera {
+                vertical_fov: 90.0,
+                z_near: 0.1,
+            },
+        ));
+
+        registry.schedule().add_exclusive_at_end_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
             move || {
@@ -117,6 +150,25 @@ impl IPlugin for PluginGameLogic {
                             egui_ctx.settings_ui(ui);
                         });
                 }
+            },
+        );
+
+        registry.schedule().add_system_to_stage(
+            CoreStage::Update.into(),
+            make_label!("aleph_test::logic"),
+            move |mut world: ResMut<WorldResource>| {
+                let elapsed = frame_timer.elapsed_time();
+                let x = elapsed.sin() * 5.0;
+                let position = Vec3::new(x as f32, 0.0, 0.0);
+                let target = Vec3::new(0.0, 0.0, -3.0);
+                let view = Mat4::look_at(position, target, Vec3::unit_y());
+
+                let (transform, _camera) = world
+                    .0
+                    .query_one_mut::<(&mut Transform, &Camera)>(camera)
+                    .unwrap();
+                transform.position = view.extract_translation().to_double();
+                transform.rotation = view.extract_rotation();
             },
         );
 
