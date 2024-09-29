@@ -139,8 +139,6 @@ impl GamepadsImpl {
                 let axis = *axis;
                 let value = *value;
 
-                log::info!("Controller Axis Motion: {which} {axis:?} {value}");
-
                 self.update_active_controller(which);
 
                 let entry = gamepads.get_mut(&which).unwrap();
@@ -150,8 +148,6 @@ impl GamepadsImpl {
                 let which = *which;
                 let button = *button;
 
-                log::info!("Controller Button Down: {which} {button:?}");
-
                 self.update_active_controller(which);
 
                 let entry = gamepads.get_mut(&which).unwrap();
@@ -160,8 +156,6 @@ impl GamepadsImpl {
             SdlEvent::ControllerButtonUp { which, button, .. } => {
                 let which = *which;
                 let button = *button;
-
-                log::info!("Controller Button Up: {which} {button:?}");
 
                 self.update_active_controller(which);
 
