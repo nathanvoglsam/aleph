@@ -39,8 +39,8 @@ use aleph::interfaces::schedule::CoreStage;
 use aleph::Engine;
 use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform};
 use aleph_engine::interfaces::label::make_label;
-use aleph_engine::interfaces::math::{DVec3, Mat4, Rotor3, ToDouble, Vec3};
-use aleph_engine::interfaces::platform::IFrameTimerProvider;
+use aleph_engine::interfaces::math::{DVec3, Rotor3, ToDouble, Vec3};
+use aleph_engine::interfaces::platform::{GamepadAxis, IFrameTimerProvider, IGamepadsProvider};
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
 
@@ -58,6 +58,9 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.depends_on::<dyn IGamepadsProvider>();
+        registrar.must_init_after::<dyn IGamepadsProvider>();
+
         registrar.depends_on::<dyn IFrameTimerProvider>();
         registrar.must_init_after::<dyn IFrameTimerProvider>();
 
@@ -74,6 +77,14 @@ impl IPlugin for PluginGameLogic {
             .unwrap()
             .get_frame_timer()
             .unwrap();
+
+        let gamepads = registry
+            .get_interface::<dyn IGamepadsProvider>()
+            .unwrap()
+            .get_gamepads()
+            .unwrap();
+
+        let gamepad = gamepads.get_accessor();
 
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
 
@@ -162,23 +173,54 @@ impl IPlugin for PluginGameLogic {
             },
         );
 
+        let mut l_dir = 0.0f32;
+        let mut u_dir = 0.0f32;
         registry.schedule().add_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::logic"),
             move |mut world: ResMut<WorldResource>| {
+                let delta = frame_timer.delta_time();
                 let elapsed = frame_timer.elapsed_time();
 
-                let x = elapsed.sin() * 5.0;
-                let position = Vec3::new(x as f32, 0.0, 0.0);
-                let target = Vec3::new(0.0, 0.0, -3.0);
-                let view = Mat4::look_at(position, target, Vec3::unit_y());
+                if let Some(state) = gamepad.get_active_controller_state() {
+                    let (transform, _camera) = world
+                        .0
+                        .query_one_mut::<(&mut Transform, &Camera)>(camera)
+                        .unwrap();
 
-                let (transform, _camera) = world
-                    .0
-                    .query_one_mut::<(&mut Transform, &Camera)>(camera)
-                    .unwrap();
-                transform.position = view.extract_translation().to_double();
-                transform.rotation = view.extract_rotation();
+                    let l = state.axis(GamepadAxis::RightX);
+                    let u = state.axis(GamepadAxis::RightY);
+                    let l = deadzone(unorm_i16_to_f32(l), 0.1);
+                    let u = deadzone(unorm_i16_to_f32(u), 0.1);
+                    l_dir += l * (90.0f32 * delta as f32);
+                    u_dir -= u * (90.0f32 * delta as f32);
+                    let yaw = Rotor3::from_rotation_xz(l_dir.to_radians());
+                    let pitch = Rotor3::from_rotation_yz(u_dir.to_radians());
+                    transform.rotation = yaw * pitch;
+
+                    let x = state.axis(GamepadAxis::LeftX);
+                    let z = state.axis(GamepadAxis::LeftY);
+                    let x = deadzone(unorm_i16_to_f32(x), 0.1);
+                    let z = deadzone(unorm_i16_to_f32(z), 0.1);
+
+                    // Get the camera's direction vectors
+                    let cam_forward = transform.rotation
+                        * (-Vec3::unit_z())
+                        * Vec3::broadcast(z * (4.0 * delta as f32));
+                    let cam_right = transform.rotation
+                        * (-Vec3::unit_x())
+                        * Vec3::broadcast(x * (4.0 * delta as f32));
+
+                    transform.position -= cam_forward.to_double();
+                    transform.position -= cam_right.to_double();
+
+                    let yd = state.axis(GamepadAxis::TriggerLeft);
+                    let yu = state.axis(GamepadAxis::TriggerRight);
+                    let yd = deadzone(unorm_i16_to_f32(yd), 0.1);
+                    let yu = deadzone(unorm_i16_to_f32(yu), 0.1);
+                    let y = yu - yd;
+                    transform.position.y += (y as f64) * (4.0 * delta);
+                }
 
                 let y = (elapsed * 0.5).sin() * 10.0;
                 let (transform, _camera) = world
@@ -200,4 +242,16 @@ pub fn engine_runner() {
     engine.default_plugins();
     engine.plugin(PluginGameLogic::new());
     engine.build(|engine| engine.run())
+}
+
+fn unorm_i16_to_f32(v: i16) -> f32 {
+    ((v as f32) / (i16::MAX as f32)).clamp(-1.0, 1.0)
+}
+fn deadzone(v: f32, dead: f32) -> f32 {
+    let norm_factor = 1.0 / (1.0 - dead);
+    if v.is_sign_negative() {
+        (v.min(-dead) + dead) * norm_factor
+    } else {
+        (v.max(dead) - dead) * norm_factor
+    }
 }
