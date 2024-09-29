@@ -187,6 +187,12 @@ impl World {
         self.component_registry.register::<T>()
     }
 
+    /// Add a new entity to the world directly into the target archetype declared on the generic
+    /// component source provided.
+    /// 
+    /// This is a specialization of [`World::extend`] that excepts a constrained [`ComponentSource`]
+    /// that only contains components for a single entity. This allows us to return a single ID
+    /// instead of a list.
     pub fn extend_one<T: IntoOneComponentSource>(&mut self, source: T) -> EntityId {
         let source = source.into_one_component_source();
         let layout = OneComponentSource::entity_layout(&source);
@@ -221,6 +227,9 @@ impl World {
         id
     }
 
+    /// A specialization of [`World::extend`] that does not yield the IDs of the created entities.
+    /// 
+    /// Useful if you don't need them and want to avoid allocating the list for returning them.
     pub fn extend_discard<T: IntoComponentSource>(&mut self, source: T) {
         let source = source.into_component_source();
         let layout = source.entity_layout();
@@ -264,6 +273,11 @@ impl World {
         }
     }
 
+    /// A specialization of [`World::extend`] that takes an allocator. The returned list will
+    /// contain the IDs of the created entities, but this list will be backed by the given
+    /// allocator.
+    /// 
+    /// Useful if you have an arena handy and want cheap allocation.
     pub fn extend_in<T: IntoComponentSource, A: Allocator>(
         &mut self,
         source: T,
@@ -317,6 +331,10 @@ impl World {
         ids
     }
 
+    /// Extends the world by adding a set of entities directly into a target archetype. Takes a
+    /// generic component source which contains a buffer of each component type that can be copied
+    /// directly into the archetype's buffers. The archetype is known based on the set of components
+    /// the [`ComponentSource`] declares it to contain.
     pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> vec::Vec<EntityId> {
         self.extend_in(source, Global)
     }
