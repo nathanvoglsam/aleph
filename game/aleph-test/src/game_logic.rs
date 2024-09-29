@@ -66,31 +66,33 @@ impl IPlugin for PluginGameLogic {
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
 
         let world = registry.world();
-        let _id = world.extend(([Transform {
-            position: DVec3::new(0.0, 0.0, -4.0),
-            rotation: Rotor3::identity(),
-            scale: Vec3::one(),
-        }],));
-        let _id = world.extend(([Transform {
-            position: DVec3::new(-3.0, 0.0, -3.0),
-            rotation: Rotor3::identity(),
-            scale: Vec3::one(),
-        }],));
-        let _id = world.extend(([Transform {
-            position: DVec3::new(3.0, 0.0, -3.0),
-            rotation: Rotor3::identity(),
-            scale: Vec3::one(),
-        }],));
-        let _id = world.extend(([Transform {
-            position: DVec3::new(0.0, 3.0, -3.0),
-            rotation: Rotor3::identity(),
-            scale: Vec3::one(),
-        }],));
-        let _id = world.extend(([Transform {
-            position: DVec3::new(0.0, -3.0, -3.0),
-            rotation: Rotor3::identity(),
-            scale: Vec3::one(),
-        }],));
+        world.extend_discard([
+            Transform {
+                position: DVec3::new(0.0, 0.0, -4.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            Transform {
+                position: DVec3::new(-3.0, 0.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            Transform {
+                position: DVec3::new(-3.0, 0.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            Transform {
+                position: DVec3::new(0.0, 3.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            Transform {
+                position: DVec3::new(0.0, -3.0, -3.0),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+        ]);
 
         registry.schedule().add_exclusive_at_start_system_to_stage(
             CoreStage::Update.into(),
