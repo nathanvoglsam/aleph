@@ -172,7 +172,7 @@ impl IPlugin for PluginRender {
 
                 render_scene.clear();
 
-                let query = world.0.query_checked::<&Transform>();
+                let query = world.0.query::<&Transform>();
                 for (_id, c) in query {
                     render_scene.push(
                         RenderTransform {
