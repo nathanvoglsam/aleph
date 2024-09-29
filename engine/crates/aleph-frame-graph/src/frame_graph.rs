@@ -155,6 +155,10 @@ impl<A: PassArgs> FrameGraph<A> {
         let transient_bundle = &self.transient_bundles[frame_index];
         let linear_descriptor_pool = self.linear_descriptor_pools.get();
 
+        // Free all our deferred deletion resources from the last time we executed this frame. We
+        // know we can as we can't record a frame index while it's still in flight on the gpu.
+        self.deletion_pools[frame_index].descriptor_pools.clear();
+
         // Reset the pool, ready to allocate fresh descriptors.
         //
         // Safety: It is up to the caller to ensure that none of the descriptors that were allocated
