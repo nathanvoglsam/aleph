@@ -55,7 +55,7 @@ pub struct PluginRegistry {
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
-    interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
+    interfaces: Option<BTreeMap<TypeId, AnyArc<dyn IAny>>>,
 
     /// The baked init execution sequence
     init_order: Vec<usize>,
@@ -88,7 +88,7 @@ impl PluginRegistry {
         let mut accessor = RegistryAccessor {
             quit_handle,
             config: None,
-            interfaces: std::mem::take(&mut self.interfaces),
+            interfaces: self.interfaces.take().unwrap(),
             schedule: self.schedule.take().unwrap(),
             resources: self.resources.take().unwrap(),
             world: self.world.take().unwrap(),
@@ -160,7 +160,7 @@ impl PluginRegistry {
         });
 
         self.plugins = plugins;
-        self.interfaces = accessor.interfaces;
+        self.interfaces = Some(accessor.interfaces);
         self.schedule = Some(accessor.schedule);
         self.resources = Some(accessor.resources);
         self.world = Some(accessor.world);
@@ -252,7 +252,7 @@ impl Drop for PluginRegistry {
         let mut accessor = RegistryAccessor {
             quit_handle,
             config: None,
-            interfaces: std::mem::take(&mut self.interfaces),
+            interfaces: self.interfaces.take().unwrap(),
             schedule: self.schedule.take().unwrap(),
             resources: self.resources.take().unwrap(),
             world: self.world.take().unwrap(),
@@ -287,7 +287,7 @@ impl Drop for PluginRegistry {
         });
 
         self.plugins = plugins;
-        self.interfaces = accessor.interfaces;
+        self.interfaces = Some(accessor.interfaces);
         self.schedule = Some(accessor.schedule);
         self.resources = Some(accessor.resources);
     }

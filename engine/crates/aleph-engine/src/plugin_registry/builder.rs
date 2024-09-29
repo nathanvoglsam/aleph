@@ -95,7 +95,7 @@ impl PluginRegistryBuilder {
         let mut registry = PluginRegistry {
             plugins: self.plugins,
             quit_handle: QuitHandleImpl::new(),
-            interfaces: BTreeMap::new(),
+            interfaces: Some(BTreeMap::new()),
             init_order,
             exit_order,
             schedule: Some(Box::new(schedule)),
