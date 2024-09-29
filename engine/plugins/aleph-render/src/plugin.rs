@@ -164,7 +164,7 @@ impl IPlugin for PluginRender {
             render_data: v,
         });
         let mut board = ScopedParamBoard::new();
-        registry.schedule().add_exclusive_at_start_system_to_stage(
+        registry.schedule().add_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
             move |world: Res<WorldResource>| {
