@@ -70,7 +70,7 @@ impl CameraInfo {
     pub fn get_view_matrix(&self) -> Mat4 {
         let translation = Mat4::from_translation(-self.position);
         let orientation = self.orientation.reversed().into_matrix().into_homogeneous();
-        translation * orientation
+        orientation * translation
     }
 
     #[inline]
