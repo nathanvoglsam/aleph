@@ -28,6 +28,7 @@
 //
 
 mod allocator_interface;
+mod allocator_pool;
 mod bump_allocator;
 mod linear_descriptor_pool;
 mod ring_buffer;
@@ -37,6 +38,9 @@ mod upload_ring_buffer;
 use std::num::NonZeroUsize;
 
 pub use allocator_interface::IUploadAllocator;
+pub use allocator_pool::{
+    AllocatorPool, AllocatorPoolItem, IAllocatorFactory, LinearDescriptorPoolFactory,
+};
 pub use bump_allocator::BumpAllocator;
 pub use linear_descriptor_pool::LinearDescriptorPool;
 pub use ring_buffer::RingBuffer;
