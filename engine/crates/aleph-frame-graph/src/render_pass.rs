@@ -33,7 +33,7 @@ use aleph_rhi_api::*;
 
 use crate::FrameGraphResources;
 
-pub trait PassArgs {
+pub trait PassArgs: 'static {
     type Args<'a>: Send + Sync;
 }
 

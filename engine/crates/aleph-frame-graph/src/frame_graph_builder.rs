@@ -51,7 +51,6 @@
 
 use std::ptr::NonNull;
 
-use aleph_arena_drop_list::DropLink;
 use aleph_device_allocators::{AllocatorPool, Grave, LinearDescriptorPoolFactory};
 use aleph_nstr::NStr;
 use aleph_rhi_api::*;
@@ -182,10 +181,6 @@ pub struct FrameGraphBuilder<A: PassArgs = ()> {
     /// The set of resources within the graph that were imported, stored as indices into the
     /// root_resources array.
     pub(crate) imported_resources: Vec<u16>,
-
-    /// The head of the dropper linked-list that contains all the drop functions for objects
-    /// allocated from the graph arena
-    pub(crate) drop_head: Option<NonNull<DropLink>>,
 }
 
 impl<A: PassArgs> FrameGraphBuilder<A> {
@@ -197,7 +192,6 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
             root_resources: Default::default(),
             resource_versions: Default::default(),
             imported_resources: Default::default(),
-            drop_head: Default::default(),
         }
     }
 
@@ -695,11 +689,8 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         let name = NStr::from_bytes(name).unwrap();
         let name = NonNull::from(name);
 
-        let pass = self.arena.put(pass);
-        let pass = NonNull::from(pass);
-
-        let abi = RenderPassAbi::new(pass);
-        let pass = RenderPass { abi, name, skip };
+        let pass: Box<dyn IRenderPass<A>> = Box::new(pass);
+        let pass = RenderPass { pass, name, skip };
         self.render_passes.push(pass);
     }
 
@@ -1181,16 +1172,6 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
                 }
                 _ => {}
             }
-        }
-    }
-}
-
-impl<A: PassArgs> Drop for FrameGraphBuilder<A> {
-    fn drop(&mut self) {
-        // Safety: implementation and API guarantees that dropper only gets called once per
-        //         object, and always on the correct type.
-        unsafe {
-            DropLink::drop_and_null(&mut self.drop_head);
         }
     }
 }

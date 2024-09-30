@@ -245,13 +245,7 @@ impl<A: PassArgs> FrameGraph<A> {
                 {
                     aleph_profile::scope!("frame-graph::Pass", render_pass.name.as_ref());
 
-                    // Safety: We're calling a type erased function here.
-                    (render_pass.abi.func)(
-                        render_pass.abi.pass.as_mut(),
-                        encoder,
-                        &resources,
-                        args,
-                    );
+                    render_pass.pass.execute(encoder, &resources, args);
                 }
                 encoder.end_event();
             }

@@ -41,50 +41,10 @@ use blink_alloc::{Blink, BlinkAlloc};
 
 use crate::render_pass::PassArgs;
 use crate::resource::ResourceId;
-use crate::{FrameGraphResources, IRenderPass, ResourceVariant, Result};
-
-/// Internal wrapper that exposes a virtual-call interface to IRenderPass. We can't use a trait
-/// object as we do not guarantee trait object compatibility. Trait object limits aren't a problem
-/// here though as all we need is opaque storage and two functions, 'drop' and 'exec'.
-///
-/// Drop is handled by the arena on the graph object, and 'exec' is handled here.
-pub(crate) struct RenderPassAbi<A: PassArgs> {
-    pub pass: NonNull<()>,
-    pub func: unsafe fn(
-        this: &mut (),
-        encoder: &mut dyn IGeneralEncoder,
-        resources: &FrameGraphResources,
-        args: &A::Args<'_>,
-    ),
-}
-
-// Safety: This wraps an allocated IRenderPass, assuming the pass has been allocated in the graph's
-//         arena. PassArgs and IRenderPass require Send+Sync but it isn't auto derived because of
-//         the pointer. We know this is safe though.
-unsafe impl<A: PassArgs> Send for RenderPassAbi<A> {}
-unsafe impl<A: PassArgs> Sync for RenderPassAbi<A> {}
-
-impl<A: PassArgs> RenderPassAbi<A> {
-    pub fn new<T: IRenderPass<A>>(v: NonNull<T>) -> Self {
-        unsafe fn runner<A: PassArgs, T: IRenderPass<A>>(
-            this: &mut (),
-            encoder: &mut dyn IGeneralEncoder,
-            resources: &FrameGraphResources,
-            args: &A::Args<'_>,
-        ) {
-            let mut ptr = NonNull::from(this).cast::<T>();
-            ptr.as_mut().execute(encoder, resources, args)
-        }
-
-        Self {
-            pass: v.cast(),
-            func: runner::<A, T>,
-        }
-    }
-}
+use crate::{IRenderPass, ResourceVariant, Result};
 
 pub(crate) struct RenderPass<A: PassArgs> {
-    pub abi: RenderPassAbi<A>,
+    pub pass: Box<dyn IRenderPass<A>>,
     pub name: NonNull<NStr>,
     pub skip: bool,
 }
