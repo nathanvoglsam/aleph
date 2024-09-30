@@ -61,12 +61,9 @@ mod system_schedule;
 
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::ptr::NonNull;
 
-use aleph_arena_drop_list::DropLink;
 use aleph_label::Label;
 use aleph_object_system::IObject;
-use bumpalo::Bump;
 
 pub use crate::system::{
     AlreadyWasSystem, ExplicitDependencies, IntoSystem, Res, ResMut, ResMutState, ResState,
@@ -95,15 +92,8 @@ impl ScheduleArgs for () {
 /// I can beat the API that `bevy_ecs` designed, so rather than trying to I just use it for myself.
 ///
 pub struct Schedule<A: ScheduleArgs = ()> {
-    /// A bump allocated arena used for storing the labels and stages.
-    arena: Bump,
-
     /// Stores the execution stages along with the label they were registered with
-    stages: HashMap<Label, NonNull<dyn Stage<A>>>,
-
-    /// The head of a linked list of all objects stored in the schedule's bump arena that need to
-    /// be dropped when the Schedule is destroyed. This includes all the labels, stages and systems.
-    drop_head: Option<NonNull<DropLink>>,
+    stages: HashMap<Label, Box<dyn Stage<A>>>,
 
     /// Stores the execution order of the schedule as an ordered sequence of stage labels
     stage_order: Vec<Label>,
@@ -118,9 +108,7 @@ pub struct Schedule<A: ScheduleArgs = ()> {
 impl<A: ScheduleArgs> Default for Schedule<A> {
     fn default() -> Self {
         Self {
-            arena: Default::default(),
             stages: Default::default(),
-            drop_head: Default::default(),
             stage_order: Default::default(),
             run_criteria: Default::default(),
         }
@@ -145,9 +133,7 @@ impl<A: ScheduleArgs> Schedule<A> {
         &mut self,
         system: S,
     ) -> &mut Self {
-        let system = self.arena.alloc(system.system());
-        let system = NonNull::from(system);
-        DropLink::append_drop_list(&self.arena, &mut self.drop_head, system);
+        let system = Box::new(system.system());
         self.run_criteria.system = Some(system);
         self.run_criteria.initialized = false;
         self
@@ -159,9 +145,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     pub fn add_stage<S: Stage<A>>(&mut self, label: Label, stage: S) -> &mut Self {
         self.stage_order.push(label);
 
-        let stage = self.arena.alloc(stage);
-        let stage = NonNull::from(stage);
-        DropLink::append_drop_list(&self.arena, &mut self.drop_head, stage);
+        let stage = Box::new(stage);
         let prev = self.stages.insert(label, stage);
         if prev.is_some() {
             panic!("Stage already exists: {label:?}.");
@@ -189,9 +173,7 @@ impl<A: ScheduleArgs> Schedule<A> {
         // Insert the new stage into the stage storage. We panic if there was already a stage
         // registered with the provided label as we do not allow overwriting already provided
         // stages.
-        let stage = self.arena.alloc(stage);
-        let stage = NonNull::from(stage);
-        DropLink::append_drop_list(&self.arena, &mut self.drop_head, stage);
+        let stage = Box::new(stage);
         let prev = self.stages.insert(label, stage);
         if prev.is_some() {
             panic!("Stage already exists: {label:?}.");
@@ -220,9 +202,7 @@ impl<A: ScheduleArgs> Schedule<A> {
         // Insert the new stage into the stage storage. We panic if there was already a stage
         // registered with the provided label as we do not allow overwriting already provided
         // stages.
-        let stage = self.arena.alloc(stage);
-        let stage = NonNull::from(stage);
-        DropLink::append_drop_list(&self.arena, &mut self.drop_head, stage);
+        let stage = Box::new(stage);
         let prev = self.stages.insert(label, stage);
         if prev.is_some() {
             panic!("Stage already exists: {label:?}.");
@@ -320,7 +300,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     pub fn get_stage<T: Stage<A>>(&self, label: Label) -> Option<&T> {
         self.stages
             .get(&label)
-            .and_then(|stage| unsafe { stage.as_ref().downcast_ref::<T>() })
+            .and_then(|stage| stage.as_ref().downcast_ref::<T>())
     }
 
     /// Get's a down-casted reference to the stage registered with the [`Label`] provided in `label`
@@ -328,7 +308,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     pub fn get_stage_mut<T: Stage<A>>(&mut self, label: Label) -> Option<&mut T> {
         self.stages
             .get_mut(&label)
-            .and_then(|stage| unsafe { stage.as_mut().downcast_mut::<T>() })
+            .and_then(|stage| stage.as_mut().downcast_mut::<T>())
     }
 
     /// Unconditionally (i.e, the run criteria system is **not** called) performs a single execution
@@ -337,10 +317,8 @@ impl<A: ScheduleArgs> Schedule<A> {
     pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
         for label in self.stage_order.iter() {
             let stage = self.stages.get_mut(label).unwrap();
-            unsafe {
-                aleph_profile::scope!("aleph::ExecScope", label);
-                stage.as_mut().run(args, resources);
-            }
+            aleph_profile::scope!("aleph::ExecScope", label);
+            stage.as_mut().run(args, resources);
         }
     }
 
@@ -349,7 +327,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     pub fn iter_stages(&self) -> impl Iterator<Item = (Label, &dyn Stage<A>)> {
         self.stage_order
             .iter()
-            .map(move |label| unsafe { (*label, self.stages[&label].as_ref()) })
+            .map(move |label| (*label, self.stages[&label].as_ref()))
     }
 
     fn index_from_label(&self, target: Label) -> usize {
@@ -373,7 +351,7 @@ impl<A: ScheduleArgs> Stage<A> for Schedule<A> {
             }
 
             // Execute the system and bail if it decides we should not run the schedule
-            let system = unsafe { system.as_mut() };
+            let system = system.as_mut();
             if system.execute_safe(&(), resources) == ShouldRun::No {
                 return;
             }
@@ -381,16 +359,6 @@ impl<A: ScheduleArgs> Stage<A> for Schedule<A> {
 
         // If we pass the above check then we can continue on and execute the schedule
         self.run_once(args, resources);
-    }
-}
-
-impl<A: ScheduleArgs> Drop for Schedule<A> {
-    fn drop(&mut self) {
-        // Safety: Drops all the objects that were allocated from the bump arena by walking the
-        //         linked list we build while adding them to the schedule.
-        unsafe {
-            DropLink::drop_and_null(&mut self.drop_head);
-        }
     }
 }
 
@@ -404,7 +372,7 @@ pub enum ShouldRun {
 }
 
 struct RunCriteriaBox {
-    system: Option<NonNull<dyn System<In = (), Out = ShouldRun>>>,
+    system: Option<Box<dyn System<In = (), Out = ShouldRun>>>,
     initialized: bool,
 }
 
