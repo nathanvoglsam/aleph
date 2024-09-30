@@ -47,7 +47,12 @@ fn main() {
     binary_path.push("out");
     binary_path.push(compile::standard_binary_path_for(target_platform, target_arch).unwrap());
 
-    let lib_path = binary_path.join("lib");
+    let mut lib_path = binary_path.join("lib");
+    if !lib_path.exists() {
+        // Because GNU likes to be difficult with their standard paths sometimes we get this
+        // rubbish. I love making build logic more complicated!!!!
+        lib_path = binary_path.join("lib64");
+    }
 
     match target_platform {
         Platform::WindowsGNU
