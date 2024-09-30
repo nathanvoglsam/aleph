@@ -160,7 +160,6 @@ aleph-identity-hasher = { path = "./engine/crates/aleph-identity-hasher", versio
 aleph-interfaces = { path = "./engine/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./engine/crates/aleph-label", version = "1" }
 aleph-math = { path = "./engine/crates/aleph-math", version = "0.1" }
-aleph-luajit-sys = { path = "./engine/crates/aleph-luajit-sys", version = "0.1" }
 aleph-nstr = { path = "./engine/crates/aleph-nstr", version = "0.1" }
 aleph-object-system = { path = "./engine/crates/aleph-object-system", version = "0.1" }
 aleph-pin-board = { path = "./engine/crates/aleph-pin-board", version = "0.1" }

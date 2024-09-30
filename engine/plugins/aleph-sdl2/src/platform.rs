@@ -268,10 +268,9 @@ impl IPlugin for PluginPlatformSDL2 {
         Box::new(response)
     }
 
-    fn on_exit(&mut self) {
+    fn on_shutdown(&mut self) {
         let mut sdl = self.sdl.take().unwrap();
-
-        sdl.on_exit();
+        sdl.on_shutdown();
     }
 }
 
@@ -504,7 +503,7 @@ struct SdlObjects {
 }
 
 impl SdlObjects {
-    pub fn on_exit(&mut self) {
+    pub fn on_shutdown(&mut self) {
         self._ctx = None;
         self.video = None;
         self._event = None;
