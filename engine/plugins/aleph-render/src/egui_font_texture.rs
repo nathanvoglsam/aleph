@@ -32,7 +32,7 @@ use std::ops::BitAnd;
 use aleph_rhi_api::*;
 use egui::epaint::ImageDelta;
 use egui::{FontImage, ImageData};
-use wide::{f32x8, i32x8, CmpEq};
+use wide::{f32x4, f32x8, i32x4, i32x8, CmpEq};
 
 use aleph_renderer::{Renderer, TextureHandle, TextureMipUploadDesc, TextureUploadSource};
 
@@ -235,30 +235,54 @@ impl FontTexture {
             pixels,
             "Must be a multiple of 8 pixels"
         );
-        assert_eq!(
-            font.pixels.as_ptr().align_offset(32),
-            0,
-            "Src data must be aligned to 32 bytes"
-        );
 
         unsafe {
-            let blocks = pixels / 8;
-            let mut block_ptr = font.pixels.as_ptr() as *const f32x8;
-            let mut dst_ptr = self.bytes.as_mut_ptr() as *mut [u8; 8];
-
-            let end_ptr = block_ptr.add(blocks);
-            while block_ptr != end_ptr {
-                // Load and do the gamma mapping in a SIMD register (hopefully)
-                let block_data = *block_ptr;
-                let mapped = coverage_mapper_simd_256(block_data);
-
-                // Store the mapped result into the destination block
-                *dst_ptr = mapped;
-
-                // Advance to the next block
-                block_ptr = block_ptr.add(1);
-                dst_ptr = dst_ptr.add(1);
+            if font.pixels.as_ptr().align_offset(32) == 0 {
+                self.copy_map_256(pixels, font);
+            } else if font.pixels.as_ptr().align_offset(16) == 0 {
+                self.copy_map_128(pixels, font);
+            } else {
+                unimplemented!("'font.pixels' must be 16 or 32 byte aligned");
             }
+        }
+    }
+
+    unsafe fn copy_map_128(&mut self, pixels: usize, font: &FontImage) {
+        let blocks = pixels / 4;
+        let mut block_ptr = font.pixels.as_ptr() as *const f32x4;
+        let mut dst_ptr = self.bytes.as_mut_ptr() as *mut [u8; 4];
+        let end_ptr = block_ptr.add(blocks);
+        while block_ptr != end_ptr {
+            // Load and do the gamma mapping in a SIMD register (hopefully)
+            let block_data = *block_ptr;
+            let mapped = coverage_mapper_simd_128(block_data);
+
+            // Store the mapped result into the destination block
+            *dst_ptr = mapped;
+
+            // Advance to the next block
+            block_ptr = block_ptr.add(1);
+            dst_ptr = dst_ptr.add(1);
+        }
+    }
+
+    unsafe fn copy_map_256(&mut self, pixels: usize, font: &FontImage) {
+        let blocks = pixels / 8;
+        let mut block_ptr = font.pixels.as_ptr() as *const f32x8;
+        let mut dst_ptr = self.bytes.as_mut_ptr() as *mut [u8; 8];
+
+        let end_ptr = block_ptr.add(blocks);
+        while block_ptr != end_ptr {
+            // Load and do the gamma mapping in a SIMD register (hopefully)
+            let block_data = *block_ptr;
+            let mapped = coverage_mapper_simd_256(block_data);
+
+            // Store the mapped result into the destination block
+            *dst_ptr = mapped;
+
+            // Advance to the next block
+            block_ptr = block_ptr.add(1);
+            dst_ptr = dst_ptr.add(1);
         }
     }
 }
@@ -275,6 +299,46 @@ fn coverage_mapper(v: f32) -> u8 {
     // Safety: Index is guaranteed to be in bounds due to masking the output to 8 bits. 8 bits
     //         can't encode an invalid index so this is safe.
     unsafe { *GAMMA_LUT.get_unchecked(fast_round(v * 255.0) as usize) }
+}
+
+#[inline(always)]
+fn coverage_mapper_simd_128(v: f32x4) -> [u8; 4] {
+    if v.cmp_eq(f32x4::splat(0.0)).all() {
+        // Special case for all zeroes as we can guarantee the output. This lets us skip the math
+        // below cheaply.
+        [0, 0, 0, 0]
+    } else {
+        // The reference implementation from egui uses powf to do the gamma correction in the FPU.
+        // powf is ___slow___. The actual range of values we output though, 0-255, is tiny. Instead,
+        // this implementation performs the conversion to unorm, cast to int, and bitmask all in
+        // simd registers (AVX on x86) before applying egui's gamma correction using a LUT.
+        //
+        // The output range is 0-255, so we only need a 256 byte LUT.
+        //
+        // This does lose precision though as we effectively do the powf after rounding to the
+        // values representable by an 8-bit unorm. We find the quality loss acceptable, considering
+        // that this makes the function ~5x faster on average.
+        //
+        // TODO: could this be improved (do we need to?)
+        //
+        // We _could_ improve the quality by doing linear interpolation of the LUT to get a better
+        // approximation of the gamma curve. What would it cost? Is the quality needed?
+        let v = v * f32x4::splat(255.0);
+        let v = v.fast_round_int();
+        let v = v.bitand(i32x4::splat(0xFF));
+        let v = v.to_array();
+
+        // Safety: Index is guaranteed to be in bounds due to masking the output to 8 bits. 8 bits
+        //         can't encode an invalid index so this is safe.
+        unsafe {
+            [
+                *GAMMA_LUT.get_unchecked(v[0] as usize),
+                *GAMMA_LUT.get_unchecked(v[1] as usize),
+                *GAMMA_LUT.get_unchecked(v[2] as usize),
+                *GAMMA_LUT.get_unchecked(v[3] as usize),
+            ]
+        }
+    }
 }
 
 #[inline(always)]
