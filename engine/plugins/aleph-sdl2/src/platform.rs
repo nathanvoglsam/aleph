@@ -58,7 +58,6 @@ use crate::window::{WindowImpl, WindowState};
 
 pub struct PluginPlatformSDL2 {
     sdl: Rc<Cell<Option<SdlObjects>>>,
-    provider: AnyArc<ProviderImpl>,
 }
 
 impl PluginPlatformSDL2 {
@@ -80,15 +79,6 @@ impl PluginPlatformSDL2 {
         };
         Self {
             sdl: Rc::new(Cell::new(Some(sdl))),
-            provider: AnyArc::new(ProviderImpl {
-                frame_timer: None,
-                window: None,
-                mouse: None,
-                keyboard: None,
-                gamepads: None,
-                events: None,
-                clipboard: None,
-            }),
         }
     }
 }
@@ -210,18 +200,17 @@ impl IPlugin for PluginPlatformSDL2 {
         self.sdl.set(Some(sdl_o));
 
         // Update our provider with the newly created implementations
-        {
-            let provider = AnyArc::get_mut(&mut self.provider).unwrap();
-            provider.frame_timer = Some(frame_timer);
-            provider.window = Some(window);
-            provider.mouse = Some(mouse);
-            provider.keyboard = Some(keyboard);
-            provider.gamepads = Some(gamepads);
-            provider.events = Some(events);
-            provider.clipboard = Some(clipboard);
-        }
+        let provider = AnyArc::new(ProviderImpl {
+            frame_timer: Some(frame_timer),
+            window: Some(window),
+            mouse: Some(mouse),
+            keyboard: Some(keyboard),
+            gamepads: Some(gamepads),
+            events: Some(events),
+            clipboard: Some(clipboard),
+        });
 
-        let send_provider = self.provider.clone();
+        let send_provider = provider.clone();
         let send_sdl = self.sdl.clone();
         let send_quit_handle = registry.quit_handle();
         registry.schedule().add_exclusive_at_start_system_to_stage(
@@ -249,37 +238,37 @@ impl IPlugin for PluginPlatformSDL2 {
         let response = vec![
             (
                 TypeId::of::<dyn IFrameTimerProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+                AnyArc::map::<dyn IAny, _>(provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IWindowProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+                AnyArc::map::<dyn IAny, _>(provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IClipboardProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+                AnyArc::map::<dyn IAny, _>(provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IKeyboardProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+                AnyArc::map::<dyn IAny, _>(provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IGamepadsProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+                AnyArc::map::<dyn IAny, _>(provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IMouseProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+                AnyArc::map::<dyn IAny, _>(provider.clone(), |v| v),
             ),
             (
                 TypeId::of::<dyn IEventsProvider>(),
-                AnyArc::map::<dyn IAny, _>(self.provider.clone(), |v| v),
+                AnyArc::map::<dyn IAny, _>(provider.clone(), |v| v),
             ),
         ];
         Box::new(response)
     }
 
-    fn on_exit(&mut self, _registry: &mut dyn IRegistryAccessor) {
+    fn on_exit(&mut self) {
         let mut sdl = self.sdl.take().unwrap();
 
         sdl.on_exit();

@@ -69,25 +69,6 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        let mut demo_window = egui_demo_lib::DemoWindows::default();
-        let mut colour_test = egui_demo_lib::ColorTest::default();
-
-        let frame_timer = registry
-            .get_interface::<dyn IFrameTimerProvider>()
-            .unwrap()
-            .get_frame_timer()
-            .unwrap();
-
-        let gamepads = registry
-            .get_interface::<dyn IGamepadsProvider>()
-            .unwrap()
-            .get_gamepads()
-            .unwrap();
-
-        let gamepad = gamepads.get_accessor();
-
-        let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
-
         let world = registry.world();
         world.extend_discard((
             [
@@ -147,6 +128,9 @@ impl IPlugin for PluginGameLogic {
             StaticMesh(0),
         ));
 
+        let mut demo_window = egui_demo_lib::DemoWindows::default();
+        let mut colour_test = egui_demo_lib::ColorTest::default();
+        let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
         registry.schedule().add_exclusive_at_end_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
@@ -173,8 +157,21 @@ impl IPlugin for PluginGameLogic {
             },
         );
 
+        let frame_timer = registry
+            .get_interface::<dyn IFrameTimerProvider>()
+            .unwrap()
+            .get_frame_timer()
+            .unwrap();
+
+        let gamepads = registry
+            .get_interface::<dyn IGamepadsProvider>()
+            .unwrap()
+            .get_gamepads()
+            .unwrap();
+
         let mut l_dir = 0.0f32;
         let mut u_dir = 0.0f32;
+        let gamepad = gamepads.get_accessor();
         registry.schedule().add_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::logic"),
@@ -223,7 +220,7 @@ impl IPlugin for PluginGameLogic {
                 }
 
                 let y = (elapsed * 0.5).sin() * 10.0;
-                let (transform, _camera) = world
+                let (transform, _) = world
                     .0
                     .query_one_mut::<(&mut Transform, &StaticMesh)>(throbber)
                     .unwrap();

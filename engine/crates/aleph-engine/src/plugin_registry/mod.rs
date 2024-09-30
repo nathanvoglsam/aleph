@@ -248,16 +248,6 @@ impl Drop for PluginRegistry {
     fn drop(&mut self) {
         let mut plugins = std::mem::take(&mut self.plugins);
 
-        let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
-        let mut accessor = RegistryAccessor {
-            quit_handle,
-            config: None,
-            interfaces: self.interfaces.take().unwrap(),
-            schedule: self.schedule.take().unwrap(),
-            resources: self.resources.take().unwrap(),
-            world: self.world.take().unwrap(),
-        };
-
         self.exit_order.iter().cloned().for_each(|v| {
             // If we panic in the plugin setup phase we can end up calling 'drop' on PluginRegistry
             // when not all of the plugins are actually stored in the plugins array yet.
@@ -265,9 +255,9 @@ impl Drop for PluginRegistry {
             // If we don't manually handle the OOB case then we'll trigger a double panic, which
             // prevents properly unwinding and adds noise to the output.
             if let Some(plugin) = plugins.get_mut(v) {
-                // Take the config value from the slot in the plugin entry so the plugin can query
-                // it in its functions
-                accessor.config = std::mem::take(&mut plugin.config);
+                // Take the config value from the slot in the plugin entry and immediately destroy
+                // it.
+                drop(plugin.config.take());
 
                 // Log that we're exiting the plugin
                 let description = plugin.v.get_description();
@@ -279,17 +269,41 @@ impl Drop for PluginRegistry {
                     description.patch_version
                 );
 
-                plugin.v.on_exit(&mut accessor);
-
-                // Put the config back in its entry
-                plugin.config = std::mem::take(&mut accessor.config);
+                plugin.v.on_exit();
             }
         });
 
-        self.plugins = plugins;
-        self.interfaces = Some(accessor.interfaces);
-        self.schedule = Some(accessor.schedule);
-        self.resources = Some(accessor.resources);
+        // Manually destroy these so we can log when they happen
+        log::debug!("Destroying PluginRegistry interfaces table");
+        drop(self.interfaces.take());
+
+        log::debug!("Destroying ECS world");
+        drop(self.world.take());
+
+        log::debug!("Destroying PluginRegistry scheduler");
+        drop(self.schedule.take());
+
+        log::debug!("Destroying PluginRegistry resource table");
+        drop(self.resources.take());
+
+        self.exit_order.iter().cloned().for_each(|v| {
+            if let Some(plugin) = plugins.get_mut(v) {
+                // Log that we're exiting the plugin
+                let description = plugin.v.get_description();
+                log::info!(
+                    "Shutdown for Plugin [{} - {}.{}.{}]",
+                    description.name,
+                    description.major_version,
+                    description.minor_version,
+                    description.patch_version
+                );
+
+                plugin.v.on_shutdown();
+            }
+        });
+
+        // Destroy the plugins
+        drop(plugins);
     }
 }
 

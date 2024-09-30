@@ -222,14 +222,27 @@ impl IPlugin for PluginRender {
         default_response()
     }
 
-    fn on_exit(&mut self, _registry: &mut dyn IRegistryAccessor) {
-        if let Some(device) = self.device.take() {
+    fn on_exit(&mut self) {
+        if let Some(device) = self.device.as_deref() {
             // When existing we need to flush all still active GPU work and force a GC cycle to
             // release all references being held live by the resource tracking system. The resource
             // tracking system creates cycles in the object graph so if we don't clear them then
             // we'll leak GPU objects.
             device.wait_idle();
             device.garbage_collect();
+        }
+    }
+
+    fn on_shutdown(&mut self) {
+        if let Some(device) = self.device.take() {
+            log::debug!(
+                "IDevice::strong_count = '{}' at 'on_shutdown'",
+                device.strong_count()
+            );
+            log::debug!(
+                "IDevice::weak_count = '{}' at 'on_shutdown'",
+                device.weak_count()
+            );
         }
     }
 }

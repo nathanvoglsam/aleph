@@ -44,14 +44,12 @@ use crate::rhi_provider::RhiProvider;
 
 pub struct PluginRHI {
     rhi_loader: RhiLoader,
-    rhi_provider: Option<AnyArc<RhiProvider>>,
 }
 
 impl PluginRHI {
     pub fn new() -> Self {
         Self {
             rhi_loader: RhiLoader::new(),
-            rhi_provider: None,
         }
     }
 }
@@ -132,15 +130,15 @@ impl IPlugin for PluginRHI {
 
         let device = adapter.request_device().unwrap();
 
-        self.rhi_provider = Some(AnyArc::new(RhiProvider {
+        let provider = AnyArc::new(RhiProvider {
             surface,
             adapter,
             device,
-        }));
+        });
 
         let response = vec![(
             TypeId::of::<dyn IRhiProvider>(),
-            AnyArc::map::<dyn IAny, _>(self.rhi_provider.clone().unwrap(), |v| v),
+            AnyArc::map::<dyn IAny, _>(provider, |v| v),
         )];
         Box::new(response)
     }

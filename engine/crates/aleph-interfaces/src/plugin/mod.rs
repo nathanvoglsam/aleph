@@ -90,7 +90,22 @@ pub trait IPlugin: IAny {
 
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     #[allow(unused_variables)]
-    fn on_exit(&mut self, registry: &mut dyn IRegistryAccessor<'_>) {}
+    fn on_exit(&mut self) {}
+
+    /// Called by the engine runtime exactly once during the shutdown phase of the engine, after
+    /// 'on_exit' is called and _after_ most of the plugin system machinery has been destroyed.
+    ///
+    /// This includes:
+    ///     - No ECS world
+    ///     - Scheduler has been destroyed
+    ///     - Resources and Interfaces have been destroyed
+    ///
+    /// # Why?
+    ///
+    /// It might be useful to have a hook after all those items have been freed. But we do also
+    /// need a hook for _before_ they're destroyed so we can finalize any pipelined work (GPU).
+    #[allow(unused_variables)]
+    fn on_shutdown(&mut self) {}
 }
 
 ///
