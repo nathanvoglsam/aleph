@@ -75,6 +75,9 @@ impl BumpAllocator {
     }
 
     /// Allocate the given number of bytes from the bump allocator.
+    /// 
+    /// Will return `None` if there is either not enough space in the allocator or if the requested
+    /// allocation is 0 sized.
     ///
     /// # Alignment
     ///
@@ -98,7 +101,7 @@ impl BumpAllocator {
         // and capacity must be no greater than MAX_CAPACITY. MAX_CAPACITY is constructed so that
         // size + align + capacity _can't_ overflow, and as such we don't need any overflow checks
         // inside the allocation logic beyond these.
-        if size > self.capacity.get() {
+        if size > self.size_remaining() {
             return None;
         }
 
@@ -117,6 +120,10 @@ impl BumpAllocator {
     /// to the requested alignment. This may allocate more memory than 'size' to satisfy the
     /// requested alignment. The allocator may forward align the block and consume additional memory
     /// to do so via padding.
+    /// 
+    /// Will return `None` if there is not enough space in the allocator to serve the aligned
+    /// allocation, or if the resulting allocation would be zero sized. This can happen if you
+    /// ask for a zero sized allocation and 'head' is already aligned to the requested alignment.
     ///
     /// # Warning
     ///
@@ -221,6 +228,8 @@ mod tests {
         assert_eq!(allocation.allocated.get(), 2);
         assert_eq!(ba.size(), 6);
         assert_eq!(ba.size_remaining(), 10);
+
+        assert!(ba.allocate(0).is_none());
     }
 
     #[test]
@@ -243,7 +252,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_bump_allocator_allocate_oom() {
         let ba = BumpAllocator::new(16).unwrap();
 
@@ -253,7 +261,15 @@ mod tests {
         assert_eq!(ba.size(), 8);
         assert_eq!(ba.size_remaining(), 8);
 
-        let _allocation = ba.allocate(10).unwrap();
+        assert!(ba.allocate(10).is_none());
+
+        let allocation = ba.allocate(8).unwrap();
+        assert_eq!(allocation.offset, 8);
+        assert_eq!(allocation.allocated.get(), 8);
+        assert_eq!(ba.size(), 16);
+        assert_eq!(ba.size_remaining(), 0);
+
+        assert!(ba.allocate(1).is_none());
     }
 
     #[test]
@@ -271,5 +287,12 @@ mod tests {
         assert_eq!(allocation.allocated.get(), 10);
         assert_eq!(ba.size(), 22);
         assert_eq!(ba.size_remaining(), 42);
+
+        let allocation = ba.allocate_aligned(0, 16).unwrap();
+        assert_eq!(allocation.offset, 32);
+        assert_eq!(allocation.allocated.get(), 10);
+        assert_eq!(ba.size(), 32);
+        assert_eq!(ba.size_remaining(), 32);
+        assert!(ba.allocate_aligned(0, 16).is_none());
     }
 }
