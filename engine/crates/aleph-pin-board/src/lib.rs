@@ -201,6 +201,13 @@ impl Table {
 unsafe impl Send for Table {}
 unsafe impl Sync for Table {}
 
+impl Drop for Table {
+    fn drop(&mut self) {
+        self.table.clear();
+        self.arena.reset();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
