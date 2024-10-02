@@ -187,6 +187,7 @@ pub fn pass(
                     .into_homogeneous_point()
                     .as_array()
                     .clone(),
+                _padding: [0; 112],
             };
             let camera = u_alloc
                 .allocate_object(camera_layout)
@@ -430,19 +431,21 @@ fn create_pipeline_state(
         .unwrap()
 }
 
-#[repr(align(256))]
-#[derive(Default, Debug)]
+#[repr(C)]
+#[derive(Debug)]
 pub struct CameraLayout {
     pub view_matrix: [f32; 16],
     pub proj_matrix: [f32; 16],
     pub position: [f32; 4],
+    pub _padding: [u8; 112],
 }
 
-#[repr(align(256))]
-#[derive(Default, Debug)]
+#[repr(C)]
+#[derive(Debug)]
 pub struct ModelLayout {
     pub model_matrix: [f32; 16],
     pub normal_matrix: [f32; 16],
+    pub _padding: [u8; 128],
 }
 
 impl ModelLayout {
@@ -462,6 +465,7 @@ impl ModelLayout {
         Self {
             model_matrix: *model_matrix.transposed().as_array(),
             normal_matrix: *normal_matrix.transposed().into_homogeneous().as_array(),
+            _padding: [0; 128],
         }
     }
 }

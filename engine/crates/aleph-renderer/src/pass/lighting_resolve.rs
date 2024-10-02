@@ -174,6 +174,7 @@ pub fn pass(
                     .into_homogeneous_point()
                     .as_array()
                     .clone(),
+                _padding: [0; 112],
             };
             u_alloc.allocate_object(camera_layout).unwrap();
             uniform_buffer.unmap().unwrap();
