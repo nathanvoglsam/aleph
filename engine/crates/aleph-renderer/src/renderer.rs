@@ -34,6 +34,7 @@ use std::sync::Arc;
 use aleph_any::AnyArc;
 use aleph_frame_graph::{FrameGraph, FrameGraphBuilder, ImportBundle, ResourceMut, ResourceRef};
 use aleph_nstr::nstr;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_pin_board::{BoardScope, PinBoard};
 use aleph_rhi_api::*;
 
@@ -199,6 +200,7 @@ pub struct Renderer {
     frame_manager: FrameManager,
     graph_manager: GraphManager,
 }
+unsafe_impl_iobject!(Renderer, "01924ac2-e95d-7aa3-9fdf-9ec32d90b49c");
 
 impl Renderer {
     pub fn device(&self) -> &dyn IDevice {

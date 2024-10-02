@@ -75,7 +75,7 @@ impl BumpAllocator {
     }
 
     /// Allocate the given number of bytes from the bump allocator.
-    /// 
+    ///
     /// Will return `None` if there is either not enough space in the allocator or if the requested
     /// allocation is 0 sized.
     ///
@@ -120,7 +120,7 @@ impl BumpAllocator {
     /// to the requested alignment. This may allocate more memory than 'size' to satisfy the
     /// requested alignment. The allocator may forward align the block and consume additional memory
     /// to do so via padding.
-    /// 
+    ///
     /// Will return `None` if there is not enough space in the allocator to serve the aligned
     /// allocation, or if the resulting allocation would be zero sized. This can happen if you
     /// ask for a zero sized allocation and 'head' is already aligned to the requested alignment.

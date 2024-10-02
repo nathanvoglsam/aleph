@@ -35,7 +35,7 @@ use std::ptr::NonNull;
 use aleph_atomic_borrow::AtomicBorrow;
 use aleph_math::{DVec3, Rotor3, Vec3};
 use aleph_object_system::uuid::Uuid;
-use aleph_object_system::{IObject, ObjectDescription};
+use aleph_object_system::{unsafe_impl_iobject, IObject, ObjectDescription};
 use aleph_pin_board::BoardParamId;
 use allocator_api2::alloc::{Allocator, Global};
 
@@ -59,6 +59,7 @@ impl<T: IObject + Send + Sync + 'static> ISceneObject for T {}
 pub struct RenderScene {
     components: HashMap<Uuid, Storage>,
 }
+unsafe_impl_iobject!(RenderScene, "01924ac2-6c15-7362-964e-6bd6d632e4d2");
 
 impl RenderScene {
     pub fn new() -> Self {

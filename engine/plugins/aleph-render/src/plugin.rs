@@ -42,13 +42,13 @@ use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::rhi::IRhiProvider;
 use interfaces::schedule::{CoreStage, WorldResource};
-use interfaces::scheduler::Res;
+use interfaces::scheduler::{Res, ResMut};
 use serde::Deserialize;
 
 use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
     CameraInfo, DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, PerspectiveInfo,
-    RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, RendererBuilder,
+    RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, Renderer, RendererBuilder,
     ShaderDatabaseAccessor,
 };
 
@@ -148,8 +148,9 @@ impl IPlugin for PluginRender {
         }
         renderer.frames_in_flight(config.frames_in_flight as usize);
 
-        let mut render_scene = RenderScene::new();
-        let mut renderer = renderer.build().unwrap();
+        registry.resources().insert(RenderScene::new());
+        registry.resources().insert(renderer.build().unwrap());
+        
         let mut egui_data = render_data.map(|v| EguiData {
             font_texture: EguiFontTexture::new(),
             render_data: v,
@@ -158,7 +159,9 @@ impl IPlugin for PluginRender {
         registry.schedule().add_system_to_stage(
             CoreStage::Render.into(),
             make_label!("render::render"),
-            move |world: Res<WorldResource>| {
+            move |world: Res<WorldResource>,
+                  mut renderer: ResMut<Renderer>,
+                  mut render_scene: ResMut<RenderScene>| {
                 device.garbage_collect();
 
                 render_scene.clear();
