@@ -154,7 +154,8 @@ impl IBuffer for Buffer {
     fn unmap(&self) -> Result<(), ResourceUnmapError> {
         let mut lock = self.map_state.lock();
 
-        lock.count = lock.count
+        lock.count = lock
+            .count
             .checked_sub(1)
             .ok_or(ResourceUnmapError::NotMapped)?;
 

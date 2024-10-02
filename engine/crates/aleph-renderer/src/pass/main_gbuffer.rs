@@ -189,9 +189,7 @@ pub fn pass(
                     .clone(),
                 _padding: [0; 112],
             };
-            let camera = u_alloc
-                .allocate_object(camera_layout)
-                .unwrap();
+            let camera = u_alloc.allocate_object(camera_layout).unwrap();
 
             let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
             let write = BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256);
