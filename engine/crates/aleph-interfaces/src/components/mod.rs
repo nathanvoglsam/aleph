@@ -85,12 +85,17 @@ mod lights {
 }
 
 mod static_mesh {
+    use renderer::BufferHandle;
+
     ///
     ///
     ///
     #[derive(Clone, PartialEq, Debug, Default)]
     #[repr(C)]
-    pub struct StaticMesh(pub u32);
+    pub struct StaticMesh {
+        pub vtx: Option<BufferHandle>,
+        pub idx: Option<BufferHandle>,
+    }
     object_system::unsafe_impl_iobject!(StaticMesh, "01923c3a-624e-7100-b97a-50e9baaa5ca0");
 }
 
