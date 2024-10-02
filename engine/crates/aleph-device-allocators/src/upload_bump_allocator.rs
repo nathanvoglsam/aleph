@@ -29,7 +29,7 @@
 
 use std::ptr::NonNull;
 
-use aleph_interfaces::any::AnyArc;
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 use crate::{AllocationResult, BumpAllocator, IUploadAllocator, RawDeviceAllocationResult};

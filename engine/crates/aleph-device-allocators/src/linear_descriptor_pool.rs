@@ -29,7 +29,7 @@
 
 use std::cell::Cell;
 
-use aleph_interfaces::any::AnyArc;
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 /// A descriptor set allocator that grabs arenas as pages and bump allocates descriptor sets from

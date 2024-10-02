@@ -31,7 +31,7 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, Weak};
 
-use aleph_interfaces::any::AnyArc;
+use aleph_any::AnyArc;
 use aleph_rhi_api::IDevice;
 use crossbeam::queue::ArrayQueue;
 
