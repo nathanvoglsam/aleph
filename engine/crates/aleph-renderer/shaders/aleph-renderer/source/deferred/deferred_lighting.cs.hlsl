@@ -55,6 +55,55 @@ static float lumens = 100;
 
 static float reflectance = 0.5;
 
+func PointLight(
+    light_position: float3,
+    frag_position: float3,
+    base_colour: float3,
+    normal: float3,
+    metallic: float,
+    roughness: float,
+) -> float3 {
+    // Camera and light vectors
+    let frag_to_camera = -frag_position; // We light in view space, 0,0,0 is implicitly the camera
+    let frag_to_light = light_position - frag_position;
+
+    // Derived material parameters
+    let v = normalize(frag_to_camera);
+    let l = normalize(frag_to_light);
+    let n = normalize(normal);
+    let f0 = CalculateF0(base_colour, metallic, reflectance);
+
+    // Calculate the result of our BRDF
+    let brdf = StandardBRDF(v, l, n, base_colour, metallic, roughness, f0);
+
+    // Apply a single point light
+    let NoL = clamp(dot(n, l), 0.0, 1.0);
+    let distance_squared = dot(frag_to_light, frag_to_light);
+    return EvaluatePointLight(brdf, lumens, distance_squared, NoL);
+}
+
+func DirectionLight(
+    light_direction: float3,
+    frag_position: float3,
+    base_colour: float3,
+    normal: float3,
+    metallic: float,
+    roughness: float,
+) -> float3 {
+    // Derived material parameters
+    let v = normalize(-frag_position); // We light in view space, 0,0,0 is implicitly the camera
+    let l = normalize(light_direction);
+    let n = normalize(normal);
+    let f0 = CalculateF0(base_colour, metallic, reflectance);
+
+    // Calculate the result of our BRDF
+    let brdf = StandardBRDF(v, l, n, base_colour, metallic, roughness, f0);
+
+    // Apply a single point light
+    let NoL = clamp(dot(n, l), 0.0, 1.0);
+    return brdf * NoL;
+}
+
 [numthreads(8, 8, 1)]
 void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
 {
@@ -64,6 +113,8 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
 
     let texCoord = int3(dispatch_thread_id.x, dispatch_thread_id.y, 0);
 
+    let view_rotation_matrix = float3x3(g_camera.view_matrix);
+
     if (texCoord.x < width && texCoord.y < height) {
         let viewportX = ((float(texCoord.x) / float(width)) - 0.5) * 2;
         let viewportY = ((float(texCoord.y) / float(height)) - 0.5) * 2;
@@ -71,34 +122,31 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         let viewportPoint = float3(viewportX, -viewportY, viewportZ);
         let viewspacePoint = UnprojectPointWithMatrix(g_camera.proj_matrix, viewportPoint);
 
+        // If we still have the clear value of the depth buffer then don't do any lighting as this
+        // isn't an object
+        if (viewportZ == 0) {
+            g_output[dispatch_thread_id.xy] = float4(0, 0, 0, 1);
+            return;
+        }
+
         let base_colour = g_gbuffer0.Load(texCoord).rgb;
         let ws_normal = g_gbuffer1.Load(texCoord).xyz;
         let gbuffer_2 = g_gbuffer2.Load(texCoord);
         let metallic = gbuffer_2.r;
         let roughness = RemapRoughness(gbuffer_2.g);
 
-        // Transform light and normal into viewspace
-        let light_pos = mul(float4(float3(1.5,0.0,0.0), 1), g_camera.view_matrix);
-        let normal = mul(ws_normal, float3x3(g_camera.view_matrix));
+        // Transform the normal into viewspace, where we do all our lighting
+        let vs_normal = mul(ws_normal, view_rotation_matrix);
 
-        // Camera and light vectors
-        let frag_to_camera = -viewspacePoint;
-        let frag_to_light = light_pos.xyz - viewspacePoint;
+        float3 light = float3(0, 0, 0);
 
-        // Derived material parameters
-        let v = normalize(frag_to_camera);
-        let l = normalize(frag_to_light);
-        let n = normalize(normal);
-        let f0 = CalculateF0(base_colour, metallic, reflectance);
+        let point_pos = mul(float4(float3(1.5, 0, 0), 1), g_camera.view_matrix);
+        light += PointLight(point_pos.xyz, viewspacePoint, base_colour, vs_normal, metallic, roughness);
 
-        // Calculate the result of our BRDF
-        let brdf = StandardBRDF(v, l, n, base_colour, metallic, roughness, f0);
+        let dir_vector = mul(normalize(float3(1, 1, 1)), view_rotation_matrix);
+        light += DirectionLight(dir_vector, viewspacePoint, base_colour, vs_normal, metallic, roughness) * 0.5;
+        light += DirectionLight(-dir_vector, viewspacePoint, base_colour, vs_normal, metallic, roughness) * float3(0.25, 0.1, 0.1);
 
-        // Apply a single point light
-        let NoL = clamp(dot(n, l), 0.0, 1.0);
-        let distance_squared = dot(frag_to_light, frag_to_light);
-        let final = EvaluatePointLight(brdf, lumens, distance_squared, NoL);
-
-        g_output[dispatch_thread_id.xy] = float4(final, 1);
+        g_output[dispatch_thread_id.xy] = float4(light, 1);
     }
 }
