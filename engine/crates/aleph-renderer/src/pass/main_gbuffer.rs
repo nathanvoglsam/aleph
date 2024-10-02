@@ -126,7 +126,7 @@ pub fn pass(
             resources.create_texture(&depth_buffer_desc, ResourceUsageFlags::RENDER_TARGET);
 
         let uniform_buffer = resources.create_buffer(
-            &BufferDesc::new(4 * 1024u64)
+            &BufferDesc::new(4 * 1024 * 1024)
                 .cpu_write()
                 .with_name(obj_name!("TestUniformBuffer")),
             ResourceUsageFlags::CONSTANT_BUFFER,
@@ -165,7 +165,8 @@ pub fn pass(
 
             let u_ptr = uniform_buffer.map().unwrap();
             let u_alloc =
-                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
+                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024 * 1024)
+                    .unwrap();
 
             let extent = gbuffer0.desc_ref().get_extent_2d();
             // let aspect_ratio = extent.width as f32 / extent.height as f32;
@@ -187,10 +188,9 @@ pub fn pass(
                     .as_array()
                     .clone(),
             };
-            let camera_offset = u_alloc
+            let camera = u_alloc
                 .allocate_object(camera_layout)
-                .unwrap()
-                .device_offset;
+                .unwrap();
 
             let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
             let write = BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256);
@@ -198,7 +198,7 @@ pub fn pass(
                 DescriptorWriteDesc::uniform_buffer(
                     descriptor_set,
                     0,
-                    &write.clone().with_offset(camera_offset as u64),
+                    &write.clone().with_offset(camera.device_offset as u64),
                 ),
                 DescriptorWriteDesc::uniform_buffer_dynamic(
                     descriptor_set,
@@ -269,16 +269,15 @@ pub fn pass(
 
             let objects = scene.get_storage_ref::<StaticMesh>().unwrap();
             for (t, _o) in objects.iter() {
-                let model_offset = u_alloc
+                let m = u_alloc
                     .allocate_object(ModelLayout::from_transform(t))
-                    .unwrap()
-                    .device_offset;
+                    .unwrap();
                 encoder.bind_descriptor_sets(
                     pipeline_layout.as_ref(),
                     PipelineBindPoint::Graphics,
                     0,
                     &[descriptor_set],
-                    &[model_offset as u32],
+                    &[m.device_offset as u32],
                 );
 
                 encoder.draw_indexed(INDICES.len() as _, 1, 0, 0, 0);
