@@ -35,6 +35,7 @@ use std::ptr::NonNull;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use parking_lot::Mutex;
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 
@@ -47,6 +48,7 @@ pub struct Buffer {
     pub(crate) allocation: ManuallyDrop<d3d12ma::Allocation>,
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) base_address: GPUDescriptorHandle,
+    pub(crate) map_state: Mutex<MapState>,
     pub(crate) desc: BufferDesc<'static>,
     pub(crate) name: Option<String>,
 }
@@ -62,6 +64,11 @@ impl IGetPlatformInterface for Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
+            // Unmap the buffer if it's still mapped
+            if self.map_state.get_mut().count > 0 {
+                self.resource.Unmap(0, None);
+            }
+
             ManuallyDrop::drop(&mut self.resource);
             ManuallyDrop::drop(&mut self.allocation);
         }
@@ -121,21 +128,47 @@ impl IBuffer for Buffer {
     }
 
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
+        let mut lock = self.map_state.lock();
+
+        if let Some(ptr) = lock.ptr {
+            lock.count = lock.count.checked_add(1).unwrap();
+            return Ok(ptr);
+        }
+
+        debug_assert_eq!(lock.count, 0);
+
         // TODO: should we expose 'read_range'?
         unsafe {
             let mut ptr = std::ptr::null_mut();
             self.resource
                 .Map(0, None, Some(&mut ptr))
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-            NonNull::new(ptr as *mut u8).ok_or(ResourceMapError::MappedNullPointer)
+            let ptr = NonNull::new(ptr as *mut u8).ok_or(ResourceMapError::MappedNullPointer)?;
+
+            lock.count = lock.count.checked_add(1).unwrap();
+            lock.ptr = Some(ptr);
+            Ok(ptr)
         }
     }
 
-    fn unmap(&self) {
+    fn unmap(&self) -> Result<(), ResourceUnmapError> {
+        let mut lock = self.map_state.lock();
+
+        lock.count = lock.count
+            .checked_sub(1)
+            .ok_or(ResourceUnmapError::NotMapped)?;
+
+        if lock.count > 0 {
+            return Ok(());
+        }
+
         // TODO: should we expose 'written_range'
         unsafe {
             self.resource.Unmap(0, None);
+            lock.ptr = None;
         }
+
+        Ok(())
     }
 
     fn flush_range(&self, _offset: u64, _len: u64) {
@@ -146,3 +179,11 @@ impl IBuffer for Buffer {
         // intentional no-op
     }
 }
+
+#[derive(Default)]
+pub(crate) struct MapState {
+    count: usize,
+    ptr: Option<NonNull<u8>>,
+}
+
+unsafe impl Send for MapState {}

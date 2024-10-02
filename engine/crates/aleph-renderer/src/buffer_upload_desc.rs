@@ -206,8 +206,8 @@ impl BufferUploadSource {
     /// In general it's only correct to call this on [`BufferUploadSource`] instances that were
     /// constructed via the [`BufferUploadSource::new_owned`] function.
     #[inline(always)]
-    pub unsafe fn unmap(&self) {
-        self.buffer.unmap();
+    pub unsafe fn unmap(&self) -> Result<(), ResourceUnmapError> {
+        self.buffer.unmap()
     }
 
     /// Returns a handle to the [`IBuffer`] object that backs our staging buffer.

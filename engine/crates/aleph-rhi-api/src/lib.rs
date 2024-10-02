@@ -633,7 +633,7 @@ pub trait IBuffer: IAny + IGetPlatformInterface + Send + Sync {
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError>;
 
     /// Unmaps the buffers memory, releasing the associated address space range to be reused.
-    fn unmap(&self);
+    fn unmap(&self) -> Result<(), ResourceUnmapError>;
 
     /// Flushes any writes to mapped buffer memory for non `HOST_COHERENT` memory.
     ///
@@ -5746,6 +5746,18 @@ pub enum ResourceMapError {
     MappedNullPointer,
 }
 error_enum_from_unit_type!(ResourceMapError);
+
+/// Set of errors that can occur when unmapping an [IBuffer]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum ResourceUnmapError {
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+
+    #[error("The buffer was not mapped yet was asked to be unmapped.")]
+    NotMapped,
+}
+error_enum_from_unit_type!(ResourceUnmapError);
 
 //
 //

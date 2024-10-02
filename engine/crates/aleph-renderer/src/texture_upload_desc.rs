@@ -240,8 +240,8 @@ impl TextureUploadSource {
     ///
     /// See [`BufferUploadSource::unmap`] for more info.
     #[inline(always)]
-    pub unsafe fn unmap(&self) {
-        self.source.unmap();
+    pub unsafe fn unmap(&self) -> Result<(), ResourceUnmapError> {
+        self.source.unmap()
     }
 
     /// Returns a handle to the [`IBuffer`] object that backs our staging buffer.

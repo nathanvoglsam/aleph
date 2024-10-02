@@ -78,7 +78,9 @@ impl IBuffer for NullBuffer {
         unimplemented!()
     }
 
-    fn unmap(&self) {}
+    fn unmap(&self) -> Result<(), ResourceUnmapError> {
+        unimplemented!()
+    }
 
     fn flush_range(&self, _offset: u64, _len: u64) {}
 

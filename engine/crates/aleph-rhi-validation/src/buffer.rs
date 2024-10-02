@@ -28,7 +28,6 @@
 //
 
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
@@ -39,7 +38,6 @@ pub struct ValidationBuffer {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IBuffer>,
-    pub(crate) debug_mapped_tracker: AtomicBool,
 }
 
 declare_interfaces!(ValidationBuffer, [IBuffer]);
@@ -72,23 +70,11 @@ impl IBuffer for ValidationBuffer {
     }
 
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
-        // Debug check for tracking that the resource is unmapped when trying to map it
-        assert!(self
-            .debug_mapped_tracker
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-            .is_ok());
-
         self.inner.map()
     }
 
-    fn unmap(&self) {
-        // Debug check for tracking that the resource is mapped when trying to unmap it
-        assert!(self
-            .debug_mapped_tracker
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
-            .is_ok());
-
-        self.inner.unmap();
+    fn unmap(&self) -> Result<(), ResourceUnmapError> {
+        self.inner.unmap()
     }
 
     fn flush_range(&self, offset: u64, len: u64) {

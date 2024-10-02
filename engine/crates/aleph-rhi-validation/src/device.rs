@@ -350,7 +350,6 @@ impl IDevice for ValidationDevice {
             _this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
-            debug_mapped_tracker: Default::default(),
         });
         Ok(AnyArc::map::<dyn IBuffer, _>(layout, |v| v))
     }

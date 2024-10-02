@@ -79,13 +79,13 @@ pub fn pass(
         let v_alloc =
             UploadBumpAllocator::new_from_block(vtx_buffer.as_ref(), v_ptr, 0, 4 * 1024).unwrap();
         v_alloc.allocate_objects_clone(&VERTS).unwrap();
-        vtx_buffer.unmap();
+        vtx_buffer.unmap().unwrap();
 
         let i_ptr = idx_buffer.map().unwrap();
         let i_alloc =
             UploadBumpAllocator::new_from_block(idx_buffer.as_ref(), i_ptr, 0, 4 * 1024).unwrap();
         i_alloc.allocate_objects_copy(&INDICES).unwrap();
-        idx_buffer.unmap();
+        idx_buffer.unmap().unwrap();
     }
 
     let descriptor_set_layout = create_descriptor_set_layout(device);
@@ -286,7 +286,7 @@ pub fn pass(
 
             encoder.end_rendering();
 
-            uniform_buffer.unmap();
+            uniform_buffer.unmap().unwrap();
         }
     });
 }

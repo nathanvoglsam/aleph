@@ -88,7 +88,7 @@ impl EguiFontTexture {
                     desc.size_requirement(),
                 );
 
-                staging_buffer.unmap();
+                staging_buffer.unmap().unwrap();
 
                 if let Some(handle) = self.font_handle {
                     renderer

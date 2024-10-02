@@ -593,10 +593,10 @@ impl World {
 
 /// Private function implementations
 impl World {
-    fn component_source_debug_assertions<T: ComponentSource>(&self, source: &T) {
+    fn component_source_debug_assertions<T: ComponentSource>(&self, _source: &T) {
         #[cfg(debug_assertions)]
         {
-            let layout = source.entity_layout();
+            let layout = _source.entity_layout();
             // Debug assertion that checks that the buffer sizes for each component are exactly the
             // size and alignment needed.
             let descs = layout.iter().map(|v| {
@@ -604,11 +604,11 @@ impl World {
                     .component_registry
                     .lookup(v)
                     .expect("Tried to insert an unregistered component type");
-                let buffer = source.data_for(v);
+                let buffer = _source.data_for(v);
                 (desc, buffer)
             });
             for (desc, buffer) in descs {
-                let required_bytes = source.count() as usize * desc.size;
+                let required_bytes = _source.count() as usize * desc.size;
                 let actual_bytes = buffer.len();
                 debug_assert_eq!(
                     required_bytes, actual_bytes,

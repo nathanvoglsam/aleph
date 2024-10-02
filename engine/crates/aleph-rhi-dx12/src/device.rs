@@ -658,6 +658,7 @@ impl IDevice for Device {
             allocation: ManuallyDrop::new(allocation),
             resource: ManuallyDrop::new(resource),
             base_address,
+            map_state: Mutex::new(Default::default()),
             desc,
             name,
         });

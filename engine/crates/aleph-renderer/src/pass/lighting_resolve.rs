@@ -176,7 +176,7 @@ pub fn pass(
                     .clone(),
             };
             u_alloc.allocate_object(camera_layout).unwrap();
-            uniform_buffer.unmap();
+            uniform_buffer.unmap().unwrap();
 
             let set = arena.allocate_set(set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[

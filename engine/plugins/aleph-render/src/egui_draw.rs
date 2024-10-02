@@ -243,8 +243,8 @@ pub fn pass(
 
             encoder.end_rendering();
 
-            vtx_buffer.unmap();
-            idx_buffer.unmap();
+            vtx_buffer.unmap().unwrap();
+            idx_buffer.unmap().unwrap();
         }
     });
 

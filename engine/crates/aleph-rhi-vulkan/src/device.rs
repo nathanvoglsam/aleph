@@ -42,6 +42,7 @@ use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
 use byteorder::{ByteOrder, NativeEndian};
 use crossbeam::queue::ArrayQueue;
+use parking_lot::Mutex;
 use vulkan_alloc::vma;
 
 use crate::adapter::Adapter;
@@ -647,6 +648,7 @@ impl IDevice for Device {
             id: self.object_counter.next_buffer(),
             buffer,
             allocation,
+            map_state: Mutex::new(Default::default()),
             desc,
             name,
         });
