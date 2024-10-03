@@ -804,6 +804,8 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
         regions: &[TextureToTextureCopyInfo],
     );
 
+    unsafe fn close(&mut self) -> Result<(), CommandListCloseError>;
+
     ///
     /// Emits an instantaneous 'marker' on this command list, with the given message and message
     /// color.
@@ -5927,6 +5929,9 @@ error_enum_from_unit_type!(CommandListCreateError);
 
 #[derive(Error, Debug)]
 pub enum CommandListBeginError {
+    #[error("The command list is not ready to begin recording commands")]
+    InvalidCommandListState,
+
     #[error("The command list does not support encoding commands for a '{0}' queue")]
     InvalidEncoderType(QueueType),
 
@@ -5935,6 +5940,16 @@ pub enum CommandListBeginError {
 }
 error_enum_from_unit_type!(CommandListBeginError);
 
+#[derive(Error, Debug)]
+pub enum CommandListCloseError {
+    #[error("The command list was already closed but has been closed again.")]
+    AlreadyClosed,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+error_enum_from_unit_type!(CommandListCloseError);
+
 //
 //
 // _________________________________________________________________________________________________
@@ -5942,6 +5957,9 @@ error_enum_from_unit_type!(CommandListBeginError);
 
 #[derive(Error, Debug)]
 pub enum QueueSubmitError {
+    #[error("A command list in the submission was not in the correct state for submission.")]
+    InvalidCommandListState,
+
     #[error("The queue does not support submitting '{0}' commands")]
     InvalidEncoderType(QueueType),
 

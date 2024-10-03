@@ -366,6 +366,10 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         self.inner.copy_texture_regions(src, dst, regions)
     }
 
+    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+        self.inner.close()
+    }
+
     unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
         self.inner.set_marker(color, message)
     }

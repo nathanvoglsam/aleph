@@ -40,7 +40,7 @@ use ash::vk;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 
-use crate::command_list::CommandList;
+use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
 use crate::internal::unwrap;
 
@@ -313,6 +313,13 @@ impl IQueue for Queue {
             let list = box_downcast::<_, CommandList>(list).ok().unwrap();
             command_buffers.push(list.buffer);
             lists.push(list);
+        }
+
+        // Make sure all the lists are in the correct state for submission
+        for list in lists.iter() {
+            if list.state != ListState::Closed {
+                return Err(QueueSubmitError::InvalidCommandListState);
+            }
         }
 
         // Signal the fence, if one is provided, to let CPU know the submitted commands are

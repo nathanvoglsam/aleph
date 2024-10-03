@@ -150,7 +150,7 @@ impl IPlugin for PluginRender {
 
         registry.resources().insert(RenderScene::new());
         registry.resources().insert(renderer.build().unwrap());
-        
+
         let mut egui_data = render_data.map(|v| EguiData {
             font_texture: EguiFontTexture::new(),
             render_data: v,

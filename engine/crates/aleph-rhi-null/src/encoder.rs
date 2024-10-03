@@ -135,6 +135,10 @@ impl ITransferEncoder for NullEncoder {
     ) {
     }
 
+    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+        Ok(())
+    }
+
     unsafe fn set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}
 
     unsafe fn begin_event(&mut self, _color: Color, _message: &aleph_nstr::NStr) {}

@@ -44,6 +44,7 @@ pub struct CommandList {
     pub(crate) list: ID3D12GraphicsCommandList7,
     pub(crate) descriptor_heaps: [Option<ID3D12DescriptorHeap>; 2],
     pub(crate) list_type: QueueType,
+    pub(crate) state: ListState,
 }
 
 declare_interfaces!(CommandList, [ICommandList]);
@@ -67,32 +68,42 @@ impl ICommandList for CommandList {
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
-            // Open the command list for recording with no bound pipeline so we can attach it to
-            // the command allocator
-            unsafe {
-                self.allocator
-                    .Reset()
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            match self.state {
+                ListState::Empty => {
+                    // Open the command list for recording with no bound pipeline so we can attach it to
+                    // the command allocator
+                    unsafe {
+                        self.allocator
+                            .Reset()
+                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
-                self.list
-                    .Reset(&self.allocator, None)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                        self.list
+                            .Reset(&self.allocator, None)
+                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
-                self.list.SetDescriptorHeaps(&self.descriptor_heaps);
+                        self.list.SetDescriptorHeaps(&self.descriptor_heaps);
+                    }
+
+                    self.state = ListState::Open;
+
+                    let _list = self.list.clone();
+                    let _queue_type = self.list_type;
+                    let encoder = Encoder::<'a> {
+                        _parent: self,
+                        _list,
+                        _queue_type,
+                        bound_graphics_pipeline: None,
+                        bound_compute_pipeline: None,
+                        input_binding_strides: [0; 16],
+                        arena: Bump::with_capacity(1024 * 16),
+                        bound_graphics_sets: vec![None; 16].into(),
+                        bound_compute_sets: vec![None; 16].into(),
+                    };
+                    Ok(Box::new(encoder))
+                }
+                ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
+                ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
             }
-
-            let encoder = Encoder::<'a> {
-                _list: self.list.clone(),
-                _queue_type: self.list_type,
-                bound_graphics_pipeline: None,
-                bound_compute_pipeline: None,
-                input_binding_strides: [0; 16],
-                arena: Bump::with_capacity(1024 * 16),
-                phantom_data: Default::default(),
-                bound_graphics_sets: vec![None; 16].into(),
-                bound_compute_sets: vec![None; 16].into(),
-            };
-            Ok(Box::new(encoder))
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::General,
@@ -115,4 +126,11 @@ impl ICommandList for CommandList {
             QueueType::Transfer,
         ))
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub(crate) enum ListState {
+    Empty,
+    Open,
+    Closed,
 }

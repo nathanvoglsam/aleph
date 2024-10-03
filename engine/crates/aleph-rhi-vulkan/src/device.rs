@@ -47,7 +47,7 @@ use vulkan_alloc::vma;
 
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
-use crate::command_list::CommandList;
+use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
@@ -836,6 +836,7 @@ impl IDevice for Device {
                     pool: list.pool,
                     buffer: list.buffer,
                     list_type: list.list_type,
+                    state: ListState::Empty,
                 });
                 return Ok(out);
             }
@@ -878,6 +879,7 @@ impl IDevice for Device {
                 pool: command_pool,
                 buffer: command_buffer,
                 list_type: desc.queue_type,
+                state: ListState::Empty,
             });
 
             Ok(out)

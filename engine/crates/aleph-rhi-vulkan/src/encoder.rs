@@ -28,7 +28,6 @@
 //
 
 use std::any::TypeId;
-use std::marker::PhantomData;
 
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
@@ -37,7 +36,7 @@ use ash::vk;
 use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
 
-use crate::command_list::CommandList;
+use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::*;
@@ -45,6 +44,7 @@ use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 
 pub struct Encoder<'a> {
+    pub(crate) _parent: &'a mut CommandList,
     pub(crate) _buffer: vk::CommandBuffer,
     pub(crate) _context: AnyArc<Context>,
     pub(crate) _device: AnyArc<Device>,
@@ -52,19 +52,6 @@ pub struct Encoder<'a> {
     pub(crate) bound_compute_pipeline: Option<AnyArc<ComputePipeline>>,
     pub(crate) arena: Bump,
     pub(crate) enabled_shader_features: SyncShaderFeatures,
-    pub(crate) phantom_data: PhantomData<&'a mut CommandList>,
-}
-
-impl<'a> Drop for Encoder<'a> {
-    fn drop(&mut self) {
-        // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
-        unsafe {
-            self._device
-                .device
-                .end_command_buffer(self._buffer)
-                .unwrap()
-        }
-    }
 }
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
@@ -465,6 +452,21 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn end_event(&mut self) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
             loader.cmd_end_debug_utils_label(self._buffer)
+        }
+    }
+
+    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+        match self._parent.state {
+            ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
+            ListState::Open => {
+                self._device
+                    .device
+                    .end_command_buffer(self._buffer)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                self._parent.state = ListState::Closed;
+                Ok(())
+            }
+            ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
         }
     }
 }

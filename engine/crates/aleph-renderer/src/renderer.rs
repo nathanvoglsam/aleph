@@ -345,6 +345,8 @@ impl Renderer {
 
             self.graph_manager
                 .execute_graph(frame_index, &import_bundle, encoder.as_mut(), &args);
+
+            encoder.close().unwrap();
         }
 
         self.queue

@@ -43,7 +43,7 @@ use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
 
-use crate::command_list::CommandList;
+use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
 use crate::internal::unwrap;
 
@@ -345,6 +345,13 @@ impl IQueue for Queue {
 
             // Add the bundle to our list
             lists.push(list);
+        }
+
+        // Assert the command list is in the correct state for submission
+        for list in lists.iter_mut() {
+            if list.state != ListState::Closed {
+                return Err(QueueSubmitError::InvalidCommandListState);
+            }
         }
 
         self.handle.ExecuteCommandLists(&handles);

@@ -28,7 +28,6 @@
 //
 
 use std::any::TypeId;
-use std::marker::PhantomData;
 use std::mem::transmute_copy;
 use std::ops::Deref;
 use std::ptr::NonNull;
@@ -43,7 +42,7 @@ use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 
-use crate::command_list::CommandList;
+use crate::command_list::{CommandList, ListState};
 use crate::internal::conv::{
     barrier_access_to_dx12, barrier_sync_to_dx12, image_layout_to_dx12,
     translate_barrier_texture_aspect_to_plane_range, translate_rendering_color_attachment,
@@ -55,22 +54,15 @@ use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::ImageViewObject;
 
 pub struct Encoder<'a> {
+    pub(crate) _parent: &'a mut CommandList,
     pub(crate) _list: ID3D12GraphicsCommandList7,
     pub(crate) _queue_type: QueueType,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) bound_compute_pipeline: Option<AnyArc<ComputePipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
     pub(crate) arena: Bump,
-    pub(crate) phantom_data: PhantomData<&'a mut CommandList>,
     pub(crate) bound_graphics_sets: Box<[Option<DescriptorSetHandle>]>,
     pub(crate) bound_compute_sets: Box<[Option<DescriptorSetHandle>]>,
-}
-
-impl<'a> Drop for Encoder<'a> {
-    fn drop(&mut self) {
-        // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
-        unsafe { self._list.Close().unwrap() }
-    }
 }
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
@@ -668,6 +660,20 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 &src,
                 Some(&src_box),
             );
+        }
+    }
+
+    unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
+        match self._parent.state {
+            ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
+            ListState::Open => {
+                self._list
+                    .Close()
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                self._parent.state = ListState::Closed;
+                Ok(())
+            }
+            ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
         }
     }
 

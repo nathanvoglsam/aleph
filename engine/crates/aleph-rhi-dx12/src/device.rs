@@ -56,7 +56,7 @@ use windows::Win32::System::Threading::*;
 
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
-use crate::command_list::CommandList;
+use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
@@ -812,6 +812,7 @@ impl IDevice for Device {
                 list,
                 descriptor_heaps,
                 list_type,
+                state: ListState::Empty,
             });
             return Ok(out);
         }
@@ -850,6 +851,7 @@ impl IDevice for Device {
             descriptor_heaps,
             allocator,
             list,
+            state: ListState::Closed,
         };
         Ok(Box::new(command_list))
     }

@@ -44,6 +44,7 @@ pub struct CommandList {
     pub(crate) pool: vk::CommandPool,
     pub(crate) buffer: vk::CommandBuffer,
     pub(crate) list_type: QueueType,
+    pub(crate) state: ListState,
 }
 
 declare_interfaces!(CommandList, [ICommandList]);
@@ -67,40 +68,51 @@ impl ICommandList for CommandList {
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
         if matches!(self.list_type, QueueType::General) {
-            // Open the command list for recording with no bound pipeline so we can attach it to
-            // the command allocator
-            unsafe {
-                self._device
-                    .device
-                    .reset_command_pool(self.pool, Default::default())
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            match self.state {
+                ListState::Empty => {
+                    // Open the command list for recording with no bound pipeline so we can attach it to
+                    // the command allocator
+                    unsafe {
+                        self._device
+                            .device
+                            .reset_command_pool(self.pool, Default::default())
+                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
-                let begin_info = vk::CommandBufferBeginInfo::default()
-                    .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-                self._device
-                    .device
-                    .begin_command_buffer(self.buffer, &begin_info)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                        let begin_info = vk::CommandBufferBeginInfo::default()
+                            .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+                        self._device
+                            .device
+                            .begin_command_buffer(self.buffer, &begin_info)
+                            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                    }
+
+                    self.state = ListState::Open;
+
+                    let features_10 = &self._device.adapter.device_info.features_10;
+                    let enabled_shader_features = SyncShaderFeatures {
+                        tessellation: features_10.tessellation_shader == vk::TRUE,
+                        geometry: features_10.geometry_shader == vk::TRUE,
+                        mesh: false,
+                        task: false,
+                    };
+                    let _buffer = self.buffer;
+                    let _context = self._device.context.clone();
+                    let _device = self._device.clone();
+                    let encoder = Encoder::<'a> {
+                        _parent: self,
+                        _buffer,
+                        _context,
+                        _device,
+                        bound_graphics_pipeline: None,
+                        bound_compute_pipeline: None,
+                        arena: Bump::with_capacity(1024 * 16),
+                        enabled_shader_features,
+                    };
+                    Ok(Box::new(encoder))
+                }
+                ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
+                ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
             }
-
-            let features_10 = &self._device.adapter.device_info.features_10;
-            let enabled_shader_features = SyncShaderFeatures {
-                tessellation: features_10.tessellation_shader == vk::TRUE,
-                geometry: features_10.geometry_shader == vk::TRUE,
-                mesh: false,
-                task: false,
-            };
-            let encoder = Encoder::<'a> {
-                _buffer: self.buffer,
-                _context: self._device.context.clone(),
-                _device: self._device.clone(),
-                bound_graphics_pipeline: None,
-                bound_compute_pipeline: None,
-                arena: Bump::with_capacity(1024 * 16),
-                enabled_shader_features,
-                phantom_data: Default::default(),
-            };
-            Ok(Box::new(encoder))
         } else {
             Err(CommandListBeginError::InvalidEncoderType(
                 QueueType::General,
@@ -134,4 +146,11 @@ impl Drop for CommandList {
             }
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub(crate) enum ListState {
+    Empty,
+    Open,
+    Closed,
 }
