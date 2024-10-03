@@ -300,7 +300,7 @@ impl BufferLoader {
         let desc = BufferDesc {
             size: load.data.data_ptr().len() as u64,
             cpu_access: CpuAccessMode::None, // TODO: do we allow something else?
-            usage: ResourceUsageFlags::SHADER_RESOURCE | ResourceUsageFlags::COPY_DEST,
+            usage: ResourceUsageFlags::COPY_DEST | load.data.usage,
             name: None,
         };
         let buffer = device.create_buffer(&desc)?;
