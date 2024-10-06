@@ -851,7 +851,7 @@ impl IDevice for Device {
             descriptor_heaps,
             allocator,
             list,
-            state: ListState::Closed,
+            state: ListState::Empty,
         };
         Ok(Box::new(command_list))
     }
