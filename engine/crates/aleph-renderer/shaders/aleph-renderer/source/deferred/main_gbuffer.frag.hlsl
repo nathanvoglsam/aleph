@@ -37,13 +37,9 @@ struct Params {
 
 ParameterBlock<Params> g_params;
 
-struct Params2 {
-    Texture2D<float4> base_colour;
-    Texture2D<float4> metal_roughness;
-    SamplerState sampler;
-};
-
-ParameterBlock<Params2> g_params2;
+[[vk_binding(0, 1)]] Texture2D<float4> g_base_colour : register(t0, space1);
+[[vk_binding(1, 1)]] Texture2D<float4> g_metal_roughness : register(t1, space1);
+[[vk_binding(2, 1)]] SamplerState g_sampler : register(s2, space1);
 
 // Material parameters
 static float reflectance = 0.5;
@@ -59,9 +55,9 @@ PixelOutput main(in StaticMeshPixelInput input) {
 
     let vtx_colour = input.colour;
     let base_colour = g_params.model.colour.xyz;
-    let base_colour_tex = g_params2.base_colour.Sample(g_params2.sampler, input.uv).xyz;
+    let base_colour_tex = g_base_colour.Sample(g_sampler, input.uv).xyz;
 
-    let metal_roughness = g_params2.metal_roughness.Sample(g_params2.sampler, input.uv);
+    let metal_roughness = g_metal_roughness.Sample(g_sampler, input.uv);
 
     let metallic = g_params.model.metal_roughness_padding.x * metal_roughness.z;
     let roughness = RemapRoughness(g_params.model.metal_roughness_padding.y) * RemapRoughness(metal_roughness.y);
