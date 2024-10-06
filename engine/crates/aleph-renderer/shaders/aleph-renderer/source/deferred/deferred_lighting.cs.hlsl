@@ -72,9 +72,10 @@ func PointLight(
     let l = normalize(frag_to_light);
     let n = normalize(normal);
     let f0 = CalculateF0(base_colour, metallic, reflectance);
+    let diffuse_colour = CalculateDiffuseColour(base_colour, metallic);
 
     // Calculate the result of our BRDF
-    let brdf = StandardBRDF(v, l, n, base_colour, metallic, roughness, f0);
+    let brdf = StandardBRDF(v, l, n, diffuse_colour, metallic, roughness, f0);
 
     // Apply a single point light
     let NoL = clamp(dot(n, l), 0.0, 1.0);
@@ -95,9 +96,10 @@ func DirectionLight(
     let l = normalize(light_direction);
     let n = normalize(normal);
     let f0 = CalculateF0(base_colour, metallic, reflectance);
+    let diffuse_colour = CalculateDiffuseColour(base_colour, metallic);
 
     // Calculate the result of our BRDF
-    let brdf = StandardBRDF(v, l, n, base_colour, metallic, roughness, f0);
+    let brdf = StandardBRDF(v, l, n, diffuse_colour, metallic, roughness, f0);
 
     // Apply a single point light
     let NoL = clamp(dot(n, l), 0.0, 1.0);

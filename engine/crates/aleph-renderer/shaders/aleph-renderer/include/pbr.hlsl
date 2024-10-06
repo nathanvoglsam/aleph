@@ -102,6 +102,24 @@ inline func CalculateF0<T: __BuiltinFloatingPointType>(
 }
 
 //
+// Calculates the diffuse colour from the base colour and metallic parameters.
+//
+// We need to use the derived diffuse colour as the input to our BRDFs, not the base colour. This
+// function derives that diffuse colour.
+//
+// Arguments:
+//
+// - base_colour: The base colour parameter of the material
+// - metallic: The metallic parameter of the material
+//
+inline func CalculateDiffuseColour<T: __BuiltinFloatingPointType>(
+    in vector<T, 3> base_colour,
+    in T metallic
+) -> vector<T, 3> {
+    return (T(1.0) - metallic) * base_colour;
+}
+
+//
 // The GGX D term
 //
 inline func D_GGX<T: __BuiltinFloatingPointType>(
@@ -236,7 +254,7 @@ inline func Fd_Burley<T: __BuiltinFloatingPointType>(
 // - v: The view unit vector
 // - l: The incident light unit vector
 // - n: The surface normal vector
-// - base_colour: The base colour of the material
+// - diffuse_colour: The diffuse colour of the material
 // - metallic: The metallic parameter of the material
 // - roughness: The roughness value after being mapped from a perceptual roughness value
 // - f0: Reflectance at normal incidence
@@ -245,7 +263,7 @@ inline func StandardBRDF(
     in float3 v,
     in float3 l,
     in float3 n,
-    in float3 base_colour,
+    in float3 diffuse_colour,
     in float metallic,
     in float roughness,
     in float3 f0
@@ -269,7 +287,7 @@ inline func StandardBRDF(
     // let Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
-    let Fd = base_colour * Fd_Burley(NoV, NoL, LoH, roughness);
+    let Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
 
     // Diffuse contribution
     let kD = (float3(1,1,1) - F) * (1 - metallic);
@@ -293,7 +311,7 @@ inline func V_Kelemen<T: __BuiltinFloatingPointType>(T LoH) -> T {
 // - v: The view unit vector
 // - l: The incident light unit vector
 // - n: The surface normal vector
-// - base_colour: The base colour of the material
+// - diffuse_colour: The diffuse colour of the material
 // - metallic: The metallic parameter of the material
 // - roughness: The roughness value after being mapped
 // - f0: Reflectance at normal incidence
@@ -304,7 +322,7 @@ inline func ClearCoatBRDF(
     in float3 v,
     in float3 l,
     in float3 n,
-    in float3 base_colour,
+    in float3 diffuse_colour,
     in float metallic,
     in float roughness,
     in float3 f0,
@@ -330,7 +348,7 @@ inline func ClearCoatBRDF(
     // let Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
-    let Fd = base_colour * Fd_Burley(NoV, NoL, LoH, roughness);
+    let Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
 
     // Diffuse contribution
     let kD = (float3(1,1,1) - F) * (1 - metallic);
