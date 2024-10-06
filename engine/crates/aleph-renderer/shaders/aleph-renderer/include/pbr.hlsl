@@ -264,9 +264,9 @@ inline func StandardBRDF(
     let F = F_SchlickVec(LoH, f0, 1.0);
 
     // Specular BRDF
-    let Fr_nominator = (D * V) * F;
-    let Fr_denominator = max(4 * NoV * NoL, 0.001);
-    let Fr = Fr_nominator / Fr_denominator;
+    let Fr = (D * V) * F; // The division by (4 * NoV * NoL) is factored into the V function
+    // let Fr_denominator = max(4 * NoV * NoL, 0.001);
+    // let Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
     let Fd = base_colour * Fd_Burley(NoV, NoL, LoH, roughness);
@@ -325,9 +325,9 @@ inline func ClearCoatBRDF(
     let F = F_SchlickVec(LoH, f0, 1.0);
 
     // Specular BRDF
-    let Fr_nominator = (D * V) * F;
-    let Fr_denominator = max(4 * NoV * NoL, 0.001);
-    let Fr = Fr_nominator / Fr_denominator;
+    let Fr = (D * V) * F; // The division by (4 * NoV * NoL) is factored into the V function
+    // let Fr_denominator = max(4 * NoV * NoL, 0.001);
+    // let Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
     let Fd = base_colour * Fd_Burley(NoV, NoL, LoH, roughness);
@@ -339,9 +339,9 @@ inline func ClearCoatBRDF(
     let Vc = V_SmithGGXCorrelatedFast(NoV, NoL, clear_coat_roughness);
     let Fc = F_Schlick(LoH, 0.04, 1.0) * clear_coat;
 
-    let Frc_nominator = (Dc * Vc) * Fc;
-    let Frc_denominator = max(4 * NoV * NoL, 0.001);
-    let Frc = Frc_nominator / Frc_denominator;
+    let Frc = (Dc * Vc) * Fc; // The division by (4 * NoV * NoL) is factored into the V function
+    // let Frc_denominator = max(4 * NoV * NoL, 0.001);
+    // let Frc = Frc_nominator / Frc_denominator;
 
     let cc_energy_loss = 1 - Fc;
     let Or = Fr * cc_energy_loss;
