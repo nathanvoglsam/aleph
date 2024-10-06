@@ -1168,7 +1168,7 @@ impl Device {
             .polygon_mode(polygon_mode)
             .cull_mode(cull_mode)
             .front_face(front_face)
-            .depth_clamp_enable(true)
+            .depth_clamp_enable(false)
             .rasterizer_discard_enable(false) // No support in dx12
             .depth_bias_enable(desc.rasterizer_state.depth_bias != 0)
             .depth_bias_constant_factor(desc.rasterizer_state.depth_bias as f32)
