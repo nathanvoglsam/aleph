@@ -30,10 +30,22 @@
 #include "main_gbuffer.inc.hlsl"
 #include "pbr.hlsl"
 
+struct Params {
+    ConstantBuffer<CameraLayout> camera;
+    ConstantBuffer<ModelLayout> model;
+};
+
+ParameterBlock<Params> g_params;
+
+struct Params2 {
+    Texture2D<float4> base_colour;
+    Texture2D<float4> metal_roughness;
+    SamplerState sampler;
+};
+
+ParameterBlock<Params2> g_params2;
+
 // Material parameters
-static float3 base_colour = float3(0.2,1,1);
-static float metallic = 0.0;
-static float roughness = RemapRoughness(0.01);
 static float reflectance = 0.5;
 
 struct PixelOutput {
@@ -45,8 +57,17 @@ struct PixelOutput {
 PixelOutput main(in StaticMeshPixelInput input) {
     const float3 n = normalize(input.normal);
 
+    let vtx_colour = input.colour;
+    let base_colour = g_params.model.colour.xyz;
+    let base_colour_tex = g_params2.base_colour.Sample(g_params2.sampler, input.uv).xyz;
+
+    let metal_roughness = g_params2.metal_roughness.Sample(g_params2.sampler, input.uv);
+
+    let metallic = g_params.model.metal_roughness_padding.x * metal_roughness.z;
+    let roughness = RemapRoughness(g_params.model.metal_roughness_padding.y) * RemapRoughness(metal_roughness.y);
+
     PixelOutput output;
-    output.gbuffer_0.xyz = base_colour;
+    output.gbuffer_0.xyz = vtx_colour * base_colour * base_colour_tex;
     output.gbuffer_0.w = 1;
     output.gbuffer_1.xyz = n;
     output.gbuffer_2.x = metallic;

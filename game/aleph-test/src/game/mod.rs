@@ -27,16 +27,8 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
-aleph_dx12_agility_sdk::export_standard_agility_sdk_symbols!();
-
-mod game;
-
-#[no_mangle]
-pub extern "C" fn SDL_main(
-    _argc: std::ffi::c_int,
-    _argv: *const *const std::ffi::c_char,
-) -> std::ffi::c_int {
-    game::game_logic::engine_runner();
-    return 0;
-}
+pub mod cube_mesh;
+pub mod free_camera;
+pub mod game_logic;
+pub mod gltf_loader;
+pub mod throbber_logic;

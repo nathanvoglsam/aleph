@@ -295,7 +295,9 @@ impl TextureUploadSource {
     pub unsafe fn row_ptr(&self, row: u32) -> NonNull<[u8]> {
         // Calculate the offset to the start of the 'row'th row.
         let aligned_width = self.desc.aligned_width() as usize;
-        let row_offset = aligned_width * row as usize;
+        let elem_size = self.desc.format.bytes_per_element() as usize;
+        let aligned_stride = aligned_width * elem_size;
+        let row_offset = aligned_stride * row as usize;
 
         // We check anyway on debug builds because we can.
         #[cfg(debug_assertions)]
@@ -311,7 +313,7 @@ impl TextureUploadSource {
         let base_ptr = self.source.data.cast::<u8>().as_ptr();
         let ptr = base_ptr.add(row_offset);
         let ptr = NonNull::new(ptr as _).unwrap_unchecked();
-        NonNull::slice_from_raw_parts(ptr, aligned_width)
+        NonNull::slice_from_raw_parts(ptr, self.desc.width as usize * elem_size)
     }
 
     /// Get the upload block as a raw pointer.

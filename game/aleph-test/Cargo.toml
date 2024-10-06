@@ -48,7 +48,26 @@ path = "./src/lib.rs"
 [dependencies]
 aleph-engine = { workspace = true }
 egui_demo_lib = { workspace = true }
-## aleph-profile = { workspace = true, features = ["profile-with-superluminal"] }
+aleph-rhi-api = { workspace = true  }
+aleph-profile = { workspace = true, features = ["profile-with-superluminal"] }
+
+bytemuck = { workspace = true }
+
+[dependencies.gltf]
+version = "1"
+features = [
+    "KHR_lights_punctual",
+    "KHR_materials_emissive_strength",
+    "KHR_materials_ior",
+    "KHR_materials_pbrSpecularGlossiness",
+    "KHR_materials_specular",
+    "KHR_materials_transmission",
+    "KHR_materials_unlit",
+    "KHR_materials_variants",
+    "KHR_materials_volume",
+    "KHR_texture_transform"
+]
+
 
 [target.'cfg(windows)'.dependencies]
 aleph-dx12-agility-sdk = { workspace = true }

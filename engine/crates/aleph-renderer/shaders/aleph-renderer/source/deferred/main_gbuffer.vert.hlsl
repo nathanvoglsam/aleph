@@ -54,6 +54,7 @@ func main(in StaticMeshVertexInput input, out float4 sv_position : SV_Position) 
     output.normal = normal;
     output.tangent = tangent;
     output.uv = input.uv;
+    output.colour = input.colour;
 
     position = mul(position, g_params.camera.view_matrix);
     position = mul(position, g_params.camera.proj_matrix);

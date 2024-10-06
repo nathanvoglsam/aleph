@@ -85,16 +85,21 @@ mod lights {
 }
 
 mod static_mesh {
-    use renderer::BufferHandle;
+    use renderer::{BufferHandle, TextureHandle};
 
     ///
     ///
     ///
-    #[derive(Clone, PartialEq, Debug, Default)]
+    #[derive(Clone, PartialEq, Debug)]
     #[repr(C)]
     pub struct StaticMesh {
-        pub vtx: Option<BufferHandle>,
-        pub idx: Option<BufferHandle>,
+        pub vtx: BufferHandle,
+        pub idx: BufferHandle,
+        pub colour_tex: TextureHandle,
+        pub colour: [f32; 4],
+        pub metalness: f32,
+        pub roughness: f32,
+        pub metal_roughness_tex: TextureHandle,
     }
     object_system::unsafe_impl_iobject!(StaticMesh, "01923c3a-624e-7100-b97a-50e9baaa5ca0");
 }

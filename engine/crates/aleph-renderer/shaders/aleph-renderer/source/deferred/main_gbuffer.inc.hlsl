@@ -37,6 +37,7 @@ struct StaticMeshPixelInput {
     [[vk::location(1)]] float2 uv        : A1;
     [[vk::location(2)]] float3 normal    : A2;
     [[vk::location(3)]] float3 tangent   : A3;
+    [[vk::location(4)]] float3 colour    : A4;
 };
 
 /*
@@ -47,6 +48,7 @@ struct StaticMeshVertexInput {
     [[vk::location(1)]] float2 uv       : A1;
     [[vk::location(2)]] float3 normal   : A2;
     [[vk::location(3)]] float3 tangent  : A3;
+    [[vk::location(4)]] float3 colour   : A4;
 };
 
 struct CameraLayout {
@@ -58,4 +60,6 @@ struct CameraLayout {
 struct ModelLayout {
     float4x4 model_matrix;
     float4x4 normal_matrix;
+    float4 colour;
+    float4 metal_roughness_padding;
 };

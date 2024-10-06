@@ -168,6 +168,58 @@ impl RendererBuilder {
             swap_image_id: None,
         };
 
+        let texture_loader = Arc::new(TextureLoader::new());
+        let buffer_loader = Arc::new(BufferLoader::new());
+        let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
+        let buffer_pool = BufferPool::new(NonZeroU8::new(2).unwrap());
+
+        let white_texture_rgba8 = unsafe {
+            let mut data = TextureUploadSource::new_owned(
+                device.as_ref(),
+                crate::TextureMipUploadDesc {
+                    width: 1,
+                    height: 1,
+                    depth: 1,
+                    format: Format::Rgba8Unorm,
+                },
+                ResourceUsageFlags::SHADER_RESOURCE,
+            )
+            .unwrap();
+
+            let dst = &mut data.data_mut()[0..4];
+            dst.copy_from_slice(bytemuck::bytes_of(&0xFFFFFFFFu32));
+
+            let handle = texture_pool.create_texture(None);
+            texture_loader
+                .immediate_upload(None, handle, data)
+                .ok()
+                .unwrap();
+            handle
+        };
+        let black_texture_rgba8 = unsafe {
+            let mut data = TextureUploadSource::new_owned(
+                device.as_ref(),
+                crate::TextureMipUploadDesc {
+                    width: 1,
+                    height: 1,
+                    depth: 1,
+                    format: Format::Rgba8Unorm,
+                },
+                ResourceUsageFlags::SHADER_RESOURCE,
+            )
+            .unwrap();
+
+            let dst = &mut data.data_mut()[0..4];
+            dst.copy_from_slice(bytemuck::bytes_of(&0x00000000u32));
+
+            let handle = texture_pool.create_texture(None);
+            texture_loader
+                .immediate_upload(None, handle, data)
+                .ok()
+                .unwrap();
+            handle
+        };
+
         let out = Renderer {
             config: RendererConfig {
                 frames_in_flight: self.frames_in_flight,
@@ -176,12 +228,16 @@ impl RendererBuilder {
             queue,
             shader_db,
             swap_manager,
-            texture_loader: Arc::new(TextureLoader::new()),
-            buffer_loader: Arc::new(BufferLoader::new()),
-            texture_pool: TexturePool::new(NonZeroU8::new(1).unwrap()),
-            buffer_pool: BufferPool::new(NonZeroU8::new(2).unwrap()),
+            texture_loader,
+            buffer_loader,
+            texture_pool,
+            buffer_pool,
             frame_manager,
             graph_manager,
+            default_resources: DefaultResources {
+                white_texture_rgba8,
+                black_texture_rgba8,
+            },
         };
         Some(out)
     }
@@ -199,6 +255,7 @@ pub struct Renderer {
     buffer_pool: BufferPool,
     frame_manager: FrameManager,
     graph_manager: GraphManager,
+    default_resources: DefaultResources,
 }
 unsafe_impl_iobject!(Renderer, "01924ac2-e95d-7aa3-9fdf-9ec32d90b49c");
 
@@ -221,6 +278,10 @@ impl Renderer {
 
     pub fn get_buffer_loader(&self) -> &BufferLoader {
         self.buffer_loader.as_ref()
+    }
+
+    pub fn default_resources(&self) -> &DefaultResources {
+        &self.default_resources
     }
 
     pub fn create_texture(&mut self, data: TextureUploadSource) -> Option<TextureHandle> {
@@ -378,6 +439,21 @@ impl Default for DrawOptions {
         Self {
             force_rebuild_frame_graph: false,
         }
+    }
+}
+
+pub struct DefaultResources {
+    white_texture_rgba8: TextureHandle,
+    black_texture_rgba8: TextureHandle,
+}
+
+impl DefaultResources {
+    pub const fn white_texture_rgba8(&self) -> TextureHandle {
+        self.white_texture_rgba8
+    }
+
+    pub const fn black_texture_rgba8(&self) -> TextureHandle {
+        self.black_texture_rgba8
     }
 }
 

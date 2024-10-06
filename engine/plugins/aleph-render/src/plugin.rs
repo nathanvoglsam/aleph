@@ -167,14 +167,22 @@ impl IPlugin for PluginRender {
                 render_scene.clear();
 
                 let query = world.0.query::<(&Transform, &components::StaticMesh)>();
-                for (_id, (t, _)) in query {
+                for (_id, (t, m)) in query {
                     render_scene.push(
                         RenderTransform {
                             position: t.position,
                             rotation: t.rotation,
                             scale: t.scale,
                         },
-                        aleph_renderer::StaticMesh,
+                        aleph_renderer::StaticMesh {
+                            vtx: m.vtx,
+                            idx: m.idx,
+                            colour_tex: m.colour_tex,
+                            colour: m.colour,
+                            metalness: m.metalness,
+                            roughness: m.roughness,
+                            metal_roughness_tex: m.metal_roughness_tex,
+                        },
                     );
                 }
 

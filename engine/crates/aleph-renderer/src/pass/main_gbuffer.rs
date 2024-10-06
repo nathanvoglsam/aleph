@@ -44,8 +44,6 @@ struct MainGBufferPassPayload {
     gbuffer1: ResourceMut,
     gbuffer2: ResourceMut,
     depth_buffer: ResourceMut,
-    vtx_buffer: AnyArc<dyn IBuffer>,
-    idx_buffer: AnyArc<dyn IBuffer>,
     uniform_buffer: ResourceMut,
 }
 
@@ -62,34 +60,14 @@ pub fn pass(
     pin_board: &PinBoard,
     shader_db: &ShaderDatabaseAccessor,
 ) {
-    let desc = BufferDesc::new(4 * 1024u64)
-        .cpu_write()
-        .with_usage(ResourceUsageFlags::VERTEX_BUFFER)
-        .with_name(obj_name!("TestVertexBuffer"));
-    let vtx_buffer = device.create_buffer(&desc).unwrap();
-
-    let desc = BufferDesc::new(4 * 1024u64)
-        .cpu_write()
-        .with_usage(ResourceUsageFlags::INDEX_BUFFER)
-        .with_name(obj_name!("TestIndexBuffer"));
-    let idx_buffer = device.create_buffer(&desc).unwrap();
-
-    unsafe {
-        let v_ptr = vtx_buffer.map().unwrap();
-        let v_alloc =
-            UploadBumpAllocator::new_from_block(vtx_buffer.as_ref(), v_ptr, 0, 4 * 1024).unwrap();
-        v_alloc.allocate_objects_clone(&VERTS).unwrap();
-        vtx_buffer.unmap().unwrap();
-
-        let i_ptr = idx_buffer.map().unwrap();
-        let i_alloc =
-            UploadBumpAllocator::new_from_block(idx_buffer.as_ref(), i_ptr, 0, 4 * 1024).unwrap();
-        i_alloc.allocate_objects_copy(&INDICES).unwrap();
-        idx_buffer.unmap().unwrap();
-    }
-
+    let sampler = create_sampler(device);
     let descriptor_set_layout = create_descriptor_set_layout(device);
-    let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
+    let descriptor_set_layout_tex = create_descriptor_set_layout_tex(device, &[sampler.as_ref()]);
+    let pipeline_layout = create_root_signature(
+        device,
+        descriptor_set_layout.as_ref(),
+        descriptor_set_layout_tex.as_ref(),
+    );
 
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
 
@@ -137,8 +115,6 @@ pub fn pass(
             gbuffer1,
             gbuffer2,
             depth_buffer,
-            vtx_buffer,
-            idx_buffer,
             uniform_buffer,
         };
         pin_board.publish(MainGBufferPassOutput {
@@ -149,9 +125,8 @@ pub fn pass(
         });
 
         move |encoder, resources, args| unsafe {
-            let vtx_buffer = data.vtx_buffer.as_ref();
-            let idx_buffer = data.idx_buffer.as_ref();
             let set_layout = descriptor_set_layout.as_ref();
+            let set_layout_tex = descriptor_set_layout_tex.as_ref();
             let device = resources.device();
             let descriptor_arena = resources.descriptor_arena();
             let camera_info = args.board.get::<CameraInfo>().unwrap();
@@ -247,9 +222,6 @@ pub fn pass(
 
             encoder.bind_graphics_pipeline(pipeline.as_ref());
 
-            encoder.bind_vertex_buffers(0, &[InputAssemblyBufferBinding::new(vtx_buffer)]);
-            encoder.bind_index_buffer(IndexType::U32, &InputAssemblyBufferBinding::new(idx_buffer));
-
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
                 y: 0.0,
@@ -267,19 +239,47 @@ pub fn pass(
             }]);
 
             let objects = scene.get_storage_ref::<StaticMesh>().unwrap();
-            for (t, _o) in objects.iter() {
+            for (t, o) in objects.iter() {
                 let m = u_alloc
                     .allocate_object(ModelLayout::from_transform(t))
                     .unwrap();
+                m.result.colour = o.colour;
+                m.result.metal_roughness = [o.metalness, o.roughness, 0.0, 0.0];
+
+                let vtx = args.buffer_pool.get_buffer(o.vtx).unwrap();
+                let idx = args.buffer_pool.get_buffer(o.idx).unwrap();
+
+                encoder.bind_vertex_buffers(0, &[InputAssemblyBufferBinding::new(vtx)]);
+                encoder.bind_index_buffer(IndexType::U32, &InputAssemblyBufferBinding::new(idx));
+
+                let image_view_c = args.texture_pool.get_default_view(o.colour_tex).unwrap();
+                let image_view_mr = args
+                    .texture_pool
+                    .get_default_view(o.metal_roughness_tex)
+                    .unwrap();
+                let tex_set = descriptor_arena.allocate_set(set_layout_tex).unwrap();
+                device.update_descriptor_sets(&[
+                    DescriptorWriteDesc::texture(
+                        tex_set,
+                        0,
+                        &ImageDescriptorWrite::srv(image_view_c),
+                    ),
+                    DescriptorWriteDesc::texture(
+                        tex_set,
+                        1,
+                        &ImageDescriptorWrite::srv(image_view_mr),
+                    ),
+                ]);
+
                 encoder.bind_descriptor_sets(
                     pipeline_layout.as_ref(),
                     PipelineBindPoint::Graphics,
                     0,
-                    &[descriptor_set],
+                    &[descriptor_set, tex_set],
                     &[m.device_offset as u32],
                 );
 
-                encoder.draw_indexed(INDICES.len() as _, 1, 0, 0, 0);
+                encoder.draw_indexed((idx.desc_ref().size / 4) as u32, 1, 0, 0, 0);
             }
 
             encoder.end_rendering();
@@ -305,12 +305,33 @@ fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorS
         .unwrap()
 }
 
+fn create_descriptor_set_layout_tex(
+    device: &dyn IDevice,
+    sampler: &[&dyn ISampler],
+) -> AnyArc<dyn IDescriptorSetLayout> {
+    let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+        visibility: DescriptorShaderVisibility::All,
+        items: &[
+            DescriptorType::Texture.binding(0),
+            DescriptorType::Texture.binding(1),
+            DescriptorType::Sampler
+                .binding(2)
+                .with_static_samplers(sampler),
+        ],
+        name: obj_name_opt!("DescriptorSetLayout"),
+    };
+    device
+        .create_descriptor_set_layout(&descriptor_set_layout_desc)
+        .unwrap()
+}
+
 fn create_root_signature(
     device: &dyn IDevice,
     descriptor_set_layout: &dyn IDescriptorSetLayout,
+    descriptor_set_layout_tex: &dyn IDescriptorSetLayout,
 ) -> AnyArc<dyn IPipelineLayout> {
     let pipeline_layout_desc = PipelineLayoutDesc {
-        set_layouts: &[descriptor_set_layout],
+        set_layouts: &[descriptor_set_layout, descriptor_set_layout_tex],
         push_constant_blocks: &[],
         name: obj_name_opt!("RootSignature"),
     };
@@ -345,7 +366,7 @@ fn create_pipeline_state(
     let vertex_layout = VertexInputStateDesc {
         input_bindings: &[VertexInputBindingDesc {
             binding: 0,
-            stride: 44,
+            stride: 56,
             input_rate: VertexInputRate::PerVertex,
         }],
         input_attributes: &[
@@ -372,6 +393,12 @@ fn create_pipeline_state(
                 binding: 0,
                 format: Format::Rgb32Float,
                 offset: 32,
+            },
+            VertexInputAttributeDesc {
+                location: 4,
+                binding: 0,
+                format: Format::Rgb32Float,
+                offset: 44,
             },
         ],
     };
@@ -443,7 +470,9 @@ pub struct CameraLayout {
 pub struct ModelLayout {
     pub model_matrix: [f32; 16],
     pub normal_matrix: [f32; 16],
-    pub _padding: [u8; 128],
+    pub colour: [f32; 4],
+    pub metal_roughness: [f32; 4],
+    pub _padding: [u8; 96],
 }
 
 impl ModelLayout {
@@ -463,81 +492,22 @@ impl ModelLayout {
         Self {
             model_matrix: *model_matrix.transposed().as_array(),
             normal_matrix: *normal_matrix.transposed().into_homogeneous().as_array(),
-            _padding: [0; 128],
+            colour: [1.0; 4],
+            metal_roughness: [0.0, 1.0, 0.0, 0.0],
+            _padding: [0; 96],
         }
     }
 }
 
-#[repr(C)]
-#[derive(Clone)]
-struct Vertex {
-    pub position: [f32; 3],
-    pub uv: [f32; 2],
-    pub normal: [f32; 3],
-    pub tangent: [f32; 3],
+fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+    let desc = SamplerDesc {
+        min_filter: SamplerFilter::Linear,
+        mag_filter: SamplerFilter::Linear,
+        mip_filter: SamplerMipFilter::Linear,
+        address_mode_u: SamplerAddressMode::Wrap,
+        address_mode_v: SamplerAddressMode::Wrap,
+        address_mode_w: SamplerAddressMode::Wrap,
+        ..Default::default()
+    };
+    device.create_sampler(&desc).unwrap()
 }
-
-impl Vertex {
-    pub const fn new(x: f32, y: f32, z: f32) -> Self {
-        Self {
-            position: [x, y, z],
-            uv: [0.; 2],
-            normal: [0.; 3],
-            tangent: [0.; 3],
-        }
-    }
-
-    pub const fn normal(mut self, x: f32, y: f32, z: f32) -> Self {
-        self.normal = [x, y, z];
-        self
-    }
-
-    pub const fn uv(mut self, u: f32, v: f32) -> Self {
-        self.uv = [u, v];
-        self
-    }
-}
-
-#[rustfmt::skip]
-const VERTS: [Vertex; 24] = [
-    Vertex::new(-1.,  1., -1.).normal( 0.,  1.,  0.).uv(0.875, 0.5),
-    Vertex::new( 1.,  1.,  1.).normal( 0.,  1.,  0.).uv(0.625, 0.75),
-    Vertex::new( 1.,  1., -1.).normal( 0.,  1.,  0.).uv(0.625, 0.5),
-    Vertex::new( 1.,  1.,  1.).normal( 0.,  0.,  1.).uv(0.625, 0.75),
-    Vertex::new(-1., -1.,  1.).normal( 0.,  0.,  1.).uv(0.375, 1.),
-    Vertex::new( 1., -1.,  1.).normal( 0.,  0.,  1.).uv(0.375, 0.75),
-    Vertex::new(-1.,  1.,  1.).normal(-1.,  0.,  0.).uv(0.625, 0.),
-    Vertex::new(-1., -1., -1.).normal(-1.,  0.,  0.).uv(0.375, 0.25),
-    Vertex::new(-1., -1.,  1.).normal(-1.,  0.,  0.).uv(0.375, 0.),
-    Vertex::new( 1., -1., -1.).normal( 0., -1.,  0.).uv(0.375, 0.5),
-    Vertex::new(-1., -1.,  1.).normal( 0., -1.,  0.).uv(0.125, 0.75),
-    Vertex::new(-1., -1., -1.).normal( 0., -1.,  0.).uv(0.125, 0.5),
-    Vertex::new( 1.,  1., -1.).normal( 1.,  0.,  0.).uv(0.625, 0.5),
-    Vertex::new( 1., -1.,  1.).normal( 1.,  0.,  0.).uv(0.375, 0.75),
-    Vertex::new( 1., -1., -1.).normal( 1.,  0.,  0.).uv(0.375, 0.5),
-    Vertex::new(-1.,  1., -1.).normal( 0.,  0., -1.).uv(0.625, 0.25),
-    Vertex::new( 1., -1., -1.).normal( 0.,  0., -1.).uv(0.375, 0.5),
-    Vertex::new(-1., -1., -1.).normal( 0.,  0., -1.).uv(0.375, 0.25),
-    Vertex::new(-1.,  1.,  1.).normal( 0.,  1.,  0.).uv(0.875, 0.75),
-    Vertex::new(-1.,  1.,  1.).normal( 0.,  0.,  1.).uv(0.625, 1.),
-    Vertex::new(-1.,  1., -1.).normal(-1.,  0.,  0.).uv(0.625, 0.25),
-    Vertex::new( 1., -1.,  1.).normal( 0., -1.,  0.).uv(0.375, 0.75),
-    Vertex::new( 1.,  1.,  1.).normal( 1.,  0.,  0.).uv(0.625, 0.75),
-    Vertex::new( 1.,  1., -1.).normal( 0.,  0., -1.).uv(0.625, 0.5),
-];
-
-#[rustfmt::skip]
-const INDICES: [u32; 36] = [
-    0, 1, 2,
-    3, 4, 5,
-    6, 7, 8,
-    9, 10, 11,
-    12, 13, 14,
-    15, 16, 17,
-    0, 18, 1,
-    3, 19, 4,
-    6, 20, 7,
-    9, 21, 10,
-    12, 22, 13,
-    15, 23, 16,
-];

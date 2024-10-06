@@ -27,16 +27,38 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
-aleph_dx12_agility_sdk::export_standard_agility_sdk_symbols!();
+use aleph_engine::any::AnyArc;
+use aleph_engine::interfaces::components::{StaticMesh, Transform};
+use aleph_engine::interfaces::ecs::{EntityId, World};
+use aleph_engine::interfaces::math::{DVec3, Rotor3};
+use aleph_engine::interfaces::platform::IFrameTimer;
 
-mod game;
+pub struct ThrobberLogic {
+    frame_timer: AnyArc<dyn IFrameTimer>,
+    pub throbber: Option<EntityId>,
+}
 
-#[no_mangle]
-pub extern "C" fn SDL_main(
-    _argc: std::ffi::c_int,
-    _argv: *const *const std::ffi::c_char,
-) -> std::ffi::c_int {
-    game::game_logic::engine_runner();
-    return 0;
+impl ThrobberLogic {
+    pub fn new(frame_timer: AnyArc<dyn IFrameTimer>) -> Self {
+        Self {
+            frame_timer,
+            throbber: None,
+        }
+    }
+
+    pub fn tick(&self, world: &mut World) {
+        let throbber = match self.throbber {
+            Some(v) => v,
+            None => return,
+        };
+
+        let elapsed = self.frame_timer.elapsed_time();
+
+        let y = (elapsed * 0.5).sin() * 10.0;
+        let (transform, _) = world
+            .query_one_mut::<(&mut Transform, &StaticMesh)>(throbber)
+            .unwrap();
+        transform.position = DVec3::new(0.0, y, -5.0);
+        transform.rotation = Rotor3::from_rotation_xz(elapsed as f32);
+    }
 }
