@@ -70,6 +70,7 @@ macro_rules! register_thread {
     ($name:expr) => {
         #[cfg(target_os = "windows")]
         unsafe {
+            use $crate::aleph_superluminal_sys as ffi;
             ffi::PerformanceAPI_SetCurrentThreadName_N(
                 $name.as_ptr().cast::<i8>(),
                 $name.len() as u16,
