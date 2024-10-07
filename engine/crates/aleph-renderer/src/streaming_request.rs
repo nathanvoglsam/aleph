@@ -80,7 +80,7 @@ impl<T> StreamingRequest<T> {
     /// Try to take ownership of this request and move it into the 'waiting' state. This will only
     /// succeed a single time and failure should be taken as a signal that someone else is handling
     /// the request.
-    pub(crate) fn try_take_ownership(&self) -> Option<()> {
+    pub fn try_take_ownership(&self) -> Result<(), TransitionResult> {
         let result = self.data.state.compare_exchange(
             RequestState::Opened as _,
             RequestState::Waiting as _,
@@ -88,49 +88,42 @@ impl<T> StreamingRequest<T> {
             Ordering::Relaxed,
         );
         match result {
-            Ok(_) => Some(()),
-            Err(_) => None,
+            Ok(_) => Ok(()),
+            Err(_) => Err(TransitionResult::InvalidSourceState),
         }
     }
 
-    /// Internal function used for transitioning to the 'failed' state.
-    ///
-    /// # Panics
-    ///
-    /// Will panic if the source state is not [RequestState::Waiting]
-    pub(crate) fn mark_failed(&self) {
-        self.transition_state(RequestState::Waiting, RequestState::Failed);
+    /// Function used for transitioning to the 'failed' state. This will fail if the request is in
+    /// a state that it is not valid to transition to 'failed' from.
+    pub fn mark_failed(&self) -> Result<(), TransitionResult> {
+        self.transition_state(RequestState::Failed)
     }
 
-    /// Internal function used for transitioning to the 'cancelled' state.
-    ///
-    /// # Panics
-    ///
-    /// Will panic if the source state is not [RequestState::Waiting]
-    pub(crate) fn mark_cancelled(&self) {
-        self.transition_state(RequestState::Waiting, RequestState::Cancelled);
+    /// Function used for transitioning to the 'cancelled' state. This will fail if the request is
+    /// in a state that it is not valid to transition to 'cancelled' from.
+    pub fn mark_cancelled(&self) -> Result<(), TransitionResult> {
+        self.transition_state(RequestState::Cancelled)
     }
 
-    pub(crate) fn transition_state(&self, expected: RequestState, dst: RequestState) {
-        debug_assert!(expected.can_transition_to(dst));
+    pub(crate) fn transition_state(&self, dst: RequestState) -> Result<(), TransitionResult> {
+        loop {
+            let current = self.data.state.load(Ordering::Relaxed);
 
-        let result = self.data.state.compare_exchange(
-            expected as _,
-            dst as _,
-            Ordering::Release,
-            Ordering::Relaxed,
-        );
+            let current_state = RequestState::from_u64(current).unwrap();
+            if !current_state.can_transition_to(dst) {
+                return Err(TransitionResult::InvalidSourceState);
+            }
 
-        match result {
-            Ok(_) => {}
-            Err(v) => {
-                // Safety: The state field will never contain a value that isn't a valid request
-                //         state making this safe.
-                let src = unsafe { RequestState::from_u64(v).unwrap_unchecked() };
-                panic!(
-                    "Tried to transition a request from '{:?}' to '{:?}'",
-                    src, dst,
-                );
+            let result = self.data.state.compare_exchange(
+                current,
+                dst as _,
+                Ordering::Release,
+                Ordering::Relaxed,
+            );
+
+            match result {
+                Ok(_) => return Ok(()),
+                Err(_) => {}
             }
         }
     }
@@ -169,13 +162,19 @@ impl<T: IntoPayload> StreamingRequest<T> {
     /// manager takes ownership of the management of the request by only accepting requests in the
     /// 'open' state. This can be done atomically with a compare-exchange. It's not UB to call this
     /// function on multiple threads simultaneously, but it's probably going to give logic errors.
-    pub(crate) fn mark_complete(&self, payload: T) {
+    pub fn mark_complete(&self, payload: T) -> Result<(), TransitionResult> {
         // Writes the payload and updates the state. The payload must be written first so that as
         // soon as an observer sees the state change the payload will be valid to read.
         let payload = payload.into_payload();
         self.data.payload.store(payload, Ordering::Relaxed);
-        self.transition_state(RequestState::Waiting, RequestState::Complete);
+        self.transition_state(RequestState::Complete)
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Error)]
+pub enum TransitionResult {
+    #[error("The request was in a state where it is invalid to transition to new state")]
+    InvalidSourceState,
 }
 
 /// Trait that must be implemented on a type to allow it to be sent as a request payload.
@@ -329,7 +328,7 @@ impl RequestError {
 
 #[cfg(test)]
 mod tests {
-    use crate::streaming_request::RequestError;
+    use crate::streaming_request::{RequestError, TransitionResult};
     use crate::StreamingRequest;
 
     fn make_request() -> StreamingRequest<u64> {
@@ -348,7 +347,7 @@ mod tests {
         assert_eq!(request.poll_complete().unwrap_err(), RequestError::Waiting);
 
         // Complete the request, will panic if we fail
-        request.mark_complete(56);
+        request.mark_complete(56).unwrap();
 
         // Unwrap the request with the payload
         assert_eq!(request.poll_complete().unwrap(), 56);
@@ -362,7 +361,7 @@ mod tests {
         request.try_take_ownership().unwrap();
 
         // Fail the request, will panic if we fail this call
-        request.mark_failed();
+        request.mark_failed().unwrap();
 
         // Unwrap the request
         assert_eq!(request.poll_complete().unwrap_err(), RequestError::Failed);
@@ -376,7 +375,7 @@ mod tests {
         request.try_take_ownership().unwrap();
 
         // Cancel the request, will panic if we fail
-        request.mark_cancelled();
+        request.mark_cancelled().unwrap();
 
         // Unwrap the request
         assert_eq!(
@@ -393,12 +392,17 @@ mod tests {
         request.try_take_ownership().unwrap();
 
         // Try again, should always fail afterwards
-        assert!(request.try_take_ownership().is_none());
-        assert!(request.try_take_ownership().is_none());
+        assert_eq!(
+            request.try_take_ownership(),
+            Err(TransitionResult::InvalidSourceState)
+        );
+        assert_eq!(
+            request.try_take_ownership(),
+            Err(TransitionResult::InvalidSourceState)
+        );
     }
 
     #[test]
-    #[should_panic]
     pub fn request_bad_transition_success() {
         let request = make_request();
 
@@ -406,14 +410,13 @@ mod tests {
         request.try_take_ownership().unwrap();
 
         // Complete the request
-        request.mark_complete(56);
+        request.mark_complete(56).unwrap();
 
         // Complete it again, should fail as the state machine won't allow the transition
-        request.mark_complete(21);
+        assert!(request.mark_complete(21).is_err());
     }
 
     #[test]
-    #[should_panic]
     pub fn request_bad_transition_cancel_complete() {
         let request = make_request();
 
@@ -421,10 +424,10 @@ mod tests {
         request.try_take_ownership().unwrap();
 
         // Cancel the request
-        request.mark_cancelled();
+        request.mark_cancelled().unwrap();
 
         // Try to complete it after cancelling, should fail as the state machine won't allow the
         // transition
-        request.mark_complete(21);
+        assert!(request.mark_complete(21).is_err());
     }
 }

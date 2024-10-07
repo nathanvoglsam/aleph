@@ -71,8 +71,8 @@ impl TextureLoader {
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
         if let Some(req) = request.as_ref() {
             match req.try_take_ownership() {
-                Some(_) => (),
-                None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+                Ok(_) => (),
+                Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
             }
         }
 
@@ -93,8 +93,8 @@ impl TextureLoader {
         data: TextureUploadSource,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
         match request.try_take_ownership() {
-            Some(_) => (),
-            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+            Ok(_) => (),
+            Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
         }
 
         let load = LoadRequest {
@@ -113,8 +113,8 @@ impl TextureLoader {
         data: TextureUploadSource,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
         match request.try_take_ownership() {
-            Some(_) => (),
-            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+            Ok(_) => (),
+            Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
         }
 
         let load = LoadRequest {
@@ -219,7 +219,7 @@ impl TextureLoader {
             encoder.copy_buffer_to_texture(upload.load.data.buffer(), texture.as_ref(), &[region]);
 
             if let Some(req) = upload.load.request.as_ref() {
-                req.mark_complete(upload.load.target.unwrap());
+                req.mark_complete(upload.load.target.unwrap()).unwrap();
             }
 
             deletion_pool.push_upload(upload.load.data);
@@ -248,7 +248,7 @@ impl TextureLoader {
                 // go to the next one in the queue
                 log::error!("Failed to create texture for upload request. Reason: {err:?}");
                 if let Some(req) = request.request.as_ref() {
-                    req.mark_failed();
+                    req.mark_failed().unwrap();
                 }
                 return;
             }

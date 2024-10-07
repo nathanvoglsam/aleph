@@ -71,8 +71,8 @@ impl BufferLoader {
     ) -> Result<(), EnqueueError<BufferUploadSource>> {
         if let Some(req) = request.as_ref() {
             match req.try_take_ownership() {
-                Some(_) => (),
-                None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+                Ok(_) => (),
+                Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
             }
         }
 
@@ -93,8 +93,8 @@ impl BufferLoader {
         data: BufferUploadSource,
     ) -> Result<(), EnqueueError<BufferUploadSource>> {
         match request.try_take_ownership() {
-            Some(_) => (),
-            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+            Ok(_) => (),
+            Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
         }
 
         let load = LoadRequest {
@@ -113,8 +113,8 @@ impl BufferLoader {
         data: BufferUploadSource,
     ) -> Result<(), EnqueueError<BufferUploadSource>> {
         match request.try_take_ownership() {
-            Some(_) => (),
-            None => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
+            Ok(_) => (),
+            Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
         }
 
         let load = LoadRequest {
@@ -216,7 +216,7 @@ impl BufferLoader {
             encoder.copy_buffer_regions(upload.load.data.buffer(), buffer.as_ref(), &[region]);
 
             if let Some(req) = upload.load.request.as_ref() {
-                req.mark_complete(upload.load.target.unwrap());
+                req.mark_complete(upload.load.target.unwrap()).unwrap();
             }
 
             deletion_pool.push_upload(upload.load.data);
@@ -245,7 +245,7 @@ impl BufferLoader {
                 // go to the next one in the queue
                 log::error!("Failed to create buffer for upload request. Reason: {err:?}");
                 if let Some(req) = request.request.as_ref() {
-                    req.mark_failed();
+                    req.mark_failed().unwrap();
                 }
                 return;
             }
