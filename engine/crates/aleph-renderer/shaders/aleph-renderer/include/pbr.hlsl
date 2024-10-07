@@ -200,6 +200,11 @@ inline func V_SmithGGXCorrelatedFast<T: __BuiltinFloatingPointType>(
     return T(0.5) / (GGXV + GGXL);
 }
 
+// Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
+inline func V_Neubelt<T: __BuiltinFloatingPointType>(T NoV, T NoL) -> T {
+    return saturate(T(1.0) / (T(4.0) * (NoL + NoV - NoL * NoV)));
+}
+
 //
 // The Schlick F term, using a float3 f0 arg
 //
@@ -227,6 +232,23 @@ inline func F_Schlick<T: __BuiltinFloatingPointType>(
 //
 inline func Fd_Lambert<T: __BuiltinFloatingPointType>() -> T {
     return T(1.0) / T(PI);
+}
+
+//
+// Lambertian diffuse Fd term modified for use in a fabric/cloth material model.
+//
+// This is not a very physically based diffuse BRDF.
+//
+// - 'w': a term between 0 and 1 defining by how much the diffuse light should wrap around the
+//        terminator.
+//
+// - 'subsurface': artist authored subsurface parameter. is a hack and is not physically based.
+//
+inline func Fd_LambertCloth<T: __BuiltinFloatingPointType>(in T w, in T NoL, in vector<T, 3> subsurface) -> vector<T, 3> {
+    let _0 = NoL + w;
+    let _1 = (T(1.0) + w) * (T(1.0) + w);
+    let _2 = Fd_Lambert<T>() * saturate(_0 / _1) * saturate(subsurface + NoL);
+    return _2;
 }
 
 //
@@ -283,8 +305,6 @@ inline func StandardBRDF(
 
     // Specular BRDF
     let Fr = (D * V) * F; // The division by (4 * NoV * NoL) is factored into the V function
-    // let Fr_denominator = max(4 * NoV * NoL, 0.001);
-    // let Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
     let Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
@@ -337,15 +357,20 @@ inline func ClearCoatBRDF(
     let NoH = clamp(dot(n, h), 0.0, 1.0);
     let LoH = clamp(dot(l, h), 0.0, 1.0);
 
+    // Recalculate the f0 term, which as given assumes an air-material interface so that it instead
+    // assumes an clearcoat-material interface.
+    let rootF0 = sqrt(f0);
+    let baseF0nominator = (1 - 5 * rootF0) * (1 - 5 * rootF0);
+    let baseF0denominator = (5 - rootF0) * (5 - rootF0);
+    let baseF0 = baseF0nominator / baseF0denominator;
+
     // Calculate the different parts of the BRDF
     let D = D_GGX(NoH, roughness);
     let V = V_SmithGGXCorrelatedFast(NoV, NoL, roughness);
-    let F = F_SchlickVec(LoH, f0, 1.0);
+    let F = F_SchlickVec(LoH, baseF0, 1.0);
 
     // Specular BRDF
     let Fr = (D * V) * F; // The division by (4 * NoV * NoL) is factored into the V function
-    // let Fr_denominator = max(4 * NoV * NoL, 0.001);
-    // let Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
     let Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
@@ -353,13 +378,12 @@ inline func ClearCoatBRDF(
     // Diffuse contribution
     let kD = (float3(1,1,1) - F) * (1 - metallic);
 
+    // The clear coat layer has no diffuse term
     let Dc = D_GGX(NoH, clear_coat_roughness);
     let Vc = V_SmithGGXCorrelatedFast(NoV, NoL, clear_coat_roughness);
     let Fc = F_Schlick(LoH, 0.04, 1.0) * clear_coat;
 
     let Frc = (Dc * Vc) * Fc; // The division by (4 * NoV * NoL) is factored into the V function
-    // let Frc_denominator = max(4 * NoV * NoL, 0.001);
-    // let Frc = Frc_nominator / Frc_denominator;
 
     let cc_energy_loss = 1 - Fc;
     let Or = Fr * cc_energy_loss;
@@ -385,6 +409,60 @@ inline func D_Charlie(in float roughness, in float NoH) -> float {
     let cos2h = NoH * NoH;
     let sin2h = max(1.0 - cos2h, 0.0078125); // 2^(-14/2), so sin2h^2 > 0 in fp16
     return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
+}
+
+// 
+// A standard hard surface PBR BRDF. This does not account for light attenuation and intensity.
+// 
+// Returns the combined output of the diffuse and specular term prior to lighting
+// 
+// Arguments:
+// 
+// - v: The view unit vector
+// - l: The incident light unit vector
+// - n: The surface normal vector
+// - diffuse_colour: The diffuse colour of the material
+// - metallic: The metallic parameter of the material
+// - roughness: The roughness value after being mapped from a perceptual roughness value
+// - f0: Reflectance at normal incidence
+// 
+inline func ClothBRDF(
+    in float3 v,
+    in float3 l,
+    in float3 n,
+    in float3 diffuse_colour,
+    in float3 subsurface_colour,
+    in float metallic,
+    in float roughness,
+    in float3 f0
+) -> float3 {
+    // Half unit vector between l and v
+    let h = normalize(v + l);
+
+    let NoV = clamp(abs(dot(n, v)) + 0.00005, 0.0, 1.0);
+    let NoL = clamp(dot(n, l), 0.0, 1.0);
+    let NoH = clamp(dot(n, h), 0.0, 1.0);
+    let LoH = clamp(dot(l, h), 0.0, 1.0);
+
+    // Calculate the different parts of the BRDF
+    let D = D_Ashikhmin(roughness, NoH);
+    let V = V_Neubelt(NoV, NoL);
+    let F = F_SchlickVec(LoH, f0, 1.0); // We could allow artists to define this directly
+
+    // Specular BRDF
+    // The division by (4 * NoV * NoL) is not used and an alternative is used, which is 'factored'
+    // into the V term (the V term _is_ the divisor in this case 'V_Neubelt')
+    let Fr = D * V * F;
+
+    // Diffuse BRDF
+    let Fd = diffuse_colour * Fd_LambertCloth(0.5, NoL, subsurface_colour);
+
+    // Diffuse contribution
+    let kD = (float3(1,1,1) - F) * (1 - metallic);
+
+    let colour = Fr + (Fd * kD);
+
+    return colour;
 }
 
 // // specular BRDF
