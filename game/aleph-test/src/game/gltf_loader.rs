@@ -28,11 +28,10 @@
 //
 
 use aleph_engine::interfaces::components::{StaticMesh, Transform};
-use aleph_engine::interfaces::ecs::World;
+use aleph_engine::interfaces::ecs::{EntityId, World};
 use aleph_engine::interfaces::math::{Mat4, Rotor3, ToDouble, Vec3, Vec4};
 use aleph_engine::interfaces::renderer::{
-    BufferHandle, BufferUploadSource, Renderer, TextureHandle, TextureMipUploadDesc,
-    TextureUploadSource,
+    BufferHandle, BufferUploadSource, Renderer, RequestError, TextureStreamingRequest,
 };
 use aleph_rhi_api::*;
 use gltf::accessor::{DataType, Dimensions};
@@ -40,78 +39,74 @@ use gltf::buffer::Data;
 use gltf::material::AlphaMode;
 use gltf::{Accessor, Primitive};
 
-#[aleph_profile::function]
-pub fn load_scene(world: &mut World, renderer: &mut Renderer, path: &str) {
-    let (document, buffers, images) = gltf::import(path).unwrap();
+use crate::game::async_texture_loader::AsyncTextureLoader;
 
-    let mut tex_table = Vec::new();
-    for image in images.iter() {
-        let image = match image.format {
-            gltf::image::Format::R8G8B8A8 => {
-                let upload = unsafe {
-                    TextureUploadSource::new_owned(
-                        renderer.device(),
-                        TextureMipUploadDesc {
-                            width: image.width,
-                            height: image.height,
-                            depth: 1,
-                            format: Format::Rgba8UnormSrgb,
-                        },
-                        ResourceUsageFlags::SHADER_RESOURCE,
-                    )
-                    .unwrap()
-                };
+pub struct TextureLoadThinker {
+    target: EntityId,
+    request: Option<TextureStreamingRequest>,
+    target_tex: TargetTex,
+}
 
-                for row in 0..image.height {
-                    let dst = unsafe { upload.row_ptr(row).as_mut() };
-
-                    let row_width = image.width as usize * 4;
-                    let row_start = row as usize * row_width;
-                    let row_end = row_start + row_width;
-                    let src = &image.pixels[row_start..row_end];
-                    dst.copy_from_slice(src);
-                }
-
-                Some(renderer.create_texture(upload).unwrap())
-            }
-            gltf::image::Format::R8G8B8 => {
-                let upload = unsafe {
-                    TextureUploadSource::new_owned(
-                        renderer.device(),
-                        TextureMipUploadDesc {
-                            width: image.width,
-                            height: image.height,
-                            depth: 1,
-                            format: Format::Rgba8UnormSrgb,
-                        },
-                        ResourceUsageFlags::SHADER_RESOURCE,
-                    )
-                    .unwrap()
-                };
-
-                for row in 0..image.height {
-                    let dst = unsafe { upload.row_ptr(row).as_mut() };
-
-                    let row_width = image.width as usize * 3;
-                    let row_start = row as usize * row_width;
-                    let src = &image.pixels[row_start..row_start + row_width];
-                    for col in 0..image.width {
-                        let dst_base = col as usize * 4;
-                        let dst = &mut dst[dst_base..dst_base + 3];
-
-                        let src_base = col as usize * 3;
-                        let src = &src[src_base..src_base + 3];
-
-                        dst.copy_from_slice(src);
-                    }
-                }
-
-                Some(renderer.create_texture(upload).unwrap())
-            }
-            _ => None,
+impl TextureLoadThinker {
+    pub fn poll_and_resolve(&mut self, world: &mut World) -> PollResult {
+        let new_tex = match self.request.as_ref().map(|v| v.poll_complete()) {
+            Some(Ok(v)) => v,
+            Some(Err(RequestError::Waiting)) => return PollResult::Waiting,
+            Some(Err(_)) => return PollResult::Fail,
+            None => return PollResult::Fail,
         };
-        tex_table.push(image);
+
+        let target = if let Some(v) = world.query_one_mut::<&mut StaticMesh>(self.target) {
+            v
+        } else {
+            return PollResult::Fail;
+        };
+
+        match self.target_tex {
+            TargetTex::Colour => target.colour_tex = new_tex,
+            TargetTex::MetalRoughness => target.metal_roughness_tex = new_tex,
+        }
+
+        self.request = None;
+
+        PollResult::Success
     }
+}
+
+pub enum TargetTex {
+    Colour,
+    MetalRoughness,
+}
+
+pub enum PollResult {
+    Success,
+    Waiting,
+    Fail,
+}
+
+#[aleph_profile::function]
+pub fn load_scene(
+    world: &mut World,
+    renderer: &mut Renderer,
+    loader: &AsyncTextureLoader,
+    path: &std::path::Path,
+) -> Vec<TextureLoadThinker> {
+    let (document, buffers) = import_path(path).unwrap();
+
+    let base = path.parent().unwrap();
+    let mut tex_table: Vec<Option<TextureStreamingRequest>> = Vec::new();
+    for image in document.images() {
+        match image.source() {
+            gltf::image::Source::Uri { uri, .. } => {
+                let path = base.join(uri);
+                let request = loader.load(path, true);
+                tex_table.push(Some(request));
+            }
+            _ => tex_table.push(None),
+        }
+    }
+
+    let mut load_thinkers = Vec::new();
 
     let mut mesh_table = Vec::with_capacity(document.meshes().len());
     for mesh in document.meshes() {
@@ -134,7 +129,8 @@ pub fn load_scene(world: &mut World, renderer: &mut Renderer, path: &str) {
         world: &mut World,
         renderer: &Renderer,
         mesh_table: &[Vec<(BufferHandle, BufferHandle)>],
-        tex_table: &[Option<TextureHandle>],
+        tex_table: &[Option<TextureStreamingRequest>],
+        thinkers: &mut Vec<TextureLoadThinker>,
         parent_transform: Mat4,
         node: &gltf::Node,
     ) {
@@ -170,32 +166,38 @@ pub fn load_scene(world: &mut World, renderer: &mut Renderer, path: &str) {
                         scale: Vec3::from(s),
                     };
 
-                    let colour_tex = mat
-                        .base_color_texture()
-                        .map(|v| v.texture().source().index());
-                    let colour_tex = colour_tex
-                        .map(|v| tex_table[v])
-                        .flatten()
-                        .unwrap_or(renderer.default_resources().white_texture_rgba8());
-
-                    let metal_roughness_tex = mat
-                        .metallic_roughness_texture()
-                        .map(|v| v.texture().source().index());
-                    let metal_roughness_tex = metal_roughness_tex
-                        .map(|v| tex_table[v])
-                        .flatten()
-                        .unwrap_or(renderer.default_resources().white_texture_rgba8());
+                    let white_tex = renderer.default_resources().white_texture_rgba8();
 
                     let static_mesh = StaticMesh {
                         vtx: *vtx,
                         idx: *idx,
-                        colour_tex,
+                        colour_tex: white_tex,
                         colour: mat.base_color_factor(),
                         metalness: mat.metallic_factor(),
                         roughness: mat.roughness_factor(),
-                        metal_roughness_tex,
+                        metal_roughness_tex: white_tex,
                     };
-                    world.extend_one((transform, static_mesh));
+                    let entity = world.extend_one((transform, static_mesh));
+
+                    if let Some(tex) = mat.base_color_texture() {
+                        if let Some(req) = &tex_table[tex.texture().source().index()] {
+                            thinkers.push(TextureLoadThinker {
+                                target: entity,
+                                request: Some(req.clone()),
+                                target_tex: TargetTex::Colour,
+                            });
+                        }
+                    }
+
+                    if let Some(tex) = mat.metallic_roughness_texture() {
+                        if let Some(req) = &tex_table[tex.texture().source().index()] {
+                            thinkers.push(TextureLoadThinker {
+                                target: entity,
+                                request: Some(req.clone()),
+                                target_tex: TargetTex::MetalRoughness,
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -206,6 +208,7 @@ pub fn load_scene(world: &mut World, renderer: &mut Renderer, path: &str) {
                 renderer,
                 mesh_table,
                 tex_table,
+                thinkers,
                 world_transform,
                 &node,
             );
@@ -220,11 +223,14 @@ pub fn load_scene(world: &mut World, renderer: &mut Renderer, path: &str) {
                 renderer,
                 &mesh_table,
                 &tex_table,
+                &mut load_thinkers,
                 root_transform,
                 &node,
             );
         }
     }
+
+    load_thinkers
 }
 
 #[aleph_profile::function]
@@ -389,4 +395,20 @@ fn copy_vec2_f32_semantic(
         let src = &src[src_i..src_i + e_size];
         dst[dst_i..dst_i + e_size].copy_from_slice(src);
     }
+}
+
+fn import_impl(
+    gltf::Gltf { document, blob }: gltf::Gltf,
+    base: Option<&std::path::Path>,
+) -> Option<(gltf::Document, Vec<gltf::buffer::Data>)> {
+    let buffer_data = gltf::import_buffers(&document, base, blob).ok()?;
+    let import = (document, buffer_data);
+    Some(import)
+}
+
+fn import_path(path: &std::path::Path) -> Option<(gltf::Document, Vec<gltf::buffer::Data>)> {
+    let base = path.parent().unwrap_or_else(|| std::path::Path::new("./"));
+    let file = std::fs::File::open(path).ok()?;
+    let reader = std::io::BufReader::new(file);
+    import_impl(gltf::Gltf::from_reader(reader).ok()?, Some(base))
 }

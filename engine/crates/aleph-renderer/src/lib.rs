@@ -69,8 +69,8 @@ pub use renderer::{
 };
 pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use streaming_request::{
-    BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestState,
-    StreamingRequest, TextureStreamingRequest,
+    BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestError,
+    RequestState, StreamingRequest, TextureStreamingRequest,
 };
 pub use texture_loader::TextureLoader;
 pub use texture_pool::{TextureObject, TexturePool};

@@ -30,6 +30,8 @@
 extern crate aleph_engine as aleph;
 extern crate egui_demo_lib;
 
+use std::path::Path;
+
 use aleph::egui::IEguiContextProvider;
 use aleph::interfaces::make_plugin_description_for_crate;
 use aleph::interfaces::plugin::{
@@ -42,9 +44,11 @@ use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
 use aleph_engine::interfaces::platform::{IFrameTimerProvider, IGamepadsProvider};
+use aleph_engine::interfaces::plugin::CoreRefs;
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
 
+use crate::game::async_texture_loader::AsyncTextureLoader;
 use crate::game::cube_mesh::upload_cube_buffers;
 use crate::game::free_camera::FreeCamera;
 use crate::game::gltf_loader::load_scene;
@@ -84,24 +88,28 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        let world = registry.world();
+        let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
+        let frame_timer = registry
+            .get_interface::<dyn IFrameTimerProvider>()
+            .unwrap()
+            .get_frame_timer()
+            .unwrap();
 
-        let camera = world.extend_one((
-            Transform {
-                position: DVec3::zero(),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one(),
-            },
-            Camera {
-                vertical_fov: 90.0,
-                z_near: 0.1,
-            },
-        ));
+        let gamepads = registry
+            .get_interface::<dyn IGamepadsProvider>()
+            .unwrap()
+            .get_gamepads()
+            .unwrap();
+
+        let CoreRefs {
+            resources,
+            schedule,
+            world,
+        } = registry.core();
 
         let mut demo_window = egui_demo_lib::DemoWindows::default();
         let mut colour_test = egui_demo_lib::ColorTest::default();
-        let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
-        registry.schedule().add_exclusive_at_end_system_to_stage(
+        schedule.add_exclusive_at_end_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
             move || {
@@ -127,55 +135,69 @@ impl IPlugin for PluginGameLogic {
             },
         );
 
-        let frame_timer = registry
-            .get_interface::<dyn IFrameTimerProvider>()
-            .unwrap()
-            .get_frame_timer()
-            .unwrap();
+        let camera = world.extend_one((
+            Transform {
+                position: DVec3::zero(),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one(),
+            },
+            Camera {
+                vertical_fov: 90.0,
+                z_near: 0.1,
+            },
+        ));
 
-        let gamepads = registry
-            .get_interface::<dyn IGamepadsProvider>()
-            .unwrap()
-            .get_gamepads()
-            .unwrap();
+        let renderer = resources.get_mut::<Renderer>().unwrap();
+
+        let async_texture_loader = AsyncTextureLoader::new(renderer);
+        let mut thinkers1 = load_scene(
+            world,
+            renderer,
+            &async_texture_loader,
+            Path::new("F:\\Files\\IntelSponza\\Main\\NewSponza_Main_Blender_glTF.gltf"),
+        );
+        let mut thinkers2 = load_scene(
+            world,
+            renderer,
+            &async_texture_loader,
+            Path::new("OrientationTest.gltf"),
+        );
+
+        let (idx, vtx) = upload_cube_buffers(renderer);
+
+        let throbber = world.extend_one((
+            Transform {
+                position: DVec3::zero(),
+                rotation: Rotor3::identity(),
+                scale: Vec3::one() * 2.0,
+            },
+            StaticMesh {
+                vtx,
+                idx,
+                colour_tex: renderer.default_resources().white_texture_rgba8(),
+                colour: [0.5, 1.0, 0.5, 1.0],
+                metalness: 0.0,
+                roughness: 0.5,
+                metal_roughness_tex: renderer.default_resources().white_texture_rgba8(),
+            },
+        ));
+
+        resources.insert(async_texture_loader);
 
         let mut free_camera = FreeCamera::new(frame_timer.clone(), gamepads.get_accessor(), camera);
-        let mut throbber_logic = ThrobberLogic::new(frame_timer.clone());
-        let mut should_init = true;
-        registry.schedule().add_system_to_stage(
+        let throbber_logic = ThrobberLogic::new(frame_timer.clone(), throbber);
+        schedule.add_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::logic"),
-            move |mut world: ResMut<WorldResource>, mut renderer: ResMut<Renderer>| {
-                if should_init {
-                    should_init = false;
-                    load_scene(
-                        &mut world.0,
-                        &mut renderer,
-                        "E:\\Files\\ORCA\\IntelSponza\\Main\\NewSponza_Main_Blender_glTF.gltf",
-                    );
-                    load_scene(&mut world.0, &mut renderer, "OrientationTest.gltf");
-
-                    let (idx, vtx) = upload_cube_buffers(&mut renderer);
-
-                    throbber_logic.throbber = Some(world.0.extend_one((
-                        Transform {
-                            position: DVec3::zero(),
-                            rotation: Rotor3::identity(),
-                            scale: Vec3::one() * 2.0,
-                        },
-                        StaticMesh {
-                            vtx,
-                            idx,
-                            colour_tex: renderer.default_resources().white_texture_rgba8(),
-                            colour: [0.5, 1.0, 0.5, 1.0],
-                            metalness: 0.0,
-                            roughness: 0.5,
-                            metal_roughness_tex: renderer.default_resources().white_texture_rgba8(),
-                        },
-                    )));
-                }
+            move |mut world: ResMut<WorldResource>| {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
+                for t in thinkers1.iter_mut() {
+                    t.poll_and_resolve(&mut world.0);
+                }
+                for t in thinkers2.iter_mut() {
+                    t.poll_and_resolve(&mut world.0);
+                }
             },
         );
 

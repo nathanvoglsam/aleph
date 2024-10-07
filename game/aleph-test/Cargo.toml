@@ -53,6 +53,8 @@ aleph-profile = { workspace = true, features = ["profile-with-superluminal"] }
 
 bytemuck = { workspace = true }
 
+image = "0.25"
+
 [dependencies.gltf]
 version = "1"
 features = [

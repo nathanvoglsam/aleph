@@ -35,28 +35,23 @@ use aleph_engine::interfaces::platform::IFrameTimer;
 
 pub struct ThrobberLogic {
     frame_timer: AnyArc<dyn IFrameTimer>,
-    pub throbber: Option<EntityId>,
+    throbber: EntityId,
 }
 
 impl ThrobberLogic {
-    pub fn new(frame_timer: AnyArc<dyn IFrameTimer>) -> Self {
+    pub fn new(frame_timer: AnyArc<dyn IFrameTimer>, throbber: EntityId) -> Self {
         Self {
             frame_timer,
-            throbber: None,
+            throbber,
         }
     }
 
     pub fn tick(&self, world: &mut World) {
-        let throbber = match self.throbber {
-            Some(v) => v,
-            None => return,
-        };
-
         let elapsed = self.frame_timer.elapsed_time();
 
         let y = (elapsed * 0.5).sin() * 10.0;
         let (transform, _) = world
-            .query_one_mut::<(&mut Transform, &StaticMesh)>(throbber)
+            .query_one_mut::<(&mut Transform, &StaticMesh)>(self.throbber)
             .unwrap();
         transform.position = DVec3::new(0.0, y, -5.0);
         transform.rotation = Rotor3::from_rotation_xz(elapsed as f32);
