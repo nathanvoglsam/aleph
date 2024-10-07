@@ -213,26 +213,29 @@ impl IPlugin for PluginPlatformSDL2 {
         let send_provider = provider.clone();
         let send_sdl = self.sdl.clone();
         let send_quit_handle = registry.quit_handle();
-        registry.schedule().add_exclusive_at_start_system_to_stage(
-            CoreStage::InputCollection.into(),
-            make_label!("platform_sdl2::input_collection"),
-            move || {
-                let provider = send_provider.deref();
-                let sdl_cell = send_sdl.deref();
-                let quit_handle = send_quit_handle.deref();
+        registry
+            .core()
+            .schedule
+            .add_exclusive_at_start_system_to_stage(
+                CoreStage::InputCollection.into(),
+                make_label!("platform_sdl2::input_collection"),
+                move || {
+                    let provider = send_provider.deref();
+                    let sdl_cell = send_sdl.deref();
+                    let quit_handle = send_quit_handle.deref();
 
-                let mut sdl = sdl_cell.take().unwrap();
-                {
-                    let timer = sdl.timer.take().unwrap();
-                    Self::frame_timer(provider).unwrap().update(&timer);
-                    sdl.timer = Some(timer);
+                    let mut sdl = sdl_cell.take().unwrap();
+                    {
+                        let timer = sdl.timer.take().unwrap();
+                        Self::frame_timer(provider).unwrap().update(&timer);
+                        sdl.timer = Some(timer);
 
-                    Self::handle_requests(&cursors, &mut sdl, provider);
-                    Self::handle_events(&mut sdl, provider, quit_handle);
-                }
-                sdl_cell.set(Some(sdl));
-            },
-        );
+                        Self::handle_requests(&cursors, &mut sdl, provider);
+                        Self::handle_events(&mut sdl, provider, quit_handle);
+                    }
+                    sdl_cell.set(Some(sdl));
+                },
+            );
 
         // Provide our declared implementations to the plugin registry
         let response = vec![

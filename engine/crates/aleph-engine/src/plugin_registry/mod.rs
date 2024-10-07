@@ -30,6 +30,7 @@
 use aleph_config::{ConfigRunner, RunConfigError};
 pub use interfaces::any;
 use interfaces::ecs::World;
+use interfaces::plugin::CoreRefs;
 use interfaces::schedule::WorldResource;
 use interfaces::scheduler::{Resources, Schedule, Stage};
 
@@ -329,16 +330,12 @@ impl<'a> IRegistryAccessor<'a> for RegistryAccessor {
         self.config.as_ref()
     }
 
-    fn resources(&mut self) -> &mut Resources {
-        &mut self.resources
-    }
-
-    fn schedule(&mut self) -> &mut Schedule {
-        &mut self.schedule
-    }
-
-    fn world(&mut self) -> &mut World {
-        &mut self.world
+    fn core(&mut self) -> CoreRefs {
+        CoreRefs {
+            resources: self.resources.as_mut(),
+            schedule: self.schedule.as_mut(),
+            world: self.world.as_mut(),
+        }
     }
 }
 

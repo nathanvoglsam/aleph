@@ -176,15 +176,8 @@ pub trait IRegistryAccessor<'a>: 'a {
     /// Get the plugin's config, if one was found.
     fn config(&self) -> Option<&serde_json::Value>;
 
-    /// Access the engine's core [`Resources`] store to allow the plugin to register resources into
-    /// the scheduler.
-    fn resources(&mut self) -> &mut Resources;
-
-    /// Access the engine's core [`Schedule`] to allow the plugin to register systems.
-    fn schedule(&mut self) -> &mut Schedule;
-
-    /// Access the engine's core [`Schedule`] to allow the plugin to register systems.
-    fn world(&mut self) -> &mut World;
+    /// Access to a core set of resources provided by the engine, wrapped in a [`CoreRefs`].
+    fn core(&mut self) -> CoreRefs;
 }
 
 impl<'a> dyn IRegistryAccessor<'a> {
@@ -194,6 +187,12 @@ impl<'a> dyn IRegistryAccessor<'a> {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
     }
+}
+
+pub struct CoreRefs<'a> {
+    pub resources: &'a mut Resources,
+    pub schedule: &'a mut Schedule,
+    pub world: &'a mut World,
 }
 
 ///

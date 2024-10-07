@@ -71,7 +71,7 @@ impl IPlugin for PluginPlatformHeadless {
         .expect("Failed to registr ctrl+c handler");
 
         let send_provider = provider.clone();
-        registry.schedule().add_system_to_stage(
+        registry.core().schedule.add_system_to_stage(
             CoreStage::InputCollection.into(),
             make_label!("platform_headless::input_collection"),
             move || {

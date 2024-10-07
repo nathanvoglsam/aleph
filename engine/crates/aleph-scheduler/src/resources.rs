@@ -57,6 +57,20 @@ impl Resources {
             .insert(T::ID, UnsafeCell::new(ResourceBox::new(v)));
     }
 
+    pub fn get_ref<T: Resource>(&self) -> Option<&T> {
+        let cell = self.resources.get(&T::ID)?;
+        unsafe {
+            let out = (&*cell.get()).get_ref::<T>();
+            out
+        }
+    }
+
+    pub fn get_mut<T: Resource>(&mut self) -> Option<&mut T> {
+        let cell = self.resources.get_mut(&T::ID)?;
+        let out = cell.get_mut().get_mut::<T>();
+        out
+    }
+
     pub fn take<T: Resource>(&mut self) -> Option<T> {
         let cell = self.resources.remove(&T::ID)?;
         cell.into_inner().into_inner::<T>()

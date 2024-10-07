@@ -40,6 +40,5 @@ pub mod platform;
 pub mod plugin;
 pub mod rhi;
 pub mod schedule;
-pub mod world;
 
 mod utils;
