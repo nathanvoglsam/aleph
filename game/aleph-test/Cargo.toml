@@ -49,9 +49,10 @@ path = "./src/lib.rs"
 aleph-engine = { workspace = true }
 egui_demo_lib = { workspace = true }
 aleph-rhi-api = { workspace = true  }
-aleph-profile = { workspace = true, features = ["profile-with-superluminal"] }
+aleph-profile = { workspace = true }
 
 bytemuck = { workspace = true }
+rayon = { workspace = true }
 
 image = "0.25"
 

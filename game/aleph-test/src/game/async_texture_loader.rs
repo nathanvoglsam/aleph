@@ -145,15 +145,34 @@ impl LoaderWorker {
     fn load(&mut self, cmd: &LoadCommand) -> Option<()> {
         let extension = cmd.path.extension()?;
         let format = image::ImageFormat::from_extension(extension)?;
-
         let data = std::fs::read(&cmd.path).ok()?;
+
+        let device = self.device.clone();
+        let loader = self.loader.clone();
+        let reqeust = cmd.request.clone();
+        let srgb = cmd.srgb;
+        rayon::spawn(move || {
+            let _ = Self::load_on_threadpool(device, loader, reqeust, srgb, data, format);
+        });
+
+        Some(())
+    }
+
+    fn load_on_threadpool(
+        device: AnyArc<dyn IDevice>,
+        loader: Arc<TextureLoader>,
+        request: TextureStreamingRequest,
+        srgb: bool,
+        data: Vec<u8>,
+        format: image::ImageFormat,
+    ) -> Option<()> {
         let image = image::load_from_memory_with_format(&data, format).ok()?;
 
         let desc = TextureMipUploadDesc {
             width: image.width(),
             height: image.height(),
             depth: 1,
-            format: if cmd.srgb {
+            format: if srgb {
                 Format::Rgba8UnormSrgb
             } else {
                 Format::Rgba8Unorm
@@ -166,7 +185,7 @@ impl LoaderWorker {
             DynamicImage::ImageRgb8(i) => {
                 let data = unsafe {
                     TextureUploadSource::new_owned(
-                        self.device.as_ref(),
+                        device.as_ref(),
                         desc,
                         ResourceUsageFlags::SHADER_RESOURCE,
                     )
@@ -196,7 +215,7 @@ impl LoaderWorker {
             DynamicImage::ImageRgba8(i) => {
                 let data = unsafe {
                     TextureUploadSource::new_owned(
-                        self.device.as_ref(),
+                        device.as_ref(),
                         desc,
                         ResourceUsageFlags::SHADER_RESOURCE,
                     )
@@ -224,9 +243,8 @@ impl LoaderWorker {
             _ => todo!(),
         };
 
-        self.loader
-            .enqueue_new_upload(cmd.request.clone(), data)
-            .ok()?;
+        loader.enqueue_new_upload(request, data).ok()?;
+
         Some(())
     }
 }

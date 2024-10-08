@@ -306,6 +306,9 @@ inline func StandardBRDF(
     // Specular BRDF
     let Fr = (D * V) * F; // The division by (4 * NoV * NoL) is factored into the V function
 
+    // // Compensation for energy loss due to single-scattering BRDF.
+    // // Fr *= float3(1.0) + f0 * (1.0 / dfg.y - 1);
+
     // Diffuse BRDF
     let Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
 
@@ -372,6 +375,9 @@ inline func ClearCoatBRDF(
     // Specular BRDF
     let Fr = (D * V) * F; // The division by (4 * NoV * NoL) is factored into the V function
 
+    // // Compensation for energy loss due to single-scattering BRDF.
+    // // Fr *= float3(1.0) + f0 * (1.0 / dfg.y - 1);
+
     // Diffuse BRDF
     let Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
 
@@ -384,6 +390,9 @@ inline func ClearCoatBRDF(
     let Fc = F_Schlick(LoH, 0.04, 1.0) * clear_coat;
 
     let Frc = (Dc * Vc) * Fc; // The division by (4 * NoV * NoL) is factored into the V function
+
+    // // Compensation for energy loss due to single-scattering BRDF.
+    // // Frc *= float3(1.0) + f0 * (1.0 / dfg.y - 1);
 
     let cc_energy_loss = 1 - Fc;
     let Or = Fr * cc_energy_loss;
