@@ -37,6 +37,7 @@ use crate::{
 };
 
 pub struct TextureLoader {
+    device: AnyArc<dyn IDevice>,
     load_queue: ArrayQueue<LoadRequest>,
     immediate_queue: SegQueue<LoadRequest>,
 }
@@ -68,6 +69,7 @@ impl TextureLoader {
         request: Option<TextureStreamingRequest>,
         handle: TextureHandle,
         data: TextureUploadSource,
+        mode: TextureAllocMode,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
         if let Some(req) = request.as_ref() {
             match req.try_take_ownership() {
@@ -76,10 +78,21 @@ impl TextureLoader {
             }
         }
 
+        let final_tex = match mode {
+            TextureAllocMode::Deferred => None,
+            TextureAllocMode::Immediate => {
+                match Self::allocate_texture(self.device.as_ref(), &data) {
+                    Ok(texture) => Some(texture),
+                    Err(e) => return Err(EnqueueErrorKind::TextureCreateError(e).with_data(data)),
+                }
+            }
+        };
+
         let load = LoadRequest {
             target: Some(handle),
             request,
             data,
+            final_tex,
         };
 
         self.immediate_queue.push(load);
@@ -91,16 +104,28 @@ impl TextureLoader {
         &self,
         request: TextureStreamingRequest,
         data: TextureUploadSource,
+        mode: TextureAllocMode,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
         match request.try_take_ownership() {
             Ok(_) => (),
             Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
         }
 
+        let final_tex = match mode {
+            TextureAllocMode::Deferred => None,
+            TextureAllocMode::Immediate => {
+                match Self::allocate_texture(self.device.as_ref(), &data) {
+                    Ok(texture) => Some(texture),
+                    Err(e) => return Err(EnqueueErrorKind::TextureCreateError(e).with_data(data)),
+                }
+            }
+        };
+
         let load = LoadRequest {
             target: None,
             request: Some(request),
             data,
+            final_tex,
         };
 
         self.enqueue_deferred_request(load)
@@ -111,16 +136,28 @@ impl TextureLoader {
         request: TextureStreamingRequest,
         target: TextureHandle,
         data: TextureUploadSource,
+        mode: TextureAllocMode,
     ) -> Result<(), EnqueueError<TextureUploadSource>> {
         match request.try_take_ownership() {
             Ok(_) => (),
             Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
         }
 
+        let final_tex = match mode {
+            TextureAllocMode::Deferred => None,
+            TextureAllocMode::Immediate => {
+                match Self::allocate_texture(self.device.as_ref(), &data) {
+                    Ok(texture) => Some(texture),
+                    Err(e) => return Err(EnqueueErrorKind::TextureCreateError(e).with_data(data)),
+                }
+            }
+        };
+
         let load = LoadRequest {
             target: Some(target),
             request: Some(request),
             data,
+            final_tex,
         };
 
         self.enqueue_deferred_request(load)
@@ -133,13 +170,14 @@ impl TextureLoader {
 
     /// Creates a new [TextureLoader] with a default queue size. The current default is
     /// [TextureLoader::DEFAULT_QUEUE_SIZE].
-    pub(crate) fn new() -> Self {
-        Self::new_with_queue_size(Self::DEFAULT_QUEUE_SIZE)
+    pub(crate) fn new(device: AnyArc<dyn IDevice>) -> Self {
+        Self::new_with_queue_size(device, Self::DEFAULT_QUEUE_SIZE)
     }
 
     /// Creates a new [TextureLoader] with the given queue size.
-    pub(crate) fn new_with_queue_size(n: usize) -> Self {
+    pub(crate) fn new_with_queue_size(device: AnyArc<dyn IDevice>, n: usize) -> Self {
         Self {
+            device,
             load_queue: ArrayQueue::new(n),
             immediate_queue: SegQueue::new(),
         }
@@ -236,9 +274,9 @@ impl TextureLoader {
         discard_barriers: &mut Vec<TextureBarrier>,
         textures: &mut Vec<Upload>,
         release_barriers: &mut Vec<TextureBarrier>,
-        request: LoadRequest,
+        mut request: LoadRequest,
     ) {
-        let result = Self::create_texture(pool, deletion_pool, device, &request);
+        let result = Self::create_texture(pool, deletion_pool, device, &mut request);
         let (handle, texture) = match result {
             Ok(v) => v,
             Err(err) => {
@@ -303,26 +341,13 @@ impl TextureLoader {
         pool: &'a mut TexturePool,
         deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
-        load: &LoadRequest,
+        load: &mut LoadRequest,
     ) -> Result<(TextureHandle, AnyArc<dyn ITexture>), TextureCreateError> {
-        // We require copy dest so we can initialize the resource
-        let combined_usage = load.data.source.usage | ResourceUsageFlags::COPY_DEST;
-
-        let desc = TextureDesc {
-            width: load.data.desc.width,
-            height: load.data.desc.height,
-            depth: load.data.desc.depth,
-            format: load.data.desc.format,
-            dimension: TextureDimension::Texture2D, // TODO: need to propogate this
-            clear_value: None,
-            array_size: 1,
-            mip_levels: 1,
-            sample_count: 1,
-            sample_quality: 0,
-            usage: combined_usage,
-            name: None,
+        let texture = if let Some(tex) = load.final_tex.take() {
+            tex
+        } else {
+            Self::allocate_texture(device, &load.data)?
         };
-        let texture = device.create_texture(&desc)?;
 
         match load.target {
             Some(handle) => {
@@ -339,6 +364,54 @@ impl TextureLoader {
             }
         }
     }
+
+    fn allocate_texture(
+        device: &dyn IDevice,
+        src: &TextureUploadSource,
+    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
+        // We require copy dest so we can initialize the resource
+        let combined_usage = src.source.usage | ResourceUsageFlags::COPY_DEST;
+
+        let desc = TextureDesc {
+            width: src.desc.width,
+            height: src.desc.height,
+            depth: src.desc.depth,
+            format: src.desc.format,
+            dimension: TextureDimension::Texture2D, // TODO: need to propogate this
+            clear_value: None,
+            array_size: 1,
+            mip_levels: 1,
+            sample_count: 1,
+            sample_quality: 0,
+            usage: combined_usage,
+            name: None,
+        };
+        device.create_texture(&desc)
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum TextureAllocMode {
+    /// Do not allocate the texture object inside the enqueue call and instead let the loader thread
+    /// allocate the texture just-in-time.
+    ///
+    /// This will push expensive memory allocations onto the render thread, but won't consume memory
+    /// until immediately before the texture is uploaded and used in the frame
+    Deferred,
+
+    /// Immediately pre-allocates a texture object inside the enqueue call instead of leaving it
+    /// to be allocated on the loader thread.
+    ///
+    /// Allows distributing the expensive texture allocations across the queueing threads at the
+    /// cost of potentially more contention on the allocator and a slightly longer memory lifetime
+    /// of the allocated textures.
+    Immediate,
+}
+
+impl Default for TextureAllocMode {
+    fn default() -> Self {
+        Self::Immediate
+    }
 }
 
 struct LoadRequest {
@@ -351,6 +424,9 @@ struct LoadRequest {
 
     /// The actual data source for the upload.
     data: TextureUploadSource,
+
+    /// Optional pre-allocated destination texture
+    final_tex: Option<AnyArc<dyn ITexture>>,
 }
 
 struct Upload {

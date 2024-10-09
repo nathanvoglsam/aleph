@@ -29,6 +29,7 @@
 
 use std::fmt::Formatter;
 
+use aleph_rhi_api::TextureCreateError;
 use thiserror::Error;
 
 pub struct EnqueueError<T> {
@@ -85,6 +86,9 @@ pub enum EnqueueErrorKind {
 
     #[error("The request object is already enqueued.")]
     RequestAlreadyQueued,
+
+    #[error("Failed to create the texture as requested.")]
+    TextureCreateError(#[from] TextureCreateError),
 }
 
 impl EnqueueErrorKind {

@@ -41,7 +41,8 @@ use aleph_rhi_api::*;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
     BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
-    ShaderDatabaseAccessor, TextureHandle, TextureLoader, TexturePool, TextureUploadSource,
+    ShaderDatabaseAccessor, TextureAllocMode, TextureHandle, TextureLoader, TexturePool,
+    TextureUploadSource,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -168,7 +169,7 @@ impl RendererBuilder {
             swap_image_id: None,
         };
 
-        let texture_loader = Arc::new(TextureLoader::new());
+        let texture_loader = Arc::new(TextureLoader::new(device.clone()));
         let buffer_loader = Arc::new(BufferLoader::new());
         let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
         let buffer_pool = BufferPool::new(NonZeroU8::new(2).unwrap());
@@ -191,7 +192,7 @@ impl RendererBuilder {
 
             let handle = texture_pool.create_texture(None);
             texture_loader
-                .immediate_upload(None, handle, data)
+                .immediate_upload(None, handle, data, TextureAllocMode::Deferred)
                 .ok()
                 .unwrap();
             handle
@@ -214,7 +215,7 @@ impl RendererBuilder {
 
             let handle = texture_pool.create_texture(None);
             texture_loader
-                .immediate_upload(None, handle, data)
+                .immediate_upload(None, handle, data, TextureAllocMode::Deferred)
                 .ok()
                 .unwrap();
             handle
@@ -284,11 +285,15 @@ impl Renderer {
         &self.default_resources
     }
 
-    pub fn create_texture(&mut self, data: TextureUploadSource) -> Option<TextureHandle> {
+    pub fn create_texture(
+        &mut self,
+        data: TextureUploadSource,
+        mode: TextureAllocMode,
+    ) -> Option<TextureHandle> {
         let handle = self.texture_pool.create_texture(None);
 
         self.texture_loader
-            .immediate_upload(None, handle, data)
+            .immediate_upload(None, handle, data, mode)
             .ok()?;
 
         Some(handle)
@@ -609,7 +614,7 @@ impl FrameResources {
             acquire_semaphore: device.create_semaphore().unwrap(),
             present_semaphore: device.create_semaphore().unwrap(),
             done_fence: device.create_fence(true).unwrap(),
-            deletion_pool: DeletionPool::new(),
+            deletion_pool: DeletionPool::default(),
         }
     }
 }
