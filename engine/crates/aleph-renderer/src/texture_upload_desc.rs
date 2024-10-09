@@ -30,6 +30,7 @@
 use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
+use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_rhi_api::*;
 
 use crate::BufferUploadSource;
@@ -183,6 +184,39 @@ impl TextureUploadSource {
 
         let source = BufferUploadSource::new(buffer, offset, usage, data);
         Self { source, desc }
+    }
+
+    /// Constructs a new owned [TextureUploadSource] for the given buffer upload description.
+    ///
+    /// # Safety
+    ///
+    /// See [TextureUploadSource::new] for more information.
+    ///
+    /// This utility is safer to use than [TextureUploadSource::new] as it guarantees all the buffer
+    /// size and ownership constraints by construction. The only relevant requirements are to
+    /// ensure the [TextureMipUploadDesc] encodes a valid non-zero-sized texture. That is:
+    ///
+    /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
+    ///   textures.
+    /// - The buffer in 'bump' must have been created with [`ResourceUsageFlags::COPY_SOURCE`]
+    pub unsafe fn new_in_bump_arena(
+        bump: &UploadBumpAllocator,
+        desc: TextureMipUploadDesc,
+        usage: ResourceUsageFlags,
+    ) -> Result<Self, BufferCreateError> {
+        let required_size = desc.size_requirement() as usize;
+        let block = bump
+            .allocate_aligned(required_size, 256)
+            .ok_or(BufferCreateError::OutOfMemory)?;
+        let data = NonNull::slice_from_raw_parts(block.result, required_size);
+        let out = Self::new(
+            bump.buffer().upgrade(),
+            desc,
+            block.device_offset as u64,
+            usage,
+            data,
+        );
+        Ok(out)
     }
 
     /// Constructs a new owned [TextureUploadSource] for the given texture upload description.

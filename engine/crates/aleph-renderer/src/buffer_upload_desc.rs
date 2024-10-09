@@ -30,6 +30,7 @@
 use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
+use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_rhi_api::*;
 
 /// A data source for a buffer upload request. Represents an annotated block of upload memory that
@@ -151,7 +152,41 @@ impl BufferUploadSource {
         }
     }
 
-    /// Constructs a new owned [BufferUploadSource] for the given texture upload description.
+    /// Constructs a new owned [BufferUploadSource] for the given buffer upload description.
+    ///
+    /// # Safety
+    ///
+    /// See [BufferUploadSource::new] for more information.
+    ///
+    /// This utility is safer to use than [BufferUploadSource::new] as it guarantees all the buffer
+    /// size and ownership constraints by construction.
+    ///
+    /// - The buffer in 'bump' must have been created with [`ResourceUsageFlags::COPY_SOURCE`]
+    pub unsafe fn new_in_bump_arena(
+        bump: &UploadBumpAllocator,
+        len: usize,
+        usage: ResourceUsageFlags,
+    ) -> Result<Self, BufferCreateError> {
+        debug_assert!(bump
+            .buffer()
+            .desc_ref()
+            .usage
+            .contains(ResourceUsageFlags::COPY_SOURCE));
+
+        let block = bump
+            .allocate_aligned(len, 256)
+            .ok_or(BufferCreateError::OutOfMemory)?;
+        let data = NonNull::slice_from_raw_parts(block.result, len);
+        let out = Self::new(
+            bump.buffer().upgrade(),
+            block.device_offset as u64,
+            usage,
+            data,
+        );
+        Ok(out)
+    }
+
+    /// Constructs a new owned [BufferUploadSource] for the given buffer upload description.
     ///
     /// # Safety
     ///
@@ -159,10 +194,7 @@ impl BufferUploadSource {
     ///
     /// This utility is safer to use than [BufferUploadSource::new] as it guarantees all the buffer
     /// size and ownership constraints by construction. The only relevant requirements are to
-    /// ensure the [TextureMipUploadDesc] encodes a valid non-zero-sized texture. That is:
-    ///
-    /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
-    ///   textures.
+    /// ensure that the length is non zero.
     pub unsafe fn new_owned(
         device: &dyn IDevice,
         len: usize,

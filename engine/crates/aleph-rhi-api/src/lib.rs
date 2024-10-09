@@ -5768,6 +5768,9 @@ error_enum_from_unit_type!(ResourceUnmapError);
 
 #[derive(Error, Debug)]
 pub enum BufferCreateError {
+    #[error("There was not enough memory available to serve the requested buffer.")]
+    OutOfMemory,
+
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
