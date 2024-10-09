@@ -30,29 +30,39 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use aleph_device_allocators::{
+    DeviceAllocationResult, IUploadAllocator, RawDeviceAllocationResult, UploadBumpAllocator,
+};
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::object_system::unsafe_impl_iobject;
 use aleph_engine::interfaces::renderer::{
-    TextureLoader, TextureMipUploadDesc, TextureStreamingRequest, TextureUploadSource,
+    TextureAllocMode, TextureLoader, TextureMipUploadDesc, TextureStreamingRequest,
+    TextureUploadSource,
 };
 use aleph_rhi_api::*;
-use image::DynamicImage;
+use image::{DynamicImage, ImageDecoder};
 
 use crate::game::async_loader::{AsyncLoader, AsyncLoaderHandle};
 
-pub struct TextureLoaderContext {
-    pub device: AnyArc<dyn IDevice>,
-    pub loader: Arc<TextureLoader>,
-}
-
 pub struct AsyncTextureLoader {
-    loader: AsyncLoader<TextureLoaderContext, AsyncTextureLoadCommand>,
+    loader: AsyncLoader<AsyncTextureLoadCommand>,
 }
 
 unsafe_impl_iobject!(AsyncTextureLoader, "0192663a-8d56-7bd0-b7b9-495d4590d8a9");
 
 impl AsyncTextureLoader {
-    pub fn new(context: TextureLoaderContext) -> Self {
+    pub fn new(device: AnyArc<dyn IDevice>, loader: Arc<TextureLoader>) -> Self {
+        let upload_buffer = UploadBumpAllocator::new_upload_buffer(
+            device.as_ref(),
+            256 * 1000 * 1000,
+            Some("AsyncTextureLoaderUploadBlock"),
+        )
+        .unwrap();
+        let context = TextureLoaderContext {
+            device,
+            loader,
+            upload_buffer,
+        };
         let loader = AsyncLoader::new(context, handler);
         Self { loader }
     }
@@ -76,7 +86,7 @@ impl AsyncTextureLoader {
 }
 
 pub struct AsyncTextureLoader2Handle {
-    inner: AsyncLoaderHandle<TextureLoaderContext, AsyncTextureLoadCommand>,
+    inner: AsyncLoaderHandle<AsyncTextureLoadCommand>,
 }
 
 impl AsyncTextureLoader2Handle {
@@ -102,22 +112,62 @@ struct AsyncTextureLoadCommand {
     v: AsyncTextureLoadRequest,
 }
 
-fn handler(context: &TextureLoaderContext, request: &AsyncTextureLoadCommand) {
+struct TextureLoaderContext {
+    device: AnyArc<dyn IDevice>,
+    loader: Arc<TextureLoader>,
+    upload_buffer: UploadBumpAllocator,
+}
+
+fn handler(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) {
     let _ = load(context, request);
 }
 
 #[aleph_profile::function]
-fn load(context: &TextureLoaderContext, request: &AsyncTextureLoadCommand) -> Option<()> {
+fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -> Option<()> {
     let extension = request.v.path.extension()?;
     let format = image::ImageFormat::from_extension(extension)?;
     let data = std::fs::read(&request.v.path).ok()?;
 
+    let reader = image::ImageReader::with_format(std::io::Cursor::new(&data), format)
+        .into_decoder()
+        .ok()?;
+    let (width, height) = reader.dimensions();
+    let desc = TextureMipUploadDesc {
+        width,
+        height,
+        depth: 1,
+        format: if request.v.srgb {
+            Format::Rgba8UnormSrgb
+        } else {
+            Format::Rgba8Unorm
+        },
+    };
+    let size = desc.size_requirement();
+    let block = match context.upload_buffer.allocate_aligned(size, 256) {
+        Some(block) => block,
+        None => {
+            aleph_profile::scope!("AsyncTextureLoader::NewBlock");
+            let mut new_buffer = UploadBumpAllocator::new_upload_buffer(
+                context.device.as_ref(),
+                256 * 1024 * 1024,
+                Some("AsyncTextureLoaderUploadBlock"),
+            )
+            .unwrap();
+            std::mem::swap(&mut new_buffer, &mut context.upload_buffer);
+            context.upload_buffer.allocate_aligned(size, 256).unwrap()
+        }
+    };
+    let allocation = AllocationWithBuffer {
+        allocation: block,
+        buffer: context.upload_buffer.buffer().upgrade(),
+    };
+    drop(reader);
+
     let device = context.device.clone();
     let loader = context.loader.clone();
     let reqeust = request.req.clone();
-    let srgb = request.v.srgb;
     rayon::spawn(move || {
-        let _ = load_on_threadpool(device, loader, reqeust, srgb, data, format);
+        let _ = load_on_threadpool(device, loader, reqeust, desc, data, format, allocation);
     });
 
     Some(())
@@ -128,34 +178,29 @@ fn load_on_threadpool(
     device: AnyArc<dyn IDevice>,
     loader: Arc<TextureLoader>,
     request: TextureStreamingRequest,
-    srgb: bool,
+    desc: TextureMipUploadDesc,
     data: Vec<u8>,
     format: image::ImageFormat,
+    allocation: AllocationWithBuffer,
 ) -> Option<()> {
     let image = image::load_from_memory_with_format(&data, format).ok()?;
-
-    let desc = TextureMipUploadDesc {
-        width: image.width(),
-        height: image.height(),
-        depth: 1,
-        format: if srgb {
-            Format::Rgba8UnormSrgb
-        } else {
-            Format::Rgba8Unorm
-        },
-    };
 
     let data = match image {
         DynamicImage::ImageLuma8(_i) => return None,
         DynamicImage::ImageLumaA8(_i) => return None,
         DynamicImage::ImageRgb8(i) => {
             let data = unsafe {
-                TextureUploadSource::new_owned(
-                    device.as_ref(),
+                let data = std::ptr::NonNull::slice_from_raw_parts(
+                    allocation.allocation.result,
+                    desc.size_requirement(),
+                );
+                TextureUploadSource::new(
+                    allocation.buffer,
                     desc,
+                    allocation.allocation.device_offset as u64,
                     ResourceUsageFlags::SHADER_RESOURCE,
+                    data,
                 )
-                .ok()?
             };
 
             let row_width = i.width() as usize * 3;
@@ -209,7 +254,21 @@ fn load_on_threadpool(
         _ => todo!(),
     };
 
-    loader.enqueue_new_upload(request, data).ok()?;
+    // We want to allocate the texture on the worker thread, even at the cost of contention, so we
+    // don't block the render thread and so we can distribute the work over multiple cores.
+    {
+        aleph_profile::scope!("load_on_threadpool::EnqueueAndAllocate");
+        loader
+            .enqueue_new_upload(request, data, TextureAllocMode::Immediate)
+            .ok()?;
+    }
 
     Some(())
 }
+
+struct AllocationWithBuffer {
+    allocation: RawDeviceAllocationResult,
+    buffer: AnyArc<dyn IBuffer>,
+}
+
+unsafe impl Send for AllocationWithBuffer {}

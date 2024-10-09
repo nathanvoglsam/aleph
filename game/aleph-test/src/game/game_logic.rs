@@ -48,10 +48,10 @@ use aleph_engine::interfaces::plugin::CoreRefs;
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
 
-use crate::game::async_texture_loader::{AsyncTextureLoader, TextureLoaderContext};
+use crate::game::async_texture_loader::AsyncTextureLoader;
 use crate::game::cube_mesh::upload_cube_buffers;
 use crate::game::free_camera::FreeCamera;
-use crate::game::gltf_loader::load_scene;
+use crate::game::gltf_loader::{load_scene, BumpThingy};
 use crate::game::throbber_logic::ThrobberLogic;
 
 pub fn engine_runner() {
@@ -149,21 +149,24 @@ impl IPlugin for PluginGameLogic {
 
         let renderer = resources.get_mut::<Renderer>().unwrap();
 
-        let context = TextureLoaderContext {
-            device: renderer.device().upgrade(),
-            loader: renderer.get_texture_loader_handle(),
-        };
-        let async_texture_loader = AsyncTextureLoader::new(context);
+        let async_texture_loader = AsyncTextureLoader::new(
+            renderer.device().upgrade(),
+            renderer.get_texture_loader_handle(),
+        );
+
+        let mut arena = BumpThingy::new(renderer.device());
 
         let mut thinkers1 = load_scene(
             world,
             renderer,
+            &mut arena,
             &async_texture_loader,
             Path::new("F:\\Files\\IntelSponza\\Main\\NewSponza_Main_Blender_glTF.gltf"),
         );
         let mut thinkers2 = load_scene(
             world,
             renderer,
+            &mut arena,
             &async_texture_loader,
             Path::new("OrientationTest.gltf"),
         );

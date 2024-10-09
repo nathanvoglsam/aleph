@@ -27,24 +27,23 @@
 // SOFTWARE.
 //
 
-use std::marker::PhantomData;
 use std::sync::mpsc;
 use std::thread::JoinHandle;
 
-pub struct AsyncLoader<T, C> {
-    queue: AsyncLoaderHandle<T, C>,
+pub struct AsyncLoader<C> {
+    queue: AsyncLoaderHandle<C>,
     worker: Option<JoinHandle<()>>,
 }
 
-impl<T, C> Drop for AsyncLoader<T, C> {
+impl<C> Drop for AsyncLoader<C> {
     fn drop(&mut self) {
         self.queue.queue.send(LoaderMessage::Exit).unwrap();
         self.worker.take().unwrap().join().unwrap();
     }
 }
 
-impl<T: Send + 'static, C: Send + 'static> AsyncLoader<T, C> {
-    pub fn new(context: T, handler: fn(&T, &C)) -> Self {
+impl<C: Send + 'static> AsyncLoader<C> {
+    pub fn new<T: Send + 'static>(context: T, handler: fn(&mut T, &C)) -> Self {
         let (sender, receiver) = mpsc::channel();
 
         let mut worker = LoaderWorker2::new(receiver, context);
@@ -66,22 +65,18 @@ impl<T: Send + 'static, C: Send + 'static> AsyncLoader<T, C> {
         self.queue.load(command)
     }
 
-    pub fn handle(&self) -> AsyncLoaderHandle<T, C> {
+    pub fn handle(&self) -> AsyncLoaderHandle<C> {
         AsyncLoaderHandle::new(self.queue.queue.clone())
     }
 }
 
-pub struct AsyncLoaderHandle<T, C> {
+pub struct AsyncLoaderHandle<C> {
     queue: mpsc::Sender<LoaderMessage<C>>,
-    _phantom: PhantomData<T>,
 }
 
-impl<T, C: Send> AsyncLoaderHandle<T, C> {
+impl<C: Send> AsyncLoaderHandle<C> {
     fn new(v: mpsc::Sender<LoaderMessage<C>>) -> Self {
-        Self {
-            queue: v,
-            _phantom: PhantomData,
-        }
+        Self { queue: v }
     }
 
     pub fn load(&self, command: C) {
@@ -103,13 +98,13 @@ impl<T, C> LoaderWorker2<T, C> {
         }
     }
 
-    fn run(&mut self, handler: fn(&T, &C)) {
+    fn run(&mut self, handler: fn(&mut T, &C)) {
         loop {
             match self.queue.recv() {
                 Ok(LoaderMessage::Exit) => {
                     return;
                 }
-                Ok(LoaderMessage::Command(cmd)) => handler(&self.context, &cmd),
+                Ok(LoaderMessage::Command(cmd)) => handler(&mut self.context, &cmd),
                 Err(_e) => {
                     // TODO: log the error then return
                     return;

@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use aleph_device_allocators::UploadBumpAllocator;
+use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::components::{StaticMesh, Transform};
 use aleph_engine::interfaces::ecs::{EntityId, World};
 use aleph_engine::interfaces::math::{Mat4, Rotor3, ToDouble, Vec3, Vec4};
@@ -40,6 +42,42 @@ use gltf::material::AlphaMode;
 use gltf::{Accessor, Primitive};
 
 use crate::game::async_texture_loader::{AsyncTextureLoadRequest, AsyncTextureLoader};
+
+pub struct BumpThingy {
+    device: AnyArc<dyn IDevice>,
+    alloc: UploadBumpAllocator,
+}
+
+impl BumpThingy {
+    pub fn new(device: &dyn IDevice) -> Self {
+        Self {
+            device: device.upgrade(),
+            alloc: Self::new_alloc(device),
+        }
+    }
+
+    pub unsafe fn alloc_upload_desc(
+        &mut self,
+        len: usize,
+        usage: ResourceUsageFlags,
+    ) -> Result<BufferUploadSource, BufferCreateError> {
+        match BufferUploadSource::new_in_bump_arena(&self.alloc, len, usage) {
+            Ok(out) => Ok(out),
+            Err(BufferCreateError::OutOfMemory) => {
+                let mut new_block = Self::new_alloc(self.device.as_ref());
+                std::mem::swap(&mut new_block, &mut self.alloc);
+                BufferUploadSource::new_in_bump_arena(&self.alloc, len, usage)
+            }
+            e @ Err(_) => return e,
+        }
+    }
+
+    fn new_alloc(device: &dyn IDevice) -> UploadBumpAllocator {
+        const ALLOC_SIZE: usize = 64 * 1024 * 1024;
+        UploadBumpAllocator::new_upload_buffer(device, ALLOC_SIZE, Some("BumpThingyUploadBlock"))
+            .unwrap()
+    }
+}
 
 pub struct TextureLoadThinker {
     target: EntityId,
@@ -88,6 +126,7 @@ pub enum PollResult {
 pub fn load_scene(
     world: &mut World,
     renderer: &mut Renderer,
+    arena: &mut BumpThingy,
     loader: &AsyncTextureLoader,
     path: &std::path::Path,
 ) -> Vec<TextureLoadThinker> {
@@ -115,10 +154,10 @@ pub fn load_scene(
             assert_eq!(prim.mode(), gltf::mesh::Mode::Triangles);
 
             let indices = prim.indices().unwrap();
-            let idx_buffer = load_index_buffer(renderer, &buffers, &indices);
+            let idx_buffer = load_index_buffer(renderer, arena, &buffers, &indices);
 
             // Get the upper bound for number of vertices
-            let vtx_buffer = load_vertex_buffer(renderer, &buffers, &prim);
+            let vtx_buffer = load_vertex_buffer(renderer, arena, &buffers, &prim);
 
             prims.push((idx_buffer, vtx_buffer));
         }
@@ -153,8 +192,6 @@ pub fn load_scene(
             ],
         }
         .decomposed();
-
-        println!("{:?} {:?}", node.name(), r);
 
         if let Some(mesh) = node.mesh() {
             for (prim, (idx, vtx)) in mesh.primitives().zip(mesh_table[mesh.index()].iter()) {
@@ -236,6 +273,7 @@ pub fn load_scene(
 #[aleph_profile::function]
 fn load_index_buffer(
     renderer: &mut Renderer,
+    arena: &mut BumpThingy,
     buffers: &[Data],
     indices: &Accessor,
 ) -> BufferHandle {
@@ -250,7 +288,8 @@ fn load_index_buffer(
     let size = indices.count() * size_of::<u32>();
 
     let mut idx_buffer = unsafe {
-        BufferUploadSource::new_owned(renderer.device(), size, ResourceUsageFlags::INDEX_BUFFER)
+        arena
+            .alloc_upload_desc(size, ResourceUsageFlags::INDEX_BUFFER)
             .unwrap()
     };
 
@@ -293,7 +332,12 @@ fn load_index_buffer(
 }
 
 #[aleph_profile::function]
-fn load_vertex_buffer(renderer: &mut Renderer, buffers: &[Data], prim: &Primitive) -> BufferHandle {
+fn load_vertex_buffer(
+    renderer: &mut Renderer,
+    arena: &mut BumpThingy,
+    buffers: &[Data],
+    prim: &Primitive,
+) -> BufferHandle {
     // Get the upper bound for number of vertices
     let vertex_count = prim.attributes().map(|v| v.1.count()).max().unwrap();
 
@@ -302,7 +346,8 @@ fn load_vertex_buffer(renderer: &mut Renderer, buffers: &[Data], prim: &Primitiv
     let size = vertex_count * dst_stride;
 
     let mut vtx_buffer = unsafe {
-        BufferUploadSource::new_owned(renderer.device(), size, ResourceUsageFlags::VERTEX_BUFFER)
+        arena
+            .alloc_upload_desc(size, ResourceUsageFlags::VERTEX_BUFFER)
             .unwrap()
     };
 
