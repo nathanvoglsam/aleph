@@ -49,8 +49,6 @@ pub mod any {
 use std::env::current_dir;
 use std::path::Path;
 
-// use interfaces::schedule::CoreStage;
-// use interfaces::scheduler::{Schedule, SystemSchedule};
 use log::LevelFilter;
 
 use crate::interfaces::plugin::IPlugin;
@@ -74,6 +72,19 @@ impl EngineBuilder {
         unsafe {
             aleph_windows::name_current_thread(&utf16_lit::utf16_null!("MainThread")).unwrap();
         }
+
+        rayon::ThreadPoolBuilder::new()
+            .thread_name(|v| format!("Rayon Worker {v}"))
+            .start_handler(|_v| {
+                // Initialize COM with MTA
+                #[cfg(target_os = "windows")]
+                unsafe {
+                    use aleph_windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
+                    CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
+                }
+            })
+            .build_global()
+            .unwrap();
 
         #[cfg(not(target_os = "android"))]
         fn create_logger() -> env_logger::Logger {
