@@ -45,13 +45,15 @@ use crate::BufferUploadSource;
 pub struct DeletionPool {
     textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
     buffers: Vec<ManuallyDrop<AnyArc<dyn IBuffer>>>,
+    mode: DeletionMode,
 }
 
 impl DeletionPool {
-    pub const fn new() -> Self {
+    pub const fn new(mode: DeletionMode) -> Self {
         Self {
             textures: Vec::new(),
             buffers: Vec::new(),
+            mode
         }
     }
 
@@ -102,9 +104,13 @@ impl DeletionPool {
     #[inline]
     pub unsafe fn purge_textures(&mut self) {
         // Drain the pools and explicitly drop the contained elements.
-        self.textures
-            .drain(..)
-            .for_each(|mut v| ManuallyDrop::drop(&mut v));
+        self.textures.drain(..).for_each(|mut v| {
+            if v.strong_count() == 1 && self.mode == DeletionMode::Deferred {
+                rayon::spawn(move || drop_texture_on_pool(v));
+            } else {
+                ManuallyDrop::drop(&mut v);
+            }
+        });
     }
 
     /// Alternate version of [`DeletionPool::purge`] that only purges the
@@ -116,9 +122,13 @@ impl DeletionPool {
     #[inline]
     pub unsafe fn purge_buffers(&mut self) {
         // Drain the pools and explicitly drop the contained elements.
-        self.buffers
-            .drain(..)
-            .for_each(|mut v| ManuallyDrop::drop(&mut v));
+        self.buffers.drain(..).for_each(|mut v| {
+            if v.strong_count() == 1 && self.mode == DeletionMode::Deferred {
+                rayon::spawn(move || drop_buffer_on_pool(v));
+            } else {
+                ManuallyDrop::drop(&mut v);
+            }
+        });
     }
 }
 
@@ -133,4 +143,30 @@ impl Drop for DeletionPool {
             log::warn!("Deletion Pool dropped with {len} buffers! This is leaking memory!");
         }
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum DeletionMode {
+    /// All resources should be destroyed immediately in the purge functions.
+    Inline,
+
+    /// All resources will be sent into the threadpool to be dropped and deallocated.
+    Deferred,
+}
+
+impl Default for DeletionMode {
+    #[inline]
+    fn default() -> Self {
+        Self::Deferred
+    }
+}
+
+#[aleph_profile::function]
+unsafe fn drop_texture_on_pool(mut v: ManuallyDrop<AnyArc<dyn ITexture>>) {
+    ManuallyDrop::drop(&mut v)
+}
+
+#[aleph_profile::function]
+unsafe fn drop_buffer_on_pool(mut v: ManuallyDrop<AnyArc<dyn IBuffer>>) {
+    ManuallyDrop::drop(&mut v)
 }
