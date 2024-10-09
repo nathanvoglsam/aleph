@@ -156,7 +156,7 @@ impl Context {
             failed = true;
         }
 
-        if feature_support.HighestShaderModel().0 < D3D_SHADER_MODEL_6_0.0 {
+        if feature_support.HighestShaderModel().0 < D3D_SHADER_MODEL_6_6.0 {
             log::error!("Adapter doesn't support Shader Model 6.0");
             failed = true;
         }
@@ -166,8 +166,8 @@ impl Context {
             failed = true;
         }
 
-        if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_11_0.0 {
-            log::error!("Adapter doesn't support Feature Level 11_0");
+        if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_12_1.0 {
+            log::error!("Adapter doesn't support Feature Level 12_0");
             failed = true;
         }
 
@@ -183,7 +183,7 @@ impl Context {
         factory: &IDXGIFactory2,
         candidate: &IDXGIAdapter1,
     ) -> bool {
-        let device = create_device(candidate, D3D_FEATURE_LEVEL_11_0).ok();
+        let device = create_device(candidate, D3D_FEATURE_LEVEL_12_1).ok();
         let device = if let Some(device) = device {
             device
         } else {
@@ -324,7 +324,7 @@ impl IContext for Context {
         });
 
         if let Some(adapter) = selected_adapter {
-            let device = create_device(&adapter, D3D_FEATURE_LEVEL_11_0).ok()?;
+            let device = create_device(&adapter, D3D_FEATURE_LEVEL_12_1).ok()?;
 
             if let Some(surface) = options.surface {
                 let surface = unwrap::surface(surface);
