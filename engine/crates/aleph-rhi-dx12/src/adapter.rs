@@ -120,7 +120,8 @@ impl IAdapter for Adapter {
 
         let allocator = d3d12ma::Allocator::new(&d3d12ma::ALLOCATOR_DESC {
             Flags: d3d12ma::ALLOCATOR_FLAGS::MSAA_TEXTURES_ALWAYS_COMMITTED
-                | d3d12ma::ALLOCATOR_FLAGS::DEFAULT_POOLS_NOT_ZEROED,
+                | d3d12ma::ALLOCATOR_FLAGS::DEFAULT_POOLS_NOT_ZEROED
+                | d3d12ma::ALLOCATOR_FLAGS::DONT_PREFER_SMALL_BUFFERS_COMMITTED,
             pDevice: Some(device.clone().into()),
             PreferredBlockSize: 0,
             pAllocationCallbacks: std::ptr::null(),

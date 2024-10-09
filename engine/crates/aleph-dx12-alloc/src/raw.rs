@@ -213,7 +213,7 @@ bitflags! {
         /// heaps. Passing this flag will disable this committed preference globally for the
         /// allocator. It can also be disabled for a single allocation by using
         /// #ALLOCATION_FLAG_STRATEGY_MIN_TIME.
-        const ALLOCATOR_FLAG_DONT_PREFER_SMALL_BUFFERS_COMMITTED = 0x10;
+        const DONT_PREFER_SMALL_BUFFERS_COMMITTED = 0x10;
     }
 }
 
