@@ -50,6 +50,11 @@ pub struct UploadBumpAllocator {
     state: BumpAllocator,
 }
 
+// Safety: We rely on other unsafe code to ensure the allocator uniquely owns the mapped region of
+//         the device buffer. As long as that is met it is safe to send the allocator across threads
+//         as the only non-send field is the 'base_host_address' pointer.
+unsafe impl Send for UploadBumpAllocator {}
+
 impl IUploadAllocator for UploadBumpAllocator {
     /// Allocate the given number of bytes from the buffer.
     ///
@@ -85,6 +90,34 @@ impl UploadBumpAllocator {
                     size: capacity as u64,
                     cpu_access: CpuAccessMode::Write,
                     usage: ResourceUsageFlags::CONSTANT_BUFFER,
+                    name,
+                })
+                .ok()?;
+            let base_host_address = buffer.map().ok()?;
+            Some(Self {
+                buffer,
+                base_host_address,
+                base_device_offset: 0,
+                state,
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Constructs a [UploadBumpAllocator] with the given capacity and name, allocating the buffer
+    /// from the provided device.
+    pub fn new_upload_buffer(
+        device: &dyn IDevice,
+        capacity: usize,
+        name: Option<&str>,
+    ) -> Option<Self> {
+        if let Some(state) = BumpAllocator::new(capacity) {
+            let buffer = device
+                .create_buffer(&BufferDesc {
+                    size: capacity as u64,
+                    cpu_access: CpuAccessMode::Write,
+                    usage: ResourceUsageFlags::COPY_SOURCE,
                     name,
                 })
                 .ok()?;
