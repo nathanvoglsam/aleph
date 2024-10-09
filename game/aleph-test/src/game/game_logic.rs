@@ -48,7 +48,7 @@ use aleph_engine::interfaces::plugin::CoreRefs;
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
 
-use crate::game::async_texture_loader::AsyncTextureLoader;
+use crate::game::async_texture_loader::{AsyncTextureLoader, TextureLoaderContext};
 use crate::game::cube_mesh::upload_cube_buffers;
 use crate::game::free_camera::FreeCamera;
 use crate::game::gltf_loader::load_scene;
@@ -149,7 +149,12 @@ impl IPlugin for PluginGameLogic {
 
         let renderer = resources.get_mut::<Renderer>().unwrap();
 
-        let async_texture_loader = AsyncTextureLoader::new(renderer);
+        let context = TextureLoaderContext {
+            device: renderer.device().upgrade(),
+            loader: renderer.get_texture_loader_handle(),
+        };
+        let async_texture_loader = AsyncTextureLoader::new(context);
+
         let mut thinkers1 = load_scene(
             world,
             renderer,

@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod async_loader;
 pub mod async_texture_loader;
 pub mod cube_mesh;
 pub mod free_camera;

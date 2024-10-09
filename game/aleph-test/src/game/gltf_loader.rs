@@ -39,7 +39,7 @@ use gltf::buffer::Data;
 use gltf::material::AlphaMode;
 use gltf::{Accessor, Primitive};
 
-use crate::game::async_texture_loader::AsyncTextureLoader;
+use crate::game::async_texture_loader::{AsyncTextureLoadRequest, AsyncTextureLoader};
 
 pub struct TextureLoadThinker {
     target: EntityId,
@@ -99,7 +99,7 @@ pub fn load_scene(
         match image.source() {
             gltf::image::Source::Uri { uri, .. } => {
                 let path = base.join(uri);
-                let request = loader.load(path, true);
+                let request = loader.load(AsyncTextureLoadRequest { path, srgb: true });
                 tex_table.push(Some(request));
             }
             _ => tex_table.push(None),
