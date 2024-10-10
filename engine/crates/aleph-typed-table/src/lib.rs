@@ -80,13 +80,12 @@ impl TypedTable {
     pub fn get_or_insert_with<T: IObject + Send + Sync + 'static>(
         &mut self,
         f: impl FnOnce() -> T,
-    ) -> Option<&mut T> {
+    ) -> &mut T {
         let out = self.resources.entry(T::ID).or_insert_with(|| {
             let v = f();
             UnsafeCell::new(TypedTableBox::new(v))
         });
-        let out = out.get_mut().get_mut::<T>();
-        out
+        out.get_mut().get_mut::<T>().unwrap()
     }
 
     pub fn take<T: IObject + Send + Sync + 'static>(&mut self) -> Option<T> {
