@@ -32,15 +32,17 @@ use std::num::NonZeroU8;
 use std::sync::Arc;
 
 use aleph_any::AnyArc;
+use aleph_device_allocators::{AllocatorPool, LinearDescriptorPoolFactory};
 use aleph_frame_graph::{FrameGraph, FrameGraphBuilder, ImportBundle, ResourceMut, ResourceRef};
 use aleph_nstr::nstr;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_pin_board::{BoardScope, PinBoard};
 use aleph_rhi_api::*;
 
+use crate::mip_generator::MipGenerator;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
+    BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool, GenerateMips,
     ShaderDatabaseAccessor, TextureAllocMode, TextureHandle, TextureLoader, TexturePool,
     TextureUploadSource,
 };
@@ -169,6 +171,8 @@ impl RendererBuilder {
             swap_image_id: None,
         };
 
+        let mip_generator = MipGenerator::new(device.clone(), &shader_db);
+
         let texture_loader = Arc::new(TextureLoader::new(device.clone()));
         let buffer_loader = Arc::new(BufferLoader::new());
         let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
@@ -192,7 +196,13 @@ impl RendererBuilder {
 
             let handle = texture_pool.create_texture(None);
             texture_loader
-                .immediate_upload(None, handle, data, TextureAllocMode::Deferred)
+                .immediate_upload(
+                    None,
+                    handle,
+                    data,
+                    TextureAllocMode::Deferred,
+                    GenerateMips::No,
+                )
                 .ok()
                 .unwrap();
             handle
@@ -215,11 +225,20 @@ impl RendererBuilder {
 
             let handle = texture_pool.create_texture(None);
             texture_loader
-                .immediate_upload(None, handle, data, TextureAllocMode::Deferred)
+                .immediate_upload(
+                    None,
+                    handle,
+                    data,
+                    TextureAllocMode::Deferred,
+                    GenerateMips::No,
+                )
                 .ok()
                 .unwrap();
             handle
         };
+
+        let linear_descriptor_pools =
+            AllocatorPool::new(LinearDescriptorPoolFactory::new(device.clone(), 128), 32);
 
         let out = Renderer {
             config: RendererConfig {
@@ -229,6 +248,7 @@ impl RendererBuilder {
             queue,
             shader_db,
             swap_manager,
+            mip_generator,
             texture_loader,
             buffer_loader,
             texture_pool,
@@ -239,6 +259,7 @@ impl RendererBuilder {
                 white_texture_rgba8,
                 black_texture_rgba8,
             },
+            linear_descriptor_pools,
         };
         Some(out)
     }
@@ -250,6 +271,7 @@ pub struct Renderer {
     queue: AnyArc<dyn IQueue>,
     shader_db: ShaderDatabaseAccessor<'static>,
     swap_manager: SwapManager,
+    mip_generator: MipGenerator,
     texture_loader: Arc<TextureLoader>,
     buffer_loader: Arc<BufferLoader>,
     texture_pool: TexturePool,
@@ -257,6 +279,7 @@ pub struct Renderer {
     frame_manager: FrameManager,
     graph_manager: GraphManager,
     default_resources: DefaultResources,
+    linear_descriptor_pools: Arc<AllocatorPool<LinearDescriptorPoolFactory>>,
 }
 unsafe_impl_iobject!(Renderer, "01924ac2-e95d-7aa3-9fdf-9ec32d90b49c");
 
@@ -289,11 +312,12 @@ impl Renderer {
         &mut self,
         data: TextureUploadSource,
         mode: TextureAllocMode,
+        mips: GenerateMips,
     ) -> Option<TextureHandle> {
         let handle = self.texture_pool.create_texture(None);
 
         self.texture_loader
-            .immediate_upload(None, handle, data, mode)
+            .immediate_upload(None, handle, data, mode, mips)
             .ok()?;
 
         Some(handle)
@@ -334,6 +358,9 @@ impl Renderer {
         // timeline and that means we can purge anything that was being held alive for that GPU
         // frame in the deletion pool.
         deletion_pool.purge();
+
+        let linear_descriptor_pool = self.linear_descriptor_pools.get();
+        linear_descriptor_pool.reset();
 
         // Acquire the next image from the swap chain. This will also trigger rebuilding the swap
         // chain if it is out of date.
@@ -385,9 +412,10 @@ impl Renderer {
                 usize::MAX,
             );
             self.texture_loader.upload_requests(
+                &self.mip_generator,
+                linear_descriptor_pool.as_ref(),
                 &mut self.texture_pool,
                 deletion_pool,
-                self.device.as_ref(),
                 encoder.as_mut(),
                 usize::MAX,
             );
@@ -414,6 +442,8 @@ impl Renderer {
 
             encoder.close().unwrap();
         }
+
+        deletion_pool.push_descriptor_pool(linear_descriptor_pool.into());
 
         self.queue
             .submit(&QueueSubmitDesc {

@@ -319,6 +319,11 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
             .map(get_as_unwrapped::texture_barrier)
             .collect();
 
+        let barrier_num = global_barriers.len() + buffer_barriers.len() + texture_barriers.len();
+        if barrier_num == 0 {
+            log::warn!("ITransferEncoder::resource_barrier called with 0 barriers!");
+        }
+
         self.inner
             .resource_barrier(global_barriers, &buffer_barriers, &texture_barriers)
     }

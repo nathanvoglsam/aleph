@@ -38,6 +38,7 @@ mod enqueue_error;
 mod handle;
 mod handle_pool;
 mod mesh_layout;
+mod mip_generator;
 mod object_pool;
 mod objects;
 mod render_scene;
@@ -72,7 +73,7 @@ pub use streaming_request::{
     BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestError,
     RequestState, StreamingRequest, TextureStreamingRequest,
 };
-pub use texture_loader::{TextureAllocMode, TextureLoader};
+pub use texture_loader::{GenerateMips, TextureAllocMode, TextureLoader};
 pub use texture_pool::{TextureObject, TexturePool};
 pub use texture_upload_desc::{TextureMipUploadDesc, TextureUploadSource};
 

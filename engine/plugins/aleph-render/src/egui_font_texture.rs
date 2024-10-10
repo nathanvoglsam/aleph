@@ -35,7 +35,8 @@ use egui::{FontImage, ImageData};
 use wide::{f32x4, f32x8, i32x4, i32x8, CmpEq};
 
 use aleph_renderer::{
-    Renderer, TextureAllocMode, TextureHandle, TextureMipUploadDesc, TextureUploadSource,
+    GenerateMips, Renderer, TextureAllocMode, TextureHandle, TextureMipUploadDesc,
+    TextureUploadSource,
 };
 
 pub struct EguiFontTexture {
@@ -95,11 +96,20 @@ impl EguiFontTexture {
                 if let Some(handle) = self.font_handle {
                     renderer
                         .get_texture_loader()
-                        .immediate_upload(None, handle, staging_buffer, TextureAllocMode::Deferred)
+                        .immediate_upload(
+                            None,
+                            handle,
+                            staging_buffer,
+                            TextureAllocMode::Deferred,
+                            GenerateMips::No,
+                        )
                         .unwrap();
                 } else {
-                    let result =
-                        renderer.create_texture(staging_buffer, TextureAllocMode::Deferred);
+                    let result = renderer.create_texture(
+                        staging_buffer,
+                        TextureAllocMode::Deferred,
+                        GenerateMips::No,
+                    );
                     self.font_handle = Some(result.unwrap());
                 }
             }

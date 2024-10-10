@@ -30,6 +30,7 @@
 use std::mem::ManuallyDrop;
 
 use aleph_any::AnyArc;
+use aleph_device_allocators::{AllocatorPoolItem, Grave, LinearDescriptorPoolFactory};
 use aleph_rhi_api::*;
 
 use crate::BufferUploadSource;
@@ -45,6 +46,7 @@ use crate::BufferUploadSource;
 pub struct DeletionPool {
     textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
     buffers: Vec<ManuallyDrop<AnyArc<dyn IBuffer>>>,
+    descriptor_pools: Vec<Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>>,
     mode: DeletionMode,
 }
 
@@ -53,6 +55,7 @@ impl DeletionPool {
         Self {
             textures: Vec::new(),
             buffers: Vec::new(),
+            descriptor_pools: Vec::new(),
             mode,
         }
     }
@@ -65,6 +68,14 @@ impl DeletionPool {
     #[inline]
     pub fn push_buffer(&mut self, buffer: AnyArc<dyn IBuffer>) {
         self.buffers.push(ManuallyDrop::new(buffer))
+    }
+
+    #[inline]
+    pub fn push_descriptor_pool(
+        &mut self,
+        pool: Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>,
+    ) {
+        self.descriptor_pools.push(pool)
     }
 
     #[inline]
@@ -93,6 +104,7 @@ impl DeletionPool {
         // Drain the pools and explicitly drop the contained elements.
         self.purge_textures();
         self.purge_buffers();
+        self.purge_descriptor_pools();
     }
 
     /// Alternate version of [`DeletionPool::purge`] that only purges the
@@ -129,6 +141,19 @@ impl DeletionPool {
                 ManuallyDrop::drop(&mut v);
             }
         });
+    }
+
+    /// Alternate version of [`DeletionPool::purge`] that only purges the
+    /// descriptor pools.
+    ///
+    /// # Safety
+    ///
+    /// See `purge` for more info, the constraints are the same.
+    #[inline]
+    pub unsafe fn purge_descriptor_pools(&mut self) {
+        // These simply get sent back to the pool they came from so we don't need to do any threaded
+        // destruction here to avoid tanking the main thread.
+        self.descriptor_pools.clear()
     }
 }
 

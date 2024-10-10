@@ -36,7 +36,7 @@ use aleph_device_allocators::{
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::object_system::unsafe_impl_iobject;
 use aleph_engine::interfaces::renderer::{
-    TextureAllocMode, TextureLoader, TextureMipUploadDesc, TextureStreamingRequest,
+    GenerateMips, TextureAllocMode, TextureLoader, TextureMipUploadDesc, TextureStreamingRequest,
     TextureUploadSource,
 };
 use aleph_rhi_api::*;
@@ -259,7 +259,12 @@ fn load_on_threadpool(
     {
         aleph_profile::scope!("load_on_threadpool::EnqueueAndAllocate");
         loader
-            .enqueue_new_upload(request, data, TextureAllocMode::Immediate)
+            .enqueue_new_upload(
+                request,
+                data,
+                TextureAllocMode::Immediate,
+                GenerateMips::Yes,
+            )
             .ok()?;
     }
 

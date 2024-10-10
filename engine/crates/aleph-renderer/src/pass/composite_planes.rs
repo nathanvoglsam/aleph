@@ -30,6 +30,7 @@
 use aleph_any::AnyArc;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
@@ -56,10 +57,7 @@ pub fn pass(
         .clone()
         .with_name(obj_name!("SwapImage"));
 
-    let sampler = create_sampler(device);
-    let descriptor_set_layout = create_descriptor_set_layout(device, sampler.as_ref());
-    let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
-    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db, desc.format);
+    let state = CompositePlanesState::new(device, shader_db, desc.format);
 
     let mut result = None;
 
@@ -116,7 +114,7 @@ pub fn pass(
                 depth_stencil_attachment: None,
                 allow_uav_writes: false,
             });
-            encoder.bind_graphics_pipeline(pipeline.as_ref());
+            encoder.bind_graphics_pipeline(state.pipeline.as_ref());
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
                 y: 0.0,
@@ -146,7 +144,7 @@ pub fn pass(
                     .unwrap();
                 let set = resources
                     .descriptor_arena()
-                    .allocate_set(descriptor_set_layout.as_ref())
+                    .allocate_set(state.descriptor_set_layout.as_ref())
                     .unwrap();
                 resources
                     .device()
@@ -158,7 +156,7 @@ pub fn pass(
                     }]);
 
                 encoder.bind_descriptor_sets(
-                    pipeline_layout.as_ref(),
+                    state.pipeline_layout.as_ref(),
                     PipelineBindPoint::Graphics,
                     0,
                     &[set],
@@ -175,113 +173,136 @@ pub fn pass(
     result.unwrap()
 }
 
-fn create_descriptor_set_layout(
-    device: &dyn IDevice,
-    sampler: &dyn ISampler,
-) -> AnyArc<dyn IDescriptorSetLayout> {
-    let sampler = [sampler];
-    let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-        visibility: DescriptorShaderVisibility::Fragment,
-        items: &[
-            DescriptorType::Texture.binding(0),
-            DescriptorType::Sampler
-                .binding(1)
-                .with_static_samplers(&sampler),
-        ],
-        name: obj_name_opt!("DescriptorSetLayout"),
-    };
-    device
-        .create_descriptor_set_layout(&descriptor_set_layout_desc)
-        .unwrap()
+pub struct CompositePlanesState {
+    pub descriptor_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
+    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
 }
+unsafe_impl_iobject!(CompositePlanesState, "019275bc-0b34-75a1-b03c-88a1c561142c");
 
-fn create_root_signature(
-    device: &dyn IDevice,
-    descriptor_set_layout: &dyn IDescriptorSetLayout,
-) -> AnyArc<dyn IPipelineLayout> {
-    let pipeline_layout_desc = PipelineLayoutDesc {
-        set_layouts: &[descriptor_set_layout],
-        push_constant_blocks: &[],
-        name: obj_name_opt!("RootSignature"),
-    };
-    device
-        .create_pipeline_layout(&pipeline_layout_desc)
-        .unwrap()
-}
+impl CompositePlanesState {
+    pub fn new(device: &dyn IDevice, shader_db: &ShaderDatabaseAccessor, format: Format) -> Self {
+        let sampler = Self::create_sampler(device);
+        let descriptor_set_layout = Self::create_descriptor_set_layout(device, sampler.as_ref());
+        let pipeline_layout = Self::create_pipeline_layout(device, descriptor_set_layout.as_ref());
+        let pipeline =
+            Self::create_pipeline_state(device, pipeline_layout.as_ref(), shader_db, format);
 
-fn create_pipeline_state(
-    device: &dyn IDevice,
-    pipeline_layout: &dyn IPipelineLayout,
-    shader_db: &ShaderDatabaseAccessor,
-    format: Format,
-) -> AnyArc<dyn IGraphicsPipeline> {
-    let vertex_shader = shader_db
-        .load_stage(shaders::composite_planes::vert())
-        .unwrap();
-    let fragment_shader = shader_db
-        .load_stage(shaders::composite_planes::frag())
-        .unwrap();
+        Self {
+            descriptor_set_layout,
+            pipeline_layout,
+            pipeline,
+        }
+    }
 
-    let vertex_layout = VertexInputStateDesc::default();
+    pub fn create_descriptor_set_layout(
+        device: &dyn IDevice,
+        sampler: &dyn ISampler,
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        let sampler = [sampler];
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::Fragment,
+            items: &[
+                DescriptorType::Texture.binding(0),
+                DescriptorType::Sampler
+                    .binding(1)
+                    .with_static_samplers(&sampler),
+            ],
+            name: obj_name_opt!("DescriptorSetLayout"),
+        };
+        device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap()
+    }
 
-    let input_assembly_state = InputAssemblyStateDesc {
-        primitive_topology: PrimitiveTopology::TriangleList,
-    };
+    pub fn create_pipeline_layout(
+        device: &dyn IDevice,
+        descriptor_set_layout: &dyn IDescriptorSetLayout,
+    ) -> AnyArc<dyn IPipelineLayout> {
+        let pipeline_layout_desc = PipelineLayoutDesc {
+            set_layouts: &[descriptor_set_layout],
+            push_constant_blocks: &[],
+            name: obj_name_opt!("PipelineLayout"),
+        };
+        device
+            .create_pipeline_layout(&pipeline_layout_desc)
+            .unwrap()
+    }
 
-    let rasterizer_state = RasterizerStateDesc {
-        cull_mode: CullMode::None,
-        front_face: FrontFaceOrder::CounterClockwise,
-        polygon_mode: PolygonMode::Fill,
-        depth_bias: 0,
-        depth_bias_clamp: 0.0,
-        depth_bias_slope_factor: 0.0,
-    };
+    pub fn create_pipeline_state(
+        device: &dyn IDevice,
+        pipeline_layout: &dyn IPipelineLayout,
+        shader_db: &ShaderDatabaseAccessor,
+        format: Format,
+    ) -> AnyArc<dyn IGraphicsPipeline> {
+        let vertex_shader = shader_db
+            .load_stage(shaders::composite_planes::vert())
+            .unwrap();
+        let fragment_shader = shader_db
+            .load_stage(shaders::composite_planes::frag())
+            .unwrap();
 
-    let depth_stencil_state = DepthStencilStateDesc {
-        depth_test: false,
-        ..Default::default()
-    };
+        let vertex_layout = VertexInputStateDesc::default();
 
-    let blend_state_new = BlendStateDesc {
-        attachments: &[AttachmentBlendState {
-            blend_enabled: true,
-            src_factor: BlendFactor::One,
-            dst_factor: BlendFactor::OneMinusSrcAlpha,
-            blend_op: BlendOp::Add,
-            alpha_src_factor: BlendFactor::OneMinusDstAlpha,
-            alpha_dst_factor: BlendFactor::One,
-            alpha_blend_op: BlendOp::Add,
-            color_write_mask: ColorComponentFlags::all(),
-        }],
-    };
+        let input_assembly_state = InputAssemblyStateDesc {
+            primitive_topology: PrimitiveTopology::TriangleList,
+        };
 
-    let graphics_pipeline_desc_new = GraphicsPipelineDesc {
-        shader_stages: &[vertex_shader, fragment_shader],
-        pipeline_layout,
-        vertex_layout: &vertex_layout,
-        input_assembly_state: &input_assembly_state,
-        rasterizer_state: &rasterizer_state,
-        depth_stencil_state: &depth_stencil_state,
-        blend_state: &blend_state_new,
-        render_target_formats: &[format],
-        depth_stencil_format: None,
-        name: obj_name_opt!("GraphicsPipelineState"),
-    };
+        let rasterizer_state = RasterizerStateDesc {
+            cull_mode: CullMode::None,
+            front_face: FrontFaceOrder::CounterClockwise,
+            polygon_mode: PolygonMode::Fill,
+            depth_bias: 0,
+            depth_bias_clamp: 0.0,
+            depth_bias_slope_factor: 0.0,
+        };
 
-    device
-        .create_graphics_pipeline(&graphics_pipeline_desc_new)
-        .unwrap()
-}
+        let depth_stencil_state = DepthStencilStateDesc {
+            depth_test: false,
+            ..Default::default()
+        };
 
-fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
-    let desc = SamplerDesc {
-        min_filter: SamplerFilter::Linear,
-        mag_filter: SamplerFilter::Linear,
-        mip_filter: SamplerMipFilter::Linear,
-        address_mode_u: SamplerAddressMode::Clamp,
-        address_mode_v: SamplerAddressMode::Clamp,
-        address_mode_w: SamplerAddressMode::Clamp,
-        ..Default::default()
-    };
-    device.create_sampler(&desc).unwrap()
+        let blend_state_new = BlendStateDesc {
+            attachments: &[AttachmentBlendState {
+                blend_enabled: true,
+                src_factor: BlendFactor::One,
+                dst_factor: BlendFactor::OneMinusSrcAlpha,
+                blend_op: BlendOp::Add,
+                alpha_src_factor: BlendFactor::OneMinusDstAlpha,
+                alpha_dst_factor: BlendFactor::One,
+                alpha_blend_op: BlendOp::Add,
+                color_write_mask: ColorComponentFlags::all(),
+            }],
+        };
+
+        let graphics_pipeline_desc_new = GraphicsPipelineDesc {
+            shader_stages: &[vertex_shader, fragment_shader],
+            pipeline_layout,
+            vertex_layout: &vertex_layout,
+            input_assembly_state: &input_assembly_state,
+            rasterizer_state: &rasterizer_state,
+            depth_stencil_state: &depth_stencil_state,
+            blend_state: &blend_state_new,
+            render_target_formats: &[format],
+            depth_stencil_format: None,
+            name: obj_name_opt!("GraphicsPipelineState"),
+        };
+
+        device
+            .create_graphics_pipeline(&graphics_pipeline_desc_new)
+            .unwrap()
+    }
+
+    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+        let desc = SamplerDesc {
+            min_filter: SamplerFilter::Linear,
+            mag_filter: SamplerFilter::Linear,
+            mip_filter: SamplerMipFilter::Linear,
+            address_mode_u: SamplerAddressMode::Clamp,
+            address_mode_v: SamplerAddressMode::Clamp,
+            address_mode_w: SamplerAddressMode::Clamp,
+            ..Default::default()
+        };
+        device.create_sampler(&desc).unwrap()
+    }
 }
