@@ -45,6 +45,7 @@ mod render_scene;
 mod renderer;
 mod shader_db_accessor;
 mod shaders;
+mod state_cache;
 mod streaming_request;
 mod texture_loader;
 mod texture_pool;
@@ -69,6 +70,7 @@ pub use renderer::{
     RendererBuilder,
 };
 pub use shader_db_accessor::ShaderDatabaseAccessor;
+pub use state_cache::{IStateCacheKey, StateCache};
 pub use streaming_request::{
     BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestError,
     RequestState, StreamingRequest, TextureStreamingRequest,

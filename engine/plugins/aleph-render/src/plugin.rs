@@ -49,7 +49,7 @@ use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
     CameraInfo, DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, PerspectiveInfo,
     RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, Renderer, RendererBuilder,
-    ShaderDatabaseAccessor,
+    ShaderDatabaseAccessor, StateCache,
 };
 
 use crate::egui_draw::EguiPassContext;
@@ -324,10 +324,16 @@ impl IRenderPlane for EguiRenderPlane {
         frame_graph: &mut FrameGraphBuilder<GraphArgs>,
         device: &dyn IDevice,
         pin_board: &aleph_pin_board::PinBoard,
-        shader_db: &ShaderDatabaseAccessor,
+        state_cache: &mut StateCache,
     ) -> RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
-        crate::egui_draw::pass(frame_graph, device, pin_board, shader_db, pixels_per_point)
+        crate::egui_draw::pass(
+            frame_graph,
+            device,
+            pin_board,
+            state_cache,
+            pixels_per_point,
+        )
     }
 }
 

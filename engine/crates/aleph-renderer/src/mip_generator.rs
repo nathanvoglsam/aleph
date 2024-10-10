@@ -27,38 +27,38 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
-
 use aleph_any::AnyArc;
 use aleph_device_allocators::LinearDescriptorPool;
-use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 
 use crate::pass::composite_planes::CompositePlanesState;
-use crate::ShaderDatabaseAccessor;
+use crate::StateCache;
 
 pub struct MipGenerator {
     device: AnyArc<dyn IDevice>,
-    state: MipGeneratorState,
 }
 
 impl MipGenerator {
-    pub fn new(device: AnyArc<dyn IDevice>, shader_db: &ShaderDatabaseAccessor) -> Self {
-        let state = MipGeneratorState::new(
-            device.as_ref(),
-            shader_db,
-            &[
-                Format::Rgba8Unorm,
-                Format::Rgba8UnormSrgb,
-                Format::Bgra8Unorm,
-                Format::Bgra8UnormSrgb,
-            ],
-        );
-        Self { device, state }
+    pub fn new(device: AnyArc<dyn IDevice>, state_cache: &mut StateCache) -> Self {
+        // Pre warm the cache with pipelines for the following common formats
+        let pre_warm_formats = [
+            Format::Rgba8Unorm,
+            Format::Rgba8UnormSrgb,
+            Format::Bgra8Unorm,
+            Format::Bgra8UnormSrgb,
+        ];
+        for format in pre_warm_formats {
+            let key = CompositePlanesState::key(format);
+            let _ = state_cache.get_or_insert_with(&key, |cache, k| {
+                CompositePlanesState::new(cache, device.as_ref(), k.0)
+            });
+        }
+        Self { device }
     }
 
     pub unsafe fn record(
         &self,
+        state_cache: &mut StateCache,
         arena: &LinearDescriptorPool,
         encoder: &mut dyn IGeneralEncoder,
         texture: &dyn ITexture,
@@ -72,12 +72,10 @@ impl MipGenerator {
             return;
         }
 
-        let pipeline = self
-            .state
-            .pipelines
-            .get(&format)
-            .map(|v| v.as_ref())
-            .unwrap();
+        let key = CompositePlanesState::key(desc.format);
+        let state = state_cache.get_or_insert_with(&key, |cache, k| {
+            CompositePlanesState::new(cache, self.device.as_ref(), k.0)
+        });
 
         let mut barrier_queue = Vec::new();
         barrier_queue.push(TextureBarrier {
@@ -135,7 +133,7 @@ impl MipGenerator {
                 allow_uav_writes: false,
             });
 
-            encoder.bind_graphics_pipeline(pipeline);
+            encoder.bind_graphics_pipeline(state.pipeline.as_ref());
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
                 y: 0.0,
@@ -160,7 +158,7 @@ impl MipGenerator {
                 })
                 .unwrap();
             let set = arena
-                .allocate_set(self.state.descriptor_set_layout.as_ref())
+                .allocate_set(state.layout.set_layout.as_ref())
                 .unwrap();
             self.device.update_descriptor_sets(&[DescriptorWriteDesc {
                 set,
@@ -170,7 +168,7 @@ impl MipGenerator {
             }]);
 
             encoder.bind_descriptor_sets(
-                self.state.pipeline_layout.as_ref(),
+                state.layout.pipeline_layout.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
                 &[set],
@@ -221,43 +219,5 @@ impl MipGenerator {
 
         encoder.resource_barrier(&[], &[], &barrier_queue);
         barrier_queue.clear();
-    }
-}
-
-pub struct MipGeneratorState {
-    pub descriptor_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pub pipelines: HashMap<Format, AnyArc<dyn IGraphicsPipeline>>,
-}
-unsafe_impl_iobject!(MipGeneratorState, "019275bf-fcc0-77a0-89c4-e09002dfcdd4");
-
-impl MipGeneratorState {
-    pub fn new(
-        device: &dyn IDevice,
-        shader_db: &ShaderDatabaseAccessor,
-        supported_formats: &[Format],
-    ) -> Self {
-        let sampler = CompositePlanesState::create_sampler(device);
-        let descriptor_set_layout =
-            CompositePlanesState::create_descriptor_set_layout(device, sampler.as_ref());
-        let pipeline_layout =
-            CompositePlanesState::create_pipeline_layout(device, descriptor_set_layout.as_ref());
-
-        let mut pipelines = HashMap::new();
-        for format in supported_formats {
-            let pipeline = CompositePlanesState::create_pipeline_state(
-                device,
-                pipeline_layout.as_ref(),
-                shader_db,
-                *format,
-            );
-            pipelines.insert(*format, pipeline);
-        }
-
-        Self {
-            descriptor_set_layout,
-            pipeline_layout,
-            pipelines,
-        }
     }
 }

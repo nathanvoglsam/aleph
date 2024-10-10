@@ -27,13 +27,17 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_math::Vec2;
 use aleph_nstr::nstr;
 use aleph_pin_board::{BoardParamId, PinBoard};
 use aleph_renderer::pass::{GraphArgs, GraphSwapImageInfo};
-use aleph_renderer::{RenderPlaneOutput, ShaderDatabaseAccessor, TextureHandle};
+use aleph_renderer::{
+    IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache, TextureHandle,
+};
 use aleph_rhi_api::*;
 use egui::RenderData;
 use interfaces::any::AnyArc;
@@ -60,7 +64,7 @@ pub fn pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
-    shader_db: &ShaderDatabaseAccessor,
+    state_cache: &mut StateCache,
     pixels_per_point: f32,
 ) -> RenderPlaneOutput {
     const VERTEX_BUFFER_SIZE: usize = 1024 * 1024 * 4;
@@ -68,12 +72,8 @@ pub fn pass(
 
     let b_desc = &pin_board.get::<GraphSwapImageInfo>().unwrap().desc;
 
-    let sampler = create_sampler(device);
-
-    let descriptor_set_layout = create_descriptor_set_layout(device);
-    let pipeline_layout = create_root_signature(device, descriptor_set_layout.as_ref());
-
-    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
+    let key = EguiState::key(b_desc.format);
+    let state = state_cache.get_or_insert_with(&key, |cache, k| EguiState::new(cache, device, k.0));
 
     let mut result = None;
     frame_graph.add_pass(nstr!("EguiPass"), |resources| {
@@ -109,7 +109,7 @@ pub fn pass(
         };
 
         move |encoder, resources, args| unsafe {
-            let sampler = sampler.as_ref();
+            let sampler = state.layout.sampler.as_ref();
             let descriptor_arena = resources.descriptor_arena();
 
             let render_target = resources.get_texture(data.render_target).unwrap();
@@ -126,7 +126,7 @@ pub fn pass(
             let font_view = args.texture_pool.get_default_view(*font_handle).unwrap();
 
             let set = descriptor_arena
-                .allocate_set(descriptor_set_layout.as_ref())
+                .allocate_set(state.layout.set_layout.as_ref())
                 .unwrap();
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &font_view.srv_write()),
@@ -164,9 +164,9 @@ pub fn pass(
                 allow_uav_writes: false,
             });
 
-            encoder.bind_graphics_pipeline(pipeline.as_ref());
+            encoder.bind_graphics_pipeline(state.pipeline.as_ref());
             encoder.bind_descriptor_sets(
-                pipeline_layout.as_ref(),
+                state.layout.pipeline_layout.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
                 &[set],
@@ -316,132 +316,196 @@ fn calculate_clip_rect(
     }
 }
 
-fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
-    let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-        visibility: DescriptorShaderVisibility::All,
-        items: &[
-            DescriptorType::Texture.binding(0),
-            DescriptorType::Sampler.binding(1),
-        ],
-        name: obj_name_opt!("DescriptorSetLayout"),
-    };
-    device
-        .create_descriptor_set_layout(&descriptor_set_layout_desc)
-        .unwrap()
+#[derive(PartialEq, Eq, Hash)]
+pub struct EguiLayoutKey;
+
+impl IStateCacheKey for EguiLayoutKey {
+    type Storage = EguiLayout;
 }
 
-fn create_root_signature(
-    device: &dyn IDevice,
-    descriptor_set_layout: &dyn IDescriptorSetLayout,
-) -> AnyArc<dyn IPipelineLayout> {
-    let pipeline_layout_desc = PipelineLayoutDesc {
-        set_layouts: &[descriptor_set_layout],
-        push_constant_blocks: &[PushConstantBlock {
-            binding: 0,
+pub struct EguiLayout {
+    pub sampler: AnyArc<dyn ISampler>,
+    pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
+}
+
+impl EguiLayout {
+    pub fn key() -> EguiLayoutKey {
+        EguiLayoutKey
+    }
+
+    pub fn new(device: &dyn IDevice) -> Self {
+        let sampler = Self::create_sampler(device);
+        let set_layout = Self::create_set_layout(device);
+        let pipeline_layout = Self::create_pipeline_layout(device, set_layout.as_ref());
+
+        Self {
+            sampler,
+            set_layout,
+            pipeline_layout,
+        }
+    }
+
+    pub fn create_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
-            size: 16,
-        }],
-        name: obj_name_opt!("RootSignature"),
-    };
-    device
-        .create_pipeline_layout(&pipeline_layout_desc)
-        .unwrap()
+            items: &[
+                DescriptorType::Texture.binding(0),
+                DescriptorType::Sampler.binding(1),
+            ],
+            name: obj_name_opt!("DescriptorSetLayout"),
+        };
+        device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap()
+    }
+
+    pub fn create_pipeline_layout(
+        device: &dyn IDevice,
+        set_layout: &dyn IDescriptorSetLayout,
+    ) -> AnyArc<dyn IPipelineLayout> {
+        let pipeline_layout_desc = PipelineLayoutDesc {
+            set_layouts: &[set_layout],
+            push_constant_blocks: &[PushConstantBlock {
+                binding: 0,
+                visibility: DescriptorShaderVisibility::All,
+                size: 16,
+            }],
+            name: obj_name_opt!("PipelineLayout"),
+        };
+        device
+            .create_pipeline_layout(&pipeline_layout_desc)
+            .unwrap()
+    }
+
+    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+        let desc = SamplerDesc {
+            min_filter: SamplerFilter::Linear,
+            mag_filter: SamplerFilter::Linear,
+            mip_filter: SamplerMipFilter::Linear,
+            address_mode_u: SamplerAddressMode::Clamp,
+            address_mode_v: SamplerAddressMode::Clamp,
+            address_mode_w: SamplerAddressMode::Clamp,
+            ..Default::default()
+        };
+        device.create_sampler(&desc).unwrap()
+    }
 }
 
-fn create_pipeline_state(
-    device: &dyn IDevice,
-    pipeline_layout: &dyn IPipelineLayout,
-    shader_db: &ShaderDatabaseAccessor,
-) -> AnyArc<dyn IGraphicsPipeline> {
-    let rasterizer_state_new = RasterizerStateDesc {
-        cull_mode: CullMode::None,
-        front_face: FrontFaceOrder::CounterClockwise,
-        polygon_mode: PolygonMode::Fill,
-        depth_bias: 0,
-        depth_bias_clamp: 0.0,
-        depth_bias_slope_factor: 0.0,
-    };
+#[derive(PartialEq, Eq, Hash)]
+pub struct EguiStateKey(pub Format);
 
-    let depth_stencil_state_new = DepthStencilStateDesc {
-        depth_test: false,
-        ..Default::default()
-    };
-
-    let vertex_layout_new = VertexInputStateDesc {
-        input_bindings: &[VertexInputBindingDesc {
-            binding: 0,
-            stride: 20,
-            input_rate: VertexInputRate::PerVertex,
-        }],
-        input_attributes: &[
-            VertexInputAttributeDesc {
-                location: 0,
-                binding: 0,
-                format: Format::Rg32Float,
-                offset: 0,
-            },
-            VertexInputAttributeDesc {
-                location: 1,
-                binding: 0,
-                format: Format::Rg32Float,
-                offset: 8,
-            },
-            VertexInputAttributeDesc {
-                location: 2,
-                binding: 0,
-                format: Format::Rgba8Unorm,
-                offset: 16,
-            },
-        ],
-    };
-
-    let input_assembly_state_new = InputAssemblyStateDesc {
-        primitive_topology: PrimitiveTopology::TriangleList,
-    };
-
-    let blend_state_new = BlendStateDesc {
-        attachments: &[AttachmentBlendState {
-            blend_enabled: true,
-            src_factor: BlendFactor::One,
-            dst_factor: BlendFactor::OneMinusSrcAlpha,
-            blend_op: BlendOp::Add,
-            alpha_src_factor: BlendFactor::OneMinusDstAlpha,
-            alpha_dst_factor: BlendFactor::One,
-            alpha_blend_op: BlendOp::Add,
-            color_write_mask: ColorComponentFlags::all(),
-        }],
-    };
-
-    let vertex_shader = shader_db.load_stage(shaders::egui::egui_vert()).unwrap();
-    let fragment_shader = shader_db.load_stage(shaders::egui::egui_frag()).unwrap();
-
-    let graphics_pipeline_desc_new = GraphicsPipelineDesc {
-        shader_stages: &[vertex_shader, fragment_shader],
-        pipeline_layout,
-        vertex_layout: &vertex_layout_new,
-        input_assembly_state: &input_assembly_state_new,
-        rasterizer_state: &rasterizer_state_new,
-        depth_stencil_state: &depth_stencil_state_new,
-        blend_state: &blend_state_new,
-        render_target_formats: &[Format::Bgra8UnormSrgb],
-        depth_stencil_format: None,
-        name: obj_name_opt!("GraphicsPipelineState"),
-    };
-
-    device
-        .create_graphics_pipeline(&graphics_pipeline_desc_new)
-        .unwrap()
+impl IStateCacheKey for EguiStateKey {
+    type Storage = EguiState;
 }
 
-fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
-    let desc = SamplerDesc {
-        min_filter: SamplerFilter::Linear,
-        mag_filter: SamplerFilter::Linear,
-        mip_filter: SamplerMipFilter::Linear,
-        address_mode_u: SamplerAddressMode::Clamp,
-        address_mode_v: SamplerAddressMode::Clamp,
-        address_mode_w: SamplerAddressMode::Clamp,
-        ..Default::default()
-    };
-    device.create_sampler(&desc).unwrap()
+pub struct EguiState {
+    pub layout: Arc<EguiLayout>,
+    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+}
+
+impl EguiState {
+    pub fn key(format: Format) -> EguiStateKey {
+        EguiStateKey(format)
+    }
+
+    pub fn new(cache: &mut StateCache, device: &dyn IDevice, format: Format) -> Self {
+        let key = EguiLayout::key();
+        let layout = cache.get_or_insert_with(&key, |_, _| EguiLayout::new(device));
+
+        let pipeline = Self::create_pipeline_state(
+            device,
+            layout.pipeline_layout.as_ref(),
+            cache.shader_db(),
+            format,
+        );
+
+        Self { layout, pipeline }
+    }
+
+    pub fn create_pipeline_state(
+        device: &dyn IDevice,
+        pipeline_layout: &dyn IPipelineLayout,
+        shader_db: &ShaderDatabaseAccessor,
+        format: Format,
+    ) -> AnyArc<dyn IGraphicsPipeline> {
+        let rasterizer_state_new = RasterizerStateDesc {
+            cull_mode: CullMode::None,
+            front_face: FrontFaceOrder::CounterClockwise,
+            polygon_mode: PolygonMode::Fill,
+            depth_bias: 0,
+            depth_bias_clamp: 0.0,
+            depth_bias_slope_factor: 0.0,
+        };
+
+        let depth_stencil_state_new = DepthStencilStateDesc {
+            depth_test: false,
+            ..Default::default()
+        };
+
+        let vertex_layout_new = VertexInputStateDesc {
+            input_bindings: &[VertexInputBindingDesc {
+                binding: 0,
+                stride: 20,
+                input_rate: VertexInputRate::PerVertex,
+            }],
+            input_attributes: &[
+                VertexInputAttributeDesc {
+                    location: 0,
+                    binding: 0,
+                    format: Format::Rg32Float,
+                    offset: 0,
+                },
+                VertexInputAttributeDesc {
+                    location: 1,
+                    binding: 0,
+                    format: Format::Rg32Float,
+                    offset: 8,
+                },
+                VertexInputAttributeDesc {
+                    location: 2,
+                    binding: 0,
+                    format: Format::Rgba8Unorm,
+                    offset: 16,
+                },
+            ],
+        };
+
+        let input_assembly_state_new = InputAssemblyStateDesc {
+            primitive_topology: PrimitiveTopology::TriangleList,
+        };
+
+        let blend_state_new = BlendStateDesc {
+            attachments: &[AttachmentBlendState {
+                blend_enabled: true,
+                src_factor: BlendFactor::One,
+                dst_factor: BlendFactor::OneMinusSrcAlpha,
+                blend_op: BlendOp::Add,
+                alpha_src_factor: BlendFactor::OneMinusDstAlpha,
+                alpha_dst_factor: BlendFactor::One,
+                alpha_blend_op: BlendOp::Add,
+                color_write_mask: ColorComponentFlags::all(),
+            }],
+        };
+
+        let vertex_shader = shader_db.load_stage(shaders::egui::egui_vert()).unwrap();
+        let fragment_shader = shader_db.load_stage(shaders::egui::egui_frag()).unwrap();
+
+        let graphics_pipeline_desc_new = GraphicsPipelineDesc {
+            shader_stages: &[vertex_shader, fragment_shader],
+            pipeline_layout,
+            vertex_layout: &vertex_layout_new,
+            input_assembly_state: &input_assembly_state_new,
+            rasterizer_state: &rasterizer_state_new,
+            depth_stencil_state: &depth_stencil_state_new,
+            blend_state: &blend_state_new,
+            render_target_formats: &[format],
+            depth_stencil_format: None,
+            name: obj_name_opt!("GraphicsPipelineState"),
+        };
+
+        device
+            .create_graphics_pipeline(&graphics_pipeline_desc_new)
+            .unwrap()
+    }
 }

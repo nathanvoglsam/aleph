@@ -36,7 +36,7 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::{shaders, CameraInfo};
+use crate::{shaders, CameraInfo, StateCache};
 use crate::{RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StaticMesh};
 
 struct MainGBufferPassPayload {
@@ -58,7 +58,7 @@ pub fn pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
-    shader_db: &ShaderDatabaseAccessor,
+    state_cache: &mut StateCache,
 ) {
     let sampler = create_sampler(device);
     let descriptor_set_layout = create_descriptor_set_layout(device);
@@ -69,7 +69,7 @@ pub fn pass(
         descriptor_set_layout_tex.as_ref(),
     );
 
-    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), shader_db);
+    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), state_cache.shader_db());
 
     frame_graph.add_pass(nstr!("MainGBufferPass"), |resources| {
         let back_buffer_info: &GraphSwapImageInfo = pin_board.get().unwrap();

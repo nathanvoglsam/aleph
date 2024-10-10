@@ -43,8 +43,8 @@ use crate::mip_generator::MipGenerator;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
     BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool, GenerateMips,
-    ShaderDatabaseAccessor, TextureAllocMode, TextureHandle, TextureLoader, TexturePool,
-    TextureUploadSource,
+    ShaderDatabaseAccessor, StateCache, TextureAllocMode, TextureHandle, TextureLoader,
+    TexturePool, TextureUploadSource,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -59,7 +59,7 @@ pub trait IRenderPlane: Any + Send + Sync {
         frame_graph: &mut FrameGraphBuilder<GraphArgs>,
         device: &dyn IDevice,
         pin_board: &PinBoard,
-        shader_db: &ShaderDatabaseAccessor,
+        state_cache: &mut StateCache,
     ) -> RenderPlaneOutput;
 }
 
@@ -83,13 +83,13 @@ impl IRenderPlane for DefaultRenderPlane {
         frame_graph: &mut FrameGraphBuilder<GraphArgs>,
         device: &dyn IDevice,
         pin_board: &PinBoard,
-        shader_db: &ShaderDatabaseAccessor,
+        state_cache: &mut StateCache,
     ) -> RenderPlaneOutput {
         use crate::pass;
 
-        pass::main_gbuffer::pass(frame_graph, device, pin_board, shader_db);
-        pass::lighting_resolve::pass(frame_graph, device, pin_board, shader_db);
-        let result = pass::tone_map::pass(frame_graph, device, pin_board, shader_db);
+        pass::main_gbuffer::pass(frame_graph, device, pin_board, state_cache);
+        pass::lighting_resolve::pass(frame_graph, device, pin_board, state_cache);
+        let result = pass::tone_map::pass(frame_graph, device, pin_board, state_cache);
 
         result
     }
@@ -149,6 +149,7 @@ impl RendererBuilder {
         let device = self.device.expect("Device missing!");
         let queue = device.get_queue(QueueType::General).unwrap();
         let shader_db = self.shader_db.expect("Shader DB missing!");
+        let mut state_cache = StateCache::new(shader_db);
 
         let swap_manager = SwapManager {
             surface: self.surface.expect("RenderSurface missing!"),
@@ -171,7 +172,7 @@ impl RendererBuilder {
             swap_image_id: None,
         };
 
-        let mip_generator = MipGenerator::new(device.clone(), &shader_db);
+        let mip_generator = MipGenerator::new(device.clone(), &mut state_cache);
 
         let texture_loader = Arc::new(TextureLoader::new(device.clone()));
         let buffer_loader = Arc::new(BufferLoader::new());
@@ -246,7 +247,7 @@ impl RendererBuilder {
             },
             device,
             queue,
-            shader_db,
+            state_cache,
             swap_manager,
             mip_generator,
             texture_loader,
@@ -269,7 +270,7 @@ pub struct Renderer {
     config: RendererConfig,
     device: AnyArc<dyn IDevice>,
     queue: AnyArc<dyn IQueue>,
-    shader_db: ShaderDatabaseAccessor<'static>,
+    state_cache: StateCache,
     swap_manager: SwapManager,
     mip_generator: MipGenerator,
     texture_loader: Arc<TextureLoader>,
@@ -382,7 +383,7 @@ impl Renderer {
             }
             self.graph_manager.build_graph(
                 &self.config,
-                &self.shader_db,
+                &mut self.state_cache,
                 self.device.as_ref(),
                 &self.swap_manager,
             );
@@ -413,6 +414,7 @@ impl Renderer {
             );
             self.texture_loader.upload_requests(
                 &self.mip_generator,
+                &mut self.state_cache,
                 linear_descriptor_pool.as_ref(),
                 &mut self.texture_pool,
                 deletion_pool,
@@ -680,7 +682,7 @@ impl GraphManager {
     unsafe fn build_graph(
         &mut self,
         config: &RendererConfig,
-        shader_db: &ShaderDatabaseAccessor,
+        state_cache: &mut StateCache,
         device: &dyn IDevice,
         swap_manager: &SwapManager,
     ) {
@@ -690,7 +692,7 @@ impl GraphManager {
             desc: swap_manager.desc.clone(),
         });
 
-        let (builder, swap_id) = self.register_graph_passes(shader_db, device);
+        let (builder, swap_id) = self.register_graph_passes(state_cache, device);
 
         let mut frame_graph = builder.build(device);
         frame_graph.allocate_transients(config.frames_in_flight);
@@ -702,7 +704,7 @@ impl GraphManager {
     #[aleph_profile::function]
     unsafe fn register_graph_passes(
         &mut self,
-        shader_db: &ShaderDatabaseAccessor,
+        state_cache: &mut StateCache,
         device: &dyn IDevice,
     ) -> (FrameGraphBuilder<GraphArgs>, ResourceMut) {
         let mut frame_graph = FrameGraph::<GraphArgs>::builder();
@@ -710,7 +712,7 @@ impl GraphManager {
         let mut outputs = Vec::with_capacity(self.render_planes.capacity());
         for plane in self.render_planes.iter_mut() {
             let output =
-                plane.register_passes(&mut frame_graph, device, &self.pin_board, shader_db);
+                plane.register_passes(&mut frame_graph, device, &self.pin_board, state_cache);
             outputs.push(output);
         }
 
@@ -718,7 +720,7 @@ impl GraphManager {
             &mut frame_graph,
             device,
             &self.pin_board,
-            shader_db,
+            state_cache,
             &outputs,
         );
         (frame_graph, swap_id)

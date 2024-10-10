@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
@@ -35,8 +36,7 @@ use aleph_rhi_api::*;
 
 use crate::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::ShaderDatabaseAccessor;
-use crate::{shaders, CameraInfo};
+use crate::{shaders, CameraInfo, IStateCacheKey, ShaderDatabaseAccessor, StateCache};
 
 struct LightingResolvePassPayload {
     depth: ResourceRef,
@@ -54,41 +54,11 @@ pub fn pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
-    shader_db: &ShaderDatabaseAccessor,
+    state_cache: &mut StateCache,
 ) {
-    let set_layout = device
-        .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::Compute,
-            items: &[
-                DescriptorType::Texture.binding(0),
-                DescriptorType::Texture.binding(1),
-                DescriptorType::Texture.binding(2),
-                DescriptorType::Texture.binding(3),
-                DescriptorType::TextureRW.binding(4),
-                DescriptorType::UniformBuffer.binding(5),
-            ],
-            name: obj_name_opt!("DescriptorSetLayout"),
-        })
-        .unwrap();
-    let pipeline_layout = device
-        .create_pipeline_layout(
-            &PipelineLayoutDesc::new()
-                .with_set_layouts(&[set_layout.as_ref()])
-                .with_name(obj_name!("PipelineLayout")),
-        )
-        .unwrap();
-
-    let shader_module = shader_db
-        .load_data(shaders::deferred::deferred_lighting_cs())
-        .unwrap();
-
-    let pipeline = device
-        .create_compute_pipeline(&ComputePipelineDesc {
-            shader_module,
-            pipeline_layout: pipeline_layout.as_ref(),
-            name: obj_name_opt!("ComputePipeline"),
-        })
-        .unwrap();
+    let key = LightResolveState::key();
+    let state =
+        state_cache.get_or_insert_with(&key, |cache, _| LightResolveState::new(cache, device));
 
     frame_graph.add_pass(nstr!("DeferredLightingPass"), |resources| {
         let main_gbuffer_pass_output: &MainGBufferPassOutput = pin_board.get().unwrap();
@@ -179,7 +149,7 @@ pub fn pass(
             u_alloc.allocate_object(camera_layout).unwrap();
             uniform_buffer.unmap().unwrap();
 
-            let set = arena.allocate_set(set_layout.as_ref()).unwrap();
+            let set = arena.allocate_set(state.set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &depth_srv.srv_write()),
                 DescriptorWriteDesc::texture(set, 1, &gbuffer0_srv.srv_write()),
@@ -193,9 +163,9 @@ pub fn pass(
                 ),
             ]);
 
-            encoder.bind_compute_pipeline(pipeline.as_ref());
+            encoder.bind_compute_pipeline(state.pipeline.as_ref());
             encoder.bind_descriptor_sets(
-                pipeline_layout.as_ref(),
+                state.pipeline_layout.as_ref(),
                 PipelineBindPoint::Compute,
                 0,
                 &[set],
@@ -208,4 +178,83 @@ pub fn pass(
             encoder.dispatch(group_count_x, group_count_y, 1);
         }
     });
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct LightResolveStateKey;
+
+impl IStateCacheKey for LightResolveStateKey {
+    type Storage = LightResolveState;
+}
+
+pub struct LightResolveState {
+    pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
+    pub pipeline: AnyArc<dyn IComputePipeline>,
+}
+
+impl LightResolveState {
+    pub fn key() -> LightResolveStateKey {
+        LightResolveStateKey
+    }
+
+    pub fn new(cache: &mut StateCache, device: &dyn IDevice) -> Self {
+        let set_layout = Self::create_set_layout(device);
+        let pipeline_layout = Self::create_pipeline_layout(device, set_layout.as_ref());
+        let pipeline =
+            Self::create_pipeline_state(device, pipeline_layout.as_ref(), cache.shader_db());
+
+        Self {
+            set_layout,
+            pipeline_layout,
+            pipeline,
+        }
+    }
+
+    pub fn create_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
+        device
+            .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
+                visibility: DescriptorShaderVisibility::Compute,
+                items: &[
+                    DescriptorType::Texture.binding(0),
+                    DescriptorType::Texture.binding(1),
+                    DescriptorType::Texture.binding(2),
+                    DescriptorType::Texture.binding(3),
+                    DescriptorType::TextureRW.binding(4),
+                    DescriptorType::UniformBuffer.binding(5),
+                ],
+                name: obj_name_opt!("DescriptorSetLayout"),
+            })
+            .unwrap()
+    }
+
+    pub fn create_pipeline_layout(
+        device: &dyn IDevice,
+        set_layout: &dyn IDescriptorSetLayout,
+    ) -> AnyArc<dyn IPipelineLayout> {
+        device
+            .create_pipeline_layout(
+                &PipelineLayoutDesc::new()
+                    .with_set_layouts(&[set_layout])
+                    .with_name(obj_name!("PipelineLayout")),
+            )
+            .unwrap()
+    }
+
+    pub fn create_pipeline_state(
+        device: &dyn IDevice,
+        pipeline_layout: &dyn IPipelineLayout,
+        shader_db: &ShaderDatabaseAccessor,
+    ) -> AnyArc<dyn IComputePipeline> {
+        let shader_module = shader_db
+            .load_data(shaders::deferred::deferred_lighting_cs())
+            .unwrap();
+        device
+            .create_compute_pipeline(&ComputePipelineDesc {
+                shader_module,
+                pipeline_layout: pipeline_layout,
+                name: obj_name_opt!("ComputePipeline"),
+            })
+            .unwrap()
+    }
 }

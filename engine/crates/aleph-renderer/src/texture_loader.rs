@@ -36,7 +36,7 @@ use crossbeam::queue::{ArrayQueue, SegQueue};
 
 use crate::mip_generator::MipGenerator;
 use crate::{
-    DeletionPool, EnqueueError, EnqueueErrorKind, TextureHandle, TexturePool,
+    DeletionPool, EnqueueError, EnqueueErrorKind, StateCache, TextureHandle, TexturePool,
     TextureStreamingRequest, TextureUploadSource,
 };
 
@@ -203,6 +203,7 @@ impl TextureLoader {
     pub(crate) unsafe fn upload_requests(
         &self,
         mip_generator: &MipGenerator,
+        state_cache: &mut StateCache,
         arena: &LinearDescriptorPool,
         pool: &mut TexturePool,
         deletion_pool: &mut DeletionPool,
@@ -275,6 +276,7 @@ impl TextureLoader {
             match upload.load.mips {
                 GenerateMips::Yes => {
                     mip_generator.record(
+                        state_cache,
                         arena,
                         encoder,
                         upload.texture.as_ref(),

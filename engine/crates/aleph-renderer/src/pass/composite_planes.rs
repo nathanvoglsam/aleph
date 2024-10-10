@@ -27,16 +27,17 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_any::AnyArc;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
-use aleph_object_system::unsafe_impl_iobject;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::ShaderDatabaseAccessor;
-use crate::{shaders, RenderPlaneOutput};
+use crate::{shaders, IStateCacheKey, RenderPlaneOutput};
+use crate::{ShaderDatabaseAccessor, StateCache};
 
 struct Payload {
     planes: Vec<ResourceRef>,
@@ -47,7 +48,7 @@ pub fn pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     device: &dyn IDevice,
     pin_board: &PinBoard,
-    shader_db: &ShaderDatabaseAccessor,
+    state_cache: &mut StateCache,
     planes: &[RenderPlaneOutput],
 ) -> ResourceMut {
     let desc = pin_board
@@ -57,7 +58,10 @@ pub fn pass(
         .clone()
         .with_name(obj_name!("SwapImage"));
 
-    let state = CompositePlanesState::new(device, shader_db, desc.format);
+    let key = CompositePlanesState::key(desc.format);
+    let state = state_cache.get_or_insert_with(&key, |cache, k| {
+        CompositePlanesState::new(cache, device, k.0)
+    });
 
     let mut result = None;
 
@@ -144,7 +148,7 @@ pub fn pass(
                     .unwrap();
                 let set = resources
                     .descriptor_arena()
-                    .allocate_set(state.descriptor_set_layout.as_ref())
+                    .allocate_set(state.layout.set_layout.as_ref())
                     .unwrap();
                 resources
                     .device()
@@ -156,7 +160,7 @@ pub fn pass(
                     }]);
 
                 encoder.bind_descriptor_sets(
-                    state.pipeline_layout.as_ref(),
+                    state.layout.pipeline_layout.as_ref(),
                     PipelineBindPoint::Graphics,
                     0,
                     &[set],
@@ -173,29 +177,35 @@ pub fn pass(
     result.unwrap()
 }
 
-pub struct CompositePlanesState {
-    pub descriptor_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
-}
-unsafe_impl_iobject!(CompositePlanesState, "019275bc-0b34-75a1-b03c-88a1c561142c");
+#[derive(PartialEq, Eq, Hash)]
+pub struct CompositePlanesLayoutKey;
 
-impl CompositePlanesState {
-    pub fn new(device: &dyn IDevice, shader_db: &ShaderDatabaseAccessor, format: Format) -> Self {
+impl IStateCacheKey for CompositePlanesLayoutKey {
+    type Storage = CompositePlanesLayout;
+}
+
+pub struct CompositePlanesLayout {
+    pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
+}
+
+impl CompositePlanesLayout {
+    pub fn key() -> CompositePlanesLayoutKey {
+        CompositePlanesLayoutKey
+    }
+
+    pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
-        let descriptor_set_layout = Self::create_descriptor_set_layout(device, sampler.as_ref());
-        let pipeline_layout = Self::create_pipeline_layout(device, descriptor_set_layout.as_ref());
-        let pipeline =
-            Self::create_pipeline_state(device, pipeline_layout.as_ref(), shader_db, format);
+        let set_layout = Self::create_set_layout(device, sampler.as_ref());
+        let pipeline_layout = Self::create_pipeline_layout(device, set_layout.as_ref());
 
         Self {
-            descriptor_set_layout,
+            set_layout: set_layout,
             pipeline_layout,
-            pipeline,
         }
     }
 
-    pub fn create_descriptor_set_layout(
+    pub fn create_set_layout(
         device: &dyn IDevice,
         sampler: &dyn ISampler,
     ) -> AnyArc<dyn IDescriptorSetLayout> {
@@ -217,16 +227,61 @@ impl CompositePlanesState {
 
     pub fn create_pipeline_layout(
         device: &dyn IDevice,
-        descriptor_set_layout: &dyn IDescriptorSetLayout,
+        set_layout: &dyn IDescriptorSetLayout,
     ) -> AnyArc<dyn IPipelineLayout> {
         let pipeline_layout_desc = PipelineLayoutDesc {
-            set_layouts: &[descriptor_set_layout],
+            set_layouts: &[set_layout],
             push_constant_blocks: &[],
             name: obj_name_opt!("PipelineLayout"),
         };
         device
             .create_pipeline_layout(&pipeline_layout_desc)
             .unwrap()
+    }
+
+    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+        let desc = SamplerDesc {
+            min_filter: SamplerFilter::Linear,
+            mag_filter: SamplerFilter::Linear,
+            mip_filter: SamplerMipFilter::Linear,
+            address_mode_u: SamplerAddressMode::Clamp,
+            address_mode_v: SamplerAddressMode::Clamp,
+            address_mode_w: SamplerAddressMode::Clamp,
+            ..Default::default()
+        };
+        device.create_sampler(&desc).unwrap()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct CompositePlanesStateKey(pub Format);
+
+impl IStateCacheKey for CompositePlanesStateKey {
+    type Storage = CompositePlanesState;
+}
+
+pub struct CompositePlanesState {
+    pub layout: Arc<CompositePlanesLayout>,
+    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+}
+
+impl CompositePlanesState {
+    pub fn key(format: Format) -> CompositePlanesStateKey {
+        CompositePlanesStateKey(format)
+    }
+
+    pub fn new(cache: &mut StateCache, device: &dyn IDevice, format: Format) -> Self {
+        let key = CompositePlanesLayout::key();
+        let layout = cache.get_or_insert_with(&key, |_, _| CompositePlanesLayout::new(device));
+
+        let pipeline = Self::create_pipeline_state(
+            device,
+            layout.pipeline_layout.as_ref(),
+            cache.shader_db(),
+            format,
+        );
+
+        Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
@@ -291,18 +346,5 @@ impl CompositePlanesState {
         device
             .create_graphics_pipeline(&graphics_pipeline_desc_new)
             .unwrap()
-    }
-
-    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
-        let desc = SamplerDesc {
-            min_filter: SamplerFilter::Linear,
-            mag_filter: SamplerFilter::Linear,
-            mip_filter: SamplerMipFilter::Linear,
-            address_mode_u: SamplerAddressMode::Clamp,
-            address_mode_v: SamplerAddressMode::Clamp,
-            address_mode_w: SamplerAddressMode::Clamp,
-            ..Default::default()
-        };
-        device.create_sampler(&desc).unwrap()
     }
 }
