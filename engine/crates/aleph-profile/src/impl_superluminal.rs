@@ -83,6 +83,7 @@ macro_rules! register_thread {
 macro_rules! finish_frame {
     () => {
         // superluminal does not have a frame end function
+        {}
     };
 }
 

@@ -53,16 +53,16 @@
 
 #[macro_export]
 macro_rules! scope {
-    ($name:literal) => {};
-    ($name:literal, $data:expr) => {};
+    ($name:literal) => {{}};
+    ($name:literal, $data:expr) => {{}};
 }
 
 #[macro_export]
 macro_rules! register_thread {
-    ($name:expr) => {};
+    ($name:expr) => {{}};
 }
 
 #[macro_export]
 macro_rules! finish_frame {
-    () => {};
+    () => {{}};
 }

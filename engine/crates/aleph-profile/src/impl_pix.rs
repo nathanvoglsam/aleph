@@ -80,12 +80,12 @@ macro_rules! scope {
 
 #[macro_export]
 macro_rules! register_thread {
-    ($name:expr) => {};
+    ($name:expr) => {{}};
 }
 
 #[macro_export]
 macro_rules! finish_frame {
-    () => {};
+    () => {{}};
 }
 
 //
@@ -112,7 +112,7 @@ pub mod detail {
         }
 
         #[inline(always)]
-        pub fn new_with_data(name: &'static CStr, data: impl ProfileDataParam) -> Self {
+        pub fn new_with_data<'a>(name: &'static CStr, data: impl ProfileDataParam<'a>) -> Self {
             if let Some(data) = data.get_cstr() {
                 // If we can cheaply get the input as a cstr we're golden
                 unsafe {
