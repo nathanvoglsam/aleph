@@ -30,6 +30,8 @@
 extern crate aleph_interfaces as interfaces;
 extern crate egui;
 
+pub mod widgets;
+
 mod plugin;
 mod traits;
 mod utils;

@@ -28,7 +28,6 @@
 //
 
 extern crate aleph_engine as aleph;
-extern crate egui_demo_lib;
 
 use std::path::Path;
 
@@ -40,7 +39,7 @@ use aleph::interfaces::plugin::{
 use aleph::interfaces::renderer::Renderer;
 use aleph::interfaces::schedule::CoreStage;
 use aleph::Engine;
-use aleph_engine::egui::Grid;
+use aleph_engine::egui::widgets::{frame_stats, FrameTimeHistory};
 use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
@@ -109,30 +108,17 @@ impl IPlugin for PluginGameLogic {
         } = registry.core();
 
         let e_frame_timer = frame_timer.clone();
+        let mut frame_time_history = FrameTimeHistory::new();
         schedule.add_exclusive_at_end_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::ui"),
             move || {
                 if let Some(egui) = egui_provider.as_ref() {
                     let egui_ctx = egui.get_context();
-                    aleph::egui::Window::new("FrameStats")
-                        .collapsible(true)
-                        .resizable([false, false])
-                        .show(&egui_ctx, |ui| {
-                            ui.heading("Frame Time");
 
-                            let delta = e_frame_timer.delta_time();
-                            let frame_rate = 1.0 / delta;
-                            ui.group(|ui| {
-                                Grid::new("frame-time-grid")
-                                    .num_columns(2)
-                                    .min_col_width(75.0)
-                                    .show(ui, |ui| {
-                                        ui.label(format!("FPS {frame_rate:.3}"));
-                                        ui.label(format!("{delta:.4}ms"));
-                                    });
-                            });
-                        });
+                    let dt = e_frame_timer.delta_time();
+                    frame_time_history.next_frame(dt);
+                    frame_stats(&egui_ctx, &frame_time_history);
                 }
             },
         );

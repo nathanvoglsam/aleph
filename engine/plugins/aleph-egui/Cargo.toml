@@ -42,6 +42,7 @@ edition.workspace = true
 aleph-interfaces = { workspace = true }
 log = { workspace = true }
 egui = { workspace = true }
+egui_plot = { workspace = true }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
