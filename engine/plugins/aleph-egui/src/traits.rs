@@ -48,11 +48,11 @@ pub struct EguiContextProvider {
 
 impl EguiContextProvider {
     pub fn begin_frame(&self, new_input: RawInput) {
-        self.ctx.begin_frame(new_input);
+        self.ctx.begin_pass(new_input);
     }
 
     pub fn end_frame(&self) -> FullOutput {
-        self.ctx.end_frame()
+        self.ctx.end_pass()
     }
 }
 
