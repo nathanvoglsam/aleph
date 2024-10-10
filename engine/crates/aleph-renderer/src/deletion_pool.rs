@@ -53,7 +53,7 @@ impl DeletionPool {
         Self {
             textures: Vec::new(),
             buffers: Vec::new(),
-            mode
+            mode,
         }
     }
 
