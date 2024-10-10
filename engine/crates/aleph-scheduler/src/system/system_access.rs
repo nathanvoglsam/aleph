@@ -68,8 +68,11 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
+use aleph_object_system::IObject;
+use aleph_typed_table::TypedTable;
+
 use crate::system::{IntoSystem, System};
-use crate::{AccessDescriptor, Resource, Resources, ScheduleArgs};
+use crate::{AccessDescriptor, ScheduleArgs};
 
 // ============================================================================================== //
 
@@ -90,7 +93,7 @@ pub unsafe trait SystemParamState: Send + Sync + 'static {
 pub trait SystemParamFetch<'a>: SystemParamState {
     type Item;
 
-    unsafe fn get_param(state: &'a mut Self, resources: &'a Resources) -> Self::Item;
+    unsafe fn get_param(state: &'a mut Self, resources: &'a TypedTable) -> Self::Item;
 }
 
 // ============================================================================================== //
@@ -101,7 +104,7 @@ pub struct Res<'w, T> {
     value: &'w T,
 }
 
-impl<'w, T: Resource> Deref for Res<'w, T> {
+impl<'w, T: IObject + Send + Sync + 'static> Deref for Res<'w, T> {
     type Target = T;
 
     #[inline]
@@ -113,11 +116,11 @@ impl<'w, T: Resource> Deref for Res<'w, T> {
 /// An internal type that handles loading the pointer [`Res`] will provide to a system function.
 pub struct ResState<T>(PhantomData<T>);
 
-impl<'a, T: Resource> SystemParam for Res<'a, T> {
+impl<'a, T: IObject + Send + Sync + 'static> SystemParam for Res<'a, T> {
     type Fetch = ResState<T>;
 }
 
-unsafe impl<T: Resource> SystemParamState for ResState<T> {
+unsafe impl<T: IObject + Send + Sync + 'static> SystemParamState for ResState<T> {
     #[inline]
     fn init(access: &mut dyn AccessDescriptor) -> Self {
         access.reads_resource::<T>();
@@ -125,14 +128,12 @@ unsafe impl<T: Resource> SystemParamState for ResState<T> {
     }
 }
 
-impl<'a, T: Resource> SystemParamFetch<'a> for ResState<T> {
+impl<'a, T: IObject + Send + Sync + 'static> SystemParamFetch<'a> for ResState<T> {
     type Item = Res<'a, T>;
 
     #[inline]
-    unsafe fn get_param(_state: &'a mut Self, resources: &'a Resources) -> Self::Item {
-        let v = resources.resources.get(&T::ID).unwrap();
-        let v = v.get().as_ref().unwrap_unchecked();
-        let v = v.get_ref::<T>().unwrap();
+    unsafe fn get_param(_state: &'a mut Self, resources: &'a TypedTable) -> Self::Item {
+        let v = resources.get_ref::<T>().unwrap();
         Res { value: v }
     }
 }
@@ -145,7 +146,7 @@ pub struct ResMut<'w, T> {
     value: &'w mut T,
 }
 
-impl<'w, T: Resource> Deref for ResMut<'w, T> {
+impl<'w, T: IObject + Send + Sync + 'static> Deref for ResMut<'w, T> {
     type Target = T;
 
     #[inline]
@@ -154,7 +155,7 @@ impl<'w, T: Resource> Deref for ResMut<'w, T> {
     }
 }
 
-impl<'w, T: Resource> DerefMut for ResMut<'w, T> {
+impl<'w, T: IObject + Send + Sync + 'static> DerefMut for ResMut<'w, T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.value
@@ -164,11 +165,11 @@ impl<'w, T: Resource> DerefMut for ResMut<'w, T> {
 /// An internal type that handles loading the pointer [`ResMut`] will provide to a system function.
 pub struct ResMutState<T>(PhantomData<T>);
 
-impl<'a, T: Resource> SystemParam for ResMut<'a, T> {
+impl<'a, T: IObject + Send + Sync + 'static> SystemParam for ResMut<'a, T> {
     type Fetch = ResMutState<T>;
 }
 
-unsafe impl<T: Resource> SystemParamState for ResMutState<T> {
+unsafe impl<T: IObject + Send + Sync + 'static> SystemParamState for ResMutState<T> {
     #[inline]
     fn init(access: &mut dyn AccessDescriptor) -> Self {
         access.reads_resource::<T>();
@@ -176,14 +177,13 @@ unsafe impl<T: Resource> SystemParamState for ResMutState<T> {
     }
 }
 
-impl<'a, T: Resource> SystemParamFetch<'a> for ResMutState<T> {
+impl<'a, T: IObject + Send + Sync + 'static> SystemParamFetch<'a> for ResMutState<T> {
     type Item = ResMut<'a, T>;
 
     #[inline]
-    unsafe fn get_param(_state: &'a mut Self, resources: &'a Resources) -> Self::Item {
-        let v = resources.resources.get(&T::ID).unwrap();
-        let v = v.get().as_mut().unwrap_unchecked();
-        let v = v.get_mut::<T>().unwrap();
+    unsafe fn get_param(_state: &'a mut Self, resources: &'a TypedTable) -> Self::Item {
+        let mut v = resources.get_raw::<T>().unwrap();
+        let v = v.as_mut();
         ResMut { value: v }
     }
 }
@@ -197,7 +197,7 @@ impl<'a, T: Resource> SystemParamFetch<'a> for ResMutState<T> {
 /// for the underlying function before calling said function.
 #[allow(clippy::missing_safety_doc)]
 pub trait SystemParamFunction<Param: SystemParam>: 'static {
-    unsafe fn run(&mut self, state: &mut Param::Fetch, resources: &Resources);
+    unsafe fn run(&mut self, state: &mut Param::Fetch, resources: &TypedTable);
 }
 
 // ============================================================================================== //
@@ -225,7 +225,7 @@ impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> System
     unsafe fn execute(
         &mut self,
         _input: &<Self::In as ScheduleArgs>::Args<'_>,
-        resources: &Resources,
+        resources: &TypedTable,
     ) -> Self::Out {
         self.f.run(self.state.as_mut().unwrap(), resources)
     }
@@ -254,7 +254,7 @@ impl<T: FnMut() + 'static> System for T {
     unsafe fn execute(
         &mut self,
         _input: &<Self::In as ScheduleArgs>::Args<'_>,
-        _resources: &Resources,
+        _resources: &TypedTable,
     ) -> Self::Out {
         self()
     }
@@ -273,7 +273,7 @@ macro_rules! impl_system_function {
                 FnMut($(<<$param as $crate::SystemParam>::Fetch as $crate::SystemParamFetch>::Item),*),
         {
             #[inline]
-            unsafe fn run(&mut self, state: &mut <($($param,)*) as $crate::SystemParam>::Fetch, resources: &$crate::Resources) {
+            unsafe fn run(&mut self, state: &mut <($($param,)*) as $crate::SystemParam>::Fetch, resources: &$crate::TypedTable) {
                 // Yes, this is strange, but rustc fails to compile this impl
                 // without using this function.
                 #[allow(clippy::too_many_arguments)]
@@ -320,7 +320,7 @@ macro_rules! impl_param_for_tuple {
             type Item = ($($name::Item,)*);
 
             #[inline]
-            unsafe fn get_param(state: &'a mut Self, resources: &'a $crate::Resources) -> Self::Item {
+            unsafe fn get_param(state: &'a mut Self, resources: &'a $crate::TypedTable) -> Self::Item {
                 let ($($name,)*) = state;
                 ($($name::get_param($name, resources),)*)
             }

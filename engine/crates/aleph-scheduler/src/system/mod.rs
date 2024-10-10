@@ -29,6 +29,7 @@
 
 mod system_access;
 
+use aleph_typed_table::TypedTable;
 pub use system_access::{
     Res, ResMut, ResMutState, ResState, SystemParam, SystemParamFetch, SystemParamFunction,
     SystemParamState,
@@ -36,7 +37,7 @@ pub use system_access::{
 
 use std::any::Any;
 
-use crate::{AccessDescriptor, Resources, ScheduleArgs};
+use crate::{AccessDescriptor, ScheduleArgs};
 
 use aleph_label::Label;
 
@@ -102,7 +103,7 @@ pub trait System: Any + 'static {
     unsafe fn execute(
         &mut self,
         input: &<Self::In as ScheduleArgs>::Args<'_>,
-        resources: &Resources,
+        resources: &TypedTable,
     ) -> Self::Out;
 
     /// A wrapper around [`System::execute`] that allows calling execute safely by enforcing that
@@ -110,7 +111,7 @@ pub trait System: Any + 'static {
     fn execute_safe(
         &mut self,
         input: &<Self::In as ScheduleArgs>::Args<'_>,
-        resources: &mut Resources,
+        resources: &mut TypedTable,
     ) -> Self::Out {
         // SAFETY: This is safe per the requirements of context 1 as documented on the execute
         //         function. See the documentation of System::execute for more info.
@@ -203,7 +204,7 @@ impl<S: System> System for RunsBeforeSystem<S> {
     unsafe fn execute(
         &mut self,
         input: &<Self::In as ScheduleArgs>::Args<'_>,
-        resources: &Resources,
+        resources: &TypedTable,
     ) -> Self::Out {
         self.s.execute(input, resources)
     }
@@ -232,7 +233,7 @@ impl<S: System> System for RunsAfterSystem<S> {
     unsafe fn execute(
         &mut self,
         input: &<Self::In as ScheduleArgs>::Args<'_>,
-        resources: &Resources,
+        resources: &TypedTable,
     ) -> Self::Out {
         self.s.execute(input, resources)
     }

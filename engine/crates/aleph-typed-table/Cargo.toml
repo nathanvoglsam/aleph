@@ -29,28 +29,18 @@
 
 
 [package]
-name = "aleph-scheduler"
+name = "aleph-typed-table"
 version = "0.1.0"
 authors.workspace = true
-description = "Aleph's ecs"
+description = "A generic table based on aleph-object-system"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-scheduler/"
+documentation = "https://docs.rs/aleph-typed-table/"
 edition.workspace = true
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-arena-drop-list = { workspace = true }
 aleph-object-system = { workspace = true }
-aleph-identity-hasher = { workspace = true }
-aleph-virtual-buffer = { workspace = true }
-aleph-label = { workspace = true }
-aleph-profile = { workspace = true }
-aleph-typed-table = { workspace = true }
-
-bumpalo = { workspace = true }
-crossbeam = { workspace = true }
-rayon = { workspace = true }
 allocator-api2 = { workspace = true }

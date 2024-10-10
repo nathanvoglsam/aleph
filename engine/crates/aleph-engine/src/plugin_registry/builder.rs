@@ -33,7 +33,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use interfaces::components;
 use interfaces::ecs::{World, WorldOptions};
 use interfaces::schedule::CoreStage;
-use interfaces::scheduler::{Resources, Schedule, SystemSchedule};
+use interfaces::scheduler::{Schedule, SystemSchedule, TypedTable};
 
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
@@ -99,7 +99,7 @@ impl PluginRegistryBuilder {
             init_order,
             exit_order,
             schedule: Some(Box::new(schedule)),
-            resources: Some(Box::new(Resources::default())),
+            resources: Some(Box::new(TypedTable::default())),
             world: Some(Box::new(world)),
         };
 

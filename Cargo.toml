@@ -74,6 +74,7 @@ members = [
     "engine/crates/aleph-sys-info",
     "engine/crates/aleph-target",
     "engine/crates/aleph-target-build",
+    "engine/crates/aleph-typed-table",
     "engine/crates/aleph-virtual-buffer",
     "engine/crates/aleph-vulkan-alloc",
     "engine/crates/aleph-windows",
@@ -184,6 +185,7 @@ aleph-superluminal-sys = { path = "./engine/crates/aleph-superluminal-sys", vers
 aleph-sys-info = { path = "./engine/crates/aleph-sys-info", version = "0.1" }
 aleph-target = { path = "./engine/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./engine/crates/aleph-target-build", version = "2" }
+aleph-typed-table = { path = "./engine/crates/aleph-typed-table", version = "0.1" }
 aleph-virtual-buffer = { path = "./engine/crates/aleph-virtual-buffer", version = "0.1" }
 aleph-vulkan-alloc = { path = "./engine/crates/aleph-vulkan-alloc", version = "0.1" }
 aleph-windows = { path = "./engine/crates/aleph-windows", version = "0.1" }

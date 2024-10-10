@@ -33,11 +33,12 @@ mod system_cell;
 mod system_channel;
 
 use aleph_label::Label;
+use aleph_typed_table::TypedTable;
 
 use crate::system::{IntoSystem, System};
 use crate::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
 use crate::system_schedule::system_channel::SystemChannel;
-use crate::{Resources, ScheduleArgs, Stage};
+use crate::{ScheduleArgs, Stage};
 
 pub struct SystemSchedule<A: ScheduleArgs> {
     /// Systems and graph for single threaded systems that runs before the parallel phase
@@ -107,7 +108,7 @@ impl<A: ScheduleArgs> SystemSchedule<A> {
         self
     }
 
-    pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
+    pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut TypedTable) {
         self.check_dirty();
         self.exclusive_at_start.execute_exclusive(args, resources);
         self.parallel_systems.execute_parallel(args, resources);
@@ -116,7 +117,7 @@ impl<A: ScheduleArgs> SystemSchedule<A> {
 }
 
 impl<A: ScheduleArgs> Stage<A> for SystemSchedule<A> {
-    fn run(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
+    fn run(&mut self, args: &A::Args<'_>, resources: &mut TypedTable) {
         self.run_once(args, resources)
     }
 }

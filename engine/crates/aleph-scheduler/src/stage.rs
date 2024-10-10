@@ -31,15 +31,17 @@ use std::any::{Any, TypeId};
 
 use aleph_label::Label;
 use aleph_object_system::uuid::Uuid;
+use aleph_object_system::IObject;
+use aleph_typed_table::TypedTable;
 
-use crate::{Resource, Resources, ScheduleArgs};
+use crate::ScheduleArgs;
 
 ///
 /// The interface expected of an execution stage
 ///
 pub trait Stage<A: ScheduleArgs>: Any + 'static {
     /// This will be called by a scheduler exactly once during an execution cycle.
-    fn run(&mut self, args: &A::Args<'_>, resources: &mut Resources);
+    fn run(&mut self, args: &A::Args<'_>, resources: &mut TypedTable);
 }
 
 impl<A: ScheduleArgs> dyn Stage<A> {
@@ -107,13 +109,13 @@ pub trait AccessDescriptor: 'static {
 impl dyn AccessDescriptor {
     /// Generic wrapper around [`AccessDescriptor::reads_resource_with_id`] that uses a generic
     /// parameter to get the ID.
-    pub fn reads_resource<T: Resource>(&mut self) {
+    pub fn reads_resource<T: IObject + Send + Sync + 'static>(&mut self) {
         self.reads_resource_with_id(T::ID);
     }
 
     /// Generic wrapper around [`AccessDescriptor::writes_resource_with_id`] that uses a generic
     /// parameter to get the ID.
-    pub fn writes_resource<T: Resource>(&mut self) {
+    pub fn writes_resource<T: IObject + Send + Sync + 'static>(&mut self) {
         self.writes_resource_with_id(T::ID);
     }
 

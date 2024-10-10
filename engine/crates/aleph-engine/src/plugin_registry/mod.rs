@@ -32,7 +32,7 @@ pub use interfaces::any;
 use interfaces::ecs::World;
 use interfaces::plugin::CoreRefs;
 use interfaces::schedule::WorldResource;
-use interfaces::scheduler::{Resources, Schedule, Stage};
+use interfaces::scheduler::{Schedule, Stage, TypedTable};
 
 mod builder;
 mod quit_handle;
@@ -68,7 +68,7 @@ pub struct PluginRegistry {
     schedule: Option<Box<Schedule>>,
 
     /// The resource store, accessed by the scheduler
-    resources: Option<Box<Resources>>,
+    resources: Option<Box<TypedTable>>,
 
     /// The core ECS world that constitures the 'game world'
     world: Option<Box<World>>,
@@ -313,7 +313,7 @@ struct RegistryAccessor {
     config: Option<serde_json::Value>,
     interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
     schedule: Box<Schedule>,
-    resources: Box<Resources>,
+    resources: Box<TypedTable>,
     world: Box<World>,
 }
 

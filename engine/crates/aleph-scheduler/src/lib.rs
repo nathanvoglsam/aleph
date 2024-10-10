@@ -54,7 +54,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod resources;
 mod stage;
 mod system;
 mod system_schedule;
@@ -63,14 +62,13 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use aleph_label::Label;
-use aleph_object_system::IObject;
 
 pub use crate::system::{
     AlreadyWasSystem, ExplicitDependencies, IntoSystem, Res, ResMut, ResMutState, ResState,
     RunsAfterSystem, RunsBeforeSystem, System, SystemParam, SystemParamFetch, SystemParamFunction,
     SystemParamState,
 };
-pub use resources::Resources;
+pub use aleph_typed_table::TypedTable;
 pub use stage::{AccessDescriptor, Stage};
 pub use system_schedule::SystemSchedule;
 
@@ -314,7 +312,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     /// Unconditionally (i.e, the run criteria system is **not** called) performs a single execution
     /// run of the [`Schedule`]
     #[inline]
-    pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
+    pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut TypedTable) {
         for label in self.stage_order.iter() {
             let stage = self.stages.get_mut(label).unwrap();
             aleph_profile::scope!("aleph::ExecScope", label);
@@ -341,7 +339,7 @@ impl<A: ScheduleArgs> Schedule<A> {
 }
 
 impl<A: ScheduleArgs> Stage<A> for Schedule<A> {
-    fn run(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
+    fn run(&mut self, args: &A::Args<'_>, resources: &mut TypedTable) {
         // First we need to check if the schedule's run criteria is met
         if let Some(system) = self.run_criteria.system.as_mut() {
             // Initialize the criteria system if it hasn't already been
@@ -384,6 +382,3 @@ impl Default for RunCriteriaBox {
         }
     }
 }
-
-pub trait Resource: IObject + Send + Sync + 'static {}
-impl<T: IObject + Send + Sync + 'static> Resource for T {}

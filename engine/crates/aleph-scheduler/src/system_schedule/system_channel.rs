@@ -35,6 +35,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_label::Label;
 use aleph_object_system::uuid::Uuid;
+use aleph_typed_table::TypedTable;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;
@@ -42,7 +43,7 @@ use rayon::prelude::*;
 use crate::system::{IntoSystem, System};
 use crate::system_schedule::system_box::SystemBox;
 use crate::system_schedule::system_cell::{ExclusiveSystemCell, GenericSystemCell, SystemCell};
-use crate::{Resources, ScheduleArgs};
+use crate::ScheduleArgs;
 
 pub struct SystemChannel<A, T> {
     /// Stores all systems in the schedule
@@ -115,7 +116,7 @@ impl<A: ScheduleArgs> SystemChannel<A, ExclusiveSystemCell<A>> {
 }
 
 impl<A: ScheduleArgs, C: GenericSystemCell<A> + Send + Sync> SystemChannel<A, C> {
-    pub fn execute_parallel(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
+    pub fn execute_parallel(&mut self, args: &A::Args<'_>, resources: &mut TypedTable) {
         /// Struct that holds data that needs ownership transferred to the thread that executes the
         /// matching system
         struct WorkerPayload {
@@ -154,7 +155,7 @@ impl<A: ScheduleArgs, C: GenericSystemCell<A> + Send + Sync> SystemChannel<A, C>
             systems: &[SystemBox<T>],
             done: &[AtomicBool],
             payloads: &[PayloadCell],
-            resources: &Resources,
+            resources: &TypedTable,
             system_index: usize,
         ) {
             // Unpack the payload
@@ -223,7 +224,7 @@ impl<A: ScheduleArgs, C: GenericSystemCell<A> + Send + Sync> SystemChannel<A, C>
 }
 
 impl<A: ScheduleArgs, C: GenericSystemCell<A>> SystemChannel<A, C> {
-    pub fn execute_exclusive(&mut self, args: &A::Args<'_>, resources: &mut Resources) {
+    pub fn execute_exclusive(&mut self, args: &A::Args<'_>, resources: &mut TypedTable) {
         // SoA list of flags that denote whether the matching task has completed, indexed in
         // parallel with self.systems
         let mut done: Vec<bool> = (0..self.systems.len()).map(|_| false).collect();

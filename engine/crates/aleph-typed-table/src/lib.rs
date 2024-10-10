@@ -34,30 +34,36 @@ use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 use aleph_object_system::uuid::Uuid;
-use aleph_object_system::ObjectDescription;
+use aleph_object_system::{IObject, ObjectDescription};
 use allocator_api2::alloc::{Allocator, Global};
 
-use crate::Resource;
-
 #[derive(Default)]
-pub struct Resources {
-    pub(crate) resources: HashMap<Uuid, UnsafeCell<ResourceBox>>,
+pub struct TypedTable {
+    pub(crate) resources: HashMap<Uuid, UnsafeCell<TypedTableBox>>,
 }
 
-impl Resources {
+impl TypedTable {
     pub fn new() -> Self {
         Self {
             resources: HashMap::new(),
         }
     }
 
-    pub fn insert<T: Resource>(&mut self, v: T) {
+    pub fn insert<T: IObject + Send + Sync + 'static>(&mut self, v: T) {
         let _ = self
             .resources
-            .insert(T::ID, UnsafeCell::new(ResourceBox::new(v)));
+            .insert(T::ID, UnsafeCell::new(TypedTableBox::new(v)));
     }
 
-    pub fn get_ref<T: Resource>(&self) -> Option<&T> {
+    pub fn get_raw<T: IObject + Send + Sync + 'static>(&self) -> Option<NonNull<T>> {
+        let cell = self.resources.get(&T::ID)?;
+        unsafe {
+            let b = &*cell.get();
+            b.get_ptr()
+        }
+    }
+
+    pub fn get_ref<T: IObject + Send + Sync + 'static>(&self) -> Option<&T> {
         let cell = self.resources.get(&T::ID)?;
         unsafe {
             let out = (&*cell.get()).get_ref::<T>();
@@ -65,13 +71,25 @@ impl Resources {
         }
     }
 
-    pub fn get_mut<T: Resource>(&mut self) -> Option<&mut T> {
+    pub fn get_mut<T: IObject + Send + Sync + 'static>(&mut self) -> Option<&mut T> {
         let cell = self.resources.get_mut(&T::ID)?;
         let out = cell.get_mut().get_mut::<T>();
         out
     }
 
-    pub fn take<T: Resource>(&mut self) -> Option<T> {
+    pub fn get_or_insert_with<T: IObject + Send + Sync + 'static>(
+        &mut self,
+        f: impl FnOnce() -> T,
+    ) -> Option<&mut T> {
+        let out = self.resources.entry(T::ID).or_insert_with(|| {
+            let v = f();
+            UnsafeCell::new(TypedTableBox::new(v))
+        });
+        let out = out.get_mut().get_mut::<T>();
+        out
+    }
+
+    pub fn take<T: IObject + Send + Sync + 'static>(&mut self) -> Option<T> {
         let cell = self.resources.remove(&T::ID)?;
         cell.into_inner().into_inner::<T>()
     }
@@ -81,19 +99,19 @@ impl Resources {
     }
 }
 
-unsafe impl Send for Resources {}
-unsafe impl Sync for Resources {}
+unsafe impl Send for TypedTable {}
+unsafe impl Sync for TypedTable {}
 
-pub(crate) struct ResourceBox {
+pub(crate) struct TypedTableBox {
     ptr: NonNull<()>,
     desc: ObjectDescription,
 }
 
-unsafe impl Send for ResourceBox {}
-unsafe impl Sync for ResourceBox {}
+unsafe impl Send for TypedTableBox {}
+unsafe impl Sync for TypedTableBox {}
 
-impl ResourceBox {
-    fn new<T: Resource>(v: T) -> Self {
+impl TypedTableBox {
+    fn new<T: IObject + Send + Sync + 'static>(v: T) -> Self {
         let layout = Layout::new::<T>();
         let ptr = Global.allocate(layout);
         match ptr {
@@ -110,7 +128,7 @@ impl ResourceBox {
         }
     }
 
-    pub(crate) fn into_inner<T: Resource>(mut self) -> Option<T> {
+    pub(crate) fn into_inner<T: IObject + Send + Sync + 'static>(mut self) -> Option<T> {
         let object = self.get_ptr::<T>()?;
         let out = unsafe { object.read() };
 
@@ -121,15 +139,15 @@ impl ResourceBox {
         Some(out)
     }
 
-    pub(crate) fn get_ref<T: Resource>(&self) -> Option<&T> {
+    pub(crate) fn get_ref<T: IObject + Send + Sync + 'static>(&self) -> Option<&T> {
         self.get_ptr::<T>().map(|v| unsafe { v.as_ref() })
     }
 
-    pub(crate) fn get_mut<T: Resource>(&mut self) -> Option<&mut T> {
+    pub(crate) fn get_mut<T: IObject + Send + Sync + 'static>(&mut self) -> Option<&mut T> {
         self.get_ptr::<T>().map(|mut v| unsafe { v.as_mut() })
     }
 
-    pub(crate) fn get_ptr<T: Resource>(&self) -> Option<NonNull<T>> {
+    pub(crate) fn get_ptr<T: IObject + Send + Sync + 'static>(&self) -> Option<NonNull<T>> {
         if T::ID == self.desc.id {
             Some(self.ptr.cast::<T>())
         } else {
@@ -138,7 +156,7 @@ impl ResourceBox {
     }
 }
 
-impl Drop for ResourceBox {
+impl Drop for TypedTableBox {
     fn drop(&mut self) {
         if let Some(f) = self.desc.destructor {
             // Safety: It is unsafe to create a ResourceBox where this isn't safe to call. So this

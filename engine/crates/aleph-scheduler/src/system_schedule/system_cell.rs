@@ -29,11 +29,12 @@
 
 use std::cell::Cell;
 
+use aleph_typed_table::TypedTable;
 use crossbeam::atomic::AtomicCell;
 
 use crate::system::System;
 use crate::system_schedule::access_descriptor::SystemAccessDescriptor;
-use crate::{Resources, ScheduleArgs};
+use crate::ScheduleArgs;
 
 /// Type alias for a boxed system trait object
 pub type BoxedSystem<A> = Box<dyn System<In = A, Out = ()> + Send + Sync>;
@@ -57,9 +58,9 @@ pub type ExclusiveSystemCell<A> = Cell<Option<Box<BoxedExclusiveSystem<A>>>>;
 pub trait GenericSystemCell<A: ScheduleArgs> {
     fn declare_access(&self, access: &mut SystemAccessDescriptor);
 
-    unsafe fn execute(&self, args: &A::Args<'_>, resources: &Resources);
+    unsafe fn execute(&self, args: &A::Args<'_>, resources: &TypedTable);
 
-    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut Resources);
+    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut TypedTable);
 }
 
 impl<A: ScheduleArgs> GenericSystemCell<A> for SystemCell<A> {
@@ -69,13 +70,13 @@ impl<A: ScheduleArgs> GenericSystemCell<A> for SystemCell<A> {
         self.store(Some(system));
     }
 
-    unsafe fn execute(&self, args: &A::Args<'_>, resources: &Resources) {
+    unsafe fn execute(&self, args: &A::Args<'_>, resources: &TypedTable) {
         let mut system = self.take().unwrap();
         system.execute(args, resources);
         self.store(Some(system));
     }
 
-    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut Resources) {
+    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut TypedTable) {
         let mut system = self.take().unwrap();
         system.execute_safe(args, resources);
         self.store(Some(system));
@@ -89,13 +90,13 @@ impl<A: ScheduleArgs> GenericSystemCell<A> for ExclusiveSystemCell<A> {
         self.set(Some(system))
     }
 
-    unsafe fn execute(&self, args: &A::Args<'_>, resources: &Resources) {
+    unsafe fn execute(&self, args: &A::Args<'_>, resources: &TypedTable) {
         let mut system = self.take().unwrap();
         system.execute(args, resources);
         self.set(Some(system));
     }
 
-    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut Resources) {
+    fn execute_safe(&self, args: &A::Args<'_>, resources: &mut TypedTable) {
         let mut system = self.take().unwrap();
         system.execute_safe(args, resources);
         self.set(Some(system));

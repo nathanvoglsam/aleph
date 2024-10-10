@@ -31,7 +31,7 @@ use std::any::TypeId;
 
 use any::IAny;
 use ecs::World;
-use scheduler::{Resources, Schedule};
+use scheduler::{Schedule, TypedTable};
 
 use crate::any::AnyArc;
 
@@ -190,7 +190,7 @@ impl<'a> dyn IRegistryAccessor<'a> {
 }
 
 pub struct CoreRefs<'a> {
-    pub resources: &'a mut Resources,
+    pub resources: &'a mut TypedTable,
     pub schedule: &'a mut Schedule,
     pub world: &'a mut World,
 }
