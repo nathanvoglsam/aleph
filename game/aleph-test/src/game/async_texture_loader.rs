@@ -30,9 +30,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use aleph_device_allocators::{
-    IUploadAllocator, RawDeviceAllocationResult, UploadBumpAllocator,
-};
+use aleph_device_allocators::{IUploadAllocator, RawDeviceAllocationResult, UploadBumpAllocator};
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::object_system::unsafe_impl_iobject;
 use aleph_engine::interfaces::renderer::{
