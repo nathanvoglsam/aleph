@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_any::AnyArc;
 use aleph_device_allocators::LinearDescriptorPool;
 use aleph_rhi_api::*;
 
-use crate::pass::composite_planes::CompositePlanesState;
-use crate::StateCache;
+use crate::pass::composite_planes::CompositePlanesLayout;
+use crate::{shaders, IStateCacheKey, ShaderDatabaseAccessor, StateCache};
 
 pub struct MipGenerator {
     device: AnyArc<dyn IDevice>,
@@ -48,9 +50,9 @@ impl MipGenerator {
             Format::Bgra8UnormSrgb,
         ];
         for format in pre_warm_formats {
-            let key = CompositePlanesState::key(format);
+            let key = MipGeneratorState::key(format);
             let _ = state_cache.get_or_insert_with(&key, |cache, k| {
-                CompositePlanesState::new(cache, device.as_ref(), k.0)
+                MipGeneratorState::new(cache, device.as_ref(), k.0)
             });
         }
         Self { device }
@@ -72,9 +74,9 @@ impl MipGenerator {
             return;
         }
 
-        let key = CompositePlanesState::key(desc.format);
+        let key = MipGeneratorState::key(desc.format);
         let state = state_cache.get_or_insert_with(&key, |cache, k| {
-            CompositePlanesState::new(cache, self.device.as_ref(), k.0)
+            MipGeneratorState::new(cache, self.device.as_ref(), k.0)
         });
 
         let mut barrier_queue = Vec::new();
@@ -174,6 +176,9 @@ impl MipGenerator {
                 &[set],
                 &[],
             );
+            
+            let src_level = (level - 1) as f32;
+            encoder.set_push_constant_block(0, bytemuck::bytes_of(&src_level));
 
             encoder.draw(3, 1, 0, 0);
 
@@ -219,5 +224,96 @@ impl MipGenerator {
 
         encoder.resource_barrier(&[], &[], &barrier_queue);
         barrier_queue.clear();
+    }
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct MipGeneratorStateKey(pub Format);
+
+impl IStateCacheKey for MipGeneratorStateKey {
+    type Storage = MipGeneratorState;
+}
+
+pub struct MipGeneratorState {
+    pub layout: Arc<CompositePlanesLayout>,
+    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+}
+
+impl MipGeneratorState {
+    pub fn key(format: Format) -> MipGeneratorStateKey {
+        MipGeneratorStateKey(format)
+    }
+
+    pub fn new(cache: &mut StateCache, device: &dyn IDevice, format: Format) -> Self {
+        let key = CompositePlanesLayout::key();
+        let layout = cache.get_or_insert_with(&key, |_, _| CompositePlanesLayout::new(device));
+
+        let pipeline = Self::create_pipeline_state(
+            device,
+            layout.pipeline_layout.as_ref(),
+            cache.shader_db(),
+            format,
+        );
+
+        Self { layout, pipeline }
+    }
+
+    pub fn create_pipeline_state(
+        device: &dyn IDevice,
+        pipeline_layout: &dyn IPipelineLayout,
+        shader_db: &ShaderDatabaseAccessor,
+        format: Format,
+    ) -> AnyArc<dyn IGraphicsPipeline> {
+        let vertex_shader = shader_db
+            .load_stage(shaders::composite_planes::vert())
+            .unwrap();
+        let fragment_shader = shader_db
+            .load_stage(shaders::composite_planes::frag())
+            .unwrap();
+
+        let vertex_layout = VertexInputStateDesc::default();
+
+        let input_assembly_state = InputAssemblyStateDesc {
+            primitive_topology: PrimitiveTopology::TriangleList,
+        };
+
+        let rasterizer_state = RasterizerStateDesc {
+            cull_mode: CullMode::None,
+            front_face: FrontFaceOrder::CounterClockwise,
+            polygon_mode: PolygonMode::Fill,
+            depth_bias: 0,
+            depth_bias_clamp: 0.0,
+            depth_bias_slope_factor: 0.0,
+        };
+
+        let depth_stencil_state = DepthStencilStateDesc {
+            depth_test: false,
+            ..Default::default()
+        };
+
+        let blend_state_new = BlendStateDesc {
+            attachments: &[AttachmentBlendState {
+                blend_enabled: false,
+                color_write_mask: ColorComponentFlags::all(),
+                ..Default::default()
+            }],
+        };
+
+        let graphics_pipeline_desc_new = GraphicsPipelineDesc {
+            shader_stages: &[vertex_shader, fragment_shader],
+            pipeline_layout,
+            vertex_layout: &vertex_layout,
+            input_assembly_state: &input_assembly_state,
+            rasterizer_state: &rasterizer_state,
+            depth_stencil_state: &depth_stencil_state,
+            blend_state: &blend_state_new,
+            render_target_formats: &[format],
+            depth_stencil_format: None,
+            name: obj_name_opt!("GraphicsPipelineState"),
+        };
+
+        device
+            .create_graphics_pipeline(&graphics_pipeline_desc_new)
+            .unwrap()
     }
 }

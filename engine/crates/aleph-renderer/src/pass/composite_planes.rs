@@ -158,6 +158,8 @@ pub fn pass(
                         array_element: 0,
                         writes: DescriptorWrites::Texture(&[ImageDescriptorWrite::srv(src_view)]),
                     }]);
+                let level = 0.0f32;
+                encoder.set_push_constant_block(0, bytemuck::bytes_of(&level));
 
                 encoder.bind_descriptor_sets(
                     state.layout.pipeline_layout.as_ref(),
@@ -231,7 +233,11 @@ impl CompositePlanesLayout {
     ) -> AnyArc<dyn IPipelineLayout> {
         let pipeline_layout_desc = PipelineLayoutDesc {
             set_layouts: &[set_layout],
-            push_constant_blocks: &[],
+            push_constant_blocks: &[PushConstantBlock {
+                binding: 0,
+                visibility: DescriptorShaderVisibility::All,
+                size: 4,
+            }],
             name: obj_name_opt!("PipelineLayout"),
         };
         device
@@ -243,7 +249,7 @@ impl CompositePlanesLayout {
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Linear,
             mag_filter: SamplerFilter::Linear,
-            mip_filter: SamplerMipFilter::Linear,
+            mip_filter: SamplerMipFilter::Nearest,
             address_mode_u: SamplerAddressMode::Clamp,
             address_mode_v: SamplerAddressMode::Clamp,
             address_mode_w: SamplerAddressMode::Clamp,

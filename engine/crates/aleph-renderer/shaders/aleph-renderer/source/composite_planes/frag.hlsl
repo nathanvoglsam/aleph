@@ -29,13 +29,20 @@
 
 #include "payload.hlsl"
 
+struct Params {
+    float mip_level;
+};
+
+[[vk::push_constant]]
+ConstantBuffer<Params> g_params : register(b0, space1024);
+
 [[vk::binding(0, 0)]]
-Texture2D Src : register(t0);
+Texture2D<float4> Src : register(t0);
 
 [[vk::binding(1, 0)]]
 SamplerState Sampler : register(s1);
 
 float4 main(PixelInput input) : SV_Target0
 {
-    return Src.Sample(Sampler, input.uv);
+    return Src.SampleLevel(Sampler, input.uv, g_params.mip_level);
 }
