@@ -176,7 +176,7 @@ impl MipGenerator {
                 &[set],
                 &[],
             );
-            
+
             let src_level = (level - 1) as f32;
             encoder.set_push_constant_block(0, bytemuck::bytes_of(&src_level));
 

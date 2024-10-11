@@ -39,6 +39,7 @@ use aleph_object_system::unsafe_impl_iobject;
 use aleph_pin_board::{BoardScope, PinBoard};
 use aleph_rhi_api::*;
 
+use crate::deletion_pool::DeletionMode;
 use crate::mip_generator::MipGenerator;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
@@ -284,6 +285,34 @@ pub struct Renderer {
 }
 unsafe_impl_iobject!(Renderer, "01924ac2-e95d-7aa3-9fdf-9ec32d90b49c");
 
+impl Drop for Renderer {
+    fn drop(&mut self) {
+        for f in self.frame_manager.frames.iter() {
+            // Wait for all our in flight frames to be done
+            assert_eq!(
+                self.device
+                    .wait_fences(&[f.done_fence.as_ref()], true, u32::MAX),
+                FenceWaitResult::Complete
+            );
+        }
+
+        for f in self.frame_manager.frames.iter_mut() {
+            // Purge all our kept alive resources
+            //
+            // Safety: This is safe because we just waited for all the GPU work related to the
+            //         renderer to complete and we can't queue any more because we're in the drop
+            //         function.
+            unsafe {
+                f.deletion_pool.purge(DeletionMode::Inline);
+            }
+        }
+
+        // General wait idle and GC purge to make sure all our device resources are now freed
+        self.device.wait_idle();
+        self.device.garbage_collect();
+    }
+}
+
 impl Renderer {
     pub fn device(&self) -> &dyn IDevice {
         self.device.as_ref()
@@ -358,7 +387,7 @@ impl Renderer {
         // We are now definitely recording the frame, we've proven it has been retired on the GPU
         // timeline and that means we can purge anything that was being held alive for that GPU
         // frame in the deletion pool.
-        deletion_pool.purge();
+        deletion_pool.purge(DeletionMode::Deferred);
 
         let linear_descriptor_pool = self.linear_descriptor_pools.get();
         linear_descriptor_pool.reset();

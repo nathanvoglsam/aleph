@@ -47,16 +47,14 @@ pub struct DeletionPool {
     textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
     buffers: Vec<ManuallyDrop<AnyArc<dyn IBuffer>>>,
     descriptor_pools: Vec<Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>>,
-    mode: DeletionMode,
 }
 
 impl DeletionPool {
-    pub const fn new(mode: DeletionMode) -> Self {
+    pub const fn new() -> Self {
         Self {
             textures: Vec::new(),
             buffers: Vec::new(),
             descriptor_pools: Vec::new(),
-            mode,
         }
     }
 
@@ -100,11 +98,11 @@ impl DeletionPool {
     /// It is the caller's responsibility to ensure that all resources in this pool are no longer
     /// being used on the GPU timeline.
     #[inline]
-    pub unsafe fn purge(&mut self) {
+    pub unsafe fn purge(&mut self, mode: DeletionMode) {
         // Drain the pools and explicitly drop the contained elements.
-        self.purge_textures();
-        self.purge_buffers();
-        self.purge_descriptor_pools();
+        self.purge_textures(mode);
+        self.purge_buffers(mode);
+        self.purge_descriptor_pools(mode);
     }
 
     /// Alternate version of [`DeletionPool::purge`] that only purges the
@@ -114,10 +112,10 @@ impl DeletionPool {
     ///
     /// See `purge` for more info, the constraints are the same.
     #[inline]
-    pub unsafe fn purge_textures(&mut self) {
+    pub unsafe fn purge_textures(&mut self, mode: DeletionMode) {
         // Drain the pools and explicitly drop the contained elements.
         self.textures.drain(..).for_each(|mut v| {
-            if v.strong_count() == 1 && self.mode == DeletionMode::Deferred {
+            if v.strong_count() == 1 && mode == DeletionMode::Deferred {
                 rayon::spawn(move || drop_texture_on_pool(v));
             } else {
                 ManuallyDrop::drop(&mut v);
@@ -132,10 +130,10 @@ impl DeletionPool {
     ///
     /// See `purge` for more info, the constraints are the same.
     #[inline]
-    pub unsafe fn purge_buffers(&mut self) {
+    pub unsafe fn purge_buffers(&mut self, mode: DeletionMode) {
         // Drain the pools and explicitly drop the contained elements.
         self.buffers.drain(..).for_each(|mut v| {
-            if v.strong_count() == 1 && self.mode == DeletionMode::Deferred {
+            if v.strong_count() == 1 && mode == DeletionMode::Deferred {
                 rayon::spawn(move || drop_buffer_on_pool(v));
             } else {
                 ManuallyDrop::drop(&mut v);
@@ -150,7 +148,7 @@ impl DeletionPool {
     ///
     /// See `purge` for more info, the constraints are the same.
     #[inline]
-    pub unsafe fn purge_descriptor_pools(&mut self) {
+    pub unsafe fn purge_descriptor_pools(&mut self, _mode: DeletionMode) {
         // These simply get sent back to the pool they came from so we don't need to do any threaded
         // destruction here to avoid tanking the main thread.
         self.descriptor_pools.clear()
