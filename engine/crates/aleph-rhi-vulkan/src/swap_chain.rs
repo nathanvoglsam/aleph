@@ -207,7 +207,17 @@ impl SwapChain {
 
         let old_swapchain = inner.swap_chain;
 
+        // Select our set of view-compatible formats
+        let format_list = config.format.compatible_view_formats();
+        let format_list = Vec::from_iter(format_list.iter().copied().map(texture_format_to_vk));
+        let mut format_flags = vk::SwapchainCreateFlagsKHR::empty();
+        if format_list.len() > 1 {
+            format_flags |= vk::SwapchainCreateFlagsKHR::MUTABLE_FORMAT
+        }
+        let mut format_list = vk::ImageFormatListCreateInfo::default().view_formats(&format_list);
+
         let swap_create_info = vk::SwapchainCreateInfoKHR::default()
+            .flags(format_flags)
             .surface(self.surface.surface)
             .min_image_count(buffer_count)
             .present_mode(present_mode)
@@ -221,6 +231,7 @@ impl SwapChain {
             .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
             .old_swapchain(old_swapchain)
             .clipped(true);
+        let swap_create_info = swap_create_info.push_next(&mut format_list);
 
         inner.swap_chain = swapchain_loader
             .create_swapchain(&swap_create_info, None)

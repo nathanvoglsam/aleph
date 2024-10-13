@@ -121,6 +121,7 @@ impl DeviceInfo {
                 make_ext_prop("VK_KHR_shader_float_controls\0"),
                 make_ext_prop("VK_KHR_shader_subgroup_extended_types\0"),
                 make_ext_prop("VK_KHR_depth_stencil_resolve\0"),
+                make_ext_prop("VK_KHR_swapchain_mutable_format\0"),
             ],
             properties_10: CreateProfile::minimum(),
             id_properties: CreateProfile::minimum(),

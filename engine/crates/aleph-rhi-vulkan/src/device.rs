@@ -662,95 +662,112 @@ impl IDevice for Device {
         &self,
         desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
-        let image_type = match desc.dimension {
-            TextureDimension::Texture1D => vk::ImageType::TYPE_1D,
-            TextureDimension::Texture2D => vk::ImageType::TYPE_2D,
-            TextureDimension::Texture3D => vk::ImageType::TYPE_3D,
-        };
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
 
-        let format = texture_format_to_vk(desc.format);
+            let image_type = match desc.dimension {
+                TextureDimension::Texture1D => vk::ImageType::TYPE_1D,
+                TextureDimension::Texture2D => vk::ImageType::TYPE_2D,
+                TextureDimension::Texture3D => vk::ImageType::TYPE_3D,
+            };
 
-        let samples = match desc.sample_count {
-            1 => vk::SampleCountFlags::TYPE_1,
-            2 => vk::SampleCountFlags::TYPE_2,
-            4 => vk::SampleCountFlags::TYPE_4,
-            8 => vk::SampleCountFlags::TYPE_8,
-            16 => vk::SampleCountFlags::TYPE_16,
-            32 => vk::SampleCountFlags::TYPE_32,
-            _ => return Err(TextureCreateError::InvalidSampleCount(desc.sample_count)),
-        };
+            let format = texture_format_to_vk(desc.format);
 
-        let mut usage = vk::ImageUsageFlags::empty();
-        if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
-            usage |= vk::ImageUsageFlags::SAMPLED
-        }
-        if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
-            usage |= vk::ImageUsageFlags::TRANSFER_DST
-        }
-        if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
-            usage |= vk::ImageUsageFlags::TRANSFER_SRC
-        }
-        if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
-            usage |= vk::ImageUsageFlags::STORAGE
-        }
-        if desc.usage.contains(ResourceUsageFlags::RENDER_TARGET) {
-            if desc.format.is_depth_stencil() {
-                usage |= vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
-            } else {
-                usage |= vk::ImageUsageFlags::COLOR_ATTACHMENT
+            // Select our set of view-compatible formats
+            let format_list = desc.format.compatible_view_formats();
+            let format_list =
+                bump.alloc_slice_fill_iter(format_list.iter().copied().map(texture_format_to_vk));
+            let mut format_flags = vk::ImageCreateFlags::empty();
+            if format_list.len() > 1 {
+                format_flags |= vk::ImageCreateFlags::MUTABLE_FORMAT
             }
-        }
 
-        let mut flags = vk::ImageCreateFlags::empty();
-        if desc.usage.contains(ResourceUsageFlags::CUBE_FACE) {
-            flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
-        }
+            let mut format_list =
+                vk::ImageFormatListCreateInfo::default().view_formats(format_list);
 
-        let create_info = vk::ImageCreateInfo::default()
-            .flags(flags)
-            .image_type(image_type)
-            .format(format)
-            .extent(vk::Extent3D {
-                width: desc.width,
-                height: desc.height,
-                depth: desc.depth,
-            })
-            .mip_levels(desc.mip_levels)
-            .array_layers(desc.array_size)
-            .samples(samples)
-            .tiling(vk::ImageTiling::OPTIMAL)
-            .usage(usage)
-            .sharing_mode(vk::SharingMode::EXCLUSIVE)
-            .initial_layout(vk::ImageLayout::UNDEFINED);
+            let samples = match desc.sample_count {
+                1 => vk::SampleCountFlags::TYPE_1,
+                2 => vk::SampleCountFlags::TYPE_2,
+                4 => vk::SampleCountFlags::TYPE_4,
+                8 => vk::SampleCountFlags::TYPE_8,
+                16 => vk::SampleCountFlags::TYPE_16,
+                32 => vk::SampleCountFlags::TYPE_32,
+                _ => return Err(TextureCreateError::InvalidSampleCount(desc.sample_count)),
+            };
 
-        let alloc_info = vma::AllocationCreateInfo::builder()
-            .flags(vma::AllocationCreateFlags::empty())
-            .usage(vma::MemoryUsage::GpuOnly);
+            let mut usage = vk::ImageUsageFlags::empty();
+            if desc.usage.contains(ResourceUsageFlags::SHADER_RESOURCE) {
+                usage |= vk::ImageUsageFlags::SAMPLED
+            }
+            if desc.usage.contains(ResourceUsageFlags::COPY_DEST) {
+                usage |= vk::ImageUsageFlags::TRANSFER_DST
+            }
+            if desc.usage.contains(ResourceUsageFlags::COPY_SOURCE) {
+                usage |= vk::ImageUsageFlags::TRANSFER_SRC
+            }
+            if desc.usage.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
+                usage |= vk::ImageUsageFlags::STORAGE
+            }
+            if desc.usage.contains(ResourceUsageFlags::RENDER_TARGET) {
+                if desc.format.is_depth_stencil() {
+                    usage |= vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
+                } else {
+                    usage |= vk::ImageUsageFlags::COLOR_ATTACHMENT
+                }
+            }
 
-        let (image, allocation, _) = unsafe {
-            self.allocator
-                .create_image(&create_info, &alloc_info)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-        };
+            let mut flags = vk::ImageCreateFlags::empty();
+            if desc.usage.contains(ResourceUsageFlags::CUBE_FACE) {
+                flags |= vk::ImageCreateFlags::CUBE_COMPATIBLE;
+            }
 
-        let name = desc.name.map(String::from);
-        let desc = desc.clone().strip_name();
-        let out = AnyArc::new_cyclic(move |v| Texture {
-            _this: v.clone(),
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_texture(),
-            image,
-            // creation_flags: create_info.flags,
-            // created_usage: create_info.usage,
-            allocation: Some(allocation),
-            is_owned: true,
-            views: Default::default(),
-            rtvs: Default::default(),
-            dsvs: Default::default(),
-            desc,
-            name,
-        });
-        Ok(AnyArc::map::<dyn ITexture, _>(out, |v| v))
+            let create_info = vk::ImageCreateInfo::default()
+                .flags(flags | format_flags)
+                .image_type(image_type)
+                .format(format)
+                .extent(vk::Extent3D {
+                    width: desc.width,
+                    height: desc.height,
+                    depth: desc.depth,
+                })
+                .mip_levels(desc.mip_levels)
+                .array_layers(desc.array_size)
+                .samples(samples)
+                .tiling(vk::ImageTiling::OPTIMAL)
+                .usage(usage)
+                .sharing_mode(vk::SharingMode::EXCLUSIVE)
+                .initial_layout(vk::ImageLayout::UNDEFINED);
+            let create_info = create_info.push_next(&mut format_list);
+
+            let alloc_info = vma::AllocationCreateInfo::builder()
+                .flags(vma::AllocationCreateFlags::empty())
+                .usage(vma::MemoryUsage::GpuOnly);
+
+            let (image, allocation, _) = unsafe {
+                self.allocator
+                    .create_image(&create_info, &alloc_info)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+            };
+
+            let name = desc.name.map(String::from);
+            let desc = desc.clone().strip_name();
+            let out = AnyArc::new_cyclic(move |v| Texture {
+                _this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_texture(),
+                image,
+                // creation_flags: create_info.flags,
+                // created_usage: create_info.usage,
+                allocation: Some(allocation),
+                is_owned: true,
+                views: Default::default(),
+                rtvs: Default::default(),
+                dsvs: Default::default(),
+                desc,
+                name,
+            });
+            Ok(AnyArc::map::<dyn ITexture, _>(out, |v| v))
+        })
     }
 
     // ========================================================================================== //

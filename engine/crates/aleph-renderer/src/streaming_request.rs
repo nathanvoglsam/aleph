@@ -309,7 +309,7 @@ impl RequestState {
     /// - [`RequestState::Complete`]
     /// - [`RequestState::Cancelled`]
     /// - [`RequestState::Failed`]
-    /// 
+    ///
     /// Useful for checking as part of a request handler chain to see if the request is still valid
     /// to continue processing.
     pub const fn is_terminal(&self) -> bool {
