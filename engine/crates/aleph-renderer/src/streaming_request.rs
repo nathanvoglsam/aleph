@@ -105,6 +105,11 @@ impl<T> StreamingRequest<T> {
         self.transition_state(RequestState::Cancelled)
     }
 
+    /// Polls the request to see if it has completed, failed or been cancelled.
+    pub fn poll_state(&self) -> RequestState {
+        self.data.get_state()
+    }
+
     pub(crate) fn transition_state(&self, dst: RequestState) -> Result<(), TransitionResult> {
         loop {
             let current = self.data.state.load(Ordering::Relaxed);
@@ -275,6 +280,42 @@ pub enum RequestState {
 }
 
 impl RequestState {
+    /// Shorthand for checking if `self` is [`RequestState::Opened`]
+    pub const fn is_open(&self) -> bool {
+        matches!(*self, RequestState::Opened)
+    }
+
+    /// Shorthand for checking if `self` is [`RequestState::Waiting`]
+    pub const fn is_waiting(&self) -> bool {
+        matches!(*self, RequestState::Waiting)
+    }
+
+    /// Shorthand for checking if `self` is [`RequestState::Complete`]
+    pub const fn is_complete(&self) -> bool {
+        matches!(*self, RequestState::Complete)
+    }
+
+    /// Shorthand for checking if `self` is [`RequestState::Failed`]
+    pub const fn is_failed(&self) -> bool {
+        matches!(*self, RequestState::Failed)
+    }
+
+    /// Shorthand for checking if `self` is [`RequestState::Cancelled`]
+    pub const fn is_cancelled(&self) -> bool {
+        matches!(*self, RequestState::Cancelled)
+    }
+
+    /// Shorthand for checking if `self` is one of the terminal states:
+    /// - [`RequestState::Complete`]
+    /// - [`RequestState::Cancelled`]
+    /// - [`RequestState::Failed`]
+    /// 
+    /// Useful for checking as part of a request handler chain to see if the request is still valid
+    /// to continue processing.
+    pub const fn is_terminal(&self) -> bool {
+        self.is_complete() || self.is_cancelled() || self.is_failed()
+    }
+
     pub const fn from_u64(v: u64) -> Option<Self> {
         match v {
             0 => Some(Self::Opened),

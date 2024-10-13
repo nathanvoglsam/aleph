@@ -181,6 +181,11 @@ fn load_on_threadpool(
     format: image::ImageFormat,
     allocation: AllocationWithBuffer,
 ) -> Option<()> {
+    // If the request has been moved into a terminal state (cancelled) we should bail.
+    if request.poll_state().is_terminal() {
+        return Some(());
+    }
+
     let image = image::load_from_memory_with_format(&data, format).ok()?;
 
     let data = match image {
