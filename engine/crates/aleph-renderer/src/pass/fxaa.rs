@@ -528,9 +528,9 @@ impl FxaaParams {
         let fxaa_console360_rcp_frame_opt2 =
             [8.0 / width, 8.0 / height, -4.0 / width, -4.0 / height];
 
-        let fxaa_quality_subpix = 0.75;
-        let fxaa_quality_edge_threshold = 0.166;
-        let fxaa_quality_edge_threshold_min = 0.0833;
+        let fxaa_quality_subpix = 1.00;
+        let fxaa_quality_edge_threshold = 0.063;
+        let fxaa_quality_edge_threshold_min = 0.0312;
         let fxaa_console_edge_sharpness = 8.0;
         let fxaa_console_edge_threshold = 0.125;
         let fxaa_console_edge_threshold_min = 0.05;

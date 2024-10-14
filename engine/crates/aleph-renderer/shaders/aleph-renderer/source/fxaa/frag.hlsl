@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-#define FXAA_QUALITY__PRESET 29
+#define FXAA_QUALITY__PRESET 39
 #include "fxaa/Fxaa3_11.hlsl"
 
 #include "payload.hlsl"
