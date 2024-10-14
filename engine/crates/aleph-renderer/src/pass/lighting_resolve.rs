@@ -124,7 +124,7 @@ pub fn pass(
 
             let u_ptr = uniform_buffer.map().unwrap();
             let u_alloc =
-                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024).unwrap();
+                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 1024).unwrap();
 
             // let gbuffer0_desc = gbuffer0.desc_ref();
             // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;

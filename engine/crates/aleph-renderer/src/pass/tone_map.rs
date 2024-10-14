@@ -113,7 +113,11 @@ pub fn pass(
             let input = resources.get_texture(data.input).unwrap();
             let output = resources.get_texture(data.output).unwrap();
             let input_srv = ImageView::get_srv_for(input).unwrap();
-            let output_uav = ImageView::get_uav_for(output).unwrap();
+            let output_uav = ImageViewDesc {
+                format: Format::Bgra8Unorm, // Can't take UAV of SRGB formats
+                ..ImageViewDesc::uav_for_texture(output)
+            };
+            let output_uav = output.get_view(&output_uav).unwrap();
 
             let set = arena.allocate_set(set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[

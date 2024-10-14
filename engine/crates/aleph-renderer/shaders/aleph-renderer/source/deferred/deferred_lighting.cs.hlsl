@@ -51,7 +51,7 @@ struct CameraLayout {
 ConstantBuffer<CameraLayout> g_camera : register(b5, space0);
 
 // Light parameters
-static float lumens = 100;
+static float lumens = 1000;
 
 static float reflectance = 0.5;
 
@@ -146,7 +146,7 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         light += PointLight(point_pos.xyz, viewspacePoint, base_colour, vs_normal, metallic, roughness);
 
         let dir_vector = mul(normalize(float3(1, 1, 1)), view_rotation_matrix);
-        light += DirectionLight(dir_vector, viewspacePoint, base_colour, vs_normal, metallic, roughness) * 0.5;
+        light += DirectionLight(dir_vector, viewspacePoint, base_colour, vs_normal, metallic, roughness) * 2.0;
         light += DirectionLight(-dir_vector, viewspacePoint, base_colour, vs_normal, metallic, roughness) * float3(0.25, 0.1, 0.1);
 
         g_output[dispatch_thread_id.xy] = float4(light, 1);

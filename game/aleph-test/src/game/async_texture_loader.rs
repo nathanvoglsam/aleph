@@ -134,11 +134,7 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
         width,
         height,
         depth: 1,
-        format: if request.v.srgb {
-            Format::Rgba8UnormSrgb
-        } else {
-            Format::Rgba8Unorm
-        },
+        format: Format::Rgba8Unorm,
     };
     let size = desc.size_requirement();
     let block = match context.upload_buffer.allocate_aligned(size, 256) {

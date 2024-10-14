@@ -27,35 +27,12 @@
 // SOFTWARE.
 //
 
-use aleph_frame_graph::PassArgs;
-use aleph_pin_board::{BoardParamId, BoardScope};
-use aleph_rhi_api::*;
+#include "payload.hlsl"
 
-use crate::{BufferPool, TexturePool};
-
-pub mod composite_planes;
-pub mod fxaa;
-pub mod lighting_resolve;
-pub mod main_gbuffer;
-pub mod tone_map;
-
-#[derive(Clone)]
-pub struct GraphSwapImageInfo {
-    pub desc: TextureDesc<'static>,
-}
-
-impl BoardParamId for GraphSwapImageInfo {
-    type Output<'a> = Self;
-}
-
-pub struct GraphArgsLayout<'a> {
-    pub board: &'a BoardScope<'a>,
-    pub texture_pool: &'a TexturePool,
-    pub buffer_pool: &'a BufferPool,
-}
-
-pub struct GraphArgs();
-
-impl PassArgs for GraphArgs {
-    type Args<'a> = GraphArgsLayout<'a>;
+PixelInput main(uint id : SV_VertexID)
+{
+	PixelInput output;
+	output.uv = float2((id << 1) & 2, id & 2);
+	output.sv_position = float4(output.uv * float2(2, -2) + float2(-1, 1), 0, 1);
+	return output;
 }

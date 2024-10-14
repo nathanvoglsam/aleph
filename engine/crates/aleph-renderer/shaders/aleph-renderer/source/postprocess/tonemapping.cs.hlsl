@@ -27,19 +27,9 @@
 // SOFTWARE.
 //
 
-#include "aces.hlsl"
-
-float3 LinearTosRGB(in float3 color) {
-    float3 x = color * 12.92f;
-    float3 y = 1.055f * pow(saturate(color), 1.0f / 2.4f) - 0.055f;
-
-    float3 clr = color;
-    clr.r = color.r < 0.0031308f ? x.r : y.r;
-    clr.g = color.g < 0.0031308f ? x.g : y.g;
-    clr.b = color.b < 0.0031308f ? x.b : y.b;
-
-    return clr;
-}
+#include "common.hlsl"
+#include "srgb.hlsl"
+#include "tonemap.hlsl"
 
 [[vk::binding(0, 0)]]
 Texture2D<float4> g_input : register(t0, space0);
@@ -56,8 +46,18 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
 
     if (dispatch_thread_id.x < width && dispatch_thread_id.y < height) {
         float3 colour = g_input.Load(int3(dispatch_thread_id.x, dispatch_thread_id.y, 0)).rgb;
-        colour = LinearTosRGB(ACESFitted(colour) * 1.8f);
-        g_output[dispatch_thread_id.xy] = float4(colour, 1.0);
+
+        // // Get our linear space ACES colour
+        // float3 acesColour = ACESFitted(colour);
+
+        // Then while we're still linear we get an estimate for luminance, which will go in the
+        // spare alpha. This is intended to be consumed by FXAA
+        float luma = LuminanceFromLinearRGB(colour);
+
+        // Finally do the SRGB conversion before output
+        float3 srgbColour = LinearToSRGB(colour);
+
+        g_output[dispatch_thread_id.xy] = float4(srgbColour, luma);
     }
 }
 

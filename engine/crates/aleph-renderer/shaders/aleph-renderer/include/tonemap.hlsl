@@ -75,3 +75,10 @@ func ACESFitted<T: __BuiltinFloatingPointType>(vector<T, 3> color) -> vector<T, 
     color = saturate(color);
     return color;
 }
+
+float3 ToneMapFilmicALU(float3 color)
+{
+    color = max(0, color - 0.004f);
+    color = (color * (6.2f * color + 0.5f)) / (color * (6.2f * color + 1.7f)+ 0.06f);
+    return color;
+}

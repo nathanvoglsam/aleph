@@ -91,3 +91,8 @@ inline func Saturate<T : __BuiltinFloatingPointType>(T val) -> T {
         return clamp(val, T(0.045), T(1.0)); // TODO: other types
     }
 }
+
+float LuminanceFromLinearRGB(float3 color)
+{
+    return dot(color, float3(0.2126f, 0.7152f, 0.0722f));
+}

@@ -655,6 +655,22 @@ pub trait IBuffer: IAny + IGetPlatformInterface + Send + Sync {
     fn invalidate_range(&self, offset: u64, len: u64);
 }
 
+impl dyn IBuffer {
+    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer`]
+    pub const fn uniform_buffer_write(&self, len: u32) -> BufferDescriptorWrite {
+        BufferDescriptorWrite::uniform_buffer(self, len)
+    }
+
+    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer_offset`]
+    pub const fn uniform_buffer_offset_write(
+        &self,
+        offset: u64,
+        len: u32,
+    ) -> BufferDescriptorWrite {
+        BufferDescriptorWrite::uniform_buffer_offset(self, offset, len)
+    }
+}
+
 pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ITexture);
 
@@ -1190,7 +1206,7 @@ impl UOffset3D {
 }
 
 /// A two-component vector of [u32], canonically used for specifying extents.
-#[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Default, Debug)]
 pub struct Extent2D {
     /// Extent along the `x` axis
     pub width: u32,
@@ -1207,7 +1223,7 @@ impl Extent2D {
 }
 
 /// A three-component vector of [u32], canonically used for specifying extents.
-#[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Default, Debug)]
 pub struct Extent3D {
     /// Extent along the `x` axis
     pub width: u32,

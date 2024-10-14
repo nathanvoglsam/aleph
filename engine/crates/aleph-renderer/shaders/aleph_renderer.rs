@@ -46,6 +46,20 @@ pub mod fullscreen_quad {
     }
 }
 #[allow(unused)]
+pub mod fxaa {
+    #[allow(unused)]
+    use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
+
+    #[allow(unused)]
+    pub const fn frag() -> ShaderName<'static, Fragment> {
+        unsafe { ShaderName::<Fragment>::new("aleph-renderer/fxaa/frag") } // Safety guaranteed by code-gen
+    }
+    #[allow(unused)]
+    pub const fn vert() -> ShaderName<'static, Vertex> {
+        unsafe { ShaderName::<Vertex>::new("aleph-renderer/fxaa/vert") } // Safety guaranteed by code-gen
+    }
+}
+#[allow(unused)]
 pub mod postprocess {
     #[allow(unused)]
     use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };

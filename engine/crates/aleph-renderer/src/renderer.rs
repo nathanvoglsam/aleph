@@ -91,6 +91,7 @@ impl IRenderPlane for DefaultRenderPlane {
         pass::main_gbuffer::pass(frame_graph, device, pin_board, state_cache);
         pass::lighting_resolve::pass(frame_graph, device, pin_board, state_cache);
         let result = pass::tone_map::pass(frame_graph, device, pin_board, state_cache);
+        let result = pass::fxaa::pass(frame_graph, device, pin_board, state_cache, &result);
 
         result
     }
