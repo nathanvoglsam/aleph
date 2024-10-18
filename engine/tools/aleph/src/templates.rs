@@ -86,7 +86,9 @@ pub const JS_CONFIG_TEMPLATE: &str = r#"
   "compilerOptions": {
     "module": "CommonJS",
     "target": "ES6",
-    "checkJs": true
+    "checkJs": true,
+    "strict": true,
+    "alwaysStrict": true
   },
   "include": [
 {{ALEPH_INCLUDES}}
