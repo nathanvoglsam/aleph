@@ -90,4 +90,4 @@ declare const Environment: {
 
 interface Configs {}
 
-declare var Configs: Configs;
+declare const Configs: Configs;
