@@ -28,6 +28,5 @@
 //
 
 fn main() {
-    aleph_engine_build::add_platform_flags();
     println!("cargo::rerun-if-changed=src");
 }
