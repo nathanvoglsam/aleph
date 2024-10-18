@@ -29,15 +29,16 @@
 
 mod build;
 mod bundle;
+mod genconfigs;
 mod genproj;
 mod genvscode;
-pub mod haxe;
 pub mod shaders;
 mod uuid;
 
 pub use build::Build;
 pub use bundle::Bundle;
 use clap::{Arg, ArgMatches, Command};
+pub use genconfigs::GenConfigs;
 pub use genproj::GenProj;
 pub use genvscode::GenVsCode;
 pub use uuid::Uuid;

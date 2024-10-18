@@ -41,8 +41,8 @@ categories = ["game-engines"]
 edition.workspace = true
 
 [package.metadata.aleph]
+config = true
 shaders = { modules = ["aleph-render"] }
-haxe = { modules = ["config", "script"] }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

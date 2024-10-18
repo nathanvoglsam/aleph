@@ -27,34 +27,20 @@
 // SOFTWARE.
 //
 
-import aleph_config.Environment;
-import aleph_rhi.Config.RhiConfig;
-import aleph_rhi.Config.RhiBackend;
-
-class Config {
-    /**
-     * Constructs a default 'RhiConfig' object based on the given target.
-     * 
-     * This function will choose opinionated defaults for the available settings based on the target
-     * platform and architecture. These may be override though command line flags or through
-     * additional config scripts.
-     * @param target
-     */
-    @:expose
-    private static function get(env: Environment): RhiConfig {
-        // On Windows we prefer D3D12 for better platform integration (DXGI)
-        var api = if (env.platform.isWindows()) {
-            RhiBackend.D3D12;
-        } else {
-            RhiBackend.VULKAN;
-        };
-
-        return {
-            api: api,
-
-            // We'll never want validation or debug by default. Leave that to an override
-            validation: false,
-            debug: false,
-        };
+interface Configs {
+    "aleph-render": {
+        /** 
+         * The number of frames the renderer is allowed to have in flight on the GPU at any one
+         * time.
+         */
+        framesInFlight: number;
+    
+        /**
+         * When enabled, the renderer is forced to rebuild the frame graph every frame regardless of
+         * whether it otherwise would've needed to.
+         * 
+         * Useful for profiling.
+         */
+        forceGraphRebuild: boolean;
     }
 }

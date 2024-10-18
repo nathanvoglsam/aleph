@@ -27,39 +27,6 @@
 // SOFTWARE.
 //
 
-package aleph_render;
-
-/**
- * Collection of all options for configuring the RHI.
- */
-typedef RenderConfig = {
-    /** 
-     * Whether debuging utilities are allowed to be initialized. Different backends have debug
-     * tools only available on dev machines.
-     */
-    var framesInFlight: Int;
-
-    /**
-     * When enabled, the renderer is forced to rebuild the frame graph every frame regardless of
-     * whether it otherwise would've needed to.
-     * 
-     * Useful for profiling.
-     */
-    var forceGraphRebuild: Bool;
-}
-
-class Config {
-    /**
-     * [Description]
-     * Utility function for fetching the 'RenderConfig' object from the given ConfigTable.
-     * 
-     * This is expected to be used by an ConfigOverride to fetch the current config state so it can
-     * be tweaked.
-     * @param config 
-     * @return RhiConfig
-     */
-    @:access(aleph_config.ConfigTable.get)
-    public static function fetch(config: aleph_config.ConfigTable): RenderConfig {
-        return config.get("aleph-render");
-    }
-}
+Configs["aleph-rhi"].api = "vulkan";
+Configs["aleph-rhi"].validation = true;
+Configs["aleph-rhi"].debug = true;

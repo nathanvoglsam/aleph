@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::commands::{Build, Bundle, GenProj, GenVsCode, SubcommandSet, Uuid};
+use crate::commands::{Build, Bundle, GenConfigs, GenProj, GenVsCode, SubcommandSet, Uuid};
 
 mod commands;
+mod config_subproject;
 mod crate_metadata;
-mod haxe;
 mod project;
 mod project_schema;
 mod shader_system;
@@ -51,9 +51,9 @@ fn main() -> anyhow::Result<()> {
     subcommands.register_subcommand(Uuid {});
     subcommands.register_subcommand(GenProj {});
     subcommands.register_subcommand(GenVsCode {});
+    subcommands.register_subcommand(GenConfigs {});
     subcommands.register_subcommand(Build {});
     subcommands.register_subcommand(Bundle {});
     subcommands.register_subcommand(commands::shaders::make());
-    subcommands.register_subcommand(commands::haxe::make());
     subcommands.exec_as_root()
 }

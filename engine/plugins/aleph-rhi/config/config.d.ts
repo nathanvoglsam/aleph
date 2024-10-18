@@ -27,34 +27,44 @@
 // SOFTWARE.
 //
 
-package aleph_config;
-
-import haxe.DynamicAccess;
-
-/**
- * An abstract over Dynamic that is conventionally expected to be a key-value table that pairs
- * plugin/crate names to their config objects.
- */
-abstract ConfigTable(DynamicAccess<Dynamic>) {
+declare namespace aleph_rhi {
     /**
-     * [Description]
-     * Returns the config object for the given plugin/crate by name.
-     * 
-     * May throw if there is no config object by that name.
-     * 
-     * This function is for internal use only. This interface is quite raw and easy to misuse so it
-     * is marked as 'private' to prevent a naive caller from calling it. Use a wrapper instead.
-     * 
-     * To access this function use @:access.
-     * @return Dynamic
+     * All the supported RHI backends.
      */
-    inline private function get(name: String): Dynamic {
-        var cfg = this.get(name);
-        // Make sure the config is there.
-        if (cfg != null) {
-            return cfg;
-        } else {
-            throw new haxe.Exception('Field for \"$name\" not found in config table');
-        }
+    declare type Backend = "d3d12" | "vulkan"; 
+
+    /**
+     * Special options specific to the D3D12 backend.
+     */
+    declare interface D3D12Options {}
+
+    /**
+     * Special options specific to the Vulkan backend.
+     */
+    declare interface VulkanOptions {
+        /** Whether to disable sync2 and force the sync2 emulation path on. **/
+        denySync2: boolean;
     }
+}
+
+interface Configs {
+    "aleph-rhi": {
+        /** The backend that should be used **/
+        api: Backend;
+
+        /** Any options to configure the Vulkan backend, if it is loaded. **/
+        vulkan?: VulkanOptions;
+
+        /** Any options to configure the D3D12 backend, if it is loaded. **/
+        d3d12?: D3D12Options;
+
+        /** Whether to enable RHI and platform validation layers if they are available. **/
+        validation: boolean;
+
+        /** 
+         * Whether debuging utilities are allowed to be initialized. Different backends have debug
+         * tools only available on dev machines.
+         */
+        debug: boolean;
+    },
 }

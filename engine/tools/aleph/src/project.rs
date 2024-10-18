@@ -69,14 +69,10 @@ pub struct AlephProject<'a> {
     /// The path to the '.aleph/shaders' folder for this project
     shader_build_path: Utf8PathBuf,
 
-    /// The path to the '.aleph/config' folder for this project
-    config_build_path: Utf8PathBuf,
-
-    /// The path to the '.aleph/assets' folder for this project
-    assets_build_path: Utf8PathBuf,
-
-    /// The path to the '.aleph/haxe' folder for this project
-    haxe_build_path: Utf8PathBuf,
+    // /// The path to the '.aleph/assets' folder for this project
+    // assets_build_path: Utf8PathBuf,
+    /// The path to the '.aleph/configs' folder for this project
+    configs_build_path: Utf8PathBuf,
 
     /// Path to the android project in the '.aleph/proj' directory
     android_proj_path: Utf8PathBuf,
@@ -99,9 +95,6 @@ pub struct AlephProject<'a> {
 
     /// The path to the '.aleph/sdks/ninja/ninja' executable for this project
     ninja_path: Utf8PathBuf,
-
-    /// The path to the '.aleph/sdks/haxe/haxe' executable for this project
-    haxe_path: Utf8PathBuf,
 
     /// The path to the Cargo.toml file adjacent to the aleph-project.toml
     cargo_toml_file: Utf8PathBuf,
@@ -154,9 +147,8 @@ impl<'a> AlephProject<'a> {
         let uwp_aarch64_proj_path = Self::compute_target_project_root(&dot_aleph_path, &target)?;
 
         let shader_build_path = dot_aleph_path.join("shaders");
-        let config_build_path = dot_aleph_path.join("data").join("config");
-        let assets_build_path = dot_aleph_path.join("data").join("assets");
-        let haxe_build_path = dot_aleph_path.join("haxe");
+        // let assets_build_path = dot_aleph_path.join("data").join("assets");
+        let configs_build_path = dot_aleph_path.join("configs");
 
         let mut ndk_path = dot_aleph_path.clone();
         ndk_path.push("sdks");
@@ -212,9 +204,8 @@ impl<'a> AlephProject<'a> {
             project_root,
             dot_aleph_path,
             shader_build_path,
-            config_build_path,
-            assets_build_path,
-            haxe_build_path,
+            // assets_build_path,
+            configs_build_path,
             android_proj_path,
             uwp_x86_64_proj_path,
             uwp_aarch64_proj_path,
@@ -222,7 +213,6 @@ impl<'a> AlephProject<'a> {
             dxc_path,
             slang_path,
             ninja_path,
-            haxe_path,
             cargo_toml_file,
             vscode_workspace_file,
             cargo_target_dir,
@@ -261,22 +251,16 @@ impl<'a> AlephProject<'a> {
         &self.shader_build_path
     }
 
-    /// Returns the path to the folder that contains the `config` directory that will be used as
-    /// the output directory for our config scripts
-    pub fn config_build_path(&self) -> &Utf8Path {
-        &self.config_build_path
-    }
+    // /// Returns the path to the folder that contains the `assets` directory that will be used as
+    // /// the output directory for our cooked assets
+    // pub fn assets_build_path(&self) -> &Utf8Path {
+    //     &self.assets_build_path
+    // }
 
-    /// Returns the path to the folder that contains the `assets` directory that will be used as
-    /// the output directory for our cooked assets
-    pub fn assets_build_path(&self) -> &Utf8Path {
-        &self.assets_build_path
-    }
-
-    /// Returns the path to the folder that contains the `haxe` directory that will be used as
-    /// the output directory for our haxe builds
-    pub fn haxe_build_path(&self) -> &Utf8Path {
-        &self.haxe_build_path
+    /// Returns the path to the folder that contains the `configs` directory that will be used as
+    /// the output directory for our config files
+    pub fn configs_build_path(&self) -> &Utf8Path {
+        &self.configs_build_path
     }
 
     /// A utility around [Self::target_project_root] that returns also ensures that the project
@@ -357,12 +341,6 @@ impl<'a> AlephProject<'a> {
     /// not exist so check before using!
     pub fn ninja_path(&self) -> &Utf8Path {
         &self.ninja_path
-    }
-
-    /// Returns the path to the project's bundled haxe, in '.aleph/sdks/haxe/haxe'. This path may
-    /// not exist so check before using!
-    pub fn haxe_path(&self) -> &Utf8Path {
-        &self.haxe_path
     }
 
     /// Returns the './target/{target-triple}/{profile}' path for the request target + profile set.

@@ -55,7 +55,7 @@ pub struct ConfigRunner {
 impl ConfigRunner {
     pub fn new() -> io::Result<Self> {
         let runtime = qjs::Runtime::new().unwrap();
-        let config_dir = find_folder_in_search_path("config")?;
+        let config_dir = find_folder_in_search_path("configs")?;
         let config_object = qjs::Value::UNDEFINED.to_ref_value();
         let config_object = ManuallyDrop::new(config_object);
 
@@ -89,28 +89,28 @@ impl ConfigRunner {
             self.config_object.deref().clone()
         };
 
+        // Provide the 'Configs' object which is where the scripts are expected to write their
+        // config into.
+        unsafe {
+            let global = context.get_global_object();
+            if 0 > context.set_property_str(&global, "Configs", &config_object) {
+                return Err(js_exception_to_err(&context));
+            }
+
+            Self::setup_global_environment(&context)?;
+        }
+        
+        // Run the setup script to provide the default functions
+        log::trace!("Running aleph-config.js");
+        let result = context.eval(SETUP_SCRIPT, nstr!("aleph-config.js"), qjs::raw::JSEvalOptions::STRICT);
+        let _ = check_exception(&context, result)?;
+
         // Load the script module itself. This won't run the config script, just load all the code
         // into the context. We have to fetch the entry point and execute the entry point
         // separately...
+        log::trace!("Running {filename}");
         let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
         let _ = check_exception(&context, result)?;
-
-        // ... which is exactly what we do here. This creates a new aleph_config.Environment object
-        // using a magic function we expect to exist at aleph_config.Environment.create and then
-        // call Config.get with it.
-        let result = Self::run_config_script(&context)?;
-
-        unsafe {
-            // Make sure the field doesn't exist yet to prevent people from loading the same config
-            // scripts twice by accident.
-            let prop = context.get_property_str(&config_object, name);
-            let prop = check_exception(&context, prop).unwrap();
-            assert!(prop.is_undefined());
-
-            if 0 > context.set_property_str(&config_object, name, &result) {
-                return Err(js_exception_to_err(&context));
-            }
-        };
 
         Ok(())
     }
@@ -136,16 +136,22 @@ impl ConfigRunner {
             self.config_object.deref().clone()
         };
 
+        // Provide the 'Configs' object which is where the scripts are expected to write their
+        // config into.
+        unsafe {
+            let global = context.get_global_object();
+            if 0 > context.set_property_str(&global, "Configs", &config_object) {
+                return Err(js_exception_to_err(&context));
+            }
+
+            Self::setup_global_environment(&context)?;
+        }
+
         // Load the script module itself. This won't run the config script, just load all the code
         // into the context. We have to fetch the entry point and execute the entry point
         // separately...
         let result = context.eval(script_nstr, filename, qjs::raw::JSEvalOptions::STRICT);
         let _ = check_exception(&context, result)?;
-
-        // ... which is exactly what we do here. This creates a new aleph_config.Environment object
-        // using a magic function we expect to exist at aleph_config.Environment.create and then
-        // call ConfigOverrides.get with it.
-        Self::run_config_overrides_script(&context, config_object)?;
 
         Ok(())
     }
@@ -251,101 +257,46 @@ impl ConfigRunner {
         }
     }
 
-    fn get_env_create_fn<'a>(
+    fn setup_global_environment<'a>(
         context: &'a qjs::Context,
-    ) -> Result<qjs::RefValue<'a>, RunConfigError> {
+    ) -> Result<(), RunConfigError> {
         let global = context.get_global_object();
+        
         unsafe {
-            let prop = context.get_property_str(&global, "aleph_config");
-            let prop = check_exception(context, prop)?;
+            let p_string = context.new_string(target_platform().name());
+            let a_string = context.new_string(target_architecture().name());
+            let b_string = context.new_string(target_build_type().name());
 
-            let prop = context.get_property_str(&prop, "Environment");
-            let prop = check_exception(context, prop)?;
-
-            let prop = context.get_property_str(&prop, "create");
-            let prop = check_exception(context, prop)?;
-            assert!(prop.is_object());
-
-            Ok(prop)
-        }
-    }
-
-    fn create_environment_object<'a>(
-        context: &'a qjs::Context,
-    ) -> Result<qjs::Object<'a>, RunConfigError> {
-        let env_create_fn = Self::get_env_create_fn(context)?;
-
-        let args = [
-            context.new_string(target_platform().name()),
-            context.new_string(target_architecture().name()),
-            context.new_string(target_build_type().name()),
-        ];
-        let result = context.call(&env_create_fn, &context.get_global_object(), &args);
-        let result = check_exception(context, result)?;
-        match result.to_object() {
-            Ok(v) => Ok(v),
-            Err(v) => {
-                let msg = format!("Expected 'object', got '{:?}'", v.get_tag());
-                Err(RunConfigError::Js(msg))
+            if 0 > context.set_property_str(&global, "THIS_PLATFORM", &p_string) {
+                return Err(js_exception_to_err(&context));
+            }
+            if 0 > context.set_property_str(&global, "THIS_ARCHITECTURE", &a_string) {
+                return Err(js_exception_to_err(&context));
+            }
+            if 0 > context.set_property_str(&global, "THIS_BUILD_TYPE", &b_string) {
+                return Err(js_exception_to_err(&context));
             }
         }
-    }
 
-    fn get_config_entry_fn<'a>(
-        context: &'a qjs::Context,
-    ) -> Result<qjs::RefValue<'a>, RunConfigError> {
-        let global = context.get_global_object();
         unsafe {
-            let prop = context.get_property_str(&global, "Config");
-            let prop = check_exception(context, prop)?;
+            let p = context.new_object().to_ref_value();
+            let a = context.new_object().to_ref_value();
+            let b = context.new_object().to_ref_value();
+            let e = context.new_object().to_ref_value();
 
-            let prop = context.get_property_str(&prop, "get");
-            let prop = check_exception(context, prop)?;
-            assert!(prop.is_object());
-
-            Ok(prop)
+            if 0 > context.set_property_str(&global, "Platform", &p) {
+                return Err(js_exception_to_err(&context));
+            }
+            if 0 > context.set_property_str(&global, "Architecture", &a) {
+                return Err(js_exception_to_err(&context));
+            }
+            if 0 > context.set_property_str(&global, "BuildType", &b) {
+                return Err(js_exception_to_err(&context));
+            }
+            if 0 > context.set_property_str(&global, "Environment", &e) {
+                return Err(js_exception_to_err(&context));
+            }
         }
-    }
-
-    fn run_config_script<'a>(
-        context: &'a qjs::Context,
-    ) -> Result<qjs::RefValue<'a>, RunConfigError> {
-        let env_object = Self::create_environment_object(context)?;
-        let script_fn = Self::get_config_entry_fn(context)?;
-
-        let args = [env_object.to_ref_value()];
-        let result = context.call(&script_fn, &context.get_global_object(), &args);
-        let result = check_exception(context, result)?;
-
-        Ok(result)
-    }
-
-    fn get_config_overrides_entry_fn<'a>(
-        context: &'a qjs::Context,
-    ) -> Result<qjs::RefValue<'a>, RunConfigError> {
-        let global = context.get_global_object();
-        unsafe {
-            let prop = context.get_property_str(&global, "ConfigOverrides");
-            let prop = check_exception(context, prop)?;
-
-            let prop = context.get_property_str(&prop, "get");
-            let prop = check_exception(context, prop)?;
-            assert!(prop.is_object());
-
-            Ok(prop)
-        }
-    }
-
-    fn run_config_overrides_script<'a>(
-        context: &'a qjs::Context,
-        config_object: qjs::RefValue<'a>,
-    ) -> Result<(), RunConfigError> {
-        let env_object = Self::create_environment_object(context)?;
-        let script_fn = Self::get_config_overrides_entry_fn(context)?;
-
-        let args = [env_object.to_ref_value(), config_object];
-        let result = context.call(&script_fn, &context.get_global_object(), &args);
-        let _ = check_exception(context, result)?;
 
         Ok(())
     }
@@ -399,7 +350,7 @@ pub enum RunConfigError {
 ///
 /// - `${CWD}/{folder}`
 /// - `${EXE_DIR}/{folder}`
-/// - `${CWD}/.aleph/data/{folder}`
+/// - `${CWD}/.aleph/{folder}`
 ///
 /// # Info
 ///
@@ -425,7 +376,7 @@ fn find_folder_in_search_path(folder: &str) -> io::Result<Utf8PathBuf> {
         return Ok(exe_dir_config);
     }
 
-    let dot_aleph_dir_config = cwd.join(".aleph").join("data").join(folder);
+    let dot_aleph_dir_config = cwd.join(".aleph").join(folder);
     if dot_aleph_dir_config.is_dir() {
         return Ok(dot_aleph_dir_config);
     }
@@ -457,3 +408,5 @@ fn js_exception_to_err(context: &qjs::Context) -> RunConfigError {
     };
     RunConfigError::Js(message.to_string())
 }
+
+const SETUP_SCRIPT: &NStr = nstr!(include_str!("../config/config.js"));

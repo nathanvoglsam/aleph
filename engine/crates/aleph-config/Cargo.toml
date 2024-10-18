@@ -42,7 +42,12 @@ edition.workspace = true
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [package.metadata.aleph]
-haxe = { modules = ["script"] }
+## Special flag for adding the the 'config' subdir to the generated jsconfig without actually adding
+## this to the config bundle.
+##
+## In practice the only crate that should ever use this is 'aleph-config' which _implements_ the
+## config system
+config-defs = true
 
 [dependencies]
 aleph-target = { workspace = true }

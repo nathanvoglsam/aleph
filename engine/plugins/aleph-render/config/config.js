@@ -27,51 +27,7 @@
 // SOFTWARE.
 //
 
-package aleph_config;
-
-enum abstract BuildTypeId(String) {
-    var Dev = "dev";
-    var Retail = "retail";
-}
-
-/**
- * A wrapper over 'BuildTypeId' that provides an array of utility functions.
- */
-class BuildType {
-    private var v: BuildTypeId;
-
-    public function new(v: BuildTypeId) {
-        this.v = v;
-    }
-
-    /**
-     * [Description]
-     * Checks if 'this' and 'other' represent the same build type.
-     * 
-     * This compares the internal IDs and is not a simple reference equality check.
-     * @param other 
-     * @return Bool
-     */
-    public function isSame(other: BuildType): Bool {
-        return this.v == other.v;
-    }
-
-    /**
-     * [Description] Shortcut for comparing against DEV
-     * @return Bool
-     */
-    public function isDev(): Bool {
-        return this.isSame(BuildType.DEV);
-    }
-
-    /**
-     * [Description] Shortcut for comparing against RETAIL
-     * @return Bool
-     */
-    public function isRetail(): Bool {
-        return this.isSame(BuildType.RETAIL);
-    }
-
-    public static var DEV = new BuildType(BuildTypeId.Dev);
-    public static var RETAIL = new BuildType(BuildTypeId.Retail);
+Configs["aleph-render"] = {
+    framesInFlight: 2,
+    forceGraphRebuild: false,
 }

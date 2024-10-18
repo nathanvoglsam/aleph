@@ -1,0 +1,162 @@
+//
+//
+// This file is a part of Aleph
+//
+// https://github.com/nathanvoglsam/aleph
+//
+// MIT License
+//
+// Copyright (c) 2020 Aleph Engine
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
+use bumpalo::collections::Vec as BVec;
+use bumpalo::Bump;
+use camino::Utf8Path;
+use cargo_metadata::Package;
+
+use crate::crate_metadata::{AlephCrateMetadata, ProjectCrateMetadata};
+use crate::project::AlephProject;
+use crate::subproject::{ISubproject, SubprojectCrateContext, SubprojectProjectContext};
+use crate::utils::BumpExt;
+
+#[derive(Debug)]
+pub struct ConfigSubproject();
+
+impl<'a> ISubproject<'a> for ConfigSubproject {
+    type ProjectMeta = ConfigProjectMeta<'a>;
+
+    type CrateMeta = ConfigCrateMeta<'a>;
+
+    type ModuleMeta = ();
+
+    fn load_project(arena: &'a Bump, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta> {
+        let configs_root = arena.alloc_utf8_path(ctx.configs_build_path());
+
+        Ok(ConfigProjectMeta { configs_root })
+    }
+
+    fn retain_crate(_package: &Package, metadata: &AlephCrateMetadata) -> bool {
+        // Skip any packages with no config script
+        metadata.config || metadata.config_defs
+    }
+
+    fn load_crate(
+        arena: &'a Bump,
+        _ctx: &AlephProject,
+        project_ctx: &SubprojectProjectContext<'a, Self>,
+        package: &Package,
+        metadata: &AlephCrateMetadata,
+    ) -> anyhow::Result<Self::CrateMeta> {
+        // The game crate is special, and gets the name @overrides which the config crate interprets
+        // as a script that runs after all the library configs.
+        //
+        // It's intended to provide game specific overrides to the library's default config.
+        let (game_crate, _) = _ctx.get_game_crate_and_target()?;
+        let output_name = if game_crate.id == package.id {
+            "@overrides"
+        } else {
+            package.name.as_str()
+        };
+
+        let output_file = project_ctx
+            .meta
+            .configs_root
+            .join(output_name)
+            .with_extension("js");
+        let output_file = arena.alloc_utf8_path(&output_file);
+
+        let config_file = package
+            .manifest_path
+            .parent()
+            .unwrap()
+            .join("config")
+            .join("config.js");
+        let config_file = arena.alloc_utf8_path(&config_file);
+
+        Ok(ConfigCrateMeta {
+            output_file,
+            config_file,
+            defs_only: metadata.config_defs,
+        })
+    }
+
+    fn get_module_names(
+        arena: &'a Bump,
+        _package: &Package,
+        _metadata: &AlephCrateMetadata,
+    ) -> anyhow::Result<BVec<'a, &'a str>> {
+        Ok(BVec::new_in(arena))
+    }
+
+    fn load_module(
+        _arena: &'a Bump,
+        _ctx: &AlephProject,
+        _project_ctx: &SubprojectProjectContext<'a, Self>,
+        _crate_ctx: &SubprojectCrateContext<'a, Self>,
+        _package: &Package,
+        _metadata: &AlephCrateMetadata,
+        _module_name: &str,
+    ) -> anyhow::Result<Self::ModuleMeta> {
+        Ok(())
+    }
+}
+
+impl ConfigSubproject {
+    pub fn load<'a>(
+        arena: &'a Bump,
+        ctx: &AlephProject,
+    ) -> anyhow::Result<ConfigProjectContext<'a>> {
+        let metadata = ProjectCrateMetadata::load(ctx)?;
+        let project_ctx = SubprojectProjectContext::load(&arena, ctx, &metadata)?;
+        Ok(project_ctx)
+    }
+
+    pub fn ensure_build_directories(ctx: &SubprojectProjectContext<Self>) -> anyhow::Result<()> {
+        ctx.meta.ensure_build_directories()?;
+        Ok(())
+    }
+}
+
+pub type ConfigProjectContext<'a> = SubprojectProjectContext<'a, ConfigSubproject>;
+
+#[derive(Clone, Debug)]
+pub struct ConfigProjectMeta<'a> {
+    /// Path to '.aleph/configs'
+    pub configs_root: &'a Utf8Path,
+}
+
+impl<'a> ConfigProjectMeta<'a> {
+    pub fn ensure_build_directories(&self) -> std::io::Result<()> {
+        std::fs::create_dir_all(self.configs_root)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ConfigCrateMeta<'a> {
+    /// Path to '.aleph/configs/{crate}.js'
+    pub output_file: &'a Utf8Path,
+
+    /// Path to the 'config.js' file in the crate's 'config' folder.
+    pub config_file: &'a Utf8Path,
+
+    /// Whether this crate provides only type defs and no config script
+    pub defs_only: bool,
+}

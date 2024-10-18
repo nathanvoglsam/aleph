@@ -38,7 +38,7 @@ edition.workspace = true
 publish = false
 
 [package.metadata.aleph]
-haxe = { modules = ["script"] }
+config = true
 
 [lib]
 crate-type = ["cdylib"]

@@ -27,23 +27,14 @@
 // SOFTWARE.
 //
 
-import aleph_config.Environment;
-import aleph_render.Config.RenderConfig;
+let config = Environment.getConfig();
 
-class Config {
-    /**
-     * Constructs a default 'RenderConfig' object based on the given target.
-     * 
-     * This function will choose opinionated defaults for the available settings based on the target
-     * platform and architecture. These may be override though command line flags or through
-     * additional config scripts.
-     * @param target
-     */
-    @:expose
-    private static function get(env: Environment): RenderConfig {
-        return {
-            framesInFlight: 2,
-            forceGraphRebuild: false,
-        };
-    }
-}
+// On Windows we prefer D3D12 for better platform integration (DXGI)
+/** @type {aleph_rhi.Backend} */
+let api = Platform.isWindows(config.platform) ? "d3d12" : "vulkan";
+
+Configs["aleph-rhi"] = {
+    api: api,
+    validation: false,
+    debug: false,
+};

@@ -44,8 +44,14 @@ pub struct AlephCrateMetadata<'a> {
     /// Shader metadata description
     pub shaders: Option<ShaderCrateMetadata<'a>>,
 
-    /// Haxe metadata description
-    pub haxe: Option<HaxeCrateMetadata<'a>>,
+    /// Does the crate want to integrate with aleph's config system (provide a config script)
+    #[serde(default)]
+    pub config: bool,
+
+    /// Odes the crate want to provide only type definitions for the config system
+    /// (no config script)
+    #[serde(default, rename = "config-defs")]
+    pub config_defs: bool,
 }
 
 impl<'a> AlephCrateMetadata<'a> {
@@ -58,7 +64,7 @@ impl<'a> AlephCrateMetadata<'a> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.shaders.is_none() && self.haxe.is_none()
+        self.shaders.is_none() && !self.config && !self.config_defs
     }
 
     fn value_for_package(package: &Package) -> Option<&serde_json::Value> {
@@ -98,14 +104,6 @@ impl<'a> ProjectCrateMetadata<'a> {
 #[derive(Default, Serialize, Deserialize)]
 pub struct ShaderCrateMetadata<'a> {
     /// Named set of shader modules that the crate contains within the shaders folder
-    #[serde(default)]
-    pub modules: Vec<Cow<'a, str>>,
-}
-
-/// The description of the 'package.metadata.aleph.haxe' key in a package's metadata.
-#[derive(Default, Serialize, Deserialize)]
-pub struct HaxeCrateMetadata<'a> {
-    /// Named set of haxe modules that the crate contains within the haxe folder
     #[serde(default)]
     pub modules: Vec<Cow<'a, str>>,
 }
