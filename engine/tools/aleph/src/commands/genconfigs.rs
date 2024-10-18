@@ -35,7 +35,6 @@ use crate::commands::ISubcommand;
 use crate::config_subproject::ConfigSubproject;
 use crate::project::AlephProject;
 use crate::templates::JS_CONFIG_TEMPLATE;
-use crate::utils::dunce_utf8;
 
 pub struct GenConfigs {}
 

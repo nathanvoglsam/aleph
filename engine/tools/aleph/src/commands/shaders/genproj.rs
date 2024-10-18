@@ -327,7 +327,7 @@ fn generate_shader_name_bindings_for_module(
 
                 // Output the function declaration
                 let file_stem_no_dots = shader_file.name_with_type.replace(&['.', '-'], "_");
-                writeln!(&mut output, "{indent}#[allow(unused)]")?;
+                writeln!(&mut output, "{indent}#[allow(unused, non_snake_case)]")?;
                 writeln!(
                     &mut output,
                     "{indent}pub const fn {file_stem_no_dots}() -> {} {{",
@@ -353,7 +353,7 @@ fn generate_shader_name_bindings_for_module(
 
                 // Open the new module in the file
                 let sanitized_dir_name = file_name.replace(&['.', '-'], "_");
-                writeln!(&mut output, "{indent}#[allow(unused)]")?;
+                writeln!(&mut output, "{indent}#[allow(unused, non_snake_case)]")?;
                 writeln!(&mut output, "{indent}pub mod {sanitized_dir_name} {{")?;
 
                 // Increase our indent level
