@@ -35,6 +35,7 @@ use cargo_metadata::Package;
 use crate::crate_metadata::{AlephCrateMetadata, ProjectCrateMetadata};
 use crate::project::AlephProject;
 use crate::subproject::{ISubproject, SubprojectCrateContext, SubprojectProjectContext};
+use crate::utils::dunce_utf8::simplified;
 use crate::utils::BumpExt;
 
 #[derive(Debug)]
@@ -81,7 +82,7 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
             .configs_root
             .join(output_name)
             .with_extension("js");
-        let output_file = arena.alloc_utf8_path(&output_file);
+        let output_file = arena.alloc_utf8_path(simplified(&output_file));
 
         let config_file = package
             .manifest_path
@@ -89,7 +90,7 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
             .unwrap()
             .join("config")
             .join("config.js");
-        let config_file = arena.alloc_utf8_path(&config_file);
+        let config_file = arena.alloc_utf8_path(simplified(&config_file));
 
         Ok(ConfigCrateMeta {
             output_file,

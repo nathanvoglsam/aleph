@@ -99,10 +99,14 @@ impl ConfigRunner {
 
             Self::setup_global_environment(&context)?;
         }
-        
+
         // Run the setup script to provide the default functions
         log::trace!("Running aleph-config.js");
-        let result = context.eval(SETUP_SCRIPT, nstr!("aleph-config.js"), qjs::raw::JSEvalOptions::STRICT);
+        let result = context.eval(
+            SETUP_SCRIPT,
+            nstr!("aleph-config.js"),
+            qjs::raw::JSEvalOptions::STRICT,
+        );
         let _ = check_exception(&context, result)?;
 
         // Load the script module itself. This won't run the config script, just load all the code
@@ -257,11 +261,9 @@ impl ConfigRunner {
         }
     }
 
-    fn setup_global_environment<'a>(
-        context: &'a qjs::Context,
-    ) -> Result<(), RunConfigError> {
+    fn setup_global_environment<'a>(context: &'a qjs::Context) -> Result<(), RunConfigError> {
         let global = context.get_global_object();
-        
+
         unsafe {
             let p_string = context.new_string(target_platform().name());
             let a_string = context.new_string(target_architecture().name());
