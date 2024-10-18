@@ -49,6 +49,25 @@ mod transform {
     object_system::unsafe_impl_iobject!(Transform, "01922c0e-dde9-72f0-b62f-dd9748e29f92");
 }
 
+mod transform_history {
+    use crate::components::Transform;
+
+    ///
+    /// This component stores an object's world space position in the previous frame.
+    ///
+    /// # Background
+    ///
+    /// This is typically used for TAA motion vectors, and is optional. Objects without this
+    /// component are assumed to be static and will not generate motion vectors.
+    ///
+    #[derive(Clone, PartialEq, Debug, Default)]
+    #[repr(C)]
+    pub struct TransformHistory {
+        pub previous: Transform,
+    }
+    object_system::unsafe_impl_iobject!(TransformHistory, "01928a60-e332-7912-bc4a-fe6b44b7ac12");
+}
+
 mod camera {
     ///
     /// This component attaches camera behavior to an entity. The fields provide the configuration
@@ -108,3 +127,4 @@ pub use camera::Camera;
 pub use lights::PointLight;
 pub use static_mesh::StaticMesh;
 pub use transform::Transform;
+pub use transform_history::TransformHistory;

@@ -40,7 +40,7 @@ use aleph::interfaces::renderer::Renderer;
 use aleph::interfaces::schedule::CoreStage;
 use aleph::Engine;
 use aleph_engine::egui::widgets::{frame_stats, FrameTimeHistory};
-use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform};
+use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
 use aleph_engine::interfaces::platform::{IFrameTimerProvider, IGamepadsProvider};
@@ -161,11 +161,15 @@ impl IPlugin for PluginGameLogic {
 
         let (idx, vtx) = upload_cube_buffers(renderer);
 
+        let transform = Transform {
+            position: DVec3::zero(),
+            rotation: Rotor3::identity(),
+            scale: Vec3::one() * 2.0,
+        };
         let throbber = world.extend_one((
-            Transform {
-                position: DVec3::zero(),
-                rotation: Rotor3::identity(),
-                scale: Vec3::one() * 2.0,
+            transform.clone(),
+            TransformHistory {
+                previous: transform,
             },
             StaticMesh {
                 vtx,

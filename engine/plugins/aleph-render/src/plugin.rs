@@ -35,7 +35,7 @@ use aleph_pin_board::ScopedParamBoard;
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
-use interfaces::components::{self, Camera, Transform};
+use interfaces::components::{self, Camera, Transform, TransformHistory};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::*;
@@ -229,6 +229,23 @@ impl IPlugin for PluginRender {
                 });
             },
         );
+
+        // System to update the transform history of entities so we get correct motion vectors. We
+        // do this immediately after the main render job gets kicked off as we want to capture the
+        // transforms immediately after the last render frame.
+        registry
+            .core()
+            .schedule
+            .add_exclusive_at_end_system_to_stage(
+                CoreStage::Render.into(),
+                make_label!("render::capture_previous_transform"),
+                move |mut world: ResMut<WorldResource>| {
+                    for (_id, (t, h)) in world.0.query_mut::<(&Transform, &mut TransformHistory)>()
+                    {
+                        h.previous = t.clone();
+                    }
+                },
+            );
 
         default_response()
     }

@@ -87,6 +87,7 @@ impl PluginRegistryBuilder {
 
         let mut world = Box::new(World::new(WorldOptions::default())).unwrap();
         world.register::<components::Transform>();
+        world.register::<components::TransformHistory>();
         world.register::<components::Camera>();
         world.register::<components::PointLight>();
         world.register::<components::StaticMesh>();
