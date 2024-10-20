@@ -69,31 +69,3 @@ pub mod postprocess {
         unsafe { ShaderName::<Compute>::new("aleph-renderer/postprocess/tonemapping.cs") } // Safety guaranteed by code-gen
     }
 }
-#[allow(unused, non_snake_case)]
-pub mod standard {
-    #[allow(unused)]
-    use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
-
-    #[allow(unused, non_snake_case)]
-    pub const fn standard_frag() -> ShaderName<'static, Fragment> {
-        unsafe { ShaderName::<Fragment>::new("aleph-renderer/standard/standard.frag") } // Safety guaranteed by code-gen
-    }
-    #[allow(unused, non_snake_case)]
-    pub const fn standard_vert() -> ShaderName<'static, Vertex> {
-        unsafe { ShaderName::<Vertex>::new("aleph-renderer/standard/standard.vert") } // Safety guaranteed by code-gen
-    }
-}
-#[allow(unused, non_snake_case)]
-pub mod standard_tex {
-    #[allow(unused)]
-    use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
-
-    #[allow(unused, non_snake_case)]
-    pub const fn standard_tex_frag() -> ShaderName<'static, Fragment> {
-        unsafe { ShaderName::<Fragment>::new("aleph-renderer/standard_tex/standard_tex.frag") } // Safety guaranteed by code-gen
-    }
-    #[allow(unused, non_snake_case)]
-    pub const fn standard_tex_vert() -> ShaderName<'static, Vertex> {
-        unsafe { ShaderName::<Vertex>::new("aleph-renderer/standard_tex/standard_tex.vert") } // Safety guaranteed by code-gen
-    }
-}

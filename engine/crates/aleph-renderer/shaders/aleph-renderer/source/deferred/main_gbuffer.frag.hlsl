@@ -29,6 +29,7 @@
 
 #include "main_gbuffer.inc.hlsl"
 #include "pbr.hlsl"
+#include "normal_map.hlsl"
 
 struct Params {
     ConstantBuffer<CameraLayout> camera;
@@ -39,7 +40,8 @@ ParameterBlock<Params> g_params;
 
 [[vk_binding(0, 1)]] Texture2D<float4> g_base_colour : register(t0, space1);
 [[vk_binding(1, 1)]] Texture2D<float4> g_metal_roughness : register(t1, space1);
-[[vk_binding(2, 1)]] SamplerState g_sampler : register(s2, space1);
+[[vk_binding(2, 1)]] Texture2D<float3> g_normal_map : register(t2, space1);
+[[vk_binding(3, 1)]] SamplerState g_sampler : register(s3, space1);
 
 // Material parameters
 static float reflectance = 0.5;
@@ -51,7 +53,19 @@ struct PixelOutput {
 };
 
 PixelOutput main(in StaticMeshPixelInput input) {
-    const float3 n = normalize(input.normal);
+    float3 n;
+	float3 t;
+	float3 b;
+	const float3 normal_sample = g_normal_map.Sample(g_sampler, input.uv);
+	const float3 map_normal = normalize((normal_sample * 2.0) - 1.0);
+	TBNNormalMapSample(
+        map_normal,
+        normalize(input.normal),
+        input.tangent,
+        n,
+        t,
+        b
+    );
 
     let vtx_colour = input.colour;
     let base_colour = g_params.model.colour.xyz;

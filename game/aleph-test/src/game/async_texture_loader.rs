@@ -102,7 +102,6 @@ impl AsyncTextureLoader2Handle {
 
 pub struct AsyncTextureLoadRequest {
     pub path: PathBuf,
-    pub srgb: bool,
 }
 
 struct AsyncTextureLoadCommand {
@@ -137,7 +136,7 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
         format: Format::Rgba8Unorm,
     };
     let size = desc.size_requirement();
-    let block = match context.upload_buffer.allocate_aligned(size, 256) {
+    let block = match context.upload_buffer.allocate_aligned(size, 512) {
         Some(block) => block,
         None => {
             aleph_profile::scope!("AsyncTextureLoader::NewBlock");
@@ -148,7 +147,7 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
             )
             .unwrap();
             std::mem::swap(&mut new_buffer, &mut context.upload_buffer);
-            context.upload_buffer.allocate_aligned(size, 256).unwrap()
+            context.upload_buffer.allocate_aligned(size, 512).unwrap()
         }
     };
     let allocation = AllocationWithBuffer {

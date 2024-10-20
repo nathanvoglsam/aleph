@@ -119,6 +119,7 @@ mod static_mesh {
         pub metalness: f32,
         pub roughness: f32,
         pub metal_roughness_tex: TextureHandle,
+        pub normal_map_tex: TextureHandle,
     }
     object_system::unsafe_impl_iobject!(StaticMesh, "01923c3a-624e-7100-b97a-50e9baaa5ca0");
 }

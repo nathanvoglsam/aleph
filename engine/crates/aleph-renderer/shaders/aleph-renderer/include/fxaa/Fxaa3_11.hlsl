@@ -19,6 +19,8 @@ THIS SOFTWARE, EVEN IF NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGES.
 */
 
+#pragma once
+
 // These are always on because the other flags for consoles are not important for aleph
 #define FXAA_PC 1
 #define FXAA_HLSL_5 1

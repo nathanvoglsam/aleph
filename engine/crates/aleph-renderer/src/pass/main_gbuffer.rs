@@ -263,6 +263,10 @@ pub fn pass(
                     .texture_pool
                     .get_default_view(o.metal_roughness_tex)
                     .unwrap();
+                let image_view_nrm = args
+                    .texture_pool
+                    .get_default_view(o.normal_map_tex)
+                    .unwrap();
                 let tex_set = descriptor_arena.allocate_set(set_layout_tex).unwrap();
                 device.update_descriptor_sets(&[
                     DescriptorWriteDesc::texture(
@@ -274,6 +278,11 @@ pub fn pass(
                         tex_set,
                         1,
                         &ImageDescriptorWrite::srv(image_view_mr),
+                    ),
+                    DescriptorWriteDesc::texture(
+                        tex_set,
+                        2,
+                        &ImageDescriptorWrite::srv(image_view_nrm),
                     ),
                 ]);
 
@@ -320,8 +329,9 @@ fn create_descriptor_set_layout_tex(
         items: &[
             DescriptorType::Texture.binding(0),
             DescriptorType::Texture.binding(1),
+            DescriptorType::Texture.binding(2),
             DescriptorType::Sampler
-                .binding(2)
+                .binding(3)
                 .with_static_samplers(sampler),
         ],
         name: obj_name_opt!("DescriptorSetLayout"),
@@ -372,7 +382,7 @@ fn create_pipeline_state(
     let vertex_layout = VertexInputStateDesc {
         input_bindings: &[VertexInputBindingDesc {
             binding: 0,
-            stride: 56,
+            stride: 60,
             input_rate: VertexInputRate::PerVertex,
         }],
         input_attributes: &[
@@ -397,14 +407,14 @@ fn create_pipeline_state(
             VertexInputAttributeDesc {
                 location: 3,
                 binding: 0,
-                format: Format::Rgb32Float,
+                format: Format::Rgba32Float,
                 offset: 32,
             },
             VertexInputAttributeDesc {
                 location: 4,
                 binding: 0,
                 format: Format::Rgb32Float,
-                offset: 44,
+                offset: 48,
             },
         ],
     };

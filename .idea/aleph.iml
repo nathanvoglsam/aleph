@@ -55,6 +55,8 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-superluminal-sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-atomic-borrow/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-object-system/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-scheduler/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-typed-table/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

@@ -182,6 +182,7 @@ impl IPlugin for PluginRender {
                             metalness: m.metalness,
                             roughness: m.roughness,
                             metal_roughness_tex: m.metal_roughness_tex,
+                            normal_map_tex: m.normal_map_tex,
                         },
                     );
                 }

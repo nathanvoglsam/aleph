@@ -158,10 +158,10 @@ impl TextureUploadSource {
         usage: ResourceUsageFlags,
         data: NonNull<[u8]>,
     ) -> Self {
-        let required_size = desc.size_requirement() as usize;
-
         #[cfg(debug_assertions)]
         {
+            let required_size = desc.size_requirement() as usize;
+
             debug_assert!(desc.width > 0, "Width must be > 0");
             debug_assert!(desc.height > 0, "Height must be > 0");
             debug_assert!(desc.depth > 0, "Depth must be > 0");

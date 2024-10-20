@@ -179,6 +179,7 @@ impl IPlugin for PluginGameLogic {
                 metalness: 0.0,
                 roughness: 0.5,
                 metal_roughness_tex: renderer.default_resources().white_texture_rgba8(),
+                normal_map_tex: renderer.default_resources().normal_texture_rgba8(),
             },
         ));
 

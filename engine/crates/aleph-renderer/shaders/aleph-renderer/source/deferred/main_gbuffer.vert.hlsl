@@ -52,7 +52,7 @@ func main(in StaticMeshVertexInput input, out float4 sv_position : SV_Position) 
     StaticMeshPixelInput output;
     output.position = position.xyz;
     output.normal = normal;
-    output.tangent = tangent;
+    output.tangent = float4(tangent, input.tangent.w);
     output.uv = input.uv;
     output.colour = input.colour;
 

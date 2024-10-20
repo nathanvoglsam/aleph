@@ -165,6 +165,7 @@ impl BufferUploadSource {
     pub unsafe fn new_in_bump_arena(
         bump: &UploadBumpAllocator,
         len: usize,
+        align: usize,
         usage: ResourceUsageFlags,
     ) -> Result<Self, BufferCreateError> {
         debug_assert!(bump
@@ -174,7 +175,7 @@ impl BufferUploadSource {
             .contains(ResourceUsageFlags::COPY_SOURCE));
 
         let block = bump
-            .allocate_aligned(len, 256)
+            .allocate_aligned(len, 256.max(align))
             .ok_or(BufferCreateError::OutOfMemory)?;
         let data = NonNull::slice_from_raw_parts(block.result, len);
         let out = Self::new(

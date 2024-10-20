@@ -240,6 +240,36 @@ impl RendererBuilder {
             handle
         };
 
+        let normal_texture_rgba8 = unsafe {
+            let mut data = TextureUploadSource::new_owned(
+                device.as_ref(),
+                crate::TextureMipUploadDesc {
+                    width: 1,
+                    height: 1,
+                    depth: 1,
+                    format: Format::Rgba8Unorm,
+                },
+                ResourceUsageFlags::SHADER_RESOURCE,
+            )
+            .unwrap();
+
+            let dst = &mut data.data_mut()[0..4];
+            dst.copy_from_slice(bytemuck::bytes_of(&0xFFFF8080u32));
+
+            let handle = texture_pool.create_texture(None);
+            texture_loader
+                .immediate_upload(
+                    None,
+                    handle,
+                    data,
+                    TextureAllocMode::Deferred,
+                    GenerateMips::No,
+                )
+                .ok()
+                .unwrap();
+            handle
+        };
+
         let linear_descriptor_pools =
             AllocatorPool::new(LinearDescriptorPoolFactory::new(device.clone(), 128), 32);
 
@@ -261,6 +291,7 @@ impl RendererBuilder {
             default_resources: DefaultResources {
                 white_texture_rgba8,
                 black_texture_rgba8,
+                normal_texture_rgba8,
             },
             linear_descriptor_pools,
         };
@@ -512,6 +543,7 @@ impl Default for DrawOptions {
 pub struct DefaultResources {
     white_texture_rgba8: TextureHandle,
     black_texture_rgba8: TextureHandle,
+    normal_texture_rgba8: TextureHandle,
 }
 
 impl DefaultResources {
@@ -521,6 +553,10 @@ impl DefaultResources {
 
     pub const fn black_texture_rgba8(&self) -> TextureHandle {
         self.black_texture_rgba8
+    }
+
+    pub const fn normal_texture_rgba8(&self) -> TextureHandle {
+        self.normal_texture_rgba8
     }
 }
 

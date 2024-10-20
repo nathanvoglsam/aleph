@@ -66,11 +66,11 @@ pub fn upload_cube_buffers(renderer: &mut Renderer) -> (BufferHandle, BufferHand
 
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
-struct Vertex {
+pub struct Vertex {
     pub position: [f32; 3],
     pub uv: [f32; 2],
     pub normal: [f32; 3],
-    pub tangent: [f32; 3],
+    pub tangent: [f32; 4],
     pub colour: [f32; 3],
 }
 
@@ -80,13 +80,18 @@ impl Vertex {
             position: [x, y, z],
             uv: [0.; 2],
             normal: [0.; 3],
-            tangent: [0.; 3],
+            tangent: [0.; 4],
             colour: [0.5; 3],
         }
     }
 
     pub const fn normal(mut self, x: f32, y: f32, z: f32) -> Self {
         self.normal = [x, y, z];
+        self
+    }
+
+    pub const fn tangent(mut self, x: f32, y: f32, z: f32, w: f32) -> Self {
+        self.tangent = [x, y, z, w];
         self
     }
 
@@ -98,44 +103,44 @@ impl Vertex {
 
 #[rustfmt::skip]
 const VERTS: [Vertex; 24] = [
-    Vertex::new(-1.,  1., -1.).normal( 0.,  1.,  0.).uv(0.875, 0.5),
-    Vertex::new( 1.,  1.,  1.).normal( 0.,  1.,  0.).uv(0.625, 0.75),
-    Vertex::new( 1.,  1., -1.).normal( 0.,  1.,  0.).uv(0.625, 0.5),
-    Vertex::new( 1.,  1.,  1.).normal( 0.,  0.,  1.).uv(0.625, 0.75),
-    Vertex::new(-1., -1.,  1.).normal( 0.,  0.,  1.).uv(0.375, 1.),
-    Vertex::new( 1., -1.,  1.).normal( 0.,  0.,  1.).uv(0.375, 0.75),
-    Vertex::new(-1.,  1.,  1.).normal(-1.,  0.,  0.).uv(0.625, 0.),
-    Vertex::new(-1., -1., -1.).normal(-1.,  0.,  0.).uv(0.375, 0.25),
-    Vertex::new(-1., -1.,  1.).normal(-1.,  0.,  0.).uv(0.375, 0.),
-    Vertex::new( 1., -1., -1.).normal( 0., -1.,  0.).uv(0.375, 0.5),
-    Vertex::new(-1., -1.,  1.).normal( 0., -1.,  0.).uv(0.125, 0.75),
-    Vertex::new(-1., -1., -1.).normal( 0., -1.,  0.).uv(0.125, 0.5),
-    Vertex::new( 1.,  1., -1.).normal( 1.,  0.,  0.).uv(0.625, 0.5),
-    Vertex::new( 1., -1.,  1.).normal( 1.,  0.,  0.).uv(0.375, 0.75),
-    Vertex::new( 1., -1., -1.).normal( 1.,  0.,  0.).uv(0.375, 0.5),
-    Vertex::new(-1.,  1., -1.).normal( 0.,  0., -1.).uv(0.625, 0.25),
-    Vertex::new( 1., -1., -1.).normal( 0.,  0., -1.).uv(0.375, 0.5),
-    Vertex::new(-1., -1., -1.).normal( 0.,  0., -1.).uv(0.375, 0.25),
-    Vertex::new(-1.,  1.,  1.).normal( 0.,  1.,  0.).uv(0.875, 0.75),
-    Vertex::new(-1.,  1.,  1.).normal( 0.,  0.,  1.).uv(0.625, 1.),
-    Vertex::new(-1.,  1., -1.).normal(-1.,  0.,  0.).uv(0.625, 0.25),
-    Vertex::new( 1., -1.,  1.).normal( 0., -1.,  0.).uv(0.375, 0.75),
-    Vertex::new( 1.,  1.,  1.).normal( 1.,  0.,  0.).uv(0.625, 0.75),
-    Vertex::new( 1.,  1., -1.).normal( 0.,  0., -1.).uv(0.625, 0.5),
+    Vertex::new(-1.0, -1.0,  1.0).normal( 0.0,  0.0,  1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 0.0),
+    Vertex::new(-1.0, -1.0,  1.0).normal( 0.0, -1.0,  0.0).tangent( 1.0, 0.0, 0.0, 1.0).uv(0.125, 0.25),
+    Vertex::new(-1.0, -1.0,  1.0).normal(-1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 1.0),
+    Vertex::new(-1.0,  1.0,  1.0).normal( 0.0,  0.0,  1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 0.0),
+    Vertex::new(-1.0,  1.0,  1.0).normal( 0.0,  1.0,  0.0).tangent(-1.0, 0.0, 0.0, 1.0).uv(0.875, 0.25),
+    Vertex::new(-1.0,  1.0,  1.0).normal(-1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 1.0),
+    Vertex::new(-1.0, -1.0, -1.0).normal( 0.0,  0.0, -1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 0.75),
+    Vertex::new(-1.0, -1.0, -1.0).normal( 0.0, -1.0,  0.0).tangent( 1.0, 0.0, 0.0, 1.0).uv(0.125, 0.5),
+    Vertex::new(-1.0, -1.0, -1.0).normal(-1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 0.75),
+    Vertex::new(-1.0,  1.0, -1.0).normal( 0.0,  0.0, -1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 0.75),
+    Vertex::new(-1.0,  1.0, -1.0).normal( 0.0,  1.0,  0.0).tangent(-1.0, 0.0, 0.0, 1.0).uv(0.875, 0.5),
+    Vertex::new(-1.0,  1.0, -1.0).normal(-1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 0.75),
+    Vertex::new( 1.0, -1.0,  1.0).normal( 0.0,  0.0,  1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 0.25),
+    Vertex::new( 1.0, -1.0,  1.0).normal( 0.0, -1.0,  0.0).tangent( 1.0, 0.0, 0.0, 1.0).uv(0.375, 0.25),
+    Vertex::new( 1.0, -1.0,  1.0).normal( 1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 0.25),
+    Vertex::new( 1.0,  1.0,  1.0).normal( 0.0,  0.0,  1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 0.25),
+    Vertex::new( 1.0,  1.0,  1.0).normal( 0.0,  1.0,  0.0).tangent(-1.0, 0.0, 0.0, 1.0).uv(0.625, 0.25),
+    Vertex::new( 1.0,  1.0,  1.0).normal( 1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 0.25),
+    Vertex::new( 1.0, -1.0, -1.0).normal( 0.0,  0.0, -1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 0.5),
+    Vertex::new( 1.0, -1.0, -1.0).normal( 0.0, -1.0,  0.0).tangent( 1.0, 0.0, 0.0, 1.0).uv(0.375, 0.5),
+    Vertex::new( 1.0, -1.0, -1.0).normal( 1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.375, 0.5),
+    Vertex::new( 1.0,  1.0, -1.0).normal( 0.0,  0.0, -1.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 0.5),
+    Vertex::new( 1.0,  1.0, -1.0).normal( 0.0,  1.0,  0.0).tangent(-1.0, 0.0, 0.0, 1.0).uv(0.625, 0.5),
+    Vertex::new( 1.0,  1.0, -1.0).normal( 1.0,  0.0,  0.0).tangent( 0.0, 1.0, 0.0, 1.0).uv(0.625, 0.5),
 ];
 
 #[rustfmt::skip]
 const INDICES: [u32; 36] = [
-    0, 1, 2,
-    3, 4, 5,
-    6, 7, 8,
-    9, 10, 11,
-    12, 13, 14,
-    15, 16, 17,
-    0, 18, 1,
-    3, 19, 4,
-    6, 20, 7,
-    9, 21, 10,
-    12, 22, 13,
-    15, 23, 16,
+    2, 5, 11,
+    2, 11, 8,
+    6, 9, 21,
+    6, 21, 18,
+    20, 23, 17,
+    20, 17, 14,
+    12, 15, 3,
+    12, 3, 0,
+    7, 19, 13,
+    7, 13, 1,
+    22, 10, 4,
+    22, 4, 16,
 ];

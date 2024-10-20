@@ -40,5 +40,6 @@ pub struct StaticMesh {
     pub metalness: f32,
     pub roughness: f32,
     pub metal_roughness_tex: TextureHandle,
+    pub normal_map_tex: TextureHandle,
 }
 unsafe_impl_iobject!(StaticMesh, "0192311d-0809-7f12-aba8-1ce56b596be7");
