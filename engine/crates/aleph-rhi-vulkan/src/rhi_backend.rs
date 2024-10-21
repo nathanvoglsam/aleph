@@ -36,7 +36,15 @@ impl IRhiBackend for RhiBackend {
             true
         } else {
             // Safety: We assume that loading the vulkan dll does not have any unsafe side effects
-            unsafe { Library::new(loader::platform_library_name()).is_ok() }
+            unsafe {
+                for lib in loader::platform_library_search_stack() {
+                    let result = Library::new(lib);
+                    if result.is_ok() {
+                        return true;
+                    }
+                }
+                false
+            }
         }
     }
 
