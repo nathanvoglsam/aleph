@@ -91,6 +91,54 @@ macro_rules! error_enum_from_unit_type {
     };
 }
 
+macro_rules! new_linear_metadata {
+    ($f: expr, $n: expr, $e_size: expr, $encoding: expr) => {
+        FormatMetadata {
+            name: $n,
+            bytes_per_element: $e_size,
+            is_srgb: false,
+            encoding: $encoding,
+            has_depth: false,
+            has_stencil: false,
+            srgb_format: $f,
+            linear_format: $f,
+            compatible_views: &[$f],
+            aspect_mask: TextureAspect::COLOR,
+        }
+    };
+    ($f: expr, $n: expr, $e_size: expr, $encoding: expr, $s_f: expr) => {
+        FormatMetadata {
+            name: $n,
+            bytes_per_element: $e_size,
+            is_srgb: false,
+            encoding: $encoding,
+            has_depth: false,
+            has_stencil: false,
+            srgb_format: $s_f,
+            linear_format: $f,
+            compatible_views: &[$f, $s_f],
+            aspect_mask: TextureAspect::COLOR,
+        }
+    };
+}
+
+macro_rules! new_srgb_metadata {
+    ($f: expr, $n: expr, $e_size: expr, $encoding: expr, $l_f: expr) => {
+        FormatMetadata {
+            name: $n,
+            bytes_per_element: $e_size,
+            is_srgb: true,
+            encoding: $encoding,
+            has_depth: false,
+            has_stencil: false,
+            srgb_format: $f,
+            linear_format: $l_f,
+            compatible_views: &[$l_f, $f],
+            aspect_mask: TextureAspect::COLOR,
+        }
+    };
+}
+
 /// Utility macro that can be (optionally) used to construct a name for an RHI object. This macro
 /// will yield a bare string literal and is intended to be used with the `with_name` builder
 /// functions.
@@ -2079,6 +2127,30 @@ impl Default for BarrierAccess {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct FormatMetadata {
+    pub name: &'static str,
+    pub bytes_per_element: u8,
+    pub is_srgb: bool,
+    pub encoding: FormatChannelEncoding,
+    pub has_depth: bool,
+    pub has_stencil: bool,
+    pub srgb_format: Format,
+    pub linear_format: Format,
+    pub compatible_views: &'static [Format],
+    pub aspect_mask: TextureAspect,
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum FormatChannelEncoding {
+    Unorm,
+    Snorm,
+    Uint,
+    Sint,
+    Float,
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Format {
     R8Unorm,
@@ -2138,112 +2210,102 @@ impl Default for Format {
 }
 
 impl Format {
-    /// Returns the Linear version of a format if it's an SRGB format. If the format is already
-    /// linear it simply returns itself.
-    pub const fn compatible_view_formats(&self) -> &'static [Format] {
-        match self {
-            Format::R8Unorm => &[Format::R8Unorm],
-            Format::R8Snorm => &[Format::R8Snorm],
-            Format::R8Uint => &[Format::R8Uint],
-            Format::R8Sint => &[Format::R8Sint],
-            Format::R16Uint => &[Format::R16Uint],
-            Format::R16Sint => &[Format::R16Sint],
-            Format::R16Unorm => &[Format::R16Unorm],
-            Format::R16Snorm => &[Format::R16Snorm],
-            Format::R16Float => &[Format::R16Float],
-            Format::R32Uint => &[Format::R32Uint],
-            Format::R32Sint => &[Format::R32Sint],
-            Format::R32Float => &[Format::R32Float],
-            Format::Rg8Unorm => &[Format::Rg8Unorm],
-            Format::Rg8Snorm => &[Format::Rg8Snorm],
-            Format::Rg8Uint => &[Format::Rg8Uint],
-            Format::Rg8Sint => &[Format::Rg8Sint],
-            Format::Rg16Uint => &[Format::Rg16Uint],
-            Format::Rg16Sint => &[Format::Rg16Sint],
-            Format::Rg16Unorm => &[Format::Rg16Unorm],
-            Format::Rg16Snorm => &[Format::Rg16Snorm],
-            Format::Rg16Float => &[Format::Rg16Float],
-            Format::Rg32Uint => &[Format::Rg32Uint],
-            Format::Rg32Sint => &[Format::Rg32Sint],
-            Format::Rg32Float => &[Format::Rg32Float],
-            Format::Rgb32Uint => &[Format::Rgb32Uint],
-            Format::Rgb32Sint => &[Format::Rgb32Sint],
-            Format::Rgb32Float => &[Format::Rgb32Float],
-            Format::Rgba8Unorm => &[Format::Rgba8Unorm, Format::Rgba8UnormSrgb],
-            Format::Rgba8UnormSrgb => &[Format::Rgba8Unorm, Format::Rgba8UnormSrgb],
-            Format::Rgba8Snorm => &[Format::Rgba8Snorm],
-            Format::Rgba8Uint => &[Format::Rgba8Uint],
-            Format::Rgba8Sint => &[Format::Rgba8Sint],
-            Format::Bgra8Unorm => &[Format::Bgra8Unorm, Format::Bgra8UnormSrgb],
-            Format::Bgra8UnormSrgb => &[Format::Bgra8Unorm, Format::Bgra8UnormSrgb],
-            Format::Rgb10a2Unorm => &[Format::Rgb10a2Unorm],
-            Format::Rg11b10Float => &[Format::Rg11b10Float],
-            Format::Rgba16Uint => &[Format::Rgba16Uint],
-            Format::Rgba16Sint => &[Format::Rgba16Sint],
-            Format::Rgba16Unorm => &[Format::Rgba16Unorm],
-            Format::Rgba16Snorm => &[Format::Rgba16Snorm],
-            Format::Rgba16Float => &[Format::Rgba16Float],
-            Format::Rgba32Uint => &[Format::Rgba32Uint],
-            Format::Rgba32Sint => &[Format::Rgba32Sint],
-            Format::Rgba32Float => &[Format::Rgba32Float],
-            Format::Depth32Float => &[Format::Depth32Float],
-            Format::Depth32FloatStencil8 => &[Format::Depth32FloatStencil8],
-            Format::Depth24Stencil8 => &[Format::Depth24Stencil8],
+    #[rustfmt::skip]
+    pub const fn metadata(&self) -> FormatMetadata {
+        match *self {
+            Format::R8Unorm => new_linear_metadata!(Format::R8Unorm, "R8Unorm", 1, FormatChannelEncoding::Unorm),
+            Format::R8Snorm => new_linear_metadata!(Format::R8Snorm, "R8Snorm", 1, FormatChannelEncoding::Snorm),
+            Format::R8Uint => new_linear_metadata!(Format::R8Uint, "R8Uint", 1, FormatChannelEncoding::Uint),
+            Format::R8Sint => new_linear_metadata!(Format::R8Sint, "R8Sint", 1, FormatChannelEncoding::Sint),
+            Format::R16Uint => new_linear_metadata!(Format::R16Uint, "R16Uint", 2, FormatChannelEncoding::Uint),
+            Format::R16Sint => new_linear_metadata!(Format::R16Sint, "R16Sint", 2, FormatChannelEncoding::Sint),
+            Format::R16Unorm => new_linear_metadata!(Format::R16Unorm, "R16Unorm", 2, FormatChannelEncoding::Unorm),
+            Format::R16Snorm => new_linear_metadata!(Format::R16Snorm, "R16Snorm", 2, FormatChannelEncoding::Snorm),
+            Format::R16Float => new_linear_metadata!(Format::R16Float, "R16Float", 2, FormatChannelEncoding::Float),
+            Format::R32Uint => new_linear_metadata!(Format::R32Uint, "R32Uint", 4, FormatChannelEncoding::Uint),
+            Format::R32Sint => new_linear_metadata!(Format::R32Sint, "R32Sint", 4, FormatChannelEncoding::Sint),
+            Format::R32Float => new_linear_metadata!(Format::R32Float, "R32Float", 4, FormatChannelEncoding::Float),
+            Format::Rg8Unorm => new_linear_metadata!(Format::Rg8Unorm, "Rg8Unorm", 2, FormatChannelEncoding::Unorm),
+            Format::Rg8Snorm => new_linear_metadata!(Format::Rg8Snorm, "Rg8Snorm", 2, FormatChannelEncoding::Snorm),
+            Format::Rg8Uint => new_linear_metadata!(Format::Rg8Uint, "Rg8Uint", 2, FormatChannelEncoding::Uint),
+            Format::Rg8Sint => new_linear_metadata!(Format::Rg8Sint, "Rg8Sint", 2, FormatChannelEncoding::Sint),
+            Format::Rg16Uint => new_linear_metadata!(Format::Rg16Uint, "Rg16Uint", 4, FormatChannelEncoding::Uint),
+            Format::Rg16Sint => new_linear_metadata!(Format::Rg16Sint, "Rg16Sint", 4, FormatChannelEncoding::Sint),
+            Format::Rg16Unorm => new_linear_metadata!(Format::Rg16Unorm, "Rg16Unorm", 4, FormatChannelEncoding::Unorm),
+            Format::Rg16Snorm => new_linear_metadata!(Format::Rg16Snorm, "Rg16Snorm", 4, FormatChannelEncoding::Snorm),
+            Format::Rg16Float => new_linear_metadata!(Format::Rg16Float, "Rg16Float", 4, FormatChannelEncoding::Float),
+            Format::Rg32Uint => new_linear_metadata!(Format::Rg32Uint, "Rg32Uint", 8, FormatChannelEncoding::Uint),
+            Format::Rg32Sint => new_linear_metadata!(Format::Rg32Sint, "Rg32Sint", 8, FormatChannelEncoding::Sint),
+            Format::Rg32Float => new_linear_metadata!(Format::Rg32Float, "Rg32Float", 8, FormatChannelEncoding::Float),
+            Format::Rgb32Uint => new_linear_metadata!(Format::Rgb32Uint, "Rgb32Uint", 12, FormatChannelEncoding::Uint),
+            Format::Rgb32Sint => new_linear_metadata!(Format::Rgb32Sint, "Rgb32Sint", 12, FormatChannelEncoding::Sint),
+            Format::Rgb32Float => new_linear_metadata!(Format::Rgb32Float, "Rgb32Float", 12, FormatChannelEncoding::Float),
+            Format::Rgba8Unorm => new_linear_metadata!(Format::Rgba8Unorm, "Rgba8Unorm", 4, FormatChannelEncoding::Unorm, Format::Rgba8UnormSrgb),
+            Format::Rgba8UnormSrgb => new_srgb_metadata!(Format::Rgba8UnormSrgb, "Rgba8UnormSrgb", 4, FormatChannelEncoding::Unorm, Format::Rgba8Unorm),
+            Format::Rgba8Snorm => new_linear_metadata!(Format::Rgba8Snorm, "Rgba8Snorm", 4, FormatChannelEncoding::Snorm),
+            Format::Rgba8Uint => new_linear_metadata!(Format::Rgba8Uint, "Rgba8Uint", 4, FormatChannelEncoding::Uint),
+            Format::Rgba8Sint => new_linear_metadata!(Format::Rgba8Sint, "Rgba8Sint", 4, FormatChannelEncoding::Sint),
+            Format::Bgra8Unorm => new_linear_metadata!(Format::Bgra8Unorm, "Bgra8Unorm", 4, FormatChannelEncoding::Unorm, Format::Bgra8UnormSrgb),
+            Format::Bgra8UnormSrgb => new_srgb_metadata!(Format::Bgra8UnormSrgb, "Bgra8UnormSrgb", 4, FormatChannelEncoding::Unorm, Format::Bgra8Unorm),
+            Format::Rgb10a2Unorm => new_linear_metadata!(Format::Rgb10a2Unorm, "Rgb10a2Unorm", 4, FormatChannelEncoding::Unorm),
+            Format::Rg11b10Float => new_linear_metadata!(Format::Rg11b10Float, "Rg11b10Float", 4, FormatChannelEncoding::Float),
+            Format::Rgba16Uint => new_linear_metadata!(Format::Rgba16Uint, "Rgba16Uint", 8, FormatChannelEncoding::Uint),
+            Format::Rgba16Sint => new_linear_metadata!(Format::Rgba16Sint, "Rgba16Sint", 8, FormatChannelEncoding::Sint),
+            Format::Rgba16Unorm => new_linear_metadata!(Format::Rgba16Unorm, "Rgba16Unorm", 8, FormatChannelEncoding::Unorm),
+            Format::Rgba16Snorm => new_linear_metadata!(Format::Rgba16Snorm, "Rgba16Snorm", 8, FormatChannelEncoding::Snorm),
+            Format::Rgba16Float => new_linear_metadata!(Format::Rgba16Float, "Rgba16Float", 8, FormatChannelEncoding::Float),
+            Format::Rgba32Uint => new_linear_metadata!(Format::Rgba32Uint, "Rgba32Uint", 16, FormatChannelEncoding::Uint),
+            Format::Rgba32Sint => new_linear_metadata!(Format::Rgba32Sint, "Rgba32Sint", 16, FormatChannelEncoding::Sint),
+            Format::Rgba32Float => new_linear_metadata!(Format::Rgba32Float, "Rgba32Float", 16, FormatChannelEncoding::Float),
+            Format::Depth32Float => FormatMetadata {
+                name: "Depth32Float",
+                bytes_per_element: 4,
+                is_srgb: false,
+                encoding: FormatChannelEncoding::Float,
+                has_depth: true,
+                has_stencil: false,
+                srgb_format: Format::Depth32Float,
+                linear_format: Format::Depth32Float,
+                compatible_views: &[Format::Depth32Float],
+                aspect_mask: TextureAspect::DEPTH,
+            },
+            Format::Depth32FloatStencil8 => FormatMetadata {
+                name: "Depth32FloatStencil8",
+                bytes_per_element: 8,
+                is_srgb: false,
+                encoding: FormatChannelEncoding::Float,
+                has_depth: true,
+                has_stencil: true,
+                srgb_format: Format::Depth32FloatStencil8,
+                linear_format: Format::Depth32FloatStencil8,
+                compatible_views: &[Format::Depth32FloatStencil8],
+                aspect_mask: TextureAspect::DEPTH_STENCIL,
+            },
+            Format::Depth24Stencil8 => FormatMetadata {
+                name: "Depth24Stencil8",
+                bytes_per_element: 4,
+                is_srgb: false,
+                encoding: FormatChannelEncoding::Unorm,
+                has_depth: true,
+                has_stencil: true,
+                srgb_format: Format::Depth24Stencil8,
+                linear_format: Format::Depth24Stencil8,
+                compatible_views: &[Format::Depth24Stencil8],
+                aspect_mask: TextureAspect::DEPTH_STENCIL,
+            },
         }
     }
 
     /// Returns the Linear version of a format if it's an SRGB format. If the format is already
     /// linear it simply returns itself.
+    pub const fn compatible_view_formats(&self) -> &'static [Format] {
+        self.metadata().compatible_views
+    }
+
+    /// Returns the Linear version of a format if it's an SRGB format. If the format is already
+    /// linear it simply returns itself.
     pub const fn to_non_srgb(&self) -> Self {
-        match self {
-            Format::R8Unorm => Format::R8Unorm,
-            Format::R8Snorm => Format::R8Snorm,
-            Format::R8Uint => Format::R8Uint,
-            Format::R8Sint => Format::R8Sint,
-            Format::R16Uint => Format::R16Uint,
-            Format::R16Sint => Format::R16Sint,
-            Format::R16Unorm => Format::R16Unorm,
-            Format::R16Snorm => Format::R16Snorm,
-            Format::R16Float => Format::R16Float,
-            Format::R32Uint => Format::R32Uint,
-            Format::R32Sint => Format::R32Sint,
-            Format::R32Float => Format::R32Float,
-            Format::Rg8Unorm => Format::Rg8Unorm,
-            Format::Rg8Snorm => Format::Rg8Snorm,
-            Format::Rg8Uint => Format::Rg8Uint,
-            Format::Rg8Sint => Format::Rg8Sint,
-            Format::Rg16Uint => Format::Rg16Uint,
-            Format::Rg16Sint => Format::Rg16Sint,
-            Format::Rg16Unorm => Format::Rg16Unorm,
-            Format::Rg16Snorm => Format::Rg16Snorm,
-            Format::Rg16Float => Format::Rg16Float,
-            Format::Rg32Uint => Format::Rg32Uint,
-            Format::Rg32Sint => Format::Rg32Sint,
-            Format::Rg32Float => Format::Rg32Float,
-            Format::Rgb32Uint => Format::Rgb32Uint,
-            Format::Rgb32Sint => Format::Rgb32Sint,
-            Format::Rgb32Float => Format::Rgb32Float,
-            Format::Rgba8Unorm => Format::Rgba8Unorm,
-            Format::Rgba8UnormSrgb => Format::Rgba8Unorm,
-            Format::Rgba8Snorm => Format::Rgba8Snorm,
-            Format::Rgba8Uint => Format::Rgba8Uint,
-            Format::Rgba8Sint => Format::Rgba8Sint,
-            Format::Bgra8Unorm => Format::Bgra8Unorm,
-            Format::Bgra8UnormSrgb => Format::Bgra8Unorm,
-            Format::Rgb10a2Unorm => Format::Rgb10a2Unorm,
-            Format::Rg11b10Float => Format::Rg11b10Float,
-            Format::Rgba16Uint => Format::Rgba16Uint,
-            Format::Rgba16Sint => Format::Rgba16Sint,
-            Format::Rgba16Unorm => Format::Rgba16Unorm,
-            Format::Rgba16Snorm => Format::Rgba16Snorm,
-            Format::Rgba16Float => Format::Rgba16Float,
-            Format::Rgba32Uint => Format::Rgba32Uint,
-            Format::Rgba32Sint => Format::Rgba32Sint,
-            Format::Rgba32Float => Format::Rgba32Float,
-            Format::Depth32Float => Format::Depth32Float,
-            Format::Depth32FloatStencil8 => Format::Depth32FloatStencil8,
-            Format::Depth24Stencil8 => Format::Depth24Stencil8,
-        }
+        self.metadata().linear_format
     }
 
     /// Converts the given format into its SRGB form. (i.e. Format::Rgba8Unorm ->
@@ -2254,108 +2316,12 @@ impl Format {
     /// If the format does not have a matching SRGB format then it returns the same format as was
     /// passed in.
     pub const fn to_srgb(&self) -> Self {
-        match self {
-            Format::R8Unorm => Format::R8Unorm,
-            Format::R8Snorm => Format::R8Snorm,
-            Format::R8Uint => Format::R8Uint,
-            Format::R8Sint => Format::R8Sint,
-            Format::R16Uint => Format::R16Uint,
-            Format::R16Sint => Format::R16Sint,
-            Format::R16Unorm => Format::R16Unorm,
-            Format::R16Snorm => Format::R16Snorm,
-            Format::R16Float => Format::R16Float,
-            Format::R32Uint => Format::R32Uint,
-            Format::R32Sint => Format::R32Sint,
-            Format::R32Float => Format::R32Float,
-            Format::Rg8Unorm => Format::Rg8Unorm,
-            Format::Rg8Snorm => Format::Rg8Snorm,
-            Format::Rg8Uint => Format::Rg8Uint,
-            Format::Rg8Sint => Format::Rg8Sint,
-            Format::Rg16Uint => Format::Rg16Uint,
-            Format::Rg16Sint => Format::Rg16Sint,
-            Format::Rg16Unorm => Format::Rg16Unorm,
-            Format::Rg16Snorm => Format::Rg16Snorm,
-            Format::Rg16Float => Format::Rg16Float,
-            Format::Rg32Uint => Format::Rg32Uint,
-            Format::Rg32Sint => Format::Rg32Sint,
-            Format::Rg32Float => Format::Rg32Float,
-            Format::Rgb32Uint => Format::Rgb32Uint,
-            Format::Rgb32Sint => Format::Rgb32Sint,
-            Format::Rgb32Float => Format::Rgb32Float,
-            Format::Rgba8Unorm => Format::Rgba8UnormSrgb,
-            Format::Rgba8UnormSrgb => Format::Rgba8UnormSrgb,
-            Format::Rgba8Snorm => Format::Rgba8Snorm,
-            Format::Rgba8Uint => Format::Rgba8Uint,
-            Format::Rgba8Sint => Format::Rgba8Sint,
-            Format::Bgra8Unorm => Format::Bgra8UnormSrgb,
-            Format::Bgra8UnormSrgb => Format::Bgra8UnormSrgb,
-            Format::Rgb10a2Unorm => Format::Rgb10a2Unorm,
-            Format::Rg11b10Float => Format::Rg11b10Float,
-            Format::Rgba16Uint => Format::Rgba16Uint,
-            Format::Rgba16Sint => Format::Rgba16Sint,
-            Format::Rgba16Unorm => Format::Rgba16Unorm,
-            Format::Rgba16Snorm => Format::Rgba16Snorm,
-            Format::Rgba16Float => Format::Rgba16Float,
-            Format::Rgba32Uint => Format::Rgba32Uint,
-            Format::Rgba32Sint => Format::Rgba32Sint,
-            Format::Rgba32Float => Format::Rgba32Float,
-            Format::Depth32Float => Format::Depth32Float,
-            Format::Depth32FloatStencil8 => Format::Depth32FloatStencil8,
-            Format::Depth24Stencil8 => Format::Depth24Stencil8,
-        }
+        self.metadata().srgb_format
     }
 
     /// Returns whether the format is an SRGB format
     pub const fn is_srgb(&self) -> bool {
-        match self {
-            Format::R8Unorm => false,
-            Format::R8Snorm => false,
-            Format::R8Uint => false,
-            Format::R8Sint => false,
-            Format::R16Uint => false,
-            Format::R16Sint => false,
-            Format::R16Unorm => false,
-            Format::R16Snorm => false,
-            Format::R16Float => false,
-            Format::R32Uint => false,
-            Format::R32Sint => false,
-            Format::R32Float => false,
-            Format::Rg8Unorm => false,
-            Format::Rg8Snorm => false,
-            Format::Rg8Uint => false,
-            Format::Rg8Sint => false,
-            Format::Rg16Uint => false,
-            Format::Rg16Sint => false,
-            Format::Rg16Unorm => false,
-            Format::Rg16Snorm => false,
-            Format::Rg16Float => false,
-            Format::Rg32Uint => false,
-            Format::Rg32Sint => false,
-            Format::Rg32Float => false,
-            Format::Rgb32Uint => false,
-            Format::Rgb32Sint => false,
-            Format::Rgb32Float => false,
-            Format::Rgba8Unorm => false,
-            Format::Rgba8UnormSrgb => true,
-            Format::Rgba8Snorm => false,
-            Format::Rgba8Uint => false,
-            Format::Rgba8Sint => false,
-            Format::Bgra8Unorm => false,
-            Format::Bgra8UnormSrgb => true,
-            Format::Rgb10a2Unorm => false,
-            Format::Rg11b10Float => false,
-            Format::Rgba16Uint => false,
-            Format::Rgba16Sint => false,
-            Format::Rgba16Unorm => false,
-            Format::Rgba16Snorm => false,
-            Format::Rgba16Float => false,
-            Format::Rgba32Uint => false,
-            Format::Rgba32Sint => false,
-            Format::Rgba32Float => false,
-            Format::Depth32Float => false,
-            Format::Depth32FloatStencil8 => false,
-            Format::Depth24Stencil8 => false,
-        }
+        self.metadata().is_srgb
     }
 
     /// Returns whether the format has an alterative, storage compatible format that encodes in the
@@ -2364,154 +2330,53 @@ impl Format {
     /// This is useful for detecting when the format allows viewing as both SRGB or Linear depending
     /// on the format you provide to the SRV.
     pub const fn has_srgb_format(&self) -> bool {
-        match self {
-            Format::R8Unorm => false,
-            Format::R8Snorm => false,
-            Format::R8Uint => false,
-            Format::R8Sint => false,
-            Format::R16Uint => false,
-            Format::R16Sint => false,
-            Format::R16Unorm => false,
-            Format::R16Snorm => false,
-            Format::R16Float => false,
-            Format::R32Uint => false,
-            Format::R32Sint => false,
-            Format::R32Float => false,
-            Format::Rg8Unorm => false,
-            Format::Rg8Snorm => false,
-            Format::Rg8Uint => false,
-            Format::Rg8Sint => false,
-            Format::Rg16Uint => false,
-            Format::Rg16Sint => false,
-            Format::Rg16Unorm => false,
-            Format::Rg16Snorm => false,
-            Format::Rg16Float => false,
-            Format::Rg32Uint => false,
-            Format::Rg32Sint => false,
-            Format::Rg32Float => false,
-            Format::Rgb32Uint => false,
-            Format::Rgb32Sint => false,
-            Format::Rgb32Float => false,
-            Format::Rgba8Unorm => true,
-            Format::Rgba8UnormSrgb => true,
-            Format::Rgba8Snorm => false,
-            Format::Rgba8Uint => false,
-            Format::Rgba8Sint => false,
-            Format::Bgra8Unorm => true,
-            Format::Bgra8UnormSrgb => true,
-            Format::Rgb10a2Unorm => false,
-            Format::Rg11b10Float => false,
-            Format::Rgba16Uint => false,
-            Format::Rgba16Sint => false,
-            Format::Rgba16Unorm => false,
-            Format::Rgba16Snorm => false,
-            Format::Rgba16Float => false,
-            Format::Rgba32Uint => false,
-            Format::Rgba32Sint => false,
-            Format::Rgba32Float => false,
-            Format::Depth32Float => false,
-            Format::Depth32FloatStencil8 => false,
-            Format::Depth24Stencil8 => false,
-        }
+        let m = self.metadata();
+
+        // Cast to u8 to workaround const fn limits
+        m.srgb_format as u8 != m.linear_format as u8
     }
 
     /// Returns whether the format is a depth texture format
     pub const fn is_depth(&self) -> bool {
-        matches!(self, Self::Depth32Float)
+        // TODO: we need to revamp our depth metadata reporting
+        let m = self.metadata();
+        m.has_depth && !m.has_stencil
     }
 
     /// Returns whether the format is a stencil texture format
     pub const fn is_stencil(&self) -> bool {
-        matches!(self, Self::Depth32FloatStencil8 | Self::Depth24Stencil8)
+        self.metadata().has_stencil
     }
 
     /// Returns whether the format is a depth/stencil texture format
     pub const fn is_depth_stencil(&self) -> bool {
-        matches!(
-            self,
-            Self::Depth32Float | Self::Depth32FloatStencil8 | Self::Depth24Stencil8
-        )
+        let m = self.metadata();
+        m.has_depth || m.has_stencil
     }
 
     /// Returns whether the format is a float format
     pub const fn is_float(&self) -> bool {
-        matches!(
-            self,
-            Self::R16Float
-                | Self::R32Float
-                | Self::Rg16Float
-                | Self::Rg11b10Float
-                | Self::Rg32Float
-                | Self::Rgb32Float
-                | Self::Rgba16Float
-                | Self::Rgba32Float
-                | Self::Depth32Float
-                | Self::Depth32FloatStencil8
-        )
+        matches!(self.metadata().encoding, FormatChannelEncoding::Float)
     }
 
     /// Returns whether the format is a signed-int format
     pub const fn is_sint(&self) -> bool {
-        matches!(
-            self,
-            Self::R8Sint
-                | Self::R16Sint
-                | Self::Rg8Sint
-                | Self::R32Sint
-                | Self::Rg16Sint
-                | Self::Rgba8Sint
-                | Self::Rg32Sint
-                | Self::Rgb32Sint
-                | Self::Rgba16Sint
-                | Self::Rgba32Sint
-        )
+        matches!(self.metadata().encoding, FormatChannelEncoding::Sint)
     }
 
     /// Returns whether the format is an unsigned-int format
     pub const fn is_uint(&self) -> bool {
-        matches!(
-            self,
-            Self::R8Uint
-                | Self::R16Uint
-                | Self::Rg8Uint
-                | Self::R32Uint
-                | Self::Rg16Uint
-                | Self::Rgba8Uint
-                | Self::Rg32Uint
-                | Self::Rgb32Uint
-                | Self::Rgba16Uint
-                | Self::Rgba32Uint
-        )
+        matches!(self.metadata().encoding, FormatChannelEncoding::Uint)
     }
 
     /// Returns whether the format is a signed-normalized-int format
     pub const fn is_snorm(&self) -> bool {
-        matches!(
-            self,
-            Self::R8Snorm
-                | Self::R16Snorm
-                | Self::Rg8Snorm
-                | Self::Rg16Snorm
-                | Self::Rgba8Snorm
-                | Self::Rgba16Snorm
-        )
+        matches!(self.metadata().encoding, FormatChannelEncoding::Snorm)
     }
 
     /// Returns whether the format is an unsigned-normalized-int format
     pub const fn is_unorm(&self) -> bool {
-        matches!(
-            self,
-            Self::R8Unorm
-                | Self::R16Unorm
-                | Self::Rg8Unorm
-                | Self::Rg16Unorm
-                | Self::Rgba8Unorm
-                | Self::Rgba8UnormSrgb
-                | Self::Bgra8Unorm
-                | Self::Bgra8UnormSrgb
-                | Self::Rgb10a2Unorm
-                | Self::Rgba16Unorm
-        )
+        matches!(self.metadata().encoding, FormatChannelEncoding::Unorm)
     }
 
     /// Returns the number of bytes the format consumes per individual element.
@@ -2520,55 +2385,7 @@ impl Format {
     /// will return the number of bytes per block (block formats smallest 'element' is a single
     /// block).
     pub const fn bytes_per_element(&self) -> u32 {
-        match self {
-            Format::R8Unorm => 1,
-            Format::R8Snorm => 1,
-            Format::R8Uint => 1,
-            Format::R8Sint => 1,
-            Format::R16Uint => 2,
-            Format::R16Sint => 2,
-            Format::R16Unorm => 2,
-            Format::R16Snorm => 2,
-            Format::R16Float => 2,
-            Format::Rg8Unorm => 2,
-            Format::Rg8Snorm => 2,
-            Format::Rg8Uint => 2,
-            Format::Rg8Sint => 2,
-            Format::R32Uint => 4,
-            Format::R32Sint => 4,
-            Format::R32Float => 4,
-            Format::Rg16Uint => 4,
-            Format::Rg16Sint => 4,
-            Format::Rg16Unorm => 4,
-            Format::Rg16Snorm => 4,
-            Format::Rg16Float => 4,
-            Format::Rgba8Unorm => 4,
-            Format::Rgba8UnormSrgb => 4,
-            Format::Rgba8Snorm => 4,
-            Format::Rgba8Uint => 4,
-            Format::Rgba8Sint => 4,
-            Format::Bgra8Unorm => 4,
-            Format::Bgra8UnormSrgb => 4,
-            Format::Rgb10a2Unorm => 4,
-            Format::Rg11b10Float => 4,
-            Format::Rg32Uint => 8,
-            Format::Rg32Sint => 8,
-            Format::Rg32Float => 8,
-            Format::Rgb32Uint => 8,
-            Format::Rgb32Sint => 8,
-            Format::Rgb32Float => 8,
-            Format::Rgba16Uint => 8,
-            Format::Rgba16Sint => 8,
-            Format::Rgba16Unorm => 8,
-            Format::Rgba16Snorm => 8,
-            Format::Rgba16Float => 8,
-            Format::Rgba32Uint => 16,
-            Format::Rgba32Sint => 16,
-            Format::Rgba32Float => 16,
-            Format::Depth32Float => 4,
-            Format::Depth32FloatStencil8 => 4,
-            Format::Depth24Stencil8 => 4,
-        }
+        self.metadata().bytes_per_element as u32
     }
 
     /// Returns the minimum row pitch required for a buffer to texture copy operation on a texture
@@ -2580,6 +2397,15 @@ impl Format {
     /// imposed by D3D12. D3D12 exposes the limit in bytes but Vulkan exposes the same concept in
     /// texels. This utility function can be used for determining what values are valid row pitch
     /// sizes for a particular format.
+    /// 
+    /// # Warning
+    /// 
+    /// This function will only produce sane output if [`Format::bytes_per_element`] is a power of
+    /// two. Some formats like [`Format::Rgb32Float`] do not meet this requirement, however they are
+    /// not valid _texture_ formats. These are purely _vertex_ formats and so you should never need
+    /// to call this function on one of these formats as this function is entirely concerned with
+    /// handling texture uploads.
+    /// 
     pub const fn buffer_to_texture_copy_row_pitch(&self) -> u32 {
         256u32 / self.bytes_per_element()
     }
@@ -2593,108 +2419,13 @@ impl Format {
     }
 
     pub const fn aspect_mask(&self) -> TextureAspect {
-        match self {
-            Format::R8Unorm
-            | Format::R8Snorm
-            | Format::R8Uint
-            | Format::R8Sint
-            | Format::R16Uint
-            | Format::R16Sint
-            | Format::R16Unorm
-            | Format::R16Snorm
-            | Format::R16Float
-            | Format::Rg8Unorm
-            | Format::Rg8Snorm
-            | Format::Rg8Uint
-            | Format::Rg8Sint
-            | Format::R32Uint
-            | Format::R32Sint
-            | Format::R32Float
-            | Format::Rg16Uint
-            | Format::Rg16Sint
-            | Format::Rg16Unorm
-            | Format::Rg16Snorm
-            | Format::Rg16Float
-            | Format::Rgba8Unorm
-            | Format::Rgba8UnormSrgb
-            | Format::Rgba8Snorm
-            | Format::Rgba8Uint
-            | Format::Rgba8Sint
-            | Format::Bgra8Unorm
-            | Format::Bgra8UnormSrgb
-            | Format::Rgb10a2Unorm
-            | Format::Rg11b10Float
-            | Format::Rg32Uint
-            | Format::Rg32Sint
-            | Format::Rg32Float
-            | Format::Rgb32Uint
-            | Format::Rgb32Sint
-            | Format::Rgb32Float
-            | Format::Rgba16Uint
-            | Format::Rgba16Sint
-            | Format::Rgba16Unorm
-            | Format::Rgba16Snorm
-            | Format::Rgba16Float
-            | Format::Rgba32Uint
-            | Format::Rgba32Sint
-            | Format::Rgba32Float => TextureAspect::COLOR,
-            Format::Depth32Float => TextureAspect::DEPTH,
-            Format::Depth32FloatStencil8 | Format::Depth24Stencil8 => TextureAspect::DEPTH_STENCIL,
-        }
+        self.metadata().aspect_mask
     }
 }
 
 impl Display for Format {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Format::R8Unorm => f.write_str("R8Unorm"),
-            Format::R8Snorm => f.write_str("R8Snorm"),
-            Format::R8Uint => f.write_str("R8Uint"),
-            Format::R8Sint => f.write_str("R8Sint"),
-            Format::R16Uint => f.write_str("R16Uint"),
-            Format::R16Sint => f.write_str("R16Sint"),
-            Format::R16Unorm => f.write_str("R16Unorm"),
-            Format::R16Snorm => f.write_str("R16Snorm"),
-            Format::R16Float => f.write_str("R16Float"),
-            Format::Rg8Unorm => f.write_str("Rg8Unorm"),
-            Format::Rg8Snorm => f.write_str("Rg8Snorm"),
-            Format::Rg8Uint => f.write_str("Rg8Uint"),
-            Format::Rg8Sint => f.write_str("Rg8Sint"),
-            Format::R32Uint => f.write_str("R32Uint"),
-            Format::R32Sint => f.write_str("R32Sint"),
-            Format::R32Float => f.write_str("R32Float"),
-            Format::Rg16Uint => f.write_str("Rg16Uint"),
-            Format::Rg16Sint => f.write_str("Rg16Sint"),
-            Format::Rg16Unorm => f.write_str("Rg16Unorm"),
-            Format::Rg16Snorm => f.write_str("Rg16Snorm"),
-            Format::Rg16Float => f.write_str("Rg16Float"),
-            Format::Rgba8Unorm => f.write_str("Rgba8Unorm"),
-            Format::Rgba8UnormSrgb => f.write_str("Rgba8UnormSrgb"),
-            Format::Rgba8Snorm => f.write_str("Rgba8Snorm"),
-            Format::Rgba8Uint => f.write_str("Rgba8Uint"),
-            Format::Rgba8Sint => f.write_str("Rgba8Sint"),
-            Format::Bgra8Unorm => f.write_str("Bgra8Unorm"),
-            Format::Bgra8UnormSrgb => f.write_str("Bgra8UnormSrgb"),
-            Format::Rgb10a2Unorm => f.write_str("Rgb10a2Unorm"),
-            Format::Rg11b10Float => f.write_str("Rg11b10Float"),
-            Format::Rg32Uint => f.write_str("Rg32Uint"),
-            Format::Rg32Sint => f.write_str("Rg32Sint"),
-            Format::Rg32Float => f.write_str("Rg32Float"),
-            Format::Rgb32Uint => f.write_str("Rgb32Uint"),
-            Format::Rgb32Sint => f.write_str("Rgb32Sint"),
-            Format::Rgb32Float => f.write_str("Rgb32Float"),
-            Format::Rgba16Uint => f.write_str("Rgba16Uint"),
-            Format::Rgba16Sint => f.write_str("Rgba16Sint"),
-            Format::Rgba16Unorm => f.write_str("Rgba16Unorm"),
-            Format::Rgba16Snorm => f.write_str("Rgba16Snorm"),
-            Format::Rgba16Float => f.write_str("Rgba16Float"),
-            Format::Rgba32Uint => f.write_str("Rgba32Uint"),
-            Format::Rgba32Sint => f.write_str("Rgba32Sint"),
-            Format::Rgba32Float => f.write_str("Rgba32Float"),
-            Format::Depth32Float => f.write_str("Depth32Float"),
-            Format::Depth32FloatStencil8 => f.write_str("Depth32FloatStencil8"),
-            Format::Depth24Stencil8 => f.write_str("Depth24Stencil8"),
-        }
+        f.write_str(self.metadata().name)
     }
 }
 
