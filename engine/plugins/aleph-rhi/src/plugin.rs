@@ -36,7 +36,7 @@ use aleph_interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
 use aleph_interfaces::rhi::IRhiProvider;
-use aleph_rhi_api::{AdapterRequestOptions, BackendAPI};
+use aleph_rhi_api::{AdapterPowerClass, AdapterRequestOptions, BackendAPI};
 use aleph_rhi_loader::{BackendConfigs, ContextOptions, RhiLoader};
 use serde::Deserialize;
 
@@ -121,7 +121,7 @@ impl IPlugin for PluginRHI {
         let adapter = context
             .request_adapter(&AdapterRequestOptions {
                 surface: surface.as_ref().map(|v| v.as_ref()),
-                power_class: Default::default(),
+                power_class: AdapterPowerClass::HighPower,
                 type_preference: Default::default(),
                 allow_software_adapters: true,
                 deny_hardware_adapters: false,
