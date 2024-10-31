@@ -53,7 +53,7 @@
 
 #[macro_export]
 macro_rules! scope {
-    ($name:literal, $data:literal) => {
+    ($name:expr, $data:literal) => {
         use $crate::ProfileDataParam;
         let _cstr = concat!($name, "\0");
         let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(_cstr.as_bytes()) };
@@ -66,12 +66,12 @@ macro_rules! scope {
         };
         let _pix_guard = $crate::detail::Guard::new_with_data(_cstr, _data);
     };
-    ($name:literal) => {
+    ($name:expr) => {
         let _cstr = concat!($name, "\0");
         let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(_cstr.as_bytes()) };
         let _pix_guard = $crate::detail::Guard::new(_cstr);
     };
-    ($name:literal, $data:expr) => {
+    ($name:expr, $data:expr) => {
         let _cstr = concat!($name, "\0");
         let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(_cstr.as_bytes()) };
         let _pix_guard = $crate::detail::Guard::new_with_data(_cstr, $data);

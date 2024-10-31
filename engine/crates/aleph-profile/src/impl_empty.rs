@@ -53,8 +53,8 @@
 
 #[macro_export]
 macro_rules! scope {
-    ($name:literal) => {{}};
-    ($name:literal, $data:expr) => {{}};
+    ($name:expr) => {{}};
+    ($name:expr, $data:expr) => {{}};
 }
 
 #[macro_export]

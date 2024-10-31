@@ -227,7 +227,7 @@ impl PluginRegistry {
         resources.insert::<WorldResource>(WorldResource(*world));
 
         while !self.quit_handle.quit_requested() {
-            aleph_profile::scope!("aleph::OnUpdate");
+            aleph_profile::scope_named!("OnUpdate");
 
             schedule.run(&(), &mut resources);
 

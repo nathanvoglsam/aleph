@@ -139,7 +139,7 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
     let block = match context.upload_buffer.allocate_aligned(size, 512) {
         Some(block) => block,
         None => {
-            aleph_profile::scope!("AsyncTextureLoader::NewBlock");
+            aleph_profile::scope_named!("AsyncTextureLoader::NewBlock");
             let mut new_buffer = UploadBumpAllocator::new_upload_buffer(
                 context.device.as_ref(),
                 256 * 1024 * 1024,
@@ -255,7 +255,7 @@ fn load_on_threadpool(
     // We want to allocate the texture on the worker thread, even at the cost of contention, so we
     // don't block the render thread and so we can distribute the work over multiple cores.
     {
-        aleph_profile::scope!("load_on_threadpool::EnqueueAndAllocate");
+        aleph_profile::scope_named!("EnqueueAndAllocate");
         loader
             .enqueue_new_upload(
                 request,

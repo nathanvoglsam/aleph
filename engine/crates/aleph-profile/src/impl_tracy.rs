@@ -53,11 +53,11 @@
 
 #[macro_export]
 macro_rules! scope {
-    ($name:literal) => {
+    ($name:expr) => {
         // Note: callstack_depth is 0 since this has significant overhead
         let _tracy_span = $crate::tracy_client::span!($name, 0);
     };
-    ($name:literal, $data:expr) => {
+    ($name:expr, $data:expr) => {
         // Note: callstack_depth is 0 since this has significant overhead
         let _tracy_span = $crate::tracy_client::span!($name, 0);
         {

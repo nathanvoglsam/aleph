@@ -53,12 +53,12 @@
 
 #[macro_export]
 macro_rules! scope {
-    ($name:literal) => {
+    ($name:expr) => {
         let _cstr = concat!($name, "\0");
         let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(_cstr.as_bytes()) };
         let _superluminal_guard = $crate::detail::Guard::new(_cstr);
     };
-    ($name:literal, $data:expr) => {
+    ($name:expr, $data:expr) => {
         let _cstr = concat!($name, "\0");
         let _cstr = unsafe { core::ffi::CStr::from_bytes_with_nul_unchecked(_cstr.as_bytes()) };
         let _superluminal_guard = $crate::detail::Guard::new_with_data(_cstr, $data);

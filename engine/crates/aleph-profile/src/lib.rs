@@ -136,3 +136,13 @@ impl<'a> ProfileDataParam<'a> for &'a CStr {
         CString::from(self)
     }
 }
+
+#[macro_export]
+macro_rules! scope_named {
+    ($name:expr) => {
+        $crate::scope!(concat!(module_path!(), "::", $name))
+    };
+    ($name:expr, $data:expr) => {
+        $crate::scope!(concat!(module_path!(), "::", $name), $data)
+    };
+}

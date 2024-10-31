@@ -315,7 +315,7 @@ impl<A: ScheduleArgs> Schedule<A> {
     pub fn run_once(&mut self, args: &A::Args<'_>, resources: &mut TypedTable) {
         for label in self.stage_order.iter() {
             let stage = self.stages.get_mut(label).unwrap();
-            aleph_profile::scope!("aleph::ExecScope", label);
+            aleph_profile::scope_named!("ExecScope", label);
             stage.as_mut().run(args, resources);
         }
     }

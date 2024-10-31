@@ -243,7 +243,7 @@ impl<A: PassArgs> FrameGraph<A> {
 
                 encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
                 {
-                    aleph_profile::scope!("frame-graph::Pass", render_pass.name.as_ref());
+                    aleph_profile::scope_named!("FrameGraphPass", render_pass.name.as_ref());
 
                     render_pass.pass.execute(encoder, &resources, args);
                 }
