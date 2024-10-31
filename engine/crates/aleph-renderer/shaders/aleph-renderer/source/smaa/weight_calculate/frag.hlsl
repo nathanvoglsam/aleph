@@ -27,38 +27,35 @@
 // SOFTWARE.
 //
 
-use aleph_frame_graph::PassArgs;
-use aleph_pin_board::{BoardParamId, BoardScope};
-use aleph_rhi_api::*;
+#include "smaa/metrics.hlsl"
+#include "payload.hlsl"
 
-use crate::{BufferPool, TexturePool};
+[[vk::binding(0, 0)]]
+Texture2D areaTex : register(t0);
 
-pub mod composite_planes;
-pub mod fxaa;
-pub mod lighting_resolve;
-pub mod main_gbuffer;
-pub mod smaa;
-pub mod tone_map;
+[[vk::binding(1, 0)]]
+Texture2D searchTex : register(t1);
 
-mod utils;
+[[vk::binding(2, 0)]]
+Texture2D edgesTex : register(t2);
 
-#[derive(Clone)]
-pub struct GraphSwapImageInfo {
-    pub desc: TextureDesc<'static>,
-}
+[[vk::binding(3, 0)]]
+SamplerState LinearSampler : register(s3);
 
-impl BoardParamId for GraphSwapImageInfo {
-    type Output<'a> = Self;
-}
+[[vk::binding(4, 0)]]
+SamplerState PointSampler : register(s4);
 
-pub struct GraphArgsLayout<'a> {
-    pub board: &'a BoardScope<'a>,
-    pub texture_pool: &'a TexturePool,
-    pub buffer_pool: &'a BufferPool,
-}
+[[vk::push_constant]]
+ConstantBuffer<SmaaMetrics> g_constants : register(b0, space1024);
 
-pub struct GraphArgs();
+#define SMAA_RT_METRICS g_constants.metrics
+#define SMAA_INCLUDE_VS 0
 
-impl PassArgs for GraphArgs {
-    type Args<'a> = GraphArgsLayout<'a>;
+#include "smaa/SMAA.hlsl"
+
+float4 main(PixelInput input) : SV_Target0
+{
+    // Unused, needed for temporal SMAA which we aren't using
+    float4 subsampleIndices = float4(0, 0, 0, 0);
+    return SMAABlendingWeightCalculationPS(input.uv, input.pixcoord, input.offset, edgesTex, areaTex, searchTex, subsampleIndices);
 }

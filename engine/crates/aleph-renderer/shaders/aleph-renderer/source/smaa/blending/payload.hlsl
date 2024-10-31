@@ -27,38 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_frame_graph::PassArgs;
-use aleph_pin_board::{BoardParamId, BoardScope};
-use aleph_rhi_api::*;
-
-use crate::{BufferPool, TexturePool};
-
-pub mod composite_planes;
-pub mod fxaa;
-pub mod lighting_resolve;
-pub mod main_gbuffer;
-pub mod smaa;
-pub mod tone_map;
-
-mod utils;
-
-#[derive(Clone)]
-pub struct GraphSwapImageInfo {
-    pub desc: TextureDesc<'static>,
-}
-
-impl BoardParamId for GraphSwapImageInfo {
-    type Output<'a> = Self;
-}
-
-pub struct GraphArgsLayout<'a> {
-    pub board: &'a BoardScope<'a>,
-    pub texture_pool: &'a TexturePool,
-    pub buffer_pool: &'a BufferPool,
-}
-
-pub struct GraphArgs();
-
-impl PassArgs for GraphArgs {
-    type Args<'a> = GraphArgsLayout<'a>;
-}
+struct PixelInput {
+    float4 sv_position : SV_Position;
+    [[vk::location(0)]] float2 uv : A0;
+    [[vk::location(1)]] float4 offset : A1;
+};

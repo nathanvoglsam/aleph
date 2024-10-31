@@ -343,6 +343,7 @@ impl IRenderPlane for EguiRenderPlane {
         device: &dyn IDevice,
         pin_board: &aleph_pin_board::PinBoard,
         state_cache: &mut StateCache,
+        _resource_cache: &mut StateCache,
     ) -> RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
         crate::egui_draw::pass(

@@ -31,6 +31,7 @@ use aleph_rhi_api::*;
 use aleph_shader_db::*;
 
 // A wrapper struct
+#[derive(Clone)]
 pub struct ShaderDatabaseAccessor<'a> {
     loader: fn(shader_db: &'a dyn IShaderDatabase, &str) -> Option<ApiShaderEntry<'a>>,
     shader_db: &'a (dyn IShaderDatabase + Send + Sync),

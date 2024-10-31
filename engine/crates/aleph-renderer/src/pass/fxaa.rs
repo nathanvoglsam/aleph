@@ -36,6 +36,10 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::pass::utils::{
+    create_fullscreen_triangle_pipeline, draw_fullscreen_triangle, FullscreenTriangleBindInfo,
+    FullscreenTriangleInfo,
+};
 use crate::pass::GraphArgs;
 use crate::{shaders, IStateCacheKey, RenderPlaneOutput};
 use crate::{ShaderDatabaseAccessor, StateCache};
@@ -116,34 +120,6 @@ pub fn pass(
                 .unwrap();
             buffer.unmap().unwrap();
 
-            encoder.begin_rendering(&BeginRenderingInfo {
-                layer_count: 1,
-                extent: src_extent,
-                color_attachments: &[RenderingColorAttachmentInfo {
-                    image_view: dst_view,
-                    image_layout: ImageLayout::ColorAttachment,
-                    load_op: AttachmentLoadOp::DontCare, // We write the whole texture
-                    store_op: AttachmentStoreOp::Store,
-                }],
-                depth_stencil_attachment: None,
-                allow_uav_writes: false,
-            });
-            encoder.bind_graphics_pipeline(state.pipeline.as_ref());
-            encoder.set_viewports(&[Viewport {
-                x: 0.0,
-                y: 0.0,
-                width: src_extent.width as _,
-                height: src_extent.height as _,
-                min_depth: 0.0,
-                max_depth: 1.0,
-            }]);
-            encoder.set_scissor_rects(&[Rect {
-                x: 0,
-                y: 0,
-                w: src_extent.width,
-                h: src_extent.height,
-            }]);
-
             let set = resources
                 .descriptor_arena()
                 .allocate_set(state.layout.set_layout.as_ref())
@@ -153,17 +129,19 @@ pub fn pass(
                 DescriptorWriteDesc::texture(set, 1, &src_view.srv_write()),
             ]);
 
-            encoder.bind_descriptor_sets(
-                state.layout.pipeline_layout.as_ref(),
-                PipelineBindPoint::Graphics,
-                0,
-                &[set],
-                &[],
-            );
-
-            encoder.draw(3, 1, 0, 0);
-
-            encoder.end_rendering();
+            let info = FullscreenTriangleInfo {
+                dst_view,
+                pipeline: state.pipeline.as_ref(),
+                extent: src_extent,
+                bindings: &FullscreenTriangleBindInfo {
+                    layout: state.layout.pipeline_layout.as_ref(),
+                    sets: &[set],
+                    first_set: 0,
+                    dynamic_offsets: &[],
+                    constant_blocks: &[],
+                },
+            };
+            draw_fullscreen_triangle(encoder, &info);
         }
     });
 
@@ -293,50 +271,15 @@ impl FxaaState {
         let vertex_shader = shader_db.load_stage(shaders::fxaa::vert()).unwrap();
         let fragment_shader = shader_db.load_stage(shaders::fxaa::frag()).unwrap();
 
-        let vertex_layout = VertexInputStateDesc::default();
-
-        let input_assembly_state = InputAssemblyStateDesc {
-            primitive_topology: PrimitiveTopology::TriangleList,
-        };
-
-        let rasterizer_state = RasterizerStateDesc {
-            cull_mode: CullMode::None,
-            front_face: FrontFaceOrder::CounterClockwise,
-            polygon_mode: PolygonMode::Fill,
-            depth_bias: 0,
-            depth_bias_clamp: 0.0,
-            depth_bias_slope_factor: 0.0,
-        };
-
-        let depth_stencil_state = DepthStencilStateDesc {
-            depth_test: false,
-            ..Default::default()
-        };
-
-        let blend_state_new = BlendStateDesc {
-            attachments: &[AttachmentBlendState {
-                blend_enabled: false,
-                color_write_mask: ColorComponentFlags::all(),
-                ..Default::default()
-            }],
-        };
-
-        let graphics_pipeline_desc_new = GraphicsPipelineDesc {
-            shader_stages: &[vertex_shader, fragment_shader],
+        create_fullscreen_triangle_pipeline(
+            device,
             pipeline_layout,
-            vertex_layout: &vertex_layout,
-            input_assembly_state: &input_assembly_state,
-            rasterizer_state: &rasterizer_state,
-            depth_stencil_state: &depth_stencil_state,
-            blend_state: &blend_state_new,
-            render_target_formats: &[format],
-            depth_stencil_format: None,
-            name: obj_name_opt!("GraphicsPipelineState"),
-        };
-
-        device
-            .create_graphics_pipeline(&graphics_pipeline_desc_new)
-            .unwrap()
+            format,
+            vertex_shader,
+            fragment_shader,
+            obj_name_opt!("GraphicsPipelineState"),
+        )
+        .unwrap()
     }
 }
 

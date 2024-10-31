@@ -61,6 +61,7 @@ pub trait IRenderPlane: Any + Send + Sync {
         device: &dyn IDevice,
         pin_board: &PinBoard,
         state_cache: &mut StateCache,
+        resource_cache: &mut StateCache,
     ) -> RenderPlaneOutput;
 }
 
@@ -85,6 +86,7 @@ impl IRenderPlane for DefaultRenderPlane {
         device: &dyn IDevice,
         pin_board: &PinBoard,
         state_cache: &mut StateCache,
+        _resource_cache: &mut StateCache,
     ) -> RenderPlaneOutput {
         use crate::pass;
 
@@ -151,7 +153,8 @@ impl RendererBuilder {
         let device = self.device.expect("Device missing!");
         let queue = device.get_queue(QueueType::General).unwrap();
         let shader_db = self.shader_db.expect("Shader DB missing!");
-        let mut state_cache = StateCache::new(shader_db);
+        let mut state_cache = StateCache::new(shader_db.clone());
+        let resource_cache = StateCache::new(shader_db.clone());
 
         let swap_manager = SwapManager {
             surface: self.surface.expect("RenderSurface missing!"),
@@ -182,92 +185,30 @@ impl RendererBuilder {
         let buffer_pool = BufferPool::new(NonZeroU8::new(2).unwrap());
 
         let white_texture_rgba8 = unsafe {
-            let mut data = TextureUploadSource::new_owned(
+            create_1x1_colour_texture(
                 device.as_ref(),
-                crate::TextureMipUploadDesc {
-                    width: 1,
-                    height: 1,
-                    depth: 1,
-                    format: Format::Rgba8Unorm,
-                },
-                ResourceUsageFlags::SHADER_RESOURCE,
+                &mut texture_pool,
+                &texture_loader,
+                0xFFFFFFFF,
             )
-            .unwrap();
-
-            let dst = &mut data.data_mut()[0..4];
-            dst.copy_from_slice(bytemuck::bytes_of(&0xFFFFFFFFu32));
-
-            let handle = texture_pool.create_texture(None);
-            texture_loader
-                .immediate_upload(
-                    None,
-                    handle,
-                    data,
-                    TextureAllocMode::Deferred,
-                    GenerateMips::No,
-                )
-                .ok()
-                .unwrap();
-            handle
         };
+
         let black_texture_rgba8 = unsafe {
-            let mut data = TextureUploadSource::new_owned(
+            create_1x1_colour_texture(
                 device.as_ref(),
-                crate::TextureMipUploadDesc {
-                    width: 1,
-                    height: 1,
-                    depth: 1,
-                    format: Format::Rgba8Unorm,
-                },
-                ResourceUsageFlags::SHADER_RESOURCE,
+                &mut texture_pool,
+                &texture_loader,
+                0x00000000,
             )
-            .unwrap();
-
-            let dst = &mut data.data_mut()[0..4];
-            dst.copy_from_slice(bytemuck::bytes_of(&0x00000000u32));
-
-            let handle = texture_pool.create_texture(None);
-            texture_loader
-                .immediate_upload(
-                    None,
-                    handle,
-                    data,
-                    TextureAllocMode::Deferred,
-                    GenerateMips::No,
-                )
-                .ok()
-                .unwrap();
-            handle
         };
 
         let normal_texture_rgba8 = unsafe {
-            let mut data = TextureUploadSource::new_owned(
+            create_1x1_colour_texture(
                 device.as_ref(),
-                crate::TextureMipUploadDesc {
-                    width: 1,
-                    height: 1,
-                    depth: 1,
-                    format: Format::Rgba8Unorm,
-                },
-                ResourceUsageFlags::SHADER_RESOURCE,
+                &mut texture_pool,
+                &texture_loader,
+                0xFFFF8080,
             )
-            .unwrap();
-
-            let dst = &mut data.data_mut()[0..4];
-            dst.copy_from_slice(bytemuck::bytes_of(&0xFFFF8080u32));
-
-            let handle = texture_pool.create_texture(None);
-            texture_loader
-                .immediate_upload(
-                    None,
-                    handle,
-                    data,
-                    TextureAllocMode::Deferred,
-                    GenerateMips::No,
-                )
-                .ok()
-                .unwrap();
-            handle
         };
 
         let linear_descriptor_pools =
@@ -280,6 +221,7 @@ impl RendererBuilder {
             device,
             queue,
             state_cache,
+            resource_cache,
             swap_manager,
             mip_generator,
             texture_loader,
@@ -299,11 +241,45 @@ impl RendererBuilder {
     }
 }
 
+unsafe fn create_1x1_colour_texture(
+    device: &dyn IDevice,
+    texture_pool: &mut TexturePool,
+    texture_loader: &TextureLoader,
+    payload: u32,
+) -> TextureHandle {
+    let mut data = TextureUploadSource::new_owned(
+        device,
+        crate::TextureMipUploadDesc {
+            width: 1,
+            height: 1,
+            depth: 1,
+            format: Format::Rgba8Unorm,
+        },
+        ResourceUsageFlags::SHADER_RESOURCE,
+    )
+    .unwrap();
+    let dst = &mut data.data_mut()[0..4];
+    dst.copy_from_slice(bytemuck::bytes_of(&payload));
+    let handle = texture_pool.create_texture(None);
+    texture_loader
+        .immediate_upload(
+            None,
+            handle,
+            data,
+            TextureAllocMode::Deferred,
+            GenerateMips::No,
+        )
+        .ok()
+        .unwrap();
+    handle
+}
+
 pub struct Renderer {
     config: RendererConfig,
     device: AnyArc<dyn IDevice>,
     queue: AnyArc<dyn IQueue>,
     state_cache: StateCache,
+    resource_cache: StateCache,
     swap_manager: SwapManager,
     mip_generator: MipGenerator,
     texture_loader: Arc<TextureLoader>,
@@ -445,6 +421,7 @@ impl Renderer {
             self.graph_manager.build_graph(
                 &self.config,
                 &mut self.state_cache,
+                &mut self.resource_cache,
                 self.device.as_ref(),
                 &self.swap_manager,
             );
@@ -749,6 +726,7 @@ impl GraphManager {
         &mut self,
         config: &RendererConfig,
         state_cache: &mut StateCache,
+        resource_cache: &mut StateCache,
         device: &dyn IDevice,
         swap_manager: &SwapManager,
     ) {
@@ -758,7 +736,7 @@ impl GraphManager {
             desc: swap_manager.desc.clone(),
         });
 
-        let (builder, swap_id) = self.register_graph_passes(state_cache, device);
+        let (builder, swap_id) = self.register_graph_passes(state_cache, resource_cache, device);
 
         let mut frame_graph = builder.build(device);
         frame_graph.allocate_transients(config.frames_in_flight);
@@ -771,14 +749,20 @@ impl GraphManager {
     unsafe fn register_graph_passes(
         &mut self,
         state_cache: &mut StateCache,
+        resource_cache: &mut StateCache,
         device: &dyn IDevice,
     ) -> (FrameGraphBuilder<GraphArgs>, ResourceMut) {
         let mut frame_graph = FrameGraph::<GraphArgs>::builder();
 
         let mut outputs = Vec::with_capacity(self.render_planes.capacity());
         for plane in self.render_planes.iter_mut() {
-            let output =
-                plane.register_passes(&mut frame_graph, device, &self.pin_board, state_cache);
+            let output = plane.register_passes(
+                &mut frame_graph,
+                device,
+                &self.pin_board,
+                state_cache,
+                resource_cache,
+            );
             outputs.push(output);
         }
 

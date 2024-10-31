@@ -27,38 +27,25 @@
 // SOFTWARE.
 //
 
-use aleph_frame_graph::PassArgs;
-use aleph_pin_board::{BoardParamId, BoardScope};
-use aleph_rhi_api::*;
+#include "smaa/metrics.hlsl"
+#include "payload.hlsl"
 
-use crate::{BufferPool, TexturePool};
+[[vk::push_constant]]
+ConstantBuffer<SmaaMetrics> g_constants : register(b0, space1024);
 
-pub mod composite_planes;
-pub mod fxaa;
-pub mod lighting_resolve;
-pub mod main_gbuffer;
-pub mod smaa;
-pub mod tone_map;
+#define SMAA_RT_METRICS g_constants.metrics
+#define SMAA_INCLUDE_PS 0
 
-mod utils;
+#include "smaa/SMAA.hlsl"
 
-#[derive(Clone)]
-pub struct GraphSwapImageInfo {
-    pub desc: TextureDesc<'static>,
-}
+PixelInput main(uint id : SV_VertexID) {
+	// Fullscreen triangle generation
+	PixelInput output;
+	output.uv = float2((id << 1) & 2, id & 2);
+	output.sv_position = float4(output.uv * float2(2, -2) + float2(-1, 1), 0, 1);
 
-impl BoardParamId for GraphSwapImageInfo {
-    type Output<'a> = Self;
-}
+	// Writes into output.offset
+    SMAANeighborhoodBlendingVS(output.uv, output.offset);
 
-pub struct GraphArgsLayout<'a> {
-    pub board: &'a BoardScope<'a>,
-    pub texture_pool: &'a TexturePool,
-    pub buffer_pool: &'a BufferPool,
-}
-
-pub struct GraphArgs();
-
-impl PassArgs for GraphArgs {
-    type Args<'a> = GraphArgsLayout<'a>;
+	return output;
 }

@@ -69,3 +69,51 @@ pub mod postprocess {
         unsafe { ShaderName::<Compute>::new("aleph-renderer/postprocess/tonemapping.cs") } // Safety guaranteed by code-gen
     }
 }
+#[allow(unused, non_snake_case)]
+pub mod smaa {
+    #[allow(unused)]
+    use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
+
+    #[allow(unused, non_snake_case)]
+    pub mod blending {
+        #[allow(unused)]
+        use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
+
+        #[allow(unused, non_snake_case)]
+        pub const fn frag() -> ShaderName<'static, Fragment> {
+            unsafe { ShaderName::<Fragment>::new("aleph-renderer/smaa/blending/frag") } // Safety guaranteed by code-gen
+        }
+        #[allow(unused, non_snake_case)]
+        pub const fn vert() -> ShaderName<'static, Vertex> {
+            unsafe { ShaderName::<Vertex>::new("aleph-renderer/smaa/blending/vert") } // Safety guaranteed by code-gen
+        }
+    }
+    #[allow(unused, non_snake_case)]
+    pub mod edge_detect {
+        #[allow(unused)]
+        use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
+
+        #[allow(unused, non_snake_case)]
+        pub const fn frag() -> ShaderName<'static, Fragment> {
+            unsafe { ShaderName::<Fragment>::new("aleph-renderer/smaa/edge_detect/frag") } // Safety guaranteed by code-gen
+        }
+        #[allow(unused, non_snake_case)]
+        pub const fn vert() -> ShaderName<'static, Vertex> {
+            unsafe { ShaderName::<Vertex>::new("aleph-renderer/smaa/edge_detect/vert") } // Safety guaranteed by code-gen
+        }
+    }
+    #[allow(unused, non_snake_case)]
+    pub mod weight_calculate {
+        #[allow(unused)]
+        use aleph_shader_db::{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex };
+
+        #[allow(unused, non_snake_case)]
+        pub const fn frag() -> ShaderName<'static, Fragment> {
+            unsafe { ShaderName::<Fragment>::new("aleph-renderer/smaa/weight_calculate/frag") } // Safety guaranteed by code-gen
+        }
+        #[allow(unused, non_snake_case)]
+        pub const fn vert() -> ShaderName<'static, Vertex> {
+            unsafe { ShaderName::<Vertex>::new("aleph-renderer/smaa/weight_calculate/vert") } // Safety guaranteed by code-gen
+        }
+    }
+}

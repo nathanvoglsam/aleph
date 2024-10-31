@@ -1,0 +1,561 @@
+//
+//
+// This file is a part of Aleph
+//
+// https://github.com/nathanvoglsam/aleph
+//
+// MIT License
+//
+// Copyright (c) 2020 Aleph Engine
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
+use std::sync::Arc;
+
+use aleph_any::AnyArc;
+use aleph_frame_graph::*;
+use aleph_nstr::nstr;
+use aleph_pin_board::PinBoard;
+use aleph_rhi_api::*;
+
+use crate::pass::utils::{
+    create_fullscreen_triangle_pipeline, draw_fullscreen_triangle, FullscreenTriangleBindInfo,
+    FullscreenTriangleInfo,
+};
+use crate::pass::GraphArgs;
+use crate::{shaders, IStateCacheKey, RenderPlaneOutput};
+use crate::{ShaderDatabaseAccessor, StateCache};
+
+pub fn pass(
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
+    device: &dyn IDevice,
+    _pin_board: &PinBoard,
+    state_cache: &mut StateCache,
+    _resource_cache: &mut StateCache,
+    colour_input: &RenderPlaneOutput,
+) -> RenderPlaneOutput {
+    let key = SmaaState::key(colour_input.desc.format);
+    let state_handle =
+        state_cache.get_or_insert_with(&key, |cache, k| SmaaState::new(cache, device, k.0));
+
+    //______________________________________________________________________________________________
+    // 1. Edge Texture
+    let state = state_handle.clone();
+    let edge_texture = edge_pass(frame_graph, state, colour_input);
+
+    //______________________________________________________________________________________________
+    // 2. Weights Texture
+    let state = state_handle.clone();
+    let blend_texture = blend_weight_pass(frame_graph, state, &edge_texture);
+
+    //______________________________________________________________________________________________
+    // 3. AA Resolve
+    let state = state_handle.clone();
+    let out_texture = aa_blend_resolve_pass(frame_graph, state, &colour_input, &blend_texture);
+
+    out_texture
+}
+
+fn edge_pass(
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
+    state: Arc<SmaaState>,
+    colour_input: &RenderPlaneOutput,
+) -> RenderPlaneOutput {
+    let extent = colour_input.desc.get_extent_2d();
+
+    let mut edge_texture = None;
+    frame_graph.add_pass(nstr!("SmaaEdgeDetection"), |resources| {
+        let colour_input =
+            resources.read_texture(colour_input.id, ResourceUsageFlags::SHADER_RESOURCE);
+
+        let output_desc = TextureDesc::texture_2d(extent.width, extent.height)
+            .with_format(Format::Bgra8Unorm)
+            .with_name(obj_name!("SmaaEdgesTexture"));
+        let dst = resources.create_texture(
+            &output_desc,
+            // BarrierSync::RENDER_TARGET,
+            ResourceUsageFlags::RENDER_TARGET,
+        );
+        edge_texture = Some(RenderPlaneOutput {
+            id: dst.into(),
+            desc: output_desc.strip_name(),
+        });
+
+        move |encoder, resources, _args| unsafe {
+            let dst = resources.get_texture(dst).unwrap();
+            let dst_view = ImageView::get_rtv_for(dst).unwrap();
+
+            let colour_input = resources.get_texture(colour_input).unwrap();
+            let colour_input_view = ImageView::get_srv_for(colour_input).unwrap();
+
+            let set = resources
+                .descriptor_arena()
+                .allocate_set(state.edge_set_layout.as_ref())
+                .unwrap();
+            resources
+                .device()
+                .update_descriptor_sets(&[DescriptorWriteDesc::texture(
+                    set,
+                    1,
+                    &colour_input_view.srv_write(),
+                )]);
+
+            let info = FullscreenTriangleInfo {
+                dst_view,
+                pipeline: state.edge_pipeline.as_ref(),
+                extent,
+                bindings: &FullscreenTriangleBindInfo {
+                    layout: state.edge_layout.as_ref(),
+                    sets: &[],
+                    first_set: 0,
+                    dynamic_offsets: &[],
+                    constant_blocks: &[],
+                },
+            };
+            draw_fullscreen_triangle(encoder, &info);
+        }
+    });
+    edge_texture.unwrap()
+}
+
+fn blend_weight_pass(
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
+    state: Arc<SmaaState>,
+    edge_texture: &RenderPlaneOutput,
+) -> RenderPlaneOutput {
+    let extent = edge_texture.desc.get_extent_2d();
+
+    let mut blend_texture = None;
+    frame_graph.add_pass(nstr!("SmaaBlendingWeightCalculation"), |resources| {
+        let edges = resources.read_buffer(edge_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
+
+        let output_desc = TextureDesc::texture_2d(extent.width, extent.height)
+            .with_format(Format::Bgra8Unorm)
+            .with_name(obj_name!("SmaaBlendTexture"));
+        let dst = resources.create_texture(
+            &output_desc,
+            // BarrierSync::RENDER_TARGET,
+            ResourceUsageFlags::RENDER_TARGET,
+        );
+        blend_texture = Some(RenderPlaneOutput {
+            id: dst.into(),
+            desc: output_desc.strip_name(),
+        });
+
+        move |encoder, resources, _args| unsafe {
+            let dst = resources.get_texture(dst).unwrap();
+            let dst_view = ImageView::get_rtv_for(dst).unwrap();
+
+            let src = resources.get_texture(edges).unwrap();
+            let src_view = ImageView::get_srv_for(src).unwrap();
+
+            // TODO: we aren't writing all the image views or cbuffer stuff yet
+            let set = resources
+                .descriptor_arena()
+                .allocate_set(state.edge_set_layout.as_ref())
+                .unwrap();
+            resources
+                .device()
+                .update_descriptor_sets(&[DescriptorWriteDesc::texture(
+                    set,
+                    1,
+                    &src_view.srv_write(),
+                )]);
+
+            let info = FullscreenTriangleInfo {
+                dst_view,
+                pipeline: state.edge_pipeline.as_ref(),
+                extent,
+                bindings: &FullscreenTriangleBindInfo {
+                    layout: state.edge_layout.as_ref(),
+                    sets: &[],
+                    first_set: 0,
+                    dynamic_offsets: &[],
+                    constant_blocks: &[],
+                },
+            };
+            draw_fullscreen_triangle(encoder, &info);
+        }
+    });
+    blend_texture.unwrap()
+}
+
+fn aa_blend_resolve_pass(
+    frame_graph: &mut FrameGraphBuilder<GraphArgs>,
+    state: Arc<SmaaState>,
+    colour_input: &RenderPlaneOutput,
+    blend_texture: &RenderPlaneOutput,
+) -> RenderPlaneOutput {
+    let format = colour_input.desc.format;
+    let extent = blend_texture.desc.get_extent_2d();
+
+    let mut out_texture = None;
+    frame_graph.add_pass(nstr!("SmaaBlend"), |resources| {
+        let blend_texture =
+            resources.read_texture(blend_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
+
+        let output_desc = TextureDesc::texture_2d(extent.width, extent.height)
+            .with_format(format)
+            .with_name(obj_name!("SmaaOutput"));
+        let dst = resources.create_texture(
+            &output_desc,
+            // BarrierSync::RENDER_TARGET,
+            ResourceUsageFlags::RENDER_TARGET,
+        );
+        out_texture = Some(RenderPlaneOutput {
+            id: dst.into(),
+            desc: output_desc.strip_name(),
+        });
+
+        move |encoder, resources, _args| unsafe {
+            let dst = resources.get_texture(dst).unwrap();
+            let dst_view = ImageView::get_rtv_for(dst).unwrap();
+
+            let blend_texture = resources.get_texture(blend_texture).unwrap();
+            let blend_texture_view = ImageView::get_srv_for(blend_texture).unwrap();
+
+            // TODO: we aren't writing all the image views or cbuffer stuff yet
+            let set = resources
+                .descriptor_arena()
+                .allocate_set(state.edge_set_layout.as_ref())
+                .unwrap();
+            resources
+                .device()
+                .update_descriptor_sets(&[DescriptorWriteDesc::texture(
+                    set,
+                    1,
+                    &blend_texture_view.srv_write(),
+                )]);
+
+            let info = FullscreenTriangleInfo {
+                dst_view,
+                pipeline: state.edge_pipeline.as_ref(),
+                extent,
+                bindings: &FullscreenTriangleBindInfo {
+                    layout: state.edge_layout.as_ref(),
+                    sets: &[],
+                    first_set: 0,
+                    dynamic_offsets: &[],
+                    constant_blocks: &[],
+                },
+            };
+            draw_fullscreen_triangle(encoder, &info);
+        }
+    });
+    out_texture.unwrap()
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct SmaaStateKey(pub Format);
+
+impl IStateCacheKey for SmaaStateKey {
+    type Storage = SmaaState;
+}
+
+pub struct SmaaState {
+    pub linear_sampler: AnyArc<dyn ISampler>,
+    pub point_sampler: AnyArc<dyn ISampler>,
+    pub edge_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub weight_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub blend_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub edge_layout: AnyArc<dyn IPipelineLayout>,
+    pub weight_layout: AnyArc<dyn IPipelineLayout>,
+    pub blend_layout: AnyArc<dyn IPipelineLayout>,
+    pub edge_pipeline: AnyArc<dyn IGraphicsPipeline>,
+    pub weight_pipeline: AnyArc<dyn IGraphicsPipeline>,
+    pub blend_pipeline: AnyArc<dyn IGraphicsPipeline>,
+}
+
+impl SmaaState {
+    pub fn key(format: Format) -> SmaaStateKey {
+        SmaaStateKey(format)
+    }
+
+    pub fn new(cache: &mut StateCache, device: &dyn IDevice, format: Format) -> Self {
+        let linear_sampler = Self::create_linear_sampler(device);
+        let point_sampler = Self::create_point_sampler(device);
+
+        let linear_sampler_ref = linear_sampler.as_ref();
+        let point_sampler_ref = linear_sampler.as_ref();
+
+        let edge_set_layout =
+            Self::create_edge_layout(device, linear_sampler_ref, point_sampler_ref);
+
+        let weight_set_layout =
+            Self::create_weight_layout(device, linear_sampler_ref, point_sampler_ref);
+
+        let blend_set_layout =
+            Self::create_blend_layout(device, linear_sampler_ref, point_sampler_ref);
+
+        let edge_layout = Self::create_pipeline_layout(
+            device,
+            edge_set_layout.as_ref(),
+            obj_name_opt!("EdgePipelineLayout"),
+        );
+
+        let weight_layout = Self::create_pipeline_layout(
+            device,
+            weight_set_layout.as_ref(),
+            obj_name_opt!("WeightPipelineLayout"),
+        );
+
+        let blend_layout = Self::create_pipeline_layout(
+            device,
+            blend_set_layout.as_ref(),
+            obj_name_opt!("BlendPipelineLayout"),
+        );
+
+        let edge_pipeline = Self::create_edge_detect_pipeline_state(
+            device,
+            edge_layout.as_ref(),
+            cache.shader_db(),
+            format,
+        );
+
+        let weight_pipeline = Self::create_weight_calculate_pipeline_state(
+            device,
+            weight_layout.as_ref(),
+            cache.shader_db(),
+            format,
+        );
+
+        let blend_pipeline = Self::create_blending_pipeline_state(
+            device,
+            blend_layout.as_ref(),
+            cache.shader_db(),
+            format,
+        );
+
+        Self {
+            linear_sampler,
+            point_sampler,
+            edge_set_layout,
+            weight_set_layout,
+            blend_set_layout,
+            edge_layout,
+            weight_layout,
+            blend_layout,
+            edge_pipeline,
+            weight_pipeline,
+            blend_pipeline,
+        }
+    }
+
+    pub fn create_edge_layout(
+        device: &dyn IDevice,
+        linear_sampler: &dyn ISampler,
+        point_sampler: &dyn ISampler,
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        let linear_sampler = [linear_sampler];
+        let point_sampler = [point_sampler];
+
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::Fragment,
+            items: &[
+                DescriptorType::Texture.binding(0),
+                DescriptorType::Texture.binding(1),
+                DescriptorType::Sampler
+                    .binding(2)
+                    .with_static_samplers(&linear_sampler),
+                DescriptorType::Sampler
+                    .binding(3)
+                    .with_static_samplers(&point_sampler),
+            ],
+            name: obj_name_opt!("EdgeDescriptorSetLayout"),
+        };
+        device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap()
+    }
+
+    pub fn create_weight_layout(
+        device: &dyn IDevice,
+        linear_sampler: &dyn ISampler,
+        point_sampler: &dyn ISampler,
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        let linear_sampler = [linear_sampler];
+        let point_sampler = [point_sampler];
+
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::Fragment,
+            items: &[
+                DescriptorType::Texture.binding(0),
+                DescriptorType::Texture.binding(1),
+                DescriptorType::Texture.binding(2),
+                DescriptorType::Sampler
+                    .binding(3)
+                    .with_static_samplers(&linear_sampler),
+                DescriptorType::Sampler
+                    .binding(4)
+                    .with_static_samplers(&point_sampler),
+            ],
+            name: obj_name_opt!("WeightDescriptorSetLayout"),
+        };
+        device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap()
+    }
+
+    pub fn create_blend_layout(
+        device: &dyn IDevice,
+        linear_sampler: &dyn ISampler,
+        point_sampler: &dyn ISampler,
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        let linear_sampler = [linear_sampler];
+        let point_sampler = [point_sampler];
+
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::Fragment,
+            items: &[
+                DescriptorType::Texture.binding(0),
+                DescriptorType::Texture.binding(1),
+                DescriptorType::Sampler
+                    .binding(2)
+                    .with_static_samplers(&linear_sampler),
+                DescriptorType::Sampler
+                    .binding(3)
+                    .with_static_samplers(&point_sampler),
+            ],
+            name: obj_name_opt!("BlendDescriptorSetLayout"),
+        };
+        device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap()
+    }
+
+    pub fn create_pipeline_layout(
+        device: &dyn IDevice,
+        set_layout: &dyn IDescriptorSetLayout,
+        name: Option<&str>,
+    ) -> AnyArc<dyn IPipelineLayout> {
+        let pipeline_layout_desc = PipelineLayoutDesc {
+            set_layouts: &[set_layout],
+            push_constant_blocks: &[PushConstantBlock {
+                binding: 0,
+                visibility: DescriptorShaderVisibility::All,
+                size: 8,
+            }],
+            name,
+        };
+        device
+            .create_pipeline_layout(&pipeline_layout_desc)
+            .unwrap()
+    }
+
+    pub fn create_edge_detect_pipeline_state(
+        device: &dyn IDevice,
+        pipeline_layout: &dyn IPipelineLayout,
+        shader_db: &ShaderDatabaseAccessor,
+        format: Format,
+    ) -> AnyArc<dyn IGraphicsPipeline> {
+        let vertex_shader = shader_db
+            .load_stage(shaders::smaa::edge_detect::vert())
+            .unwrap();
+        let fragment_shader = shader_db
+            .load_stage(shaders::smaa::edge_detect::frag())
+            .unwrap();
+
+        create_fullscreen_triangle_pipeline(
+            device,
+            pipeline_layout,
+            format,
+            vertex_shader,
+            fragment_shader,
+            obj_name_opt!("EdgeDetectGraphicsPipelineState"),
+        )
+        .unwrap()
+    }
+
+    pub fn create_weight_calculate_pipeline_state(
+        device: &dyn IDevice,
+        pipeline_layout: &dyn IPipelineLayout,
+        shader_db: &ShaderDatabaseAccessor,
+        format: Format,
+    ) -> AnyArc<dyn IGraphicsPipeline> {
+        let vertex_shader = shader_db
+            .load_stage(shaders::smaa::weight_calculate::vert())
+            .unwrap();
+        let fragment_shader = shader_db
+            .load_stage(shaders::smaa::weight_calculate::frag())
+            .unwrap();
+
+        create_fullscreen_triangle_pipeline(
+            device,
+            pipeline_layout,
+            format,
+            vertex_shader,
+            fragment_shader,
+            obj_name_opt!("WeightCalculateGraphicsPipelineState"),
+        )
+        .unwrap()
+    }
+
+    pub fn create_blending_pipeline_state(
+        device: &dyn IDevice,
+        pipeline_layout: &dyn IPipelineLayout,
+        shader_db: &ShaderDatabaseAccessor,
+        format: Format,
+    ) -> AnyArc<dyn IGraphicsPipeline> {
+        let vertex_shader = shader_db
+            .load_stage(shaders::smaa::blending::vert())
+            .unwrap();
+        let fragment_shader = shader_db
+            .load_stage(shaders::smaa::blending::frag())
+            .unwrap();
+
+        create_fullscreen_triangle_pipeline(
+            device,
+            pipeline_layout,
+            format,
+            vertex_shader,
+            fragment_shader,
+            obj_name_opt!("BlendingGraphicsPipelineState"),
+        )
+        .unwrap()
+    }
+
+    pub fn create_linear_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+        let desc = SamplerDesc {
+            min_filter: SamplerFilter::Linear,
+            mag_filter: SamplerFilter::Linear,
+            mip_filter: SamplerMipFilter::Nearest,
+            address_mode_u: SamplerAddressMode::Clamp,
+            address_mode_v: SamplerAddressMode::Clamp,
+            address_mode_w: SamplerAddressMode::Clamp,
+            name: obj_name_opt!("LinearSampler"),
+            ..Default::default()
+        };
+        device.create_sampler(&desc).unwrap()
+    }
+
+    pub fn create_point_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+        let desc = SamplerDesc {
+            min_filter: SamplerFilter::Nearest,
+            mag_filter: SamplerFilter::Nearest,
+            mip_filter: SamplerMipFilter::Nearest,
+            address_mode_u: SamplerAddressMode::Clamp,
+            address_mode_v: SamplerAddressMode::Clamp,
+            address_mode_w: SamplerAddressMode::Clamp,
+            name: obj_name_opt!("PointSampler"),
+            ..Default::default()
+        };
+        device.create_sampler(&desc).unwrap()
+    }
+}
