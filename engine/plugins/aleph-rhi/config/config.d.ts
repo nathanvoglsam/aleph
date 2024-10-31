@@ -50,13 +50,13 @@ declare namespace aleph_rhi {
 interface Configs {
     "aleph-rhi": {
         /** The backend that should be used **/
-        api: Backend;
+        api: aleph_rhi.Backend;
 
         /** Any options to configure the Vulkan backend, if it is loaded. **/
-        vulkan?: VulkanOptions;
+        vulkan?: aleph_rhi.VulkanOptions;
 
         /** Any options to configure the D3D12 backend, if it is loaded. **/
-        d3d12?: D3D12Options;
+        d3d12?: aleph_rhi.D3D12Options;
 
         /** Whether to enable RHI and platform validation layers if they are available. **/
         validation: boolean;
