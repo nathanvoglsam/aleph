@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#pragma once
+
 struct PixelInput {
     float4 sv_position : SV_Position;
     [[vk::location(0)]] float2 uv : A0;

@@ -29,7 +29,11 @@
 
 #pragma once
 
-static const float PI = 3.14159265f;
+// PI
+static const float PI = 3.141592653589793;
+
+// 1 / PI
+static const float INV_PI = 0.318309886183791;
 
 // 
 // Struct that describes a ray for use with ray tracing functions.

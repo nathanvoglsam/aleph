@@ -473,35 +473,3 @@ inline func ClothBRDF(
 
     return colour;
 }
-
-// // specular BRDF
-// float D = distributionCloth(roughness, NoH);
-// float V = visibilityCloth(NoV, NoL);
-// vec3  F = sheenColor;
-// vec3 Fr = (D * V) * F;
-// 
-// // diffuse BRDF
-// float diffuse = diffuse(roughness, NoV, NoL, LoH);
-// #if defined(MATERIAL_HAS_SUBSURFACE_COLOR)
-// // energy conservative wrap diffuse
-// diffuse *= saturate((dot(n, light.l) + 0.5) / 2.25);
-// #endif
-// vec3 Fd = diffuse * pixel.diffuseColor;
-// 
-// #if defined(MATERIAL_HAS_SUBSURFACE_COLOR)
-// // cheap subsurface scatter
-// Fd *= saturate(subsurfaceColor + NoL);
-// vec3 color = Fd + Fr * NoL;
-// color *= (lightIntensity * lightAttenuation) * lightColor;
-// #else
-// vec3 color = Fd + Fr;
-// color *= (lightIntensity * lightAttenuation * NoL) * lightColor;
-// #endif
-
-// float3 l = normalize(-lightDirection);
-// float NoL = clamp(dot(n, l), 0.0, 1.0);
-// 
-// // lightIntensity is the illuminance
-// // at perpendicular incidence in lux
-// float illuminance = lightIntensity * NoL;
-// float3 luminance = BSDF(v, l) * illuminance;
