@@ -43,9 +43,9 @@ use crate::deletion_pool::DeletionMode;
 use crate::mip_generator::MipGenerator;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool, GenerateMips,
-    ShaderDatabaseAccessor, StateCache, TextureAllocMode, TextureHandle, TextureLoader,
-    TexturePool, TextureUploadSource,
+    built_in_textures, BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
+    GenerateMips, ShaderDatabaseAccessor, StateCache, TextureAllocMode, TextureHandle,
+    TextureLoader, TexturePool, TextureUploadSource,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -185,7 +185,7 @@ impl RendererBuilder {
         let buffer_pool = BufferPool::new(NonZeroU8::new(2).unwrap());
 
         let white_texture_rgba8 = unsafe {
-            create_1x1_colour_texture(
+            built_in_textures::create_1x1_colour_texture(
                 device.as_ref(),
                 &mut texture_pool,
                 &texture_loader,
@@ -194,7 +194,7 @@ impl RendererBuilder {
         };
 
         let black_texture_rgba8 = unsafe {
-            create_1x1_colour_texture(
+            built_in_textures::create_1x1_colour_texture(
                 device.as_ref(),
                 &mut texture_pool,
                 &texture_loader,
@@ -203,11 +203,27 @@ impl RendererBuilder {
         };
 
         let normal_texture_rgba8 = unsafe {
-            create_1x1_colour_texture(
+            built_in_textures::create_1x1_colour_texture(
                 device.as_ref(),
                 &mut texture_pool,
                 &texture_loader,
                 0xFFFF8080,
+            )
+        };
+
+        let smaa_area_tex = unsafe {
+            built_in_textures::create_smaa_area_texture(
+                device.as_ref(),
+                &mut texture_pool,
+                &texture_loader,
+            )
+        };
+
+        let smaa_search_tex = unsafe {
+            built_in_textures::create_smaa_search_texture(
+                device.as_ref(),
+                &mut texture_pool,
+                &texture_loader,
             )
         };
 
@@ -234,44 +250,13 @@ impl RendererBuilder {
                 white_texture_rgba8,
                 black_texture_rgba8,
                 normal_texture_rgba8,
+                smaa_area_tex,
+                smaa_search_tex,
             },
             linear_descriptor_pools,
         };
         Some(out)
     }
-}
-
-unsafe fn create_1x1_colour_texture(
-    device: &dyn IDevice,
-    texture_pool: &mut TexturePool,
-    texture_loader: &TextureLoader,
-    payload: u32,
-) -> TextureHandle {
-    let mut data = TextureUploadSource::new_owned(
-        device,
-        crate::TextureMipUploadDesc {
-            width: 1,
-            height: 1,
-            depth: 1,
-            format: Format::Rgba8Unorm,
-        },
-        ResourceUsageFlags::SHADER_RESOURCE,
-    )
-    .unwrap();
-    let dst = &mut data.data_mut()[0..4];
-    dst.copy_from_slice(bytemuck::bytes_of(&payload));
-    let handle = texture_pool.create_texture(None);
-    texture_loader
-        .immediate_upload(
-            None,
-            handle,
-            data,
-            TextureAllocMode::Deferred,
-            GenerateMips::No,
-        )
-        .ok()
-        .unwrap();
-    handle
 }
 
 pub struct Renderer {
@@ -521,6 +506,8 @@ pub struct DefaultResources {
     white_texture_rgba8: TextureHandle,
     black_texture_rgba8: TextureHandle,
     normal_texture_rgba8: TextureHandle,
+    smaa_area_tex: TextureHandle,
+    smaa_search_tex: TextureHandle,
 }
 
 impl DefaultResources {
@@ -534,6 +521,14 @@ impl DefaultResources {
 
     pub const fn normal_texture_rgba8(&self) -> TextureHandle {
         self.normal_texture_rgba8
+    }
+
+    pub const fn smaa_area_tex(&self) -> TextureHandle {
+        self.smaa_area_tex
+    }
+
+    pub const fn smaa_search_tex(&self) -> TextureHandle {
+        self.smaa_search_tex
     }
 }
 

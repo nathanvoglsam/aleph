@@ -29,6 +29,8 @@
 
 pub mod pass;
 
+pub(crate) mod built_in_textures;
+
 mod buffer_loader;
 mod buffer_pool;
 mod buffer_upload_desc;

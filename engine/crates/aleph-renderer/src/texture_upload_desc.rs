@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
@@ -350,6 +351,26 @@ impl TextureUploadSource {
         NonNull::slice_from_raw_parts(ptr, self.desc.width as usize * elem_size)
     }
 
+    /// Returns an iterator that will yield each row of the image as an individual slice. The row
+    /// slices do _not_ contain the padding pitch.
+    #[inline]
+    pub fn row_iter(&self) -> RowIterator {
+        RowIterator {
+            inner: self.make_row_iter_inner(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Returns an iterator that will yield each row of the image as an individual slice. The row
+    /// slices do _not_ contain the padding pitch.
+    #[inline]
+    pub fn row_iter_mut(&mut self) -> RowIteratorMut {
+        RowIteratorMut {
+            inner: self.make_row_iter_inner(),
+            _phantom: PhantomData,
+        }
+    }
+
     /// Get the upload block as a raw pointer.
     ///
     /// See [`BufferUploadSource::data_ptr`] for more info.
@@ -368,8 +389,178 @@ impl TextureUploadSource {
     }
 }
 
+impl TextureUploadSource {
+    fn make_row_iter_inner(&self) -> RowIteratorInner {
+        // Safety: We guarantee that ptr is good for rows * stride bytes because it is unsafe to
+        //         construct a 'TextureUploadSource' such that this requirement can't be met.
+        //
+        // We only provide safe constructors that check at runtime (or allocate the block
+        // themselves). The alternative is an _unsafe_ constructor.
+        unsafe {
+            let ptr = self.source.data.cast::<u8>();
+
+            let elem_size = self.desc.format.bytes_per_element() as usize;
+            let width = self.desc.width as usize * elem_size;
+
+            let rows = self.desc.height as usize;
+
+            let aligned_width = self.desc.aligned_width() as usize;
+            let stride = aligned_width * elem_size;
+
+            RowIteratorInner::new(ptr, width, rows, stride)
+        }
+    }
+}
+
 impl Into<BufferUploadSource> for TextureUploadSource {
     fn into(self) -> BufferUploadSource {
         self.into_buffer_source()
+    }
+}
+
+pub struct RowIteratorInner {
+    /// The width of a row, in bytes (not pixels), not including padding pitch needed to meet upload
+    /// requirements
+    width: usize,
+
+    /// The true size of a row, in bytes, including padding pitch.
+    stride: usize,
+
+    /// Iterator state. Pointer to the base of the row we will return on the next call to the
+    /// iterator.
+    ptr: NonNull<u8>,
+
+    /// A marker for the end of the iterable range. This logically points to the base of the next
+    /// row after the end of the buffer (that is, it points out of bounds). Do _NOT_ derference.
+    end: NonNull<u8>,
+}
+
+impl RowIteratorInner {
+    /// Unsafe constructor for [`RowIteratorInner`]. This will check that stride and width are well
+    /// formed (in general, and with regard to eachother).
+    ///
+    /// - `width` <= `stride`
+    /// - `width` < `isize::MAX`
+    /// - `stride` < `isize::MAX`
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsiblity to ensure that the region of memory starting at 'ptr' is
+    /// valid for 'rows * stride' bytes.
+    pub unsafe fn new(ptr: NonNull<u8>, width: usize, rows: usize, stride: usize) -> Self {
+        assert!(stride < isize::MAX as usize);
+        assert!(width <= stride);
+        // width < isize::MAX is checked transitively by stride < isize::MAX
+        //     width <= stride < isize::MAX
+
+        let end = ptr.add(rows * stride);
+        Self {
+            width,
+            stride,
+            ptr,
+            end,
+        }
+    }
+}
+
+impl Iterator for RowIteratorInner {
+    type Item = NonNull<[u8]>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ptr == self.end {
+            return None;
+        }
+
+        let out = NonNull::slice_from_raw_parts(self.ptr, self.width);
+
+        // Safety: It is illegal to construct a row iterator where this is unsafe. We require that:
+        //  - ptr <= end
+        //  - stride < isize::MAX
+        //  - width < isize::MAX
+        //  - width and stride must be set such that we can never iterate past 'end' and that we
+        //    can never yield a slice the extends past 'end'.
+        //
+        // As a result the add is safe. We won't access outside the allocation, or the borrow we
+        // build on top. And we won't overflow the add (isize::MAX constraint).
+        unsafe {
+            self.ptr = self.ptr.add(self.stride);
+        }
+
+        Some(out)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let ptr = self.ptr.as_ptr() as usize;
+        let end = self.end.as_ptr() as usize;
+
+        // size of
+        let diff = end - ptr;
+        let rows = diff / self.stride;
+        (rows, Some(rows))
+    }
+}
+
+impl ExactSizeIterator for RowIteratorInner {
+    #[inline(always)]
+    fn len(&self) -> usize {
+        // Look up, you can see we're guaranteed to have lower == upper
+        let (lower, _upper) = self.size_hint();
+        lower
+    }
+}
+
+pub struct RowIterator<'a> {
+    inner: RowIteratorInner,
+    _phantom: PhantomData<&'a TextureUploadSource>,
+}
+
+impl<'a> Iterator for RowIterator<'a> {
+    type Item = &'a [u8];
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|v| {
+            // Safety: We have a phantom borrow of the container and check all required
+            //         preconditions in the constructor so this is safe.
+            unsafe { v.as_ref() }
+        })
+    }
+}
+
+impl<'a> ExactSizeIterator for RowIterator<'a> {
+    #[inline(always)]
+    fn len(&self) -> usize {
+        // Look up, you can see we're guaranteed to have lower == upper
+        let (lower, _upper) = self.size_hint();
+        lower
+    }
+}
+
+pub struct RowIteratorMut<'a> {
+    inner: RowIteratorInner,
+    _phantom: PhantomData<&'a TextureUploadSource>,
+}
+
+impl<'a> Iterator for RowIteratorMut<'a> {
+    type Item = &'a mut [u8];
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|mut v| {
+            // Safety: We have a phantom borrow of the container and check all required
+            //         preconditions in the constructor so this is safe.
+            unsafe { v.as_mut() }
+        })
+    }
+}
+
+impl<'a> ExactSizeIterator for RowIteratorMut<'a> {
+    #[inline(always)]
+    fn len(&self) -> usize {
+        // Look up, you can see we're guaranteed to have lower == upper
+        let (lower, _upper) = self.size_hint();
+        lower
     }
 }
