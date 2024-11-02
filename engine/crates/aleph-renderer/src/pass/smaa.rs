@@ -85,22 +85,22 @@ fn edge_pass(
         let colour_input =
             resources.read_texture(colour_input.id, ResourceUsageFlags::SHADER_RESOURCE);
 
-        let output_desc = TextureDesc::texture_2d(extent.width, extent.height)
+        let edge_desc = TextureDesc::texture_2d(extent.width, extent.height)
             .with_format(Format::Bgra8Unorm)
             .with_name(obj_name!("SmaaEdgesTexture"));
-        let dst = resources.create_texture(
-            &output_desc,
+        let edge_tex = resources.create_texture(
+            &edge_desc,
             // BarrierSync::RENDER_TARGET,
             ResourceUsageFlags::RENDER_TARGET,
         );
         edge_texture = Some(RenderPlaneOutput {
-            id: dst.into(),
-            desc: output_desc.strip_name(),
+            id: edge_tex.into(),
+            desc: edge_desc.strip_name(),
         });
 
         move |encoder, resources, _args| unsafe {
-            let dst = resources.get_texture(dst).unwrap();
-            let dst_view = ImageView::get_rtv_for(dst).unwrap();
+            let edge_tex = resources.get_texture(edge_tex).unwrap();
+            let edge_tex_view = ImageView::get_rtv_for(edge_tex).unwrap();
 
             let colour_input = resources.get_texture(colour_input).unwrap();
             let colour_input_view = ImageView::get_srv_for(colour_input).unwrap();
@@ -117,8 +117,10 @@ fn edge_pass(
                     &colour_input_view.srv_write(),
                 )]);
 
+            let metrics = metrics(extent);
+
             let info = FullscreenTriangleInfo {
-                dst_view,
+                dst_view: edge_tex_view,
                 pipeline: state.edge_pipeline.as_ref(),
                 extent,
                 bindings: &FullscreenTriangleBindInfo {
@@ -126,7 +128,7 @@ fn edge_pass(
                     sets: &[],
                     first_set: 0,
                     dynamic_offsets: &[],
-                    constant_blocks: &[],
+                    constant_blocks: &[(0, &metrics)],
                 },
             };
             draw_fullscreen_triangle(encoder, &info);
@@ -144,27 +146,27 @@ fn blend_weight_pass(
 
     let mut blend_texture = None;
     frame_graph.add_pass(nstr!("SmaaBlendingWeightCalculation"), |resources| {
-        let edges = resources.read_buffer(edge_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
+        let edge_tex = resources.read_buffer(edge_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
 
-        let output_desc = TextureDesc::texture_2d(extent.width, extent.height)
+        let blend_tex_desc = TextureDesc::texture_2d(extent.width, extent.height)
             .with_format(Format::Bgra8Unorm)
             .with_name(obj_name!("SmaaBlendTexture"));
-        let dst = resources.create_texture(
-            &output_desc,
+        let blend_tex = resources.create_texture(
+            &blend_tex_desc,
             // BarrierSync::RENDER_TARGET,
             ResourceUsageFlags::RENDER_TARGET,
         );
         blend_texture = Some(RenderPlaneOutput {
-            id: dst.into(),
-            desc: output_desc.strip_name(),
+            id: blend_tex.into(),
+            desc: blend_tex_desc.strip_name(),
         });
 
         move |encoder, resources, _args| unsafe {
-            let dst = resources.get_texture(dst).unwrap();
-            let dst_view = ImageView::get_rtv_for(dst).unwrap();
+            let blend_tex = resources.get_texture(blend_tex).unwrap();
+            let blend_tex_view = ImageView::get_rtv_for(blend_tex).unwrap();
 
-            let src = resources.get_texture(edges).unwrap();
-            let src_view = ImageView::get_srv_for(src).unwrap();
+            let edge_tex = resources.get_texture(edge_tex).unwrap();
+            let edge_tex_view = ImageView::get_srv_for(edge_tex).unwrap();
 
             // TODO: we aren't writing all the image views or cbuffer stuff yet
             let set = resources
@@ -176,11 +178,13 @@ fn blend_weight_pass(
                 .update_descriptor_sets(&[DescriptorWriteDesc::texture(
                     set,
                     1,
-                    &src_view.srv_write(),
+                    &edge_tex_view.srv_write(),
                 )]);
 
+            let metrics = metrics(extent);
+
             let info = FullscreenTriangleInfo {
-                dst_view,
+                dst_view: blend_tex_view,
                 pipeline: state.edge_pipeline.as_ref(),
                 extent,
                 bindings: &FullscreenTriangleBindInfo {
@@ -188,7 +192,7 @@ fn blend_weight_pass(
                     sets: &[],
                     first_set: 0,
                     dynamic_offsets: &[],
-                    constant_blocks: &[],
+                    constant_blocks: &[(0, &metrics)],
                 },
             };
             draw_fullscreen_triangle(encoder, &info);
@@ -214,19 +218,19 @@ fn aa_blend_resolve_pass(
         let output_desc = TextureDesc::texture_2d(extent.width, extent.height)
             .with_format(format)
             .with_name(obj_name!("SmaaOutput"));
-        let dst = resources.create_texture(
+        let output = resources.create_texture(
             &output_desc,
             // BarrierSync::RENDER_TARGET,
             ResourceUsageFlags::RENDER_TARGET,
         );
         out_texture = Some(RenderPlaneOutput {
-            id: dst.into(),
+            id: output.into(),
             desc: output_desc.strip_name(),
         });
 
         move |encoder, resources, _args| unsafe {
-            let dst = resources.get_texture(dst).unwrap();
-            let dst_view = ImageView::get_rtv_for(dst).unwrap();
+            let output = resources.get_texture(output).unwrap();
+            let output_view = ImageView::get_rtv_for(output).unwrap();
 
             let blend_texture = resources.get_texture(blend_texture).unwrap();
             let blend_texture_view = ImageView::get_srv_for(blend_texture).unwrap();
@@ -244,8 +248,10 @@ fn aa_blend_resolve_pass(
                     &blend_texture_view.srv_write(),
                 )]);
 
+            let metrics = metrics(extent);
+
             let info = FullscreenTriangleInfo {
-                dst_view,
+                dst_view: output_view,
                 pipeline: state.edge_pipeline.as_ref(),
                 extent,
                 bindings: &FullscreenTriangleBindInfo {
@@ -253,7 +259,7 @@ fn aa_blend_resolve_pass(
                     sets: &[],
                     first_set: 0,
                     dynamic_offsets: &[],
-                    constant_blocks: &[],
+                    constant_blocks: &[(0, &metrics)],
                 },
             };
             draw_fullscreen_triangle(encoder, &info);
@@ -558,4 +564,12 @@ impl SmaaState {
         };
         device.create_sampler(&desc).unwrap()
     }
+}
+
+fn metrics(extent: Extent2D) -> [u8; 16] {
+    let metric_w = extent.width as f32;
+    let metric_h = extent.height as f32;
+    let metrics: [f32; 4] = [1.0 / metric_w, 1.0 / metric_h, metric_w, metric_h];
+
+    bytemuck::cast(metrics)
 }
