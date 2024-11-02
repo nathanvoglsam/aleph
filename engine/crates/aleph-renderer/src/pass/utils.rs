@@ -34,6 +34,7 @@ pub struct FullscreenTriangleInfo<'a> {
     pub dst_view: ImageView,
     pub pipeline: &'a dyn IGraphicsPipeline,
     pub extent: Extent2D,
+    pub load_op: AttachmentLoadOp<ColorClearValue>,
     pub bindings: &'a FullscreenTriangleBindInfo<'a>,
 }
 
@@ -55,7 +56,7 @@ pub unsafe fn draw_fullscreen_triangle(
         color_attachments: &[RenderingColorAttachmentInfo {
             image_view: info.dst_view,
             image_layout: ImageLayout::ColorAttachment,
-            load_op: AttachmentLoadOp::DontCare, // We write the whole texture
+            load_op: info.load_op.clone(), // We write the whole texture
             store_op: AttachmentStoreOp::Store,
         }],
         depth_stencil_attachment: None,

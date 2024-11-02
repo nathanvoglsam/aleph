@@ -68,8 +68,8 @@ pub use object_pool::ObjectPool;
 pub use objects::StaticMesh;
 pub use render_scene::{RenderScene, RenderSceneParam, RenderTransform, StorageMut, StorageRef};
 pub use renderer::{
-    DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, RenderPlaneOutput, Renderer,
-    RendererBuilder,
+    DefaultRenderPlane, DefaultResources, DrawOptions, IRenderPlane, IRenderSurface,
+    RenderPlaneOutput, Renderer, RendererBuilder,
 };
 pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use state_cache::{IStateCacheKey, StateCache};

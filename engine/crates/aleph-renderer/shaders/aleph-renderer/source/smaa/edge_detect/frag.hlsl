@@ -31,13 +31,13 @@
 #include "payload.hlsl"
 
 [[vk::binding(0, 0)]]
-Texture2D colorTexGamma : register(t1);
+Texture2D colorTexGamma : register(t0);
 
 [[vk::binding(1, 0)]]
-SamplerState LinearSampler : register(s2);
+SamplerState LinearSampler : register(s1);
 
 [[vk::binding(2, 0)]]
-SamplerState PointSampler : register(s3);
+SamplerState PointSampler : register(s2);
 
 [[vk::push_constant]]
 ConstantBuffer<SmaaMetrics> g_constants : register(b0, space1024);

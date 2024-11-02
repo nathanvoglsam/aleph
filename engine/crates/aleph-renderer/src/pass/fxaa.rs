@@ -130,6 +130,7 @@ pub fn pass(
                 dst_view,
                 pipeline: state.pipeline.as_ref(),
                 extent: src_extent,
+                load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
                     layout: state.layout.pipeline_layout.as_ref(),
                     sets: &[set],

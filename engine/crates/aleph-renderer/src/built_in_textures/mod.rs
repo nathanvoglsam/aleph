@@ -87,8 +87,8 @@ pub unsafe fn create_smaa_area_texture(
     .unwrap();
 
     for (i, row) in data.row_iter_mut().enumerate() {
-        let src_base = smaa_area::WIDTH as usize * i;
-        let src_end = smaa_area::WIDTH as usize * (i + 1);
+        let src_base = smaa_area::ROW_STRIDE as usize * i;
+        let src_end = smaa_area::ROW_STRIDE as usize * (i + 1);
         let src = &smaa_area::BYTES[src_base..src_end];
         row.copy_from_slice(src);
     }
@@ -125,8 +125,8 @@ pub unsafe fn create_smaa_search_texture(
     .unwrap();
 
     for (i, row) in data.row_iter_mut().enumerate() {
-        let src_base = smaa_search::WIDTH as usize * i;
-        let src_end = smaa_search::WIDTH as usize * (i + 1);
+        let src_base = smaa_search::ROW_STRIDE as usize * i;
+        let src_end = smaa_search::ROW_STRIDE as usize * (i + 1);
         let src = &smaa_search::BYTES[src_base..src_end];
         row.copy_from_slice(src);
     }

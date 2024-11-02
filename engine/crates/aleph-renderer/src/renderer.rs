@@ -61,7 +61,7 @@ pub trait IRenderPlane: Any + Send + Sync {
         device: &dyn IDevice,
         pin_board: &PinBoard,
         state_cache: &mut StateCache,
-        resource_cache: &mut StateCache,
+        default_resources: &DefaultResources,
     ) -> RenderPlaneOutput;
 }
 
@@ -86,14 +86,24 @@ impl IRenderPlane for DefaultRenderPlane {
         device: &dyn IDevice,
         pin_board: &PinBoard,
         state_cache: &mut StateCache,
-        _resource_cache: &mut StateCache,
+        default_resources: &DefaultResources,
     ) -> RenderPlaneOutput {
         use crate::pass;
 
         pass::main_gbuffer::pass(frame_graph, device, pin_board, state_cache);
         pass::lighting_resolve::pass(frame_graph, device, pin_board, state_cache);
         let result = pass::tone_map::pass(frame_graph, device, pin_board, state_cache);
-        let result = pass::fxaa::pass(frame_graph, device, pin_board, state_cache, &result);
+
+        let result = pass::smaa::pass(
+            frame_graph,
+            device,
+            pin_board,
+            state_cache,
+            default_resources,
+            &result,
+        );
+
+        // let _result = pass::fxaa::pass(frame_graph, device, pin_board, state_cache, &result);
 
         result
     }
@@ -154,7 +164,6 @@ impl RendererBuilder {
         let queue = device.get_queue(QueueType::General).unwrap();
         let shader_db = self.shader_db.expect("Shader DB missing!");
         let mut state_cache = StateCache::new(shader_db.clone());
-        let resource_cache = StateCache::new(shader_db.clone());
 
         let swap_manager = SwapManager {
             surface: self.surface.expect("RenderSurface missing!"),
@@ -237,7 +246,6 @@ impl RendererBuilder {
             device,
             queue,
             state_cache,
-            resource_cache,
             swap_manager,
             mip_generator,
             texture_loader,
@@ -264,7 +272,6 @@ pub struct Renderer {
     device: AnyArc<dyn IDevice>,
     queue: AnyArc<dyn IQueue>,
     state_cache: StateCache,
-    resource_cache: StateCache,
     swap_manager: SwapManager,
     mip_generator: MipGenerator,
     texture_loader: Arc<TextureLoader>,
@@ -406,7 +413,7 @@ impl Renderer {
             self.graph_manager.build_graph(
                 &self.config,
                 &mut self.state_cache,
-                &mut self.resource_cache,
+                &self.default_resources,
                 self.device.as_ref(),
                 &self.swap_manager,
             );
@@ -721,7 +728,7 @@ impl GraphManager {
         &mut self,
         config: &RendererConfig,
         state_cache: &mut StateCache,
-        resource_cache: &mut StateCache,
+        default_resources: &DefaultResources,
         device: &dyn IDevice,
         swap_manager: &SwapManager,
     ) {
@@ -731,7 +738,7 @@ impl GraphManager {
             desc: swap_manager.desc.clone(),
         });
 
-        let (builder, swap_id) = self.register_graph_passes(state_cache, resource_cache, device);
+        let (builder, swap_id) = self.register_graph_passes(state_cache, default_resources, device);
 
         let mut frame_graph = builder.build(device);
         frame_graph.allocate_transients(config.frames_in_flight);
@@ -744,7 +751,7 @@ impl GraphManager {
     unsafe fn register_graph_passes(
         &mut self,
         state_cache: &mut StateCache,
-        resource_cache: &mut StateCache,
+        default_resources: &DefaultResources,
         device: &dyn IDevice,
     ) -> (FrameGraphBuilder<GraphArgs>, ResourceMut) {
         let mut frame_graph = FrameGraph::<GraphArgs>::builder();
@@ -756,7 +763,7 @@ impl GraphManager {
                 device,
                 &self.pin_board,
                 state_cache,
-                resource_cache,
+                default_resources,
             );
             outputs.push(output);
         }

@@ -47,9 +47,9 @@ use serde::Deserialize;
 
 use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
-    CameraInfo, DefaultRenderPlane, DrawOptions, IRenderPlane, IRenderSurface, PerspectiveInfo,
-    RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, Renderer, RendererBuilder,
-    ShaderDatabaseAccessor, StateCache,
+    CameraInfo, DefaultRenderPlane, DefaultResources, DrawOptions, IRenderPlane, IRenderSurface,
+    PerspectiveInfo, RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, Renderer,
+    RendererBuilder, ShaderDatabaseAccessor, StateCache,
 };
 
 use crate::egui_draw::EguiPassContext;
@@ -343,7 +343,7 @@ impl IRenderPlane for EguiRenderPlane {
         device: &dyn IDevice,
         pin_board: &aleph_pin_board::PinBoard,
         state_cache: &mut StateCache,
-        _resource_cache: &mut StateCache,
+        _default_resources: &DefaultResources,
     ) -> RenderPlaneOutput {
         let pixels_per_point = self.window.current_display_scale();
         crate::egui_draw::pass(

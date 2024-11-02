@@ -40,7 +40,7 @@ use crate::pass::utils::{
     FullscreenTriangleInfo,
 };
 use crate::pass::GraphArgs;
-use crate::{shaders, IStateCacheKey, RenderPlaneOutput};
+use crate::{shaders, DefaultResources, IStateCacheKey, RenderPlaneOutput, TextureHandle};
 use crate::{ShaderDatabaseAccessor, StateCache};
 
 pub fn pass(
@@ -48,12 +48,15 @@ pub fn pass(
     device: &dyn IDevice,
     _pin_board: &PinBoard,
     state_cache: &mut StateCache,
-    _resource_cache: &mut StateCache,
+    default_resources: &DefaultResources,
     colour_input: &RenderPlaneOutput,
 ) -> RenderPlaneOutput {
     let key = SmaaState::key(colour_input.desc.format);
     let state_handle =
         state_cache.get_or_insert_with(&key, |cache, k| SmaaState::new(cache, device, k.0));
+
+    let area_tex = default_resources.smaa_area_tex();
+    let search_tex = default_resources.smaa_search_tex();
 
     //______________________________________________________________________________________________
     // 1. Edge Texture
@@ -63,7 +66,7 @@ pub fn pass(
     //______________________________________________________________________________________________
     // 2. Weights Texture
     let state = state_handle.clone();
-    let blend_texture = blend_weight_pass(frame_graph, state, &edge_texture);
+    let blend_texture = blend_weight_pass(frame_graph, state, area_tex, search_tex, &edge_texture);
 
     //______________________________________________________________________________________________
     // 3. AA Resolve
@@ -123,6 +126,7 @@ fn edge_pass(
                 dst_view: edge_tex_view,
                 pipeline: state.edge_pipeline.as_ref(),
                 extent,
+                load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
                 bindings: &FullscreenTriangleBindInfo {
                     layout: state.edge_layout.as_ref(),
                     sets: &[set],
@@ -140,13 +144,15 @@ fn edge_pass(
 fn blend_weight_pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,
     state: Arc<SmaaState>,
+    area_tex: TextureHandle,
+    search_tex: TextureHandle,
     edge_texture: &RenderPlaneOutput,
 ) -> RenderPlaneOutput {
     let extent = edge_texture.desc.get_extent_2d();
 
     let mut blend_texture = None;
     frame_graph.add_pass(nstr!("SmaaBlendingWeightCalculation"), |resources| {
-        let edge_tex = resources.read_buffer(edge_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
+        let edge_tex = resources.read_texture(edge_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
 
         let blend_tex_desc = TextureDesc::texture_2d(extent.width, extent.height)
             .with_format(Format::Bgra8Unorm)
@@ -161,31 +167,35 @@ fn blend_weight_pass(
             desc: blend_tex_desc.strip_name(),
         });
 
-        move |encoder, resources, _args| unsafe {
+        move |encoder, resources, args| unsafe {
             let blend_tex = resources.get_texture(blend_tex).unwrap();
             let blend_tex_view = ImageView::get_rtv_for(blend_tex).unwrap();
 
             let edge_tex = resources.get_texture(edge_tex).unwrap();
             let edge_tex_view = ImageView::get_srv_for(edge_tex).unwrap();
 
+            let area_view = args.texture_pool.get_default_view(area_tex).unwrap();
+            let search_view = args.texture_pool.get_default_view(search_tex).unwrap();
+
             let set = resources
                 .descriptor_arena()
-                .allocate_set(state.edge_set_layout.as_ref())
+                .allocate_set(state.weight_set_layout.as_ref())
                 .unwrap();
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &edge_tex_view.srv_write()),
-                DescriptorWriteDesc::texture(set, 1, &edge_tex_view.srv_write()), // TODO: area
-                DescriptorWriteDesc::texture(set, 2, &edge_tex_view.srv_write()), // TODO: search
+                DescriptorWriteDesc::texture(set, 1, &area_view.srv_write()),
+                DescriptorWriteDesc::texture(set, 2, &search_view.srv_write()),
             ]);
 
             let metrics = metrics(extent);
 
             let info = FullscreenTriangleInfo {
                 dst_view: blend_tex_view,
-                pipeline: state.edge_pipeline.as_ref(),
+                pipeline: state.weight_pipeline.as_ref(),
                 extent,
+                load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: state.edge_layout.as_ref(),
+                    layout: state.weight_layout.as_ref(),
                     sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
@@ -215,7 +225,7 @@ fn aa_blend_resolve_pass(
             resources.read_texture(blend_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
 
         let output_desc = TextureDesc::texture_2d(extent.width, extent.height)
-            .with_format(format)
+            .with_format(format.to_srgb())
             .with_name(obj_name!("SmaaOutput"));
         let output = resources.create_texture(
             &output_desc,
@@ -238,7 +248,10 @@ fn aa_blend_resolve_pass(
             // We want raw access to the encoded SRGB data
             let colour_input_tex = resources.get_texture(colour_input).unwrap();
             let colour = colour_input_tex
-                .get_view(&ImageViewDesc::srv_for_texture(output).with_format(format.to_non_srgb()))
+                .get_view(
+                    &ImageViewDesc::srv_for_texture(colour_input_tex)
+                        .with_format(format.to_non_srgb()),
+                )
                 .unwrap();
 
             // Blend texture is accessed directly as the native UNORM format.
@@ -247,21 +260,22 @@ fn aa_blend_resolve_pass(
 
             let set = resources
                 .descriptor_arena()
-                .allocate_set(state.edge_set_layout.as_ref())
+                .allocate_set(state.blend_set_layout.as_ref())
                 .unwrap();
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &blend.srv_write()),
-                DescriptorWriteDesc::texture(set, 0, &colour.srv_write()),
+                DescriptorWriteDesc::texture(set, 1, &colour.srv_write()),
             ]);
 
             let metrics = metrics(extent);
 
             let info = FullscreenTriangleInfo {
                 dst_view: output_view,
-                pipeline: state.edge_pipeline.as_ref(),
+                pipeline: state.blend_pipeline.as_ref(),
                 extent,
+                load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: state.edge_layout.as_ref(),
+                    layout: state.blend_layout.as_ref(),
                     sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
@@ -338,21 +352,21 @@ impl SmaaState {
             device,
             edge_layout.as_ref(),
             cache.shader_db(),
-            format,
+            Format::Bgra8Unorm,
         );
 
         let weight_pipeline = Self::create_weight_calculate_pipeline_state(
             device,
             weight_layout.as_ref(),
             cache.shader_db(),
-            format,
+            Format::Bgra8Unorm,
         );
 
         let blend_pipeline = Self::create_blending_pipeline_state(
             device,
             blend_layout.as_ref(),
             cache.shader_db(),
-            format,
+            format.to_non_srgb(), // Intentional for how this pass is implemented
         );
 
         Self {
@@ -461,7 +475,7 @@ impl SmaaState {
             push_constant_blocks: &[PushConstantBlock {
                 binding: 0,
                 visibility: DescriptorShaderVisibility::All,
-                size: 8,
+                size: 16,
             }],
             name,
         };
