@@ -174,7 +174,14 @@ fn archive_shaders_for_package(
             module_ctx.module_name,
         );
 
-        let walker = ignore::WalkBuilder::new(module_ctx.meta.output_dir).build();
+        // We disable any ignore file filtering as that shouldn't have any affect on our shader build
+        // system.
+        let walker = ignore::WalkBuilder::new(module_ctx.meta.output_dir)
+            .ignore(false)
+            .git_ignore(false)
+            .git_global(false)
+            .git_exclude(false)
+            .build();
         for entry in walker.flatten() {
             // We will only process utf-8 paths because we are sane little crewmates. If it's
             // not utf-8 we're in for sadness

@@ -180,8 +180,16 @@ fn build_shader_ninja_file_for_shader_module(
     // Compute the compilation params from the module file
     let compilation_params = ShaderCompilationParams::new(module_ctx, module)?;
 
-    // We use a single-threaded walker as we intend to parallelise at the package level instead
-    let walker = ignore::WalkBuilder::new(module_ctx.meta.source_dir).build();
+    // We use a single-threaded walker as we intend to parallelise at the package level instead.
+    //
+    // We disable any ignore file filtering as that shouldn't have any affect on our shader build
+    // system.
+    let walker = ignore::WalkBuilder::new(module_ctx.meta.source_dir)
+        .ignore(false)
+        .git_ignore(false)
+        .git_global(false)
+        .git_exclude(false)
+        .build();
     for entry in walker.flatten() {
         // We will only process utf-8 paths because we are sane little crewmates. If it's
         // not utf-8 we're in for sadness
