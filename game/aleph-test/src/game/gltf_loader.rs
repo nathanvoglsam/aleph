@@ -201,57 +201,61 @@ pub fn load_scene(
             for (prim, (idx, vtx)) in mesh.primitives().zip(mesh_table[mesh.index()].iter()) {
                 let mat = prim.material();
                 let pbr_mat = mat.pbr_metallic_roughness();
-                if prim.material().alpha_mode() == AlphaMode::Opaque {
-                    let transform = Transform {
-                        position: Vec3::from(t).to_double(),
-                        rotation: Rotor3::from_quaternion_array(r),
-                        scale: Vec3::from(s),
-                    };
+                match prim.material().alpha_mode() {
+                    AlphaMode::Mask | AlphaMode::Blend | AlphaMode::Opaque => {
+                        let transform = Transform {
+                            position: Vec3::from(t).to_double(),
+                            rotation: Rotor3::from_quaternion_array(r),
+                            scale: Vec3::from(s),
+                        };
 
-                    let white_tex = renderer.default_resources().white_texture_rgba8();
-                    let norm_tex = renderer.default_resources().normal_texture_rgba8();
+                        let white_tex = renderer.default_resources().white_texture_rgba8();
+                        let norm_tex = renderer.default_resources().normal_texture_rgba8();
 
-                    let static_mesh = StaticMesh {
-                        vtx: *vtx,
-                        idx: *idx,
-                        colour_tex: white_tex,
-                        colour: pbr_mat.base_color_factor(),
-                        metalness: pbr_mat.metallic_factor(),
-                        roughness: pbr_mat.roughness_factor(),
-                        metal_roughness_tex: white_tex,
-                        normal_map_tex: norm_tex,
-                    };
-                    let entity = world.extend_one((transform, static_mesh));
+                        let static_mesh = StaticMesh {
+                            vtx: *vtx,
+                            idx: *idx,
+                            colour_tex: white_tex,
+                            colour: pbr_mat.base_color_factor(),
+                            metalness: pbr_mat.metallic_factor(),
+                            roughness: pbr_mat.roughness_factor(),
+                            metal_roughness_tex: white_tex,
+                            normal_map_tex: norm_tex,
+                        };
+                        let entity = world.extend_one((transform, static_mesh));
 
-                    if let Some(tex) = pbr_mat.base_color_texture() {
-                        if let Some(req) = &tex_table[tex.texture().source().index()] {
-                            thinkers.push(TextureLoadThinker {
-                                target: entity,
-                                request: Some(req.clone()),
-                                target_tex: TargetTex::Colour,
-                            });
+                        if let Some(tex) = pbr_mat.base_color_texture() {
+                            if let Some(req) = &tex_table[tex.texture().source().index()] {
+                                thinkers.push(TextureLoadThinker {
+                                    target: entity,
+                                    request: Some(req.clone()),
+                                    target_tex: TargetTex::Colour,
+                                });
+                            }
+                        }
+
+                        if let Some(tex) = pbr_mat.metallic_roughness_texture() {
+                            if let Some(req) = &tex_table[tex.texture().source().index()] {
+                                thinkers.push(TextureLoadThinker {
+                                    target: entity,
+                                    request: Some(req.clone()),
+                                    target_tex: TargetTex::MetalRoughness,
+                                });
+                            }
+                        }
+
+                        if let Some(tex) = mat.normal_texture() {
+                            if let Some(req) = &tex_table[tex.texture().source().index()] {
+                                thinkers.push(TextureLoadThinker {
+                                    target: entity,
+                                    request: Some(req.clone()),
+                                    target_tex: TargetTex::Normal,
+                                });
+                            }
                         }
                     }
-
-                    if let Some(tex) = pbr_mat.metallic_roughness_texture() {
-                        if let Some(req) = &tex_table[tex.texture().source().index()] {
-                            thinkers.push(TextureLoadThinker {
-                                target: entity,
-                                request: Some(req.clone()),
-                                target_tex: TargetTex::MetalRoughness,
-                            });
-                        }
-                    }
-
-                    if let Some(tex) = mat.normal_texture() {
-                        if let Some(req) = &tex_table[tex.texture().source().index()] {
-                            thinkers.push(TextureLoadThinker {
-                                target: entity,
-                                request: Some(req.clone()),
-                                target_tex: TargetTex::Normal,
-                            });
-                        }
-                    }
+                    #[allow(unreachable_patterns)]
+                    _ => {}
                 }
             }
         }
@@ -408,6 +412,7 @@ fn load_vertex_buffer(
         dst[2] = 1.0;
     }
 
+    let has_texcoord = prim.attributes().any(|(s, _)| s == gltf::Semantic::TexCoords(0));
     let has_normals = prim.attributes().any(|(s, _)| s == gltf::Semantic::Normals);
     let has_tangents = prim
         .attributes()
@@ -438,7 +443,7 @@ fn load_vertex_buffer(
         }
     }
 
-    if has_normals && !has_tangents {
+    if has_texcoord && has_normals && !has_tangents {
         fn get_attr<'a, 'b>(
             buffers: &'b [Data],
             prim: &'a gltf::Primitive<'a>,

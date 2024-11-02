@@ -149,14 +149,7 @@ impl IPlugin for PluginGameLogic {
             renderer,
             &mut arena,
             &async_texture_loader,
-            Path::new("F:\\Files\\IntelSponza\\Main\\NewSponza_Main_Blender_glTF.gltf"),
-        );
-        let mut thinkers2 = load_scene(
-            world,
-            renderer,
-            &mut arena,
-            &async_texture_loader,
-            Path::new("OrientationTest.gltf"),
+            Path::new("game/aleph-test/assets/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf"),
         );
 
         let (idx, vtx) = upload_cube_buffers(renderer);
@@ -194,9 +187,6 @@ impl IPlugin for PluginGameLogic {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
                 for t in thinkers1.iter_mut() {
-                    t.poll_and_resolve(&mut world.0);
-                }
-                for t in thinkers2.iter_mut() {
                     t.poll_and_resolve(&mut world.0);
                 }
             },
