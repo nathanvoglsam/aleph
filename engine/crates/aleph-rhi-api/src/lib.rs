@@ -4008,7 +4008,7 @@ pub struct ImageView(NonNull<()>);
 impl ImageView {
     #[inline]
     pub fn get_rtv_for(texture: &dyn ITexture) -> Result<Self, ()> {
-        texture.get_view(&ImageViewDesc::rtv_for_texture(texture))
+        texture.get_rtv(&ImageViewDesc::rtv_for_texture(texture))
     }
 
     #[inline]
