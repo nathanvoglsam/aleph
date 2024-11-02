@@ -31,13 +31,13 @@
 #include "payload.hlsl"
 
 [[vk::binding(0, 0)]]
-Texture2D areaTex : register(t0);
+Texture2D edgesTex : register(t0);
 
 [[vk::binding(1, 0)]]
-Texture2D searchTex : register(t1);
+Texture2D areaTex : register(t1);
 
 [[vk::binding(2, 0)]]
-Texture2D edgesTex : register(t2);
+Texture2D searchTex : register(t2);
 
 [[vk::binding(3, 0)]]
 SamplerState LinearSampler : register(s3);

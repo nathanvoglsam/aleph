@@ -412,7 +412,9 @@ fn load_vertex_buffer(
         dst[2] = 1.0;
     }
 
-    let has_texcoord = prim.attributes().any(|(s, _)| s == gltf::Semantic::TexCoords(0));
+    let has_texcoord = prim
+        .attributes()
+        .any(|(s, _)| s == gltf::Semantic::TexCoords(0));
     let has_normals = prim.attributes().any(|(s, _)| s == gltf::Semantic::Normals);
     let has_tangents = prim
         .attributes()

@@ -113,7 +113,7 @@ fn edge_pass(
                 .device()
                 .update_descriptor_sets(&[DescriptorWriteDesc::texture(
                     set,
-                    1,
+                    0,
                     &colour_input_view.srv_write(),
                 )]);
 
@@ -125,7 +125,7 @@ fn edge_pass(
                 extent,
                 bindings: &FullscreenTriangleBindInfo {
                     layout: state.edge_layout.as_ref(),
-                    sets: &[],
+                    sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
                     constant_blocks: &[(0, &metrics)],
@@ -168,18 +168,15 @@ fn blend_weight_pass(
             let edge_tex = resources.get_texture(edge_tex).unwrap();
             let edge_tex_view = ImageView::get_srv_for(edge_tex).unwrap();
 
-            // TODO: we aren't writing all the image views or cbuffer stuff yet
             let set = resources
                 .descriptor_arena()
                 .allocate_set(state.edge_set_layout.as_ref())
                 .unwrap();
-            resources
-                .device()
-                .update_descriptor_sets(&[DescriptorWriteDesc::texture(
-                    set,
-                    1,
-                    &edge_tex_view.srv_write(),
-                )]);
+            resources.device().update_descriptor_sets(&[
+                DescriptorWriteDesc::texture(set, 0, &edge_tex_view.srv_write()),
+                DescriptorWriteDesc::texture(set, 1, &edge_tex_view.srv_write()), // TODO: area
+                DescriptorWriteDesc::texture(set, 2, &edge_tex_view.srv_write()), // TODO: search
+            ]);
 
             let metrics = metrics(extent);
 
@@ -189,7 +186,7 @@ fn blend_weight_pass(
                 extent,
                 bindings: &FullscreenTriangleBindInfo {
                     layout: state.edge_layout.as_ref(),
-                    sets: &[],
+                    sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
                     constant_blocks: &[(0, &metrics)],
@@ -212,6 +209,8 @@ fn aa_blend_resolve_pass(
 
     let mut out_texture = None;
     frame_graph.add_pass(nstr!("SmaaBlend"), |resources| {
+        let colour_input =
+            resources.read_texture(colour_input.id, ResourceUsageFlags::SHADER_RESOURCE);
         let blend_texture =
             resources.read_texture(blend_texture.id, ResourceUsageFlags::SHADER_RESOURCE);
 
@@ -229,24 +228,31 @@ fn aa_blend_resolve_pass(
         });
 
         move |encoder, resources, _args| unsafe {
+            // We want raw access to the encoded SRGB data. We output SRGB encoded data from the
+            // shader so we need a UNORM view to ensure we don't double encode it.
             let output = resources.get_texture(output).unwrap();
-            let output_view = ImageView::get_rtv_for(output).unwrap();
+            let output_view = output
+                .get_rtv(&ImageViewDesc::rtv_for_texture(output).with_format(format.to_non_srgb()))
+                .unwrap();
 
+            // We want raw access to the encoded SRGB data
+            let colour_input_tex = resources.get_texture(colour_input).unwrap();
+            let colour = colour_input_tex
+                .get_view(&ImageViewDesc::srv_for_texture(output).with_format(format.to_non_srgb()))
+                .unwrap();
+
+            // Blend texture is accessed directly as the native UNORM format.
             let blend_texture = resources.get_texture(blend_texture).unwrap();
-            let blend_texture_view = ImageView::get_srv_for(blend_texture).unwrap();
+            let blend = ImageView::get_srv_for(blend_texture).unwrap();
 
-            // TODO: we aren't writing all the image views or cbuffer stuff yet
             let set = resources
                 .descriptor_arena()
                 .allocate_set(state.edge_set_layout.as_ref())
                 .unwrap();
-            resources
-                .device()
-                .update_descriptor_sets(&[DescriptorWriteDesc::texture(
-                    set,
-                    1,
-                    &blend_texture_view.srv_write(),
-                )]);
+            resources.device().update_descriptor_sets(&[
+                DescriptorWriteDesc::texture(set, 0, &blend.srv_write()),
+                DescriptorWriteDesc::texture(set, 0, &colour.srv_write()),
+            ]);
 
             let metrics = metrics(extent);
 
@@ -256,7 +262,7 @@ fn aa_blend_resolve_pass(
                 extent,
                 bindings: &FullscreenTriangleBindInfo {
                     layout: state.edge_layout.as_ref(),
-                    sets: &[],
+                    sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
                     constant_blocks: &[(0, &metrics)],
@@ -376,12 +382,11 @@ impl SmaaState {
             visibility: DescriptorShaderVisibility::Fragment,
             items: &[
                 DescriptorType::Texture.binding(0),
-                DescriptorType::Texture.binding(1),
                 DescriptorType::Sampler
-                    .binding(2)
+                    .binding(1)
                     .with_static_samplers(&linear_sampler),
                 DescriptorType::Sampler
-                    .binding(3)
+                    .binding(2)
                     .with_static_samplers(&point_sampler),
             ],
             name: obj_name_opt!("EdgeDescriptorSetLayout"),

@@ -3882,6 +3882,13 @@ pub struct ImageViewDesc {
 }
 
 impl ImageViewDesc {
+    /// Returns the [`ImageViewDesc`] as-is, except with [`ImageViewDesc::format`] set to the given
+    /// format.
+    pub const fn with_format(mut self, format: Format) -> ImageViewDesc {
+        self.format = format;
+        self
+    }
+
     #[inline]
     pub fn srv_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
         Self::srv_for_desc(texture.desc_ref())

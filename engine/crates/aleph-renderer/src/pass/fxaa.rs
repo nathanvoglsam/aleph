@@ -98,10 +98,7 @@ pub fn pass(
         move |encoder, resources, _args| unsafe {
             let dst = resources.get_texture(data.dst).unwrap();
             let dst_view = dst
-                .get_rtv(&ImageViewDesc {
-                    format: src_format.to_non_srgb(),
-                    ..ImageViewDesc::rtv_for_texture(dst)
-                })
+                .get_rtv(&ImageViewDesc::rtv_for_texture(dst).with_format(src_format.to_non_srgb()))
                 .unwrap();
 
             let src = resources.get_texture(data.src).unwrap();

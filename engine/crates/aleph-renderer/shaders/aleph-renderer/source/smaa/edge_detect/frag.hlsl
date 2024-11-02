@@ -31,15 +31,12 @@
 #include "payload.hlsl"
 
 [[vk::binding(0, 0)]]
-Texture2D colorTex : register(t0);
-
-[[vk::binding(1, 0)]]
 Texture2D colorTexGamma : register(t1);
 
-[[vk::binding(2, 0)]]
+[[vk::binding(1, 0)]]
 SamplerState LinearSampler : register(s2);
 
-[[vk::binding(3, 0)]]
+[[vk::binding(2, 0)]]
 SamplerState PointSampler : register(s3);
 
 [[vk::push_constant]]

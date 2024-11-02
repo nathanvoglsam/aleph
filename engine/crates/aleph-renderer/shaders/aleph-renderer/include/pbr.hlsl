@@ -300,7 +300,7 @@ inline func StandardBRDF(
 
     // Calculate the different parts of the BRDF
     let D = D_GGX(NoH, roughness);
-    let V = V_SmithGGXCorrelatedFast(NoV, NoL, roughness);
+    let V = V_SmithGGXCorrelated(NoV, NoL, roughness);
     let F = F_SchlickVec(LoH, f0, 1.0);
 
     // Specular BRDF
@@ -369,7 +369,7 @@ inline func ClearCoatBRDF(
 
     // Calculate the different parts of the BRDF
     let D = D_GGX(NoH, roughness);
-    let V = V_SmithGGXCorrelatedFast(NoV, NoL, roughness);
+    let V = V_SmithGGXCorrelated(NoV, NoL, roughness);
     let F = F_SchlickVec(LoH, baseF0, 1.0);
 
     // Specular BRDF
@@ -386,7 +386,7 @@ inline func ClearCoatBRDF(
 
     // The clear coat layer has no diffuse term
     let Dc = D_GGX(NoH, clear_coat_roughness);
-    let Vc = V_SmithGGXCorrelatedFast(NoV, NoL, clear_coat_roughness);
+    let Vc = V_SmithGGXCorrelated(NoV, NoL, clear_coat_roughness);
     let Fc = F_Schlick(LoH, 0.04, 1.0) * clear_coat;
 
     let Frc = (Dc * Vc) * Fc; // The division by (4 * NoV * NoL) is factored into the V function
