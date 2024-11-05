@@ -61,7 +61,7 @@ func UniformSampleSphere<T : __BuiltinFloatingPointType>(
 // The probability density is constant over the domain for a given radius.
 func SphereSampleDensity<T : __BuiltinFloatingPointType>(
     T radius
-) -> vector<T, 3> {
+) -> T {
     // reciprocal of the surface area of a sphere
 	return T(1.0) / (T(4 * PI) * radius * radius);
 }
@@ -118,7 +118,7 @@ func UniformSampleDisk<T : __BuiltinFloatingPointType>(
 // The probability density is constant over the domain for a given radius.
 func DiskSampleDensity<T : __BuiltinFloatingPointType>(
     T radius
-) -> vector<T, 3> {
+) -> T {
     // reciprocal of the area of a circle
 	return T(1.0) / (T(PI) * radius * radius);
 }
@@ -133,7 +133,13 @@ func CosineSampleHemisphere<T : __BuiltinFloatingPointType>(
     T u2
 ) -> vector<T, 3> {
 	let p = UniformSampleDisk(u1, u2);
-    let z = sqrt(max(T(0.0), T(1.0) - p.x * p.x - p.y * p.y));
+
+    // Alternate form from PBRT. Reconstructs r^2 from x^2+y^2 using pythagoras. Or in this case
+    // we're doing (1 - (x^2 + y^2)) = (1 - x^2 - y^2).
+    // let z = sqrt(max(T(0.0), T(1.0) - p.x * p.x - p.y * p.y));
+
+    // Faster form based on the observation that r = sqrt(u1) -> r^2 = u1. (see UniformSampleDisk).
+    let z = sqrt(max(T(0.0), T(1.0) - u1));
     return vector<T, 3>(p.x, p.y, z);
 }
 
@@ -148,7 +154,7 @@ func CosineSampleHemisphere<T : __BuiltinFloatingPointType>(
 // values.
 func CosineHemisphereSampleDensity<T : __BuiltinFloatingPointType>(
     T cosTheta
-) -> vector<T, 3> {
+) -> T {
     return cosTheta * T(INV_PI);
 }
 
@@ -175,6 +181,6 @@ func UniformSampleCone<T : __BuiltinFloatingPointType>(
 // The probability density is constant over the domain for a given 'cosThetaMax'.
 func ConeSampleDensity<T : __BuiltinFloatingPointType>(
     T cosThetaMax
-) -> vector<T, 3> {
+) -> T {
 	return T(1.0) / (T(2 * PI) * (T(1.0) - cosThetaMax));
 }

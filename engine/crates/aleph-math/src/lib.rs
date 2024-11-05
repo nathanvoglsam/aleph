@@ -31,6 +31,8 @@ pub use to_double::ToDouble;
 pub use to_single::ToSingle;
 pub use ultraviolet::*;
 
+pub mod sampling;
+
 pub mod unprojection {
     use ultraviolet::{Mat4, Vec3};
 
