@@ -43,3 +43,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 ultraviolet = { workspace = true }
+bytemuck = { workspace = true }
