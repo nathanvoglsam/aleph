@@ -50,13 +50,13 @@
 // THE SOFTWARE.
 
 //! Dervied from: https://github.com/michaldrobot/ShaderFastLibs
-//! 
+//!
 //! # References:
 //! - [0] Handbook of Mathematical Functions (chapter : Elementary Transcendental Functions), M. Abramowitz and I.A. Stegun, Ed.
 //! - [1] Efficient approximations for the arctangent function, Rajan, S. Sichun Wang Inkol, R. Joyal, A., May 2006
-//! 
+//!
 //! # Info
-//! 
+//!
 //! This is a CPU implementation of the fast math ops implemented in 'drobot_math.hlsl'. These are
 //! typically _not_ faster than using the real hardware intrinsics on the CPU, so they're unlikely
 //! to give you performance wins there. However having these functions available on the CPU is
