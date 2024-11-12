@@ -523,6 +523,8 @@ fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
         address_mode_u: SamplerAddressMode::Wrap,
         address_mode_v: SamplerAddressMode::Wrap,
         address_mode_w: SamplerAddressMode::Wrap,
+        enable_anisotropy: true,
+        max_anisotropy: 16,
         ..Default::default()
     };
     device.create_sampler(&desc).unwrap()
