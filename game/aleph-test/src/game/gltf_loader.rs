@@ -40,6 +40,7 @@ use gltf::accessor::{DataType, Dimensions};
 use gltf::buffer::Data;
 use gltf::material::AlphaMode;
 use gltf::{Accessor, Primitive};
+use rayon::prelude::*;
 
 use crate::game::async_texture_loader::{AsyncTextureLoadRequest, AsyncTextureLoader};
 use crate::game::cube_mesh::Vertex;
@@ -136,6 +137,46 @@ pub fn load_scene(
 ) -> Vec<TextureLoadThinker> {
     let (document, buffers) = import_path(path).unwrap();
 
+    struct MeshUpload<'a> {
+        i_upload: IndexUpload,
+        v_upload: VertexUpload,
+        prim: gltf::Primitive<'a>,
+    }
+    let mut mesh_uploads = Vec::new();
+    for mesh in document.meshes() {
+        for prim in mesh.primitives() {
+            let indices = prim.indices().unwrap();
+            let i_upload = allocate_index_upload(arena, &indices);
+            let v_upload = allocate_vertex_upload(arena, &prim);
+
+            mesh_uploads.push(MeshUpload {
+                i_upload,
+                v_upload,
+                prim,
+            });
+        }
+    }
+
+    mesh_uploads.par_iter_mut().for_each(|v| {
+        let indices = v.prim.indices().unwrap();
+        copy_index_data_into_upload(&buffers, &indices, &mut v.i_upload);
+        copy_vertex_data_into_upload(&buffers, &v.prim, &mut v.v_upload);
+    });
+
+    let mut mesh_table = Vec::with_capacity(document.meshes().len());
+    let mut mesh_upload_iter = mesh_uploads.drain(..);
+    for mesh in document.meshes() {
+        let mut prims = Vec::with_capacity(mesh.primitives().len());
+        for _prim in mesh.primitives() {
+            let upload = mesh_upload_iter.next().unwrap();
+
+            let idx_buffer = finalize_index_upload(renderer, upload.i_upload);
+            let vtx_buffer = finalize_vertex_upload(renderer, upload.v_upload);
+            prims.push((idx_buffer, vtx_buffer));
+        }
+        mesh_table.push(prims);
+    }
+
     let base = path.parent().unwrap();
     let mut tex_table: Vec<Option<TextureStreamingRequest>> = Vec::new();
     for image in document.images() {
@@ -150,23 +191,6 @@ pub fn load_scene(
     }
 
     let mut load_thinkers = Vec::new();
-
-    let mut mesh_table = Vec::with_capacity(document.meshes().len());
-    for mesh in document.meshes() {
-        let mut prims = Vec::new();
-        for prim in mesh.primitives() {
-            assert_eq!(prim.mode(), gltf::mesh::Mode::Triangles);
-
-            let indices = prim.indices().unwrap();
-            let idx_buffer = load_index_buffer(renderer, arena, &buffers, &indices);
-
-            // Get the upper bound for number of vertices
-            let vtx_buffer = load_vertex_buffer(renderer, arena, &buffers, &prim);
-
-            prims.push((idx_buffer, vtx_buffer));
-        }
-        mesh_table.push(prims);
-    }
 
     fn process_node(
         world: &mut World,
@@ -291,13 +315,12 @@ pub fn load_scene(
     load_thinkers
 }
 
+struct IndexUpload {
+    data: BufferUploadSource,
+}
+
 #[aleph_profile::function]
-fn load_index_buffer(
-    renderer: &mut Renderer,
-    arena: &mut BumpThingy,
-    buffers: &[Data],
-    indices: &Accessor,
-) -> BufferHandle {
+fn allocate_index_upload(arena: &mut BumpThingy, indices: &Accessor) -> IndexUpload {
     let data_type = indices.data_type();
     assert!(
         matches!(data_type, DataType::U32 | DataType::U16 | DataType::U8),
@@ -308,16 +331,24 @@ fn load_index_buffer(
     // We only use 32-bit indices
     let size = indices.count() * size_of::<u32>();
 
-    let mut idx_buffer = unsafe {
+    let data = unsafe {
         arena
             .alloc_upload_desc(size, align_of::<u32>(), ResourceUsageFlags::INDEX_BUFFER)
             .unwrap()
     };
 
-    let dst = idx_buffer.data_mut();
-    load_index_buffer_data(bytemuck::cast_slice_mut(dst), buffers, indices);
+    IndexUpload { data }
+}
 
-    renderer.create_buffer(idx_buffer).unwrap()
+#[aleph_profile::function]
+fn copy_index_data_into_upload(buffers: &[Data], indices: &Accessor, upload: &mut IndexUpload) {
+    let dst = upload.data.data_mut();
+    load_index_buffer_data(bytemuck::cast_slice_mut(dst), buffers, indices);
+}
+
+#[aleph_profile::function]
+fn finalize_index_upload(renderer: &mut Renderer, upload: IndexUpload) -> BufferHandle {
+    renderer.create_buffer(upload.data).unwrap()
 }
 
 fn load_index_buffer_into_vec(buffers: &[Data], indices: &Accessor) -> Vec<u32> {
@@ -382,29 +413,39 @@ fn load_index_buffer_data(dst: &mut [u32], buffers: &[Data], indices: &Accessor)
     }
 }
 
+struct VertexUpload {
+    data: BufferUploadSource,
+    vertex_count: usize,
+    stride: usize,
+}
+
 #[aleph_profile::function]
-fn load_vertex_buffer(
-    renderer: &mut Renderer,
-    arena: &mut BumpThingy,
-    buffers: &[Data],
-    prim: &Primitive,
-) -> BufferHandle {
+fn allocate_vertex_upload(arena: &mut BumpThingy, prim: &Primitive) -> VertexUpload {
     // Get the upper bound for number of vertices
     let vertex_count = prim.attributes().map(|v| v.1.count()).max().unwrap();
 
     // We have an implicit vtx layout for now
-    let dst_stride = 60;
-    let size = vertex_count * dst_stride;
+    let stride = 60;
+    let size = vertex_count * stride;
 
-    let mut vtx_buffer = unsafe {
+    let data = unsafe {
         arena
             .alloc_upload_desc(size, 256, ResourceUsageFlags::VERTEX_BUFFER)
             .unwrap()
     };
 
-    let dst = &mut vtx_buffer.data_mut()[48..];
-    for i in 0..vertex_count {
-        let dst_i = dst_stride * i;
+    VertexUpload {
+        data,
+        vertex_count,
+        stride,
+    }
+}
+
+#[aleph_profile::function]
+fn copy_vertex_data_into_upload(buffers: &[Data], prim: &Primitive, upload: &mut VertexUpload) {
+    let dst = &mut upload.data.data_mut()[48..];
+    for i in 0..upload.vertex_count {
+        let dst_i = upload.stride * i;
         let dst = &mut dst[dst_i..dst_i + 12];
         let dst = bytemuck::cast_slice_mut::<_, f32>(dst);
         dst[0] = 1.0;
@@ -422,23 +463,23 @@ fn load_vertex_buffer(
     for (semantic, accessor) in prim.attributes() {
         match semantic {
             gltf::Semantic::Positions => {
-                copy_vec3_f32_semantic(&mut vtx_buffer, &accessor, buffers, dst_stride, 0);
+                copy_vec3_f32_semantic(&mut upload.data, &accessor, buffers, upload.stride, 0);
             }
             gltf::Semantic::Normals => {
-                copy_vec3_f32_semantic(&mut vtx_buffer, &accessor, buffers, dst_stride, 20);
+                copy_vec3_f32_semantic(&mut upload.data, &accessor, buffers, upload.stride, 20);
             }
             gltf::Semantic::Tangents => {
-                copy_vec4_f32_semantic(&mut vtx_buffer, &accessor, buffers, dst_stride, 32);
+                copy_vec4_f32_semantic(&mut upload.data, &accessor, buffers, upload.stride, 32);
             }
             gltf::Semantic::Colors(0) => {
-                // copy_vec3_f32_semantic(&mut vtx_buffer, &accessor, buffers, dst_stride, 48);
+                // copy_vec3_f32_semantic(&mut upload.data, &accessor, buffers, upload.stride, 48);
             }
             gltf::Semantic::Colors(_) => {}
             gltf::Semantic::TexCoords(0) => {
-                copy_vec2_f32_semantic(&mut vtx_buffer, &accessor, buffers, dst_stride, 12);
+                copy_vec2_f32_semantic(&mut upload.data, &accessor, buffers, upload.stride, 12);
             }
             gltf::Semantic::TexCoords(_) => {
-                // copy_vec2_f32_semantic(&mut vtx_buffer, &accessor, buffers, dst_stride, ??);
+                // copy_vec2_f32_semantic(&mut upload.data, &accessor, buffers, upload.stride, ??);
             }
             gltf::Semantic::Joints(_) => unimplemented!(),
             gltf::Semantic::Weights(_) => unimplemented!(),
@@ -478,13 +519,16 @@ fn load_vertex_buffer(
             uvs_view,
             uvs_buffer,
             indices,
-            dst: bytemuck::cast_slice_mut(vtx_buffer.data_mut()),
+            dst: bytemuck::cast_slice_mut(upload.data.data_mut()),
         };
         let success = mikktspace::generate_tangents(&mut geom);
         assert!(success);
     }
+}
 
-    renderer.create_buffer(vtx_buffer).unwrap()
+#[aleph_profile::function]
+fn finalize_vertex_upload(renderer: &mut Renderer, upload: VertexUpload) -> BufferHandle {
+    renderer.create_buffer(upload.data).unwrap()
 }
 
 fn copy_vec4_f32_semantic(
