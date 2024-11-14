@@ -177,7 +177,7 @@ fn load_on_threadpool(
     allocation: AllocationWithBuffer,
 ) -> Option<()> {
     // If the request has been moved into a terminal state (cancelled) we should bail.
-    if request.poll_state().is_terminal() {
+    if !request.poll_state().is_open() {
         return Some(());
     }
 

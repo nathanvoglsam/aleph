@@ -74,8 +74,8 @@ pub use renderer::{
 pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use state_cache::{IStateCacheKey, StateCache};
 pub use streaming_request::{
-    BufferStreamingRequest, IntoPayload, MeshStreamingRequest, RequestData, RequestError,
-    RequestState, StreamingRequest, TextureStreamingRequest,
+    BufferStreamingRequest, MeshStreamingRequest, PollCompleteError, PollFailError, RequestState,
+    StreamingRequest, TextureStreamingRequest,
 };
 pub use texture_loader::{GenerateMips, TextureAllocMode, TextureLoader};
 pub use texture_pool::{TextureObject, TexturePool};

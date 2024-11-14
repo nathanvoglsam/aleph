@@ -30,8 +30,6 @@
 use std::fmt::{Debug, Formatter};
 use std::num::NonZeroU64;
 
-use crate::IntoPayload;
-
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[repr(transparent)]
 pub struct Handle(NonZeroU64);
@@ -91,11 +89,6 @@ impl Handle {
         }
     }
 
-    /// Unwraps the handle to the most basic, u64 form.
-    pub(crate) const fn into_u64(self) -> u64 {
-        self.0.get()
-    }
-
     /// Utility for implementing debug on newtype wrappers using the newtype's name
     pub(crate) fn debug_newtype(&self, f: &mut Formatter<'_>, name: &str) -> std::fmt::Result {
         let fields = self.to_fields();
@@ -111,17 +104,6 @@ impl Handle {
 impl Debug for Handle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.debug_newtype(f, "Handle")
-    }
-}
-
-unsafe impl IntoPayload for Handle {
-    unsafe fn from_payload(v: u64) -> Self {
-        let payload: Option<Handle> = std::mem::transmute(v);
-        payload.unwrap_unchecked()
-    }
-
-    fn into_payload(self) -> u64 {
-        self.into_u64()
     }
 }
 
@@ -174,17 +156,6 @@ macro_rules! handle_newtype {
         impl $crate::IntoHandle for $name {
             fn into_handle(self) -> $crate::Handle {
                 self.to_handle()
-            }
-        }
-
-        unsafe impl $crate::IntoPayload for $name {
-            unsafe fn from_payload(v: u64) -> Self {
-                let payload: Option<$name> = std::mem::transmute(v);
-                payload.unwrap_unchecked()
-            }
-
-            fn into_payload(self) -> u64 {
-                self.0.into_u64()
             }
         }
     };

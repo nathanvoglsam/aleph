@@ -84,9 +84,6 @@ pub enum EnqueueErrorKind {
     #[error("The queue is full and the request could not be placed into the queue.")]
     QueueFull,
 
-    #[error("The request object is already enqueued.")]
-    RequestAlreadyQueued,
-
     #[error("Failed to create the texture as requested.")]
     TextureCreateError(#[from] TextureCreateError),
 }

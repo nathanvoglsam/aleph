@@ -33,7 +33,7 @@ use aleph_engine::interfaces::components::{StaticMesh, Transform};
 use aleph_engine::interfaces::ecs::{EntityId, World};
 use aleph_engine::interfaces::math::{Mat4, Rotor3, ToDouble, Vec3, Vec4};
 use aleph_engine::interfaces::renderer::{
-    BufferHandle, BufferUploadSource, Renderer, RequestError, TextureStreamingRequest,
+    BufferHandle, BufferUploadSource, PollCompleteError, Renderer, TextureStreamingRequest,
 };
 use aleph_rhi_api::*;
 use gltf::accessor::{DataType, Dimensions};
@@ -92,7 +92,7 @@ impl TextureLoadThinker {
     pub fn poll_and_resolve(&mut self, world: &mut World) -> PollResult {
         let new_tex = match self.request.as_ref().map(|v| v.poll_complete()) {
             Some(Ok(v)) => v,
-            Some(Err(RequestError::Waiting)) => return PollResult::Waiting,
+            Some(Err(PollCompleteError::Waiting)) => return PollResult::Waiting,
             Some(Err(_)) => return PollResult::Fail,
             None => return PollResult::Fail,
         };

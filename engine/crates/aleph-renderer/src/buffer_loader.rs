@@ -69,13 +69,6 @@ impl BufferLoader {
         handle: BufferHandle,
         data: BufferUploadSource,
     ) -> Result<(), EnqueueError<BufferUploadSource>> {
-        if let Some(req) = request.as_ref() {
-            match req.try_take_ownership() {
-                Ok(_) => (),
-                Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
-            }
-        }
-
         let load = LoadRequest {
             target: Some(handle),
             request,
@@ -92,11 +85,6 @@ impl BufferLoader {
         request: BufferStreamingRequest,
         data: BufferUploadSource,
     ) -> Result<(), EnqueueError<BufferUploadSource>> {
-        match request.try_take_ownership() {
-            Ok(_) => (),
-            Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
-        }
-
         let load = LoadRequest {
             target: None,
             request: Some(request),
@@ -112,11 +100,6 @@ impl BufferLoader {
         target: BufferHandle,
         data: BufferUploadSource,
     ) -> Result<(), EnqueueError<BufferUploadSource>> {
-        match request.try_take_ownership() {
-            Ok(_) => (),
-            Err(_) => return Err(EnqueueErrorKind::RequestAlreadyQueued.with_data(data)),
-        }
-
         let load = LoadRequest {
             target: Some(target),
             request: Some(request),
@@ -245,7 +228,7 @@ impl BufferLoader {
                 // go to the next one in the queue
                 log::error!("Failed to create buffer for upload request. Reason: {err:?}");
                 if let Some(req) = request.request.as_ref() {
-                    req.mark_failed().unwrap();
+                    req.mark_failed(()).unwrap();
                 }
                 return;
             }
