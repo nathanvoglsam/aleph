@@ -194,7 +194,7 @@ impl<T: Send, E: Send> StreamingRequest<T, E> {
 
     /// Polls the request to see if it has completed, failed or been cancelled.
     ///
-    /// This will return [`Ok`] exactly once, taking the `T` from the payload slot and leaving the
+    /// This will return [`Ok`] exactly once, taking the `E` from the payload slot and leaving the
     /// request in the terminal 'Consumed' state.
     pub fn poll_fail(&self) -> Result<E, PollFailError> {
         let current = RequestState::Failed as u64;

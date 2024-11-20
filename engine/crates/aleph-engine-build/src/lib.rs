@@ -73,7 +73,9 @@ fn compile_and_link_windows_resource_file() {
     std::fs::write(&rc_file, format!("IDI_ICON1 ICON \"{}\"", icon_path)).unwrap();
 
     let name = std::env::var("CARGO_PKG_NAME").unwrap();
-    embed_resource::compile_for(&rc_file, [&name], embed_resource::NONE);
+    embed_resource::compile_for(&rc_file, [&name], embed_resource::NONE)
+        .manifest_required()
+        .unwrap();
 }
 
 #[cfg(not(windows))]
