@@ -27,53 +27,44 @@
 // SOFTWARE.
 //
 
-use std::marker::PhantomData;
-use std::ops::Deref;
 use std::ptr::NonNull;
+
+use raw::JSPropertyEnum;
 
 use crate::{Atom, Context};
 
-#[repr(C)]
-pub struct PropertyEnum<'a> {
-    pub is_enumerable: raw::JSBool,
-    pub atom: Option<Atom<'a>>,
+pub struct PropertyEnum {
+    pub is_enumerable: bool,
+    pub atom: Option<Atom>,
 }
 
 /// Wrapper type over the result of [`raw::JS_GetOwnPropertyNames`]. Manages freeing the result
 /// array when the 'Self' is dropped.
-pub struct OwnPropertyNames<'a> {
-    pub(crate) ctx: NonNull<raw::JSContext>,
+pub struct OwnPropertyNames {
+    pub(crate) ctx: Context,
 
     /// Reference to the context to keep it alive
-    pub(crate) props: NonNull<[PropertyEnum<'a>]>,
-
-    /// The context must be kept alive
-    pub(crate) _phantom: PhantomData<&'a Context<'a>>,
+    pub(crate) props: NonNull<[JSPropertyEnum]>,
 }
 
-impl<'a> OwnPropertyNames<'a> {
-    pub fn get(&self) -> &[PropertyEnum<'a>] {
-        self.as_ref()
+impl OwnPropertyNames {
+    pub fn iter<'a>(&'a self) -> impl ExactSizeIterator<Item = PropertyEnum> + 'a {
+        unsafe {
+            self.props.as_ref().iter().map(|v| PropertyEnum {
+                is_enumerable: v.is_enumerable.to_bool(),
+                atom: v.atom.map(|v| {
+                    let v = raw::JS_DupAtom(self.ctx.0.ctx, v).unwrap();
+                    Atom {
+                        v,
+                        c: self.ctx.clone(),
+                    }
+                }),
+            })
+        }
     }
 }
 
-impl<'a> AsRef<[PropertyEnum<'a>]> for OwnPropertyNames<'a> {
-    #[inline]
-    fn as_ref(&self) -> &[PropertyEnum<'a>] {
-        unsafe { &*self.props.as_ptr() }
-    }
-}
-
-impl<'a> Deref for OwnPropertyNames<'a> {
-    type Target = [PropertyEnum<'a>];
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        self.as_ref()
-    }
-}
-
-impl<'a> Drop for OwnPropertyNames<'a> {
+impl Drop for OwnPropertyNames {
     fn drop(&mut self) {
         if !self.props.is_empty() {
             // Safety: if props is not empty then we're guanteed to have a valid pointer (job of
@@ -85,7 +76,7 @@ impl<'a> Drop for OwnPropertyNames<'a> {
                 // 'len' is guaranteed to fit in u32 as we got the length from quickjs in the first
                 // place.
                 raw::JS_FreePropertyEnum(
-                    self.ctx,
+                    self.ctx.0.ctx,
                     props.as_mut_ptr() as *mut _,
                     self.props.len() as u32,
                 );

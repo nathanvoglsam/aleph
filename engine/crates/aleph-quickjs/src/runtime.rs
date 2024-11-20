@@ -28,40 +28,47 @@
 //
 
 use std::ptr::NonNull;
+use std::rc::Rc;
 
+use crate::context::InnerContext;
 use crate::Context;
 
-pub struct Runtime(pub(crate) NonNull<raw::JSRuntime>);
+#[derive(Clone)]
+pub struct Runtime(pub(crate) Rc<InnerRuntime>);
 
 impl Runtime {
     #[inline]
     pub fn new() -> Option<Self> {
         unsafe {
             let rt = raw::JS_NewRuntime()?;
+            let rt = InnerRuntime(rt);
+            let rt = Rc::new(rt);
             Some(Self(rt))
         }
     }
 
     #[inline]
     pub fn to_raw(&self) -> NonNull<raw::JSRuntime> {
-        self.0
+        self.0 .0
     }
 
     #[inline]
     pub fn new_context(&self) -> Option<Context> {
         unsafe {
-            let ctx = raw::JS_NewContext(self.0)?;
-            Some(Context {
+            let ctx = raw::JS_NewContext(self.0 .0)?;
+            let ctx = InnerContext {
                 ctx,
-                _phantom: std::marker::PhantomData,
-            })
+                rt: self.clone(),
+            };
+            let ctx = Rc::new(ctx);
+            Some(Context(ctx))
         }
     }
 
     #[inline]
     pub fn gc(&self) {
         unsafe {
-            raw::JS_RunGC(self.0);
+            raw::JS_RunGC(self.0 .0);
         }
     }
 
@@ -70,13 +77,15 @@ impl Runtime {
     pub fn compute_memory_usage(&self) -> raw::JSMemoryUsage {
         unsafe {
             let mut usage = raw::JSMemoryUsage::default();
-            raw::JS_ComputeMemoryUsage(self.0, &mut usage);
+            raw::JS_ComputeMemoryUsage(self.0 .0, &mut usage);
             usage
         }
     }
 }
 
-impl Drop for Runtime {
+pub(crate) struct InnerRuntime(pub(crate) NonNull<raw::JSRuntime>);
+
+impl Drop for InnerRuntime {
     #[inline]
     fn drop(&mut self) {
         unsafe {

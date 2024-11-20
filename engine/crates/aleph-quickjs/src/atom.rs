@@ -27,24 +27,14 @@
 // SOFTWARE.
 //
 
-use std::marker::PhantomData;
+use crate::{Context, CtxString, RefValue};
 
-use crate::Context;
-
-#[repr(transparent)]
-pub struct Atom<'a> {
-    v: raw::JSAtom,
-    _phantom: PhantomData<&'a Context<'a>>,
+pub struct Atom {
+    pub(crate) v: raw::JSAtom,
+    pub(crate) c: Context,
 }
 
-impl<'a> Atom<'a> {
-    pub const unsafe fn from_raw(v: raw::JSAtom) -> Self {
-        Self {
-            v,
-            _phantom: PhantomData,
-        }
-    }
-
+impl Atom {
     pub const fn to_raw(&self) -> raw::JSAtom {
         self.v
     }
@@ -54,10 +44,51 @@ impl<'a> Atom<'a> {
         std::mem::forget(self);
         out
     }
+
+    #[inline]
+    pub fn to_value(&self) -> RefValue {
+        unsafe {
+            let string = raw::JS_AtomToValue(self.c.0.ctx, self.v);
+            RefValue::from_raw(&self.c, string)
+        }
+    }
+
+    #[inline]
+    pub fn to_string(&self) -> RefValue {
+        unsafe {
+            let string = raw::JS_AtomToString(self.c.0.ctx, self.v);
+            RefValue::from_raw(&self.c, string)
+        }
+    }
+
+    #[inline]
+    pub fn to_c_str(&self) -> Option<CtxString> {
+        let string = self.to_string();
+        if !string.is_exception() {
+            string.to_c_str()
+        } else {
+            None
+        }
+    }
 }
 
-impl<'a> Drop for Atom<'a> {
+impl Clone for Atom {
+    #[inline]
+    fn clone(&self) -> Self {
+        unsafe {
+            let atom = raw::JS_DupAtom(self.c.0.ctx, self.v).unwrap();
+            Self {
+                v: atom,
+                c: self.c.clone(),
+            }
+        }
+    }
+}
+
+impl Drop for Atom {
     fn drop(&mut self) {
-        panic!("Dropping an Atom may leak. Please use Atom::leak to explicitly leak");
+        unsafe {
+            raw::JS_FreeAtom(self.c.0.ctx, self.v);
+        }
     }
 }

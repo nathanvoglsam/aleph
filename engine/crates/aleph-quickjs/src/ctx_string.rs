@@ -27,16 +27,17 @@
 // SOFTWARE.
 //
 
+use std::ffi::c_char;
 use std::ops::Deref;
 
 use crate::Context;
 
-pub struct CtxString<'a> {
-    ctx: &'a Context<'a>,
+pub struct CtxString {
+    ctx: Context,
     v: *const str,
 }
 
-impl<'a> CtxString<'a> {
+impl CtxString {
     /// Constructs a new [`CtxString`] from the given context and str.
     ///
     /// # Safety
@@ -44,37 +45,23 @@ impl<'a> CtxString<'a> {
     /// It is the caller's responsibility to ensure that the given string 'v' is live and was
     /// allocated from the given [`Context`]. [`CtxString`] will take ownership of the string and
     /// the [`Drop`] implementation will free the
-    pub const unsafe fn from_ctx_and_str<'b>(ctx: &'a Context, v: &'b str) -> Self {
+    pub const unsafe fn from_ctx_and_str<'b>(ctx: Context, v: &'b str) -> Self {
         Self {
             ctx,
             v: v as *const str,
         }
     }
-
-    /// Leak the [`CtxString`] to get a bare string object. The lifetime is still tied to the
-    /// context but you don't need to carry the [`Context`] reference around. The runtime will
-    /// only reclaim the memory when the runtime is destroyed.
-    ///
-    /// For all intents and purposes this leaks the memory until you manually free the string.
-    pub const fn leak(self) -> &'a str {
-        let out = self.v;
-        std::mem::forget(self);
-
-        // Safety: This is safe as a [`CtxString`] is required to own the string slice. Leaking it
-        //         gives it a lifetime tied to the context.
-        unsafe { &*out }
-    }
 }
 
-impl<'a> Drop for CtxString<'a> {
+impl Drop for CtxString {
     fn drop(&mut self) {
         // Safety: It is unsafe to construct a 'CtxString' with the incorrect ctx and dead string
         //         so we can assume this is safe
-        unsafe { self.ctx.free_c_str(&*self.v) }
+        unsafe { raw::JS_FreeCString(self.ctx.0.ctx, (*self.v).as_ptr() as *const c_char) }
     }
 }
 
-impl<'a> AsRef<str> for CtxString<'a> {
+impl AsRef<str> for CtxString {
     #[inline]
     fn as_ref<'b>(&'b self) -> &'b str {
         // Safety: It is unsafe for a caller to construct a CtxString where this operation is unsafe
@@ -82,7 +69,7 @@ impl<'a> AsRef<str> for CtxString<'a> {
     }
 }
 
-impl<'a> Deref for CtxString<'a> {
+impl Deref for CtxString {
     type Target = str;
 
     #[inline]

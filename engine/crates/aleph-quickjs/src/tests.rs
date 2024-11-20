@@ -103,25 +103,23 @@ pub fn eval_script_call_c_func() {
     let runtime = Runtime::new().unwrap();
     let context = runtime.new_context().unwrap();
 
-    unsafe {
-        let global = context.get_global_object();
+    let global = context.get_global_object();
 
-        let func_name = nstr!("call_me_maybe");
-        let func_v = context.new_c_function(func, func_name, 1);
-        assert!(func_v.is_object());
+    let func_name = nstr!("call_me_maybe");
+    let func_v = context.new_c_function(func, func_name, 1);
+    assert!(func_v.is_object());
 
-        let result = context.set_property_str(&global, func_name.to_str(), &func_v);
-        assert_ne!(result, -1);
+    let result = global.set_property_str(func_name.to_str(), &func_v);
+    assert_ne!(result, -1);
 
-        let filename = nstr!("script.js");
-        let script = nstr!("call_me_maybe(56);");
-        let result = context.eval(script, filename, JSEvalOptions::STRICT);
-        let result = check_exception(&context, result);
+    let filename = nstr!("script.js");
+    let script = nstr!("call_me_maybe(56);");
+    let result = context.eval(script, filename, JSEvalOptions::STRICT);
+    let result = check_exception(&context, result);
 
-        assert!(CALLED.load(Ordering::SeqCst));
-        assert_eq!(result.get_tag(), JSTag::INT);
-        assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
-    }
+    assert!(CALLED.load(Ordering::SeqCst));
+    assert_eq!(result.get_tag(), JSTag::INT);
+    assert_eq!(result.get_number(), Some(NumberVariant::Integer(21)));
 }
 
 #[test]
@@ -146,40 +144,37 @@ pub fn eval_script_get_property_names() {
     let runtime = Runtime::new().unwrap();
     let context = runtime.new_context().unwrap();
 
-    unsafe {
-        let filename = nstr!("script.js");
-        let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
-        let result = check_exception(&context, result);
-        assert!(
-            result.is_undefined(),
-            "Expected 'undefined' got '{:?}'",
-            result.get_tag()
-        );
+    let filename = nstr!("script.js");
+    let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
+    let result = check_exception(&context, result);
+    assert!(
+        result.is_undefined(),
+        "Expected 'undefined' got '{:?}'",
+        result.get_tag()
+    );
 
-        let global = context.get_global_object();
+    let global = context.get_global_object();
 
-        let result = context.get_property_str(&global, "OUTPUT");
+    let result = global.get_property_str("OUTPUT");
 
-        assert!(
-            result.is_object(),
-            "Expected 'object' got '{:?}'",
-            result.get_tag()
-        );
-        let result = result.to_object().ok().unwrap();
+    assert!(
+        result.is_object(),
+        "Expected 'object' got '{:?}'",
+        result.get_tag()
+    );
+    let result = result.to_object().ok().unwrap();
 
-        let props = context.get_own_property_names(
-            &result,
-            JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
-        );
+    let props = result.get_own_property_names(
+        JSGetPropertyNameOption::STRING_MASK | JSGetPropertyNameOption::ENUM_ONLY,
+    );
 
-        let props = props.get();
+    let props = props.iter();
 
-        assert_eq!(props.len(), 3);
-        for prop in props {
-            let atom = prop.atom.as_ref().unwrap();
-            let prop_name = context.atom_to_c_str(atom).unwrap();
-            assert!(expected_names.remove(prop_name.as_ref()));
-        }
+    assert_eq!(props.len(), 3);
+    for prop in props {
+        let atom = prop.atom.as_ref().unwrap();
+        let prop_name = atom.to_c_str().unwrap();
+        assert!(expected_names.remove(prop_name.as_ref()));
     }
 }
 
@@ -210,32 +205,32 @@ pub fn eval_script_to_serde() {
     let runtime = Runtime::new().unwrap();
     let context = runtime.new_context().unwrap();
 
-    unsafe {
-        let filename = nstr!("script.js");
-        let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
-        let result = check_exception(&context, result);
-        assert!(
-            result.is_undefined(),
-            "Expected 'undefined' got '{:?}'",
-            result.get_tag()
-        );
+    //unsafe {
+    let filename = nstr!("script.js");
+    let result = context.eval(SCRIPT, filename, JSEvalOptions::STRICT);
+    let result = check_exception(&context, result);
+    assert!(
+        result.is_undefined(),
+        "Expected 'undefined' got '{:?}'",
+        result.get_tag()
+    );
 
-        let global = context.get_global_object();
+    let global = context.get_global_object();
 
-        let result = context.get_property_str(&global, "OUTPUT");
+    let result = global.get_property_str("OUTPUT");
 
-        assert!(
-            result.is_object(),
-            "Expected 'object' got '{:?}'",
-            result.get_tag()
-        );
-        let result = result.to_object().ok().unwrap();
+    assert!(
+        result.is_object(),
+        "Expected 'object' got '{:?}'",
+        result.get_tag()
+    );
+    let result = result.to_object().ok().unwrap();
 
-        let result_json = context.object_to_json(&result).unwrap();
-        let expected_json: serde_json::Value = serde_json::from_str(JSON_EXPECTED).unwrap();
+    let result_json = result.to_json().unwrap();
+    let expected_json: serde_json::Value = serde_json::from_str(JSON_EXPECTED).unwrap();
 
-        assert_eq!(result_json, expected_json);
-    }
+    assert_eq!(result_json, expected_json);
+    //}
 }
 
 #[test]
@@ -320,25 +315,23 @@ pub fn set_object_property_ref_count_behavior() {
     let runtime = Runtime::new().unwrap();
     let context = runtime.new_context().unwrap();
 
-    unsafe {
-        let root = context.new_object();
-        let leaf = context.new_object();
+    let root = context.new_object();
+    let leaf = context.new_object();
 
-        assert_eq!(root.get_ref_count(), 1);
-        assert_eq!(leaf.get_ref_count(), 1);
+    assert_eq!(root.get_ref_count(), 1);
+    assert_eq!(leaf.get_ref_count(), 1);
 
-        let result = context.set_property_str(&root, "leaf", &leaf);
-        assert!(result >= 0);
+    let result = root.set_property_str("leaf", &leaf);
+    assert!(result >= 0);
 
-        assert_eq!(root.get_ref_count(), 1);
-        assert_eq!(leaf.get_ref_count(), 2);
+    assert_eq!(root.get_ref_count(), 1);
+    assert_eq!(leaf.get_ref_count(), 2);
 
-        let result = context.delete_property_str(&root, "leaf");
-        assert!(result >= 0);
+    let result = root.delete_property_str("leaf");
+    assert!(result >= 0);
 
-        assert_eq!(root.get_ref_count(), 1);
-        assert_eq!(leaf.get_ref_count(), 1);
-    }
+    assert_eq!(root.get_ref_count(), 1);
+    assert_eq!(leaf.get_ref_count(), 1);
 }
 
 #[test]
@@ -346,24 +339,21 @@ pub fn string_with_internal_null_character() {
     let runtime = Runtime::new().unwrap();
     let context = runtime.new_context().unwrap();
 
-    unsafe {
-        let string = "String with a \0 character in the middle";
+    let string = "String with a \0 character in the middle";
 
-        let v = context.new_string(string);
-        assert!(v.is_string());
+    let v = context.new_string(string);
+    assert!(v.is_string());
 
-        let got_string = context.to_c_str(&v).unwrap();
-        assert_eq!(string, got_string.as_ref());
-    }
+    let got_string = v.to_c_str().unwrap();
+    assert_eq!(string, got_string.as_ref());
 }
 
-fn check_exception<'a>(ctx: &'a Context, v: RefValue<'a>) -> RefValue<'a> {
+fn check_exception<'a>(ctx: &'a Context, v: RefValue) -> RefValue {
     if v.is_exception() {
         let exception = ctx.get_exception();
-        let message = unsafe {
-            ctx.to_c_str(&exception)
-                .expect("Failed to get exception message")
-        };
+        let message = exception
+            .to_c_str()
+            .expect("Failed to get exception message");
         let message_str = message.as_ref();
         panic!("Unhandled JS Exception: {}", message_str);
     } else {
