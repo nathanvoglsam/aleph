@@ -297,12 +297,26 @@ impl Value {
 
     #[inline]
     pub fn to_string(&self, ctx: &Context) -> RefValue {
-        unsafe { to_string(ctx, self) }
+        unsafe {
+            let string = raw::JS_ToString(ctx.0.ctx, self.0);
+            RefValue::from_raw(ctx, string)
+        }
     }
 
     #[inline]
     pub fn to_c_str(&self, ctx: &Context) -> Option<CtxString> {
-        unsafe { to_c_str(ctx, self) }
+        unsafe {
+            let mut len = 0;
+            let cstr = raw::JS_ToCStringLen2(ctx.0.ctx, &mut len, self.0, raw::JSBool::FALSE);
+
+            if len == 0 || cstr.is_null() {
+                None
+            } else {
+                let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
+                let string = str::from_utf8(bytes).unwrap_unchecked();
+                Some(CtxString::from_ctx_and_str(ctx.clone(), string))
+            }
+        }
     }
 }
 
@@ -327,6 +341,25 @@ impl RefValue {
         v
     }
 
+    /// An explicit destructor for JS value wrappers. This is similar to the [`Drop`]
+    /// implementations on our wrapper functions but will _immediately_ free the value if the ref
+    /// count reaches zero. This will not trigger a GC cycle, rather the individual value will be
+    /// explicitly freed.
+    ///
+    /// This isn't _required_ to be called. The [`Drop`] implementation will still decrement the
+    /// reference count and the object will eventually be freed if you manually run a GC cycle or
+    /// wait for the runtime to do it internally. This simply performs the free immediately if that
+    /// is important to your use case.
+    #[inline]
+    pub fn free_value(self) {
+        unsafe {
+            // Performs the actual ref-count decrement and free call
+            self.v.free_value(self.c.0.ctx);
+        }
+        // Avoid decrementing the refcount a second time by calling detach
+        self.detatch();
+    }
+
     /// Get the inner [`JSValue`] for raw access to the QuickJS API.
     pub const fn to_raw(&self) -> JSValue {
         self.v
@@ -342,6 +375,7 @@ impl RefValue {
         Object::from_value(self)
     }
 
+    #[inline(always)]
     pub fn get_ref_count(&self) -> Option<c_int> {
         // Safety: This wrapper type is guaranteed to contain a live JS object
         unsafe { self.v.get_ref_count() }
@@ -349,55 +383,135 @@ impl RefValue {
 
     #[inline]
     pub fn to_string(&self) -> RefValue {
-        unsafe { to_string(&self.c, self) }
+        unsafe {
+            let string = raw::JS_ToString(self.c.0.ctx, self.v);
+            RefValue::from_raw(&self.c, string)
+        }
     }
 
     #[inline]
     pub fn to_c_str(&self) -> Option<CtxString> {
-        unsafe { to_c_str(&self.c, self) }
+        unsafe {
+            let mut len = 0;
+            let cstr = raw::JS_ToCStringLen2(self.c.0.ctx, &mut len, self.v, raw::JSBool::FALSE);
+
+            if len == 0 || cstr.is_null() {
+                None
+            } else {
+                let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
+                let string = str::from_utf8(bytes).unwrap_unchecked();
+                Some(CtxString::from_ctx_and_str(self.c.clone(), string))
+            }
+        }
     }
 
     #[inline]
     pub fn get_property_str(&self, prop: &str) -> RefValue {
-        unsafe { get_property_str(&self.c, self, prop) }
+        if let Some(a) = self.c.new_atom(prop) {
+            let v = self.get_property(&a);
+            v
+        } else {
+            panic!()
+        }
     }
 
     #[inline]
     pub fn get_property(&self, prop: &Atom) -> RefValue {
-        unsafe { get_property(&self.c, self, prop) }
+        unsafe {
+            assert!(self.c.same_rt(&prop.c));
+            let v = raw::JS_GetProperty(self.c.0.ctx, self.v, prop.v);
+            RefValue::from_raw(&self.c, v)
+        }
     }
 
     #[inline]
     pub fn set_property_str(&self, prop: &str, v: &impl DupRawValue) -> c_int {
-        unsafe { set_property_str(&self.c, self, prop, v) }
+        if let Some(a) = self.c.new_atom(prop) {
+            self.set_property(&a, v)
+        } else {
+            panic!()
+        }
     }
 
     #[inline]
     pub fn set_property(&self, prop: &Atom, v: &impl DupRawValue) -> c_int {
-        unsafe { set_property(&self.c, self, prop, v) }
+        unsafe {
+            assert!(self.c.same_rt(&prop.c));
+            if let Some(c) = v.ctx() {
+                assert!(self.c.same_rt(c));
+            }
+
+            let v = v.dup_raw_value();
+            raw::JS_SetProperty(self.c.0.ctx, self.v, prop.v, v)
+        }
     }
 
     #[inline]
     pub fn delete_property_str(&self, prop: &str) -> c_int {
-        unsafe { delete_property_str(&self.c, self, prop) }
+        if let Some(a) = self.c.new_atom(prop) {
+            self.delete_property(&a)
+        } else {
+            panic!()
+        }
     }
 
     #[inline]
     pub fn delete_property(&self, prop: &Atom) -> c_int {
-        unsafe { delete_property(&self.c, self, prop) }
+        unsafe {
+            assert!(self.c.same_rt(&prop.c));
+            raw::JS_DeleteProperty(self.c.0.ctx, self.v, prop.v, 0) // TODO: flags
+        }
     }
 
     #[inline]
     pub fn call(&self, this: &impl GetRawValue, args: &[&RefValue]) -> RefValue {
-        unsafe { call(&self.c, self, this, args) }
+        unsafe {
+            if let Some(c) = this.ctx() {
+                assert!(self.c.same_rt(c));
+            }
+            for arg in args {
+                assert!(self.c.same_rt(&arg.c));
+            }
+
+            let args = Vec::from_iter(args.iter().map(|v| v.v));
+
+            let argc: c_int = args.len().try_into().unwrap();
+            let argv = if !args.is_empty() {
+                args.as_ptr() as *mut RefValue as *mut raw::JSValue
+            } else {
+                std::ptr::null_mut()
+            };
+
+            let v = raw::JS_Call(self.c.0.ctx, self.v, this.get_raw_value(), argc, argv);
+            RefValue::from_raw(&self.c, v)
+        }
     }
 
     #[inline]
     pub fn get_own_property_names(&self, opts: raw::JSGetPropertyNameOption) -> OwnPropertyNames {
-        unsafe { get_own_property_names(&self.c, self, opts) }
+        unsafe {
+            let mut tab = std::ptr::null_mut();
+            let mut len = 0;
+            let result =
+                raw::JS_GetOwnPropertyNames(self.c.0.ctx, &mut tab, &mut len, self.v, opts);
+            if result < 0 {
+                panic!("Don't know how to handle exceptions yet");
+            }
+
+            let slice = if len > 0 {
+                let tab = NonNull::new(tab).unwrap();
+                NonNull::slice_from_raw_parts(tab, len as usize)
+            } else {
+                NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
+            };
+
+            OwnPropertyNames {
+                ctx: self.c.clone(),
+                props: slice,
+            }
+        }
     }
 
-    #[inline]
     pub fn to_json(&self) -> Option<serde_json::Value> {
         let v = match self.get_tag() {
             raw::JSTag::BIG_INT => unimplemented!(),
@@ -551,110 +665,92 @@ impl<'a> Drop for RefValue {
     }
 }
 
-/// A wrapper over [`JSValue`] that can contains a JS 'object'.
-pub struct Object {
-    /// The wrapped JS value
-    v: JSValue,
-
-    /// Attach this value to the context it was acquired from.
-    c: Context,
-}
+/// A wrapper over [`JSValue`] that can contain a JS 'object'.
+#[derive(Clone)]
+pub struct Object(pub(crate) RefValue);
 
 impl Object {
     /// Destroys the [`Object`], without decrementing the JSValue's ref-count but while still
     /// decrementing the internal [`Context`] ref count.
     #[inline]
     pub fn detatch(self) -> JSValue {
-        let v = self.v;
-        unsafe { drop(std::ptr::read(&self.c)) };
-        std::mem::forget(self);
-        v
+        self.0.detatch()
     }
 
     /// Convert the [`RefValue`] into an [`Object`] if this value contains a JS 'object' value.
     pub const fn from_value(v: RefValue) -> Result<Self, RefValue> {
         if v.is_object() {
-            let val = v.v;
-            let c = unsafe { std::ptr::read(&v.c) };
-
-            // Prevent 'drop' from being called and decrementing the ref-count
-            std::mem::forget(v);
-
-            Ok(Self { v: val, c })
+            Ok(Self(v))
         } else {
             Err(v)
         }
     }
 
-    pub const fn to_value(self) -> RefValue {
-        let v = self.v;
-        let c = unsafe { std::ptr::read(&self.c) };
-
-        // Prevent 'drop' from being called and decrementing the ref-count
-        std::mem::forget(self);
-
-        RefValue { v, c }
+    /// Get the inner [`RefValue`].
+    #[inline(always)]
+    pub fn to_value(self) -> RefValue {
+        self.0
     }
 
     /// Get the inner [`JSValue`] for raw access to the QuickJS API.
     pub const fn to_raw(&self) -> JSValue {
-        self.v
+        self.0.to_raw()
     }
 
     #[inline]
     pub fn get_ref_count(&self) -> c_int {
         // Safety: This wrapper type is guaranteed to contain a live ref-counted JS object
-        unsafe { self.v.get_ref_count().unwrap_unchecked() }
+        unsafe { self.0.get_ref_count().unwrap_unchecked() }
     }
 
     #[inline]
     pub fn to_string(&self) -> RefValue {
-        unsafe { to_string(&self.c, self) }
+        self.0.to_string()
     }
 
     #[inline]
     pub fn to_c_str(&self) -> Option<CtxString> {
-        unsafe { to_c_str(&self.c, self) }
+        self.0.to_c_str()
     }
 
     #[inline]
     pub fn get_property_str(&self, prop: &str) -> RefValue {
-        unsafe { get_property_str(&self.c, self, prop) }
+        self.0.get_property_str(prop)
     }
 
     #[inline]
     pub fn get_property(&self, prop: &Atom) -> RefValue {
-        unsafe { get_property(&self.c, self, prop) }
+        self.0.get_property(prop)
     }
 
     #[inline]
     pub fn set_property_str(&self, prop: &str, v: &impl DupRawValue) -> c_int {
-        unsafe { set_property_str(&self.c, self, prop, v) }
+        self.0.set_property_str(prop, v)
     }
 
     #[inline]
     pub fn set_property(&self, prop: &Atom, v: &impl DupRawValue) -> c_int {
-        unsafe { set_property(&self.c, self, prop, v) }
+        self.0.set_property(prop, v)
     }
 
     #[inline]
     pub fn delete_property_str(&self, prop: &str) -> c_int {
-        unsafe { delete_property_str(&self.c, self, prop) }
+        self.0.delete_property_str(prop)
     }
 
     #[inline]
     pub fn delete_property(&self, prop: &Atom) -> c_int {
-        unsafe { delete_property(&self.c, self, prop) }
+        self.0.delete_property(prop)
     }
 
     #[inline]
     pub fn call(&self, this: &impl GetRawValue, args: &[&RefValue]) -> RefValue {
-        unsafe { call(&self.c, self, this, args) }
+        self.0.call(this, args)
     }
 
     #[inline]
     pub fn get_own_property_names(&self, opts: raw::JSGetPropertyNameOption) -> OwnPropertyNames {
-        unsafe { get_own_property_names(&self.c, self, opts) }
+        self.0.get_own_property_names(opts)
     }
 
     #[inline]
@@ -680,7 +776,7 @@ impl Object {
 impl Object {
     pub(crate) unsafe fn from_raw(c: &Context, v: JSValue) -> Option<Self> {
         if v.is_object() {
-            Some(Self { v, c: c.clone() })
+            Some(Self(RefValue::from_raw(c, v)))
         } else {
             None
         }
@@ -691,32 +787,6 @@ impl Into<RefValue> for Object {
     #[inline]
     fn into(self) -> RefValue {
         self.to_value()
-    }
-}
-
-impl Clone for Object {
-    #[inline]
-    fn clone(&self) -> Self {
-        unsafe {
-            // We do an unwrap-unchecked here because we _know_ we have an object and we want to
-            // encourage the optimizer to drop the branches inside 'increment_ref_count' as they're
-            // dead code.
-            let _ = self.v.increment_ref_count().unwrap_unchecked();
-            Self {
-                v: self.v,
-                c: self.c.clone(),
-            }
-        }
-    }
-}
-
-impl Drop for Object {
-    #[inline]
-    fn drop(&mut self) {
-        unsafe {
-            // For the same reasons as the [Object::clone] impl we do an unwrap-unchecked here.
-            let _ = self.v.decrement_ref_count().unwrap_unchecked();
-        }
     }
 }
 
@@ -761,15 +831,12 @@ impl DupRawValue for RefValue {
 impl DupRawValue for Object {
     #[inline]
     fn ctx(&self) -> Option<&Context> {
-        Some(&self.c)
+        DupRawValue::ctx(&self.0)
     }
 
     #[inline]
     fn dup_raw_value(&self) -> JSValue {
-        unsafe {
-            self.v.increment_ref_count().unwrap_unchecked();
-        }
-        self.v
+        DupRawValue::dup_raw_value(&self.0)
     }
 }
 
@@ -807,12 +874,12 @@ impl GetRawValue for RefValue {
 impl GetRawValue for Object {
     #[inline]
     fn ctx(&self) -> Option<&Context> {
-        Some(&self.c)
+        GetRawValue::ctx(&self.0)
     }
 
     #[inline]
     fn get_raw_value(&self) -> JSValue {
-        self.v
+        GetRawValue::get_raw_value(&self.0)
     }
 }
 
@@ -838,150 +905,5 @@ impl ToRefValue for Object {
     #[inline]
     fn to_ref_value(self) -> RefValue {
         self.to_value()
-    }
-}
-
-unsafe fn to_string(ctx: &Context, v: &impl GetRawValue) -> RefValue {
-    let v = v.get_raw_value();
-    let string = raw::JS_ToString(ctx.0.ctx, v);
-    RefValue::from_raw(ctx, string)
-}
-
-unsafe fn to_c_str(ctx: &Context, v: &impl GetRawValue) -> Option<CtxString> {
-    let v = v.get_raw_value();
-
-    let mut len = 0;
-    let cstr = raw::JS_ToCStringLen2(ctx.0.ctx, &mut len, v, raw::JSBool::FALSE);
-
-    if len == 0 || cstr.is_null() {
-        None
-    } else {
-        let bytes = std::slice::from_raw_parts(cstr as *const u8, len);
-        let string = str::from_utf8(bytes).unwrap_unchecked();
-        Some(CtxString::from_ctx_and_str(ctx.clone(), string))
-    }
-}
-
-unsafe fn get_property_str(ctx: &Context, this: &impl GetRawValue, prop: &str) -> RefValue {
-    if let Some(a) = ctx.new_atom(prop) {
-        let v = get_property(ctx, this, &a);
-        v
-    } else {
-        panic!()
-    }
-}
-
-unsafe fn get_property(ctx: &Context, this: &impl GetRawValue, prop: &Atom) -> RefValue {
-    assert_eq!(ctx.0.rt.0 .0, prop.c.0.rt.0 .0);
-
-    let this = this.get_raw_value();
-
-    let v = raw::JS_GetProperty(ctx.0.ctx, this, prop.v);
-    RefValue::from_raw(ctx, v)
-}
-
-unsafe fn set_property_str(
-    ctx: &Context,
-    this: &impl GetRawValue,
-    prop: &str,
-    v: &impl DupRawValue,
-) -> c_int {
-    if let Some(a) = ctx.new_atom(prop) {
-        let result = set_property(ctx, this, &a, v);
-        result
-    } else {
-        panic!()
-    }
-}
-
-unsafe fn set_property(
-    ctx: &Context,
-    this: &impl GetRawValue,
-    prop: &Atom,
-    v: &impl DupRawValue,
-) -> c_int {
-    assert_eq!(ctx.0.rt.0 .0, prop.c.0.rt.0 .0);
-    if let Some(c) = v.ctx() {
-        assert_eq!(ctx.0.rt.0 .0, c.0.rt.0 .0);
-    }
-
-    let this = this.get_raw_value();
-    let v = v.dup_raw_value();
-    raw::JS_SetProperty(ctx.0.ctx, this, prop.v, v)
-}
-
-unsafe fn delete_property_str(ctx: &Context, this: &impl GetRawValue, prop: &str) -> c_int {
-    if let Some(a) = ctx.new_atom(prop) {
-        let result = delete_property(ctx, this, &a);
-        result
-    } else {
-        panic!()
-    }
-}
-
-unsafe fn delete_property(ctx: &Context, this: &impl GetRawValue, prop: &Atom) -> c_int {
-    assert_eq!(ctx.0.rt.0 .0, prop.c.0.rt.0 .0);
-
-    let this = this.get_raw_value();
-
-    raw::JS_DeleteProperty(ctx.0.ctx, this, prop.v, 0) // TODO: flags
-}
-
-unsafe fn call(
-    ctx: &Context,
-    func: &impl GetRawValue,
-    this: &impl GetRawValue,
-    args: &[&RefValue],
-) -> RefValue {
-    if let Some(c) = this.ctx() {
-        assert_eq!(ctx.0.rt.0 .0, c.0.rt.0 .0);
-    }
-    for arg in args {
-        assert_eq!(ctx.0.rt.0 .0, arg.c.0.rt.0 .0);
-    }
-
-    let args = Vec::from_iter(args.iter().map(|v| v.v));
-
-    let argc: c_int = args.len().try_into().unwrap();
-    let argv = if !args.is_empty() {
-        args.as_ptr() as *mut RefValue as *mut raw::JSValue
-    } else {
-        std::ptr::null_mut()
-    };
-
-    let v = raw::JS_Call(
-        ctx.0.ctx,
-        func.get_raw_value(),
-        this.get_raw_value(),
-        argc,
-        argv,
-    );
-    RefValue::from_raw(ctx, v)
-}
-
-unsafe fn get_own_property_names(
-    ctx: &Context,
-    obj: &impl GetRawValue,
-    opts: raw::JSGetPropertyNameOption,
-) -> OwnPropertyNames {
-    let obj = obj.get_raw_value();
-
-    let mut tab = std::ptr::null_mut();
-    let mut len = 0;
-    let result = raw::JS_GetOwnPropertyNames(ctx.0.ctx, &mut tab, &mut len, obj, opts);
-    if result < 0 {
-        panic!("Don't know how to handle exceptions yet");
-    }
-
-    let slice = if len > 0 {
-        let tab = NonNull::new(tab).unwrap();
-        NonNull::slice_from_raw_parts(tab, len as usize)
-    } else {
-        NonNull::slice_from_raw_parts(NonNull::dangling(), 0)
-    };
-
-    OwnPropertyNames {
-        ctx: ctx.clone(),
-        props: slice,
     }
 }

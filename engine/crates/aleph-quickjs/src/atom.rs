@@ -39,12 +39,6 @@ impl Atom {
         self.v
     }
 
-    pub const fn leak(self) -> raw::JSAtom {
-        let out = self.v;
-        std::mem::forget(self);
-        out
-    }
-
     #[inline]
     pub fn to_value(&self) -> RefValue {
         unsafe {

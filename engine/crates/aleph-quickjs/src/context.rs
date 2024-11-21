@@ -28,13 +28,15 @@
 //
 
 use core::str;
-use std::ffi::{c_char, c_int};
+use std::any::Any;
+use std::ffi::{c_char, c_int, c_void};
 use std::ptr::NonNull;
 use std::rc::Rc;
 
 use aleph_nstr::NStr;
 
-use crate::{Atom, Object, RefValue, Runtime, ToRefValue};
+use crate::opaque_box::{OpaqueBox, UntypedOpaqueBox};
+use crate::{Atom, Object, RefValue, Runtime};
 
 #[derive(Clone)]
 pub struct Context(pub(crate) Rc<InnerContext>);
@@ -79,11 +81,6 @@ impl Context {
     }
 
     /// Returns the global object [`Object`] for this context.
-    ///
-    /// # Memory
-    ///
-    /// Each call to [`Context::get_global_object`] will increment the reference count to the global
-    /// object. Make sure to free the value, otherwise you will leak memory.
     #[inline]
     pub fn get_global_object(&self) -> Object {
         unsafe {
@@ -149,21 +146,42 @@ impl Context {
         }
     }
 
-    /// An explicit destructor for JS value wrappers. This is similar to the [`Drop`]
-    /// implementations on our wrapper functions but will _immediately_ free the value if the ref
-    /// count reaches zero. This will not trigger a GC cycle, rather the individual value will be
-    /// explicitly freed.
-    ///
-    /// # Safety
-    ///
-    /// It is the caller's responsibility to ensure that the given [`RefValue`] was allocated from
-    /// this context.
     #[inline]
-    pub unsafe fn free_value(&self, v: impl ToRefValue) {
-        let v = v.to_ref_value();
-        let v = v.detatch();
+    pub fn set_opaque<T: Any + Sized>(&self, v: T) {
+        self.remove_opaque();
 
-        v.free_value(self.0.ctx);
+        unsafe {
+            let opaque = OpaqueBox::new(v);
+            raw::JS_SetContextOpaque(self.0.ctx, opaque.as_ptr() as *mut c_void);
+        }
+    }
+
+    #[inline]
+    pub fn get_opaque<T: Any + Sized>(&self) -> Option<&T> {
+        unsafe {
+            let old = raw::JS_GetContextOpaque(self.0.ctx);
+            let old = NonNull::new(old);
+            if let Some(old) = old {
+                let old = old.cast::<UntypedOpaqueBox>().as_ref();
+                old.try_to_typed::<T>().map(|v| &v.v)
+            } else {
+                None
+            }
+        }
+    }
+
+    #[inline]
+    pub fn remove_opaque(&self) {
+        unsafe {
+            let old = raw::JS_GetContextOpaque(self.0.ctx);
+            let old = NonNull::new(old);
+            if let Some(old) = old {
+                let old = old.cast::<UntypedOpaqueBox>();
+                UntypedOpaqueBox::drop_inner(old);
+            }
+
+            raw::JS_SetContextOpaque(self.0.ctx, std::ptr::null_mut());
+        }
     }
 }
 
@@ -173,8 +191,12 @@ impl Context {
     ///
     /// This is expected to be used to allow access to various functions on `Runtime` directly from
     /// the context object. Mainly to avoid code duplication.
-    fn get_rt(&self) -> Runtime {
+    pub(crate) fn get_rt(&self) -> Runtime {
         self.0.rt.clone()
+    }
+
+    pub(crate) fn same_rt(&self, other: &Self) -> bool {
+        self.0.rt.0 .0 == other.0.rt.0 .0
     }
 }
 
@@ -187,6 +209,13 @@ impl<'a> Drop for InnerContext {
     #[inline]
     fn drop(&mut self) {
         unsafe {
+            let old = raw::JS_GetContextOpaque(self.ctx);
+            let old = NonNull::new(old);
+            if let Some(old) = old {
+                let old = old.cast::<UntypedOpaqueBox>();
+                UntypedOpaqueBox::drop_inner(old);
+            }
+
             raw::JS_FreeContext(self.ctx);
         }
     }

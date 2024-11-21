@@ -32,6 +32,7 @@ pub extern crate aleph_quickjs_sys as raw;
 mod atom;
 mod context;
 mod ctx_string;
+mod opaque_box;
 mod own_property_names;
 mod runtime;
 mod value;

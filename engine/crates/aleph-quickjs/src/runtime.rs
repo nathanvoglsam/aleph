@@ -27,10 +27,13 @@
 // SOFTWARE.
 //
 
+use std::any::Any;
+use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
 use crate::context::InnerContext;
+use crate::opaque_box::{OpaqueBox, UntypedOpaqueBox};
 use crate::Context;
 
 #[derive(Clone)]
@@ -81,6 +84,44 @@ impl Runtime {
             usage
         }
     }
+
+    #[inline]
+    pub fn set_opaque<T: Any + Sized>(&self, v: T) {
+        self.remove_opaque();
+
+        unsafe {
+            let opaque = OpaqueBox::new(v);
+            raw::JS_SetRuntimeOpaque(self.0 .0, opaque.as_ptr() as *mut c_void);
+        }
+    }
+
+    #[inline]
+    pub fn get_opaque<T: Any + Sized>(&self) -> Option<&T> {
+        unsafe {
+            let old = raw::JS_GetRuntimeOpaque(self.0 .0);
+            let old = NonNull::new(old);
+            if let Some(old) = old {
+                let old = old.cast::<UntypedOpaqueBox>().as_ref();
+                old.try_to_typed::<T>().map(|v| &v.v)
+            } else {
+                None
+            }
+        }
+    }
+
+    #[inline]
+    pub fn remove_opaque(&self) {
+        unsafe {
+            let old = raw::JS_GetRuntimeOpaque(self.0 .0);
+            let old = NonNull::new(old);
+            if let Some(old) = old {
+                let old = old.cast::<UntypedOpaqueBox>();
+                UntypedOpaqueBox::drop_inner(old);
+            }
+
+            raw::JS_SetRuntimeOpaque(self.0 .0, std::ptr::null_mut());
+        }
+    }
 }
 
 pub(crate) struct InnerRuntime(pub(crate) NonNull<raw::JSRuntime>);
@@ -89,6 +130,13 @@ impl Drop for InnerRuntime {
     #[inline]
     fn drop(&mut self) {
         unsafe {
+            let old = raw::JS_GetRuntimeOpaque(self.0);
+            let old = NonNull::new(old);
+            if let Some(old) = old {
+                let old = old.cast::<UntypedOpaqueBox>();
+                UntypedOpaqueBox::drop_inner(old);
+            }
+
             raw::JS_FreeRuntime(self.0);
         }
     }
