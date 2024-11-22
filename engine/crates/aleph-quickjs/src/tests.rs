@@ -30,6 +30,7 @@
 use std::collections::HashSet;
 use std::ffi::*;
 use std::ptr::NonNull;
+use std::rc::Rc;
 
 use aleph_nstr::{nstr, NStr};
 use raw::*;
@@ -346,6 +347,114 @@ pub fn string_with_internal_null_character() {
 
     let got_string = v.to_c_str().unwrap();
     assert_eq!(string, got_string.as_ref());
+}
+
+#[test]
+pub fn runtime_opaque_test() {
+    let runtime = Runtime::new().unwrap();
+
+    let o1 = Rc::new(123i32);
+    let o2 = Rc::new(456u64);
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert_eq!(Rc::strong_count(&o2), 1);
+    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
+    assert!(runtime.get_opaque::<Rc<u64>>().is_none());
+
+    runtime.set_opaque(o1.clone());
+
+    assert_eq!(Rc::strong_count(&o1), 2);
+    assert_eq!(Rc::strong_count(&o2), 1);
+    assert!(runtime.get_opaque::<Rc<i32>>().is_some());
+    assert!(runtime.get_opaque::<Rc<u64>>().is_none());
+
+    runtime.set_opaque(o2.clone());
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert_eq!(Rc::strong_count(&o2), 2);
+    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
+    assert!(runtime.get_opaque::<Rc<u64>>().is_some());
+
+    runtime.remove_opaque();
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert_eq!(Rc::strong_count(&o2), 1);
+    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
+    assert!(runtime.get_opaque::<Rc<u64>>().is_none());
+}
+
+#[test]
+pub fn runtime_opaque_drop_test() {
+    let runtime = Runtime::new().unwrap();
+
+    let o1 = Rc::new(420i32);
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert!(runtime.get_opaque::<Rc<i32>>().is_none());
+
+    runtime.set_opaque(o1.clone());
+
+    assert_eq!(Rc::strong_count(&o1), 2);
+    assert!(runtime.get_opaque::<Rc<i32>>().is_some());
+
+    drop(runtime);
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+}
+
+#[test]
+pub fn context_opaque_test() {
+    let runtime = Runtime::new().unwrap();
+    let context = runtime.new_context().unwrap();
+
+    let o1 = Rc::new(123i32);
+    let o2 = Rc::new(456u64);
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert_eq!(Rc::strong_count(&o2), 1);
+    assert!(context.get_opaque::<Rc<i32>>().is_none());
+    assert!(context.get_opaque::<Rc<u64>>().is_none());
+
+    context.set_opaque(o1.clone());
+
+    assert_eq!(Rc::strong_count(&o1), 2);
+    assert_eq!(Rc::strong_count(&o2), 1);
+    assert!(context.get_opaque::<Rc<i32>>().is_some());
+    assert!(context.get_opaque::<Rc<u64>>().is_none());
+
+    context.set_opaque(o2.clone());
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert_eq!(Rc::strong_count(&o2), 2);
+    assert!(context.get_opaque::<Rc<i32>>().is_none());
+    assert!(context.get_opaque::<Rc<u64>>().is_some());
+
+    context.remove_opaque();
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert_eq!(Rc::strong_count(&o2), 1);
+    assert!(context.get_opaque::<Rc<i32>>().is_none());
+    assert!(context.get_opaque::<Rc<u64>>().is_none());
+}
+
+#[test]
+pub fn context_opaque_drop_test() {
+    let runtime = Runtime::new().unwrap();
+    let context = runtime.new_context().unwrap();
+
+    let o1 = Rc::new(420i32);
+
+    assert_eq!(Rc::strong_count(&o1), 1);
+    assert!(context.get_opaque::<Rc<i32>>().is_none());
+
+    context.set_opaque(o1.clone());
+
+    assert_eq!(Rc::strong_count(&o1), 2);
+    assert!(context.get_opaque::<Rc<i32>>().is_some());
+
+    drop(context);
+
+    assert_eq!(Rc::strong_count(&o1), 1);
 }
 
 fn check_exception<'a>(ctx: &'a Context, v: RefValue) -> RefValue {
