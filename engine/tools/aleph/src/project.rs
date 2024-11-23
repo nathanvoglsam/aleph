@@ -34,7 +34,7 @@ use aleph_target::{Architecture, Profile};
 use anyhow::{anyhow, Context};
 use bumpalo::Bump;
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::Package;
+use cargo_metadata::{Package, TargetKind};
 use once_cell::sync::OnceCell;
 
 use crate::project_schema::ProjectSchema;
@@ -578,7 +578,7 @@ impl<'a> AlephProject<'a> {
                     .targets
                     .iter()
                     .enumerate()
-                    .find(|(_i, v)| v.kind.iter().any(|v| v.as_str() == "cdylib"))
+                    .find(|(_i, v)| v.kind.iter().any(|v| *v == TargetKind::CDyLib))
                     .map(|(i, _v)| i);
 
                 Ok((package_index, target_index))
