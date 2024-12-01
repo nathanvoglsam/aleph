@@ -34,6 +34,7 @@ use std::ops::Deref;
 
 use aleph_object_system::uuid::Uuid;
 use allocator_api2::alloc::{Allocator, Global};
+use allocator_api2::boxed::Box as ABox;
 use allocator_api2::vec::{IntoIter as AIntoIter, Vec as AVec};
 
 ///
@@ -230,6 +231,7 @@ impl ToOwned for EntityLayout {
 /// - Disjoint Check: O(N log N) where N = number of member components.
 ///
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct EntityLayoutBuf<A: Allocator = Global> {
     components: AVec<Uuid, A>,
 }
@@ -296,6 +298,17 @@ impl<A: Allocator> EntityLayoutBuf<A> {
             }
             Err(_) => false,
         }
+    }
+}
+
+impl<A: Allocator + Clone> EntityLayoutBuf<A> {
+    #[inline]
+    pub fn into_boxed_slice(&self) -> ABox<EntityLayout, A> {
+        let v = self.components.clone().into_boxed_slice();
+        let (v, a) = ABox::<[Uuid], A>::into_raw_with_allocator(v);
+        let v = v as *mut EntityLayout;
+        let v = unsafe { ABox::<_, A>::from_raw_in(v, a) };
+        v
     }
 }
 

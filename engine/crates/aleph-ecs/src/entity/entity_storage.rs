@@ -97,6 +97,7 @@ pub struct EntityEntry {
 ///
 /// A data-structure that manages efficiently
 ///
+#[repr(C)]
 pub struct EntityStorage {
     /// The backing storage for the entities
     entities: VirtualVec<EntityEntry>,

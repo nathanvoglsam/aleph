@@ -29,13 +29,14 @@
 
 mod implementation;
 
-use std::ops::{Deref, DerefMut, Range};
+use std::ops::Range;
 use std::ptr::NonNull;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
 ///
 /// An abstraction over an owned region of address space that can be committed and released
 ///
+#[repr(C)]
 pub struct VirtualBuffer {
     data: NonNull<u8>,
     len: usize,
@@ -142,15 +143,6 @@ impl VirtualBuffer {
     }
 
     ///
-    /// Commits the entire address range and emits a new-type wrapper that can allow for more
-    /// powerful operations to be done entirely in safe code
-    ///
-    pub fn commit_whole(self) -> std::io::Result<CommittedVirtualBuffer> {
-        self.commit(0..self.len)?;
-        Ok(CommittedVirtualBuffer(self))
-    }
-
-    ///
     /// Returns a slice over the whole address range
     ///
     /// # Safety
@@ -229,25 +221,3 @@ impl VirtualBuffer {
 
 unsafe impl Send for VirtualBuffer {}
 unsafe impl Sync for VirtualBuffer {}
-
-///
-/// A new-type wrapper around `VirtualBuffer` that requires that the entire buffer is committed.
-///
-/// By requiring the whole virtual address range to be committed we can safely treat the entire
-/// buffer as a contiguous slice.
-///
-pub struct CommittedVirtualBuffer(pub(crate) VirtualBuffer);
-
-impl Deref for CommittedVirtualBuffer {
-    type Target = VirtualBuffer;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for CommittedVirtualBuffer {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}

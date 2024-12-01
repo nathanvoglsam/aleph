@@ -33,6 +33,7 @@ use std::num::NonZeroU32;
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
 use allocator_api2::alloc::{Allocator, Global};
+use allocator_api2::boxed::Box as ABox;
 use allocator_api2::vec;
 
 use crate::{
@@ -126,7 +127,7 @@ pub struct World {
     pub(crate) entities: EntityStorage,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    pub(crate) archetype_map: HashMap<EntityLayoutBuf, Option<ArchetypeIndex>>,
+    pub(crate) archetype_map: HashMap<ABox<EntityLayout>, Option<ArchetypeIndex>>,
 
     /// The list of all archetypes in the ECS world
     pub(crate) archetypes: Vec<Archetype>,
@@ -158,7 +159,7 @@ impl World {
 
         // Creates the table that maps entity layouts to archetypes. Maps the empty layout to 0.
         let mut archetype_map = HashMap::new();
-        archetype_map.insert(EntityLayoutBuf::new(), None);
+        archetype_map.insert(EntityLayoutBuf::new().into_boxed_slice(), None);
 
         let out = Self {
             options,
@@ -687,8 +688,10 @@ impl World {
             let archetype_edges = ComponentIdMap::with_hasher(Default::default());
             let archetype_index = self.archetypes.len() as u32;
             let archetype_index = NonZeroU32::new(archetype_index).unwrap();
-            self.archetype_map
-                .insert(layout.to_owned(), Some(ArchetypeIndex(archetype_index)));
+            self.archetype_map.insert(
+                layout.to_owned().into_boxed_slice(),
+                Some(ArchetypeIndex(archetype_index)),
+            );
             self.archetypes.push(archetype);
             self.archetype_edges.push(archetype_edges);
             ArchetypeIndex(archetype_index)

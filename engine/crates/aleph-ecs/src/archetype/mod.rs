@@ -33,11 +33,10 @@ use std::ptr::NonNull;
 use aleph_atomic_borrow::AtomicBorrow;
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
+use allocator_api2::boxed::Box as ABox;
 use virtual_buffer::VirtualVec;
 
-use crate::{
-    ComponentIdMap, ComponentRegistry, ComponentSource, EntityId, EntityLayout, EntityLayoutBuf,
-};
+use crate::{ComponentRegistry, ComponentSource, EntityId, EntityLayout};
 
 ///
 /// This index wrapper represents an index into the list of archetypes within a world.
@@ -76,6 +75,7 @@ impl ArchetypeIndex {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct ArchetypeEntityIndex(pub NonZeroU32);
 
+#[repr(C)]
 pub struct ComponentStorage {
     /// The buffer that stores our components
     pub data: VirtualVec<u8>,
@@ -143,15 +143,15 @@ impl ComponentStorage {
 ///
 pub struct Archetype {
     /// The entity layout of this archetype
-    entity_layout: EntityLayoutBuf,
+    entity_layout: ABox<EntityLayout>,
 
-    /// A hash table that maps a component's id to the storage index. The storage index is used to
+    /// A table that maps a component's id to the storage index. The storage index is used to
     /// index into the `component_descriptions` and `storages` fields.
-    storage_indices: ComponentIdMap<usize>,
+    storage_indices: ComponentMapper,
 
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index
-    storages: Vec<ComponentStorage>,
+    storages: Box<[ComponentStorage]>,
 
     /// A list that maps an entity's index in the archetype storage back to the ID it was allocated
     /// with.
@@ -196,8 +196,9 @@ impl Archetype {
         let storage_capacity = capacity.checked_add(1).unwrap();
 
         // Produce the index map from the layout
-        let storage_indices: ComponentIdMap<usize> =
-            layout.iter().enumerate().map(|v| (*v.1, v.0)).collect();
+        let storage_indices = ComponentMapper {
+            table: layout.iter().enumerate().map(|v| (*v.1, v.0)).collect(),
+        };
 
         // Create a virtual memory reservation for each component's storage
         let storages = layout
@@ -217,7 +218,7 @@ impl Archetype {
         entity_ids.push(EntityId::null());
 
         Self {
-            entity_layout: layout.to_owned(),
+            entity_layout: layout.to_owned().into_boxed_slice(),
             storage_indices,
             storages,
             entity_ids,
@@ -304,7 +305,7 @@ impl Archetype {
         data: &[u8],
     ) {
         // Get the index of the type inside the archetype and lookup the size of the type
-        let type_index = self.storage_indices.get(component_type).copied().unwrap();
+        let type_index = self.storage_indices.get(component_type).unwrap();
         let type_size = self.storages[type_index].desc.size;
 
         // Get the bounds of the component's data
@@ -326,7 +327,7 @@ impl Archetype {
         slot: ArchetypeEntityIndex,
         component_type: &Uuid,
     ) {
-        let type_index = self.storage_indices.get(component_type).copied().unwrap();
+        let type_index = self.storage_indices.get(component_type).unwrap();
         let type_size = self.storages[type_index].desc.size;
         let drop_fn = self.storages[type_index].desc.destructor;
 
@@ -340,7 +341,7 @@ impl Archetype {
 
     pub(crate) fn get_component_guard(&self, component_type: &Uuid) -> Option<&AtomicBorrow> {
         // Lookup the storage index for the borrow guard
-        let storage_index = self.storage_indices.get(component_type).copied()?;
+        let storage_index = self.storage_indices.get(component_type)?;
         Some(&self.storages[storage_index].guard)
     }
 
@@ -350,7 +351,7 @@ impl Archetype {
         component_type: &Uuid,
     ) -> Option<NonNull<u8>> {
         // Lookup the storage index, load the size of the type and get the storage pointer
-        let storage_index = self.storage_indices.get(component_type).copied()?;
+        let storage_index = self.storage_indices.get(component_type)?;
         let storage = &self.storages[storage_index];
 
         let type_size = storage.desc.size;
@@ -491,12 +492,11 @@ impl Archetype {
 
             // Create a slice of the data to copy, exiting the loop if the component is not present
             // in the source archetype
-            let source_buffer =
-                if let Some(source_index) = source.storage_indices.get(&source_id).copied() {
-                    source.storages[source_index].data.as_slice()
-                } else {
-                    continue;
-                };
+            let source_buffer = if let Some(source_index) = source.storage_indices.get(&source_id) {
+                source.storages[source_index].data.as_slice()
+            } else {
+                continue;
+            };
             let source_buffer = &source_buffer[source_base..source_end];
 
             // Get the bounds of the memory to copy the data to
@@ -560,5 +560,21 @@ impl Drop for Archetype {
                 }
             }
         }
+    }
+}
+
+#[repr(C)]
+struct ComponentMapper {
+    pub table: Box<[(Uuid, usize)]>,
+}
+
+impl ComponentMapper {
+    fn get(&self, component_id: &Uuid) -> Option<usize> {
+        for v in self.table.iter() {
+            if v.0 == *component_id {
+                return Some(v.1);
+            }
+        }
+        None
     }
 }
