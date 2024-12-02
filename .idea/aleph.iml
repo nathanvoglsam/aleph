@@ -57,6 +57,7 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-object-system/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-scheduler/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-typed-table/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-hibitset/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

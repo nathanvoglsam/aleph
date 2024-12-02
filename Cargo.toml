@@ -46,6 +46,7 @@ members = [
     "engine/crates/aleph-engine",
     "engine/crates/aleph-engine-build",
     "engine/crates/aleph-frame-graph",
+    "engine/crates/aleph-hibitset",
     "engine/crates/aleph-identity-hasher",
     "engine/crates/aleph-interfaces",
     "engine/crates/aleph-label",
@@ -157,6 +158,7 @@ aleph-ecs = { path = "./engine/crates/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./engine/crates/aleph-engine", version = "0.1" }
 aleph-engine-build = { path = "./engine/crates/aleph-engine-build", version = "0.1" }
 aleph-frame-graph = { path = "./engine/crates/aleph-frame-graph", version = "0.1" }
+aleph-hibitset = { path = "./engine/crates/aleph-hibitset", version = "0.1" }
 aleph-identity-hasher = { path = "./engine/crates/aleph-identity-hasher", version = "1" }
 aleph-interfaces = { path = "./engine/crates/aleph-interfaces", version = "0.1" }
 aleph-label = { path = "./engine/crates/aleph-label", version = "1" }
