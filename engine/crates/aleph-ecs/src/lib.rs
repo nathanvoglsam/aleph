@@ -54,7 +54,7 @@ pub use self::entity::entity_storage::{
 };
 pub use self::entity::{EntityId, EntityIndex};
 pub use self::query::query_filter::QueryFilter;
-pub use self::query::Query;
+pub use self::query::{QueryMut, QueryRef, UnsafeQuery};
 pub use self::utils::Generation;
 pub use self::world::{World, WorldOptions};
 

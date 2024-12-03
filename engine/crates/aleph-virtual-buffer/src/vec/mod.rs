@@ -363,6 +363,45 @@ impl<T> VirtualVec<T> {
         self.len = new_len;
     }
 
+    #[inline]
+    pub fn extend_from_iter<I>(&mut self, iter: I)
+    where
+        I: ExactSizeIterator<Item = T>,
+    {
+        // No-op on empty iter
+        if iter.len() == 0 {
+            return;
+        }
+
+        // Check if we have enough capacity
+        let new_len = self
+            .len
+            .checked_add(iter.len())
+            .expect("VirtualVec::extend_from_slice> overflow adding lengths");
+        if new_len > self.capacity() {
+            panic!(
+                "VirtualVec::extend_from_slice> total length {} exceeds capacity {}",
+                new_len,
+                self.capacity()
+            )
+        }
+
+        // Pre-reserve space for the new entries
+        self.reserve(new_len).unwrap();
+
+        // SAFETY:
+        // Safe as we've guaranteed the memory to be accessible with the above reserve call
+        unsafe {
+            let base = self.ptr_mut().add(self.len);
+            for (i, item) in iter.enumerate() {
+                base.add(i).write(item)
+            }
+        };
+
+        // Update the length
+        self.len = new_len;
+    }
+
     // TODO: retain
 
     // TODO: drain

@@ -35,10 +35,10 @@ use crate::{Archetype, ArchetypeEntityIndex, Component, EntityLayoutBuf};
 pub trait ComponentQuery: Send + Sync {
     type Fetch: for<'a> Fetch<'a>;
 
-    fn add_to_layout(layout: &mut EntityLayoutBuf);
+    /// Whether we want mutable access to the item we're querying for
+    const MUTABLE: bool;
 
-    /// Returns whether the component query asks for mutable access for _any_ component.
-    fn wants_any_mutable_access() -> bool;
+    fn add_to_layout(layout: &mut EntityLayoutBuf);
 }
 
 /// Type of values yielded by a query
@@ -53,14 +53,6 @@ pub type ComponentQueryItem<'a, Q> = <<Q as ComponentQuery>::Fetch as Fetch<'a>>
 /// to call `impl_query_for_tuple`.
 pub unsafe trait Fetch<'a>: Sized {
     type Item;
-
-    /// Attempts to acquire appropriate borrow access to the component storage for this 'fetch'.
-    ///
-    /// Will panic if appropriate access could not be obtained safely.
-    fn acquire_borrow(archetype: &Archetype);
-
-    /// Will release appropriate borrow access to the component storage for this 'fetch'.
-    fn release_borrow(archetype: &Archetype);
 
     /// Constructs an instance of [`Fetch`] from the given archetype.
     ///
@@ -90,16 +82,13 @@ pub unsafe trait Fetch<'a>: Sized {
 impl<'a, T: Component> ComponentQuery for &'a T {
     type Fetch = ComponentRead<T>;
 
+    const MUTABLE: bool = false;
+
     #[inline]
     fn add_to_layout(layout: &mut EntityLayoutBuf) {
         if layout.add_component_type(T::ID) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
-    }
-
-    #[inline(always)]
-    fn wants_any_mutable_access() -> bool {
-        false
     }
 }
 
@@ -108,22 +97,6 @@ pub struct ComponentRead<T>(NonNull<T>);
 
 unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
     type Item = &'a T;
-
-    #[inline]
-    fn acquire_borrow(archetype: &Archetype) {
-        let guard = archetype.get_component_guard(&T::ID).unwrap();
-        assert!(
-            guard.borrow(),
-            "Colliding shared access to component type '{}' in query",
-            std::any::type_name::<T>()
-        );
-    }
-
-    #[inline]
-    fn release_borrow(archetype: &Archetype) {
-        let guard = archetype.get_component_guard(&T::ID).unwrap();
-        guard.release();
-    }
 
     #[inline]
     fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
@@ -148,16 +121,13 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
 impl<'a, T: Component> ComponentQuery for &'a mut T {
     type Fetch = ComponentWrite<T>;
 
+    const MUTABLE: bool = true;
+
     #[inline]
     fn add_to_layout(layout: &mut EntityLayoutBuf) {
         if layout.add_component_type(T::ID) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
-    }
-
-    #[inline(always)]
-    fn wants_any_mutable_access() -> bool {
-        true
     }
 }
 
@@ -166,22 +136,6 @@ pub struct ComponentWrite<T>(NonNull<T>);
 
 unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
     type Item = &'a mut T;
-
-    #[inline]
-    fn acquire_borrow(archetype: &Archetype) {
-        let guard = archetype.get_component_guard(&T::ID).unwrap();
-        assert!(
-            guard.borrow_mut(),
-            "Colliding exclusive access to component type '{}' in query",
-            std::any::type_name::<T>()
-        );
-    }
-
-    #[inline]
-    fn release_borrow(archetype: &Archetype) {
-        let guard = archetype.get_component_guard(&T::ID).unwrap();
-        guard.release_mut();
-    }
 
     #[inline]
     fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
@@ -211,16 +165,6 @@ macro_rules! impl_query_for_tuple {
             type Item = ($($name::Item,)*);
 
             #[inline]
-            fn acquire_borrow(archetype: &$crate::Archetype) {
-                ($($name::acquire_borrow(archetype),)*);
-            }
-
-            #[inline]
-            fn release_borrow(archetype: &$crate::Archetype) {
-                ($($name::release_borrow(archetype),)*);
-            }
-
-            #[inline]
             fn create_at(archetype: &$crate::Archetype, entity: $crate::archetype::ArchetypeEntityIndex) -> Self {
                 ($($name::create_at(archetype, entity),)*)
             }
@@ -242,14 +186,11 @@ macro_rules! impl_query_for_tuple {
         impl<$($name: $crate::ComponentQuery),*> $crate::ComponentQuery for ($($name,)*) {
             type Fetch = ($($name::Fetch,)*);
 
+            const MUTABLE: bool = $($name::MUTABLE|)* false;
+
             #[inline]
             fn add_to_layout(layout: &mut $crate::EntityLayoutBuf) {
                 ($($name::add_to_layout(layout),)*);
-            }
-
-            #[inline]
-            fn wants_any_mutable_access() -> bool {
-                $($name::wants_any_mutable_access()|)* false
             }
         }
     };

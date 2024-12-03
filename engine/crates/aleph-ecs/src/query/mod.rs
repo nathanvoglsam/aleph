@@ -29,19 +29,50 @@
 
 pub mod query_filter;
 
+use std::marker::PhantomData;
+use std::ptr::NonNull;
+
 use crate::{
     ArchetypeIndex, ComponentQuery, ComponentQueryItem, EntityId, EntityLayout, EntityLayoutBuf,
     Fetch, QueryFilter, World,
 };
 
-pub struct Query<'world, Q: ComponentQuery, const CHECKED: bool> {
-    world: &'world World,
+pub struct QueryRef<'world, Q: ComponentQuery> {
+    pub(crate) inner: UnsafeQuery<Q>,
+    pub(crate) phantom: PhantomData<&'world World>,
+}
+
+impl<'world, Q: ComponentQuery> Iterator for QueryRef<'world, Q> {
+    type Item = (EntityId, ComponentQueryItem<'world, Q>);
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe { self.inner.next() }
+    }
+}
+
+pub struct QueryMut<'world, Q: ComponentQuery> {
+    pub(crate) inner: UnsafeQuery<Q>,
+    pub(crate) phantom: PhantomData<&'world mut World>,
+}
+
+impl<'world, Q: ComponentQuery> Iterator for QueryMut<'world, Q> {
+    type Item = (EntityId, ComponentQueryItem<'world, Q>);
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe { self.inner.next() }
+    }
+}
+
+pub struct UnsafeQuery<Q: ComponentQuery> {
+    world: NonNull<World>,
     archetype_filter: QueryFilter,
     state: QueryState<Q>,
 }
 
-impl<'world, Q: ComponentQuery, const CHECKED: bool> Query<'world, Q, CHECKED> {
-    pub(crate) fn new(world: &'world World) -> Self {
+impl<Q: ComponentQuery> UnsafeQuery<Q> {
+    pub(crate) fn new(world: NonNull<World>) -> Self {
         let mut matching = EntityLayoutBuf::new();
         Q::add_to_layout(&mut matching);
 
@@ -73,20 +104,20 @@ enum QueryState<Q: ComponentQuery> {
     Terminal,
 }
 
-impl<'world, Q: ComponentQuery, const CHECKED: bool> Iterator for Query<'world, Q, CHECKED> {
-    type Item = (EntityId, ComponentQueryItem<'world, Q>);
-
+impl<Q: ComponentQuery> UnsafeQuery<Q> {
     #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
+    pub unsafe fn next<'b>(&mut self) -> Option<(EntityId, ComponentQueryItem<'b, Q>)> {
         loop {
             match &mut self.state {
                 // Initial state. This state just does an initial bounds check and then transitions
                 // to archetype filtering.
                 QueryState::Entry => {
+                    let world = unsafe { self.world.as_ref() };
+
                     // If there's only a single archetype then we haven't inserted any entities yet
                     // because the 0th archetype is intentionally invalid to give ArchetypeIndex
                     // a niche value.
-                    if self.world.archetypes.len() <= 1 {
+                    if world.archetypes.len() <= 1 {
                         self.state = QueryState::Terminal;
                     } else {
                         self.state = QueryState::FindingArchetype(ArchetypeIndex::first());
@@ -98,27 +129,23 @@ impl<'world, Q: ComponentQuery, const CHECKED: bool> Iterator for Query<'world, 
                 // archetype if it matches, move to the next archetype if it doesn't, or move to
                 // the terminal state if there's no archetypes left.
                 QueryState::FindingArchetype(index) => {
+                    let world = unsafe { self.world.as_ref() };
+
                     // Safety: We never construct this state with an out of bounds index so this
                     //         unchecked index is safe to perform if the remains true.
                     let archetype =
-                        unsafe { self.world.archetypes.get_unchecked(index.0.get() as usize) };
+                        unsafe { world.archetypes.get_unchecked(index.0.get() as usize) };
 
                     if self.archetype_filter.filter_archetype(archetype) {
                         let (ids, ids_end) = archetype.entity_id_ptr_range();
                         let (ids, ids_end) = (ids.as_ptr(), ids_end.as_ptr());
                         let fetch = Q::Fetch::create(archetype);
 
-                        // If dynamic borrow checking is enabled then we must acquire our access.
-                        // This _may_ panic.
-                        if CHECKED {
-                            Q::Fetch::acquire_borrow(archetype)
-                        }
-
                         self.state = QueryState::IteratingArchetype(*index, ids, ids_end, fetch);
                     } else {
                         // If the next index is out of bounds then we've reached the end of the
                         // iterator
-                        match bounds_check_archetype_index_increment(&self.world, *index) {
+                        match bounds_check_archetype_index_increment(world, *index) {
                             Some(i) => self.state = QueryState::FindingArchetype(i),
                             None => self.state = QueryState::Terminal,
                         }
@@ -131,6 +158,8 @@ impl<'world, Q: ComponentQuery, const CHECKED: bool> Iterator for Query<'world, 
                 // to find more archetypes. If we've run out of archetypes we terminate, if we have
                 // some we return to searching for archetypes.
                 QueryState::IteratingArchetype(index, ids, ids_end, fetch) => {
+                    let world = unsafe { self.world.as_ref() };
+
                     if *ids != *ids_end {
                         // Safety: Borrow checking is handled at a higher layer, but we do bounds
                         //         check and ensure that our pointers are always in bounds and valid
@@ -148,16 +177,7 @@ impl<'world, Q: ComponentQuery, const CHECKED: bool> Iterator for Query<'world, 
                             return Some((out_id, out_fetch));
                         }
                     } else {
-                        // Safety: We never construct this state with an out of bounds index so this
-                        //         unchecked index is safe to perform if the remains true.
-                        let archetype =
-                            unsafe { self.world.archetypes.get_unchecked(index.0.get() as usize) };
-
-                        // If dynamic borrow checking is enabled then we must release our access.
-                        if CHECKED {
-                            Q::Fetch::release_borrow(archetype)
-                        }
-                        match bounds_check_archetype_index_increment(&self.world, *index) {
+                        match bounds_check_archetype_index_increment(world, *index) {
                             Some(i) => self.state = QueryState::FindingArchetype(i),
                             None => self.state = QueryState::Terminal,
                         }
@@ -170,30 +190,6 @@ impl<'world, Q: ComponentQuery, const CHECKED: bool> Iterator for Query<'world, 
                     return None;
                 }
             }
-        }
-    }
-}
-
-impl<'world, Q: ComponentQuery, const CHECKED: bool> Drop for Query<'world, Q, CHECKED> {
-    fn drop(&mut self) {
-        // If we drop a Query while partially through iterating an archetype we have to release the
-        // dynamic borrows on that archetype. If we don't it will leave the borrows active and we'll
-        // never be able to access that archetype mutably again (or at all if it was already a
-        // mutable borrow)
-        match &mut self.state {
-            QueryState::Entry => {}
-            QueryState::FindingArchetype(_) => {}
-            QueryState::IteratingArchetype(index, _ids, _ids_end, _fetch) => {
-                // Safety: We never construct this state with an out of bounds index so this
-                //         unchecked index is safe to perform if the remains true.
-                let archetype =
-                    unsafe { self.world.archetypes.get_unchecked(index.0.get() as usize) };
-
-                if CHECKED {
-                    Q::Fetch::release_borrow(archetype)
-                }
-            }
-            QueryState::Terminal => {}
         }
     }
 }

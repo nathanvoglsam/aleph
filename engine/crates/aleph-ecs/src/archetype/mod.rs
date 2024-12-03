@@ -30,7 +30,6 @@
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
-use aleph_atomic_borrow::AtomicBorrow;
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
 use allocator_api2::boxed::Box as ABox;
@@ -80,9 +79,6 @@ pub struct ComponentStorage {
     /// The buffer that stores our components
     pub data: VirtualVec<u8>,
 
-    /// A guard object that enables dynamic borrow checking of our component storages
-    pub guard: AtomicBorrow,
-
     /// A description of the type being stored
     pub desc: ObjectDescription,
 }
@@ -96,11 +92,7 @@ impl ComponentStorage {
         // Pre-fill the first slot with zeroes, it will never be accessed
         data.resize(desc.size, 0);
 
-        Self {
-            data,
-            guard: AtomicBorrow::new(),
-            desc,
-        }
+        Self { data, desc }
     }
 }
 
@@ -337,12 +329,6 @@ impl Archetype {
 
             drop_fn(NonNull::from(component).cast(), 1);
         }
-    }
-
-    pub(crate) fn get_component_guard(&self, component_type: &Uuid) -> Option<&AtomicBorrow> {
-        // Lookup the storage index for the borrow guard
-        let storage_index = self.storage_indices.get(component_type)?;
-        Some(&self.storages[storage_index].guard)
     }
 
     pub(crate) fn get_component_ptr(

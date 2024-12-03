@@ -424,59 +424,6 @@ fn query_test() {
 }
 
 #[test]
-#[should_panic]
-fn query_checked_test_colliding_access() {
-    let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
-    let _scale_ids = world.extend((
-        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
-        [Scale::new(5.0, 6.0), Scale::new(7.0, 8.0)],
-    ));
-
-    let _mesh_ids = world.extend((
-        [Position::new(1.5, 2.5), Position::new(3.5, 4.5)],
-        [Mesh::new(5), Mesh::new(6)],
-    ));
-
-    let query_a = world.query::<&mut Position>();
-    let query_b = world.query::<(&Position, &mut Mesh)>();
-
-    let iter = query_a.zip(query_b);
-    assert_eq!(iter.count(), 2);
-}
-
-#[test]
-fn query_checked_test_safe_access() {
-    let mut world = World::new(Default::default()).unwrap();
-
-    world.register::<Position>();
-    world.register::<Scale>();
-    world.register::<Mesh>();
-
-    let _scale_ids = world.extend((
-        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
-        [Scale::new(5.0, 6.0), Scale::new(7.0, 8.0)],
-    ));
-
-    let _mesh_ids = world.extend((
-        [Position::new(1.5, 2.5), Position::new(3.5, 4.5)],
-        [Mesh::new(5), Mesh::new(6)],
-    ));
-
-    // query_b will iterate the same archetype as query_a, but only query_a will ask for access to
-    // 'Scale' so both queries can run in parallel.
-    let query_a = world.query::<(&Position, &mut Scale)>();
-    let query_b = world.query::<&Position>();
-
-    let iter = query_a.zip(query_b);
-    assert_eq!(iter.count(), 2);
-}
-
-#[test]
 fn is_world_send_and_sync() {
     fn the_send_sync_filter<T: Send + Sync>(_v: T) {
         let _do_nothing = ();

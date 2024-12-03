@@ -28,7 +28,9 @@
 //
 
 use std::collections::HashMap;
+use std::marker::PhantomData;
 use std::num::NonZeroU32;
+use std::ptr::NonNull;
 
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
@@ -40,7 +42,7 @@ use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
     ComponentQueryItem, ComponentRegistry, ComponentSource, EntityId, EntityLayout,
     EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, IntoOneComponentSource,
-    OneComponentSource, Query,
+    OneComponentSource, QueryMut, QueryRef, UnsafeQuery,
 };
 
 ///
@@ -412,7 +414,7 @@ impl World {
         use crate::component::component_query::Fetch;
 
         assert!(
-            !Q::wants_any_mutable_access(),
+            !Q::MUTABLE,
             "Tried to execute a query with mutable access without mutable world"
         );
 
@@ -449,26 +451,34 @@ impl World {
         }
     }
 
-    // TODO: Add checked query functions to enable getting shared references
+    /// Constructs a safe query that can only access components immutably
+    pub fn query<Q: ComponentQuery>(&self) -> QueryRef<Q> {
+        assert!(
+            !Q::MUTABLE,
+            "Tried to execute a query with mutable access without mutable world"
+        );
 
-    /// Constructs a safe query that performs no runtime borrow checking, but will only allow shared
-    /// access to any component in the query.
-    pub fn query<Q: ComponentQuery>(&self) -> Query<Q, true> {
-        Query::new(self)
+        QueryRef {
+            inner: self.query_unchecked::<Q>(),
+            phantom: PhantomData::default(),
+        }
     }
 
-    /// Constructs a safe query that performs no runtime borrow checking, and allows mutable access
-    /// to components in the query, but requires exclusive access to the world.
-    pub fn query_mut<Q: ComponentQuery>(&mut self) -> Query<Q, false> {
-        Query::new(self)
+    /// Constructs a safe query that can access components mutably but requires an exclusive borrow
+    /// of the world
+    pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<Q> {
+        QueryMut {
+            inner: self.query_unchecked::<Q>(),
+            phantom: PhantomData::default(),
+        }
     }
 
-    /// An unsafe version of [World::query] that allows mutable access through a shared reference
-    /// but doesn't do any checking to ensure that this is safe to do.
-    ///
-    ///
-    pub unsafe fn query_unchecked<Q: ComponentQuery>(&self) -> Query<Q, false> {
-        Query::new(self)
+    /// Constructs an unsafe query that does not constrain lifetime access soundness of the returned
+    /// query items. Using this query is very unsafe to use ([`UnsafeQuery::next`] is unsafe) but
+    /// allows for the caller to do their own borrow checking.
+    pub fn query_unchecked<Q: ComponentQuery>(&self) -> UnsafeQuery<Q> {
+        // TODO: we need unsafe cells on the component storage to make this even possible
+        UnsafeQuery::new(NonNull::from(self))
     }
 }
 
