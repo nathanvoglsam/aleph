@@ -46,7 +46,8 @@ pub use self::component::component_query::{
 };
 pub use self::component::component_registry::ComponentRegistry;
 pub use self::component::component_source::{
-    ComponentSource, IntoComponentSource, IntoOneComponentSource, OneComponentSource,
+    CheckedSource, ComponentSource, IntoComponentSource, IntoOneComponentSource,
+    OneComponentSource, UnsafeComponentSource, UnsafeComponentSourceEntry,
 };
 pub use self::component::{Component, ComponentIdMap};
 pub use self::entity::entity_layout::{EntityLayout, EntityLayoutBuf};

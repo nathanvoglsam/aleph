@@ -35,7 +35,7 @@ use aleph_object_system::ObjectDescription;
 use allocator_api2::boxed::Box as ABox;
 use virtual_buffer::VirtualVec;
 
-use crate::{ComponentRegistry, ComponentSource, EntityId, EntityLayout};
+use crate::{ComponentRegistry, EntityId, EntityLayout, UnsafeComponentSource};
 
 ///
 /// This index wrapper represents an index into the list of archetypes within a world.
@@ -260,14 +260,19 @@ impl Archetype {
     /// This will not perform any checks to ensure existing data isn't overwritten, this is
     /// effectively a wrapper around `memcpy`. It will, however, ensure that data is not written or
     /// read out of bounds.
-    pub(crate) fn copy_from_source<T: ComponentSource>(
+    pub(crate) unsafe fn unsafe_copy_from_source(
         &mut self,
         base: ArchetypeEntityIndex,
-        source: T,
+        source: &UnsafeComponentSource,
     ) {
         // Copy the component data into the archetype buffers
-        for (i, comp) in source.entity_layout().iter().enumerate() {
-            let source = source.data_for(comp);
+        for (i, comp) in self.entity_layout.iter().enumerate() {
+            // Safety: Caller's job to ensure components is valid to read
+            let components = source.components.as_ref();
+
+            // Safety: Caller's job to ensure that all IDs in 'layout' are also in the components
+            //         list.
+            let data = components.iter().find(|v| v.id == *comp).unwrap_unchecked();
 
             // Get the size of the type we're copying from the buffers
             let type_size = self.storages[i].desc.size;
@@ -276,15 +281,12 @@ impl Archetype {
             let base = base.0.get() as usize;
             let base = base * type_size;
 
-            // Calculate the end of the region to copy into
-            let end = base + source.len();
-
             // Get the target slice to copy into
             let target = self.storages[i].data.as_slice_mut();
-            let target = &mut target[base..end];
+            let target = NonNull::new_unchecked(target.as_mut_ptr().add(base));
 
             // Perform the actual copy
-            target.copy_from_slice(source);
+            target.copy_from_nonoverlapping(data.ptr, source.count as usize * type_size);
         }
     }
 

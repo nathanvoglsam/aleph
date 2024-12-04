@@ -204,6 +204,48 @@ fn extend_test_one() {
 }
 
 #[test]
+#[should_panic]
+fn extend_test_non_matched_sizes() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let _ids = world.extend((
+        vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        vec![Scale::new(5.0, 6.0)],
+    ));
+}
+
+#[test]
+#[should_panic]
+fn extend_test_duplicate_components() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let _ids = world.extend((
+        vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        vec![Position::new(5.0, 6.0), Position::new(7.0, 8.0)],
+    ));
+}
+
+#[test]
+#[should_panic]
+fn extend_test_duplicate_components_2() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let _id = world.extend_one((Position::new(1.0, 2.0), Position::new(5.0, 6.0)));
+}
+
+#[test]
 fn remove_entity_array() {
     let mut world = World::new(Default::default()).unwrap();
 
