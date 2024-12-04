@@ -292,11 +292,11 @@ impl Archetype {
 
     /// This function will write the provided `data` into the storage for the given `component_type`
     /// at the given `slot` within the storage.
-    pub(crate) fn copy_component_data_into_slot(
+    pub(crate) unsafe fn copy_component_data_into_slot(
         &mut self,
         slot: ArchetypeEntityIndex,
         component_type: &Uuid,
-        data: &[u8],
+        data: NonNull<u8>,
     ) {
         // Get the index of the type inside the archetype and lookup the size of the type
         let type_index = self.storage_indices.get(component_type).unwrap();
@@ -305,14 +305,13 @@ impl Archetype {
         // Get the bounds of the component's data
         let dest_base = slot.0.get() as usize;
         let dest_base = dest_base * type_size;
-        let dest_end = dest_base + type_size;
 
         // Create the slice to copy into, no dropping is needed as the data is uninitialized
         let dest_buffer = self.storages[type_index].data.as_slice_mut();
-        let dest_buffer = &mut dest_buffer[dest_base..dest_end];
+        let dest_buffer = NonNull::new_unchecked(dest_buffer.as_mut_ptr().add(dest_base));
 
         // Perform the actual copy
-        dest_buffer.copy_from_slice(data);
+        dest_buffer.copy_from_nonoverlapping(data, type_size);
     }
 
     #[inline]

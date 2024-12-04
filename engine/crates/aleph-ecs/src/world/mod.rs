@@ -313,18 +313,11 @@ impl World {
     ///
     /// Returns true if the component is successfully inserted, otherwise returns false.
     pub fn add_component<T: Component>(&mut self, entity: EntityId, component: T) -> bool {
-        // Construct a slice of the component data. This will be used by the underlying
-        // implementation
-        let data = unsafe {
-            let data = &component as *const T as *const u8;
-            let len = std::mem::size_of::<T>();
-            std::slice::from_raw_parts(data, len)
-        };
-
         // Perform the call, using mem::forget to not drop the component if ownership was
         // successfully transferred into the archetype
         unsafe {
-            if self.add_component_dynamic(entity, &T::ID, data) {
+            let data = NonNull::from(&component);
+            if self.add_component_dynamic(entity, &T::ID, data.cast()) {
                 std::mem::forget(component);
                 true
             } else {
@@ -466,7 +459,7 @@ impl World {
         &mut self,
         entity: EntityId,
         component: &Uuid,
-        data: &[u8],
+        data: NonNull<u8>,
     ) -> bool {
         // Lookup the entity location by the provided ID, returning false if the ID is invalid
         let location = if let Some(location) = self.entities.lookup(entity) {
