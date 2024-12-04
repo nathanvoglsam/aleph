@@ -42,6 +42,7 @@ mod utils;
 pub use self::archetype::{Archetype, ArchetypeEntityIndex, ArchetypeIndex};
 pub use self::component::component_query::{
     ComponentQuery, ComponentQueryItem, ComponentRead, ComponentWrite, Fetch,
+    ReadOnlyComponentQuery,
 };
 pub use self::component::component_registry::ComponentRegistry;
 pub use self::component::component_source::{

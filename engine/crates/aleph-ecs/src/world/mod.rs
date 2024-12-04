@@ -42,7 +42,7 @@ use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
     ComponentQueryItem, ComponentRegistry, ComponentSource, EntityId, EntityLayout,
     EntityLayoutBuf, EntityLocation, EntityStorage, IntoComponentSource, IntoOneComponentSource,
-    OneComponentSource, QueryMut, QueryRef, UnsafeQuery,
+    OneComponentSource, QueryMut, QueryRef, ReadOnlyComponentQuery, UnsafeQuery,
 };
 
 ///
@@ -410,17 +410,16 @@ impl World {
     }
 
     #[inline]
-    pub fn query_one<Q: ComponentQuery>(&self, entity: EntityId) -> Option<ComponentQueryItem<Q>> {
+    pub fn query_one<Q: ReadOnlyComponentQuery>(
+        &self,
+        entity: EntityId,
+    ) -> Option<ComponentQueryItem<Q::QueryType>> {
         use crate::component::component_query::Fetch;
-
-        assert!(
-            !Q::MUTABLE,
-            "Tried to execute a query with mutable access without mutable world"
-        );
 
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &self.archetypes[location.archetype.0.get() as usize];
-            let fetch = Q::Fetch::create_at(archetype, location.entity);
+            let fetch =
+                <Q::QueryType as ComponentQuery>::Fetch::create_at(archetype, location.entity);
 
             // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
             //         break aliasing rules. Otherwise the entity lookup has performed all the
@@ -452,14 +451,9 @@ impl World {
     }
 
     /// Constructs a safe query that can only access components immutably
-    pub fn query<Q: ComponentQuery>(&self) -> QueryRef<Q> {
-        assert!(
-            !Q::MUTABLE,
-            "Tried to execute a query with mutable access without mutable world"
-        );
-
+    pub fn query<Q: ReadOnlyComponentQuery>(&self) -> QueryRef<Q::QueryType> {
         QueryRef {
-            inner: self.query_unchecked::<Q>(),
+            inner: Self::query_unchecked::<Q::QueryType>(NonNull::from(self)),
             phantom: PhantomData::default(),
         }
     }
@@ -468,7 +462,7 @@ impl World {
     /// of the world
     pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<Q> {
         QueryMut {
-            inner: self.query_unchecked::<Q>(),
+            inner: Self::query_unchecked::<Q>(NonNull::from(self)),
             phantom: PhantomData::default(),
         }
     }
@@ -476,9 +470,8 @@ impl World {
     /// Constructs an unsafe query that does not constrain lifetime access soundness of the returned
     /// query items. Using this query is very unsafe to use ([`UnsafeQuery::next`] is unsafe) but
     /// allows for the caller to do their own borrow checking.
-    pub fn query_unchecked<Q: ComponentQuery>(&self) -> UnsafeQuery<Q> {
-        // TODO: we need unsafe cells on the component storage to make this even possible
-        UnsafeQuery::new(NonNull::from(self))
+    pub fn query_unchecked<Q: ComponentQuery>(this: NonNull<Self>) -> UnsafeQuery<Q> {
+        UnsafeQuery::new(this)
     }
 }
 
@@ -487,7 +480,7 @@ impl World {
 ///
 impl World {
     /// The function provides the raw implementation of adding to the component registry using an
-    /// arbitrary `ComponentTypeDescription`.
+    /// arbitrary [`ObjectDescription`].
     ///
     /// # Safety
     ///

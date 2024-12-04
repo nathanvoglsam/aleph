@@ -41,6 +41,10 @@ pub trait ComponentQuery: Send + Sync {
     fn add_to_layout(layout: &mut EntityLayoutBuf);
 }
 
+pub trait ReadOnlyComponentQuery: Send + Sync {
+    type QueryType: ComponentQuery;
+}
+
 /// Type of values yielded by a query
 ///
 /// Once rust offers generic associated types, this will be moved into [`Query`].
@@ -90,6 +94,10 @@ impl<'a, T: Component> ComponentQuery for &'a T {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
     }
+}
+
+impl<'a, T: Component> ReadOnlyComponentQuery for &'a T {
+    type QueryType = Self;
 }
 
 /// Internal type that implements `Fetch` for shared references
@@ -192,6 +200,10 @@ macro_rules! impl_query_for_tuple {
             fn add_to_layout(layout: &mut $crate::EntityLayoutBuf) {
                 ($($name::add_to_layout(layout),)*);
             }
+        }
+
+        impl<$($name: $crate::ReadOnlyComponentQuery + $crate::ComponentQuery),*> $crate::ReadOnlyComponentQuery for ($($name,)*) {
+            type QueryType = ($($name,)*);
         }
     };
 }

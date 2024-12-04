@@ -105,6 +105,8 @@ enum QueryState<Q: ComponentQuery> {
 }
 
 impl<Q: ComponentQuery> UnsafeQuery<Q> {
+    /// The actual component query iterator implementation that is wrapped by [`QueryRef`] and
+    /// [`QueryMut`].
     #[inline]
     pub unsafe fn next<'b>(&mut self) -> Option<(EntityId, ComponentQueryItem<'b, Q>)> {
         loop {
