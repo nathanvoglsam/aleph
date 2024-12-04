@@ -84,7 +84,7 @@ impl<'a> BoardScope<'a> {
     }
 
     /// Look up a published item by its type. May return None if no value has been published yet.
-    pub fn get<'s, T: BoardParamId>(&'s self) -> Option<&T::Output<'s>> {
+    pub fn get<'s, T: BoardParamId>(&'s self) -> Option<&'s T::Output<'s>> {
         let t = TypeId::of::<T>();
         let ptr = self.v.table.get(&t).copied();
 
