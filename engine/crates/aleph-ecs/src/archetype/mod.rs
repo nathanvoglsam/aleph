@@ -33,7 +33,7 @@ use std::ptr::NonNull;
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
 use allocator_api2::boxed::Box as ABox;
-use virtual_buffer::VirtualVec;
+use virtual_buffer::{VirtualBuffer, VirtualVec};
 
 use crate::{ComponentRegistry, EntityId, EntityLayout, UnsafeComponentSource};
 
@@ -62,6 +62,10 @@ impl ArchetypeIndex {
         // Safety: uuuh, seems pretty obvious
         unsafe { Self(NonZeroU32::new_unchecked(1)) }
     }
+
+    pub const fn inner(&self) -> NonZeroU32 {
+        self.0
+    }
 }
 
 ///
@@ -72,29 +76,49 @@ impl ArchetypeIndex {
 ///
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct ArchetypeEntityIndex(pub NonZeroU32);
+pub struct ArchetypeEntityIndex(NonZeroU32);
+
+impl ArchetypeEntityIndex {
+    /// Construct a new ArchetypeEntityIndex from the given raw u32
+    pub const fn new(index: NonZeroU32) -> ArchetypeEntityIndex {
+        Self(index)
+    }
+
+    /// Construct a new ArchetypeEntityIndex from the given raw u32
+    pub const fn new_checked(index: u32) -> Option<ArchetypeEntityIndex> {
+        if let Some(v) = NonZeroU32::new(index) {
+            Some(ArchetypeEntityIndex(v))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the first valid ArchetypeEntityIndex, which will be '1'
+    pub const fn first() -> ArchetypeEntityIndex {
+        // Safety: uuuh, seems pretty obvious
+        unsafe { Self(NonZeroU32::new_unchecked(1)) }
+    }
+
+    pub const fn inner(&self) -> NonZeroU32 {
+        self.0
+    }
+
+    const fn get_index(&self) -> usize {
+        self.0.get() as usize - 1
+    }
+}
 
 #[repr(C)]
 pub struct ComponentStorage {
-    /// The buffer that stores our components
-    pub data: VirtualVec<u8>,
+    /// Pointer to the start of the virtual memory region that stores a given type of component
+    pub data: NonNull<u8>,
 
     /// A description of the type being stored
     pub desc: ObjectDescription,
 }
 
-impl ComponentStorage {
-    pub fn with_capacity(desc: ObjectDescription, capacity: usize) -> Self {
-        let capacity = desc.size * capacity;
-        let mut data =
-            VirtualVec::new(capacity).expect("Failed to reserve address space for components");
-
-        // Pre-fill the first slot with zeroes, it will never be accessed
-        data.resize(desc.size, 0);
-
-        Self { data, desc }
-    }
-}
+unsafe impl Send for ComponentStorage {}
+unsafe impl Sync for ComponentStorage {}
 
 // TODO: State system based on linked list described here: https://ajmmertens.medium.com/why-storing-state-machines-in-ecs-is-a-bad-idea-742de7a18e59
 
@@ -141,6 +165,9 @@ pub struct Archetype {
     /// index into the `component_descriptions` and `storages` fields.
     storage_indices: ComponentMapper,
 
+    /// The virtual memory allocation that backs the component storages
+    component_buffer: VirtualBuffer,
+
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index
     storages: Box<[ComponentStorage]>,
@@ -153,6 +180,9 @@ pub struct Archetype {
 
     /// The maximum number of entities that can be stored in this archetype
     capacity: u32,
+
+    /// The current number of entities we have space commited in the virtual allocation
+    allocated: u32,
 
     /// The number of entities currently stored in this archetype
     len: u32,
@@ -184,37 +214,61 @@ impl Archetype {
 /// Internal implementations
 impl Archetype {
     pub(crate) fn new(capacity: u32, layout: &EntityLayout, registry: &ComponentRegistry) -> Self {
-        // Add 1 so there's space for the always empty 0th element
-        let storage_capacity = capacity.checked_add(1).unwrap();
-
         // Produce the index map from the layout
         let storage_indices = ComponentMapper {
             table: layout.iter().enumerate().map(|v| (*v.1, v.0)).collect(),
         };
 
+        let mut num_pages = 0;
+        for v in layout.iter() {
+            let type_description = registry
+                .lookup(v)
+                .expect("Tried to create an archetype with an unregistered component type")
+                .clone();
+
+            let wanted_bytes = capacity as usize * type_description.size;
+            let wanted_pages = wanted_bytes.div_ceil(VirtualBuffer::page_size());
+            num_pages += wanted_pages;
+        }
+
+        // Clamp to a minimum of 1 page to solve an edge case for the dummy archetype in the 0th
+        // slot which will ask for 0 pages as it stores no components
+        let component_buffer = VirtualBuffer::reserve(num_pages.max(1)).unwrap();
+
         // Create a virtual memory reservation for each component's storage
+        let component_ptr = component_buffer.data();
+        let mut base_page = 0;
         let storages = layout
             .iter()
             .map(|v| {
-                let type_description = registry
+                let desc = registry
                     .lookup(v)
                     .expect("Tried to create an archetype with an unregistered component type")
                     .clone();
-                ComponentStorage::with_capacity(type_description, storage_capacity as _)
+
+                let wanted_bytes = capacity as usize * desc.size;
+                let wanted_pages = wanted_bytes.div_ceil(VirtualBuffer::page_size());
+
+                let data = unsafe { component_ptr.add(base_page * VirtualBuffer::page_size()) };
+
+                base_page += wanted_pages;
+
+                ComponentStorage { data, desc }
             })
             .collect();
 
         // Create the buffer for mapping entity indices back to an entity id
-        let mut entity_ids = VirtualVec::new(storage_capacity as usize)
+        let entity_ids = VirtualVec::new(capacity as usize)
             .expect("Failed to reserve address space for entity id list");
-        entity_ids.push(EntityId::null());
 
         Self {
             entity_layout: layout.to_owned().into_boxed_slice(),
             storage_indices,
+            component_buffer,
             storages,
             entity_ids,
             capacity,
+            allocated: 0,
             len: 0,
         }
     }
@@ -225,10 +279,6 @@ impl Archetype {
     /// The function returns the base index where the first newly allocated entity can be found.
     /// All new entities will be contiguous.
     pub(crate) fn allocate_entities(&mut self, count: u32) -> ArchetypeEntityIndex {
-        // The base will be the index of the first slot after the end of the densely packed section
-        //
-        // We need to offset by 1 because the 1st slot in memory is skipped to allow using a 0 index
-        // as a niche value.
         let base = NonZeroU32::new(self.len.checked_add(1).unwrap()).unwrap();
 
         let new_size = self.len.checked_add(count).unwrap();
@@ -239,13 +289,25 @@ impl Archetype {
             );
         }
 
-        for storage in self.storages.iter_mut() {
-            let bytes = count as usize * storage.desc.size;
-            storage.data.resize(storage.data.len() + bytes, 0);
+        if new_size > self.allocated {
+            // Minimum number of entities to have space for is 64 and max is capacity
+            let mut new_allocated = self.allocated.checked_mul(2).unwrap().max(1);
+            while new_allocated < new_size {
+                new_allocated = new_allocated.checked_mul(2).unwrap();
+            }
+            let new_allocated = u32::clamp(new_allocated, 64, self.capacity);
+            for storage in self.storages.iter_mut() {
+                unsafe {
+                    let start = storage.data.byte_offset_from(self.component_buffer.data());
+                    let start = start as usize;
+                    let end = start + new_allocated as usize * storage.desc.size;
+                    self.component_buffer.commit(start..end).unwrap();
+                }
+            }
+            self.allocated = new_allocated;
         }
 
-        self.entity_ids
-            .resize(count as usize + self.entity_ids.len(), EntityId::null());
+        self.entity_ids.resize(new_size as usize, EntityId::null());
 
         self.len = new_size;
 
@@ -278,12 +340,11 @@ impl Archetype {
             let type_size = self.storages[i].desc.size;
 
             // Calculate the base index for where to start copying into the buffer
-            let base = base.0.get() as usize;
+            let base = base.get_index();
             let base = base * type_size;
 
             // Get the target slice to copy into
-            let target = self.storages[i].data.as_slice_mut();
-            let target = NonNull::new_unchecked(target.as_mut_ptr().add(base));
+            let target = self.storages[i].data.add(base);
 
             // Perform the actual copy
             target.copy_from_nonoverlapping(data.ptr, source.count as usize * type_size);
@@ -303,12 +364,11 @@ impl Archetype {
         let type_size = self.storages[type_index].desc.size;
 
         // Get the bounds of the component's data
-        let dest_base = slot.0.get() as usize;
+        let dest_base = slot.get_index();
         let dest_base = dest_base * type_size;
 
         // Create the slice to copy into, no dropping is needed as the data is uninitialized
-        let dest_buffer = self.storages[type_index].data.as_mut_ptr();
-        let dest_buffer = NonNull::new_unchecked(dest_buffer.add(dest_base));
+        let dest_buffer = self.storages[type_index].data.add(dest_base);
 
         // Perform the actual copy
         dest_buffer.copy_from_nonoverlapping(data, type_size);
@@ -325,13 +385,10 @@ impl Archetype {
         let drop_fn = self.storages[type_index].desc.destructor;
 
         if let Some(drop_fn) = drop_fn {
-            let slot = slot.0.get() as usize;
-            let component = self.storages[type_index]
-                .data
-                .as_mut_ptr()
-                .add(slot * type_size);
+            let slot = slot.get_index();
+            let component = self.storages[type_index].data.add(slot * type_size);
 
-            drop_fn(NonNull::new_unchecked(component).cast(), 1);
+            drop_fn(component.cast(), 1);
         }
     }
 
@@ -340,7 +397,7 @@ impl Archetype {
         slot: ArchetypeEntityIndex,
         component_type: &Uuid,
     ) -> Option<NonNull<u8>> {
-        let slot = slot.0.get() as usize;
+        let slot = slot.get_index();
 
         // Lookup the storage index, load the size of the type and get the storage pointer
         let storage_index = self.storage_indices.get(component_type)?;
@@ -375,11 +432,11 @@ impl Archetype {
         // inside the archetype
         //
         // This returns the entity that needs to be updated and whether an update is needed
-        self.entity_ids.swap_remove(index.0.get() as usize);
-        let out_index = if index.0.get() as usize == self.entity_ids.len() {
+        self.entity_ids.swap_remove(index.get_index());
+        let out_index = if index.get_index() == self.entity_ids.len() {
             None
         } else {
-            Some(self.entity_ids[index.0.get() as usize])
+            Some(self.entity_ids[index.get_index()])
         };
 
         for i in 0..self.storages.len() {
@@ -403,8 +460,12 @@ impl Archetype {
         storage_index: usize,
         index: ArchetypeEntityIndex,
     ) {
-        let index = index.0.get() as usize;
-        let last_index = self.len as usize;
+        if self.len == 0 {
+            return;
+        }
+
+        let index = index.get_index();
+        let last_index = (self.len - 1) as usize;
         if index == last_index {
             // Swap and pop at the end of the storage just decays to a regular pop operation.
             self.pop_for_storage::<DROP>(storage_index);
@@ -415,8 +476,8 @@ impl Archetype {
             let remove_offset = index * desc.size;
             let last_offset = last_index * desc.size;
 
-            let remove = storage.data.as_mut_ptr().add(remove_offset);
-            let last = storage.data.as_ptr().add(last_offset);
+            let remove = storage.data.add(remove_offset);
+            let last = storage.data.add(last_offset);
 
             if DROP {
                 if let Some(fn_drop) = desc.destructor {
@@ -433,7 +494,7 @@ impl Archetype {
                     //         incorrect by providing an incorrect ComponentTypeDescription using an
                     //         unsafe function.
                     unsafe {
-                        fn_drop(NonNull::new_unchecked(remove).cast(), 1);
+                        fn_drop(remove.cast(), 1);
                     }
                 }
             }
@@ -448,30 +509,32 @@ impl Archetype {
     ///
     /// DO NOT FORGET TO MANUALLY DECREMENT `self.len`
     pub(crate) fn pop_for_storage<const DROP: bool>(&mut self, storage_index: usize) {
-        if self.len != 0 {
-            let storage = &mut self.storages[storage_index];
-            let desc = &storage.desc;
+        if self.len == 0 {
+            return;
+        }
 
-            if DROP {
-                if let Some(fn_drop) = desc.destructor {
-                    let last_index = (self.len - 1) as usize;
+        let storage = &mut self.storages[storage_index];
+        let desc = &storage.desc;
 
-                    // SAFETY: This handles calling the drop function for a component through a raw
-                    //         pointer. The signature is type erased so the interface is unsafe.
-                    //
-                    //         This is just a type-erased call to `drop::<T>()` where T is the type of
-                    //         the component. The `Archetype` data structure's safe interface ensures
-                    //         the drop function is only called with valid data.
-                    //
-                    //         UB can be triggered if `fn_drop` is not implemented correctly, but this
-                    //         is impossible from safe code as the implementation for each component is
-                    //         auto generated from a generic implementation. The function can only be
-                    //         incorrect by providing an incorrect ComponentTypeDescription using an
-                    //         unsafe function.
-                    unsafe {
-                        let last_ptr = storage.data.as_mut_ptr().add(last_index * desc.size);
-                        fn_drop(NonNull::new_unchecked(last_ptr).cast(), 1);
-                    }
+        if DROP {
+            if let Some(fn_drop) = desc.destructor {
+                let last_index = (self.len - 1) as usize;
+
+                // SAFETY: This handles calling the drop function for a component through a raw
+                //         pointer. The signature is type erased so the interface is unsafe.
+                //
+                //         This is just a type-erased call to `drop::<T>()` where T is the type of
+                //         the component. The `Archetype` data structure's safe interface ensures
+                //         the drop function is only called with valid data.
+                //
+                //         UB can be triggered if `fn_drop` is not implemented correctly, but this
+                //         is impossible from safe code as the implementation for each component is
+                //         auto generated from a generic implementation. The function can only be
+                //         incorrect by providing an incorrect ComponentTypeDescription using an
+                //         unsafe function.
+                unsafe {
+                    let last_ptr = storage.data.add(last_index * desc.size);
+                    fn_drop(last_ptr.cast(), 1);
                 }
             }
         }
@@ -486,30 +549,30 @@ impl Archetype {
         let new_index = self.allocate_entities(1);
 
         // Copy the entity ID slot across
-        self.entity_ids[new_index.0.get() as usize] = source.entity_ids[target.0.get() as usize];
+        self.entity_ids[new_index.get_index()] = source.entity_ids[target.get_index()];
 
         for (source_index, source_id) in self.entity_layout.iter().enumerate() {
             // Get the size of the component to copy
             let type_size = self.storages[source_index].desc.size;
 
             // Get the bounds of the data to copy
-            let source_base = target.0.get() as usize;
+            let source_base = target.get_index();
             let source_base = source_base * type_size;
 
             // Create a slice of the data to copy, exiting the loop if the component is not present
             // in the source archetype
             let source_buffer = if let Some(source_index) = source.storage_indices.get(&source_id) {
-                source.storages[source_index].data.as_ptr().add(source_base)
+                source.storages[source_index].data.add(source_base)
             } else {
                 continue;
             };
 
             // Get the bounds of the memory to copy the data to
-            let dest_base = new_index.0.get() as usize;
+            let dest_base = new_index.get_index();
             let dest_base = dest_base * type_size;
 
             // Create a slice of the destination to copy into
-            let dest_buffer = self.storages[source_index].data.as_mut_ptr().add(dest_base);
+            let dest_buffer = self.storages[source_index].data.add(dest_base);
 
             // Perform the actual copy
             dest_buffer.copy_from_nonoverlapping(source_buffer, type_size);
@@ -522,7 +585,7 @@ impl Archetype {
     ///
     /// Used for initializing the ID when entities are inserted.
     pub(crate) fn update_entity_id(&mut self, slot: ArchetypeEntityIndex, id: EntityId) {
-        self.entity_ids[slot.0.get() as usize] = id;
+        self.entity_ids[slot.get_index()] = id;
     }
 
     /// Returns the start and end address for the entity id list so it can be used by query
@@ -530,7 +593,6 @@ impl Archetype {
     pub(crate) fn entity_id_ptr_range(&self) -> (NonNull<EntityId>, NonNull<EntityId>) {
         unsafe {
             let ptr = self.entity_ids.as_ptr() as *mut EntityId;
-            let ptr = ptr.add(1);
             let ptr_end = ptr.add(self.len() as usize);
             let ptr = NonNull::new_unchecked(ptr);
             let ptr_end = NonNull::new_unchecked(ptr_end);
@@ -550,7 +612,6 @@ impl Drop for Archetype {
         for storage in self.storages.iter_mut() {
             // Lookup the size and drop fn so we can iterate over the components in the storage
             let desc = &storage.desc;
-            let type_size = desc.size;
 
             // Only need to iterate if the drop function is actually defined
             if let Some(drop_fn) = desc.destructor {
@@ -558,8 +619,8 @@ impl Drop for Archetype {
                 //         is a sound operation. The drop function will never be invalid to call if
                 //         there is no unsafe code interfacing with the world.
                 unsafe {
-                    let current = storage.data.as_mut_ptr().add(type_size);
-                    drop_fn(NonNull::new_unchecked(current).cast(), self.len as _);
+                    let current = storage.data;
+                    drop_fn(current.cast(), self.len as _);
                 }
             }
         }

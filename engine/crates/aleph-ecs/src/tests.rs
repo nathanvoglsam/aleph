@@ -34,12 +34,18 @@ use object_system::unsafe_impl_iobject;
 
 use crate::World;
 
-#[derive(Default, PartialEq, Debug)]
+#[derive(Clone, Default, PartialEq, Debug)]
 struct Position {
     pub x: f32,
     pub y: f32,
 }
 unsafe_impl_iobject!(Position, "01922977-e48a-7f00-83a5-d78e50e77567");
+
+#[derive(Clone, PartialEq, Debug)]
+struct BigComponent {
+    pub data: [u8; 64],
+}
+unsafe_impl_iobject!(BigComponent, "019395de-d02d-7702-89c1-6bdeb67bb7ce");
 
 impl Position {
     pub fn new(x: f32, y: f32) -> Self {
@@ -47,7 +53,7 @@ impl Position {
     }
 }
 
-#[derive(Default, PartialEq, Debug)]
+#[derive(Clone, Default, PartialEq, Debug)]
 struct Scale {
     pub x: f32,
     pub y: f32,
@@ -128,6 +134,94 @@ fn extend_test_vec() {
 
     assert!(!world.has_component::<Mesh>(ids[0]));
     assert!(!world.has_component::<Mesh>(ids[1]));
+}
+
+#[test]
+fn extend_test_vec_large() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let positions: Vec<_> = (0..20_000)
+        .enumerate()
+        .map(|(i, _)| Position::new(1.0 * i as f32, 2.0 * i as f32))
+        .collect();
+
+    let scales: Vec<_> = (0..20_000)
+        .enumerate()
+        .map(|(i, _)| Scale::new(3.0 * i as f32, 5.0 * i as f32))
+        .collect();
+
+    let ids = world.extend((positions.clone(), scales.clone()));
+
+    assert_eq!(ids.len(), 20_000);
+    assert_eq!(world.len(), 20_000);
+
+    let mut iter_count = 20000u32;
+    for ((id, position), scale) in ids.iter().zip(positions).zip(scales) {
+        let (stored_position, stored_scale) = world.query_one::<(&Position, &Scale)>(*id).unwrap();
+        assert_eq!(position, stored_position.clone());
+        assert_eq!(scale, stored_scale.clone());
+        iter_count -= 1;
+    }
+    assert_eq!(iter_count, 0);
+}
+
+#[test]
+fn extend_test_vec_larger() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<BigComponent>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let components: Vec<_> = (0..20_000)
+        .map(|_| BigComponent { data: [56; 64] })
+        .collect();
+
+    let ids = world.extend((components.clone(),));
+
+    assert_eq!(ids.len(), 20_000);
+    assert_eq!(world.len(), 20_000);
+
+    let mut iter_count = 20000u32;
+    for (id, component) in ids.iter().zip(components) {
+        let stored_component = world.query_one::<&BigComponent>(*id).unwrap();
+        assert_eq!(&component, stored_component);
+        iter_count -= 1;
+    }
+    assert_eq!(iter_count, 0);
+}
+
+#[test]
+fn extend_test_vec_larger_extend_one() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<BigComponent>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let components: Vec<_> = (0..20_000)
+        .map(|_| BigComponent { data: [56; 64] })
+        .collect();
+
+    let mut ids = Vec::new();
+    for component in components.iter() {
+        ids.push(world.extend_one((component.clone(),)));
+    }
+
+    assert_eq!(ids.len(), 20_000);
+    assert_eq!(world.len(), 20_000);
+
+    let mut iter_count = 20000u32;
+    for (id, component) in ids.iter().zip(components) {
+        let stored_component = world.query_one::<&BigComponent>(*id).unwrap();
+        assert_eq!(&component, stored_component);
+        iter_count -= 1;
+    }
+    assert_eq!(iter_count, 0);
 }
 
 #[test]

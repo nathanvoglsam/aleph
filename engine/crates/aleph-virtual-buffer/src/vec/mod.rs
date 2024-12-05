@@ -29,7 +29,7 @@
 
 use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
-use std::mem::{align_of, needs_drop, size_of};
+use std::mem::{needs_drop, size_of};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use std::slice::{from_raw_parts, from_raw_parts_mut, SliceIndex};
 
@@ -60,9 +60,8 @@ impl<T> VirtualVec<T> {
         //
         // This should almost always pass as the buffers should always be aligned to a page boundary
         // which are aligned to 4096. Types that need higher alignment than that are very rare.
-        let wanted_alignment = align_of::<T>();
-        let buffer_base = buffer.as_ptr() as usize;
-        if buffer_base % wanted_alignment != 0 {
+        let buffer_base = buffer.data().cast::<T>();
+        if !buffer_base.is_aligned() {
             Err(Error::new(
                 ErrorKind::Other,
                 "The allocated buffer was not sufficiently aligned",
@@ -468,12 +467,12 @@ impl<T> VirtualVec<T> {
     }
 
     const fn ptr(&self) -> *const T {
-        self.buffer.data() as *const u8 as *const T
+        self.buffer.data().as_ptr() as *const u8 as *const T
     }
 
     #[inline(always)]
     fn ptr_mut(&mut self) -> *mut T {
-        self.buffer.data() as *mut T
+        self.buffer.data().as_ptr() as *mut T
     }
 }
 

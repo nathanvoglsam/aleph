@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
 use crate::{Archetype, ArchetypeEntityIndex, Component, EntityLayoutBuf};
@@ -62,7 +61,7 @@ pub unsafe trait Fetch<'a>: Sized {
     ///
     /// Takes a pointer because borrow could mutable or shared depending on the implementation.
     unsafe fn create(archetype: &Archetype) -> Self {
-        Self::create_at(archetype, ArchetypeEntityIndex(NonZeroU32::new(1).unwrap()))
+        Self::create_at(archetype, ArchetypeEntityIndex::first())
     }
 
     /// Constructs an instance of [`Fetch`] from the given archetype.

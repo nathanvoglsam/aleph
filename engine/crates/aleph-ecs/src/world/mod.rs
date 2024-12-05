@@ -238,7 +238,7 @@ impl World {
 
             self.extend_unsafe(&source);
 
-            ids.set_len(ids.capacity());
+            ids.set_len(source.count as usize);
             ids
         })
     }
@@ -247,8 +247,19 @@ impl World {
     /// generic component source which contains a buffer of each component type that can be copied
     /// directly into the archetype's buffers. The archetype is known based on the set of components
     /// the [`ComponentSource`] declares it to contain.
-    pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> vec::Vec<EntityId> {
-        self.extend_in(source, Global)
+    pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> Vec<EntityId> {
+        let source = source.into_component_source();
+        source.with_unsafe_source(|mut source| unsafe {
+            let mut ids = Vec::with_capacity(source.count as usize);
+            source.ids = Some(NonNull::new_unchecked(
+                ids.spare_capacity_mut().as_mut_ptr(),
+            ));
+
+            self.extend_unsafe(&source);
+
+            ids.set_len(source.count as usize);
+            ids
+        })
     }
 
     /// Extends the world by adding a set of entities directly into a target archetype. Takes a
@@ -276,8 +287,8 @@ impl World {
         if let Some(out_ids) = source.ids {
             for i in 0..source.count {
                 // Calculate the final EntityLocation
-                let entity = archetype_entity_base.0.saturating_add(i);
-                let entity = ArchetypeEntityIndex(entity);
+                let entity = archetype_entity_base.inner().saturating_add(i);
+                let entity = ArchetypeEntityIndex::new(entity);
                 let location = EntityLocation {
                     archetype: archetype_index,
                     entity,
@@ -292,8 +303,8 @@ impl World {
         } else {
             for i in 0..source.count {
                 // Calculate the final EntityLocation
-                let entity = archetype_entity_base.0.saturating_add(i);
-                let entity = ArchetypeEntityIndex(entity);
+                let entity = archetype_entity_base.inner().saturating_add(i);
+                let entity = ArchetypeEntityIndex::new(entity);
                 let location = EntityLocation {
                     archetype: archetype_index,
                     entity,

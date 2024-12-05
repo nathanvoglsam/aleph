@@ -124,8 +124,8 @@ impl VirtualBuffer {
     /// This must be upheld by the caller, hence returning a pointer rather than a slice. We wash
     /// our hands of the safety problem from here after.
     ///
-    pub const fn data(&self) -> *mut u8 {
-        self.data.as_ptr()
+    pub const fn data(&self) -> NonNull<u8> {
+        self.data
     }
 
     ///
@@ -154,7 +154,7 @@ impl VirtualBuffer {
     /// `Self::requires_committing`.
     ///
     pub const unsafe fn as_slice(&self) -> &[u8] {
-        from_raw_parts(self.as_ptr(), self.len)
+        from_raw_parts(self.data().as_ptr(), self.len)
     }
 
     ///
@@ -169,12 +169,7 @@ impl VirtualBuffer {
     /// `Self::requires_committing`.
     ///
     pub unsafe fn as_slice_mut(&mut self) -> &mut [u8] {
-        from_raw_parts_mut(self.as_ptr(), self.len)
-    }
-
-    /// Returns a pointer to the base address of the virtual address range.
-    pub const fn as_ptr(&self) -> *mut u8 {
-        self.data()
+        from_raw_parts_mut(self.data().as_ptr(), self.len)
     }
 
     ///
@@ -188,7 +183,7 @@ impl VirtualBuffer {
 impl Drop for VirtualBuffer {
     fn drop(&mut self) {
         unsafe {
-            implementation::free_virtual_buffer(self.as_ptr(), self.len / Self::page_size())
+            implementation::free_virtual_buffer(self.data().as_ptr(), self.len / Self::page_size())
                 .unwrap()
         }
     }
