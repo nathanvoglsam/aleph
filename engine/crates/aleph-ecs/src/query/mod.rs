@@ -136,7 +136,7 @@ impl<Q: ComponentQuery> UnsafeQuery<Q> {
                     // Safety: We never construct this state with an out of bounds index so this
                     //         unchecked index is safe to perform if the remains true.
                     let archetype =
-                        unsafe { world.archetypes.get_unchecked(index.0.get() as usize) };
+                        unsafe { world.archetypes.get_unchecked(index.get_index()) };
 
                     if self.archetype_filter.filter_archetype(archetype) {
                         let (ids, ids_end) = archetype.entity_id_ptr_range();
@@ -200,10 +200,13 @@ fn bounds_check_archetype_index_increment(
     world: &World,
     i: ArchetypeIndex,
 ) -> Option<ArchetypeIndex> {
-    let next_index = i.0.get() as usize + 1;
-    if next_index >= world.archetypes.len() {
+    let old_index = i.inner();
+    let next_index = old_index.saturating_add(1);
+    // bounds check based on an implicit -1 to 'next_index' as ArchetypeIndex stores the real index
+    // + 1 so zero can be a niche.
+    if old_index.get() as usize >= world.archetypes.len() {
         None
     } else {
-        unsafe { Some(ArchetypeIndex::new(next_index as u32).unwrap_unchecked()) }
+        Some(ArchetypeIndex::new(next_index))
     }
 }

@@ -45,11 +45,16 @@ use crate::{ComponentRegistry, EntityId, EntityLayout, UnsafeComponentSource};
 ///
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct ArchetypeIndex(pub NonZeroU32);
+pub struct ArchetypeIndex(NonZeroU32);
 
 impl ArchetypeIndex {
     /// Construct a new ArchetypeIndex from the given raw u32
-    pub const fn new(index: u32) -> Option<ArchetypeIndex> {
+    pub const fn new(index: NonZeroU32) -> ArchetypeIndex {
+        Self(index)
+    }
+
+    /// Construct a new ArchetypeIndex from the given raw u32
+    pub const fn new_checked(index: u32) -> Option<ArchetypeIndex> {
         if let Some(v) = NonZeroU32::new(index) {
             Some(ArchetypeIndex(v))
         } else {
@@ -65,6 +70,10 @@ impl ArchetypeIndex {
 
     pub const fn inner(&self) -> NonZeroU32 {
         self.0
+    }
+
+    pub const fn get_index(&self) -> usize {
+        self.0.get() as usize - 1
     }
 }
 
@@ -103,7 +112,7 @@ impl ArchetypeEntityIndex {
         self.0
     }
 
-    const fn get_index(&self) -> usize {
+    pub const fn get_index(&self) -> usize {
         self.0.get() as usize - 1
     }
 }
@@ -214,6 +223,9 @@ impl Archetype {
 /// Internal implementations
 impl Archetype {
     pub(crate) fn new(capacity: u32, layout: &EntityLayout, registry: &ComponentRegistry) -> Self {
+        assert_ne!(capacity, 0);
+        assert_ne!(layout.len(), 0);
+
         // Produce the index map from the layout
         let storage_indices = ComponentMapper {
             table: layout.iter().enumerate().map(|v| (*v.1, v.0)).collect(),
@@ -231,9 +243,7 @@ impl Archetype {
             num_pages += wanted_pages;
         }
 
-        // Clamp to a minimum of 1 page to solve an edge case for the dummy archetype in the 0th
-        // slot which will ask for 0 pages as it stores no components
-        let component_buffer = VirtualBuffer::reserve(num_pages.max(1)).unwrap();
+        let component_buffer = VirtualBuffer::reserve(num_pages).unwrap();
 
         // Create a virtual memory reservation for each component's storage
         let component_ptr = component_buffer.data();

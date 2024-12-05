@@ -35,7 +35,7 @@ use std::ptr::NonNull;
 
 use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
-use allocator_api2::alloc::{Allocator, Global};
+use allocator_api2::alloc::Allocator;
 use allocator_api2::boxed::Box as ABox;
 use allocator_api2::vec;
 
@@ -148,17 +148,8 @@ impl World {
         let component_registry = ComponentRegistry::new();
         let entities = EntityStorage::new(options.entity_capacity)?;
 
-        // Create the list of archetypes, with the first slot taken by an archetype with no
-        // components.
-        //
-        // This allows using `ArchetypeIndex(0)` as a special value as its not possible to create
-        // an entity with no components.
-        let mut archetypes = Vec::new();
-        let mut archetype_edges = Vec::new();
-        let base_archetype = Archetype::new(1, EntityLayout::empty(), &component_registry);
-        let base_archetype_edges = ComponentIdMap::default();
-        archetypes.push(base_archetype);
-        archetype_edges.push(base_archetype_edges);
+        let archetypes = Vec::new();
+        let archetype_edges = Vec::new();
 
         // Creates the table that maps entity layouts to archetypes. Maps the empty layout to 0.
         let mut archetype_map = HashMap::new();
@@ -277,7 +268,7 @@ impl World {
 
         // Locate the archetype and allocate space in the archetype for the new entities
         let archetype_index = self.find_or_create_archetype(&layout);
-        let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
+        let archetype = &mut self.archetypes[archetype_index.get_index()];
         let archetype_entity_base = archetype.allocate_entities(source.count);
 
         // Copy the component data into the archetype buffers
@@ -351,7 +342,7 @@ impl World {
     /// If the ID is invalid then this function does nothing and returns false.
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
-            let archetype = &mut self.archetypes[location.archetype.0.get() as usize];
+            let archetype = &mut self.archetypes[location.archetype.get_index()];
 
             // Remove the entity from the archetype, patching the `EntityLocation` if an entity
             // needed to be moved to keep the archetype storage dense.
@@ -385,7 +376,7 @@ impl World {
         use crate::component::component_query::Fetch;
 
         if let Some(location) = self.entities.lookup(entity) {
-            let archetype = &self.archetypes[location.archetype.0.get() as usize];
+            let archetype = &self.archetypes[location.archetype.get_index()];
             // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
             //         break aliasing rules. Otherwise the entity lookup has performed all the
             //         bounds checks we need so this is safe.
@@ -407,7 +398,7 @@ impl World {
         use crate::component::component_query::Fetch;
 
         if let Some(location) = self.entities.lookup(entity) {
-            let archetype = &self.archetypes[location.archetype.0.get() as usize];
+            let archetype = &self.archetypes[location.archetype.get_index()];
 
             // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
             //         break aliasing rules. Otherwise the entity lookup has performed all the
@@ -502,7 +493,7 @@ impl World {
             destination_archetype_index,
         );
 
-        self.archetypes[destination_archetype_index.0.get() as usize]
+        self.archetypes[destination_archetype_index.get_index()]
             .copy_component_data_into_slot(new_index, component, data);
 
         true
@@ -546,7 +537,7 @@ impl World {
         );
 
         // Manually drop the component we're removing
-        self.archetypes[source_archetype_index.0.get() as usize]
+        self.archetypes[source_archetype_index.get_index()]
             .drop_component_in_slot(location.entity, component);
 
         true
@@ -557,7 +548,7 @@ impl World {
     #[inline]
     pub fn has_component_dynamic(&self, entity: EntityId, component: &Uuid) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
-            self.archetypes[location.archetype.0.get() as usize]
+            self.archetypes[location.archetype.get_index()]
                 .entity_layout()
                 .contains_component_type(component)
         } else {
@@ -573,7 +564,7 @@ impl World {
         source: ArchetypeIndex,
         component: &Uuid,
     ) -> Option<ArchetypeIndex> {
-        let source = source.0.get() as usize;
+        let source = source.get_index();
 
         // First check for an existing link in the graph
         if let Some(edge) = self.archetype_edges[source].get_mut(component) {
@@ -608,7 +599,7 @@ impl World {
         source: ArchetypeIndex,
         component: &Uuid,
     ) -> Option<ArchetypeIndex> {
-        let source = source.0.get() as usize;
+        let source = source.get_index();
 
         // First check for an existing link in the graph
         if let Some(edge) = self.archetype_edges[source].get_mut(component) {
@@ -645,15 +636,15 @@ impl World {
             let capacity = self.options.archetype_capacity;
             let archetype = Archetype::new(capacity, layout, &self.component_registry);
             let archetype_edges = ComponentIdMap::with_hasher(Default::default());
-            let archetype_index = self.archetypes.len() as u32;
+            let archetype_index = self.archetypes.len().checked_add(1).unwrap() as u32;
             let archetype_index = NonZeroU32::new(archetype_index).unwrap();
             self.archetype_map.insert(
                 layout.to_owned().into_boxed_slice(),
-                Some(ArchetypeIndex(archetype_index)),
+                Some(ArchetypeIndex::new(archetype_index)),
             );
             self.archetypes.push(archetype);
             self.archetype_edges.push(archetype_edges);
-            ArchetypeIndex(archetype_index)
+            ArchetypeIndex::new(archetype_index)
         }
     }
 
@@ -675,8 +666,8 @@ impl World {
         //
         // Unfortunately this has to be vendored into each function to satisfy the borrow checker
         let (source, dest) = {
-            let source: usize = source_index.0.get() as usize;
-            let dest: usize = dest_index.0.get() as usize;
+            let source: usize = source_index.get_index();
+            let dest: usize = dest_index.get_index();
             // Handles all cases: <, >, and ==. Will panic from underflow in the == case as that
             // would lead to mutable aliasing.
             if source < dest {
