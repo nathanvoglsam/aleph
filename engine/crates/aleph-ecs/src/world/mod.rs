@@ -344,8 +344,8 @@ impl World {
 
             // Remove the entity from the archetype, patching the `EntityLocation` if an entity
             // needed to be moved to keep the archetype storage dense.
-            if let Some(needs_update) = archetype.remove_entity::<true>(location.entity) {
-                unsafe {
+            unsafe {
+                if let Some(needs_update) = archetype.remove_entity::<true>(location.entity) {
                     let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
                     let entry = entry.data.location.as_mut().unwrap();
                     entry.entity = location.entity;
@@ -375,13 +375,14 @@ impl World {
 
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &self.archetypes[location.archetype.0.get() as usize];
-            let fetch =
-                <Q::QueryType as ComponentQuery>::Fetch::create_at(archetype, location.entity);
-
             // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
             //         break aliasing rules. Otherwise the entity lookup has performed all the
             //         bounds checks we need so this is safe.
-            unsafe { Some(fetch.get()) }
+            unsafe {
+                let fetch =
+                    <Q::QueryType as ComponentQuery>::Fetch::create_at(archetype, location.entity);
+                Some(fetch.get())
+            }
         } else {
             None
         }
@@ -396,12 +397,14 @@ impl World {
 
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &self.archetypes[location.archetype.0.get() as usize];
-            let fetch = Q::Fetch::create_at(archetype, location.entity);
 
             // Safety: We are guaranteed exclusive access by taking the self as mut, so we can't
             //         break aliasing rules. Otherwise the entity lookup has performed all the
             //         bounds checks we need so this is safe.
-            unsafe { Some(fetch.get()) }
+            unsafe {
+                let fetch = Q::Fetch::create_at(archetype, location.entity);
+                Some(fetch.get())
+            }
         } else {
             None
         }
@@ -474,7 +477,7 @@ impl World {
         // Find the destination archetype, returning false if the source and destination are the
         // same.
         let destination_archetype_index = if let Some(index) =
-            self.follow_archetype_link::<true>(source_archetype_index, component)
+            self.follow_archetype_link_add(source_archetype_index, component)
         {
             index
         } else {
@@ -517,7 +520,7 @@ impl World {
         // Find the destination archetype, returning false if the source and destination are the
         // same.
         let destination_archetype_index = if let Some(index) =
-            self.follow_archetype_link::<false>(source_archetype_index, component)
+            self.follow_archetype_link_remove(source_archetype_index, component)
         {
             index
         } else {
@@ -554,7 +557,7 @@ impl World {
 
 /// Private function implementations
 impl World {
-    fn follow_archetype_link<const ADD: bool>(
+    fn follow_archetype_link_remove(
         &mut self,
         source: ArchetypeIndex,
         component: &Uuid,
@@ -563,15 +566,8 @@ impl World {
 
         // First check for an existing link in the graph
         if let Some(edge) = self.archetype_edges[source].get_mut(component) {
-            // Const switch between add or remove
-            if ADD {
-                if let Some(index) = edge.add {
-                    return Some(index);
-                }
-            } else {
-                if let Some(index) = edge.remove {
-                    return Some(index);
-                }
+            if let Some(index) = edge.remove {
+                return Some(index);
             }
         }
 
@@ -584,24 +580,49 @@ impl World {
         // for doesn't change the layout (i.e trying to go from src->src).
         let source_layout = self.archetypes[source].entity_layout().to_owned();
         let mut destination_layout = source_layout;
-        if ADD {
-            if destination_layout.add_component_type(*component) {
-                return None;
-            }
-        } else {
-            if !destination_layout.remove_component_type(*component) {
-                return None;
-            }
+        if !destination_layout.remove_component_type(*component) {
+            return None;
         }
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(&destination_layout);
         let edge = self.archetype_edges[source].entry(*component).or_default();
-        if ADD {
-            edge.add = Some(index);
-        } else {
-            edge.remove = Some(index);
+        edge.remove = Some(index);
+
+        Some(index)
+    }
+
+    fn follow_archetype_link_add(
+        &mut self,
+        source: ArchetypeIndex,
+        component: &Uuid,
+    ) -> Option<ArchetypeIndex> {
+        let source = source.0.get() as usize;
+
+        // First check for an existing link in the graph
+        if let Some(edge) = self.archetype_edges[source].get_mut(component) {
+            if let Some(index) = edge.add {
+                return Some(index);
+            }
         }
+
+        // If we get here then we failed to find an existing link so we'll need to lookup the target
+        // archetype by layout, which requires an allocation to build the layout to lookup with.
+        //
+        // At least we'll only ever need to do this once
+
+        // Create the destination layout, returning None if the component we're following a link
+        // for doesn't change the layout (i.e trying to go from src->src).
+        let source_layout = self.archetypes[source].entity_layout().to_owned();
+        let mut destination_layout = source_layout;
+        if destination_layout.add_component_type(*component) {
+            return None;
+        }
+
+        // Lookup the archetype and update the graph edge in source
+        let index = self.find_or_create_archetype(&destination_layout);
+        let edge = self.archetype_edges[source].entry(*component).or_default();
+        edge.add = Some(index);
 
         Some(index)
     }
@@ -697,7 +718,6 @@ impl World {
 /// added or removed
 ///
 #[repr(C)]
-#[repr(align(8))]
 #[derive(Clone, Copy, Hash, Debug, Default)]
 pub struct ArchetypeEdge {
     /// Links to the archetype to move to if the specific component is added

@@ -61,14 +61,14 @@ pub unsafe trait Fetch<'a>: Sized {
     /// Constructs an instance of [`Fetch`] from the given archetype.
     ///
     /// Takes a pointer because borrow could mutable or shared depending on the implementation.
-    fn create(archetype: &Archetype) -> Self {
+    unsafe fn create(archetype: &Archetype) -> Self {
         Self::create_at(archetype, ArchetypeEntityIndex(NonZeroU32::new(1).unwrap()))
     }
 
     /// Constructs an instance of [`Fetch`] from the given archetype.
     ///
     /// Takes a pointer because borrow could mutable or shared depending on the implementation.
-    fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self;
+    unsafe fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self;
 
     /// Skip to the next item in the stream
     ///
@@ -107,7 +107,7 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
     type Item = &'a T;
 
     #[inline]
-    fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
+    unsafe fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         let ptr = archetype
             .get_component_ptr(entity, &T::ID)
             .unwrap()
@@ -146,7 +146,7 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
     type Item = &'a mut T;
 
     #[inline]
-    fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
+    unsafe fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
         let ptr = archetype
             .get_component_ptr(entity, &T::ID)
             .unwrap()
@@ -173,7 +173,7 @@ macro_rules! impl_query_for_tuple {
             type Item = ($($name::Item,)*);
 
             #[inline]
-            fn create_at(archetype: &$crate::Archetype, entity: $crate::archetype::ArchetypeEntityIndex) -> Self {
+            unsafe fn create_at(archetype: &$crate::Archetype, entity: $crate::archetype::ArchetypeEntityIndex) -> Self {
                 ($($name::create_at(archetype, entity),)*)
             }
 
