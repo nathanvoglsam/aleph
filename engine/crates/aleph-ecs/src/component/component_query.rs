@@ -172,7 +172,7 @@ macro_rules! impl_query_for_tuple {
             type Item = ($($name::Item,)*);
 
             #[inline]
-            unsafe fn create_at(archetype: &$crate::Archetype, entity: $crate::archetype::ArchetypeEntityIndex) -> Self {
+            unsafe fn create_at(archetype: &$crate::Archetype, entity: $crate::ArchetypeEntityIndex) -> Self {
                 ($($name::create_at(archetype, entity),)*)
             }
 

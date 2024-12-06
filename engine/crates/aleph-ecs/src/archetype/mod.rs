@@ -35,85 +35,76 @@ use aleph_object_system::ObjectDescription;
 use allocator_api2::boxed::Box as ABox;
 use virtual_buffer::{VirtualBuffer, VirtualVec};
 
+pub use crate::archetype::index::{ArchetypeEntityIndex, ArchetypeIndex};
 use crate::{ComponentRegistry, EntityId, EntityLayout, UnsafeComponentSource};
 
-///
-/// This index wrapper represents an index into the list of archetypes within a world.
-///
-/// This is used to better document the purpose of various indexes that would've otherwise been
-/// plain `u32` fields.
-///
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct ArchetypeIndex(NonZeroU32);
+mod index {
+    use std::num::NonZeroU32;
 
-impl ArchetypeIndex {
-    /// Construct a new ArchetypeIndex from the given raw u32
-    pub const fn new(index: NonZeroU32) -> ArchetypeIndex {
-        Self(index)
-    }
+    use crate::World;
 
-    /// Construct a new ArchetypeIndex from the given raw u32
-    pub const fn new_checked(index: u32) -> Option<ArchetypeIndex> {
-        if let Some(v) = NonZeroU32::new(index) {
-            Some(ArchetypeIndex(v))
-        } else {
-            None
+    ///
+    /// This index wrapper represents an index into the list of archetypes within a world.
+    ///
+    /// This is used to better document the purpose of various indexes that would've otherwise been
+    /// plain `u32` fields.
+    ///
+    #[repr(transparent)]
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+    pub struct ArchetypeIndex(NonZeroU32);
+
+    impl ArchetypeIndex {
+        /// Construct a new ArchetypeIndex from the given u32. This assumes that the given 'index'
+        /// has already been offset by 1
+        pub const fn new(index: NonZeroU32) -> ArchetypeIndex {
+            assert!((index.get() as usize) <= World::MAX_ARCHETYPES);
+            Self(index)
+        }
+
+        /// Returns the first valid ArchetypeIndex, which will be '1'
+        pub const fn first() -> ArchetypeIndex {
+            // Safety: uuuh, seems pretty obvious
+            unsafe { Self(NonZeroU32::new_unchecked(1)) }
+        }
+
+        pub const fn inner(&self) -> NonZeroU32 {
+            self.0
+        }
+
+        pub const fn get_index(&self) -> usize {
+            self.0.get() as usize - 1
         }
     }
 
-    /// Returns the first valid ArchetypeIndex, which will be '1'
-    pub const fn first() -> ArchetypeIndex {
-        // Safety: uuuh, seems pretty obvious
-        unsafe { Self(NonZeroU32::new_unchecked(1)) }
-    }
+    ///
+    /// This index wrapper represents an index into an archetype's component storage.
+    ///
+    /// This is used to better document the purpose of various indexes that would've otherwise been
+    /// plain `u32` fields.
+    ///
+    #[repr(transparent)]
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+    pub struct ArchetypeEntityIndex(NonZeroU32);
 
-    pub const fn inner(&self) -> NonZeroU32 {
-        self.0
-    }
-
-    pub const fn get_index(&self) -> usize {
-        self.0.get() as usize - 1
-    }
-}
-
-///
-/// This index wrapper represents an index into an archetype's component storage.
-///
-/// This is used to better document the purpose of various indexes that would've otherwise been
-/// plain `u32` fields.
-///
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct ArchetypeEntityIndex(NonZeroU32);
-
-impl ArchetypeEntityIndex {
-    /// Construct a new ArchetypeEntityIndex from the given raw u32
-    pub const fn new(index: NonZeroU32) -> ArchetypeEntityIndex {
-        Self(index)
-    }
-
-    /// Construct a new ArchetypeEntityIndex from the given raw u32
-    pub const fn new_checked(index: u32) -> Option<ArchetypeEntityIndex> {
-        if let Some(v) = NonZeroU32::new(index) {
-            Some(ArchetypeEntityIndex(v))
-        } else {
-            None
+    impl ArchetypeEntityIndex {
+        /// Construct a new ArchetypeEntityIndex from the given raw u32
+        pub const fn new(index: NonZeroU32) -> ArchetypeEntityIndex {
+            Self(index)
         }
-    }
 
-    /// Returns the first valid ArchetypeEntityIndex, which will be '1'
-    pub const fn first() -> ArchetypeEntityIndex {
-        // Safety: uuuh, seems pretty obvious
-        unsafe { Self(NonZeroU32::new_unchecked(1)) }
-    }
+        /// Returns the first valid ArchetypeEntityIndex, which will be '1'
+        pub const fn first() -> ArchetypeEntityIndex {
+            // Safety: uuuh, seems pretty obvious
+            unsafe { Self(NonZeroU32::new_unchecked(1)) }
+        }
 
-    pub const fn inner(&self) -> NonZeroU32 {
-        self.0
-    }
+        pub const fn inner(&self) -> NonZeroU32 {
+            self.0
+        }
 
-    pub const fn get_index(&self) -> usize {
-        self.0.get() as usize - 1
+        pub const fn get_index(&self) -> usize {
+            self.0.get() as usize - 1
+        }
     }
 }
 
@@ -321,7 +312,7 @@ impl Archetype {
 
         self.len = new_size;
 
-        ArchetypeEntityIndex(base)
+        ArchetypeEntityIndex::new(base)
     }
 
     /// This function handles writing data from a generic component source into the correct buffers

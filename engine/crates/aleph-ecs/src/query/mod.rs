@@ -116,10 +116,8 @@ impl<Q: ComponentQuery> UnsafeQuery<Q> {
                 QueryState::Entry => {
                     let world = unsafe { self.world.as_ref() };
 
-                    // If there's only a single archetype then we haven't inserted any entities yet
-                    // because the 0th archetype is intentionally invalid to give ArchetypeIndex
-                    // a niche value.
-                    if world.archetypes.len() <= 1 {
+                    // If there's no archetypes then we haven't inserted any entities yet
+                    if world.archetypes.is_empty() {
                         self.state = QueryState::Terminal;
                     } else {
                         self.state = QueryState::FindingArchetype(ArchetypeIndex::first());
@@ -135,8 +133,7 @@ impl<Q: ComponentQuery> UnsafeQuery<Q> {
 
                     // Safety: We never construct this state with an out of bounds index so this
                     //         unchecked index is safe to perform if the remains true.
-                    let archetype =
-                        unsafe { world.archetypes.get_unchecked(index.get_index()) };
+                    let archetype = unsafe { world.archetypes.get_unchecked(index.get_index()) };
 
                     if self.archetype_filter.filter_archetype(archetype) {
                         let (ids, ids_end) = archetype.entity_id_ptr_range();
@@ -201,12 +198,16 @@ fn bounds_check_archetype_index_increment(
     i: ArchetypeIndex,
 ) -> Option<ArchetypeIndex> {
     let old_index = i.inner();
-    let next_index = old_index.saturating_add(1);
-    // bounds check based on an implicit -1 to 'next_index' as ArchetypeIndex stores the real index
-    // + 1 so zero can be a niche.
+
+    // By checking old_index directly against the number of archetypes we have we are actually doing
+    // bounds check against the index after old_index.
+    //
+    // ArchetypeIndex stores the index+1 so that we can represent the 0th archetype with 1. That way
+    // 0 stays as a niche for ArchetypeIndex.
     if old_index.get() as usize >= world.archetypes.len() {
         None
     } else {
+        let next_index = old_index.saturating_add(1);
         Some(ArchetypeIndex::new(next_index))
     }
 }

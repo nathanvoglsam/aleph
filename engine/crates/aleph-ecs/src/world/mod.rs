@@ -143,6 +143,12 @@ pub struct World {
 /// Implementations for the rust friendly interface
 ///
 impl World {
+    /// Maximum number of individual archetypes the world is allowed to store.
+    ///
+    /// This is more than you would ever need in practice. However a hard cap on the number of
+    /// archetypes means we can skip overflow checks.
+    pub const MAX_ARCHETYPES: usize = 16_777_216;
+
     ///
     pub fn new(options: WorldOptions) -> std::io::Result<Self> {
         let component_registry = ComponentRegistry::new();
@@ -633,18 +639,20 @@ impl World {
         if let Some(archetype) = self.archetype_map.get(layout).cloned() {
             archetype.expect("Tried to lookup the empty archetype")
         } else {
+            let archetype_index = self.archetypes.len();
+            let archetype_index = NonZeroU32::new(1 + archetype_index as u32).unwrap();
+            let archetype_index = ArchetypeIndex::new(archetype_index);
+            // 'ArchetypeIndex::new' checks if the index would be larger than max_archetypes
+
             let capacity = self.options.archetype_capacity;
             let archetype = Archetype::new(capacity, layout, &self.component_registry);
             let archetype_edges = ComponentIdMap::with_hasher(Default::default());
-            let archetype_index = self.archetypes.len().checked_add(1).unwrap() as u32;
-            let archetype_index = NonZeroU32::new(archetype_index).unwrap();
-            self.archetype_map.insert(
-                layout.to_owned().into_boxed_slice(),
-                Some(ArchetypeIndex::new(archetype_index)),
-            );
+
+            self.archetype_map
+                .insert(layout.to_owned().into_boxed_slice(), Some(archetype_index));
             self.archetypes.push(archetype);
             self.archetype_edges.push(archetype_edges);
-            ArchetypeIndex::new(archetype_index)
+            archetype_index
         }
     }
 
