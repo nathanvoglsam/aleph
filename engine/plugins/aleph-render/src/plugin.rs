@@ -71,14 +71,10 @@ impl IPlugin for PluginRender {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.depends_on::<dyn IWindowProvider>();
-        registrar.must_init_after::<dyn IWindowProvider>();
+        registrar.requires::<dyn IWindowProvider>(InitOrder::After);
+        registrar.requires::<dyn IRhiProvider>(InitOrder::After);
 
-        registrar.depends_on::<dyn IRhiProvider>();
-        registrar.must_init_after::<dyn IRhiProvider>();
-
-        // registrar.depends_on::<dyn egui::IEguiRenderData>();
-        registrar.must_init_after::<dyn egui::IEguiRenderData>();
+        registrar.uses::<dyn egui::IEguiRenderData>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {

@@ -33,7 +33,7 @@ use aleph_interfaces::any::{declare_interfaces, AnyArc, IAny};
 use aleph_interfaces::make_plugin_description_for_crate;
 use aleph_interfaces::platform::IWindowProvider;
 use aleph_interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription
 };
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::{AdapterPowerClass, AdapterRequestOptions, BackendAPI};
@@ -66,10 +66,10 @@ impl IPlugin for PluginRHI {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.must_init_after::<dyn IWindowProvider>();
+        registrar.uses::<dyn IWindowProvider>(InitOrder::After);
 
         if !self.rhi_loader.backends().is_empty() {
-            registrar.provides_interface::<dyn IRhiProvider>();
+            registrar.provides::<dyn IRhiProvider>();
         }
     }
 

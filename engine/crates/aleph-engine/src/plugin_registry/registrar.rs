@@ -30,6 +30,8 @@
 use std::any::TypeId;
 use std::collections::BTreeSet;
 
+use interfaces::plugin::InitOrder;
+
 use crate::interfaces::plugin::IPluginRegistrar;
 
 pub struct PluginRegistrar {
@@ -38,16 +40,30 @@ pub struct PluginRegistrar {
     pub(crate) init_after_list: BTreeSet<TypeId>,
 }
 
-impl<'a> IPluginRegistrar<'a> for PluginRegistrar {
-    fn __depends_on(&mut self, dependency: TypeId) {
+impl IPluginRegistrar for PluginRegistrar {
+    fn __requires(&mut self, dependency: TypeId, init: InitOrder) {
         self.depends_on_list.insert(dependency);
+        match init {
+            InitOrder::After => {
+                self.init_after_list.insert(dependency);
+            },
+            InitOrder::DontCare => todo!(),
+        }
     }
 
-    fn __provides_interface(&mut self, provides: TypeId) {
+    fn __provides(&mut self, provides: TypeId) {
         self.provided_interfaces.insert(provides);
     }
 
-    fn __must_init_after(&mut self, requires: TypeId) {
-        self.init_after_list.insert(requires);
+    fn __uses(&mut self, uses: TypeId, init: InitOrder) {
+        match init {
+            InitOrder::After => {
+                self.init_after_list.insert(uses);
+            },
+            InitOrder::DontCare => {
+                // Intentionally blank as we don't track optional dependencies currently.
+            },
+        }
+        
     }
 }

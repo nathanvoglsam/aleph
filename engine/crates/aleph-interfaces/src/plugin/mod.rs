@@ -79,12 +79,12 @@ pub trait IPlugin: IAny {
 
     /// Called by the plugin registry exactly once so that a plugin can register its execution
     /// dependencies
-    fn register(&mut self, registrar: &mut dyn IPluginRegistrar<'_>);
+    fn register(&mut self, registrar: &mut dyn IPluginRegistrar);
 
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
     #[allow(unused_variables)]
-    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor<'_>) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         Box::<Vec<(TypeId, AnyArc<dyn IAny>)>>::default()
     }
 
@@ -165,7 +165,7 @@ impl<T: Iterator<Item = (TypeId, AnyArc<dyn IAny>)>> IInterfaceIterator for T {}
 /// registry. This can be used to retrieve interface implementations, request the main loop exit,
 /// etc.
 ///
-pub trait IRegistryAccessor<'a>: 'a {
+pub trait IRegistryAccessor {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>>;
 
@@ -180,7 +180,7 @@ pub trait IRegistryAccessor<'a>: 'a {
     fn core(&mut self) -> CoreRefs;
 }
 
-impl<'a> dyn IRegistryAccessor<'a> {
+impl<'a> dyn IRegistryAccessor + 'a {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
     pub fn get_interface<T: IAny + ?Sized>(&self) -> Option<AnyArc<T>> {
@@ -245,36 +245,52 @@ pub trait IQuitHandle: IAny + Send + Sync + 'static {
 /// dependency that is generic over arbitrary plugins that provide an abstract interface
 /// (i.e `IWindowProvider`) implementation.
 ///
-pub trait IPluginRegistrar<'a>: 'a {
-    /// Object safe implementation of `depends_on`. See wrapper for more info.
-    fn __depends_on(&mut self, dependency: TypeId);
+pub trait IPluginRegistrar {
+    /// Object safe implementation of `requires`. See wrapper for more info.
+    #[doc(hidden)]
+    fn __requires(&mut self, dependency: TypeId, init: InitOrder);
 
     /// Object safe implementation of `provides_interface`. See wrapper for more info.
-    fn __provides_interface(&mut self, provides: TypeId);
+    #[doc(hidden)]
+    fn __provides(&mut self, provides: TypeId);
 
-    /// Object safe implementation of `must_init_after`. See wrapper for more info.
-    fn __must_init_after(&mut self, requires: TypeId);
+    /// Object safe implementation of `uses`. See wrapper for more info.
+    #[doc(hidden)]
+    fn __uses(&mut self, requires: TypeId, init: InitOrder);
 }
 
-impl<'a> dyn IPluginRegistrar<'a> {
+impl<'a> dyn IPluginRegistrar + 'a {
     /// Declares that the plugin depends on the existence of another plugin given by the type
     /// parameter. This can be used to declare that one plugin requires another plugin, or another
-    /// interface to exist without specifying any execution dependencies.
-    pub fn depends_on<T: IAny + ?Sized>(&mut self) {
-        self.__depends_on(TypeId::of::<T>())
+    /// interface to exist.
+    /// 
+    /// The 'init' parameter controls whether an execution dependency is also implied during the
+    /// init phase.
+    pub fn requires<T: IAny + ?Sized>(&mut self, init: InitOrder) {
+        self.__requires(TypeId::of::<T>(), init);
     }
 
     /// Declares that the plugin will provide an object that implements the interface given by the
     /// `T` type parameter.
-    pub fn provides_interface<T: IAny + ?Sized>(&mut self) {
-        self.__provides_interface(TypeId::of::<T>())
+    pub fn provides<T: IAny + ?Sized>(&mut self) {
+        self.__provides(TypeId::of::<T>())
     }
 
-    /// Declares that the plugin's init function can only execute *after* the given plugin has had
-    /// its own init function execute.
-    pub fn must_init_after<T: IAny + ?Sized>(&mut self) {
-        self.__must_init_after(TypeId::of::<T>())
+    /// Declares a soft dependency on the given interface. This is similar to [`Self::requires`] but
+    /// does not cause a failure if the interface is not made available by another plugin (or the
+    /// engine itself).
+    /// 
+    /// The 'init' parameter controls whether an execution dependency is also implied during the
+    /// init phase.
+    pub fn uses<T: IAny + ?Sized>(&mut self, init: InitOrder) {
+        self.__uses(TypeId::of::<T>(), init)
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum InitOrder {
+    After,
+    DontCare,
 }
 
 ///

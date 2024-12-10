@@ -39,7 +39,7 @@ use interfaces::platform::{
     IWindowProvider,
 };
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription
 };
 use interfaces::schedule::CoreStage;
 
@@ -61,23 +61,16 @@ impl IPlugin for PluginEgui {
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
         // We export two interfaces for interacting with egui
-        registrar.provides_interface::<dyn IEguiContextProvider>();
-        registrar.provides_interface::<dyn IEguiRenderData>();
+        registrar.provides::<dyn IEguiContextProvider>();
+        registrar.provides::<dyn IEguiRenderData>();
 
         // We need to get handles to all these when we initialize to save querying them every frame
-        registrar.must_init_after::<dyn IWindowProvider>();
-        registrar.must_init_after::<dyn IMouseProvider>();
-        registrar.must_init_after::<dyn IKeyboardProvider>();
-        registrar.must_init_after::<dyn IFrameTimerProvider>();
-        registrar.must_init_after::<dyn IEventsProvider>();
-        registrar.must_init_after::<dyn IClipboardProvider>();
-
-        registrar.depends_on::<dyn IWindowProvider>();
-        registrar.depends_on::<dyn IMouseProvider>();
-        registrar.depends_on::<dyn IKeyboardProvider>();
-        registrar.depends_on::<dyn IFrameTimerProvider>();
-        registrar.depends_on::<dyn IEventsProvider>();
-        registrar.depends_on::<dyn IClipboardProvider>();
+        registrar.requires::<dyn IWindowProvider>(InitOrder::After);
+        registrar.requires::<dyn IMouseProvider>(InitOrder::After);
+        registrar.requires::<dyn IKeyboardProvider>(InitOrder::After);
+        registrar.requires::<dyn IFrameTimerProvider>(InitOrder::After);
+        registrar.requires::<dyn IEventsProvider>(InitOrder::After);
+        registrar.requires::<dyn IClipboardProvider>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {

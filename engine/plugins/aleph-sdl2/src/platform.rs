@@ -89,13 +89,13 @@ impl IPlugin for PluginPlatformSDL2 {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.provides_interface::<dyn IFrameTimerProvider>();
-        registrar.provides_interface::<dyn IWindowProvider>();
-        registrar.provides_interface::<dyn IClipboardProvider>();
-        registrar.provides_interface::<dyn IKeyboardProvider>();
-        registrar.provides_interface::<dyn IGamepadsProvider>();
-        registrar.provides_interface::<dyn IMouseProvider>();
-        registrar.provides_interface::<dyn IEventsProvider>();
+        registrar.provides::<dyn IFrameTimerProvider>();
+        registrar.provides::<dyn IWindowProvider>();
+        registrar.provides::<dyn IClipboardProvider>();
+        registrar.provides::<dyn IKeyboardProvider>();
+        registrar.provides::<dyn IGamepadsProvider>();
+        registrar.provides::<dyn IMouseProvider>();
+        registrar.provides::<dyn IEventsProvider>();
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {

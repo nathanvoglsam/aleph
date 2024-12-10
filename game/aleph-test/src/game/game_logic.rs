@@ -44,7 +44,7 @@ use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, Transf
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
 use aleph_engine::interfaces::platform::{IFrameTimerProvider, IGamepadsProvider};
-use aleph_engine::interfaces::plugin::CoreRefs;
+use aleph_engine::interfaces::plugin::{CoreRefs, InitOrder};
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
 
@@ -77,14 +77,9 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.depends_on::<dyn IGamepadsProvider>();
-        registrar.must_init_after::<dyn IGamepadsProvider>();
-
-        registrar.depends_on::<dyn IFrameTimerProvider>();
-        registrar.must_init_after::<dyn IFrameTimerProvider>();
-
-        //registrar.depends_on::<dyn IEguiContextProvider>();
-        registrar.must_init_after::<dyn IEguiContextProvider>();
+        registrar.requires::<dyn IGamepadsProvider>(InitOrder::After);
+        registrar.requires::<dyn IFrameTimerProvider>(InitOrder::After);
+        registrar.uses::<dyn IEguiContextProvider>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {

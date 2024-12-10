@@ -317,7 +317,7 @@ struct RegistryAccessor {
     world: Box<World>,
 }
 
-impl<'a> IRegistryAccessor<'a> for RegistryAccessor {
+impl IRegistryAccessor for RegistryAccessor {
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>> {
         self.interfaces.get(&interface).cloned()
     }
