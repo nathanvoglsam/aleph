@@ -56,7 +56,6 @@ use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
     registry: PluginRegistryBuilder,
-    headless: bool,
 }
 
 impl EngineBuilder {
@@ -115,30 +114,13 @@ impl EngineBuilder {
 
         Self {
             registry: PluginRegistry::builder(),
-            headless: cfg!(not(feature = "aleph-sdl2")), // Default to headless if there's no SDL2
         }
-    }
-
-    pub fn headless(&mut self) -> &mut Self {
-        self.headless = true;
-        self
     }
 
     pub fn default_plugins(&mut self) -> &mut Self {
-        if !self.headless {
-            self.plugin(aleph_rhi::PluginRHI::new());
-        }
-
-        // This only makes sense to load on platforms we have a renderer for, and only if we're not
-        // trying to run headless
-        if !self.headless {
-            self.plugin(egui::PluginEgui::new());
-        }
-
-        // This only makes sense to load on windows and not headless
-        if !self.headless {
-            self.plugin(aleph_render::PluginRender::new());
-        }
+        self.plugin(aleph_rhi::PluginRHI::new());
+        self.plugin(egui::PluginEgui::new());
+        self.plugin(aleph_render::PluginRender::new());
 
         self
     }
@@ -149,20 +131,11 @@ impl EngineBuilder {
     }
 
     pub fn build(mut self, cont: impl FnOnce(Engine)) {
-        if self.headless {
-            self.plugin(aleph_headless::PluginPlatformHeadless::new());
+        aleph_sdl2::PluginPlatformSDL2::setup(move |v| {
+            self.plugin(v);
             let engine = self.init();
             cont(engine)
-        } else {
-            if cfg!(not(feature = "aleph-sdl2")) {
-                panic!("Requesting a non headless platform plugin when none is available");
-            }
-            aleph_sdl2::PluginPlatformSDL2::setup(move |v| {
-                self.plugin(v);
-                let engine = self.init();
-                cont(engine)
-            });
-        }
+        });
     }
 
     fn init(self) -> Engine {

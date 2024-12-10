@@ -80,7 +80,6 @@ members = [
     "engine/crates/aleph-vulkan-alloc",
     "engine/crates/aleph-windows",
     "engine/plugins/aleph-egui",
-    "engine/plugins/aleph-headless",
     "engine/plugins/aleph-render",
     "engine/plugins/aleph-rhi",
     "engine/plugins/aleph-sdl2",
@@ -194,7 +193,6 @@ aleph-windows = { path = "./engine/crates/aleph-windows", version = "0.1" }
 
 # Aleph Plugins
 aleph-egui = { path = "./engine/plugins/aleph-egui", version = "0.1" }
-aleph-headless = { path = "./engine/plugins/aleph-headless", version = "0.1" }
 aleph-render = { path = "./engine/plugins/aleph-render", version = "0.1" }
 aleph-rhi = { path = "./engine/plugins/aleph-rhi", version = "0.1" }
 aleph-sdl2 = { path = "./engine/plugins/aleph-sdl2", version = "0.1" }

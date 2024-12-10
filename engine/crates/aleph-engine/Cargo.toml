@@ -43,17 +43,12 @@ edition.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[features]
-default = ["platform-sdl2"]
-platform-sdl2 = ["aleph-sdl2"]
-
 [dependencies]
 aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }
 aleph-sys-info = { workspace = true }
 aleph-egui = { workspace = true }
-aleph-sdl2 = { workspace = true, optional = true }
-aleph-headless = { workspace = true }
+aleph-sdl2 = { workspace = true }
 aleph-render = { workspace = true }
 aleph-rhi = { workspace = true }
 aleph-profile = { workspace = true }
