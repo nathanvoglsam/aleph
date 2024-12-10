@@ -43,7 +43,7 @@ fn main() {
     let target_arch = target::build::target_architecture();
 
     let mut binary_path = PathBuf::new();
-    binary_path.push("thirdparty");
+    binary_path.push("SDL2-builds");
     binary_path.push("out");
     binary_path.push(compile::standard_binary_path_for(target_platform, target_arch).unwrap());
 

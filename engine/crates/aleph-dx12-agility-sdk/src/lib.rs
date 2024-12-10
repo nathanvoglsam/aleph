@@ -90,7 +90,7 @@ fn def_location() -> PathBuf {
 /// Internal function which returns the location of the agility SDK .nupkg file.
 ///
 fn pkg_location() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("thirdparty")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("DirectX12AgilitySDK")
 }
 
 ///

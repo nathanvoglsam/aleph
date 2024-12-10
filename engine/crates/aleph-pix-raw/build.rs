@@ -49,7 +49,7 @@ fn main() {
             .link_lib_modifier("-bundle")
             .file("cpp/shim_noop.cpp")
             .flag("-w")
-            .include("thirdparty/Include/WinPixEventRuntime")
+            .include("WinPixEventRuntime/Include/WinPixEventRuntime")
             .compile("winpix_shim");
         false
     } else {
@@ -57,7 +57,7 @@ fn main() {
             .cpp(true)
             .link_lib_modifier("-bundle")
             .file("cpp/shim.cpp")
-            .include("thirdparty/Include/WinPixEventRuntime")
+            .include("WinPixEventRuntime/Include/WinPixEventRuntime")
             .compile("winpix_shim");
         true
     };
@@ -68,9 +68,9 @@ fn main() {
             Architecture::AARCH64 => "ARM64",
             Architecture::Unknown => panic!("Unknown architecture"),
         };
-        let win32_dll = format!("./thirdparty/bin/{arch}/WinPixEventRuntime.dll");
-        let winrt_dll = format!("./thirdparty/bin/{arch}/WinPixEventRuntime_UAP.dll");
-        let link_path = format!("./thirdparty/bin/{arch}");
+        let win32_dll = format!("./WinPixEventRuntime/bin/{arch}/WinPixEventRuntime.dll");
+        let winrt_dll = format!("./WinPixEventRuntime/bin/{arch}/WinPixEventRuntime_UAP.dll");
+        let link_path = format!("./WinPixEventRuntime/bin/{arch}");
         let link_path = Path::new(&link_path).canonicalize().unwrap();
         let link_path_full = link_path.display();
 

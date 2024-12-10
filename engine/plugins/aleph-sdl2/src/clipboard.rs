@@ -45,6 +45,8 @@ impl ClipboardImpl {
     }
 }
 
+// TODO: lol this is unsafe as hell what was I thinking. I highly doubt these functions are thread
+//       safe.
 impl IClipboard for ClipboardImpl {
     fn get(&self) -> Option<String> {
         unsafe {

@@ -1,24 +1,24 @@
-[submodule "submodules/Vulkan-Headers"]
-	path = submodules/Vulkan-Headers
+[submodule "engine/crates/aleph-vulkan-alloc/Vulkan-Headers"]
+	path = engine/crates/aleph-vulkan-alloc/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
-[submodule "submodules/VulkanMemoryAllocator"]
-	path = submodules/VulkanMemoryAllocator
+[submodule "engine/crates/aleph-vulkan-alloc/VulkanMemoryAllocator"]
+	path = engine/crates/aleph-vulkan-alloc/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "submodules/WinPixEventRuntime"]
-	path = submodules/WinPixEventRuntime
+[submodule "engine/crates/aleph-pix-raw/WinPixEventRuntime"]
+	path = engine/crates/aleph-pix-raw/WinPixEventRuntime
 	url = https://gitlab.com/MindSpunk/WinPixEventRuntime.git
-[submodule "submodules/DirectX12AgilitySDK"]
-	path = submodules/DirectX12AgilitySDK
+[submodule "engine/crates/aleph-dx12-agility-sdk/DirectX12AgilitySDK"]
+	path = engine/crates/aleph-dx12-agility-sdk/DirectX12AgilitySDK
 	url = https://gitlab.com/MindSpunk/DirectX12AgilitySDK.git
-[submodule "submodules/SDL2-builds"]
-	path = submodules/SDL2-builds
+[submodule "engine/plugins/aleph-sdl2/SDL2-builds"]
+	path = engine/plugins/aleph-sdl2/SDL2-builds
 	url = https://gitlab.com/MindSpunk/SDL2-Builds.git
-[submodule "submodules/D3D12MemoryAllocator"]
-	path = submodules/D3D12MemoryAllocator
+[submodule "engine/crates/aleph-dx12-alloc/D3D12MemoryAllocator"]
+	path = engine/crates/aleph-dx12-alloc/D3D12MemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
-[submodule "submodules/DirectX-Headers"]
-	path = submodules/DirectX-Headers
+[submodule "engine/crates/aleph-dx12-alloc/DirectX-Headers"]
+	path = engine/crates/aleph-dx12-alloc/DirectX-Headers
 	url = https://github.com/microsoft/DirectX-Headers.git
-[submodule "submodules/QuickJSNG-builds"]
-	path = submodules/QuickJSNG-builds
+[submodule "engine/crates/aleph-quickjs-sys/QuickJSNG-builds"]
+	path = engine/crates/aleph-quickjs-sys/QuickJSNG-builds
 	url = https://gitlab.com/MindSpunk/QuickJSNG-builds.git
