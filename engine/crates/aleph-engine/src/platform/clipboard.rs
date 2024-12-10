@@ -35,19 +35,19 @@ use interfaces::platform::IClipboard;
 ///
 /// Object that provides implementation of `IClipboard`
 ///
-pub struct ClipboardImpl();
+pub struct Clipboard();
 
-declare_interfaces!(ClipboardImpl, [IClipboard]);
+declare_interfaces!(Clipboard, [IClipboard]);
 
-impl ClipboardImpl {
-    pub fn new() -> AnyArc<Self> {
+impl Clipboard {
+    pub(crate) fn new() -> AnyArc<Self> {
         AnyArc::new(Self())
     }
 }
 
 // TODO: lol this is unsafe as hell what was I thinking. I highly doubt these functions are thread
 //       safe.
-impl IClipboard for ClipboardImpl {
+impl IClipboard for Clipboard {
     fn get(&self) -> Option<String> {
         unsafe {
             let buf = sdl2::sys::SDL_GetClipboardText();

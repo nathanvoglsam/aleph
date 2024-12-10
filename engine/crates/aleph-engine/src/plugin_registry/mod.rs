@@ -45,6 +45,7 @@ pub use builder::PluginRegistryBuilder;
 
 use crate::interfaces::any::{AnyArc, IAny};
 use crate::interfaces::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
+use crate::platform::PlatformSDL2;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 
 ///
@@ -72,6 +73,9 @@ pub struct PluginRegistry {
 
     /// The core ECS world that constitures the 'game world'
     world: Option<Box<World>>,
+
+    /// The SDL integration object for managing the connection to the SDL library
+    platform: PlatformSDL2,
 }
 
 impl PluginRegistry {
@@ -94,6 +98,9 @@ impl PluginRegistry {
             resources: self.resources.take().unwrap(),
             world: self.world.take().unwrap(),
         };
+
+        // Init the SDL2 integration
+        self.platform.on_init(&mut accessor);
 
         self.init_order.iter().cloned().for_each(|index| {
             // Take the set out of the list
@@ -303,18 +310,20 @@ impl Drop for PluginRegistry {
             }
         });
 
+        self.platform.on_shutdown();
+
         // Destroy the plugins
         drop(plugins);
     }
 }
 
-struct RegistryAccessor {
-    quit_handle: AnyArc<dyn IQuitHandle>,
-    config: Option<serde_json::Value>,
-    interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
-    schedule: Box<Schedule>,
-    resources: Box<TypedTable>,
-    world: Box<World>,
+pub(crate) struct RegistryAccessor {
+    pub(crate) quit_handle: AnyArc<dyn IQuitHandle>,
+    pub(crate) config: Option<serde_json::Value>,
+    pub(crate) interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
+    pub(crate) schedule: Box<Schedule>,
+    pub(crate) resources: Box<TypedTable>,
+    pub(crate) world: Box<World>,
 }
 
 impl IRegistryAccessor for RegistryAccessor {

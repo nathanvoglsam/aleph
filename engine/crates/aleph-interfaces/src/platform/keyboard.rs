@@ -32,24 +32,6 @@ use std::fmt::Display;
 use any::*;
 
 ///
-/// This interface should be used by plugins that wish to register themselves as the engine's
-/// keyboard provider. Anything that implements this should correctly handle creating and destroying
-/// whatever is needed to access the system's keyboard, and should be able to give out an
-/// `AnyArc<IKeyboard>` to allow others to retrieve information about and manipulate the keyboard.
-///
-pub trait IKeyboardProvider: IAny + 'static {
-    ///
-    /// Returns an `AnyArc` that holds an `IKeyboard` interface.
-    ///
-    /// This will always return the same `IKeyboard` instance as `IKeyboardProvider` only supports
-    /// handling a single keyboard device.
-    ///
-    /// A return value of `None` should signal that the functionality is not supported.
-    ///
-    fn get_keyboard(&self) -> Option<AnyArc<dyn IKeyboard>>;
-}
-
-///
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's keyboard.
 ///

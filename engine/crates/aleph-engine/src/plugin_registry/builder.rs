@@ -36,6 +36,7 @@ use interfaces::schedule::CoreStage;
 use interfaces::scheduler::{Schedule, SystemSchedule, TypedTable};
 
 use crate::interfaces::plugin::IPlugin;
+use crate::platform::{platform_interfaces, PlatformSDL2};
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
 use crate::plugin_registry::{PluginEntry, PluginRegistry};
@@ -102,6 +103,7 @@ impl PluginRegistryBuilder {
             schedule: Some(Box::new(schedule)),
             resources: Some(Box::new(TypedTable::default())),
             world: Some(Box::new(world)),
+            platform: PlatformSDL2::new(),
         };
 
         // Initialize the plugins
@@ -135,6 +137,7 @@ impl PluginRegistryBuilder {
             init_dependencies.push(std::mem::take(&mut registrar.init_after_list));
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
         });
+
         SchedulerState {
             dependencies,
             init_dependencies,
@@ -159,7 +162,8 @@ impl PluginRegistryBuilder {
         let all_interfaces: BTreeSet<TypeId> = provided_interfaces
             .iter()
             .flat_map(|v| v.iter().cloned())
-            .chain(self.plugins.iter().map(|v| v.type_id()))
+            .chain(self.plugins.iter().map(|v| v.v.type_id()))
+            .chain(platform_interfaces()) // Add the platform interfaces provided by the engine
             .collect();
 
         // If all interfaces contain the entirety of mandatory interfaces then all plugins provided
@@ -242,7 +246,9 @@ impl PluginRegistryBuilder {
         let mut order = Vec::new();
 
         // Set to keep track of what has been executed
-        let mut executed = BTreeSet::new();
+        //
+        // Contains platform interfaces as they are implicitly provided by the engine
+        let mut executed = BTreeSet::from_iter(platform_interfaces());
 
         // Set to keep track of what was executed over the course of a single scheduler iteration
         let mut newly_executed = BTreeSet::new();
@@ -263,7 +269,7 @@ impl PluginRegistryBuilder {
                     let dependencies_satisfied = executed.is_superset(&execution_dependencies[*v]);
                     if dependencies_satisfied {
                         // Insert the plugin's concrete type id into the executed set
-                        newly_executed.insert(self.plugins[*v].type_id());
+                        newly_executed.insert(self.plugins[*v].v.type_id());
 
                         // Insert the type id for all interfaces that the plugin implements
                         newly_executed.extend(provided_implementations[*v].iter());

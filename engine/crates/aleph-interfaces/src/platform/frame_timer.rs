@@ -27,11 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::any::{AnyArc, IAny};
-
-pub trait IFrameTimerProvider: IAny + 'static {
-    fn get_frame_timer(&self) -> Option<AnyArc<dyn IFrameTimer>>;
-}
+use crate::any::IAny;
 
 pub trait IFrameTimer: IAny + Send + Sync + 'static {
     fn delta_time(&self) -> f64;

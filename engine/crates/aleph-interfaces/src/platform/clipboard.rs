@@ -32,25 +32,6 @@ use std::ffi::{CStr, CString};
 use any::*;
 
 ///
-/// This interface should be used by plugins that wish to register themselves as the engine's
-/// clipboard provider. Anything that implements this should correctly handle creating and
-/// destroying whatever is needed to access the system's clipboard, and should be able to give out
-/// an `AnyArc<IClipboard>` to allow others to retrieve information about and manipulate the
-/// clipboard.
-///
-pub trait IClipboardProvider: IAny + 'static {
-    ///
-    /// Returns an `AnyArc` that holds an `IClipboard` interface.
-    ///
-    /// This will always return the same `IClipboard` instance as `IClipboardProvider` only supports
-    /// handling a single mouse device.
-    ///
-    /// A return value of `None` should signal that the functionality is not supported.
-    ///
-    fn get_clipboard(&self) -> Option<AnyArc<dyn IClipboard>>;
-}
-
-///
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's clipboard.
 ///

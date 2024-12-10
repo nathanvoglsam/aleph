@@ -40,7 +40,7 @@ use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 ///
 /// Internal enum for representing a mouse request
 ///
-pub enum MouseRequest {
+pub(crate) enum MouseRequest {
     SetPos(i32, i32),
     SetCursor(Cursor),
     ShowCursor,
@@ -50,22 +50,22 @@ pub enum MouseRequest {
 ///
 /// The struct that provides the context for, and implements, `IKeyboard`
 ///
-pub struct MouseImpl {
+pub struct Mouse {
     /// The current state of the keyboard, as recorded at the beginning of a frame
-    pub state: RwLock<MouseState>,
+    pub(crate) state: RwLock<MouseState>,
 
     /// The event list for the current frame
-    pub events: RwLock<Vec<MouseEvent>>,
+    pub(crate) events: RwLock<Vec<MouseEvent>>,
 
     /// The request queue that will be flushed and handled at the beginning of the frame after a
     /// request is made
-    pub requests: Mutex<Vec<MouseRequest>>,
+    pub(crate) requests: Mutex<Vec<MouseRequest>>,
 }
 
-declare_interfaces!(MouseImpl, [IMouse]);
+declare_interfaces!(Mouse, [IMouse]);
 
-impl MouseImpl {
-    pub fn new() -> AnyArc<Self> {
+impl Mouse {
+    pub(crate) fn new() -> AnyArc<Self> {
         let out = Self {
             state: RwLock::new(MouseState {
                 pos: (0.0, 0.0),
@@ -80,7 +80,7 @@ impl MouseImpl {
     ///
     /// Internal function for handling requests made in the last frame
     ///
-    pub fn process_mouse_requests(
+    pub(crate) fn process_mouse_requests(
         &self,
         window: &sdl2::video::Window,
         mouse_utils: &sdl2::mouse::MouseUtil,
@@ -115,7 +115,7 @@ impl MouseImpl {
     ///
     /// Internal function for handling the events produced by the OS
     ///
-    pub fn process_mouse_event(
+    pub(crate) fn process_mouse_event(
         &self,
         mouse_events: &mut Vec<MouseEvent>,
         all_events: &mut Vec<Event>,
@@ -214,7 +214,7 @@ impl MouseImpl {
     ///
     /// Internal function for getting new mouse state from SDL2
     ///
-    pub fn update_state(&self, event_pump: &sdl2::EventPump) {
+    pub(crate) fn update_state(&self, event_pump: &sdl2::EventPump) {
         let state = sdl2::mouse::MouseState::new(event_pump);
 
         *self.state.write().deref_mut() = MouseState {
@@ -224,7 +224,7 @@ impl MouseImpl {
     }
 }
 
-impl IMouse for MouseImpl {
+impl IMouse for Mouse {
     fn get_state(&self) -> MouseState {
         let lock = self.state.read();
         lock.deref().clone()
@@ -247,17 +247,16 @@ impl IMouse for MouseImpl {
     }
 
     fn events<'a>(&'a self) -> Box<dyn IMouseEventsLock + 'a> {
-        let lock = MouseEventsLockImpl(self.events.read());
-        Box::new(lock)
+        Box::new(MouseEventsLock(self.events.read()))
     }
 }
 
 ///
 /// Wrapper around RwLockReadGuard and implementation of `IKeyboardEventsLock`
 ///
-pub struct MouseEventsLockImpl<'a>(pub RwLockReadGuard<'a, Vec<MouseEvent>>);
+pub struct MouseEventsLock<'a>(RwLockReadGuard<'a, Vec<MouseEvent>>);
 
-impl<'a> IMouseEventsLock for MouseEventsLockImpl<'a> {
+impl<'a> IMouseEventsLock for MouseEventsLock<'a> {
     fn events(&self) -> &[MouseEvent] {
         self.0.as_slice()
     }

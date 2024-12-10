@@ -263,7 +263,7 @@ impl<'a> dyn IPluginRegistrar + 'a {
     /// Declares that the plugin depends on the existence of another plugin given by the type
     /// parameter. This can be used to declare that one plugin requires another plugin, or another
     /// interface to exist.
-    /// 
+    ///
     /// The 'init' parameter controls whether an execution dependency is also implied during the
     /// init phase.
     pub fn requires<T: IAny + ?Sized>(&mut self, init: InitOrder) {
@@ -279,7 +279,7 @@ impl<'a> dyn IPluginRegistrar + 'a {
     /// Declares a soft dependency on the given interface. This is similar to [`Self::requires`] but
     /// does not cause a failure if the interface is not made available by another plugin (or the
     /// engine itself).
-    /// 
+    ///
     /// The 'init' parameter controls whether an execution dependency is also implied during the
     /// init phase.
     pub fn uses<T: IAny + ?Sized>(&mut self, init: InitOrder) {

@@ -48,11 +48,11 @@ aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }
 aleph-sys-info = { workspace = true }
 aleph-egui = { workspace = true }
-aleph-sdl2 = { workspace = true }
 aleph-render = { workspace = true }
 aleph-rhi = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-config = { workspace = true }
+aleph-identity-hasher = { workspace = true }
 
 log = { workspace = true }
 once_cell = { workspace = true }
@@ -62,6 +62,15 @@ num_cpus = { workspace = true }
 serde_json = { workspace = true }
 crossbeam = { workspace = true }
 rayon = { workspace = true }
+sdl2 = { workspace = true }
+sdl2-sys = { workspace = true }
+ctrlc = { workspace = true }
+parking_lot = { workspace = true }
+raw-window-handle = { workspace = true }
+
+[build-dependencies]
+aleph-compile = { workspace = true }
+aleph-target-build = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows = { workspace = true }

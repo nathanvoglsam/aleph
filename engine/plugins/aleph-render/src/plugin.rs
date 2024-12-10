@@ -71,7 +71,7 @@ impl IPlugin for PluginRender {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.requires::<dyn IWindowProvider>(InitOrder::After);
+        registrar.requires::<dyn IWindow>(InitOrder::After);
         registrar.requires::<dyn IRhiProvider>(InitOrder::After);
 
         registrar.uses::<dyn egui::IEguiRenderData>(InitOrder::After);
@@ -83,11 +83,7 @@ impl IPlugin for PluginRender {
         config.log();
 
         // Get the handle for the window
-        let window = registry
-            .get_interface::<dyn IWindowProvider>()
-            .unwrap()
-            .get_window()
-            .unwrap();
+        let window = registry.get_interface::<dyn IWindow>().unwrap();
 
         // Get the render data slot for egui and the egui provider
         let render_data = registry.get_interface::<dyn egui::IEguiRenderData>();

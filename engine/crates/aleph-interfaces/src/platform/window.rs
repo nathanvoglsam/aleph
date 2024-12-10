@@ -55,24 +55,6 @@ pub enum WindowEvent {
 }
 
 ///
-/// This interface should be used by plugins that wish to register themselves as the engine's window
-/// provider. Anything that implements this should correctly handle creating and destroying an OS
-/// window, and should be able to give out an `AnyArc<IWindow>` to allow others to retrieve
-/// information about and manipulate the window.
-///
-pub trait IWindowProvider: IAny + 'static {
-    ///
-    /// Returns an `AnyArc` that holds a window interface.
-    ///
-    /// This will always return the same `IWindow` instance as `IWindowProvider` only supports
-    /// handling a single OS window.
-    ///
-    /// A return value of `None` should signal that the functionality is not supported.
-    ///
-    fn get_window(&self) -> Option<AnyArc<dyn IWindow>>;
-}
-
-///
 /// This interface should be implemented as the interface to an OS window. Ideally access to an
 /// `IWindow` instance will be provided from an `IWindowProvider`.
 ///

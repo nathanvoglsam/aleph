@@ -32,24 +32,6 @@ use any::*;
 use crate::platform::{KeyboardEvent, MouseEvent, WindowEvent};
 
 ///
-/// This interface should be used by plugins that wish to register themselves as the engine's
-/// event provider. Anything that implements this should correctly handle creating and
-/// destroying whatever is needed to access the system's event queue, and should be able to give out
-/// an `AnyArc<IEvents>` to allow others to interface with the events system.
-///
-pub trait IEventsProvider: IAny + 'static {
-    ///
-    /// Returns an `AnyArc` that holds an `IEvents` interface.
-    ///
-    /// This will always return the same `IEvents` instance as `IEventsProvider` only supports
-    /// handling a single events instance.
-    ///
-    /// A return value of `None` should signal that the functionality is not supported.
-    ///
-    fn get_events(&self) -> Option<AnyArc<dyn IEvents>>;
-}
-
-///
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's event queue.
 ///

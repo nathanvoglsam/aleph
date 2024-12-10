@@ -46,7 +46,7 @@ impl IPluginRegistrar for PluginRegistrar {
         match init {
             InitOrder::After => {
                 self.init_after_list.insert(dependency);
-            },
+            }
             InitOrder::DontCare => todo!(),
         }
     }
@@ -59,11 +59,10 @@ impl IPluginRegistrar for PluginRegistrar {
         match init {
             InitOrder::After => {
                 self.init_after_list.insert(uses);
-            },
+            }
             InitOrder::DontCare => {
                 // Intentionally blank as we don't track optional dependencies currently.
-            },
+            }
         }
-        
     }
 }

@@ -34,12 +34,9 @@ use egui::ClippedPrimitive;
 use interfaces::any::{AnyArc, IAny};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
-use interfaces::platform::{
-    IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider, IMouseProvider,
-    IWindowProvider,
-};
+use interfaces::platform::{IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow};
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
 };
 use interfaces::schedule::CoreStage;
 
@@ -65,48 +62,24 @@ impl IPlugin for PluginEgui {
         registrar.provides::<dyn IEguiRenderData>();
 
         // We need to get handles to all these when we initialize to save querying them every frame
-        registrar.requires::<dyn IWindowProvider>(InitOrder::After);
-        registrar.requires::<dyn IMouseProvider>(InitOrder::After);
-        registrar.requires::<dyn IKeyboardProvider>(InitOrder::After);
-        registrar.requires::<dyn IFrameTimerProvider>(InitOrder::After);
-        registrar.requires::<dyn IEventsProvider>(InitOrder::After);
-        registrar.requires::<dyn IClipboardProvider>(InitOrder::After);
+        registrar.requires::<dyn IWindow>(InitOrder::After);
+        registrar.requires::<dyn IMouse>(InitOrder::After);
+        registrar.requires::<dyn IKeyboard>(InitOrder::After);
+        registrar.requires::<dyn IFrameTimer>(InitOrder::After);
+        registrar.requires::<dyn IEvents>(InitOrder::After);
+        registrar.requires::<dyn IClipboard>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let render_data: AnyArc<EguiRenderData> = AnyArc::default();
         let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
 
-        let window = registry
-            .get_interface::<dyn IWindowProvider>()
-            .unwrap()
-            .get_window()
-            .unwrap();
-        let mouse = registry
-            .get_interface::<dyn IMouseProvider>()
-            .unwrap()
-            .get_mouse()
-            .unwrap();
-        let keyboard = registry
-            .get_interface::<dyn IKeyboardProvider>()
-            .unwrap()
-            .get_keyboard()
-            .unwrap();
-        let frame_timer = registry
-            .get_interface::<dyn IFrameTimerProvider>()
-            .unwrap()
-            .get_frame_timer()
-            .unwrap();
-        let events = registry
-            .get_interface::<dyn IEventsProvider>()
-            .unwrap()
-            .get_events()
-            .unwrap();
-        let clipboard = registry
-            .get_interface::<dyn IClipboardProvider>()
-            .unwrap()
-            .get_clipboard()
-            .unwrap();
+        let window = registry.get_interface::<dyn IWindow>().unwrap();
+        let mouse = registry.get_interface::<dyn IMouse>().unwrap();
+        let keyboard = registry.get_interface::<dyn IKeyboard>().unwrap();
+        let frame_timer = registry.get_interface::<dyn IFrameTimer>().unwrap();
+        let events = registry.get_interface::<dyn IEvents>().unwrap();
+        let clipboard = registry.get_interface::<dyn IClipboard>().unwrap();
 
         let pre_update_keyboard = keyboard.clone();
         let pre_update_frame_timer = frame_timer.clone();

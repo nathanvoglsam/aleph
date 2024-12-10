@@ -35,18 +35,17 @@ mod keyboard;
 mod mouse;
 mod window;
 
-pub use clipboard::{IClipboard, IClipboardProvider};
-pub use events::{Event, IEvents, IEventsLock, IEventsProvider};
-pub use frame_timer::{IFrameTimer, IFrameTimerProvider};
+pub use clipboard::IClipboard;
+pub use events::{Event, IEvents, IEventsLock};
+pub use frame_timer::IFrameTimer;
 pub use gamepad::*;
 pub use keyboard::{
-    IKeyboard, IKeyboardEventsLock, IKeyboardProvider, IKeyboardStateLock, KeyCode, KeyDownEvent,
-    KeyMod, KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
+    IKeyboard, IKeyboardEventsLock, IKeyboardStateLock, KeyCode, KeyDownEvent, KeyMod, KeyUpEvent,
+    KeyboardEvent, ScanCode, TextInputEvent,
 };
 pub use mouse::{
-    Cursor, IMouse, IMouseEventsLock, IMouseProvider, MouseButton, MouseButtonDownEvent,
-    MouseButtonUpEvent, MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection,
-    MouseWheelEvent,
+    Cursor, IMouse, IMouseEventsLock, MouseButton, MouseButtonDownEvent, MouseButtonUpEvent,
+    MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection, MouseWheelEvent,
 };
 pub use raw_window_handle::*;
-pub use window::{IWindow, IWindowEventsLock, IWindowProvider, WindowEvent};
+pub use window::{IWindow, IWindowEventsLock, WindowEvent};

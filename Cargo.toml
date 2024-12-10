@@ -82,7 +82,6 @@ members = [
     "engine/plugins/aleph-egui",
     "engine/plugins/aleph-render",
     "engine/plugins/aleph-rhi",
-    "engine/plugins/aleph-sdl2",
     "engine/tools/aleph",
     "game/aleph-test",
 ]
@@ -195,7 +194,6 @@ aleph-windows = { path = "./engine/crates/aleph-windows", version = "0.1" }
 aleph-egui = { path = "./engine/plugins/aleph-egui", version = "0.1" }
 aleph-render = { path = "./engine/plugins/aleph-render", version = "0.1" }
 aleph-rhi = { path = "./engine/plugins/aleph-rhi", version = "0.1" }
-aleph-sdl2 = { path = "./engine/plugins/aleph-sdl2", version = "0.1" }
 
 # 'archived' Crates
 aleph-ktx = { path = "./engine/archived/aleph-ktx", version = "0.1" }

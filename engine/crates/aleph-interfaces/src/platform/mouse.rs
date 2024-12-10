@@ -30,24 +30,6 @@
 use any::*;
 
 ///
-/// This interface should be used by plugins that wish to register themselves as the engine's mouse
-/// provider. Anything that implements this should correctly handle creating and destroying whatever
-/// is needed to access the system's mouse, and should be able to give out an `AnyArc<IMouse>` to
-/// allow others to retrieve information about and manipulate the mouse.
-///
-pub trait IMouseProvider: IAny + 'static {
-    ///
-    /// Returns an `AnyArc` that holds an `IMouse` interface.
-    ///
-    /// This will always return the same `IMouse` instance as `IMouseProvider` only supports
-    /// handling a single mouse device.
-    ///
-    /// A return value of `None` should signal that the functionality is not supported.
-    ///
-    fn get_mouse(&self) -> Option<AnyArc<dyn IMouse>>;
-}
-
-///
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's mouse.
 ///

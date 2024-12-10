@@ -31,9 +31,9 @@ use std::any::TypeId;
 
 use aleph_interfaces::any::{declare_interfaces, AnyArc, IAny};
 use aleph_interfaces::make_plugin_description_for_crate;
-use aleph_interfaces::platform::IWindowProvider;
+use aleph_interfaces::platform::IWindow;
 use aleph_interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
 };
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::{AdapterPowerClass, AdapterRequestOptions, BackendAPI};
@@ -66,7 +66,7 @@ impl IPlugin for PluginRHI {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.uses::<dyn IWindowProvider>(InitOrder::After);
+        registrar.uses::<dyn IWindow>(InitOrder::After);
 
         if !self.rhi_loader.backends().is_empty() {
             registrar.provides::<dyn IRhiProvider>();
@@ -98,9 +98,7 @@ impl IPlugin for PluginRHI {
             })
             .unwrap();
 
-        let window = registry
-            .get_interface::<dyn IWindowProvider>()
-            .and_then(|v| v.get_window());
+        let window = registry.get_interface::<dyn IWindow>();
         let surface = if let Some(window) = window {
             let surface = if cfg!(any(target_os = "ios", target_os = "macos")) {
                 context.create_surface_for_metal_layer(window.metal_layer().unwrap())

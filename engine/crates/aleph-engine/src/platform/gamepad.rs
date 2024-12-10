@@ -41,29 +41,29 @@ use interfaces::platform::{
 use parking_lot::RwLock;
 use sdl2::controller::GameController;
 
-pub type GamepadsMap = HashMap<u32, GamepadEntry, BuildHasherDefault<IdentityHasher>>;
+pub(crate) type GamepadsMap = HashMap<u32, GamepadEntry, BuildHasherDefault<IdentityHasher>>;
 
-pub struct GamepadsImpl {
+pub struct Gamepads {
     /// Set of all gamepads currently connected and opened by the gamepads system. Only one of these
     /// will be considered active at any one point.
-    pub gamepads: RefCell<GamepadsMap>,
+    pub(crate) gamepads: RefCell<GamepadsMap>,
 
     /// The highest gamepad ID we've opened. Used to determine if we get handed a bad ID or an ID
     /// for a controller that has since been disconnected and not in the gamepads set anymore.
-    pub highest_id: Cell<u32>,
+    pub(crate) highest_id: Cell<u32>,
 
     /// The index of the currently active controller, if one is active
-    pub active_controller: Cell<Option<u32>>,
+    pub(crate) active_controller: Cell<Option<u32>>,
 
     /// The thread-safe object we can share to enable safe access to the current gamepad state
     /// outside of the main thread. New state and events will be published here every frame.
-    pub accessor: AnyArc<GamepadsAccessorImpl>,
+    pub(crate) accessor: AnyArc<GamepadsAccessor>,
 }
 
-declare_interfaces!(GamepadsImpl, [IGamepads]);
+declare_interfaces!(Gamepads, [IGamepads]);
 
-impl GamepadsImpl {
-    pub fn new() -> AnyArc<Self> {
+impl Gamepads {
+    pub(crate) fn new() -> AnyArc<Self> {
         AnyArc::new(Self {
             gamepads: Default::default(),
             highest_id: Default::default(),
@@ -75,7 +75,7 @@ impl GamepadsImpl {
     ///
     /// Internal function for handling the events produced by the OS
     ///
-    pub fn process_gamepad_event(
+    pub(crate) fn process_gamepad_event(
         &self,
         gamepads: &mut GamepadsMap,
         joystick: &sdl2::JoystickSubsystem,
@@ -180,7 +180,11 @@ impl GamepadsImpl {
         self.active_controller.set(Some(new_id));
     }
 
-    pub fn publish_active_state(&self, gamepads: &GamepadsMap, events: &[sdl2::event::Event]) {
+    pub(crate) fn publish_active_state(
+        &self,
+        gamepads: &GamepadsMap,
+        events: &[sdl2::event::Event],
+    ) {
         let mut shared_state = self.accessor.shared_state.write();
         if let Some(active) = self.active_controller.get() {
             let entry = gamepads.get(&active).unwrap();
@@ -237,28 +241,27 @@ impl GamepadsImpl {
     }
 }
 
-impl IGamepads for GamepadsImpl {
+impl IGamepads for Gamepads {
     fn get_accessor(&self) -> AnyArc<dyn IGamepadsAccessor> {
-        let accessor = self.accessor.clone();
-        AnyArc::map::<dyn IGamepadsAccessor, _>(accessor, |v| v)
+        AnyArc::map::<dyn IGamepadsAccessor, _>(self.accessor.clone(), |v| v)
     }
 }
 
-pub struct GamepadEntry {
-    pub _device_index: u32,
-    pub pad: GameController,
-    pub state: GamepadState,
+pub(crate) struct GamepadEntry {
+    pub(crate) _device_index: u32,
+    pub(crate) pad: GameController,
+    pub(crate) state: GamepadState,
 }
 
 #[derive(Default)]
-pub struct GamepadsAccessorImpl {
-    pub shared_state: RwLock<Option<GamepadState>>,
-    pub shared_events: RwLock<Option<Vec<GamepadEvent>>>,
+pub struct GamepadsAccessor {
+    pub(crate) shared_state: RwLock<Option<GamepadState>>,
+    pub(crate) shared_events: RwLock<Option<Vec<GamepadEvent>>>,
 }
 
-declare_interfaces!(GamepadsAccessorImpl, [IGamepadsAccessor]);
+declare_interfaces!(GamepadsAccessor, [IGamepadsAccessor]);
 
-impl IGamepadsAccessor for GamepadsAccessorImpl {
+impl IGamepadsAccessor for GamepadsAccessor {
     fn get_active_controller_state(&self) -> Option<GamepadState> {
         let reader = self.shared_state.read();
         reader.deref().clone()

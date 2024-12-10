@@ -39,10 +39,10 @@ use parking_lot::{RwLock, RwLockReadGuard};
 ///
 /// Represents the state of the keyboard this frame
 ///
-pub struct KeyboardState {
+pub(crate) struct KeyboardState {
     /// Array of boolean values that should be indexed with a `ScanCode` to see if that `ScanCode`
     /// is pressed.
-    pub keys: [bool; ScanCode::MAX_VALUES],
+    pub(crate) keys: [bool; ScanCode::MAX_VALUES],
 
     /// Table used for translating scan codes into key codes
     scan_code_translation_table: [Option<KeyCode>; ScanCode::MAX_VALUES],
@@ -54,33 +54,31 @@ pub struct KeyboardState {
 ///
 /// The struct that provides the context for, and implements, `IKeyboard`
 ///
-pub struct KeyboardImpl {
+pub struct Keyboard {
     /// The current state of the keyboard, as recorded at the beginning of a frame
-    pub state: RwLock<KeyboardState>,
+    pub(crate) state: RwLock<KeyboardState>,
 
     /// The event list for the current frame
-    pub events: RwLock<Vec<KeyboardEvent>>,
+    pub(crate) events: RwLock<Vec<KeyboardEvent>>,
 }
 
-declare_interfaces!(KeyboardImpl, [IKeyboard]);
+declare_interfaces!(Keyboard, [IKeyboard]);
 
-impl IKeyboard for KeyboardImpl {
+impl IKeyboard for Keyboard {
     fn get_state<'a>(&'a self) -> Box<dyn IKeyboardStateLock + 'a> {
-        let lock = KeyboardStateLockImpl(self.state.read());
-        Box::new(lock)
+        Box::new(KeyboardStateLock(self.state.read()))
     }
 
     fn events<'a>(&'a self) -> Box<dyn IKeyboardEventsLock + 'a> {
-        let lock = KeyboardEventsLockImpl(self.events.read());
-        Box::new(lock)
+        Box::new(KeyboardEventsLock(self.events.read()))
     }
 }
 
-impl KeyboardImpl {
+impl Keyboard {
     ///
     /// Internal function for initializing the keyboard state
     ///
-    pub fn new() -> AnyArc<Self> {
+    pub(crate) fn new() -> AnyArc<Self> {
         log::info!("Initializing the Keyboard system");
         let keyboard_state = KeyboardState {
             keys: [false; ScanCode::MAX_VALUES],
@@ -98,7 +96,7 @@ impl KeyboardImpl {
     ///
     /// Internal function for handling the events produced by the OS
     ///
-    pub fn process_keyboard_event(
+    pub(crate) fn process_keyboard_event(
         &self,
         keyboard_events: &mut Vec<KeyboardEvent>,
         keyboard_state: &mut KeyboardState,
@@ -152,9 +150,9 @@ impl KeyboardImpl {
 ///
 /// Wrapper around RwLockReadGuard and implementation of `IKeyboardEventsLock`
 ///
-pub struct KeyboardEventsLockImpl<'a>(pub RwLockReadGuard<'a, Vec<KeyboardEvent>>);
+pub struct KeyboardEventsLock<'a>(RwLockReadGuard<'a, Vec<KeyboardEvent>>);
 
-impl<'a> IKeyboardEventsLock for KeyboardEventsLockImpl<'a> {
+impl<'a> IKeyboardEventsLock for KeyboardEventsLock<'a> {
     fn events(&self) -> &[KeyboardEvent] {
         self.0.as_slice()
     }
@@ -163,9 +161,9 @@ impl<'a> IKeyboardEventsLock for KeyboardEventsLockImpl<'a> {
 ///
 /// Wrapper around RwLockReadGuard and implementation of `IKeyboardStateLock`
 ///
-pub struct KeyboardStateLockImpl<'a>(pub RwLockReadGuard<'a, KeyboardState>);
+pub struct KeyboardStateLock<'a>(RwLockReadGuard<'a, KeyboardState>);
 
-impl<'a> IKeyboardStateLock for KeyboardStateLockImpl<'a> {
+impl<'a> IKeyboardStateLock for KeyboardStateLock<'a> {
     fn translate_scan_code(&self, scan_code: ScanCode) -> Option<KeyCode> {
         self.0.scan_code_translation_table[scan_code as usize]
     }

@@ -34,30 +34,29 @@ use parking_lot::{RwLock, RwLockReadGuard};
 ///
 /// The struct that provides the context for, and implements, `IEvents`
 ///
-pub struct EventsImpl(pub RwLock<Vec<Event>>);
+pub struct Events(pub(crate) RwLock<Vec<Event>>);
 
-declare_interfaces!(EventsImpl, [IEvents]);
+declare_interfaces!(Events, [IEvents]);
 
-impl IEvents for EventsImpl {
-    fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a> {
-        let lock = EventsLockImpl(self.0.read());
-        Box::new(lock)
+impl Events {
+    pub(crate) fn new() -> AnyArc<Self> {
+        let out = Self(RwLock::new(Vec::new()));
+        AnyArc::new(out)
     }
 }
 
-impl EventsImpl {
-    pub fn new() -> AnyArc<Self> {
-        let out = Self(RwLock::new(Vec::new()));
-        AnyArc::new(out)
+impl IEvents for Events {
+    fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a> {
+        Box::new(EventsLock(self.0.read()))
     }
 }
 
 ///
 /// Wrapper around RwLockReadGuard and implementation of `IEventsLock`
 ///
-pub struct EventsLockImpl<'a>(pub RwLockReadGuard<'a, Vec<Event>>);
+pub struct EventsLock<'a>(RwLockReadGuard<'a, Vec<Event>>);
 
-impl<'a> IEventsLock for EventsLockImpl<'a> {
+impl<'a> IEventsLock for EventsLock<'a> {
     fn events(&self) -> &[Event] {
         self.0.as_slice()
     }

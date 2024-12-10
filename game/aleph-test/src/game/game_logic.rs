@@ -43,7 +43,7 @@ use aleph_engine::egui::widgets::{frame_stats, FrameTimeHistory};
 use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
-use aleph_engine::interfaces::platform::{IFrameTimerProvider, IGamepadsProvider};
+use aleph_engine::interfaces::platform::{IFrameTimer, IGamepads};
 use aleph_engine::interfaces::plugin::{CoreRefs, InitOrder};
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
@@ -77,24 +77,15 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.requires::<dyn IGamepadsProvider>(InitOrder::After);
-        registrar.requires::<dyn IFrameTimerProvider>(InitOrder::After);
+        registrar.requires::<dyn IGamepads>(InitOrder::After);
+        registrar.requires::<dyn IFrameTimer>(InitOrder::After);
         registrar.uses::<dyn IEguiContextProvider>(InitOrder::After);
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
-        let frame_timer = registry
-            .get_interface::<dyn IFrameTimerProvider>()
-            .unwrap()
-            .get_frame_timer()
-            .unwrap();
-
-        let gamepads = registry
-            .get_interface::<dyn IGamepadsProvider>()
-            .unwrap()
-            .get_gamepads()
-            .unwrap();
+        let frame_timer = registry.get_interface::<dyn IFrameTimer>().unwrap();
+        let gamepads = registry.get_interface::<dyn IGamepads>().unwrap();
 
         let CoreRefs {
             resources,

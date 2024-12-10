@@ -43,45 +43,45 @@ use raw_window_handle::{DisplayHandle, HandleError, WindowHandle};
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more
 /// info regarding "recently collected" see the documentation for `Window`
 ///
-pub struct WindowState {
+pub(crate) struct WindowState {
     /// The title/text in the window header
-    pub title: String,
+    pub(crate) title: String,
 
     /// The current width of the window on the desktop
-    pub current_width: u32,
+    pub(crate) current_width: u32,
 
     /// The current height of the window on the desktop
-    pub current_height: u32,
+    pub(crate) current_height: u32,
 
     /// The current width of the drawable surface
-    pub drawable_width: u32,
+    pub(crate) drawable_width: u32,
 
     /// The current height of the drawable surface
-    pub drawable_height: u32,
+    pub(crate) drawable_height: u32,
 
     /// The width of the window when not fullscreen
-    pub windowed_width: u32,
+    pub(crate) windowed_width: u32,
 
     /// The height of the window when not fullscreen
-    pub windowed_height: u32,
+    pub(crate) windowed_height: u32,
 
     /// Whether the window is currently fullscreen
-    pub fullscreen: bool,
+    pub(crate) fullscreen: bool,
 
     /// Is the window currently focused
-    pub focused: bool,
+    pub(crate) focused: bool,
 
     /// Is the DPI of the window based on the display it is currently on
-    pub current_dpi: f32,
+    pub(crate) current_dpi: f32,
 
     /// The window's display handle
-    pub display_handle: RawDisplayHandle,
+    pub(crate) display_handle: RawDisplayHandle,
 
     /// The window's window handle
-    pub window_handle: RawWindowHandle,
+    pub(crate) window_handle: RawWindowHandle,
 
     /// The 'CAMetalLayer' pointer for the window, only available on Metal (Apple) platforms.
-    pub metal_layer: Option<NonNull<c_void>>,
+    pub(crate) metal_layer: Option<NonNull<c_void>>,
 }
 
 unsafe impl Send for WindowState {}
@@ -90,7 +90,7 @@ unsafe impl Sync for WindowState {}
 ///
 /// Represents the set of possible state change requests the window can perform
 ///
-pub enum WindowRequest {
+pub(crate) enum WindowRequest {
     /// Request the window to update it's title
     ChangeTitle(String),
 
@@ -116,28 +116,28 @@ pub enum WindowRequest {
 ///
 /// The struct that provides the context for, and implements, `IWindow`
 ///
-pub struct WindowImpl {
+pub struct Window {
     /// The window state, as recorded at the beginning of a frame
-    pub state: RwLock<WindowState>,
+    pub(crate) state: RwLock<WindowState>,
 
     /// The event list for the current frame
-    pub events: RwLock<Vec<WindowEvent>>,
+    pub(crate) events: RwLock<Vec<WindowEvent>>,
 
     /// The request queue that will be flushed and handled at the beginning of the frame after a
     /// request is made
-    pub requests: Mutex<Vec<WindowRequest>>,
+    pub(crate) requests: Mutex<Vec<WindowRequest>>,
 
     /// A flag that is used to check whether the window has been resized
-    pub resized: AtomicBool,
+    pub(crate) resized: AtomicBool,
 }
 
-declare_interfaces!(WindowImpl, [IWindow]);
+declare_interfaces!(Window, [IWindow]);
 
-impl WindowImpl {
+impl Window {
     ///
     /// Internal function for initializing the engine window
     ///
-    pub fn new(
+    pub(crate) fn new(
         video_ctx: &sdl2::VideoSubsystem,
         title: &str,
     ) -> (AnyArc<Self>, sdl2::video::Window) {
@@ -251,7 +251,7 @@ impl WindowImpl {
     /// Internal function for handling internal reactions to window events then pushing them to the
     /// event queue
     ///
-    pub fn process_window_event(
+    pub(crate) fn process_window_event(
         &self,
         video_ctx: &sdl2::VideoSubsystem,
         window_state: &mut WindowState,
@@ -331,7 +331,7 @@ impl WindowImpl {
     /// Internal function for handling internal reactions to window events then pushing them to the
     /// event queue
     ///
-    pub fn process_window_requests(
+    pub(crate) fn process_window_requests(
         &self,
         window: &mut sdl2::video::Window,
         window_state: &mut WindowState,
@@ -436,14 +436,14 @@ impl WindowImpl {
     ///
     /// Internal function for getting new mouse state from SDL2
     ///
-    pub fn update_state(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
+    pub(crate) fn update_state(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
         let drawable_size = window.vulkan_drawable_size();
         window_state.drawable_width = drawable_size.0;
         window_state.drawable_height = drawable_size.1;
     }
 }
 
-impl IWindow for WindowImpl {
+impl IWindow for Window {
     fn resized(&self) -> bool {
         self.resized.swap(false, Ordering::Relaxed)
     }
@@ -533,26 +533,25 @@ impl IWindow for WindowImpl {
     }
 
     fn events<'a>(&'a self) -> Box<dyn IWindowEventsLock + 'a> {
-        let lock = WindowEventsLockImpl(self.events.read());
-        Box::new(lock)
+        Box::new(WindowEventsLock(self.events.read()))
     }
 }
 
-impl HasDisplayHandle for WindowImpl {
+impl HasDisplayHandle for Window {
     fn display_handle(&self) -> Result<DisplayHandle, HandleError> {
         let handle = self.state.read().display_handle;
         unsafe { Ok(DisplayHandle::borrow_raw(handle)) }
     }
 }
 
-impl HasWindowHandle for WindowImpl {
+impl HasWindowHandle for Window {
     fn window_handle(&self) -> Result<WindowHandle, HandleError> {
         let handle = self.state.read().window_handle;
         unsafe { Ok(WindowHandle::borrow_raw(handle)) }
     }
 }
 
-impl Drop for WindowImpl {
+impl Drop for Window {
     fn drop(&mut self) {
         #[cfg(any(target_os = "macos", target_os = "ios"))]
         unsafe {
@@ -577,9 +576,9 @@ impl Drop for WindowImpl {
 ///
 /// Wrapper around RwLockReadGuard and implementation of `IWindowEventsLock`
 ///
-pub struct WindowEventsLockImpl<'a>(RwLockReadGuard<'a, Vec<WindowEvent>>);
+pub struct WindowEventsLock<'a>(RwLockReadGuard<'a, Vec<WindowEvent>>);
 
-impl<'a> IWindowEventsLock for WindowEventsLockImpl<'a> {
+impl<'a> IWindowEventsLock for WindowEventsLock<'a> {
     fn events(&self) -> &[WindowEvent] {
         self.0.as_slice()
     }

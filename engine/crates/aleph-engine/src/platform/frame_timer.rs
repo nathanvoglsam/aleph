@@ -32,15 +32,15 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use interfaces::any::AnyArc;
 use interfaces::platform::IFrameTimer;
 
-pub struct FrameTimerImpl {
+pub struct FrameTimer {
     freq: AtomicU64,
     first: AtomicU64,
     last: AtomicU64,
     current: AtomicU64,
 }
 
-impl FrameTimerImpl {
-    pub fn new(timer: &sdl2::TimerSubsystem) -> AnyArc<Self> {
+impl FrameTimer {
+    pub(crate) fn new(timer: &sdl2::TimerSubsystem) -> AnyArc<Self> {
         log::info!("Initializing the Frame Timer");
         let out = Self {
             freq: AtomicU64::new(timer.performance_frequency()),
@@ -51,7 +51,7 @@ impl FrameTimerImpl {
         AnyArc::new(out)
     }
 
-    pub fn update(&self, timer: &sdl2::TimerSubsystem) {
+    pub(crate) fn update(&self, timer: &sdl2::TimerSubsystem) {
         self.last
             .store(self.current.load(Ordering::Relaxed), Ordering::Relaxed);
         self.current
@@ -59,7 +59,7 @@ impl FrameTimerImpl {
     }
 }
 
-impl IFrameTimer for FrameTimerImpl {
+impl IFrameTimer for FrameTimer {
     fn delta_time(&self) -> f64 {
         let current = self.current.load(Ordering::Relaxed) as f64;
         let last = self.last.load(Ordering::Relaxed) as f64;
@@ -79,4 +79,4 @@ impl IFrameTimer for FrameTimerImpl {
     }
 }
 
-interfaces::any::declare_interfaces!(FrameTimerImpl, [IFrameTimer]);
+interfaces::any::declare_interfaces!(FrameTimer, [IFrameTimer]);

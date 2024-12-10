@@ -36,6 +36,7 @@ pub extern crate aleph_egui as egui;
 pub extern crate aleph_interfaces as interfaces;
 pub extern crate aleph_target as target;
 
+pub mod platform;
 pub mod plugin_registry;
 
 pub mod any {
@@ -52,6 +53,7 @@ use std::path::Path;
 use log::LevelFilter;
 
 use crate::interfaces::plugin::IPlugin;
+use crate::platform::intercept_main;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
 pub struct EngineBuilder {
@@ -130,9 +132,8 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(mut self, cont: impl FnOnce(Engine)) {
-        aleph_sdl2::PluginPlatformSDL2::setup(move |v| {
-            self.plugin(v);
+    pub fn build(self, cont: impl FnOnce(Engine)) {
+        intercept_main(move || {
             let engine = self.init();
             cont(engine)
         });
