@@ -27,13 +27,11 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-
-use aleph_interfaces::any::{declare_interfaces, AnyArc, IAny};
+use aleph_interfaces::any::{declare_interfaces, AnyArc};
 use aleph_interfaces::make_plugin_description_for_crate;
 use aleph_interfaces::platform::IWindow;
 use aleph_interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
+    IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription, Provides,
 };
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::{AdapterPowerClass, AdapterRequestOptions, BackendAPI};
@@ -67,17 +65,14 @@ impl IPlugin for PluginRHI {
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
         registrar.uses::<dyn IWindow>(InitOrder::After);
-
-        if !self.rhi_loader.backends().is_empty() {
-            registrar.provides::<dyn IRhiProvider>();
-        }
+        registrar.provides::<dyn IRhiProvider>(Provides::Optional);
     }
 
-    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
         // If there are no GPU backends available we early exit and yield no provider as there's
         // nothing to provide
         if self.rhi_loader.backends().is_empty() {
-            return Box::<Vec<(TypeId, AnyArc<dyn IAny>)>>::default();
+            return;
         }
 
         let config = registry.config().unwrap();
@@ -134,11 +129,7 @@ impl IPlugin for PluginRHI {
             device,
         });
 
-        let response = vec![(
-            TypeId::of::<dyn IRhiProvider>(),
-            AnyArc::map::<dyn IAny, _>(provider, |v| v),
-        )];
-        Box::new(response)
+        registry.provide::<dyn IRhiProvider, _>(provider);
     }
 }
 

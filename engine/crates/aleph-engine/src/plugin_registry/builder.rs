@@ -71,6 +71,7 @@ impl PluginRegistryBuilder {
             dependencies,
             mut init_dependencies,
             mut provided_interfaces,
+            optional_provides,
         } = self.handle_plugin_registration();
 
         // Then we need a resolution phase
@@ -107,7 +108,7 @@ impl PluginRegistryBuilder {
         };
 
         // Initialize the plugins
-        registry.init_plugins(provided_interfaces);
+        registry.init_plugins(provided_interfaces, optional_provides);
 
         // Return the registry
         registry
@@ -118,13 +119,15 @@ impl PluginRegistryBuilder {
         let mut registrar = PluginRegistrar {
             depends_on_list: Default::default(),
             provided_interfaces: Default::default(),
-            init_after_list: BTreeSet::default(),
+            optional_provides: Default::default(),
+            init_after_list: Default::default(),
         };
 
         // SoA storage for the plugin's execution dependencies for each execution stage
         let mut dependencies: Vec<BTreeSet<TypeId>> = Vec::new();
         let mut init_dependencies: Vec<BTreeSet<TypeId>> = Vec::new();
         let mut provided_interfaces: Vec<BTreeSet<TypeId>> = Vec::new();
+        let mut optional_provides: Vec<BTreeSet<TypeId>> = Vec::new();
 
         // Iterate over each plugin and record its registration info
         self.plugins.iter_mut().for_each(|plugin| {
@@ -136,12 +139,14 @@ impl PluginRegistryBuilder {
             dependencies.push(std::mem::take(&mut registrar.depends_on_list));
             init_dependencies.push(std::mem::take(&mut registrar.init_after_list));
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
+            optional_provides.push(std::mem::take(&mut registrar.optional_provides));
         });
 
         SchedulerState {
             dependencies,
             init_dependencies,
             provided_interfaces,
+            optional_provides,
         }
     }
 
@@ -304,6 +309,7 @@ struct SchedulerState {
     dependencies: Vec<BTreeSet<TypeId>>,
     init_dependencies: Vec<BTreeSet<TypeId>>,
     provided_interfaces: Vec<BTreeSet<TypeId>>,
+    optional_provides: Vec<BTreeSet<TypeId>>,
 }
 
 impl Default for PluginRegistryBuilder {

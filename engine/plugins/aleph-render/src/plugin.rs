@@ -77,7 +77,7 @@ impl IPlugin for PluginRender {
         registrar.uses::<dyn egui::IEguiRenderData>(InitOrder::After);
     }
 
-    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
         let config = registry.config().unwrap();
         let config: Config = serde_json::from_value(config.clone()).unwrap();
         config.log();
@@ -239,8 +239,6 @@ impl IPlugin for PluginRender {
                     }
                 },
             );
-
-        default_response()
     }
 
     fn on_exit(&mut self) {

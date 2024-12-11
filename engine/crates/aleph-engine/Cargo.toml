@@ -47,9 +47,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }
 aleph-sys-info = { workspace = true }
-aleph-egui = { workspace = true }
-aleph-render = { workspace = true }
-aleph-rhi = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-config = { workspace = true }
 aleph-identity-hasher = { workspace = true }

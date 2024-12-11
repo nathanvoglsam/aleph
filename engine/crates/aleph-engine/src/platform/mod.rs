@@ -37,13 +37,13 @@ mod sdl_main_wrapper;
 mod window;
 
 pub use clipboard::Clipboard;
-pub use events::{Events, EventsLock};
+pub use events::Events;
 pub use frame_timer::FrameTimer;
-pub use gamepad::{Gamepads, GamepadsAccessor};
-pub use keyboard::{Keyboard, KeyboardEventsLock, KeyboardStateLock};
-pub use mouse::{Mouse, MouseEventsLock};
-pub(crate) use sdl_main_wrapper::intercept_main;
-pub use window::{Window, WindowEventsLock};
+pub use gamepad::Gamepads;
+pub use keyboard::Keyboard;
+pub use mouse::Mouse;
+pub use sdl_main_wrapper::intercept_main;
+pub use window::Window;
 
 use std::any::TypeId;
 use std::cell::Cell;

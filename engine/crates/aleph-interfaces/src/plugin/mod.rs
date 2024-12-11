@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
+use std::any::{type_name, TypeId};
 
 use any::IAny;
 use ecs::World;
@@ -84,9 +84,7 @@ pub trait IPlugin: IAny {
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
     #[allow(unused_variables)]
-    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        Box::<Vec<(TypeId, AnyArc<dyn IAny>)>>::default()
-    }
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {}
 
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     #[allow(unused_variables)]
@@ -121,53 +119,18 @@ pub struct PluginDescription {
 }
 
 ///
-/// A generic wrapper over the response expected from a plugin for the `on_init` function.
-///
-/// Rather than using a concrete type for the response we use an interface to allow for updating
-/// the response format in the future without changing the plugin interface.
-///
-pub trait IInitResponse {
-    /// Take the interfaces iterator from the init response.
-    ///
-    /// This function must yield a non `None` value *at least* once. It may continue to return a
-    /// non `None` value after the first call, but such behavior is not required and *should not*
-    /// be relied on.
-    fn interfaces(&mut self) -> Box<dyn IInterfaceIterator>;
-}
-
-/// Utility function for a default, empty response object
-pub fn default_response() -> Box<dyn IInitResponse> {
-    #[allow(clippy::box_default)]
-    Box::new(Vec::new())
-}
-
-///
-/// A helper implementation that can save manually implementing `IInitResponse`
-///
-impl IInitResponse for Vec<(TypeId, AnyArc<dyn IAny>)> {
-    fn interfaces(&mut self) -> Box<dyn IInterfaceIterator> {
-        let take = std::mem::take(self);
-        let iter = take.into_iter();
-        Box::new(iter)
-    }
-}
-
-///
-/// A generic iterator interface that is used by the plugin initialization process to get the
-/// provided interfaces from a plugin
-///
-pub trait IInterfaceIterator: Iterator<Item = (TypeId, AnyArc<dyn IAny>)> {}
-
-impl<T: Iterator<Item = (TypeId, AnyArc<dyn IAny>)>> IInterfaceIterator for T {}
-
-///
 /// An abstract interface over any potential concrete implementation of an accessor into the plugin
 /// registry. This can be used to retrieve interface implementations, request the main loop exit,
 /// etc.
 ///
 pub trait IRegistryAccessor {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
+    #[doc(hidden)]
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>>;
+
+    /// Object safe implementation of `provide`. See wrapper for more info.
+    #[doc(hidden)]
+    fn __provide(&mut self, interface: TypeId, object: AnyArc<dyn IAny>);
 
     /// Registry quit handle which can be freely sent to other threads. The object is used to
     /// request the engine/plugin registry to exit.
@@ -186,6 +149,20 @@ impl<'a> dyn IRegistryAccessor + 'a {
     pub fn get_interface<T: IAny + ?Sized>(&self) -> Option<AnyArc<T>> {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
+    }
+
+    pub fn provide<I: IAny + ?Sized, T: IAny>(&mut self, object: AnyArc<T>) {
+        // We check this in the __provide layer too but we can generate much better panic messages
+        // if we do it here where we can get the type names of all objects involved.
+        let interface_name = type_name::<I>();
+        let got_name = type_name::<T>();
+        assert!(
+            object.query_interface::<I>().is_some(),
+            "Attempting to provide an object '{}' that does not implement the '{}' interface!",
+            got_name,
+            interface_name
+        );
+        self.__provide(TypeId::of::<I>(), AnyArc::map::<dyn IAny, _>(object, |v| v));
     }
 }
 
@@ -240,19 +217,19 @@ pub trait IQuitHandle: IAny + Send + Sync + 'static {
 /// ```
 ///
 /// The `TypeId`/type parameter can either be a concrete type, such as a specific plugin
-/// implementation, or an abstract interface like `IWindowProvider`. This way it is possible for a
-/// plugin to depend on both specific plugins (i.e `WindowProviderSDL2`) or they can declare a
+/// implementation, or an abstract interface like `IWindow`. This way it is possible for a
+/// plugin to depend on both specific plugins (i.e `WindowSDL2`) or they can declare a
 /// dependency that is generic over arbitrary plugins that provide an abstract interface
-/// (i.e `IWindowProvider`) implementation.
+/// (i.e `IWindow`) implementation.
 ///
 pub trait IPluginRegistrar {
     /// Object safe implementation of `requires`. See wrapper for more info.
     #[doc(hidden)]
-    fn __requires(&mut self, dependency: TypeId, init: InitOrder);
+    fn __requires(&mut self, requires: TypeId, init: InitOrder);
 
     /// Object safe implementation of `provides_interface`. See wrapper for more info.
     #[doc(hidden)]
-    fn __provides(&mut self, provides: TypeId);
+    fn __provides(&mut self, provides: TypeId, availability: Provides);
 
     /// Object safe implementation of `uses`. See wrapper for more info.
     #[doc(hidden)]
@@ -272,8 +249,8 @@ impl<'a> dyn IPluginRegistrar + 'a {
 
     /// Declares that the plugin will provide an object that implements the interface given by the
     /// `T` type parameter.
-    pub fn provides<T: IAny + ?Sized>(&mut self) {
-        self.__provides(TypeId::of::<T>())
+    pub fn provides<T: IAny + ?Sized>(&mut self, availability: Provides) {
+        self.__provides(TypeId::of::<T>(), availability)
     }
 
     /// Declares a soft dependency on the given interface. This is similar to [`Self::requires`] but
@@ -291,6 +268,12 @@ impl<'a> dyn IPluginRegistrar + 'a {
 pub enum InitOrder {
     After,
     DontCare,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum Provides {
+    Always,
+    Optional,
 }
 
 ///

@@ -55,8 +55,7 @@ pub enum WindowEvent {
 }
 
 ///
-/// This interface should be implemented as the interface to an OS window. Ideally access to an
-/// `IWindow` instance will be provided from an `IWindowProvider`.
+/// This interface should be implemented as the interface to an OS window.
 ///
 pub trait IWindow: IAny + HasDisplayHandle + HasWindowHandle + Send + Sync + 'static {
     ///

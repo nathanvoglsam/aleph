@@ -31,15 +31,13 @@ extern crate aleph_engine as aleph;
 
 use std::path::Path;
 
-use aleph::egui::IEguiContextProvider;
 use aleph::interfaces::make_plugin_description_for_crate;
-use aleph::interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
-};
+use aleph::interfaces::plugin::{IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription};
 use aleph::interfaces::renderer::Renderer;
 use aleph::interfaces::schedule::CoreStage;
 use aleph::Engine;
-use aleph_engine::egui::widgets::{frame_stats, FrameTimeHistory};
+use aleph_egui::widgets::{frame_stats, FrameTimeHistory};
+use aleph_egui::IEguiContextProvider;
 use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
@@ -56,7 +54,9 @@ use crate::game::throbber_logic::ThrobberLogic;
 
 pub fn engine_runner() {
     let mut engine = Engine::builder();
-    engine.default_plugins();
+    engine.plugin(aleph_rhi::PluginRHI::new());
+    engine.plugin(aleph_egui::PluginEgui::new());
+    engine.plugin(aleph_render::PluginRender::new());
     engine.plugin(PluginGameLogic::new());
     engine.build(|engine| engine.run())
 }
@@ -82,7 +82,7 @@ impl IPlugin for PluginGameLogic {
         registrar.uses::<dyn IEguiContextProvider>(InitOrder::After);
     }
 
-    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
         let frame_timer = registry.get_interface::<dyn IFrameTimer>().unwrap();
         let gamepads = registry.get_interface::<dyn IGamepads>().unwrap();
@@ -177,7 +177,5 @@ impl IPlugin for PluginGameLogic {
                 }
             },
         );
-
-        Box::new(Vec::new())
     }
 }

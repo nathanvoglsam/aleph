@@ -27,16 +27,15 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::ops::Deref;
 
 use egui::ClippedPrimitive;
-use interfaces::any::{AnyArc, IAny};
+use interfaces::any::AnyArc;
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
 use interfaces::platform::{IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow};
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription,
+    IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription, Provides,
 };
 use interfaces::schedule::CoreStage;
 
@@ -58,8 +57,8 @@ impl IPlugin for PluginEgui {
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
         // We export two interfaces for interacting with egui
-        registrar.provides::<dyn IEguiContextProvider>();
-        registrar.provides::<dyn IEguiRenderData>();
+        registrar.provides::<dyn IEguiContextProvider>(Provides::Always);
+        registrar.provides::<dyn IEguiRenderData>(Provides::Always);
 
         // We need to get handles to all these when we initialize to save querying them every frame
         registrar.requires::<dyn IWindow>(InitOrder::After);
@@ -70,7 +69,7 @@ impl IPlugin for PluginEgui {
         registrar.requires::<dyn IClipboard>(InitOrder::After);
     }
 
-    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
         let render_data: AnyArc<EguiRenderData> = AnyArc::default();
         let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
 
@@ -134,17 +133,8 @@ impl IPlugin for PluginEgui {
                 },
             );
 
-        let response = vec![
-            (
-                TypeId::of::<dyn IEguiContextProvider>(),
-                AnyArc::map::<dyn IAny, _>(context_provider, |v| v),
-            ),
-            (
-                TypeId::of::<dyn IEguiRenderData>(),
-                AnyArc::map::<dyn IAny, _>(render_data, |v| v),
-            ),
-        ];
-        Box::new(response)
+        registry.provide::<dyn IEguiContextProvider, _>(context_provider);
+        registry.provide::<dyn IEguiRenderData, _>(render_data);
     }
 }
 

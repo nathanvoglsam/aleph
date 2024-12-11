@@ -32,11 +32,9 @@
 // =================================================================================================
 
 // Re-export useful crates
-pub extern crate aleph_egui as egui;
 pub extern crate aleph_interfaces as interfaces;
 pub extern crate aleph_target as target;
 
-pub mod platform;
 pub mod plugin_registry;
 
 pub mod any {
@@ -46,6 +44,8 @@ pub mod any {
 // =================================================================================================
 // Modules
 // =================================================================================================
+
+mod platform;
 
 use std::env::current_dir;
 use std::path::Path;
@@ -117,14 +117,6 @@ impl EngineBuilder {
         Self {
             registry: PluginRegistry::builder(),
         }
-    }
-
-    pub fn default_plugins(&mut self) -> &mut Self {
-        self.plugin(aleph_rhi::PluginRHI::new());
-        self.plugin(egui::PluginEgui::new());
-        self.plugin(aleph_render::PluginRender::new());
-
-        self
     }
 
     pub fn plugin(&mut self, plugin: impl IPlugin) -> &mut Self {

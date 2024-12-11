@@ -84,7 +84,11 @@ impl PluginRegistry {
     }
 
     /// Internal function that drives the initialization of all the plugins
-    pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<BTreeSet<TypeId>>) {
+    pub(crate) fn init_plugins(
+        &mut self,
+        mut provided_interfaces: Vec<BTreeSet<TypeId>>,
+        optional_provides: Vec<BTreeSet<TypeId>>,
+    ) {
         let mut plugins = std::mem::take(&mut self.plugins);
 
         Self::load_configs(&mut plugins);
@@ -94,6 +98,7 @@ impl PluginRegistry {
             quit_handle,
             config: None,
             interfaces: self.interfaces.take().unwrap(),
+            provides: Default::default(),
             schedule: self.schedule.take().unwrap(),
             resources: self.resources.take().unwrap(),
             world: self.world.take().unwrap(),
@@ -105,6 +110,8 @@ impl PluginRegistry {
         self.init_order.iter().cloned().for_each(|index| {
             // Take the set out of the list
             let mut provided = std::mem::take(&mut provided_interfaces[index]);
+            let optional = &optional_provides[index];
+
             let plugin = &mut plugins[index];
 
             // Log that we're initializing the plugin
@@ -121,8 +128,8 @@ impl PluginRegistry {
             // in its functions
             accessor.config = std::mem::take(&mut plugin.config);
 
-            let mut response = plugin.v.on_init(&mut accessor);
-            response.interfaces().for_each(|(id, object)| {
+            plugin.v.on_init(&mut accessor);
+            while let Some((id, object)) = accessor.provides.pop_first() {
                 if !provided.remove(&id) {
                     let description = plugin.v.get_description();
                     let message = format!(
@@ -148,9 +155,11 @@ impl PluginRegistry {
                     log::error!("{}", &message);
                     panic!("{}", &message);
                 }
-            });
+            }
 
-            if !provided.is_empty() {
+            // If provided contains interfaces not in the optional set then it means the plugin
+            // failed to provide interfaces it promised to always provide. This is an error!
+            if !provided.is_subset(optional) {
                 let description = plugin.v.get_description();
                 let message = format!(
                     "Plugin [{} - {}.{}.{}] failed to provide all the interfaces it declared",
@@ -321,6 +330,7 @@ pub(crate) struct RegistryAccessor {
     pub(crate) quit_handle: AnyArc<dyn IQuitHandle>,
     pub(crate) config: Option<serde_json::Value>,
     pub(crate) interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
+    pub(crate) provides: BTreeMap<TypeId, AnyArc<dyn IAny>>,
     pub(crate) schedule: Box<Schedule>,
     pub(crate) resources: Box<TypedTable>,
     pub(crate) world: Box<World>,
@@ -329,6 +339,14 @@ pub(crate) struct RegistryAccessor {
 impl IRegistryAccessor for RegistryAccessor {
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>> {
         self.interfaces.get(&interface).cloned()
+    }
+
+    fn __provide(&mut self, interface: TypeId, object: AnyArc<dyn IAny>) {
+        assert!(
+            object.__query_interface(interface).is_some(),
+            "Attempting to provide an object that does not implement the specified interface!"
+        );
+        self.provides.insert(interface, object);
     }
 
     fn quit_handle(&self) -> AnyArc<dyn IQuitHandle> {

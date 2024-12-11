@@ -30,29 +30,41 @@
 use std::any::TypeId;
 use std::collections::BTreeSet;
 
-use interfaces::plugin::InitOrder;
+use interfaces::plugin::{InitOrder, Provides};
 
 use crate::interfaces::plugin::IPluginRegistrar;
 
 pub struct PluginRegistrar {
     pub(crate) depends_on_list: BTreeSet<TypeId>,
     pub(crate) provided_interfaces: BTreeSet<TypeId>,
+    pub(crate) optional_provides: BTreeSet<TypeId>,
     pub(crate) init_after_list: BTreeSet<TypeId>,
 }
 
 impl IPluginRegistrar for PluginRegistrar {
-    fn __requires(&mut self, dependency: TypeId, init: InitOrder) {
-        self.depends_on_list.insert(dependency);
+    fn __requires(&mut self, requires: TypeId, init: InitOrder) {
+        self.depends_on_list.insert(requires);
         match init {
             InitOrder::After => {
-                self.init_after_list.insert(dependency);
+                self.init_after_list.insert(requires);
             }
-            InitOrder::DontCare => todo!(),
+            InitOrder::DontCare => {
+                // Intentionally left blank
+            }
         }
     }
 
-    fn __provides(&mut self, provides: TypeId) {
+    fn __provides(&mut self, provides: TypeId, availability: Provides) {
+        // TODO: do something with 'availability' so we can have optional interface providers
         self.provided_interfaces.insert(provides);
+        match availability {
+            Provides::Always => {
+                // Intentionally left blank
+            }
+            Provides::Optional => {
+                self.optional_provides.insert(provides);
+            }
+        }
     }
 
     fn __uses(&mut self, uses: TypeId, init: InitOrder) {

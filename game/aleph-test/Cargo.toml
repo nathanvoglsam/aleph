@@ -48,6 +48,9 @@ path = "./src/lib.rs"
 [dependencies]
 aleph-engine = { workspace = true }
 aleph-rhi-api = { workspace = true }
+aleph-egui = { workspace = true }
+aleph-render = { workspace = true }
+aleph-rhi = { workspace = true }
 aleph-device-allocators = { workspace = true }
 aleph-profile = { workspace = true, features = ["profile-with-tracy"] }
 
