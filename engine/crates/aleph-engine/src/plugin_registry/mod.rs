@@ -197,16 +197,6 @@ impl PluginRegistry {
                 }
             }
         }
-        for plugin in plugins.iter() {
-            let desc = plugin.v.get_description();
-            log::info!(
-                "Running config script for plugin [{} - {}.{}.{}]",
-                &desc.name,
-                desc.major_version,
-                desc.minor_version,
-                desc.patch_version
-            );
-        }
 
         match configs.run_override_script() {
             Ok(_) => {}
