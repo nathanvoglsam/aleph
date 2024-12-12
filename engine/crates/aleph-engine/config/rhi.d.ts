@@ -27,28 +27,44 @@
 // SOFTWARE.
 //
 
-use aleph_interfaces::any::{declare_interfaces, AnyArc};
-use aleph_interfaces::rhi::IRhiProvider;
-use aleph_rhi_api::{IAdapter, IDevice, ISurface};
+declare namespace rhi {
+    /**
+     * All the supported RHI backends.
+     */
+    declare type Backend = "d3d12" | "vulkan"; 
 
-pub struct RhiProvider {
-    pub surface: Option<AnyArc<dyn ISurface>>,
-    pub adapter: AnyArc<dyn IAdapter>,
-    pub device: AnyArc<dyn IDevice>,
-}
+    /**
+     * Special options specific to the D3D12 backend.
+     */
+    declare interface D3D12Options {}
 
-impl IRhiProvider for RhiProvider {
-    fn surface(&self) -> Option<AnyArc<dyn ISurface>> {
-        self.surface.clone()
-    }
-
-    fn adapter(&self) -> AnyArc<dyn IAdapter> {
-        self.adapter.clone()
-    }
-
-    fn device(&self) -> AnyArc<dyn IDevice> {
-        self.device.clone()
+    /**
+     * Special options specific to the Vulkan backend.
+     */
+    declare interface VulkanOptions {
+        /** Whether to disable sync2 and force the sync2 emulation path on. **/
+        denySync2: boolean;
     }
 }
 
-declare_interfaces!(RhiProvider, [IRhiProvider]);
+interface Configs {
+    "rhi": {
+        /** The backend that should be used **/
+        api: rhi.Backend;
+
+        /** Any options to configure the Vulkan backend, if it is loaded. **/
+        vulkan?: rhi.VulkanOptions;
+
+        /** Any options to configure the D3D12 backend, if it is loaded. **/
+        d3d12?: rhi.D3D12Options;
+
+        /** Whether to enable RHI and platform validation layers if they are available. **/
+        validation: boolean;
+
+        /** 
+         * Whether debuging utilities are allowed to be initialized. Different backends have debug
+         * tools only available on dev machines.
+         */
+        debug: boolean;
+    },
+}

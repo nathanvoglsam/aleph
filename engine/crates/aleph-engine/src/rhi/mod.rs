@@ -27,24 +27,28 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+
 use aleph_interfaces::any::{declare_interfaces, AnyArc};
-use aleph_interfaces::make_plugin_description_for_crate;
 use aleph_interfaces::platform::IWindow;
-use aleph_interfaces::plugin::{
-    IPlugin, IPluginRegistrar, IRegistryAccessor, InitOrder, PluginDescription, Provides,
-};
 use aleph_interfaces::rhi::IRhiProvider;
-use aleph_rhi_api::{AdapterPowerClass, AdapterRequestOptions, BackendAPI};
+use aleph_rhi_api::*;
 use aleph_rhi_loader::{BackendConfigs, ContextOptions, RhiLoader};
+
+use interfaces::any::IAny;
 use serde::Deserialize;
 
-use crate::rhi_provider::RhiProvider;
+use crate::plugin_registry::RegistryAccessor;
 
-pub struct PluginRHI {
+pub(crate) fn rhi_interfaces() -> [TypeId; 1] {
+    [TypeId::of::<dyn IRhiProvider>()]
+}
+
+pub(crate) struct Rhi {
     rhi_loader: RhiLoader,
 }
 
-impl PluginRHI {
+impl Rhi {
     pub fn new() -> Self {
         Self {
             rhi_loader: RhiLoader::new(),
@@ -52,30 +56,15 @@ impl PluginRHI {
     }
 }
 
-impl Default for PluginRHI {
-    fn default() -> Self {
-        PluginRHI::new()
-    }
-}
-
-impl IPlugin for PluginRHI {
-    fn get_description(&self) -> PluginDescription {
-        make_plugin_description_for_crate!()
-    }
-
-    fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.uses::<dyn IWindow>(InitOrder::After);
-        registrar.provides::<dyn IRhiProvider>(Provides::Optional);
-    }
-
-    fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
+impl Rhi {
+    pub(crate) fn on_init(&mut self, registry: &mut RegistryAccessor) {
         // If there are no GPU backends available we early exit and yield no provider as there's
         // nothing to provide
         if self.rhi_loader.backends().is_empty() {
             return;
         }
 
-        let config = registry.config().unwrap();
+        let config = registry.configs.get("rhi").unwrap();
         let config: Config = serde_json::from_value(config.clone()).unwrap();
         config.log();
 
@@ -93,7 +82,10 @@ impl IPlugin for PluginRHI {
             })
             .unwrap();
 
-        let window = registry.get_interface::<dyn IWindow>();
+        let window = registry
+            .interfaces
+            .get(&TypeId::of::<dyn IWindow>())
+            .and_then(|v| v.query_interface::<dyn IWindow>());
         let surface = if let Some(window) = window {
             let surface = if cfg!(any(target_os = "ios", target_os = "macos")) {
                 context.create_surface_for_metal_layer(window.metal_layer().unwrap())
@@ -129,11 +121,12 @@ impl IPlugin for PluginRHI {
             device,
         });
 
-        registry.provide::<dyn IRhiProvider, _>(provider);
+        registry.interfaces.insert(
+            TypeId::of::<dyn IRhiProvider>(),
+            AnyArc::map::<dyn IAny, _>(provider, |v| v),
+        );
     }
 }
-
-declare_interfaces!(PluginRHI, [IPlugin]);
 
 #[derive(Copy, Clone, Debug, Deserialize)]
 enum Backend {
@@ -161,7 +154,7 @@ struct VulkanOptions {
 
 impl VulkanOptions {
     pub fn log(&self) {
-        log::info!("aleph-rhi.vulkan.deny_sync_2 = {}", self.deny_sync_2);
+        log::info!("rhi.vulkan.deny_sync_2 = {}", self.deny_sync_2);
     }
 }
 
@@ -202,12 +195,34 @@ struct Config {
 
 impl Config {
     pub fn log(&self) {
-        log::info!("aleph-rhi.api = {:?}", self.api);
+        log::info!("rhi.api = {:?}", self.api);
 
         self.vulkan.as_ref().inspect(|v| v.log());
         self.d3d12.as_ref().inspect(|v| v.log());
 
-        log::info!("aleph-rhi.validation = {}", self.validation);
-        log::info!("aleph-rhi.debug = {}", self.debug);
+        log::info!("rhi.validation = {}", self.validation);
+        log::info!("rhi.debug = {}", self.debug);
     }
 }
+
+pub(crate) struct RhiProvider {
+    pub(crate) surface: Option<AnyArc<dyn ISurface>>,
+    pub(crate) adapter: AnyArc<dyn IAdapter>,
+    pub(crate) device: AnyArc<dyn IDevice>,
+}
+
+impl IRhiProvider for RhiProvider {
+    fn surface(&self) -> Option<AnyArc<dyn ISurface>> {
+        self.surface.clone()
+    }
+
+    fn adapter(&self) -> AnyArc<dyn IAdapter> {
+        self.adapter.clone()
+    }
+
+    fn device(&self) -> AnyArc<dyn IDevice> {
+        self.device.clone()
+    }
+}
+
+declare_interfaces!(RhiProvider, [IRhiProvider]);

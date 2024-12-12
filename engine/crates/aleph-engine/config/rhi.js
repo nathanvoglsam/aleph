@@ -27,6 +27,14 @@
 // SOFTWARE.
 //
 
-fn main() {
-    println!("cargo::rerun-if-changed=src");
-}
+let config = Environment.getConfig();
+
+// On Windows we prefer D3D12 for better platform integration (DXGI)
+/** @type {rhi.Backend} */
+let api = Platform.isWindows(config.platform) ? "d3d12" : "vulkan";
+
+Configs["rhi"] = {
+    api: api,
+    validation: false,
+    debug: false,
+};

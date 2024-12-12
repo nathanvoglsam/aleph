@@ -27,44 +27,7 @@
 // SOFTWARE.
 //
 
-declare namespace aleph_rhi {
-    /**
-     * All the supported RHI backends.
-     */
-    declare type Backend = "d3d12" | "vulkan"; 
-
-    /**
-     * Special options specific to the D3D12 backend.
-     */
-    declare interface D3D12Options {}
-
-    /**
-     * Special options specific to the Vulkan backend.
-     */
-    declare interface VulkanOptions {
-        /** Whether to disable sync2 and force the sync2 emulation path on. **/
-        denySync2: boolean;
-    }
-}
-
-interface Configs {
-    "aleph-rhi": {
-        /** The backend that should be used **/
-        api: aleph_rhi.Backend;
-
-        /** Any options to configure the Vulkan backend, if it is loaded. **/
-        vulkan?: aleph_rhi.VulkanOptions;
-
-        /** Any options to configure the D3D12 backend, if it is loaded. **/
-        d3d12?: aleph_rhi.D3D12Options;
-
-        /** Whether to enable RHI and platform validation layers if they are available. **/
-        validation: boolean;
-
-        /** 
-         * Whether debuging utilities are allowed to be initialized. Different backends have debug
-         * tools only available on dev machines.
-         */
-        debug: boolean;
-    },
+Configs["render"] = {
+    framesInFlight: 2,
+    forceGraphRebuild: false,
 }

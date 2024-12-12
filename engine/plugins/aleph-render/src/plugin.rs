@@ -78,7 +78,7 @@ impl IPlugin for PluginRender {
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
-        let config = registry.config().unwrap();
+        let config = registry.config("render").unwrap();
         let config: Config = serde_json::from_value(config.clone()).unwrap();
         config.log();
 
@@ -357,11 +357,8 @@ struct Config {
 
 impl Config {
     pub fn log(&self) {
-        log::info!("aleph-render.framesInFlight = {}", self.frames_in_flight);
-        log::info!(
-            "aleph-render.forceGraphRebuild = {}",
-            self.force_graph_rebuild
-        );
+        log::info!("render.framesInFlight = {}", self.frames_in_flight);
+        log::info!("render.forceGraphRebuild = {}", self.force_graph_rebuild);
     }
 }
 

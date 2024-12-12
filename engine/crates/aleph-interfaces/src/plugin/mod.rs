@@ -136,8 +136,20 @@ pub trait IRegistryAccessor {
     /// request the engine/plugin registry to exit.
     fn quit_handle(&self) -> AnyArc<dyn IQuitHandle>;
 
-    /// Get the plugin's config, if one was found.
-    fn config(&self) -> Option<&serde_json::Value>;
+    /// Fetch the config object for the given root config name.
+    ///
+    /// # Example
+    ///
+    /// Each crate can export a number of named config objects. The aleph-engine crate (at the time
+    /// of writing) exports 'core' and 'rhi' config objects. To access these objects simply call:
+    /// ```ignore
+    /// let accessor: &dyn IRegistryAccessor = something;
+    /// let rhi = accessor.config_by_name("rhi");
+    /// let core = accessor.config_by_name("core");
+    /// ```
+    ///
+    /// Only a single crate can export a config for a given name.
+    fn config(&self, name: &str) -> Option<&serde_json::Value>;
 
     /// Access to a core set of resources provided by the engine, wrapped in a [`CoreRefs`].
     fn core(&mut self) -> CoreRefs;

@@ -46,6 +46,7 @@ pub mod any {
 // =================================================================================================
 
 mod platform;
+mod rhi;
 
 use std::env::current_dir;
 use std::path::Path;

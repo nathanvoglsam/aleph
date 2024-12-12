@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-mod plugin;
-mod rhi_provider;
-
-pub use plugin::PluginRHI;
+Configs["rhi"].api = "vulkan";
+Configs["rhi"].validation = true;
+Configs["rhi"].debug = true;

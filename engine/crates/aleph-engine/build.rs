@@ -39,6 +39,9 @@ use target::Platform;
 /// target platforms.
 ///
 fn main() {
+    println!("cargo::rerun-if-changed=src");
+    println!("cargo::rerun-if-changed=SDL2-builds");
+
     let target_platform = target::build::target_platform();
     let target_arch = target::build::target_architecture();
 

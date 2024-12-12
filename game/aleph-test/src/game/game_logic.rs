@@ -54,7 +54,6 @@ use crate::game::throbber_logic::ThrobberLogic;
 
 pub fn engine_runner() {
     let mut engine = Engine::builder();
-    engine.plugin(aleph_rhi::PluginRHI::new());
     engine.plugin(aleph_egui::PluginEgui::new());
     engine.plugin(aleph_render::PluginRender::new());
     engine.plugin(PluginGameLogic::new());

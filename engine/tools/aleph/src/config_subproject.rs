@@ -56,7 +56,7 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
 
     fn retain_crate(_package: &Package, metadata: &AlephCrateMetadata) -> bool {
         // Skip any packages with no config script
-        metadata.config || metadata.config_defs
+        !metadata.configs.is_empty() || metadata.config_defs
     }
 
     fn load_crate(
@@ -66,35 +66,26 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
         package: &Package,
         metadata: &AlephCrateMetadata,
     ) -> anyhow::Result<Self::CrateMeta> {
-        // The game crate is special, and gets the name @overrides which the config crate interprets
-        // as a script that runs after all the library configs.
-        //
-        // It's intended to provide game specific overrides to the library's default config.
-        let (game_crate, _) = _ctx.get_game_crate_and_target()?;
-        let output_name = if game_crate.id == package.id {
-            "@overrides"
-        } else {
-            package.name.as_str()
-        };
+        let config_names =
+            arena.alloc_slice_fill_iter(metadata.configs.iter().map(|v| &*arena.alloc_str(v)));
 
-        let output_file = project_ctx
-            .meta
-            .configs_root
-            .join(output_name)
-            .with_extension("js");
-        let output_file = arena.alloc_utf8_path(simplified(&output_file));
+        let config_dir = package.manifest_path.parent().unwrap().join("config");
+        let config_dir = arena.alloc_utf8_path(simplified(&config_dir));
 
-        let config_file = package
-            .manifest_path
-            .parent()
-            .unwrap()
-            .join("config")
-            .join("config.js");
-        let config_file = arena.alloc_utf8_path(simplified(&config_file));
+        let configs = arena.alloc_slice_fill_iter(metadata.configs.iter().map(|v| {
+            let dst = project_ctx.meta.configs_root.join(v).with_extension("js");
+            let dst = arena.alloc_utf8_path(simplified(&dst));
+
+            let src = config_dir.join(v).with_extension("js");
+            let src = arena.alloc_utf8_path(simplified(&src));
+
+            ConfigPair { src, dst }
+        }));
 
         Ok(ConfigCrateMeta {
-            output_file,
-            config_file,
+            config_dir,
+            config_names,
+            configs,
             defs_only: metadata.config_defs,
         })
     }
@@ -152,12 +143,24 @@ impl<'a> ConfigProjectMeta<'a> {
 
 #[derive(Clone, Debug)]
 pub struct ConfigCrateMeta<'a> {
-    /// Path to '.aleph/configs/{crate}.js'
-    pub output_file: &'a Utf8Path,
+    /// Path to the crate's config folder
+    pub config_dir: &'a Utf8Path,
 
-    /// Path to the 'config.js' file in the crate's 'config' folder.
-    pub config_file: &'a Utf8Path,
+    /// The list of config names the crate exports. This is what [`Self::configs`] is derived from.
+    pub config_names: &'a [&'a str],
+
+    /// Pairs of src and dst files for each declared config.
+    pub configs: &'a [ConfigPair<'a>],
 
     /// Whether this crate provides only type defs and no config script
     pub defs_only: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct ConfigPair<'a> {
+    /// Path to the 'config.js' file in the crate's 'config' folder.
+    pub src: &'a Utf8Path,
+
+    /// Path to '.aleph/configs/{config}.js'
+    pub dst: &'a Utf8Path,
 }

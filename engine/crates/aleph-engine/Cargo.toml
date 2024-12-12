@@ -43,6 +43,9 @@ edition.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[package.metadata.aleph]
+configs = ["core", "rhi"]
+
 [dependencies]
 aleph-interfaces = { workspace = true }
 aleph-target = { workspace = true }
@@ -50,12 +53,15 @@ aleph-sys-info = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-config = { workspace = true }
 aleph-identity-hasher = { workspace = true }
+aleph-rhi-loader = { workspace = true }
+aleph-rhi-api = { workspace = true }
 
 log = { workspace = true }
 once_cell = { workspace = true }
 utf16_lit = { workspace = true }
 raw-cpuid = { workspace = true }
 num_cpus = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 crossbeam = { workspace = true }
 rayon = { workspace = true }

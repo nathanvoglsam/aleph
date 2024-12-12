@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
+use std::collections::HashSet;
+
+use anyhow::anyhow;
 use bumpalo::Bump;
 use clap::ArgMatches;
 use tera::{Context, Tera};
@@ -66,39 +69,56 @@ impl ISubcommand for GenConfigs {
 
         ConfigSubproject::ensure_build_directories(&project_ctx)?;
 
+        let mut declared_configs = HashSet::new();
         for c in project_ctx.crates.iter() {
             if c.meta.defs_only {
                 continue;
             }
 
-            log::info!(
-                "Creating Symlink {} -> {}",
-                c.meta.config_file,
-                c.meta.output_file
-            );
-            // Symlink the config so we don't need to call this command every time we change a
-            // config
-            #[cfg(windows)]
-            {
-                std::os::windows::fs::symlink_file(c.meta.config_file, c.meta.output_file)?;
+            for config in c.meta.config_names {
+                if !declared_configs.insert(*config) {
+                    log::error!("Config name '{}' declared by multiple crates!", config);
+                    return Err(anyhow!(
+                        "Config name '{}' declared by multiple crates!",
+                        config
+                    ));
+                }
+            }
+        }
+
+        for c in project_ctx.crates.iter() {
+            if c.meta.defs_only {
+                continue;
             }
 
-            #[cfg(not(windows))]
-            {
-                std::os::unix::fs::symlink(c.meta.config_file, c.meta.output_file)?;
+            for config in c.meta.configs {
+                log::info!("Creating Symlink {} -> {}", config.src, config.dst);
+                // Symlink the config so we don't need to call this command every time we change a
+                // config
+                #[cfg(windows)]
+                {
+                    std::os::windows::fs::symlink_file(config.src, config.dst)?;
+                }
+
+                #[cfg(not(windows))]
+                {
+                    std::os::unix::fs::symlink(config.src, config.dst)?;
+                }
             }
         }
 
         let mut includes = String::new();
         let mut crates = project_ctx.crates.iter().peekable();
         while let Some(c) = crates.next() {
-            let include = c.meta.config_file.parent().unwrap().join("*");
-            let include = include.as_str().replace('\\', "\\\\");
-            use std::fmt::Write;
-            if crates.peek().is_some() {
-                writeln!(&mut includes, "    \"{}\",", include)?;
-            } else {
-                write!(&mut includes, "    \"{}\"", include)?;
+            if !c.meta.configs.is_empty() || c.meta.defs_only {
+                let include = c.meta.config_dir.join("*");
+                let include = include.as_str().replace('\\', "\\\\");
+                use std::fmt::Write;
+                if crates.peek().is_some() {
+                    writeln!(&mut includes, "    \"{}\",", include)?;
+                } else {
+                    write!(&mut includes, "    \"{}\"", include)?;
+                }
             }
         }
 

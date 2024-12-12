@@ -27,6 +27,6 @@
 // SOFTWARE.
 //
 
-Configs["aleph-rhi"].api = "vulkan";
-Configs["aleph-rhi"].validation = true;
-Configs["aleph-rhi"].debug = true;
+interface Configs {
+    "core": {},
+}

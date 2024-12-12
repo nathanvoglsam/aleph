@@ -44,9 +44,16 @@ pub struct AlephCrateMetadata<'a> {
     /// Shader metadata description
     pub shaders: Option<ShaderCrateMetadata<'a>>,
 
-    /// Does the crate want to integrate with aleph's config system (provide a config script)
+    /// An optional list of config object names that the crate wishes to export into the config
+    /// system.
+    ///
+    /// Each name in this list will map to a '.js' and '.d.ts' file inside the 'configs' directory
+    /// of the crate. Each config will be mapped into the game's config space and will be loaded
+    /// at launch. Each config can be queried by name from the config system. Only a single crate
+    /// can export a config by a given name. If multiple crates attempt to do so then the config
+    /// cook will fail at build time.
     #[serde(default)]
-    pub config: bool,
+    pub configs: Vec<String>,
 
     /// Odes the crate want to provide only type definitions for the config system
     /// (no config script)
@@ -64,7 +71,7 @@ impl<'a> AlephCrateMetadata<'a> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.shaders.is_none() && !self.config && !self.config_defs
+        self.shaders.is_none() && self.configs.is_empty() && !self.config_defs
     }
 
     fn value_for_package(package: &Package) -> Option<&serde_json::Value> {

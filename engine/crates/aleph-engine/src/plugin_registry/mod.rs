@@ -47,6 +47,7 @@ use crate::interfaces::any::{AnyArc, IAny};
 use crate::interfaces::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
 use crate::platform::PlatformSDL2;
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
+use crate::rhi::Rhi;
 
 ///
 pub struct PluginRegistry {
@@ -76,6 +77,9 @@ pub struct PluginRegistry {
 
     /// The SDL integration object for managing the connection to the SDL library
     platform: PlatformSDL2,
+
+    /// The RHI integration object
+    rhi: Rhi,
 }
 
 impl PluginRegistry {
@@ -91,12 +95,12 @@ impl PluginRegistry {
     ) {
         let mut plugins = std::mem::take(&mut self.plugins);
 
-        Self::load_configs(&mut plugins);
+        let configs = Self::load_configs(&mut plugins);
 
         let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
         let mut accessor = RegistryAccessor {
             quit_handle,
-            config: None,
+            configs,
             interfaces: self.interfaces.take().unwrap(),
             provides: Default::default(),
             schedule: self.schedule.take().unwrap(),
@@ -106,6 +110,9 @@ impl PluginRegistry {
 
         // Init the SDL2 integration
         self.platform.on_init(&mut accessor);
+
+        // Init the RHI integration
+        self.rhi.on_init(&mut accessor);
 
         self.init_order.iter().cloned().for_each(|index| {
             // Take the set out of the list
@@ -123,10 +130,6 @@ impl PluginRegistry {
                 description.minor_version,
                 description.patch_version
             );
-
-            // Take the config value from the slot in the plugin entry so the plugin can query it
-            // in its functions
-            accessor.config = std::mem::take(&mut plugin.config);
 
             plugin.v.on_init(&mut accessor);
             while let Some((id, object)) = accessor.provides.pop_first() {
@@ -171,9 +174,6 @@ impl PluginRegistry {
                 log::error!("{}", &message);
                 panic!("{}", &message);
             }
-
-            // Put the config back in its entry
-            plugin.config = std::mem::take(&mut accessor.config);
         });
 
         self.plugins = plugins;
@@ -183,10 +183,20 @@ impl PluginRegistry {
         self.world = Some(accessor.world);
     }
 
-    fn load_configs(plugins: &mut [PluginEntry]) {
+    fn load_configs(plugins: &mut [PluginEntry]) -> serde_json::Map<String, serde_json::Value> {
         log::info!("Initializing config JS runtime");
         let mut configs = ConfigRunner::new().expect("Failed to init config runner");
 
+        match configs.run_all_configs() {
+            Ok(_) => {}
+            Err(v) => {
+                if !matches!(v, RunConfigError::NoConfig) {
+                    log::error!("Failed while running config script. Reason: {:?}", v);
+                    // If the error is for anything other than a missing config then we panic
+                    panic!("Failed while running config script. Reason: {:?}", v);
+                }
+            }
+        }
         for plugin in plugins.iter() {
             let desc = plugin.v.get_description();
             log::info!(
@@ -196,38 +206,20 @@ impl PluginRegistry {
                 desc.minor_version,
                 desc.patch_version
             );
-
-            match configs.run_config_by_name(&desc.name) {
-                Ok(_) => {}
-                Err(v) => {
-                    if !matches!(v, RunConfigError::NoConfig) {
-                        log::error!("Failed while running config script. Reason: {:?}", v);
-                        // If the error is for anything other than a missing config then we panic
-                        panic!("Failed while running config script. Reason: {:?}", v);
-                    } else {
-                        log::warn!("No config found for plugin");
-                    }
-                }
-            }
         }
 
         match configs.run_override_script() {
             Ok(_) => {}
             Err(v) => {
-                log::error!("Failed while running @override script. Reason: {:?}", v);
+                log::error!("Failed while running @game script. Reason: {:?}", v);
                 if !matches!(v, RunConfigError::NoConfig) {
                     // If the error is for anything other than a missing config then we panic
-                    panic!("Failed while running @override script. Reason: {:?}", v);
+                    panic!("Failed while running @game script. Reason: {:?}", v);
                 }
             }
         }
 
-        let mut configs = configs.finalize();
-
-        for plugin in plugins.iter_mut() {
-            let desc = plugin.v.get_description();
-            plugin.config = configs.remove(&desc.name);
-        }
+        configs.finalize()
     }
 
     ///
@@ -328,7 +320,7 @@ impl Drop for PluginRegistry {
 
 pub(crate) struct RegistryAccessor {
     pub(crate) quit_handle: AnyArc<dyn IQuitHandle>,
-    pub(crate) config: Option<serde_json::Value>,
+    pub(crate) configs: serde_json::Map<String, serde_json::Value>,
     pub(crate) interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
     pub(crate) provides: BTreeMap<TypeId, AnyArc<dyn IAny>>,
     pub(crate) schedule: Box<Schedule>,
@@ -353,8 +345,8 @@ impl IRegistryAccessor for RegistryAccessor {
         self.quit_handle.clone()
     }
 
-    fn config(&self) -> Option<&serde_json::Value> {
-        self.config.as_ref()
+    fn config(&self, name: &str) -> Option<&serde_json::Value> {
+        self.configs.get(name)
     }
 
     fn core(&mut self) -> CoreRefs {

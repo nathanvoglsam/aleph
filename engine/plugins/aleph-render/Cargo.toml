@@ -41,7 +41,7 @@ categories = ["game-engines"]
 edition.workspace = true
 
 [package.metadata.aleph]
-config = true
+configs = ["render"]
 shaders = { modules = ["aleph-render"] }
 
 [badges]

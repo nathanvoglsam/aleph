@@ -27,14 +27,20 @@
 // SOFTWARE.
 //
 
-let config = Environment.getConfig();
-
-// On Windows we prefer D3D12 for better platform integration (DXGI)
-/** @type {aleph_rhi.Backend} */
-let api = Platform.isWindows(config.platform) ? "d3d12" : "vulkan";
-
-Configs["aleph-rhi"] = {
-    api: api,
-    validation: false,
-    debug: false,
-};
+interface Configs {
+    "render": {
+        /** 
+         * The number of frames the renderer is allowed to have in flight on the GPU at any one
+         * time.
+         */
+        framesInFlight: number;
+    
+        /**
+         * When enabled, the renderer is forced to rebuild the frame graph every frame regardless of
+         * whether it otherwise would've needed to.
+         * 
+         * Useful for profiling.
+         */
+        forceGraphRebuild: boolean;
+    }
+}

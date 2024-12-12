@@ -65,6 +65,30 @@ impl ConfigRunner {
         Ok(out)
     }
 
+    pub fn run_all_configs(&mut self) -> Result<(), RunConfigError> {
+        for item in self.config_dir.read_dir_utf8()? {
+            let item = item?;
+
+            // Skip '@' configs as those are overrides not config scripts
+            if item.file_name().starts_with('@') {
+                continue;
+            }
+
+            // Skip non js files
+            if !item.file_name().ends_with(".js") {
+                continue;
+            }
+
+            let file_type = item.file_type()?;
+            if file_type.is_file() || file_type.is_symlink() {
+                let name = item.path().file_stem().unwrap();
+                self.run_config_by_name(name)?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn run_config_by_name(&mut self, name: &str) -> Result<(), RunConfigError> {
         let script = self.load_config_script(name)?;
         let script_nstr = NStr::from_str(&script).unwrap();
@@ -108,10 +132,10 @@ impl ConfigRunner {
     }
 
     pub fn run_override_script(&mut self) -> Result<(), RunConfigError> {
-        let script = self.load_config_script("@overrides")?;
+        let script = self.load_config_script("@game")?;
         let script_nstr = NStr::from_str(&script).unwrap();
 
-        let filename = nstr!("@overrides.js");
+        let filename = nstr!("@game.js");
 
         // We create a new context for every script so they don't polute eachother's global state.
         //

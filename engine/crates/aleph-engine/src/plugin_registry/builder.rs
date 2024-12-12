@@ -40,6 +40,7 @@ use crate::platform::{platform_interfaces, PlatformSDL2};
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
 use crate::plugin_registry::{PluginEntry, PluginRegistry};
+use crate::rhi::{rhi_interfaces, Rhi};
 
 ///
 ///
@@ -105,6 +106,7 @@ impl PluginRegistryBuilder {
             resources: Some(Box::new(TypedTable::default())),
             world: Some(Box::new(world)),
             platform: PlatformSDL2::new(),
+            rhi: Rhi::new(),
         };
 
         // Initialize the plugins
@@ -169,6 +171,7 @@ impl PluginRegistryBuilder {
             .flat_map(|v| v.iter().cloned())
             .chain(self.plugins.iter().map(|v| v.v.type_id()))
             .chain(platform_interfaces()) // Add the platform interfaces provided by the engine
+            .chain(rhi_interfaces()) // Add the platform interfaces provided by the engine
             .collect();
 
         // If all interfaces contain the entirety of mandatory interfaces then all plugins provided
@@ -253,7 +256,8 @@ impl PluginRegistryBuilder {
         // Set to keep track of what has been executed
         //
         // Contains platform interfaces as they are implicitly provided by the engine
-        let mut executed = BTreeSet::from_iter(platform_interfaces());
+        let mut executed =
+            BTreeSet::from_iter(platform_interfaces().into_iter().chain(rhi_interfaces()));
 
         // Set to keep track of what was executed over the course of a single scheduler iteration
         let mut newly_executed = BTreeSet::new();
