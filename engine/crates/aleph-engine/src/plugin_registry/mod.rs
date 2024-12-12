@@ -95,7 +95,7 @@ impl PluginRegistry {
     ) {
         let mut plugins = std::mem::take(&mut self.plugins);
 
-        let configs = Self::load_configs(&mut plugins);
+        let configs = Self::load_configs();
 
         let quit_handle = AnyArc::map::<dyn IQuitHandle, _>(self.quit_handle.clone(), |v| v);
         let mut accessor = RegistryAccessor {
@@ -183,7 +183,7 @@ impl PluginRegistry {
         self.world = Some(accessor.world);
     }
 
-    fn load_configs(plugins: &mut [PluginEntry]) -> serde_json::Map<String, serde_json::Value> {
+    fn load_configs() -> serde_json::Map<String, serde_json::Value> {
         log::info!("Initializing config JS runtime");
         let mut configs = ConfigRunner::new().expect("Failed to init config runner");
 
