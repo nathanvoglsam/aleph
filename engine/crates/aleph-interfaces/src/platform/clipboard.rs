@@ -35,7 +35,12 @@ use any::*;
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's clipboard.
 ///
-pub trait IClipboard: IAny + Send + Sync + 'static {
+pub trait IClipboard: IAny + 'static {
+    ///
+    /// Gets if the clipboard currently contains any text.
+    ///
+    fn has(&self) -> bool;
+
     ///
     /// Gets the current clipboard text, if there is some.
     ///

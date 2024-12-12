@@ -199,7 +199,11 @@ impl PlatformSDL2 {
         let keyboard = Keyboard::new();
         let gamepads = Gamepads::new();
         let events = Events::new();
-        let clipboard = Clipboard::new();
+        let clipboard = unsafe {
+            // Safety: We always call this on the main thread currently.
+            //         However we don't guarantee it based on the interface. Might want to fix?
+            Clipboard::new()
+        };
 
         // Update our SDL2 handle storages with the created handles
         let mut sdl_o = self.sdl.take().unwrap();

@@ -28,6 +28,7 @@
 //
 
 use std::ffi::{c_void, CStr, CString};
+use std::marker::PhantomData;
 
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::IClipboard;
@@ -35,20 +36,31 @@ use interfaces::platform::IClipboard;
 ///
 /// Object that provides implementation of `IClipboard`
 ///
-pub struct Clipboard();
+pub struct Clipboard(PhantomData<*const ()>);
 
 declare_interfaces!(Clipboard, [IClipboard]);
 
 impl Clipboard {
-    pub(crate) fn new() -> AnyArc<Self> {
-        AnyArc::new(Self())
+    /// Safety: It is the caller's responsibility to ensure they only construct a Clipboard object
+    ///         on the main thread.
+    pub(crate) unsafe fn new() -> AnyArc<Self> {
+        AnyArc::new(Self(Default::default()))
     }
 }
 
-// TODO: lol this is unsafe as hell what was I thinking. I highly doubt these functions are thread
-//       safe.
 impl IClipboard for Clipboard {
+    fn has(&self) -> bool {
+        // Safety: These functions are only safe to call from the main thread. We enforce that via
+        //         an unsafe constructor and denying Send+Sync on the Clipboard object.
+        unsafe {
+            let has = sdl2::sys::SDL_HasClipboardText();
+            has != sdl2::sys::SDL_bool::SDL_FALSE
+        }
+    }
+
     fn get(&self) -> Option<String> {
+        // Safety: These functions are only safe to call from the main thread. We enforce that via
+        //         an unsafe constructor and denying Send+Sync on the Clipboard object.
         unsafe {
             let buf = sdl2::sys::SDL_GetClipboardText();
 
@@ -67,6 +79,8 @@ impl IClipboard for Clipboard {
     }
 
     fn get_null_terminated(&self) -> Option<CString> {
+        // Safety: These functions are only safe to call from the main thread. We enforce that via
+        //         an unsafe constructor and denying Send+Sync on the Clipboard object.
         unsafe {
             let buf = sdl2::sys::SDL_GetClipboardText();
 
@@ -84,6 +98,8 @@ impl IClipboard for Clipboard {
     }
 
     fn set(&self, value: &str) {
+        // Safety: These functions are only safe to call from the main thread. We enforce that via
+        //         an unsafe constructor and denying Send+Sync on the Clipboard object.
         unsafe {
             let mut string = value.to_string();
             string.push('\0');
@@ -93,6 +109,8 @@ impl IClipboard for Clipboard {
     }
 
     fn set_null_terminated(&self, value: &CStr) {
+        // Safety: These functions are only safe to call from the main thread. We enforce that via
+        //         an unsafe constructor and denying Send+Sync on the Clipboard object.
         unsafe {
             sdl2::sys::SDL_SetClipboardText(value.as_ptr() as *const _);
         }
