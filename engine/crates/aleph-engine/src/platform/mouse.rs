@@ -36,6 +36,8 @@ use interfaces::platform::{
     MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection, MouseWheelEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
+use smallbox::space::S1;
+use smallbox::{smallbox, SmallBox};
 
 ///
 /// Internal enum for representing a mouse request
@@ -246,8 +248,8 @@ impl IMouse for Mouse {
         self.requests.lock().push(MouseRequest::HideCursor);
     }
 
-    fn events<'a>(&'a self) -> Box<dyn IMouseEventsLock + 'a> {
-        Box::new(MouseEventsLock(self.events.read()))
+    fn events<'a>(&'a self) -> SmallBox<dyn IMouseEventsLock + 'a, S1> {
+        smallbox!(MouseEventsLock(self.events.read()))
     }
 }
 

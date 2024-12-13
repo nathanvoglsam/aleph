@@ -27,4 +27,4 @@
 // SOFTWARE.
 //
 
-Configs["core"] = {};
+Configs.core = {};

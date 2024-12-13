@@ -30,6 +30,8 @@
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{Event, IEvents, IEventsLock};
 use parking_lot::{RwLock, RwLockReadGuard};
+use smallbox::space::S1;
+use smallbox::{smallbox, SmallBox};
 
 ///
 /// The struct that provides the context for, and implements, `IEvents`
@@ -46,8 +48,8 @@ impl Events {
 }
 
 impl IEvents for Events {
-    fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a> {
-        Box::new(EventsLock(self.0.read()))
+    fn get<'a>(&'a self) -> SmallBox<dyn IEventsLock + 'a, S1> {
+        smallbox!(EventsLock(self.0.read()))
     }
 }
 

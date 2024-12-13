@@ -32,6 +32,8 @@ use std::ptr::NonNull;
 
 use any::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
+use smallbox::space::S1;
+use smallbox::SmallBox;
 
 /// An enum of window events.
 #[derive(Clone, Debug)]
@@ -204,7 +206,7 @@ pub trait IWindow: IAny + HasDisplayHandle + HasWindowHandle + Send + Sync + 'st
     /// This will probably lock an RwLock so trying to hold on to this between frames will likely
     /// deadlock the engine.
     ///
-    fn events<'a>(&'a self) -> Box<dyn IWindowEventsLock + 'a>;
+    fn events<'a>(&'a self) -> SmallBox<dyn IWindowEventsLock + 'a, S1>;
 }
 
 ///

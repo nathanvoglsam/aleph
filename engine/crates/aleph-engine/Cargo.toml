@@ -70,6 +70,7 @@ sdl2-sys = { workspace = true }
 ctrlc = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
+smallbox = { workspace = true }
 
 [build-dependencies]
 aleph-compile = { workspace = true }

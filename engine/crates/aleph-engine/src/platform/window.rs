@@ -38,6 +38,8 @@ use interfaces::platform::{
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use raw_window_handle::{DisplayHandle, HandleError, WindowHandle};
+use smallbox::space::S1;
+use smallbox::{smallbox, SmallBox};
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more
@@ -532,8 +534,8 @@ impl IWindow for Window {
         state.metal_layer
     }
 
-    fn events<'a>(&'a self) -> Box<dyn IWindowEventsLock + 'a> {
-        Box::new(WindowEventsLock(self.events.read()))
+    fn events<'a>(&'a self) -> SmallBox<dyn IWindowEventsLock + 'a, S1> {
+        smallbox!(WindowEventsLock(self.events.read()))
     }
 }
 

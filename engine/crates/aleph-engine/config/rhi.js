@@ -33,7 +33,7 @@ let config = Environment.getConfig();
 /** @type {rhi.Backend} */
 let api = Platform.isWindows(config.platform) ? "d3d12" : "vulkan";
 
-Configs["rhi"] = {
+Configs.rhi = {
     api: api,
     validation: false,
     debug: false,

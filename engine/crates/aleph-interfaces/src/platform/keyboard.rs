@@ -30,6 +30,8 @@
 use std::fmt::Display;
 
 use any::*;
+use smallbox::space::S1;
+use smallbox::SmallBox;
 
 ///
 /// This interface represents the API expected of something that gives the engine access to a
@@ -44,7 +46,7 @@ pub trait IKeyboard: IAny + Send + Sync + 'static {
     /// This will likely lock an RwLock so trying to hold on to this between frames will deadlock
     /// the engine.
     ///
-    fn get_state<'a>(&'a self) -> Box<dyn IKeyboardStateLock + 'a>;
+    fn get_state<'a>(&'a self) -> SmallBox<dyn IKeyboardStateLock + 'a, S1>;
 
     ///
     /// Get read only access to this frame's list of mouse events.
@@ -54,7 +56,7 @@ pub trait IKeyboard: IAny + Send + Sync + 'static {
     /// This will likely lock an RwLock so trying to hold on to this between frames will deadlock
     /// the engine.
     ///
-    fn events<'a>(&'a self) -> Box<dyn IKeyboardEventsLock + 'a>;
+    fn events<'a>(&'a self) -> SmallBox<dyn IKeyboardEventsLock + 'a, S1>;
 }
 
 ///

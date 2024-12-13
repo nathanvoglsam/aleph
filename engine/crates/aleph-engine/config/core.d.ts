@@ -28,5 +28,5 @@
 //
 
 interface Configs {
-    "core": {},
+    core?: {},
 }

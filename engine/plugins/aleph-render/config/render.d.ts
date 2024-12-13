@@ -28,7 +28,7 @@
 //
 
 interface Configs {
-    "render": {
+    render?: {
         /** 
          * The number of frames the renderer is allowed to have in flight on the GPU at any one
          * time.

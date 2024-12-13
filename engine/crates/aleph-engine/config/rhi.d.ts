@@ -48,7 +48,7 @@ declare namespace rhi {
 }
 
 interface Configs {
-    "rhi": {
+    rhi?: {
         /** The backend that should be used **/
         api: rhi.Backend;
 

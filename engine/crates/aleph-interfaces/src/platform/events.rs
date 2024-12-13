@@ -28,6 +28,8 @@
 //
 
 use any::*;
+use smallbox::space::S1;
+use smallbox::SmallBox;
 
 use crate::platform::{KeyboardEvent, MouseEvent, WindowEvent};
 
@@ -36,7 +38,7 @@ use crate::platform::{KeyboardEvent, MouseEvent, WindowEvent};
 /// device's event queue.
 ///
 pub trait IEvents: IAny + Send + Sync + 'static {
-    fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a>;
+    fn get<'a>(&'a self) -> SmallBox<dyn IEventsLock + 'a, S1>;
 }
 
 ///

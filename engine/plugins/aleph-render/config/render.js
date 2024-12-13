@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-Configs["render"] = {
+Configs.render = {
     framesInFlight: 2,
     forceGraphRebuild: false,
 }

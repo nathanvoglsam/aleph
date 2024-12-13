@@ -28,6 +28,8 @@
 //
 
 use any::*;
+use smallbox::space::S1;
+use smallbox::SmallBox;
 
 ///
 /// This interface represents the API expected of something that gives the engine access to a
@@ -67,7 +69,7 @@ pub trait IMouse: IAny + Send + Sync + 'static {
     /// This will probably lock an RwLock so trying to hold on to this between frames will likely
     /// deadlock the engine.
     ///
-    fn events<'a>(&'a self) -> Box<dyn IMouseEventsLock + 'a>;
+    fn events<'a>(&'a self) -> SmallBox<dyn IMouseEventsLock + 'a, S1>;
 }
 
 ///

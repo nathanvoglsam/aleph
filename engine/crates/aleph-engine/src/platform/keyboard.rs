@@ -35,6 +35,8 @@ use interfaces::platform::{
     KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
 };
 use parking_lot::{RwLock, RwLockReadGuard};
+use smallbox::space::S1;
+use smallbox::{smallbox, SmallBox};
 
 ///
 /// Represents the state of the keyboard this frame
@@ -65,12 +67,12 @@ pub struct Keyboard {
 declare_interfaces!(Keyboard, [IKeyboard]);
 
 impl IKeyboard for Keyboard {
-    fn get_state<'a>(&'a self) -> Box<dyn IKeyboardStateLock + 'a> {
-        Box::new(KeyboardStateLock(self.state.read()))
+    fn get_state<'a>(&'a self) -> SmallBox<dyn IKeyboardStateLock + 'a, S1> {
+        smallbox!(KeyboardStateLock(self.state.read()))
     }
 
-    fn events<'a>(&'a self) -> Box<dyn IKeyboardEventsLock + 'a> {
-        Box::new(KeyboardEventsLock(self.events.read()))
+    fn events<'a>(&'a self) -> SmallBox<dyn IKeyboardEventsLock + 'a, S1> {
+        smallbox!(KeyboardEventsLock(self.events.read()))
     }
 }
 
