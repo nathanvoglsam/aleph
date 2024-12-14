@@ -29,7 +29,10 @@
 
 use std::io::Cursor;
 
-use crate::{KTXDocument, KTXReadError};
+use aleph_vk2dfd::vk2dfd;
+use aleph_vk_format::ALL_FORMATS;
+
+use crate::{is_format_prohibited, is_format_unsupported, KTXDocument, KTXReadError};
 
 static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &[u8] =
     include_bytes!("../test_images/cubemap_yokohama_astc_8x8_srgb.ktx2");
@@ -54,6 +57,24 @@ static TEXTUREARRAY_ETC2_UNORM: &[u8] =
 //    include_bytes!("../test_images/incorrect_mip_layout_and_padding.ktx2");
 static INVALID_FACE_COUNT_AND_PADDING: &[u8] =
     include_bytes!("../test_images/invalid_face_count_and_padding.ktx2");
+
+#[test]
+fn all_formats_have_dfd() {
+    for format in ALL_FORMATS {
+        if is_format_unsupported(format) {
+            // Skip undefined as it won't have a dfd by definition
+            continue;
+        }
+        if is_format_prohibited(format) {
+            // Can't have a dfd for a prohibited format
+            continue;
+        }
+        assert!(
+            vk2dfd(format.0).is_ok(),
+            "{format:#?} is missing a dfd in the dfd table!"
+        );
+    }
+}
 
 #[test]
 fn test_validates_files() {

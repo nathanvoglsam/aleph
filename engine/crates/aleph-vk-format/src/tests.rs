@@ -40,6 +40,19 @@ fn all_formats_enumerated() {
 }
 
 #[test]
+fn all_formats_unique() {
+    for format in ALL_FORMATS {
+        let mut occurances = 0;
+        for v in ALL_FORMATS {
+            if v == format {
+                occurances += 1;
+            }
+        }
+        assert_eq!(occurances, 1, "{format:#?} is listed multiple times!")
+    }
+}
+
+#[test]
 fn all_formats_have_debug_name() {
     ALL_FORMATS.iter().for_each(|format| {
         let format_str = format!("{format:#?}");
@@ -49,12 +62,3 @@ fn all_formats_have_debug_name() {
         );
     });
 }
-
-//#[test]
-//fn quick() {
-//    ALL_FORMATS.iter().for_each(|format| {
-//        let a = ColorModel::for_format(*format);
-//        let b = ColorModel::for_format_small(*format);
-//        assert_eq!(a, b, "A:B -> {:#?}", format);
-//    })
-//}

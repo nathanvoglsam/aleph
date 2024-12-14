@@ -36,7 +36,7 @@ mod table;
 mod test;
 
 /// A Vulkan format, one of the `VK_FORMAT_` constants.
-/// 
+///
 /// This is just a type alias for `u32` for maximum compatibility with the Rust Vulkan ecosystem.
 pub type VkFormat = u32;
 
@@ -49,7 +49,7 @@ pub enum Error {
 }
 
 /// Converts a Vulkan format to the appropriate descriptor.
-/// 
+///
 /// Returns the descriptor as a static slice of `u32`s, or an [enum@Error] on
 /// failure. If written to a KTX or KTX2 file, the descriptor must be written in
 /// little endian byte order per the specification. The slice includes the

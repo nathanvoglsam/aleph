@@ -245,7 +245,6 @@ impl VkFormat {
     pub const ASTC_12X10_SRGB_BLOCK: Self = Self(182);
     pub const ASTC_12X12_UNORM_BLOCK: Self = Self(183);
     pub const ASTC_12X12_SRGB_BLOCK: Self = Self(184);
-
     pub const G8B8G8R8_422_UNORM: Self = Self(1000156000);
     pub const B8G8R8G8_422_UNORM: Self = Self(1000156001);
     pub const G8_B8_R8_3PLANE_420_UNORM: Self = Self(1000156002);
@@ -280,8 +279,6 @@ impl VkFormat {
     pub const G16_B16_R16_3PLANE_422_UNORM: Self = Self(1000156031);
     pub const G16_B16R16_2PLANE_422_UNORM: Self = Self(1000156032);
     pub const G16_B16_R16_3PLANE_444_UNORM: Self = Self(1000156033);
-
-    // ASTC compressed formats (VK_EXT_texture_compression_astc_hdr)
     pub const ASTC_4X4_SFLOAT_BLOCK_EXT: Self = Self(1000066000);
     pub const ASTC_5X4_SFLOAT_BLOCK_EXT: Self = Self(1000066001);
     pub const ASTC_5X5_SFLOAT_BLOCK_EXT: Self = Self(1000066002);
@@ -296,8 +293,6 @@ impl VkFormat {
     pub const ASTC_10X10_SFLOAT_BLOCK_EXT: Self = Self(1000066011);
     pub const ASTC_12X10_SFLOAT_BLOCK_EXT: Self = Self(1000066012);
     pub const ASTC_12X12_SFLOAT_BLOCK_EXT: Self = Self(1000066013);
-
-    // PVRTC compressed formats (VK_IMG_format_pvrtc)
     pub const PVRTC1_2BPP_UNORM_BLOCK_IMG: Self = Self(1000054000);
     pub const PVRTC1_4BPP_UNORM_BLOCK_IMG: Self = Self(1000054001);
     pub const PVRTC2_2BPP_UNORM_BLOCK_IMG: Self = Self(1000054002);
