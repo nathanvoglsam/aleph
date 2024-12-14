@@ -4,9 +4,8 @@ use std::mem::ManuallyDrop;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_any::AnyArc;
-use aleph_rhi_api::{BackendAPI, IContext};
+use aleph_rhi_api::{ContextCreateError, IContext};
 use aleph_rhi_impl_utils::cstr;
-use aleph_rhi_loader_api::{ContextCreateError, ContextOptions, IRhiBackend};
 use ash::vk;
 use libloading::Library;
 
@@ -14,23 +13,24 @@ use crate::context::{Context, SurfaceLoaders};
 use crate::internal::messenger::vulkan_debug_messenger;
 use crate::internal::{loader, mvk};
 
-pub static RHI_BACKEND: &'static dyn IRhiBackend = &RHI_BACKEND_OBJECT;
-
-static RHI_BACKEND_OBJECT: RhiBackend = RhiBackend {
+pub static RHI_BACKEND_OBJECT: VulkanLoader = VulkanLoader {
     context_made: AtomicBool::new(false),
 };
 
-struct RhiBackend {
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
+pub struct VulkanConfig {
+    /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
+    /// platforms that support sync2.
+    pub deny_sync_2: bool,
+}
+
+pub struct VulkanLoader {
     /// Flags whether a context has already been created
     context_made: AtomicBool,
 }
 
-impl IRhiBackend for RhiBackend {
-    fn backend(&self) -> BackendAPI {
-        BackendAPI::Vulkan
-    }
-
-    fn is_available(&self) -> bool {
+impl VulkanLoader {
+    pub fn is_available(&self) -> bool {
         if cfg!(target_os = "ios") {
             // On iOS we statically link to the loader and vulkan is always available via MoltenVK
             true
@@ -48,9 +48,11 @@ impl IRhiBackend for RhiBackend {
         }
     }
 
-    fn make_context(
+    pub fn make_context(
         &self,
-        options: &ContextOptions,
+        validation: bool,
+        debug: bool,
+        config: &VulkanConfig,
     ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
         match self
             .context_made
@@ -67,10 +69,9 @@ impl IRhiBackend for RhiBackend {
                     }
                 };
 
-                let (instance, extensions) =
-                    Self::create_instance(&entry, options.debug, options.validation)?;
+                let (instance, extensions) = Self::create_instance(&entry, debug, validation)?;
 
-                let messenger = match (extensions.debug_loader.as_ref(), options.validation) {
+                let messenger = match (extensions.debug_loader.as_ref(), validation) {
                     (Some(loader), true) => match install_debug_messenger(loader) {
                         Ok(v) => Some(v),
                         Err(e) => {
@@ -95,7 +96,7 @@ impl IRhiBackend for RhiBackend {
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     _this: v.clone(),
-                    config: options.config.vulkan.clone().unwrap_or_default(),
+                    config: config.clone(),
                     library: ManuallyDrop::new(library),
                     entry_loader: ManuallyDrop::new(entry),
                     instance: ManuallyDrop::new(instance),
@@ -110,7 +111,7 @@ impl IRhiBackend for RhiBackend {
     }
 }
 
-impl RhiBackend {
+impl VulkanLoader {
     fn create_instance(
         entry: &ash::Entry,
         debug: bool,

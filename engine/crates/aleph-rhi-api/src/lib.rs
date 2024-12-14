@@ -6038,3 +6038,24 @@ pub enum QueuePresentError {
     Platform,
 }
 error_enum_from_unit_type!(QueuePresentError);
+
+/// Set of errors that can occur when creating an [IContext]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum ContextCreateError {
+    #[error("A context has already been created by the loader")]
+    ContextAlreadyCreated,
+
+    #[error("No backends are available from the loader")]
+    NoBackendsAvailable,
+
+    #[error("The requested backend '{0}' is not available")]
+    RequiredBackendUnavailable(BackendAPI),
+
+    #[error("The context could not be created due to not meeting the minimum feature level")]
+    MissingRequiredFeatures,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+error_enum_from_unit_type!(ContextCreateError);

@@ -50,4 +50,6 @@ mod surface;
 mod swap_chain;
 mod texture;
 
-pub use rhi_backend::RHI_BACKEND;
+pub use rhi_backend::VulkanConfig;
+pub use rhi_backend::VulkanLoader;
+pub use rhi_backend::RHI_BACKEND_OBJECT;

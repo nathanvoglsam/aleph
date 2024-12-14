@@ -48,10 +48,10 @@ backend-d3d12 = ["aleph-rhi-dx12"]
 
 [dependencies]
 aleph-rhi-api = { workspace = true }
-aleph-rhi-loader-api = { workspace = true }
 aleph-rhi-validation = { workspace = true }
 aleph-any = { workspace = true }
 log = { workspace = true }
+serde = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 aleph-rhi-dx12 = { workspace = true, optional = true }

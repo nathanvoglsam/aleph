@@ -33,7 +33,7 @@ use aleph_interfaces::any::{declare_interfaces, AnyArc};
 use aleph_interfaces::platform::IWindow;
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::*;
-use aleph_rhi_loader::{BackendConfigs, ContextOptions, RhiLoader};
+use aleph_rhi_loader::{BackendConfigs, ContextOptions, D3D12Config, RhiLoader, VulkanConfig};
 
 use interfaces::any::IAny;
 use serde::Deserialize;
@@ -147,47 +147,14 @@ impl Into<BackendAPI> for Backend {
 }
 
 #[derive(Deserialize)]
-struct VulkanOptions {
-    #[serde(rename = "denySync2")]
-    pub deny_sync_2: bool,
-}
-
-impl VulkanOptions {
-    pub fn log(&self) {
-        log::info!("rhi.vulkan.deny_sync_2 = {}", self.deny_sync_2);
-    }
-}
-
-impl Into<aleph_rhi_loader::VulkanConfig> for VulkanOptions {
-    fn into(self) -> aleph_rhi_loader::VulkanConfig {
-        aleph_rhi_loader::VulkanConfig {
-            deny_sync_2: self.deny_sync_2,
-        }
-    }
-}
-
-#[derive(Deserialize)]
-struct D3D12Options {}
-
-impl D3D12Options {
-    pub fn log(&self) {}
-}
-
-impl Into<aleph_rhi_loader::D3D12Config> for D3D12Options {
-    fn into(self) -> aleph_rhi_loader::D3D12Config {
-        aleph_rhi_loader::D3D12Config {}
-    }
-}
-
-#[derive(Deserialize)]
 struct Config {
     pub api: Backend,
 
     #[serde(default)]
-    pub vulkan: Option<VulkanOptions>,
+    pub vulkan: Option<VulkanConfig>,
 
     #[serde(default)]
-    pub d3d12: Option<D3D12Options>,
+    pub d3d12: Option<D3D12Config>,
 
     pub validation: bool,
     pub debug: bool,
@@ -197,8 +164,10 @@ impl Config {
     pub fn log(&self) {
         log::info!("rhi.api = {:?}", self.api);
 
-        self.vulkan.as_ref().inspect(|v| v.log());
-        self.d3d12.as_ref().inspect(|v| v.log());
+        self.vulkan.as_ref().inspect(|v| {
+            log::info!("rhi.vulkan.deny_sync_2 = {}", v.deny_sync_2);
+        });
+        // self.d3d12.as_ref().inspect(|v| {});
 
         log::info!("rhi.validation = {}", self.validation);
         log::info!("rhi.debug = {}", self.debug);

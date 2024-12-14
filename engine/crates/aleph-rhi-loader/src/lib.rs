@@ -29,7 +29,95 @@
 
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
-pub use aleph_rhi_loader_api::*;
+use serde::Deserialize;
+
+/// Options provided when a context is created
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct ContextOptions {
+    /// Specifies a preference for a specific API to the loader. `None` denotes no preference.
+    ///
+    /// When a `preferred_api` is provided the loader will always choose the selected backend if it
+    /// is available. If the backend is *not* available then the loader will chose another from the
+    /// available backends itself.
+    pub backend: BackendAPI,
+
+    /// Whether backend API validation should be enabled.
+    ///
+    /// Will implicitly force the `debug` option to true if `validation` is also true as on some
+    /// backends the `validation` option requires loading the same `debug` utilities to function.
+    ///
+    /// This flag requests that the backend should enable their backend specific API validation.
+    ///
+    /// This will add massive amounts of overhead and should never be enabled unless debugging the
+    /// backends themselves.
+    ///
+    /// # Detail
+    ///
+    /// This is will enable w/e API validation and debug tools that are available to the backend.
+    ///
+    /// For Vulkan this will enable the validation layers and install a debug messenger the uses
+    /// the rust `log` framework.
+    ///
+    /// For Direct3D 12 this will enable API validation.
+    pub validation: bool,
+
+    /// Whether backend debug utilities should be enabled. This enables debug integrations for
+    /// naming objects and marking code sections to the backend's API for markup in debug tools.
+    ///
+    /// # Detail
+    ///
+    /// Basically just a request to enable `VK_EXT_debug_utils` for Vulkan without enabling
+    /// validation layers. Vulkan requires `VK_EXT_debug_utils` for object naming as that is the
+    /// extension that provides the naming functionality.
+    pub debug: bool,
+
+    /// A set of per-backend configs that will be used by the loader to configure the loaded backend
+    /// when creating the context. Only one of these will be used, depending on what backend API
+    /// was selected by the user/loader.
+    pub config: BackendConfigs,
+}
+
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default, Deserialize)]
+pub struct VulkanConfig {
+    /// Force disable the VK_KHR_synchronization2 path. Intended for testing the fallback path on
+    /// platforms that support sync2.
+    #[serde(rename = "denySync2")]
+    pub deny_sync_2: bool,
+}
+
+#[cfg(any(
+    windows,
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "linux",
+    target_os = "android"
+))]
+impl Into<aleph_rhi_vulkan::VulkanConfig> for VulkanConfig {
+    fn into(self) -> aleph_rhi_vulkan::VulkanConfig {
+        aleph_rhi_vulkan::VulkanConfig {
+            deny_sync_2: self.deny_sync_2,
+        }
+    }
+}
+
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default, Deserialize)]
+pub struct D3D12Config {}
+
+#[cfg(windows)]
+impl Into<aleph_rhi_dx12::D3D12Config> for D3D12Config {
+    fn into(self) -> aleph_rhi_dx12::D3D12Config {
+        aleph_rhi_dx12::D3D12Config {}
+    }
+}
+
+#[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
+pub struct BackendConfigs {
+    /// The config to use for the Vulkan backend
+    pub vulkan: Option<VulkanConfig>,
+
+    /// The config to use for the D3D12 backend
+    pub d3d12: Option<D3D12Config>,
+}
 
 pub struct RhiLoader {
     /// List of backends that are available
@@ -143,7 +231,7 @@ impl RhiLoader {
     fn try_load_backends(&mut self) {
         #[cfg(windows)]
         {
-            self.d3d12 = Some(aleph_rhi_dx12::RHI_BACKEND);
+            self.d3d12 = Some(&aleph_rhi_dx12::RHI_BACKEND_OBJECT);
         }
 
         #[cfg(any(
@@ -156,7 +244,7 @@ impl RhiLoader {
         {
             // Except on UWP where there's no Vulkan
             if !cfg!(target_vendor = "uwp") {
-                self.vulkan = Some(aleph_rhi_vulkan::RHI_BACKEND);
+                self.vulkan = Some(&aleph_rhi_vulkan::RHI_BACKEND_OBJECT);
             }
         }
     }
@@ -208,5 +296,63 @@ impl RhiLoader {
         } else {
             context
         }
+    }
+}
+
+trait IRhiBackend {
+    /// Returns whether the backend is dynamically available on the current system.
+    ///
+    /// Some platforms or backends may not always be able to provide a context, such as Vulkan. On
+    /// Vulkan may be missing if `vulkan-1.dll` can't be found.
+    fn is_available(&self) -> bool;
+
+    /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
+    /// will always return `Err`.
+    fn make_context(
+        &self,
+        options: &ContextOptions,
+    ) -> Result<AnyArc<dyn IContext>, ContextCreateError>;
+}
+
+#[cfg(any(
+    windows,
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "linux",
+    target_os = "android"
+))]
+impl IRhiBackend for aleph_rhi_vulkan::VulkanLoader {
+    fn is_available(&self) -> bool {
+        aleph_rhi_vulkan::VulkanLoader::is_available(self)
+    }
+
+    fn make_context(
+        &self,
+        options: &ContextOptions,
+    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+        let config = options.config.vulkan.clone().unwrap_or_default();
+        let config = config.into();
+        aleph_rhi_vulkan::VulkanLoader::make_context(
+            self,
+            options.validation,
+            options.debug,
+            &config,
+        )
+    }
+}
+
+#[cfg(windows)]
+impl IRhiBackend for aleph_rhi_dx12::D3D12Loader {
+    fn is_available(&self) -> bool {
+        aleph_rhi_dx12::D3D12Loader::is_available(self)
+    }
+
+    fn make_context(
+        &self,
+        options: &ContextOptions,
+    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+        let config = options.config.d3d12.clone().unwrap_or_default();
+        let config = config.into();
+        aleph_rhi_dx12::D3D12Loader::make_context(self, options.validation, options.debug, &config)
     }
 }

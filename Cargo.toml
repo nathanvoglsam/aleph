@@ -65,7 +65,6 @@ members = [
     "engine/crates/aleph-rhi-dx12",
     "engine/crates/aleph-rhi-impl-utils",
     "engine/crates/aleph-rhi-loader",
-    "engine/crates/aleph-rhi-loader-api",
     "engine/crates/aleph-rhi-null",
     "engine/crates/aleph-rhi-validation",
     "engine/crates/aleph-rhi-vulkan",
@@ -175,7 +174,6 @@ aleph-rhi-api = { path = "./engine/crates/aleph-rhi-api", version = "0.1" }
 aleph-rhi-dx12 = { path = "./engine/crates/aleph-rhi-dx12", version = "0.1" }
 aleph-rhi-impl-utils = { path = "./engine/crates/aleph-rhi-impl-utils", version = "0.1" }
 aleph-rhi-loader = { path = "./engine/crates/aleph-rhi-loader", version = "0.1" }
-aleph-rhi-loader-api = { path = "./engine/crates/aleph-rhi-loader-api", version = "0.1" }
 aleph-rhi-null = { path = "./engine/crates/aleph-rhi-null", version = "0.1" }
 aleph-rhi-validation = { path = "./engine/crates/aleph-rhi-validation", version = "0.1" }
 aleph-rhi-vulkan = { path = "./engine/crates/aleph-rhi-vulkan", version = "0.1" }
