@@ -32,8 +32,6 @@
 resolver = "2"
 
 members = [
-    "engine/archived/aleph-ktx",
-    "engine/archived/aleph-vk-format",
     "engine/crates/aleph-any",
     "engine/crates/aleph-arena-drop-list",
     "engine/crates/aleph-atomic-borrow",
@@ -49,6 +47,7 @@ members = [
     "engine/crates/aleph-hibitset",
     "engine/crates/aleph-identity-hasher",
     "engine/crates/aleph-interfaces",
+    "engine/crates/aleph-ktx",
     "engine/crates/aleph-label",
     "engine/crates/aleph-math",
     "engine/crates/aleph-nstr",
@@ -76,6 +75,8 @@ members = [
     "engine/crates/aleph-target-build",
     "engine/crates/aleph-typed-table",
     "engine/crates/aleph-virtual-buffer",
+    "engine/crates/aleph-vk-format",
+    "engine/crates/aleph-vk2dfd",
     "engine/crates/aleph-vulkan-alloc",
     "engine/crates/aleph-windows",
     "engine/plugins/aleph-egui",
@@ -131,7 +132,7 @@ sdl2-sys = { version = "^0.37" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 smallbox = "0.8"
-sysinfo = "0.32"
+sysinfo = "0.33"
 tera = "1"
 thiserror = "2"
 toml = "0.8"
@@ -141,6 +142,7 @@ wide = { version = "0.7" }
 utf16_lit = "2"
 uuid = { version = "1", features = ["v7"] }
 zip = "2"
+num-integer = "0.1"
 
 # Aleph Crates
 aleph-any = { path = "./engine/crates/aleph-any", version = "0.1" }
@@ -158,6 +160,7 @@ aleph-frame-graph = { path = "./engine/crates/aleph-frame-graph", version = "0.1
 aleph-hibitset = { path = "./engine/crates/aleph-hibitset", version = "0.1" }
 aleph-identity-hasher = { path = "./engine/crates/aleph-identity-hasher", version = "1" }
 aleph-interfaces = { path = "./engine/crates/aleph-interfaces", version = "0.1" }
+aleph-ktx = { path = "./engine/crates/aleph-ktx", version = "0.1" }
 aleph-label = { path = "./engine/crates/aleph-label", version = "1" }
 aleph-math = { path = "./engine/crates/aleph-math", version = "0.1" }
 aleph-nstr = { path = "./engine/crates/aleph-nstr", version = "0.1" }
@@ -185,20 +188,14 @@ aleph-target = { path = "./engine/crates/aleph-target", version = "2" }
 aleph-target-build = { path = "./engine/crates/aleph-target-build", version = "2" }
 aleph-typed-table = { path = "./engine/crates/aleph-typed-table", version = "0.1" }
 aleph-virtual-buffer = { path = "./engine/crates/aleph-virtual-buffer", version = "0.1" }
+aleph-vk-format = { path = "./engine/crates/aleph-vk-format", version = "1" }
+aleph-vk2dfd = { path = "./engine/crates/aleph-vk2dfd", version = "0.1" }
 aleph-vulkan-alloc = { path = "./engine/crates/aleph-vulkan-alloc", version = "0.1" }
 aleph-windows = { path = "./engine/crates/aleph-windows", version = "0.1" }
 
 # Aleph Plugins
 aleph-egui = { path = "./engine/plugins/aleph-egui", version = "0.1" }
 aleph-render = { path = "./engine/plugins/aleph-render", version = "0.1" }
-
-# 'archived' Crates
-aleph-ktx = { path = "./engine/archived/aleph-ktx", version = "0.1" }
-aleph-vk-format = { path = "./engine/archived/aleph-vk-format", version = "1" }
-
-# 'archived' Dependencies
-num-integer = "0.1"
-smartstring = "1"
 
 # Compile all our third-party dependencies with optimizations even on debug builds. Some crates (mainly math crates)
 # will bring our runtime performance to a crawl when built without optimizations, so we definitely want this enabled.

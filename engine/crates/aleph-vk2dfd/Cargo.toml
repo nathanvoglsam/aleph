@@ -29,21 +29,19 @@
 
 
 [package]
-name = "aleph-ktx"
+name = "aleph-vk2dfd"
 version = "0.1.0"
 authors.workspace = true
-description = "KTX 2.0 parsing library"
+description = "Fork of https://github.com/pcwalton/vk2dfd setup for integration in the aleph repo"
 license.workspace = true
 repository.workspace = true
-documentation = "https://docs.rs/aleph-ktx/"
+documentation = "https://docs.rs/aleph-vk2dfd/"
 edition.workspace = true
 publish = false
 
 [dependencies]
-aleph-vk-format = { workspace = true }
-byteorder = { workspace = true }
-num-integer = { workspace = true }
-bitflags = { workspace = true }
+thiserror = "2"
+phf = { version = "0.11", features = ["macros"] }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
