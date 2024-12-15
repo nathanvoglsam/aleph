@@ -70,11 +70,19 @@ impl TransferFunction {
     #[inline]
     pub fn is_compatible_with_format(self, format: VkFormat) -> bool {
         let is_srgb = format.is_srgb();
-        let allowed = !is_format_unsupported(format) && !is_format_prohibited(format);
-        matches!(
-            (allowed, is_srgb, self),
-            (true, true, TransferFunction::SRGB) | (true, false, TransferFunction::Linear)
-        )
+        let has_srgb = format.has_srgb();
+
+        if is_srgb {
+            // All SRGB formats must have the SRGB transfer function flagged
+            self == TransferFunction::SRGB
+        } else if has_srgb {
+            // Non SRGB formats that have an SRGB counterpart must _not_ have the SRGB transfer
+            // function
+            self != TransferFunction::SRGB
+        } else {
+            // Otherwise we're golden
+            true
+        }
     }
 
     ///

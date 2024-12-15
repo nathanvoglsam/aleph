@@ -1034,6 +1034,49 @@ impl VkFormat {
     }
 
     ///
+    /// Returns whether a non-SRGB format has a matching SRGB formats
+    ///
+    #[inline]
+    pub const fn has_srgb(self) -> bool {
+        matches!(
+            self,
+            VkFormat::R8_UNORM
+                | VkFormat::R8G8_UNORM
+                | VkFormat::R8G8B8_UNORM
+                | VkFormat::B8G8R8_UNORM
+                | VkFormat::R8G8B8A8_UNORM
+                | VkFormat::B8G8R8A8_UNORM
+                | VkFormat::A8B8G8R8_UNORM_PACK32
+                | VkFormat::BC1_RGB_UNORM_BLOCK
+                | VkFormat::BC1_RGBA_UNORM_BLOCK
+                | VkFormat::BC2_UNORM_BLOCK
+                | VkFormat::ASTC_4X4_UNORM_BLOCK
+                | VkFormat::ASTC_8X6_UNORM_BLOCK
+                | VkFormat::ASTC_5X4_UNORM_BLOCK
+                | VkFormat::ASTC_5X5_UNORM_BLOCK
+                | VkFormat::ASTC_6X5_UNORM_BLOCK
+                | VkFormat::ASTC_6X6_UNORM_BLOCK
+                | VkFormat::ASTC_8X5_UNORM_BLOCK
+                | VkFormat::ASTC_8X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X5_UNORM_BLOCK
+                | VkFormat::ASTC_10X6_UNORM_BLOCK
+                | VkFormat::ASTC_10X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X10_UNORM_BLOCK
+                | VkFormat::ASTC_12X10_UNORM_BLOCK
+                | VkFormat::ASTC_12X12_UNORM_BLOCK
+                | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::BC3_UNORM_BLOCK
+                | VkFormat::BC7_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+        )
+    }
+
+    ///
     /// Does this format have a depth component
     ///
     #[inline]

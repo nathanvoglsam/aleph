@@ -32,7 +32,7 @@ mod level_index;
 mod super_compression_scheme;
 
 use std::cell::Cell;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -42,7 +42,7 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::{is_format_prohibited, is_format_unsupported};
-use crate::{format_bytes_for_image, format_type_size, ColorPrimaries, DFDError, DFDFlags};
+use crate::{ColorPrimaries, DFDError, DFDFlags};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -62,9 +62,6 @@ pub enum KTXReadError {
 
     /// The KTX file specified a super compression scheme that this implementation doesn't support
     UnsupportedSuperCompressionScheme(SuperCompressionScheme),
-
-    /// The `typeSize` value != 1 when `vkFormat` was a block format as required by the spec
-    WrongTypeSizeForBlockFormat(u32, VkFormat),
 
     /// The width value in `pixelWidth` is not valid, this must always hold true: `pixelWidth > 0`
     InvalidWidth(u32),
@@ -346,13 +343,7 @@ impl<R: Read + Seek> KTXDocument<R> {
     /// This function requires the `KTXDocument` mutably as the reader will be mutated while being
     /// read from (a reader is a stateful object).
     ///
-    pub fn read_image(
-        &self,
-        layer: usize,
-        face: usize,
-        level: usize,
-        writer: &mut impl Write,
-    ) -> Result<(), std::io::Error> {
+    pub fn level_offset(&self, level: usize) -> Result<u64, std::io::Error> {
         use std::io::{Error, ErrorKind};
 
         // Check we're in bounds for the number of levels, faces and levels
@@ -362,73 +353,11 @@ impl<R: Read + Seek> KTXDocument<R> {
                 "Level index out of bounds",
             ));
         }
-        if layer >= self.layer_num() as usize {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "Layer index out of bounds",
-            ));
-        }
-        if face >= self.face_num() as usize {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "Face index out of bounds",
-            ));
-        }
 
         // Read the offset from the level indices
         let level_offset = self.level_indices[level].offset;
 
-        // Gets the size of a single image at the mip level requested
-        let image_bytes = self.image_bytes(level).unwrap();
-
-        // Calculates the stride of a single face
-        let face_stride = image_bytes as u64;
-
-        // Calculate the stride of a single layer
-        let layer_stride = (face_stride * self.face_num() as u64) * (self.layer_num() as u64);
-
-        // Calculate the final offset of the image data in the file
-        let data_offset =
-            (layer_stride * layer as u64) + (face_stride * face as u64) + level_offset;
-
-        // Take ownership of the reader from the document
-        let mut reader = self.reader.take().unwrap();
-
-        // Seek to the start of the image data
-        reader.seek(SeekFrom::Start(data_offset))?;
-
-        // Make a scoped reader that will read exactly the number of bytes required for the image
-        let mut reader = reader.take(image_bytes as u64);
-
-        // Perform the copy from the reader into writer
-        std::io::copy(&mut reader, writer)?;
-
-        // Return the reader to the document
-        self.reader.set(Some(reader.into_inner()));
-
-        Ok(())
-    }
-
-    ///
-    /// Returns the number of bytes required for a single image at the given mip level. This will,
-    /// roughly speaking, return the value of width * height * depth (bytes per block/pixel) for a
-    /// given mip level. For block compressed formats it will be based on the dimensions and size of
-    /// a block. For regular formats it will be based on dimensions and size of a single pixel.
-    ///
-    /// For cube maps this will be the size of a single face, not all 6 faces.
-    ///
-    /// Will return `None` if the level index provided is out of bounds.
-    ///
-    pub fn image_bytes(&self, level: usize) -> Option<usize> {
-        if level >= self.level_num() as usize {
-            None
-        } else {
-            let width = (self.width >> level).max(1) as usize;
-            let height = (self.height >> level).max(1) as usize;
-            let depth = (self.depth >> level).max(1) as usize;
-            let bytes = format_bytes_for_image(self.format, width, height, depth).unwrap();
-            Some(bytes)
-        }
+        Ok(level_offset)
     }
 
     pub fn lookup_key(&self, key: &str) -> Result<Option<Vec<u8>>, KTXReadError> {
@@ -531,7 +460,7 @@ impl<R: Read + Seek> KTXDocument<R> {
     ///
     pub fn from_reader(mut reader: R) -> Result<Self, KTXReadError> {
         Self::validate_file_identifier(&mut reader)?;
-        let mut format = Self::read_vk_format(&mut reader)?;
+        let format = Self::read_vk_format(&mut reader)?;
         let type_size = Self::read_type_size(&mut reader, format)?;
         let dimensions = Self::read_dimensions(&mut reader, format)?;
         let layer_num = Self::read_layer_count(&mut reader)?;
@@ -590,7 +519,7 @@ impl<R: Read + Seek> KTXDocument<R> {
             _ => panic!("Unable to deduce valid document type"),
         };
 
-        let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, &mut format)?;
+        let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, format)?;
 
         let reader = Cell::new(Some(reader));
 
@@ -650,15 +579,9 @@ impl<R: Read + Seek> KTXDocument<R> {
     ///
     /// Internal function for reading the type_size
     ///
-    fn read_type_size(reader: &mut impl Read, format: VkFormat) -> Result<u32, KTXReadError> {
+    fn read_type_size(reader: &mut impl Read, _format: VkFormat) -> Result<u32, KTXReadError> {
         let type_size = reader.read_u32::<LittleEndian>()?;
-        let expected = format_type_size(format);
-
-        if type_size != expected {
-            Err(KTXReadError::WrongTypeSizeForBlockFormat(type_size, format))
-        } else {
-            Ok(type_size)
-        }
+        Ok(type_size)
     }
 
     ///

@@ -43,6 +43,7 @@ publish = false
 aleph-vk-format = { workspace = true }
 aleph-vk2dfd = { workspace = true }
 byteorder = { workspace = true }
+bytemuck = { workspace = true }
 num-integer = { workspace = true }
 bitflags = { workspace = true }
 

@@ -28,12 +28,28 @@
 //
 
 use crate::table::VK_TO_DFD;
+use crate::LONGEST_DFD;
 
 #[test]
 fn sizes_are_sensible() {
     for (_, value) in VK_TO_DFD.entries() {
         assert_eq!(value[0], value.len() as u32 * 4);
+        assert!(value.len() >= 7);
     }
+}
+
+#[test]
+fn longest_dfd_is_correct() {
+    let mut real_longest = 0;
+    for (_, value) in VK_TO_DFD.entries() {
+        assert!(value.len() <= LONGEST_DFD);
+
+        // Swap out 'real_longest' if we find a bigger dfd
+        real_longest = value.len().max(real_longest);
+    }
+
+    // LONGEST_DFD should be exactly equal to the length of the longest DFD with no extra space
+    assert_eq!(real_longest, LONGEST_DFD);
 }
 
 #[test]

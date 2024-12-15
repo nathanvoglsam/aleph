@@ -61,3 +61,8 @@ pub fn vk2dfd(vulkan_format: VkFormat) -> Result<&'static [u32], Error> {
         .cloned()
         .ok_or(Error::UnknownType)
 }
+
+/// The size of the longest DFD enumerated by this crate as the number of [`u32`] words.
+///
+/// This is directly comparable with the length of an array returned by [`vk2dfd`].
+pub const LONGEST_DFD: usize = 31;

@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use std::io::Cursor;
-
 use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::ALL_FORMATS;
 
@@ -53,8 +51,8 @@ static TEXTUREARRAY_BC3_UNORM: &[u8] = include_bytes!("../test_images/texturearr
 static TEXTUREARRAY_ETC2_UNORM: &[u8] =
     include_bytes!("../test_images/texturearray_etc2_unorm.ktx2");
 
-//static INCORRECT_MIP_LAYOUT_AND_PADDING: &'static [u8] =
-//    include_bytes!("../test_images/incorrect_mip_layout_and_padding.ktx2");
+// static INCORRECT_MIP_LAYOUT_AND_PADDING: &'static [u8] =
+//     include_bytes!("../test_images/incorrect_mip_layout_and_padding.ktx2");
 static INVALID_FACE_COUNT_AND_PADDING: &[u8] =
     include_bytes!("../test_images/invalid_face_count_and_padding.ktx2");
 
@@ -103,17 +101,21 @@ fn test_validates_files() {
 
 #[test]
 fn test_invalid_files() {
-    //let error = KTXDocument::from_slice(INCORRECT_MIP_LAYOUT_AND_PADDING).err().unwrap();
-    //if !matches!(error, KTXReadError::InvalidFaceCount(4)) {
-    //    panic!("Loading failed for the wrong reason");
-    //}
+    // let error = KTXDocument::from_slice(INCORRECT_MIP_LAYOUT_AND_PADDING)
+    //     .err()
+    //     .unwrap();
+    // assert!(
+    //     matches!(error, KTXReadError::InvalidFaceCount(4)),
+    //     "wrong error: {error:#?}"
+    // );
 
     let error = KTXDocument::from_slice(INVALID_FACE_COUNT_AND_PADDING)
         .err()
         .unwrap();
-    if !matches!(error, KTXReadError::InvalidFaceCount(4)) {
-        panic!("Loading failed for the wrong reason");
-    }
+    assert!(
+        matches!(error, KTXReadError::InvalidFaceCount(4)),
+        "wrong error: {error:#?}"
+    );
 }
 
 #[test]
@@ -140,15 +142,9 @@ fn test_read_image_data() {
     ];
 
     for (level, expected_vals) in level_vals.iter().enumerate() {
-        let image_bytes = ktx.image_bytes(level).unwrap();
-        let mut cursor = Cursor::new(vec![0u8; image_bytes]);
+        let offset = ktx.level_offset(level).unwrap() as usize;
+        let data = &RGB_MIPMAP_REFERENCE_U[offset..offset + 3];
 
-        ktx.read_image(0, 0, level, &mut cursor).unwrap();
-
-        let data = cursor.into_inner();
-
-        data.chunks(3).for_each(|pixel_vals| {
-            assert_eq!(pixel_vals, expected_vals);
-        });
+        assert_eq!(data, expected_vals);
     }
 }

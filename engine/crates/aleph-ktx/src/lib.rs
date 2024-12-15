@@ -38,13 +38,7 @@ pub use data_format_descriptor::{
     ASTCChannelType, BC1ChannelType, BC2ChannelType, BC3ChannelType, BC4ChannelType,
     BC5ChannelType, BC6ChannelType, BC7ChannelType, ColorModel, ColorPrimaries, DFDError, DFDFlags,
     DataFormatDescriptor, ETC1ChannelType, ETC1SChannelType, ETC2ChannelType, PVRTC2ChannelType,
-    PVRTCChannelType, RGBSDAChannelType, SampleFlags, SampleInfo, SampleInfoIterator,
-    TransferFunction,
+    PVRTCChannelType, RGBSDAChannelType, SampleFlags, TransferFunction,
 };
 pub use document::{FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme};
-pub use format::{
-    format_alpha_bits, format_blue_bits, format_bytes_for_image, format_bytes_per_block,
-    format_depth_bits, format_exponent_bits, format_green_bits, format_pack_bits, format_red_bits,
-    format_sample_info_count, format_stencil_bits, format_type_size, is_format_alpha_first_ordered,
-    is_format_prohibited, is_format_rgbds_ordered, is_format_unsupported, ALLOWED_FORMATS,
-};
+pub use format::{is_format_prohibited, is_format_unsupported, ALLOWED_FORMATS};

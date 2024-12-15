@@ -29,8 +29,7 @@
 
 use aleph_vk_format::ALL_FORMATS;
 
-use crate::format::{is_format_prohibited, is_format_unsupported, ALLOWED_FORMATS};
-use crate::{format_sample_info_count, SampleInfo};
+use crate::format::{is_format_prohibited, ALLOWED_FORMATS};
 
 #[test]
 fn all_formats_handled_prohibited() {
@@ -42,26 +41,5 @@ fn all_formats_handled_prohibited() {
             (false, true) => panic!("Prohibited format in allowed list: {format:#?}"),
             _ => (),
         };
-    });
-}
-
-#[test]
-fn all_formats_sample_count() {
-    ALLOWED_FORMATS.iter().for_each(|format| {
-        if !is_format_unsupported(*format) {
-            let format_covered = format_sample_info_count(*format).is_some();
-            assert!(format_covered, "{format:#?}");
-        }
-    });
-}
-
-#[test]
-fn allowed_formats_sample_info() {
-    let mut sample_infos: [SampleInfo; 16] = Default::default();
-    ALLOWED_FORMATS.iter().for_each(|format| {
-        if !is_format_unsupported(*format) {
-            let format_covered = SampleInfo::for_format(*format, &mut sample_infos).is_some();
-            assert!(format_covered, "{format:#?}");
-        }
     });
 }
