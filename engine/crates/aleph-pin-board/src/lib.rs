@@ -210,7 +210,6 @@ impl Drop for Table {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
 
     use crate::PinBoard;
@@ -219,12 +218,7 @@ mod tests {
     struct B(u32);
     struct C(bool);
 
-    struct D(Arc<AtomicUsize>);
-    impl Drop for D {
-        fn drop(&mut self) {
-            self.0.fetch_add(1, Ordering::SeqCst);
-        }
-    }
+    struct D(#[allow(dead_code)] Arc<()>);
 
     /// This test will fail to compile if [PinBoard] does not implement Send + Sync
     #[test]
@@ -271,31 +265,33 @@ mod tests {
     fn test_pin_board_drop_1() {
         let mut pin_board = PinBoard::new();
 
-        let v = Arc::new(AtomicUsize::new(0));
+        let v = Arc::new(());
         pin_board.publish(D(v.clone()));
 
-        pin_board.clear();
-
-        assert_eq!(v.load(Ordering::SeqCst), 1);
+        assert_eq!(Arc::strong_count(&v), 2);
 
         pin_board.clear();
 
-        assert_eq!(v.load(Ordering::SeqCst), 1);
+        assert_eq!(Arc::strong_count(&v), 1);
+
+        pin_board.clear();
+
+        assert_eq!(Arc::strong_count(&v), 1);
 
         drop(pin_board);
 
-        assert_eq!(v.load(Ordering::SeqCst), 1);
+        assert_eq!(Arc::strong_count(&v), 1);
     }
 
     #[test]
     fn test_pin_board_drop_2() {
         let pin_board = PinBoard::new();
 
-        let v = Arc::new(AtomicUsize::new(0));
+        let v = Arc::new(());
         pin_board.publish(D(v.clone()));
 
         drop(pin_board);
 
-        assert_eq!(v.load(Ordering::SeqCst), 1);
+        assert_eq!(Arc::strong_count(&v), 1);
     }
 }

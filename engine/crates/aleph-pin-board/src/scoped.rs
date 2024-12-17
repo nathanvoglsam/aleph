@@ -105,7 +105,6 @@ impl<'a> Drop for BoardScope<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
 
     use crate::scoped::BoardParamId;
@@ -131,12 +130,7 @@ mod tests {
         type Output<'a> = D;
     }
 
-    struct D(Arc<AtomicUsize>);
-    impl Drop for D {
-        fn drop(&mut self) {
-            self.0.fetch_add(1, Ordering::SeqCst);
-        }
-    }
+    struct D(#[allow(dead_code)] Arc<()>);
 
     /// This test will fail to compile if [PinBoard] does not implement Send + Sync
     #[test]
@@ -181,7 +175,7 @@ mod tests {
     fn test_param_board_drop_1() {
         let mut board = ScopedParamBoard::new();
 
-        let v = Arc::new(AtomicUsize::new(0));
+        let v = Arc::new(());
         assert_eq!(Arc::strong_count(&v), 1);
 
         board.scope(|board| {
