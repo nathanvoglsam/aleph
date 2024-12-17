@@ -79,25 +79,8 @@ impl Mesh {
 }
 
 #[derive(Default, Debug)]
-struct Dropper {
-    pub counter: Arc<AtomicU32>,
-}
+struct Dropper(Arc<AtomicU32>);
 unsafe_impl_iobject!(Dropper, "01922979-2550-7d31-b91a-6c05bab9bb3b");
-
-impl Dropper {
-    pub fn new(counter: &Arc<AtomicU32>) -> Self {
-        counter.fetch_add(1, Ordering::SeqCst);
-        Self {
-            counter: counter.clone(),
-        }
-    }
-}
-
-impl Drop for Dropper {
-    fn drop(&mut self) {
-        self.counter.fetch_sub(1, Ordering::SeqCst);
-    }
-}
 
 #[test]
 fn extend_test_vec() {
@@ -484,26 +467,26 @@ fn drop_test() {
 
     let ids = world.extend((
         vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
-        vec![Dropper::new(&counter), Dropper::new(&counter)],
+        vec![Dropper(counter.clone()), Dropper(counter.clone())],
     ));
 
-    assert_eq!(counter.load(Ordering::SeqCst), 2);
+    assert_eq!(Arc::strong_count(&counter), 3);
     assert_eq!(ids.len(), 2);
     assert_eq!(world.len(), 2);
 
     let comp = world.query_one::<&Dropper>(ids[0]).unwrap();
-    assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
+    assert_eq!(Arc::strong_count(&comp.0), 3);
 
     let comp = world.query_one::<&Dropper>(ids[1]).unwrap();
-    assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
+    assert_eq!(Arc::strong_count(&comp.0), 3);
 
     assert!(world.remove_entity(ids[0]));
 
-    assert_eq!(counter.load(Ordering::SeqCst), 1);
+    assert_eq!(counter.load(Ordering::SeqCst), 2);
 
     drop(world);
 
-    assert_eq!(counter.load(Ordering::SeqCst), 0);
+    assert_eq!(counter.load(Ordering::SeqCst), 1);
 }
 
 #[test]
