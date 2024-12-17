@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
 use object_system::unsafe_impl_iobject;
@@ -79,7 +78,7 @@ impl Mesh {
 }
 
 #[derive(Default, Debug)]
-struct Dropper(Arc<AtomicU32>);
+struct Dropper(Arc<()>);
 unsafe_impl_iobject!(Dropper, "01922979-2550-7d31-b91a-6c05bab9bb3b");
 
 #[test]
@@ -462,8 +461,7 @@ fn drop_test() {
     world.register::<Mesh>();
     world.register::<Dropper>();
 
-    let counter = AtomicU32::new(0);
-    let counter = Arc::new(counter);
+    let counter = Arc::new(());
 
     let ids = world.extend((
         vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
@@ -482,11 +480,11 @@ fn drop_test() {
 
     assert!(world.remove_entity(ids[0]));
 
-    assert_eq!(counter.load(Ordering::SeqCst), 2);
+    assert_eq!(Arc::strong_count(&counter), 2);
 
     drop(world);
 
-    assert_eq!(counter.load(Ordering::SeqCst), 1);
+    assert_eq!(Arc::strong_count(&counter), 1);
 }
 
 #[test]
