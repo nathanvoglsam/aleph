@@ -35,8 +35,8 @@ use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 ///
 #[allow(clippy::identity_op)]
 pub static SYSTEM_INFO: Lazy<System> = Lazy::new(|| {
-    let refreshes = RefreshKind::new()
-        .with_cpu(CpuRefreshKind::new())
-        .with_memory(MemoryRefreshKind::new().with_ram());
+    let refreshes = RefreshKind::nothing()
+        .with_cpu(CpuRefreshKind::everything())
+        .with_memory(MemoryRefreshKind::nothing().with_ram());
     System::new_with_specifics(refreshes)
 });
