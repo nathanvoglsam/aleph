@@ -41,7 +41,7 @@ pub use level_index::LevelIndex;
 pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
-use crate::format::{is_format_prohibited, is_format_unsupported};
+use crate::format::is_format_prohibited;
 use crate::{ColorPrimaries, DFDError, DFDFlags};
 
 ///
@@ -175,7 +175,7 @@ pub struct KTXDocument<R: Read + Seek> {
     file_index: FileIndex,
     dfd: DataFormatDescriptor,
     document_type: DocumentType,
-    level_indices: Vec<LevelIndex>,
+    level_indices: LevelIndices,
 }
 
 impl<R: Read + Seek> KTXDocument<R> {
@@ -336,6 +336,17 @@ impl<R: Read + Seek> KTXDocument<R> {
         self.super_compression_scheme
     }
 
+    /// Removes the reader from the document, left in whatever state it was left in.
+    /// 
+    /// # Warning
+    /// 
+    /// Once the reader has been taken some functions ([`Self::lookup_key`] for example) will panic
+    /// as the reader is needed to extract the key and value. Only call this once you've queried all
+    /// required information from the document.
+    pub fn take_reader(&self) -> Option<R> {
+        self.reader.take()
+    }
+
     ///
     /// Reads the image data for the given mip level, cube face and array layer into the writer
     /// provided.
@@ -343,7 +354,7 @@ impl<R: Read + Seek> KTXDocument<R> {
     /// This function requires the `KTXDocument` mutably as the reader will be mutated while being
     /// read from (a reader is a stateful object).
     ///
-    pub fn level_offset(&self, level: usize) -> Result<u64, std::io::Error> {
+    pub fn get_level_info(&self, level: usize) -> Result<LevelIndex, std::io::Error> {
         use std::io::{Error, ErrorKind};
 
         // Check we're in bounds for the number of levels, faces and levels
@@ -355,11 +366,16 @@ impl<R: Read + Seek> KTXDocument<R> {
         }
 
         // Read the offset from the level indices
-        let level_offset = self.level_indices[level].offset;
+        let info = self.level_indices.as_slice()[level].clone();
 
-        Ok(level_offset)
+        Ok(info)
     }
 
+    /// Lookup, and read out the data for, the given key in the documents key/value store.
+    /// 
+    /// # Warning
+    /// 
+    /// May panic if the reader has been taken from the document. See [`Self::take_reader`].
     pub fn lookup_key(&self, key: &str) -> Result<Option<Vec<u8>>, KTXReadError> {
         // Get reader from cell
         let mut reader = self.reader.take().unwrap();
@@ -461,28 +477,20 @@ impl<R: Read + Seek> KTXDocument<R> {
     pub fn from_reader(mut reader: R) -> Result<Self, KTXReadError> {
         Self::validate_file_identifier(&mut reader)?;
         let format = Self::read_vk_format(&mut reader)?;
-        let type_size = Self::read_type_size(&mut reader, format)?;
+        let type_size = Self::read_type_size(&mut reader)?;
         let dimensions = Self::read_dimensions(&mut reader, format)?;
         let layer_num = Self::read_layer_count(&mut reader)?;
         let face_num = Self::read_face_count(&mut reader, dimensions.2)?;
         let level_num = Self::read_level_count(&mut reader, dimensions, format)?;
         let super_compression_scheme = Self::read_super_compression_scheme(&mut reader)?;
         let file_index = FileIndex::from_reader(&mut reader, super_compression_scheme)?;
-
-        // We always need to read at least one level, even if it says 0 as 0 means 1, but the reader
-        // should generate mip levels
-        let levels_to_read = u32::max(1, level_num);
-
-        // Preallocate a list to read into
-        let mut level_indices = Vec::new();
-        for _ in 0..levels_to_read {
-            level_indices.push(LevelIndex::from_reader(
-                &mut reader,
-                layer_num.max(1),
-                face_num,
-                super_compression_scheme,
-            )?);
-        }
+        let level_indices = LevelIndices::from_reader(
+            &mut reader,
+            level_num,
+            layer_num,
+            face_num,
+            super_compression_scheme,
+        )?;
 
         // Unpack dimensions
         let (width, height, depth) = dimensions;
@@ -569,7 +577,8 @@ impl<R: Read + Seek> KTXDocument<R> {
         // Check if format is valid and supported
         if is_format_prohibited(format) {
             Err(KTXReadError::ProhibitedFormat(format))
-        } else if is_format_unsupported(format) {
+        } else if !format.is_known() {
+            // If we don't know anything about the format we won't know how to read it
             Err(KTXReadError::UnsupportedFormat(format))
         } else {
             Ok(format)
@@ -579,7 +588,7 @@ impl<R: Read + Seek> KTXDocument<R> {
     ///
     /// Internal function for reading the type_size
     ///
-    fn read_type_size(reader: &mut impl Read, _format: VkFormat) -> Result<u32, KTXReadError> {
+    fn read_type_size(reader: &mut impl Read) -> Result<u32, KTXReadError> {
         let type_size = reader.read_u32::<LittleEndian>()?;
         Ok(type_size)
     }
@@ -600,6 +609,7 @@ impl<R: Read + Seek> KTXDocument<R> {
         } else if width == 0 {
             Err(KTXReadError::InvalidWidth(width))
         } else {
+            // Unknown formats will follow this branch
             Ok((width, height, depth))
         }
     }
@@ -647,15 +657,18 @@ impl<R: Read + Seek> KTXDocument<R> {
         let max_dim = u32::max(max_dim, dimensions.2);
 
         // Max level is equal to log2 of the highest image dimension
-        let max_dim = max_dim as f64;
-        let max_dim = max_dim.log2();
-        let max_levels = max_dim as u32;
+        let max_levels = max_dim as f64;
+        let max_levels = max_levels.log2();
+        let max_levels = max_levels as u32;
 
         if level_count > max_levels + 1 {
             Err(KTXReadError::TooManyLevels(level_count))
         } else if level_count == 0 && format.is_block_format() {
+            // It's not legal for a block compressed image to require the reader to generate mip
+            // levels.
             Err(KTXReadError::InvalidLevelCountForBlockFormat(level_count))
         } else {
+            // Unknown formats will take this branch
             Ok(level_count)
         }
     }
@@ -685,3 +698,66 @@ impl<R: Read + Seek> KTXDocument<R> {
 const FILE_IDENTIFIER: [u8; 12] = [
     0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A,
 ];
+
+enum LevelIndices {
+    // Inline storage, which we will use 99.999999% of the time.
+    Inline([LevelIndex; 16], usize),
+
+    // Heap storage fallback, which we'll only use for truly enormous textures 32k * 32k !!!
+    Heap(Vec<LevelIndex>),
+}
+
+impl LevelIndices {
+    fn as_slice(&self) -> &[LevelIndex] {
+        match self {
+            LevelIndices::Inline(arr, len) => &arr[0..*len],
+            LevelIndices::Heap(vec) => vec.as_slice(),
+        }
+    }
+
+    fn from_reader<R: Read + Seek>(
+        reader: &mut R,
+        level_num: u32,
+        layer_num: u32,
+        face_num: u32,
+        super_compression_scheme: SuperCompressionScheme,
+    ) -> Result<Self, KTXReadError> {
+        // We always need to read at least one level, even if it says 0 as 0 means 1, but the reader
+        // should generate mip levels
+        let levels_to_read = u32::max(1, level_num);
+
+        if levels_to_read > 32 {
+            // 33+ levels would apply mip 0 is wider than (2^32) on some dimension. We can't encode
+            // that as dimensions are stored in 32 bits so something has gone very wrong and we have
+            // a corrupted file.
+            return Err(KTXReadError::TooManyLevels(level_num));
+        }
+
+        // We use inline storage for the first 16 levels in an image. Images with more than this
+        // many levels are exceedingly rare. This way we only hit the heap allocated path on the
+        // rarest of rare images.
+        if levels_to_read <= 16 {
+            let mut level_indices: [_; 16] = std::array::from_fn(|_| LevelIndex::default());
+            for i in 0..levels_to_read {
+                level_indices[i as usize] = LevelIndex::from_reader(
+                    reader,
+                    layer_num.max(1),
+                    face_num,
+                    super_compression_scheme,
+                )?;
+            }
+            Ok(Self::Inline(level_indices, levels_to_read as usize))
+        } else {
+            let mut level_indices = Vec::new();
+            for _ in 0..levels_to_read {
+                level_indices.push(LevelIndex::from_reader(
+                    reader,
+                    layer_num.max(1),
+                    face_num,
+                    super_compression_scheme,
+                )?);
+            }
+            Ok(Self::Heap(level_indices))
+        }
+    }
+}

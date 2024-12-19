@@ -29,9 +29,6 @@
 
 use aleph_vk_format::VkFormat;
 
-use crate::format::is_format_prohibited;
-use crate::is_format_unsupported;
-
 ///
 /// Represents the set of supported `transferFunction` values
 ///
@@ -81,21 +78,9 @@ impl TransferFunction {
             self != TransferFunction::SRGB
         } else {
             // Otherwise we're golden
+            //
+            // This will also handle the undefined format, which we default to 'allowed'
             true
-        }
-    }
-
-    ///
-    /// Gets a TransferFunction value from the given format
-    ///
-    #[inline]
-    pub fn for_format(format: VkFormat) -> Option<Self> {
-        if is_format_prohibited(format) || is_format_unsupported(format) {
-            None
-        } else if format.is_srgb() {
-            Some(TransferFunction::SRGB)
-        } else {
-            Some(TransferFunction::Linear)
         }
     }
 }

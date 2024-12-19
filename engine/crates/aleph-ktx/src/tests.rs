@@ -30,7 +30,7 @@
 use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::ALL_FORMATS;
 
-use crate::{is_format_prohibited, is_format_unsupported, KTXDocument, KTXReadError};
+use crate::{is_format_prohibited, KTXDocument, KTXReadError};
 
 static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &[u8] =
     include_bytes!("../test_images/cubemap_yokohama_astc_8x8_srgb.ktx2");
@@ -59,11 +59,7 @@ static INVALID_FACE_COUNT_AND_PADDING: &[u8] =
 #[test]
 fn all_formats_have_dfd() {
     for format in ALL_FORMATS {
-        if is_format_unsupported(format) {
-            // Skip undefined as it won't have a dfd by definition
-            continue;
-        }
-        if is_format_prohibited(format) {
+        if is_format_prohibited(format) || format == aleph_vk_format::VkFormat::UNDEFINED {
             // Can't have a dfd for a prohibited format
             continue;
         }
@@ -142,7 +138,8 @@ fn test_read_image_data() {
     ];
 
     for (level, expected_vals) in level_vals.iter().enumerate() {
-        let offset = ktx.level_offset(level).unwrap() as usize;
+        let info = ktx.get_level_info(level).unwrap();
+        let offset = info.offset as usize;
         let data = &RGB_MIPMAP_REFERENCE_U[offset..offset + 3];
 
         assert_eq!(data, expected_vals);

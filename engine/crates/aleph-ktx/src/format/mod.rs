@@ -108,14 +108,6 @@ pub fn is_format_prohibited(format: VkFormat) -> bool {
 }
 
 ///
-/// If this format has been marked explicitly as unsupported by our implementation
-///
-#[inline]
-pub fn is_format_unsupported(format: VkFormat) -> bool {
-    matches!(format, VkFormat::UNDEFINED)
-}
-
-///
 /// A list of all formats allowed by the KTX2 spec
 ///
 pub const ALLOWED_FORMATS: [VkFormat; 176] = [

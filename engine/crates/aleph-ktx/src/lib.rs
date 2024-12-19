@@ -41,4 +41,4 @@ pub use data_format_descriptor::{
     PVRTCChannelType, RGBSDAChannelType, SampleFlags, TransferFunction,
 };
 pub use document::{FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme};
-pub use format::{is_format_prohibited, is_format_unsupported, ALLOWED_FORMATS};
+pub use format::{is_format_prohibited, ALLOWED_FORMATS};
