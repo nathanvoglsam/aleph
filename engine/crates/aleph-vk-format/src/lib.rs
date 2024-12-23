@@ -279,20 +279,20 @@ impl VkFormat {
     pub const G16_B16_R16_3PLANE_422_UNORM: Self = Self(1000156031);
     pub const G16_B16R16_2PLANE_422_UNORM: Self = Self(1000156032);
     pub const G16_B16_R16_3PLANE_444_UNORM: Self = Self(1000156033);
-    pub const ASTC_4X4_SFLOAT_BLOCK_EXT: Self = Self(1000066000);
-    pub const ASTC_5X4_SFLOAT_BLOCK_EXT: Self = Self(1000066001);
-    pub const ASTC_5X5_SFLOAT_BLOCK_EXT: Self = Self(1000066002);
-    pub const ASTC_6X5_SFLOAT_BLOCK_EXT: Self = Self(1000066003);
-    pub const ASTC_6X6_SFLOAT_BLOCK_EXT: Self = Self(1000066004);
-    pub const ASTC_8X5_SFLOAT_BLOCK_EXT: Self = Self(1000066005);
-    pub const ASTC_8X6_SFLOAT_BLOCK_EXT: Self = Self(1000066006);
-    pub const ASTC_8X8_SFLOAT_BLOCK_EXT: Self = Self(1000066007);
-    pub const ASTC_10X5_SFLOAT_BLOCK_EXT: Self = Self(1000066008);
-    pub const ASTC_10X6_SFLOAT_BLOCK_EXT: Self = Self(1000066009);
-    pub const ASTC_10X8_SFLOAT_BLOCK_EXT: Self = Self(1000066010);
-    pub const ASTC_10X10_SFLOAT_BLOCK_EXT: Self = Self(1000066011);
-    pub const ASTC_12X10_SFLOAT_BLOCK_EXT: Self = Self(1000066012);
-    pub const ASTC_12X12_SFLOAT_BLOCK_EXT: Self = Self(1000066013);
+    pub const ASTC_4X4_SFLOAT_BLOCK: Self = Self(1000066000);
+    pub const ASTC_5X4_SFLOAT_BLOCK: Self = Self(1000066001);
+    pub const ASTC_5X5_SFLOAT_BLOCK: Self = Self(1000066002);
+    pub const ASTC_6X5_SFLOAT_BLOCK: Self = Self(1000066003);
+    pub const ASTC_6X6_SFLOAT_BLOCK: Self = Self(1000066004);
+    pub const ASTC_8X5_SFLOAT_BLOCK: Self = Self(1000066005);
+    pub const ASTC_8X6_SFLOAT_BLOCK: Self = Self(1000066006);
+    pub const ASTC_8X8_SFLOAT_BLOCK: Self = Self(1000066007);
+    pub const ASTC_10X5_SFLOAT_BLOCK: Self = Self(1000066008);
+    pub const ASTC_10X6_SFLOAT_BLOCK: Self = Self(1000066009);
+    pub const ASTC_10X8_SFLOAT_BLOCK: Self = Self(1000066010);
+    pub const ASTC_10X10_SFLOAT_BLOCK: Self = Self(1000066011);
+    pub const ASTC_12X10_SFLOAT_BLOCK: Self = Self(1000066012);
+    pub const ASTC_12X12_SFLOAT_BLOCK: Self = Self(1000066013);
     pub const PVRTC1_2BPP_UNORM_BLOCK_IMG: Self = Self(1000054000);
     pub const PVRTC1_4BPP_UNORM_BLOCK_IMG: Self = Self(1000054001);
     pub const PVRTC2_2BPP_UNORM_BLOCK_IMG: Self = Self(1000054002);
@@ -301,6 +301,15 @@ impl VkFormat {
     pub const PVRTC1_4BPP_SRGB_BLOCK_IMG: Self = Self(1000054005);
     pub const PVRTC2_2BPP_SRGB_BLOCK_IMG: Self = Self(1000054006);
     pub const PVRTC2_4BPP_SRGB_BLOCK_IMG: Self = Self(1000054007);
+    pub const G8_B8R8_2PLANE_444_UNORM: Self = Self(1_000_330_000);
+    pub const G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16: Self = Self(1_000_330_001);
+    pub const G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16: Self = Self(1_000_330_002);
+    pub const G16_B16R16_2PLANE_444_UNORM: Self = Self(1_000_330_003);
+    pub const A4R4G4B4_UNORM_PACK16: Self = Self(1_000_340_000);
+    pub const A4B4G4R4_UNORM_PACK16: Self = Self(1_000_340_001);
+    pub const R16G16_S10_5_NV: Self = Self(1_000_464_000);
+    pub const A1B5G5R5_UNORM_PACK16_KHR: Self = Self(1_000_470_000);
+    pub const A8_UNORM_KHR: Self = Self(1_000_470_001);
 }
 
 impl VkFormat {
@@ -310,6 +319,23 @@ impl VkFormat {
     #[inline]
     pub const fn is_block_format(self) -> bool {
         self.is_bcn() || self.is_etc2() || self.is_eac() || self.is_astc() || self.is_pvrtc()
+    }
+
+    /// The Khronos defined texel block size directly pulled from the spec.
+    pub const fn texel_block_size(self) -> Option<usize> {
+        match self.texel_block_size_inner() {
+            Some((v, _)) => Some(v),
+            None => None,
+        }
+    }
+
+    /// The Khronos defined texel block size with format specific overrides specified by the KTX2
+    /// spec applied.
+    pub const fn texel_block_size_ktx(self) -> Option<usize> {
+        match self.texel_block_size_inner() {
+            Some((_, v)) => Some(v),
+            None => None,
+        }
     }
 
     ///
@@ -328,6 +354,7 @@ impl VkFormat {
                 | VkFormat::BC1_RGBA_SRGB_BLOCK
                 | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
                 | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+                | VkFormat::A1B5G5R5_UNORM_PACK16_KHR
         )
     }
 
@@ -424,20 +451,20 @@ impl VkFormat {
                 | VkFormat::ASTC_12X12_SRGB_BLOCK
                 | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
                 | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
                 | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
                 | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
                 | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
@@ -446,6 +473,10 @@ impl VkFormat {
                 | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::A4R4G4B4_UNORM_PACK16
+                | VkFormat::A4B4G4R4_UNORM_PACK16
+                | VkFormat::A1B5G5R5_UNORM_PACK16_KHR
+                | VkFormat::A8_UNORM_KHR
         )
     }
 
@@ -574,7 +605,7 @@ impl VkFormat {
             self,
             VkFormat::ASTC_4X4_UNORM_BLOCK
                 | VkFormat::ASTC_4X4_SRGB_BLOCK
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
         )
     }
 
@@ -590,8 +621,8 @@ impl VkFormat {
                 | VkFormat::ASTC_5X4_SRGB_BLOCK
                 | VkFormat::ASTC_5X5_UNORM_BLOCK
                 | VkFormat::ASTC_5X5_SRGB_BLOCK
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
         )
     }
 
@@ -607,8 +638,8 @@ impl VkFormat {
                 | VkFormat::ASTC_6X5_SRGB_BLOCK
                 | VkFormat::ASTC_6X6_UNORM_BLOCK
                 | VkFormat::ASTC_6X6_SRGB_BLOCK
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
         )
     }
 
@@ -626,9 +657,9 @@ impl VkFormat {
                 | VkFormat::ASTC_8X6_SRGB_BLOCK
                 | VkFormat::ASTC_8X8_UNORM_BLOCK
                 | VkFormat::ASTC_8X8_SRGB_BLOCK
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
         )
     }
 
@@ -648,10 +679,10 @@ impl VkFormat {
                 | VkFormat::ASTC_10X8_SRGB_BLOCK
                 | VkFormat::ASTC_10X10_UNORM_BLOCK
                 | VkFormat::ASTC_10X10_SRGB_BLOCK
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
         )
     }
 
@@ -667,8 +698,8 @@ impl VkFormat {
                 | VkFormat::ASTC_12X10_SRGB_BLOCK
                 | VkFormat::ASTC_12X12_UNORM_BLOCK
                 | VkFormat::ASTC_12X12_SRGB_BLOCK
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
         )
     }
 
@@ -684,8 +715,8 @@ impl VkFormat {
                 | VkFormat::ASTC_4X4_SRGB_BLOCK
                 | VkFormat::ASTC_5X4_UNORM_BLOCK
                 | VkFormat::ASTC_5X4_SRGB_BLOCK
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
         )
     }
 
@@ -705,10 +736,10 @@ impl VkFormat {
                 | VkFormat::ASTC_8X5_SRGB_BLOCK
                 | VkFormat::ASTC_10X5_UNORM_BLOCK
                 | VkFormat::ASTC_10X5_SRGB_BLOCK
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
         )
     }
 
@@ -726,9 +757,9 @@ impl VkFormat {
                 | VkFormat::ASTC_8X6_SRGB_BLOCK
                 | VkFormat::ASTC_10X6_UNORM_BLOCK
                 | VkFormat::ASTC_10X6_SRGB_BLOCK
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
         )
     }
 
@@ -744,8 +775,8 @@ impl VkFormat {
                 | VkFormat::ASTC_8X8_SRGB_BLOCK
                 | VkFormat::ASTC_10X8_UNORM_BLOCK
                 | VkFormat::ASTC_10X8_SRGB_BLOCK
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
         )
     }
 
@@ -761,8 +792,8 @@ impl VkFormat {
                 | VkFormat::ASTC_10X10_SRGB_BLOCK
                 | VkFormat::ASTC_12X10_UNORM_BLOCK
                 | VkFormat::ASTC_12X10_SRGB_BLOCK
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
         )
     }
 
@@ -776,7 +807,7 @@ impl VkFormat {
             self,
             VkFormat::ASTC_12X12_UNORM_BLOCK
                 | VkFormat::ASTC_12X12_SRGB_BLOCK
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
         )
     }
 
@@ -815,20 +846,20 @@ impl VkFormat {
                 | VkFormat::ASTC_12X10_SRGB_BLOCK
                 | VkFormat::ASTC_12X12_UNORM_BLOCK
                 | VkFormat::ASTC_12X12_SRGB_BLOCK
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
         )
     }
 
@@ -1178,20 +1209,21 @@ impl VkFormat {
                 | VkFormat::BC6H_SFLOAT_BLOCK
                 | VkFormat::EAC_R11_SNORM_BLOCK
                 | VkFormat::EAC_R11G11_SNORM_BLOCK
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
+                | VkFormat::R16G16_S10_5_NV
         )
     }
 
@@ -1220,20 +1252,20 @@ impl VkFormat {
                 | VkFormat::D32_SFLOAT_S8_UINT
                 | VkFormat::BC6H_UFLOAT_BLOCK
                 | VkFormat::BC6H_SFLOAT_BLOCK
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
         )
     }
 
@@ -1383,6 +1415,14 @@ impl VkFormat {
                 | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::G8_B8R8_2PLANE_444_UNORM
+                | VkFormat::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16
+                | VkFormat::G16_B16R16_2PLANE_444_UNORM
+                | VkFormat::A4R4G4B4_UNORM_PACK16
+                | VkFormat::A4B4G4R4_UNORM_PACK16
+                | VkFormat::A1B5G5R5_UNORM_PACK16_KHR
+                | VkFormat::A8_UNORM_KHR
         )
     }
 
@@ -1630,20 +1670,20 @@ impl VkFormat {
                 | VkFormat::G16_B16_R16_3PLANE_422_UNORM
                 | VkFormat::G16_B16R16_2PLANE_422_UNORM
                 | VkFormat::G16_B16_R16_3PLANE_444_UNORM
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
                 | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
                 | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
                 | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
@@ -1652,7 +1692,297 @@ impl VkFormat {
                 | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::G8_B8R8_2PLANE_444_UNORM
+                | VkFormat::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16
+                | VkFormat::G16_B16R16_2PLANE_444_UNORM
+                | VkFormat::A4R4G4B4_UNORM_PACK16
+                | VkFormat::A4B4G4R4_UNORM_PACK16
+                | VkFormat::R16G16_S10_5_NV
+                | VkFormat::A1B5G5R5_UNORM_PACK16_KHR
+                | VkFormat::A8_UNORM_KHR
         )
+    }
+}
+
+impl VkFormat {
+    const fn texel_block_size_inner(self) -> Option<(usize, usize)> {
+        let v = match self {
+            Self::R4G4_UNORM_PACK8 |
+            Self::R8_UNORM |
+            Self::R8_SNORM |
+            Self::R8_USCALED |
+            Self::R8_SSCALED |
+            Self::R8_UINT |
+            Self::R8_SINT |
+            Self::R8_SRGB |
+            Self::A8_UNORM_KHR => (1, 1),
+
+            Self::A1B5G5R5_UNORM_PACK16_KHR |
+            Self::R10X6_UNORM_PACK16 |
+            Self::R12X4_UNORM_PACK16 |
+            Self::A4R4G4B4_UNORM_PACK16 |
+            Self::A4B4G4R4_UNORM_PACK16 |
+            Self::R4G4B4A4_UNORM_PACK16 |
+            Self::B4G4R4A4_UNORM_PACK16 |
+            Self::R5G6B5_UNORM_PACK16 |
+            Self::B5G6R5_UNORM_PACK16 |
+            Self::R5G5B5A1_UNORM_PACK16 |
+            Self::B5G5R5A1_UNORM_PACK16 |
+            Self::A1R5G5B5_UNORM_PACK16 |
+            Self::R8G8_UNORM |
+            Self::R8G8_SNORM |
+            Self::R8G8_USCALED |
+            Self::R8G8_SSCALED |
+            Self::R8G8_UINT |
+            Self::R8G8_SINT |
+            Self::R8G8_SRGB |
+            Self::R16_UNORM |
+            Self::R16_SNORM |
+            Self::R16_USCALED |
+            Self::R16_SSCALED |
+            Self::R16_UINT |
+            Self::R16_SINT |
+            Self::R16_SFLOAT => (2, 2),
+
+            Self::R8G8B8_UNORM |
+            Self::R8G8B8_SNORM |
+            Self::R8G8B8_USCALED |
+            Self::R8G8B8_SSCALED |
+            Self::R8G8B8_UINT |
+            Self::R8G8B8_SINT |
+            Self::R8G8B8_SRGB |
+            Self::B8G8R8_UNORM |
+            Self::B8G8R8_SNORM |
+            Self::B8G8R8_USCALED |
+            Self::B8G8R8_SSCALED |
+            Self::B8G8R8_UINT |
+            Self::B8G8R8_SINT |
+            Self::B8G8R8_SRGB => (3, 3),
+
+            Self::R10X6G10X6_UNORM_2PACK16 |
+            Self::R12X4G12X4_UNORM_2PACK16 |
+            Self::R16G16_S10_5_NV | // R16G16_SFIXED5_NV
+            Self::R8G8B8A8_UNORM |
+            Self::R8G8B8A8_SNORM |
+            Self::R8G8B8A8_USCALED |
+            Self::R8G8B8A8_SSCALED |
+            Self::R8G8B8A8_UINT |
+            Self::R8G8B8A8_SINT |
+            Self::R8G8B8A8_SRGB |
+            Self::B8G8R8A8_UNORM |
+            Self::B8G8R8A8_SNORM |
+            Self::B8G8R8A8_USCALED |
+            Self::B8G8R8A8_SSCALED |
+            Self::B8G8R8A8_UINT |
+            Self::B8G8R8A8_SINT |
+            Self::B8G8R8A8_SRGB |
+            Self::A8B8G8R8_UNORM_PACK32 |
+            Self::A8B8G8R8_SNORM_PACK32 |
+            Self::A8B8G8R8_USCALED_PACK32 |
+            Self::A8B8G8R8_SSCALED_PACK32 |
+            Self::A8B8G8R8_UINT_PACK32 |
+            Self::A8B8G8R8_SINT_PACK32 |
+            Self::A8B8G8R8_SRGB_PACK32 |
+            Self::A2R10G10B10_UNORM_PACK32 |
+            Self::A2R10G10B10_SNORM_PACK32 |
+            Self::A2R10G10B10_USCALED_PACK32 |
+            Self::A2R10G10B10_SSCALED_PACK32 |
+            Self::A2R10G10B10_UINT_PACK32 |
+            Self::A2R10G10B10_SINT_PACK32 |
+            Self::A2B10G10R10_UNORM_PACK32 |
+            Self::A2B10G10R10_SNORM_PACK32 |
+            Self::A2B10G10R10_USCALED_PACK32 |
+            Self::A2B10G10R10_SSCALED_PACK32 |
+            Self::A2B10G10R10_UINT_PACK32 |
+            Self::A2B10G10R10_SINT_PACK32 |
+            Self::R16G16_UNORM |
+            Self::R16G16_SNORM |
+            Self::R16G16_USCALED |
+            Self::R16G16_SSCALED |
+            Self::R16G16_UINT |
+            Self::R16G16_SINT |
+            Self::R16G16_SFLOAT |
+            Self::R32_UINT |
+            Self::R32_SINT |
+            Self::R32_SFLOAT |
+            Self::B10G11R11_UFLOAT_PACK32 |
+            Self::E5B9G9R9_UFLOAT_PACK32 => (4, 4),
+
+            Self::R16G16B16_UNORM |
+            Self::R16G16B16_SNORM |
+            Self::R16G16B16_USCALED |
+            Self::R16G16B16_SSCALED |
+            Self::R16G16B16_UINT |
+            Self::R16G16B16_SINT |
+            Self::R16G16B16_SFLOAT => (6, 6),
+
+            Self::R16G16B16A16_UNORM |
+            Self::R16G16B16A16_SNORM |
+            Self::R16G16B16A16_USCALED |
+            Self::R16G16B16A16_SSCALED |
+            Self::R16G16B16A16_UINT |
+            Self::R16G16B16A16_SINT |
+            Self::R16G16B16A16_SFLOAT |
+            Self::R32G32_UINT |
+            Self::R32G32_SINT |
+            Self::R32G32_SFLOAT |
+            Self::R64_UINT |
+            Self::R64_SINT |
+            Self::R64_SFLOAT => (8, 8),
+
+            Self::R32G32B32_UINT |
+            Self::R32G32B32_SINT |
+            Self::R32G32B32_SFLOAT => (12, 12),
+
+            Self::R32G32B32A32_UINT |
+            Self::R32G32B32A32_SINT |
+            Self::R32G32B32A32_SFLOAT |
+            Self::R64G64_UINT |
+            Self::R64G64_SINT |
+            Self::R64G64_SFLOAT => (16, 16),
+
+            Self::R64G64B64_UINT |
+            Self::R64G64B64_SINT |
+            Self::R64G64B64_SFLOAT => (24, 24),
+
+            Self::R64G64B64A64_UINT |
+            Self::R64G64B64A64_SINT |
+            Self::R64G64B64A64_SFLOAT => (32, 3),
+
+            Self::D16_UNORM => (2, 2),
+            Self::X8_D24_UNORM_PACK32 => (4, 4),
+            Self::D32_SFLOAT => (4, 4),
+            Self::S8_UINT => (1, 1),
+            Self::D16_UNORM_S8_UINT => (3, 4),
+            Self::D24_UNORM_S8_UINT => (4, 4),
+            Self::D32_SFLOAT_S8_UINT => (5, 8),
+
+            Self::BC1_RGB_UNORM_BLOCK |
+            Self::BC1_RGB_SRGB_BLOCK |
+            Self::BC1_RGBA_UNORM_BLOCK |
+            Self::BC1_RGBA_SRGB_BLOCK |
+            Self::BC4_UNORM_BLOCK |
+            Self::BC4_SNORM_BLOCK => (8 ,8),
+
+            Self::BC2_UNORM_BLOCK |
+            Self::BC2_SRGB_BLOCK |
+            Self::BC3_UNORM_BLOCK |
+            Self::BC3_SRGB_BLOCK |
+            Self::BC5_UNORM_BLOCK |
+            Self::BC5_SNORM_BLOCK |
+            Self::BC6H_UFLOAT_BLOCK |
+            Self::BC6H_SFLOAT_BLOCK |
+            Self::BC7_UNORM_BLOCK |
+            Self::BC7_SRGB_BLOCK => (16, 16),
+
+            Self::ETC2_R8G8B8_UNORM_BLOCK |
+            Self::ETC2_R8G8B8_SRGB_BLOCK |
+            Self::ETC2_R8G8B8A1_UNORM_BLOCK |
+            Self::ETC2_R8G8B8A1_SRGB_BLOCK => (8, 8),
+
+            Self::ETC2_R8G8B8A8_UNORM_BLOCK |
+            Self::ETC2_R8G8B8A8_SRGB_BLOCK => (16, 16),
+
+            Self::EAC_R11_UNORM_BLOCK |
+            Self::EAC_R11_SNORM_BLOCK => (8, 8),
+
+            Self::EAC_R11G11_UNORM_BLOCK |
+            Self::EAC_R11G11_SNORM_BLOCK => (16, 16),
+
+            Self::ASTC_4X4_UNORM_BLOCK |
+            Self::ASTC_4X4_SRGB_BLOCK |
+            Self::ASTC_5X4_UNORM_BLOCK |
+            Self::ASTC_5X4_SRGB_BLOCK |
+            Self::ASTC_5X5_UNORM_BLOCK |
+            Self::ASTC_5X5_SRGB_BLOCK |
+            Self::ASTC_6X5_UNORM_BLOCK |
+            Self::ASTC_6X5_SRGB_BLOCK |
+            Self::ASTC_6X6_UNORM_BLOCK |
+            Self::ASTC_6X6_SRGB_BLOCK |
+            Self::ASTC_8X5_UNORM_BLOCK |
+            Self::ASTC_8X5_SRGB_BLOCK |
+            Self::ASTC_8X6_UNORM_BLOCK |
+            Self::ASTC_8X6_SRGB_BLOCK |
+            Self::ASTC_8X8_UNORM_BLOCK |
+            Self::ASTC_8X8_SRGB_BLOCK |
+            Self::ASTC_10X5_UNORM_BLOCK |
+            Self::ASTC_10X5_SRGB_BLOCK |
+            Self::ASTC_10X6_UNORM_BLOCK |
+            Self::ASTC_10X6_SRGB_BLOCK |
+            Self::ASTC_10X8_UNORM_BLOCK |
+            Self::ASTC_10X8_SRGB_BLOCK |
+            Self::ASTC_10X10_UNORM_BLOCK |
+            Self::ASTC_10X10_SRGB_BLOCK |
+            Self::ASTC_12X10_UNORM_BLOCK |
+            Self::ASTC_12X10_SRGB_BLOCK |
+            Self::ASTC_12X12_UNORM_BLOCK |
+            Self::ASTC_12X12_SRGB_BLOCK |
+            Self::ASTC_4X4_SFLOAT_BLOCK |
+            Self::ASTC_5X4_SFLOAT_BLOCK |
+            Self::ASTC_5X5_SFLOAT_BLOCK |
+            Self::ASTC_6X5_SFLOAT_BLOCK |
+            Self::ASTC_6X6_SFLOAT_BLOCK |
+            Self::ASTC_8X5_SFLOAT_BLOCK |
+            Self::ASTC_8X6_SFLOAT_BLOCK |
+            Self::ASTC_8X8_SFLOAT_BLOCK |
+            Self::ASTC_10X5_SFLOAT_BLOCK |
+            Self::ASTC_10X6_SFLOAT_BLOCK |
+            Self::ASTC_10X8_SFLOAT_BLOCK |
+            Self::ASTC_10X10_SFLOAT_BLOCK |
+            Self::ASTC_12X10_SFLOAT_BLOCK |
+            Self::ASTC_12X12_SFLOAT_BLOCK => (16, 16),
+
+            Self::PVRTC1_2BPP_UNORM_BLOCK_IMG |
+            Self::PVRTC1_2BPP_SRGB_BLOCK_IMG |
+            Self::PVRTC1_4BPP_UNORM_BLOCK_IMG |
+            Self::PVRTC1_4BPP_SRGB_BLOCK_IMG |
+            Self::PVRTC2_2BPP_UNORM_BLOCK_IMG |
+            Self::PVRTC2_2BPP_SRGB_BLOCK_IMG |
+            Self::PVRTC2_4BPP_UNORM_BLOCK_IMG |
+            Self::PVRTC2_4BPP_SRGB_BLOCK_IMG => (8, 8),
+
+            Self::R10X6G10X6B10X6A10X6_UNORM_4PACK16 |
+            Self::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 |
+            Self::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 |
+            Self::R12X4G12X4B12X4A12X4_UNORM_4PACK16 |
+            Self::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 |
+            Self::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 |
+            Self::G16B16G16R16_422_UNORM |
+            Self::B16G16R16G16_422_UNORM => (8, 8),
+
+            Self::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 |
+            Self::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 |
+            Self::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16 |
+            Self::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 |
+            Self::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16 |
+            Self::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 |
+            Self::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16 |
+            Self::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16 |
+            Self::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16 |
+            Self::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16 |
+            Self::G16_B16_R16_3PLANE_420_UNORM |
+            Self::G16_B16R16_2PLANE_420_UNORM |
+            Self::G16_B16_R16_3PLANE_422_UNORM |
+            Self::G16_B16R16_2PLANE_422_UNORM |
+            Self::G16_B16_R16_3PLANE_444_UNORM |
+            Self::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16 |
+            Self::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16 |
+            Self::G16_B16R16_2PLANE_444_UNORM => (6, 6),
+
+            Self::G8_B8_R8_3PLANE_420_UNORM |
+            Self::G8_B8R8_2PLANE_420_UNORM |
+            Self::G8_B8_R8_3PLANE_422_UNORM |
+            Self::G8_B8R8_2PLANE_422_UNORM |
+            Self::G8_B8R8_2PLANE_444_UNORM |
+            Self::G8_B8_R8_3PLANE_444_UNORM => (3, 3),
+
+            Self::G8B8G8R8_422_UNORM => (4, 4),
+            Self::B8G8R8G8_422_UNORM => (4, 4),
+
+            _ => return None,
+        };
+        Some(v)
     }
 }
 
@@ -1906,20 +2236,20 @@ impl std::fmt::Debug for VkFormat {
             Self::G16_B16_R16_3PLANE_422_UNORM => "G16_B16_R16_3PLANE_422_UNORM",
             Self::G16_B16R16_2PLANE_422_UNORM => "G16_B16R16_2PLANE_422_UNORM",
             Self::G16_B16_R16_3PLANE_444_UNORM => "G16_B16_R16_3PLANE_444_UNORM",
-            Self::ASTC_4X4_SFLOAT_BLOCK_EXT => "ASTC_4X4_SFLOAT_BLOCK_EXT",
-            Self::ASTC_5X4_SFLOAT_BLOCK_EXT => "ASTC_5X4_SFLOAT_BLOCK_EXT",
-            Self::ASTC_5X5_SFLOAT_BLOCK_EXT => "ASTC_5X5_SFLOAT_BLOCK_EXT",
-            Self::ASTC_6X5_SFLOAT_BLOCK_EXT => "ASTC_6X5_SFLOAT_BLOCK_EXT",
-            Self::ASTC_6X6_SFLOAT_BLOCK_EXT => "ASTC_6X6_SFLOAT_BLOCK_EXT",
-            Self::ASTC_8X5_SFLOAT_BLOCK_EXT => "ASTC_8X5_SFLOAT_BLOCK_EXT",
-            Self::ASTC_8X6_SFLOAT_BLOCK_EXT => "ASTC_8X6_SFLOAT_BLOCK_EXT",
-            Self::ASTC_8X8_SFLOAT_BLOCK_EXT => "ASTC_8X8_SFLOAT_BLOCK_EXT",
-            Self::ASTC_10X5_SFLOAT_BLOCK_EXT => "ASTC_10X5_SFLOAT_BLOCK_EXT",
-            Self::ASTC_10X6_SFLOAT_BLOCK_EXT => "ASTC_10X6_SFLOAT_BLOCK_EXT",
-            Self::ASTC_10X8_SFLOAT_BLOCK_EXT => "ASTC_10X8_SFLOAT_BLOCK_EXT",
-            Self::ASTC_10X10_SFLOAT_BLOCK_EXT => "ASTC_10X10_SFLOAT_BLOCK_EXT",
-            Self::ASTC_12X10_SFLOAT_BLOCK_EXT => "ASTC_12X10_SFLOAT_BLOCK_EXT",
-            Self::ASTC_12X12_SFLOAT_BLOCK_EXT => "ASTC_12X12_SFLOAT_BLOCK_EXT",
+            Self::ASTC_4X4_SFLOAT_BLOCK => "ASTC_4X4_SFLOAT_BLOCK",
+            Self::ASTC_5X4_SFLOAT_BLOCK => "ASTC_5X4_SFLOAT_BLOCK",
+            Self::ASTC_5X5_SFLOAT_BLOCK => "ASTC_5X5_SFLOAT_BLOCK",
+            Self::ASTC_6X5_SFLOAT_BLOCK => "ASTC_6X5_SFLOAT_BLOCK",
+            Self::ASTC_6X6_SFLOAT_BLOCK => "ASTC_6X6_SFLOAT_BLOCK",
+            Self::ASTC_8X5_SFLOAT_BLOCK => "ASTC_8X5_SFLOAT_BLOCK",
+            Self::ASTC_8X6_SFLOAT_BLOCK => "ASTC_8X6_SFLOAT_BLOCK",
+            Self::ASTC_8X8_SFLOAT_BLOCK => "ASTC_8X8_SFLOAT_BLOCK",
+            Self::ASTC_10X5_SFLOAT_BLOCK => "ASTC_10X5_SFLOAT_BLOCK",
+            Self::ASTC_10X6_SFLOAT_BLOCK => "ASTC_10X6_SFLOAT_BLOCK",
+            Self::ASTC_10X8_SFLOAT_BLOCK => "ASTC_10X8_SFLOAT_BLOCK",
+            Self::ASTC_10X10_SFLOAT_BLOCK => "ASTC_10X10_SFLOAT_BLOCK",
+            Self::ASTC_12X10_SFLOAT_BLOCK => "ASTC_12X10_SFLOAT_BLOCK",
+            Self::ASTC_12X12_SFLOAT_BLOCK => "ASTC_12X12_SFLOAT_BLOCK",
             Self::PVRTC1_2BPP_UNORM_BLOCK_IMG => "PVRTC1_2BPP_UNORM_BLOCK_IMG",
             Self::PVRTC1_4BPP_UNORM_BLOCK_IMG => "PVRTC1_4BPP_UNORM_BLOCK_IMG",
             Self::PVRTC2_2BPP_UNORM_BLOCK_IMG => "PVRTC2_2BPP_UNORM_BLOCK_IMG",
@@ -1928,6 +2258,19 @@ impl std::fmt::Debug for VkFormat {
             Self::PVRTC1_4BPP_SRGB_BLOCK_IMG => "PVRTC1_4BPP_SRGB_BLOCK_IMG",
             Self::PVRTC2_2BPP_SRGB_BLOCK_IMG => "PVRTC2_2BPP_SRGB_BLOCK_IMG",
             Self::PVRTC2_4BPP_SRGB_BLOCK_IMG => "PVRTC2_4BPP_SRGB_BLOCK_IMG",
+            Self::G8_B8R8_2PLANE_444_UNORM => "G8_B8R8_2PLANE_444_UNORM",
+            Self::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16 => {
+                "G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16"
+            }
+            Self::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16 => {
+                "G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16"
+            }
+            Self::G16_B16R16_2PLANE_444_UNORM => "G16_B16R16_2PLANE_444_UNORM",
+            Self::A4R4G4B4_UNORM_PACK16 => "A4R4G4B4_UNORM_PACK16",
+            Self::A4B4G4R4_UNORM_PACK16 => "A4B4G4R4_UNORM_PACK16",
+            Self::R16G16_S10_5_NV => "R16G16_S10_5_NV",
+            Self::A1B5G5R5_UNORM_PACK16_KHR => "A1B5G5R5_UNORM_PACK16_KHR",
+            Self::A8_UNORM_KHR => "A8_UNORM_KHR",
             _ => "(unknown)",
         })
     }
@@ -1936,7 +2279,7 @@ impl std::fmt::Debug for VkFormat {
 ///
 /// A list of all formats that are enumerated by this crate
 ///
-pub const ALL_FORMATS: [VkFormat; 241] = [
+pub const ALL_FORMATS: [VkFormat; 250] = [
     VkFormat::UNDEFINED,
     VkFormat::R4G4_UNORM_PACK8,
     VkFormat::R4G4B4A4_UNORM_PACK16,
@@ -2156,20 +2499,20 @@ pub const ALL_FORMATS: [VkFormat; 241] = [
     VkFormat::G16_B16_R16_3PLANE_422_UNORM,
     VkFormat::G16_B16R16_2PLANE_422_UNORM,
     VkFormat::G16_B16_R16_3PLANE_444_UNORM,
-    VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_4X4_SFLOAT_BLOCK,
+    VkFormat::ASTC_5X4_SFLOAT_BLOCK,
+    VkFormat::ASTC_5X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_6X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_6X6_SFLOAT_BLOCK,
+    VkFormat::ASTC_8X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_8X6_SFLOAT_BLOCK,
+    VkFormat::ASTC_8X8_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X6_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X8_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X10_SFLOAT_BLOCK,
+    VkFormat::ASTC_12X10_SFLOAT_BLOCK,
+    VkFormat::ASTC_12X12_SFLOAT_BLOCK,
     VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG,
     VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG,
     VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG,
@@ -2178,4 +2521,13 @@ pub const ALL_FORMATS: [VkFormat; 241] = [
     VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG,
     VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG,
     VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG,
+    VkFormat::G8_B8R8_2PLANE_444_UNORM,
+    VkFormat::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16,
+    VkFormat::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16,
+    VkFormat::G16_B16R16_2PLANE_444_UNORM,
+    VkFormat::A4R4G4B4_UNORM_PACK16,
+    VkFormat::A4B4G4R4_UNORM_PACK16,
+    VkFormat::R16G16_S10_5_NV,
+    VkFormat::A1B5G5R5_UNORM_PACK16_KHR,
+    VkFormat::A8_UNORM_KHR,
 ];

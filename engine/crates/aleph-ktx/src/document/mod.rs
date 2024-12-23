@@ -33,6 +33,7 @@ mod super_compression_scheme;
 
 use std::cell::Cell;
 use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::num::NonZeroUsize;
 
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -54,6 +55,9 @@ pub enum KTXReadError {
     /// usually be thrown if file identifier is invalid
     NotKtxDocument,
 
+    /// A file reading function was called but the reader has been taken from the document.
+    NoReader,
+
     /// The KTX file tried to specify a prohibited format
     ProhibitedFormat(VkFormat),
 
@@ -62,6 +66,12 @@ pub enum KTXReadError {
 
     /// The KTX file specified a super compression scheme that this implementation doesn't support
     UnsupportedSuperCompressionScheme(SuperCompressionScheme),
+
+    /// The file's format is incorrect for the declared supercompression scheme.
+    InvalidFormatForSuperCompressionScheme(SuperCompressionScheme, VkFormat),
+
+    /// The super compression global data is either missing or broken.
+    BadSuperCompressionGlobalData,
 
     /// The width value in `pixelWidth` is not valid, this must always hold true: `pixelWidth > 0`
     InvalidWidth(u32),
@@ -83,6 +93,12 @@ pub enum KTXReadError {
 
     /// The `kvdByteOffset` must be 0 if `kvdByteLength` is 0, otherwise it is considered an error
     InvalidKeyValueDataOffset(u32),
+
+    /// We found a key in the key/value data but the data is malformed.
+    BadKeyValueData,
+
+    /// We found a key in the key/value data but the target buffer is too small to extract the data
+    DestBufferTooSmall,
 
     /// The `sgdByteOffset` must be 0 if `sgdByteLength` is 0, otherwise it is considered an error
     InvalidSuperCompressionGlobalDataOffset(u64),
@@ -337,10 +353,10 @@ impl<R: Read + Seek> KTXDocument<R> {
     }
 
     /// Removes the reader from the document, left in whatever state it was left in.
-    /// 
+    ///
     /// # Warning
-    /// 
-    /// Once the reader has been taken some functions ([`Self::lookup_key`] for example) will panic
+    ///
+    /// Once the reader has been taken some functions ([`Self::lookup_key`] for example) will fail
     /// as the reader is needed to extract the key and value. Only call this once you've queried all
     /// required information from the document.
     pub fn take_reader(&self) -> Option<R> {
@@ -372,13 +388,21 @@ impl<R: Read + Seek> KTXDocument<R> {
     }
 
     /// Lookup, and read out the data for, the given key in the documents key/value store.
-    /// 
-    /// # Warning
-    /// 
-    /// May panic if the reader has been taken from the document. See [`Self::take_reader`].
-    pub fn lookup_key(&self, key: &str) -> Result<Option<Vec<u8>>, KTXReadError> {
+    ///
+    /// The data will be written into 'dst'. On success the number of bytes written into 'dst' will
+    /// be returned.
+    pub fn lookup_key(
+        &self,
+        key: &str,
+        dst: &mut [u8],
+    ) -> Result<Option<NonZeroUsize>, KTXReadError> {
+        if self.file_index.kvd_offset == 0 {
+            // Early exit if there is no key-value data segment in the file.
+            return Ok(None);
+        }
+
         // Get reader from cell
-        let mut reader = self.reader.take().unwrap();
+        let mut reader = self.reader.take().ok_or(KTXReadError::NoReader)?;
 
         // Go to start of key value section
         reader.seek(SeekFrom::Start(self.file_index.kvd_offset as u64))?;
@@ -423,20 +447,29 @@ impl<R: Read + Seek> KTXDocument<R> {
             // Get the number of bytes for the value
             //
             // Subtract length of string bytes and -1 for the null terminator
-            let value_len = key_and_val_length as usize - key_to_check.len() - 1;
+            let value_len = key_and_val_length as usize;
+            let value_len = value_len.saturating_sub(key_to_check.len());
+            let value_len = value_len.saturating_sub(1);
+            let value_len = if let Some(v) = NonZeroUsize::new(value_len) {
+                v
+            } else {
+                return Err(KTXReadError::BadKeyValueData);
+            };
 
             // If we've found the key we're looking for
             if key_to_check == key {
                 // Read the value into a buffer
-                let mut out = vec![0u8; value_len];
-                reader.read_exact(&mut out)?;
+                let out = dst
+                    .get_mut(0..value_len.get())
+                    .ok_or(KTXReadError::DestBufferTooSmall)?;
+                reader.read_exact(out)?;
 
                 // Return the reader to the document and return the value
                 self.reader.set(Some(reader));
-                return Ok(Some(out));
+                return Ok(Some(value_len));
             } else {
                 // Seek past the value
-                reader.seek(SeekFrom::Current(value_len as i64))?;
+                reader.seek(SeekFrom::Current(value_len.get() as i64))?;
 
                 // Get the current offset in the file so we can align forward over the padding
                 // bytes
@@ -526,6 +559,28 @@ impl<R: Read + Seek> KTXDocument<R> {
             (2, true, true) => DocumentType::CubeArray,
             _ => panic!("Unable to deduce valid document type"),
         };
+
+        // Assert that the BASIZ_LZ scheme has the format set correctly
+        match super_compression_scheme {
+            SuperCompressionScheme::NONE
+            | SuperCompressionScheme::ZSTD
+            | SuperCompressionScheme::ZLIB => {
+                // Intentionally blank
+            }
+            SuperCompressionScheme::BASIS_LZ => {
+                if format != VkFormat::UNDEFINED {
+                    return Err(KTXReadError::InvalidFormatForSuperCompressionScheme(
+                        super_compression_scheme,
+                        format,
+                    ));
+                }
+
+                if file_index.sgd_size == 0 {
+                    return Err(KTXReadError::BadSuperCompressionGlobalData);
+                }
+            }
+            _ => unreachable!(),
+        }
 
         let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, format)?;
 

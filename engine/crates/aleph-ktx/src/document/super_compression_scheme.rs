@@ -58,7 +58,13 @@ impl SuperCompressionScheme {
     /// Is this compression scheme supported by our implementation
     ///
     pub fn is_supported(self) -> bool {
-        matches!(self, SuperCompressionScheme::NONE)
+        matches!(
+            self,
+            SuperCompressionScheme::NONE
+                | SuperCompressionScheme::BASIS_LZ
+                | SuperCompressionScheme::ZSTD
+                | SuperCompressionScheme::ZLIB
+        )
     }
 
     ///

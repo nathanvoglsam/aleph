@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::ALL_FORMATS;
+use crate::{VkFormat, ALL_FORMATS};
 
 #[test]
 fn all_formats_enumerated() {
@@ -35,6 +35,19 @@ fn all_formats_enumerated() {
         assert!(
             format.is_known(),
             "All formats in the list must be known: {format:#?}"
+        );
+    });
+}
+
+#[test]
+fn all_formats_have_block_size() {
+    ALL_FORMATS.iter().for_each(|format| {
+        if *format == VkFormat::UNDEFINED {
+            return;
+        }
+        assert!(
+            format.texel_block_size().is_some(),
+            "All formats in the list must have texel size: {format:#?}"
         );
     });
 }

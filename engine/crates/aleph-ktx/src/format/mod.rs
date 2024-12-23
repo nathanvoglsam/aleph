@@ -104,13 +104,17 @@ pub fn is_format_prohibited(format: VkFormat) -> bool {
             | VkFormat::G16_B16_R16_3PLANE_422_UNORM
             | VkFormat::G16_B16R16_2PLANE_422_UNORM
             | VkFormat::G16_B16_R16_3PLANE_444_UNORM
+            | VkFormat::G8_B8R8_2PLANE_444_UNORM
+            | VkFormat::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16
+            | VkFormat::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16
+            | VkFormat::G16_B16R16_2PLANE_444_UNORM
     )
 }
 
 ///
 /// A list of all formats allowed by the KTX2 spec
 ///
-pub const ALLOWED_FORMATS: [VkFormat; 176] = [
+pub const ALLOWED_FORMATS: [VkFormat; 181] = [
     VkFormat::UNDEFINED,
     VkFormat::R4G4_UNORM_PACK8,
     VkFormat::R4G4B4A4_UNORM_PACK16,
@@ -265,20 +269,20 @@ pub const ALLOWED_FORMATS: [VkFormat; 176] = [
     VkFormat::ASTC_12X10_SRGB_BLOCK,
     VkFormat::ASTC_12X12_UNORM_BLOCK,
     VkFormat::ASTC_12X12_SRGB_BLOCK,
-    VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT,
-    VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_4X4_SFLOAT_BLOCK,
+    VkFormat::ASTC_5X4_SFLOAT_BLOCK,
+    VkFormat::ASTC_5X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_6X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_6X6_SFLOAT_BLOCK,
+    VkFormat::ASTC_8X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_8X6_SFLOAT_BLOCK,
+    VkFormat::ASTC_8X8_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X5_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X6_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X8_SFLOAT_BLOCK,
+    VkFormat::ASTC_10X10_SFLOAT_BLOCK,
+    VkFormat::ASTC_12X10_SFLOAT_BLOCK,
+    VkFormat::ASTC_12X12_SFLOAT_BLOCK,
     VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG,
     VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG,
     VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG,
@@ -287,4 +291,9 @@ pub const ALLOWED_FORMATS: [VkFormat; 176] = [
     VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG,
     VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG,
     VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG,
+    VkFormat::A4R4G4B4_UNORM_PACK16,
+    VkFormat::A4B4G4R4_UNORM_PACK16,
+    VkFormat::R16G16_S10_5_NV,
+    VkFormat::A1B5G5R5_UNORM_PACK16_KHR,
+    VkFormat::A8_UNORM_KHR,
 ];

@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::ffi::CStr;
+
 use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::ALL_FORMATS;
 
@@ -117,10 +119,27 @@ fn test_invalid_files() {
 #[test]
 fn test_lookup_key() {
     let doc = KTXDocument::from_slice(CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB).unwrap();
-    let _value = doc.lookup_key("KTXorientation").unwrap().unwrap();
-    let _value = doc.lookup_key("KTXwriter").unwrap().unwrap();
 
-    assert!(doc.lookup_key("AKeyThatDoesntExist").unwrap().is_none());
+    let mut scratch = [0u8; 256];
+    let value = doc
+        .lookup_key("KTXorientation", &mut scratch)
+        .unwrap()
+        .unwrap();
+    let orientation = &scratch[0..value.get()];
+    let orientation = CStr::from_bytes_until_nul(orientation)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert_eq!(orientation, "ru");
+    assert_eq!(value.get(), 3);
+
+    let mut scratch = [0u8; 256];
+    let _value = doc.lookup_key("KTXwriter", &mut scratch).unwrap().unwrap();
+
+    assert!(doc
+        .lookup_key("AKeyThatDoesntExist", &mut scratch)
+        .unwrap()
+        .is_none());
 }
 
 #[test]
