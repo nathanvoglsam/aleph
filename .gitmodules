@@ -1,24 +1,24 @@
-[submodule "engine/crates/aleph-vulkan-alloc/Vulkan-Headers"]
-	path = engine/crates/aleph-vulkan-alloc/Vulkan-Headers
+[submodule "engine/aleph-vulkan-alloc/Vulkan-Headers"]
+	path = engine/aleph-vulkan-alloc/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
-[submodule "engine/crates/aleph-vulkan-alloc/VulkanMemoryAllocator"]
-	path = engine/crates/aleph-vulkan-alloc/VulkanMemoryAllocator
+[submodule "engine/aleph-vulkan-alloc/VulkanMemoryAllocator"]
+	path = engine/aleph-vulkan-alloc/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "engine/crates/aleph-pix-raw/WinPixEventRuntime"]
-	path = engine/crates/aleph-pix-raw/WinPixEventRuntime
+[submodule "engine/aleph-pix-raw/WinPixEventRuntime"]
+	path = engine/aleph-pix-raw/WinPixEventRuntime
 	url = https://gitlab.com/MindSpunk/WinPixEventRuntime.git
-[submodule "engine/crates/aleph-dx12-agility-sdk/DirectX12AgilitySDK"]
-	path = engine/crates/aleph-dx12-agility-sdk/DirectX12AgilitySDK
+[submodule "engine/aleph-dx12-agility-sdk/DirectX12AgilitySDK"]
+	path = engine/aleph-dx12-agility-sdk/DirectX12AgilitySDK
 	url = https://gitlab.com/MindSpunk/DirectX12AgilitySDK.git
-[submodule "engine/crates/aleph-engine/SDL2-builds"]
-	path = engine/crates/aleph-engine/SDL2-builds
+[submodule "engine/aleph-engine/SDL2-builds"]
+	path = engine/aleph-engine/SDL2-builds
 	url = https://gitlab.com/MindSpunk/SDL2-Builds.git
-[submodule "engine/crates/aleph-dx12-alloc/D3D12MemoryAllocator"]
-	path = engine/crates/aleph-dx12-alloc/D3D12MemoryAllocator
+[submodule "engine/aleph-dx12-alloc/D3D12MemoryAllocator"]
+	path = engine/aleph-dx12-alloc/D3D12MemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
-[submodule "engine/crates/aleph-dx12-alloc/DirectX-Headers"]
-	path = engine/crates/aleph-dx12-alloc/DirectX-Headers
+[submodule "engine/aleph-dx12-alloc/DirectX-Headers"]
+	path = engine/aleph-dx12-alloc/DirectX-Headers
 	url = https://github.com/microsoft/DirectX-Headers.git
-[submodule "engine/crates/aleph-quickjs-sys/QuickJSNG-builds"]
-	path = engine/crates/aleph-quickjs-sys/QuickJSNG-builds
+[submodule "engine/aleph-quickjs-sys/QuickJSNG-builds"]
+	path = engine/aleph-quickjs-sys/QuickJSNG-builds
 	url = https://gitlab.com/MindSpunk/QuickJSNG-builds.git

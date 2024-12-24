@@ -32,56 +32,56 @@
 resolver = "2"
 
 members = [
-    "engine/crates/aleph-any",
-    "engine/crates/aleph-arena-drop-list",
-    "engine/crates/aleph-atomic-borrow",
-    "engine/crates/aleph-compile",
-    "engine/crates/aleph-config",
-    "engine/crates/aleph-device-allocators",
-    "engine/crates/aleph-dx12-agility-sdk",
-    "engine/crates/aleph-dx12-alloc",
-    "engine/crates/aleph-ecs",
-    "engine/crates/aleph-engine",
-    "engine/crates/aleph-engine-build",
-    "engine/crates/aleph-frame-graph",
-    "engine/crates/aleph-hibitset",
-    "engine/crates/aleph-identity-hasher",
-    "engine/crates/aleph-interfaces",
-    "engine/crates/aleph-ktx",
-    "engine/crates/aleph-label",
-    "engine/crates/aleph-math",
-    "engine/crates/aleph-nstr",
-    "engine/crates/aleph-object-system",
-    "engine/crates/aleph-pin-board",
-    "engine/crates/aleph-pix",
-    "engine/crates/aleph-pix-raw",
-    "engine/crates/aleph-profile",
-    "engine/crates/aleph-profile-procmacros",
-    "engine/crates/aleph-quickjs",
-    "engine/crates/aleph-quickjs-sys",
-    "engine/crates/aleph-renderer",
-    "engine/crates/aleph-rhi-api",
-    "engine/crates/aleph-rhi-dx12",
-    "engine/crates/aleph-rhi-impl-utils",
-    "engine/crates/aleph-rhi-loader",
-    "engine/crates/aleph-rhi-null",
-    "engine/crates/aleph-rhi-validation",
-    "engine/crates/aleph-rhi-vulkan",
-    "engine/crates/aleph-scheduler",
-    "engine/crates/aleph-shader-db",
-    "engine/crates/aleph-superluminal-sys",
-    "engine/crates/aleph-sys-info",
-    "engine/crates/aleph-target",
-    "engine/crates/aleph-target-build",
-    "engine/crates/aleph-typed-table",
-    "engine/crates/aleph-virtual-buffer",
-    "engine/crates/aleph-vk-format",
-    "engine/crates/aleph-vk2dfd",
-    "engine/crates/aleph-vulkan-alloc",
-    "engine/crates/aleph-windows",
-    "engine/plugins/aleph-egui",
-    "engine/plugins/aleph-render",
-    "engine/tools/aleph",
+    "engine/aleph",
+    "engine/aleph-any",
+    "engine/aleph-arena-drop-list",
+    "engine/aleph-atomic-borrow",
+    "engine/aleph-compile",
+    "engine/aleph-config",
+    "engine/aleph-device-allocators",
+    "engine/aleph-dx12-agility-sdk",
+    "engine/aleph-dx12-alloc",
+    "engine/aleph-ecs",
+    "engine/aleph-egui",
+    "engine/aleph-engine",
+    "engine/aleph-engine-build",
+    "engine/aleph-frame-graph",
+    "engine/aleph-hibitset",
+    "engine/aleph-identity-hasher",
+    "engine/aleph-interfaces",
+    "engine/aleph-ktx",
+    "engine/aleph-label",
+    "engine/aleph-math",
+    "engine/aleph-nstr",
+    "engine/aleph-object-system",
+    "engine/aleph-pin-board",
+    "engine/aleph-pix",
+    "engine/aleph-pix-raw",
+    "engine/aleph-profile",
+    "engine/aleph-profile-procmacros",
+    "engine/aleph-quickjs",
+    "engine/aleph-quickjs-sys",
+    "engine/aleph-render",
+    "engine/aleph-renderer",
+    "engine/aleph-rhi-api",
+    "engine/aleph-rhi-dx12",
+    "engine/aleph-rhi-impl-utils",
+    "engine/aleph-rhi-loader",
+    "engine/aleph-rhi-null",
+    "engine/aleph-rhi-validation",
+    "engine/aleph-rhi-vulkan",
+    "engine/aleph-scheduler",
+    "engine/aleph-shader-db",
+    "engine/aleph-superluminal-sys",
+    "engine/aleph-sys-info",
+    "engine/aleph-target",
+    "engine/aleph-target-build",
+    "engine/aleph-typed-table",
+    "engine/aleph-virtual-buffer",
+    "engine/aleph-vk-format",
+    "engine/aleph-vk2dfd",
+    "engine/aleph-vulkan-alloc",
+    "engine/aleph-windows",
     "game/aleph-test",
 ]
 
@@ -168,57 +168,57 @@ windows.features = [
 ]
 
 # Aleph Crates
-aleph-any = { path = "./engine/crates/aleph-any", version = "0.1" }
-aleph-arena-drop-list = { path = "./engine/crates/aleph-arena-drop-list", version = "0.1" }
-aleph-atomic-borrow = { path = "./engine/crates/aleph-atomic-borrow", version = "0.1" }
-aleph-compile = { path = "./engine/crates/aleph-compile", version = "1" }
-aleph-config = { path = "./engine/crates/aleph-config", version = "0.1" }
-aleph-device-allocators = { path = "./engine/crates/aleph-device-allocators", version = "0.1" }
-aleph-dx12-agility-sdk = { path = "./engine/crates/aleph-dx12-agility-sdk", version = "1.711.3" }
-aleph-dx12-alloc = { path = "./engine/crates/aleph-dx12-alloc", version = "0.1" }
-aleph-ecs = { path = "./engine/crates/aleph-ecs", version = "0.1" }
-aleph-engine = { path = "./engine/crates/aleph-engine", version = "0.1" }
-aleph-engine-build = { path = "./engine/crates/aleph-engine-build", version = "0.1" }
-aleph-frame-graph = { path = "./engine/crates/aleph-frame-graph", version = "0.1" }
-aleph-hibitset = { path = "./engine/crates/aleph-hibitset", version = "0.1" }
-aleph-identity-hasher = { path = "./engine/crates/aleph-identity-hasher", version = "1" }
-aleph-interfaces = { path = "./engine/crates/aleph-interfaces", version = "0.1" }
-aleph-ktx = { path = "./engine/crates/aleph-ktx", version = "0.1" }
-aleph-label = { path = "./engine/crates/aleph-label", version = "1" }
-aleph-math = { path = "./engine/crates/aleph-math", version = "0.1" }
-aleph-nstr = { path = "./engine/crates/aleph-nstr", version = "0.1" }
-aleph-object-system = { path = "./engine/crates/aleph-object-system", version = "0.1" }
-aleph-pin-board = { path = "./engine/crates/aleph-pin-board", version = "0.1" }
-aleph-pix = { path = "./engine/crates/aleph-pix", version = "0.1" }
-aleph-pix-raw = { path = "./engine/crates/aleph-pix-raw", version = "0.1" }
-aleph-profile = { path = "./engine/crates/aleph-profile", version = "0.1" }
-aleph-profile-procmacros = { path = "./engine/crates/aleph-profile-procmacros", version = "0.1" }
-aleph-quickjs = { path = "./engine/crates/aleph-quickjs", version = "0.1" }
-aleph-quickjs-sys = { path = "./engine/crates/aleph-quickjs-sys", version = "0.1" }
-aleph-renderer = { path = "./engine/crates/aleph-renderer", version = "0.1" }
-aleph-rhi-api = { path = "./engine/crates/aleph-rhi-api", version = "0.1" }
-aleph-rhi-dx12 = { path = "./engine/crates/aleph-rhi-dx12", version = "0.1" }
-aleph-rhi-impl-utils = { path = "./engine/crates/aleph-rhi-impl-utils", version = "0.1" }
-aleph-rhi-loader = { path = "./engine/crates/aleph-rhi-loader", version = "0.1" }
-aleph-rhi-null = { path = "./engine/crates/aleph-rhi-null", version = "0.1" }
-aleph-rhi-validation = { path = "./engine/crates/aleph-rhi-validation", version = "0.1" }
-aleph-rhi-vulkan = { path = "./engine/crates/aleph-rhi-vulkan", version = "0.1" }
-aleph-scheduler = { path = "./engine/crates/aleph-scheduler", version = "0.1" }
-aleph-shader-db = { path = "./engine/crates/aleph-shader-db", version = "0.1" }
-aleph-superluminal-sys = { path = "./engine/crates/aleph-superluminal-sys", version = "0.3" }
-aleph-sys-info = { path = "./engine/crates/aleph-sys-info", version = "0.1" }
-aleph-target = { path = "./engine/crates/aleph-target", version = "2" }
-aleph-target-build = { path = "./engine/crates/aleph-target-build", version = "2" }
-aleph-typed-table = { path = "./engine/crates/aleph-typed-table", version = "0.1" }
-aleph-virtual-buffer = { path = "./engine/crates/aleph-virtual-buffer", version = "0.1" }
-aleph-vk-format = { path = "./engine/crates/aleph-vk-format", version = "1" }
-aleph-vk2dfd = { path = "./engine/crates/aleph-vk2dfd", version = "0.1" }
-aleph-vulkan-alloc = { path = "./engine/crates/aleph-vulkan-alloc", version = "0.1" }
-aleph-windows = { path = "./engine/crates/aleph-windows", version = "0.1" }
+aleph-any = { path = "./engine/aleph-any", version = "0.1" }
+aleph-arena-drop-list = { path = "./engine/aleph-arena-drop-list", version = "0.1" }
+aleph-atomic-borrow = { path = "./engine/aleph-atomic-borrow", version = "0.1" }
+aleph-compile = { path = "./engine/aleph-compile", version = "1" }
+aleph-config = { path = "./engine/aleph-config", version = "0.1" }
+aleph-device-allocators = { path = "./engine/aleph-device-allocators", version = "0.1" }
+aleph-dx12-agility-sdk = { path = "./engine/aleph-dx12-agility-sdk", version = "1.711.3" }
+aleph-dx12-alloc = { path = "./engine/aleph-dx12-alloc", version = "0.1" }
+aleph-ecs = { path = "./engine/aleph-ecs", version = "0.1" }
+aleph-engine = { path = "./engine/aleph-engine", version = "0.1" }
+aleph-engine-build = { path = "./engine/aleph-engine-build", version = "0.1" }
+aleph-frame-graph = { path = "./engine/aleph-frame-graph", version = "0.1" }
+aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
+aleph-identity-hasher = { path = "./engine/aleph-identity-hasher", version = "1" }
+aleph-interfaces = { path = "./engine/aleph-interfaces", version = "0.1" }
+aleph-ktx = { path = "./engine/aleph-ktx", version = "0.1" }
+aleph-label = { path = "./engine/aleph-label", version = "1" }
+aleph-math = { path = "./engine/aleph-math", version = "0.1" }
+aleph-nstr = { path = "./engine/aleph-nstr", version = "0.1" }
+aleph-object-system = { path = "./engine/aleph-object-system", version = "0.1" }
+aleph-pin-board = { path = "./engine/aleph-pin-board", version = "0.1" }
+aleph-pix = { path = "./engine/aleph-pix", version = "0.1" }
+aleph-pix-raw = { path = "./engine/aleph-pix-raw", version = "0.1" }
+aleph-profile = { path = "./engine/aleph-profile", version = "0.1" }
+aleph-profile-procmacros = { path = "./engine/aleph-profile-procmacros", version = "0.1" }
+aleph-quickjs = { path = "./engine/aleph-quickjs", version = "0.1" }
+aleph-quickjs-sys = { path = "./engine/aleph-quickjs-sys", version = "0.1" }
+aleph-renderer = { path = "./engine/aleph-renderer", version = "0.1" }
+aleph-rhi-api = { path = "./engine/aleph-rhi-api", version = "0.1" }
+aleph-rhi-dx12 = { path = "./engine/aleph-rhi-dx12", version = "0.1" }
+aleph-rhi-impl-utils = { path = "./engine/aleph-rhi-impl-utils", version = "0.1" }
+aleph-rhi-loader = { path = "./engine/aleph-rhi-loader", version = "0.1" }
+aleph-rhi-null = { path = "./engine/aleph-rhi-null", version = "0.1" }
+aleph-rhi-validation = { path = "./engine/aleph-rhi-validation", version = "0.1" }
+aleph-rhi-vulkan = { path = "./engine/aleph-rhi-vulkan", version = "0.1" }
+aleph-scheduler = { path = "./engine/aleph-scheduler", version = "0.1" }
+aleph-shader-db = { path = "./engine/aleph-shader-db", version = "0.1" }
+aleph-superluminal-sys = { path = "./engine/aleph-superluminal-sys", version = "0.3" }
+aleph-sys-info = { path = "./engine/aleph-sys-info", version = "0.1" }
+aleph-target = { path = "./engine/aleph-target", version = "2" }
+aleph-target-build = { path = "./engine/aleph-target-build", version = "2" }
+aleph-typed-table = { path = "./engine/aleph-typed-table", version = "0.1" }
+aleph-virtual-buffer = { path = "./engine/aleph-virtual-buffer", version = "0.1" }
+aleph-vk-format = { path = "./engine/aleph-vk-format", version = "1" }
+aleph-vk2dfd = { path = "./engine/aleph-vk2dfd", version = "0.1" }
+aleph-vulkan-alloc = { path = "./engine/aleph-vulkan-alloc", version = "0.1" }
+aleph-windows = { path = "./engine/aleph-windows", version = "0.1" }
 
 # Aleph Plugins
-aleph-egui = { path = "./engine/plugins/aleph-egui", version = "0.1" }
-aleph-render = { path = "./engine/plugins/aleph-render", version = "0.1" }
+aleph-egui = { path = "./engine/aleph-egui", version = "0.1" }
+aleph-render = { path = "./engine/aleph-render", version = "0.1" }
 
 # Compile all our third-party dependencies with optimizations even on debug builds. Some crates (mainly math crates)
 # will bring our runtime performance to a crawl when built without optimizations, so we definitely want this enabled.
