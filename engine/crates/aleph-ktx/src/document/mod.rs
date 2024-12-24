@@ -43,7 +43,7 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::is_format_prohibited;
-use crate::{ColorPrimaries, DFDError, DFDFlags};
+use crate::{ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -491,6 +491,28 @@ impl<R: Read + Seek> KTXDocument<R> {
         // If we've gotten here we've failed to find the key, return None to reflect this
         self.reader.set(Some(reader));
         Ok(None)
+    }
+
+    /// Utility for looking up the standard 'KTXorientation' key/value data.
+    pub fn lookup_orientation(&self) -> Result<Option<KtxOrientation>, KTXReadError> {
+        let mut bytes = [0u8; 4];
+        if let Some(_) = self.lookup_key("KTXorientation", &mut bytes)? {
+            let orientation = KtxOrientation::new(bytes).ok_or(KTXReadError::BadKeyValueData)?;
+            Ok(Some(orientation))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Utility for looking up the standard 'KTXswizzle' key/value data.
+    pub fn lookup_swizzle(&self) -> Result<Option<KtxSwizzle>, KTXReadError> {
+        let mut bytes = [0u8; 5];
+        if let Some(_) = self.lookup_key("KTXswizzle", &mut bytes)? {
+            let swizzle = KtxSwizzle::new(bytes).ok_or(KTXReadError::BadKeyValueData)?;
+            Ok(Some(swizzle))
+        } else {
+            Ok(None)
+        }
     }
 }
 

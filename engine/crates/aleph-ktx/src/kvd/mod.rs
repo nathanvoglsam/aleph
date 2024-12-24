@@ -27,20 +27,46 @@
 // SOFTWARE.
 //
 
-mod data_format_descriptor;
-mod document;
-mod format;
-mod kvd;
+use std::ffi::CStr;
 
-#[cfg(test)]
-mod tests;
+pub struct KtxOrientation {
+    bytes: [u8; 4],
+}
 
-pub use data_format_descriptor::{
-    ASTCChannelType, BC1ChannelType, BC2ChannelType, BC3ChannelType, BC4ChannelType,
-    BC5ChannelType, BC6ChannelType, BC7ChannelType, ColorModel, ColorPrimaries, DFDError, DFDFlags,
-    DataFormatDescriptor, ETC1ChannelType, ETC1SChannelType, ETC2ChannelType, PVRTC2ChannelType,
-    PVRTCChannelType, RGBSDAChannelType, SampleFlags, TransferFunction,
-};
-pub use document::{FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme};
-pub use format::{is_format_prohibited, ALLOWED_FORMATS};
-pub use kvd::{KtxOrientation, KtxSwizzle};
+impl KtxOrientation {
+    /// The given bytes should encode a valid null terminated UTF-8 'c-string'.
+    pub(crate) fn new(bytes: [u8; 4]) -> Option<Self> {
+        let cstr = CStr::from_bytes_until_nul(&bytes).ok()?;
+        let _rstr = cstr.to_str().ok()?;
+        Some(Self { bytes })
+    }
+
+    pub fn as_str(&self) -> &str {
+        unsafe {
+            let cstr = CStr::from_bytes_until_nul(&self.bytes).unwrap_unchecked();
+            let rstr = cstr.to_str().unwrap_unchecked();
+            rstr
+        }
+    }
+}
+
+pub struct KtxSwizzle {
+    bytes: [u8; 5],
+}
+
+impl KtxSwizzle {
+    /// The given bytes should encode a valid null terminated UTF-8 'c-string'.
+    pub(crate) fn new(bytes: [u8; 5]) -> Option<Self> {
+        let cstr = CStr::from_bytes_until_nul(&bytes).ok()?;
+        let _rstr = cstr.to_str().ok()?;
+        Some(Self { bytes })
+    }
+
+    pub fn as_str(&self) -> &str {
+        unsafe {
+            let cstr = CStr::from_bytes_until_nul(&self.bytes).unwrap_unchecked();
+            let rstr = cstr.to_str().unwrap_unchecked();
+            rstr
+        }
+    }
+}
