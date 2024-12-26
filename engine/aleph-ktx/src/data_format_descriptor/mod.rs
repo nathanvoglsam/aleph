@@ -49,7 +49,7 @@ pub use flags::{DFDFlags, SampleFlags};
 pub use transfer_function::TransferFunction;
 
 use crate::document::FileIndex;
-use crate::KTXReadError;
+use crate::{KTXReadError, SuperCompressionScheme};
 
 ///
 /// The set of errors that can be produced when reading the DFD section of a ktx file
@@ -125,6 +125,7 @@ impl DataFormatDescriptor {
         reader: &mut (impl Read + Seek),
         file_index: &FileIndex,
         format: VkFormat,
+        super_compression_scheme: SuperCompressionScheme,
     ) -> Result<Self, KTXReadError> {
         reader.seek(SeekFrom::Start(file_index.dfd_offset as _))?;
 
@@ -168,15 +169,19 @@ impl DataFormatDescriptor {
             }
 
             if &dfd_words[0..3] != &expected_dfd[0..3] {
-                // The first 3 words are always the same for a given format. dfd_words[4] can
-                // vary
+                // We only validate the first few words of the DFD as they're basic structural parts
+                // of the DFD. The actual DFD rules are very complex. I've simply resigned to not
+                // bothering as the DFD is useless for our purposes anyway
                 return Err(DFDError::DescriptorFormatMismatch.into());
             }
 
-            if &dfd_words[4..] != &expected_dfd[4..] {
-                // Everything except dfd_words[4] is always the same.
+            // dfd_words[4] should always match vk2dfd
+            if dfd_words[4] != expected_dfd[4] {
                 return Err(DFDError::DescriptorFormatMismatch.into());
             }
+
+            // word[3] we validate more explicitly below, but the rest we ignore. We don't actually
+            // care to validate it because without a VkFormat we're hosed anyway.
 
             // Assert the transfer function is valid for the format specified by the file earlier
             if !dfd.transfer_function.is_compatible_with_format(format) {
@@ -186,7 +191,8 @@ impl DataFormatDescriptor {
             }
 
             // Assert the color model is valid for the format specified by the file earlier
-            if !dfd.color_model.is_compatible_with_format(format) {
+            let expected = RawDataFormatDescriptor::from_words(&expected_dfd).unwrap();
+            if dfd.color_model != expected.color_model {
                 return Err(DFDError::ColorModelMismatch(format, dfd.color_model).into());
             }
 

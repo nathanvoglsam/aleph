@@ -32,6 +32,7 @@ mod level_index;
 mod super_compression_scheme;
 
 use std::cell::Cell;
+use std::ffi::CStr;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::num::NonZeroUsize;
 
@@ -43,7 +44,7 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::is_format_prohibited;
-use crate::{ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle};
+use crate::{format_type_size, ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -51,6 +52,9 @@ use crate::{ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle};
 ///
 #[derive(Debug)]
 pub enum KTXReadError {
+    /// Could not find the requested key in the KVD section
+    NoSuchKey,
+
     /// This error is produced when the stream of bytes does not contain a ktx file. This will
     /// usually be thrown if file identifier is invalid
     NotKtxDocument,
@@ -63,6 +67,9 @@ pub enum KTXReadError {
 
     /// The KTX file specified a format this implementation doesn't support
     UnsupportedFormat(VkFormat),
+
+    /// The declared typeSize field does not match the value expected by the format
+    InvalidTypeSize(u32),
 
     /// The KTX file specified a super compression scheme that this implementation doesn't support
     UnsupportedSuperCompressionScheme(SuperCompressionScheme),
@@ -97,8 +104,9 @@ pub enum KTXReadError {
     /// We found a key in the key/value data but the data is malformed.
     BadKeyValueData,
 
-    /// We found a key in the key/value data but the target buffer is too small to extract the data
-    DestBufferTooSmall,
+    /// We found a key in the key/value data but the target buffer is too small to extract the data.
+    /// This error will also contain the number of bytes that we would've needed.
+    DestBufferTooSmall(usize),
 
     /// The `sgdByteOffset` must be 0 if `sgdByteLength` is 0, otherwise it is considered an error
     InvalidSuperCompressionGlobalDataOffset(u64),
@@ -342,7 +350,7 @@ impl<R: Read + Seek> KTXDocument<R> {
     /// image level provided by the file.
     ///
     pub fn requests_mip_generation(&self) -> bool {
-        self.layer_num == 0
+        self.level_num == 0
     }
 
     ///
@@ -391,19 +399,35 @@ impl<R: Read + Seek> KTXDocument<R> {
     ///
     /// The data will be written into 'dst'. On success the number of bytes written into 'dst' will
     /// be returned.
-    pub fn lookup_key(
-        &self,
-        key: &str,
-        dst: &mut [u8],
-    ) -> Result<Option<NonZeroUsize>, KTXReadError> {
+    pub fn lookup_key(&self, key: &str, dst: &mut [u8]) -> Result<NonZeroUsize, KTXReadError> {
         if self.file_index.kvd_offset == 0 {
             // Early exit if there is no key-value data segment in the file.
-            return Ok(None);
+            return Err(KTXReadError::NoSuchKey);
         }
 
         // Get reader from cell
         let mut reader = self.reader.take().ok_or(KTXReadError::NoReader)?;
 
+        // Wrap the inner failible function so we can ensure we return the reader to it's slot even
+        // if we hit an error.
+        match self.inner_lookup_key(&mut reader, key, dst) {
+            Ok(v) => {
+                self.reader.set(Some(reader));
+                Ok(v)
+            }
+            Err(e) => {
+                self.reader.set(Some(reader));
+                Err(e)
+            }
+        }
+    }
+
+    fn inner_lookup_key(
+        &self,
+        reader: &mut R,
+        key: &str,
+        dst: &mut [u8],
+    ) -> Result<NonZeroUsize, KTXReadError> {
         // Go to start of key value section
         reader.seek(SeekFrom::Start(self.file_index.kvd_offset as u64))?;
 
@@ -461,12 +485,10 @@ impl<R: Read + Seek> KTXDocument<R> {
                 // Read the value into a buffer
                 let out = dst
                     .get_mut(0..value_len.get())
-                    .ok_or(KTXReadError::DestBufferTooSmall)?;
+                    .ok_or(KTXReadError::DestBufferTooSmall(value_len.get()))?;
                 reader.read_exact(out)?;
 
-                // Return the reader to the document and return the value
-                self.reader.set(Some(reader));
-                return Ok(Some(value_len));
+                return Ok(value_len);
             } else {
                 // Seek past the value
                 reader.seek(SeekFrom::Current(value_len.get() as i64))?;
@@ -488,31 +510,39 @@ impl<R: Read + Seek> KTXDocument<R> {
             }
         }
 
-        // If we've gotten here we've failed to find the key, return None to reflect this
-        self.reader.set(Some(reader));
-        Ok(None)
+        Err(KTXReadError::NoSuchKey)
     }
 
     /// Utility for looking up the standard 'KTXorientation' key/value data.
-    pub fn lookup_orientation(&self) -> Result<Option<KtxOrientation>, KTXReadError> {
+    pub fn lookup_orientation(&self) -> Result<KtxOrientation, KTXReadError> {
         let mut bytes = [0u8; 4];
-        if let Some(_) = self.lookup_key("KTXorientation", &mut bytes)? {
-            let orientation = KtxOrientation::new(bytes).ok_or(KTXReadError::BadKeyValueData)?;
-            Ok(Some(orientation))
-        } else {
-            Ok(None)
-        }
+        let _ = self.lookup_key("KTXorientation", &mut bytes)?;
+        let orientation = KtxOrientation::new(bytes).ok_or(KTXReadError::BadKeyValueData)?;
+        Ok(orientation)
     }
 
     /// Utility for looking up the standard 'KTXswizzle' key/value data.
-    pub fn lookup_swizzle(&self) -> Result<Option<KtxSwizzle>, KTXReadError> {
+    pub fn lookup_swizzle(&self) -> Result<KtxSwizzle, KTXReadError> {
         let mut bytes = [0u8; 5];
-        if let Some(_) = self.lookup_key("KTXswizzle", &mut bytes)? {
-            let swizzle = KtxSwizzle::new(bytes).ok_or(KTXReadError::BadKeyValueData)?;
-            Ok(Some(swizzle))
-        } else {
-            Ok(None)
-        }
+        let _ = self.lookup_key("KTXswizzle", &mut bytes)?;
+        let swizzle = KtxSwizzle::new(bytes).ok_or(KTXReadError::BadKeyValueData)?;
+        Ok(swizzle)
+    }
+
+    /// Will lookup the 'KTXwriter' key and return a &str containing the declared name of the writer
+    /// if the key is present.
+    ///
+    /// This function takes 'scratch' as a scratch buffer, and may fail if scratch is not big enough
+    /// to contain the key.
+    pub fn lookup_writer<'b>(&self, scratch: &'b mut [u8]) -> Result<&'b str, KTXReadError> {
+        let read = self.lookup_key("KTXwriter", scratch)?;
+        let writer_name = &scratch[0..read.get()];
+        let writer_name =
+            CStr::from_bytes_until_nul(writer_name).map_err(|_| KTXReadError::BadKeyValueData)?;
+        let writer_name = writer_name
+            .to_str()
+            .map_err(|_| KTXReadError::BadKeyValueData)?;
+        Ok(writer_name)
     }
 }
 
@@ -532,7 +562,7 @@ impl<R: Read + Seek> KTXDocument<R> {
     pub fn from_reader(mut reader: R) -> Result<Self, KTXReadError> {
         Self::validate_file_identifier(&mut reader)?;
         let format = Self::read_vk_format(&mut reader)?;
-        let type_size = Self::read_type_size(&mut reader)?;
+        let type_size = Self::read_type_size(&mut reader, format)?;
         let dimensions = Self::read_dimensions(&mut reader, format)?;
         let layer_num = Self::read_layer_count(&mut reader)?;
         let face_num = Self::read_face_count(&mut reader, dimensions.2)?;
@@ -604,7 +634,12 @@ impl<R: Read + Seek> KTXDocument<R> {
             _ => unreachable!(),
         }
 
-        let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, format)?;
+        let dfd = DataFormatDescriptor::from_reader(
+            &mut reader,
+            &file_index,
+            format,
+            super_compression_scheme,
+        )?;
 
         let reader = Cell::new(Some(reader));
 
@@ -665,8 +700,12 @@ impl<R: Read + Seek> KTXDocument<R> {
     ///
     /// Internal function for reading the type_size
     ///
-    fn read_type_size(reader: &mut impl Read) -> Result<u32, KTXReadError> {
+    fn read_type_size(reader: &mut impl Read, format: VkFormat) -> Result<u32, KTXReadError> {
         let type_size = reader.read_u32::<LittleEndian>()?;
+        let expected_type_size = format_type_size(format).unwrap();
+        if type_size != expected_type_size {
+            return Err(KTXReadError::InvalidTypeSize(type_size));
+        }
         Ok(type_size)
     }
 
@@ -740,7 +779,7 @@ impl<R: Read + Seek> KTXDocument<R> {
 
         if level_count > max_levels + 1 {
             Err(KTXReadError::TooManyLevels(level_count))
-        } else if level_count == 0 && format.is_block_format() {
+        } else if level_count == 0 && format.is_block_compressed() {
             // It's not legal for a block compressed image to require the reader to generate mip
             // levels.
             Err(KTXReadError::InvalidLevelCountForBlockFormat(level_count))
@@ -772,7 +811,7 @@ impl<R: Read + Seek> KTXDocument<R> {
 ///
 /// The file identifier that should be at the start of every KTX, byte for byte
 ///
-const FILE_IDENTIFIER: [u8; 12] = [
+pub(crate) const FILE_IDENTIFIER: [u8; 12] = [
     0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A,
 ];
 

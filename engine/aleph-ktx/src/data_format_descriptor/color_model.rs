@@ -27,10 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_vk_format::VkFormat;
-
-use crate::format::is_format_prohibited;
-
 ///
 /// Represents the supported set of DFD color models
 ///
@@ -42,6 +38,48 @@ pub enum ColorModel {
 
     /// Red, green, blue, stencil, depth, alpha
     RGBSDA = MODEL_RGBSDA,
+
+    /// YCbCr, stencil, depth, alpha
+    YUVSDA = MODEL_YUVSDA,
+
+    /// YIQ, stencil, depth, alpha
+    YIQSDA = MODEL_YIQSDA,
+
+    /// Perceptual color (CIE L*a*b*) + alpha, depth and stencil
+    LABSDA = MODEL_LABSDA,
+
+    /// Subtractive colors (cyan, magenta, yellow, black) + alpha
+    CMYKA = MODEL_CMYKA,
+
+    /// Non-color coordinate data (X, Y, Z, W)
+    XYZW = MODEL_XYZW,
+
+    /// Hue, saturation, value, hue angle on color circle, plus alpha
+    HSVAAng = MODEL_HSVA_ANG,
+
+    /// Hue, saturation, lightness, hue angle on color circle, plus alpha
+    HSLAAng = MODEL_HSLA_ANG,
+
+    /// Hue, saturation, value, hue on color hexagon, plus alpha
+    HSVAHex = MODEL_HSVA_HEX,
+
+    /// Hue, saturation, lightness, hue on color hexagon, plus alpha
+    HSLAHex = MODEL_HSLA_HEX,
+
+    /// Lightweight approximate color difference (luma, orange, green)
+    YCGCOA = MODEL_YCGCOA,
+
+    /// ITU BT.2020 constant luminance YcCbcCrc
+    YCCBCCRC = MODEL_YCCBCCRC,
+
+    /// ITU BT.2100 constant intensity ICtCp
+    ICTCP = MODEL_ICTCP,
+
+    /// CIE 1931 XYZ color coordinates (X, Y, Z)
+    CIEXYZ = MODEL_CIEXYZ,
+
+    /// CIE 1931 xyY color coordinates (X, Y, Y)
+    CIEXYY = MODEL_CIEXYY,
 
     /// BC1 compressed
     BC1A = MODEL_BC1A,
@@ -81,6 +119,9 @@ pub enum ColorModel {
 
     /// PVRTC2 compressed
     PVRTC2 = MODEL_PVRTC2,
+
+    /// UASTC compressed
+    UASTC = MODEL_UASTC,
 }
 
 impl ColorModel {
@@ -93,6 +134,20 @@ impl ColorModel {
         match v {
             MODEL_UNSPECIFIED => Some(ColorModel::Unspecified),
             MODEL_RGBSDA => Some(ColorModel::RGBSDA),
+            MODEL_YUVSDA => Some(ColorModel::YUVSDA),
+            MODEL_YIQSDA => Some(ColorModel::YIQSDA),
+            MODEL_LABSDA => Some(ColorModel::LABSDA),
+            MODEL_CMYKA => Some(ColorModel::CMYKA),
+            MODEL_XYZW => Some(ColorModel::XYZW),
+            MODEL_HSVA_ANG => Some(ColorModel::HSVAAng),
+            MODEL_HSLA_ANG => Some(ColorModel::HSLAAng),
+            MODEL_HSVA_HEX => Some(ColorModel::HSVAHex),
+            MODEL_HSLA_HEX => Some(ColorModel::HSLAHex),
+            MODEL_YCGCOA => Some(ColorModel::YCGCOA),
+            MODEL_YCCBCCRC => Some(ColorModel::YCCBCCRC),
+            MODEL_ICTCP => Some(ColorModel::ICTCP),
+            MODEL_CIEXYZ => Some(ColorModel::CIEXYZ),
+            MODEL_CIEXYY => Some(ColorModel::CIEXYY),
             MODEL_BC1A => Some(ColorModel::BC1A),
             MODEL_BC2 => Some(ColorModel::BC2),
             MODEL_BC3 => Some(ColorModel::BC3),
@@ -106,6 +161,7 @@ impl ColorModel {
             MODEL_ETC1S => Some(ColorModel::ETC1S),
             MODEL_PVRTC => Some(ColorModel::PVRTC),
             MODEL_PVRTC2 => Some(ColorModel::PVRTC2),
+            MODEL_UASTC => Some(ColorModel::UASTC),
             _ => None,
         }
     }
@@ -117,67 +173,24 @@ impl ColorModel {
     pub const fn into_raw(self) -> u16 {
         self as u16
     }
-
-    ///
-    /// Is the color model correct for the given VkFormat
-    ///
-    #[inline]
-    pub fn is_compatible_with_format(self, format: VkFormat) -> bool {
-        match self {
-            Self::Unspecified => false, // This will always be wrong
-            Self::RGBSDA => !format.is_block_format(),
-            Self::BC1A => format.is_bc1(),
-            Self::BC2 => format.is_bc2(),
-            Self::BC3 => format.is_bc3(),
-            Self::BC4 => format.is_bc4(),
-            Self::BC5 => format.is_bc5(),
-            Self::BC6H => format.is_bc6h(),
-            Self::BC7 => format.is_bc7(),
-            Self::ETC1 => format.is_etc2(),
-            Self::ETC2 => format.is_etc2() || format.is_eac(),
-            Self::ASTC => format.is_astc(),
-            Self::ETC1S => format.is_etc2() || format == VkFormat::UNDEFINED,
-            Self::PVRTC => format.is_pvrtc1(),
-            Self::PVRTC2 => format.is_pvrtc2(),
-        }
-    }
-
-    ///
-    /// Returns a color model for the given VkFormat
-    ///
-    pub fn for_format(format: VkFormat) -> Option<ColorModel> {
-        if format == VkFormat::UNDEFINED || is_format_prohibited(format) {
-            None
-        } else if format.is_bc1() {
-            Some(ColorModel::BC1A)
-        } else if format.is_bc2() {
-            Some(ColorModel::BC2)
-        } else if format.is_bc3() {
-            Some(ColorModel::BC3)
-        } else if format.is_bc4() {
-            Some(ColorModel::BC4)
-        } else if format.is_bc5() {
-            Some(ColorModel::BC5)
-        } else if format.is_bc6h() {
-            Some(ColorModel::BC6H)
-        } else if format.is_bc7() {
-            Some(ColorModel::BC7)
-        } else if format.is_etc2() || format.is_eac() {
-            Some(ColorModel::ETC2)
-        } else if format.is_astc() {
-            Some(ColorModel::ASTC)
-        } else if format.is_pvrtc1() {
-            Some(ColorModel::PVRTC)
-        } else if format.is_pvrtc2() {
-            Some(ColorModel::PVRTC2)
-        } else {
-            Some(ColorModel::RGBSDA)
-        }
-    }
 }
 
 const MODEL_UNSPECIFIED: u8 = 0;
 const MODEL_RGBSDA: u8 = 1;
+const MODEL_YUVSDA: u8 = 2;
+const MODEL_YIQSDA: u8 = 3;
+const MODEL_LABSDA: u8 = 4;
+const MODEL_CMYKA: u8 = 5;
+const MODEL_XYZW: u8 = 6;
+const MODEL_HSVA_ANG: u8 = 7;
+const MODEL_HSLA_ANG: u8 = 8;
+const MODEL_HSVA_HEX: u8 = 9;
+const MODEL_HSLA_HEX: u8 = 10;
+const MODEL_YCGCOA: u8 = 11;
+const MODEL_YCCBCCRC: u8 = 12;
+const MODEL_ICTCP: u8 = 13;
+const MODEL_CIEXYZ: u8 = 14;
+const MODEL_CIEXYY: u8 = 15;
 const MODEL_BC1A: u8 = 128;
 const MODEL_BC2: u8 = 129;
 const MODEL_BC3: u8 = 130;
@@ -191,3 +204,4 @@ const MODEL_ASTC: u8 = 162;
 const MODEL_ETC1S: u8 = 163;
 const MODEL_PVRTC: u8 = 164;
 const MODEL_PVRTC2: u8 = 165;
+const MODEL_UASTC: u8 = 166;

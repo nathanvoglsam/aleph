@@ -28,6 +28,7 @@
 //
 
 use std::io::Read;
+use std::ops::Range;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
@@ -63,6 +64,26 @@ impl LevelIndex {
             size,
             size_uncompressed,
         })
+    }
+
+    /// Constructs a [`Range`] based on [`Self::offset`] and [`Self::size_uncompressed`] for
+    /// indexing into a slice.
+    ///
+    /// This function is intended to be used when reading KTX files from memory (or mapped files).
+    /// Assuming a byte slice 'data' that contains the KTX file, starting from 0, then this range
+    /// can be used to index that slice and get a sub-slice containing exactly the given image
+    /// level's data.
+    ///
+    /// # Panic
+    ///
+    /// This function will panic if 'offset' and/or 'offset + size' overflow a usize.
+    pub fn to_slice_range(&self) -> Range<usize> {
+        let base = self.offset;
+        let end = base.checked_add(self.size_uncompressed).unwrap();
+
+        let base: usize = base.try_into().unwrap();
+        let end: usize = end.try_into().unwrap();
+        base..end
     }
 
     ///

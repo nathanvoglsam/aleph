@@ -301,6 +301,36 @@ impl VkFormat {
     pub const PVRTC1_4BPP_SRGB_BLOCK_IMG: Self = Self(1000054005);
     pub const PVRTC2_2BPP_SRGB_BLOCK_IMG: Self = Self(1000054006);
     pub const PVRTC2_4BPP_SRGB_BLOCK_IMG: Self = Self(1000054007);
+    pub const ASTC_3X3X3_UNORM_BLOCK_EXT: Self = Self(1000288000);
+    pub const ASTC_3X3X3_SRGB_BLOCK_EXT: Self = Self(1000288001);
+    pub const ASTC_3X3X3_SFLOAT_BLOCK_EXT: Self = Self(1000288002);
+    pub const ASTC_4X3X3_UNORM_BLOCK_EXT: Self = Self(1000288003);
+    pub const ASTC_4X3X3_SRGB_BLOCK_EXT: Self = Self(1000288004);
+    pub const ASTC_4X3X3_SFLOAT_BLOCK_EXT: Self = Self(1000288005);
+    pub const ASTC_4X4X3_UNORM_BLOCK_EXT: Self = Self(1000288006);
+    pub const ASTC_4X4X3_SRGB_BLOCK_EXT: Self = Self(1000288007);
+    pub const ASTC_4X4X3_SFLOAT_BLOCK_EXT: Self = Self(1000288008);
+    pub const ASTC_4X4X4_UNORM_BLOCK_EXT: Self = Self(1000288009);
+    pub const ASTC_4X4X4_SRGB_BLOCK_EXT: Self = Self(1000288010);
+    pub const ASTC_4X4X4_SFLOAT_BLOCK_EXT: Self = Self(1000288011);
+    pub const ASTC_5X4X4_UNORM_BLOCK_EXT: Self = Self(1000288012);
+    pub const ASTC_5X4X4_SRGB_BLOCK_EXT: Self = Self(1000288013);
+    pub const ASTC_5X4X4_SFLOAT_BLOCK_EXT: Self = Self(1000288014);
+    pub const ASTC_5X5X4_UNORM_BLOCK_EXT: Self = Self(1000288015);
+    pub const ASTC_5X5X4_SRGB_BLOCK_EXT: Self = Self(1000288016);
+    pub const ASTC_5X5X4_SFLOAT_BLOCK_EXT: Self = Self(1000288017);
+    pub const ASTC_5X5X5_UNORM_BLOCK_EXT: Self = Self(1000288018);
+    pub const ASTC_5X5X5_SRGB_BLOCK_EXT: Self = Self(1000288019);
+    pub const ASTC_5X5X5_SFLOAT_BLOCK_EXT: Self = Self(1000288020);
+    pub const ASTC_6X5X5_UNORM_BLOCK_EXT: Self = Self(1000288021);
+    pub const ASTC_6X5X5_SRGB_BLOCK_EXT: Self = Self(1000288022);
+    pub const ASTC_6X5X5_SFLOAT_BLOCK_EXT: Self = Self(1000288023);
+    pub const ASTC_6X6X5_UNORM_BLOCK_EXT: Self = Self(1000288024);
+    pub const ASTC_6X6X5_SRGB_BLOCK_EXT: Self = Self(1000288025);
+    pub const ASTC_6X6X5_SFLOAT_BLOCK_EXT: Self = Self(1000288026);
+    pub const ASTC_6X6X6_UNORM_BLOCK_EXT: Self = Self(1000288027);
+    pub const ASTC_6X6X6_SRGB_BLOCK_EXT: Self = Self(1000288028);
+    pub const ASTC_6X6X6_SFLOAT_BLOCK_EXT: Self = Self(1000288029);
     pub const G8_B8R8_2PLANE_444_UNORM: Self = Self(1_000_330_000);
     pub const G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16: Self = Self(1_000_330_001);
     pub const G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16: Self = Self(1_000_330_002);
@@ -314,10 +344,10 @@ impl VkFormat {
 
 impl VkFormat {
     ///
-    /// If this is a block format
+    /// If this is a block compressed format
     ///
     #[inline]
-    pub const fn is_block_format(self) -> bool {
+    pub const fn is_block_compressed(self) -> bool {
         self.is_bcn() || self.is_etc2() || self.is_eac() || self.is_astc() || self.is_pvrtc()
     }
 
@@ -596,222 +626,6 @@ impl VkFormat {
     }
 
     ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block width
-    /// of 4
-    ///
-    #[inline]
-    pub const fn is_astc_block_width_4(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_4X4_UNORM_BLOCK
-                | VkFormat::ASTC_4X4_SRGB_BLOCK
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block width
-    /// of 5
-    ///
-    #[inline]
-    pub const fn is_astc_block_width_5(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_5X4_UNORM_BLOCK
-                | VkFormat::ASTC_5X4_SRGB_BLOCK
-                | VkFormat::ASTC_5X5_UNORM_BLOCK
-                | VkFormat::ASTC_5X5_SRGB_BLOCK
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block width
-    /// of 6
-    ///
-    #[inline]
-    pub const fn is_astc_block_width_6(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_6X5_UNORM_BLOCK
-                | VkFormat::ASTC_6X5_SRGB_BLOCK
-                | VkFormat::ASTC_6X6_UNORM_BLOCK
-                | VkFormat::ASTC_6X6_SRGB_BLOCK
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block width
-    /// of 8
-    ///
-    #[inline]
-    pub const fn is_astc_block_width_8(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_8X5_UNORM_BLOCK
-                | VkFormat::ASTC_8X5_SRGB_BLOCK
-                | VkFormat::ASTC_8X6_UNORM_BLOCK
-                | VkFormat::ASTC_8X6_SRGB_BLOCK
-                | VkFormat::ASTC_8X8_UNORM_BLOCK
-                | VkFormat::ASTC_8X8_SRGB_BLOCK
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block width
-    /// of 10
-    ///
-    #[inline]
-    pub const fn is_astc_block_width_10(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_10X5_UNORM_BLOCK
-                | VkFormat::ASTC_10X5_SRGB_BLOCK
-                | VkFormat::ASTC_10X6_UNORM_BLOCK
-                | VkFormat::ASTC_10X6_SRGB_BLOCK
-                | VkFormat::ASTC_10X8_UNORM_BLOCK
-                | VkFormat::ASTC_10X8_SRGB_BLOCK
-                | VkFormat::ASTC_10X10_UNORM_BLOCK
-                | VkFormat::ASTC_10X10_SRGB_BLOCK
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block width
-    /// of 12
-    ///
-    #[inline]
-    pub const fn is_astc_block_width_12(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_12X10_UNORM_BLOCK
-                | VkFormat::ASTC_12X10_SRGB_BLOCK
-                | VkFormat::ASTC_12X12_UNORM_BLOCK
-                | VkFormat::ASTC_12X12_SRGB_BLOCK
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block height
-    /// of 4
-    ///
-    #[inline]
-    pub const fn is_astc_block_height_4(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_4X4_UNORM_BLOCK
-                | VkFormat::ASTC_4X4_SRGB_BLOCK
-                | VkFormat::ASTC_5X4_UNORM_BLOCK
-                | VkFormat::ASTC_5X4_SRGB_BLOCK
-                | VkFormat::ASTC_4X4_SFLOAT_BLOCK
-                | VkFormat::ASTC_5X4_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block height
-    /// of 5
-    ///
-    #[inline]
-    pub const fn is_astc_block_height_5(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_5X5_UNORM_BLOCK
-                | VkFormat::ASTC_5X5_SRGB_BLOCK
-                | VkFormat::ASTC_6X5_UNORM_BLOCK
-                | VkFormat::ASTC_6X5_SRGB_BLOCK
-                | VkFormat::ASTC_8X5_UNORM_BLOCK
-                | VkFormat::ASTC_8X5_SRGB_BLOCK
-                | VkFormat::ASTC_10X5_UNORM_BLOCK
-                | VkFormat::ASTC_10X5_SRGB_BLOCK
-                | VkFormat::ASTC_5X5_SFLOAT_BLOCK
-                | VkFormat::ASTC_6X5_SFLOAT_BLOCK
-                | VkFormat::ASTC_8X5_SFLOAT_BLOCK
-                | VkFormat::ASTC_10X5_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block height
-    /// of 6
-    ///
-    #[inline]
-    pub const fn is_astc_block_height_6(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_6X6_UNORM_BLOCK
-                | VkFormat::ASTC_6X6_SRGB_BLOCK
-                | VkFormat::ASTC_8X6_UNORM_BLOCK
-                | VkFormat::ASTC_8X6_SRGB_BLOCK
-                | VkFormat::ASTC_10X6_UNORM_BLOCK
-                | VkFormat::ASTC_10X6_SRGB_BLOCK
-                | VkFormat::ASTC_6X6_SFLOAT_BLOCK
-                | VkFormat::ASTC_8X6_SFLOAT_BLOCK
-                | VkFormat::ASTC_10X6_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block height
-    /// of 8
-    ///
-    #[inline]
-    pub const fn is_astc_block_height_8(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_8X8_UNORM_BLOCK
-                | VkFormat::ASTC_8X8_SRGB_BLOCK
-                | VkFormat::ASTC_10X8_UNORM_BLOCK
-                | VkFormat::ASTC_10X8_SRGB_BLOCK
-                | VkFormat::ASTC_8X8_SFLOAT_BLOCK
-                | VkFormat::ASTC_10X8_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block height
-    /// of 10
-    ///
-    #[inline]
-    pub const fn is_astc_block_height_10(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_10X10_UNORM_BLOCK
-                | VkFormat::ASTC_10X10_SRGB_BLOCK
-                | VkFormat::ASTC_12X10_UNORM_BLOCK
-                | VkFormat::ASTC_12X10_SRGB_BLOCK
-                | VkFormat::ASTC_10X10_SFLOAT_BLOCK
-                | VkFormat::ASTC_12X10_SFLOAT_BLOCK
-        )
-    }
-
-    ///
-    /// If this format is any one of the possible ASTC compressed image formats with a block height
-    /// of 12
-    ///
-    #[inline]
-    pub const fn is_astc_block_height_12(self) -> bool {
-        matches!(
-            self,
-            VkFormat::ASTC_12X12_UNORM_BLOCK
-                | VkFormat::ASTC_12X12_SRGB_BLOCK
-                | VkFormat::ASTC_12X12_SFLOAT_BLOCK
-        )
-    }
-
-    ///
     /// If this format is any one of the possible ASTC compressed image formats
     ///
     #[inline]
@@ -860,6 +674,36 @@ impl VkFormat {
                 | VkFormat::ASTC_10X10_SFLOAT_BLOCK
                 | VkFormat::ASTC_12X10_SFLOAT_BLOCK
                 | VkFormat::ASTC_12X12_SFLOAT_BLOCK
+                | VkFormat::ASTC_3X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_3X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_3X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SFLOAT_BLOCK_EXT
         )
     }
 
@@ -942,7 +786,7 @@ impl VkFormat {
     }
 
     ///
-    /// Returns the pixel width of a "block" for this image format
+    /// Returns the pixel dimensions of a "block" for this image format
     ///
     /// # Info
     ///
@@ -952,73 +796,124 @@ impl VkFormat {
     /// This will be >1 for any compressed formats.
     ///
     #[inline]
-    pub const fn block_width(self) -> u32 {
-        if self.is_bcn() || self.is_etc2() || self.is_eac() {
-            4
-        } else if self.is_pvrtc_2bpp() {
-            8
-        } else if self.is_pvrtc_4bpp() || self.is_astc_block_width_4() {
-            4
-        } else if self.is_astc_block_width_5() {
-            5
-        } else if self.is_astc_block_width_6() {
-            6
-        } else if self.is_astc_block_width_8() {
-            8
-        } else if self.is_astc_block_width_10() {
-            10
-        } else if self.is_astc_block_width_12() {
-            12
-        } else {
-            1
+    pub const fn block_dimensions(self) -> (u32, u32, u32) {
+        match self {
+            Self::BC1_RGB_UNORM_BLOCK => (4, 4, 1),
+            Self::BC1_RGB_SRGB_BLOCK => (4, 4, 1),
+            Self::BC1_RGBA_UNORM_BLOCK => (4, 4, 1),
+            Self::BC1_RGBA_SRGB_BLOCK => (4, 4, 1),
+            Self::BC2_UNORM_BLOCK => (4, 4, 1),
+            Self::BC2_SRGB_BLOCK => (4, 4, 1),
+            Self::BC3_UNORM_BLOCK => (4, 4, 1),
+            Self::BC3_SRGB_BLOCK => (4, 4, 1),
+            Self::BC4_UNORM_BLOCK => (4, 4, 1),
+            Self::BC4_SNORM_BLOCK => (4, 4, 1),
+            Self::BC5_UNORM_BLOCK => (4, 4, 1),
+            Self::BC5_SNORM_BLOCK => (4, 4, 1),
+            Self::BC6H_UFLOAT_BLOCK => (4, 4, 1),
+            Self::BC6H_SFLOAT_BLOCK => (4, 4, 1),
+            Self::BC7_UNORM_BLOCK => (4, 4, 1),
+            Self::BC7_SRGB_BLOCK => (4, 4, 1),
+            Self::ETC2_R8G8B8_UNORM_BLOCK => (4, 4, 1),
+            Self::ETC2_R8G8B8_SRGB_BLOCK => (4, 4, 1),
+            Self::ETC2_R8G8B8A1_UNORM_BLOCK => (4, 4, 1),
+            Self::ETC2_R8G8B8A1_SRGB_BLOCK => (4, 4, 1),
+            Self::ETC2_R8G8B8A8_UNORM_BLOCK => (4, 4, 1),
+            Self::ETC2_R8G8B8A8_SRGB_BLOCK => (4, 4, 1),
+            Self::EAC_R11_UNORM_BLOCK => (4, 4, 1),
+            Self::EAC_R11_SNORM_BLOCK => (4, 4, 1),
+            Self::EAC_R11G11_UNORM_BLOCK => (4, 4, 1),
+            Self::EAC_R11G11_SNORM_BLOCK => (4, 4, 1),
+            Self::ASTC_4X4_UNORM_BLOCK => (4, 4, 1),
+            Self::ASTC_4X4_SRGB_BLOCK => (4, 4, 1),
+            Self::ASTC_5X4_UNORM_BLOCK => (5, 4, 1),
+            Self::ASTC_5X4_SRGB_BLOCK => (5, 4, 1),
+            Self::ASTC_5X5_UNORM_BLOCK => (5, 5, 1),
+            Self::ASTC_5X5_SRGB_BLOCK => (5, 5, 1),
+            Self::ASTC_6X5_UNORM_BLOCK => (6, 5, 1),
+            Self::ASTC_6X5_SRGB_BLOCK => (6, 5, 1),
+            Self::ASTC_6X6_UNORM_BLOCK => (6, 6, 1),
+            Self::ASTC_6X6_SRGB_BLOCK => (6, 6, 1),
+            Self::ASTC_8X5_UNORM_BLOCK => (8, 5, 1),
+            Self::ASTC_8X5_SRGB_BLOCK => (8, 5, 1),
+            Self::ASTC_8X6_UNORM_BLOCK => (8, 6, 1),
+            Self::ASTC_8X6_SRGB_BLOCK => (8, 6, 1),
+            Self::ASTC_8X8_UNORM_BLOCK => (8, 8, 1),
+            Self::ASTC_8X8_SRGB_BLOCK => (8, 8, 1),
+            Self::ASTC_10X5_UNORM_BLOCK => (10, 5, 1),
+            Self::ASTC_10X5_SRGB_BLOCK => (10, 5, 1),
+            Self::ASTC_10X6_UNORM_BLOCK => (10, 6, 1),
+            Self::ASTC_10X6_SRGB_BLOCK => (10, 6, 1),
+            Self::ASTC_10X8_UNORM_BLOCK => (10, 8, 1),
+            Self::ASTC_10X8_SRGB_BLOCK => (10, 8, 1),
+            Self::ASTC_10X10_UNORM_BLOCK => (10, 10, 1),
+            Self::ASTC_10X10_SRGB_BLOCK => (10, 10, 1),
+            Self::ASTC_12X10_UNORM_BLOCK => (12, 10, 1),
+            Self::ASTC_12X10_SRGB_BLOCK => (12, 10, 1),
+            Self::ASTC_12X12_UNORM_BLOCK => (12, 12, 1),
+            Self::ASTC_12X12_SRGB_BLOCK => (12, 12, 1),
+            Self::G8B8G8R8_422_UNORM => (2, 1, 1),
+            Self::B8G8R8G8_422_UNORM => (2, 1, 1),
+            Self::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 => (2, 1, 1),
+            Self::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 => (2, 1, 1),
+            Self::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 => (2, 1, 1),
+            Self::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 => (2, 1, 1),
+            Self::G16B16G16R16_422_UNORM => (2, 1, 1),
+            Self::B16G16R16G16_422_UNORM => (2, 1, 1),
+            Self::ASTC_4X4_SFLOAT_BLOCK => (4, 4, 1),
+            Self::ASTC_5X4_SFLOAT_BLOCK => (5, 4, 1),
+            Self::ASTC_5X5_SFLOAT_BLOCK => (5, 5, 1),
+            Self::ASTC_6X5_SFLOAT_BLOCK => (6, 5, 1),
+            Self::ASTC_6X6_SFLOAT_BLOCK => (6, 6, 1),
+            Self::ASTC_8X5_SFLOAT_BLOCK => (8, 5, 1),
+            Self::ASTC_8X6_SFLOAT_BLOCK => (8, 6, 1),
+            Self::ASTC_8X8_SFLOAT_BLOCK => (8, 8, 1),
+            Self::ASTC_10X5_SFLOAT_BLOCK => (10, 5, 1),
+            Self::ASTC_10X6_SFLOAT_BLOCK => (10, 6, 1),
+            Self::ASTC_10X8_SFLOAT_BLOCK => (10, 8, 1),
+            Self::ASTC_10X10_SFLOAT_BLOCK => (10, 10, 1),
+            Self::ASTC_12X10_SFLOAT_BLOCK => (12, 10, 1),
+            Self::ASTC_12X12_SFLOAT_BLOCK => (12, 12, 1),
+            Self::PVRTC1_2BPP_UNORM_BLOCK_IMG => (8, 4, 1),
+            Self::PVRTC1_4BPP_UNORM_BLOCK_IMG => (4, 4, 1),
+            Self::PVRTC2_2BPP_UNORM_BLOCK_IMG => (8, 4, 1),
+            Self::PVRTC2_4BPP_UNORM_BLOCK_IMG => (4, 4, 1),
+            Self::PVRTC1_2BPP_SRGB_BLOCK_IMG => (8, 4, 1),
+            Self::PVRTC1_4BPP_SRGB_BLOCK_IMG => (4, 4, 1),
+            Self::PVRTC2_2BPP_SRGB_BLOCK_IMG => (8, 4, 1),
+            Self::PVRTC2_4BPP_SRGB_BLOCK_IMG => (4, 4, 1),
+            Self::ASTC_3X3X3_UNORM_BLOCK_EXT => (3, 3, 3),
+            Self::ASTC_3X3X3_SRGB_BLOCK_EXT => (3, 3, 3),
+            Self::ASTC_3X3X3_SFLOAT_BLOCK_EXT => (3, 3, 3),
+            Self::ASTC_4X3X3_UNORM_BLOCK_EXT => (4, 3, 3),
+            Self::ASTC_4X3X3_SRGB_BLOCK_EXT => (4, 3, 3),
+            Self::ASTC_4X3X3_SFLOAT_BLOCK_EXT => (4, 3, 3),
+            Self::ASTC_4X4X3_UNORM_BLOCK_EXT => (4, 4, 3),
+            Self::ASTC_4X4X3_SRGB_BLOCK_EXT => (4, 4, 3),
+            Self::ASTC_4X4X3_SFLOAT_BLOCK_EXT => (4, 4, 3),
+            Self::ASTC_4X4X4_UNORM_BLOCK_EXT => (4, 4, 4),
+            Self::ASTC_4X4X4_SRGB_BLOCK_EXT => (4, 4, 4),
+            Self::ASTC_4X4X4_SFLOAT_BLOCK_EXT => (4, 4, 4),
+            Self::ASTC_5X4X4_UNORM_BLOCK_EXT => (5, 4, 4),
+            Self::ASTC_5X4X4_SRGB_BLOCK_EXT => (5, 4, 4),
+            Self::ASTC_5X4X4_SFLOAT_BLOCK_EXT => (5, 4, 4),
+            Self::ASTC_5X5X4_UNORM_BLOCK_EXT => (5, 5, 4),
+            Self::ASTC_5X5X4_SRGB_BLOCK_EXT => (5, 5, 4),
+            Self::ASTC_5X5X4_SFLOAT_BLOCK_EXT => (5, 5, 4),
+            Self::ASTC_5X5X5_UNORM_BLOCK_EXT => (5, 5, 5),
+            Self::ASTC_5X5X5_SRGB_BLOCK_EXT => (5, 5, 5),
+            Self::ASTC_5X5X5_SFLOAT_BLOCK_EXT => (5, 5, 5),
+            Self::ASTC_6X5X5_UNORM_BLOCK_EXT => (6, 5, 5),
+            Self::ASTC_6X5X5_SRGB_BLOCK_EXT => (6, 5, 5),
+            Self::ASTC_6X5X5_SFLOAT_BLOCK_EXT => (6, 5, 5),
+            Self::ASTC_6X6X5_UNORM_BLOCK_EXT => (6, 6, 5),
+            Self::ASTC_6X6X5_SRGB_BLOCK_EXT => (6, 6, 5),
+            Self::ASTC_6X6X5_SFLOAT_BLOCK_EXT => (6, 6, 5),
+            Self::ASTC_6X6X6_UNORM_BLOCK_EXT => (6, 6, 6),
+            Self::ASTC_6X6X6_SRGB_BLOCK_EXT => (6, 6, 6),
+            Self::ASTC_6X6X6_SFLOAT_BLOCK_EXT => (6, 6, 6),
+            _ => (1, 1, 1),
         }
-    }
-
-    ///
-    /// Returns the pixel height of a "block" for this image format
-    ///
-    /// # Info
-    ///
-    /// This will be one for non block compressed formats as a "non blocked" can be described as
-    /// a blocked format with a 1x1 block size.
-    ///
-    /// This will be >1 for any compressed formats.
-    ///
-    #[inline]
-    pub const fn block_height(self) -> u32 {
-        if self.is_bcn()
-            || self.is_etc2()
-            || self.is_eac()
-            || self.is_pvrtc()
-            || self.is_astc_block_height_4()
-        {
-            4
-        } else if self.is_astc_block_height_5() {
-            5
-        } else if self.is_astc_block_height_6() {
-            6
-        } else if self.is_astc_block_height_8() {
-            8
-        } else if self.is_astc_block_height_10() {
-            10
-        } else if self.is_astc_block_height_12() {
-            12
-        } else {
-            1
-        }
-    }
-
-    ///
-    /// Returns the pixel depth of a "block" for this image format
-    ///
-    /// # Info
-    ///
-    /// There are 3D block compressed ASTC formats, but they aren't enumerated by Vulkan at the time
-    /// of this code being written so we just return 1 here.
-    ///
-    #[inline]
-    pub const fn block_depth(self) -> u32 {
-        1
     }
 
     ///
@@ -1061,6 +956,16 @@ impl VkFormat {
                 | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
                 | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
                 | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+                | VkFormat::ASTC_3X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SRGB_BLOCK_EXT
         )
     }
 
@@ -1104,6 +1009,16 @@ impl VkFormat {
                 | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
                 | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
                 | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+                | VkFormat::ASTC_3X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_UNORM_BLOCK_EXT
         )
     }
 
@@ -1224,6 +1139,16 @@ impl VkFormat {
                 | VkFormat::ASTC_12X10_SFLOAT_BLOCK
                 | VkFormat::ASTC_12X12_SFLOAT_BLOCK
                 | VkFormat::R16G16_S10_5_NV
+                | VkFormat::ASTC_3X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SFLOAT_BLOCK_EXT
         )
     }
 
@@ -1266,6 +1191,16 @@ impl VkFormat {
                 | VkFormat::ASTC_10X10_SFLOAT_BLOCK
                 | VkFormat::ASTC_12X10_SFLOAT_BLOCK
                 | VkFormat::ASTC_12X12_SFLOAT_BLOCK
+                | VkFormat::ASTC_3X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SFLOAT_BLOCK_EXT
         )
     }
 
@@ -1415,6 +1350,26 @@ impl VkFormat {
                 | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::ASTC_3X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_3X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SRGB_BLOCK_EXT
                 | VkFormat::G8_B8R8_2PLANE_444_UNORM
                 | VkFormat::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16
                 | VkFormat::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16
@@ -1692,6 +1647,36 @@ impl VkFormat {
                 | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
                 | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::ASTC_3X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_3X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_3X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X3X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X3_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_4X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_5X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_UNORM_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SRGB_BLOCK_EXT
+                | VkFormat::ASTC_6X6X6_SFLOAT_BLOCK_EXT
                 | VkFormat::G8_B8R8_2PLANE_444_UNORM
                 | VkFormat::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16
                 | VkFormat::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16
@@ -1931,7 +1916,37 @@ impl VkFormat {
             Self::ASTC_10X8_SFLOAT_BLOCK |
             Self::ASTC_10X10_SFLOAT_BLOCK |
             Self::ASTC_12X10_SFLOAT_BLOCK |
-            Self::ASTC_12X12_SFLOAT_BLOCK => (16, 16),
+            Self::ASTC_12X12_SFLOAT_BLOCK |
+            Self::ASTC_3X3X3_UNORM_BLOCK_EXT |
+            Self::ASTC_3X3X3_SRGB_BLOCK_EXT |
+            Self::ASTC_3X3X3_SFLOAT_BLOCK_EXT |
+            Self::ASTC_4X3X3_UNORM_BLOCK_EXT |
+            Self::ASTC_4X3X3_SRGB_BLOCK_EXT |
+            Self::ASTC_4X3X3_SFLOAT_BLOCK_EXT |
+            Self::ASTC_4X4X3_UNORM_BLOCK_EXT |
+            Self::ASTC_4X4X3_SRGB_BLOCK_EXT |
+            Self::ASTC_4X4X3_SFLOAT_BLOCK_EXT |
+            Self::ASTC_4X4X4_UNORM_BLOCK_EXT |
+            Self::ASTC_4X4X4_SRGB_BLOCK_EXT |
+            Self::ASTC_4X4X4_SFLOAT_BLOCK_EXT |
+            Self::ASTC_5X4X4_UNORM_BLOCK_EXT |
+            Self::ASTC_5X4X4_SRGB_BLOCK_EXT |
+            Self::ASTC_5X4X4_SFLOAT_BLOCK_EXT |
+            Self::ASTC_5X5X4_UNORM_BLOCK_EXT |
+            Self::ASTC_5X5X4_SRGB_BLOCK_EXT |
+            Self::ASTC_5X5X4_SFLOAT_BLOCK_EXT |
+            Self::ASTC_5X5X5_UNORM_BLOCK_EXT |
+            Self::ASTC_5X5X5_SRGB_BLOCK_EXT |
+            Self::ASTC_5X5X5_SFLOAT_BLOCK_EXT |
+            Self::ASTC_6X5X5_UNORM_BLOCK_EXT |
+            Self::ASTC_6X5X5_SRGB_BLOCK_EXT |
+            Self::ASTC_6X5X5_SFLOAT_BLOCK_EXT |
+            Self::ASTC_6X6X5_UNORM_BLOCK_EXT |
+            Self::ASTC_6X6X5_SRGB_BLOCK_EXT |
+            Self::ASTC_6X6X5_SFLOAT_BLOCK_EXT |
+            Self::ASTC_6X6X6_UNORM_BLOCK_EXT |
+            Self::ASTC_6X6X6_SRGB_BLOCK_EXT |
+            Self::ASTC_6X6X6_SFLOAT_BLOCK_EXT => (16, 16),
 
             Self::PVRTC1_2BPP_UNORM_BLOCK_IMG |
             Self::PVRTC1_2BPP_SRGB_BLOCK_IMG |
@@ -2258,6 +2273,36 @@ impl std::fmt::Debug for VkFormat {
             Self::PVRTC1_4BPP_SRGB_BLOCK_IMG => "PVRTC1_4BPP_SRGB_BLOCK_IMG",
             Self::PVRTC2_2BPP_SRGB_BLOCK_IMG => "PVRTC2_2BPP_SRGB_BLOCK_IMG",
             Self::PVRTC2_4BPP_SRGB_BLOCK_IMG => "PVRTC2_4BPP_SRGB_BLOCK_IMG",
+            Self::ASTC_3X3X3_UNORM_BLOCK_EXT => "ASTC_3X3X3_UNORM_BLOCK_EXT",
+            Self::ASTC_3X3X3_SRGB_BLOCK_EXT => "ASTC_3X3X3_SRGB_BLOCK_EXT",
+            Self::ASTC_3X3X3_SFLOAT_BLOCK_EXT => "ASTC_3X3X3_SFLOAT_BLOCK_EXT",
+            Self::ASTC_4X3X3_UNORM_BLOCK_EXT => "ASTC_4X3X3_UNORM_BLOCK_EXT",
+            Self::ASTC_4X3X3_SRGB_BLOCK_EXT => "ASTC_4X3X3_SRGB_BLOCK_EXT",
+            Self::ASTC_4X3X3_SFLOAT_BLOCK_EXT => "ASTC_4X3X3_SFLOAT_BLOCK_EXT",
+            Self::ASTC_4X4X3_UNORM_BLOCK_EXT => "ASTC_4X4X3_UNORM_BLOCK_EXT",
+            Self::ASTC_4X4X3_SRGB_BLOCK_EXT => "ASTC_4X4X3_SRGB_BLOCK_EXT",
+            Self::ASTC_4X4X3_SFLOAT_BLOCK_EXT => "ASTC_4X4X3_SFLOAT_BLOCK_EXT",
+            Self::ASTC_4X4X4_UNORM_BLOCK_EXT => "ASTC_4X4X4_UNORM_BLOCK_EXT",
+            Self::ASTC_4X4X4_SRGB_BLOCK_EXT => "ASTC_4X4X4_SRGB_BLOCK_EXT",
+            Self::ASTC_4X4X4_SFLOAT_BLOCK_EXT => "ASTC_4X4X4_SFLOAT_BLOCK_EXT",
+            Self::ASTC_5X4X4_UNORM_BLOCK_EXT => "ASTC_5X4X4_UNORM_BLOCK_EXT",
+            Self::ASTC_5X4X4_SRGB_BLOCK_EXT => "ASTC_5X4X4_SRGB_BLOCK_EXT",
+            Self::ASTC_5X4X4_SFLOAT_BLOCK_EXT => "ASTC_5X4X4_SFLOAT_BLOCK_EXT",
+            Self::ASTC_5X5X4_UNORM_BLOCK_EXT => "ASTC_5X5X4_UNORM_BLOCK_EXT",
+            Self::ASTC_5X5X4_SRGB_BLOCK_EXT => "ASTC_5X5X4_SRGB_BLOCK_EXT",
+            Self::ASTC_5X5X4_SFLOAT_BLOCK_EXT => "ASTC_5X5X4_SFLOAT_BLOCK_EXT",
+            Self::ASTC_5X5X5_UNORM_BLOCK_EXT => "ASTC_5X5X5_UNORM_BLOCK_EXT",
+            Self::ASTC_5X5X5_SRGB_BLOCK_EXT => "ASTC_5X5X5_SRGB_BLOCK_EXT",
+            Self::ASTC_5X5X5_SFLOAT_BLOCK_EXT => "ASTC_5X5X5_SFLOAT_BLOCK_EXT",
+            Self::ASTC_6X5X5_UNORM_BLOCK_EXT => "ASTC_6X5X5_UNORM_BLOCK_EXT",
+            Self::ASTC_6X5X5_SRGB_BLOCK_EXT => "ASTC_6X5X5_SRGB_BLOCK_EXT",
+            Self::ASTC_6X5X5_SFLOAT_BLOCK_EXT => "ASTC_6X5X5_SFLOAT_BLOCK_EXT",
+            Self::ASTC_6X6X5_UNORM_BLOCK_EXT => "ASTC_6X6X5_UNORM_BLOCK_EXT",
+            Self::ASTC_6X6X5_SRGB_BLOCK_EXT => "ASTC_6X6X5_SRGB_BLOCK_EXT",
+            Self::ASTC_6X6X5_SFLOAT_BLOCK_EXT => "ASTC_6X6X5_SFLOAT_BLOCK_EXT",
+            Self::ASTC_6X6X6_UNORM_BLOCK_EXT => "ASTC_6X6X6_UNORM_BLOCK_EXT",
+            Self::ASTC_6X6X6_SRGB_BLOCK_EXT => "ASTC_6X6X6_SRGB_BLOCK_EXT",
+            Self::ASTC_6X6X6_SFLOAT_BLOCK_EXT => "ASTC_6X6X6_SFLOAT_BLOCK_EXT",
             Self::G8_B8R8_2PLANE_444_UNORM => "G8_B8R8_2PLANE_444_UNORM",
             Self::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16 => {
                 "G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16"
@@ -2279,7 +2324,7 @@ impl std::fmt::Debug for VkFormat {
 ///
 /// A list of all formats that are enumerated by this crate
 ///
-pub const ALL_FORMATS: [VkFormat; 250] = [
+pub const ALL_FORMATS: [VkFormat; 280] = [
     VkFormat::UNDEFINED,
     VkFormat::R4G4_UNORM_PACK8,
     VkFormat::R4G4B4A4_UNORM_PACK16,
@@ -2521,6 +2566,36 @@ pub const ALL_FORMATS: [VkFormat; 250] = [
     VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG,
     VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG,
     VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG,
+    VkFormat::ASTC_3X3X3_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_3X3X3_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_3X3X3_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_4X3X3_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_4X3X3_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_4X3X3_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_4X4X3_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_4X4X3_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_4X4X3_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_4X4X4_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_4X4X4_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_4X4X4_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_5X4X4_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_5X4X4_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_5X4X4_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_5X5X4_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_5X5X4_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_5X5X4_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_5X5X5_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_5X5X5_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_5X5X5_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_6X5X5_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_6X5X5_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_6X5X5_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_6X6X5_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_6X6X5_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_6X6X5_SFLOAT_BLOCK_EXT,
+    VkFormat::ASTC_6X6X6_UNORM_BLOCK_EXT,
+    VkFormat::ASTC_6X6X6_SRGB_BLOCK_EXT,
+    VkFormat::ASTC_6X6X6_SFLOAT_BLOCK_EXT,
     VkFormat::G8_B8R8_2PLANE_444_UNORM,
     VkFormat::G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16,
     VkFormat::G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16,

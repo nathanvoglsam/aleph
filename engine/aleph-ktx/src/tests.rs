@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use std::io::BufReader;
+
 use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::ALL_FORMATS;
 
@@ -96,6 +98,62 @@ fn test_validates_files() {
 }
 
 #[test]
+fn test_validates_files_cts() {
+    use std::fs::read_dir;
+
+    let dir = read_dir("./test_images/cts/ktx2").unwrap();
+    for entry in dir {
+        let entry = entry.unwrap();
+
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .expect(&format!("Get FileType for '{}'", path.display()));
+
+        if file_type.is_file() {
+            let file = std::fs::OpenOptions::new()
+                .read(true)
+                .open(&path)
+                .expect(&format!("Read for '{}'", path.display()));
+            let read = BufReader::new(file);
+            match KTXDocument::from_reader(read) {
+                Ok(_) => {}
+                Err(KTXReadError::UnsupportedFormat(_)) => {}
+                Err(e) => panic!("Failed validate for '{}' with '{:#?}", path.display(), e),
+            }
+        }
+    }
+}
+
+#[test]
+fn test_validates_files_sample() {
+    use std::fs::read_dir;
+
+    let dir = read_dir("./test_images/cts/ktx2_sample").unwrap();
+    for entry in dir {
+        let entry = entry.unwrap();
+
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .expect(&format!("Get FileType for '{}'", path.display()));
+
+        if file_type.is_file() {
+            let file = std::fs::OpenOptions::new()
+                .read(true)
+                .open(&path)
+                .expect(&format!("Read for '{}'", path.display()));
+            let read = BufReader::new(file);
+            match KTXDocument::from_reader(read) {
+                Ok(_) => {}
+                Err(KTXReadError::UnsupportedFormat(_)) => {}
+                Err(e) => panic!("Failed validate for '{}' with '{:#?}", path.display(), e),
+            }
+        }
+    }
+}
+
+#[test]
 fn test_invalid_files() {
     // let error = KTXDocument::from_slice(INCORRECT_MIP_LAYOUT_AND_PADDING)
     //     .err()
@@ -119,21 +177,16 @@ fn test_lookup_key() {
     let doc = KTXDocument::from_slice(CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB).unwrap();
 
     let mut scratch = [0u8; 256];
-    let value = doc
-        .lookup_key("KTXorientation", &mut scratch)
-        .unwrap()
-        .unwrap();
+    let value = doc.lookup_key("KTXorientation", &mut scratch).unwrap();
     assert_eq!(value.get(), 3);
-    let orientation = doc.lookup_orientation().unwrap().unwrap();
+    let orientation = doc.lookup_orientation().unwrap();
     assert_eq!(orientation.as_str(), "ru");
 
     let mut scratch = [0u8; 256];
-    let _value = doc.lookup_key("KTXwriter", &mut scratch).unwrap().unwrap();
+    let _value = doc.lookup_writer(&mut scratch).unwrap();
 
-    assert!(doc
-        .lookup_key("AKeyThatDoesntExist", &mut scratch)
-        .unwrap()
-        .is_none());
+    let no_exist = doc.lookup_key("AKeyThatDoesntExist", &mut scratch);
+    assert!(matches!(no_exist, Err(KTXReadError::NoSuchKey)));
 }
 
 #[test]

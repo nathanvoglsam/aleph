@@ -29,6 +29,7 @@
 
 mod data_format_descriptor;
 mod document;
+mod encoder;
 mod format;
 mod kvd;
 
@@ -41,6 +42,9 @@ pub use data_format_descriptor::{
     DataFormatDescriptor, ETC1ChannelType, ETC1SChannelType, ETC2ChannelType, PVRTC2ChannelType,
     PVRTCChannelType, RGBSDAChannelType, SampleFlags, TransferFunction,
 };
-pub use document::{FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme};
-pub use format::{is_format_prohibited, ALLOWED_FORMATS};
+pub use document::{
+    DocumentType, FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme,
+};
+pub use encoder::{CubeFacesRef, DocumentDescription, LevelNum, MipChainRef, ENCODER_NAME};
+pub use format::{format_type_size, is_format_prohibited, ALLOWED_FORMATS};
 pub use kvd::{KtxOrientation, KtxSwizzle};

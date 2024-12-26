@@ -29,7 +29,7 @@
 
 use aleph_vk_format::ALL_FORMATS;
 
-use crate::format::{is_format_prohibited, ALLOWED_FORMATS};
+use crate::format::{format_type_size, is_format_prohibited, ALLOWED_FORMATS};
 
 #[test]
 fn all_formats_handled_prohibited() {
@@ -41,5 +41,18 @@ fn all_formats_handled_prohibited() {
             (false, true) => panic!("Prohibited format in allowed list: {format:#?}"),
             _ => (),
         };
+    });
+}
+
+#[test]
+fn all_formats_have_expected_type_size() {
+    ALLOWED_FORMATS.iter().for_each(|format| {
+        let type_size = format_type_size(*format);
+        assert!(
+            type_size.is_some(),
+            "'{:?}' has incorrect type size '{:?}'",
+            format,
+            type_size
+        );
     });
 }
