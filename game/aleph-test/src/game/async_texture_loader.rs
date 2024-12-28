@@ -153,7 +153,7 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
     let loader = context.loader.clone();
     let reqeust = request.req.clone();
     rayon::spawn(move || {
-        let _ = load_on_threadpool(device, loader, reqeust, desc, data, allocation);
+        let _ = load_on_threadpool(loader, reqeust, desc, data, allocation);
     });
 
     Some(())
@@ -161,7 +161,6 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
 
 #[aleph_profile::function]
 fn load_on_threadpool(
-    device: AnyArc<dyn IDevice>,
     loader: Arc<TextureLoader>,
     request: TextureStreamingRequest,
     desc: TextureMipUploadDesc,
