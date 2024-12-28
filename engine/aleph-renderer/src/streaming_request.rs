@@ -39,12 +39,12 @@ use crate::{BufferHandle, MeshHandle, TextureHandle};
 
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct StreamingRequest<T: Send, E: Send = ()> {
+struct InnerStreamingRequest<T: Send, E: Send = ()> {
     data: Arc<RequestData<T, E>>,
 }
 
-impl<T: Send, E: Send> StreamingRequest<T, E> {
-    pub fn get_id(&self) -> RequestId {
+impl<T: Send, E: Send> InnerStreamingRequest<T, E> {
+    fn get_id(&self) -> RequestId {
         // Just use the address of the Arc, which is guaranteed to uniquely identify our request
         // while that request object is live.
         let id = self.data.as_ref() as *const RequestData<T, E> as usize;
@@ -58,7 +58,7 @@ impl<T: Send, E: Send> StreamingRequest<T, E> {
         unsafe { RequestId(NonZeroUsize::new_unchecked(id)) }
     }
 
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             data: Arc::new(RequestData {
                 state: Default::default(),
@@ -67,8 +67,7 @@ impl<T: Send, E: Send> StreamingRequest<T, E> {
         }
     }
 
-    /// Transition to the 'complete' state with the given payload.
-    pub fn mark_complete(&self, payload: T) -> Result<(), TransitionResult> {
+    fn mark_complete(&self, payload: T) -> Result<(), TransitionResult> {
         let current = RequestState::Opened as u64;
         let new = RequestState::Finalizing as u64;
         let result =
@@ -102,9 +101,7 @@ impl<T: Send, E: Send> StreamingRequest<T, E> {
         Ok(())
     }
 
-    /// Function used for transitioning to the 'failed' state. This will fail if the request is in
-    /// a state that it is not valid to transition to 'failed' from.
-    pub fn mark_failed(&self, reason: E) -> Result<(), TransitionResult> {
+    fn mark_failed(&self, reason: E) -> Result<(), TransitionResult> {
         let current = RequestState::Opened as u64;
         let new = RequestState::FinalizingFail as u64;
         let result =
@@ -140,7 +137,7 @@ impl<T: Send, E: Send> StreamingRequest<T, E> {
 
     /// Function used for transitioning to the 'cancelled' state. This will fail if the request is
     /// in a state that it is not valid to transition to 'cancelled' from.
-    pub fn mark_cancelled(&self) -> Result<(), TransitionResult> {
+    fn mark_cancelled(&self) -> Result<(), TransitionResult> {
         let current = RequestState::Opened as u64;
         let new = RequestState::Cancelled as u64;
         let result =
@@ -155,48 +152,15 @@ impl<T: Send, E: Send> StreamingRequest<T, E> {
     }
 
     /// Polls the request to see if it has completed, failed or been cancelled.
-    pub fn poll_state(&self) -> RequestState {
+    fn poll_state(&self) -> RequestState {
         self.data.get_state()
-    }
-
-    /// Polls the request to see if it has completed, failed or been cancelled.
-    ///
-    /// This will return [`Ok`] exactly once, taking the `T` from the payload slot and leaving the
-    /// request in the terminal 'Consumed' state.
-    pub fn poll_complete(&self) -> Result<T, PollCompleteError> {
-        let current = RequestState::Complete as u64;
-        let new = RequestState::Consumed as u64;
-        let result =
-            self.data
-                .state
-                .compare_exchange(current, new, Ordering::Release, Ordering::Relaxed);
-
-        match result {
-            Ok(_) => {
-                // Safety: It is a bug for the request to be in the complete state and for payload
-                //         to not contain a valid T. We have entered a critical section by winning
-                //         the race to transition from Complete to Consumed so we have ownership
-                //         of the T in payload.
-                unsafe {
-                    let slot = self.data.payload.get().read();
-                    let slot = slot.assume_init();
-                    let payload = ManuallyDrop::into_inner(slot.success);
-                    Ok(payload)
-                }
-            }
-            Err(state) => {
-                // Safety: It's a bug for state to not be a valid RequestState.
-                let state = unsafe { RequestState::from_u64(state).unwrap_unchecked() };
-                Err(PollCompleteError::from_state(state))
-            }
-        }
     }
 
     /// Polls the request to see if it has completed, failed or been cancelled.
     ///
     /// This will return [`Ok`] exactly once, taking the `E` from the payload slot and leaving the
     /// request in the terminal 'Consumed' state.
-    pub fn poll_fail(&self) -> Result<E, PollFailError> {
+    fn poll_fail(&self) -> Result<E, PollFailError> {
         let current = RequestState::Failed as u64;
         let new = RequestState::ConsumedFail as u64;
         let result =
@@ -223,6 +187,166 @@ impl<T: Send, E: Send> StreamingRequest<T, E> {
                 Err(PollFailError::from_state(state))
             }
         }
+    }
+}
+
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct StreamingRequest<T: Send + Clone, E: Send = ()>(InnerStreamingRequest<T, E>);
+
+impl<T: Send + Clone, E: Send> StreamingRequest<T, E> {
+    pub fn get_id(&self) -> RequestId {
+        self.0.get_id()
+    }
+
+    pub fn new() -> Self {
+        Self(InnerStreamingRequest::new())
+    }
+
+    /// Transition to the 'complete' state with the given payload.
+    pub fn mark_complete(&self, payload: T) -> Result<(), TransitionResult> {
+        self.0.mark_complete(payload)
+    }
+
+    /// Function used for transitioning to the 'failed' state. This will fail if the request is in
+    /// a state that it is not valid to transition to 'failed' from.
+    pub fn mark_failed(&self, reason: E) -> Result<(), TransitionResult> {
+        self.0.mark_failed(reason)
+    }
+
+    /// Function used for transitioning to the 'cancelled' state. This will fail if the request is
+    /// in a state that it is not valid to transition to 'cancelled' from.
+    pub fn mark_cancelled(&self) -> Result<(), TransitionResult> {
+        self.0.mark_cancelled()
+    }
+
+    /// Polls the request to see if it has completed, failed or been cancelled.
+    pub fn poll_state(&self) -> RequestState {
+        self.0.poll_state()
+    }
+
+    /// Polls the request to see if it has completed, failed or been cancelled.
+    ///
+    /// This will always return [`Ok`] after the complete state has been reached. The `T` payload is
+    /// cloned from the slot every time this function yields [`Ok`].
+    pub fn poll_complete(&self) -> Result<T, PollCompleteError> {
+        let current = RequestState::Complete as u64;
+        let new = RequestState::Complete as u64;
+        let result =
+            self.0
+                .data
+                .state
+                .compare_exchange(current, new, Ordering::Release, Ordering::Relaxed);
+
+        match result {
+            Ok(_) => {
+                // Safety: Once in the Complete state we never transition out of it. Once Complete
+                //         the payload is always safe to access. This wrapper just clones it out
+                //         so repeat calls can succeed, they just return a new copy of the payload.
+                unsafe {
+                    let slot = self.0.data.payload.get().as_ref().unwrap_unchecked();
+                    let slot = slot.as_ptr().as_ref().unwrap_unchecked();
+                    let slot = slot.success.clone();
+                    let payload = ManuallyDrop::into_inner(slot);
+                    Ok(payload)
+                }
+            }
+            Err(state) => {
+                // Safety: It's a bug for state to not be a valid RequestState.
+                let state = unsafe { RequestState::from_u64(state).unwrap_unchecked() };
+                Err(PollCompleteError::from_state(state))
+            }
+        }
+    }
+
+    /// Polls the request to see if it has completed, failed or been cancelled.
+    ///
+    /// This will return [`Ok`] exactly once, taking the `E` from the payload slot and leaving the
+    /// request in the terminal 'Consumed' state.
+    pub fn poll_fail(&self) -> Result<E, PollFailError> {
+        self.0.poll_fail()
+    }
+}
+
+/// [`ConsumeStreamingRequest`] is a variant of [`StreamingRequest`] that will consume the payload
+/// object, yielding it only once, instead of returning a copy of the payload multiple times.
+///
+/// See [`ConsumeStreamingRequest::poll_complete`].
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct ConsumeStreamingRequest<T: Send + Clone, E: Send = ()>(InnerStreamingRequest<T, E>);
+
+impl<T: Send + Clone, E: Send> ConsumeStreamingRequest<T, E> {
+    pub fn get_id(&self) -> RequestId {
+        self.0.get_id()
+    }
+
+    pub fn new() -> Self {
+        Self(InnerStreamingRequest::new())
+    }
+
+    /// Transition to the 'complete' state with the given payload.
+    pub fn mark_complete(&self, payload: T) -> Result<(), TransitionResult> {
+        self.0.mark_complete(payload)
+    }
+
+    /// Function used for transitioning to the 'failed' state. This will fail if the request is in
+    /// a state that it is not valid to transition to 'failed' from.
+    pub fn mark_failed(&self, reason: E) -> Result<(), TransitionResult> {
+        self.0.mark_failed(reason)
+    }
+
+    /// Function used for transitioning to the 'cancelled' state. This will fail if the request is
+    /// in a state that it is not valid to transition to 'cancelled' from.
+    pub fn mark_cancelled(&self) -> Result<(), TransitionResult> {
+        self.0.mark_cancelled()
+    }
+
+    /// Polls the request to see if it has completed, failed or been cancelled.
+    pub fn poll_state(&self) -> RequestState {
+        self.0.poll_state()
+    }
+
+    /// Polls the request to see if it has completed, failed or been cancelled.
+    ///
+    /// This will return [`Ok`] exactly once, taking the `T` from the payload slot and leaving the
+    /// request in the terminal 'Consumed' state.
+    pub fn poll_complete(&self) -> Result<T, PollCompleteError> {
+        let current = RequestState::Complete as u64;
+        let new = RequestState::Consumed as u64;
+        let result =
+            self.0
+                .data
+                .state
+                .compare_exchange(current, new, Ordering::Release, Ordering::Relaxed);
+
+        match result {
+            Ok(_) => {
+                // Safety: It is a bug for the request to be in the complete state and for payload
+                //         to not contain a valid T. We have entered a critical section by winning
+                //         the race to transition from Complete to Consumed so we have ownership
+                //         of the T in payload.
+                unsafe {
+                    let slot = self.0.data.payload.get().read();
+                    let slot = slot.assume_init();
+                    let payload = ManuallyDrop::into_inner(slot.success);
+                    Ok(payload)
+                }
+            }
+            Err(state) => {
+                // Safety: It's a bug for state to not be a valid RequestState.
+                let state = unsafe { RequestState::from_u64(state).unwrap_unchecked() };
+                Err(PollCompleteError::from_state(state))
+            }
+        }
+    }
+
+    /// Polls the request to see if it has completed, failed or been cancelled.
+    ///
+    /// This will return [`Ok`] exactly once, taking the `E` from the payload slot and leaving the
+    /// request in the terminal 'Consumed' state.
+    pub fn poll_fail(&self) -> Result<E, PollFailError> {
+        self.0.poll_fail()
     }
 }
 
@@ -353,6 +477,9 @@ impl RequestState {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Error)]
 pub enum PollCompleteError {
+    #[error("The request has already been consumed")]
+    Consumed,
+
     #[error("The request is not complete")]
     Waiting,
 
@@ -369,7 +496,7 @@ impl PollCompleteError {
             RequestState::Opened => Self::Waiting,
             RequestState::Finalizing => Self::Waiting,
             RequestState::Complete => Self::Waiting, // Nonsense but means the function won't fail
-            RequestState::Consumed => Self::Waiting, // Nonsense but means the function won't fail
+            RequestState::Consumed => Self::Consumed,
             RequestState::FinalizingFail => Self::Waiting,
             RequestState::Failed => Self::Failed,
             RequestState::ConsumedFail => Self::Failed,
@@ -380,6 +507,9 @@ impl PollCompleteError {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Error)]
 pub enum PollFailError {
+    #[error("The request has already been consumed")]
+    Consumed,
+
     #[error("The request is not complete")]
     Waiting,
 
@@ -399,7 +529,7 @@ impl PollFailError {
             RequestState::Consumed => Self::Complete,
             RequestState::FinalizingFail => Self::Waiting,
             RequestState::Failed => Self::Waiting, // Junk so function won't fail
-            RequestState::ConsumedFail => Self::Waiting, // Junk so function won't fail
+            RequestState::ConsumedFail => Self::Consumed,
             RequestState::Cancelled => Self::Cancelled,
         }
     }
@@ -479,10 +609,14 @@ union Payload<T: Send, E: Send> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{PollCompleteError, PollFailError, StreamingRequest};
+    use crate::{ConsumeStreamingRequest, PollCompleteError, PollFailError, StreamingRequest};
 
     fn make_request() -> StreamingRequest<u64, f32> {
         StreamingRequest::new()
+    }
+
+    fn make_request_consume() -> ConsumeStreamingRequest<u64, f32> {
+        ConsumeStreamingRequest::new()
     }
 
     #[test]
@@ -501,7 +635,28 @@ mod tests {
         assert_eq!(request.poll_fail().unwrap_err(), PollFailError::Complete);
 
         // Unwrap the request with the payload
-        assert_eq!(request.poll_complete().unwrap(), 56);
+        assert_eq!(request.poll_complete(), Ok(56));
+        assert_eq!(request.poll_complete(), Ok(56));
+    }
+
+    #[test]
+    pub fn request_to_completion_consume() {
+        let request = make_request_consume();
+
+        assert_eq!(
+            request.poll_complete().unwrap_err(),
+            PollCompleteError::Waiting
+        );
+
+        // Complete the request, will panic if we fail
+        request.mark_complete(56).unwrap();
+
+        // Unwrap the request
+        assert_eq!(request.poll_fail().unwrap_err(), PollFailError::Complete);
+
+        // Unwrap the request with the payload
+        assert_eq!(request.poll_complete(), Ok(56));
+        assert_eq!(request.poll_complete(), Err(PollCompleteError::Consumed));
     }
 
     #[test]
@@ -518,6 +673,7 @@ mod tests {
         );
 
         assert_eq!(request.poll_fail(), Ok(1234.5));
+        assert_eq!(request.poll_fail(), Err(PollFailError::Consumed));
     }
 
     #[test]
