@@ -37,8 +37,8 @@ use aleph_engine::interfaces::renderer::{
     GenerateMips, TextureAllocMode, TextureLoader, TextureMipUploadDesc, TextureStreamingRequest,
     TextureUploadSource,
 };
+use aleph_ktx::{KtxDocument, VkFormat};
 use aleph_rhi_api::*;
-use image::{DynamicImage, ImageDecoder};
 
 use crate::game::async_loader::{AsyncLoader, AsyncLoaderHandle};
 
@@ -121,18 +121,12 @@ fn handler(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand
 
 #[aleph_profile::function]
 fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -> Option<()> {
-    let extension = request.v.path.extension()?;
-    let format = image::ImageFormat::from_extension(extension)?;
     let data = std::fs::read(&request.v.path).ok()?;
-
-    let reader = image::ImageReader::with_format(std::io::Cursor::new(&data), format)
-        .into_decoder()
-        .ok()?;
-    let (width, height) = reader.dimensions();
+    let doc = KtxDocument::from_slice(&data).ok()?;
     let desc = TextureMipUploadDesc {
-        width,
-        height,
-        depth: 1,
+        width: doc.width(),
+        height: doc.height(),
+        depth: doc.depth(),
         format: Format::Rgba8Unorm,
     };
     let size = desc.size_requirement();
@@ -154,13 +148,12 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
         allocation: block,
         buffer: context.upload_buffer.buffer().upgrade(),
     };
-    drop(reader);
 
     let device = context.device.clone();
     let loader = context.loader.clone();
     let reqeust = request.req.clone();
     rayon::spawn(move || {
-        let _ = load_on_threadpool(device, loader, reqeust, desc, data, format, allocation);
+        let _ = load_on_threadpool(device, loader, reqeust, desc, data, allocation);
     });
 
     Some(())
@@ -173,7 +166,6 @@ fn load_on_threadpool(
     request: TextureStreamingRequest,
     desc: TextureMipUploadDesc,
     data: Vec<u8>,
-    format: image::ImageFormat,
     allocation: AllocationWithBuffer,
 ) -> Option<()> {
     // If the request has been moved into a terminal state (cancelled) we should bail.
@@ -181,13 +173,11 @@ fn load_on_threadpool(
         return Some(());
     }
 
-    let image = image::load_from_memory_with_format(&data, format).ok()?;
+    let doc = KtxDocument::from_slice(&data).ok()?;
 
-    let data = match image {
-        DynamicImage::ImageLuma8(_i) => return None,
-        DynamicImage::ImageLumaA8(_i) => return None,
-        DynamicImage::ImageRgb8(i) => {
-            let data = unsafe {
+    let data = match doc.format() {
+        VkFormat::R8G8B8A8_UNORM => {
+            let v = unsafe {
                 let data = std::ptr::NonNull::slice_from_raw_parts(
                     allocation.allocation.result,
                     desc.size_requirement(),
@@ -201,55 +191,22 @@ fn load_on_threadpool(
                 )
             };
 
-            let row_width = i.width() as usize * 3;
-            let src = i.as_raw().as_slice();
-            for row in 0..i.height() {
-                let dst = unsafe { data.row_ptr(row).as_mut() };
+            let src = doc.get_level_info(0).ok()?;
+            let src = &data[src.to_slice_range()];
 
-                let row_start = row as usize * row_width;
-                let src = &src[row_start..row_start + row_width];
-                for col in 0..i.width() {
-                    let dst_base = col as usize * 4;
-                    let dst = &mut dst[dst_base..dst_base + 3];
+            let row_width = doc.width() as usize * 4;
+            for row in 0..doc.height() as usize {
+                let dst = unsafe { v.row_ptr(row as u32).as_mut() };
 
-                    let src_base = col as usize * 3;
-                    let src = &src[src_base..src_base + 3];
-
-                    dst.copy_from_slice(src);
-                }
-            }
-
-            data
-        }
-        DynamicImage::ImageRgba8(i) => {
-            let data = unsafe {
-                TextureUploadSource::new_owned(
-                    device.as_ref(),
-                    desc,
-                    ResourceUsageFlags::SHADER_RESOURCE,
-                )
-                .ok()?
-            };
-
-            let row_width = i.width() as usize * 4;
-            let src = i.as_raw().as_slice();
-            for row in 0..i.height() {
-                let dst = unsafe { data.row_ptr(row).as_mut() };
-
-                let row_start = row as usize * row_width;
+                let row_start = row * row_width;
                 let src = &src[row_start..row_start + row_width];
                 dst.copy_from_slice(src);
             }
 
-            data
+            v
         }
-        DynamicImage::ImageLuma16(_i) => return None,
-        DynamicImage::ImageLumaA16(_i) => return None,
-        DynamicImage::ImageRgb16(_i) => return None,
-        DynamicImage::ImageRgba16(_i) => return None,
-        DynamicImage::ImageRgb32F(_i) => return None,
-        DynamicImage::ImageRgba32F(_i) => return None,
-        _ => todo!(),
+        _ => return None,
+        
     };
 
     // We want to allocate the texture on the worker thread, even at the cost of contention, so we

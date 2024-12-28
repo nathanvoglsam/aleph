@@ -134,7 +134,7 @@ impl IPlugin for PluginGameLogic {
             renderer,
             &mut arena,
             &async_texture_loader,
-            Path::new("game/aleph-test/assets/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf"),
+            Path::new("game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf"),
         );
 
         let (idx, vtx) = upload_cube_buffers(renderer);
