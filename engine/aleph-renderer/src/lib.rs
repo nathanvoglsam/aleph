@@ -37,6 +37,7 @@ mod buffer_upload_desc;
 mod camera;
 mod deletion_pool;
 mod enqueue_error;
+mod format;
 mod handle;
 mod handle_pool;
 mod mesh_layout;
@@ -59,6 +60,7 @@ pub use buffer_upload_desc::BufferUploadSource;
 pub use camera::{CameraInfo, PerspectiveInfo};
 pub use deletion_pool::DeletionPool;
 pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
+pub use format::vk_to_rhi_format;
 pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
 pub use handle_pool::{HandleFreeError, HandlePool};
 pub use mesh_layout::{
