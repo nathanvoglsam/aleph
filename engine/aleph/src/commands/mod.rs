@@ -32,6 +32,7 @@ mod bundle;
 mod genconfigs;
 mod genproj;
 mod genvscode;
+mod img2ktx;
 pub mod shaders;
 mod uuid;
 
@@ -41,6 +42,7 @@ use clap::{Arg, ArgMatches, Command};
 pub use genconfigs::GenConfigs;
 pub use genproj::GenProj;
 pub use genvscode::GenVsCode;
+pub use img2ktx::Image2Ktx;
 pub use uuid::Uuid;
 
 use crate::project::AlephProject;

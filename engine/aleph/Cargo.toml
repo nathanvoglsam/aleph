@@ -60,6 +60,8 @@ parking_lot = { workspace = true }
 crossbeam = { workspace = true }
 rkyv = { workspace = true }
 uuid = { workspace = true }
+image = { workspace = true }
 
 aleph-target = { workspace = true }
 aleph-shader-db = { workspace = true }
+aleph-ktx = { workspace = true }
