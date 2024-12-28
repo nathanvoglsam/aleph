@@ -49,7 +49,7 @@ use aleph_engine::interfaces::scheduler::ResMut;
 use crate::game::async_texture_loader::AsyncTextureLoader;
 use crate::game::cube_mesh::upload_cube_buffers;
 use crate::game::free_camera::FreeCamera;
-use crate::game::gltf_loader::{load_scene, BumpThingy};
+use crate::game::gltf_loader::{load_scene, BumpThingy, PollResult};
 use crate::game::throbber_logic::ThrobberLogic;
 
 pub fn engine_runner() {
@@ -171,9 +171,14 @@ impl IPlugin for PluginGameLogic {
             move |mut world: ResMut<WorldResource>| {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
-                for t in thinkers1.iter_mut() {
-                    t.poll_and_resolve(&mut world.0);
-                }
+                thinkers1.retain_mut(|t| match t.poll_and_resolve(&mut world.0) {
+                    PollResult::Success => false,
+                    PollResult::Waiting => true,
+                    PollResult::Fail => {
+                        log::error!("Thinker Failed!");
+                        false
+                    }
+                });
             },
         );
     }

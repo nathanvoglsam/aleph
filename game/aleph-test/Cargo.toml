@@ -55,6 +55,7 @@ aleph-profile = { workspace = true, features = ["profile-with-tracy"] }
 
 bytemuck = { workspace = true }
 rayon = { workspace = true }
+log = { workspace = true }
 
 image = "0.25"
 
