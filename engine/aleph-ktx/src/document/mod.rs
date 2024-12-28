@@ -44,7 +44,10 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::is_format_prohibited;
-use crate::{format_type_size, ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle};
+use crate::{
+    format_type_size, ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle,
+    TransferFunction,
+};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -80,11 +83,8 @@ pub enum KTXReadError {
     /// The super compression global data is either missing or broken.
     BadSuperCompressionGlobalData,
 
-    /// The width value in `pixelWidth` is not valid, this must always hold true: `pixelWidth > 0`
-    InvalidWidth(u32),
-
-    /// The depth value in `pixelDepth` is not valid for the `vkFormat` specified by the document
-    InvalidDepthForFormat(u32, VkFormat),
+    /// The declared dimensions are invalid for the declared format
+    InvalidDimensions((u32, u32, u32)),
 
     /// The depth value in `pixelDepth` must be 0 for cube maps `faceCount == 6`
     InvalidDepthForCubeMap(u32),
@@ -280,6 +280,11 @@ impl<R: Read + Seek> KTXDocument<R> {
     ///
     pub fn color_primaries(&self) -> ColorPrimaries {
         self.dfd.color_primaries
+    }
+
+    /// Gets the transfer function that the file states the image data matches
+    pub fn transfer_function(&self) -> TransferFunction {
+        self.dfd.transfer_function
     }
 
     ///
@@ -720,14 +725,19 @@ impl<R: Read + Seek> KTXDocument<R> {
         let height = reader.read_u32::<LittleEndian>()?;
         let depth = reader.read_u32::<LittleEndian>()?;
 
-        if format.is_depth_format() && depth != 0 {
-            Err(KTXReadError::InvalidDepthForFormat(depth, format))
-        } else if width == 0 {
-            Err(KTXReadError::InvalidWidth(width))
-        } else {
-            // Unknown formats will follow this branch
-            Ok((width, height, depth))
+        if width == 0 {
+            return Err(KTXReadError::InvalidDimensions((width, height, depth)));
         }
+
+        if !format.is_known() {
+            return Ok((width, height, depth));
+        }
+
+        if format.is_depth_format() && depth != 0 {
+            return Err(KTXReadError::InvalidDimensions((width, height, depth)));
+        }
+
+        Ok((width, height, depth))
     }
 
     ///

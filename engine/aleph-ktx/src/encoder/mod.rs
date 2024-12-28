@@ -107,6 +107,13 @@ impl<'a> DocumentDescription<'a> {
         self
     }
 
+    pub fn image_1d_array(&mut self, width: u32, layers: &'a [MipChainRef<'a>]) -> &mut Self {
+        assert_ne!(width, 0);
+        self.width = width;
+        self.doc_type = DocumentTypeDescription::Array1D { layers };
+        self
+    }
+
     pub fn image_2d(&mut self, width: u32, height: u32, levels: MipChainRef<'a>) -> &mut Self {
         assert_ne!(width, 0);
         assert_ne!(height, 0);
@@ -144,6 +151,46 @@ impl<'a> DocumentDescription<'a> {
         self.height = height;
         self.depth = depth;
         self.doc_type = DocumentTypeDescription::Image3D { levels };
+        self
+    }
+
+    pub fn image_3d_array(
+        &mut self,
+        width: u32,
+        height: u32,
+        depth: u32,
+        layers: &'a [MipChainRef<'a>],
+    ) -> &mut Self {
+        assert_ne!(width, 0);
+        assert_ne!(height, 0);
+        assert_ne!(depth, 0);
+        self.width = width;
+        self.height = height;
+        self.depth = depth;
+        self.doc_type = DocumentTypeDescription::Array3D { layers };
+        self
+    }
+
+    pub fn cube(&mut self, width: u32, height: u32, faces: [MipChainRef<'a>; 6]) -> &mut Self {
+        assert_ne!(width, 0);
+        assert_ne!(height, 0);
+        self.width = width;
+        self.height = height;
+        self.doc_type = DocumentTypeDescription::Cube { faces };
+        self
+    }
+
+    pub fn cube_array(
+        &mut self,
+        width: u32,
+        height: u32,
+        layers: &'a [[MipChainRef<'a>; 6]],
+    ) -> &mut Self {
+        assert_ne!(width, 0);
+        assert_ne!(height, 0);
+        self.width = width;
+        self.height = height;
+        self.doc_type = DocumentTypeDescription::CubeArray { layers };
         self
     }
 
@@ -259,16 +306,16 @@ impl<'a> DocumentDescription<'a> {
             }
             DocumentTypeDescription::Cube { faces } => {
                 for level_i in (0..level_num).into_iter().rev() {
+                    // Forward align the level to the next mip_padding boundary and write mip
+                    // padding bytes
+                    let padding = accum.next_multiple_of(mip_padding) - accum;
+                    for _ in 0..padding {
+                        dst.write_u8(0)?;
+                    }
+                    accum = accum + padding;
+
                     for face in faces.iter() {
                         let level = &face[level_i];
-
-                        // Forward align the level to the next mip_padding boundary and write mip
-                        // padding bytes
-                        let padding = accum.next_multiple_of(mip_padding) - accum;
-                        for _ in 0..padding {
-                            dst.write_u8(0)?;
-                        }
-                        accum = accum + padding;
 
                         // Write all the level data
                         dst.write_all(level)?;
@@ -282,16 +329,16 @@ impl<'a> DocumentDescription<'a> {
             | DocumentTypeDescription::Array2D { layers }
             | DocumentTypeDescription::Array3D { layers } => {
                 for level_i in (0..level_num).into_iter().rev() {
+                    // Forward align the level to the next mip_padding boundary and write mip
+                    // padding bytes
+                    let padding = accum.next_multiple_of(mip_padding) - accum;
+                    for _ in 0..padding {
+                        dst.write_u8(0)?;
+                    }
+                    accum = accum + padding;
+
                     for layer in layers.iter() {
                         let level = &layer[level_i];
-
-                        // Forward align the level to the next mip_padding boundary and write mip
-                        // padding bytes
-                        let padding = accum.next_multiple_of(mip_padding) - accum;
-                        for _ in 0..padding {
-                            dst.write_u8(0)?;
-                        }
-                        accum = accum + padding;
 
                         // Write all the level data
                         dst.write_all(level)?;
@@ -303,17 +350,17 @@ impl<'a> DocumentDescription<'a> {
             }
             DocumentTypeDescription::CubeArray { layers } => {
                 for level_i in (0..level_num).into_iter().rev() {
-                    for layer in layers.iter() {
+                    // Forward align the level to the next mip_padding boundary and write mip
+                    // padding bytes
+                    let padding = accum.next_multiple_of(mip_padding) - accum;
+                    for _ in 0..padding {
+                        dst.write_u8(0)?;
+                    }
+                    accum = accum + padding;
+
+                    for layer in layers.iter().copied() {
                         for face in layer {
                             let level = &face[level_i];
-
-                            // Forward align the level to the next mip_padding boundary and write mip
-                            // padding bytes
-                            let padding = accum.next_multiple_of(mip_padding) - accum;
-                            for _ in 0..padding {
-                                dst.write_u8(0)?;
-                            }
-                            accum = accum + padding;
 
                             // Write all the level data
                             dst.write_all(level)?;
@@ -342,58 +389,63 @@ impl<'a> DocumentDescription<'a> {
             .texel_block_size_ktx()
             .expect("Format has no known texel_block_size");
 
-        match self.doc_type {
-            DocumentTypeDescription::Image1D { .. } => {
-                assert!(
-                    !self.format.is_block_compressed(),
-                    "Format '{:?}' can't be used with 1D Images",
-                    self.format
-                );
-            }
-            DocumentTypeDescription::Image2D { .. } => {}
-            DocumentTypeDescription::Image3D { .. } => {}
-            DocumentTypeDescription::Cube { .. } => {}
-            DocumentTypeDescription::Array1D { .. } => {
-                assert!(
-                    !self.format.is_block_compressed(),
-                    "Format '{:?}' can't be used with 1D Array Images",
-                    self.format
-                );
-            }
-            DocumentTypeDescription::Array2D { .. } => {}
-            DocumentTypeDescription::Array3D { .. } => {}
-            DocumentTypeDescription::CubeArray { .. } => {}
+        let (bw, bh, bd) = self.format.block_dimensions();
+        if bw > 1 {
+            assert_ne!(
+                self.width, 0,
+                "Format '{:?}' must be at least 1 pixel width",
+                self.format
+            );
+        }
+        if bh > 1 {
+            assert_ne!(
+                self.height, 0,
+                "Format '{:?}' must be at least 1 pixel height",
+                self.format
+            );
+        }
+        if bd > 1 {
+            assert_ne!(
+                self.depth, 0,
+                "Format '{:?}' must be at least 1 pixel depth",
+                self.format
+            );
         }
 
         match self.doc_type {
             DocumentTypeDescription::Image1D { levels }
             | DocumentTypeDescription::Image2D { levels }
             | DocumentTypeDescription::Image3D { levels } => {
-                self.validate_levels(levels, texel_block_size);
+                self.validate_levels(levels, (bw, bh, bd), texel_block_size);
             }
             DocumentTypeDescription::Cube { faces } => {
-                for face in faces {
-                    self.validate_levels(face, texel_block_size);
+                for face in faces.iter().copied() {
+                    self.validate_levels(face, (bw, bh, bd), texel_block_size);
                 }
             }
             DocumentTypeDescription::Array1D { layers }
             | DocumentTypeDescription::Array2D { layers }
             | DocumentTypeDescription::Array3D { layers } => {
-                for layer in layers {
-                    self.validate_levels(layer, texel_block_size);
+                for layer in layers.iter().copied() {
+                    self.validate_levels(layer, (bw, bh, bd), texel_block_size);
                 }
             }
             DocumentTypeDescription::CubeArray { layers } => {
-                for layer in layers {
+                for layer in layers.iter().copied() {
                     for face in layer {
-                        self.validate_levels(face, texel_block_size);
+                        self.validate_levels(face, (bw, bh, bd), texel_block_size);
                     }
                 }
             }
         }
     }
 
-    fn validate_levels(&self, levels: &[&[u8]], texel_block_size: usize) {
+    fn validate_levels(
+        &self,
+        levels: &[&[u8]],
+        (bw, bh, bd): (u32, u32, u32),
+        texel_block_size: usize,
+    ) {
         let store_num = self.level_num.storage_level_num() as usize;
         let got_num = levels.len();
         assert_eq!(
@@ -403,13 +455,14 @@ impl<'a> DocumentDescription<'a> {
         );
 
         for (i, level) in levels.iter().enumerate() {
-            let storage_width = (self.width.max(1) as usize >> i).max(1);
-            let storage_height = (self.height.max(1) as usize >> i).max(1);
-            let storage_depth = (self.depth.max(1) as usize >> i).max(1);
-            let expected_mip_size =
-                storage_width * storage_height * storage_depth * texel_block_size;
+            let storage_width = (self.width.max(1) >> i).max(1);
+            let storage_height = (self.height.max(1) >> i).max(1);
+            let storage_depth = (self.depth.max(1) >> i).max(1);
+            let storage_bw = storage_width.div_ceil(bw) as usize;
+            let storage_bh = storage_height.div_ceil(bh) as usize;
+            let storage_bd = storage_depth.div_ceil(bd) as usize;
+            let expected_mip_size = storage_bw * storage_bh * storage_bd * texel_block_size;
             assert_eq!(level.len(), expected_mip_size);
-            // TODO: we need to handle block formats differently here
         }
 
         for window in levels.windows(2) {

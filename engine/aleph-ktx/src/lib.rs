@@ -39,8 +39,8 @@ mod tests;
 pub use data_format_descriptor::{
     ASTCChannelType, BC1ChannelType, BC2ChannelType, BC3ChannelType, BC4ChannelType,
     BC5ChannelType, BC6ChannelType, BC7ChannelType, ColorModel, ColorPrimaries, DFDError, DFDFlags,
-    DataFormatDescriptor, ETC1ChannelType, ETC1SChannelType, ETC2ChannelType, PVRTC2ChannelType,
-    PVRTCChannelType, RGBSDAChannelType, SampleFlags, TransferFunction,
+    ETC1ChannelType, ETC1SChannelType, ETC2ChannelType, PVRTC2ChannelType, PVRTCChannelType,
+    RGBSDAChannelType, SampleFlags, SampleInfo, SampleInfoIterator, TransferFunction,
 };
 pub use document::{
     DocumentType, FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme,

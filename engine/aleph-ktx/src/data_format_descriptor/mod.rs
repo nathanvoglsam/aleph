@@ -31,6 +31,7 @@ mod channel_type;
 mod color_model;
 mod color_primaries;
 mod flags;
+mod sample_info;
 mod transfer_function;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -46,6 +47,7 @@ pub use channel_type::{
 pub use color_model::ColorModel;
 pub use color_primaries::ColorPrimaries;
 pub use flags::{DFDFlags, SampleFlags};
+pub use sample_info::{SampleInfo, SampleInfoIterator};
 pub use transfer_function::TransferFunction;
 
 use crate::document::FileIndex;
@@ -105,7 +107,7 @@ pub enum DFDError {
 ///
 /// Struct for unpacking and validating the data format descriptor in a KTX document
 ///
-pub struct DataFormatDescriptor {
+pub(crate) struct DataFormatDescriptor {
     pub flags: DFDFlags,
     pub color_primaries: ColorPrimaries,
     pub transfer_function: TransferFunction,
@@ -127,6 +129,9 @@ impl DataFormatDescriptor {
         format: VkFormat,
         super_compression_scheme: SuperCompressionScheme,
     ) -> Result<Self, KTXReadError> {
+        assert!(super_compression_scheme.is_known());
+        assert!(super_compression_scheme.is_supported());
+
         reader.seek(SeekFrom::Start(file_index.dfd_offset as _))?;
 
         let expected_dfd_bytes = file_index.kvd_offset - file_index.dfd_offset;
@@ -146,29 +151,25 @@ impl DataFormatDescriptor {
         // Undefined format we just pull the color space info and validate the size is correct
         // as there's not much else I want to bother implementing
         let dfd = RawDataFormatDescriptor::from_words(&dfd_words)?;
+        let dfd = dfd.validate()?;
 
         // Assert the dfd_total_size field matches the constraints of the KTX format
         if dfd.dfd_total_size != file_index.kvd_offset - file_index.dfd_offset {
             return Err(DFDError::InvalidTotalSize(dfd.dfd_total_size).into());
         }
 
-        if format == VkFormat::UNDEFINED {
-            Ok(Self {
-                flags: dfd.flags,
-                color_primaries: dfd.color_primaries,
-                transfer_function: dfd.transfer_function,
-            })
-        } else if format.is_known() {
-            let expected_dfd =
-                vk2dfd(format.0).map_err(|_| KTXReadError::UnsupportedFormat(format))?;
-            assert!(expected_dfd.len() >= 7);
+        if format.is_known() && format != VkFormat::UNDEFINED {
+            // We should've already checked the format is valid so we panic here instead.
+            let expected_words = vk2dfd(format.0).unwrap();
+            let expected = RawDataFormatDescriptor::from_words(&expected_words).unwrap();
+            assert!(expected_words.len() >= 7);
 
-            if dfd_words.len() != expected_dfd.len() {
+            if dfd_words.len() != expected_words.len() {
                 // Length must match
                 return Err(DFDError::DescriptorFormatMismatch.into());
             }
 
-            if &dfd_words[0..3] != &expected_dfd[0..3] {
+            if &dfd_words[0..3] != &expected_words[0..3] {
                 // We only validate the first few words of the DFD as they're basic structural parts
                 // of the DFD. The actual DFD rules are very complex. I've simply resigned to not
                 // bothering as the DFD is useless for our purposes anyway
@@ -176,7 +177,7 @@ impl DataFormatDescriptor {
             }
 
             // dfd_words[4] should always match vk2dfd
-            if dfd_words[4] != expected_dfd[4] {
+            if dfd_words[4] != expected_words[4] {
                 return Err(DFDError::DescriptorFormatMismatch.into());
             }
 
@@ -191,36 +192,68 @@ impl DataFormatDescriptor {
             }
 
             // Assert the color model is valid for the format specified by the file earlier
-            let expected = RawDataFormatDescriptor::from_words(&expected_dfd).unwrap();
-            if dfd.color_model != expected.color_model {
+            if dfd.color_model.into_raw() != expected.color_model {
                 return Err(DFDError::ColorModelMismatch(format, dfd.color_model).into());
             }
 
-            Ok(Self {
-                flags: dfd.flags,
-                color_primaries: dfd.color_primaries,
-                transfer_function: dfd.transfer_function,
-            })
-        } else {
-            Ok(Self {
-                flags: dfd.flags,
-                color_primaries: dfd.color_primaries,
-                transfer_function: dfd.transfer_function,
-            })
+            // Super compressed formats must have all bytePlanes set to 0 size
+            let expected_byte_planes = match super_compression_scheme {
+                SuperCompressionScheme::NONE => [expected_words[5], expected_words[6]],
+                _ => [0, 0],
+            };
+
+            if dfd_words[5..7] != expected_byte_planes {
+                eprintln!("g {:?}", dfd_words);
+                eprintln!("e {:?}", expected_words);
+                return Err(DFDError::DescriptorFormatMismatch.into());
+            }
+
+            // let got_samples = SampleInfoIterator::from_words(&dfd_words[7..]);
+            // let exp_samples = SampleInfoIterator::from_words(&expected_words[7..]);
+            //
+            // let mut failed = false;
+            // for (g, e) in got_samples.zip(exp_samples) {
+            //     if g != e || failed {
+            //         failed = true;
+            //         eprintln!("g {:?}", g);
+            //         eprintln!("e {:?}", e);
+            //     }
+            // }
+            // if failed {
+            //     return Err(DFDError::DescriptorFormatMismatch.into());
+            // }
         }
+
+        Ok(Self {
+            flags: dfd.flags,
+            color_primaries: dfd.color_primaries,
+            transfer_function: dfd.transfer_function,
+        })
     }
 }
 
-///
-/// Raw layout of a DFD
-///
+struct ValidatedDataFormatDescriptor {
+    dfd_total_size: u32,
+    _vendor_id: u32,
+    _descriptor_type: u16,
+    _version_number: u16,
+    _descriptor_block_size: u16,
+    color_model: ColorModel,
+    color_primaries: ColorPrimaries,
+    transfer_function: TransferFunction,
+    flags: DFDFlags,
+}
+
 struct RawDataFormatDescriptor {
-    pub dfd_total_size: u32,
-    pub _descriptor_block_size: u16,
-    pub color_model: ColorModel,
-    pub color_primaries: ColorPrimaries,
-    pub transfer_function: TransferFunction,
-    pub flags: DFDFlags,
+    dfd_total_size: u32,
+    vendor_id: u32,
+    descriptor_type: u16,
+    version_number: u16,
+    _descriptor_block_size: u16,
+    color_model: u8,
+    color_primaries: u8,
+    transfer_function: u8,
+    flags: u8,
 }
 
 impl RawDataFormatDescriptor {
@@ -232,43 +265,61 @@ impl RawDataFormatDescriptor {
 
         // Unpack the next word
         let vendor_id = words[1] & 0x1FFFF;
-        if vendor_id != 0 {
-            return Err(DFDError::InvalidVendor(vendor_id).into());
-        }
-
         let descriptor_type = (words[1] >> 17) as u16;
-        if descriptor_type != 0 {
-            return Err(DFDError::InvalidDescriptorType(descriptor_type).into());
-        }
 
         // Unpack the next word
         let version_number = (words[2] & 0xFFFF) as u16;
-
-        // We only support DFD version 2 so assert the file is the right version
-        if version_number != 2 {
-            return Err(DFDError::InvalidVersionNumber(version_number).into());
-        }
-
         let _descriptor_block_size = (words[2] >> 16) as u16;
 
         // Unpack the next word
         let color_model = ((words[3] >> 0) & 0xFF) as u8;
-        let color_model =
-            ColorModel::from_raw(color_model).ok_or(DFDError::InvalidColorModel(color_model))?;
-
         let color_primaries = ((words[3] >> 8) & 0xFF) as u8;
-        let color_primaries = ColorPrimaries::from_raw(color_primaries)
-            .ok_or(DFDError::InvalidColorPrimaries(color_primaries))?;
-
         let transfer_function = ((words[3] >> 16) & 0xFF) as u8;
-        let transfer_function = TransferFunction::from_raw(transfer_function)
-            .ok_or(DFDError::InvalidTransferFunction(transfer_function))?;
         let flags = ((words[3] >> 24) & 0xFF) as u8;
-        let flags = DFDFlags::from_bits(flags).ok_or(DFDError::InvalidFlags(flags))?;
 
         Ok(Self {
             dfd_total_size,
+            vendor_id,
+            descriptor_type,
+            version_number,
             _descriptor_block_size,
+            color_model,
+            color_primaries,
+            transfer_function,
+            flags,
+        })
+    }
+
+    fn validate(self) -> Result<ValidatedDataFormatDescriptor, KTXReadError> {
+        if self.vendor_id != 0 {
+            return Err(DFDError::InvalidVendor(self.vendor_id).into());
+        }
+
+        if self.descriptor_type != 0 {
+            return Err(DFDError::InvalidDescriptorType(self.descriptor_type).into());
+        }
+
+        if self.version_number != 2 {
+            return Err(DFDError::InvalidVersionNumber(self.version_number).into());
+        }
+
+        let color_model = ColorModel::from_raw(self.color_model)
+            .ok_or(DFDError::InvalidColorModel(self.color_model))?;
+
+        let color_primaries = ColorPrimaries::from_raw(self.color_primaries)
+            .ok_or(DFDError::InvalidColorPrimaries(self.color_primaries))?;
+
+        let transfer_function = TransferFunction::from_raw(self.transfer_function)
+            .ok_or(DFDError::InvalidTransferFunction(self.transfer_function))?;
+
+        let flags = DFDFlags::from_bits(self.flags).ok_or(DFDError::InvalidFlags(self.flags))?;
+
+        Ok(ValidatedDataFormatDescriptor {
+            dfd_total_size: self.dfd_total_size,
+            _vendor_id: self.vendor_id,
+            _descriptor_type: self.descriptor_type,
+            _version_number: self.version_number,
+            _descriptor_block_size: self._descriptor_block_size,
             color_model,
             color_primaries,
             transfer_function,

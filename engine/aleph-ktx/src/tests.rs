@@ -111,16 +111,10 @@ fn test_validates_files_cts() {
             .expect(&format!("Get FileType for '{}'", path.display()));
 
         if file_type.is_file() {
-            let file = std::fs::OpenOptions::new()
-                .read(true)
-                .open(&path)
-                .expect(&format!("Read for '{}'", path.display()));
+            println!("Trying to validate '{}'", path.display());
+            let file = std::fs::OpenOptions::new().read(true).open(&path).unwrap();
             let read = BufReader::new(file);
-            match KTXDocument::from_reader(read) {
-                Ok(_) => {}
-                Err(KTXReadError::UnsupportedFormat(_)) => {}
-                Err(e) => panic!("Failed validate for '{}' with '{:#?}", path.display(), e),
-            }
+            let _ = KTXDocument::from_reader(read).unwrap();
         }
     }
 }
@@ -139,16 +133,10 @@ fn test_validates_files_sample() {
             .expect(&format!("Get FileType for '{}'", path.display()));
 
         if file_type.is_file() {
-            let file = std::fs::OpenOptions::new()
-                .read(true)
-                .open(&path)
-                .expect(&format!("Read for '{}'", path.display()));
+            println!("Trying to validate '{}'", path.display());
+            let file = std::fs::OpenOptions::new().read(true).open(&path).unwrap();
             let read = BufReader::new(file);
-            match KTXDocument::from_reader(read) {
-                Ok(_) => {}
-                Err(KTXReadError::UnsupportedFormat(_)) => {}
-                Err(e) => panic!("Failed validate for '{}' with '{:#?}", path.display(), e),
-            }
+            let _ = KTXDocument::from_reader(read).unwrap();
         }
     }
 }

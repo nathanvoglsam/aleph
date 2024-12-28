@@ -170,8 +170,8 @@ impl ColorModel {
     /// Returns the raw `u8` value of the enum variant
     ///
     #[inline]
-    pub const fn into_raw(self) -> u16 {
-        self as u16
+    pub const fn into_raw(self) -> u8 {
+        self as u8
     }
 }
 
