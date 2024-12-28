@@ -149,7 +149,6 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
         buffer: context.upload_buffer.buffer().upgrade(),
     };
 
-    let device = context.device.clone();
     let loader = context.loader.clone();
     let reqeust = request.req.clone();
     rayon::spawn(move || {
@@ -205,7 +204,6 @@ fn load_on_threadpool(
             v
         }
         _ => return None,
-        
     };
 
     // We want to allocate the texture on the worker thread, even at the cost of contention, so we
