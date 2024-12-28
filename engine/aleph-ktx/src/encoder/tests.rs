@@ -32,7 +32,7 @@ use std::io::{Cursor, Read, Seek};
 use aleph_vk_format::VkFormat;
 
 use crate::{
-    DocumentType, KtxDocument, KtxReadError, KtxDocumentDescription, SuperCompressionScheme,
+    DocumentType, KtxDocument, KtxDocumentDescription, KtxReadError, SuperCompressionScheme,
     ENCODER_NAME,
 };
 

@@ -73,36 +73,36 @@ impl ISubcommand for Image2Ktx {
             None => input.with_extension("ktx2"),
         };
 
-        let loaded = image::ImageReader::open(&input)?.with_guessed_format()?.decode()?;
+        let loaded = image::ImageReader::open(&input)?
+            .with_guessed_format()?
+            .decode()?;
 
         match loaded {
             DynamicImage::ImageLuma8(i) => {
                 let output_file = std::fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(&output)?;
-            
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
                 let mut ktx = KtxDocumentDescription::new();
                 ktx.format(VkFormat::R8_UNORM);
                 ktx.mip_generate();
 
-                let levels = [
-                    i.as_raw().as_slice()
-                ];
-                
+                let levels = [i.as_raw().as_slice()];
+
                 ktx.image_2d(i.width(), i.height(), &levels);
 
                 let mut writer = BufWriter::new(output_file);
                 ktx.write(&mut writer)?;
-            },
+            }
             DynamicImage::ImageLumaA8(_i) => unimplemented!("ImageLumaA8"),
             DynamicImage::ImageRgb8(i) => {
                 let output_file = std::fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(&output)?;
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
 
                 let mut ktx = KtxDocumentDescription::new();
                 ktx.format(VkFormat::R8G8B8A8_UNORM);
@@ -137,10 +137,8 @@ impl ISubcommand for Image2Ktx {
                     }
                 }
 
-                let levels = [
-                    swizzled.as_slice()
-                ];
-                
+                let levels = [swizzled.as_slice()];
+
                 ktx.image_2d(i.width(), i.height(), &levels);
 
                 let mut writer = BufWriter::new(output_file);
@@ -148,19 +146,17 @@ impl ISubcommand for Image2Ktx {
             }
             DynamicImage::ImageRgba8(i) => {
                 let output_file = std::fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(&output)?;
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
 
                 let mut ktx = KtxDocumentDescription::new();
                 ktx.format(VkFormat::R8G8B8A8_UNORM);
                 ktx.mip_generate();
 
-                let levels = [
-                    i.as_raw().as_slice()
-                ];
-                
+                let levels = [i.as_raw().as_slice()];
+
                 ktx.image_2d(i.width(), i.height(), &levels);
 
                 let mut writer = BufWriter::new(output_file);
