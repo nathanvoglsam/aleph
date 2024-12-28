@@ -51,7 +51,7 @@ pub use sample_info::{SampleInfo, SampleInfoIterator};
 pub use transfer_function::TransferFunction;
 
 use crate::document::FileIndex;
-use crate::{KTXReadError, SuperCompressionScheme};
+use crate::{KtxReadError, SuperCompressionScheme};
 
 ///
 /// The set of errors that can be produced when reading the DFD section of a ktx file
@@ -128,7 +128,7 @@ impl DataFormatDescriptor {
         file_index: &FileIndex,
         format: VkFormat,
         super_compression_scheme: SuperCompressionScheme,
-    ) -> Result<Self, KTXReadError> {
+    ) -> Result<Self, KtxReadError> {
         assert!(super_compression_scheme.is_known());
         assert!(super_compression_scheme.is_supported());
 
@@ -257,7 +257,7 @@ struct RawDataFormatDescriptor {
 }
 
 impl RawDataFormatDescriptor {
-    fn from_words(words: &[u32]) -> Result<Self, KTXReadError> {
+    fn from_words(words: &[u32]) -> Result<Self, KtxReadError> {
         assert!(words.len() >= 4);
 
         // Unpack the next word
@@ -290,7 +290,7 @@ impl RawDataFormatDescriptor {
         })
     }
 
-    fn validate(self) -> Result<ValidatedDataFormatDescriptor, KTXReadError> {
+    fn validate(self) -> Result<ValidatedDataFormatDescriptor, KtxReadError> {
         if self.vendor_id != 0 {
             return Err(DFDError::InvalidVendor(self.vendor_id).into());
         }

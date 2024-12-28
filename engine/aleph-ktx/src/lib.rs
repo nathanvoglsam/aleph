@@ -36,6 +36,7 @@ mod kvd;
 #[cfg(test)]
 mod tests;
 
+pub use aleph_vk_format::VkFormat;
 pub use data_format_descriptor::{
     ASTCChannelType, BC1ChannelType, BC2ChannelType, BC3ChannelType, BC4ChannelType,
     BC5ChannelType, BC6ChannelType, BC7ChannelType, ColorModel, ColorPrimaries, DFDError, DFDFlags,
@@ -43,8 +44,8 @@ pub use data_format_descriptor::{
     RGBSDAChannelType, SampleFlags, SampleInfo, SampleInfoIterator, TransferFunction,
 };
 pub use document::{
-    DocumentType, FileIndex, KTXDocument, KTXReadError, LevelIndex, SuperCompressionScheme,
+    DocumentType, FileIndex, KtxDocument, KtxReadError, LevelIndex, SuperCompressionScheme,
 };
-pub use encoder::{CubeFacesRef, DocumentDescription, LevelNum, MipChainRef, ENCODER_NAME};
+pub use encoder::{CubeFacesRef, KtxDocumentDescription, LevelNum, MipChainRef, ENCODER_NAME};
 pub use format::{format_type_size, is_format_prohibited, ALLOWED_FORMATS};
 pub use kvd::{KtxOrientation, KtxSwizzle};

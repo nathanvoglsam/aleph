@@ -32,7 +32,7 @@ use std::io::{Cursor, Read, Seek};
 use aleph_vk_format::VkFormat;
 
 use crate::{
-    DocumentDescription, DocumentType, KTXDocument, KTXReadError, SuperCompressionScheme,
+    DocumentType, KtxDocument, KtxReadError, KtxDocumentDescription, SuperCompressionScheme,
     ENCODER_NAME,
 };
 
@@ -53,7 +53,7 @@ fn test_round_trip_files_cts() {
             println!("Trying to round trip '{}'", path.display());
             let file = std::fs::read(&path).unwrap();
             let read = Cursor::new(file.as_slice());
-            let doc = KTXDocument::from_reader(read).unwrap();
+            let doc = KtxDocument::from_reader(read).unwrap();
             round_trip_document(file.as_slice(), doc).unwrap();
         }
     }
@@ -76,7 +76,7 @@ fn test_round_trip_files_samples() {
             println!("Trying to round trip '{}'", path.display());
             let file = std::fs::read(&path).unwrap();
             let read = Cursor::new(file.as_slice());
-            let doc = KTXDocument::from_reader(read).unwrap();
+            let doc = KtxDocument::from_reader(read).unwrap();
             round_trip_document(file.as_slice(), doc).unwrap();
         }
     }
@@ -84,8 +84,8 @@ fn test_round_trip_files_samples() {
 
 fn round_trip_document<R: Read + Seek>(
     file: &[u8],
-    doc: KTXDocument<R>,
-) -> Result<(), KTXReadError> {
+    doc: KtxDocument<R>,
+) -> Result<(), KtxReadError> {
     if doc.format() == VkFormat::UNDEFINED {
         // We don't support writing undefined format files, which may include some supercompressed
         // files
@@ -97,7 +97,7 @@ fn round_trip_document<R: Read + Seek>(
         return Ok(());
     }
 
-    let mut desc = DocumentDescription::new();
+    let mut desc = KtxDocumentDescription::new();
     desc.format(doc.format());
     if doc.requests_mip_generation() {
         desc.mip_generate();
@@ -316,10 +316,10 @@ fn round_trip_document<R: Read + Seek>(
 fn check_round_trip<R: Read + Seek>(
     file: &[u8],
     output: Vec<u8>,
-    original: KTXDocument<R>,
-) -> Result<(), KTXReadError> {
+    original: KtxDocument<R>,
+) -> Result<(), KtxReadError> {
     let read = Cursor::new(output.as_slice());
-    let doc = KTXDocument::from_reader(read)?;
+    let doc = KtxDocument::from_reader(read)?;
 
     assert_eq!(doc.format(), original.format());
     assert_eq!(

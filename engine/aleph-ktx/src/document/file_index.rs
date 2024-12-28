@@ -31,7 +31,7 @@ use std::io::Read;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::{KTXReadError, SuperCompressionScheme};
+use crate::{KtxReadError, SuperCompressionScheme};
 
 ///
 /// Internal struct for loading and storing the file index
@@ -52,7 +52,7 @@ impl FileIndex {
     pub fn from_reader(
         reader: &mut impl Read,
         super_compression_scheme: SuperCompressionScheme,
-    ) -> Result<Self, KTXReadError> {
+    ) -> Result<Self, KtxReadError> {
         let dfd_offset = Self::read_dfd_offset(reader)?;
         let dfd_size = Self::read_dfd_size(reader)?;
         let kvd_offset = Self::read_kvd_offset(reader)?;
@@ -73,32 +73,32 @@ impl FileIndex {
     ///
     /// Internal function for reading the dfd_offset
     ///
-    fn read_dfd_offset(reader: &mut impl Read) -> Result<u32, KTXReadError> {
+    fn read_dfd_offset(reader: &mut impl Read) -> Result<u32, KtxReadError> {
         Ok(reader.read_u32::<LittleEndian>()?)
     }
 
     ///
     /// Internal function for reading the dfd_size
     ///
-    fn read_dfd_size(reader: &mut impl Read) -> Result<u32, KTXReadError> {
+    fn read_dfd_size(reader: &mut impl Read) -> Result<u32, KtxReadError> {
         Ok(reader.read_u32::<LittleEndian>()?)
     }
 
     ///
     /// Internal function for reading the kvd_offset
     ///
-    fn read_kvd_offset(reader: &mut impl Read) -> Result<u32, KTXReadError> {
+    fn read_kvd_offset(reader: &mut impl Read) -> Result<u32, KtxReadError> {
         Ok(reader.read_u32::<LittleEndian>()?)
     }
 
     ///
     /// Internal function for reading the kvd_size
     ///
-    fn read_kvd_size(reader: &mut impl Read, kvd_offset: u32) -> Result<u32, KTXReadError> {
+    fn read_kvd_size(reader: &mut impl Read, kvd_offset: u32) -> Result<u32, KtxReadError> {
         let kvd_size = reader.read_u32::<LittleEndian>()?;
 
         if kvd_size == 0 && kvd_offset != 0 {
-            Err(KTXReadError::InvalidKeyValueDataOffset(kvd_offset))
+            Err(KtxReadError::InvalidKeyValueDataOffset(kvd_offset))
         } else {
             Ok(kvd_size)
         }
@@ -107,7 +107,7 @@ impl FileIndex {
     ///
     /// Internal function for reading the sgd_offset
     ///
-    fn read_sgd_offset(reader: &mut impl Read) -> Result<u64, KTXReadError> {
+    fn read_sgd_offset(reader: &mut impl Read) -> Result<u64, KtxReadError> {
         Ok(reader.read_u64::<LittleEndian>()?)
     }
 
@@ -118,15 +118,15 @@ impl FileIndex {
         reader: &mut impl Read,
         sgd_offset: u64,
         super_compression_scheme: SuperCompressionScheme,
-    ) -> Result<u64, KTXReadError> {
+    ) -> Result<u64, KtxReadError> {
         let sgd_size = reader.read_u64::<LittleEndian>()?;
 
         if sgd_size == 0 && sgd_offset != 0 {
-            Err(KTXReadError::InvalidSuperCompressionGlobalDataOffset(
+            Err(KtxReadError::InvalidSuperCompressionGlobalDataOffset(
                 sgd_offset,
             ))
         } else if super_compression_scheme.has_global_data() && sgd_size == 0 {
-            Err(KTXReadError::CompressionSchemeGlobalDataNotFound(
+            Err(KtxReadError::CompressionSchemeGlobalDataNotFound(
                 super_compression_scheme,
             ))
         } else {

@@ -32,7 +32,7 @@ use std::io::BufReader;
 use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::ALL_FORMATS;
 
-use crate::{is_format_prohibited, KTXDocument, KTXReadError};
+use crate::{is_format_prohibited, KtxDocument, KtxReadError};
 
 static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &[u8] =
     include_bytes!("../test_images/cubemap_yokohama_astc_8x8_srgb.ktx2");
@@ -93,7 +93,7 @@ fn test_validates_files() {
     ];
 
     file_list.iter().for_each(|file| {
-        let _ktx = KTXDocument::from_slice(file).unwrap();
+        let _ktx = KtxDocument::from_slice(file).unwrap();
     });
 }
 
@@ -114,7 +114,7 @@ fn test_validates_files_cts() {
             println!("Trying to validate '{}'", path.display());
             let file = std::fs::OpenOptions::new().read(true).open(&path).unwrap();
             let read = BufReader::new(file);
-            let _ = KTXDocument::from_reader(read).unwrap();
+            let _ = KtxDocument::from_reader(read).unwrap();
         }
     }
 }
@@ -136,7 +136,7 @@ fn test_validates_files_sample() {
             println!("Trying to validate '{}'", path.display());
             let file = std::fs::OpenOptions::new().read(true).open(&path).unwrap();
             let read = BufReader::new(file);
-            let _ = KTXDocument::from_reader(read).unwrap();
+            let _ = KtxDocument::from_reader(read).unwrap();
         }
     }
 }
@@ -151,18 +151,18 @@ fn test_invalid_files() {
     //     "wrong error: {error:#?}"
     // );
 
-    let error = KTXDocument::from_slice(INVALID_FACE_COUNT_AND_PADDING)
+    let error = KtxDocument::from_slice(INVALID_FACE_COUNT_AND_PADDING)
         .err()
         .unwrap();
     assert!(
-        matches!(error, KTXReadError::InvalidFaceCount(4)),
+        matches!(error, KtxReadError::InvalidFaceCount(4)),
         "wrong error: {error:#?}"
     );
 }
 
 #[test]
 fn test_lookup_key() {
-    let doc = KTXDocument::from_slice(CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB).unwrap();
+    let doc = KtxDocument::from_slice(CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB).unwrap();
 
     let mut scratch = [0u8; 256];
     let value = doc.lookup_key("KTXorientation", &mut scratch).unwrap();
@@ -174,12 +174,12 @@ fn test_lookup_key() {
     let _value = doc.lookup_writer(&mut scratch).unwrap();
 
     let no_exist = doc.lookup_key("AKeyThatDoesntExist", &mut scratch);
-    assert!(matches!(no_exist, Err(KTXReadError::NoSuchKey)));
+    assert!(matches!(no_exist, Err(KtxReadError::NoSuchKey)));
 }
 
 #[test]
 fn test_read_image_data() {
-    let ktx = KTXDocument::from_slice(RGB_MIPMAP_REFERENCE_U).unwrap();
+    let ktx = KtxDocument::from_slice(RGB_MIPMAP_REFERENCE_U).unwrap();
 
     let level_vals: [[u8; 3]; 7] = [
         [255, 0, 0],

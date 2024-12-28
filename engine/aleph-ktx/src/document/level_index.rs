@@ -32,7 +32,7 @@ use std::ops::Range;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::{KTXReadError, SuperCompressionScheme};
+use crate::{KtxReadError, SuperCompressionScheme};
 
 ///
 /// Internal struct for holding a single member object of the level indicies list
@@ -53,7 +53,7 @@ impl LevelIndex {
         layer_num: u32,
         face_num: u32,
         compression: SuperCompressionScheme,
-    ) -> Result<Self, KTXReadError> {
+    ) -> Result<Self, KtxReadError> {
         let offset = Self::read_offset(reader)?;
         let size = Self::read_size(reader)?;
         let size_uncompressed =
@@ -89,14 +89,14 @@ impl LevelIndex {
     ///
     /// Internal function for reading the offset
     ///
-    fn read_offset(reader: &mut impl Read) -> Result<u64, KTXReadError> {
+    fn read_offset(reader: &mut impl Read) -> Result<u64, KtxReadError> {
         Ok(reader.read_u64::<LittleEndian>()?)
     }
 
     ///
     /// Internal function for reading the size
     ///
-    fn read_size(reader: &mut impl Read) -> Result<u64, KTXReadError> {
+    fn read_size(reader: &mut impl Read) -> Result<u64, KtxReadError> {
         // TODO: More validation, see 3.9.7. Level Index
         Ok(reader.read_u64::<LittleEndian>()?)
     }
@@ -110,7 +110,7 @@ impl LevelIndex {
         layer_num: u32,
         face_num: u32,
         compression: SuperCompressionScheme,
-    ) -> Result<u64, KTXReadError> {
+    ) -> Result<u64, KtxReadError> {
         let size_uncompressed = reader.read_u64::<LittleEndian>()?;
 
         let invalid_basis =
@@ -118,7 +118,7 @@ impl LevelIndex {
         let invalid_none = compression == SuperCompressionScheme::NONE && size_uncompressed != size;
         let invalid_other = size_uncompressed % (face_num as u64 * layer_num as u64) != 0;
         if invalid_basis || invalid_none || invalid_other {
-            Err(KTXReadError::InvalidLevelIndexUncompressedSize)
+            Err(KtxReadError::InvalidLevelIndexUncompressedSize)
         } else {
             Ok(size_uncompressed)
         }

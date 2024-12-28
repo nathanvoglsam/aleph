@@ -44,7 +44,7 @@ use crate::{format_type_size, SuperCompressionScheme};
 /// The name of the encoder, as will be written into the KTX key/value data
 pub const ENCODER_NAME: &str = concat!(env!("CARGO_PKG_NAME"), "-", env!("CARGO_PKG_VERSION"));
 
-pub struct DocumentDescription<'a> {
+pub struct KtxDocumentDescription<'a> {
     width: u32,
     height: u32,
     depth: u32,
@@ -54,7 +54,7 @@ pub struct DocumentDescription<'a> {
     doc_type: DocumentTypeDescription<'a>,
 }
 
-impl<'a> DocumentDescription<'a> {
+impl<'a> KtxDocumentDescription<'a> {
     /// Constructs a new, invalid [`DocumentDescription`] that needs to be filled out.
     pub fn new() -> Self {
         static DEFAULT_KVD: [KeyValueEntry; 1] = [KeyValueEntry::writer()];
