@@ -30,9 +30,10 @@
 use std::io::BufWriter;
 
 use aleph_ktx::{KtxDocumentDescription, VkFormat};
+use anyhow::anyhow;
 use camino::Utf8Path;
-use clap::{Arg, ArgMatches, Command};
-use image::DynamicImage;
+use clap::{Arg, ArgAction, ArgMatches, Command};
+use image::imageops::FilterType;
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
@@ -49,18 +50,35 @@ impl ISubcommand for Image2Ktx {
             .short('i')
             .long("input")
             .help("The input file.")
-            .long_help("The input file. Supports png, jpg, bmp, jpeg, tga, tiff")
+            .long_help("The input file. Supports png, jpg, bmp, jpeg, tga, tiff.")
             .required(true);
         let output = Arg::new("output")
             .short('o')
             .long("output")
             .help("The output file.")
-            .long_help("The output file. Supports ktx2")
+            .long_help(
+                "The output file. If unspecified the filename is derived from the input name.",
+            )
+            .required(false);
+        let gen_mips = Arg::new("gen-mips")
+            .action(ArgAction::SetTrue)
+            .short('g')
+            .long("gen-mips")
+            .help("Whether to generate a mip chain from the input image.")
+            .long_help("Whether to generate a mip chain from the input image. Uses a bilinear filter by default.");
+        let mip_filter = Arg::new("mip-filter")
+            .short('f')
+            .long("mip-filter")
+            .help("The type of filter to use when downsampling mips.")
+            .long_help("The type of filter to use when downsampling mips. Options: nearest, bilinear, cubic, gaussian, lanczos3")
+            .default_value("bilinear")
             .required(false);
         Command::new(self.name())
             .about("Converts the given input image into the KTX2 format")
             .arg(input)
             .arg(output)
+            .arg(gen_mips)
+            .arg(mip_filter)
     }
 
     fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -73,103 +91,428 @@ impl ISubcommand for Image2Ktx {
             None => input.with_extension("ktx2"),
         };
 
+        let gen_mips = matches.get_flag("gen-mips");
+
+        let mip_filter: String = matches.remove_one("mip-filter").unwrap();
+        let mip_filter = mip_filter.to_lowercase();
+        let mip_filter = parse_filter(&mip_filter)
+            .ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
+
         let loaded = image::ImageReader::open(&input)?
             .with_guessed_format()?
             .decode()?;
 
-        match loaded {
-            DynamicImage::ImageLuma8(i) => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
+        let color_type = loaded.color();
+        let base_width = loaded.width();
+        let base_height = loaded.height();
 
-                let mut ktx = KtxDocumentDescription::new();
-                ktx.format(VkFormat::R8_UNORM);
-                ktx.mip_generate();
+        // Generate mipmaps if requested
+        let mut loaded = if gen_mips {
+            let mip_levels = u32::max(loaded.width(), loaded.height()) as f32;
+            let mip_levels = mip_levels.log2().floor() + 1.0;
+            let mip_levels = mip_levels as u32;
+            let mut chain = vec![loaded];
 
-                let levels = [i.as_raw().as_slice()];
-
-                ktx.image_2d(i.width(), i.height(), &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
+            if mip_levels > 1 {
+                // The first mip is already filled by definition
+                for _ in 1..mip_levels {
+                    let last = chain.last().unwrap();
+                    let new_width = (last.width() / 2).max(1);
+                    let new_height = (last.height() / 2).max(1);
+                    let next = last.resize_exact(new_width, new_height, mip_filter.into());
+                    chain.push(next);
+                }
             }
-            DynamicImage::ImageLumaA8(_i) => unimplemented!("ImageLumaA8"),
-            DynamicImage::ImageRgb8(i) => {
+
+            chain
+        } else {
+            vec![loaded]
+        };
+
+        // Setup mip state in common code to keep the match arms shorter
+        let mut ktx = KtxDocumentDescription::new();
+        if gen_mips {
+            ktx.mip_levels(loaded.len() as u32);
+        } else {
+            ktx.mip_generate();
+        }
+
+        match color_type {
+            image::ColorType::L8 => {
                 let output_file = std::fs::OpenOptions::new()
                     .write(true)
                     .create(true)
                     .truncate(true)
                     .open(&output)?;
 
-                let mut ktx = KtxDocumentDescription::new();
-                ktx.format(VkFormat::R8G8B8A8_UNORM);
-                ktx.mip_generate();
+                ktx.format(VkFormat::R8_UNORM);
 
-                let mut swizzled = Vec::new();
-
-                let bytes = i.width() as usize * i.height() as usize * 4;
-                swizzled.resize(bytes, 0xFF);
-
-                let src_row_width = i.width() as usize * 3;
-                let dst_row_width = i.width() as usize * 4;
-                let src = i.as_raw().as_slice();
-
-                for row in 0..i.height() as usize {
-                    let dst_row_start = row * dst_row_width;
-                    let dst_row_end = dst_row_start + dst_row_width;
-                    let dst = &mut swizzled[dst_row_start..dst_row_end];
-
-                    let src_row_start = row * src_row_width;
-                    let src_row_end = src_row_start + src_row_width;
-                    let src = &src[src_row_start..src_row_end];
-
-                    for col in 0..i.width() as usize {
-                        let dst_base = col as usize * 4;
-                        let dst = &mut dst[dst_base..dst_base + 3];
-
-                        let src_base = col as usize * 3;
-                        let src = &src[src_base..src_base + 3];
-
-                        dst.copy_from_slice(src);
-                    }
+                let mut levels = Vec::new();
+                for i in loaded.iter() {
+                    let i = i.as_luma8().unwrap();
+                    levels.push(i.as_raw().as_slice());
                 }
 
-                let levels = [swizzled.as_slice()];
-
-                ktx.image_2d(i.width(), i.height(), &levels);
+                ktx.image_2d(base_width, base_height, &levels);
 
                 let mut writer = BufWriter::new(output_file);
                 ktx.write(&mut writer)?;
             }
-            DynamicImage::ImageRgba8(i) => {
+            image::ColorType::La8 => {
                 let output_file = std::fs::OpenOptions::new()
                     .write(true)
                     .create(true)
                     .truncate(true)
                     .open(&output)?;
 
-                let mut ktx = KtxDocumentDescription::new();
-                ktx.format(VkFormat::R8G8B8A8_UNORM);
-                ktx.mip_generate();
+                ktx.format(VkFormat::R8G8_UNORM);
 
-                let levels = [i.as_raw().as_slice()];
+                let mut levels = Vec::new();
+                for i in loaded.iter() {
+                    let i = i.as_luma_alpha8().unwrap();
+                    levels.push(i.as_raw().as_slice());
+                }
 
-                ktx.image_2d(i.width(), i.height(), &levels);
+                ktx.image_2d(base_width, base_height, &levels);
 
                 let mut writer = BufWriter::new(output_file);
                 ktx.write(&mut writer)?;
             }
-            DynamicImage::ImageLuma16(_i) => unimplemented!("ImageLuma16"),
-            DynamicImage::ImageLumaA16(_i) => unimplemented!("ImageLumaA16"),
-            DynamicImage::ImageRgb16(_i) => unimplemented!("ImageRgb16"),
-            DynamicImage::ImageRgba16(_i) => unimplemented!("ImageRgba16"),
-            DynamicImage::ImageRgb32F(_i) => unimplemented!("ImageRgb32F"),
-            DynamicImage::ImageRgba32F(_i) => unimplemented!("ImageRgba32F"),
-            _ => todo!(),
-        };
+            image::ColorType::Rgb8 => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R8G8B8A8_UNORM);
+
+                let mut swizzled_levels = Vec::new();
+                for i in loaded.iter() {
+                    let i = i.as_rgb8().unwrap();
+
+                    let mut level: Vec<u8> = Vec::new();
+                    let bytes = i.width() as usize * i.height() as usize * 4;
+                    level.resize(bytes, 0xFF);
+
+                    let src_row_width = i.width() as usize * 3;
+                    let dst_row_width = i.width() as usize * 4;
+                    let src = i.as_raw().as_slice();
+
+                    for row in 0..i.height() as usize {
+                        let dst_row_start = row * dst_row_width;
+                        let dst_row_end = dst_row_start + dst_row_width;
+                        let dst = &mut level[dst_row_start..dst_row_end];
+
+                        let src_row_start = row * src_row_width;
+                        let src_row_end = src_row_start + src_row_width;
+                        let src = &src[src_row_start..src_row_end];
+
+                        for col in 0..i.width() as usize {
+                            let dst_base = col as usize * 4;
+                            let dst = &mut dst[dst_base..dst_base + 3];
+
+                            let src_base = col as usize * 3;
+                            let src = &src[src_base..src_base + 3];
+
+                            dst.copy_from_slice(src);
+                        }
+                    }
+
+                    swizzled_levels.push(level);
+                }
+
+                let mut levels = Vec::new();
+                for i in swizzled_levels.iter() {
+                    levels.push(i.as_slice());
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            }
+            image::ColorType::Rgba8 => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R8G8B8A8_UNORM);
+
+                let mut levels = Vec::new();
+                for i in loaded.iter() {
+                    let i = i.as_rgba8().unwrap();
+                    levels.push(i.as_raw().as_slice());
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            }
+            image::ColorType::L16 => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R16_UNORM);
+
+                let mut levels = Vec::new();
+                for i in loaded.iter_mut() {
+                    let i = i.as_mut_luma16().unwrap();
+
+                    // byte swap to convert our BE to LE when needed
+                    if cfg!(target_endian = "big") {
+                        for p in i.pixels_mut() {
+                            p.0[0] = p.0[0].to_le();
+                        }
+                    }
+
+                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
+                    levels.push(level);
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            }
+            image::ColorType::La16 => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R16G16_UNORM);
+
+                let mut levels = Vec::new();
+                for i in loaded.iter_mut() {
+                    let i = i.as_mut_luma_alpha16().unwrap();
+
+                    // byte swap to convert our BE to LE when needed
+                    if cfg!(target_endian = "big") {
+                        for p in i.pixels_mut() {
+                            p.0[0] = p.0[0].to_le();
+                            p.0[1] = p.0[1].to_le();
+                        }
+                    }
+
+                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
+                    levels.push(level);
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            }
+            image::ColorType::Rgb16 => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R16G16B16A16_UNORM);
+
+                let mut swizzled_levels = Vec::new();
+                for i in loaded.iter_mut() {
+                    let i = i.as_mut_rgb16().unwrap();
+
+                    // byte swap to convert our BE to LE when needed
+                    if cfg!(target_endian = "big") {
+                        for p in i.pixels_mut() {
+                            p.0[0] = p.0[0].to_le();
+                            p.0[1] = p.0[1].to_le();
+                            p.0[2] = p.0[2].to_le();
+                        }
+                    }
+
+                    let mut level: Vec<u16> = Vec::new();
+                    let bytes = i.width() as usize * i.height() as usize * 4;
+                    level.resize(bytes, 0xFFFF);
+
+                    let src_row_width = i.width() as usize * 3;
+                    let dst_row_width = i.width() as usize * 4;
+                    let src = i.as_raw().as_slice();
+
+                    for row in 0..i.height() as usize {
+                        let dst_row_start = row * dst_row_width;
+                        let dst_row_end = dst_row_start + dst_row_width;
+                        let dst = &mut level[dst_row_start..dst_row_end];
+
+                        let src_row_start = row * src_row_width;
+                        let src_row_end = src_row_start + src_row_width;
+                        let src = &src[src_row_start..src_row_end];
+
+                        for col in 0..i.width() as usize {
+                            let dst_base = col as usize * 4;
+                            let dst = &mut dst[dst_base..dst_base + 3];
+
+                            let src_base = col as usize * 3;
+                            let src = &src[src_base..src_base + 3];
+
+                            dst.copy_from_slice(src);
+                        }
+                    }
+
+                    swizzled_levels.push(level);
+                }
+
+                let mut levels = Vec::new();
+                for i in swizzled_levels.iter() {
+                    let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
+                    levels.push(level);
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            }
+            image::ColorType::Rgba16 => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R16G16B16A16_UNORM);
+
+                let mut levels = Vec::new();
+                for i in loaded.iter_mut() {
+                    let i = i.as_mut_rgba16().unwrap();
+
+                    // byte swap to convert our BE to LE when needed
+                    if cfg!(target_endian = "big") {
+                        for p in i.pixels_mut() {
+                            p.0[0] = p.0[0].to_le();
+                            p.0[1] = p.0[1].to_le();
+                            p.0[2] = p.0[2].to_le();
+                            p.0[3] = p.0[3].to_le();
+                        }
+                    }
+
+                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
+                    levels.push(level);
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            }
+            image::ColorType::Rgb32F => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R32G32B32A32_SFLOAT);
+
+                let mut swizzled_levels = Vec::new();
+                for i in loaded.iter_mut() {
+                    let i = i.as_mut_rgb32f().unwrap();
+
+                    // byte swap to convert our BE to LE when needed
+                    if cfg!(target_endian = "big") {
+                        for p in i.pixels_mut() {
+                            p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
+                            p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
+                            p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
+                        }
+                    }
+
+                    // Default value is 1.0f with a little endian swap if we're on a big endian
+                    // platform. All data must be in little endian order.
+                    let default_value = {
+                        let v = 1.0f32;
+                        let v = v.to_le_bytes();
+                        bytemuck::cast::<_, f32>(v)
+                    };
+
+                    let mut level: Vec<f32> = Vec::new();
+                    let bytes = i.width() as usize * i.height() as usize * 4;
+                    level.resize(bytes, default_value);
+
+                    let src_row_width = i.width() as usize * 3;
+                    let dst_row_width = i.width() as usize * 4;
+                    let src = i.as_raw().as_slice();
+
+                    for row in 0..i.height() as usize {
+                        let dst_row_start = row * dst_row_width;
+                        let dst_row_end = dst_row_start + dst_row_width;
+                        let dst = &mut level[dst_row_start..dst_row_end];
+
+                        let src_row_start = row * src_row_width;
+                        let src_row_end = src_row_start + src_row_width;
+                        let src = &src[src_row_start..src_row_end];
+
+                        for col in 0..i.width() as usize {
+                            let dst_base = col as usize * 4;
+                            let dst = &mut dst[dst_base..dst_base + 3];
+
+                            let src_base = col as usize * 3;
+                            let src = &src[src_base..src_base + 3];
+
+                            dst.copy_from_slice(src);
+                        }
+                    }
+
+                    swizzled_levels.push(level);
+                }
+
+                let mut levels = Vec::new();
+                for i in swizzled_levels.iter() {
+                    let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
+                    levels.push(level);
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            },
+            image::ColorType::Rgba32F => {
+                let output_file = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&output)?;
+
+                ktx.format(VkFormat::R32G32B32A32_SFLOAT);
+
+                let mut levels = Vec::new();
+                for i in loaded.iter_mut() {
+                    let i = i.as_mut_rgba32f().unwrap();
+
+                    // byte swap to convert our BE to LE when needed
+                    if cfg!(target_endian = "big") {
+                        for p in i.pixels_mut() {
+                            p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
+                            p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
+                            p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
+                            p.0[3] = bytemuck::cast::<_, f32>(p.0[3].to_le_bytes());
+                        }
+                    }
+
+                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
+                    levels.push(level);
+                }
+
+                ktx.image_2d(base_width, base_height, &levels);
+
+                let mut writer = BufWriter::new(output_file);
+                ktx.write(&mut writer)?;
+            }
+            _ => unimplemented!("Unknown Pixel Format"),
+        }
 
         Ok(())
     }
@@ -177,4 +520,16 @@ impl ISubcommand for Image2Ktx {
     fn dont_log(&self) -> bool {
         true
     }
+}
+
+fn parse_filter(v: &str) -> Option<FilterType> {
+    let v = match v {
+        "nearest" => FilterType::Nearest,
+        "bilinear" => FilterType::Triangle,
+        "cubic" => FilterType::CatmullRom,
+        "gaussian" => FilterType::Gaussian,
+        "lanczos3" => FilterType::Lanczos3,
+        _ => return None,
+    };
+    Some(v)
 }
