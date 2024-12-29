@@ -63,6 +63,7 @@ uuid = { workspace = true }
 image = { workspace = true }
 bytemuck = { workspace = true }
 
+aleph-math = { workspace = true }
 aleph-target = { workspace = true }
 aleph-shader-db = { workspace = true }
 aleph-ktx = { workspace = true }

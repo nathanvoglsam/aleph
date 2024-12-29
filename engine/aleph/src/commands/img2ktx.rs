@@ -30,10 +30,12 @@
 use std::io::BufWriter;
 
 use aleph_ktx::{KtxDocumentDescription, VkFormat};
+use aleph_math::Vec3;
 use anyhow::anyhow;
 use camino::Utf8Path;
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use image::imageops::FilterType;
+use image::DynamicImage;
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
@@ -66,6 +68,12 @@ impl ISubcommand for Image2Ktx {
             .long("gen-mips")
             .help("Whether to generate a mip chain from the input image.")
             .long_help("Whether to generate a mip chain from the input image. Uses a bilinear filter by default.");
+        let is_normal_map = Arg::new("is-normal-map")
+            .action(ArgAction::SetTrue)
+            .short('n')
+            .long("is-normal-map")
+            .help("Declares that the input image is a normal map.")
+            .long_help("Declares that the input image is a normal map. This changes some things, like an additonal normalization operation when generating mips.");
         let mip_filter = Arg::new("mip-filter")
             .short('f')
             .long("mip-filter")
@@ -79,6 +87,7 @@ impl ISubcommand for Image2Ktx {
             .arg(output)
             .arg(gen_mips)
             .arg(mip_filter)
+            .arg(is_normal_map)
     }
 
     fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -92,6 +101,7 @@ impl ISubcommand for Image2Ktx {
         };
 
         let gen_mips = matches.get_flag("gen-mips");
+        let is_normal_map = matches.get_flag("is-normal-map");
 
         let mip_filter: String = matches.remove_one("mip-filter").unwrap();
         let mip_filter = mip_filter.to_lowercase();
@@ -119,7 +129,12 @@ impl ISubcommand for Image2Ktx {
                     let last = chain.last().unwrap();
                     let new_width = (last.width() / 2).max(1);
                     let new_height = (last.height() / 2).max(1);
-                    let next = last.resize_exact(new_width, new_height, mip_filter.into());
+                    let mut next = last.resize_exact(new_width, new_height, mip_filter.into());
+
+                    if is_normal_map {
+                        normalize_normal_map(&mut next)?;
+                    }
+
                     chain.push(next);
                 }
             }
@@ -478,7 +493,7 @@ impl ISubcommand for Image2Ktx {
 
                 let mut writer = BufWriter::new(output_file);
                 ktx.write(&mut writer)?;
-            },
+            }
             image::ColorType::Rgba32F => {
                 let output_file = std::fs::OpenOptions::new()
                     .write(true)
@@ -532,4 +547,196 @@ fn parse_filter(v: &str) -> Option<FilterType> {
         _ => return None,
     };
     Some(v)
+}
+
+fn normalize_normal_map(i: &mut DynamicImage) -> anyhow::Result<()> {
+    match i {
+        DynamicImage::ImageLuma8(_i) => {
+            return Err(anyhow!("Need at least 3 channels for a normal map. Got 1"))
+        }
+        DynamicImage::ImageLumaA8(_i) => {
+            return Err(anyhow!("Need at least 3 channels for a normal map. Got 2"))
+        }
+        DynamicImage::ImageRgb8(i) => {
+            for p in i.pixels_mut() {
+                let x = unorm_u8_to_f32(p[0]);
+                let y = unorm_u8_to_f32(p[1]);
+                let z = unorm_u8_to_f32(p[2]);
+
+                // Expand the UNORM into the full encoded normal range
+                let n = Vec3::new(x, y, z);
+                let n = n * Vec3::broadcast(2.0);
+                let n = n - Vec3::broadcast(1.0);
+
+                // The actual normalization we want to do
+                let n = n.normalized();
+
+                // Map back into packed representation
+                let x = (n.x + 1.0) / 2.0;
+                let y = (n.y + 1.0) / 2.0;
+                let z = (n.z + 1.0) / 2.0;
+
+                p[0] = f32_to_unorm_u8(x);
+                p[1] = f32_to_unorm_u8(y);
+                p[2] = f32_to_unorm_u8(z);
+            }
+        }
+        DynamicImage::ImageRgba8(i) => {
+            for p in i.pixels_mut() {
+                let x = unorm_u8_to_f32(p[0]);
+                let y = unorm_u8_to_f32(p[1]);
+                let z = unorm_u8_to_f32(p[2]);
+
+                // Expand the UNORM into the full encoded normal range
+                let n = Vec3::new(x, y, z);
+                let n = n * Vec3::broadcast(2.0);
+                let n = n - Vec3::broadcast(1.0);
+
+                // The actual normalization we want to do
+                let n = n.normalized();
+
+                // Map back into packed representation
+                let x = (n.x + 1.0) / 2.0;
+                let y = (n.y + 1.0) / 2.0;
+                let z = (n.z + 1.0) / 2.0;
+
+                p[0] = f32_to_unorm_u8(x);
+                p[1] = f32_to_unorm_u8(y);
+                p[2] = f32_to_unorm_u8(z);
+            }
+        }
+        DynamicImage::ImageLuma16(_i) => {
+            return Err(anyhow!("Need at least 3 channels for a normal map. Got 1"))
+        }
+        DynamicImage::ImageLumaA16(_i) => {
+            return Err(anyhow!("Need at least 3 channels for a normal map. Got 2"))
+        }
+        DynamicImage::ImageRgb16(i) => {
+            for p in i.pixels_mut() {
+                let x = unorm_u16_to_f32(p[0]);
+                let y = unorm_u16_to_f32(p[1]);
+                let z = unorm_u16_to_f32(p[2]);
+
+                // Expand the UNORM into the full encoded normal range
+                let n = Vec3::new(x, y, z);
+                let n = n * Vec3::broadcast(2.0);
+                let n = n - Vec3::broadcast(1.0);
+
+                // The actual normalization we want to do
+                let n = n.normalized();
+
+                // Map back into UNORM
+                let x = (n.x + 1.0) / 2.0;
+                let y = (n.y + 1.0) / 2.0;
+                let z = (n.z + 1.0) / 2.0;
+
+                p[0] = f32_to_unorm_u16(x);
+                p[1] = f32_to_unorm_u16(y);
+                p[2] = f32_to_unorm_u16(z);
+            }
+        }
+        DynamicImage::ImageRgba16(i) => {
+            for p in i.pixels_mut() {
+                let x = unorm_u16_to_f32(p[0]);
+                let y = unorm_u16_to_f32(p[1]);
+                let z = unorm_u16_to_f32(p[2]);
+
+                // Expand the UNORM into the full encoded normal range
+                let n = Vec3::new(x, y, z);
+                let n = n * Vec3::broadcast(2.0);
+                let n = n - Vec3::broadcast(1.0);
+
+                // The actual normalization we want to do
+                let n = n.normalized();
+
+                // Map back into UNORM
+                let x = (n.x + 1.0) / 2.0;
+                let y = (n.y + 1.0) / 2.0;
+                let z = (n.z + 1.0) / 2.0;
+
+                p[0] = f32_to_unorm_u16(x);
+                p[1] = f32_to_unorm_u16(y);
+                p[2] = f32_to_unorm_u16(z);
+            }
+        }
+        DynamicImage::ImageRgb32F(i) => {
+            for p in i.pixels_mut() {
+                let n = Vec3::new(p[0], p[1], p[2]);
+
+                // The actual normalization we want to do
+                let n = n.normalized();
+
+                p[0] = n.x;
+                p[1] = n.y;
+                p[2] = n.z;
+            }
+        }
+        DynamicImage::ImageRgba32F(i) => {
+            for p in i.pixels_mut() {
+                let n = Vec3::new(p[0], p[1], p[2]);
+
+                // The actual normalization we want to do
+                let n = n.normalized();
+
+                p[0] = n.x;
+                p[1] = n.y;
+                p[2] = n.z;
+            }
+        }
+        _ => return Err(anyhow!("Unknown Pixel Format")),
+    }
+    Ok(())
+}
+
+fn unorm_u8_to_f32(v: u8) -> f32 {
+    const K0: f32 = 3.0;
+    const K1: f32 = 1.0 / (255.0 * 3.0);
+    return (v as f32 * K0) * K1;
+}
+
+fn unorm_u16_to_f32(v: u16) -> f32 {
+    const K0: f32 = 3.0;
+    const K1: f32 = 1.0 / (65535.0 * 3.0);
+    return (v as f32 * K0) * K1;
+}
+
+fn f32_to_unorm_u8(v: f32) -> u8 {
+    const K0: f32 = 3.0;
+    const K1: f32 = 1.0 / (255.0 * 3.0);
+    return ((v / K1) / K0).round() as u8;
+}
+
+fn f32_to_unorm_u16(v: f32) -> u16 {
+    const K0: f32 = 3.0;
+    const K1: f32 = 1.0 / (65535.0 * 3.0);
+    return ((v / K1) / K0).round() as u16;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::img2ktx::{
+        f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32,
+    };
+
+    #[test]
+    fn unorm_u8_to_f32_associates() {
+        for i in 0..256i32 {
+            let i: u8 = i.try_into().unwrap();
+
+            let f = unorm_u8_to_f32(i);
+            let u = f32_to_unorm_u8(f);
+            assert_eq!(i, u);
+        }
+    }
+
+    #[test]
+    fn unorm_u16_to_f32_associates() {
+        for i in 0..65536i32 {
+            let i: u16 = i.try_into().unwrap();
+
+            let f = unorm_u16_to_f32(i);
+            let u = f32_to_unorm_u16(f);
+            assert_eq!(i, u);
+        }
+    }
 }
