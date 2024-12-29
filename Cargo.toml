@@ -116,6 +116,7 @@ egui = "0.30"
 egui_plot = "0.30"
 embed-resource = "3"
 env_logger = "0.11.0"
+half = { version = "2", features = ["alloc", "bytemuck"] }
 ignore = "0.4"
 image = "0.25"
 libc = "0.2"

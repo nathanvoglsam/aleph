@@ -34,6 +34,7 @@ use aleph_math::Vec3;
 use anyhow::anyhow;
 use camino::Utf8Path;
 use clap::{Arg, ArgAction, ArgMatches, Command};
+use half::f16;
 use image::imageops::FilterType;
 use image::DynamicImage;
 
@@ -74,6 +75,12 @@ impl ISubcommand for Image2Ktx {
             .long("is-normal-map")
             .help("Declares that the input image is a normal map.")
             .long_help("Declares that the input image is a normal map. This changes some things, like an additonal normalization operation when generating mips.");
+        let to_half = Arg::new("to-half")
+            .action(ArgAction::SetTrue)
+            .short('h')
+            .long("to-half")
+            .help("Declares that floating point input should be output in half-precision.")
+            .long_help("Declares that floating point input should be output in half-precision. This only affects floating point input images like HDRIs.");
         let mip_filter = Arg::new("mip-filter")
             .short('f')
             .long("mip-filter")
@@ -88,6 +95,7 @@ impl ISubcommand for Image2Ktx {
             .arg(gen_mips)
             .arg(mip_filter)
             .arg(is_normal_map)
+            .arg(to_half)
     }
 
     fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -102,6 +110,7 @@ impl ISubcommand for Image2Ktx {
 
         let gen_mips = matches.get_flag("gen-mips");
         let is_normal_map = matches.get_flag("is-normal-map");
+        let to_half = matches.get_flag("to-half");
 
         let mip_filter: String = matches.remove_one("mip-filter").unwrap();
         let mip_filter = mip_filter.to_lowercase();
@@ -206,33 +215,8 @@ impl ISubcommand for Image2Ktx {
                 for i in loaded.iter() {
                     let i = i.as_rgb8().unwrap();
 
-                    let mut level: Vec<u8> = Vec::new();
-                    let bytes = i.width() as usize * i.height() as usize * 4;
-                    level.resize(bytes, 0xFF);
-
-                    let src_row_width = i.width() as usize * 3;
-                    let dst_row_width = i.width() as usize * 4;
-                    let src = i.as_raw().as_slice();
-
-                    for row in 0..i.height() as usize {
-                        let dst_row_start = row * dst_row_width;
-                        let dst_row_end = dst_row_start + dst_row_width;
-                        let dst = &mut level[dst_row_start..dst_row_end];
-
-                        let src_row_start = row * src_row_width;
-                        let src_row_end = src_row_start + src_row_width;
-                        let src = &src[src_row_start..src_row_end];
-
-                        for col in 0..i.width() as usize {
-                            let dst_base = col as usize * 4;
-                            let dst = &mut dst[dst_base..dst_base + 3];
-
-                            let src_base = col as usize * 3;
-                            let src = &src[src_base..src_base + 3];
-
-                            dst.copy_from_slice(src);
-                        }
-                    }
+                    let level =
+                        swizzle_rgb_to_rgba(i.as_raw().as_slice(), i.width(), i.height(), 0xFF);
 
                     swizzled_levels.push(level);
                 }
@@ -348,33 +332,8 @@ impl ISubcommand for Image2Ktx {
                         }
                     }
 
-                    let mut level: Vec<u16> = Vec::new();
-                    let bytes = i.width() as usize * i.height() as usize * 4;
-                    level.resize(bytes, 0xFFFF);
-
-                    let src_row_width = i.width() as usize * 3;
-                    let dst_row_width = i.width() as usize * 4;
-                    let src = i.as_raw().as_slice();
-
-                    for row in 0..i.height() as usize {
-                        let dst_row_start = row * dst_row_width;
-                        let dst_row_end = dst_row_start + dst_row_width;
-                        let dst = &mut level[dst_row_start..dst_row_end];
-
-                        let src_row_start = row * src_row_width;
-                        let src_row_end = src_row_start + src_row_width;
-                        let src = &src[src_row_start..src_row_end];
-
-                        for col in 0..i.width() as usize {
-                            let dst_base = col as usize * 4;
-                            let dst = &mut dst[dst_base..dst_base + 3];
-
-                            let src_base = col as usize * 3;
-                            let src = &src[src_base..src_base + 3];
-
-                            dst.copy_from_slice(src);
-                        }
-                    }
+                    let level =
+                        swizzle_rgb_to_rgba(i.as_raw().as_slice(), i.width(), i.height(), 0xFFFF);
 
                     swizzled_levels.push(level);
                 }
@@ -429,70 +388,88 @@ impl ISubcommand for Image2Ktx {
                     .truncate(true)
                     .open(&output)?;
 
-                ktx.format(VkFormat::R32G32B32A32_SFLOAT);
+                if to_half {
+                    ktx.format(VkFormat::R16G16B16A16_SFLOAT);
 
-                let mut swizzled_levels = Vec::new();
-                for i in loaded.iter_mut() {
-                    let i = i.as_mut_rgb32f().unwrap();
+                    let mut swizzled_levels = Vec::new();
+                    for i in loaded.iter_mut() {
+                        let i = i.as_rgb32f().unwrap();
 
-                    // byte swap to convert our BE to LE when needed
-                    if cfg!(target_endian = "big") {
-                        for p in i.pixels_mut() {
-                            p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
-                            p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
-                            p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
-                        }
+                        let halved = cast_f32_buffer_to_f16(i.as_raw());
+
+                        // Default value is 1.0f with a little endian swap if we're on a big endian
+                        // platform. All data must be in little endian order.
+                        let default_value = {
+                            let v = f16::from_f32(1.0);
+                            let v = v.to_le_bytes();
+                            bytemuck::cast::<_, f16>(v)
+                        };
+
+                        let level = swizzle_rgb_to_rgba(
+                            halved.as_slice(),
+                            i.width(),
+                            i.height(),
+                            default_value,
+                        );
+
+                        swizzled_levels.push(level);
                     }
 
-                    // Default value is 1.0f with a little endian swap if we're on a big endian
-                    // platform. All data must be in little endian order.
-                    let default_value = {
-                        let v = 1.0f32;
-                        let v = v.to_le_bytes();
-                        bytemuck::cast::<_, f32>(v)
-                    };
-
-                    let mut level: Vec<f32> = Vec::new();
-                    let bytes = i.width() as usize * i.height() as usize * 4;
-                    level.resize(bytes, default_value);
-
-                    let src_row_width = i.width() as usize * 3;
-                    let dst_row_width = i.width() as usize * 4;
-                    let src = i.as_raw().as_slice();
-
-                    for row in 0..i.height() as usize {
-                        let dst_row_start = row * dst_row_width;
-                        let dst_row_end = dst_row_start + dst_row_width;
-                        let dst = &mut level[dst_row_start..dst_row_end];
-
-                        let src_row_start = row * src_row_width;
-                        let src_row_end = src_row_start + src_row_width;
-                        let src = &src[src_row_start..src_row_end];
-
-                        for col in 0..i.width() as usize {
-                            let dst_base = col as usize * 4;
-                            let dst = &mut dst[dst_base..dst_base + 3];
-
-                            let src_base = col as usize * 3;
-                            let src = &src[src_base..src_base + 3];
-
-                            dst.copy_from_slice(src);
-                        }
+                    let mut levels = Vec::new();
+                    for i in swizzled_levels.iter() {
+                        let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
+                        levels.push(level);
                     }
 
-                    swizzled_levels.push(level);
+                    ktx.image_2d(base_width, base_height, &levels);
+
+                    let mut writer = BufWriter::new(output_file);
+                    ktx.write(&mut writer)?;
+                } else {
+                    ktx.format(VkFormat::R32G32B32A32_SFLOAT);
+
+                    let mut swizzled_levels = Vec::new();
+                    for i in loaded.iter_mut() {
+                        let i = i.as_mut_rgb32f().unwrap();
+
+                        // byte swap to convert our BE to LE when needed
+                        if cfg!(target_endian = "big") {
+                            for p in i.pixels_mut() {
+                                p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
+                                p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
+                                p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
+                            }
+                        }
+
+                        // Default value is 1.0f with a little endian swap if we're on a big endian
+                        // platform. All data must be in little endian order.
+                        let default_value = {
+                            let v = 1.0f32;
+                            let v = v.to_le_bytes();
+                            bytemuck::cast::<_, f32>(v)
+                        };
+
+                        let level = swizzle_rgb_to_rgba(
+                            i.as_raw().as_slice(),
+                            i.width(),
+                            i.height(),
+                            default_value,
+                        );
+
+                        swizzled_levels.push(level);
+                    }
+
+                    let mut levels = Vec::new();
+                    for i in swizzled_levels.iter() {
+                        let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
+                        levels.push(level);
+                    }
+
+                    ktx.image_2d(base_width, base_height, &levels);
+
+                    let mut writer = BufWriter::new(output_file);
+                    ktx.write(&mut writer)?;
                 }
-
-                let mut levels = Vec::new();
-                for i in swizzled_levels.iter() {
-                    let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
-                    levels.push(level);
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::Rgba32F => {
                 let output_file = std::fs::OpenOptions::new()
@@ -501,30 +478,53 @@ impl ISubcommand for Image2Ktx {
                     .truncate(true)
                     .open(&output)?;
 
-                ktx.format(VkFormat::R32G32B32A32_SFLOAT);
+                if to_half {
+                    ktx.format(VkFormat::R16G16B16A16_SFLOAT);
 
-                let mut levels = Vec::new();
-                for i in loaded.iter_mut() {
-                    let i = i.as_mut_rgba32f().unwrap();
+                    let mut halved_levels = Vec::new();
+                    for i in loaded.iter_mut() {
+                        let i = i.as_mut_rgba32f().unwrap();
 
-                    // byte swap to convert our BE to LE when needed
-                    if cfg!(target_endian = "big") {
-                        for p in i.pixels_mut() {
-                            p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
-                            p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
-                            p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
-                            p.0[3] = bytemuck::cast::<_, f32>(p.0[3].to_le_bytes());
-                        }
+                        let halved = cast_f32_buffer_to_f16(i.as_raw());
+                        halved_levels.push(halved);
                     }
 
-                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
-                    levels.push(level);
+                    let mut levels = Vec::new();
+                    for halved in halved_levels.iter() {
+                        let level = bytemuck::cast_slice::<_, u8>(halved.as_slice());
+                        levels.push(level);
+                    }
+
+                    ktx.image_2d(base_width, base_height, &levels);
+
+                    let mut writer = BufWriter::new(output_file);
+                    ktx.write(&mut writer)?;
+                } else {
+                    ktx.format(VkFormat::R32G32B32A32_SFLOAT);
+
+                    let mut levels = Vec::new();
+                    for i in loaded.iter_mut() {
+                        let i = i.as_mut_rgba32f().unwrap();
+
+                        // byte swap to convert our BE to LE when needed
+                        if cfg!(target_endian = "big") {
+                            for p in i.pixels_mut() {
+                                p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
+                                p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
+                                p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
+                                p.0[3] = bytemuck::cast::<_, f32>(p.0[3].to_le_bytes());
+                            }
+                        }
+
+                        let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
+                        levels.push(level);
+                    }
+
+                    ktx.image_2d(base_width, base_height, &levels);
+
+                    let mut writer = BufWriter::new(output_file);
+                    ktx.write(&mut writer)?;
                 }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             _ => unimplemented!("Unknown Pixel Format"),
         }
@@ -535,6 +535,53 @@ impl ISubcommand for Image2Ktx {
     fn dont_log(&self) -> bool {
         true
     }
+}
+
+fn cast_f32_buffer_to_f16(v: &[f32]) -> Vec<f16> {
+    Vec::from_iter(v.iter().map(|v| {
+        let v = f16::from_f32(*v);
+        if cfg!(target_endian = "big") {
+            bytemuck::cast::<_, f16>(v.to_le_bytes())
+        } else {
+            v
+        }
+    }))
+}
+
+fn swizzle_rgb_to_rgba<T: Copy + Clone>(
+    src: &[T],
+    width: u32,
+    height: u32,
+    default_value: T,
+) -> Vec<T> {
+    let mut level: Vec<T> = Vec::new();
+    let bytes = width as usize * height as usize * 4;
+    level.resize(bytes, default_value);
+
+    let src_row_width = width as usize * 3;
+    let dst_row_width = width as usize * 4;
+
+    for row in 0..height as usize {
+        let dst_row_start = row * dst_row_width;
+        let dst_row_end = dst_row_start + dst_row_width;
+        let dst = &mut level[dst_row_start..dst_row_end];
+
+        let src_row_start = row * src_row_width;
+        let src_row_end = src_row_start + src_row_width;
+        let src = &src[src_row_start..src_row_end];
+
+        for col in 0..width as usize {
+            let dst_base = col as usize * 4;
+            let dst = &mut dst[dst_base..dst_base + 3];
+
+            let src_base = col as usize * 3;
+            let src = &src[src_base..src_base + 3];
+
+            dst.copy_from_slice(src);
+        }
+    }
+
+    level
 }
 
 fn parse_filter(v: &str) -> Option<FilterType> {
