@@ -81,7 +81,7 @@ pub use streaming_request::{
 };
 pub use texture_loader::{GenerateMips, TextureAllocMode, TextureLoader};
 pub use texture_pool::{TextureObject, TexturePool};
-pub use texture_upload_desc::{TextureMipUploadDesc, TextureUploadSource};
+pub use texture_upload_desc::{TextureObjectDesc, TextureUploadDataDesc, TextureUploadDesc};
 
 #[cfg(test)]
 mod test_utils {

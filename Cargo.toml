@@ -145,6 +145,7 @@ utf16_lit = "2"
 uuid = { version = "1", features = ["v7"] }
 zip = "2"
 num-integer = "0.1"
+arrayvec = "0.7"
 
 windows-interface = "0.58.0"
 windows.version = "0.58.0"

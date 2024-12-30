@@ -356,12 +356,14 @@ impl Allocator {
             Some(NonNull::from(&mut allocation_info)),
         );
 
-        result.result_with_success((
-            vma::Allocation {
-                allocation: allocation.unwrap_unchecked(),
-            },
-            allocation_info,
-        ))
+        result_with_success_then(result, || {
+            (
+                vma::Allocation {
+                    allocation: allocation.unwrap_unchecked(),
+                },
+                allocation_info,
+            )
+        })
     }
 
     /// vmaAllocateMemoryPages
@@ -454,12 +456,14 @@ impl Allocator {
             Some(NonNull::from(&mut allocation_info)),
         );
 
-        result.result_with_success((
-            vma::Allocation {
-                allocation: allocation.unwrap_unchecked(),
-            },
-            allocation_info,
-        ))
+        result_with_success_then(result, || {
+            (
+                vma::Allocation {
+                    allocation: allocation.unwrap_unchecked(),
+                },
+                allocation_info,
+            )
+        })
     }
 
     /// vmaAllocateMemoryforImage
@@ -480,12 +484,14 @@ impl Allocator {
             Some(NonNull::from(&mut allocation_info)),
         );
 
-        result.result_with_success((
-            vma::Allocation {
-                allocation: allocation.unwrap_unchecked(),
-            },
-            allocation_info,
-        ))
+        result_with_success_then(result, || {
+            (
+                vma::Allocation {
+                    allocation: allocation.unwrap_unchecked(),
+                },
+                allocation_info,
+            )
+        })
     }
 
     /// vmaFreeMemory
@@ -616,13 +622,15 @@ impl Allocator {
             Some(NonNull::from(&mut allocation_info)),
         );
 
-        result.result_with_success((
-            buffer,
-            vma::Allocation {
-                allocation: allocation.unwrap_unchecked(),
-            },
-            allocation_info,
-        ))
+        result_with_success_then(result, || {
+            (
+                buffer,
+                vma::Allocation {
+                    allocation: allocation.unwrap_unchecked(),
+                },
+                allocation_info,
+            )
+        })
     }
 
     /// vmaDestroyBuffer
@@ -651,13 +659,15 @@ impl Allocator {
             Some(NonNull::from(&mut allocation_info)),
         );
 
-        result.result_with_success((
-            image,
-            vma::Allocation {
-                allocation: allocation.unwrap_unchecked(),
-            },
-            allocation_info,
-        ))
+        result_with_success_then(result, || {
+            (
+                image,
+                vma::Allocation {
+                    allocation: allocation.unwrap_unchecked(),
+                },
+                allocation_info,
+            )
+        })
     }
 
     /// vmaDestroyImage
@@ -690,5 +700,12 @@ impl Drop for Inner {
         unsafe {
             raw::vmaDestroyAllocator(Some(self.allocator));
         }
+    }
+}
+
+fn result_with_success_then<T>(v: vk::Result, f: impl FnOnce() -> T) -> VkResult<T> {
+    match v {
+        vk::Result::SUCCESS => Ok(f()),
+        _ => Err(v),
     }
 }

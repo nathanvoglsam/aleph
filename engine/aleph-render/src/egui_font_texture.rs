@@ -35,8 +35,7 @@ use egui::{FontImage, ImageData};
 use wide::{f32x4, f32x8, i32x4, i32x8, CmpEq};
 
 use aleph_renderer::{
-    GenerateMips, Renderer, TextureAllocMode, TextureHandle, TextureMipUploadDesc,
-    TextureUploadSource,
+    GenerateMips, Renderer, TextureAllocMode, TextureHandle, TextureObjectDesc, TextureUploadDesc,
 };
 
 pub struct EguiFontTexture {
@@ -64,54 +63,45 @@ impl EguiFontTexture {
         }
 
         if updated {
-            unsafe {
-                let dimensions = (
-                    self.font_texture.width as u32,
-                    self.font_texture.height as u32,
-                );
+            let dimensions = (
+                self.font_texture.width as u32,
+                self.font_texture.height as u32,
+            );
 
-                let desc =
-                    TextureMipUploadDesc::new(dimensions.0, dimensions.1, 1, Format::R8Unorm);
-                let staging_buffer = TextureUploadSource::new_owned(
-                    renderer.device(),
-                    desc.clone(),
-                    ResourceUsageFlags::SHADER_RESOURCE,
-                )
-                .unwrap();
+            let mut desc = TextureObjectDesc::new();
+            desc.format(Format::R8Unorm);
+            desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
+            desc.image_2d(dimensions.0, dimensions.1);
 
-                assert_eq!(
-                    desc.aligned_width(),
-                    desc.width,
-                    "Currently we don't handle row pitch here"
-                );
+            let mut data = TextureUploadDesc::new_owned(renderer.device(), desc, 0, 1).unwrap();
 
-                let data = staging_buffer.data_ptr().cast::<u8>();
-                data.as_ptr().copy_from_nonoverlapping(
-                    self.font_texture.bytes.as_ptr(),
-                    desc.size_requirement(),
-                );
+            assert_eq!(
+                data.desc.upload_row_texels_for_level(0),
+                data.desc.width,
+                "Currently we don't handle row pitch here"
+            );
 
-                staging_buffer.unmap().unwrap();
+            let size = data.desc.upload_bytes_for_level(0);
+            let dst = &mut data.buffer.bytes_mut()[0..size];
+            dst.copy_from_slice(&self.font_texture.bytes[0..size]);
 
-                if let Some(handle) = self.font_handle {
-                    renderer
-                        .get_texture_loader()
-                        .immediate_upload(
-                            None,
-                            handle,
-                            staging_buffer,
-                            TextureAllocMode::Deferred,
-                            GenerateMips::No,
-                        )
-                        .unwrap();
-                } else {
-                    let result = renderer.create_texture(
-                        staging_buffer,
+            data.buffer.buffer().unmap().unwrap();
+
+            if let Some(handle) = self.font_handle {
+                renderer
+                    .get_texture_loader()
+                    .immediate_upload(
+                        None,
+                        handle,
+                        data,
                         TextureAllocMode::Deferred,
                         GenerateMips::No,
-                    );
-                    self.font_handle = Some(result.unwrap());
-                }
+                    )
+                    .unwrap();
+            } else {
+                let result =
+                    renderer.create_texture(data, TextureAllocMode::Deferred, GenerateMips::No);
+                self.font_handle = Some(result.unwrap());
             }
         }
     }

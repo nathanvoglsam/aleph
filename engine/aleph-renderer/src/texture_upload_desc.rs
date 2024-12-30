@@ -27,266 +27,552 @@
 // SOFTWARE.
 //
 
-use std::marker::PhantomData;
+use std::num::NonZero;
+use std::ops::Range;
 use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_rhi_api::*;
+use arrayvec::ArrayVec;
+use smallbox::space::S8;
+use smallbox::{smallbox, SmallBox};
 
-use crate::BufferUploadSource;
-
-/// This describes the size and format of a texture upload payload.
+/// This struct describes a texture object for storage in a texture pool. This is a simplifcation
+/// over [`TextureDesc`] that omits various options that are only applicable to render targets.
 ///
-/// # Important
+/// # Info
 ///
-/// This only describes the size of a texture mip/array slice. This does not encode the target mip
-/// level or array slice as that is handled separately. This allows for the same staging data to be
-/// used as the source for multiple destination resources.
-#[derive(Clone, Eq, PartialEq, Debug, Default, Hash)]
-pub struct TextureMipUploadDesc {
-    /// The width of the texture. Row pitch is handled internally, this should be the logical width
-    /// not physical width.
+/// The type of texture is derived from the declared dimensions of the texture. A 1D texture will
+/// have 'width' > 0, and 'height' + 'depth' = 0. A 2D texture will have 'width' and 'height' > 0,
+/// and 'depth' = 0. And so on for 3D textures. It is illegal for 'width' to ever be zero. Leaving
+/// it as 0 will lead to panics.
+///
+/// - `width`
+///     - must always be > 0.
+/// - `height`
+///     - when > 0 the texture may be 2D or 3D.
+/// - `depth`
+///     - when > 0 the texture will be 3D if `height` is > 0 too.
+///     - if > 0, then `height` must be > 0 too.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct TextureObjectDesc {
+    /// The width of the texture in texels. This can _not_ be zero, see [`TextureObjectDesc`] for
+    /// info.
     pub width: u32,
 
-    /// The height of the texture
+    /// The height of the texture in texels. This can be zero, see [`TextureObjectDesc`] for info.
     pub height: u32,
 
-    /// The depth of the texture
+    /// The depth of the texture in texels. This can be zero, see [`TextureObjectDesc`] for info.
     pub depth: u32,
 
-    /// The pixel format of the texture
+    /// The number of mip levels the texture will have.
+    pub num_levels: NonZero<u32>,
+
+    // /// The number of array layers the texture will have.
+    // pub num_layers: NonZero<u32>,
+    /// The image format of the texture
     pub format: Format,
+
+    /// The set of supported usage flags the resource should be created with
+    pub usage: ResourceUsageFlags,
 }
 
-impl TextureMipUploadDesc {
-    pub const fn new(width: u32, height: u32, depth: u32, format: Format) -> Self {
+impl TextureObjectDesc {
+    pub const fn new() -> Self {
         Self {
-            width,
-            height,
-            depth,
-            format,
+            width: 0,
+            height: 0,
+            depth: 0,
+            num_levels: NonZero::new(1).unwrap(),
+            // num_layers: NonZero::new(1).unwrap(),
+            format: Format::R8Unorm, // zero init
+            usage: ResourceUsageFlags::empty(),
         }
     }
 
-    /// Computes the number of bytes needed to store the texture slice described by this
-    /// [TextureMipUploadDesc] in a format compatible with being uploaded using a buffer to texture
-    /// copy.
-    pub const fn size_requirement(&self) -> usize {
-        debug_assert!(self.width > 0);
-        debug_assert!(self.height > 0);
-        debug_assert!(self.depth > 0);
+    // /// Set the number of array layers in the image. Must != 0.
+    // ///
+    // /// Defaults to 1.
+    // pub const fn num_layers(&mut self, layers: u32) -> &mut Self {
+    //     self.num_layers = NonZero::new(layers).unwrap();
+    //     self
+    // }
 
-        // Width must be aligned to the row pitch
-        let aligned_width = self.aligned_width();
-
-        // Use the padded width and bytes-per-texel to calculate the required size
-        let texel_count = aligned_width * self.height * self.depth;
-        let bytes = self.format.bytes_per_element() * texel_count;
-
-        bytes as usize
+    /// Set the number of mip levels in the image. Must != 0.
+    ///
+    /// Defaults to 1.
+    pub const fn num_levels(&mut self, levels: u32) -> &mut Self {
+        self.num_levels = NonZero::new(levels).unwrap();
+        self
     }
 
-    /// Returns the width of the texture expanded to the width required to satisfy row pitch
-    /// requirements needed for uploading the texture with a buffer to texture copy.
-    pub const fn aligned_width(&self) -> u32 {
-        // Width must be aligned to the row pitch
-        let aligned_width = self
-            .width
-            .next_multiple_of(self.format.buffer_to_texture_copy_row_pitch());
-
-        aligned_width
+    /// Sets the number of mip levels in the image to the number needed to have a full mip chain
+    /// for the current image dimensions.
+    ///
+    /// # Warning
+    ///
+    /// This will only be correct if the dimensions have been provided. Ensure width, height, and
+    /// depth are correct before calling this function.
+    pub fn num_levels_full(&mut self) -> &mut Self {
+        let max = const_max(self.width, self.height);
+        let max = const_max(max, self.depth);
+        let max = const_max(max, 1);
+        let levels = max as f32;
+        let levels = levels.log2().floor() + 1.0;
+        let levels = levels as u32;
+        self.num_levels(levels)
     }
 
-    pub const fn extent(&self) -> Extent3D {
-        Extent3D::new(self.width, self.height, self.depth)
+    /// The image format
+    pub const fn format(&mut self, format: Format) -> &mut Self {
+        self.format = format;
+        self
+    }
+
+    /// The image usage
+    pub const fn usage(&mut self, usage: ResourceUsageFlags) -> &mut Self {
+        self.usage = usage;
+        self
+    }
+
+    pub const fn image_1d(&mut self, width: u32) -> &mut Self {
+        if width == 0 {
+            panic!("width == 0");
+        }
+
+        self.width = width;
+        self.height = 0;
+        self.depth = 0;
+        self
+    }
+
+    pub const fn image_2d(&mut self, width: u32, height: u32) -> &mut Self {
+        if width == 0 {
+            panic!("width == 0");
+        }
+        if height == 0 {
+            panic!("height == 0");
+        }
+
+        self.width = width;
+        self.height = height;
+        self.depth = 0;
+        self
+    }
+
+    pub const fn image_3d(&mut self, width: u32, height: u32, depth: u32) -> &mut Self {
+        if width == 0 {
+            panic!("width == 0");
+        }
+        if height == 0 {
+            panic!("height == 0");
+        }
+        if depth == 0 {
+            panic!("depth == 0");
+        }
+
+        self.width = width;
+        self.height = height;
+        self.depth = depth;
+        self
+    }
+
+    /// Calculates the number of texels along the 'x' dimension in mip0.
+    pub const fn storage_width(&self) -> u32 {
+        const_max(self.width, 1)
+    }
+
+    /// Calculates the number of texels along the 'y' dimension in mip0.
+    ///
+    /// # Info
+    ///
+    /// Even for 1D images this will return 1, as there is logically a single row as far as in
+    /// memory representation is concerned.
+    pub const fn storage_height(&self) -> u32 {
+        const_max(self.height, 1)
+    }
+
+    /// Calculates the number of texels along the 'z' dimension in mip0.
+    ///
+    /// # Info
+    ///
+    /// Even for 1D/2D images this will return 1, as there is logically a single plane as far as in
+    /// memory representation is concerned.
+    pub const fn storage_depth(&self) -> u32 {
+        const_max(self.depth, 1)
+    }
+
+    /// Deduces the [`TextureDimension`] of the texture described by `self`. Will return `None` if
+    /// 'self' doesn't describe a valid texture.
+    pub const fn texture_dimension(&self) -> Option<TextureDimension> {
+        let has_width = self.width > 0;
+        let has_height = self.height > 0;
+        let has_depth = self.depth > 0;
+        let v = match (has_width, has_height, has_depth) {
+            (true, false, false) => TextureDimension::Texture1D,
+            (true, true, false) => TextureDimension::Texture2D,
+            (true, true, true) => TextureDimension::Texture3D,
+            _ => return None,
+        };
+        Some(v)
+    }
+
+    /// Checks if the [`TextureObjectDesc`] describes a valid texture.
+    pub const fn validate(&self) -> Option<()> {
+        // No ? in const
+        let _dimension = match self.texture_dimension() {
+            Some(v) => v,
+            None => return None,
+        };
+
+        // if matches!(dimension, TextureDimension::Texture3D) {
+        //     // No 3D arrays are allowed
+        //     if self.num_layers.get() > 1 {
+        //         return None;
+        //     }
+        // }
+
+        Some(())
+    }
+
+    /// Returns the dimensions of the texture at the given mip level.
+    pub const fn dimensions_for_level(&self, level: u32) -> (u32, u32, u32) {
+        let width = const_max(self.storage_width() >> level as u32, 1);
+        let height = const_max(self.storage_height() >> level as u32, 1);
+        let depth = const_max(self.storage_depth() >> level as u32, 1);
+        (width, height, depth)
+    }
+
+    /// Returns the number of rows of texels that make up the image at the given level.
+    ///
+    /// This is defined as (height.max(1) * depth.max(1))
+    pub fn num_rows_for_level(&self, level: u32) -> usize {
+        let (_, height, depth) = self.dimensions_for_level(level);
+        height as usize * depth as usize
+    }
+
+    /// Returns the number of bytes
+    pub const fn bytes_for_level(&self, level: u32) -> usize {
+        let (width, height, depth) = self.dimensions_for_level(level);
+        let bytes_per_row = width as usize * self.format.bytes_per_element() as usize;
+        bytes_per_row * height as usize * depth as usize
+    }
+
+    /// Returns the number of bytes consumed by a single row of texels.
+    ///
+    /// This does _not_ include any padding bytes in the size needed to meet minimum row pitch
+    /// requirements.
+    pub const fn row_bytes_for_level(&self, level: u32) -> usize {
+        let (width, _, _) = self.dimensions_for_level(level);
+        width as usize * self.format.bytes_per_element() as usize
+    }
+
+    /// Returns the number of bytes consumed by a single row of texels, including any padding needed
+    /// to reach the minimum row pitch.
+    pub const fn upload_row_bytes_for_level(&self, level: u32) -> usize {
+        let bytes_per_row = self.row_bytes_for_level(level);
+        bytes_per_row.next_multiple_of(256)
+    }
+
+    /// Returns the number of _texels_ consumed by a single row of texels, including any padding
+    /// needed to reach the minimum row pitch.
+    pub const fn upload_row_texels_for_level(&self, level: u32) -> u32 {
+        let (width, _, _) = self.dimensions_for_level(level);
+        width.next_multiple_of(self.format.buffer_to_texture_copy_row_pitch())
+    }
+
+    /// Returns the number of bytes needed to store the given mip level in an upload buffer.
+    ///
+    /// This will calculate the size as (padded row size) * height.max(1) * depth.max(1). We need
+    /// to pad each row to a 256 byte boundary to meet the minimum row pitch requirements for
+    /// upload to the GPU.
+    pub const fn upload_bytes_for_level(&self, level: u32) -> usize {
+        let bytes_per_row = self.upload_row_bytes_for_level(level);
+        let (_, height, depth) = self.dimensions_for_level(level);
+        bytes_per_row * height as usize * depth as usize
     }
 }
 
-/// A data source for a texture upload request. Represents an annotated block of upload memory that
-/// pairs the memory block with a description of the texture slice that it contains.
-///
-/// This can be combined in the upload manager with a target texture + mip level and array slice to
-/// create an upload request.
-///
-/// This struct abstracts access to a chunk of upload memory so that it can be safely used to upload
-/// texture data to the GPU.
+/// A description of what data for some texture is present in an associated upload buffer.
+#[derive(Clone, Hash, Debug, Default)]
+pub struct TextureUploadDataDesc {
+    /// The base mip level that data is provided for in 'level_offsets'.
+    pub base_level: u8,
+
+    /// A list of indices into an associated memory buffer for where the beginning of a mip level's
+    /// data is.
+    ///
+    /// All offsets must be aligned along a 512 byte boundary. The actual layout and size of the
+    /// data is format specific.
+    ///
+    /// This field is ordered from the lower mip level upwards, with a starting index specified by
+    /// 'base_level'.
+    ///
+    /// # Example
+    ///
+    /// Given a 'base_level' of 2, level_offsets[0] would refer to mip 2, level_offsets[1] to mip 3,
+    /// and so on.
+    ///
+    /// # What about disjoint sets?
+    ///
+    /// We don't see a strong use case for specifying a sparse set of mips (i.e. populate mip 1 and
+    /// 3).
+    pub level_offsets: ArrayVec<usize, 16>,
+}
+
+impl TextureUploadDataDesc {
+    pub fn offset_for_level(&self, level: u32) -> Option<usize> {
+        // base_level is the index of the first mip. subtracting base level from 'level' gives us
+        // the index to lookup in 'level_offsets'. the overflow check doubles as a bounds check
+        // for a mips we haven't provided data for.
+        let i = level.checked_sub(self.base_level as u32)?;
+
+        // Gets the offset for the mip we want based on the calculated mip level. The bounds check
+        // on the index also bounds checks whether we asked for a mip level we don't have data for.
+        self.level_offsets.get(i as usize).copied()
+    }
+
+    /// Yields a [`Range`] that yields the mip levels that have data available.
+    pub fn level_range(&self) -> Range<u32> {
+        let base_level = self.base_level as u32;
+        let end_level = base_level + self.level_offsets.len() as u32;
+        base_level..end_level
+    }
+
+    /// Validates that the data description is compatible with the given [`TextureObjectDesc`].
+    pub fn validate(&self, object_desc: &TextureObjectDesc) -> Option<()> {
+        for offset in self.level_offsets.iter() {
+            // Offsets must be 512 byte aligned
+            if *offset % 512 != 0 {
+                return None;
+            }
+        }
+
+        let min_level = self.base_level as usize;
+        let max_level = min_level + self.level_offsets.len();
+
+        // Mip chain addresses an out of bounds mip level
+        if min_level >= object_desc.num_levels.get() as usize {
+            return None;
+        }
+
+        // Mip chain addresses an out of bounds mip level
+        if max_level > object_desc.num_levels.get() as usize {
+            return None;
+        }
+
+        Some(())
+    }
+}
+
+/// The interface expected of some object that abstracts over the source of a byte buffer that can
+/// be used with copy commands on the GPU. Typically any buffer memory yielded by this interface
+/// will be uploaded from an upload heap in the GPU API.
 ///
 /// # Performance Warning
 ///
 /// It is likely for the underlying upload memory to be mapped as write-combined or uncached. This
 /// will make reads from the upload memory very expensive as well as make random writes expensive.
 ///
-/// It is highly recommended to only write to this memory once, sequentially.
-pub struct TextureUploadSource {
-    /// The inner [`BufferUploadSource`] that we abstract over to create a [`TextureUploadSource`].
-    pub(crate) source: BufferUploadSource,
-
-    /// A description of the texture data we will store in this upload memory block. The size of the
-    /// staging memory block will have been derived from this description.
-    pub(crate) desc: TextureMipUploadDesc,
+/// It is highly recommended to only write to this memory once, sequentially, and _never_ read it.
+///
+/// # Safety
+///
+/// It is the implementation's responsibility to ensure that the buffer yielded by this interface
+/// is valid to use as an upload source in the platform's GPU API. Typically this means it must be
+/// allocated from [`CpuAccessMode::Write`] memory.
+///
+/// It is also the implemetation's responsibility to ensure that the device offset of the region is
+/// aligned to at least 512 bytes. This is critical so users are able to ensure individual mip
+/// levels can be aligned to 512 byte blocks within a single [`IUploadBuffer`].
+pub unsafe trait IUploadBuffer: Send + Sync {
+    fn buffer(&self) -> &dyn IBuffer;
+    fn device_offset(&self) -> u64;
+    fn bytes(&self) -> &[u8];
+    fn bytes_mut(&mut self) -> &mut [u8];
 }
 
-// TODO: Block Formats like DXT/BCn
+pub struct SharedUploadBuffer {
+    /// A reference to the 'IBuffer' that the owned buffer region was allocated from. This is only
+    /// held to ensure the buffer is never dropped.
+    buffer: AnyArc<dyn IBuffer>,
 
-impl TextureUploadSource {
-    /// Constructs a new upload source from the given parameters. Includes some debug validation to
-    /// try and detect mistakes.
+    /// The offset from the start of the upload buffer within the associated buffer object.
+    device_offset: u64,
+
+    /// A slice referring to the actual buffer region this upload buffer wraps. Logically this is
+    /// owned by the [`SharedUploadBuffer`] and we have an exclusive borrow but we can't express
+    /// this to rustc.
     ///
-    /// This function is intended to be used when sub-allocating upload payloads from a larger
-    /// staging buffer allocation.
+    /// How do we have an exclusive borrow? It's an interface requirement! It's unsafe to construct
+    /// a [`SharedUploadBuffer`] over a slice if the borrow isn't exclusive.
+    data: NonNull<[u8]>,
+}
+
+impl SharedUploadBuffer {
+    /// Constructs a new [`SharedUploadBuffer`] from the given [`IBuffer`] and slice pointer.
     ///
     /// # Safety
     ///
-    /// There are a bunch of requirements for safely implementing this system.
-    ///
-    /// - 'data' takes ownership of the underlying buffer
-    /// - 'data' must point to memory in the mapped range of 'buffer'
-    /// - 'data' must be sized for the texture described by 'desc'
-    /// - 'offset' must be aligned to 512 bytes within the buffer
-    /// - 'data.len()' combined with 'offset' must not overrun the end of the buffer
-    /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
-    ///   textures.
-    /// - 'usage' must be read-only and a valid texture usage flag
-    ///
-    /// There are a bunch of debug asserts for these which are only enabled on debug builds, check
-    /// those to see all the requirements. Do not violate these requirements as they will not be
-    /// checked in a release build.
+    /// It is the caller's responsibility to ensure that `buffer` must be allocated from
+    /// [`CpuAccessMode::Write`] memory, `data` must be part of the buffer's memory mapping, and
+    /// the `data` slice must be exclusively owned. The buffer must also allow the
+    /// [`ResourceUsageFlags::COPY_SOURCE`] usage.
     pub unsafe fn new(
         buffer: AnyArc<dyn IBuffer>,
-        desc: TextureMipUploadDesc,
-        offset: u64,
-        usage: ResourceUsageFlags,
+        device_offset: u64,
         data: NonNull<[u8]>,
     ) -> Self {
-        #[cfg(debug_assertions)]
-        {
-            let required_size = desc.size_requirement() as usize;
+        debug_assert_eq!(buffer.desc_ref().cpu_access, CpuAccessMode::Write);
+        debug_assert!(buffer
+            .desc_ref()
+            .usage
+            .contains(ResourceUsageFlags::COPY_SOURCE));
+        debug_assert_eq!(
+            device_offset % 512,
+            0,
+            "device_offset must be 512 byte aligned!"
+        );
+        Self {
+            buffer,
+            device_offset,
+            data,
+        }
+    }
+}
 
-            debug_assert!(desc.width > 0, "Width must be > 0");
-            debug_assert!(desc.height > 0, "Height must be > 0");
-            debug_assert!(desc.depth > 0, "Depth must be > 0");
+// Because of 'data' we need to do these manually
+unsafe impl Send for SharedUploadBuffer {}
+unsafe impl Sync for SharedUploadBuffer {}
 
-            debug_assert!(
-                data.len() >= required_size,
-                "data.len() is {} but must be >= {}",
-                data.len(),
-                required_size
-            );
+unsafe impl IUploadBuffer for SharedUploadBuffer {
+    fn buffer(&self) -> &dyn IBuffer {
+        self.buffer.as_ref()
+    }
 
-            debug_assert_eq!(
-                offset % 512,
-                0,
-                "Offset must be aligned to 512 bytes within the buffer"
-            );
+    fn device_offset(&self) -> u64 {
+        self.device_offset
+    }
 
-            debug_assert!(usage.is_read_usage() && usage.is_texture_usage())
+    fn bytes(&self) -> &[u8] {
+        // Safety: It is unsafe to construct a [`SharedUploadBuffer`] where this is unsound
+        unsafe { self.data.as_ref() }
+    }
+
+    fn bytes_mut(&mut self) -> &mut [u8] {
+        // Safety: It is unsafe to construct a [`SharedUploadBuffer`] where this is unsound
+        unsafe { self.data.as_mut() }
+    }
+}
+
+pub struct TextureUploadDesc {
+    /// A description of the texture object we should create.
+    pub desc: TextureObjectDesc,
+
+    /// The buffer that our image levels have been populated in ready for upload to the GPU.
+    pub buffer: SmallBox<dyn IUploadBuffer, S8>,
+
+    /// A description of where each mip level we've provided data for can be found within
+    /// [`Self::buffer`].
+    pub data: TextureUploadDataDesc,
+}
+
+impl TextureUploadDesc {
+    /// Constructs a new owned [TextureUploadSource] for the given buffer upload description.
+    pub fn new_owned(
+        device: &dyn IDevice,
+        desc: TextureObjectDesc,
+        base_level: u32,
+        num_levels: u32,
+    ) -> Result<Self, BufferCreateError> {
+        desc.validate().unwrap();
+
+        let min_level = base_level;
+        let max_level = min_level + num_levels;
+
+        assert!(min_level < desc.num_levels.get());
+        assert!(max_level <= desc.num_levels.get());
+
+        let mut total_size = 0;
+        let mut level_offsets = ArrayVec::new();
+        for level in min_level..max_level {
+            level_offsets.push(total_size);
+            total_size += desc.upload_bytes_for_level(level);
+            total_size = total_size.next_multiple_of(512);
         }
 
-        let source = BufferUploadSource::new(buffer, offset, usage, data);
-        Self { source, desc }
+        let data = TextureUploadDataDesc {
+            base_level: base_level as u8, // Cast is checked above
+            level_offsets,
+        };
+
+        let buffer = unsafe {
+            let buffer = device.create_buffer(&BufferDesc {
+                size: total_size as u64,
+                cpu_access: CpuAccessMode::Write,
+                usage: ResourceUsageFlags::COPY_SOURCE,
+                name: None,
+            })?;
+
+            let ptr = buffer.map().unwrap();
+            let data = NonNull::slice_from_raw_parts(ptr, total_size);
+            SharedUploadBuffer::new(buffer, 0, data)
+        };
+
+        let out = Self {
+            desc,
+            buffer: smallbox!(buffer),
+            data,
+        };
+        Ok(out)
     }
 
     /// Constructs a new owned [TextureUploadSource] for the given buffer upload description.
-    ///
-    /// # Safety
-    ///
-    /// See [TextureUploadSource::new] for more information.
-    ///
-    /// This utility is safer to use than [TextureUploadSource::new] as it guarantees all the buffer
-    /// size and ownership constraints by construction. The only relevant requirements are to
-    /// ensure the [TextureMipUploadDesc] encodes a valid non-zero-sized texture. That is:
-    ///
-    /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
-    ///   textures.
-    /// - The buffer in 'bump' must have been created with [`ResourceUsageFlags::COPY_SOURCE`]
-    pub unsafe fn new_in_bump_arena(
+    pub fn new_in_bump_arena(
         bump: &UploadBumpAllocator,
-        desc: TextureMipUploadDesc,
-        usage: ResourceUsageFlags,
+        desc: TextureObjectDesc,
+        base_level: u32,
+        num_levels: u32,
     ) -> Result<Self, BufferCreateError> {
-        let required_size = desc.size_requirement() as usize;
-        let block = bump
-            .allocate_aligned(required_size, 256)
-            .ok_or(BufferCreateError::OutOfMemory)?;
-        let data = NonNull::slice_from_raw_parts(block.result, required_size);
-        let out = Self::new(
-            bump.buffer().upgrade(),
+        assert!(bump.usage().contains(ResourceUsageFlags::COPY_SOURCE));
+
+        desc.validate().unwrap();
+
+        let min_level = base_level;
+        let max_level = min_level + num_levels;
+
+        assert!(min_level < desc.num_levels.get());
+        assert!(max_level <= desc.num_levels.get());
+
+        let mut total_size = 0;
+        let mut level_offsets = ArrayVec::new();
+        for level in min_level..max_level {
+            level_offsets.push(total_size);
+            total_size += desc.upload_bytes_for_level(level);
+            total_size = total_size.next_multiple_of(512);
+        }
+
+        let data = TextureUploadDataDesc {
+            base_level: base_level as u8, // Cast is checked above
+            level_offsets,
+        };
+
+        let buffer = unsafe {
+            let block = bump
+                .allocate_aligned(total_size, 512)
+                .ok_or(BufferCreateError::OutOfMemory)?;
+            let data = NonNull::slice_from_raw_parts(block.result, total_size);
+            SharedUploadBuffer::new(bump.buffer().upgrade(), block.device_offset as u64, data)
+        };
+
+        let out = Self {
             desc,
-            block.device_offset as u64,
-            usage,
+            buffer: smallbox!(buffer),
             data,
-        );
+        };
         Ok(out)
-    }
-
-    /// Constructs a new owned [TextureUploadSource] for the given texture upload description.
-    ///
-    /// # Safety
-    ///
-    /// See [TextureUploadSource::new] for more information.
-    ///
-    /// This utility is safer to use than [TextureUploadSource::new] as it guarantees all the buffer
-    /// size and ownership constraints by construction. The only relevant requirements are to
-    /// ensure the [TextureMipUploadDesc] encodes a valid non-zero-sized texture. That is:
-    ///
-    /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
-    ///   textures.
-    pub unsafe fn new_owned(
-        device: &dyn IDevice,
-        desc: TextureMipUploadDesc,
-        usage: ResourceUsageFlags,
-    ) -> Result<Self, BufferCreateError> {
-        let size_requirement = desc.size_requirement();
-        let buffer = device.create_buffer(&BufferDesc {
-            size: size_requirement as u64,
-            cpu_access: CpuAccessMode::Write,
-            usage: ResourceUsageFlags::COPY_SOURCE,
-            name: None,
-        })?;
-
-        let ptr = buffer.map().unwrap();
-        let data = NonNull::slice_from_raw_parts(ptr, size_requirement as usize);
-        let out = Self::new(buffer, desc, 0, usage, data);
-
-        Ok(out)
-    }
-
-    /// Discard any texture specific info and decay this [`TextureUploadSource`] into the underlying
-    /// [`BufferUploadSource`].
-    ///
-    /// Useful for unifying the types for deferred deletion when all you care about is the rhi
-    /// buffer handle.
-    #[inline]
-    pub fn into_buffer_source(self) -> BufferUploadSource {
-        let TextureUploadSource { source, .. } = self;
-        source
-    }
-
-    /// Get the [`TextureMipUploadDesc`] this upload request was created with.
-    #[inline]
-    pub const fn desc(&self) -> &TextureMipUploadDesc {
-        &self.desc
-    }
-
-    /// Calls [`IBuffer::unmap`] the internal buffer.
-    ///
-    /// # Safety
-    ///
-    /// See [`BufferUploadSource::unmap`] for more info.
-    #[inline(always)]
-    pub unsafe fn unmap(&self) -> Result<(), ResourceUnmapError> {
-        self.source.unmap()
-    }
-
-    /// Returns a handle to the [`IBuffer`] object that backs our staging buffer.
-    ///
-    /// # Warning
-    ///
-    /// See [`BufferUploadSource::buffer`] for more info.
-    #[inline(always)]
-    pub fn buffer(&self) -> &dyn IBuffer {
-        self.source.buffer()
     }
 
     /// Constructs a [BufferToTextureCopyRegion] that encodes a valid copy command to copy from the
@@ -297,270 +583,37 @@ impl TextureUploadSource {
     /// We make some assumptions.
     /// - We only allow uploading entire mip levels and/or array layers so the origin is always
     ///   `(0, 0)` and the extent is assumed to cover the entire subresource.
-    pub const fn get_copy_region(
+    pub fn get_copy_region(
         &self,
-        mip_level: u32,
-        array_layer: u32,
+        level: u32,
+        // array_layer: u32,
         aspect: TextureCopyAspect,
     ) -> BufferToTextureCopyRegion {
+        let mip_offset = self.data.offset_for_level(level).unwrap() as u64;
+        let src_offset = self.buffer.device_offset() + mip_offset;
+        let (w, h, d) = self.desc.dimensions_for_level(level);
+        let extent = Extent3D::new(w, h, d);
         BufferToTextureCopyRegion {
             src: ImageDataLayout {
-                offset: self.source.offset,
-                row_pitch: self.desc.aligned_width(),
-                extent: self.desc.extent(),
+                offset: src_offset,
+                row_pitch: self.desc.upload_row_texels_for_level(level),
+                extent,
             },
             dst: TextureCopyInfo {
-                mip_level,
-                array_layer,
+                mip_level: level,
+                array_layer: 0,
                 aspect,
                 origin: UOffset3D::new(0, 0, 0),
-                extent: self.desc.extent(),
+                extent,
             },
         }
     }
-
-    /// Gets a slice over the requested row, including padding texels needed for satisfying row
-    /// pitch.
-    ///
-    /// # Safety
-    ///
-    /// The input parameter is not bounds checked and my produce a slice that is out of bounds of
-    /// the upload buffer slice we're sub-slicing from. It is the caller's responsibility to ensure
-    /// that the buffer is valid for the requested row.
-    pub unsafe fn row_ptr(&self, row: u32) -> NonNull<[u8]> {
-        // Calculate the offset to the start of the 'row'th row.
-        let aligned_width = self.desc.aligned_width() as usize;
-        let elem_size = self.desc.format.bytes_per_element() as usize;
-        let aligned_stride = aligned_width * elem_size;
-        let row_offset = aligned_stride * row as usize;
-
-        // We check anyway on debug builds because we can.
-        #[cfg(debug_assertions)]
-        {
-            let row_count = self.desc.height * self.desc.depth;
-            debug_assert!(
-                row < row_count,
-                "Row '{row}' out of bounds of '{row_count}'"
-            );
-        }
-
-        // Make our sub-slice with the new offset+len pair.
-        let base_ptr = self.source.data.cast::<u8>().as_ptr();
-        let ptr = base_ptr.add(row_offset);
-        let ptr = NonNull::new(ptr as _).unwrap_unchecked();
-        NonNull::slice_from_raw_parts(ptr, self.desc.width as usize * elem_size)
-    }
-
-    /// Returns an iterator that will yield each row of the image as an individual slice. The row
-    /// slices do _not_ contain the padding pitch.
-    #[inline]
-    pub fn row_iter(&self) -> RowIterator {
-        RowIterator {
-            inner: self.make_row_iter_inner(),
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Returns an iterator that will yield each row of the image as an individual slice. The row
-    /// slices do _not_ contain the padding pitch.
-    #[inline]
-    pub fn row_iter_mut(&mut self) -> RowIteratorMut {
-        RowIteratorMut {
-            inner: self.make_row_iter_inner(),
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Get the upload block as a raw pointer.
-    ///
-    /// See [`BufferUploadSource::data_ptr`] for more info.
-    pub const fn data_ptr(&self) -> NonNull<[u8]> {
-        self.source.data
-    }
-
-    /// Get the upload block as a slice.
-    ///
-    /// See [`BufferUploadSource::data_mut`] for more info.
-    #[inline(always)]
-    pub fn data_mut(&mut self) -> &mut [u8] {
-        // Safety: It is guaranteed by the implementation that this should be uniquely owned by the
-        //         request and valid for access as long as the upload request object is available.
-        unsafe { self.source.data.as_mut() }
-    }
 }
 
-impl TextureUploadSource {
-    fn make_row_iter_inner(&self) -> RowIteratorInner {
-        // Safety: We guarantee that ptr is good for rows * stride bytes because it is unsafe to
-        //         construct a 'TextureUploadSource' such that this requirement can't be met.
-        //
-        // We only provide safe constructors that check at runtime (or allocate the block
-        // themselves). The alternative is an _unsafe_ constructor.
-        unsafe {
-            let ptr = self.source.data.cast::<u8>();
-
-            let elem_size = self.desc.format.bytes_per_element() as usize;
-            let width = self.desc.width as usize * elem_size;
-
-            let rows = self.desc.height as usize;
-
-            let aligned_width = self.desc.aligned_width() as usize;
-            let stride = aligned_width * elem_size;
-
-            RowIteratorInner::new(ptr, width, rows, stride)
-        }
-    }
-}
-
-impl Into<BufferUploadSource> for TextureUploadSource {
-    fn into(self) -> BufferUploadSource {
-        self.into_buffer_source()
-    }
-}
-
-pub struct RowIteratorInner {
-    /// The width of a row, in bytes (not pixels), not including padding pitch needed to meet upload
-    /// requirements
-    width: usize,
-
-    /// The true size of a row, in bytes, including padding pitch.
-    stride: usize,
-
-    /// Iterator state. Pointer to the base of the row we will return on the next call to the
-    /// iterator.
-    ptr: NonNull<u8>,
-
-    /// A marker for the end of the iterable range. This logically points to the base of the next
-    /// row after the end of the buffer (that is, it points out of bounds). Do _NOT_ derference.
-    end: NonNull<u8>,
-}
-
-impl RowIteratorInner {
-    /// Unsafe constructor for [`RowIteratorInner`]. This will check that stride and width are well
-    /// formed (in general, and with regard to eachother).
-    ///
-    /// - `width` <= `stride`
-    /// - `width` < `isize::MAX`
-    /// - `stride` < `isize::MAX`
-    ///
-    /// # Safety
-    ///
-    /// It is the caller's responsiblity to ensure that the region of memory starting at 'ptr' is
-    /// valid for 'rows * stride' bytes.
-    pub unsafe fn new(ptr: NonNull<u8>, width: usize, rows: usize, stride: usize) -> Self {
-        assert!(stride < isize::MAX as usize);
-        assert!(width <= stride);
-        // width < isize::MAX is checked transitively by stride < isize::MAX
-        //     width <= stride < isize::MAX
-
-        let end = ptr.add(rows * stride);
-        Self {
-            width,
-            stride,
-            ptr,
-            end,
-        }
-    }
-}
-
-impl Iterator for RowIteratorInner {
-    type Item = NonNull<[u8]>;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.ptr == self.end {
-            return None;
-        }
-
-        let out = NonNull::slice_from_raw_parts(self.ptr, self.width);
-
-        // Safety: It is illegal to construct a row iterator where this is unsafe. We require that:
-        //  - ptr <= end
-        //  - stride < isize::MAX
-        //  - width < isize::MAX
-        //  - width and stride must be set such that we can never iterate past 'end' and that we
-        //    can never yield a slice the extends past 'end'.
-        //
-        // As a result the add is safe. We won't access outside the allocation, or the borrow we
-        // build on top. And we won't overflow the add (isize::MAX constraint).
-        unsafe {
-            self.ptr = self.ptr.add(self.stride);
-        }
-
-        Some(out)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let ptr = self.ptr.as_ptr() as usize;
-        let end = self.end.as_ptr() as usize;
-
-        // size of
-        let diff = end - ptr;
-        let rows = diff / self.stride;
-        (rows, Some(rows))
-    }
-}
-
-impl ExactSizeIterator for RowIteratorInner {
-    #[inline(always)]
-    fn len(&self) -> usize {
-        // Look up, you can see we're guaranteed to have lower == upper
-        let (lower, _upper) = self.size_hint();
-        lower
-    }
-}
-
-pub struct RowIterator<'a> {
-    inner: RowIteratorInner,
-    _phantom: PhantomData<&'a TextureUploadSource>,
-}
-
-impl<'a> Iterator for RowIterator<'a> {
-    type Item = &'a [u8];
-
-    #[inline(always)]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|v| {
-            // Safety: We have a phantom borrow of the container and check all required
-            //         preconditions in the constructor so this is safe.
-            unsafe { v.as_ref() }
-        })
-    }
-}
-
-impl<'a> ExactSizeIterator for RowIterator<'a> {
-    #[inline(always)]
-    fn len(&self) -> usize {
-        // Look up, you can see we're guaranteed to have lower == upper
-        let (lower, _upper) = self.size_hint();
-        lower
-    }
-}
-
-pub struct RowIteratorMut<'a> {
-    inner: RowIteratorInner,
-    _phantom: PhantomData<&'a TextureUploadSource>,
-}
-
-impl<'a> Iterator for RowIteratorMut<'a> {
-    type Item = &'a mut [u8];
-
-    #[inline(always)]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|mut v| {
-            // Safety: We have a phantom borrow of the container and check all required
-            //         preconditions in the constructor so this is safe.
-            unsafe { v.as_mut() }
-        })
-    }
-}
-
-impl<'a> ExactSizeIterator for RowIteratorMut<'a> {
-    #[inline(always)]
-    fn len(&self) -> usize {
-        // Look up, you can see we're guaranteed to have lower == upper
-        let (lower, _upper) = self.size_hint();
-        lower
+const fn const_max(a: u32, b: u32) -> u32 {
+    if a < b {
+        b
+    } else {
+        a
     }
 }

@@ -726,12 +726,12 @@ impl IDevice for Device {
                 .image_type(image_type)
                 .format(format)
                 .extent(vk::Extent3D {
-                    width: desc.width,
-                    height: desc.height,
-                    depth: desc.depth,
+                    width: desc.width.max(1),
+                    height: desc.height.max(1),
+                    depth: desc.depth.max(1),
                 })
-                .mip_levels(desc.mip_levels)
-                .array_layers(desc.array_size)
+                .mip_levels(desc.mip_levels.max(1))
+                .array_layers(desc.array_size.max(1))
                 .samples(samples)
                 .tiling(vk::ImageTiling::OPTIMAL)
                 .usage(usage)

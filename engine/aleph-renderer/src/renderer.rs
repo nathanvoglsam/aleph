@@ -45,7 +45,7 @@ use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
     built_in_textures, BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
     GenerateMips, ShaderDatabaseAccessor, StateCache, TextureAllocMode, TextureHandle,
-    TextureLoader, TexturePool, TextureUploadSource,
+    TextureLoader, TexturePool, TextureUploadDesc,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -340,7 +340,7 @@ impl Renderer {
 
     pub fn create_texture(
         &mut self,
-        data: TextureUploadSource,
+        data: TextureUploadDesc,
         mode: TextureAllocMode,
         mips: GenerateMips,
     ) -> Option<TextureHandle> {

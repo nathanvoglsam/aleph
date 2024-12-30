@@ -383,11 +383,11 @@ impl<R: Read + Seek> KtxDocument<R> {
     /// This function requires the `KTXDocument` mutably as the reader will be mutated while being
     /// read from (a reader is a stateful object).
     ///
-    pub fn get_level_info(&self, level: usize) -> Result<LevelIndex, std::io::Error> {
+    pub fn get_level_info(&self, level: u32) -> Result<LevelIndex, std::io::Error> {
         use std::io::{Error, ErrorKind};
 
         // Check we're in bounds for the number of levels, faces and levels
-        if level >= self.level_num() as usize {
+        if level >= self.level_num() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
                 "Level index out of bounds",
@@ -395,7 +395,7 @@ impl<R: Read + Seek> KtxDocument<R> {
         }
 
         // Read the offset from the level indices
-        let info = self.level_indices.as_slice()[level].clone();
+        let info = self.level_indices.as_slice()[level as usize].clone();
 
         Ok(info)
     }

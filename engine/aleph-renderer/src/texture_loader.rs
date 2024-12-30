@@ -37,7 +37,7 @@ use crossbeam::queue::{ArrayQueue, SegQueue};
 use crate::mip_generator::MipGenerator;
 use crate::{
     DeletionPool, EnqueueError, EnqueueErrorKind, StateCache, TextureHandle, TexturePool,
-    TextureStreamingRequest, TextureUploadSource,
+    TextureStreamingRequest, TextureUploadDesc,
 };
 
 pub struct TextureLoader {
@@ -72,10 +72,10 @@ impl TextureLoader {
         &self,
         request: Option<TextureStreamingRequest>,
         handle: TextureHandle,
-        data: TextureUploadSource,
+        data: TextureUploadDesc,
         mode: TextureAllocMode,
         mips: GenerateMips,
-    ) -> Result<(), EnqueueError<TextureUploadSource>> {
+    ) -> Result<(), EnqueueError<TextureUploadDesc>> {
         let load = LoadRequest {
             target: Some(handle),
             request,
@@ -93,10 +93,10 @@ impl TextureLoader {
     pub fn enqueue_new_upload(
         &self,
         request: TextureStreamingRequest,
-        data: TextureUploadSource,
+        data: TextureUploadDesc,
         mode: TextureAllocMode,
         mips: GenerateMips,
-    ) -> Result<(), EnqueueError<TextureUploadSource>> {
+    ) -> Result<(), EnqueueError<TextureUploadDesc>> {
         let load = LoadRequest {
             target: None,
             request: Some(request),
@@ -113,10 +113,10 @@ impl TextureLoader {
         &self,
         request: TextureStreamingRequest,
         target: TextureHandle,
-        data: TextureUploadSource,
+        data: TextureUploadDesc,
         mode: TextureAllocMode,
         mips: GenerateMips,
-    ) -> Result<(), EnqueueError<TextureUploadSource>> {
+    ) -> Result<(), EnqueueError<TextureUploadDesc>> {
         let load = LoadRequest {
             target: Some(target),
             request: Some(request),
@@ -154,7 +154,7 @@ impl TextureLoader {
         mode: TextureAllocMode,
         mips: GenerateMips,
         mut load: LoadRequest,
-    ) -> Result<LoadRequest, EnqueueError<TextureUploadSource>> {
+    ) -> Result<LoadRequest, EnqueueError<TextureUploadDesc>> {
         // Pre-allocate the texture if requested and patch the final_tex field with that texture
         match mode {
             TextureAllocMode::Deferred => {}
@@ -176,7 +176,7 @@ impl TextureLoader {
     fn enqueue_deferred_request(
         &self,
         load: LoadRequest,
-    ) -> Result<(), EnqueueError<TextureUploadSource>> {
+    ) -> Result<(), EnqueueError<TextureUploadDesc>> {
         match self.load_queue.push(load) {
             Ok(_) => Ok(()),
             Err(v) => Err(EnqueueErrorKind::QueueFull.with_data(v.data)),
@@ -238,12 +238,20 @@ impl TextureLoader {
         encoder.resource_barrier(&[], &[], &discard_barriers);
 
         for upload in textures.iter() {
+            let data = &upload.load.data.data;
+
             let texture = AnyArc::from_raw(upload.texture.as_ptr());
-            let region = upload
-                .load
-                .data
-                .get_copy_region(0, 0, TextureCopyAspect::Color);
-            encoder.copy_buffer_to_texture(upload.load.data.buffer(), texture.as_ref(), &[region]);
+            for level in data.level_range() {
+                let region = upload
+                    .load
+                    .data
+                    .get_copy_region(level, TextureCopyAspect::Color);
+                encoder.copy_buffer_to_texture(
+                    upload.load.data.buffer.buffer(),
+                    texture.as_ref(),
+                    &[region],
+                );
+            }
 
             if let Some(req) = upload.load.request.as_ref() {
                 req.mark_complete(upload.load.target.unwrap()).unwrap();
@@ -263,7 +271,7 @@ impl TextureLoader {
                         arena,
                         encoder,
                         upload.texture.as_ref(),
-                        upload.load.data.source.usage,
+                        upload.load.data.desc.usage,
                     );
                 }
                 GenerateMips::No => {
@@ -274,7 +282,7 @@ impl TextureLoader {
 
             // Finally push our data into the deletion pool to keep it alive for the copy on the GPU
             // timeline
-            deletion_pool.push_upload(upload.load.data);
+            deletion_pool.push_buffer(upload.load.data.buffer.buffer().upgrade());
         }
     }
 
@@ -305,7 +313,7 @@ impl TextureLoader {
 
         let subresources = TextureSubResourceSet::all(texture.desc_ref());
 
-        let usage = request.data.source.usage;
+        let usage = request.data.desc.usage;
         let mips = request.mips;
         let format = texture.desc_ref().format;
 
@@ -389,11 +397,11 @@ impl TextureLoader {
 
     fn allocate_texture(
         device: &dyn IDevice,
-        src: &TextureUploadSource,
+        src: &TextureUploadDesc,
         mips: GenerateMips,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
         // We require copy dest so we can initialize the resource
-        let mut combined_usage = src.source.usage | ResourceUsageFlags::COPY_DEST;
+        let mut combined_usage = src.desc.usage | ResourceUsageFlags::COPY_DEST;
         match mips {
             GenerateMips::Yes => {
                 // We require shader resource and render target usage to be able to generate mip
@@ -407,24 +415,15 @@ impl TextureLoader {
             GenerateMips::No => {}
         }
 
-        let mip_levels = match mips {
-            GenerateMips::Yes => {
-                let mip_levels = u32::max(src.desc.width, src.desc.height) as f32;
-                let mip_levels = mip_levels.log2().floor() + 1.0;
-                mip_levels as u32
-            }
-            GenerateMips::No => 1,
-        };
-
         let desc = TextureDesc {
-            width: src.desc.width,
-            height: src.desc.height,
-            depth: src.desc.depth,
+            width: src.desc.width.max(1),
+            height: src.desc.height.max(1),
+            depth: src.desc.depth.max(1),
             format: src.desc.format,
             dimension: TextureDimension::Texture2D, // TODO: need to propogate this
             clear_value: None,
             array_size: 1,
-            mip_levels,
+            mip_levels: src.desc.num_levels.get(),
             sample_count: 1,
             sample_quality: 0,
             usage: combined_usage,
@@ -479,7 +478,7 @@ struct LoadRequest {
     request: Option<TextureStreamingRequest>,
 
     /// The actual data source for the upload.
-    data: TextureUploadSource,
+    data: TextureUploadDesc,
 
     /// Optional pre-allocated destination texture
     final_tex: Option<AnyArc<dyn ITexture>>,

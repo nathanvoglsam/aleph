@@ -30,14 +30,14 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use aleph_device_allocators::{IUploadAllocator, RawDeviceAllocationResult, UploadBumpAllocator};
+use aleph_device_allocators::UploadBumpAllocator;
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::object_system::unsafe_impl_iobject;
 use aleph_engine::interfaces::renderer::{
-    GenerateMips, TextureAllocMode, TextureLoader, TextureMipUploadDesc, TextureStreamingRequest,
-    TextureUploadSource,
+    GenerateMips, TextureAllocMode, TextureLoader, TextureObjectDesc, TextureStreamingRequest,
+    TextureUploadDesc,
 };
-use aleph_ktx::{KtxDocument, VkFormat};
+use aleph_ktx::{DocumentType, KtxDocument, VkFormat};
 use aleph_rhi_api::*;
 
 use crate::game::async_loader::{AsyncLoader, AsyncLoaderHandle};
@@ -52,7 +52,7 @@ impl AsyncTextureLoader {
     pub fn new(device: AnyArc<dyn IDevice>, loader: Arc<TextureLoader>) -> Self {
         let upload_buffer = UploadBumpAllocator::new_upload_buffer(
             device.as_ref(),
-            256 * 1000 * 1000,
+            256 * 1024 * 1024,
             Some("AsyncTextureLoaderUploadBlock"),
         )
         .unwrap();
@@ -123,36 +123,60 @@ fn handler(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand
 fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -> Option<()> {
     let data = std::fs::read(&request.v.path).ok()?;
     let doc = KtxDocument::from_slice(&data).ok()?;
-    let desc = TextureMipUploadDesc {
-        width: doc.width(),
-        height: doc.height(),
-        depth: doc.depth(),
-        format: Format::Rgba8Unorm,
-    };
-    let size = desc.size_requirement();
-    let block = match context.upload_buffer.allocate_aligned(size, 512) {
-        Some(block) => block,
-        None => {
-            aleph_profile::scope_named!("AsyncTextureLoader::NewBlock");
-            let mut new_buffer = UploadBumpAllocator::new_upload_buffer(
-                context.device.as_ref(),
-                256 * 1024 * 1024,
-                Some("AsyncTextureLoaderUploadBlock"),
-            )
-            .unwrap();
-            std::mem::swap(&mut new_buffer, &mut context.upload_buffer);
-            context.upload_buffer.allocate_aligned(size, 512).unwrap()
+
+    if doc.document_type() != DocumentType::Image2D {
+        return None;
+    }
+
+    let mut desc = TextureObjectDesc::new();
+    desc.image_2d(doc.width(), doc.height());
+    desc.num_levels_full();
+    desc.format(Format::Rgba8Unorm);
+    desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
+
+    let new_source = {
+        let new_source = TextureUploadDesc::new_in_bump_arena(
+            &context.upload_buffer,
+            desc.clone(),
+            0,
+            desc.num_levels.get(),
+        );
+        match new_source {
+            Ok(v) => v,
+            Err(BufferCreateError::OutOfMemory) => {
+                aleph_profile::scope_named!("AsyncTextureLoader::NewBlock");
+                let mut new_buffer = UploadBumpAllocator::new_upload_buffer(
+                    context.device.as_ref(),
+                    256 * 1024 * 1024,
+                    Some("AsyncTextureLoaderUploadBlock"),
+                )
+                .unwrap();
+                std::mem::swap(&mut new_buffer, &mut context.upload_buffer);
+
+                TextureUploadDesc::new_in_bump_arena(
+                    &context.upload_buffer,
+                    desc.clone(),
+                    0,
+                    desc.num_levels.get(),
+                )
+                .unwrap()
+            }
+            Err(_) => {
+                panic!()
+            }
         }
-    };
-    let allocation = AllocationWithBuffer {
-        allocation: block,
-        buffer: context.upload_buffer.buffer().upgrade(),
     };
 
     let loader = context.loader.clone();
     let reqeust = request.req.clone();
     rayon::spawn(move || {
-        let _ = load_on_threadpool(loader, reqeust, desc, data, allocation);
+        let result = load_on_threadpool(loader, reqeust, data, new_source);
+        match result {
+            Some(_) => {}
+            None => {
+                log::error!("Texture Upload Failed on Worker!")
+            }
+        }
     });
 
     Some(())
@@ -162,9 +186,8 @@ fn load(context: &mut TextureLoaderContext, request: &AsyncTextureLoadCommand) -
 fn load_on_threadpool(
     loader: Arc<TextureLoader>,
     request: TextureStreamingRequest,
-    desc: TextureMipUploadDesc,
     data: Vec<u8>,
-    allocation: AllocationWithBuffer,
+    mut upload: TextureUploadDesc,
 ) -> Option<()> {
     // If the request has been moved into a terminal state (cancelled) we should bail.
     if !request.poll_state().is_open() {
@@ -175,33 +198,24 @@ fn load_on_threadpool(
 
     let data = match doc.format() {
         VkFormat::R8G8B8A8_UNORM => {
-            let v = unsafe {
-                let data = std::ptr::NonNull::slice_from_raw_parts(
-                    allocation.allocation.result,
-                    desc.size_requirement(),
-                );
-                TextureUploadSource::new(
-                    allocation.buffer,
-                    desc,
-                    allocation.allocation.device_offset as u64,
-                    ResourceUsageFlags::SHADER_RESOURCE,
-                    data,
-                )
-            };
-
-            let src = doc.get_level_info(0).ok()?;
-            let src = &data[src.to_slice_range()];
-
-            let row_width = doc.width() as usize * 4;
-            for row in 0..doc.height() as usize {
-                let dst = unsafe { v.row_ptr(row as u32).as_mut() };
-
-                let row_start = row * row_width;
-                let src = &src[row_start..row_start + row_width];
-                dst.copy_from_slice(src);
+            for level in 0..upload.desc.num_levels.get() {
+                let num_rows = upload.desc.num_rows_for_level(level);
+                let row_bytes = upload.desc.row_bytes_for_level(level);
+                let row_bytes_padded = upload.desc.upload_row_bytes_for_level(level);
+                let src = doc.get_level_info(level).ok()?;
+                let mut src = &data[src.to_slice_range()];
+                let dst = upload.data.offset_for_level(level)?;
+                let mut dst = &mut upload.buffer.bytes_mut()[dst..];
+                for _ in 0..num_rows {
+                    let copy_src = &src[0..row_bytes];
+                    let copy_dst = &mut dst[0..row_bytes];
+                    copy_dst.copy_from_slice(copy_src);
+                    src = &src[row_bytes..];
+                    dst = &mut dst[row_bytes_padded..];
+                }
             }
 
-            v
+            upload
         }
         _ => return None,
     };
@@ -211,21 +225,9 @@ fn load_on_threadpool(
     {
         aleph_profile::scope_named!("EnqueueAndAllocate");
         loader
-            .enqueue_new_upload(
-                request,
-                data,
-                TextureAllocMode::Immediate,
-                GenerateMips::Yes,
-            )
+            .enqueue_new_upload(request, data, TextureAllocMode::Immediate, GenerateMips::No)
             .ok()?;
     }
 
     Some(())
 }
-
-struct AllocationWithBuffer {
-    allocation: RawDeviceAllocationResult,
-    buffer: AnyArc<dyn IBuffer>,
-}
-
-unsafe impl Send for AllocationWithBuffer {}

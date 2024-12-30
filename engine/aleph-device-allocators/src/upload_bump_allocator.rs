@@ -48,6 +48,9 @@ pub struct UploadBumpAllocator {
 
     /// The bump allocator state. The allocator's brain.
     state: BumpAllocator,
+
+    /// What usage flags the bump allocator was created with.
+    usage: ResourceUsageFlags,
 }
 
 // Safety: We rely on other unsafe code to ensure the allocator uniquely owns the mapped region of
@@ -99,6 +102,7 @@ impl UploadBumpAllocator {
                 base_host_address,
                 base_device_offset: 0,
                 state,
+                usage: ResourceUsageFlags::CONSTANT_BUFFER,
             })
         } else {
             None
@@ -127,6 +131,7 @@ impl UploadBumpAllocator {
                 base_host_address,
                 base_device_offset: 0,
                 state,
+                usage: ResourceUsageFlags::COPY_SOURCE,
             })
         } else {
             None
@@ -169,6 +174,7 @@ impl UploadBumpAllocator {
                 base_host_address,
                 base_device_offset: offset,
                 state,
+                usage: buffer.desc_ref().usage,
             })
         } else {
             None
@@ -207,6 +213,11 @@ impl UploadBumpAllocator {
     #[inline]
     pub fn buffer(&self) -> &dyn IBuffer {
         self.buffer.as_ref()
+    }
+
+    /// The [`ResourceUsageFlags`] the wrapped buffer was allocated with
+    pub const fn usage(&self) -> ResourceUsageFlags {
+        self.usage
     }
 
     /// Internal function for convertin an allocation result to our own [RawDeviceAllocationResult]

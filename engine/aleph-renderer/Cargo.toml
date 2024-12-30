@@ -68,4 +68,6 @@ rkyv = { workspace = true }
 thiserror = { workspace = true }
 wide = { workspace = true }
 allocator-api2 = { workspace = true }
-rayon = {workspace = true }
+rayon = { workspace = true }
+arrayvec = { workspace = true }
+smallbox = { workspace = true }

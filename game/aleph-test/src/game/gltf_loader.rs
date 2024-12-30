@@ -226,7 +226,7 @@ pub fn load_scene(
                 let mat = prim.material();
                 let pbr_mat = mat.pbr_metallic_roughness();
                 match prim.material().alpha_mode() {
-                    AlphaMode::Mask | AlphaMode::Blend | AlphaMode::Opaque => {
+                    AlphaMode::Opaque => {
                         let transform = Transform {
                             position: Vec3::from(t).to_double(),
                             rotation: Rotor3::from_quaternion_array(r),

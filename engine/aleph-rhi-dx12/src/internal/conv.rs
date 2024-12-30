@@ -603,7 +603,7 @@ pub fn texture_create_desc_to_dx12(
             if desc.depth >= u16::MAX as _ {
                 return Err(TextureCreateError::InvalidDepth(desc.depth));
             }
-            if desc.array_size >= 1 {
+            if desc.array_size > 1 {
                 return Err(TextureCreateError::InvalidArraySize(desc.array_size));
             }
             (D3D12_RESOURCE_DIMENSION_TEXTURE3D, desc.depth)
@@ -634,10 +634,10 @@ pub fn texture_create_desc_to_dx12(
     let out = D3D12_RESOURCE_DESC1 {
         Dimension: dimension,
         Alignment: 0,
-        Width: desc.width as u64,
-        Height: desc.height,
-        DepthOrArraySize: depth_or_array_size as u16,
-        MipLevels: desc.mip_levels as u16,
+        Width: desc.width.max(1) as u64,
+        Height: desc.height.max(1),
+        DepthOrArraySize: depth_or_array_size.max(1) as u16,
+        MipLevels: desc.mip_levels.max(1) as u16,
         Format: texture_format_to_dxgi(desc.format),
         SampleDesc: DXGI_SAMPLE_DESC {
             Count: desc.sample_count,

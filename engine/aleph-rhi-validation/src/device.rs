@@ -365,6 +365,9 @@ impl IDevice for ValidationDevice {
             ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(desc.usage),
             "Attempted to create a texture with usage flags meant only for buffers!"
         );
+        assert_ne!(desc.width, 0, "desc.width must be > 0");
+        assert_ne!(desc.height, 0, "desc.height must be > 0");
+        assert_ne!(desc.depth, 0, "desc.depth must be > 0");
         let inner = self.inner.create_texture(desc)?;
         let texture = AnyArc::new_cyclic(move |v| ValidationTexture {
             _this: v.clone(),

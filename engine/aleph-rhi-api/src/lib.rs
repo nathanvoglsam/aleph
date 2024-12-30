@@ -104,6 +104,7 @@ macro_rules! new_linear_metadata {
             linear_format: $f,
             compatible_views: &[$f],
             aspect_mask: TextureAspect::COLOR,
+            block_dimensions: (1, 1, 1),
         }
     };
     ($f: expr, $n: expr, $e_size: expr, $encoding: expr, $s_f: expr) => {
@@ -118,6 +119,7 @@ macro_rules! new_linear_metadata {
             linear_format: $f,
             compatible_views: &[$f, $s_f],
             aspect_mask: TextureAspect::COLOR,
+            block_dimensions: (1, 1, 1),
         }
     };
 }
@@ -135,6 +137,7 @@ macro_rules! new_srgb_metadata {
             linear_format: $l_f,
             compatible_views: &[$l_f, $f],
             aspect_mask: TextureAspect::COLOR,
+            block_dimensions: (1, 1, 1),
         }
     };
 }
@@ -2139,6 +2142,7 @@ pub struct FormatMetadata {
     pub linear_format: Format,
     pub compatible_views: &'static [Format],
     pub aspect_mask: TextureAspect,
+    pub block_dimensions: (u8, u8, u8),
 }
 
 #[repr(u8)]
@@ -2268,6 +2272,7 @@ impl Format {
                 linear_format: Format::Depth32Float,
                 compatible_views: &[Format::Depth32Float],
                 aspect_mask: TextureAspect::DEPTH,
+                block_dimensions: (1, 1, 1),
             },
             Format::Depth32FloatStencil8 => FormatMetadata {
                 name: "Depth32FloatStencil8",
@@ -2280,6 +2285,7 @@ impl Format {
                 linear_format: Format::Depth32FloatStencil8,
                 compatible_views: &[Format::Depth32FloatStencil8],
                 aspect_mask: TextureAspect::DEPTH_STENCIL,
+                block_dimensions: (1, 1, 1),
             },
             Format::Depth24Stencil8 => FormatMetadata {
                 name: "Depth24Stencil8",
@@ -2292,6 +2298,7 @@ impl Format {
                 linear_format: Format::Depth24Stencil8,
                 compatible_views: &[Format::Depth24Stencil8],
                 aspect_mask: TextureAspect::DEPTH_STENCIL,
+                block_dimensions: (1, 1, 1),
             },
         }
     }
@@ -2386,6 +2393,11 @@ impl Format {
     /// block).
     pub const fn bytes_per_element(&self) -> u32 {
         self.metadata().bytes_per_element as u32
+    }
+
+    /// Returns the dimensions of a block for the given format.
+    pub const fn block_dimensions(&self) -> (u8, u8, u8) {
+        self.metadata().block_dimensions
     }
 
     /// Returns the minimum row pitch required for a buffer to texture copy operation on a texture

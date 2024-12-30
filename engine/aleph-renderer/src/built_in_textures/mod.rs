@@ -33,7 +33,8 @@ mod smaa_search;
 use aleph_rhi_api::*;
 
 use crate::{
-    GenerateMips, TextureAllocMode, TextureHandle, TextureLoader, TexturePool, TextureUploadSource,
+    GenerateMips, TextureAllocMode, TextureHandle, TextureLoader, TextureObjectDesc, TexturePool,
+    TextureUploadDesc,
 };
 
 pub unsafe fn create_1x1_colour_texture(
@@ -42,18 +43,13 @@ pub unsafe fn create_1x1_colour_texture(
     texture_loader: &TextureLoader,
     payload: u32,
 ) -> TextureHandle {
-    let mut data = TextureUploadSource::new_owned(
-        device,
-        crate::TextureMipUploadDesc {
-            width: 1,
-            height: 1,
-            depth: 1,
-            format: Format::Rgba8Unorm,
-        },
-        ResourceUsageFlags::SHADER_RESOURCE,
-    )
-    .unwrap();
-    let dst = &mut data.data_mut()[0..4];
+    let mut desc = TextureObjectDesc::new();
+    desc.format(Format::Rgba8Unorm);
+    desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
+    desc.image_2d(1, 1);
+
+    let mut data = TextureUploadDesc::new_owned(device, desc, 0, 1).unwrap();
+    let dst = &mut data.buffer.bytes_mut()[0..4];
     dst.copy_from_slice(bytemuck::bytes_of(&payload));
     let handle = texture_pool.create_texture(None);
     texture_loader
@@ -74,23 +70,25 @@ pub unsafe fn create_smaa_area_texture(
     texture_pool: &mut TexturePool,
     texture_loader: &TextureLoader,
 ) -> TextureHandle {
-    let mut data = TextureUploadSource::new_owned(
-        device,
-        crate::TextureMipUploadDesc {
-            width: smaa_area::WIDTH,
-            height: smaa_area::HEIGHT,
-            depth: 1,
-            format: Format::Rg8Unorm,
-        },
-        ResourceUsageFlags::SHADER_RESOURCE,
-    )
-    .unwrap();
+    let mut desc = TextureObjectDesc::new();
+    desc.format(Format::Rg8Unorm);
+    desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
+    desc.image_2d(smaa_area::WIDTH, smaa_area::HEIGHT);
 
-    for (i, row) in data.row_iter_mut().enumerate() {
-        let src_base = smaa_area::ROW_STRIDE as usize * i;
-        let src_end = smaa_area::ROW_STRIDE as usize * (i + 1);
-        let src = &smaa_area::BYTES[src_base..src_end];
-        row.copy_from_slice(src);
+    let mut data = TextureUploadDesc::new_owned(device, desc, 0, 1).unwrap();
+
+    let num_rows = data.desc.num_rows_for_level(0);
+    let row_bytes = data.desc.row_bytes_for_level(0);
+    let row_bytes_padded = data.desc.upload_row_bytes_for_level(0);
+    let mut src = smaa_area::BYTES.as_slice();
+    let mut dst = data.buffer.bytes_mut();
+    for _ in 0..num_rows {
+        assert_eq!(row_bytes, smaa_area::ROW_STRIDE as usize);
+
+        dst[0..row_bytes].copy_from_slice(&src[0..row_bytes]);
+
+        src = &src[row_bytes..];
+        dst = &mut dst[row_bytes_padded..];
     }
 
     let handle = texture_pool.create_texture(None);
@@ -112,23 +110,25 @@ pub unsafe fn create_smaa_search_texture(
     texture_pool: &mut TexturePool,
     texture_loader: &TextureLoader,
 ) -> TextureHandle {
-    let mut data = TextureUploadSource::new_owned(
-        device,
-        crate::TextureMipUploadDesc {
-            width: smaa_search::WIDTH,
-            height: smaa_search::HEIGHT,
-            depth: 1,
-            format: Format::R8Unorm,
-        },
-        ResourceUsageFlags::SHADER_RESOURCE,
-    )
-    .unwrap();
+    let mut desc = TextureObjectDesc::new();
+    desc.format(Format::R8Unorm);
+    desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
+    desc.image_2d(smaa_search::WIDTH, smaa_search::HEIGHT);
 
-    for (i, row) in data.row_iter_mut().enumerate() {
-        let src_base = smaa_search::ROW_STRIDE as usize * i;
-        let src_end = smaa_search::ROW_STRIDE as usize * (i + 1);
-        let src = &smaa_search::BYTES[src_base..src_end];
-        row.copy_from_slice(src);
+    let mut data = TextureUploadDesc::new_owned(device, desc, 0, 1).unwrap();
+
+    let num_rows = data.desc.num_rows_for_level(0);
+    let row_bytes = data.desc.row_bytes_for_level(0);
+    let row_bytes_padded = data.desc.upload_row_bytes_for_level(0);
+    let mut src = smaa_search::BYTES.as_slice();
+    let mut dst = data.buffer.bytes_mut();
+    for _ in 0..num_rows {
+        assert_eq!(row_bytes, smaa_search::ROW_STRIDE as usize);
+
+        dst[0..row_bytes].copy_from_slice(&src[0..row_bytes]);
+
+        src = &src[row_bytes..];
+        dst = &mut dst[row_bytes_padded..];
     }
 
     let handle = texture_pool.create_texture(None);
