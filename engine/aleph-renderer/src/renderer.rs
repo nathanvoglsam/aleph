@@ -43,7 +43,7 @@ use crate::deletion_pool::DeletionMode;
 use crate::mip_generator::MipGenerator;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    built_in_textures, BufferHandle, BufferLoader, BufferPool, BufferUploadSource, DeletionPool,
+    built_in_textures, BufferHandle, BufferLoader, BufferPool, BufferUploadDesc, DeletionPool,
     GenerateMips, ShaderDatabaseAccessor, StateCache, TextureAllocMode, TextureHandle,
     TextureLoader, TexturePool, TextureUploadDesc,
 };
@@ -353,7 +353,7 @@ impl Renderer {
         Some(handle)
     }
 
-    pub fn create_buffer(&mut self, data: BufferUploadSource) -> Option<BufferHandle> {
+    pub fn create_buffer(&mut self, data: BufferUploadDesc) -> Option<BufferHandle> {
         let handle = self.buffer_pool.create_buffer(None);
 
         self.buffer_loader

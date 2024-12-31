@@ -31,12 +31,13 @@ use std::num::NonZero;
 use std::ops::Range;
 use std::ptr::NonNull;
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_rhi_api::*;
 use arrayvec::ArrayVec;
 use smallbox::space::S8;
 use smallbox::{smallbox, SmallBox};
+
+use crate::{IUploadBuffer, SharedUploadBuffer};
 
 /// This struct describes a texture object for storage in a texture pool. This is a simplifcation
 /// over [`TextureDesc`] that omits various options that are only applicable to render targets.
@@ -367,106 +368,6 @@ impl TextureUploadDataDesc {
     }
 }
 
-/// The interface expected of some object that abstracts over the source of a byte buffer that can
-/// be used with copy commands on the GPU. Typically any buffer memory yielded by this interface
-/// will be uploaded from an upload heap in the GPU API.
-///
-/// # Performance Warning
-///
-/// It is likely for the underlying upload memory to be mapped as write-combined or uncached. This
-/// will make reads from the upload memory very expensive as well as make random writes expensive.
-///
-/// It is highly recommended to only write to this memory once, sequentially, and _never_ read it.
-///
-/// # Safety
-///
-/// It is the implementation's responsibility to ensure that the buffer yielded by this interface
-/// is valid to use as an upload source in the platform's GPU API. Typically this means it must be
-/// allocated from [`CpuAccessMode::Write`] memory.
-///
-/// It is also the implemetation's responsibility to ensure that the device offset of the region is
-/// aligned to at least 512 bytes. This is critical so users are able to ensure individual mip
-/// levels can be aligned to 512 byte blocks within a single [`IUploadBuffer`].
-pub unsafe trait IUploadBuffer: Send + Sync {
-    fn buffer(&self) -> &dyn IBuffer;
-    fn device_offset(&self) -> u64;
-    fn bytes(&self) -> &[u8];
-    fn bytes_mut(&mut self) -> &mut [u8];
-}
-
-pub struct SharedUploadBuffer {
-    /// A reference to the 'IBuffer' that the owned buffer region was allocated from. This is only
-    /// held to ensure the buffer is never dropped.
-    buffer: AnyArc<dyn IBuffer>,
-
-    /// The offset from the start of the upload buffer within the associated buffer object.
-    device_offset: u64,
-
-    /// A slice referring to the actual buffer region this upload buffer wraps. Logically this is
-    /// owned by the [`SharedUploadBuffer`] and we have an exclusive borrow but we can't express
-    /// this to rustc.
-    ///
-    /// How do we have an exclusive borrow? It's an interface requirement! It's unsafe to construct
-    /// a [`SharedUploadBuffer`] over a slice if the borrow isn't exclusive.
-    data: NonNull<[u8]>,
-}
-
-impl SharedUploadBuffer {
-    /// Constructs a new [`SharedUploadBuffer`] from the given [`IBuffer`] and slice pointer.
-    ///
-    /// # Safety
-    ///
-    /// It is the caller's responsibility to ensure that `buffer` must be allocated from
-    /// [`CpuAccessMode::Write`] memory, `data` must be part of the buffer's memory mapping, and
-    /// the `data` slice must be exclusively owned. The buffer must also allow the
-    /// [`ResourceUsageFlags::COPY_SOURCE`] usage.
-    pub unsafe fn new(
-        buffer: AnyArc<dyn IBuffer>,
-        device_offset: u64,
-        data: NonNull<[u8]>,
-    ) -> Self {
-        debug_assert_eq!(buffer.desc_ref().cpu_access, CpuAccessMode::Write);
-        debug_assert!(buffer
-            .desc_ref()
-            .usage
-            .contains(ResourceUsageFlags::COPY_SOURCE));
-        debug_assert_eq!(
-            device_offset % 512,
-            0,
-            "device_offset must be 512 byte aligned!"
-        );
-        Self {
-            buffer,
-            device_offset,
-            data,
-        }
-    }
-}
-
-// Because of 'data' we need to do these manually
-unsafe impl Send for SharedUploadBuffer {}
-unsafe impl Sync for SharedUploadBuffer {}
-
-unsafe impl IUploadBuffer for SharedUploadBuffer {
-    fn buffer(&self) -> &dyn IBuffer {
-        self.buffer.as_ref()
-    }
-
-    fn device_offset(&self) -> u64 {
-        self.device_offset
-    }
-
-    fn bytes(&self) -> &[u8] {
-        // Safety: It is unsafe to construct a [`SharedUploadBuffer`] where this is unsound
-        unsafe { self.data.as_ref() }
-    }
-
-    fn bytes_mut(&mut self) -> &mut [u8] {
-        // Safety: It is unsafe to construct a [`SharedUploadBuffer`] where this is unsound
-        unsafe { self.data.as_mut() }
-    }
-}
-
 pub struct TextureUploadDesc {
     /// A description of the texture object we should create.
     pub desc: TextureObjectDesc,
@@ -480,7 +381,7 @@ pub struct TextureUploadDesc {
 }
 
 impl TextureUploadDesc {
-    /// Constructs a new owned [TextureUploadSource] for the given buffer upload description.
+    /// Constructs a new owned [`TextureUploadDesc`] for the given buffer upload description.
     pub fn new_owned(
         device: &dyn IDevice,
         desc: TextureObjectDesc,
@@ -529,7 +430,7 @@ impl TextureUploadDesc {
         Ok(out)
     }
 
-    /// Constructs a new owned [TextureUploadSource] for the given buffer upload description.
+    /// Constructs a new owned [`TextureUploadDesc`] for the given buffer upload description.
     pub fn new_in_bump_arena(
         bump: &UploadBumpAllocator,
         desc: TextureObjectDesc,

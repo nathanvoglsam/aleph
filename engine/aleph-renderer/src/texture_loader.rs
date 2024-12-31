@@ -282,7 +282,7 @@ impl TextureLoader {
 
             // Finally push our data into the deletion pool to keep it alive for the copy on the GPU
             // timeline
-            deletion_pool.push_buffer(upload.load.data.buffer.buffer().upgrade());
+            deletion_pool.push_upload(upload.load.data.buffer);
         }
     }
 

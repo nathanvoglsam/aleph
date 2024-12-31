@@ -33,7 +33,8 @@ use aleph_engine::interfaces::components::{StaticMesh, Transform};
 use aleph_engine::interfaces::ecs::{EntityId, World};
 use aleph_engine::interfaces::math::{Mat4, Rotor3, ToDouble, Vec3, Vec4};
 use aleph_engine::interfaces::renderer::{
-    BufferHandle, BufferUploadSource, PollCompleteError, Renderer, TextureStreamingRequest,
+    BufferHandle, BufferObjectDesc, BufferUploadDesc, PollCompleteError, Renderer,
+    TextureStreamingRequest,
 };
 use aleph_rhi_api::*;
 use gltf::accessor::{DataType, Dimensions};
@@ -61,15 +62,18 @@ impl BumpThingy {
     pub unsafe fn alloc_upload_desc(
         &mut self,
         len: usize,
-        align: usize,
         usage: ResourceUsageFlags,
-    ) -> Result<BufferUploadSource, BufferCreateError> {
-        match BufferUploadSource::new_in_bump_arena(&self.alloc, len, align, usage) {
+    ) -> Result<BufferUploadDesc, BufferCreateError> {
+        let mut desc = BufferObjectDesc::new();
+        desc.size(len as u64);
+        desc.usage(usage);
+
+        match BufferUploadDesc::new_in_bump_arena(&self.alloc, desc.clone()) {
             Ok(out) => Ok(out),
             Err(BufferCreateError::OutOfMemory) => {
                 let mut new_block = Self::new_alloc(self.device.as_ref());
                 std::mem::swap(&mut new_block, &mut self.alloc);
-                BufferUploadSource::new_in_bump_arena(&self.alloc, len, align, usage)
+                BufferUploadDesc::new_in_bump_arena(&self.alloc, desc)
             }
             e @ Err(_) => return e,
         }
@@ -316,7 +320,7 @@ pub fn load_scene(
 }
 
 struct IndexUpload {
-    data: BufferUploadSource,
+    data: BufferUploadDesc,
 }
 
 #[aleph_profile::function]
@@ -333,7 +337,7 @@ fn allocate_index_upload(arena: &mut BumpThingy, indices: &Accessor) -> IndexUpl
 
     let data = unsafe {
         arena
-            .alloc_upload_desc(size, align_of::<u32>(), ResourceUsageFlags::INDEX_BUFFER)
+            .alloc_upload_desc(size, ResourceUsageFlags::INDEX_BUFFER)
             .unwrap()
     };
 
@@ -342,7 +346,7 @@ fn allocate_index_upload(arena: &mut BumpThingy, indices: &Accessor) -> IndexUpl
 
 #[aleph_profile::function]
 fn copy_index_data_into_upload(buffers: &[Data], indices: &Accessor, upload: &mut IndexUpload) {
-    let dst = upload.data.data_mut();
+    let dst = upload.data.buffer.bytes_mut();
     load_index_buffer_data(bytemuck::cast_slice_mut(dst), buffers, indices);
 }
 
@@ -414,7 +418,7 @@ fn load_index_buffer_data(dst: &mut [u32], buffers: &[Data], indices: &Accessor)
 }
 
 struct VertexUpload {
-    data: BufferUploadSource,
+    data: BufferUploadDesc,
     vertex_count: usize,
     stride: usize,
 }
@@ -430,7 +434,7 @@ fn allocate_vertex_upload(arena: &mut BumpThingy, prim: &Primitive) -> VertexUpl
 
     let data = unsafe {
         arena
-            .alloc_upload_desc(size, 256, ResourceUsageFlags::VERTEX_BUFFER)
+            .alloc_upload_desc(size, ResourceUsageFlags::VERTEX_BUFFER)
             .unwrap()
     };
 
@@ -443,7 +447,7 @@ fn allocate_vertex_upload(arena: &mut BumpThingy, prim: &Primitive) -> VertexUpl
 
 #[aleph_profile::function]
 fn copy_vertex_data_into_upload(buffers: &[Data], prim: &Primitive, upload: &mut VertexUpload) {
-    let dst = &mut upload.data.data_mut()[48..];
+    let dst = &mut upload.data.buffer.bytes_mut()[48..];
     for i in 0..upload.vertex_count {
         let dst_i = upload.stride * i;
         let dst = &mut dst[dst_i..dst_i + 12];
@@ -519,7 +523,7 @@ fn copy_vertex_data_into_upload(buffers: &[Data], prim: &Primitive, upload: &mut
             uvs_view,
             uvs_buffer,
             indices,
-            dst: bytemuck::cast_slice_mut(upload.data.data_mut()),
+            dst: bytemuck::cast_slice_mut(upload.data.buffer.bytes_mut()),
         };
         let success = mikktspace::generate_tangents(&mut geom);
         assert!(success);
@@ -532,7 +536,7 @@ fn finalize_vertex_upload(renderer: &mut Renderer, upload: VertexUpload) -> Buff
 }
 
 fn copy_vec4_f32_semantic(
-    vtx_buffer: &mut BufferUploadSource,
+    vtx_buffer: &mut BufferUploadDesc,
     accessor: &Accessor,
     buffers: &[Data],
     dst_stride: usize,
@@ -545,7 +549,7 @@ fn copy_vec4_f32_semantic(
 }
 
 fn copy_vec3_f32_semantic(
-    vtx_buffer: &mut BufferUploadSource,
+    vtx_buffer: &mut BufferUploadDesc,
     accessor: &Accessor,
     buffers: &[Data],
     dst_stride: usize,
@@ -558,7 +562,7 @@ fn copy_vec3_f32_semantic(
 }
 
 fn copy_vec2_f32_semantic(
-    vtx_buffer: &mut BufferUploadSource,
+    vtx_buffer: &mut BufferUploadDesc,
     accessor: &Accessor,
     buffers: &[Data],
     dst_stride: usize,
@@ -571,7 +575,7 @@ fn copy_vec2_f32_semantic(
 }
 
 fn copy_vec_f32_semantic(
-    vtx_buffer: &mut BufferUploadSource,
+    vtx_buffer: &mut BufferUploadDesc,
     accessor: &Accessor,
     buffers: &[Data],
     dst_stride: usize,
@@ -584,7 +588,7 @@ fn copy_vec_f32_semantic(
     let src = &buffers[view.buffer().index()];
 
     let src = &src[view.offset()..view.offset() + view.length()];
-    let dst = &mut vtx_buffer.data_mut()[dst_offset..];
+    let dst = &mut vtx_buffer.buffer.bytes_mut()[dst_offset..];
     for i in 0..accessor.count() {
         let src_i = stride * i;
         let dst_i = dst_stride * i;

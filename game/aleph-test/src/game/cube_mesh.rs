@@ -27,35 +27,30 @@
 // SOFTWARE.
 //
 
-use aleph_engine::interfaces::renderer::{BufferHandle, BufferUploadSource, Renderer};
+use aleph_engine::interfaces::renderer::{
+    BufferHandle, BufferObjectDesc, BufferUploadDesc, Renderer,
+};
 use aleph_rhi_api::*;
 use bytemuck::{Pod, Zeroable};
 
 #[aleph_profile::function]
 pub fn upload_cube_buffers(renderer: &mut Renderer) -> (BufferHandle, BufferHandle) {
-    let mut vtx_buffer = unsafe {
-        BufferUploadSource::new_owned(
-            renderer.device(),
-            size_of_val(&VERTS),
-            ResourceUsageFlags::VERTEX_BUFFER,
-        )
-        .unwrap()
-    };
-    let mut idx_buffer = unsafe {
-        BufferUploadSource::new_owned(
-            renderer.device(),
-            size_of_val(&INDICES),
-            ResourceUsageFlags::INDEX_BUFFER,
-        )
-        .unwrap()
-    };
+    let mut desc = BufferObjectDesc::new();
+    desc.size(size_of_val(&VERTS) as u64);
+    desc.usage(ResourceUsageFlags::VERTEX_BUFFER);
+    let mut vtx_buffer = BufferUploadDesc::new_owned(renderer.device(), desc).unwrap();
+
+    let mut desc = BufferObjectDesc::new();
+    desc.size(size_of_val(&INDICES) as u64);
+    desc.usage(ResourceUsageFlags::INDEX_BUFFER);
+    let mut idx_buffer = BufferUploadDesc::new_owned(renderer.device(), desc).unwrap();
 
     let src = bytemuck::cast_slice::<Vertex, u8>(&VERTS);
-    let vtx_data = &mut vtx_buffer.data_mut()[0..size_of_val(&VERTS)];
+    let vtx_data = &mut vtx_buffer.buffer.bytes_mut()[0..size_of_val(&VERTS)];
     vtx_data.copy_from_slice(src);
 
     let src = bytemuck::cast_slice::<_, u8>(&INDICES);
-    let idx_data = &mut idx_buffer.data_mut()[0..size_of_val(&INDICES)];
+    let idx_data = &mut idx_buffer.buffer.bytes_mut()[0..size_of_val(&INDICES)];
     idx_data.copy_from_slice(src);
 
     let vtx = renderer.create_buffer(vtx_buffer).unwrap();

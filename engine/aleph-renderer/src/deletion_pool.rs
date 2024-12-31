@@ -32,8 +32,10 @@ use std::mem::ManuallyDrop;
 use aleph_any::AnyArc;
 use aleph_device_allocators::{AllocatorPoolItem, Grave, LinearDescriptorPoolFactory};
 use aleph_rhi_api::*;
+use smallbox::space::S8;
+use smallbox::SmallBox;
 
-use crate::BufferUploadSource;
+use crate::IUploadBuffer;
 
 /// Deletion pool that will hold textures, buffers and upload data handles that must have their
 /// lifetime extended to meet GPU timeline requirements.
@@ -46,6 +48,7 @@ use crate::BufferUploadSource;
 pub struct DeletionPool {
     textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
     buffers: Vec<ManuallyDrop<AnyArc<dyn IBuffer>>>,
+    upload: Vec<ManuallyDrop<SmallBox<dyn IUploadBuffer, S8>>>,
     descriptor_pools: Vec<Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>>,
 }
 
@@ -54,6 +57,7 @@ impl DeletionPool {
         Self {
             textures: Vec::new(),
             buffers: Vec::new(),
+            upload: Vec::new(),
             descriptor_pools: Vec::new(),
         }
     }
@@ -69,17 +73,16 @@ impl DeletionPool {
     }
 
     #[inline]
+    pub fn push_upload(&mut self, upload: SmallBox<dyn IUploadBuffer, S8>) {
+        self.upload.push(ManuallyDrop::new(upload))
+    }
+
+    #[inline]
     pub fn push_descriptor_pool(
         &mut self,
         pool: Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>,
     ) {
         self.descriptor_pools.push(pool)
-    }
-
-    #[inline]
-    pub fn push_upload(&mut self, upload: impl Into<BufferUploadSource>) {
-        let upload = upload.into().into_buffer();
-        self.buffers.push(ManuallyDrop::new(upload))
     }
 
     /// This function will purge the internal pools and _will_ drop the resources being held inside.
@@ -102,6 +105,7 @@ impl DeletionPool {
         // Drain the pools and explicitly drop the contained elements.
         self.purge_textures(mode);
         self.purge_buffers(mode);
+        self.purge_uploads(mode);
         self.purge_descriptor_pools(mode);
     }
 
@@ -135,6 +139,24 @@ impl DeletionPool {
         self.buffers.drain(..).for_each(|mut v| {
             if v.strong_count() == 1 && mode == DeletionMode::Deferred {
                 rayon::spawn(move || drop_buffer_on_pool(v));
+            } else {
+                ManuallyDrop::drop(&mut v);
+            }
+        });
+    }
+
+    /// Alternate version of [`DeletionPool::purge`] that only purges the
+    /// upload objects.
+    ///
+    /// # Safety
+    ///
+    /// See `purge` for more info, the constraints are the same.
+    #[inline]
+    pub unsafe fn purge_uploads(&mut self, mode: DeletionMode) {
+        // Drain the pools and explicitly drop the contained elements.
+        self.upload.drain(..).for_each(|mut v| {
+            if v.buffer().strong_count() == 1 && mode == DeletionMode::Deferred {
+                rayon::spawn(move || drop_upload_on_pool(v));
             } else {
                 ManuallyDrop::drop(&mut v);
             }
@@ -191,5 +213,10 @@ unsafe fn drop_texture_on_pool(mut v: ManuallyDrop<AnyArc<dyn ITexture>>) {
 
 #[aleph_profile::function]
 unsafe fn drop_buffer_on_pool(mut v: ManuallyDrop<AnyArc<dyn IBuffer>>) {
+    ManuallyDrop::drop(&mut v)
+}
+
+#[aleph_profile::function]
+unsafe fn drop_upload_on_pool(mut v: ManuallyDrop<SmallBox<dyn IUploadBuffer, S8>>) {
     ManuallyDrop::drop(&mut v)
 }

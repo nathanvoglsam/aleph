@@ -48,6 +48,7 @@ mod render_scene;
 mod renderer;
 mod shader_db_accessor;
 mod shaders;
+mod shared_upload_buffer;
 mod state_cache;
 mod streaming_request;
 mod texture_loader;
@@ -56,7 +57,7 @@ mod texture_upload_desc;
 
 pub use buffer_loader::BufferLoader;
 pub use buffer_pool::{BufferObject, BufferPool};
-pub use buffer_upload_desc::BufferUploadSource;
+pub use buffer_upload_desc::{BufferObjectDesc, BufferUploadDesc};
 pub use camera::{CameraInfo, PerspectiveInfo};
 pub use deletion_pool::DeletionPool;
 pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
@@ -74,6 +75,7 @@ pub use renderer::{
     RenderPlaneOutput, Renderer, RendererBuilder,
 };
 pub use shader_db_accessor::ShaderDatabaseAccessor;
+pub use shared_upload_buffer::{IUploadBuffer, SharedUploadBuffer};
 pub use state_cache::{IStateCacheKey, StateCache};
 pub use streaming_request::{
     BufferStreamingRequest, ConsumeStreamingRequest, MeshStreamingRequest, PollCompleteError,

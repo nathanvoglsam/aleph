@@ -32,8 +32,8 @@ use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 
 use crate::{
-    BufferHandle, BufferPool, BufferStreamingRequest, BufferUploadSource, DeletionPool,
-    EnqueueError, EnqueueErrorKind,
+    BufferHandle, BufferPool, BufferStreamingRequest, BufferUploadDesc, DeletionPool, EnqueueError,
+    EnqueueErrorKind,
 };
 
 pub struct BufferLoader {
@@ -67,8 +67,8 @@ impl BufferLoader {
         &self,
         request: Option<BufferStreamingRequest>,
         handle: BufferHandle,
-        data: BufferUploadSource,
-    ) -> Result<(), EnqueueError<BufferUploadSource>> {
+        data: BufferUploadDesc,
+    ) -> Result<(), EnqueueError<BufferUploadDesc>> {
         let load = LoadRequest {
             target: Some(handle),
             request,
@@ -83,8 +83,8 @@ impl BufferLoader {
     pub fn enqueue_new_upload(
         &self,
         request: BufferStreamingRequest,
-        data: BufferUploadSource,
-    ) -> Result<(), EnqueueError<BufferUploadSource>> {
+        data: BufferUploadDesc,
+    ) -> Result<(), EnqueueError<BufferUploadDesc>> {
         let load = LoadRequest {
             target: None,
             request: Some(request),
@@ -98,8 +98,8 @@ impl BufferLoader {
         &self,
         request: BufferStreamingRequest,
         target: BufferHandle,
-        data: BufferUploadSource,
-    ) -> Result<(), EnqueueError<BufferUploadSource>> {
+        data: BufferUploadDesc,
+    ) -> Result<(), EnqueueError<BufferUploadDesc>> {
         let load = LoadRequest {
             target: Some(target),
             request: Some(request),
@@ -131,7 +131,7 @@ impl BufferLoader {
     fn enqueue_deferred_request(
         &self,
         load: LoadRequest,
-    ) -> Result<(), EnqueueError<BufferUploadSource>> {
+    ) -> Result<(), EnqueueError<BufferUploadDesc>> {
         match self.load_queue.push(load) {
             Ok(_) => Ok(()),
             Err(v) => Err(EnqueueErrorKind::QueueFull.with_data(v.data)),
@@ -196,13 +196,17 @@ impl BufferLoader {
         for upload in buffers.drain(..) {
             let buffer = AnyArc::from_raw(upload.buffer);
             let region = upload.load.data.get_copy_region(0);
-            encoder.copy_buffer_regions(upload.load.data.buffer(), buffer.as_ref(), &[region]);
+            encoder.copy_buffer_regions(
+                upload.load.data.buffer.buffer(),
+                buffer.as_ref(),
+                &[region],
+            );
 
             if let Some(req) = upload.load.request.as_ref() {
                 req.mark_complete(upload.load.target.unwrap()).unwrap();
             }
 
-            deletion_pool.push_upload(upload.load.data);
+            deletion_pool.push_upload(upload.load.data.buffer);
         }
 
         // Sync our uploaded resources with the access scopes we consider them safe to use
@@ -244,8 +248,8 @@ impl BufferLoader {
         // - All access are through shared references
         // - The address is stable
         let buffer = AnyArc::into_raw(buffer);
-        let size = request.data.data_ptr().len();
-        let usage = request.data.usage;
+        let size = request.data.desc.size.get();
+        let usage = request.data.desc.usage;
 
         let mut load = request;
         load.target = Some(handle);
@@ -254,7 +258,7 @@ impl BufferLoader {
         discard_barriers.push(BufferBarrier {
             buffer: buffer.as_ref(),
             offset: 0,
-            size: size as u64,
+            size,
             before_sync: BarrierSync::NONE,
             after_sync: BarrierSync::COPY,
             before_access: BarrierAccess::NONE,
@@ -265,7 +269,7 @@ impl BufferLoader {
         release_barriers.push(BufferBarrier {
             buffer: buffer.as_ref(),
             offset: 0,
-            size: size as u64,
+            size,
             before_sync: BarrierSync::COPY,
             after_sync: usage.default_barrier_sync(true, Format::R8Unorm),
             before_access: BarrierAccess::COPY_WRITE,
@@ -280,10 +284,13 @@ impl BufferLoader {
         device: &dyn IDevice,
         load: &LoadRequest,
     ) -> Result<(BufferHandle, AnyArc<dyn IBuffer>), BufferCreateError> {
+        let size = load.data.desc.size.get();
+        let usage = load.data.desc.usage;
+
         let desc = BufferDesc {
-            size: load.data.data_ptr().len() as u64,
+            size,
             cpu_access: CpuAccessMode::None, // TODO: do we allow something else?
-            usage: ResourceUsageFlags::COPY_DEST | load.data.usage,
+            usage: ResourceUsageFlags::COPY_DEST | usage,
             name: None,
         };
         let buffer = device.create_buffer(&desc)?;
@@ -313,7 +320,7 @@ struct LoadRequest {
     request: Option<BufferStreamingRequest>,
 
     /// The actual data source for the upload.
-    data: BufferUploadSource,
+    data: BufferUploadDesc,
 }
 
 struct Upload {

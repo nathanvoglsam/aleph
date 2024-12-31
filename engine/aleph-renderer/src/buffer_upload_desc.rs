@@ -27,272 +27,114 @@
 // SOFTWARE.
 //
 
+use std::num::NonZero;
 use std::ptr::NonNull;
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_rhi_api::*;
+use smallbox::space::S8;
+use smallbox::{smallbox, SmallBox};
 
-/// A data source for a buffer upload request. Represents an annotated block of upload memory that
-/// pairs the memory block with a description of the buffer that it contains.
-///
-/// This can be combined in the upload manager with a target buffer to create an upload request.
-///
-/// This struct abstracts access to a chunk of upload memory so that it can be safely used to upload
-/// buffer data to the GPU.
-///
-/// # Performance Warning
-///
-/// It is likely for the underlying upload memory to be mapped as write-combined or uncached. This
-/// will make reads from the upload memory very expensive as well as make random writes expensive.
-///
-/// It is highly recommended to only write to this memory once, sequentially.
-pub struct BufferUploadSource {
-    /// A tracking handle for the buffer that the upload data is going to be stored in. This may be
-    /// an owned buffer (the request is the only holder of the refcount) or a shared buffer where
-    /// the data is a suballocated region from this buffer.
-    ///
-    /// Importantly the underlying mapped buffer memory will never be accessed through this
-    /// reference. This is simply stored to keep the buffer alive.
-    pub(crate) buffer: AnyArc<dyn IBuffer>,
+use crate::{IUploadBuffer, SharedUploadBuffer};
 
-    /// An offset in bytes from the start of the buffer for where the upload data starts. This
-    /// is needed as the upload commands use an offset+len and not a raw ptr+len pair.
-    pub(crate) offset: u64,
+/// This struct describes a buffer object for storage in a buffer pool. This is a simplifcation
+/// over [`BufferDesc`] that omits various options.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct BufferObjectDesc {
+    /// The size of the buffer in bytes. This can _not_ be zero, see [`BufferObjectDesc`] for
+    /// info.
+    pub size: NonZero<u64>,
 
-    /// The set of resource flags that the resource is allowed to be used as once uploaded.
-    ///
-    /// The scope of what is alloed depends on whether we're creating a buffer resource or texture
-    /// resource.
-    pub(crate) usage: ResourceUsageFlags,
-
-    /// A pointer to a slice of memory for where the upload data should be written into for the
-    /// specific image mip that is being uploaded by this request. This will be appropriately sized
-    /// and aligned for the texture's upload parameters.
-    ///
-    /// This memory is considered owned by this [TextureUploadSource] object but must be stored as
-    /// a pointer as a reference would be self-referential. It is up to the upload system to ensure
-    /// that we never hand out the same region to multiple upload requests.
-    ///
-    /// This slice will be mapped in an upload heap which is likely to be write-combined or uncached
-    /// memory. Reads to this region may be very expensive, and random writes may also be slow.
-    pub(crate) data: NonNull<[u8]>,
+    /// The set of supported usage flags the resource should be created with
+    pub usage: ResourceUsageFlags,
 }
 
-// Safety: It's unsafe to construct a `BufferUploadSource` where 'data' aliases. We only need the
-//         ptr because the struct is, as far as Rust can tell, self-referential. The address is in
-//         mapped buffer memory and not in the struct itself, but the lifetime is tied to the
-//         IBuffer.
-unsafe impl Send for BufferUploadSource {}
-unsafe impl Sync for BufferUploadSource {}
-
-impl BufferUploadSource {
-    /// Constructs a new upload source from the given parameters. Includes some debug validation to
-    /// try and detect mistakes.
-    ///
-    /// This function is intended to be used when sub-allocating upload payloads from a larger
-    /// staging buffer allocation.
-    ///
-    /// # Safety
-    ///
-    /// There are a bunch of requirements for safely implementing this system.
-    ///
-    /// - 'data' takes ownership of the underlying buffer
-    /// - 'data' must point to memory in the mapped range of 'buffer'
-    /// - 'data' must be sized for the texture described by 'desc'
-    /// - 'offset' must be aligned to 512 bytes within the buffer
-    /// - 'data.len()' combined with 'offset' must not overrun the end of the buffer
-    /// - 'desc.width', 'desc.height', and 'desc.depth' must all be at least 1. No zero-sized
-    ///   textures.
-    /// - 'usage' must be read-only and a valid buffer usage mask
-    ///
-    /// There are a bunch of debug asserts for these which are only enabled on debug builds, check
-    /// those to see all the requirements. Do not violate these requirements as they will not be
-    /// checked in a release build.
-    pub unsafe fn new(
-        buffer: AnyArc<dyn IBuffer>,
-        offset: u64,
-        usage: ResourceUsageFlags,
-        data: NonNull<[u8]>,
-    ) -> Self {
-        #[cfg(debug_assertions)]
-        {
-            debug_assert!(data.len() > 0, "len must be > 0");
-
-            let buffer_desc = buffer.desc_ref();
-            debug_assert!(
-                buffer_desc.cpu_access == CpuAccessMode::Write,
-                "'data' must be from an upload heap"
-            );
-
-            debug_assert!(
-                buffer_desc.size >= offset,
-                "'offset' ({}) is outside of the buffer (size {})",
-                offset,
-                buffer_desc.size
-            );
-
-            let bytes_after_offset = buffer_desc.size - offset;
-            debug_assert!(
-                bytes_after_offset >= data.len() as u64,
-                "'buffer' is too small. [{}+{}] overruns the upload buffer (size {})",
-                offset,
-                data.len(),
-                buffer_desc.size
-            );
-
-            debug_assert!(usage.is_read_usage() && usage.is_buffer_usage())
-        }
-
+impl BufferObjectDesc {
+    pub const fn new() -> Self {
         Self {
-            buffer,
-            offset,
-            usage,
-            data,
+            size: NonZero::new(1).unwrap(),
+            usage: ResourceUsageFlags::empty(),
         }
     }
 
-    /// Constructs a new owned [BufferUploadSource] for the given buffer upload description.
-    ///
-    /// # Safety
-    ///
-    /// See [BufferUploadSource::new] for more information.
-    ///
-    /// This utility is safer to use than [BufferUploadSource::new] as it guarantees all the buffer
-    /// size and ownership constraints by construction.
-    ///
-    /// - The buffer in 'bump' must have been created with [`ResourceUsageFlags::COPY_SOURCE`]
-    pub unsafe fn new_in_bump_arena(
-        bump: &UploadBumpAllocator,
-        len: usize,
-        align: usize,
-        usage: ResourceUsageFlags,
-    ) -> Result<Self, BufferCreateError> {
-        debug_assert!(bump
-            .buffer()
-            .desc_ref()
-            .usage
-            .contains(ResourceUsageFlags::COPY_SOURCE));
-
-        let block = bump
-            .allocate_aligned(len, 256.max(align))
-            .ok_or(BufferCreateError::OutOfMemory)?;
-        let data = NonNull::slice_from_raw_parts(block.result, len);
-        let out = Self::new(
-            bump.buffer().upgrade(),
-            block.device_offset as u64,
-            usage,
-            data,
-        );
-        Ok(out)
+    pub const fn size(&mut self, size: u64) -> &mut Self {
+        self.size = NonZero::new(size).unwrap();
+        self
     }
 
-    /// Constructs a new owned [BufferUploadSource] for the given buffer upload description.
-    ///
-    /// # Safety
-    ///
-    /// See [BufferUploadSource::new] for more information.
-    ///
-    /// This utility is safer to use than [BufferUploadSource::new] as it guarantees all the buffer
-    /// size and ownership constraints by construction. The only relevant requirements are to
-    /// ensure that the length is non zero.
-    pub unsafe fn new_owned(
+    pub const fn usage(&mut self, usage: ResourceUsageFlags) -> &mut Self {
+        self.usage = usage;
+        self
+    }
+}
+
+pub struct BufferUploadDesc {
+    /// A description of the texture object we should create.
+    pub desc: BufferObjectDesc,
+
+    /// The buffer that our buffer data has been populated in ready for upload to the GPU.
+    pub buffer: SmallBox<dyn IUploadBuffer, S8>,
+
+    /// Offset into [`Self::buffer`] for where the buffer data starts.
+    pub offset: usize,
+}
+
+impl BufferUploadDesc {
+    /// Constructs a new owned [`BufferUploadDesc`] for the given buffer upload description.
+    pub fn new_owned(
         device: &dyn IDevice,
-        len: usize,
-        usage: ResourceUsageFlags,
+        desc: BufferObjectDesc,
     ) -> Result<Self, BufferCreateError> {
-        let buffer = device.create_buffer(&BufferDesc {
-            size: len as u64,
-            cpu_access: CpuAccessMode::Write,
-            usage: ResourceUsageFlags::COPY_SOURCE,
-            name: None,
-        })?;
+        let buffer = unsafe {
+            let buffer = device.create_buffer(&BufferDesc {
+                size: desc.size.get(),
+                cpu_access: CpuAccessMode::Write,
+                usage: ResourceUsageFlags::COPY_SOURCE,
+                name: None,
+            })?;
 
-        let ptr = buffer.map().unwrap();
+            let ptr = buffer.map().unwrap();
+            let data = NonNull::slice_from_raw_parts(ptr, desc.size.get() as usize);
+            SharedUploadBuffer::new(buffer, 0, data)
+        };
 
-        let out = Self::new(buffer, 0, usage, NonNull::slice_from_raw_parts(ptr, len));
+        let out = Self {
+            desc,
+            buffer: smallbox!(buffer),
+            offset: 0,
+        };
         Ok(out)
     }
 
-    /// Creates a [`BufferCopyRegion`] that describes a copy out of the staging buffer into some
-    /// destination buffer starting at `dst_offset`.
-    ///
-    /// This will encode a copy of all bytes in the source buffer region (`self.offset` +
-    /// `self.data.len()`) into the destination at the given offset.
-    pub const fn get_copy_region(&self, dst_offset: u64) -> BufferCopyRegion {
+    /// Constructs a new [`BufferUploadDesc`] for the given buffer upload description by allocating
+    /// a block from the given bump arena.
+    pub fn new_in_bump_arena(
+        bump: &UploadBumpAllocator,
+        desc: BufferObjectDesc,
+    ) -> Result<Self, BufferCreateError> {
+        assert!(bump.usage().contains(ResourceUsageFlags::COPY_SOURCE));
+
+        let buffer = unsafe {
+            let block = bump
+                .allocate_aligned(desc.size.get() as usize, 512)
+                .ok_or(BufferCreateError::OutOfMemory)?;
+            let data = NonNull::slice_from_raw_parts(block.result, desc.size.get() as usize);
+            SharedUploadBuffer::new(bump.buffer().upgrade(), block.device_offset as u64, data)
+        };
+
+        let out = Self {
+            desc,
+            buffer: smallbox!(buffer),
+            offset: 0,
+        };
+        Ok(out)
+    }
+
+    pub fn get_copy_region(&self, dst_offset: u64) -> BufferCopyRegion {
         BufferCopyRegion {
-            src_offset: self.offset,
+            src_offset: self.buffer.device_offset() + self.offset as u64,
             dst_offset,
-            size: self.data.len() as u64,
+            size: self.desc.size.get(),
         }
-    }
-
-    /// Calls [`IBuffer::unmap`] the internal buffer.
-    ///
-    /// # Safety
-    ///
-    /// It is the caller's responsibility to ensure this even makes sense to call.
-    /// A [`BufferUploadSource`] is not guaranteed to be the 'owner' of the buffer. The internal
-    /// buffer could be shared between multiple upload source instances as a staging sub-allocation
-    /// scheme and so unmapping this buffer could unmap the address range underneath other callers.
-    ///
-    /// In general it's only correct to call this on [`BufferUploadSource`] instances that were
-    /// constructed via the [`BufferUploadSource::new_owned`] function.
-    #[inline(always)]
-    pub unsafe fn unmap(&self) -> Result<(), ResourceUnmapError> {
-        self.buffer.unmap()
-    }
-
-    /// Returns a handle to the [`IBuffer`] object that backs our staging buffer.
-    ///
-    /// # Warning
-    ///
-    /// Do not attempt to map or access the buffer's mapped memory. An upload source is considered
-    /// a mutable borrow to some region of that mapped buffer, so you're almost certainly going to
-    /// cause UB via mutable aliasing.
-    ///
-    /// It does require an unsafe block to do this, but it's not obvious you can't do this
-    /// specifically because of the abstraction this upload source provides
-    #[inline(always)]
-    pub fn buffer(&self) -> &dyn IBuffer {
-        self.buffer.as_ref()
-    }
-
-    /// Get the inner buffer object, discarding the upload wrapper.
-    #[inline(always)]
-    pub fn into_buffer(self) -> AnyArc<dyn IBuffer> {
-        self.buffer
-    }
-
-    /// Get the upload block as a raw pointer.
-    ///
-    /// # Performance Warning
-    ///
-    /// The upload memory may be write-combined or uncached memory as it will be mapped for upload
-    /// to the GPU. Reads should be treated as *very* expensive for these mapped regions.
-    ///
-    /// It is recommended to use write-only accessors to prevent accidental reads. It is also
-    /// heavily recommended to only perform sequential writes to these regions.
-    pub const fn data_ptr(&self) -> NonNull<[u8]> {
-        self.data
-    }
-
-    /// Get the upload block as a slice.
-    ///
-    /// # Performance Warning
-    ///
-    /// The upload memory may be write-combined or uncached memory as it will be mapped for upload
-    /// to the GPU. Reads should be treated as *very* expensive for these mapped regions.
-    ///
-    /// It is recommended to use write-only accessors to prevent accidental reads. It is also
-    /// heavily recommended to only perform sequential writes to these regions.
-    ///
-    /// This is provided as it is technically valid usage but should be handled with care. Avoid
-    /// reading from this slice.
-    #[inline(always)]
-    pub fn data_mut(&mut self) -> &mut [u8] {
-        // Safety: It is guaranteed by the implementation that this should be uniquely owned by the
-        //         request and valid for access as long as the upload request object is available.
-        unsafe { self.data.as_mut() }
     }
 }
