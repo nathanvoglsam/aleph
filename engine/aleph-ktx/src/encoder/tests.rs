@@ -110,7 +110,7 @@ fn round_trip_document<R: Read + Seek>(
         DocumentType::Image1D => {
             let mut levels = Vec::new();
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
                 levels.push(&file[level.to_slice_range()]);
             }
             desc.image_1d(doc.width(), &levels);
@@ -121,7 +121,7 @@ fn round_trip_document<R: Read + Seek>(
         DocumentType::Image2D => {
             let mut levels = Vec::new();
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
                 levels.push(&file[level.to_slice_range()]);
             }
             desc.image_2d(doc.width(), doc.height(), &levels);
@@ -132,7 +132,7 @@ fn round_trip_document<R: Read + Seek>(
         DocumentType::Image3D => {
             let mut levels = Vec::new();
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
                 levels.push(&file[level.to_slice_range()]);
             }
             desc.image_3d(doc.width(), doc.height(), doc.depth(), &levels);
@@ -151,7 +151,7 @@ fn round_trip_document<R: Read + Seek>(
             ];
 
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
 
                 let face_size = level.size_uncompressed / 6;
 
@@ -186,7 +186,7 @@ fn round_trip_document<R: Read + Seek>(
             }
 
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
 
                 let layer_size = level.size_uncompressed / layer_num;
 
@@ -213,7 +213,7 @@ fn round_trip_document<R: Read + Seek>(
             }
 
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
 
                 let layer_size = level.size_uncompressed / layer_num;
 
@@ -240,7 +240,7 @@ fn round_trip_document<R: Read + Seek>(
             }
 
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
 
                 let layer_size = level.size_uncompressed / layer_num;
 
@@ -274,7 +274,7 @@ fn round_trip_document<R: Read + Seek>(
             }
 
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
 
                 let layer_size = level.size_uncompressed / layer_num;
                 let face_size = layer_size / 6;
@@ -347,8 +347,8 @@ fn check_round_trip<R: Read + Seek>(
         | DocumentType::Array2D
         | DocumentType::Array3D => {
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
-                let original_level = original.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
+                let original_level = original.get_level_info(i)?;
 
                 let bytes = &output[level.to_slice_range()];
                 let original_bytes = &file[original_level.to_slice_range()];
@@ -359,8 +359,8 @@ fn check_round_trip<R: Read + Seek>(
         }
         DocumentType::CubeArray => {
             for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i as usize)?;
-                let original_level = original.get_level_info(i as usize)?;
+                let level = doc.get_level_info(i)?;
+                let original_level = original.get_level_info(i)?;
 
                 let bytes = &output[level.to_slice_range()];
                 let original_bytes = &file[original_level.to_slice_range()];

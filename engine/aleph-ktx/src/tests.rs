@@ -192,7 +192,7 @@ fn test_read_image_data() {
     ];
 
     for (level, expected_vals) in level_vals.iter().enumerate() {
-        let info = ktx.get_level_info(level).unwrap();
+        let info = ktx.get_level_info(level as u32).unwrap();
         let offset = info.offset as usize;
         let data = &RGB_MIPMAP_REFERENCE_U[offset..offset + 3];
 
