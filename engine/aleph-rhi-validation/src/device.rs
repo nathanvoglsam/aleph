@@ -368,6 +368,8 @@ impl IDevice for ValidationDevice {
         assert_ne!(desc.width, 0, "desc.width must be > 0");
         assert_ne!(desc.height, 0, "desc.height must be > 0");
         assert_ne!(desc.depth, 0, "desc.depth must be > 0");
+        assert_ne!(desc.mip_levels, 0, "desc.mip_levels must be > 0");
+        assert_ne!(desc.array_size, 0, "desc.array_size must be > 0");
         let inner = self.inner.create_texture(desc)?;
         let texture = AnyArc::new_cyclic(move |v| ValidationTexture {
             _this: v.clone(),
