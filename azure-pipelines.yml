@@ -51,7 +51,7 @@ jobs:
 
             - bash: |
                 bash build_x86_64_linux_release.sh
-              workingDirectory: "./submodules/QuickJSNG-builds"
+              workingDirectory: "./engine/aleph-quickjs-sys/QuickJSNG-builds"
 
             # The actual build
             - pwsh: |
