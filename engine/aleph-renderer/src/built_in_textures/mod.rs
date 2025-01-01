@@ -33,8 +33,8 @@ mod smaa_search;
 use aleph_rhi_api::*;
 
 use crate::{
-    GenerateMips, TextureAllocMode, TextureHandle, TextureLoader, TextureObjectDesc, TexturePool,
-    TextureUploadDesc,
+    GenerateMips, TextureAllocMode, TextureHandle, TextureLoader, TextureObject, TextureObjectDesc,
+    TexturePool, TextureUploadDesc,
 };
 
 pub unsafe fn create_1x1_colour_texture(
@@ -51,7 +51,8 @@ pub unsafe fn create_1x1_colour_texture(
     let mut data = TextureUploadDesc::new_owned(device, desc, 0, 1).unwrap();
     let dst = &mut data.buffer.bytes_mut()[0..4];
     dst.copy_from_slice(bytemuck::bytes_of(&payload));
-    let handle = texture_pool.create_texture(None);
+    let object = TextureObject::new();
+    let handle = texture_pool.alloc(object);
     texture_loader
         .immediate_upload(
             None,
@@ -91,7 +92,8 @@ pub unsafe fn create_smaa_area_texture(
         dst = &mut dst[row_bytes_padded..];
     }
 
-    let handle = texture_pool.create_texture(None);
+    let object = TextureObject::new();
+    let handle = texture_pool.alloc(object);
     texture_loader
         .immediate_upload(
             None,
@@ -131,7 +133,8 @@ pub unsafe fn create_smaa_search_texture(
         dst = &mut dst[row_bytes_padded..];
     }
 
-    let handle = texture_pool.create_texture(None);
+    let object = TextureObject::new();
+    let handle = texture_pool.alloc(object);
     texture_loader
         .immediate_upload(
             None,

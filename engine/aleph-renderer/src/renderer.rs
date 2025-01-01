@@ -43,9 +43,9 @@ use crate::deletion_pool::DeletionMode;
 use crate::mip_generator::MipGenerator;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    built_in_textures, BufferHandle, BufferLoader, BufferPool, BufferUploadDesc, DeletionPool,
-    GenerateMips, ShaderDatabaseAccessor, StateCache, TextureAllocMode, TextureHandle,
-    TextureLoader, TexturePool, TextureUploadDesc,
+    built_in_textures, BufferHandle, BufferLoader, BufferObject, BufferPool, BufferUploadDesc,
+    DeletionPool, GenerateMips, ShaderDatabaseAccessor, StateCache, TextureAllocMode,
+    TextureHandle, TextureLoader, TextureObject, TexturePool, TextureUploadDesc,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -344,7 +344,8 @@ impl Renderer {
         mode: TextureAllocMode,
         mips: GenerateMips,
     ) -> Option<TextureHandle> {
-        let handle = self.texture_pool.create_texture(None);
+        let object = TextureObject::new();
+        let handle = self.texture_pool.alloc(object);
 
         self.texture_loader
             .immediate_upload(None, handle, data, mode, mips)
@@ -354,7 +355,8 @@ impl Renderer {
     }
 
     pub fn create_buffer(&mut self, data: BufferUploadDesc) -> Option<BufferHandle> {
-        let handle = self.buffer_pool.create_buffer(None);
+        let object = BufferObject::new();
+        let handle = self.buffer_pool.alloc(object);
 
         self.buffer_loader
             .immediate_upload(None, handle, data)

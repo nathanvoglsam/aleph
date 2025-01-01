@@ -123,7 +123,8 @@ pub fn pass(
                 render_data,
             } = args.board.get::<EguiPassContext>().unwrap();
 
-            let font_view = args.texture_pool.get_default_view(*font_handle).unwrap();
+            let font_view = args.texture_pool.get_ref(*font_handle).unwrap();
+            let font_view = font_view.get_default_view().unwrap();
 
             let set = descriptor_arena
                 .allocate_set(state.layout.set_layout.as_ref())

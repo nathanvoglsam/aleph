@@ -36,8 +36,8 @@ use crossbeam::queue::{ArrayQueue, SegQueue};
 
 use crate::mip_generator::MipGenerator;
 use crate::{
-    DeletionPool, EnqueueError, EnqueueErrorKind, StateCache, TextureHandle, TexturePool,
-    TextureStreamingRequest, TextureUploadDesc,
+    DeletionPool, EnqueueError, EnqueueErrorKind, StateCache, TextureHandle, TextureObject,
+    TexturePool, TextureStreamingRequest, TextureUploadDesc,
 };
 
 pub struct TextureLoader {
@@ -381,15 +381,21 @@ impl TextureLoader {
 
         match load.target {
             Some(handle) => {
-                if let Some(old) = pool.update_texture(handle, texture.clone()) {
+                let old = pool
+                    .get_mut(handle)
+                    .map(|v| v.update(texture.clone()))
+                    .flatten();
+                if let Some(old) = old {
                     deletion_pool.push_texture(old);
                 }
                 Ok((handle, texture))
             }
             None => {
-                let handle = load
-                    .target
-                    .unwrap_or_else(|| pool.create_texture(Some(texture.clone())));
+                let handle = load.target.unwrap_or_else(|| {
+                    let mut object = TextureObject::new_with(texture.clone());
+                    object.recreate_default_view();
+                    pool.alloc(object)
+                });
                 Ok((handle, texture))
             }
         }

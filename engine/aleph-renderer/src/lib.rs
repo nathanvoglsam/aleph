@@ -45,6 +45,7 @@ mod mip_generator;
 mod object_pool;
 mod objects;
 mod render_scene;
+mod render_scene_objects;
 mod renderer;
 mod shader_db_accessor;
 mod shaders;
@@ -56,7 +57,7 @@ mod texture_pool;
 mod texture_upload_desc;
 
 pub use buffer_loader::BufferLoader;
-pub use buffer_pool::{BufferObject, BufferPool};
+pub use buffer_pool::BufferPool;
 pub use buffer_upload_desc::{BufferObjectDesc, BufferUploadDesc};
 pub use camera::{CameraInfo, PerspectiveInfo};
 pub use deletion_pool::DeletionPool;
@@ -68,8 +69,9 @@ pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
 pub use object_pool::ObjectPool;
-pub use objects::StaticMesh;
+pub use objects::{BufferObject, TextureObject};
 pub use render_scene::{RenderScene, RenderSceneParam, RenderTransform, StorageMut, StorageRef};
+pub use render_scene_objects::StaticMesh;
 pub use renderer::{
     DefaultRenderPlane, DefaultResources, DrawOptions, IRenderPlane, IRenderSurface,
     RenderPlaneOutput, Renderer, RendererBuilder,
@@ -82,7 +84,7 @@ pub use streaming_request::{
     PollFailError, RequestState, StreamingRequest, TextureStreamingRequest,
 };
 pub use texture_loader::{GenerateMips, TextureAllocMode, TextureLoader};
-pub use texture_pool::{TextureObject, TexturePool};
+pub use texture_pool::TexturePool;
 pub use texture_upload_desc::{TextureObjectDesc, TextureUploadDataDesc, TextureUploadDesc};
 
 #[cfg(test)]

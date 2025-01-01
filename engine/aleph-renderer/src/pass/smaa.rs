@@ -174,8 +174,10 @@ fn blend_weight_pass(
             let edge_tex = resources.get_texture(edge_tex).unwrap();
             let edge_tex_view = ImageView::get_srv_for(edge_tex).unwrap();
 
-            let area_view = args.texture_pool.get_default_view(area_tex).unwrap();
-            let search_view = args.texture_pool.get_default_view(search_tex).unwrap();
+            let area_view = args.texture_pool.get_ref(area_tex).unwrap();
+            let area_view = area_view.get_default_view().unwrap();
+            let search_view = args.texture_pool.get_ref(search_tex).unwrap();
+            let search_view = search_view.get_default_view().unwrap();
 
             let set = resources
                 .descriptor_arena()

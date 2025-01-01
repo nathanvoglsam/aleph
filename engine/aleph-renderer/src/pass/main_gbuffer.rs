@@ -246,27 +246,27 @@ pub fn pass(
                 m.result.colour = o.colour;
                 m.result.metal_roughness = [o.metalness, o.roughness, 0.0, 0.0];
 
-                let vtx = args.buffer_pool.get_buffer(o.vtx).unwrap();
-                let idx = args.buffer_pool.get_buffer(o.idx).unwrap();
+                let vtx = args.buffer_pool.get_ref(o.vtx).unwrap();
+                let vtx = vtx.get().unwrap();
+                let idx = args.buffer_pool.get_ref(o.idx).unwrap();
+                let idx = idx.get().unwrap();
 
                 encoder.bind_vertex_buffers(0, &[InputAssemblyBufferBinding::new(vtx)]);
                 encoder.bind_index_buffer(IndexType::U32, &InputAssemblyBufferBinding::new(idx));
 
-                let colour_tex = args.texture_pool.get_texture(o.colour_tex).unwrap();
-                let image_view_c = colour_tex
-                    .get_view(&ImageViewDesc {
-                        format: colour_tex.desc_ref().format.to_srgb(),
-                        ..ImageViewDesc::srv_for_texture(colour_tex)
-                    })
-                    .unwrap();
-                let image_view_mr = args
-                    .texture_pool
-                    .get_default_view(o.metal_roughness_tex)
-                    .unwrap();
-                let image_view_nrm = args
-                    .texture_pool
-                    .get_default_view(o.normal_map_tex)
-                    .unwrap();
+                let colour_tex = args.texture_pool.get_ref(o.colour_tex).unwrap();
+                let image_view_c = colour_tex.get_default_view().unwrap();
+                // let image_view_c = colour_tex.get_texture().unwrap();
+                // let image_view_c = colour_tex
+                //     .get_view(&ImageViewDesc {
+                //         format: colour_tex.desc_ref().format.to_srgb(),
+                //         ..ImageViewDesc::srv_for_texture(colour_tex)
+                //     })
+                //     .unwrap();
+                let image_view_mr = args.texture_pool.get_ref(o.metal_roughness_tex).unwrap();
+                let image_view_mr = image_view_mr.get_default_view().unwrap();
+                let image_view_nrm = args.texture_pool.get_ref(o.normal_map_tex).unwrap();
+                let image_view_nrm = image_view_nrm.get_default_view().unwrap();
                 let tex_set = descriptor_arena.allocate_set(set_layout_tex).unwrap();
                 device.update_descriptor_sets(&[
                     DescriptorWriteDesc::texture(

@@ -32,8 +32,8 @@ use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 
 use crate::{
-    BufferHandle, BufferPool, BufferStreamingRequest, BufferUploadDesc, DeletionPool, EnqueueError,
-    EnqueueErrorKind,
+    BufferHandle, BufferObject, BufferPool, BufferStreamingRequest, BufferUploadDesc, DeletionPool,
+    EnqueueError, EnqueueErrorKind,
 };
 
 pub struct BufferLoader {
@@ -296,15 +296,20 @@ impl BufferLoader {
         let buffer = device.create_buffer(&desc)?;
         match load.target {
             Some(handle) => {
-                if let Some(old) = pool.update_buffer(handle, buffer.clone()) {
+                let old = pool
+                    .get_mut(handle)
+                    .map(|v| v.update(buffer.clone()))
+                    .flatten();
+                if let Some(old) = old {
                     deletion_pool.push_buffer(old);
                 }
                 Ok((handle, buffer))
             }
             None => {
-                let handle = load
-                    .target
-                    .unwrap_or_else(|| pool.create_buffer(Some(buffer.clone())));
+                let handle = load.target.unwrap_or_else(|| {
+                    let object = BufferObject::new_with(buffer.clone());
+                    pool.alloc(object)
+                });
                 Ok((handle, buffer))
             }
         }
