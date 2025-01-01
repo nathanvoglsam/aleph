@@ -27,12 +27,16 @@
 // SOFTWARE.
 //
 
-if (Configs.rhi !== undefined) {
-    Configs["rhi"].api = "vulkan";
-    Configs["rhi"].validation = true;
-    Configs["rhi"].debug = true;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub struct Config {
+    #[serde(rename = "scene")]
+    pub scene: String,
 }
-if (Configs["aleph-test"] !== undefined) {
-    Configs["aleph-test"].scene = "game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf";
-    // Configs["aleph-test"].scene = "game/aleph-test/assets/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf";
+
+impl Config {
+    pub fn log(&self) {
+        log::info!("aleph-test.scene = {}", self.scene);
+    }
 }

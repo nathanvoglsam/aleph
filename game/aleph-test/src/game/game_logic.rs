@@ -47,6 +47,7 @@ use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
 
 use crate::game::async_texture_loader::AsyncTextureLoader;
+use crate::game::config::Config;
 use crate::game::cube_mesh::upload_cube_buffers;
 use crate::game::free_camera::FreeCamera;
 use crate::game::gltf_loader::{load_scene, BumpThingy, PollResult};
@@ -82,6 +83,10 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn on_init(&mut self, registry: &mut dyn IRegistryAccessor) {
+        let config = registry.config("aleph-test").unwrap();
+        let config: Config = serde_json::from_value(config.clone()).unwrap();
+        config.log();
+        
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
         let frame_timer = registry.get_interface::<dyn IFrameTimer>().unwrap();
         let gamepads = registry.get_interface::<dyn IGamepads>().unwrap();
@@ -134,7 +139,7 @@ impl IPlugin for PluginGameLogic {
             renderer,
             &mut arena,
             &async_texture_loader,
-            Path::new("game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf"),
+            Path::new(&config.scene),
         );
 
         let (idx, vtx) = upload_cube_buffers(renderer);
