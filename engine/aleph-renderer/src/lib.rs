@@ -32,7 +32,6 @@ pub mod pass;
 pub(crate) mod built_in_textures;
 
 mod buffer_loader;
-mod buffer_pool;
 mod buffer_upload_desc;
 mod camera;
 mod deletion_pool;
@@ -53,11 +52,9 @@ mod shared_upload_buffer;
 mod state_cache;
 mod streaming_request;
 mod texture_loader;
-mod texture_pool;
 mod texture_upload_desc;
 
 pub use buffer_loader::BufferLoader;
-pub use buffer_pool::BufferPool;
 pub use buffer_upload_desc::{BufferObjectDesc, BufferUploadDesc};
 pub use camera::{CameraInfo, PerspectiveInfo};
 pub use deletion_pool::DeletionPool;
@@ -68,7 +65,7 @@ pub use handle_pool::{HandleFreeError, HandlePool};
 pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
-pub use object_pool::ObjectPool;
+pub use object_pool::{BufferPool, ObjectPool, TexturePool};
 pub use objects::{BufferObject, TextureObject};
 pub use render_scene::{RenderScene, RenderSceneParam, RenderTransform, StorageMut, StorageRef};
 pub use render_scene_objects::StaticMesh;
@@ -84,7 +81,6 @@ pub use streaming_request::{
     PollFailError, RequestState, StreamingRequest, TextureStreamingRequest,
 };
 pub use texture_loader::{GenerateMips, TextureAllocMode, TextureLoader};
-pub use texture_pool::TexturePool;
 pub use texture_upload_desc::{TextureObjectDesc, TextureUploadDataDesc, TextureUploadDesc};
 
 #[cfg(test)]

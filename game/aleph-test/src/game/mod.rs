@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-pub mod config;
 pub mod async_loader;
 pub mod async_texture_loader;
+pub mod config;
 pub mod cube_mesh;
 pub mod free_camera;
 pub mod game_logic;

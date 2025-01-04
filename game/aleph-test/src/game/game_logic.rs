@@ -86,7 +86,7 @@ impl IPlugin for PluginGameLogic {
         let config = registry.config("aleph-test").unwrap();
         let config: Config = serde_json::from_value(config.clone()).unwrap();
         config.log();
-        
+
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
         let frame_timer = registry.get_interface::<dyn IFrameTimer>().unwrap();
         let gamepads = registry.get_interface::<dyn IGamepads>().unwrap();

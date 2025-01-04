@@ -27,7 +27,13 @@
 // SOFTWARE.
 //
 
+mod buffer_pool;
+mod texture_pool;
+
 use std::num::NonZeroU8;
+
+pub use buffer_pool::BufferPool;
+pub use texture_pool::TexturePool;
 
 use crate::{Handle, HandlePool};
 
