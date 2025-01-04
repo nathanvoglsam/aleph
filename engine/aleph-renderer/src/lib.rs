@@ -32,13 +32,10 @@ pub mod pass;
 pub(crate) mod built_in_textures;
 
 mod buffer_loader;
-mod buffer_upload_desc;
 mod camera;
 mod deletion_pool;
 mod enqueue_error;
 mod format;
-mod handle;
-mod handle_pool;
 mod mesh_layout;
 mod mip_generator;
 mod object_pool;
@@ -48,24 +45,23 @@ mod render_scene_objects;
 mod renderer;
 mod shader_db_accessor;
 mod shaders;
-mod shared_upload_buffer;
 mod state_cache;
 mod streaming_request;
 mod texture_loader;
-mod texture_upload_desc;
+mod upload_buffer;
 
 pub use buffer_loader::BufferLoader;
-pub use buffer_upload_desc::{BufferObjectDesc, BufferUploadDesc};
 pub use camera::{CameraInfo, PerspectiveInfo};
 pub use deletion_pool::DeletionPool;
 pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
 pub use format::vk_to_rhi_format;
-pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
-pub use handle_pool::{HandleFreeError, HandlePool};
 pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
-pub use object_pool::{BufferPool, ObjectPool, TexturePool};
+pub use object_pool::{
+    BufferHandle, BufferPool, Handle, HandleFreeError, HandlePool, IntoHandle, MeshHandle,
+    ObjectPool, TextureHandle, TexturePool,
+};
 pub use objects::{BufferObject, TextureObject};
 pub use render_scene::{RenderScene, RenderSceneParam, RenderTransform, StorageMut, StorageRef};
 pub use render_scene_objects::StaticMesh;
@@ -74,14 +70,16 @@ pub use renderer::{
     RenderPlaneOutput, Renderer, RendererBuilder,
 };
 pub use shader_db_accessor::ShaderDatabaseAccessor;
-pub use shared_upload_buffer::{IUploadBuffer, SharedUploadBuffer};
 pub use state_cache::{IStateCacheKey, StateCache};
 pub use streaming_request::{
     BufferStreamingRequest, ConsumeStreamingRequest, MeshStreamingRequest, PollCompleteError,
     PollFailError, RequestState, StreamingRequest, TextureStreamingRequest,
 };
 pub use texture_loader::{GenerateMips, TextureAllocMode, TextureLoader};
-pub use texture_upload_desc::{TextureObjectDesc, TextureUploadDataDesc, TextureUploadDesc};
+pub use upload_buffer::{
+    BufferObjectDesc, BufferUploadDesc, IUploadBuffer, SharedUploadBuffer, TextureObjectDesc,
+    TextureUploadDataDesc, TextureUploadDesc,
+};
 
 #[cfg(test)]
 mod test_utils {

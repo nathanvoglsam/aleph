@@ -32,8 +32,8 @@ use std::ops::{Deref, DerefMut};
 
 use thiserror::Error;
 
-use crate::handle::{Generation, HandleFields};
-use crate::Handle;
+use super::handle::{Generation, HandleFields};
+use super::Handle;
 
 /// A generic generational arena handle allocator.
 pub struct HandlePool<T> {
