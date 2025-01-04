@@ -40,8 +40,10 @@ use crate::pass::utils::{
     FullscreenTriangleInfo,
 };
 use crate::pass::GraphArgs;
-use crate::{shaders, DefaultResources, IStateCacheKey, RenderPlaneOutput, TextureHandle};
-use crate::{ShaderDatabaseAccessor, StateCache};
+use crate::{
+    shaders, DefaultResources, IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor,
+    StateCache, TextureHandle,
+};
 
 pub fn pass(
     frame_graph: &mut FrameGraphBuilder<GraphArgs>,

@@ -41,8 +41,7 @@ use crate::pass::utils::{
     FullscreenTriangleInfo,
 };
 use crate::pass::GraphArgs;
-use crate::{shaders, IStateCacheKey, RenderPlaneOutput};
-use crate::{ShaderDatabaseAccessor, StateCache};
+use crate::{shaders, IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache};
 
 struct Payload {
     src: ResourceRef,

@@ -107,8 +107,7 @@ impl<'a> Drop for BoardScope<'a> {
 mod tests {
     use std::sync::Arc;
 
-    use crate::scoped::BoardParamId;
-    use crate::scoped::ScopedParamBoard;
+    use crate::scoped::{BoardParamId, ScopedParamBoard};
 
     struct IdentA;
     impl BoardParamId for IdentA {

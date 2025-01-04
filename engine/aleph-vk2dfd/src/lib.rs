@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::table::VK_TO_DFD;
 use thiserror::Error;
+
+use crate::table::VK_TO_DFD;
 
 mod table;
 

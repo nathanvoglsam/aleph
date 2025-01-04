@@ -58,19 +58,19 @@ mod stage;
 mod system;
 mod system_schedule;
 
-use std::collections::HashMap;
-use std::hash::Hash;
-
-use aleph_label::Label;
-
-pub use crate::system::{
+pub use aleph_typed_table::TypedTable;
+pub use stage::{AccessDescriptor, Stage};
+pub use system::{
     AlreadyWasSystem, ExplicitDependencies, IntoSystem, Res, ResMut, ResMutState, ResState,
     RunsAfterSystem, RunsBeforeSystem, System, SystemParam, SystemParamFetch, SystemParamFunction,
     SystemParamState,
 };
-pub use aleph_typed_table::TypedTable;
-pub use stage::{AccessDescriptor, Stage};
 pub use system_schedule::SystemSchedule;
+
+use std::collections::HashMap;
+use std::hash::Hash;
+
+use aleph_label::Label;
 
 pub trait ScheduleArgs: std::any::Any {
     type Args<'a>: Send + Sync;

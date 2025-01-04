@@ -29,14 +29,13 @@
 
 use std::ops::BitAnd;
 
+use aleph_renderer::{
+    GenerateMips, Renderer, TextureAllocMode, TextureHandle, TextureObjectDesc, TextureUploadDesc,
+};
 use aleph_rhi_api::*;
 use egui::epaint::ImageDelta;
 use egui::{FontImage, ImageData};
 use wide::{f32x4, f32x8, i32x4, i32x8, CmpEq};
-
-use aleph_renderer::{
-    GenerateMips, Renderer, TextureAllocMode, TextureHandle, TextureObjectDesc, TextureUploadDesc,
-};
 
 pub struct EguiFontTexture {
     pub font_texture: FontTexture,

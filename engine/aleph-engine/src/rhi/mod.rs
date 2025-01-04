@@ -34,7 +34,6 @@ use aleph_interfaces::platform::IWindow;
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::*;
 use aleph_rhi_loader::{BackendConfigs, ContextOptions, D3D12Config, RhiLoader, VulkanConfig};
-
 use interfaces::any::IAny;
 use serde::Deserialize;
 

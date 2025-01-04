@@ -29,7 +29,6 @@
 
 mod system_access;
 
-use aleph_typed_table::TypedTable;
 pub use system_access::{
     Res, ResMut, ResMutState, ResState, SystemParam, SystemParamFetch, SystemParamFunction,
     SystemParamState,
@@ -37,9 +36,10 @@ pub use system_access::{
 
 use std::any::Any;
 
-use crate::{AccessDescriptor, ScheduleArgs};
-
 use aleph_label::Label;
+use aleph_typed_table::TypedTable;
+
+use crate::{AccessDescriptor, ScheduleArgs};
 
 // ============================================================================================== //
 

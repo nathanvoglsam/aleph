@@ -36,8 +36,10 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::{shaders, CameraInfo, StateCache};
-use crate::{RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StaticMesh};
+use crate::{
+    shaders, CameraInfo, RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StateCache,
+    StaticMesh,
+};
 
 struct MainGBufferPassPayload {
     gbuffer0: ResourceMut,
