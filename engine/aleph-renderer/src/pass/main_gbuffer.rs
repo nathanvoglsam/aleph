@@ -35,6 +35,7 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
+use crate::pass::resource_processor::ResourceProcessorOutput;
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
 use crate::{
     shaders, CameraInfo, RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StateCache,
@@ -74,8 +75,12 @@ pub fn pass(
     let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), state_cache.shader_db());
 
     frame_graph.add_pass(nstr!("MainGBufferPass"), |resources| {
+        let resource_processor: &ResourceProcessorOutput = pin_board.get().unwrap();
         let back_buffer_info: &GraphSwapImageInfo = pin_board.get().unwrap();
         let b_desc = &back_buffer_info.desc;
+
+        // We have to have the resource processor run first!
+        resources.execute_after(resource_processor.exec);
 
         // BaseColor+AO
         let gbuffer0_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)

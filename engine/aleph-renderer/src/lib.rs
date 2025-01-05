@@ -31,13 +31,12 @@ pub mod pass;
 
 pub(crate) mod built_in_textures;
 
-mod buffer_loader;
 mod camera;
 mod deletion_pool;
 mod enqueue_error;
 mod format;
+mod loaders;
 mod mesh_layout;
-mod mip_generator;
 mod object_pool;
 mod objects;
 mod render_scene;
@@ -47,14 +46,13 @@ mod shader_db_accessor;
 mod shaders;
 mod state_cache;
 mod streaming_request;
-mod texture_loader;
 mod upload_buffer;
 
-pub use buffer_loader::BufferLoader;
 pub use camera::{CameraInfo, PerspectiveInfo};
 pub use deletion_pool::DeletionPool;
 pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
 pub use format::vk_to_rhi_format;
+pub use loaders::{BufferLoader, GenerateMips, TextureAllocMode, TextureLoader};
 pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
@@ -76,7 +74,6 @@ pub use streaming_request::{
     BufferStreamingRequest, ConsumeStreamingRequest, MeshStreamingRequest, PollCompleteError,
     PollFailError, RequestState, StreamingRequest, TextureStreamingRequest,
 };
-pub use texture_loader::{GenerateMips, TextureAllocMode, TextureLoader};
 pub use upload_buffer::{
     BufferObjectDesc, BufferUploadDesc, IUploadBuffer, SharedUploadBuffer, TextureObjectDesc,
     TextureUploadDataDesc, TextureUploadDesc,

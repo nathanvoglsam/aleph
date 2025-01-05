@@ -34,13 +34,12 @@ use std::sync::Arc;
 use aleph_any::AnyArc;
 use aleph_device_allocators::{AllocatorPool, LinearDescriptorPoolFactory};
 use aleph_frame_graph::{FrameGraph, FrameGraphBuilder, ImportBundle, ResourceMut, ResourceRef};
-use aleph_nstr::nstr;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_pin_board::{BoardScope, PinBoard};
 use aleph_rhi_api::*;
 
 use crate::deletion_pool::DeletionMode;
-use crate::mip_generator::MipGenerator;
+use crate::pass::resource_processor::ResourceProcessorParam;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
     built_in_textures, BufferHandle, BufferLoader, BufferObject, BufferPool, BufferUploadDesc,
@@ -90,6 +89,7 @@ impl IRenderPlane for DefaultRenderPlane {
     ) -> RenderPlaneOutput {
         use crate::pass;
 
+        pass::resource_processor::pass(frame_graph, device, pin_board, state_cache);
         pass::main_gbuffer::pass(frame_graph, device, pin_board, state_cache);
         pass::lighting_resolve::pass(frame_graph, device, pin_board, state_cache);
         let result = pass::tone_map::pass(frame_graph, device, pin_board, state_cache);
@@ -163,7 +163,7 @@ impl RendererBuilder {
         let device = self.device.expect("Device missing!");
         let queue = device.get_queue(QueueType::General).unwrap();
         let shader_db = self.shader_db.expect("Shader DB missing!");
-        let mut state_cache = StateCache::new(shader_db.clone());
+        let state_cache = StateCache::new(shader_db.clone());
 
         let swap_manager = SwapManager {
             surface: self.surface.expect("RenderSurface missing!"),
@@ -185,8 +185,6 @@ impl RendererBuilder {
             render_planes,
             swap_image_id: None,
         };
-
-        let mip_generator = MipGenerator::new(device.clone(), &mut state_cache);
 
         let texture_loader = Arc::new(TextureLoader::new(device.clone()));
         let buffer_loader = Arc::new(BufferLoader::new());
@@ -247,7 +245,6 @@ impl RendererBuilder {
             queue,
             state_cache,
             swap_manager,
-            mip_generator,
             texture_loader,
             buffer_loader,
             texture_pool,
@@ -273,7 +270,6 @@ pub struct Renderer {
     queue: AnyArc<dyn IQueue>,
     state_cache: StateCache,
     swap_manager: SwapManager,
-    mip_generator: MipGenerator,
     texture_loader: Arc<TextureLoader>,
     buffer_loader: Arc<BufferLoader>,
     texture_pool: TexturePool,
@@ -432,28 +428,22 @@ impl Renderer {
         {
             let mut encoder = list.begin_general().unwrap();
 
-            encoder.begin_event(Color::BLUE, nstr!("Upload Streaming Requests"));
-            // TODO: we want to batch all of these, so we need a better interface so we can bundle
-            //       the barriers and copy commands for all our loaders into a single batch.
-            //
-            //       either that or we unify to a single loader type.
-            self.buffer_loader.upload_requests(
+            let buffer_requests = self.buffer_loader.pop_and_bundle_requests(
                 &mut self.buffer_pool,
                 deletion_pool,
                 self.device.as_ref(),
-                encoder.as_mut(),
                 usize::MAX,
             );
-            self.texture_loader.upload_requests(
-                &self.mip_generator,
+            let texture_requests = self.texture_loader.pop_and_bundle_requests(
                 &mut self.state_cache,
-                linear_descriptor_pool.as_ref(),
                 &mut self.texture_pool,
                 deletion_pool,
-                encoder.as_mut(),
                 usize::MAX,
             );
-            encoder.end_event();
+            board.publish::<ResourceProcessorParam>(ResourceProcessorParam {
+                buffer_requests,
+                texture_requests,
+            });
 
             let mut import_bundle = ImportBundle::default();
 
@@ -469,6 +459,7 @@ impl Renderer {
                 board,
                 texture_pool: &self.texture_pool,
                 buffer_pool: &self.buffer_pool,
+                state_cache: &self.state_cache,
             };
 
             self.graph_manager

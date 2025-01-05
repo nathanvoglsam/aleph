@@ -27,14 +27,11 @@
 // SOFTWARE.
 //
 
-use std::ptr::NonNull;
-
 use aleph_any::AnyArc;
-use aleph_device_allocators::LinearDescriptorPool;
 use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 
-use crate::mip_generator::MipGenerator;
+use crate::pass::resource_processor::{MipGeneratorState, TextureLoadRequest, PREWARM_MIP_FORMATS};
 use crate::{
     DeletionPool, EnqueueError, EnqueueErrorKind, StateCache, TextureHandle, TextureObject,
     TexturePool, TextureStreamingRequest, TextureUploadDesc,
@@ -183,26 +180,36 @@ impl TextureLoader {
         }
     }
 
-    pub(crate) unsafe fn upload_requests(
+    pub(crate) unsafe fn pop_and_bundle_requests(
         &self,
-        mip_generator: &MipGenerator,
         state_cache: &mut StateCache,
-        arena: &LinearDescriptorPool,
         pool: &mut TexturePool,
         deletion_pool: &mut DeletionPool,
-        encoder: &mut dyn IGeneralEncoder,
         count: usize,
-    ) {
-        let mut discard_barriers = Vec::new();
-        let mut textures = Vec::new();
-        let mut release_barriers = Vec::new();
-
-        let mut requests = Vec::new();
+    ) -> Vec<TextureLoadRequest> {
+        let mut out = Vec::new();
 
         // First we process the uploads that _must_ be processed this frame from the immediate
         // queue.
         while let Some(request) = self.immediate_queue.pop() {
-            requests.push(request)
+            let v = self.process_request(pool, deletion_pool, request);
+            if let Some(v) = v {
+                if v.mips == GenerateMips::Yes {
+                    // Ensure that the pipeline for the texture's format has been compiled
+                    let format = v.texture.desc_ref().format;
+
+                    // Skip even checking the state map if the format is in the prewarm set. This
+                    // should save us from hitting the hash map in most cases.
+                    if !PREWARM_MIP_FORMATS.contains(&format) {
+                        let key = MipGeneratorState::key(format);
+                        let _ = state_cache.get_or_insert_with(&key, |cache, k| {
+                            MipGeneratorState::new(cache, self.device.as_ref(), k.0)
+                        });
+                    }
+                }
+
+                out.push(v);
+            }
         }
 
         // We want to process no more than 'n' requests. Just pass big number (usize::MAX) if you
@@ -214,87 +221,21 @@ impl TextureLoader {
                 None => break,
             };
 
-            requests.push(request);
-        }
-
-        for request in requests.drain(..) {
-            self.process_request(
-                pool,
-                deletion_pool,
-                &mut discard_barriers,
-                &mut textures,
-                &mut release_barriers,
-                request,
-            );
-        }
-
-        // If there are no textures to upload then we early exit (we don't want to issue empty
-        // resource barriers)
-        if textures.is_empty() {
-            return;
-        }
-
-        // Prepare all our resources in a single barrier command rather than 'n' barriers
-        encoder.resource_barrier(&[], &[], &discard_barriers);
-
-        for upload in textures.iter() {
-            let data = &upload.load.data.data;
-
-            let texture = AnyArc::from_raw(upload.texture.as_ptr());
-            for level in data.level_range() {
-                let region = upload
-                    .load
-                    .data
-                    .get_copy_region(level, TextureCopyAspect::Color);
-                encoder.copy_buffer_to_texture(
-                    upload.load.data.buffer.buffer(),
-                    texture.as_ref(),
-                    &[region],
-                );
-            }
-
-            if let Some(req) = upload.load.request.as_ref() {
-                req.mark_complete(upload.load.target.unwrap()).unwrap();
+            let v = self.process_request(pool, deletion_pool, request);
+            if let Some(v) = v {
+                out.push(v);
             }
         }
 
-        // Sync our uploaded resources with the access scopes we consider them safe to use
-        if !release_barriers.is_empty() {
-            encoder.resource_barrier(&[], &[], &release_barriers);
-        }
-
-        for upload in textures.drain(..) {
-            match upload.load.mips {
-                GenerateMips::Yes => {
-                    mip_generator.record(
-                        state_cache,
-                        arena,
-                        encoder,
-                        upload.texture.as_ref(),
-                        upload.load.data.desc.usage,
-                    );
-                }
-                GenerateMips::No => {
-                    // Do nothing here, the texture has been correctly synced with the outside
-                    // users
-                }
-            }
-
-            // Finally push our data into the deletion pool to keep it alive for the copy on the GPU
-            // timeline
-            deletion_pool.push_upload(upload.load.data.buffer);
-        }
+        out
     }
 
     unsafe fn process_request(
         &self,
         pool: &mut TexturePool,
         deletion_pool: &mut DeletionPool,
-        discard_barriers: &mut Vec<TextureBarrier>,
-        textures: &mut Vec<Upload>,
-        release_barriers: &mut Vec<TextureBarrier>,
         mut request: LoadRequest,
-    ) {
+    ) -> Option<TextureLoadRequest> {
         let result = Self::create_texture(pool, deletion_pool, self.device.as_ref(), &mut request);
         let (handle, texture) = match result {
             Ok(v) => v,
@@ -307,64 +248,19 @@ impl TextureLoader {
                 if let Some(req) = request.request.as_ref() {
                     req.mark_failed(()).unwrap();
                 }
-                return;
+                return None;
             }
         };
 
-        let subresources = TextureSubResourceSet::all(texture.desc_ref());
+        deletion_pool.push_buffer(request.data.buffer.buffer().upgrade());
 
-        let usage = request.data.desc.usage;
-        let mips = request.mips;
-        let format = texture.desc_ref().format;
-
-        // Need to drop to raw pointers because the borrow checker won't be able to prove what
-        // we're doing is safe.
-        //
-        // Arc's address is stable, but we need to 'move' it into the textures array. The borrow
-        // checker will complain the move is impossible due to outstanding borrows.
-        //
-        // This is safe because:
-        // - All access are through shared references
-        // - The address is stable
-        let texture = NonNull::new_unchecked(AnyArc::into_raw(texture) as *mut _);
-
-        let mut load = request;
-        load.target = Some(handle);
-        textures.push(Upload { load, texture });
-
-        discard_barriers.push(TextureBarrier {
-            texture: Some(texture.as_ref()),
-            subresource_range: subresources.clone(),
-            before_sync: BarrierSync::NONE,
-            after_sync: BarrierSync::COPY,
-            before_access: BarrierAccess::NONE,
-            after_access: BarrierAccess::COPY_WRITE,
-            before_layout: ImageLayout::Undefined,
-            after_layout: ImageLayout::CopyDst,
-            queue_transition: None,
-        });
-
-        match mips {
-            GenerateMips::Yes => {
-                // We don't do anything here because the mip generator expects the texture to be
-                // in the copy layout still.
-                //
-                // We handle this after the copies have been completed
-            }
-            GenerateMips::No => {
-                release_barriers.push(TextureBarrier {
-                    texture: Some(texture.as_ref()),
-                    subresource_range: subresources,
-                    before_sync: BarrierSync::COPY,
-                    after_sync: usage.default_barrier_sync(true, format),
-                    before_access: BarrierAccess::COPY_WRITE,
-                    after_access: usage.barrier_access_for_read(format),
-                    before_layout: ImageLayout::CopyDst,
-                    after_layout: usage.image_layout(true, format),
-                    queue_transition: None,
-                });
-            }
-        }
+        Some(TextureLoadRequest {
+            handle,
+            request: request.request,
+            data: request.data,
+            texture,
+            mips: request.mips,
+        })
     }
 
     fn create_texture<'a>(
@@ -491,9 +387,4 @@ struct LoadRequest {
 
     /// Request the renderer to generate the mipmaps for the texture once loaded
     mips: GenerateMips,
-}
-
-struct Upload {
-    load: LoadRequest,
-    texture: NonNull<dyn ITexture>,
 }

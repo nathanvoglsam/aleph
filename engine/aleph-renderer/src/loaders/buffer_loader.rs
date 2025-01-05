@@ -31,6 +31,7 @@ use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use crossbeam::queue::{ArrayQueue, SegQueue};
 
+use crate::pass::resource_processor::BufferLoadRequest;
 use crate::{
     BufferHandle, BufferObject, BufferPool, BufferStreamingRequest, BufferUploadDesc, DeletionPool,
     EnqueueError, EnqueueErrorKind,
@@ -138,30 +139,22 @@ impl BufferLoader {
         }
     }
 
-    pub(crate) unsafe fn upload_requests(
+    pub(crate) unsafe fn pop_and_bundle_requests(
         &self,
         pool: &mut BufferPool,
         deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
-        encoder: &mut dyn IGeneralEncoder,
         count: usize,
-    ) {
-        let mut discard_barriers = Vec::new();
-        let mut buffers = Vec::new();
-        let mut release_barriers = Vec::new();
-
+    ) -> Vec<BufferLoadRequest> {
         // First we process the uploads that _must_ be processed this frame from the immediate
         // queue.
+        let mut out = Vec::new();
+
         while let Some(request) = self.immediate_queue.pop() {
-            Self::process_request(
-                pool,
-                deletion_pool,
-                device,
-                &mut discard_barriers,
-                &mut buffers,
-                &mut release_barriers,
-                request,
-            );
+            let v = Self::process_request(pool, deletion_pool, device, request);
+            if let Some(v) = v {
+                out.push(v);
+            }
         }
 
         // We want to process no more than 'n' requests. Just pass big number (usize::MAX) if you
@@ -173,57 +166,23 @@ impl BufferLoader {
                 None => break,
             };
 
-            Self::process_request(
-                pool,
-                deletion_pool,
-                device,
-                &mut discard_barriers,
-                &mut buffers,
-                &mut release_barriers,
-                request,
-            );
-        }
-
-        // If there are no buffers to upload then we early exit (we don't want to issue empty
-        // resource barriers)
-        if buffers.is_empty() {
-            return;
-        }
-
-        // Prepare all our resources in a single barrier command rather than 'n' barriers
-        encoder.resource_barrier(&[], &discard_barriers, &[]);
-
-        for upload in buffers.drain(..) {
-            let buffer = AnyArc::from_raw(upload.buffer);
-            let region = upload.load.data.get_copy_region(0);
-            encoder.copy_buffer_regions(
-                upload.load.data.buffer.buffer(),
-                buffer.as_ref(),
-                &[region],
-            );
-
-            if let Some(req) = upload.load.request.as_ref() {
-                req.mark_complete(upload.load.target.unwrap()).unwrap();
+            let v = Self::process_request(pool, deletion_pool, device, request);
+            if let Some(v) = v {
+                out.push(v);
             }
-
-            deletion_pool.push_upload(upload.load.data.buffer);
         }
 
-        // Sync our uploaded resources with the access scopes we consider them safe to use
-        encoder.resource_barrier(&[], &release_barriers, &[]);
+        out
     }
 
     unsafe fn process_request(
         pool: &mut BufferPool,
         deletion_pool: &mut DeletionPool,
         device: &dyn IDevice,
-        discard_barriers: &mut Vec<BufferBarrier>,
-        buffers: &mut Vec<Upload>,
-        release_barriers: &mut Vec<BufferBarrier>,
         request: LoadRequest,
-    ) {
+    ) -> Option<BufferLoadRequest> {
         let result = Self::create_buffer(pool, deletion_pool, device, &request);
-        let (handle, buffer) = match result {
+        let (target, buffer) = match result {
             Ok(v) => v,
             Err(err) => {
                 // TODO: do we want to push errors into the buffer object so you can query the
@@ -234,48 +193,18 @@ impl BufferLoader {
                 if let Some(req) = request.request.as_ref() {
                     req.mark_failed(()).unwrap();
                 }
-                return;
+                return None;
             }
         };
 
-        // Need to drop to raw pointers because the borrow checker won't be able to prove what
-        // we're doing is safe.
-        //
-        // Arc's address is stable, but we need to 'move' it into the buffers array. The borrow
-        // checker will complain the move is impossible due to outstanding borrows.
-        //
-        // This is safe because:
-        // - All access are through shared references
-        // - The address is stable
-        let buffer = AnyArc::into_raw(buffer);
-        let size = request.data.desc.size.get();
-        let usage = request.data.desc.usage;
+        deletion_pool.push_buffer(request.data.buffer.buffer().upgrade());
 
-        let mut load = request;
-        load.target = Some(handle);
-        buffers.push(Upload { load, buffer });
-
-        discard_barriers.push(BufferBarrier {
-            buffer: buffer.as_ref(),
-            offset: 0,
-            size,
-            before_sync: BarrierSync::NONE,
-            after_sync: BarrierSync::COPY,
-            before_access: BarrierAccess::NONE,
-            after_access: BarrierAccess::COPY_WRITE,
-            queue_transition: None,
-        });
-
-        release_barriers.push(BufferBarrier {
-            buffer: buffer.as_ref(),
-            offset: 0,
-            size,
-            before_sync: BarrierSync::COPY,
-            after_sync: usage.default_barrier_sync(true, Format::R8Unorm),
-            before_access: BarrierAccess::COPY_WRITE,
-            after_access: usage.barrier_access_for_read(Format::R8Unorm),
-            queue_transition: None,
-        });
+        Some(BufferLoadRequest {
+            target,
+            request: request.request,
+            data: request.data,
+            buffer,
+        })
     }
 
     fn create_buffer<'a>(
@@ -326,9 +255,4 @@ struct LoadRequest {
 
     /// The actual data source for the upload.
     data: BufferUploadDesc,
-}
-
-struct Upload {
-    load: LoadRequest,
-    buffer: *const dyn IBuffer,
 }
