@@ -108,7 +108,7 @@ pub fn pass(
             idx_buffer,
         };
 
-        move |encoder, resources, args| unsafe {
+        move |encoder, _graph, resources, args| unsafe {
             let sampler = state.layout.sampler.as_ref();
             let descriptor_arena = resources.descriptor_arena();
 

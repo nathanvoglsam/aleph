@@ -92,7 +92,7 @@ pub fn pass(
         result = Some(target);
 
         let data = Payload { planes, target };
-        move |encoder, resources, _args| unsafe {
+        move |encoder, _graph, resources, _args| unsafe {
             let output = resources.get_texture(data.target).unwrap();
             let dst_desc = output.desc_ref();
 

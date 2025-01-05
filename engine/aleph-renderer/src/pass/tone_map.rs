@@ -105,7 +105,7 @@ pub fn pass(
 
         let data = TonemapPassPayload { input, output };
 
-        move |encoder, resources, _args| unsafe {
+        move |encoder, _graph, resources, _args| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
 

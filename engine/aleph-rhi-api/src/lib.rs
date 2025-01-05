@@ -5118,7 +5118,7 @@ impl TextureSubResourceSet {
 }
 
 /// Describes a global memory barrier
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct GlobalBarrier {
     pub before_sync: BarrierSync,
     pub after_sync: BarrierSync,

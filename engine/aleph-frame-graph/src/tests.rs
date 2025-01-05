@@ -96,7 +96,7 @@ pub fn test_builder() {
         };
         out_create = Some(payload.resource);
 
-        move |_encoder, _resources, args| {
+        move |_encoder, _graph, _resources, args| {
             // Verify we got the right payload
             assert_eq!(payload.value, 54321);
             let context = args.get::<usize>().copied().unwrap();
@@ -115,7 +115,7 @@ pub fn test_builder() {
         };
         out_write = Some(payload.resource);
 
-        move |_encoder, _resources, args| {
+        move |_encoder, _graph, _resources, args| {
             // Verify we got the right payload
             assert_eq!(payload.value, 1234);
             let context: usize = args.get::<usize>().copied().unwrap();
@@ -135,7 +135,7 @@ pub fn test_builder() {
 
         out_read = Some(payload.resource);
 
-        move |_encoder, _resources, args| {
+        move |_encoder, _graph, _resources, args| {
             // Verify we got the right payload
             assert_eq!(payload.value, -432);
             let context = args.get::<usize>().copied().unwrap();
@@ -200,7 +200,7 @@ pub fn test_handle_equality() {
         );
         imported_resource = Some(r);
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
     let imported_resource = imported_resource.unwrap();
 
@@ -220,7 +220,7 @@ pub fn test_handle_equality() {
             ResourceUsageFlags::UNORDERED_ACCESS,
         ));
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("test-pass-2"), |resources| {
@@ -235,7 +235,7 @@ pub fn test_handle_equality() {
             ResourceUsageFlags::UNORDERED_ACCESS,
         ));
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("test-pass-3"), |resources| {
@@ -244,7 +244,7 @@ pub fn test_handle_equality() {
             BarrierSync::PIXEL_SHADING,
             ResourceUsageFlags::CONSTANT_BUFFER,
         ));
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     let out_create = out_create.unwrap();
@@ -319,7 +319,7 @@ pub fn test_usage_collection() {
         );
         imported_resource = Some(r);
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
     let imported_resource = imported_resource.unwrap();
 
@@ -338,7 +338,7 @@ pub fn test_usage_collection() {
             BarrierSync::VERTEX_SHADING,
             ResourceUsageFlags::INDEX_BUFFER,
         ));
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("test-pass-2"), |resources| {
@@ -352,7 +352,7 @@ pub fn test_usage_collection() {
             BarrierSync::COMPUTE_SHADING,
             ResourceUsageFlags::UNORDERED_ACCESS,
         ));
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("test-pass-3"), |resources| {
@@ -361,7 +361,7 @@ pub fn test_usage_collection() {
             BarrierSync::PIXEL_SHADING,
             ResourceUsageFlags::CONSTANT_BUFFER,
         );
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     let mut graph = builder.build(device.as_ref());
@@ -455,7 +455,7 @@ pub fn test_usage_schedule() {
             ResourceUsageFlags::NONE,
         );
         pin_board.publish(Pass0 { import });
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     struct Pass1 {
@@ -492,7 +492,7 @@ pub fn test_usage_schedule() {
         );
 
         pin_board.publish(Pass1 { create, import });
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     #[derive(Clone)]
@@ -532,7 +532,7 @@ pub fn test_usage_schedule() {
         };
         pin_board.publish(payload.clone());
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_buffer(payload.import_buffer_write).unwrap();
             let _resource = resources.get_texture(payload.import_texture_write).unwrap();
         }
@@ -546,7 +546,7 @@ pub fn test_usage_schedule() {
             ResourceUsageFlags::CONSTANT_BUFFER,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_buffer(read).unwrap();
         }
     });
@@ -559,7 +559,7 @@ pub fn test_usage_schedule() {
             ResourceUsageFlags::SHADER_RESOURCE,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -572,7 +572,7 @@ pub fn test_usage_schedule() {
             ResourceUsageFlags::SHADER_RESOURCE,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -585,7 +585,7 @@ pub fn test_usage_schedule() {
             ResourceUsageFlags::SHADER_RESOURCE,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -598,7 +598,7 @@ pub fn test_usage_schedule() {
             ResourceUsageFlags::RENDER_TARGET,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -611,7 +611,7 @@ pub fn test_usage_schedule() {
             ResourceUsageFlags::RENDER_TARGET,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -633,7 +633,7 @@ pub fn test_usage_schedule() {
         };
         pin_board.publish(payload.clone());
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(payload.import_texture_write).unwrap();
         }
     });
@@ -727,7 +727,7 @@ pub fn test_usage_schedule_exec_dependency() {
             ResourceUsageFlags::NONE,
         );
         pin_board.publish(Pass0 { import });
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     struct Pass1 {
@@ -756,7 +756,7 @@ pub fn test_usage_schedule_exec_dependency() {
         );
 
         pin_board.publish(Pass1 { exec, import });
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     #[derive(Clone)]
@@ -793,7 +793,7 @@ pub fn test_usage_schedule_exec_dependency() {
         };
         pin_board.publish(payload.clone());
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_buffer(payload.import_buffer_write).unwrap();
             let _resource = resources.get_texture(payload.import_texture_write).unwrap();
         }
@@ -803,7 +803,7 @@ pub fn test_usage_schedule_exec_dependency() {
         let exec = pin_board.get::<Pass2>().unwrap().exec;
         let _exec = resources.execute_after(exec);
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("test-pass-4"), |resources| {
@@ -814,7 +814,7 @@ pub fn test_usage_schedule_exec_dependency() {
             ResourceUsageFlags::SHADER_RESOURCE,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -827,7 +827,7 @@ pub fn test_usage_schedule_exec_dependency() {
             ResourceUsageFlags::SHADER_RESOURCE,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -840,7 +840,7 @@ pub fn test_usage_schedule_exec_dependency() {
             ResourceUsageFlags::SHADER_RESOURCE,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -853,7 +853,7 @@ pub fn test_usage_schedule_exec_dependency() {
             ResourceUsageFlags::RENDER_TARGET,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -866,7 +866,7 @@ pub fn test_usage_schedule_exec_dependency() {
             ResourceUsageFlags::RENDER_TARGET,
         );
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(read).unwrap();
         }
     });
@@ -888,7 +888,7 @@ pub fn test_usage_schedule_exec_dependency() {
         };
         pin_board.publish(payload.clone());
 
-        move |_encoder, resources, _args| {
+        move |_encoder, _graph, resources, _args| {
             let _resource = resources.get_texture(payload.import_texture_write).unwrap();
         }
     });
@@ -951,7 +951,7 @@ pub fn test_usage_illegal_dependency() {
         );
         pin_board.publish(Import(import));
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("writer-pass"), |resources| {
@@ -959,7 +959,7 @@ pub fn test_usage_illegal_dependency() {
         let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         pin_board.publish(Write(write));
 
-        move |_, _, _| {}
+        move |_, _, _, _| {}
     });
 
     builder.add_pass(nstr!("reader-pass"), |resources| {
@@ -967,7 +967,7 @@ pub fn test_usage_illegal_dependency() {
         let _read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         // pin_board.publish(Read(read));
 
-        move |_, _, _| {}
+        move |_, _, _, _| {}
     });
 
     builder.add_pass(nstr!("deadly-pass"), |resources| {
@@ -987,7 +987,7 @@ pub fn test_usage_illegal_dependency() {
         let _bad_read = resources.read_buffer(import.0, ResourceUsageFlags::CONSTANT_BUFFER);
         let _bad_write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
 
-        move |_, _, _| {}
+        move |_, _, _, _| {}
     });
 
     let mut dot_text = Vec::<u8>::new();
@@ -1036,7 +1036,7 @@ pub fn test_usage_illegal_dependency_2() {
         );
         pin_board.publish(Import(import));
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("writer-pass-1"), |resources| {
@@ -1044,7 +1044,7 @@ pub fn test_usage_illegal_dependency_2() {
         let write = resources.write_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         pin_board.publish(Write(write));
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("writer-pass-2"), |resources| {
@@ -1052,7 +1052,7 @@ pub fn test_usage_illegal_dependency_2() {
         let write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
         pin_board.publish(Write(write));
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("reader-pass"), |resources| {
@@ -1060,7 +1060,7 @@ pub fn test_usage_illegal_dependency_2() {
         let _read = resources.read_buffer(import.0, ResourceUsageFlags::UNORDERED_ACCESS);
         // pin_board.publish(Read(read));
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     builder.add_pass(nstr!("deadly-pass"), |resources| {
@@ -1080,7 +1080,7 @@ pub fn test_usage_illegal_dependency_2() {
         let _bad_read = resources.read_buffer(import.0, ResourceUsageFlags::CONSTANT_BUFFER);
         let _bad_write = resources.write_buffer(write.0, ResourceUsageFlags::UNORDERED_ACCESS);
 
-        move |_encoder, _resources, _args| {}
+        move |_encoder, _graph, _resources, _args| {}
     });
 
     let mut dot_text = Vec::<u8>::new();

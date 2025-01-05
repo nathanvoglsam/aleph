@@ -126,7 +126,7 @@ pub fn pass(
             depth_buffer,
         });
 
-        move |encoder, resources, args| unsafe {
+        move |encoder, _graph, resources, args| unsafe {
             let set_layout = descriptor_set_layout.as_ref();
             let set_layout_tex = descriptor_set_layout_tex.as_ref();
             let device = resources.device();

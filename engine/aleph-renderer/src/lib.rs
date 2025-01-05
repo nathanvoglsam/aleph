@@ -59,10 +59,11 @@ pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
 pub use object_pool::{
-    BufferHandle, BufferPool, Handle, HandleFreeError, HandlePool, IntoHandle, MeshHandle,
-    ObjectPool, TextureHandle, TexturePool,
+    BufferHandle, BufferPool, Handle, HandleFreeError, HandlePool, IntoHandle, MaterialHandle,
+    MaterialInstanceHandle, MaterialInstancePool, MaterialPool, MeshHandle, ObjectPool,
+    TextureHandle, TexturePool,
 };
-pub use objects::{BufferObject, TextureObject};
+pub use objects::{BufferObject, MaterialInstanceObject, MaterialObject, TextureObject};
 pub use render_scene::{RenderScene, RenderSceneParam, RenderTransform, StorageMut, StorageRef};
 pub use render_scene_objects::StaticMesh;
 pub use renderer::{

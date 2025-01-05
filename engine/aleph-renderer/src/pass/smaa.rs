@@ -103,7 +103,7 @@ fn edge_pass(
             desc: edge_desc.strip_name(),
         });
 
-        move |encoder, resources, _args| unsafe {
+        move |encoder, _graph, resources, _args| unsafe {
             let edge_tex = resources.get_texture(edge_tex).unwrap();
             let edge_tex_view = ImageView::get_rtv_for(edge_tex).unwrap();
 
@@ -169,7 +169,7 @@ fn blend_weight_pass(
             desc: blend_tex_desc.strip_name(),
         });
 
-        move |encoder, resources, args| unsafe {
+        move |encoder, _graph, resources, args| unsafe {
             let blend_tex = resources.get_texture(blend_tex).unwrap();
             let blend_tex_view = ImageView::get_rtv_for(blend_tex).unwrap();
 
@@ -241,7 +241,7 @@ fn aa_blend_resolve_pass(
             desc: output_desc.strip_name(),
         });
 
-        move |encoder, resources, _args| unsafe {
+        move |encoder, _graph, resources, _args| unsafe {
             // We want raw access to the encoded SRGB data. We output SRGB encoded data from the
             // shader so we need a UNORM view to ensure we don't double encode it.
             let output = resources.get_texture(output).unwrap();

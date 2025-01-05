@@ -43,7 +43,7 @@ use crate::internal::{
     ResourceRoot, ResourceVersion, TransientResourceBundle,
 };
 use crate::render_pass::PassArgs;
-use crate::{FrameGraphBuilder, ImportBundle, ResourceRef, ResourceVariant, Result};
+use crate::{FrameGraphBuilder, GraphChannel, ImportBundle, ResourceRef, ResourceVariant, Result};
 
 pub struct FrameGraph<A: PassArgs = ()> {
     /// The bump allocation arena that provides the backing memory for the render passes and any
@@ -174,16 +174,19 @@ impl<A: PassArgs> FrameGraph<A> {
 
         encoder.begin_event(Color::BLUE, nstr!("FrameGraph::execute"));
 
+        let mut graph_channel = GraphChannel {
+            has_global_or_buffer_barrier: false,
+            global_barrier: GlobalBarrier::default(),
+            texture_objects: Vec::new(),
+            texture_barriers: Vec::new(),
+        };
         for bundle in self.execution_bundles.iter() {
-            let mut has_memory_barrier = false;
-            let mut memory_barrier = GlobalBarrier {
-                before_sync: BarrierSync::NONE,
-                after_sync: BarrierSync::NONE,
-                before_access: BarrierAccess::NONE,
-                after_access: BarrierAccess::NONE,
-            };
+            let mut has_memory_barrier =
+                std::mem::take(&mut graph_channel.has_global_or_buffer_barrier);
+            let mut memory_barrier = std::mem::take(&mut graph_channel.global_barrier);
 
             let mut texture_barriers = Vec::new();
+            texture_barriers.extend(graph_channel.texture_barriers.drain(..));
             let barriers = unsafe { bundle.barriers.as_ref() };
             for &barrier in barriers {
                 let node = &self.ir_nodes[barrier];
@@ -218,7 +221,7 @@ impl<A: PassArgs> FrameGraph<A> {
                 }
             }
 
-            if !barriers.is_empty() {
+            if !texture_barriers.is_empty() || has_memory_barrier {
                 let memory_barrier = if has_memory_barrier {
                     std::slice::from_ref(&memory_barrier)
                 } else {
@@ -226,6 +229,9 @@ impl<A: PassArgs> FrameGraph<A> {
                 };
                 encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
             }
+
+            // Clear the texture objects from the graph channel now that we've issued the barriers
+            graph_channel.texture_objects.clear();
 
             let passes = unsafe { bundle.passes.as_ref() };
             for &pass in passes {
@@ -245,9 +251,28 @@ impl<A: PassArgs> FrameGraph<A> {
                 {
                     aleph_profile::scope_named!("FrameGraphPass", render_pass.name.as_ref());
 
-                    render_pass.pass.execute(encoder, &resources, args);
+                    render_pass
+                        .pass
+                        .execute(encoder, &mut graph_channel, &resources, args);
                 }
                 encoder.end_event();
+            }
+        }
+
+        {
+            let has_memory_barrier = graph_channel.has_global_or_buffer_barrier;
+            let memory_barrier = graph_channel.global_barrier;
+
+            let mut texture_barriers = Vec::new();
+            texture_barriers.extend(graph_channel.texture_barriers.drain(..));
+
+            if !texture_barriers.is_empty() || has_memory_barrier {
+                let memory_barrier = if has_memory_barrier {
+                    std::slice::from_ref(&memory_barrier)
+                } else {
+                    &[]
+                };
+                encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
             }
         }
 

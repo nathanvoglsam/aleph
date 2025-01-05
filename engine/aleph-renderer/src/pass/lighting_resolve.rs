@@ -105,7 +105,7 @@ pub fn pass(
         };
         pin_board.publish(LightingResolvePassOutput { lighting });
 
-        move |encoder, resources, args| unsafe {
+        move |encoder, _graph, resources, args| unsafe {
             let device = resources.device();
             let arena = resources.descriptor_arena();
             let camera_info = args.board.get::<CameraInfo>().unwrap();

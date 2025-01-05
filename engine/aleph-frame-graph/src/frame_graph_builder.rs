@@ -58,9 +58,9 @@ use allocator_api2::vec::Vec as BVec;
 use blink_alloc::{Blink, BlinkAlloc};
 use thiserror::Error;
 
-use crate::internal::*;
 use crate::render_pass::{CallbackRenderPass, PassArgs};
 use crate::resource::ResourceId;
+use crate::{internal::*, GraphChannel};
 use crate::{FrameGraph, FrameGraphResources, IRenderPass, ResourceMut, ResourceRef};
 
 #[derive(Error, Debug)]
@@ -196,7 +196,10 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     }
 
     pub fn add_pass<
-        ExecFn: FnMut(&mut dyn IGeneralEncoder, &FrameGraphResources, &A::Args<'_>) + Send + Sync + 'static,
+        ExecFn: FnMut(&mut dyn IGeneralEncoder, &mut GraphChannel, &FrameGraphResources, &A::Args<'_>)
+            + Send
+            + Sync
+            + 'static,
         SetupFn: FnOnce(&mut ResourceRegistry<A>) -> ExecFn,
     >(
         &mut self,
@@ -565,23 +568,23 @@ impl<'a, A: PassArgs> ResourceRegistry<'a, A> {
 
     /// Declares an execution dependency on the given exec token. This will cause the current pass
     /// to always be executed after whichever pass created the given token.
-    /// 
+    ///
     /// # Warning
-    /// 
+    ///
     /// This only implies _ordering_, and does not imply any synchronization. This means the
     /// commands associated with this pass will be encoded after the commands from the referenced
     /// pass, but no barrier synchronizations are implied. As far as the GPU API is concerned these
     /// passes are still unsynchronized. Always use frame graph resource edges when possible instead
     /// of [`ResourceRegistry::execute_after`].
-    /// 
+    ///
     /// There are some use cases this API handles well. The frame graph is not capable of dealing
     /// with bulk resources like material textures very well. The frame graph is designed to deal
     /// with a relatively small and _constant_ number of transient resources. An unbounded input
     /// set will scale poorly if represented as graph edges. This API is designed to compose with
     /// other utilities to enable efficiently implementing this style of pass.
-    /// 
+    ///
     /// For example: mip map generation.
-    /// 
+    ///
     /// Mip generation fits very poorly into the frame graph. There is an arbitrary and difficult to
     /// predict set of back-to-back barriers, where the number of barriers is dependent on the size
     /// of the input textures. Naively inserting a 'mip-gen' pass without this API would create an
@@ -589,8 +592,7 @@ impl<'a, A: PassArgs> ResourceRegistry<'a, A> {
     /// An exec token allows encoding the execution dependency. It is however the passes
     /// responsibility to synchronize the resources with its own barriers.
     pub fn execute_after<R: Into<ResourceRef>>(&mut self, token: R) -> ResourceRef {
-        self.builder
-            .execute_after_internal(self.render_pass, token)
+        self.builder.execute_after_internal(self.render_pass, token)
     }
 
     /// Declares that a new, transient texture will be created and used by the pass. Use 'access' to
@@ -694,11 +696,11 @@ impl<'a, A: PassArgs> ResourceRegistry<'a, A> {
     /// Declares a new execution token with the given name. An execution token is like a transient
     /// resources that lacks a backing GPU API resource. It instead exists only for encoding an
     /// explicit execution dependency on another pass without implying any GPU synchronization.
-    /// 
-    /// See [`ResourceRegistry::execute_after`] for more info. 
-    pub fn create_exec_token(&mut self, name: Option<&str>) -> ResourceRef {
+    ///
+    /// See [`ResourceRegistry::execute_after`] for more info.
+    pub fn create_exec_token<'s, T: Into<Option<&'s str>>>(&mut self, name: T) -> ResourceRef {
         self.builder
-            .create_exec_token_internal(self.render_pass, name)
+            .create_exec_token_internal(self.render_pass, name.into())
     }
 
     /// A flag that a render pass can set on itself to declare that the 'exec' fn should not be

@@ -144,6 +144,6 @@ pub use frame_graph_builder::{
     BufferImportDesc, FrameGraphBuilder, ResourceRegistry, Result, TextureImportDesc,
 };
 pub use import_bundle::ImportBundle;
-pub use render_pass::{IRenderPass, PassArgs};
+pub use render_pass::{GraphChannel, IRenderPass, PassArgs};
 pub use resource::{ResourceMut, ResourceRef};
 pub use resource_variant::ResourceVariant;

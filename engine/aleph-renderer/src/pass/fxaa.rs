@@ -94,7 +94,7 @@ pub fn pass(
             dst,
             uniform_buffer,
         };
-        move |encoder, resources, _args| unsafe {
+        move |encoder, _graph, resources, _args| unsafe {
             let dst = resources.get_texture(data.dst).unwrap();
             let dst_view = dst
                 .get_rtv(&ImageViewDesc::rtv_for_texture(dst).with_format(src_format.to_non_srgb()))
