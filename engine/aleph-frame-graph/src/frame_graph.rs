@@ -299,6 +299,7 @@ impl<A: PassArgs> FrameGraph<A> {
                     let texture = self.device.create_texture(&desc).unwrap();
                     bundle.add_resource(i, texture);
                 }
+                crate::internal::ResourceType::Execution(_) => {}
             }
         }
 
@@ -437,33 +438,52 @@ impl<A: PassArgs> FrameGraph<A> {
                 let v = u16::try_from(v).unwrap();
                 let imported_resource = import_bundle.imports.get(&v);
                 let transient_resource = transient_bundle.transients.get(&v);
-
                 let name = root_resource
                     .resource_type
                     .name()
                     .unwrap_or("Unnamed resource");
 
-                let has_transient = transient_resource.is_some();
-                assert!(
-                    has_transient,
-                    "The TransientResourceBundle does not contain handle for graph resource '{}'",
-                    name
+                let is_exec = matches!(
+                    &root_resource.resource_type,
+                    crate::internal::ResourceType::Execution(_)
                 );
+                if is_exec {
+                    let no_transient = transient_resource.is_none();
+                    assert!(
+                        no_transient,
+                        "The TransientResourceBundle contains handle for exec handle '{}'",
+                        name
+                    );
 
-                let no_import_for_transient = imported_resource.is_none();
-                assert!(
-                    no_import_for_transient,
-                    "The ImportBundle contains a resource for transient resource '{}'",
-                    name
-                );
+                    let no_import_for_transient = imported_resource.is_none();
+                    assert!(
+                        no_import_for_transient,
+                        "The ImportBundle contains a resource for exec handle '{}'",
+                        name
+                    );
+                } else {
+                    let has_transient = transient_resource.is_some();
+                    assert!(
+                        has_transient,
+                        "The TransientResourceBundle does not contain handle for graph resource '{}'",
+                        name
+                    );
 
-                let transient_resource = transient_resource.unwrap();
-                self.validate_import_or_transient_desc(
-                    root_resource,
-                    transient_resource,
-                    "Transient",
-                    name,
-                );
+                    let no_import_for_transient = imported_resource.is_none();
+                    assert!(
+                        no_import_for_transient,
+                        "The ImportBundle contains a resource for transient resource '{}'",
+                        name
+                    );
+
+                    let transient_resource = transient_resource.unwrap();
+                    self.validate_import_or_transient_desc(
+                        root_resource,
+                        transient_resource,
+                        "Transient",
+                        name,
+                    );
+                }
             }
         }
     }
@@ -484,6 +504,12 @@ impl<A: PassArgs> FrameGraph<A> {
                 crate::internal::ResourceType::Texture(_r) => {
                     panic!("{} buffer '{}' was provided a texture", resource_type, name)
                 }
+                crate::internal::ResourceType::Execution(_r) => {
+                    panic!(
+                        "{} exec dependency '{}' was provided a texture",
+                        resource_type, name
+                    )
+                }
             },
             crate::ResourceVariant::Texture(i) => match &root.resource_type {
                 crate::internal::ResourceType::Buffer(_r) => {
@@ -492,6 +518,12 @@ impl<A: PassArgs> FrameGraph<A> {
                 crate::internal::ResourceType::Texture(r) => {
                     let i_desc = i.desc();
                     self.assert_matching_texture_desc(&r.desc, &i_desc, name);
+                }
+                crate::internal::ResourceType::Execution(_r) => {
+                    panic!(
+                        "{} exec dependency '{}' was provided a buffer",
+                        resource_type, name
+                    )
                 }
             },
         }

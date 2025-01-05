@@ -171,9 +171,29 @@ impl From<ResourceTypeTexture> for ResourceType {
     }
 }
 
+pub(crate) struct ResourceTypeExecution {
+    /// The name of the resource. This is a pointer to a region within the main frame graph arena
+    /// that the passes are stored in. It is only sound to access this string immutably, and the
+    /// caller must ensure the relevant arena is still live.
+    pub name: Option<NonNull<str>>,
+}
+
+impl From<ResourceTypeExecution> for ResourceType {
+    fn from(val: ResourceTypeExecution) -> Self {
+        ResourceType::Execution(val)
+    }
+}
+
+// Safety: 'name' is just a string backed by the graph's arena. Safe to pass around by but needs to
+//         be a pointer because it's a self reference. This is safe because the address is stable
+//         as it's on the heap
+unsafe impl Send for ResourceTypeExecution {}
+unsafe impl Sync for ResourceTypeExecution {}
+
 pub(crate) enum ResourceType {
     Buffer(ResourceTypeBuffer),
     Texture(ResourceTypeTexture),
+    Execution(ResourceTypeExecution),
 }
 
 impl ResourceType {
@@ -191,10 +211,26 @@ impl ResourceType {
         }
     }
 
+    pub(crate) fn unwrap_execution(&self) -> &ResourceTypeExecution {
+        match self {
+            Self::Execution(v) => v,
+            _ => panic!("self is not a ResourceType::Execution"),
+        }
+    }
+
     pub(crate) fn is_import(&self) -> bool {
         match self {
             ResourceType::Buffer(v) => v.import.is_some(),
             ResourceType::Texture(v) => v.import.is_some(),
+            ResourceType::Execution(_) => false,
+        }
+    }
+
+    pub(crate) const fn type_name(&self) -> &'static str {
+        match self {
+            ResourceType::Buffer(_) => "Buffer",
+            ResourceType::Texture(_) => "Texture",
+            ResourceType::Execution(_) => "Execution",
         }
     }
 
@@ -209,6 +245,7 @@ impl ResourceType {
         match self {
             ResourceType::Buffer(v) => v.desc.name.map(|v| v.as_ref()),
             ResourceType::Texture(v) => v.desc.name.map(|v| v.as_ref()),
+            ResourceType::Execution(v) => v.name.map(|v| v.as_ref()),
         }
     }
 }
@@ -721,18 +758,30 @@ impl IIRNode for BarrierIRNode {
         name: &str,
         node_index: usize,
     ) -> Result<()> {
-        writeln!(
-            writer,
-            "node{} [label=\"{} Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"];",
-            node_index,
-            self.barrier_type.graphviz_text(),
-            name,
-            self.resource_id.version,
-            self.before_sync,
-            self.before_access,
-            self.after_sync,
-            self.after_access
-        )?;
+        if matches!(self.barrier_type, IRBarrierType::Execution) {
+            writeln!(
+                writer,
+                "node{} [label=\"{} Barrier: Resource: {} (v_id#{})\"];",
+                node_index,
+                self.barrier_type.graphviz_text(),
+                name,
+                self.resource_id.version,
+            )?;
+        } else {
+            writeln!(
+                writer,
+                "node{} [label=\"{} Barrier: Resource: {} (v_id#{})\\nBeforeSync: {:?}\\nBeforeAccess: {:?}\\nAfterSync: {:?}\\nAfterAccess: {:?}\"];",
+                node_index,
+                self.barrier_type.graphviz_text(),
+                name,
+                self.resource_id.version,
+                self.before_sync,
+                self.before_access,
+                self.after_sync,
+                self.after_access
+            )?;
+        }
+
         Ok(())
     }
 }
@@ -848,6 +897,9 @@ pub(crate) enum IRBarrierType {
     /// A regular internal barrier, specifically a barrier for write access after a preceeding write
     /// access.
     WriteAfterWrite,
+
+    /// A barrier with no synchronization requirements beyond execution order.
+    Execution,
 }
 
 impl Default for IRBarrierType {
@@ -858,7 +910,7 @@ impl Default for IRBarrierType {
 
 impl IRBarrierType {
     /// The number of variants of the [IRBarrierType] enum.
-    pub const NUM_VARIANTS: usize = 8;
+    pub const NUM_VARIANTS: usize = 9;
 
     pub fn graphviz_text(&self) -> &'static str {
         match self {
@@ -870,6 +922,7 @@ impl IRBarrierType {
             IRBarrierType::ReadAfterWrite => "Read after Write",
             IRBarrierType::WriteAfterRead => "Write after Read",
             IRBarrierType::WriteAfterWrite => "Write after Write",
+            IRBarrierType::Execution => "Execution",
         }
     }
 }

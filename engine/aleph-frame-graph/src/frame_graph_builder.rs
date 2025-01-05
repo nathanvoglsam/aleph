@@ -563,6 +563,36 @@ impl<'a, A: PassArgs> ResourceRegistry<'a, A> {
             .write_buffer_internal(self.render_pass, resource, sync, access)
     }
 
+    /// Declares an execution dependency on the given exec token. This will cause the current pass
+    /// to always be executed after whichever pass created the given token.
+    /// 
+    /// # Warning
+    /// 
+    /// This only implies _ordering_, and does not imply any synchronization. This means the
+    /// commands associated with this pass will be encoded after the commands from the referenced
+    /// pass, but no barrier synchronizations are implied. As far as the GPU API is concerned these
+    /// passes are still unsynchronized. Always use frame graph resource edges when possible instead
+    /// of [`ResourceRegistry::execute_after`].
+    /// 
+    /// There are some use cases this API handles well. The frame graph is not capable of dealing
+    /// with bulk resources like material textures very well. The frame graph is designed to deal
+    /// with a relatively small and _constant_ number of transient resources. An unbounded input
+    /// set will scale poorly if represented as graph edges. This API is designed to compose with
+    /// other utilities to enable efficiently implementing this style of pass.
+    /// 
+    /// For example: mip map generation.
+    /// 
+    /// Mip generation fits very poorly into the frame graph. There is an arbitrary and difficult to
+    /// predict set of back-to-back barriers, where the number of barriers is dependent on the size
+    /// of the input textures. Naively inserting a 'mip-gen' pass without this API would create an
+    /// orphaned node in the graph. All referenced resources are entirely external to the graph.
+    /// An exec token allows encoding the execution dependency. It is however the passes
+    /// responsibility to synchronize the resources with its own barriers.
+    pub fn execute_after<R: Into<ResourceRef>>(&mut self, token: R) -> ResourceRef {
+        self.builder
+            .execute_after_internal(self.render_pass, token)
+    }
+
     /// Declares that a new, transient texture will be created and used by the pass. Use 'access' to
     /// specify how the creating pass will use the resource.
     ///
@@ -659,6 +689,16 @@ impl<'a, A: PassArgs> ResourceRegistry<'a, A> {
     ) -> ResourceMut {
         self.builder
             .create_buffer_internal(self.render_pass, desc, sync, access)
+    }
+
+    /// Declares a new execution token with the given name. An execution token is like a transient
+    /// resources that lacks a backing GPU API resource. It instead exists only for encoding an
+    /// explicit execution dependency on another pass without implying any GPU synchronization.
+    /// 
+    /// See [`ResourceRegistry::execute_after`] for more info. 
+    pub fn create_exec_token(&mut self, name: Option<&str>) -> ResourceRef {
+        self.builder
+            .create_exec_token_internal(self.render_pass, name)
     }
 
     /// A flag that a render pass can set on itself to declare that the 'exec' fn should not be
@@ -880,6 +920,23 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
         self.increment_handle_for_write(r, render_pass, sync, access)
     }
 
+    pub(crate) fn execute_after_internal<R: Into<ResourceRef>>(
+        &mut self,
+        render_pass: usize,
+        token: R,
+    ) -> ResourceRef {
+        let r = token.into();
+        self.assert_resource_handle_is_execution(r);
+        self.append_read_to_version_for(
+            r,
+            render_pass,
+            BarrierSync::empty(),
+            ResourceUsageFlags::empty(),
+        );
+
+        r
+    }
+
     pub(crate) fn create_texture_internal(
         &mut self,
         render_pass: usize,
@@ -961,6 +1018,22 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
                 desc: create_desc,
             },
         )
+    }
+
+    pub(crate) fn create_exec_token_internal(
+        &mut self,
+        render_pass: usize,
+        name: Option<&str>,
+    ) -> ResourceRef {
+        let name = name.map(|v| self.arena.copy_str(v));
+        let name = name.map(NonNull::from);
+        self.create_new_handle(
+            render_pass,
+            BarrierSync::empty(),
+            ResourceUsageFlags::empty(),
+            ResourceTypeExecution { name },
+        )
+        .into()
     }
 
     /// Validate the write status for the resource handle and update it if it's valid to write
@@ -1118,7 +1191,11 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     ) -> &ResourceTypeTexture {
         let r = r.into();
         let root_type = &self.root_resources[r.0.root_id() as usize].resource_type;
-        assert!(matches!(root_type, ResourceType::Texture(_)));
+        let type_name = root_type.type_name();
+        assert!(
+            matches!(root_type, ResourceType::Texture(_)),
+            "r is '{type_name}' but should be 'Texture'"
+        );
         root_type.unwrap_texture()
     }
 
@@ -1128,8 +1205,26 @@ impl<A: PassArgs> FrameGraphBuilder<A> {
     ) -> &ResourceTypeBuffer {
         let r = r.into();
         let root_type = &self.root_resources[r.0.root_id() as usize].resource_type;
-        assert!(matches!(root_type, ResourceType::Buffer(_)));
+        let type_name = root_type.type_name();
+        assert!(
+            matches!(root_type, ResourceType::Buffer(_)),
+            "r is '{type_name}' but should be 'Buffer'"
+        );
         root_type.unwrap_buffer()
+    }
+
+    pub(crate) fn assert_resource_handle_is_execution(
+        &self,
+        r: impl Into<ResourceRef>,
+    ) -> &ResourceTypeExecution {
+        let r = r.into();
+        let root_type = &self.root_resources[r.0.root_id() as usize].resource_type;
+        let type_name = root_type.type_name();
+        assert!(
+            matches!(root_type, ResourceType::Execution(_)),
+            "r is '{type_name}' but should be 'Execution'"
+        );
+        root_type.unwrap_execution()
     }
 
     /// Checks against imported resource's usage flags to ensure that no pass within the graph is
@@ -1322,6 +1417,15 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 }
                 ResourceType::Texture(root_variant) => {
                     self.build_emit_barriers_for_texture_version(
+                        builder,
+                        version,
+                        resource_id,
+                        root,
+                        root_variant,
+                    )?;
+                }
+                ResourceType::Execution(root_variant) => {
+                    self.build_emit_barriers_for_exec_version(
                         builder,
                         version,
                         resource_id,
@@ -1957,6 +2061,35 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
         Ok(())
     }
 
+    fn build_emit_barriers_for_exec_version<A: PassArgs>(
+        &mut self,
+        _builder: &FrameGraphBuilder<A>,
+        version: &ResourceVersion,
+        resource_id: ResourceId,
+        _root: &ResourceRoot,
+        _root_variant: &ResourceTypeExecution,
+    ) -> Result<()> {
+        if version.read_count > 0 {
+            // We form a 'next' edge with all the reads to this dependency, collecting
+            // the full set of usage/sync flags as the 'after' scope of the barrier.
+            //
+            // The before scope is defined by the access declared on the creator pass,
+            // with that creator pass being the sole 'previous' edge for this barrier.
+            let (barrier_next, _all_read_sync, _all_read_usage) =
+                self.collect_read_flags_for_version(version);
+
+            let barrier_prev = self.alloc_single_edge_list(version.creator_pass);
+            self.emit_barrier_ir_node_exec(barrier_prev, barrier_next, resource_id)?;
+        }
+        if version.previous_version.is_valid() {
+            unreachable!();
+        } else {
+            let barrier_next = self.alloc_single_edge_list(version.creator_pass);
+            self.emit_barrier_ir_node_exec(&[], barrier_next, resource_id)?;
+        }
+        Ok(())
+    }
+
     fn alloc_single_edge_list(&self, v: usize) -> &'arena mut [usize] {
         self.arena.copy_slice(&[v])
     }
@@ -2012,6 +2145,10 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
                 .name
                 .map(|v| unsafe { v.as_ref() })
                 .unwrap_or("Unnamed Resource"),
+            ResourceType::Execution(v) => v
+                .name
+                .map(|v| unsafe { v.as_ref() })
+                .unwrap_or("Unnamed Execution"),
         }
     }
 
@@ -2076,6 +2213,57 @@ impl<'arena, 'b, 'c, T: std::io::Write> IRBuilder<'arena, 'b, 'c, T> {
             before_access,
             after_sync,
             after_access,
+        };
+
+        self.nodes.push(ir_node.into());
+
+        Ok(ir_node_index)
+    }
+
+    /// Internal function used for inserting new barrier IR nodes into the frame graph.
+    ///
+    /// # Safety
+    ///
+    /// This function itself is not unsafe to call, but the caller _must_ ensure that the
+    /// barrier_prev and barrier_next arrays are backed by allocations that outlive the graph. They
+    /// are cast to raw pointers inside [BarrierIRNode], so to safely dereference those pointers the
+    /// allocations have to life long enough.
+    ///
+    /// Use an arena, or just leak memory. Absoultely do _not_ store these on the stack.
+    ///
+    /// There is a _single_ exception, the empty array. The empty array will not dereference the
+    /// pointer as there's no elements to load. No allocation is needed at all for these arrays.
+    fn emit_barrier_ir_node_exec(
+        &mut self,
+        barrier_prev: &'arena [usize],
+        barrier_next: &'arena [usize],
+        resource_id: ResourceId,
+    ) -> Result<usize> {
+        // Current length of the ir_node buffer will become the index of the node we insert
+        let ir_node_index = self.nodes.len();
+
+        // Add the second half of our double linked graph. We only defined the links out of the new
+        // IR node, we need to patch the new links into the new node's linked nodes.
+        //
+        // We assume that a barrier node will only link to render pass nodes. This means we can
+        // just insert the ir_node_index into the vec stored in the pass_nexts/pass_prevs arrays by
+        // indexing with the new ir node's outward link indices.
+        for prev in barrier_prev.iter().copied() {
+            self.pass_nexts[prev].push(ir_node_index);
+        }
+        for next in barrier_next.iter().copied() {
+            self.pass_prevs[next].push(ir_node_index);
+        }
+
+        let ir_node = BarrierIRNode {
+            prev: NonNull::from(barrier_prev),
+            next: NonNull::from(barrier_next),
+            resource_id,
+            barrier_type: IRBarrierType::Execution,
+            before_sync: BarrierSync::empty(),
+            before_access: BarrierAccess::empty(),
+            after_sync: BarrierSync::empty(),
+            after_access: BarrierAccess::empty(),
         };
 
         self.nodes.push(ir_node.into());
@@ -2612,7 +2800,7 @@ impl<'arena> PassOrderBuilder<'arena> {
         &mut self,
         graph_builder: &'graph FrameGraphBuilder<A>,
         ir: &IRBuilder<'arena, '_, '_, T>,
-        barrier_type_counts: &[usize; 8],
+        barrier_type_counts: &[usize; 9],
         roots: &[usize],
         leafs: &[usize],
     ) -> (
@@ -2706,7 +2894,7 @@ impl<'arena> PassOrderBuilder<'arena> {
         }
     }
 
-    fn sum_barrier_type_counts<T: std::io::Write>(ir: &IRBuilder<'_, '_, '_, T>) -> [usize; 8] {
+    fn sum_barrier_type_counts<T: std::io::Write>(ir: &IRBuilder<'_, '_, '_, T>) -> [usize; 9] {
         // This loop will sum the total number of each barrier type into the 'barrier_type_counts'
         // array, where that array is indexed by the IRBarrierType enum.
         let mut barrier_type_counts = [0usize; IRBarrierType::NUM_VARIANTS];
