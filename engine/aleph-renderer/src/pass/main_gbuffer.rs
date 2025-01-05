@@ -261,15 +261,8 @@ pub fn pass(
                 encoder.bind_vertex_buffers(0, &[InputAssemblyBufferBinding::new(vtx)]);
                 encoder.bind_index_buffer(IndexType::U32, &InputAssemblyBufferBinding::new(idx));
 
-                let colour_tex = args.texture_pool.get_ref(o.colour_tex).unwrap();
-                let image_view_c = colour_tex.get_default_view().unwrap();
-                // let image_view_c = colour_tex.get_texture().unwrap();
-                // let image_view_c = colour_tex
-                //     .get_view(&ImageViewDesc {
-                //         format: colour_tex.desc_ref().format.to_srgb(),
-                //         ..ImageViewDesc::srv_for_texture(colour_tex)
-                //     })
-                //     .unwrap();
+                let image_view_c = args.texture_pool.get_ref(o.colour_tex).unwrap();
+                let image_view_c = image_view_c.get_default_view().unwrap();
                 let image_view_mr = args.texture_pool.get_ref(o.metal_roughness_tex).unwrap();
                 let image_view_mr = image_view_mr.get_default_view().unwrap();
                 let image_view_nrm = args.texture_pool.get_ref(o.normal_map_tex).unwrap();
