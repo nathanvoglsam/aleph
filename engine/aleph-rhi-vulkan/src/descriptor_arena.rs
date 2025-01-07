@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::mem::MaybeUninit;
 
 use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
@@ -63,14 +64,22 @@ impl IDescriptorArena for DescriptorArena {
         let allocate_info = vk::DescriptorSetAllocateInfo::default()
             .descriptor_pool(self.descriptor_pool)
             .set_layouts(&set_layouts);
-        let sets = unsafe {
-            let result = self._device.device.allocate_descriptor_sets(&allocate_info);
+
+        let set = unsafe {
+            let d = &self._device.device;
+
+            let mut desc_set = MaybeUninit::uninit();
+            let result = (d.fp_v1_0().allocate_descriptor_sets)(
+                d.handle(),
+                &allocate_info,
+                desc_set.as_mut_ptr(),
+            );
+            let result = result.assume_init_on_success(desc_set);
 
             DescriptorPool::handle_allocate_result(result)?
         };
-        let descriptor_set = sets[0];
 
-        unsafe { Ok(DescriptorSetHandle::from_raw_int(descriptor_set.as_raw()).unwrap()) }
+        unsafe { Ok(DescriptorSetHandle::from_raw_int(set.as_raw()).unwrap()) }
     }
 
     fn allocate_sets(

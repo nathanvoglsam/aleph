@@ -35,14 +35,17 @@ use bumpalo::Bump;
 pub struct BumpCell(Cell<Option<Bump>>);
 
 impl BumpCell {
+    #[inline]
     pub fn new() -> Self {
         Self(Cell::new(Some(Bump::new())))
     }
 
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self(Cell::new(Some(Bump::with_capacity(capacity))))
     }
 
+    #[inline]
     pub fn scope(&self) -> BumpScope {
         let bump = self
             .0
@@ -56,6 +59,7 @@ impl BumpCell {
 }
 
 impl Default for BumpCell {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -67,6 +71,7 @@ pub struct BumpScope<'a> {
 }
 
 impl<'a> Drop for BumpScope<'a> {
+    #[inline]
     fn drop(&mut self) {
         let mut cell = self.bump.take();
 
@@ -84,6 +89,7 @@ impl<'a> Drop for BumpScope<'a> {
 impl<'a> Deref for BumpScope<'a> {
     type Target = Bump;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         // Safety: We statically guarantee 'bump' is always Some, except in Drop where it's
         //         impossible to observe as the object is no longer accessible.
@@ -92,6 +98,7 @@ impl<'a> Deref for BumpScope<'a> {
 }
 
 impl<'a> DerefMut for BumpScope<'a> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         // Safety: We statically guarantee 'bump' is always Some, except in Drop where it's
         //         impossible to observe as the object is no longer accessible.

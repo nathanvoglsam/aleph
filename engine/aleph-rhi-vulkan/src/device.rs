@@ -28,7 +28,7 @@
 //
 
 use std::any::TypeId;
-use std::mem::ManuallyDrop;
+use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ops::Deref;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
@@ -882,11 +882,16 @@ impl IDevice for Device {
                 .level(vk::CommandBufferLevel::PRIMARY)
                 .command_buffer_count(1);
             let command_buffer = unsafe {
-                self.device
-                    .allocate_command_buffers(&allocate_info)
+                let mut buffer = MaybeUninit::uninit();
+                let result = (self.device.fp_v1_0().allocate_command_buffers)(
+                    self.device.handle(),
+                    &allocate_info,
+                    buffer.as_mut_ptr(),
+                );
+                result
+                    .assume_init_on_success(buffer)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?
             };
-            let command_buffer = command_buffer[0];
 
             set_name(self.debug_loader.as_ref(), &bump, command_pool, desc.name);
             set_name(self.debug_loader.as_ref(), &bump, command_buffer, desc.name);
