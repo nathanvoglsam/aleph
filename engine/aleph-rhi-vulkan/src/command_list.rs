@@ -33,7 +33,7 @@ use aleph_any::{declare_interfaces, AnyArc};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 
 use crate::device::Device;
 use crate::encoder::Encoder;
@@ -105,7 +105,7 @@ impl ICommandList for CommandList {
                         _device,
                         bound_graphics_pipeline: None,
                         bound_compute_pipeline: None,
-                        arena: Bump::with_capacity(1024 * 16),
+                        arena: Blink::new(),
                         enabled_shader_features,
                     };
                     Ok(Box::new(encoder))

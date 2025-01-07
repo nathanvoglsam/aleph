@@ -30,19 +30,20 @@
 use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 
+use blink_alloc::Blink;
 use bumpalo::Bump;
 
-pub struct BumpCell(Cell<Option<Bump>>);
+pub struct BumpCell(Cell<Option<Box<Bump>>>);
 
 impl BumpCell {
     #[inline]
     pub fn new() -> Self {
-        Self(Cell::new(Some(Bump::new())))
+        Self(Cell::new(Some(Box::new(Bump::new()))))
     }
 
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
-        Self(Cell::new(Some(Bump::with_capacity(capacity))))
+        Self(Cell::new(Some(Box::new(Bump::with_capacity(capacity)))))
     }
 
     #[inline]
@@ -66,8 +67,8 @@ impl Default for BumpCell {
 }
 
 pub struct BumpScope<'a> {
-    cell: &'a Cell<Option<Bump>>,
-    bump: Option<Bump>,
+    cell: &'a Cell<Option<Box<Bump>>>,
+    bump: Option<Box<Bump>>,
 }
 
 impl<'a> Drop for BumpScope<'a> {
@@ -98,6 +99,75 @@ impl<'a> Deref for BumpScope<'a> {
 }
 
 impl<'a> DerefMut for BumpScope<'a> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // Safety: We statically guarantee 'bump' is always Some, except in Drop where it's
+        //         impossible to observe as the object is no longer accessible.
+        unsafe { self.bump.as_mut().unwrap_unchecked() }
+    }
+}
+
+pub struct BlinkCell(Cell<Option<Box<Blink>>>);
+
+impl BlinkCell {
+    #[inline]
+    pub fn new() -> Self {
+        Self(Cell::new(Some(Box::new(Blink::new()))))
+    }
+
+    #[inline]
+    pub fn scope(&self) -> BlinkScope {
+        let bump = self
+            .0
+            .take()
+            .expect("A BlinkScope for this BlinkCell already exists.");
+        BlinkScope {
+            cell: &self.0,
+            bump: Some(bump),
+        }
+    }
+}
+
+impl Default for BlinkCell {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub struct BlinkScope<'a> {
+    cell: &'a Cell<Option<Box<Blink>>>,
+    bump: Option<Box<Blink>>,
+}
+
+impl<'a> Drop for BlinkScope<'a> {
+    #[inline]
+    fn drop(&mut self) {
+        let mut cell = self.bump.take();
+
+        // Safety: We statically guarantee 'bump' is always Some, except in Drop where it's
+        //         impossible to observe as the object is no longer accessible.
+        unsafe {
+            let bump = cell.as_mut().unwrap_unchecked();
+            bump.reset()
+        }
+
+        self.cell.set(cell)
+    }
+}
+
+impl<'a> Deref for BlinkScope<'a> {
+    type Target = Blink;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        // Safety: We statically guarantee 'bump' is always Some, except in Drop where it's
+        //         impossible to observe as the object is no longer accessible.
+        unsafe { self.bump.as_ref().unwrap_unchecked() }
+    }
+}
+
+impl<'a> DerefMut for BlinkScope<'a> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         // Safety: We statically guarantee 'bump' is always Some, except in Drop where it's

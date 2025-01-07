@@ -29,18 +29,19 @@
 
 use std::alloc::Layout;
 use std::ffi::c_void;
+use std::marker::PhantomData;
 use std::mem::{align_of, size_of};
 use std::ptr::NonNull;
 
 use allocator_api2::alloc::Allocator;
 use ash::vk;
-use bumpalo::Bump;
+use blink_alloc::BlinkAlloc;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
 /// allocator into the
-pub fn callbacks_from_rust_allocator(v: &Bump) -> vk::AllocationCallbacks {
+pub const fn callbacks_from_rust_allocator(v: &BlinkAlloc) -> vk::AllocationCallbacks {
     // let user_data = v.by_ref();
-    let user_data = v as *const Bump as *mut Bump;
+    let user_data = v as *const BlinkAlloc as *mut BlinkAlloc;
     vk::AllocationCallbacks {
         p_user_data: user_data.cast(),
         pfn_allocation: Some(allocation),
@@ -48,7 +49,7 @@ pub fn callbacks_from_rust_allocator(v: &Bump) -> vk::AllocationCallbacks {
         pfn_free: Some(free),
         pfn_internal_allocation: None,
         pfn_internal_free: None,
-        _marker: Default::default(),
+        _marker: PhantomData,
     }
 }
 
@@ -58,7 +59,7 @@ unsafe extern "system" fn allocation(
     alignment: usize,
     _allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
-    let user_data = p_user_data.cast::<Bump>();
+    let user_data = p_user_data.cast::<BlinkAlloc>();
     let allocator = user_data.as_ref().unwrap_unchecked();
 
     let alignment = alignment.min(align_of::<Layout>());
@@ -66,7 +67,7 @@ unsafe extern "system" fn allocation(
     let size = size + extra_capacity;
 
     let layout = Layout::from_size_align_unchecked(size, alignment);
-    let result = allocator.allocate(layout);
+    let result = Allocator::allocate(allocator, layout);
 
     match result {
         Ok(v) => {
@@ -111,7 +112,7 @@ unsafe extern "system" fn reallocation(
 }
 
 unsafe extern "system" fn free(p_user_data: *mut c_void, p_memory: *mut c_void) {
-    let user_data = p_user_data.cast::<Bump>();
+    let user_data = p_user_data.cast::<BlinkAlloc>();
     let allocator = user_data.as_ref().unwrap_unchecked();
 
     // Pull the layout from the block directly behind the allocation pointer
@@ -124,5 +125,5 @@ unsafe extern "system" fn free(p_user_data: *mut c_void, p_memory: *mut c_void) 
     let extra_capacity = size_of::<Layout>().max(alignment);
     let real_ptr = p_memory.byte_sub(extra_capacity);
 
-    allocator.deallocate(NonNull::new_unchecked(real_ptr).cast(), layout);
+    Allocator::deallocate(allocator, NonNull::new_unchecked(real_ptr).cast(), layout);
 }

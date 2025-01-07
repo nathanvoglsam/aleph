@@ -31,12 +31,13 @@ use std::ffi::CStr;
 use std::iter;
 
 use aleph_nstr::NStr;
+use allocator_api2::vec::Vec as BVec;
 use ash::vk;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 
 pub fn set_name<T: vk::Handle>(
     loader: Option<&ash::ext::debug_utils::Device>,
-    bump: &Bump,
+    bump: &Blink,
     handle: T,
     name: Option<&str>,
 ) {
@@ -45,11 +46,9 @@ pub fn set_name<T: vk::Handle>(
         // Can only set a name if one is provided
         if let Some(name) = name {
             let iter = name.bytes().chain(iter::once(0u8));
-            let name = bump.alloc_slice_fill_default(name.len() + 1);
-            name.iter_mut().zip(iter).for_each(|(n, v)| {
-                *n = v;
-            });
-            let name = unsafe { CStr::from_bytes_with_nul_unchecked(name) };
+            let mut name = BVec::new_in(bump.allocator());
+            name.extend(iter);
+            let name = unsafe { CStr::from_bytes_with_nul_unchecked(&name) };
 
             let info = vk::DebugUtilsObjectNameInfoEXT::default()
                 .object_handle(handle)

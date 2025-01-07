@@ -29,17 +29,15 @@
 
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
-use std::ops::Deref;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::bump_cell::BumpCell;
+use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::cstr;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use allocator_api2::alloc::Allocator;
+use allocator_api2::vec::Vec as BVec;
 use ash::vk;
-use bumpalo::collections::Vec as BVec;
-use bumpalo::Bump;
+use blink_alloc::{Blink, BlinkAlloc};
 use byteorder::{ByteOrder, NativeEndian};
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
@@ -164,8 +162,9 @@ impl IDevice for Device {
                 vk::PipelineDynamicStateCreateInfo::default().dynamic_states(&dynamic_states);
 
             // Translate the vertex input state
-            let vertex_binding_descriptions: BVec<_> = Self::translate_vertex_bindings(&bump, desc);
-            let vertex_attribute_descriptions: BVec<_> =
+            let vertex_binding_descriptions: BVec<_, _> =
+                Self::translate_vertex_bindings(&bump, desc);
+            let vertex_attribute_descriptions: BVec<_, _> =
                 Self::translate_vertex_attributes(&bump, desc);
             let vertex_input_state = Self::translate_vertex_input_state(
                 &vertex_binding_descriptions,
@@ -185,14 +184,16 @@ impl IDevice for Device {
                 .alpha_to_one_enable(false);
             let depth_stencil_state = Self::translate_depth_stencil_state(desc);
 
-            let mut color_formats = BVec::with_capacity_in(desc.render_target_formats.len(), &bump);
+            let mut color_formats =
+                BVec::with_capacity_in(desc.render_target_formats.len(), bump.allocator());
             let mut dynamic_rendering = Self::translate_framebuffer_info(desc, &mut color_formats);
 
             let attachments = Self::translate_color_attachment_state(&bump, desc);
             let color_blend_state = Self::translate_color_blend_state(&attachments);
 
-            let alloc_adapter = callbacks_from_rust_allocator(&bump);
-            let mut shader_modules = BVec::with_capacity_in(desc.shader_stages.len(), &bump);
+            let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
+            let mut shader_modules =
+                BVec::with_capacity_in(desc.shader_stages.len(), bump.allocator());
             for (i, v) in desc.shader_stages.iter().enumerate() {
                 let module = unsafe {
                     let shader_data = Self::unwrap_shader_bytecode(&bump, i, &v.data)?;
@@ -204,7 +205,7 @@ impl IDevice for Device {
                 shader_modules.push((v.stage, module));
             }
 
-            let mut stages = BVec::with_capacity_in(shader_modules.len(), &bump);
+            let mut stages = BVec::with_capacity_in(shader_modules.len(), bump.allocator());
             for &(shader_type, module) in shader_modules.iter() {
                 let info = vk::PipelineShaderStageCreateInfo::default()
                     .stage(shader_type_to_vk(shader_type))
@@ -266,7 +267,7 @@ impl IDevice for Device {
             let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
 
             // Create a temporary shader module using
-            let alloc_adapter = callbacks_from_rust_allocator(bump.deref().by_ref());
+            let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
             let module = unsafe {
                 let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
                 self.device
@@ -322,7 +323,7 @@ impl IDevice for Device {
             let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
 
             let mut _samplers = Vec::new();
-            let mut static_samplers = BVec::new_in(&bump);
+            let mut static_samplers = BVec::new_in(bump.allocator());
             for v in desc.items {
                 if let Some(samplers) = v.static_samplers {
                     for sampler in unwrap::sampler_iter(samplers) {
@@ -334,7 +335,7 @@ impl IDevice for Device {
 
             let mut sampler_i = 0;
             let mut sizes = [0; 11];
-            let mut bindings = BVec::with_capacity_in(desc.items.len(), &bump);
+            let mut bindings = BVec::with_capacity_in(desc.items.len(), bump.allocator());
             for v in desc.items {
                 let descriptor_type = descriptor_type_to_vk(v.binding_type);
                 let descriptor_count = v.binding_count.map(|v| v.get()).unwrap_or(1);
@@ -412,7 +413,9 @@ impl IDevice for Device {
                 .upgrade()
                 .unwrap();
 
-            let mut pool_sizes = BVec::from_iter_in(layout.pool_sizes.iter().copied(), &bump);
+            let iter = layout.pool_sizes.iter().copied();
+            let mut pool_sizes = BVec::new_in(bump.allocator());
+            pool_sizes.extend(iter);
             for size in &mut pool_sizes {
                 size.descriptor_count *= desc.num_sets;
             }
@@ -527,7 +530,7 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let mut set_layouts = BVec::with_capacity_in(desc.set_layouts.len(), &bump);
+            let mut set_layouts = BVec::with_capacity_in(desc.set_layouts.len(), bump.allocator());
             for v in desc.set_layouts {
                 let v = unwrap::descriptor_set_layout_d(v);
                 set_layouts.push(v.descriptor_set_layout);
@@ -674,16 +677,22 @@ impl IDevice for Device {
             let format = texture_format_to_vk(desc.format);
 
             // Select our set of view-compatible formats
-            let format_list = desc.format.compatible_view_formats();
-            let format_list =
-                bump.alloc_slice_fill_iter(format_list.iter().copied().map(texture_format_to_vk));
+            let iter = desc
+                .format
+                .compatible_view_formats()
+                .iter()
+                .copied()
+                .map(texture_format_to_vk);
+            let mut format_list = BVec::new_in(bump.allocator());
+            format_list.extend(iter);
+
             let mut format_flags = vk::ImageCreateFlags::empty();
             if format_list.len() > 1 {
                 format_flags |= vk::ImageCreateFlags::MUTABLE_FORMAT
             }
 
             let mut format_list =
-                vk::ImageFormatListCreateInfo::default().view_formats(format_list);
+                vk::ImageFormatListCreateInfo::default().view_formats(&format_list);
 
             let samples = match desc.sample_count {
                 1 => vk::SampleCountFlags::TYPE_1,
@@ -935,7 +944,7 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let mut descriptor_writes = BVec::with_capacity_in(writes.len(), &bump);
+            let mut descriptor_writes = BVec::with_capacity_in(writes.len(), bump.allocator());
             for write in writes {
                 let d_type = write.writes.descriptor_type();
                 let d_type = descriptor_type_to_vk(d_type);
@@ -950,12 +959,16 @@ impl IDevice for Device {
                             vk::DescriptorImageInfo::default()
                                 .sampler(unwrap::sampler(v.sampler).sampler)
                         });
-                        let image_infos = bump.alloc_slice_fill_iter(translator);
+                        let mut image_infos = BVec::new_in(bump.allocator());
+                        image_infos.extend(translator);
+                        let image_infos = BVec::leak(image_infos);
                         new_write.image_info(image_infos)
                     }
                     DescriptorWrites::TexelBufferRW(v) | DescriptorWrites::TexelBuffer(v) => {
                         let translator = v.iter().map(|_v| vk::BufferView::null());
-                        let texel_buffer_infos = bump.alloc_slice_fill_iter(translator);
+                        let mut texel_buffer_infos = BVec::new_in(bump.allocator());
+                        texel_buffer_infos.extend(translator);
+                        let texel_buffer_infos = BVec::leak(texel_buffer_infos);
                         new_write.texel_buffer_view(texel_buffer_infos)
                     }
                     DescriptorWrites::InputAttachment(v)
@@ -966,7 +979,9 @@ impl IDevice for Device {
                                 .image_view(std::mem::transmute(v.image_view))
                                 .image_layout(image_layout_to_vk(v.image_layout))
                         });
-                        let image_infos = bump.alloc_slice_fill_iter(translator);
+                        let mut image_infos = BVec::new_in(bump.allocator());
+                        image_infos.extend(translator);
+                        let image_infos = BVec::leak(image_infos);
                         new_write.image_info(image_infos)
                     }
                     DescriptorWrites::ByteAddressBuffer(v)
@@ -983,7 +998,9 @@ impl IDevice for Device {
                                 .offset(v.offset)
                                 .range(len)
                         });
-                        let buffer_infos = bump.alloc_slice_fill_iter(translator);
+                        let mut buffer_infos = BVec::new_in(bump.allocator());
+                        buffer_infos.extend(translator);
+                        let buffer_infos = BVec::leak(buffer_infos);
                         new_write.buffer_info(buffer_infos)
                     }
                 };
@@ -1049,7 +1066,8 @@ impl IDevice for Device {
             };
 
             let iter = unwrap::fence_iter(fences).map(|v| v.fence);
-            let fences = BVec::from_iter_in(iter, &bump);
+            let mut fences = BVec::new_in(bump.allocator());
+            fences.extend(iter);
 
             let result = unsafe { self.device.wait_for_fences(&fences, wait_all, timeout) };
 
@@ -1090,7 +1108,8 @@ impl IDevice for Device {
             let bump = bump_cell.scope();
 
             let iter = unwrap::fence_iter(fences).map(|v| v.fence);
-            let fences = BVec::from_iter_in(iter, &bump);
+            let mut fences = BVec::new_in(bump.allocator());
+            fences.extend(iter);
 
             unsafe { self.device.reset_fences(&fences).unwrap() }
         })
@@ -1114,7 +1133,7 @@ impl Device {
     }
 
     fn unwrap_shader_bytecode<'a>(
-        bump: &'a Bump,
+        bump: &'a Blink,
         index: usize,
         shader: &ShaderBinary,
     ) -> Result<&'a [u32], PipelineCreateError> {
@@ -1127,7 +1146,9 @@ impl Device {
 
             // We need to copy the data into a u32 buffer to satisfy alignment requirements
             let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
-            let data = bump.alloc_slice_fill_iter(data_iter);
+            let mut data = BVec::new_in(bump.allocator());
+            data.extend(data_iter);
+            let data = BVec::leak(data);
 
             Ok(&*data)
         } else {
@@ -1136,22 +1157,24 @@ impl Device {
     }
 
     fn translate_vertex_bindings<'a>(
-        bump: &'a Bump,
+        bump: &'a Blink,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<'a, vk::VertexInputBindingDescription> {
+    ) -> BVec<vk::VertexInputBindingDescription, &'a BlinkAlloc> {
         let iter = desc.vertex_layout.input_bindings.iter().map(|v| {
             vk::VertexInputBindingDescription::default()
                 .binding(v.binding)
                 .stride(v.stride)
                 .input_rate(vertex_input_rate_to_vk(v.input_rate))
         });
-        BVec::from_iter_in(iter, bump)
+        let mut out = BVec::new_in(bump.allocator());
+        out.extend(iter);
+        out
     }
 
     fn translate_vertex_attributes<'a>(
-        bump: &'a Bump,
+        bump: &'a Blink,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<'a, vk::VertexInputAttributeDescription> {
+    ) -> BVec<vk::VertexInputAttributeDescription, &'a BlinkAlloc> {
         let iter = desc.vertex_layout.input_attributes.iter().map(|v| {
             vk::VertexInputAttributeDescription::default()
                 .location(v.location)
@@ -1159,7 +1182,9 @@ impl Device {
                 .offset(v.offset)
                 .format(texture_format_to_vk(v.format))
         });
-        BVec::from_iter_in(iter, bump)
+        let mut out = BVec::new_in(bump.allocator());
+        out.extend(iter);
+        out
     }
 
     fn translate_vertex_input_state<'a>(
@@ -1239,9 +1264,9 @@ impl Device {
     }
 
     fn translate_color_attachment_state<'a>(
-        bump: &'a Bump,
+        bump: &'a Blink,
         desc: &GraphicsPipelineDesc,
-    ) -> BVec<'a, vk::PipelineColorBlendAttachmentState> {
+    ) -> BVec<vk::PipelineColorBlendAttachmentState, &'a BlinkAlloc> {
         let iter = desc.blend_state.attachments.iter().map(|v| {
             vk::PipelineColorBlendAttachmentState::default()
                 .blend_enable(v.blend_enabled)
@@ -1255,7 +1280,9 @@ impl Device {
                     v.color_write_mask.bits() as _
                 ))
         });
-        BVec::from_iter_in(iter, bump)
+        let mut out = BVec::new_in(bump.allocator());
+        out.extend(iter);
+        out
     }
 
     fn translate_color_blend_state(
@@ -1270,7 +1297,7 @@ impl Device {
 
     fn translate_framebuffer_info<'a>(
         desc: &GraphicsPipelineDesc,
-        color_formats: &'a mut BVec<vk::Format>,
+        color_formats: &'a mut BVec<vk::Format, &BlinkAlloc>,
     ) -> vk::PipelineRenderingCreateInfo<'a> {
         let builder = vk::PipelineRenderingCreateInfo::default();
 
@@ -1328,7 +1355,7 @@ impl Drop for Device {
 }
 
 thread_local! {
-    pub static DEVICE_BUMP: BumpCell = BumpCell::with_capacity(8192 * 2);
+    pub static DEVICE_BUMP: BlinkCell = BlinkCell::new();
 }
 
 pub struct FreeCommandList {

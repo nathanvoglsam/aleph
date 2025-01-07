@@ -32,9 +32,9 @@ use std::any::TypeId;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use allocator_api2::vec::Vec as BVec;
 use ash::vk;
-use bumpalo::collections::Vec as BumpVec;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
@@ -50,7 +50,7 @@ pub struct Encoder<'a> {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) bound_compute_pipeline: Option<AnyArc<ComputePipeline>>,
-    pub(crate) arena: Bump,
+    pub(crate) arena: Blink,
     pub(crate) enabled_shader_features: SyncShaderFeatures,
 }
 
@@ -82,8 +82,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         bindings: &[InputAssemblyBufferBinding],
     ) {
         {
-            let mut buffers = BumpVec::with_capacity_in(bindings.len(), &self.arena);
-            let mut offsets = BumpVec::with_capacity_in(bindings.len(), &self.arena);
+            let mut buffers = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
+            let mut offsets = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
             for v in bindings.iter() {
                 let buffer = unwrap::buffer(v.buffer);
 
@@ -123,7 +123,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
         {
-            let mut new_viewports = BumpVec::with_capacity_in(viewports.len(), &self.arena);
+            let mut new_viewports = BVec::with_capacity_in(viewports.len(), self.arena.allocator());
             for v in viewports {
                 new_viewports.push(
                     vk::Viewport::default()
@@ -146,7 +146,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
         {
-            let mut new_rects = BumpVec::with_capacity_in(rects.len(), &self.arena);
+            let mut new_rects = BVec::with_capacity_in(rects.len(), self.arena.allocator());
             for v in rects {
                 let mut rect = vk::Rect2D::default();
                 rect.offset.x = v.x as i32;
@@ -302,7 +302,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let src = unwrap::buffer(src);
             let dst = unwrap::buffer(dst);
 
-            let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
+            let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
             for v in regions {
                 new_regions.push(
                     vk::BufferCopy::default()
@@ -329,7 +329,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let src = unwrap::buffer(src);
             let dst = unwrap::texture(dst);
 
-            let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
+            let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
             for v in regions {
                 new_regions.push(
                     vk::BufferImageCopy::default()
@@ -380,7 +380,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             // src_offset
             // dst_subresource
             // dst_offset
-            let mut new_regions = BumpVec::with_capacity_in(regions.len(), &self.arena);
+            let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
             for v in regions {
                 let src_subresource = vk::ImageSubresourceLayers {
                     aspect_mask: texture_copy_aspect_to_vk(v.src.aspect),
@@ -469,7 +469,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 impl<'a> Encoder<'a> {
     unsafe fn begin_rendering_dynamic(&mut self, info: &BeginRenderingInfo) {
         let mut color_attachments =
-            BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
+            BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
         for v in info.color_attachments {
             let image_view: vk::ImageView = std::mem::transmute(v.image_view);
 
@@ -573,11 +573,11 @@ impl<'a> Encoder<'a> {
         #![allow(non_snake_case)]
 
         let mut translated_global_barriers =
-            BumpVec::with_capacity_in(global_barriers.len(), &self.arena);
+            BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
         let mut translated_buffer_barriers =
-            BumpVec::with_capacity_in(buffer_barriers.len(), &self.arena);
+            BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
         let mut translated_texture_barriers =
-            BumpVec::with_capacity_in(texture_barriers.len(), &self.arena);
+            BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
         let mut src_stage_mask = vk::PipelineStageFlags::default();
         let mut dst_stage_mask = vk::PipelineStageFlags::default();
 
@@ -673,11 +673,11 @@ impl<'a> Encoder<'a> {
         #![allow(non_snake_case)]
 
         let mut translated_global_barriers =
-            BumpVec::with_capacity_in(global_barriers.len(), &self.arena);
+            BVec::with_capacity_in(global_barriers.len(), self.arena.allocator());
         let mut translated_buffer_barriers =
-            BumpVec::with_capacity_in(buffer_barriers.len(), &self.arena);
+            BVec::with_capacity_in(buffer_barriers.len(), self.arena.allocator());
         let mut translated_texture_barriers =
-            BumpVec::with_capacity_in(texture_barriers.len(), &self.arena);
+            BVec::with_capacity_in(texture_barriers.len(), self.arena.allocator());
 
         for barrier in global_barriers {
             translated_global_barriers.push(
