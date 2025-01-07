@@ -64,10 +64,6 @@ impl<C: Send + 'static> AsyncLoader<C> {
     pub fn load(&self, command: C) {
         self.queue.load(command)
     }
-
-    pub fn handle(&self) -> AsyncLoaderHandle<C> {
-        AsyncLoaderHandle::new(self.queue.queue.clone())
-    }
 }
 
 pub struct AsyncLoaderHandle<C> {

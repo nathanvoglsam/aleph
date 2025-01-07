@@ -369,9 +369,6 @@ impl TextureUploadDataDesc {
 }
 
 pub struct TextureUploadDesc {
-    /// A description of the texture object we should create.
-    pub desc: TextureObjectDesc,
-
     /// The buffer that our image levels have been populated in ready for upload to the GPU.
     pub buffer: SmallBox<dyn IUploadBuffer, S8>,
 
@@ -384,7 +381,7 @@ impl TextureUploadDesc {
     /// Constructs a new owned [`TextureUploadDesc`] for the given buffer upload description.
     pub fn new_owned(
         device: &dyn IDevice,
-        desc: TextureObjectDesc,
+        desc: &TextureObjectDesc,
         base_level: u32,
         num_levels: u32,
     ) -> Result<Self, BufferCreateError> {
@@ -423,7 +420,6 @@ impl TextureUploadDesc {
         };
 
         let out = Self {
-            desc,
             buffer: smallbox!(buffer),
             data,
         };
@@ -433,7 +429,7 @@ impl TextureUploadDesc {
     /// Constructs a new owned [`TextureUploadDesc`] for the given buffer upload description.
     pub fn new_in_bump_arena(
         bump: &UploadBumpAllocator,
-        desc: TextureObjectDesc,
+        desc: &TextureObjectDesc,
         base_level: u32,
         num_levels: u32,
     ) -> Result<Self, BufferCreateError> {
@@ -469,7 +465,6 @@ impl TextureUploadDesc {
         };
 
         let out = Self {
-            desc,
             buffer: smallbox!(buffer),
             data,
         };
@@ -484,20 +479,21 @@ impl TextureUploadDesc {
     /// We make some assumptions.
     /// - We only allow uploading entire mip levels and/or array layers so the origin is always
     ///   `(0, 0)` and the extent is assumed to cover the entire subresource.
-    pub fn get_copy_region(
+    pub(crate) fn get_copy_region(
         &self,
+        desc: &TextureObjectDesc,
         level: u32,
         // array_layer: u32,
         aspect: TextureCopyAspect,
     ) -> BufferToTextureCopyRegion {
         let mip_offset = self.data.offset_for_level(level).unwrap() as u64;
         let src_offset = self.buffer.device_offset() + mip_offset;
-        let (w, h, d) = self.desc.dimensions_for_level(level);
+        let (w, h, d) = desc.dimensions_for_level(level);
         let extent = Extent3D::new(w, h, d);
         BufferToTextureCopyRegion {
             src: ImageDataLayout {
                 offset: src_offset,
-                row_pitch: self.desc.upload_row_texels_for_level(level),
+                row_pitch: desc.upload_row_texels_for_level(level),
                 extent,
             },
             dst: TextureCopyInfo {

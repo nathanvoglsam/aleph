@@ -28,26 +28,37 @@
 //
 
 use aleph_any::AnyArc;
-use aleph_rhi_api::IBuffer;
+use aleph_rhi_api::*;
+
+use crate::BufferObjectDesc;
 
 pub struct BufferObject {
     /// The buffer object itself
     buffer: Option<AnyArc<dyn IBuffer>>,
+
+    /// The description the object was created with.
+    desc: BufferObjectDesc,
 }
 
 impl BufferObject {
-    pub const fn new() -> Self {
-        Self { buffer: None }
-    }
+    pub fn new_for_desc(
+        device: &dyn IDevice,
+        desc: BufferObjectDesc,
+    ) -> Result<Self, BufferCreateError> {
+        let size = desc.size.get();
+        let usage = desc.usage;
+        let api_desc = BufferDesc {
+            size,
+            cpu_access: CpuAccessMode::None, // TODO: do we allow something else?
+            usage: ResourceUsageFlags::COPY_DEST | usage, // Add copy dest for uploads
+            name: None,
+        };
+        let buffer = device.create_buffer(&api_desc)?;
 
-    pub const fn new_with(buffer: AnyArc<dyn IBuffer>) -> Self {
-        Self {
+        Ok(Self {
             buffer: Some(buffer),
-        }
-    }
-
-    pub const fn new_with_opt(buffer: Option<AnyArc<dyn IBuffer>>) -> Self {
-        Self { buffer }
+            desc,
+        })
     }
 
     pub fn update(&mut self, buffer: AnyArc<dyn IBuffer>) -> Option<AnyArc<dyn IBuffer>> {
@@ -74,5 +85,9 @@ impl BufferObject {
 
     pub fn get_owned(&self) -> Option<AnyArc<dyn IBuffer>> {
         self.buffer.clone()
+    }
+
+    pub const fn desc(&self) -> &BufferObjectDesc {
+        &self.desc
     }
 }

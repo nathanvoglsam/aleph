@@ -35,13 +35,13 @@ mod camera;
 mod deletion_pool;
 mod enqueue_error;
 mod format;
-mod loaders;
 mod mesh_layout;
 mod object_pool;
 mod objects;
 mod render_scene;
 mod render_scene_objects;
 mod renderer;
+mod resource_commands;
 mod shader_db_accessor;
 mod shaders;
 mod state_cache;
@@ -52,7 +52,6 @@ pub use camera::{CameraInfo, PerspectiveInfo};
 pub use deletion_pool::DeletionPool;
 pub use enqueue_error::{EnqueueError, EnqueueErrorKind};
 pub use format::vk_to_rhi_format;
-pub use loaders::{BufferLoader, GenerateMips, TextureAllocMode, TextureLoader};
 pub use mesh_layout::{
     MeshLayoutDesc, MeshLayoutDescError, MeshLayoutId, MeshLayoutIdFields, VertexStream,
 };
@@ -67,6 +66,7 @@ pub use renderer::{
     DefaultRenderPlane, DefaultResources, DrawOptions, IRenderPlane, IRenderSurface,
     RenderPlaneOutput, Renderer, RendererBuilder,
 };
+pub use resource_commands::{ResourceCommand, ResourceCommandBuffer};
 pub use shader_db_accessor::ShaderDatabaseAccessor;
 pub use state_cache::{IStateCacheKey, StateCache};
 pub use streaming_request::{

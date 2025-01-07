@@ -127,10 +127,7 @@ impl IPlugin for PluginGameLogic {
 
         let renderer = resources.get_mut::<Renderer>().unwrap();
 
-        let async_texture_loader = AsyncTextureLoader::new(
-            renderer.device().upgrade(),
-            renderer.get_texture_loader_handle(),
-        );
+        let async_texture_loader = AsyncTextureLoader::new(renderer.device().upgrade());
 
         let mut arena = BumpThingy::new(renderer.device());
 
@@ -173,9 +170,14 @@ impl IPlugin for PluginGameLogic {
         schedule.add_system_to_stage(
             CoreStage::Update.into(),
             make_label!("aleph_test::logic"),
-            move |mut world: ResMut<WorldResource>| {
+            move |(mut world, loader, mut renderer): (
+                ResMut<WorldResource>,
+                ResMut<AsyncTextureLoader>,
+                ResMut<Renderer>,
+            )| {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
+                loader.think(&mut renderer);
                 thinkers1.retain_mut(|t| match t.poll_and_resolve(&mut world.0) {
                     PollResult::Success => false,
                     PollResult::Waiting => true,

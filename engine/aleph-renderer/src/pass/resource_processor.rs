@@ -39,13 +39,12 @@ use aleph_rhi_api::*;
 use crate::pass::composite_planes::CompositePlanesLayout;
 use crate::pass::GraphArgs;
 use crate::{
-    shaders, BufferHandle, BufferStreamingRequest, BufferUploadDesc, GenerateMips, IStateCacheKey,
-    ShaderDatabaseAccessor, StateCache, TextureHandle, TextureStreamingRequest, TextureUploadDesc,
+    shaders, BufferObject, BufferUploadDesc, IStateCacheKey, ResourceCommand,
+    ResourceCommandBuffer, ShaderDatabaseAccessor, StateCache, TextureObject, TextureUploadDesc,
 };
 
 pub struct ResourceProcessorParam {
-    pub buffer_requests: Vec<BufferLoadRequest>,
-    pub texture_requests: Vec<TextureLoadRequest>,
+    pub resource_commands: ResourceCommandBuffer,
 }
 impl BoardParamId for ResourceProcessorParam {
     type Output<'a> = ResourceProcessorParam;
@@ -73,20 +72,58 @@ pub fn pass(
             let arena = resources.descriptor_arena();
             let input = args.board.get::<ResourceProcessorParam>().unwrap();
 
+            let mut buffer_requests = Vec::new();
+            let mut texture_requests = Vec::new();
+            input.resource_commands.walk(|_, c| match c {
+                ResourceCommand::BufferUpload(h, u) => {
+                    let object = args.buffer_pool.get_ref(*h).unwrap();
+                    let buffer = object.get().unwrap();
+
+                    buffer_requests.push(BufferLoadRequest {
+                        data: u,
+                        object,
+                        buffer,
+                    });
+                }
+                ResourceCommand::TextureUpload(h, m, u) => {
+                    let object = args.texture_pool.get_ref(*h).unwrap();
+                    let texture = object.get().unwrap();
+
+                    texture_requests.push(TextureLoadRequest {
+                        data: u,
+                        object,
+                        texture,
+                        mips: *m,
+                    });
+                }
+            });
+
             // TODO: we want to batch all of these, so we need a better interface so we can bundle
             //       the barriers and copy commands for all our loaders into a single batch.
             //
             //       either that or we unify to a single loader type.
-            BufferLoader::upload_requests(&input.buffer_requests, encoder);
+            BufferLoader::upload_requests(&buffer_requests, encoder);
             TextureLoader::upload_requests(
                 device,
-                &input.texture_requests,
+                &texture_requests,
                 encoder,
                 args.state_cache,
                 arena,
             );
         }
     });
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum GenerateMips {
+    Yes,
+    No,
+}
+
+impl Default for GenerateMips {
+    fn default() -> Self {
+        Self::Yes
+    }
 }
 
 struct BufferLoader();
@@ -97,34 +134,26 @@ impl BufferLoader {
         encoder: &mut dyn IGeneralEncoder,
     ) {
         let mut discard_barriers = Vec::new();
-        let mut buffers = Vec::new();
         let mut release_barriers = Vec::new();
 
         for request in requests.iter() {
-            Self::process_request(
-                &mut discard_barriers,
-                &mut buffers,
-                &mut release_barriers,
-                request,
-            );
+            Self::process_request(&mut discard_barriers, &mut release_barriers, request);
         }
 
         // If there are no buffers to upload then we early exit (we don't want to issue empty
         // resource barriers)
-        if buffers.is_empty() {
+        if requests.is_empty() {
             return;
         }
 
         // Prepare all our resources in a single barrier command rather than 'n' barriers
         encoder.resource_barrier(&[], &discard_barriers, &[]);
 
-        for upload in buffers.drain(..) {
-            let region = upload.load.data.get_copy_region(0);
-            encoder.copy_buffer_regions(upload.load.data.buffer.buffer(), upload.buffer, &[region]);
+        for r in requests.iter() {
+            let buffer = r.object.get().unwrap();
 
-            if let Some(req) = upload.load.request.as_ref() {
-                req.mark_complete(upload.load.target).unwrap();
-            }
+            let region = r.data.get_copy_region(r.object.desc(), 0);
+            encoder.copy_buffer_regions(r.data.buffer.buffer(), buffer, &[region]);
         }
 
         // Sync our uploaded resources with the access scopes we consider them safe to use
@@ -133,31 +162,14 @@ impl BufferLoader {
 
     fn process_request<'r>(
         discard_barriers: &mut Vec<BufferBarrier<'r>>,
-        buffers: &mut Vec<BufferUpload<'r>>,
         release_barriers: &mut Vec<BufferBarrier<'r>>,
         request: &'r BufferLoadRequest,
     ) {
-        let buffer = request.buffer.as_ref();
-
-        // Need to drop to raw pointers because the borrow checker won't be able to prove what
-        // we're doing is safe.
-        //
-        // Arc's address is stable, but we need to 'move' it into the buffers array. The borrow
-        // checker will complain the move is impossible due to outstanding borrows.
-        //
-        // This is safe because:
-        // - All access are through shared references
-        // - The address is stable
-        let size = request.data.desc.size.get();
-        let usage = request.data.desc.usage;
-
-        buffers.push(BufferUpload {
-            load: request,
-            buffer,
-        });
-
+        let desc = request.object.desc();
+        let size = desc.size.get();
+        let usage = desc.usage;
         discard_barriers.push(BufferBarrier {
-            buffer: Some(buffer),
+            buffer: Some(request.buffer),
             offset: 0,
             size,
             before_sync: BarrierSync::NONE,
@@ -168,7 +180,7 @@ impl BufferLoader {
         });
 
         release_barriers.push(BufferBarrier {
-            buffer: Some(buffer),
+            buffer: Some(request.buffer),
             offset: 0,
             size,
             before_sync: BarrierSync::COPY,
@@ -180,23 +192,14 @@ impl BufferLoader {
     }
 }
 
-pub struct BufferLoadRequest {
-    /// Target resource for the upload operation
-    pub target: BufferHandle,
-
-    /// Target request object to send request notifications through. If `None` then all
-    /// notifications will be dropped.
-    pub request: Option<BufferStreamingRequest>,
-
+struct BufferLoadRequest<'a> {
     /// The actual data source for the upload.
-    pub data: BufferUploadDesc,
+    data: &'a BufferUploadDesc,
 
-    /// Destination buffer
-    pub buffer: AnyArc<dyn IBuffer>,
-}
+    /// The target buffer object
+    object: &'a BufferObject,
 
-struct BufferUpload<'a> {
-    load: &'a BufferLoadRequest,
+    /// The target API buffer object
     buffer: &'a dyn IBuffer,
 }
 
@@ -211,40 +214,28 @@ impl TextureLoader {
         arena: &LinearDescriptorPool,
     ) {
         let mut discard_barriers = Vec::new();
-        let mut textures = Vec::new();
         let mut release_barriers = Vec::new();
 
         for request in requests {
-            Self::process_request(
-                &mut discard_barriers,
-                &mut textures,
-                &mut release_barriers,
-                request,
-            );
+            Self::process_request(&mut discard_barriers, &mut release_barriers, request);
         }
 
         // If there are no textures to upload then we early exit (we don't want to issue empty
         // resource barriers)
-        if textures.is_empty() {
+        if requests.is_empty() {
             return;
         }
 
         // Prepare all our resources in a single barrier command rather than 'n' barriers
         encoder.resource_barrier(&[], &[], &discard_barriers);
 
-        for upload in textures.iter() {
-            let data = &upload.load.data;
+        for r in requests.iter() {
+            let data = r.data;
             for level in data.data.level_range() {
-                let region = data.get_copy_region(level, TextureCopyAspect::Color);
-                encoder.copy_buffer_to_texture(
-                    upload.load.data.buffer.buffer(),
-                    upload.texture,
-                    &[region],
-                );
-            }
-
-            if let Some(req) = upload.load.request.as_ref() {
-                req.mark_complete(upload.load.handle).unwrap();
+                let desc = r.object.desc();
+                let texture = r.texture;
+                let region = data.get_copy_region(desc, level, TextureCopyAspect::Color);
+                encoder.copy_buffer_to_texture(r.data.buffer.buffer(), texture, &[region]);
             }
         }
 
@@ -253,17 +244,12 @@ impl TextureLoader {
             encoder.resource_barrier(&[], &[], &release_barriers);
         }
 
-        for upload in textures.drain(..) {
-            match upload.load.mips {
+        for r in requests.iter() {
+            match r.mips {
                 GenerateMips::Yes => {
-                    MipGenerator::record(
-                        device,
-                        state_cache,
-                        arena,
-                        encoder,
-                        upload.texture,
-                        upload.load.data.desc.usage,
-                    );
+                    let desc = r.object.desc();
+                    let texture = r.texture;
+                    MipGenerator::record(device, state_cache, arena, encoder, texture, desc.usage);
                 }
                 GenerateMips::No => {
                     // Do nothing here, the texture has been correctly synced with the outside
@@ -275,24 +261,17 @@ impl TextureLoader {
 
     unsafe fn process_request<'r>(
         discard_barriers: &mut Vec<TextureBarrier<'r>>,
-        textures: &mut Vec<TextureUpload<'r>>,
         release_barriers: &mut Vec<TextureBarrier<'r>>,
         request: &'r TextureLoadRequest,
     ) {
-        let texture = request.texture.as_ref();
-        let tex_desc = texture.desc_ref();
+        let tex_desc = request.texture.desc_ref();
         let subresources = TextureSubResourceSet::all(tex_desc);
 
-        let usage = request.data.desc.usage;
+        let usage = request.object.desc().usage;
         let mips = request.mips;
         let format = tex_desc.format;
-        textures.push(TextureUpload {
-            load: request,
-            texture,
-        });
-
         discard_barriers.push(TextureBarrier {
-            texture: Some(texture),
+            texture: Some(request.texture),
             subresource_range: subresources.clone(),
             before_sync: BarrierSync::NONE,
             after_sync: BarrierSync::COPY,
@@ -312,7 +291,7 @@ impl TextureLoader {
             }
             GenerateMips::No => {
                 release_barriers.push(TextureBarrier {
-                    texture: Some(texture),
+                    texture: Some(request.texture),
                     subresource_range: subresources,
                     before_sync: BarrierSync::COPY,
                     after_sync: usage.default_barrier_sync(true, format),
@@ -327,27 +306,18 @@ impl TextureLoader {
     }
 }
 
-pub struct TextureLoadRequest {
-    /// Target resource for the upload operation
-    pub handle: TextureHandle,
-
-    /// Target request object to send request notifications through. If `None` then all
-    /// notifications will be dropped.
-    pub request: Option<TextureStreamingRequest>,
-
+struct TextureLoadRequest<'a> {
     /// The actual data source for the upload.
-    pub data: TextureUploadDesc,
+    data: &'a TextureUploadDesc,
 
-    /// Destination texture
-    pub texture: AnyArc<dyn ITexture>,
+    /// The target texture object
+    object: &'a TextureObject,
+
+    /// The target texture API object
+    texture: &'a dyn ITexture,
 
     /// Request the renderer to generate the mipmaps for the texture once loaded
-    pub mips: GenerateMips,
-}
-
-struct TextureUpload<'a> {
-    load: &'a TextureLoadRequest,
-    texture: &'a dyn ITexture,
+    mips: GenerateMips,
 }
 
 pub const PREWARM_MIP_FORMATS: [Format; 4] = [

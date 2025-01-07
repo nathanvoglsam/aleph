@@ -29,8 +29,9 @@
 
 use std::ops::BitAnd;
 
+use aleph_renderer::pass::resource_processor::GenerateMips;
 use aleph_renderer::{
-    GenerateMips, Renderer, TextureAllocMode, TextureHandle, TextureObjectDesc, TextureUploadDesc,
+    Renderer, ResourceCommand, TextureHandle, TextureObject, TextureObjectDesc, TextureUploadDesc,
 };
 use aleph_rhi_api::*;
 use egui::epaint::ImageDelta;
@@ -72,36 +73,26 @@ impl EguiFontTexture {
             desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
             desc.image_2d(dimensions.0, dimensions.1);
 
-            let mut data = TextureUploadDesc::new_owned(renderer.device(), desc, 0, 1).unwrap();
-
             assert_eq!(
-                data.desc.upload_row_texels_for_level(0),
-                data.desc.width,
+                desc.upload_row_texels_for_level(0),
+                desc.width,
                 "Currently we don't handle row pitch here"
             );
 
-            let size = data.desc.upload_bytes_for_level(0);
+            let mut object = TextureObject::new_for_desc(renderer.device(), desc.clone()).unwrap();
+            object.recreate_default_view();
+            let handle = renderer.create_texture(object).unwrap();
+            self.font_handle = Some(handle); // TODO: destroy the old texture
+
+            let mut data = TextureUploadDesc::new_owned(renderer.device(), &desc, 0, 1).unwrap();
+
+            let size = desc.upload_bytes_for_level(0);
             let dst = &mut data.buffer.bytes_mut()[0..size];
             dst.copy_from_slice(&self.font_texture.bytes[0..size]);
 
             data.buffer.buffer().unmap().unwrap();
 
-            if let Some(handle) = self.font_handle {
-                renderer
-                    .get_texture_loader()
-                    .immediate_upload(
-                        None,
-                        handle,
-                        data,
-                        TextureAllocMode::Deferred,
-                        GenerateMips::No,
-                    )
-                    .unwrap();
-            } else {
-                let result =
-                    renderer.create_texture(data, TextureAllocMode::Deferred, GenerateMips::No);
-                self.font_handle = Some(result.unwrap());
-            }
+            renderer.submit_resource_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
         }
     }
 

@@ -69,9 +69,6 @@ impl BufferObjectDesc {
 }
 
 pub struct BufferUploadDesc {
-    /// A description of the texture object we should create.
-    pub desc: BufferObjectDesc,
-
     /// The buffer that our buffer data has been populated in ready for upload to the GPU.
     pub buffer: SmallBox<dyn IUploadBuffer, S8>,
 
@@ -83,7 +80,7 @@ impl BufferUploadDesc {
     /// Constructs a new owned [`BufferUploadDesc`] for the given buffer upload description.
     pub fn new_owned(
         device: &dyn IDevice,
-        desc: BufferObjectDesc,
+        desc: &BufferObjectDesc,
     ) -> Result<Self, BufferCreateError> {
         let buffer = unsafe {
             let buffer = device.create_buffer(&BufferDesc {
@@ -99,7 +96,6 @@ impl BufferUploadDesc {
         };
 
         let out = Self {
-            desc,
             buffer: smallbox!(buffer),
             offset: 0,
         };
@@ -110,7 +106,7 @@ impl BufferUploadDesc {
     /// a block from the given bump arena.
     pub fn new_in_bump_arena(
         bump: &UploadBumpAllocator,
-        desc: BufferObjectDesc,
+        desc: &BufferObjectDesc,
     ) -> Result<Self, BufferCreateError> {
         assert!(bump.usage().contains(ResourceUsageFlags::COPY_SOURCE));
 
@@ -123,18 +119,21 @@ impl BufferUploadDesc {
         };
 
         let out = Self {
-            desc,
             buffer: smallbox!(buffer),
             offset: 0,
         };
         Ok(out)
     }
 
-    pub fn get_copy_region(&self, dst_offset: u64) -> BufferCopyRegion {
+    pub(crate) fn get_copy_region(
+        &self,
+        desc: &BufferObjectDesc,
+        dst_offset: u64,
+    ) -> BufferCopyRegion {
         BufferCopyRegion {
             src_offset: self.buffer.device_offset() + self.offset as u64,
             dst_offset,
-            size: self.desc.size.get(),
+            size: desc.size.get(),
         }
     }
 }

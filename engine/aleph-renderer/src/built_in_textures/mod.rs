@@ -32,15 +32,16 @@ mod smaa_search;
 
 use aleph_rhi_api::*;
 
+use crate::pass::resource_processor::GenerateMips;
 use crate::{
-    GenerateMips, TextureAllocMode, TextureHandle, TextureLoader, TextureObject, TextureObjectDesc,
+    ResourceCommand, ResourceCommandBuffer, TextureHandle, TextureObject, TextureObjectDesc,
     TexturePool, TextureUploadDesc,
 };
 
 pub unsafe fn create_1x1_colour_texture(
     device: &dyn IDevice,
     texture_pool: &mut TexturePool,
-    texture_loader: &TextureLoader,
+    cmds: &mut ResourceCommandBuffer,
     payload: u32,
 ) -> TextureHandle {
     let mut desc = TextureObjectDesc::new();
@@ -48,39 +49,35 @@ pub unsafe fn create_1x1_colour_texture(
     desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
     desc.image_2d(1, 1);
 
-    let mut data = TextureUploadDesc::new_owned(device, desc, 0, 1).unwrap();
+    let mut data = TextureUploadDesc::new_owned(device, &desc, 0, 1).unwrap();
+
     let dst = &mut data.buffer.bytes_mut()[0..4];
     dst.copy_from_slice(bytemuck::bytes_of(&payload));
-    let object = TextureObject::new();
+
+    let mut object = TextureObject::new_for_desc(device, desc).unwrap();
+    object.recreate_default_view();
     let handle = texture_pool.alloc(object);
-    texture_loader
-        .immediate_upload(
-            None,
-            handle,
-            data,
-            TextureAllocMode::Deferred,
-            GenerateMips::No,
-        )
-        .ok()
-        .unwrap();
+
+    cmds.push_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
+
     handle
 }
 
 pub unsafe fn create_smaa_area_texture(
     device: &dyn IDevice,
     texture_pool: &mut TexturePool,
-    texture_loader: &TextureLoader,
+    cmds: &mut ResourceCommandBuffer,
 ) -> TextureHandle {
     let mut desc = TextureObjectDesc::new();
     desc.format(Format::Rg8Unorm);
     desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
     desc.image_2d(smaa_area::WIDTH, smaa_area::HEIGHT);
 
-    let mut data = TextureUploadDesc::new_owned(device, desc, 0, 1).unwrap();
+    let mut data = TextureUploadDesc::new_owned(device, &desc, 0, 1).unwrap();
 
-    let num_rows = data.desc.num_rows_for_level(0);
-    let row_bytes = data.desc.row_bytes_for_level(0);
-    let row_bytes_padded = data.desc.upload_row_bytes_for_level(0);
+    let num_rows = desc.num_rows_for_level(0);
+    let row_bytes = desc.row_bytes_for_level(0);
+    let row_bytes_padded = desc.upload_row_bytes_for_level(0);
     let mut src = smaa_area::BYTES.as_slice();
     let mut dst = data.buffer.bytes_mut();
     for _ in 0..num_rows {
@@ -92,36 +89,30 @@ pub unsafe fn create_smaa_area_texture(
         dst = &mut dst[row_bytes_padded..];
     }
 
-    let object = TextureObject::new();
+    let mut object = TextureObject::new_for_desc(device, desc).unwrap();
+    object.recreate_default_view();
     let handle = texture_pool.alloc(object);
-    texture_loader
-        .immediate_upload(
-            None,
-            handle,
-            data,
-            TextureAllocMode::Deferred,
-            GenerateMips::No,
-        )
-        .ok()
-        .unwrap();
+
+    cmds.push_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
+
     handle
 }
 
 pub unsafe fn create_smaa_search_texture(
     device: &dyn IDevice,
     texture_pool: &mut TexturePool,
-    texture_loader: &TextureLoader,
+    cmds: &mut ResourceCommandBuffer,
 ) -> TextureHandle {
     let mut desc = TextureObjectDesc::new();
     desc.format(Format::R8Unorm);
     desc.usage(ResourceUsageFlags::SHADER_RESOURCE);
     desc.image_2d(smaa_search::WIDTH, smaa_search::HEIGHT);
 
-    let mut data = TextureUploadDesc::new_owned(device, desc, 0, 1).unwrap();
+    let mut data = TextureUploadDesc::new_owned(device, &desc, 0, 1).unwrap();
 
-    let num_rows = data.desc.num_rows_for_level(0);
-    let row_bytes = data.desc.row_bytes_for_level(0);
-    let row_bytes_padded = data.desc.upload_row_bytes_for_level(0);
+    let num_rows = desc.num_rows_for_level(0);
+    let row_bytes = desc.row_bytes_for_level(0);
+    let row_bytes_padded = desc.upload_row_bytes_for_level(0);
     let mut src = smaa_search::BYTES.as_slice();
     let mut dst = data.buffer.bytes_mut();
     for _ in 0..num_rows {
@@ -133,17 +124,11 @@ pub unsafe fn create_smaa_search_texture(
         dst = &mut dst[row_bytes_padded..];
     }
 
-    let object = TextureObject::new();
+    let mut object = TextureObject::new_for_desc(device, desc.clone()).unwrap();
+    object.recreate_default_view();
     let handle = texture_pool.alloc(object);
-    texture_loader
-        .immediate_upload(
-            None,
-            handle,
-            data,
-            TextureAllocMode::Deferred,
-            GenerateMips::No,
-        )
-        .ok()
-        .unwrap();
+
+    cmds.push_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
+
     handle
 }

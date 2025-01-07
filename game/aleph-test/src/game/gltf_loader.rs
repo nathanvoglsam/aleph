@@ -33,8 +33,8 @@ use aleph_engine::interfaces::components::{StaticMesh, Transform};
 use aleph_engine::interfaces::ecs::{EntityId, World};
 use aleph_engine::interfaces::math::{Mat4, Rotor3, ToDouble, Vec3, Vec4};
 use aleph_engine::interfaces::renderer::{
-    BufferHandle, BufferObjectDesc, BufferUploadDesc, PollCompleteError, Renderer,
-    TextureStreamingRequest,
+    BufferHandle, BufferObject, BufferObjectDesc, BufferUploadDesc, PollCompleteError, Renderer,
+    ResourceCommand, TextureStreamingRequest,
 };
 use aleph_rhi_api::*;
 use gltf::accessor::{DataType, Dimensions};
@@ -59,21 +59,16 @@ impl BumpThingy {
         }
     }
 
-    pub unsafe fn alloc_upload_desc(
+    pub fn alloc_upload_desc(
         &mut self,
-        len: usize,
-        usage: ResourceUsageFlags,
+        desc: &BufferObjectDesc,
     ) -> Result<BufferUploadDesc, BufferCreateError> {
-        let mut desc = BufferObjectDesc::new();
-        desc.size(len as u64);
-        desc.usage(usage);
-
-        match BufferUploadDesc::new_in_bump_arena(&self.alloc, desc.clone()) {
+        match BufferUploadDesc::new_in_bump_arena(&self.alloc, &desc) {
             Ok(out) => Ok(out),
             Err(BufferCreateError::OutOfMemory) => {
                 let mut new_block = Self::new_alloc(self.device.as_ref());
                 std::mem::swap(&mut new_block, &mut self.alloc);
-                BufferUploadDesc::new_in_bump_arena(&self.alloc, desc)
+                BufferUploadDesc::new_in_bump_arena(&self.alloc, &desc)
             }
             e @ Err(_) => return e,
         }
@@ -320,6 +315,7 @@ pub fn load_scene(
 }
 
 struct IndexUpload {
+    desc: BufferObjectDesc,
     data: BufferUploadDesc,
 }
 
@@ -335,13 +331,12 @@ fn allocate_index_upload(arena: &mut BumpThingy, indices: &Accessor) -> IndexUpl
     // We only use 32-bit indices
     let size = indices.count() * size_of::<u32>();
 
-    let data = unsafe {
-        arena
-            .alloc_upload_desc(size, ResourceUsageFlags::INDEX_BUFFER)
-            .unwrap()
-    };
+    let mut desc = BufferObjectDesc::new();
+    desc.size(size as u64);
+    desc.usage(ResourceUsageFlags::INDEX_BUFFER);
+    let data = arena.alloc_upload_desc(&desc).unwrap();
 
-    IndexUpload { data }
+    IndexUpload { desc, data }
 }
 
 #[aleph_profile::function]
@@ -352,7 +347,11 @@ fn copy_index_data_into_upload(buffers: &[Data], indices: &Accessor, upload: &mu
 
 #[aleph_profile::function]
 fn finalize_index_upload(renderer: &mut Renderer, upload: IndexUpload) -> BufferHandle {
-    renderer.create_buffer(upload.data).unwrap()
+    let object = BufferObject::new_for_desc(renderer.device(), upload.desc).unwrap();
+    let handle = renderer.create_buffer(object).unwrap();
+    renderer.submit_resource_command(ResourceCommand::BufferUpload(handle, upload.data));
+
+    handle
 }
 
 fn load_index_buffer_into_vec(buffers: &[Data], indices: &Accessor) -> Vec<u32> {
@@ -418,6 +417,7 @@ fn load_index_buffer_data(dst: &mut [u32], buffers: &[Data], indices: &Accessor)
 }
 
 struct VertexUpload {
+    desc: BufferObjectDesc,
     data: BufferUploadDesc,
     vertex_count: usize,
     stride: usize,
@@ -432,13 +432,13 @@ fn allocate_vertex_upload(arena: &mut BumpThingy, prim: &Primitive) -> VertexUpl
     let stride = 60;
     let size = vertex_count * stride;
 
-    let data = unsafe {
-        arena
-            .alloc_upload_desc(size, ResourceUsageFlags::VERTEX_BUFFER)
-            .unwrap()
-    };
+    let mut desc = BufferObjectDesc::new();
+    desc.size(size as u64);
+    desc.usage(ResourceUsageFlags::VERTEX_BUFFER);
+    let data = arena.alloc_upload_desc(&desc).unwrap();
 
     VertexUpload {
+        desc,
         data,
         vertex_count,
         stride,
@@ -532,7 +532,11 @@ fn copy_vertex_data_into_upload(buffers: &[Data], prim: &Primitive, upload: &mut
 
 #[aleph_profile::function]
 fn finalize_vertex_upload(renderer: &mut Renderer, upload: VertexUpload) -> BufferHandle {
-    renderer.create_buffer(upload.data).unwrap()
+    let object = BufferObject::new_for_desc(renderer.device(), upload.desc).unwrap();
+    let handle = renderer.create_buffer(object).unwrap();
+    renderer.submit_resource_command(ResourceCommand::BufferUpload(handle, upload.data));
+
+    handle
 }
 
 fn copy_vec4_f32_semantic(

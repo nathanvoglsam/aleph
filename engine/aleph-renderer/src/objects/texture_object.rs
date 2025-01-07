@@ -30,34 +30,58 @@
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
+use crate::TextureObjectDesc;
+
 pub struct TextureObject {
-    /// The texture object itself
+    /// The texture object itself.
     texture: Option<AnyArc<dyn ITexture>>,
 
-    /// The image view we want to view the texture through
+    /// The description the texture was created with.
+    desc: TextureObjectDesc,
+
+    /// The image view we want to view the texture through.
     default_view: Option<ImageView>,
 }
 
 impl TextureObject {
-    pub const fn new() -> Self {
-        Self {
-            texture: None,
-            default_view: None,
-        }
-    }
+    pub fn new_for_desc(
+        device: &dyn IDevice,
+        desc: TextureObjectDesc,
+    ) -> Result<Self, TextureCreateError> {
+        let mut combined_usage = desc.usage;
 
-    pub const fn new_with(texture: AnyArc<dyn ITexture>) -> Self {
-        Self {
+        // We require copy dest so we can initialize the resource
+        combined_usage |= ResourceUsageFlags::COPY_DEST;
+
+        // We require shader resource and render target usage to be able to generate mip
+        // maps into the texture.
+        //
+        // TODO: in the future we could use a compute based mip generator which would
+        //       require unordered access.
+        combined_usage |= ResourceUsageFlags::RENDER_TARGET;
+        combined_usage |= ResourceUsageFlags::SHADER_RESOURCE;
+
+        let api_desc = TextureDesc {
+            width: desc.width.max(1),
+            height: desc.height.max(1),
+            depth: desc.depth.max(1),
+            format: desc.format,
+            dimension: TextureDimension::Texture2D, // TODO: need to propogate this
+            clear_value: None,
+            array_size: 1,
+            mip_levels: desc.num_levels.get(),
+            sample_count: 1,
+            sample_quality: 0,
+            usage: combined_usage,
+            name: None,
+        };
+        let texture = device.create_texture(&api_desc)?;
+
+        Ok(Self {
             texture: Some(texture),
+            desc,
             default_view: None,
-        }
-    }
-
-    pub const fn new_with_opt(texture: Option<AnyArc<dyn ITexture>>) -> Self {
-        Self {
-            texture,
-            default_view: None,
-        }
+        })
     }
 
     pub fn update(&mut self, texture: AnyArc<dyn ITexture>) -> Option<AnyArc<dyn ITexture>> {
@@ -92,12 +116,17 @@ impl TextureObject {
     /// doesn't have a texture for the requested handle yet. It's possible for a handle to have
     /// no texture, such as if the handle was reserved but hasn't been initialized with
     /// [TexturePool::update_texture] yet.
-    pub fn get_texture(&self) -> Option<&dyn ITexture> {
+    pub fn get(&self) -> Option<&dyn ITexture> {
         self.texture.as_ref().map(|v| v.as_ref())
     }
 
     pub fn get_owned(&self) -> Option<AnyArc<dyn ITexture>> {
         self.texture.clone()
+    }
+
+    /// The set of resource usage flags the texture was created to be used with.
+    pub const fn desc(&self) -> &TextureObjectDesc {
+        &self.desc
     }
 
     /// Returns an [ImageView], which is the default view for the requested handle.

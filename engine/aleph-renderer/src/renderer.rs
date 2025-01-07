@@ -42,9 +42,9 @@ use crate::deletion_pool::DeletionMode;
 use crate::pass::resource_processor::ResourceProcessorParam;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    built_in_textures, BufferHandle, BufferLoader, BufferObject, BufferPool, BufferUploadDesc,
-    DeletionPool, GenerateMips, ShaderDatabaseAccessor, StateCache, TextureAllocMode,
-    TextureHandle, TextureLoader, TextureObject, TexturePool, TextureUploadDesc,
+    built_in_textures, BufferHandle, BufferObject, BufferPool, DeletionPool, ResourceCommand,
+    ResourceCommandBuffer, ShaderDatabaseAccessor, StateCache, TextureHandle, TextureObject,
+    TexturePool,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -186,8 +186,8 @@ impl RendererBuilder {
             swap_image_id: None,
         };
 
-        let texture_loader = Arc::new(TextureLoader::new(device.clone()));
-        let buffer_loader = Arc::new(BufferLoader::new());
+        let mut resource_commands = ResourceCommandBuffer::new();
+
         let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
         let buffer_pool = BufferPool::new(NonZeroU8::new(2).unwrap());
 
@@ -195,7 +195,7 @@ impl RendererBuilder {
             built_in_textures::create_1x1_colour_texture(
                 device.as_ref(),
                 &mut texture_pool,
-                &texture_loader,
+                &mut resource_commands,
                 0xFFFFFFFF,
             )
         };
@@ -204,7 +204,7 @@ impl RendererBuilder {
             built_in_textures::create_1x1_colour_texture(
                 device.as_ref(),
                 &mut texture_pool,
-                &texture_loader,
+                &mut resource_commands,
                 0x00000000,
             )
         };
@@ -213,7 +213,7 @@ impl RendererBuilder {
             built_in_textures::create_1x1_colour_texture(
                 device.as_ref(),
                 &mut texture_pool,
-                &texture_loader,
+                &mut resource_commands,
                 0xFFFF8080,
             )
         };
@@ -222,7 +222,7 @@ impl RendererBuilder {
             built_in_textures::create_smaa_area_texture(
                 device.as_ref(),
                 &mut texture_pool,
-                &texture_loader,
+                &mut resource_commands,
             )
         };
 
@@ -230,7 +230,7 @@ impl RendererBuilder {
             built_in_textures::create_smaa_search_texture(
                 device.as_ref(),
                 &mut texture_pool,
-                &texture_loader,
+                &mut resource_commands,
             )
         };
 
@@ -245,10 +245,9 @@ impl RendererBuilder {
             queue,
             state_cache,
             swap_manager,
-            texture_loader,
-            buffer_loader,
             texture_pool,
             buffer_pool,
+            resource_commands,
             frame_manager,
             graph_manager,
             default_resources: DefaultResources {
@@ -270,10 +269,9 @@ pub struct Renderer {
     queue: AnyArc<dyn IQueue>,
     state_cache: StateCache,
     swap_manager: SwapManager,
-    texture_loader: Arc<TextureLoader>,
-    buffer_loader: Arc<BufferLoader>,
     texture_pool: TexturePool,
     buffer_pool: BufferPool,
+    resource_commands: ResourceCommandBuffer,
     frame_manager: FrameManager,
     graph_manager: GraphManager,
     default_resources: DefaultResources,
@@ -314,51 +312,26 @@ impl Renderer {
         self.device.as_ref()
     }
 
-    pub fn get_texture_loader_handle(&self) -> Arc<TextureLoader> {
-        self.texture_loader.clone()
-    }
-
-    pub fn get_texture_loader(&self) -> &TextureLoader {
-        self.texture_loader.as_ref()
-    }
-
-    pub fn get_buffer_loader_handle(&self) -> Arc<BufferLoader> {
-        self.buffer_loader.clone()
-    }
-
-    pub fn get_buffer_loader(&self) -> &BufferLoader {
-        self.buffer_loader.as_ref()
-    }
-
     pub fn default_resources(&self) -> &DefaultResources {
         &self.default_resources
     }
 
-    pub fn create_texture(
-        &mut self,
-        data: TextureUploadDesc,
-        mode: TextureAllocMode,
-        mips: GenerateMips,
-    ) -> Option<TextureHandle> {
-        let object = TextureObject::new();
+    pub fn create_texture(&mut self, object: TextureObject) -> Option<TextureHandle> {
         let handle = self.texture_pool.alloc(object);
-
-        self.texture_loader
-            .immediate_upload(None, handle, data, mode, mips)
-            .ok()?;
-
         Some(handle)
     }
 
-    pub fn create_buffer(&mut self, data: BufferUploadDesc) -> Option<BufferHandle> {
-        let object = BufferObject::new();
+    pub fn create_buffer(&mut self, object: BufferObject) -> Option<BufferHandle> {
         let handle = self.buffer_pool.alloc(object);
-
-        self.buffer_loader
-            .immediate_upload(None, handle, data)
-            .ok()?;
-
         Some(handle)
+    }
+
+    pub fn submit_resource_command(&mut self, command: ResourceCommand) {
+        self.resource_commands.push_command(command);
+    }
+
+    pub fn submit_resource_commands(&mut self, commands: ResourceCommandBuffer) {
+        self.resource_commands.push_bundle(commands);
     }
 
     pub unsafe fn draw_next_frame(&mut self, options: &DrawOptions, board: &mut BoardScope) {
@@ -428,22 +401,21 @@ impl Renderer {
         {
             let mut encoder = list.begin_general().unwrap();
 
-            let buffer_requests = self.buffer_loader.pop_and_bundle_requests(
-                &mut self.buffer_pool,
-                deletion_pool,
-                self.device.as_ref(),
-                usize::MAX,
-            );
-            let texture_requests = self.texture_loader.pop_and_bundle_requests(
-                &mut self.state_cache,
-                &mut self.texture_pool,
-                deletion_pool,
-                usize::MAX,
-            );
-            board.publish::<ResourceProcessorParam>(ResourceProcessorParam {
-                buffer_requests,
-                texture_requests,
+            let resource_commands = std::mem::take(&mut self.resource_commands);
+
+            // Push all the upload buffers into the deletion pool so they live long enough to be
+            // used on the GPU timeline.
+            // TODO: is there a better way of doing this? do it on the render thread?
+            resource_commands.walk(|_, c| match c {
+                ResourceCommand::BufferUpload(_, d) => {
+                    deletion_pool.push_buffer(d.buffer.buffer().upgrade());
+                }
+                ResourceCommand::TextureUpload(_, _, d) => {
+                    deletion_pool.push_buffer(d.buffer.buffer().upgrade());
+                }
             });
+
+            board.publish::<ResourceProcessorParam>(ResourceProcessorParam { resource_commands });
 
             let mut import_bundle = ImportBundle::default();
 
