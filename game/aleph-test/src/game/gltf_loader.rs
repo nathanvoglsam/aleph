@@ -195,6 +195,80 @@ pub fn load_scene(
     }
 
     let mut load_thinkers = Vec::new();
+    let mut mat_table = Vec::new();
+    for (i, mat) in document.materials().enumerate() {
+        let _i = mat.index().unwrap();
+        debug_assert_eq!(i, _i);
+
+        let pbr_mat = mat.pbr_metallic_roughness();
+
+        let white_tex = renderer.default_resources().white_texture_rgba8();
+        let norm_tex = renderer.default_resources().normal_texture_rgba8();
+        let layout = StandardMaterialLayout {
+            colour: pbr_mat.base_color_factor(),
+            metal_roughness: [
+                pbr_mat.metallic_factor(),
+                pbr_mat.roughness_factor(),
+                0.0,
+                0.0,
+            ],
+            _padding1: [0; 128],
+            _padding2: [0; 96],
+        };
+
+        let mut desc = BufferObjectDesc::new();
+        desc.size(256);
+        desc.usage(ResourceUsageFlags::CONSTANT_BUFFER);
+        let mut upload = BufferUploadDesc::new_owned(renderer.device(), &desc).unwrap();
+        upload
+            .buffer
+            .bytes_mut()
+            .copy_from_slice(bytemuck::bytes_of(&layout));
+        let object = BufferObject::new_for_desc(renderer.device(), desc).unwrap();
+        let buffer = renderer.create_buffer(object).unwrap();
+        renderer.submit_resource_command(ResourceCommand::BufferUpload(buffer, upload));
+
+        let mut material_instance = MaterialInstanceObject::new(standard_material.clone());
+        material_instance.update_binding(0, MaterialBinding::Buffer(Some(buffer)));
+        material_instance.update_binding(1, MaterialBinding::Texture(Some(white_tex)));
+        material_instance.update_binding(2, MaterialBinding::Texture(Some(white_tex)));
+        material_instance.update_binding(3, MaterialBinding::Texture(Some(norm_tex)));
+        let material_instance = renderer
+            .create_material_instance(material_instance)
+            .unwrap();
+
+        if let Some(tex) = pbr_mat.base_color_texture() {
+            if let Some(req) = &tex_table[tex.texture().source().index()] {
+                load_thinkers.push(TextureLoadThinker {
+                    target: material_instance,
+                    request: Some(req.clone()),
+                    target_tex: TargetTex::Colour,
+                });
+            }
+        }
+
+        if let Some(tex) = pbr_mat.metallic_roughness_texture() {
+            if let Some(req) = &tex_table[tex.texture().source().index()] {
+                load_thinkers.push(TextureLoadThinker {
+                    target: material_instance,
+                    request: Some(req.clone()),
+                    target_tex: TargetTex::MetalRoughness,
+                });
+            }
+        }
+
+        if let Some(tex) = mat.normal_texture() {
+            if let Some(req) = &tex_table[tex.texture().source().index()] {
+                load_thinkers.push(TextureLoadThinker {
+                    target: material_instance,
+                    request: Some(req.clone()),
+                    target_tex: TargetTex::Normal,
+                });
+            }
+        }
+
+        mat_table.push(material_instance);
+    }
 
     fn process_node(
         world: &mut World,
@@ -202,7 +276,7 @@ pub fn load_scene(
         standard_material: &Arc<Material>,
         mesh_table: &[Vec<(BufferHandle, BufferHandle)>],
         tex_table: &[Option<TextureStreamingRequest>],
-        thinkers: &mut Vec<TextureLoadThinker>,
+        mat_table: &[MaterialInstanceHandle],
         parent_transform: Mat4,
         node: &gltf::Node,
     ) {
@@ -228,8 +302,7 @@ pub fn load_scene(
 
         if let Some(mesh) = node.mesh() {
             for (prim, (idx, vtx)) in mesh.primitives().zip(mesh_table[mesh.index()].iter()) {
-                let mat = prim.material();
-                let pbr_mat = mat.pbr_metallic_roughness();
+                let mat = prim.material().index().unwrap();
                 match prim.material().alpha_mode() {
                     AlphaMode::Opaque => {
                         let transform = Transform {
@@ -238,83 +311,12 @@ pub fn load_scene(
                             scale: Vec3::from(s),
                         };
 
-                        let white_tex = renderer.default_resources().white_texture_rgba8();
-                        let norm_tex = renderer.default_resources().normal_texture_rgba8();
-                        let layout = StandardMaterialLayout {
-                            colour: pbr_mat.base_color_factor(),
-                            metal_roughness: [
-                                pbr_mat.metallic_factor(),
-                                pbr_mat.roughness_factor(),
-                                0.0,
-                                0.0,
-                            ],
-                            _padding1: [0; 128],
-                            _padding2: [0; 96],
-                        };
-
-                        let mut desc = BufferObjectDesc::new();
-                        desc.size(256);
-                        desc.usage(ResourceUsageFlags::CONSTANT_BUFFER);
-                        let mut upload =
-                            BufferUploadDesc::new_owned(renderer.device(), &desc).unwrap();
-                        upload
-                            .buffer
-                            .bytes_mut()
-                            .copy_from_slice(bytemuck::bytes_of(&layout));
-                        let object = BufferObject::new_for_desc(renderer.device(), desc).unwrap();
-                        let buffer = renderer.create_buffer(object).unwrap();
-                        renderer
-                            .submit_resource_command(ResourceCommand::BufferUpload(buffer, upload));
-
-                        let mut material_instance =
-                            MaterialInstanceObject::new(standard_material.clone());
-                        material_instance.update_binding(0, MaterialBinding::Buffer(Some(buffer)));
-                        material_instance
-                            .update_binding(1, MaterialBinding::Texture(Some(white_tex)));
-                        material_instance
-                            .update_binding(2, MaterialBinding::Texture(Some(white_tex)));
-                        material_instance
-                            .update_binding(3, MaterialBinding::Texture(Some(norm_tex)));
-                        let material_instance = renderer
-                            .create_material_instance(material_instance)
-                            .unwrap();
-
                         let static_mesh = StaticMesh {
                             vtx: *vtx,
                             idx: *idx,
-                            material_instance,
+                            material_instance: mat_table[mat],
                         };
                         let _entity = world.extend_one((transform, static_mesh));
-
-                        if let Some(tex) = pbr_mat.base_color_texture() {
-                            if let Some(req) = &tex_table[tex.texture().source().index()] {
-                                thinkers.push(TextureLoadThinker {
-                                    target: material_instance,
-                                    request: Some(req.clone()),
-                                    target_tex: TargetTex::Colour,
-                                });
-                            }
-                        }
-
-                        if let Some(tex) = pbr_mat.metallic_roughness_texture() {
-                            if let Some(req) = &tex_table[tex.texture().source().index()] {
-                                thinkers.push(TextureLoadThinker {
-                                    target: material_instance,
-                                    request: Some(req.clone()),
-                                    target_tex: TargetTex::MetalRoughness,
-                                });
-                            }
-                        }
-
-                        if let Some(tex) = mat.normal_texture() {
-                            if let Some(req) = &tex_table[tex.texture().source().index()] {
-                                thinkers.push(TextureLoadThinker {
-                                    target: material_instance,
-                                    request: Some(req.clone()),
-                                    target_tex: TargetTex::Normal,
-                                });
-                            }
-                        }
                     }
                     #[allow(unreachable_patterns)]
                     _ => {}
@@ -329,7 +331,7 @@ pub fn load_scene(
                 standard_material,
                 mesh_table,
                 tex_table,
-                thinkers,
+                mat_table,
                 world_transform,
                 &node,
             );
@@ -345,7 +347,7 @@ pub fn load_scene(
                 standard_material,
                 &mesh_table,
                 &tex_table,
-                &mut load_thinkers,
+                &mat_table,
                 root_transform,
                 &node,
             );
