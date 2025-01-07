@@ -257,22 +257,17 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             let pipeline_layout = unwrap::pipeline_layout(pipeline_layout);
             let bind_point = pipeline_bind_point_to_vk(bind_point);
 
-            let mut new_sets = BumpVec::with_capacity_in(sets.len(), &self.arena);
-            for v in sets {
-                new_sets.push(std::mem::transmute_copy::<_, vk::DescriptorSet>(v));
-            }
+            let new_sets: &[vk::DescriptorSet] = std::mem::transmute(sets);
 
             self._device.device.cmd_bind_descriptor_sets(
                 self._buffer,
                 bind_point,
                 pipeline_layout.pipeline_layout,
                 first_set,
-                &new_sets,
+                new_sets,
                 dynamic_offsets,
             );
         }
-
-        self.arena.reset();
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
