@@ -30,8 +30,9 @@
 use aleph_frame_graph::PassArgs;
 use aleph_pin_board::{BoardParamId, BoardScope};
 use aleph_rhi_api::*;
+use parking_lot::Mutex;
 
-use crate::{BufferPool, StateCache, TexturePool};
+use crate::{BufferPool, MaterialInstancePool, StateCache, TexturePool};
 
 pub mod composite_planes;
 pub mod fxaa;
@@ -56,7 +57,8 @@ pub struct GraphArgsLayout<'a> {
     pub board: &'a BoardScope<'a>,
     pub texture_pool: &'a TexturePool,
     pub buffer_pool: &'a BufferPool,
-    pub state_cache: &'a StateCache,
+    pub material_instance_pool: &'a MaterialInstancePool,
+    pub state_cache: &'a Mutex<StateCache>,
 }
 
 pub struct GraphArgs();

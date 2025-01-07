@@ -30,13 +30,18 @@
 mod buffer_pool;
 mod handle;
 mod handle_pool;
+mod material_instance_pool;
 mod texture_pool;
 
 use std::num::NonZeroU8;
 
 pub use buffer_pool::BufferPool;
-pub use handle::{BufferHandle, Handle, IntoHandle, MeshHandle, TextureHandle};
+pub use handle::{
+    BufferHandle, Handle, IntoHandle, MaterialHandle, MaterialInstanceHandle, MeshHandle,
+    TextureHandle,
+};
 pub use handle_pool::{HandleFreeError, HandlePool};
+pub use material_instance_pool::MaterialInstancePool;
 pub use texture_pool::TexturePool;
 
 pub struct ObjectPool<T> {

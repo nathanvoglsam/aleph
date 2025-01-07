@@ -35,6 +35,7 @@ use aleph_frame_graph::*;
 use aleph_nstr::nstr;
 use aleph_pin_board::{BoardParamId, PinBoard};
 use aleph_rhi_api::*;
+use parking_lot::Mutex;
 
 use crate::pass::composite_planes::CompositePlanesLayout;
 use crate::pass::GraphArgs;
@@ -210,7 +211,7 @@ impl TextureLoader {
         device: &dyn IDevice,
         requests: &[TextureLoadRequest],
         encoder: &mut dyn IGeneralEncoder,
-        state_cache: &StateCache,
+        state_cache: &Mutex<StateCache>,
         arena: &LinearDescriptorPool,
     ) {
         let mut discard_barriers = Vec::new();
@@ -340,7 +341,7 @@ impl MipGenerator {
 
     unsafe fn record(
         device: &dyn IDevice,
-        state_cache: &StateCache,
+        state_cache: &Mutex<StateCache>,
         arena: &LinearDescriptorPool,
         encoder: &mut dyn IGeneralEncoder,
         texture: &dyn ITexture,
@@ -354,8 +355,12 @@ impl MipGenerator {
             return;
         }
 
-        let key = MipGeneratorState::key(desc.format);
-        let state = state_cache.get(&key).unwrap();
+        let state = {
+            let mut state_cache = state_cache.lock();
+            let key = MipGeneratorState::key(desc.format);
+            state_cache
+                .get_or_insert_with(&key, |cache, k| MipGeneratorState::new(cache, device, k.0))
+        };
 
         let mut barrier_queue = Vec::new();
         barrier_queue.push(TextureBarrier {

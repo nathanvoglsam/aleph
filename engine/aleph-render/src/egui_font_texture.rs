@@ -92,7 +92,11 @@ impl EguiFontTexture {
 
             data.buffer.buffer().unmap().unwrap();
 
-            renderer.submit_resource_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
+            renderer.submit_resource_command(ResourceCommand::TextureUpload(
+                handle,
+                GenerateMips::No,
+                data,
+            ));
         }
     }
 

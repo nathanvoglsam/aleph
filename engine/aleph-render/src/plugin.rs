@@ -168,12 +168,7 @@ impl IPlugin for PluginRender {
                         aleph_renderer::StaticMesh {
                             vtx: m.vtx,
                             idx: m.idx,
-                            colour_tex: m.colour_tex,
-                            colour: m.colour,
-                            metalness: m.metalness,
-                            roughness: m.roughness,
-                            metal_roughness_tex: m.metal_roughness_tex,
-                            normal_map_tex: m.normal_map_tex,
+                            material_instance: m.material_instance,
                         },
                     );
                 }

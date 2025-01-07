@@ -31,17 +31,15 @@
 #include "pbr.hlsl"
 #include "normal_map.hlsl"
 
-struct Params {
-    ConstantBuffer<CameraLayout> camera;
-    ConstantBuffer<ModelLayout> model;
-};
+[[vk_binding(0, 0)]] ConstantBuffer<CameraLayout> g_camera : register(b0, space0);
 
-ParameterBlock<Params> g_params;
+[[vk_binding(0, 1)]] ConstantBuffer<MaterialLayout> g_mat : register(b0, space1);
+[[vk_binding(1, 1)]] Texture2D<float4> g_base_colour : register(t1, space1);
+[[vk_binding(2, 1)]] Texture2D<float4> g_metal_roughness : register(t2, space1);
+[[vk_binding(3, 1)]] Texture2D<float3> g_normal_map : register(t3, space1);
+[[vk_binding(4, 1)]] SamplerState g_sampler : register(s4, space1);
 
-[[vk_binding(0, 1)]] Texture2D<float4> g_base_colour : register(t0, space1);
-[[vk_binding(1, 1)]] Texture2D<float4> g_metal_roughness : register(t1, space1);
-[[vk_binding(2, 1)]] Texture2D<float3> g_normal_map : register(t2, space1);
-[[vk_binding(3, 1)]] SamplerState g_sampler : register(s3, space1);
+[[vk_binding(0, 2)]] ConstantBuffer<ModelLayout> g_model : register(b0, space2);
 
 // Material parameters
 static float reflectance = 0.5;
@@ -68,13 +66,13 @@ PixelOutput main(in StaticMeshPixelInput input) {
     );
 
     let vtx_colour = input.colour;
-    let base_colour = g_params.model.colour.xyz;
+    let base_colour = g_mat.colour.xyz;
     let base_colour_tex = g_base_colour.Sample(g_sampler, input.uv).xyz;
 
     let metal_roughness = g_metal_roughness.Sample(g_sampler, input.uv);
 
-    let metallic = g_params.model.metal_roughness_padding.x * metal_roughness.z;
-    let roughness = RemapRoughness(g_params.model.metal_roughness_padding.y) * RemapRoughness(metal_roughness.y);
+    let metallic = g_mat.metal_roughness_padding.x * metal_roughness.z;
+    let roughness = RemapRoughness(g_mat.metal_roughness_padding.y) * RemapRoughness(metal_roughness.y);
 
     PixelOutput output;
     output.gbuffer_0.xyz = vtx_colour * base_colour * base_colour_tex;

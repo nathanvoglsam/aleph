@@ -43,8 +43,13 @@ use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
 use aleph_engine::interfaces::platform::{IFrameTimer, IGamepads};
 use aleph_engine::interfaces::plugin::{CoreRefs, InitOrder};
+use aleph_engine::interfaces::renderer::{
+    BufferObject, BufferObjectDesc, BufferUploadDesc, MaterialBinding, MaterialInstanceObject,
+    ResourceCommand, StandardMaterial, StandardMaterialLayout,
+};
 use aleph_engine::interfaces::schedule::WorldResource;
 use aleph_engine::interfaces::scheduler::ResMut;
+use aleph_rhi_api::ResourceUsageFlags;
 
 use crate::game::async_texture_loader::AsyncTextureLoader;
 use crate::game::config::Config;
@@ -127,6 +132,8 @@ impl IPlugin for PluginGameLogic {
 
         let renderer = resources.get_mut::<Renderer>().unwrap();
 
+        let standard_material = StandardMaterial::new();
+
         let async_texture_loader = AsyncTextureLoader::new(renderer.device().upgrade());
 
         let mut arena = BumpThingy::new(renderer.device());
@@ -135,12 +142,44 @@ impl IPlugin for PluginGameLogic {
             world,
             renderer,
             &mut arena,
+            &standard_material,
             &async_texture_loader,
             Path::new(&config.scene),
         );
 
         let (idx, vtx) = upload_cube_buffers(renderer);
 
+        let white_tex = renderer.default_resources().white_texture_rgba8();
+        let norm_tex = renderer.default_resources().normal_texture_rgba8();
+        let colour = [0.5, 1.0, 0.5, 1.0];
+        let metal = 0.0;
+        let roughness = 0.5;
+        let layout = StandardMaterialLayout {
+            colour,
+            metal_roughness: [metal, roughness, 0.0, 0.0],
+            _padding1: [0; 128],
+            _padding2: [0; 96],
+        };
+
+        let mut desc = BufferObjectDesc::new();
+        desc.size(256);
+        desc.usage(ResourceUsageFlags::CONSTANT_BUFFER);
+        let mut upload = BufferUploadDesc::new_owned(renderer.device(), &desc).unwrap();
+        upload
+            .buffer
+            .bytes_mut()
+            .copy_from_slice(bytemuck::bytes_of(&layout));
+        let object = BufferObject::new_for_desc(renderer.device(), desc).unwrap();
+        let buffer = renderer.create_buffer(object).unwrap();
+        renderer.submit_resource_command(ResourceCommand::BufferUpload(buffer, upload));
+        let mut material_instance = MaterialInstanceObject::new(standard_material.clone());
+        material_instance.update_binding(0, MaterialBinding::Buffer(Some(buffer)));
+        material_instance.update_binding(1, MaterialBinding::Texture(Some(white_tex)));
+        material_instance.update_binding(2, MaterialBinding::Texture(Some(white_tex)));
+        material_instance.update_binding(3, MaterialBinding::Texture(Some(norm_tex)));
+        let material_instance = renderer
+            .create_material_instance(material_instance)
+            .unwrap();
         let transform = Transform {
             position: DVec3::zero(),
             rotation: Rotor3::identity(),
@@ -154,12 +193,7 @@ impl IPlugin for PluginGameLogic {
             StaticMesh {
                 vtx,
                 idx,
-                colour_tex: renderer.default_resources().white_texture_rgba8(),
-                colour: [0.5, 1.0, 0.5, 1.0],
-                metalness: 0.0,
-                roughness: 0.5,
-                metal_roughness_tex: renderer.default_resources().white_texture_rgba8(),
-                normal_map_tex: renderer.default_resources().normal_texture_rgba8(),
+                material_instance,
             },
         ));
 
@@ -178,7 +212,7 @@ impl IPlugin for PluginGameLogic {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
                 loader.think(&mut renderer);
-                thinkers1.retain_mut(|t| match t.poll_and_resolve(&mut world.0) {
+                thinkers1.retain_mut(|t| match t.poll_and_resolve(&mut renderer) {
                     PollResult::Success => false,
                     PollResult::Waiting => true,
                     PollResult::Fail => {

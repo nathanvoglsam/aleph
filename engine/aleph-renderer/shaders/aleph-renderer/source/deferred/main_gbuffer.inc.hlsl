@@ -57,9 +57,12 @@ struct CameraLayout {
     float4 position;
 };
 
+struct MaterialLayout {
+    float4 colour;
+    float4 metal_roughness_padding;
+};
+
 struct ModelLayout {
     float4x4 model_matrix;
     float4x4 normal_matrix;
-    float4 colour;
-    float4 metal_roughness_padding;
 };

@@ -29,17 +29,12 @@
 
 use aleph_object_system::unsafe_impl_iobject;
 
-use crate::{BufferHandle, TextureHandle};
+use crate::{BufferHandle, MaterialInstanceHandle};
 
 #[derive(Clone, Debug)]
 pub struct StaticMesh {
     pub vtx: BufferHandle,
     pub idx: BufferHandle,
-    pub colour_tex: TextureHandle,
-    pub colour: [f32; 4],
-    pub metalness: f32,
-    pub roughness: f32,
-    pub metal_roughness_tex: TextureHandle,
-    pub normal_map_tex: TextureHandle,
+    pub material_instance: MaterialInstanceHandle,
 }
 unsafe_impl_iobject!(StaticMesh, "0192311d-0809-7f12-aba8-1ce56b596be7");

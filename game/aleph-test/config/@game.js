@@ -34,5 +34,5 @@ if (Configs.rhi !== undefined) {
 }
 if (Configs["aleph-test"] !== undefined) {
     Configs["aleph-test"].scene = "game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf";
-    // Configs["aleph-test"].scene = "game/aleph-test/assets/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf";
+    Configs["aleph-test"].scene = "game/aleph-test/assets/flying_world/FlyingWorld-BattleOfTheTrashGod.gltf";
 }

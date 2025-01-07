@@ -86,7 +86,11 @@ impl AsyncTextureLoader {
     pub fn think(&self, renderer: &mut Renderer) {
         while let Some(output) = self.channel.pop() {
             let handle = renderer.create_texture(output.object).unwrap();
-            renderer.submit_resource_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, output.data));
+            renderer.submit_resource_command(ResourceCommand::TextureUpload(
+                handle,
+                GenerateMips::No,
+                output.data,
+            ));
             output.request.mark_complete(handle).unwrap();
         }
     }

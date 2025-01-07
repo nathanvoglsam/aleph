@@ -37,12 +37,14 @@ use aleph_frame_graph::{FrameGraph, FrameGraphBuilder, ImportBundle, ResourceMut
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_pin_board::{BoardScope, PinBoard};
 use aleph_rhi_api::*;
+use parking_lot::Mutex;
 
 use crate::deletion_pool::DeletionMode;
 use crate::pass::resource_processor::ResourceProcessorParam;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    built_in_textures, BufferHandle, BufferObject, BufferPool, DeletionPool, ResourceCommand,
+    built_in_textures, BufferHandle, BufferObject, BufferPool, DeletionPool,
+    MaterialInstanceHandle, MaterialInstanceObject, MaterialInstancePool, ResourceCommand,
     ResourceCommandBuffer, ShaderDatabaseAccessor, StateCache, TextureHandle, TextureObject,
     TexturePool,
 };
@@ -190,6 +192,7 @@ impl RendererBuilder {
 
         let mut texture_pool = TexturePool::new(NonZeroU8::new(1).unwrap());
         let buffer_pool = BufferPool::new(NonZeroU8::new(2).unwrap());
+        let material_instance_pool = MaterialInstancePool::new(NonZeroU8::new(3).unwrap());
 
         let white_texture_rgba8 = unsafe {
             built_in_textures::create_1x1_colour_texture(
@@ -243,10 +246,11 @@ impl RendererBuilder {
             },
             device,
             queue,
-            state_cache,
+            state_cache: Mutex::new(state_cache),
             swap_manager,
             texture_pool,
             buffer_pool,
+            material_instance_pool,
             resource_commands,
             frame_manager,
             graph_manager,
@@ -267,10 +271,11 @@ pub struct Renderer {
     config: RendererConfig,
     device: AnyArc<dyn IDevice>,
     queue: AnyArc<dyn IQueue>,
-    state_cache: StateCache,
+    state_cache: Mutex<StateCache>,
     swap_manager: SwapManager,
     texture_pool: TexturePool,
     buffer_pool: BufferPool,
+    material_instance_pool: MaterialInstancePool,
     resource_commands: ResourceCommandBuffer,
     frame_manager: FrameManager,
     graph_manager: GraphManager,
@@ -324,6 +329,28 @@ impl Renderer {
     pub fn create_buffer(&mut self, object: BufferObject) -> Option<BufferHandle> {
         let handle = self.buffer_pool.alloc(object);
         Some(handle)
+    }
+
+    pub fn create_material_instance(
+        &mut self,
+        object: MaterialInstanceObject,
+    ) -> Option<MaterialInstanceHandle> {
+        let handle = self.material_instance_pool.alloc(object);
+        Some(handle)
+    }
+
+    pub fn get_material_instance_object_ref(
+        &self,
+        handle: MaterialInstanceHandle,
+    ) -> Option<&MaterialInstanceObject> {
+        self.material_instance_pool.get_ref(handle)
+    }
+
+    pub fn get_material_instance_object_mut(
+        &mut self,
+        handle: MaterialInstanceHandle,
+    ) -> Option<&mut MaterialInstanceObject> {
+        self.material_instance_pool.get_mut(handle)
     }
 
     pub fn submit_resource_command(&mut self, command: ResourceCommand) {
@@ -383,7 +410,7 @@ impl Renderer {
             }
             self.graph_manager.build_graph(
                 &self.config,
-                &mut self.state_cache,
+                self.state_cache.get_mut(),
                 &self.default_resources,
                 self.device.as_ref(),
                 &self.swap_manager,
@@ -431,6 +458,7 @@ impl Renderer {
                 board,
                 texture_pool: &self.texture_pool,
                 buffer_pool: &self.buffer_pool,
+                material_instance_pool: &self.material_instance_pool,
                 state_cache: &self.state_cache,
             };
 

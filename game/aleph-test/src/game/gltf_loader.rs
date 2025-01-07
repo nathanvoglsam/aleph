@@ -27,14 +27,17 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_device_allocators::UploadBumpAllocator;
 use aleph_engine::any::AnyArc;
 use aleph_engine::interfaces::components::{StaticMesh, Transform};
-use aleph_engine::interfaces::ecs::{EntityId, World};
+use aleph_engine::interfaces::ecs::World;
 use aleph_engine::interfaces::math::{Mat4, Rotor3, ToDouble, Vec3, Vec4};
 use aleph_engine::interfaces::renderer::{
-    BufferHandle, BufferObject, BufferObjectDesc, BufferUploadDesc, PollCompleteError, Renderer,
-    ResourceCommand, TextureStreamingRequest,
+    BufferHandle, BufferObject, BufferObjectDesc, BufferUploadDesc, Material, MaterialBinding,
+    MaterialInstanceHandle, MaterialInstanceObject, PollCompleteError, Renderer, ResourceCommand,
+    StandardMaterialLayout, TextureStreamingRequest,
 };
 use aleph_rhi_api::*;
 use gltf::accessor::{DataType, Dimensions};
@@ -82,13 +85,13 @@ impl BumpThingy {
 }
 
 pub struct TextureLoadThinker {
-    target: EntityId,
+    target: MaterialInstanceHandle,
     request: Option<TextureStreamingRequest>,
     target_tex: TargetTex,
 }
 
 impl TextureLoadThinker {
-    pub fn poll_and_resolve(&mut self, world: &mut World) -> PollResult {
+    pub fn poll_and_resolve(&mut self, renderer: &mut Renderer) -> PollResult {
         let new_tex = match self.request.as_ref().map(|v| v.poll_complete()) {
             Some(Ok(v)) => v,
             Some(Err(PollCompleteError::Waiting)) => return PollResult::Waiting,
@@ -96,17 +99,18 @@ impl TextureLoadThinker {
             None => return PollResult::Fail,
         };
 
-        let target = if let Some(v) = world.query_one_mut::<&mut StaticMesh>(self.target) {
+        let target = if let Some(v) = renderer.get_material_instance_object_mut(self.target) {
             v
         } else {
             return PollResult::Fail;
         };
 
-        match self.target_tex {
-            TargetTex::Colour => target.colour_tex = new_tex,
-            TargetTex::MetalRoughness => target.metal_roughness_tex = new_tex,
-            TargetTex::Normal => target.normal_map_tex = new_tex,
-        }
+        let binding = match self.target_tex {
+            TargetTex::Colour => 1,
+            TargetTex::MetalRoughness => 2,
+            TargetTex::Normal => 3,
+        };
+        target.update_binding(binding, MaterialBinding::Texture(Some(new_tex)));
 
         self.request = None;
 
@@ -131,6 +135,7 @@ pub fn load_scene(
     world: &mut World,
     renderer: &mut Renderer,
     arena: &mut BumpThingy,
+    standard_material: &Arc<Material>,
     loader: &AsyncTextureLoader,
     path: &std::path::Path,
 ) -> Vec<TextureLoadThinker> {
@@ -193,7 +198,8 @@ pub fn load_scene(
 
     fn process_node(
         world: &mut World,
-        renderer: &Renderer,
+        renderer: &mut Renderer,
+        standard_material: &Arc<Material>,
         mesh_table: &[Vec<(BufferHandle, BufferHandle)>],
         tex_table: &[Option<TextureStreamingRequest>],
         thinkers: &mut Vec<TextureLoadThinker>,
@@ -234,23 +240,56 @@ pub fn load_scene(
 
                         let white_tex = renderer.default_resources().white_texture_rgba8();
                         let norm_tex = renderer.default_resources().normal_texture_rgba8();
+                        let layout = StandardMaterialLayout {
+                            colour: pbr_mat.base_color_factor(),
+                            metal_roughness: [
+                                pbr_mat.metallic_factor(),
+                                pbr_mat.roughness_factor(),
+                                0.0,
+                                0.0,
+                            ],
+                            _padding1: [0; 128],
+                            _padding2: [0; 96],
+                        };
+
+                        let mut desc = BufferObjectDesc::new();
+                        desc.size(256);
+                        desc.usage(ResourceUsageFlags::CONSTANT_BUFFER);
+                        let mut upload =
+                            BufferUploadDesc::new_owned(renderer.device(), &desc).unwrap();
+                        upload
+                            .buffer
+                            .bytes_mut()
+                            .copy_from_slice(bytemuck::bytes_of(&layout));
+                        let object = BufferObject::new_for_desc(renderer.device(), desc).unwrap();
+                        let buffer = renderer.create_buffer(object).unwrap();
+                        renderer
+                            .submit_resource_command(ResourceCommand::BufferUpload(buffer, upload));
+
+                        let mut material_instance =
+                            MaterialInstanceObject::new(standard_material.clone());
+                        material_instance.update_binding(0, MaterialBinding::Buffer(Some(buffer)));
+                        material_instance
+                            .update_binding(1, MaterialBinding::Texture(Some(white_tex)));
+                        material_instance
+                            .update_binding(2, MaterialBinding::Texture(Some(white_tex)));
+                        material_instance
+                            .update_binding(3, MaterialBinding::Texture(Some(norm_tex)));
+                        let material_instance = renderer
+                            .create_material_instance(material_instance)
+                            .unwrap();
 
                         let static_mesh = StaticMesh {
                             vtx: *vtx,
                             idx: *idx,
-                            colour_tex: white_tex,
-                            colour: pbr_mat.base_color_factor(),
-                            metalness: pbr_mat.metallic_factor(),
-                            roughness: pbr_mat.roughness_factor(),
-                            metal_roughness_tex: white_tex,
-                            normal_map_tex: norm_tex,
+                            material_instance,
                         };
-                        let entity = world.extend_one((transform, static_mesh));
+                        let _entity = world.extend_one((transform, static_mesh));
 
                         if let Some(tex) = pbr_mat.base_color_texture() {
                             if let Some(req) = &tex_table[tex.texture().source().index()] {
                                 thinkers.push(TextureLoadThinker {
-                                    target: entity,
+                                    target: material_instance,
                                     request: Some(req.clone()),
                                     target_tex: TargetTex::Colour,
                                 });
@@ -260,7 +299,7 @@ pub fn load_scene(
                         if let Some(tex) = pbr_mat.metallic_roughness_texture() {
                             if let Some(req) = &tex_table[tex.texture().source().index()] {
                                 thinkers.push(TextureLoadThinker {
-                                    target: entity,
+                                    target: material_instance,
                                     request: Some(req.clone()),
                                     target_tex: TargetTex::MetalRoughness,
                                 });
@@ -270,7 +309,7 @@ pub fn load_scene(
                         if let Some(tex) = mat.normal_texture() {
                             if let Some(req) = &tex_table[tex.texture().source().index()] {
                                 thinkers.push(TextureLoadThinker {
-                                    target: entity,
+                                    target: material_instance,
                                     request: Some(req.clone()),
                                     target_tex: TargetTex::Normal,
                                 });
@@ -287,6 +326,7 @@ pub fn load_scene(
             process_node(
                 world,
                 renderer,
+                standard_material,
                 mesh_table,
                 tex_table,
                 thinkers,
@@ -302,6 +342,7 @@ pub fn load_scene(
             process_node(
                 world,
                 renderer,
+                standard_material,
                 &mesh_table,
                 &tex_table,
                 &mut load_thinkers,

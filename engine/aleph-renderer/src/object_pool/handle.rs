@@ -76,7 +76,7 @@ impl Handle {
     }
 
     /// Unwraps the handle to its individual fields.
-    pub(crate) const fn to_fields(&self) -> HandleFields {
+    pub const fn to_fields(&self) -> HandleFields {
         let pool_id = (self.0.get() >> 48) & 0xFF;
         let type_id = (self.0.get() >> 40) & 0xFF;
         let generation = (self.0.get() >> 32) & 0xFFFF;
@@ -164,6 +164,8 @@ macro_rules! handle_newtype {
 handle_newtype!(TextureHandle);
 handle_newtype!(BufferHandle);
 handle_newtype!(MeshHandle);
+handle_newtype!(MaterialHandle);
+handle_newtype!(MaterialInstanceHandle);
 
 ///
 /// The base `Generation` type that represents an arbitrary generation index.

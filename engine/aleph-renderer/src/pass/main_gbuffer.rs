@@ -38,8 +38,8 @@ use aleph_rhi_api::*;
 use crate::pass::resource_processor::ResourceProcessorOutput;
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
 use crate::{
-    shaders, CameraInfo, RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StateCache,
-    StaticMesh,
+    BufferHandle, CameraInfo, IStateCacheKey, Material, MaterialId, MaterialInstanceObject,
+    RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StateCache, StaticMesh,
 };
 
 struct MainGBufferPassPayload {
@@ -63,17 +63,6 @@ pub fn pass(
     pin_board: &PinBoard,
     state_cache: &mut StateCache,
 ) {
-    let sampler = create_sampler(device);
-    let descriptor_set_layout = create_descriptor_set_layout(device);
-    let descriptor_set_layout_tex = create_descriptor_set_layout_tex(device, &[sampler.as_ref()]);
-    let pipeline_layout = create_root_signature(
-        device,
-        descriptor_set_layout.as_ref(),
-        descriptor_set_layout_tex.as_ref(),
-    );
-
-    let pipeline = create_pipeline_state(device, pipeline_layout.as_ref(), state_cache.shader_db());
-
     frame_graph.add_pass(nstr!("MainGBufferPass"), |resources| {
         let resource_processor: &ResourceProcessorOutput = pin_board.get().unwrap();
         let back_buffer_info: &GraphSwapImageInfo = pin_board.get().unwrap();
@@ -131,11 +120,14 @@ pub fn pass(
             depth_buffer,
         });
 
+        let key = MainOpaqueCommonLayout::key();
+        let common_state =
+            state_cache.get_or_insert_with(&key, |_, _| MainOpaqueCommonLayout::new(device));
+
         move |encoder, _graph, resources, args| unsafe {
-            let set_layout = descriptor_set_layout.as_ref();
-            let set_layout_tex = descriptor_set_layout_tex.as_ref();
             let device = resources.device();
             let descriptor_arena = resources.descriptor_arena();
+
             let camera_info = args.board.get::<CameraInfo>().unwrap();
             let scene = args.board.get::<RenderSceneParam>().copied().unwrap();
 
@@ -173,20 +165,24 @@ pub fn pass(
             };
             let camera = u_alloc.allocate_object(camera_layout).unwrap();
 
-            let descriptor_set = descriptor_arena.allocate_set(set_layout).unwrap();
-            let write = BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256);
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc::uniform_buffer(
-                    descriptor_set,
-                    0,
-                    &write.clone().with_offset(camera.device_offset as u64),
-                ),
-                DescriptorWriteDesc::uniform_buffer_dynamic(
-                    descriptor_set,
-                    1,
-                    &write.clone().with_offset(0),
-                ),
-            ]);
+            let global_set = descriptor_arena
+                .allocate_set(common_state.global_set_layout.as_ref())
+                .unwrap();
+            device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer(
+                global_set,
+                0,
+                &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256)
+                    .with_offset(camera.device_offset as u64),
+            )]);
+
+            let model_set = descriptor_arena
+                .allocate_set(common_state.model_set_layout.as_ref())
+                .unwrap();
+            device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer_dynamic(
+                model_set,
+                0,
+                &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256),
+            )]);
 
             let gbuffer0_rtv = gbuffer0
                 .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer0))
@@ -227,7 +223,76 @@ pub fn pass(
                 allow_uav_writes: false,
             });
 
-            encoder.bind_graphics_pipeline(pipeline.as_ref());
+            let objects = scene.get_storage_ref::<StaticMesh>().unwrap();
+            let (transforms, _meshes) = objects.as_slice_ref();
+
+            let mut commands = Vec::from_iter(objects.iter().enumerate().map(|(i, (_, o))| {
+                let m = o.material_instance;
+                let m = args.material_instance_pool.get_ref(m).unwrap();
+
+                let key = (m.material.id().get() as u64) << 32;
+                let sort_key = key | o.material_instance.to_handle().to_fields().slot_index as u64;
+
+                DrawCommand {
+                    sort_key,
+                    object_index: i,
+                    vtx: o.vtx,
+                    idx: o.idx,
+                    mat: m,
+                }
+            }));
+            commands.sort_unstable_by_key(|v| v.sort_key);
+
+            if commands.is_empty() {
+                return;
+            }
+
+            let mut current_material = commands[0].sort_key >> 32 & 0xFFFFFFFF;
+            let mut current_material_instance = commands[0].mat;
+            let mut current_material_state = {
+                let mut state_cache = args.state_cache.lock();
+                let key =
+                    MainOpaqueMaterialLayout::key_for(current_material_instance.material.as_ref());
+                state_cache.get_or_insert_with(&key, |cache, _| {
+                    MainOpaqueMaterialLayout::new(
+                        cache,
+                        device,
+                        common_state.as_ref(),
+                        current_material_instance.material.as_ref(),
+                    )
+                })
+            };
+
+            encoder.bind_graphics_pipeline(current_material_state.pipeline.as_ref());
+
+            encoder.bind_descriptor_sets(
+                current_material_state.pipeline_layout.as_ref(),
+                PipelineBindPoint::Graphics,
+                0,
+                &[global_set],
+                &[],
+            );
+
+            let material_set = descriptor_arena
+                .allocate_set(current_material_state.material_set_layout.as_ref())
+                .unwrap();
+            current_material_instance
+                .material
+                .material
+                .update_descriptor_set(
+                    args.buffer_pool,
+                    args.texture_pool,
+                    device,
+                    current_material_instance,
+                    material_set,
+                );
+            encoder.bind_descriptor_sets(
+                current_material_state.pipeline_layout.as_ref(),
+                PipelineBindPoint::Graphics,
+                1,
+                &[material_set],
+                &[],
+            );
 
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
@@ -245,52 +310,89 @@ pub fn pass(
                 h: extent.height,
             }]);
 
-            let objects = scene.get_storage_ref::<StaticMesh>().unwrap();
-            for (t, o) in objects.iter() {
-                let m = u_alloc
-                    .allocate_object(ModelLayout::from_transform(t))
-                    .unwrap();
-                m.result.colour = o.colour;
-                m.result.metal_roughness = [o.metalness, o.roughness, 0.0, 0.0];
+            for command in commands {
+                let this_material = command.sort_key >> 32 & 0xFFFFFFFF;
 
-                let vtx = args.buffer_pool.get_ref(o.vtx).unwrap();
+                if current_material != this_material {
+                    current_material = this_material;
+
+                    current_material_state = {
+                        let mut state_cache = args.state_cache.lock();
+                        let key = MainOpaqueMaterialLayout::key_for(
+                            current_material_instance.material.as_ref(),
+                        );
+                        state_cache.get_or_insert_with(&key, |cache, _| {
+                            MainOpaqueMaterialLayout::new(
+                                cache,
+                                device,
+                                common_state.as_ref(),
+                                current_material_instance.material.as_ref(),
+                            )
+                        })
+                    };
+
+                    encoder.bind_graphics_pipeline(current_material_state.pipeline.as_ref());
+
+                    encoder.set_viewports(&[Viewport {
+                        x: 0.0,
+                        y: 0.0,
+                        width: extent.width as _,
+                        height: extent.height as _,
+                        min_depth: 0.0,
+                        max_depth: 1.0,
+                    }]);
+
+                    encoder.set_scissor_rects(&[Rect {
+                        x: 0,
+                        y: 0,
+                        w: extent.width,
+                        h: extent.height,
+                    }]);
+                }
+
+                if !std::ptr::addr_eq(current_material_instance, command.mat) {
+                    current_material_instance = command.mat;
+
+                    let material_set = descriptor_arena
+                        .allocate_set(current_material_state.material_set_layout.as_ref())
+                        .unwrap();
+                    current_material_instance
+                        .material
+                        .material
+                        .update_descriptor_set(
+                            args.buffer_pool,
+                            args.texture_pool,
+                            device,
+                            current_material_instance,
+                            material_set,
+                        );
+                    encoder.bind_descriptor_sets(
+                        current_material_state.pipeline_layout.as_ref(),
+                        PipelineBindPoint::Graphics,
+                        1,
+                        &[material_set],
+                        &[],
+                    );
+                }
+
+                // Bind the model's vertex buffers
+                let vtx = args.buffer_pool.get_ref(command.vtx).unwrap();
                 let vtx = vtx.get().unwrap();
-                let idx = args.buffer_pool.get_ref(o.idx).unwrap();
+                let idx = args.buffer_pool.get_ref(command.idx).unwrap();
                 let idx = idx.get().unwrap();
-
                 encoder.bind_vertex_buffers(0, &[InputAssemblyBufferBinding::new(vtx)]);
                 encoder.bind_index_buffer(IndexType::U32, &InputAssemblyBufferBinding::new(idx));
 
-                let image_view_c = args.texture_pool.get_ref(o.colour_tex).unwrap();
-                let image_view_c = image_view_c.get_default_view().unwrap();
-                let image_view_mr = args.texture_pool.get_ref(o.metal_roughness_tex).unwrap();
-                let image_view_mr = image_view_mr.get_default_view().unwrap();
-                let image_view_nrm = args.texture_pool.get_ref(o.normal_map_tex).unwrap();
-                let image_view_nrm = image_view_nrm.get_default_view().unwrap();
-                let tex_set = descriptor_arena.allocate_set(set_layout_tex).unwrap();
-                device.update_descriptor_sets(&[
-                    DescriptorWriteDesc::texture(
-                        tex_set,
-                        0,
-                        &ImageDescriptorWrite::srv(image_view_c),
-                    ),
-                    DescriptorWriteDesc::texture(
-                        tex_set,
-                        1,
-                        &ImageDescriptorWrite::srv(image_view_mr),
-                    ),
-                    DescriptorWriteDesc::texture(
-                        tex_set,
-                        2,
-                        &ImageDescriptorWrite::srv(image_view_nrm),
-                    ),
-                ]);
-
+                // Upload and rebind the per-model parameters
+                let t = &transforms[command.object_index];
+                let m = u_alloc
+                    .allocate_object(ModelLayout::from_transform(t))
+                    .unwrap();
                 encoder.bind_descriptor_sets(
-                    pipeline_layout.as_ref(),
+                    current_material_state.pipeline_layout.as_ref(),
                     PipelineBindPoint::Graphics,
-                    0,
-                    &[descriptor_set, tex_set],
+                    2,
+                    &[model_set],
                     &[m.device_offset as u32],
                 );
 
@@ -304,172 +406,12 @@ pub fn pass(
     });
 }
 
-fn create_descriptor_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
-    let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-        visibility: DescriptorShaderVisibility::All,
-        items: &[
-            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBuffer)
-                .with_binding_num(0),
-            DescriptorSetLayoutBinding::with_type(DescriptorType::UniformBufferDynamic)
-                .with_binding_num(1),
-        ],
-        name: obj_name_opt!("DescriptorSetLayout"),
-    };
-    device
-        .create_descriptor_set_layout(&descriptor_set_layout_desc)
-        .unwrap()
-}
-
-fn create_descriptor_set_layout_tex(
-    device: &dyn IDevice,
-    sampler: &[&dyn ISampler],
-) -> AnyArc<dyn IDescriptorSetLayout> {
-    let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-        visibility: DescriptorShaderVisibility::All,
-        items: &[
-            DescriptorType::Texture.binding(0),
-            DescriptorType::Texture.binding(1),
-            DescriptorType::Texture.binding(2),
-            DescriptorType::Sampler
-                .binding(3)
-                .with_static_samplers(sampler),
-        ],
-        name: obj_name_opt!("DescriptorSetLayout"),
-    };
-    device
-        .create_descriptor_set_layout(&descriptor_set_layout_desc)
-        .unwrap()
-}
-
-fn create_root_signature(
-    device: &dyn IDevice,
-    descriptor_set_layout: &dyn IDescriptorSetLayout,
-    descriptor_set_layout_tex: &dyn IDescriptorSetLayout,
-) -> AnyArc<dyn IPipelineLayout> {
-    let pipeline_layout_desc = PipelineLayoutDesc {
-        set_layouts: &[descriptor_set_layout, descriptor_set_layout_tex],
-        push_constant_blocks: &[],
-        name: obj_name_opt!("RootSignature"),
-    };
-    device
-        .create_pipeline_layout(&pipeline_layout_desc)
-        .unwrap()
-}
-
-fn create_pipeline_state(
-    device: &dyn IDevice,
-    pipeline_layout: &dyn IPipelineLayout,
-    shader_db: &ShaderDatabaseAccessor,
-) -> AnyArc<dyn IGraphicsPipeline> {
-    let rasterizer_state = RasterizerStateDesc {
-        cull_mode: CullMode::Back,
-        front_face: FrontFaceOrder::CounterClockwise,
-        polygon_mode: PolygonMode::Fill,
-        depth_bias: 0,
-        depth_bias_clamp: 0.0,
-        depth_bias_slope_factor: 0.0,
-    };
-
-    let depth_stencil_state = DepthStencilStateDesc {
-        depth_test: true,
-        depth_write: true,
-        depth_compare_op: CompareOp::Greater,
-        stencil_test: false,
-        depth_bounds_enable: false,
-        ..Default::default()
-    };
-
-    let vertex_layout = VertexInputStateDesc {
-        input_bindings: &[VertexInputBindingDesc {
-            binding: 0,
-            stride: 60,
-            input_rate: VertexInputRate::PerVertex,
-        }],
-        input_attributes: &[
-            VertexInputAttributeDesc {
-                location: 0,
-                binding: 0,
-                format: Format::Rgb32Float,
-                offset: 0,
-            },
-            VertexInputAttributeDesc {
-                location: 1,
-                binding: 0,
-                format: Format::Rg32Float,
-                offset: 12,
-            },
-            VertexInputAttributeDesc {
-                location: 2,
-                binding: 0,
-                format: Format::Rgb32Float,
-                offset: 20,
-            },
-            VertexInputAttributeDesc {
-                location: 3,
-                binding: 0,
-                format: Format::Rgba32Float,
-                offset: 32,
-            },
-            VertexInputAttributeDesc {
-                location: 4,
-                binding: 0,
-                format: Format::Rgb32Float,
-                offset: 48,
-            },
-        ],
-    };
-
-    let input_assembly_state = InputAssemblyStateDesc {
-        primitive_topology: PrimitiveTopology::TriangleList,
-    };
-
-    let blend_state = BlendStateDesc {
-        attachments: &[
-            AttachmentBlendState {
-                blend_enabled: false,
-                color_write_mask: ColorComponentFlags::all(),
-                ..Default::default()
-            },
-            AttachmentBlendState {
-                blend_enabled: false,
-                color_write_mask: ColorComponentFlags::all(),
-                ..Default::default()
-            },
-            AttachmentBlendState {
-                blend_enabled: false,
-                color_write_mask: ColorComponentFlags::all(),
-                ..Default::default()
-            },
-        ],
-    };
-
-    let vertex_shader = shader_db
-        .load_stage(shaders::deferred::main_gbuffer_vert())
-        .unwrap();
-    let fragment_shader = shader_db
-        .load_stage(shaders::deferred::main_gbuffer_frag())
-        .unwrap();
-
-    let graphics_pipeline_desc_new = GraphicsPipelineDesc {
-        shader_stages: &[vertex_shader, fragment_shader],
-        pipeline_layout,
-        vertex_layout: &vertex_layout,
-        input_assembly_state: &input_assembly_state,
-        rasterizer_state: &rasterizer_state,
-        depth_stencil_state: &depth_stencil_state,
-        blend_state: &blend_state,
-        render_target_formats: &[
-            Format::Rgba8UnormSrgb,
-            Format::Rgba32Float,
-            Format::Rg8Unorm,
-        ],
-        depth_stencil_format: Some(Format::Depth32Float),
-        name: obj_name_opt!("GraphicsPipeline"),
-    };
-
-    device
-        .create_graphics_pipeline(&graphics_pipeline_desc_new)
-        .unwrap()
+struct DrawCommand<'a> {
+    sort_key: u64,
+    object_index: usize,
+    vtx: BufferHandle,
+    idx: BufferHandle,
+    mat: &'a MaterialInstanceObject,
 }
 
 #[repr(C)]
@@ -483,16 +425,14 @@ pub struct CameraLayout {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct ModelLayout {
-    pub model_matrix: [f32; 16],
-    pub normal_matrix: [f32; 16],
-    pub colour: [f32; 4],
-    pub metal_roughness: [f32; 4],
-    pub _padding: [u8; 96],
+struct ModelLayout {
+    model_matrix: [f32; 16],
+    normal_matrix: [f32; 16],
+    _padding: [u8; 126],
 }
 
 impl ModelLayout {
-    pub fn from_transform(v: &RenderTransform) -> Self {
+    fn from_transform(v: &RenderTransform) -> Self {
         let pos = Vec3::new(
             v.position.x as f32,
             v.position.y as f32,
@@ -508,24 +448,251 @@ impl ModelLayout {
         Self {
             model_matrix: *model_matrix.transposed().as_array(),
             normal_matrix: *normal_matrix.transposed().into_homogeneous().as_array(),
-            colour: [1.0; 4],
-            metal_roughness: [0.0, 1.0, 0.0, 0.0],
-            _padding: [0; 96],
+            _padding: [0; 126],
         }
     }
 }
 
-fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
-    let desc = SamplerDesc {
-        min_filter: SamplerFilter::Linear,
-        mag_filter: SamplerFilter::Linear,
-        mip_filter: SamplerMipFilter::Linear,
-        address_mode_u: SamplerAddressMode::Wrap,
-        address_mode_v: SamplerAddressMode::Wrap,
-        address_mode_w: SamplerAddressMode::Wrap,
-        enable_anisotropy: true,
-        max_anisotropy: 16,
-        ..Default::default()
-    };
-    device.create_sampler(&desc).unwrap()
+#[derive(PartialEq, Eq, Hash)]
+pub struct MainOpaqueCommonKey();
+
+impl IStateCacheKey for MainOpaqueCommonKey {
+    type Storage = MainOpaqueCommonLayout;
+}
+
+pub struct MainOpaqueCommonLayout {
+    pub global_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub model_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+}
+
+impl MainOpaqueCommonLayout {
+    pub const fn key() -> MainOpaqueCommonKey {
+        MainOpaqueCommonKey()
+    }
+
+    pub fn new(device: &dyn IDevice) -> Self {
+        let global_set_layout = Self::create_global_descriptor_set_layout(device);
+        let model_set_layout = Self::create_model_descriptor_set_layout(device);
+
+        Self {
+            global_set_layout,
+            model_set_layout,
+        }
+    }
+
+    fn create_global_descriptor_set_layout(
+        device: &dyn IDevice,
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::All,
+            items: &[DescriptorType::UniformBuffer.binding(0)],
+            name: obj_name_opt!("GlobalDescriptorSetLayout"),
+        };
+        device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap()
+    }
+
+    fn create_model_descriptor_set_layout(
+        device: &dyn IDevice,
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::All,
+            items: &[DescriptorType::UniformBufferDynamic.binding(0)],
+            name: obj_name_opt!("ModelDescriptorSetLayout"),
+        };
+        device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct MainOpaqueMaterialKey(MaterialId);
+
+impl IStateCacheKey for MainOpaqueMaterialKey {
+    type Storage = MainOpaqueMaterialLayout;
+}
+
+pub struct MainOpaqueMaterialLayout {
+    pub global_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub material_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub model_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
+    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+}
+
+impl MainOpaqueMaterialLayout {
+    pub const fn key_for(material: &Material) -> MainOpaqueMaterialKey {
+        MainOpaqueMaterialKey(material.id())
+    }
+
+    pub fn new(
+        cache: &mut StateCache,
+        device: &dyn IDevice,
+        common: &MainOpaqueCommonLayout,
+        material: &Material,
+    ) -> Self {
+        let global_set_layout = common.global_set_layout.clone();
+        let material_set_layout = Self::create_material_descriptor_set_layout(device, material);
+        let model_set_layout = common.model_set_layout.clone();
+        let pipeline_layout = Self::create_pipeline_layout(
+            device,
+            global_set_layout.as_ref(),
+            material_set_layout.as_ref(),
+            model_set_layout.as_ref(),
+        );
+        let pipeline = Self::create_pipeline_state(
+            device,
+            cache.shader_db(),
+            pipeline_layout.as_ref(),
+            material,
+        );
+
+        Self {
+            global_set_layout,
+            material_set_layout,
+            model_set_layout,
+            pipeline_layout,
+            pipeline,
+        }
+    }
+
+    fn create_material_descriptor_set_layout(
+        device: &dyn IDevice,
+        material: &Material,
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        material.material.create_descriptor_set_layout(device)
+    }
+
+    fn create_pipeline_layout(
+        device: &dyn IDevice,
+        global: &dyn IDescriptorSetLayout,
+        material: &dyn IDescriptorSetLayout,
+        model: &dyn IDescriptorSetLayout,
+    ) -> AnyArc<dyn IPipelineLayout> {
+        let pipeline_layout_desc = PipelineLayoutDesc {
+            set_layouts: &[global, material, model],
+            push_constant_blocks: &[],
+            name: obj_name_opt!("RootSignature"),
+        };
+        device
+            .create_pipeline_layout(&pipeline_layout_desc)
+            .unwrap()
+    }
+
+    fn create_pipeline_state(
+        device: &dyn IDevice,
+        shader_db: &ShaderDatabaseAccessor,
+        pipeline_layout: &dyn IPipelineLayout,
+        material: &Material,
+    ) -> AnyArc<dyn IGraphicsPipeline> {
+        let rasterizer_state = RasterizerStateDesc {
+            cull_mode: CullMode::Back,
+            front_face: FrontFaceOrder::CounterClockwise,
+            polygon_mode: PolygonMode::Fill,
+            depth_bias: 0,
+            depth_bias_clamp: 0.0,
+            depth_bias_slope_factor: 0.0,
+        };
+
+        let depth_stencil_state = DepthStencilStateDesc {
+            depth_test: true,
+            depth_write: true,
+            depth_compare_op: CompareOp::Greater,
+            stencil_test: false,
+            depth_bounds_enable: false,
+            ..Default::default()
+        };
+
+        let vertex_layout = VertexInputStateDesc {
+            input_bindings: &[VertexInputBindingDesc {
+                binding: 0,
+                stride: 60,
+                input_rate: VertexInputRate::PerVertex,
+            }],
+            input_attributes: &[
+                VertexInputAttributeDesc {
+                    location: 0,
+                    binding: 0,
+                    format: Format::Rgb32Float,
+                    offset: 0,
+                },
+                VertexInputAttributeDesc {
+                    location: 1,
+                    binding: 0,
+                    format: Format::Rg32Float,
+                    offset: 12,
+                },
+                VertexInputAttributeDesc {
+                    location: 2,
+                    binding: 0,
+                    format: Format::Rgb32Float,
+                    offset: 20,
+                },
+                VertexInputAttributeDesc {
+                    location: 3,
+                    binding: 0,
+                    format: Format::Rgba32Float,
+                    offset: 32,
+                },
+                VertexInputAttributeDesc {
+                    location: 4,
+                    binding: 0,
+                    format: Format::Rgb32Float,
+                    offset: 48,
+                },
+            ],
+        };
+
+        let input_assembly_state = InputAssemblyStateDesc {
+            primitive_topology: PrimitiveTopology::TriangleList,
+        };
+
+        let blend_state = BlendStateDesc {
+            attachments: &[
+                AttachmentBlendState {
+                    blend_enabled: false,
+                    color_write_mask: ColorComponentFlags::all(),
+                    ..Default::default()
+                },
+                AttachmentBlendState {
+                    blend_enabled: false,
+                    color_write_mask: ColorComponentFlags::all(),
+                    ..Default::default()
+                },
+                AttachmentBlendState {
+                    blend_enabled: false,
+                    color_write_mask: ColorComponentFlags::all(),
+                    ..Default::default()
+                },
+            ],
+        };
+
+        let vertex_shader = material.material.vert_name();
+        let vertex_shader = shader_db.load_stage(vertex_shader).unwrap();
+        let fragment_shader = material.material.frag_name();
+        let fragment_shader = shader_db.load_stage(fragment_shader).unwrap();
+
+        let graphics_pipeline_desc_new = GraphicsPipelineDesc {
+            shader_stages: &[vertex_shader, fragment_shader],
+            pipeline_layout,
+            vertex_layout: &vertex_layout,
+            input_assembly_state: &input_assembly_state,
+            rasterizer_state: &rasterizer_state,
+            depth_stencil_state: &depth_stencil_state,
+            blend_state: &blend_state,
+            render_target_formats: &[
+                Format::Rgba8UnormSrgb,
+                Format::Rgba32Float,
+                Format::Rg8Unorm,
+            ],
+            depth_stencil_format: Some(Format::Depth32Float),
+            name: obj_name_opt!("GraphicsPipeline"),
+        };
+
+        device
+            .create_graphics_pipeline(&graphics_pipeline_desc_new)
+            .unwrap()
+    }
 }

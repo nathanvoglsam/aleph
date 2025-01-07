@@ -71,3 +71,4 @@ allocator-api2 = { workspace = true }
 rayon = { workspace = true }
 arrayvec = { workspace = true }
 smallbox = { workspace = true }
+parking_lot = { workspace = true }

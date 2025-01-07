@@ -28,7 +28,9 @@
 //
 
 mod buffer_object;
+mod material_instance_object;
 mod texture_object;
 
 pub use buffer_object::BufferObject;
+pub use material_instance_object::{MaterialBinding, MaterialInstanceObject};
 pub use texture_object::TextureObject;

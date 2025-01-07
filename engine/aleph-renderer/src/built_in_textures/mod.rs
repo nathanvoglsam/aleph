@@ -58,7 +58,11 @@ pub unsafe fn create_1x1_colour_texture(
     object.recreate_default_view();
     let handle = texture_pool.alloc(object);
 
-    cmds.push_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
+    cmds.push_command(ResourceCommand::TextureUpload(
+        handle,
+        GenerateMips::No,
+        data,
+    ));
 
     handle
 }
@@ -93,7 +97,11 @@ pub unsafe fn create_smaa_area_texture(
     object.recreate_default_view();
     let handle = texture_pool.alloc(object);
 
-    cmds.push_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
+    cmds.push_command(ResourceCommand::TextureUpload(
+        handle,
+        GenerateMips::No,
+        data,
+    ));
 
     handle
 }
@@ -128,7 +136,11 @@ pub unsafe fn create_smaa_search_texture(
     object.recreate_default_view();
     let handle = texture_pool.alloc(object);
 
-    cmds.push_command(ResourceCommand::TextureUpload(handle, GenerateMips::No, data));
+    cmds.push_command(ResourceCommand::TextureUpload(
+        handle,
+        GenerateMips::No,
+        data,
+    ));
 
     handle
 }
