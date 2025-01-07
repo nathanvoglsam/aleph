@@ -36,11 +36,14 @@ macro_rules! conversion_function {
         pub fn $name(v: &dyn $from) -> &$to {
             use $crate::aleph_any::*;
             use $crate::aleph_rhi_api::*;
-            v.query_interface::<$to>().expect(concat!(
-                "Unknown ",
-                stringify!($from),
-                " implementation"
-            ))
+            unsafe {
+                if ::core::any::Any::type_id(v) == ::core::any::TypeId::of::<$to>() {
+                    let ptr = ::core::ptr::NonNull::new_unchecked(v as *const _ as *mut ());
+                    ptr.cast::<$to>().as_ref()
+                } else {
+                    panic!(concat!("Unknown ", stringify!($from), " implementation"))
+                }
+            }
         }
 
         #[allow(unused)]
