@@ -112,6 +112,13 @@ macro_rules! declare_interfaces (
             #[allow(bare_trait_objects)]
             fn __query_interface(&self, target: ::core::any::TypeId) -> Option<$crate::TraitObject> {
                 unsafe {
+                    if target == ::core::any::TypeId::of::<$typ>() {
+                        return Some($crate::TraitObject {
+                            data: ::core::ptr::NonNull::new_unchecked(self as *const _ as *mut ()),
+                            vtable: ::core::ptr::null_mut(),
+                            phantom: ::core::default::Default::default(),
+                        });
+                    }
                     $(
                     if target == ::core::any::TypeId::of::<dyn $iface>() {
                         return Some(::core::mem::transmute(self as &dyn $iface));
@@ -121,17 +128,7 @@ macro_rules! declare_interfaces (
                         return Some(::core::mem::transmute(self as &dyn $crate::IAny));
                     }
                 }
-                unsafe {
-                    if target == ::core::any::TypeId::of::<$typ>() {
-                        Some($crate::TraitObject {
-                            data: ::core::ptr::NonNull::new_unchecked(self as *const _ as *mut ()),
-                            vtable: ::core::ptr::null_mut(),
-                            phantom: ::core::default::Default::default(),
-                        })
-                    } else {
-                        None
-                    }
-                }
+                None
             }
         }
     }
