@@ -31,12 +31,12 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Config {
-    #[serde(rename = "scene")]
-    pub scene: String,
+    #[serde(default)]
+    pub scenes: Vec<String>,
 }
 
 impl Config {
     pub fn log(&self) {
-        log::info!("aleph-test.scene = {}", self.scene);
+        log::info!("aleph-test.scenes = {:?}", self.scenes);
     }
 }

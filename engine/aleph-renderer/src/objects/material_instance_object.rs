@@ -35,6 +35,8 @@ pub struct MaterialInstanceObject {
     /// The material that this object is an instance of.
     pub(crate) material: Arc<Material>,
 
+    pub(crate) double_sided: bool,
+
     /// Indexed list of material bindings. The layout of this list is defined by the material we are
     /// instancing.
     pub(crate) bindings: Vec<MaterialBinding>,
@@ -43,7 +45,15 @@ pub struct MaterialInstanceObject {
 impl MaterialInstanceObject {
     pub fn new(material: Arc<Material>) -> Self {
         let bindings = material.material.instantiate_bindings();
-        Self { material, bindings }
+        Self {
+            material,
+            double_sided: false,
+            bindings,
+        }
+    }
+
+    pub fn set_double_sided(&mut self, double_sided: bool) {
+        self.double_sided = double_sided;
     }
 
     /// # Safety

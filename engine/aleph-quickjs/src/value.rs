@@ -375,6 +375,12 @@ impl RefValue {
         Object::from_value(self)
     }
 
+    /// Returns whether 'self' is an array
+    pub fn is_array(&self) -> bool {
+        // Safety: This wrapper type is guaranteed to contain a live JS object
+        unsafe { raw::JS_IsArray(self.c.0.ctx, self.v) != 0 }
+    }
+
     #[inline(always)]
     pub fn get_ref_count(&self) -> Option<c_int> {
         // Safety: This wrapper type is guaranteed to contain a live JS object
@@ -697,6 +703,13 @@ impl Object {
         self.0.to_raw()
     }
 
+    /// Returns whether 'self' is an array
+    #[inline]
+    pub fn is_array(&self) -> bool {
+        // Safety: This wrapper type is guaranteed to contain a live JS object
+        unsafe { raw::JS_IsArray(self.0.c.0.ctx, self.0.v) != 0 }
+    }
+
     #[inline]
     pub fn get_ref_count(&self) -> c_int {
         // Safety: This wrapper type is guaranteed to contain a live ref-counted JS object
@@ -755,21 +768,39 @@ impl Object {
 
     #[inline]
     pub fn to_json(&self) -> Option<serde_json::Value> {
-        let opts =
-            raw::JSGetPropertyNameOption::STRING_MASK | raw::JSGetPropertyNameOption::ENUM_ONLY;
-        let props = self.get_own_property_names(opts);
+        if self.is_array() {
+            let opts =
+                raw::JSGetPropertyNameOption::STRING_MASK | raw::JSGetPropertyNameOption::ENUM_ONLY;
+            let props = self.get_own_property_names(opts);
 
-        let mut object = serde_json::Map::new();
-        for prop in props.iter() {
-            let atom = prop.atom.as_ref()?;
-            let value = self.get_property(atom);
-            if let Some(value) = value.to_json() {
-                let name = atom.to_c_str()?;
-                object.insert(name.to_string(), value);
+            let mut array = Vec::new();
+            for prop in props.iter() {
+                let atom = prop.atom.as_ref()?;
+                let value = self.get_property(atom);
+                if let Some(value) = value.to_json() {
+                    // let name = atom.to_c_str()?;
+                    array.push(value);
+                }
             }
-        }
 
-        Some(serde_json::Value::Object(object))
+            Some(serde_json::Value::Array(array))
+        } else {
+            let opts =
+                raw::JSGetPropertyNameOption::STRING_MASK | raw::JSGetPropertyNameOption::ENUM_ONLY;
+            let props = self.get_own_property_names(opts);
+
+            let mut object = serde_json::Map::new();
+            for prop in props.iter() {
+                let atom = prop.atom.as_ref()?;
+                let value = self.get_property(atom);
+                if let Some(value) = value.to_json() {
+                    let name = atom.to_c_str()?;
+                    object.insert(name.to_string(), value);
+                }
+            }
+
+            Some(serde_json::Value::Object(object))
+        }
     }
 }
 

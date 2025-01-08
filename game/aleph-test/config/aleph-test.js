@@ -28,5 +28,5 @@
 //
 
 Configs["aleph-test"] = {
-    scene: "game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf"
-}
+    scenes: ["game/aleph-test/assets/IntelSponza/NewSponza_Main_Blender_glTF.gltf"]
+};

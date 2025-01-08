@@ -29,6 +29,6 @@
 
 interface Configs {
     "aleph-test"?: {
-        scene: string;
+        scenes: string[];
     }
 }

@@ -135,10 +135,11 @@ pub fn load_scene(
     world: &mut World,
     renderer: &mut Renderer,
     arena: &mut BumpThingy,
+    thinkers: &mut Vec<TextureLoadThinker>,
     standard_material: &Arc<Material>,
     loader: &AsyncTextureLoader,
     path: &std::path::Path,
-) -> Vec<TextureLoadThinker> {
+) {
     let (document, buffers) = import_path(path).unwrap();
 
     struct MeshUpload<'a> {
@@ -194,7 +195,6 @@ pub fn load_scene(
         }
     }
 
-    let mut load_thinkers = Vec::new();
     let mut mat_table = Vec::new();
     for (i, mat) in document.materials().enumerate() {
         let _i = mat.index().unwrap();
@@ -229,6 +229,7 @@ pub fn load_scene(
         renderer.submit_resource_command(ResourceCommand::BufferUpload(buffer, upload));
 
         let mut material_instance = MaterialInstanceObject::new(standard_material.clone());
+        material_instance.set_double_sided(mat.double_sided());
         material_instance.update_binding(0, MaterialBinding::Buffer(Some(buffer)));
         material_instance.update_binding(1, MaterialBinding::Texture(Some(white_tex)));
         material_instance.update_binding(2, MaterialBinding::Texture(Some(white_tex)));
@@ -239,7 +240,7 @@ pub fn load_scene(
 
         if let Some(tex) = pbr_mat.base_color_texture() {
             if let Some(req) = &tex_table[tex.texture().source().index()] {
-                load_thinkers.push(TextureLoadThinker {
+                thinkers.push(TextureLoadThinker {
                     target: material_instance,
                     request: Some(req.clone()),
                     target_tex: TargetTex::Colour,
@@ -249,7 +250,7 @@ pub fn load_scene(
 
         if let Some(tex) = pbr_mat.metallic_roughness_texture() {
             if let Some(req) = &tex_table[tex.texture().source().index()] {
-                load_thinkers.push(TextureLoadThinker {
+                thinkers.push(TextureLoadThinker {
                     target: material_instance,
                     request: Some(req.clone()),
                     target_tex: TargetTex::MetalRoughness,
@@ -259,7 +260,7 @@ pub fn load_scene(
 
         if let Some(tex) = mat.normal_texture() {
             if let Some(req) = &tex_table[tex.texture().source().index()] {
-                load_thinkers.push(TextureLoadThinker {
+                thinkers.push(TextureLoadThinker {
                     target: material_instance,
                     request: Some(req.clone()),
                     target_tex: TargetTex::Normal,
@@ -353,8 +354,6 @@ pub fn load_scene(
             );
         }
     }
-
-    load_thinkers
 }
 
 struct IndexUpload {
@@ -426,7 +425,7 @@ fn load_index_buffer_data(dst: &mut [u32], buffers: &[Data], indices: &Accessor)
 
     let view = indices.view().unwrap();
     let src = &buffers[view.buffer().index()];
-    let offset = view.offset();
+    let offset = view.offset() + indices.offset();
     assert_eq!(view.stride(), None);
     if indices.data_type() == DataType::U8 {
         assert!(view.length() >= (size / 4));
@@ -542,7 +541,9 @@ fn copy_vertex_data_into_upload(buffers: &[Data], prim: &Primitive, upload: &mut
             let (_, attr) = prim.attributes().find(|(s, _)| *s == semantic).unwrap();
             let view = attr.view().unwrap();
             let buffer = &buffers[view.buffer().index()];
-            let buffer = &buffer.0[view.offset()..view.offset() + view.length()];
+            let offset = view.offset() + attr.offset();
+            let size = attr.size() * attr.count();
+            let buffer = &buffer.0[offset..offset + size];
             (attr, view, buffer)
         }
         let (positions, positions_view, positions_buffer) =
@@ -634,7 +635,9 @@ fn copy_vec_f32_semantic(
 
     let src = &buffers[view.buffer().index()];
 
-    let src = &src[view.offset()..view.offset() + view.length()];
+    let offset = view.offset() + accessor.offset();
+    let size = accessor.size() * accessor.count();
+    let src = &src[offset..offset + size];
     let dst = &mut vtx_buffer.buffer.bytes_mut()[dst_offset..];
     for i in 0..accessor.count() {
         let src_i = stride * i;

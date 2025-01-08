@@ -138,14 +138,18 @@ impl IPlugin for PluginGameLogic {
 
         let mut arena = BumpThingy::new(renderer.device());
 
-        let mut thinkers1 = load_scene(
-            world,
-            renderer,
-            &mut arena,
-            &standard_material,
-            &async_texture_loader,
-            Path::new(&config.scene),
-        );
+        let mut thinkers = Vec::new();
+        for scene in config.scenes.iter() {
+            load_scene(
+                world,
+                renderer,
+                &mut arena,
+                &mut thinkers,
+                &standard_material,
+                &async_texture_loader,
+                Path::new(&scene),
+            );
+        }
 
         let (idx, vtx) = upload_cube_buffers(renderer);
 
@@ -212,7 +216,7 @@ impl IPlugin for PluginGameLogic {
                 free_camera.tick(&mut world.0);
                 throbber_logic.tick(&mut world.0);
                 loader.think(&mut renderer);
-                thinkers1.retain_mut(|t| match t.poll_and_resolve(&mut renderer) {
+                thinkers.retain_mut(|t| match t.poll_and_resolve(&mut renderer) {
                     PollResult::Success => false,
                     PollResult::Waiting => true,
                     PollResult::Fail => {

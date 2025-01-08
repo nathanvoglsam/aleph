@@ -193,7 +193,13 @@ fn load_on_threadpool(
         return Some(());
     }
 
-    let doc = KtxDocument::from_slice(&data).ok()?;
+    let doc = match KtxDocument::from_slice(&data) {
+        Ok(v) => v,
+        Err(e) => {
+            log::error!("Failed to parse KTX on Worker: {e:?}");
+            return None;
+        }
+    };
 
     let data = match doc.format() {
         VkFormat::R8G8B8A8_UNORM => {
@@ -201,7 +207,10 @@ fn load_on_threadpool(
                 let num_rows = desc.num_rows_for_level(level);
                 let row_bytes = desc.row_bytes_for_level(level);
                 let row_bytes_padded = desc.upload_row_bytes_for_level(level);
-                let src = doc.get_level_info(level).ok()?;
+                let src = doc
+                    .get_level_info(level)
+                    .inspect_err(|e| log::error!("Failed to get level {level} in KTX doc: {e:?}"))
+                    .ok()?;
                 let mut src = &data[src.to_slice_range()];
                 let dst = upload.data.offset_for_level(level)?;
                 let mut dst = &mut upload.buffer.bytes_mut()[dst..];

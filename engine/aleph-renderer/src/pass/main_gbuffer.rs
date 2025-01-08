@@ -247,14 +247,23 @@ pub fn pass(
                 return;
             }
 
-            let mut current_material = commands[0].sort_key >> 32 & 0xFFFFFFFF;
             let mut current_material_instance = commands[0].mat;
+            let mut current_material_key = {
+                let cull_mode = if current_material_instance.double_sided {
+                    CullMode::None
+                } else {
+                    CullMode::Back
+                };
+                MainOpaqueMaterialLayout::key_for(
+                    current_material_instance.material.as_ref(),
+                    cull_mode,
+                )
+            };
             let mut current_material_state = {
                 let mut state_cache = args.state_cache.lock();
-                let key =
-                    MainOpaqueMaterialLayout::key_for(current_material_instance.material.as_ref());
-                state_cache.get_or_insert_with(&key, |cache, _| {
+                state_cache.get_or_insert_with(&current_material_key, |cache, key| {
                     MainOpaqueMaterialLayout::new(
+                        key,
                         cache,
                         device,
                         common_state.as_ref(),
@@ -311,47 +320,54 @@ pub fn pass(
             }]);
 
             for command in commands {
-                let this_material = command.sort_key >> 32 & 0xFFFFFFFF;
-
-                if current_material != this_material {
-                    current_material = this_material;
-
-                    current_material_state = {
-                        let mut state_cache = args.state_cache.lock();
-                        let key = MainOpaqueMaterialLayout::key_for(
-                            current_material_instance.material.as_ref(),
-                        );
-                        state_cache.get_or_insert_with(&key, |cache, _| {
-                            MainOpaqueMaterialLayout::new(
-                                cache,
-                                device,
-                                common_state.as_ref(),
-                                current_material_instance.material.as_ref(),
-                            )
-                        })
-                    };
-
-                    encoder.bind_graphics_pipeline(current_material_state.pipeline.as_ref());
-
-                    encoder.set_viewports(&[Viewport {
-                        x: 0.0,
-                        y: 0.0,
-                        width: extent.width as _,
-                        height: extent.height as _,
-                        min_depth: 0.0,
-                        max_depth: 1.0,
-                    }]);
-
-                    encoder.set_scissor_rects(&[Rect {
-                        x: 0,
-                        y: 0,
-                        w: extent.width,
-                        h: extent.height,
-                    }]);
-                }
-
                 if !std::ptr::addr_eq(current_material_instance, command.mat) {
                     current_material_instance = command.mat;
+
+                    let new_key = {
+                        let cull_mode = if current_material_instance.double_sided {
+                            CullMode::None
+                        } else {
+                            CullMode::Back
+                        };
+                        MainOpaqueMaterialLayout::key_for(
+                            current_material_instance.material.as_ref(),
+                            cull_mode,
+                        )
+                    };
+
+                    if current_material_key != new_key {
+                        current_material_key = new_key;
+                        current_material_state = {
+                            let mut state_cache = args.state_cache.lock();
+                            state_cache.get_or_insert_with(&current_material_key, |cache, key| {
+                                MainOpaqueMaterialLayout::new(
+                                    key,
+                                    cache,
+                                    device,
+                                    common_state.as_ref(),
+                                    current_material_instance.material.as_ref(),
+                                )
+                            })
+                        };
+
+                        encoder.bind_graphics_pipeline(current_material_state.pipeline.as_ref());
+
+                        encoder.set_viewports(&[Viewport {
+                            x: 0.0,
+                            y: 0.0,
+                            width: extent.width as _,
+                            height: extent.height as _,
+                            min_depth: 0.0,
+                            max_depth: 1.0,
+                        }]);
+
+                        encoder.set_scissor_rects(&[Rect {
+                            x: 0,
+                            y: 0,
+                            w: extent.width,
+                            h: extent.height,
+                        }]);
+                    }
 
                     let material_set = descriptor_arena
                         .allocate_set(current_material_state.material_set_layout.as_ref())
@@ -507,8 +523,8 @@ impl MainOpaqueCommonLayout {
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
-pub struct MainOpaqueMaterialKey(MaterialId);
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MainOpaqueMaterialKey(MaterialId, CullMode);
 
 impl IStateCacheKey for MainOpaqueMaterialKey {
     type Storage = MainOpaqueMaterialLayout;
@@ -523,11 +539,12 @@ pub struct MainOpaqueMaterialLayout {
 }
 
 impl MainOpaqueMaterialLayout {
-    pub const fn key_for(material: &Material) -> MainOpaqueMaterialKey {
-        MainOpaqueMaterialKey(material.id())
+    pub const fn key_for(material: &Material, cull_mode: CullMode) -> MainOpaqueMaterialKey {
+        MainOpaqueMaterialKey(material.id(), cull_mode)
     }
 
     pub fn new(
+        key: &MainOpaqueMaterialKey,
         cache: &mut StateCache,
         device: &dyn IDevice,
         common: &MainOpaqueCommonLayout,
@@ -544,6 +561,7 @@ impl MainOpaqueMaterialLayout {
         );
         let pipeline = Self::create_pipeline_state(
             device,
+            key,
             cache.shader_db(),
             pipeline_layout.as_ref(),
             material,
@@ -583,12 +601,13 @@ impl MainOpaqueMaterialLayout {
 
     fn create_pipeline_state(
         device: &dyn IDevice,
+        key: &MainOpaqueMaterialKey,
         shader_db: &ShaderDatabaseAccessor,
         pipeline_layout: &dyn IPipelineLayout,
         material: &Material,
     ) -> AnyArc<dyn IGraphicsPipeline> {
         let rasterizer_state = RasterizerStateDesc {
-            cull_mode: CullMode::Back,
+            cull_mode: key.1,
             front_face: FrontFaceOrder::CounterClockwise,
             polygon_mode: PolygonMode::Fill,
             depth_bias: 0,
