@@ -28,8 +28,10 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
 use aleph_any::AnyArc;
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use allocator_api2::vec::Vec as BVec;
@@ -41,8 +43,8 @@ use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::*;
-use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
+use crate::pipeline_layout::PipelineLayout;
 use crate::texture::Texture;
 
 pub struct Encoder<'a> {
@@ -50,8 +52,8 @@ pub struct Encoder<'a> {
     pub(crate) _buffer: vk::CommandBuffer,
     pub(crate) _context: AnyArc<Context>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
-    pub(crate) bound_compute_pipeline: Option<AnyArc<ComputePipeline>>,
+    pub(crate) bound_graphics_pipeline: Option<Arc<ArcedObject<GraphicsPipeline>>>,
+    pub(crate) bound_compute_pipeline: Option<Arc<ArcedObject<ComputePipeline>>>,
     pub(crate) arena: Blink,
     pub(crate) enabled_shader_features: SyncShaderFeatures,
 }
@@ -63,8 +65,8 @@ impl<'a> IGetPlatformInterface for Encoder<'a> {
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
-    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
-        let concrete = unwrap::graphics_pipeline(pipeline);
+    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
+        let concrete = GraphicsPipeline::get_owned(pipeline);
 
         // Binds the pipeline
         self._device.device.cmd_bind_pipeline(
@@ -75,7 +77,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         // We need the currently bound pipeline while recording commands to access things like
         // the pipeline layout for handling binding descriptors.
-        self.bound_graphics_pipeline = Some(concrete._this.upgrade().unwrap());
+        self.bound_graphics_pipeline = Some(concrete);
     }
 
     unsafe fn bind_vertex_buffers(
@@ -232,8 +234,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 }
 
 impl<'a> IComputeEncoder for Encoder<'a> {
-    unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline) {
-        let concrete = unwrap::compute_pipeline(pipeline);
+    unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
+        let concrete = ComputePipeline::get_owned(pipeline);
 
         // Binds the pipeline
         self._device.device.cmd_bind_pipeline(
@@ -244,19 +246,19 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
         // We need the currently bound pipeline while recording commands to access things like
         // the pipeline layout for handling binding descriptors.
-        self.bound_compute_pipeline = Some(concrete._this.upgrade().unwrap());
+        self.bound_compute_pipeline = Some(concrete);
     }
 
     unsafe fn bind_descriptor_sets(
         &mut self,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
         dynamic_offsets: &[u32],
     ) {
         {
-            let pipeline_layout = unwrap::pipeline_layout(pipeline_layout);
+            let pipeline_layout = PipelineLayout::get(pipeline_layout);
             let bind_point = pipeline_bind_point_to_vk(bind_point);
 
             let new_sets: &[vk::DescriptorSet] = std::mem::transmute(sets);

@@ -27,47 +27,36 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 
 use crate::device::Device;
 
 pub struct PipelineLayout {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline_layout: vk::PipelineLayout,
     pub(crate) push_constant_blocks: Vec<vk::PushConstantRange>,
 }
 
-declare_interfaces!(PipelineLayout, [IPipelineLayout]);
+unsafe_impl_iobject!(PipelineLayout, "01944fe3-98db-7ba1-96d4-b40e2d69f172");
 
-impl IGetPlatformInterface for PipelineLayout {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::PipelineLayout>(&self.pipeline_layout, out, target)
-    }
-}
-
-impl IPipelineLayout for PipelineLayout {
-    fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {
-        AnyArc::map::<dyn IPipelineLayout, _>(self._this.upgrade().unwrap(), |v| v)
+impl PipelineLayout {
+    pub(crate) fn get_owned(v: &PipelineLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown PipelineLayout implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+    pub(crate) fn get(v: &PipelineLayoutHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown PipelineLayout implementation!")
     }
 }
 

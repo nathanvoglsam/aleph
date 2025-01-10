@@ -27,48 +27,38 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 
 use crate::device::Device;
 use crate::pipeline_layout::PipelineLayout;
 
 pub struct GraphicsPipeline {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) _pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: vk::Pipeline,
 }
 
-declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
+unsafe_impl_iobject!(GraphicsPipeline, "01944fe3-393c-7893-aa9a-0b2905168fa4");
 
-impl IGetPlatformInterface for GraphicsPipeline {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
-    }
-}
-
-impl IGraphicsPipeline for GraphicsPipeline {
-    fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
-        AnyArc::map::<dyn IGraphicsPipeline, _>(self._this.upgrade().unwrap(), |v| v)
+impl GraphicsPipeline {
+    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown GraphicsPipeline implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+    pub(crate) fn get(v: &GraphicsPipelineHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown GraphicsPipeline implementation!")
     }
 }
 
@@ -81,36 +71,26 @@ impl Drop for GraphicsPipeline {
 }
 
 pub struct ComputePipeline {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) _pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: vk::Pipeline,
 }
 
-declare_interfaces!(ComputePipeline, [IComputePipeline]);
+unsafe_impl_iobject!(ComputePipeline, "01944fe3-5207-7dd2-8f84-5d37f5623f02");
 
-impl IGetPlatformInterface for ComputePipeline {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.pipeline, out, target)
-    }
-}
-
-impl IComputePipeline for ComputePipeline {
-    fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
-        AnyArc::map::<dyn IComputePipeline, _>(self._this.upgrade().unwrap(), |v| v)
+impl ComputePipeline {
+    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown ComputePipeline implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+    pub(crate) fn get(v: &ComputePipelineHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown ComputePipeline implementation!")
     }
 }
 

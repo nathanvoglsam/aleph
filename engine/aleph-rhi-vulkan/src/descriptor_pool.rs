@@ -29,8 +29,10 @@
 
 use std::any::TypeId;
 use std::mem::MaybeUninit;
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::prelude::VkResult;
@@ -42,7 +44,7 @@ use crate::device::Device;
 
 pub struct DescriptorPool {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _layout: AnyArc<DescriptorSetLayout>,
+    pub(crate) _layout: Arc<ArcedObject<DescriptorSetLayout>>,
     pub(crate) descriptor_pool: vk::DescriptorPool,
 }
 

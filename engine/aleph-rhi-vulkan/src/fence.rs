@@ -27,40 +27,25 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 
 use crate::device::Device;
 
 pub struct Fence {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) fence: vk::Fence,
 }
 
-declare_interfaces!(Fence, [IFence]);
+unsafe_impl_iobject!(Fence, "01944f89-17b4-7580-bb46-ccfce6f195cb");
 
-impl IGetPlatformInterface for Fence {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.fence, out, target)
-    }
-}
-
-impl IFence for Fence {
-    fn upgrade(&self) -> AnyArc<dyn IFence> {
-        AnyArc::map::<dyn IFence, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
+impl Fence {
+    pub(crate) fn get(v: &FenceHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Fence implementation!")
     }
 }
 

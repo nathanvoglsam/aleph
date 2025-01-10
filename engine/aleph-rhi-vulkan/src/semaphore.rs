@@ -27,40 +27,25 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
-
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 
 use crate::device::Device;
 
 pub struct Semaphore {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) semaphore: vk::Semaphore,
 }
 
-declare_interfaces!(Semaphore, [ISemaphore]);
+unsafe_impl_iobject!(Semaphore, "01944f88-0885-7880-b667-23d534c03719");
 
-impl IGetPlatformInterface for Semaphore {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.semaphore, out, target)
-    }
-}
-
-impl ISemaphore for Semaphore {
-    fn upgrade(&self) -> AnyArc<dyn ISemaphore> {
-        AnyArc::map::<dyn ISemaphore, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
+impl Semaphore {
+    pub(crate) fn get(v: &SemaphoreHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Semaphore implementation!")
     }
 }
 

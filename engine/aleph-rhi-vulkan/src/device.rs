@@ -55,7 +55,6 @@ use crate::fence::Fence;
 use crate::internal::allocation_callbacks::callbacks_from_rust_allocator;
 use crate::internal::conv::*;
 use crate::internal::set_name::set_name;
-use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
@@ -149,11 +148,11 @@ impl IDevice for Device {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
+    ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
+            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
 
             let mut builder =
                 vk::GraphicsPipelineCreateInfo::default().layout(pipeline_layout.pipeline_layout);
@@ -242,14 +241,14 @@ impl IDevice for Device {
 
             set_name(self.debug_loader.as_ref(), &bump, pipeline, desc.name);
 
-            let out = AnyArc::new_cyclic(move |v| GraphicsPipeline {
-                _this: v.clone(),
+            let out = GraphicsPipeline {
                 _device: self.this.upgrade().unwrap(),
-                _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+                _pipeline_layout: pipeline_layout,
                 id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
-            });
-            Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(out, |v| v))
+            };
+            let out = ArcedObject::new_arc_opaque(out);
+            unsafe { Ok(GraphicsPipelineHandle::new(out)) }
         })
     }
 
@@ -260,12 +259,12 @@ impl IDevice for Device {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
+    ) -> Result<ComputePipelineHandle, PipelineCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
             let shader_data = Self::unwrap_shader_bytecode(&bump, 0, &desc.shader_module)?;
-            let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout);
+            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
 
             // Create a temporary shader module using
             let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
@@ -300,14 +299,14 @@ impl IDevice for Device {
 
             set_name(self.debug_loader.as_ref(), &bump, pipeline, desc.name);
 
-            let out = AnyArc::new_cyclic(move |v| ComputePipeline {
-                _this: v.clone(),
+            let out = ComputePipeline {
                 _device: self.this.upgrade().unwrap(),
-                _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+                _pipeline_layout: pipeline_layout,
                 id: self.object_counter.next_compute_pipeline(),
                 pipeline,
-            });
-            Ok(AnyArc::map::<dyn IComputePipeline, _>(out, |v| v))
+            };
+            let out = ArcedObject::new_arc_opaque(out);
+            unsafe { Ok(ComputePipelineHandle::new(out)) }
         })
     }
 
@@ -317,7 +316,7 @@ impl IDevice for Device {
     fn create_descriptor_set_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
-    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
+    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -327,9 +326,10 @@ impl IDevice for Device {
             let mut static_samplers = BVec::new_in(bump.allocator());
             for v in desc.items {
                 if let Some(samplers) = v.static_samplers {
-                    for sampler in unwrap::sampler_iter(samplers) {
-                        _samplers.push(sampler._this.upgrade().unwrap());
+                    for sampler in samplers.iter().copied() {
+                        let sampler = Sampler::get_owned(sampler);
                         static_samplers.push(sampler.sampler);
+                        _samplers.push(sampler);
                     }
                 }
             }
@@ -387,15 +387,15 @@ impl IDevice for Device {
                 desc.name,
             );
 
-            let out = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
-                _this: v.clone(),
+            let out = DescriptorSetLayout {
                 _device: self.this.upgrade().unwrap(),
                 _samplers,
                 id: self.object_counter.next_set_layout(),
                 descriptor_set_layout,
                 pool_sizes,
-            });
-            Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(out, |v| v))
+            };
+            let out = ArcedObject::new_arc_opaque(out);
+            unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
         })
     }
 
@@ -409,10 +409,7 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let layout = unwrap::descriptor_set_layout(desc.layout)
-                ._this
-                .upgrade()
-                .unwrap();
+            let layout = DescriptorSetLayout::get_owned(desc.layout);
 
             let iter = layout.pool_sizes.iter().copied();
             let mut pool_sizes = BVec::new_in(bump.allocator());
@@ -527,13 +524,13 @@ impl IDevice for Device {
     fn create_pipeline_layout(
         &self,
         desc: &PipelineLayoutDesc,
-    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
+    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
             let mut set_layouts = BVec::with_capacity_in(desc.set_layouts.len(), bump.allocator());
             for v in desc.set_layouts {
-                let v = unwrap::descriptor_set_layout_d(v);
+                let v = DescriptorSetLayout::get(v);
                 set_layouts.push(v.descriptor_set_layout);
             }
 
@@ -566,14 +563,14 @@ impl IDevice for Device {
                 desc.name,
             );
 
-            let out = AnyArc::new_cyclic(move |v| PipelineLayout {
-                _this: v.clone(),
+            let out = PipelineLayout {
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_pipeline_layout(),
                 pipeline_layout,
                 push_constant_blocks: ranges,
-            });
-            Ok(AnyArc::map::<dyn IPipelineLayout, _>(out, |v| v))
+            };
+            let out = ArcedObject::new_arc_opaque(out);
+            unsafe { Ok(PipelineLayoutHandle::new(out)) }
         })
     }
 
@@ -780,10 +777,7 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_sampler(
-        &self,
-        desc: &SamplerDesc,
-    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -817,15 +811,15 @@ impl IDevice for Device {
             set_name(self.debug_loader.as_ref(), &bump, sampler, desc.name);
 
             let name = desc.name.map(String::from);
-            let out = AnyArc::new_cyclic(move |v| Sampler {
-                _this: v.clone(),
+            let out = Sampler {
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_sampler(),
                 sampler,
                 desc: desc.clone().strip_name(),
                 name,
-            });
-            Ok(AnyArc::map::<dyn ISampler, _>(out, |v| v))
+            };
+            let out = ArcedObject::new_arc_opaque(out);
+            unsafe { Ok(SamplerHandle::new(out)) }
         })
     }
 
@@ -955,7 +949,7 @@ impl IDevice for Device {
                     DescriptorWrites::Sampler(v) => {
                         let translator = v.iter().map(|v| {
                             vk::DescriptorImageInfo::default()
-                                .sampler(unwrap::sampler(v.sampler).sampler)
+                                .sampler(Sampler::get(v.sampler).sampler)
                         });
                         let mut image_infos = BVec::new_in(bump.allocator());
                         image_infos.extend(translator);
@@ -1012,7 +1006,7 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
         let fence = unsafe {
             let mut info = vk::FenceCreateInfo::default();
             if signalled {
@@ -1023,18 +1017,18 @@ impl IDevice for Device {
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
-        let fence = AnyArc::new_cyclic(move |v| Fence {
-            _this: v.clone(),
+        let fence = Fence {
             _device: self.this.upgrade().unwrap(),
             fence,
-        });
-        Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
+        };
+        let fence = ArcedObject::new_arc_opaque(fence);
+        unsafe { Ok(FenceHandle::new(fence)) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
+    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
         let semaphore = unsafe {
             let info = vk::SemaphoreCreateInfo::default();
             self.device
@@ -1042,18 +1036,23 @@ impl IDevice for Device {
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
 
-        let semaphore = AnyArc::new_cyclic(move |v| Semaphore {
-            _this: v.clone(),
+        let semaphore = Semaphore {
             _device: self.this.upgrade().unwrap(),
             semaphore,
-        });
-        Ok(AnyArc::map::<dyn ISemaphore, _>(semaphore, |v| v))
+        };
+        let semaphore = ArcedObject::new_arc_opaque(semaphore);
+        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
+    fn wait_fences(
+        &self,
+        fences: &[&FenceHandle],
+        wait_all: bool,
+        timeout: u32,
+    ) -> FenceWaitResult {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -1063,7 +1062,7 @@ impl IDevice for Device {
                 timeout as u64 * 1000000 // Convert to nanoseconds
             };
 
-            let iter = unwrap::fence_iter(fences).map(|v| v.fence);
+            let iter = fences.iter().copied().map(Fence::get).map(|v| v.fence);
             let mut fences = BVec::new_in(bump.allocator());
             fences.extend(iter);
 
@@ -1083,8 +1082,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, fence: &dyn IFence) -> bool {
-        let fence = unwrap::fence(fence);
+    fn poll_fence(&self, fence: &FenceHandle) -> bool {
+        let fence = Fence::get(fence);
 
         let result = unsafe { self.device.get_fence_status(fence.fence) };
 
@@ -1101,11 +1100,11 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn reset_fences(&self, fences: &[&dyn IFence]) {
+    fn reset_fences(&self, fences: &[&FenceHandle]) {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let iter = unwrap::fence_iter(fences).map(|v| v.fence);
+            let iter = fences.iter().copied().map(Fence::get).map(|v| v.fence);
             let mut fences = BVec::new_in(bump.allocator());
             fences.extend(iter);
 
@@ -1221,6 +1220,61 @@ impl IDevice for Device {
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
         Texture::get(texture).get_dsv(self, desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
+        Sampler::get(sampler).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b> {
+        Sampler::get(sampler).desc()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
+        Sampler::get(sampler).desc_ref()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_descriptor_set_layout_id(
+        &self,
+        set_layout: &DescriptorSetLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        DescriptorSetLayout::get(set_layout).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_pipeline_layout_id(
+        &self,
+        pipeline_layout: &PipelineLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        PipelineLayout::get(pipeline_layout).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
+        GraphicsPipeline::get(pipeline).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
+        ComputePipeline::get(pipeline).id
     }
 }
 

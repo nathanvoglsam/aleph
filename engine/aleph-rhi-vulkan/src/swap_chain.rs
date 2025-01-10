@@ -42,7 +42,7 @@ use crate::device::Device;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::set_name::set_name_nstr;
-use crate::internal::unwrap;
+use crate::semaphore::Semaphore;
 use crate::surface::Surface;
 use crate::texture::Texture;
 
@@ -143,7 +143,7 @@ impl ISwapChain for SwapChain {
     }
 
     unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
-        let semaphore = unwrap::semaphore(desc.signal_semaphore);
+        let semaphore = Semaphore::get(desc.signal_semaphore);
 
         let loader = self.device.swapchain.as_ref().unwrap();
 

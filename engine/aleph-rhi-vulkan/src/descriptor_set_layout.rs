@@ -27,53 +27,39 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 
 use crate::device::Device;
 use crate::sampler::Sampler;
 
 pub struct DescriptorSetLayout {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _samplers: Vec<AnyArc<Sampler>>,
+    pub(crate) _samplers: Vec<Arc<ArcedObject<Sampler>>>,
     pub(crate) id: NonZeroU64,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
     pub(crate) pool_sizes: Vec<vk::DescriptorPoolSize>,
 }
 
-declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);
+unsafe_impl_iobject!(DescriptorSetLayout, "01944fe5-3abc-7a62-8c14-19d4d31f92b6");
 
-impl IGetPlatformInterface for DescriptorSetLayout {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::DescriptorSetLayout>(
-            &self.descriptor_set_layout,
-            out,
-            target,
-        )
-    }
-}
-
-impl IDescriptorSetLayout for DescriptorSetLayout {
-    fn upgrade(&self) -> AnyArc<dyn IDescriptorSetLayout> {
-        AnyArc::map::<dyn IDescriptorSetLayout, _>(self._this.upgrade().unwrap(), |v| v)
+impl DescriptorSetLayout {
+    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 }
 

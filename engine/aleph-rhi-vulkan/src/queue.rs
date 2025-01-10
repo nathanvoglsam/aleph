@@ -42,7 +42,9 @@ use parking_lot::Mutex;
 
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
+use crate::fence::Fence;
 use crate::internal::unwrap;
+use crate::semaphore::Semaphore;
 
 pub struct Queue {
     pub(crate) _this: AnyWeak<Self>,
@@ -285,7 +287,8 @@ impl IQueue for Queue {
         let mut wait_semaphores = Vec::with_capacity(desc.wait_semaphores.len());
         let mut wait_values = Vec::with_capacity(desc.wait_semaphores.len());
         let mut wait_dst_stage_masks = Vec::with_capacity(desc.wait_semaphores.len());
-        for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
+        for semaphore in desc.wait_semaphores {
+            let semaphore = Semaphore::get(semaphore);
             wait_semaphores.push(semaphore.semaphore);
             wait_values.push(0);
             wait_dst_stage_masks.push(vk::PipelineStageFlags::ALL_COMMANDS);
@@ -294,7 +297,8 @@ impl IQueue for Queue {
         // Translate the signal semaphore info.
         let mut signal_semaphores = Vec::with_capacity(desc.signal_semaphores.len() + 1);
         let mut signal_values = Vec::with_capacity(desc.signal_semaphores.len() + 1);
-        for semaphore in unwrap::semaphore_iter(desc.signal_semaphores) {
+        for semaphore in desc.signal_semaphores {
+            let semaphore = Semaphore::get(semaphore);
             signal_semaphores.push(semaphore.semaphore);
             signal_values.push(0);
         }
@@ -326,7 +330,7 @@ impl IQueue for Queue {
         // now fully retired.
         let fence = desc
             .fence
-            .map(unwrap::fence)
+            .map(Fence::get)
             .map(|v| v.fence)
             .unwrap_or(vk::Fence::null());
 
@@ -372,7 +376,8 @@ impl IQueue for Queue {
         }
 
         let mut wait_semaphores = Vec::with_capacity(desc.wait_semaphores.len());
-        for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
+        for semaphore in desc.wait_semaphores {
+            let semaphore = Semaphore::get(semaphore);
             wait_semaphores.push(semaphore.semaphore);
         }
 

@@ -27,18 +27,16 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 
 use crate::device::Device;
 
 pub struct Sampler {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) sampler: vk::Sampler,
@@ -46,38 +44,29 @@ pub struct Sampler {
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(Sampler, [ISampler]);
+unsafe_impl_iobject!(Sampler, "01944fe0-d30e-7e41-a0b8-dab10f5b7e5a");
 
-impl IGetPlatformInterface for Sampler {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.sampler, out, target)
-    }
-}
-
-impl ISampler for Sampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self._this.upgrade().unwrap(), |v| v)
+impl Sampler {
+    pub(crate) fn get_owned(v: &SamplerHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown Sampler implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
+    pub(crate) fn get(v: &SamplerHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Sampler implementation!")
     }
 
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
-    }
-
-    fn desc(&self) -> SamplerDesc {
+    pub(crate) fn desc(&self) -> SamplerDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &SamplerDesc {
+    pub(crate) fn desc_ref(&self) -> &SamplerDesc {
         &self.desc
     }
 }

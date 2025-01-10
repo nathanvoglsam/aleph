@@ -37,8 +37,8 @@ use ash::vk;
 use ash::vk::Handle;
 
 use crate::descriptor_pool::DescriptorPool;
+use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
-use crate::internal::unwrap;
 
 pub struct DescriptorArena {
     pub(crate) _device: AnyArc<Device>,
@@ -56,9 +56,9 @@ impl IGetPlatformInterface for DescriptorArena {
 impl IDescriptorArena for DescriptorArena {
     fn allocate_set(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        let layout = unwrap::descriptor_set_layout(layout);
+        let layout = DescriptorSetLayout::get(layout);
         let set_layouts = [layout.descriptor_set_layout];
 
         let allocate_info = vk::DescriptorSetAllocateInfo::default()
@@ -84,10 +84,10 @@ impl IDescriptorArena for DescriptorArena {
 
     fn allocate_sets(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
     ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
-        let layout = unwrap::descriptor_set_layout(layout);
+        let layout = DescriptorSetLayout::get(layout);
         let mut set_layouts = Vec::with_capacity(num_sets);
         for _ in 0..num_sets {
             set_layouts.push(layout.descriptor_set_layout);
