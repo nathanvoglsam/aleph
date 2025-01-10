@@ -139,8 +139,8 @@ pub fn pass(
 
             let u_ptr = device.map_buffer(uniform_buffer).unwrap();
             let u_alloc = UploadBumpAllocator::new_from_block(
-                device,
                 uniform_buffer.clone(),
+                ResourceUsageFlags::CONSTANT_BUFFER,
                 u_ptr,
                 0,
                 4 * 1024 * 1024,

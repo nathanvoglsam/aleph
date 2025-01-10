@@ -123,9 +123,14 @@ pub fn pass(
             let lighting_uav = ImageView::get_uav_for(lighting).unwrap();
 
             let u_ptr = device.map_buffer(uniform_buffer).unwrap();
-            let u_alloc =
-                UploadBumpAllocator::new_from_block(device, uniform_buffer.clone(), u_ptr, 0, 1024)
-                    .unwrap();
+            let u_alloc = UploadBumpAllocator::new_from_block(
+                uniform_buffer.clone(),
+                ResourceUsageFlags::CONSTANT_BUFFER,
+                u_ptr,
+                0,
+                1024,
+            )
+            .unwrap();
 
             // let gbuffer0_desc = gbuffer0.desc_ref();
             // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;

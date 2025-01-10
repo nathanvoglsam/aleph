@@ -112,9 +112,14 @@ pub fn pass(
 
             let buffer = resources.get_buffer(data.uniform_buffer).unwrap();
             let u_ptr = device.map_buffer(buffer).unwrap();
-            let u_alloc =
-                UploadBumpAllocator::new_from_block(device, buffer.clone(), u_ptr, 0, 1024)
-                    .unwrap();
+            let u_alloc = UploadBumpAllocator::new_from_block(
+                buffer.clone(),
+                ResourceUsageFlags::CONSTANT_BUFFER,
+                u_ptr,
+                0,
+                1024,
+            )
+            .unwrap();
             u_alloc
                 .allocate_object(FxaaParams::new(src_extent))
                 .unwrap();
