@@ -34,18 +34,17 @@
 //! create_descriptor_set_layout call so we can collect and use it when we create the root
 //! signature.
 
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 use windows::Win32::Graphics::Direct3D12::*;
 
 use crate::device::Device;
 
 pub struct DescriptorSetLayout {
-    pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) binding_info: HashMap<u32, DescriptorBindingInfo>,
@@ -57,13 +56,7 @@ pub struct DescriptorSetLayout {
     pub(crate) static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
 }
 
-declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);
-
-impl IGetPlatformInterface for DescriptorSetLayout {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
-    }
-}
+unsafe_impl_iobject!(DescriptorSetLayout, "01944fed-ed20-7631-ab3e-c6683ac06428");
 
 impl DescriptorSetLayout {
     /// Internal function
@@ -74,21 +67,18 @@ impl DescriptorSetLayout {
     }
 }
 
-impl IDescriptorSetLayout for DescriptorSetLayout {
-    fn upgrade(&self) -> AnyArc<dyn IDescriptorSetLayout> {
-        AnyArc::map::<dyn IDescriptorSetLayout, _>(self.this.upgrade().unwrap(), |v| v)
+impl DescriptorSetLayout {
+    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 }
 

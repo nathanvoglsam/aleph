@@ -27,18 +27,16 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use windows::Win32::Graphics::Direct3D12::*;
 
 use crate::device::Device;
 
 pub struct Semaphore {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) fence: ID3D12Fence,
 
@@ -56,29 +54,15 @@ pub struct Semaphore {
     pub(crate) value: AtomicU64,
 }
 
-declare_interfaces!(Semaphore, [ISemaphore]);
-
-impl IGetPlatformInterface for Semaphore {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.fence, out, target)
-    }
-}
-
-impl ISemaphore for Semaphore {
-    fn upgrade(&self) -> AnyArc<dyn ISemaphore> {
-        AnyArc::map::<dyn ISemaphore, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-}
+unsafe_impl_iobject!(Semaphore, "01944f96-d55c-7bf2-a3e6-5fd135ba181e");
 
 impl Semaphore {
+    pub(crate) fn get(v: &SemaphoreHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Semaphore implementation!")
+    }
+
     ///
     /// Internal implementation for the 'wait_semaphore' case.
     ///

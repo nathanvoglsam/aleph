@@ -45,7 +45,7 @@ use windows::Win32::Graphics::Dxgi::*;
 
 use crate::device::Device;
 use crate::internal::set_name::set_name;
-use crate::internal::unwrap;
+use crate::semaphore::Semaphore;
 use crate::surface::Surface;
 use crate::texture::{ImageViewObject, Texture};
 
@@ -214,7 +214,7 @@ impl ISwapChain for SwapChain {
         #[cfg(debug_assertions)]
         for v in inner.textures.iter_mut() {
             assert!(
-                Arc::weak_count(v) == 1 && Arc::strong_count(v) == 1,
+                Arc::weak_count(v) == 0 && Arc::strong_count(v) == 1,
                 "It is invalid to resize a swap chain while still holding references to its images"
             )
         }
@@ -287,7 +287,7 @@ impl ISwapChain for SwapChain {
 
         let index = self.swap_chain.GetCurrentBackBufferIndex();
 
-        let semaphore = unwrap::semaphore(desc.signal_semaphore);
+        let semaphore = Semaphore::get(desc.signal_semaphore);
         semaphore
             .signal_from_cpu()
             .map_err(|v| log::error!("Platform Error: {:#?}", v))?;

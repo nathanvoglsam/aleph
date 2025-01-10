@@ -30,9 +30,12 @@
 use std::alloc::{handle_alloc_error, Layout};
 use std::any::TypeId;
 use std::mem::MaybeUninit;
+use std::ops::Deref;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use allocator_api2::alloc::Allocator;
 use blink_alloc::BlinkAlloc;
@@ -46,7 +49,7 @@ use crate::internal::descriptor_set_pool::DescriptorSetPool;
 
 pub struct DescriptorPool {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _layout: AnyArc<DescriptorSetLayout>,
+    pub(crate) _layout: Arc<ArcedObject<DescriptorSetLayout>>,
 
     /// The base address of the arena this pool allocates resource descriptors from
     pub(crate) resource_arena: Option<DescriptorChunk>,
@@ -110,7 +113,7 @@ impl IDescriptorPool for DescriptorPool {
             // Set pool is required to have an initialized object
             let set_ptr = DescriptorSet::ptr_from_handle(set).as_mut();
 
-            set_ptr._layout = NonNull::from(self._layout.as_ref());
+            set_ptr._layout = NonNull::from(ArcedObject::deref(&self._layout));
 
             let n = self._layout.dynamic_constant_buffers.len();
             if n != 0 {
@@ -193,7 +196,7 @@ impl IDescriptorPool for DescriptorPool {
             for (i, v) in uninitialized_sets.iter_mut().enumerate() {
                 let v = v.assume_init();
                 let v = DescriptorSet::ptr_from_handle(v).as_mut();
-                v._layout = NonNull::from(self._layout.as_ref());
+                v._layout = NonNull::from(ArcedObject::deref(&self._layout));
 
                 if num_dynamic_cbs != 0 {
                     let start = i * num_dynamic_cbs;

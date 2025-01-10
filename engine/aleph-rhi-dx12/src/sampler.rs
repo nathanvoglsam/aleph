@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -38,7 +38,6 @@ use windows::Win32::Graphics::Direct3D12::*;
 use crate::device::Device;
 
 pub struct Sampler {
-    pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: SamplerDesc<'static>,
@@ -50,38 +49,22 @@ pub struct Sampler {
     pub(crate) static_desc: D3D12_STATIC_SAMPLER_DESC,
 }
 
-declare_interfaces!(Sampler, [ISampler]);
+unsafe_impl_iobject!(Sampler, "01944ff1-2d02-79d0-a95d-5d22dd91e235");
 
-impl IGetPlatformInterface for Sampler {
-    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
-        None
-    }
-}
-
-impl ISampler for Sampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self.this.upgrade().unwrap(), |v| v)
+impl Sampler {
+    pub(crate) fn get(v: &SamplerHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Sampler implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
-    }
-
-    fn desc(&self) -> SamplerDesc {
+    pub(crate) fn desc(&self) -> SamplerDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &SamplerDesc {
+    pub(crate) fn desc_ref(&self) -> &SamplerDesc {
         &self.desc
     }
 }

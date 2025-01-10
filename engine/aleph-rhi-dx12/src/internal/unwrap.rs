@@ -31,13 +31,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conversion_function;
 
 use crate::command_list::CommandList;
-use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
-use crate::fence::Fence;
-use crate::pipeline::{ComputePipeline, GraphicsPipeline};
-use crate::pipeline_layout::PipelineLayout;
-use crate::sampler::Sampler;
-use crate::semaphore::Semaphore;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
 
@@ -48,44 +42,7 @@ conversion_function!(
     command_list_d,
     command_list_iter
 );
-conversion_function!(
-    IDescriptorSetLayout,
-    DescriptorSetLayout,
-    descriptor_set_layout,
-    descriptor_set_layout_d,
-    descriptor_set_layout_iter
-);
 conversion_function!(IDevice, Device, device, device_d, device_iter);
-conversion_function!(IFence, Fence, fence, fence_d, fence_iter);
-conversion_function!(
-    IGraphicsPipeline,
-    GraphicsPipeline,
-    graphics_pipeline,
-    graphics_pipeline_d,
-    graphics_pipeline_iter
-);
-conversion_function!(
-    IComputePipeline,
-    ComputePipeline,
-    compute_pipeline,
-    compute_pipeline_d,
-    compute_pipeline_iter
-);
-conversion_function!(
-    IPipelineLayout,
-    PipelineLayout,
-    pipeline_layout,
-    pipeline_layout_d,
-    pipeline_layout_iter
-);
-conversion_function!(ISampler, Sampler, sampler, sampler_d, sampler_iter);
-conversion_function!(
-    ISemaphore,
-    Semaphore,
-    semaphore,
-    semaphore_d,
-    semaphore_iter
-);
 conversion_function!(ISurface, Surface, surface, surface_d, surface_iter);
 
 conversion_function!(

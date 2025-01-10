@@ -45,7 +45,6 @@ use crate::device::Device;
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::descriptor_set_pool::DescriptorSetPool;
-use crate::internal::unwrap;
 
 pub struct DescriptorArenaLinear {
     pub(crate) _device: AnyArc<Device>,
@@ -93,18 +92,18 @@ impl DescriptorArenaLinear {
 impl IDescriptorArena for DescriptorArenaLinear {
     fn allocate_set(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        let layout = unwrap::descriptor_set_layout(layout);
+        let layout = DescriptorSetLayout::get(layout);
         self.allocate_set_internal(layout)
     }
 
     fn allocate_sets(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
     ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
-        let layout = unwrap::descriptor_set_layout(layout);
+        let layout = DescriptorSetLayout::get(layout);
         let mut sets = Vec::with_capacity(num_sets);
         for _ in 0..num_sets {
             sets.push(self.allocate_set_internal(layout)?);
@@ -296,9 +295,9 @@ impl IGetPlatformInterface for DescriptorArenaHeap {
 impl IDescriptorArena for DescriptorArenaHeap {
     fn allocate_set(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        let set_layout = unwrap::descriptor_set_layout(layout);
+        let set_layout = DescriptorSetLayout::get(layout);
 
         let mut set = MaybeUninit::uninit();
         self.set_pool
@@ -331,10 +330,10 @@ impl IDescriptorArena for DescriptorArenaHeap {
 
     fn allocate_sets(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
     ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
-        let set_layout = unwrap::descriptor_set_layout(layout);
+        let set_layout = DescriptorSetLayout::get(layout);
 
         let mut sets = vec![MaybeUninit::uninit(); num_sets];
         self.set_pool

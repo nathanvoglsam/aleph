@@ -80,10 +80,10 @@ use crate::internal::descriptor_set_pool::DescriptorSetPool;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
+use crate::internal::handle_wait_result;
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
-use crate::internal::{handle_wait_result, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -177,15 +177,12 @@ impl IDevice for Device {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
+    ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
             // Unwrap the pipeline layout trait object into the concrete implementation
-            let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout)
-                .this
-                .upgrade()
-                .unwrap();
+            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
 
             let builder = GraphicsPipelineStateStreamBuilder::new();
 
@@ -244,8 +241,7 @@ impl IDevice for Device {
                 set_name(&pipeline, name).unwrap();
             }
 
-            let pipeline = AnyArc::new_cyclic(move |v| GraphicsPipeline {
-                this: v.clone(),
+            let out = GraphicsPipeline {
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
@@ -253,8 +249,9 @@ impl IDevice for Device {
                 primitive_topology,
                 input_binding_strides,
                 depth_bounds,
-            });
-            Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
+            };
+            let out = ArcedObject::new_arc_opaque(out);
+            unsafe { Ok(GraphicsPipelineHandle::new(out)) }
         })
     }
 
@@ -265,12 +262,9 @@ impl IDevice for Device {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
+    ) -> Result<ComputePipelineHandle, PipelineCreateError> {
         // Unwrap the pipeline layout trait object into the concrete implementation
-        let pipeline_layout = unwrap::pipeline_layout(desc.pipeline_layout)
-            .this
-            .upgrade()
-            .unwrap();
+        let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
 
         let shader = match desc.shader_module {
             ShaderBinary::Dxil(v) => v,
@@ -301,14 +295,14 @@ impl IDevice for Device {
             set_name(&pipeline, name).unwrap();
         }
 
-        let pipeline = AnyArc::new_cyclic(move |v| ComputePipeline {
-            this: v.clone(),
+        let out = ComputePipeline {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_compute_pipeline(),
             pipeline,
             pipeline_layout,
-        });
-        Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(ComputePipelineHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -317,7 +311,7 @@ impl IDevice for Device {
     fn create_descriptor_set_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
-    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
+    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
         // TODO: Currently we always create a descriptor table. In the future we could use some
         //       optimization heuristics to detect when a root descriptor is better.
         let visibility = shader_visibility_to_dx12(desc.visibility);
@@ -333,8 +327,7 @@ impl IDevice for Device {
         let (sampler_tables, static_samplers) = self.build_sampler_tables(desc, &mut binding_info);
         let resource_num = Self::calculate_descriptor_num(&resource_table);
 
-        let descriptor_set_layout = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
-            this: v.clone(),
+        let out = DescriptorSetLayout {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_set_layout(),
             binding_info,
@@ -344,11 +337,9 @@ impl IDevice for Device {
             resource_num,
             sampler_tables,
             static_samplers,
-        });
-        Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(
-            descriptor_set_layout,
-            |v| v,
-        ))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -358,10 +349,7 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let layout = unwrap::descriptor_set_layout(desc.layout)
-            .this
-            .upgrade()
-            .unwrap();
+        let layout = DescriptorSetLayout::get_owned(desc.layout);
 
         let resource_arena = DescriptorChunk::new(
             self.descriptor_heaps.gpu_view_heap(),
@@ -445,7 +433,7 @@ impl IDevice for Device {
     fn create_pipeline_layout(
         &self,
         desc: &PipelineLayoutDesc,
-    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
+    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -461,7 +449,7 @@ impl IDevice for Device {
 
             let mut root_param_index = 0;
             for (i, layout) in desc.set_layouts.iter().enumerate() {
-                let layout = unwrap::descriptor_set_layout_d(layout);
+                let layout = DescriptorSetLayout::get(layout);
 
                 // First thing is we store the base root parameter index into our set->param_index
                 // lookup table.
@@ -575,18 +563,15 @@ impl IDevice for Device {
                 set_name(&root_signature, name).unwrap();
             }
 
-            let pipeline_layout = AnyArc::new_cyclic(move |v| PipelineLayout {
-                this: v.clone(),
+            let out = PipelineLayout {
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_pipeline_layout(),
                 root_signature,
                 push_constant_blocks,
                 set_root_param_indices,
-            });
-            Ok(AnyArc::map::<dyn IPipelineLayout, _>(
-                pipeline_layout,
-                |v| v,
-            ))
+            };
+            let out = ArcedObject::new_arc_opaque(out);
+            unsafe { Ok(PipelineLayoutHandle::new(out)) }
         })
     }
 
@@ -717,10 +702,7 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_sampler(
-        &self,
-        desc: &SamplerDesc,
-    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
         let gpu_handle = self
             .descriptor_heaps
             .gpu_sampler_cache()
@@ -756,17 +738,16 @@ impl IDevice for Device {
 
         let name = desc.name.map(str::to_string);
         let desc = desc.clone().strip_name();
-
-        let sampler = AnyArc::new_cyclic(move |v| Sampler {
-            this: v.clone(),
+        let out = Sampler {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_sampler(),
             desc,
             name,
             gpu_handle,
             static_desc,
-        });
-        Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(SamplerHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -884,44 +865,50 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
         let initial_value = if signalled { 1 } else { 0 };
         let fence: ID3D12Fence = unsafe {
             self.device
                 .CreateFence(initial_value, D3D12_FENCE_FLAG_NONE)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
-        let fence = AnyArc::new_cyclic(move |v| Fence {
-            _this: v.clone(),
+
+        let fence = Fence {
             _device: self.this.upgrade().unwrap(),
             fence,
             value: AtomicU64::new(2),
-        });
-        Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
+        };
+        let fence = ArcedObject::new_arc_opaque(fence);
+        unsafe { Ok(FenceHandle::new(fence)) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
+    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
         let fence: ID3D12Fence = unsafe {
             self.device
                 .CreateFence(0, D3D12_FENCE_FLAG_NONE)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?
         };
-        let semaphore = AnyArc::new_cyclic(move |v| Semaphore {
-            _this: v.clone(),
+        let semaphore = Semaphore {
             _device: self.this.upgrade().unwrap(),
             fence,
             value: AtomicU64::new(0),
-        });
-        Ok(AnyArc::map::<dyn ISemaphore, _>(semaphore, |v| v))
+        };
+        let semaphore = ArcedObject::new_arc_opaque(semaphore);
+        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
+    fn wait_fences(
+        &self,
+        fences: &[&FenceHandle],
+        wait_all: bool,
+        timeout: u32,
+    ) -> FenceWaitResult {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
@@ -937,7 +924,7 @@ impl IDevice for Device {
                             CreateEventW(None, false, false, None).unwrap()
                         };
                     }
-                    let fence = unwrap::fence(fences[0]);
+                    let fence = Fence::get(fences[0]);
                     let wait_value = fence.get_wait_value();
 
                     WAIT_HANDLE.with(|handle| unsafe {
@@ -966,7 +953,7 @@ impl IDevice for Device {
                     let mut inner_fences: BVec<Option<ID3D12Fence>> =
                         BVec::with_capacity_in(fences.len(), &bump);
                     let mut wait_values: BVec<u64> = BVec::with_capacity_in(fences.len(), &bump);
-                    for fence in unwrap::fence_iter(fences) {
+                    for fence in fences.iter().copied().map(Fence::get) {
                         inner_fences.push(Some(fence.fence.clone()));
                         wait_values.push(fence.get_wait_value());
                     }
@@ -1002,8 +989,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, fence: &dyn IFence) -> bool {
-        let fence = unwrap::fence(fence);
+    fn poll_fence(&self, fence: &FenceHandle) -> bool {
+        let fence = Fence::get(fence);
         unsafe {
             let v = fence.fence.GetCompletedValue();
             v < fence.get_wait_value()
@@ -1013,7 +1000,7 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn reset_fences(&self, _fences: &[&dyn IFence]) {
+    fn reset_fences(&self, _fences: &[&FenceHandle]) {
         // Fence reset is a no-op on dx12 as a fence is always ready to use. It uses a monotonic
         // counter to keep the signals and waits correct.
     }
@@ -1128,6 +1115,61 @@ impl IDevice for Device {
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
         Texture::get(texture).get_dsv(desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
+        Sampler::get(sampler).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b> {
+        Sampler::get(sampler).desc()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
+        Sampler::get(sampler).desc_ref()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_descriptor_set_layout_id(
+        &self,
+        set_layout: &DescriptorSetLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        DescriptorSetLayout::get(set_layout).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_pipeline_layout_id(
+        &self,
+        pipeline_layout: &PipelineLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        PipelineLayout::get(pipeline_layout).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
+        GraphicsPipeline::get(pipeline).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
+        ComputePipeline::get(pipeline).id
     }
 }
 
@@ -1578,7 +1620,7 @@ impl Device {
             // We switch how we output the binding based on the presence of static samplers
             if let Some(samplers) = item.static_samplers {
                 for sampler in samplers {
-                    let sampler = unwrap::sampler_d(sampler);
+                    let sampler = Sampler::get(sampler);
                     let mut desc = sampler.static_desc;
                     desc.ShaderRegister = item.binding_num;
 
@@ -1718,7 +1760,7 @@ impl Device {
 
         for (_i, v) in writes.iter().enumerate() {
             let target = set.samplers.as_mut();
-            let sampler = unwrap::sampler(v.sampler);
+            let sampler = Sampler::get(v.sampler);
 
             // Copy the gpu descriptor handle into the descriptor set's internal list of samplers.
             // This internal list will be consumed at bind time to set each sampler as samplers are

@@ -45,7 +45,9 @@ use windows::Win32::Graphics::Dxgi::*;
 
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
+use crate::fence::Fence;
 use crate::internal::unwrap;
+use crate::semaphore::Semaphore;
 
 pub struct Queue {
     pub(crate) this: AnyWeak<Self>,
@@ -327,7 +329,8 @@ impl IQueue for Queue {
 
         // 'Wait' on all the wait_semaphores in a loop, as we're emulating vulkan like semaphore
         // objects that predicate a submission
-        for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
+        for semaphore in desc.wait_semaphores {
+            let semaphore = Semaphore::get(semaphore);
             semaphore
                 .wait_on_queue(&self.handle)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
@@ -358,7 +361,8 @@ impl IQueue for Queue {
 
         // 'Signal' all the 'signal_semaphores' in a loop, as we're emulating vulkan like
         // semaphore objects.
-        for semaphore in unwrap::semaphore_iter(desc.signal_semaphores) {
+        for semaphore in desc.signal_semaphores {
+            let semaphore = Semaphore::get(semaphore);
             semaphore
                 .signal_on_queue(&self.handle)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
@@ -366,7 +370,7 @@ impl IQueue for Queue {
 
         // Signal the fence, if one is provided, to let CPU know the submitted commands are
         // now fully retired.
-        if let Some(fence) = desc.fence.map(unwrap::fence) {
+        if let Some(fence) = desc.fence.map(Fence::get) {
             fence
                 .signal_on_queue(&self.handle)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
@@ -404,7 +408,8 @@ impl IQueue for Queue {
         // either.
         let _lock = self.submit_lock.lock();
 
-        for semaphore in unwrap::semaphore_iter(desc.wait_semaphores) {
+        for semaphore in desc.wait_semaphores {
+            let semaphore = Semaphore::get(semaphore);
             semaphore
                 .wait_on_queue(&self.handle)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;

@@ -27,18 +27,16 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use windows::Win32::Graphics::Direct3D12::*;
 
 use crate::device::Device;
 
 pub struct Fence {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) fence: ID3D12Fence,
 
@@ -55,29 +53,15 @@ pub struct Fence {
     pub(crate) value: AtomicU64,
 }
 
-declare_interfaces!(Fence, [IFence]);
-
-impl IGetPlatformInterface for Fence {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.fence, out, target)
-    }
-}
-
-impl IFence for Fence {
-    fn upgrade(&self) -> AnyArc<dyn IFence> {
-        AnyArc::map::<dyn IFence, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-}
+unsafe_impl_iobject!(Fence, "01944fa2-d250-7623-8cad-bace9b1c891d");
 
 impl Fence {
+    pub(crate) fn get(v: &FenceHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Fence implementation!")
+    }
+
     pub fn get_wait_value(&self) -> u64 {
         // We subtract one, saturating to 0. It is invalid to use a semaphore in
         // 'wait_semaphores' before first being used as a 'signal_semaphore' in a previous
