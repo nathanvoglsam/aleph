@@ -258,7 +258,7 @@ macro_rules! unsafe_impl_iobject {
                 static VTABLE: $crate::ObjectDescription = $crate::ObjectDescription {
                     id: $crate::uuid::uuid!($id),
                     size: ::std::mem::size_of::<$t>(),
-                    align: ::std::mem::size_of::<$t>(),
+                    align: ::std::mem::align_of::<$t>(),
                     name: $crate::nstr::nstr!(concat!(module_path!(), "::", stringify!($t))),
                     destructor: $crate::get_object_destructor_for::<$t>(),
                     destructor_arc: $crate::object_destructor::<
