@@ -35,8 +35,7 @@ use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 
-use crate::internal::unwrap;
-use crate::{ValidationDevice, ValidationSurface, ValidationTexture};
+use crate::{ValidationDevice, ValidationSemaphore, ValidationSurface, ValidationTexture};
 
 pub struct ValidationSwapChain {
     pub(crate) _this: AnyWeak<Self>,
@@ -91,7 +90,7 @@ impl ISwapChain for ValidationSwapChain {
             // Need to drop all the views before asserting the ref count as there's weak references
             // to the image inside it's own view set. These are fine to destroy as all views are
             // made invalid to access for the images as soon as 'rebuild' is entered.
-            x.object.drop_views();
+            x.drop_views();
             assert!(
                 Arc::weak_count(x) == 1 && Arc::strong_count(x) == 1,
                 "It is invalid to resize a swap chain while still holding references to its images"
@@ -143,7 +142,7 @@ impl ISwapChain for ValidationSwapChain {
         }
 
         let new_desc = AcquireDesc {
-            signal_semaphore: unwrap::semaphore(desc.signal_semaphore).inner.as_ref(),
+            signal_semaphore: &ValidationSemaphore::get(desc.signal_semaphore).inner,
         };
 
         self.inner.acquire_next_image(&new_desc)

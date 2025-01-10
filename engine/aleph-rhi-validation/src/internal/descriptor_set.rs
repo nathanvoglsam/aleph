@@ -28,8 +28,9 @@
 //
 
 use std::ptr::NonNull;
+use std::sync::Arc;
 
-use aleph_any::AnyArc;
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
 use crate::ValidationDescriptorSetLayout;
@@ -47,7 +48,7 @@ pub struct DescriptorSet {
     pub _pool_id: u64,
 
     /// The descriptor set layout of this set
-    pub _layout: AnyArc<ValidationDescriptorSetLayout>,
+    pub _layout: Arc<ArcedObject<ValidationDescriptorSetLayout>>,
 
     /// The inner handle
     pub inner: DescriptorSetHandle,

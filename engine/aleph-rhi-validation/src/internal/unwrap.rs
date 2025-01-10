@@ -30,11 +30,7 @@
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conversion_function;
 
-use crate::{
-    ValidationCommandList, ValidationComputePipeline, ValidationDescriptorSetLayout,
-    ValidationDevice, ValidationFence, ValidationGraphicsPipeline, ValidationPipelineLayout,
-    ValidationSampler, ValidationSemaphore, ValidationSurface, ValidationSwapChain,
-};
+use crate::{ValidationCommandList, ValidationDevice, ValidationSurface, ValidationSwapChain};
 
 conversion_function!(
     ICommandList,
@@ -43,50 +39,7 @@ conversion_function!(
     command_list_d,
     command_list_iter
 );
-conversion_function!(
-    IDescriptorSetLayout,
-    ValidationDescriptorSetLayout,
-    descriptor_set_layout,
-    descriptor_set_layout_d,
-    descriptor_set_layout_iter
-);
 conversion_function!(IDevice, ValidationDevice, device, device_d, device_iter);
-conversion_function!(IFence, ValidationFence, fence, fence_d, fence_iter);
-conversion_function!(
-    IGraphicsPipeline,
-    ValidationGraphicsPipeline,
-    graphics_pipeline,
-    graphics_pipeline_d,
-    graphics_pipeline_iter
-);
-conversion_function!(
-    IComputePipeline,
-    ValidationComputePipeline,
-    compute_pipeline,
-    compute_pipeline_d,
-    compute_pipeline_iter
-);
-conversion_function!(
-    IPipelineLayout,
-    ValidationPipelineLayout,
-    pipeline_layout,
-    pipeline_layout_d,
-    pipeline_layout_iter
-);
-conversion_function!(
-    ISampler,
-    ValidationSampler,
-    sampler,
-    sampler_d,
-    sampler_iter
-);
-conversion_function!(
-    ISemaphore,
-    ValidationSemaphore,
-    semaphore,
-    semaphore_d,
-    semaphore_iter
-);
 conversion_function!(
     ISurface,
     ValidationSurface,

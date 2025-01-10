@@ -34,7 +34,7 @@ use std::ops::Deref;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
@@ -42,7 +42,7 @@ use crossbeam::atomic::AtomicCell;
 use crate::descriptor_set_layout::DescriptorBindingInfo;
 use crate::fence::FenceState;
 use crate::internal::descriptor_set::DescriptorSet;
-use crate::internal::{get_as_unwrapped, unwrap};
+use crate::internal::get_as_unwrapped;
 use crate::semaphore::SemaphoreState;
 use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{
@@ -110,7 +110,7 @@ impl IDevice for ValidationDevice {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
+    ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
         let mut stage_set = HashSet::with_capacity(8);
         desc.shader_stages.iter().for_each(|v| {
             let duplicate_stage = !stage_set.insert(v.stage as u32);
@@ -125,14 +125,11 @@ impl IDevice for ValidationDevice {
             );
         });
 
-        let pipeline_layout = desc
-            .pipeline_layout
-            .query_interface::<ValidationPipelineLayout>()
-            .expect("Unknown IGraphicsPipeline implementation");
+        let pipeline_layout = ValidationPipelineLayout::get_owned(desc.pipeline_layout);
 
         let new_desc = GraphicsPipelineDesc {
             shader_stages: desc.shader_stages,
-            pipeline_layout: pipeline_layout.inner.as_ref(),
+            pipeline_layout: &pipeline_layout.inner,
             vertex_layout: desc.vertex_layout,
             input_assembly_state: desc.input_assembly_state,
             rasterizer_state: desc.rasterizer_state,
@@ -144,13 +141,13 @@ impl IDevice for ValidationDevice {
         };
 
         let inner = self.inner.create_graphics_pipeline(&new_desc)?;
-        let pipeline = AnyArc::new_cyclic(move |v| ValidationGraphicsPipeline {
-            _this: v.clone(),
+        let out = ValidationGraphicsPipeline {
             _device: self._this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout,
             inner,
-        });
-        Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(GraphicsPipelineHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -159,26 +156,23 @@ impl IDevice for ValidationDevice {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
-        let pipeline_layout = desc
-            .pipeline_layout
-            .query_interface::<ValidationPipelineLayout>()
-            .expect("Unknown IGraphicsPipeline implementation");
+    ) -> Result<ComputePipelineHandle, PipelineCreateError> {
+        let pipeline_layout = ValidationPipelineLayout::get_owned(desc.pipeline_layout);
 
         let new_desc = ComputePipelineDesc {
             shader_module: desc.shader_module,
-            pipeline_layout: pipeline_layout.inner.as_ref(),
+            pipeline_layout: &pipeline_layout.inner,
             name: desc.name,
         };
 
         let inner = self.inner.create_compute_pipeline(&new_desc)?;
-        let pipeline = AnyArc::new_cyclic(move |v| ValidationComputePipeline {
-            _this: v.clone(),
+        let out = ValidationComputePipeline {
             _device: self._this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout,
             inner,
-        });
-        Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(ComputePipelineHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -187,7 +181,7 @@ impl IDevice for ValidationDevice {
     fn create_descriptor_set_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
-    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
+    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
         Self::validate_descriptor_set_layout(desc);
 
         // Extract binding metadata we need for validation
@@ -203,7 +197,7 @@ impl IDevice for ValidationDevice {
             );
         }
 
-        // Unwrap the inner &dyn ISampler references to get references to the wrapped implementation
+        // Unwrap the inner &SamplerHandle references to get references to the wrapped implementation
         // expected by self.inner
         let mut static_samplers = Vec::with_capacity(desc.items.len());
         for v in desc.items.iter() {
@@ -211,11 +205,7 @@ impl IDevice for ValidationDevice {
                 let mut samplers = Vec::new();
 
                 for v in v {
-                    let inner_sampler = v
-                        .query_interface::<ValidationSampler>()
-                        .expect("Unknown ISampler Implementation")
-                        .inner
-                        .deref();
+                    let inner_sampler = &ValidationSampler::get(v).inner;
                     samplers.push(inner_sampler);
                 }
 
@@ -249,13 +239,13 @@ impl IDevice for ValidationDevice {
         };
 
         let inner = self.inner.create_descriptor_set_layout(&new_desc)?;
-        let layout = AnyArc::new_cyclic(move |v| ValidationDescriptorSetLayout {
-            _this: v.clone(),
+        let out = ValidationDescriptorSetLayout {
             _device: self._this.upgrade().unwrap(),
             inner,
             binding_info,
-        });
-        Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(layout, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -268,17 +258,11 @@ impl IDevice for ValidationDevice {
         let inner_desc = get_as_unwrapped::descriptor_pool_desc(desc);
         let inner = self.inner.create_descriptor_pool(&inner_desc)?;
 
-        let inner_layout = desc
-            .layout
-            .query_interface::<ValidationDescriptorSetLayout>()
-            .expect("Unknown IDescriptorSetLayout implementation")
-            ._this
-            .upgrade()
-            .unwrap();
+        let layout = ValidationDescriptorSetLayout::get_owned(desc.layout);
 
         let pool = Box::new(ValidationDescriptorPool {
             _device: self._this.upgrade().unwrap(),
-            _layout: inner_layout,
+            _layout: layout,
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
             set_objects: Vec::with_capacity(desc.num_sets as usize),
@@ -314,7 +298,7 @@ impl IDevice for ValidationDevice {
     fn create_pipeline_layout(
         &self,
         desc: &PipelineLayoutDesc,
-    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
+    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
         // TODO: implement validation for create_pipeline_layout
 
         // Unwrap the objects in 'set_layouts' into a new list so the layer below gets the correct
@@ -330,13 +314,13 @@ impl IDevice for ValidationDevice {
             push_constant_blocks.push(block.clone());
         }
 
-        let layout = AnyArc::new_cyclic(move |v| ValidationPipelineLayout {
-            _this: v.clone(),
+        let out = ValidationPipelineLayout {
             _device: self._this.upgrade().unwrap(),
             inner,
             push_constant_blocks,
-        });
-        Ok(AnyArc::map::<dyn IPipelineLayout, _>(layout, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(PipelineLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -390,17 +374,14 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_sampler(
-        &self,
-        desc: &SamplerDesc,
-    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
         let inner = self.inner.create_sampler(desc)?;
-        let sampler = AnyArc::new_cyclic(move |v| ValidationSampler {
-            _this: v.clone(),
+        let out = ValidationSampler {
             _device: self._this.upgrade().unwrap(),
             inner,
-        });
-        Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(SamplerHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -455,42 +436,47 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
+    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
         let initial_state = if signalled {
             FenceState::ObservedAsSignalled
         } else {
             FenceState::NotSignalled
         };
         let inner = self.inner.create_fence(signalled)?;
-        let fence = AnyArc::new_cyclic(move |v| ValidationFence {
-            _this: v.clone(),
+        let fence = ValidationFence {
             _device: self._this.upgrade().unwrap(),
             inner,
             state: AtomicCell::new(initial_state),
-        });
-        Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
+        };
+        let fence = ArcedObject::new_arc_opaque(fence);
+        unsafe { Ok(FenceHandle::new(fence)) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
+    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
         let inner = self.inner.create_semaphore()?;
-        let fence = AnyArc::new_cyclic(move |v| ValidationSemaphore {
-            _this: v.clone(),
+        let semaphore = ValidationSemaphore {
             _device: self._this.upgrade().unwrap(),
             inner,
             state: AtomicCell::new(SemaphoreState::Reset),
-        });
-        Ok(AnyArc::map::<dyn ISemaphore, _>(fence, |v| v))
+        };
+        let semaphore = ArcedObject::new_arc_opaque(semaphore);
+        unsafe { Ok(SemaphoreHandle::new(semaphore)) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult {
+    fn wait_fences(
+        &self,
+        fences: &[&FenceHandle],
+        wait_all: bool,
+        timeout: u32,
+    ) -> FenceWaitResult {
         fences.iter().for_each(|v| {
-            let v = unwrap::fence_d(v);
+            let v = ValidationFence::get(v);
             if timeout == u32::MAX {
                 let fence_state = v.state.load();
                 assert_ne!(
@@ -503,7 +489,9 @@ impl IDevice for ValidationDevice {
 
         let inner_fences: Vec<_> = fences
             .iter()
-            .map(|v| unwrap::fence_d(v).inner.as_ref())
+            .copied()
+            .map(ValidationFence::get)
+            .map(|v| &v.inner)
             .collect();
         let result = self.inner.wait_fences(&inner_fences, wait_all, timeout);
 
@@ -511,7 +499,7 @@ impl IDevice for ValidationDevice {
             // If we met the wait condition we can update the fence states as at least one of them
             // have been signalled
             fences.iter().for_each(|v| {
-                let v = unwrap::fence_d(v);
+                let v = ValidationFence::get(v);
 
                 // We can only update the state if we can prove the fence is signalled.
                 //
@@ -526,7 +514,7 @@ impl IDevice for ValidationDevice {
                 } else {
                     // Will update the state as a side effect of calling poll_fence. Skips storing
                     // to the state twice
-                    self.poll_fence(v.inner.as_ref());
+                    self.poll_fence(&v.inner);
                 }
             });
         }
@@ -537,10 +525,10 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, fence: &dyn IFence) -> bool {
-        let fence = unwrap::fence(fence);
+    fn poll_fence(&self, fence: &FenceHandle) -> bool {
+        let fence = ValidationFence::get(fence);
 
-        let result = self.inner.poll_fence(fence.inner.as_ref());
+        let result = self.inner.poll_fence(&fence.inner);
 
         if result {
             fence.state.store(FenceState::ObservedAsSignalled);
@@ -549,9 +537,9 @@ impl IDevice for ValidationDevice {
         result
     }
 
-    fn reset_fences(&self, fences: &[&dyn IFence]) {
+    fn reset_fences(&self, fences: &[&FenceHandle]) {
         fences.iter().for_each(|v| {
-            let v = unwrap::fence_d(v);
+            let v = ValidationFence::get(v);
             let fence_state = v.state.load();
             assert_ne!(
                 fence_state,
@@ -562,13 +550,15 @@ impl IDevice for ValidationDevice {
 
         let inner_fences: Vec<_> = fences
             .iter()
-            .map(|v| unwrap::fence_d(v).inner.as_ref())
+            .copied()
+            .map(ValidationFence::get)
+            .map(|v| &v.inner)
             .collect();
 
         self.inner.reset_fences(&inner_fences);
 
         fences.iter().for_each(|v| {
-            let v = unwrap::fence_d(v);
+            let v = ValidationFence::get(v);
             v.state.store(FenceState::NotSignalled);
         });
     }
@@ -698,6 +688,67 @@ impl IDevice for ValidationDevice {
         let texture = ValidationTexture::get(texture);
         texture.get_dsv(self, desc)
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
+        let v = ValidationSampler::get(sampler);
+        self.inner.get_sampler_id(&v.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b> {
+        let v = ValidationSampler::get(sampler);
+        self.inner.sampler_desc(&v.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
+        let v = ValidationSampler::get(sampler);
+        self.inner.sampler_desc_ref(&v.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_descriptor_set_layout_id(
+        &self,
+        set_layout: &DescriptorSetLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        ValidationDescriptorSetLayout::get(set_layout).get_id(self)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_pipeline_layout_id(
+        &self,
+        pipeline_layout: &PipelineLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        let v = ValidationPipelineLayout::get(pipeline_layout);
+        self.inner.get_pipeline_layout_id(&v.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
+        let v = ValidationGraphicsPipeline::get(pipeline);
+        self.inner.get_graphics_pipeline_id(&v.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
+        let v = ValidationComputePipeline::get(pipeline);
+        self.inner.get_compute_pipeline_id(&v.inner)
+    }
 }
 
 impl ValidationDevice {
@@ -816,10 +867,7 @@ impl ValidationDevice {
                         .upgrade()
                         .expect("Trying to write view for destroyed image");
 
-                    Self::validate_texture_usage(
-                        &texture.object,
-                        ResourceUsageFlags::SHADER_RESOURCE,
-                    );
+                    Self::validate_texture_usage(&texture, ResourceUsageFlags::SHADER_RESOURCE);
                 }
             }
             DescriptorWrites::TextureRW(writes) => {
@@ -834,10 +882,7 @@ impl ValidationDevice {
                         .upgrade()
                         .expect("Trying to write view for destroyed image");
 
-                    Self::validate_texture_usage(
-                        &texture.object,
-                        ResourceUsageFlags::UNORDERED_ACCESS,
-                    );
+                    Self::validate_texture_usage(&texture, ResourceUsageFlags::UNORDERED_ACCESS);
                 }
             }
             DescriptorWrites::UniformBuffer(writes)

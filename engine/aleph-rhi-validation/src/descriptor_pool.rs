@@ -30,8 +30,10 @@
 // TODO: generational index + extra indirection for validating use-after-free for descriptor sets
 
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
 use crate::internal::descriptor_set::DescriptorSet;
@@ -39,7 +41,7 @@ use crate::{ValidationDescriptorSetLayout, ValidationDevice};
 
 pub struct ValidationDescriptorPool {
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _layout: AnyArc<ValidationDescriptorSetLayout>,
+    pub(crate) _layout: Arc<ArcedObject<ValidationDescriptorSetLayout>>,
     pub(crate) inner: Box<dyn IDescriptorPool>,
     pub(crate) pool_id: u64,
     pub(crate) set_objects: Vec<DescriptorSet>,

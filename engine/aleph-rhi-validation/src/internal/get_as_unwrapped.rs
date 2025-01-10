@@ -49,7 +49,6 @@
 //!
 
 use std::cell::Cell;
-use std::ops::Deref;
 use std::ptr::NonNull;
 
 use aleph_any::{box_downcast, QueryInterface};
@@ -93,12 +92,10 @@ pub fn pipeline_layout_desc<Return>(
     desc: &PipelineLayoutDesc,
     f: impl FnOnce(&PipelineLayoutDesc) -> Return,
 ) -> Return {
-    let mut set_layouts: Vec<&dyn IDescriptorSetLayout> = Vec::new();
+    let mut set_layouts: Vec<&DescriptorSetLayoutHandle> = Vec::new();
     for v in desc.set_layouts {
-        let v = v
-            .query_interface::<ValidationDescriptorSetLayout>()
-            .expect("Unknown IDescriptorSetLayout implementation");
-        set_layouts.push(v.inner.as_ref());
+        let v = ValidationDescriptorSetLayout::get(v);
+        set_layouts.push(&v.inner);
     }
 
     let new_desc = PipelineLayoutDesc {
@@ -153,31 +150,20 @@ pub fn queue_submit_desc<Return>(
     let wait_semaphores: Vec<_> = desc
         .wait_semaphores
         .iter()
-        .map(|v| {
-            v.query_interface::<ValidationSemaphore>()
-                .expect("Unknown ISemaphore implementation")
-                .inner
-                .as_ref()
-        })
+        .copied()
+        .map(ValidationSemaphore::get)
+        .map(|v| &v.inner)
         .collect();
 
     let signal_semaphores: Vec<_> = desc
         .signal_semaphores
         .iter()
-        .map(|v| {
-            v.query_interface::<ValidationSemaphore>()
-                .expect("Unknown ISemaphore implementation")
-                .inner
-                .as_ref()
-        })
+        .copied()
+        .map(ValidationSemaphore::get)
+        .map(|v| &v.inner)
         .collect();
 
-    let fence = desc.fence.map(|v| {
-        v.query_interface::<ValidationFence>()
-            .expect("Unknown IFence Implementation")
-            .inner
-            .as_ref()
-    });
+    let fence = desc.fence.map(|v| &ValidationFence::get(v).inner);
 
     let new_desc = QueueSubmitDesc {
         command_lists: command_lists.as_slice(),
@@ -203,12 +189,9 @@ pub fn queue_present_desc<Return>(
     let wait_semaphores: Vec<_> = desc
         .wait_semaphores
         .iter()
-        .map(|v| {
-            v.query_interface::<ValidationSemaphore>()
-                .expect("Unknown ISemaphore implementation")
-                .inner
-                .as_ref()
-        })
+        .copied()
+        .map(ValidationSemaphore::get)
+        .map(|v| &v.inner)
         .collect();
 
     let new_desc = QueuePresentDesc {
@@ -276,12 +259,7 @@ pub fn descriptor_writes<'a>(writes: &'a DescriptorWrites<'a>) -> OwnedDescripto
 pub fn sampler_descriptor_write<'a>(
     write: &'a SamplerDescriptorWrite<'a>,
 ) -> SamplerDescriptorWrite<'a> {
-    let sampler = write
-        .sampler
-        .query_interface::<ValidationSampler>()
-        .expect("Unknown ISampler Implementation")
-        .inner
-        .deref();
+    let sampler = &ValidationSampler::get(write.sampler).inner;
     SamplerDescriptorWrite { sampler }
 }
 
@@ -428,12 +406,9 @@ pub fn texture_barrier<'a>(barrier: &'a TextureBarrier<'a>) -> TextureBarrier<'a
 }
 
 pub fn descriptor_pool_desc<'a>(desc: &'a DescriptorPoolDesc<'a>) -> DescriptorPoolDesc<'a> {
-    let layout = desc
-        .layout
-        .query_interface::<ValidationDescriptorSetLayout>()
-        .expect("Unknown IDescriptorSetLayout implementation");
+    let layout = ValidationDescriptorSetLayout::get(desc.layout);
     DescriptorPoolDesc {
-        layout: layout.inner.as_ref(),
+        layout: &layout.inner,
         num_sets: desc.num_sets,
         name: desc.name,
     }

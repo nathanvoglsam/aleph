@@ -27,43 +27,23 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 
 use crate::ValidationDevice;
 
 pub struct ValidationSampler {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn ISampler>,
+    pub(crate) inner: SamplerHandle,
 }
 
-declare_interfaces!(ValidationSampler, [ISampler]);
+unsafe_impl_iobject!(ValidationSampler, "01945007-c149-7992-9991-35554e79374b");
 
-crate::impl_platform_interface_passthrough!(ValidationSampler);
-
-impl ISampler for ValidationSampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
-    }
-
-    fn desc(&self) -> SamplerDesc {
-        self.inner.desc()
-    }
-
-    fn desc_ref(&self) -> &SamplerDesc {
-        self.inner.desc_ref()
+impl ValidationSampler {
+    pub(crate) fn get(v: &SamplerHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Sampler implementation!")
     }
 }

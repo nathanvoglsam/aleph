@@ -30,21 +30,22 @@
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 
 use crate::ValidationDevice;
 
 pub struct ValidationDescriptorSetLayout {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn IDescriptorSetLayout>,
+    pub(crate) inner: DescriptorSetLayoutHandle,
     pub(crate) binding_info: HashMap<u32, DescriptorBindingInfo>,
 }
 
-declare_interfaces!(ValidationDescriptorSetLayout, [IDescriptorSetLayout]);
-
-crate::impl_platform_interface_passthrough!(ValidationDescriptorSetLayout);
+unsafe_impl_iobject!(
+    ValidationDescriptorSetLayout,
+    "01944ff7-295e-7131-805b-27db8b658346"
+);
 
 impl ValidationDescriptorSetLayout {
     /// Internal function
@@ -55,21 +56,22 @@ impl ValidationDescriptorSetLayout {
     }
 }
 
-impl IDescriptorSetLayout for ValidationDescriptorSetLayout {
-    fn upgrade(&self) -> AnyArc<dyn IDescriptorSetLayout> {
-        AnyArc::map::<dyn IDescriptorSetLayout, _>(self._this.upgrade().unwrap(), |v| v)
+impl ValidationDescriptorSetLayout {
+    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
+    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
+    pub(crate) fn get_id(&self, device: &ValidationDevice) -> std::num::NonZeroU64 {
+        device.inner.get_descriptor_set_layout_id(&self.inner)
     }
 }
 

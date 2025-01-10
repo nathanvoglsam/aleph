@@ -27,36 +27,34 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 
 use crate::ValidationDevice;
 
 pub struct ValidationPipelineLayout {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn IPipelineLayout>,
+    pub(crate) inner: PipelineLayoutHandle,
     pub(crate) push_constant_blocks: Vec<PushConstantBlock>,
 }
 
-declare_interfaces!(ValidationPipelineLayout, [IPipelineLayout]);
+unsafe_impl_iobject!(
+    ValidationPipelineLayout,
+    "01945000-95aa-7e22-b30e-b44461b319e8"
+);
 
-crate::impl_platform_interface_passthrough!(ValidationPipelineLayout);
-
-impl IPipelineLayout for ValidationPipelineLayout {
-    fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {
-        AnyArc::map::<dyn IPipelineLayout, _>(self._this.upgrade().unwrap(), |v| v)
+impl ValidationPipelineLayout {
+    pub(crate) fn get_owned(v: &PipelineLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown PipelineLayout implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
+    pub(crate) fn get(v: &PipelineLayoutHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown PipelineLayout implementation!")
     }
 }

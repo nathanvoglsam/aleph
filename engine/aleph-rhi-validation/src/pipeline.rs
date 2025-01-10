@@ -27,65 +27,62 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use std::sync::Arc;
+
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 
 use crate::{ValidationDevice, ValidationPipelineLayout};
 
 pub struct ValidationGraphicsPipeline {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _pipeline_layout: AnyArc<ValidationPipelineLayout>,
-    pub(crate) inner: AnyArc<dyn IGraphicsPipeline>,
+    pub(crate) _pipeline_layout: Arc<ArcedObject<ValidationPipelineLayout>>,
+    pub(crate) inner: GraphicsPipelineHandle,
 }
 
-declare_interfaces!(ValidationGraphicsPipeline, [IGraphicsPipeline]);
+unsafe_impl_iobject!(
+    ValidationGraphicsPipeline,
+    "01945001-1330-7701-967e-67870337ea4b"
+);
 
-crate::impl_platform_interface_passthrough!(ValidationGraphicsPipeline);
-
-impl IGraphicsPipeline for ValidationGraphicsPipeline {
-    fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
-        AnyArc::map::<dyn IGraphicsPipeline, _>(self._this.upgrade().unwrap(), |v| v)
+impl ValidationGraphicsPipeline {
+    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown GraphicsPipeline implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
+    pub(crate) fn get(v: &GraphicsPipelineHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown GraphicsPipeline implementation!")
     }
 }
 
 pub struct ValidationComputePipeline {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _pipeline_layout: AnyArc<ValidationPipelineLayout>,
-    pub(crate) inner: AnyArc<dyn IComputePipeline>,
+    pub(crate) _pipeline_layout: Arc<ArcedObject<ValidationPipelineLayout>>,
+    pub(crate) inner: ComputePipelineHandle,
 }
 
-declare_interfaces!(ValidationComputePipeline, [IComputePipeline]);
+unsafe_impl_iobject!(
+    ValidationComputePipeline,
+    "01945000-ead1-7c43-b472-84105f560419"
+);
 
-crate::impl_platform_interface_passthrough!(ValidationComputePipeline);
-
-impl IComputePipeline for ValidationComputePipeline {
-    fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
-        AnyArc::map::<dyn IComputePipeline, _>(self._this.upgrade().unwrap(), |v| v)
+impl ValidationComputePipeline {
+    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown ComputePipeline implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
+    pub(crate) fn get(v: &ComputePipelineHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown ComputePipeline implementation!")
     }
 }

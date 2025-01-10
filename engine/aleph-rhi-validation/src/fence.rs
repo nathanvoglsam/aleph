@@ -27,34 +27,26 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
 
 use crate::ValidationDevice;
 
 pub struct ValidationFence {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn IFence>,
+    pub(crate) inner: FenceHandle,
     pub(crate) state: AtomicCell<FenceState>,
 }
 
-declare_interfaces!(ValidationFence, [IFence]);
+unsafe_impl_iobject!(ValidationFence, "01944f8f-95b6-7d51-b2da-23931a5b3fc5");
 
-crate::impl_platform_interface_passthrough!(ValidationFence);
-
-impl IFence for ValidationFence {
-    fn upgrade(&self) -> AnyArc<dyn IFence> {
-        AnyArc::map::<dyn IFence, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
+impl ValidationFence {
+    pub(crate) fn get(v: &FenceHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Fence implementation!")
     }
 }
 

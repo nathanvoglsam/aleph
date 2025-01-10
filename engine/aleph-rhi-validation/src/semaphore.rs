@@ -27,34 +27,26 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
 
 use crate::ValidationDevice;
 
 pub struct ValidationSemaphore {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn ISemaphore>,
+    pub(crate) inner: SemaphoreHandle,
     pub(crate) state: AtomicCell<SemaphoreState>,
 }
 
-declare_interfaces!(ValidationSemaphore, [ISemaphore]);
+unsafe_impl_iobject!(ValidationSemaphore, "01944f8e-5cbf-7313-bec7-4a1a1373ff4b");
 
-crate::impl_platform_interface_passthrough!(ValidationSemaphore);
-
-impl ISemaphore for ValidationSemaphore {
-    fn upgrade(&self) -> AnyArc<dyn ISemaphore> {
-        AnyArc::map::<dyn ISemaphore, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
+impl ValidationSemaphore {
+    pub(crate) fn get(v: &SemaphoreHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Semaphore implementation!")
     }
 }
 

@@ -29,8 +29,9 @@
 
 use std::any::TypeId;
 use std::ops::Deref;
+use std::sync::Arc;
 
-use aleph_any::{AnyArc, QueryInterface};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
 use crate::internal::get_as_unwrapped;
@@ -41,8 +42,8 @@ use crate::{
 };
 
 pub struct ValidationEncoder<T: ?Sized> {
-    pub(crate) bound_graphics_pipeline: Option<AnyArc<ValidationGraphicsPipeline>>,
-    pub(crate) bound_compute_pipeline: Option<AnyArc<ValidationComputePipeline>>,
+    pub(crate) bound_graphics_pipeline: Option<Arc<ArcedObject<ValidationGraphicsPipeline>>>,
+    pub(crate) bound_compute_pipeline: Option<Arc<ArcedObject<ValidationComputePipeline>>>,
     pub(crate) inner: Box<T>,
     pub(crate) list_type: QueueType,
     pub(crate) render_pass_open: bool,
@@ -55,20 +56,16 @@ impl<'a, T: IGetPlatformInterface + ?Sized + 'a> IGetPlatformInterface for Valid
 }
 
 impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder<T> {
-    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
+    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
         );
+        let pipeline = ValidationGraphicsPipeline::get_owned(pipeline);
 
-        let pipeline = pipeline
-            .query_interface::<ValidationGraphicsPipeline>()
-            .expect("Unknown IGraphicsPipeline implementation");
-
-        self.inner.bind_graphics_pipeline(pipeline.inner.deref());
+        self.inner.bind_graphics_pipeline(&pipeline.inner);
 
         // We need to know if/what pipeline is bound for validation purposes
-        let pipeline = pipeline._this.upgrade().unwrap();
         self.bound_graphics_pipeline = Some(pipeline);
     }
 
@@ -229,26 +226,23 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 }
 
 impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder<T> {
-    unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline) {
+    unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
         assert!(
             matches!(self.list_type, QueueType::General | QueueType::Compute),
             "Called a compute command on a non-compute capable command list"
         );
 
-        let pipeline = pipeline
-            .query_interface::<ValidationComputePipeline>()
-            .expect("Unknown IComputePipeline implementation");
+        let pipeline = ValidationComputePipeline::get_owned(pipeline);
 
-        self.inner.bind_compute_pipeline(pipeline.inner.deref());
+        self.inner.bind_compute_pipeline(&pipeline.inner);
 
         // We need to know if/what pipeline is bound for validation purposes
-        let pipeline = pipeline._this.upgrade().unwrap();
         self.bound_compute_pipeline = Some(pipeline);
     }
 
     unsafe fn bind_descriptor_sets(
         &mut self,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
@@ -259,11 +253,7 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
             "Called a compute command on a non-compute command list"
         );
 
-        let pipeline_layout = pipeline_layout
-            .query_interface::<ValidationPipelineLayout>()
-            .expect("Unknown IPipelineLayout Interface")
-            .inner
-            .deref();
+        let pipeline_layout = &ValidationPipelineLayout::get(pipeline_layout).inner;
 
         let sets: Vec<_> = sets
             .iter()
@@ -543,19 +533,15 @@ impl<T: ?Sized> ValidationEncoder<T> {
             );
 
             assert!(
-                image
-                    .object
-                    .desc
-                    .usage
-                    .contains(ResourceUsageFlags::RENDER_TARGET),
+                image.desc.usage.contains(ResourceUsageFlags::RENDER_TARGET),
                 "Used texture as render target when created without RENDER_TARGET usage"
             );
             assert!(
-                !image.object.desc.format.is_depth_stencil(),
+                !image.desc.format.is_depth_stencil(),
                 "Used depth/stencil texture as a color attachment",
             );
             Self::validate_sub_resource_mips_and_slices_against_texture(
-                &image.object.desc,
+                &image.desc,
                 &image_view.desc.sub_resources,
             );
         });
@@ -569,7 +555,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
             };
             let image = image_view._image.upgrade().unwrap();
 
-            (image.object.desc.width, image.object.desc.height)
+            (image.desc.width, image.desc.height)
         });
 
         // Reduce the sizes to a single item, asserting that they are all equal
@@ -596,27 +582,23 @@ impl<T: ?Sized> ValidationEncoder<T> {
             );
 
             assert!(
-                image
-                    .object
-                    .desc
-                    .usage
-                    .contains(ResourceUsageFlags::RENDER_TARGET),
+                image.desc.usage.contains(ResourceUsageFlags::RENDER_TARGET),
                 "Used texture as depth/stencil target when created without RENDER_TARGET usage"
             );
 
             assert!(
-                image.object.desc.format.is_depth_stencil(),
+                image.desc.format.is_depth_stencil(),
                 "Used non depth/stencil texture as a depth/stencil attachment",
             );
 
             Self::validate_sub_resource_mips_and_slices_against_texture(
-                &image.object.desc,
+                &image.desc,
                 &image_view.desc.sub_resources,
             );
 
             // Check that the depth stencil dimensions match the color dimensions
             if let Some((width, height)) = attachment_size {
-                let (d_width, d_height) = (image.object.desc.width, image.object.desc.height);
+                let (d_width, d_height) = (image.desc.width, image.desc.height);
                 assert_eq!(width, d_width, "All attachment widths must be equal");
                 assert_eq!(height, d_height, "All attachment heights must be equal");
             }

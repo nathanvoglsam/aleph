@@ -37,9 +37,12 @@ use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
 use aleph_rhi_api::*;
 
 use crate::fence::FenceState;
-use crate::internal::{get_as_unwrapped, unwrap};
+use crate::internal::get_as_unwrapped;
 use crate::semaphore::SemaphoreState;
-use crate::{ValidationCommandList, ValidationDevice, ValidationSemaphore, ValidationSwapChain};
+use crate::{
+    ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
+    ValidationSwapChain,
+};
 
 pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
@@ -145,7 +148,7 @@ impl IQueue for ValidationQueue {
         // }
 
         if let Some(v) = desc.fence {
-            let v = unwrap::fence(v);
+            let v = ValidationFence::get(v);
             let fence_state = v.state.load();
 
             assert_eq!(
@@ -167,12 +170,12 @@ impl IQueue for ValidationQueue {
             // }
 
             for v in desc.signal_semaphores {
-                let v = unwrap::semaphore_d(v);
+                let v = ValidationSemaphore::get(v);
                 v.state.store(SemaphoreState::Waiting);
             }
 
             if let Some(v) = desc.fence {
-                let v = unwrap::fence(v);
+                let v = ValidationFence::get(v);
                 v.state.store(FenceState::Pending);
             }
 
@@ -200,9 +203,7 @@ impl IQueue for ValidationQueue {
         }
 
         for v in desc.wait_semaphores {
-            let v = v
-                .query_interface::<ValidationSemaphore>()
-                .expect("Unknown ISemaphore implementation");
+            let v = ValidationSemaphore::get(v);
 
             assert_eq!(
                 v.state.load(),

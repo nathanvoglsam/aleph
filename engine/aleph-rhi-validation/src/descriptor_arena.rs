@@ -29,12 +29,13 @@
 
 use std::cell::Cell;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
 use crate::internal::descriptor_set::DescriptorSet;
-use crate::internal::unwrap;
 use crate::{ValidationDescriptorSetLayout, ValidationDevice};
 
 pub struct ValidationDescriptorArena {
@@ -82,7 +83,7 @@ impl ValidationDescriptorArena {
     fn create_set_object_for_set_index(
         &self,
         inner: DescriptorSetHandle,
-        layout: AnyArc<ValidationDescriptorSetLayout>,
+        layout: Arc<ArcedObject<ValidationDescriptorSetLayout>>,
     ) -> DescriptorSet {
         DescriptorSet {
             _magic_header: DescriptorSet::MAGIC_HEADER_VAL,
@@ -191,7 +192,7 @@ impl ValidationDescriptorArena {
 impl IDescriptorArena for ValidationDescriptorArena {
     fn allocate_set(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         // First try and grab something from the free list
         let mut free_list = self.free_list.take();
@@ -204,14 +205,13 @@ impl IDescriptorArena for ValidationDescriptorArena {
         // We don't need to check OOM unless we're trying to allocate a new set object
         self.check_oom()?;
 
-        let layout = unwrap::descriptor_set_layout(layout);
+        let layout = ValidationDescriptorSetLayout::get_owned(layout);
 
-        let inner = self.inner.allocate_set(layout.inner.as_ref())?;
+        let inner = self.inner.allocate_set(&layout.inner)?;
 
         // Take the next free set, we create fresh set objects linearly
         let mut set_objects = self.set_objects.take();
         let set_index = set_objects.len();
-        let layout = layout._this.upgrade().unwrap();
         let set = self.create_set_object_for_set_index(inner, layout);
         set_objects.push(set);
 
