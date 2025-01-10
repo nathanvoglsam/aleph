@@ -42,6 +42,7 @@ use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 
+use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::internal::conv::{
     barrier_access_to_dx12, barrier_sync_to_dx12, image_layout_to_dx12,
@@ -111,7 +112,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let mut views: BumpVec<D3D12_VERTEX_BUFFER_VIEW> =
             BumpVec::with_capacity_in(bindings.len(), &self.arena);
         for (i, v) in bindings.iter().enumerate() {
-            let buffer = unwrap::buffer(v.buffer);
+            let buffer = Buffer::get(v.buffer);
 
             let buffer_location = buffer.base_address;
             let buffer_location = buffer_location.add(v.offset);
@@ -134,7 +135,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        let buffer = unwrap::buffer(binding.buffer);
+        let buffer = Buffer::get(binding.buffer);
 
         let buffer_location = buffer.base_address;
         let buffer_location = buffer_location.add(binding.offset);
@@ -415,7 +416,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         if !buffer_barriers.is_empty() {
             for barrier in buffer_barriers {
                 // Grab the d3d12 resource handle
-                let resource = unwrap::buffer(barrier.buffer.unwrap());
+                let resource = Buffer::get(barrier.buffer.unwrap());
 
                 translated_buffer_barriers.push(D3D12_BUFFER_BARRIER {
                     SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
@@ -510,12 +511,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn copy_buffer_regions(
         &mut self,
-        src: &dyn IBuffer,
-        dst: &dyn IBuffer,
+        src: &BufferHandle,
+        dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     ) {
-        let src = unwrap::buffer(src);
-        let dst = unwrap::buffer(dst);
+        let src = Buffer::get(src);
+        let dst = Buffer::get(dst);
 
         for region in regions {
             self._list.CopyBufferRegion(
@@ -530,11 +531,11 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn copy_buffer_to_texture(
         &mut self,
-        src: &dyn IBuffer,
+        src: &BufferHandle,
         dst: &dyn ITexture,
         regions: &[BufferToTextureCopyRegion],
     ) {
-        let src = unwrap::buffer(src);
+        let src = Buffer::get(src);
         let dst = unwrap::texture(dst);
 
         let bytes_per_element = dst.desc.format.bytes_per_element();

@@ -27,14 +27,13 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::mem::ManuallyDrop;
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -42,7 +41,6 @@ use windows::Win32::Graphics::Direct3D12::*;
 use crate::device::Device;
 
 pub struct Buffer {
-    pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) allocation: ManuallyDrop<d3d12ma::Allocation>,
@@ -53,13 +51,7 @@ pub struct Buffer {
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(Buffer, [IBuffer]);
-
-impl IGetPlatformInterface for Buffer {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.resource, out, target)
-    }
-}
+unsafe_impl_iobject!(Buffer, "01944e61-2e75-7ec2-951d-399527ca4856");
 
 impl Drop for Buffer {
     fn drop(&mut self) {
@@ -100,34 +92,28 @@ impl Buffer {
     }
 }
 
-impl IBuffer for Buffer {
-    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
-        AnyArc::map::<dyn IBuffer, _>(self.this.upgrade().unwrap(), |v| v)
+impl Buffer {
+    pub(crate) fn get(v: &BufferHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Buffer implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
+    pub(crate) fn get_id(&self) -> NonZeroU64 {
         self.id
     }
 
-    fn desc(&self) -> BufferDesc {
+    pub(crate) fn desc(&self) -> BufferDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &BufferDesc {
+    pub(crate) fn desc_ref(&self) -> &BufferDesc {
         &self.desc
     }
 
-    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
+    pub(crate) fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
         let mut lock = self.map_state.lock();
 
         if let Some(ptr) = lock.ptr {
@@ -151,7 +137,7 @@ impl IBuffer for Buffer {
         }
     }
 
-    fn unmap(&self) -> Result<(), ResourceUnmapError> {
+    pub(crate) fn unmap(&self) -> Result<(), ResourceUnmapError> {
         let mut lock = self.map_state.lock();
 
         lock.count = lock
@@ -170,14 +156,6 @@ impl IBuffer for Buffer {
         }
 
         Ok(())
-    }
-
-    fn flush_range(&self, _offset: u64, _len: u64) {
-        // intentional no-op
-    }
-
-    fn invalidate_range(&self, _offset: u64, _len: u64) {
-        // intentional no-op
     }
 }
 

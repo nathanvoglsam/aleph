@@ -36,6 +36,7 @@ use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
@@ -592,7 +593,7 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
         let mut resource_desc = D3D12_RESOURCE_DESC1 {
             // Fields that will be the same regardless of the requested buffer desc
             Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -650,9 +651,7 @@ impl IDevice for Device {
 
         let name = desc.name.map(str::to_string);
         let desc = desc.clone().strip_name();
-
-        let buffer = AnyArc::new_cyclic(move |v| Buffer {
-            this: v.clone(),
+        let out = Buffer {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_buffer(),
             allocation: ManuallyDrop::new(allocation),
@@ -661,8 +660,9 @@ impl IDevice for Device {
             map_state: Mutex::new(Default::default()),
             desc,
             name,
-        });
-        Ok(AnyArc::map::<dyn IBuffer, _>(buffer, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(BufferHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -1027,6 +1027,57 @@ impl IDevice for Device {
 
     fn get_backend_api(&self) -> BackendAPI {
         BackendAPI::D3D12
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
+        Buffer::get(buffer).get_id()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b> {
+        Buffer::get(buffer).desc()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
+        Buffer::get(buffer).desc_ref()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn map_buffer(&self, buffer: &BufferHandle) -> Result<NonNull<u8>, ResourceMapError> {
+        Buffer::get(buffer).map()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
+        Buffer::get(buffer).unmap()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn flush_buffer_range(&self, buffer: &BufferHandle, _offset: u64, _len: u64) {
+        let _ = Buffer::get(buffer);
+        // intentional no-op
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn invalidate_buffer_range(&self, buffer: &BufferHandle, _offset: u64, _len: u64) {
+        let _ = Buffer::get(buffer);
+        // intentional no-op
     }
 }
 
@@ -1569,7 +1620,7 @@ impl Device {
                 let dynamic_cbs = &mut dynamic_cbs[dynamic_cb_index..];
 
                 for (i, v) in writes.iter().enumerate() {
-                    let buffer = unwrap::buffer(v.buffer);
+                    let buffer = Buffer::get(v.buffer);
                     let buffer = buffer.base_address.add(v.offset);
                     dynamic_cbs[i] = buffer.get_inner().get();
                 }
@@ -1684,7 +1735,7 @@ impl Device {
         for (i, v) in writes.iter().enumerate() {
             let (dst, _) = set.assume_r_handle();
 
-            let buffer = unwrap::buffer(v.buffer);
+            let buffer = Buffer::get(v.buffer);
 
             let dst = Self::calculate_dst_handle(
                 dst,
@@ -1731,7 +1782,7 @@ impl Device {
         for (i, v) in writes.iter().enumerate() {
             let (dst, _) = set.assume_r_handle();
 
-            let buffer = unwrap::buffer(v.buffer);
+            let buffer = Buffer::get(v.buffer);
 
             let dst = Self::calculate_dst_handle(
                 dst,
