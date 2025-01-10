@@ -233,7 +233,7 @@ fn load_on_threadpool(
     {
         aleph_profile::scope_named!("EnqueueAndAllocate");
         let mut object = TextureObject::new_for_desc(device.as_ref(), desc).unwrap();
-        object.recreate_default_view();
+        object.recreate_default_view(device.as_ref());
         send.push(WorkerOutput {
             request,
             data,
