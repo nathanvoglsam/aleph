@@ -27,70 +27,30 @@
 // SOFTWARE.
 //
 
-use std::ptr::NonNull;
-
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 
 use crate::ValidationDevice;
 
 pub struct ValidationBuffer {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn IBuffer>,
+    pub(crate) size: u64,
+    pub(crate) usage: ResourceUsageFlags,
+    pub(crate) inner: BufferHandle,
 }
 
-declare_interfaces!(ValidationBuffer, [IBuffer]);
-
-crate::impl_platform_interface_passthrough!(ValidationBuffer);
-
-impl IBuffer for ValidationBuffer {
-    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
-        AnyArc::map::<dyn IBuffer, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
-    }
-
-    fn desc(&self) -> BufferDesc {
-        self.inner.desc()
-    }
-
-    fn desc_ref(&self) -> &BufferDesc {
-        self.inner.desc_ref()
-    }
-
-    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
-        self.inner.map()
-    }
-
-    fn unmap(&self) -> Result<(), ResourceUnmapError> {
-        self.inner.unmap()
-    }
-
-    fn flush_range(&self, offset: u64, len: u64) {
-        self.validate_range(offset, len);
-        self.inner.flush_range(offset, len);
-    }
-
-    fn invalidate_range(&self, offset: u64, len: u64) {
-        self.validate_range(offset, len);
-        self.inner.invalidate_range(offset, len);
-    }
-}
+unsafe_impl_iobject!(ValidationBuffer, "01944e4f-dacb-7122-bdec-ae9da89e1a0e");
 
 impl ValidationBuffer {
+    pub(crate) fn get(v: &BufferHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Buffer implementation!")
+    }
+
     pub fn validate_range(&self, offset: u64, len: u64) {
-        let size = self.desc().size;
+        let size = self.size;
         assert!(
             offset < size,
             "Invalidation range (offset: {offset}, len: {len}) outside buffer size ({size})",

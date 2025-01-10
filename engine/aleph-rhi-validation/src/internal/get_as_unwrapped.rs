@@ -62,12 +62,12 @@ use crate::{
     ValidationSampler, ValidationSemaphore, ValidationSwapChain, ValidationTexture,
 };
 
-pub fn buffer(buffer: &dyn IBuffer) -> &dyn IBuffer {
-    buffer
-        .query_interface::<ValidationBuffer>()
+pub fn buffer(buffer: &BufferHandle) -> &BufferHandle {
+    &buffer
+        .get()
+        .downcast_ref::<ValidationBuffer>()
         .expect("Unknown IBuffer Implementation")
         .inner
-        .deref()
 }
 
 pub fn texture(texture: &dyn ITexture) -> &dyn ITexture {

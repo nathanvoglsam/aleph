@@ -34,6 +34,7 @@ use std::ops::Deref;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
 
@@ -340,18 +341,20 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
         assert!(
             ResourceUsageFlags::BUFFER_USAGE_MASK.contains(desc.usage),
             "Attempted to create a buffer with usage flags meant only for textures!"
         );
         let inner = self.inner.create_buffer(desc)?;
-        let layout = AnyArc::new_cyclic(move |v| ValidationBuffer {
-            _this: v.clone(),
+        let out = ValidationBuffer {
             _device: self._this.upgrade().unwrap(),
+            size: desc.size,
+            usage: desc.usage,
             inner,
-        });
-        Ok(AnyArc::map::<dyn IBuffer, _>(layout, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(BufferHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -574,6 +577,65 @@ impl IDevice for ValidationDevice {
     fn get_backend_api(&self) -> BackendAPI {
         self.inner.get_backend_api()
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
+        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        self.inner.get_buffer_id(&buffer.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b> {
+        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        self.inner.buffer_desc(&buffer.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
+        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        self.inner.buffer_desc_ref(&buffer.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn map_buffer(&self, buffer: &BufferHandle) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
+        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        self.inner.map_buffer(&buffer.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
+        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        self.inner.unmap_buffer(&buffer.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
+        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        buffer.validate_range(offset, len);
+        self.inner.flush_buffer_range(&buffer.inner, offset, len)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
+        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        buffer.validate_range(offset, len);
+        self.inner
+            .invalidate_buffer_range(&buffer.inner, offset, len)
+    }
 }
 
 impl ValidationDevice {
@@ -713,7 +775,11 @@ impl ValidationDevice {
             DescriptorWrites::UniformBuffer(writes)
             | DescriptorWrites::UniformBufferDynamic(writes) => {
                 for write in writes.iter() {
-                    let buffer = unwrap::buffer(write.buffer);
+                    let buffer = write
+                        .buffer
+                        .get()
+                        .downcast_ref::<ValidationBuffer>()
+                        .unwrap();
                     Self::validate_buffer_usage(buffer, ResourceUsageFlags::CONSTANT_BUFFER);
                     Self::validate_buffer_write_range(buffer, write);
                     Self::validate_uniform_buffer_offset_alignment(write);
@@ -721,28 +787,44 @@ impl ValidationDevice {
             }
             DescriptorWrites::StructuredBuffer(writes) => {
                 for write in writes.iter() {
-                    let buffer = unwrap::buffer(write.buffer);
+                    let buffer = write
+                        .buffer
+                        .get()
+                        .downcast_ref::<ValidationBuffer>()
+                        .unwrap();
                     Self::validate_buffer_usage(buffer, ResourceUsageFlags::SHADER_RESOURCE);
                     Self::validate_buffer_write_range(buffer, write);
                 }
             }
             DescriptorWrites::StructuredBufferRW(writes) => {
                 for write in writes.iter() {
-                    let buffer = unwrap::buffer(write.buffer);
+                    let buffer = write
+                        .buffer
+                        .get()
+                        .downcast_ref::<ValidationBuffer>()
+                        .unwrap();
                     Self::validate_buffer_usage(buffer, ResourceUsageFlags::UNORDERED_ACCESS);
                     Self::validate_buffer_write_range(buffer, write);
                 }
             }
             DescriptorWrites::ByteAddressBuffer(writes) => {
                 for write in writes.iter() {
-                    let buffer = unwrap::buffer(write.buffer);
+                    let buffer = write
+                        .buffer
+                        .get()
+                        .downcast_ref::<ValidationBuffer>()
+                        .unwrap();
                     Self::validate_buffer_usage(buffer, ResourceUsageFlags::SHADER_RESOURCE);
                     Self::validate_buffer_write_range(buffer, write);
                 }
             }
             DescriptorWrites::ByteAddressBufferRW(writes) => {
                 for write in writes.iter() {
-                    let buffer = unwrap::buffer(write.buffer);
+                    let buffer = write
+                        .buffer
+                        .get()
+                        .downcast_ref::<ValidationBuffer>()
+                        .unwrap();
                     Self::validate_buffer_usage(buffer, ResourceUsageFlags::UNORDERED_ACCESS);
                     Self::validate_buffer_write_range(buffer, write);
                 }
@@ -769,7 +851,7 @@ impl ValidationDevice {
     }
 
     fn validate_buffer_usage(buffer: &ValidationBuffer, required: ResourceUsageFlags) {
-        let buffer_usage = buffer.desc_ref().usage;
+        let buffer_usage = buffer.usage;
         assert!(
             buffer_usage.contains(required),
             "Buffer missing required usage '{:?}' for view",
@@ -778,7 +860,7 @@ impl ValidationDevice {
     }
 
     fn validate_buffer_write_range(buffer: &ValidationBuffer, write: &BufferDescriptorWrite) {
-        let buffer_size = buffer.desc_ref().size;
+        let buffer_size = buffer.size;
         let view_end = write.offset + write.len as u64;
         assert!(
             view_end <= buffer_size,

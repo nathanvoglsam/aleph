@@ -36,8 +36,8 @@ use aleph_rhi_api::*;
 use crate::internal::get_as_unwrapped;
 use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{
-    ValidationComputePipeline, ValidationGraphicsPipeline, ValidationPipelineLayout,
-    ValidationTexture,
+    ValidationBuffer, ValidationComputePipeline, ValidationGraphicsPipeline,
+    ValidationPipelineLayout, ValidationTexture,
 };
 
 pub struct ValidationEncoder<T: ?Sized> {
@@ -330,18 +330,18 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
 
     unsafe fn copy_buffer_regions(
         &mut self,
-        src: &dyn IBuffer,
-        dst: &dyn IBuffer,
+        src: &BufferHandle,
+        dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     ) {
-        let src = get_as_unwrapped::buffer(src);
-        let dst = get_as_unwrapped::buffer(dst);
+        let src = &ValidationBuffer::get(src).inner;
+        let dst = &ValidationBuffer::get(dst).inner;
         self.inner.copy_buffer_regions(src, dst, regions)
     }
 
     unsafe fn copy_buffer_to_texture(
         &mut self,
-        src: &dyn IBuffer,
+        src: &BufferHandle,
         dst: &dyn ITexture,
         regions: &[BufferToTextureCopyRegion],
     ) {
@@ -354,7 +354,7 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
             Self::validate_buffer_to_texture_copy_dest_region(dst, desc.format, v)
         });
 
-        let src = get_as_unwrapped::buffer(src);
+        let src = &ValidationBuffer::get(src).inner;
         let dst = get_as_unwrapped::texture(dst);
         self.inner.copy_buffer_to_texture(src, dst, regions);
     }
