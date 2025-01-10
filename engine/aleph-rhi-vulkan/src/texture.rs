@@ -27,13 +27,12 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use parking_lot::Mutex;
 use vulkan_alloc::vma;
@@ -42,7 +41,6 @@ use crate::device::Device;
 use crate::internal::conv::{image_view_type_to_vk, subresource_range_to_vk, texture_format_to_vk};
 
 pub struct Texture {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) image: vk::Image,
@@ -57,42 +55,30 @@ pub struct Texture {
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(Texture, [ITexture]);
+unsafe_impl_iobject!(Texture, "01944ef4-bac0-7310-aec2-60edef2587bb");
 
-impl IGetPlatformInterface for Texture {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::Image>(&self.image, out, target)
-    }
-}
-
-impl ITexture for Texture {
-    fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        AnyArc::map::<dyn ITexture, _>(self._this.upgrade().unwrap(), |v| v)
+impl Texture {
+    pub(crate) fn get(v: &TextureHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Texture implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
+    pub(crate) fn get_id(&self) -> NonZeroU64 {
         self.id
     }
 
-    fn desc(&self) -> TextureDesc {
+    pub(crate) fn desc(&self) -> TextureDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &TextureDesc {
+    pub(crate) fn desc_ref(&self) -> &TextureDesc {
         &self.desc
     }
 
-    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_view(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.views.lock();
 
         let view = if let Some(view) = views.get(desc) {
@@ -104,7 +90,7 @@ impl ITexture for Texture {
                 vk::ImageUsageFlags::SAMPLED
             };
 
-            let view = self.create_view_for_usage(desc, usage)?;
+            let view = self.create_view_for_usage(device, desc, usage)?;
 
             views.insert(desc.clone(), view);
             view
@@ -113,18 +99,19 @@ impl ITexture for Texture {
         unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
     }
 
-    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_rtv_or_dsv(desc, vk::ImageUsageFlags::COLOR_ATTACHMENT)
+    pub(crate) fn get_rtv(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        self.get_rtv_or_dsv(device, desc, vk::ImageUsageFlags::COLOR_ATTACHMENT)
     }
 
-    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_rtv_or_dsv(desc, vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
+    pub(crate) fn get_dsv(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        self.get_rtv_or_dsv(device, desc, vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
     }
 }
 
 impl Texture {
     fn get_rtv_or_dsv(
         &self,
+        device: &Device,
         desc: &ImageViewDesc,
         usage: vk::ImageUsageFlags,
     ) -> Result<ImageView, ()> {
@@ -133,7 +120,7 @@ impl Texture {
         let view = if let Some(view) = views.get(desc) {
             *view
         } else {
-            let view = self.create_view_for_usage(desc, usage)?;
+            let view = self.create_view_for_usage(device, desc, usage)?;
 
             views.insert(desc.clone(), view);
             view
@@ -144,6 +131,7 @@ impl Texture {
 
     fn create_view_for_usage(
         &self,
+        device: &Device,
         desc: &ImageViewDesc,
         usage: vk::ImageUsageFlags,
     ) -> Result<vk::ImageView, ()> {
@@ -163,7 +151,7 @@ impl Texture {
             .push_next(&mut usage_info);
 
         let view = unsafe {
-            self._device
+            device
                 .device
                 .create_image_view(&create_info, None)
                 .map_err(|_| ())? // TODO: error handling

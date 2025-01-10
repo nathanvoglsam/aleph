@@ -43,6 +43,7 @@ use crate::device::Device;
 use crate::internal::conv::*;
 use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
+use crate::texture::Texture;
 
 pub struct Encoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
@@ -300,8 +301,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         regions: &[BufferCopyRegion],
     ) {
         {
-            let src = src.get().downcast_ref::<Buffer>().unwrap();
-            let dst = dst.get().downcast_ref::<Buffer>().unwrap();
+            let src = Buffer::get(src);
+            let dst = Buffer::get(dst);
 
             let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
             for v in regions {
@@ -323,12 +324,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
-        dst: &dyn ITexture,
+        dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     ) {
         {
-            let src = src.get().downcast_ref::<Buffer>().unwrap();
-            let dst = unwrap::texture(dst);
+            let src = Buffer::get(src);
+            let dst = Texture::get(dst);
 
             let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
             for v in regions {
@@ -369,13 +370,13 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn copy_texture_regions(
         &mut self,
-        src: &dyn ITexture,
-        dst: &dyn ITexture,
+        src: &TextureHandle,
+        dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     ) {
         {
-            let src = unwrap::texture(src);
-            let dst = unwrap::texture(dst);
+            let src = Texture::get(src);
+            let dst = Texture::get(dst);
 
             // src_subresource
             // src_offset
@@ -594,12 +595,8 @@ impl<'a> Encoder<'a> {
         }
 
         for barrier in buffer_barriers {
-            let buffer = barrier
-                .buffer
-                .unwrap()
-                .get()
-                .downcast_ref::<Buffer>()
-                .unwrap();
+            let buffer = barrier.buffer.unwrap();
+            let buffer = Buffer::get(buffer);
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
@@ -626,7 +623,7 @@ impl<'a> Encoder<'a> {
 
         for barrier in texture_barriers {
             // Grab the d3d12 resource handle from our texture impls
-            let texture = unwrap::texture(barrier.texture.unwrap());
+            let texture = Texture::get(barrier.texture.unwrap());
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
@@ -696,12 +693,8 @@ impl<'a> Encoder<'a> {
         }
 
         for barrier in buffer_barriers {
-            let buffer = barrier
-                .buffer
-                .unwrap()
-                .get()
-                .downcast_ref::<Buffer>()
-                .unwrap();
+            let buffer = barrier.buffer.unwrap();
+            let buffer = Buffer::get(buffer);
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
@@ -727,7 +720,7 @@ impl<'a> Encoder<'a> {
 
         for barrier in texture_barriers {
             // Grab the d3d12 resource handle from our texture impls
-            let texture = unwrap::texture(barrier.texture.unwrap());
+            let texture = Texture::get(barrier.texture.unwrap());
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);

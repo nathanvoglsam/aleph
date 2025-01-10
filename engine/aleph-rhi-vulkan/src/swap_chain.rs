@@ -28,9 +28,11 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_nstr::{nstr, NStr};
+use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use ash::vk;
 use parking_lot::Mutex;
@@ -129,12 +131,14 @@ impl ISwapChain for SwapChain {
         Ok(inner.get_config(self.queue_support))
     }
 
-    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]) {
+    fn get_images(&self, images: &mut [Option<TextureHandle>]) {
         let lock = self.inner.lock();
         let inner_images = &lock.images;
 
         for (out, v) in images.iter_mut().zip(inner_images.iter()) {
-            *out = Some(v.upgrade());
+            let t = ArcObject::from_object(v.clone());
+            let t = unsafe { Some(TextureHandle::new(t)) };
+            *out = t;
         }
     }
 
@@ -285,13 +289,12 @@ impl SwapChain {
                     usage: F::COPY_DEST | F::RENDER_TARGET,
                     name: None,
                 };
-                AnyArc::new_cyclic(move |v| Texture {
-                    _this: v.clone(),
+                let out = Texture {
                     _device: self.device.clone(),
                     id: self.device.object_counter.next_texture(),
                     image: *image,
-                    // creation_flags: Default::default(),
-                    // created_usage: swap_create_info.image_usage,
+                    // creation_flags: create_info.flags,
+                    // created_usage: create_info.usage,
                     allocation: None,
                     is_owned: false,
                     views: Default::default(),
@@ -299,7 +302,8 @@ impl SwapChain {
                     dsvs: Default::default(),
                     desc,
                     name: None,
-                })
+                };
+                ArcedObject::new_arc(out)
             })
             .collect();
 
@@ -435,7 +439,7 @@ pub struct SwapChainState {
     pub present_mode: PresentationMode,
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
-    pub images: Vec<AnyArc<Texture>>,
+    pub images: Vec<Arc<ArcedObject<Texture>>>,
 }
 
 impl SwapChainState {
