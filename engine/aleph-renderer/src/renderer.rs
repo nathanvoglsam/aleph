@@ -435,10 +435,10 @@ impl Renderer {
             // TODO: is there a better way of doing this? do it on the render thread?
             resource_commands.walk(|_, c| match c {
                 ResourceCommand::BufferUpload(_, d) => {
-                    deletion_pool.push_buffer(d.buffer.buffer().upgrade());
+                    deletion_pool.push_buffer(d.buffer.buffer().clone());
                 }
                 ResourceCommand::TextureUpload(_, _, d) => {
-                    deletion_pool.push_buffer(d.buffer.buffer().upgrade());
+                    deletion_pool.push_buffer(d.buffer.buffer().clone());
                 }
             });
 

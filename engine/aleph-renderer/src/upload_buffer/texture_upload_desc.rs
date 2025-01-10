@@ -414,7 +414,7 @@ impl TextureUploadDesc {
                 name: None,
             })?;
 
-            let ptr = buffer.map().unwrap();
+            let ptr = device.map_buffer(&buffer).unwrap();
             let data = NonNull::slice_from_raw_parts(ptr, total_size);
             SharedUploadBuffer::new(buffer, 0, data)
         };
@@ -461,7 +461,7 @@ impl TextureUploadDesc {
                 .allocate_aligned(total_size, 512)
                 .ok_or(BufferCreateError::OutOfMemory)?;
             let data = NonNull::slice_from_raw_parts(block.result, total_size);
-            SharedUploadBuffer::new(bump.buffer().upgrade(), block.device_offset as u64, data)
+            SharedUploadBuffer::new(bump.buffer().clone(), block.device_offset as u64, data)
         };
 
         let out = Self {

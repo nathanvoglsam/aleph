@@ -95,6 +95,8 @@ pub fn pass(
             uniform_buffer,
         };
         move |encoder, _graph, resources, _args| unsafe {
+            let device = resources.device();
+
             let dst = resources.get_texture(data.dst).unwrap();
             let dst_view = dst
                 .get_rtv(&ImageViewDesc::rtv_for_texture(dst).with_format(src_format.to_non_srgb()))
@@ -109,18 +111,20 @@ pub fn pass(
                 .unwrap();
 
             let buffer = resources.get_buffer(data.uniform_buffer).unwrap();
-            let u_ptr = buffer.map().unwrap();
-            let u_alloc = UploadBumpAllocator::new_from_block(buffer, u_ptr, 0, 1024).unwrap();
+            let u_ptr = device.map_buffer(buffer).unwrap();
+            let u_alloc =
+                UploadBumpAllocator::new_from_block(device, buffer.clone(), u_ptr, 0, 1024)
+                    .unwrap();
             u_alloc
                 .allocate_object(FxaaParams::new(src_extent))
                 .unwrap();
-            buffer.unmap().unwrap();
+            device.unmap_buffer(buffer).unwrap();
 
             let set = resources
                 .descriptor_arena()
                 .allocate_set(state.layout.set_layout.as_ref())
                 .unwrap();
-            resources.device().update_descriptor_sets(&[
+            device.update_descriptor_sets(&[
                 DescriptorWriteDesc::uniform_buffer(set, 0, &buffer.uniform_buffer_write(256)),
                 DescriptorWriteDesc::texture(set, 1, &src_view.srv_write()),
             ]);

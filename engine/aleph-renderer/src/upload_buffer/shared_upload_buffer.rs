@@ -29,7 +29,6 @@
 
 use std::ptr::NonNull;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 /// The interface expected of some object that abstracts over the source of a byte buffer that can
@@ -53,7 +52,7 @@ use aleph_rhi_api::*;
 /// aligned to at least 512 bytes. This is critical so users are able to ensure individual mip
 /// levels can be aligned to 512 byte blocks within a single [`IUploadBuffer`].
 pub unsafe trait IUploadBuffer: Send + Sync {
-    fn buffer(&self) -> &dyn IBuffer;
+    fn buffer(&self) -> &BufferHandle;
     fn device_offset(&self) -> u64;
     fn bytes(&self) -> &[u8];
     fn bytes_mut(&mut self) -> &mut [u8];
@@ -62,7 +61,7 @@ pub unsafe trait IUploadBuffer: Send + Sync {
 pub struct SharedUploadBuffer {
     /// A reference to the 'IBuffer' that the owned buffer region was allocated from. This is only
     /// held to ensure the buffer is never dropped.
-    buffer: AnyArc<dyn IBuffer>,
+    buffer: BufferHandle,
 
     /// The offset from the start of the upload buffer within the associated buffer object.
     device_offset: u64,
@@ -85,16 +84,7 @@ impl SharedUploadBuffer {
     /// [`CpuAccessMode::Write`] memory, `data` must be part of the buffer's memory mapping, and
     /// the `data` slice must be exclusively owned. The buffer must also allow the
     /// [`ResourceUsageFlags::COPY_SOURCE`] usage.
-    pub unsafe fn new(
-        buffer: AnyArc<dyn IBuffer>,
-        device_offset: u64,
-        data: NonNull<[u8]>,
-    ) -> Self {
-        debug_assert_eq!(buffer.desc_ref().cpu_access, CpuAccessMode::Write);
-        debug_assert!(buffer
-            .desc_ref()
-            .usage
-            .contains(ResourceUsageFlags::COPY_SOURCE));
+    pub unsafe fn new(buffer: BufferHandle, device_offset: u64, data: NonNull<[u8]>) -> Self {
         debug_assert_eq!(
             device_offset % 512,
             0,
@@ -113,8 +103,8 @@ unsafe impl Send for SharedUploadBuffer {}
 unsafe impl Sync for SharedUploadBuffer {}
 
 unsafe impl IUploadBuffer for SharedUploadBuffer {
-    fn buffer(&self) -> &dyn IBuffer {
-        self.buffer.as_ref()
+    fn buffer(&self) -> &BufferHandle {
+        &self.buffer
     }
 
     fn device_offset(&self) -> u64 {

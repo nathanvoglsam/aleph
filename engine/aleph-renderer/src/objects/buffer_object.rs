@@ -27,14 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 use crate::BufferObjectDesc;
 
 pub struct BufferObject {
     /// The buffer object itself
-    buffer: Option<AnyArc<dyn IBuffer>>,
+    buffer: Option<BufferHandle>,
 
     /// The description the object was created with.
     desc: BufferObjectDesc,
@@ -61,10 +60,10 @@ impl BufferObject {
         })
     }
 
-    pub fn update(&mut self, buffer: AnyArc<dyn IBuffer>) -> Option<AnyArc<dyn IBuffer>> {
+    pub fn update(&mut self, device: &dyn IDevice, buffer: BufferHandle) -> Option<BufferHandle> {
         if let Some(old_buffer) = &self.buffer {
-            let new_desc = buffer.desc_ref();
-            let old_desc = old_buffer.desc_ref();
+            let new_desc = device.buffer_desc_ref(&buffer);
+            let old_desc = device.buffer_desc_ref(old_buffer);
 
             // It is illegal for any major property of the new buffer to change from the old
             // buffer.
@@ -79,11 +78,12 @@ impl BufferObject {
         buffer
     }
 
-    pub fn get(&self) -> Option<&dyn IBuffer> {
-        self.buffer.as_ref().map(|v| v.as_ref())
+    pub const fn get(&self) -> Option<&BufferHandle> {
+        self.buffer.as_ref()
     }
 
-    pub fn get_owned(&self) -> Option<AnyArc<dyn IBuffer>> {
+    #[inline]
+    pub fn get_owned(&self) -> Option<BufferHandle> {
         self.buffer.clone()
     }
 

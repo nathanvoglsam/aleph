@@ -137,10 +137,15 @@ pub fn pass(
             let depth_buffer = resources.get_texture(data.depth_buffer).unwrap();
             let uniform_buffer = resources.get_buffer(data.uniform_buffer).unwrap();
 
-            let u_ptr = uniform_buffer.map().unwrap();
-            let u_alloc =
-                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 4 * 1024 * 1024)
-                    .unwrap();
+            let u_ptr = device.map_buffer(uniform_buffer).unwrap();
+            let u_alloc = UploadBumpAllocator::new_from_block(
+                device,
+                uniform_buffer.clone(),
+                u_ptr,
+                0,
+                4 * 1024 * 1024,
+            )
+            .unwrap();
 
             let extent = gbuffer0.desc_ref().get_extent_2d();
             // let aspect_ratio = extent.width as f32 / extent.height as f32;
@@ -412,12 +417,13 @@ pub fn pass(
                     &[m.device_offset as u32],
                 );
 
-                encoder.draw_indexed((idx.desc_ref().size / 4) as u32, 1, 0, 0, 0);
+                let idx_count = device.buffer_desc_ref(idx).size / 4;
+                encoder.draw_indexed(idx_count as u32, 1, 0, 0, 0);
             }
 
             encoder.end_rendering();
 
-            uniform_buffer.unmap().unwrap();
+            device.unmap_buffer(uniform_buffer).unwrap();
         }
     });
 }

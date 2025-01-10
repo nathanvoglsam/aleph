@@ -122,9 +122,10 @@ pub fn pass(
             let gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
             let lighting_uav = ImageView::get_uav_for(lighting).unwrap();
 
-            let u_ptr = uniform_buffer.map().unwrap();
+            let u_ptr = device.map_buffer(uniform_buffer).unwrap();
             let u_alloc =
-                UploadBumpAllocator::new_from_block(uniform_buffer, u_ptr, 0, 1024).unwrap();
+                UploadBumpAllocator::new_from_block(device, uniform_buffer.clone(), u_ptr, 0, 1024)
+                    .unwrap();
 
             // let gbuffer0_desc = gbuffer0.desc_ref();
             // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
@@ -147,7 +148,7 @@ pub fn pass(
                 _padding: [0; 112],
             };
             u_alloc.allocate_object(camera_layout).unwrap();
-            uniform_buffer.unmap().unwrap();
+            device.unmap_buffer(uniform_buffer).unwrap();
 
             let set = arena.allocate_set(state.set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[

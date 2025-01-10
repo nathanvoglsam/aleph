@@ -47,7 +47,7 @@ use crate::IUploadBuffer;
 #[derive(Default)]
 pub struct DeletionPool {
     textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
-    buffers: Vec<ManuallyDrop<AnyArc<dyn IBuffer>>>,
+    buffers: Vec<ManuallyDrop<BufferHandle>>,
     upload: Vec<ManuallyDrop<SmallBox<dyn IUploadBuffer, S8>>>,
     descriptor_pools: Vec<Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>>,
 }
@@ -68,7 +68,7 @@ impl DeletionPool {
     }
 
     #[inline]
-    pub fn push_buffer(&mut self, buffer: AnyArc<dyn IBuffer>) {
+    pub fn push_buffer(&mut self, buffer: BufferHandle) {
         self.buffers.push(ManuallyDrop::new(buffer))
     }
 
@@ -212,7 +212,7 @@ unsafe fn drop_texture_on_pool(mut v: ManuallyDrop<AnyArc<dyn ITexture>>) {
 }
 
 #[aleph_profile::function]
-unsafe fn drop_buffer_on_pool(mut v: ManuallyDrop<AnyArc<dyn IBuffer>>) {
+unsafe fn drop_buffer_on_pool(mut v: ManuallyDrop<BufferHandle>) {
     ManuallyDrop::drop(&mut v)
 }
 

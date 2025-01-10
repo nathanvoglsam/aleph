@@ -90,7 +90,7 @@ impl BufferUploadDesc {
                 name: None,
             })?;
 
-            let ptr = buffer.map().unwrap();
+            let ptr = device.map_buffer(&buffer).unwrap();
             let data = NonNull::slice_from_raw_parts(ptr, desc.size.get() as usize);
             SharedUploadBuffer::new(buffer, 0, data)
         };
@@ -115,7 +115,7 @@ impl BufferUploadDesc {
                 .allocate_aligned(desc.size.get() as usize, 512)
                 .ok_or(BufferCreateError::OutOfMemory)?;
             let data = NonNull::slice_from_raw_parts(block.result, desc.size.get() as usize);
-            SharedUploadBuffer::new(bump.buffer().upgrade(), block.device_offset as u64, data)
+            SharedUploadBuffer::new(bump.buffer().clone(), block.device_offset as u64, data)
         };
 
         let out = Self {

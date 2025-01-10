@@ -201,7 +201,7 @@ struct BufferLoadRequest<'a> {
     object: &'a BufferObject,
 
     /// The target API buffer object
-    buffer: &'a dyn IBuffer,
+    buffer: &'a BufferHandle,
 }
 
 struct TextureLoader();
