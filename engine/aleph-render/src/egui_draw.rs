@@ -109,6 +109,8 @@ pub fn pass(
         };
 
         move |encoder, _graph, resources, args| unsafe {
+            let device = resources.device();
+
             let sampler = state.layout.sampler.as_ref();
             let descriptor_arena = resources.descriptor_arena();
 
@@ -136,15 +138,25 @@ pub fn pass(
 
             // Map and calculate our begin/end pointers for the mapped vertex and index buffer
             // regions
-            let v_ptr = vtx_buffer.map().unwrap();
-            let vtx_alloc =
-                UploadBumpAllocator::new_from_block(vtx_buffer, v_ptr, 0, VERTEX_BUFFER_SIZE)
-                    .unwrap();
+            let v_ptr = device.map_buffer(vtx_buffer).unwrap();
+            let vtx_alloc = UploadBumpAllocator::new_from_block(
+                vtx_buffer.clone(),
+                ResourceUsageFlags::VERTEX_BUFFER,
+                v_ptr,
+                0,
+                VERTEX_BUFFER_SIZE,
+            )
+            .unwrap();
 
-            let i_ptr = idx_buffer.map().unwrap();
-            let idx_alloc =
-                UploadBumpAllocator::new_from_block(idx_buffer, i_ptr, 0, INDEX_BUFFER_SIZE)
-                    .unwrap();
+            let i_ptr = device.map_buffer(idx_buffer).unwrap();
+            let idx_alloc = UploadBumpAllocator::new_from_block(
+                idx_buffer.clone(),
+                ResourceUsageFlags::INDEX_BUFFER,
+                i_ptr,
+                0,
+                INDEX_BUFFER_SIZE,
+            )
+            .unwrap();
 
             // Get an RTV from our imported back buffer
             let image_view = render_target
@@ -244,8 +256,8 @@ pub fn pass(
 
             encoder.end_rendering();
 
-            vtx_buffer.unmap().unwrap();
-            idx_buffer.unmap().unwrap();
+            device.unmap_buffer(vtx_buffer).unwrap();
+            device.unmap_buffer(idx_buffer).unwrap();
         }
     });
 

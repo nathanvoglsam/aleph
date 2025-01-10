@@ -90,7 +90,10 @@ impl EguiFontTexture {
             let dst = &mut data.buffer.bytes_mut()[0..size];
             dst.copy_from_slice(&self.font_texture.bytes[0..size]);
 
-            data.buffer.buffer().unmap().unwrap();
+            renderer
+                .device()
+                .unmap_buffer(data.buffer.buffer())
+                .unwrap();
 
             renderer.submit_resource_command(ResourceCommand::TextureUpload(
                 handle,
