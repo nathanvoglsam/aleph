@@ -80,7 +80,7 @@ impl EguiFontTexture {
             );
 
             let mut object = TextureObject::new_for_desc(renderer.device(), desc.clone()).unwrap();
-            object.recreate_default_view();
+            object.recreate_default_view(renderer.device());
             let handle = renderer.create_texture(object).unwrap();
             self.font_handle = Some(handle); // TODO: destroy the old texture
 

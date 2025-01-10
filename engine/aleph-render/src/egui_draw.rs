@@ -118,7 +118,7 @@ pub fn pass(
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
 
-            let extent = render_target.desc_ref().get_extent_2d();
+            let extent = device.texture_desc_ref(render_target).get_extent_2d();
 
             let EguiPassContext {
                 font_handle,
@@ -159,9 +159,7 @@ pub fn pass(
             .unwrap();
 
             // Get an RTV from our imported back buffer
-            let image_view = render_target
-                .get_rtv(&ImageViewDesc::rtv_for_texture(render_target))
-                .unwrap();
+            let image_view = ImageView::get_rtv_for(device, render_target).unwrap();
 
             // Begin a render pass targeting our back buffer
             encoder.begin_rendering(&BeginRenderingInfo {
