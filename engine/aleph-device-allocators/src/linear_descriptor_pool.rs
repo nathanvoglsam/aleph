@@ -80,7 +80,7 @@ impl LinearDescriptorPool {
     #[must_use = "Do not ignore allocation failure"]
     pub fn allocate_set(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         use DescriptorPoolAllocateError::*;
 
@@ -110,7 +110,7 @@ impl LinearDescriptorPool {
     #[must_use = "Do not ignore allocation failure"]
     pub fn allocate_sets(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
     ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         use DescriptorPoolAllocateError::*;
