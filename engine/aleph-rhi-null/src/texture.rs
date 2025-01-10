@@ -30,59 +30,51 @@
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
 pub struct NullTexture {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: TextureDesc<'static>,
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(NullTexture, [ITexture]);
+unsafe_impl_iobject!(NullTexture, "01944ecd-4c40-7793-83c0-d01bf99fd58f");
 
-crate::impl_platform_interface_passthrough!(NullTexture);
-
-impl ITexture for NullTexture {
-    fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        AnyArc::map::<dyn ITexture, _>(self._this.upgrade().unwrap(), |v| v)
+impl NullTexture {
+    pub(crate) fn get(v: &TextureHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Texture implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
+    pub(crate) fn get_id(&self) -> NonZeroU64 {
         self.id
     }
 
-    fn desc(&self) -> TextureDesc {
+    pub(crate) fn desc(&self) -> TextureDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &TextureDesc {
+    pub(crate) fn desc_ref(&self) -> &TextureDesc {
         &self.desc
     }
 
-    fn get_view(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_view(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
         Ok(unsafe { std::mem::transmute(NonNull::<()>::dangling()) })
     }
 
-    fn get_rtv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_rtv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
         Ok(unsafe { std::mem::transmute(NonNull::<()>::dangling()) })
     }
 
-    fn get_dsv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_dsv(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {
         Ok(unsafe { std::mem::transmute(NonNull::<()>::dangling()) })
     }
 }

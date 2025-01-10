@@ -71,7 +71,7 @@ impl ISwapChain for NullSwapChain {
         unimplemented!()
     }
 
-    fn get_images(&self, _images: &mut [Option<AnyArc<dyn ITexture>>]) {
+    fn get_images(&self, _images: &mut [Option<TextureHandle>]) {
         unimplemented!()
     }
 

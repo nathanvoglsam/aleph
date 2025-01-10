@@ -216,24 +216,21 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_texture(
-        &self,
-        desc: &TextureDesc,
-    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
+    fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
         assert!(
             ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(desc.usage),
             "Attempted to create a texture with usage flags meant only for buffers!"
         );
         let name = desc.name.map(String::from);
         let desc = desc.clone().strip_name();
-        let texture = AnyArc::new_cyclic(move |v| NullTexture {
-            _this: v.clone(),
+        let out = NullTexture {
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_texture(),
             desc,
             name,
-        });
-        Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(TextureHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -392,5 +389,59 @@ impl IDevice for NullDevice {
 
     fn invalidate_buffer_range(&self, buffer: &BufferHandle, _offset: u64, _len: u64) {
         let _ = NullBuffer::get(buffer);
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_id(&self, texture: &TextureHandle) -> std::num::NonZeroU64 {
+        NullTexture::get(texture).get_id()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b> {
+        NullTexture::get(texture).desc()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
+        NullTexture::get(texture).desc_ref()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_view(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        NullTexture::get(texture).get_view(desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_rtv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        NullTexture::get(texture).get_rtv(desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_dsv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        NullTexture::get(texture).get_dsv(desc)
     }
 }
