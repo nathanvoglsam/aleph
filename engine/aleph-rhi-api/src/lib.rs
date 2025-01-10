@@ -348,17 +348,17 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError>;
+    ) -> Result<GraphicsPipelineHandle, PipelineCreateError>;
 
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError>;
+    ) -> Result<ComputePipelineHandle, PipelineCreateError>;
 
     fn create_descriptor_set_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
-    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError>;
+    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError>;
 
     fn create_descriptor_pool(
         &self,
@@ -373,16 +373,13 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     fn create_pipeline_layout(
         &self,
         desc: &PipelineLayoutDesc,
-    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError>;
+    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError>;
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError>;
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError>;
 
-    fn create_sampler(
-        &self,
-        desc: &SamplerDesc,
-    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError>;
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError>;
 
     fn create_command_list(
         &self,
@@ -423,10 +420,10 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]);
 
     /// Constructs a new fence in the requested state.
-    fn create_fence(&self, signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError>;
+    fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError>;
 
     /// Constructs a new semaphore in the default (reset) state.
-    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError>;
+    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError>;
 
     /// This function will block the calling thread until the fences are signalled by an operation
     /// some GPU queue.
@@ -443,13 +440,14 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// # Info
     ///
     /// If the fences are never signalled this function will deadlock
-    fn wait_fences(&self, fences: &[&dyn IFence], wait_all: bool, timeout: u32) -> FenceWaitResult;
+    fn wait_fences(&self, fences: &[&FenceHandle], wait_all: bool, timeout: u32)
+        -> FenceWaitResult;
 
     /// Polls, and returns, whether the fence has been signalled by the device.
-    fn poll_fence(&self, fence: &dyn IFence) -> bool;
+    fn poll_fence(&self, fence: &FenceHandle) -> bool;
 
     /// Resets all the given fences to the default state, ready to be used again on a queue.
-    fn reset_fences(&self, fences: &[&dyn IFence]);
+    fn reset_fences(&self, fences: &[&FenceHandle]);
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
@@ -505,14 +503,14 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     // TEXTURE
     // ================
 
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`ITexture`]
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other texture
     /// allocated from the same [`IDevice`] instance.
     fn get_texture_id(&self, texture: &TextureHandle) -> NonZeroU64;
 
-    /// Returns a [TextureDesc] that describes this [ITexture]
+    /// Returns a [TextureDesc] that describes this texture
     fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b>;
 
-    /// Returns a [TextureDesc] that describes this [ITexture], but without the name component so we
+    /// Returns a [TextureDesc] that describes this texture, but without the name component so we
     /// can send a reference out.
     fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b>;
 
@@ -533,24 +531,41 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()>;
-}
 
-//
-//
-// _________________________________________________________________________________________________
-// Semaphore
+    // ================
+    // SAMPLER
+    // ================
 
-pub trait ISemaphore: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(ISemaphore);
-}
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other sampler
+    /// allocated from the same [`IDevice`] instance.
+    fn get_sampler_id(&self, sampler: &SamplerHandle) -> NonZeroU64;
 
-//
-//
-// _________________________________________________________________________________________________
-// Fence
+    /// Returns a [SamplerDesc] that describes this sampler object
+    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b>;
 
-pub trait IFence: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IFence);
+    /// Returns a [SamplerDesc] that describes this sampler, but without the name component so we
+    /// can send a reference out.
+    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b>;
+
+    // ================
+    // PIPELINE
+    // ================
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other descriptor set
+    /// layout allocated from the same [`IDevice`] instance.
+    fn get_descriptor_set_layout_id(&self, set_layout: &DescriptorSetLayoutHandle) -> NonZeroU64;
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other pipeline
+    /// layout allocated from the same [`IDevice`] instance.
+    fn get_pipeline_layout_id(&self, pipeline_layout: &PipelineLayoutHandle) -> NonZeroU64;
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other pipeline
+    /// allocated from the same [`IDevice`] instance.
+    fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> NonZeroU64;
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other pipeline
+    /// allocated from the same [`IDevice`] instance.
+    fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> NonZeroU64;
 }
 
 //
@@ -735,26 +750,6 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
 //
 //
 // _________________________________________________________________________________________________
-// Resources
-
-pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(ISampler);
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`ISampler`]
-    /// allocated from the same [`IDevice`] instance.
-    fn get_id(&self) -> NonZeroU64;
-
-    /// Returns a [SamplerDesc] that describes this [ISampler]
-    fn desc(&self) -> SamplerDesc;
-
-    /// Returns a [SamplerDesc] that describes this [ISampler], but without the name component so we
-    /// can send a reference out.
-    fn desc_ref(&self) -> &SamplerDesc;
-}
-
-//
-//
-// _________________________________________________________________________________________________
 // Command Encoders
 
 /// # Safety
@@ -765,7 +760,7 @@ pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
 /// TODO: DOCS
 #[allow(clippy::missing_safety_doc)]
 pub trait IGeneralEncoder: IComputeEncoder {
-    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline);
+    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle);
 
     unsafe fn bind_vertex_buffers(
         &mut self,
@@ -815,11 +810,11 @@ pub trait IGeneralEncoder: IComputeEncoder {
 /// TODO: DOCS
 #[allow(clippy::missing_safety_doc)]
 pub trait IComputeEncoder: ITransferEncoder {
-    unsafe fn bind_compute_pipeline(&mut self, pipeline: &dyn IComputePipeline);
+    unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle);
 
     unsafe fn bind_descriptor_sets(
         &mut self,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
@@ -1048,7 +1043,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     /// stale descriptors.
     fn allocate_set(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError>;
 
     /// Allocates `num_sets` descriptors from the pool. Some implementations may be able to
@@ -1060,7 +1055,7 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     /// See [IDescriptorArena::allocate_set] for some pitfalls and warnings to check for.
     fn allocate_sets(
         &self,
-        layout: &dyn IDescriptorSetLayout,
+        layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
     ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         let mut sets = Vec::with_capacity(num_sets);
@@ -1102,43 +1097,6 @@ pub trait IDescriptorArena: IAny + IGetPlatformInterface + Send {
     /// This function requires extra care as it will affect every set in the pool instead of only
     /// the individual sets requested like in 'free'.
     unsafe fn reset(&self);
-}
-
-pub trait IDescriptorSetLayout: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IDescriptorSetLayout);
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IDescriptorSetLayout`]
-    /// allocated from the same [`IDevice`] instance.
-    fn get_id(&self) -> NonZeroU64;
-}
-
-//
-//
-// _________________________________________________________________________________________________
-// Pipeline Objects
-
-pub trait IPipelineLayout: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IPipelineLayout);
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IPipelineLayout`]
-    /// allocated from the same [`IDevice`] instance.
-    fn get_id(&self) -> NonZeroU64;
-}
-
-pub trait IGraphicsPipeline: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IGraphicsPipeline);
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IGraphicsPipeline`]
-    /// allocated from the same [`IDevice`] instance.
-    fn get_id(&self) -> NonZeroU64;
-}
-
-pub trait IComputePipeline: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IComputePipeline);
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IComputePipeline`]
-    /// allocated from the same [`IDevice`] instance.
-    fn get_id(&self) -> NonZeroU64;
 }
 
 //
@@ -1642,7 +1600,7 @@ pub struct SwapChainConfiguration {
 pub struct AcquireDesc<'a> {
     /// A semaphore that will be signalled once the acquire operation is completed. Only once the
     /// acquire operation signals is the acquired image safe to use on the GPU timeline.
-    pub signal_semaphore: &'a dyn ISemaphore,
+    pub signal_semaphore: &'a SemaphoreHandle,
 }
 
 //
@@ -3212,6 +3170,51 @@ impl<'a> TextureDesc<'a> {
 // _________________________________________________________________________________________________
 // Resources - Sampler
 
+#[derive(Clone)]
+pub struct SamplerHandle {
+    inner: ArcObject,
+}
+
+impl SamplerHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`SamplerHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`SamplerHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum SamplerAddressMode {
     Wrap,
@@ -3584,7 +3587,7 @@ pub struct DescriptorSetLayoutBinding<'a> {
     /// An optional list of `binding_count` samplers to specify static samplers for `Sampler`
     /// descriptors. If `binding_type` is `Sampler` but `static_samplers` is `None` then the
     /// samplers are dynamic.
-    pub static_samplers: Option<&'a [&'a dyn ISampler]>,
+    pub static_samplers: Option<&'a [&'a SamplerHandle]>,
 }
 
 impl<'a> DescriptorSetLayoutBinding<'a> {
@@ -3614,7 +3617,7 @@ impl<'a> DescriptorSetLayoutBinding<'a> {
 
     /// Takes the given desc and returns a new desc with
     /// [DescriptorSetLayoutBinding::static_samplers] set to the given value.
-    pub const fn with_static_samplers(mut self, static_samplers: &'a [&'a dyn ISampler]) -> Self {
+    pub const fn with_static_samplers(mut self, static_samplers: &'a [&'a SamplerHandle]) -> Self {
         self.static_samplers = Some(static_samplers);
         self
     }
@@ -3636,7 +3639,7 @@ pub struct DescriptorSetLayoutDesc<'a> {
 pub struct DescriptorPoolDesc<'a> {
     /// The descriptor set layout that the descriptor pool will allocate descriptor sets for. A pool
     /// can only allocate descriptor sets with a single layout.
-    pub layout: &'a dyn IDescriptorSetLayout,
+    pub layout: &'a DescriptorSetLayoutHandle,
 
     /// The number of sets the pool should have capacity for. A pool is only guaranteed to have
     /// enough space for `num_sets` descriptor sets.
@@ -3844,7 +3847,7 @@ impl<'a> DescriptorWrites<'a> {
 #[derive(Clone)]
 pub struct SamplerDescriptorWrite<'a> {
     /// The sampler target.
-    pub sampler: &'a dyn ISampler,
+    pub sampler: &'a SamplerHandle,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -4158,6 +4161,186 @@ unsafe impl Sync for ImageView {}
 // _________________________________________________________________________________________________
 // Pipeline State Description
 
+#[derive(Clone)]
+pub struct DescriptorSetLayoutHandle {
+    inner: ArcObject,
+}
+
+impl DescriptorSetLayoutHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`DescriptorSetLayoutHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`DescriptorSetLayoutHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
+#[derive(Clone)]
+pub struct PipelineLayoutHandle {
+    inner: ArcObject,
+}
+
+impl PipelineLayoutHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`PipelineLayoutHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`PipelineLayoutHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
+#[derive(Clone)]
+pub struct GraphicsPipelineHandle {
+    inner: ArcObject,
+}
+
+impl GraphicsPipelineHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`GraphicsPipelineHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`GraphicsPipelineHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
+#[derive(Clone)]
+pub struct ComputePipelineHandle {
+    inner: ArcObject,
+}
+
+impl ComputePipelineHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`ComputePipelineHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`ComputePipelineHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct PushConstantBlock {
     /// Specifies the binding index that the push constant range will be attached to in the shader.
@@ -4183,7 +4366,7 @@ pub struct PipelineLayoutDesc<'a> {
     /// Specifies the layouts of all descriptor sets that will be combined into this pipeline
     /// layout. The order of this array is meaningful: the `n`th element will define the layout for
     /// the `n`th descriptor set.
-    pub set_layouts: &'a [&'a dyn IDescriptorSetLayout],
+    pub set_layouts: &'a [&'a DescriptorSetLayoutHandle],
 
     /// Specifies the set of push constant ranges that the pipeline layout will hold.
     pub push_constant_blocks: &'a [PushConstantBlock],
@@ -4206,7 +4389,7 @@ impl<'a> PipelineLayoutDesc<'a> {
     /// parameter
     pub const fn with_set_layouts(
         mut self,
-        set_layouts: &'a [&'a dyn IDescriptorSetLayout],
+        set_layouts: &'a [&'a DescriptorSetLayoutHandle],
     ) -> Self {
         self.set_layouts = set_layouts;
         self
@@ -4839,7 +5022,7 @@ pub struct GraphicsPipelineDesc<'a> {
 
     /// The description of binding locations used by both the pipeline and descriptor sets used with
     /// the pipeline
-    pub pipeline_layout: &'a dyn IPipelineLayout,
+    pub pipeline_layout: &'a PipelineLayoutHandle,
 
     /// Structure that describes the vertex input piece of the graphics pipeline
     pub vertex_layout: &'a VertexInputStateDesc<'a>,
@@ -4873,7 +5056,7 @@ pub struct ComputePipelineDesc<'a> {
 
     /// The description of binding locations used by both the pipeline and descriptor sets used with
     /// the pipeline
-    pub pipeline_layout: &'a dyn IPipelineLayout,
+    pub pipeline_layout: &'a PipelineLayoutHandle,
 
     /// The name of the object
     pub name: Option<&'a str>,
@@ -4939,14 +5122,14 @@ pub struct QueueSubmitDesc<'a> {
 
     /// A list of semaphores that will block the execution of the batch until all semaphores in the
     /// list are signaled.
-    pub wait_semaphores: &'a [&'a dyn ISemaphore],
+    pub wait_semaphores: &'a [&'a SemaphoreHandle],
 
     /// A list of semaphores that will be signaled once all command lists in the batch have
     /// completed executing.
-    pub signal_semaphores: &'a [&'a dyn ISemaphore],
+    pub signal_semaphores: &'a [&'a SemaphoreHandle],
 
     /// A fence that will be signaled once all command lists in the batch have completed executing.
-    pub fence: Option<&'a dyn IFence>,
+    pub fence: Option<&'a FenceHandle>,
 }
 
 impl<'a> QueueSubmitDesc<'a> {
@@ -4972,7 +5155,10 @@ impl<'a> QueueSubmitDesc<'a> {
 
     /// Takes the given desc and returns it with [QueueSubmitDesc::wait_semaphores] set to the given
     /// parameter
-    pub const fn with_wait_semaphores(mut self, wait_semaphores: &'a [&'a dyn ISemaphore]) -> Self {
+    pub const fn with_wait_semaphores(
+        mut self,
+        wait_semaphores: &'a [&'a SemaphoreHandle],
+    ) -> Self {
         self.wait_semaphores = wait_semaphores;
         self
     }
@@ -4981,14 +5167,14 @@ impl<'a> QueueSubmitDesc<'a> {
     /// given parameter
     pub const fn with_signal_semaphores(
         mut self,
-        signal_semaphores: &'a [&'a dyn ISemaphore],
+        signal_semaphores: &'a [&'a SemaphoreHandle],
     ) -> Self {
         self.signal_semaphores = signal_semaphores;
         self
     }
 
     /// Takes the given desc and returns it with [QueueSubmitDesc::fence] set to the given parameter
-    pub const fn with_fence(mut self, fence: &'a dyn IFence) -> Self {
+    pub const fn with_fence(mut self, fence: &'a FenceHandle) -> Self {
         self.fence = Some(fence);
         self
     }
@@ -5011,7 +5197,7 @@ pub struct QueuePresentDesc<'a> {
 
     /// A list of semaphores that will block the execution of the batch until all semaphores in the
     /// list are signaled.
-    pub wait_semaphores: &'a [&'a dyn ISemaphore],
+    pub wait_semaphores: &'a [&'a SemaphoreHandle],
 }
 
 impl<'a> QueuePresentDesc<'a> {
@@ -5033,9 +5219,102 @@ impl<'a> QueuePresentDesc<'a> {
 
     /// Takes the given desc and returns it with [QueueSubmitDesc::wait_semaphores] set to the given
     /// parameter
-    pub const fn with_wait_semaphores(mut self, wait_semaphores: &'a [&'a dyn ISemaphore]) -> Self {
+    pub const fn with_wait_semaphores(
+        mut self,
+        wait_semaphores: &'a [&'a SemaphoreHandle],
+    ) -> Self {
         self.wait_semaphores = wait_semaphores;
         self
+    }
+}
+
+#[derive(Clone)]
+pub struct SemaphoreHandle {
+    inner: ArcObject,
+}
+
+impl SemaphoreHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`SemaphoreHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`SemaphoreHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
+#[derive(Clone)]
+pub struct FenceHandle {
+    inner: ArcObject,
+}
+
+impl FenceHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`FenceHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`FenceHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
     }
 }
 
@@ -5231,7 +5510,7 @@ pub struct GlobalBarrier {
     pub after_access: BarrierAccess,
 }
 
-/// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
+/// Describes a resource barrier that will apply to a buffer resource on a command queue
 #[derive(Clone)]
 pub struct BufferBarrier<'a> {
     /// The buffer that the barrier will describe a state transition for.
@@ -5889,7 +6168,7 @@ error_enum_from_unit_type!(SemaphoreCreateError);
 // _________________________________________________________________________________________________
 // Resource
 
-/// Set of errors that can occur when mapping an [IBuffer]
+/// Set of errors that can occur when mapping a buffer
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum ResourceMapError {
@@ -5901,7 +6180,7 @@ pub enum ResourceMapError {
 }
 error_enum_from_unit_type!(ResourceMapError);
 
-/// Set of errors that can occur when unmapping an [IBuffer]
+/// Set of errors that can occur when unmapping a buffer
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum ResourceUnmapError {
