@@ -28,61 +28,40 @@
 //
 
 use std::num::NonZeroU64;
-use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
 pub struct NullBuffer {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: BufferDesc<'static>,
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(NullBuffer, [IBuffer]);
+unsafe_impl_iobject!(NullBuffer, "01944e4c-c48d-7fd1-bf12-53bd50eba3a0");
 
-crate::impl_platform_interface_passthrough!(NullBuffer);
-
-impl IBuffer for NullBuffer {
-    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
-        AnyArc::map::<dyn IBuffer, _>(self._this.upgrade().unwrap(), |v| v)
+impl NullBuffer {
+    pub(crate) fn get(v: &BufferHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Buffer implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
+    pub(crate) fn get_id(&self) -> NonZeroU64 {
         self.id
     }
 
-    fn desc(&self) -> BufferDesc {
+    pub(crate) fn desc(&self) -> BufferDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &BufferDesc {
+    pub(crate) fn desc_ref(&self) -> &BufferDesc {
         &self.desc
     }
-
-    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
-        unimplemented!()
-    }
-
-    fn unmap(&self) -> Result<(), ResourceUnmapError> {
-        unimplemented!()
-    }
-
-    fn flush_range(&self, _offset: u64, _len: u64) {}
-
-    fn invalidate_range(&self, _offset: u64, _len: u64) {}
 }

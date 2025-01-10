@@ -113,15 +113,15 @@ impl ITransferEncoder for NullEncoder {
 
     unsafe fn copy_buffer_regions(
         &mut self,
-        _src: &dyn IBuffer,
-        _dst: &dyn IBuffer,
+        _src: &BufferHandle,
+        _dst: &BufferHandle,
         _regions: &[BufferCopyRegion],
     ) {
     }
 
     unsafe fn copy_buffer_to_texture(
         &mut self,
-        _src: &dyn IBuffer,
+        _src: &BufferHandle,
         _dst: &dyn ITexture,
         _regions: &[BufferToTextureCopyRegion],
     ) {
