@@ -34,7 +34,6 @@ use crate::{
     ValidationCommandList, ValidationComputePipeline, ValidationDescriptorSetLayout,
     ValidationDevice, ValidationFence, ValidationGraphicsPipeline, ValidationPipelineLayout,
     ValidationSampler, ValidationSemaphore, ValidationSurface, ValidationSwapChain,
-    ValidationTexture,
 };
 
 conversion_function!(
@@ -101,11 +100,4 @@ conversion_function!(
     swap_chain,
     swap_chain_d,
     swap_chain_iter
-);
-conversion_function!(
-    ITexture,
-    ValidationTexture,
-    texture,
-    texture_d,
-    texture_iter
 );

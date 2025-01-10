@@ -32,9 +32,10 @@ use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
-use aleph_object_system::ArcedObject;
+use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
 
@@ -360,10 +361,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_texture(
-        &self,
-        desc: &TextureDesc,
-    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
+    fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
         assert!(
             ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(desc.usage),
             "Attempted to create a texture with usage flags meant only for buffers!"
@@ -374,15 +372,19 @@ impl IDevice for ValidationDevice {
         assert_ne!(desc.mip_levels, 0, "desc.mip_levels must be > 0");
         assert_ne!(desc.array_size, 0, "desc.array_size must be > 0");
         let inner = self.inner.create_texture(desc)?;
-        let texture = AnyArc::new_cyclic(move |v| ValidationTexture {
-            _this: v.clone(),
-            _device: self._this.upgrade().unwrap(),
-            inner,
-            views: Default::default(),
-            rtvs: Default::default(),
-            dsvs: Default::default(),
+        let out = Arc::new_cyclic(|v| {
+            ArcedObject::new(ValidationTexture {
+                _this: v.clone(),
+                _device: self._this.upgrade().unwrap(),
+                inner,
+                desc: desc.clone().strip_name(),
+                views: Default::default(),
+                rtvs: Default::default(),
+                dsvs: Default::default(),
+            })
         });
-        Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
+        let out = ArcObject::from_object(out);
+        unsafe { Ok(TextureHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -582,7 +584,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
-        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        let buffer = ValidationBuffer::get(buffer);
         self.inner.get_buffer_id(&buffer.inner)
     }
 
@@ -590,7 +592,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b> {
-        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        let buffer = ValidationBuffer::get(buffer);
         self.inner.buffer_desc(&buffer.inner)
     }
 
@@ -598,7 +600,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
-        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        let buffer = ValidationBuffer::get(buffer);
         self.inner.buffer_desc_ref(&buffer.inner)
     }
 
@@ -606,7 +608,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn map_buffer(&self, buffer: &BufferHandle) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
-        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        let buffer = ValidationBuffer::get(buffer);
         self.inner.map_buffer(&buffer.inner)
     }
 
@@ -614,7 +616,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
-        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        let buffer = ValidationBuffer::get(buffer);
         self.inner.unmap_buffer(&buffer.inner)
     }
 
@@ -622,7 +624,7 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        let buffer = ValidationBuffer::get(buffer);
         buffer.validate_range(offset, len);
         self.inner.flush_buffer_range(&buffer.inner, offset, len)
     }
@@ -631,10 +633,70 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        let buffer = buffer.get().downcast_ref::<ValidationBuffer>().unwrap();
+        let buffer = ValidationBuffer::get(buffer);
         buffer.validate_range(offset, len);
         self.inner
             .invalidate_buffer_range(&buffer.inner, offset, len)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_id(&self, texture: &TextureHandle) -> std::num::NonZeroU64 {
+        let texture = ValidationTexture::get(texture);
+        self.inner.get_texture_id(&texture.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b> {
+        let texture = ValidationTexture::get(texture);
+        self.inner.texture_desc(&texture.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
+        let texture = ValidationTexture::get(texture);
+        self.inner.texture_desc_ref(&texture.inner)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_view(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        let texture = ValidationTexture::get(texture);
+        texture.get_view(self, desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_rtv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        let texture = ValidationTexture::get(texture);
+        texture.get_rtv(self, desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_dsv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        let texture = ValidationTexture::get(texture);
+        texture.get_dsv(self, desc)
     }
 }
 
@@ -754,7 +816,10 @@ impl ValidationDevice {
                         .upgrade()
                         .expect("Trying to write view for destroyed image");
 
-                    Self::validate_texture_usage(&texture, ResourceUsageFlags::SHADER_RESOURCE);
+                    Self::validate_texture_usage(
+                        &texture.object,
+                        ResourceUsageFlags::SHADER_RESOURCE,
+                    );
                 }
             }
             DescriptorWrites::TextureRW(writes) => {
@@ -769,7 +834,10 @@ impl ValidationDevice {
                         .upgrade()
                         .expect("Trying to write view for destroyed image");
 
-                    Self::validate_texture_usage(&texture, ResourceUsageFlags::UNORDERED_ACCESS);
+                    Self::validate_texture_usage(
+                        &texture.object,
+                        ResourceUsageFlags::UNORDERED_ACCESS,
+                    );
                 }
             }
             DescriptorWrites::UniformBuffer(writes)
@@ -842,7 +910,7 @@ impl ValidationDevice {
     }
 
     fn validate_texture_usage(texture: &ValidationTexture, required: ResourceUsageFlags) {
-        let texture_usage = texture.desc_ref().usage;
+        let texture_usage = texture.desc.usage;
         assert!(
             texture_usage.contains(required),
             "Texture missing required usage '{:?}' for view",

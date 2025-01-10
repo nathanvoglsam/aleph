@@ -28,8 +28,10 @@
 //
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 
@@ -42,7 +44,7 @@ pub struct ValidationSwapChain {
     pub(crate) _surface: AnyArc<ValidationSurface>,
     pub(crate) inner: AnyArc<dyn ISwapChain>,
     pub(crate) queue_support: QueueType,
-    pub(crate) textures: Mutex<Vec<AnyArc<ValidationTexture>>>,
+    pub(crate) textures: Mutex<Vec<Arc<ArcedObject<ValidationTexture>>>>,
     pub(crate) acquired: AtomicBool,
 }
 
@@ -89,9 +91,9 @@ impl ISwapChain for ValidationSwapChain {
             // Need to drop all the views before asserting the ref count as there's weak references
             // to the image inside it's own view set. These are fine to destroy as all views are
             // made invalid to access for the images as soon as 'rebuild' is entered.
-            x.drop_views();
+            x.object.drop_views();
             assert!(
-                x.weak_count() == 1 && x.strong_count() == 1,
+                Arc::weak_count(x) == 1 && Arc::strong_count(x) == 1,
                 "It is invalid to resize a swap chain while still holding references to its images"
             );
         }
@@ -121,11 +123,13 @@ impl ISwapChain for ValidationSwapChain {
         result
     }
 
-    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]) {
+    fn get_images(&self, images: &mut [Option<TextureHandle>]) {
         let textures = self.textures.lock();
 
         for (out, v) in images.iter_mut().zip(textures.iter()) {
-            *out = Some(AnyArc::map::<dyn ITexture, _>(v.clone(), |v| v));
+            let t = ArcObject::from_object(v.clone());
+            let t = unsafe { Some(TextureHandle::new(t)) };
+            *out = t;
         }
     }
 
@@ -159,26 +163,29 @@ impl Drop for ValidationSwapChain {
 impl ValidationSwapChain {
     pub(crate) fn wrap_images(
         device: &ValidationDevice,
-        textures: &mut Vec<AnyArc<ValidationTexture>>,
-        images: &mut [Option<AnyArc<dyn ITexture>>],
+        textures: &mut Vec<Arc<ArcedObject<ValidationTexture>>>,
+        images: &mut [Option<TextureHandle>],
     ) {
         // The returned images are from the inner implementation, wrap them in ValidationTexture.
         for image in images {
             let image = image.take().unwrap();
-            let image = AnyArc::new_cyclic(move |v| ValidationTexture {
-                _this: v.clone(),
-                _device: device._this.upgrade().unwrap(),
-                inner: image,
-                views: Default::default(),
-                rtvs: Default::default(),
-                dsvs: Default::default(),
+            let desc = device.inner.texture_desc_ref(&image).clone().strip_name();
+            let out = Arc::new_cyclic(|v| {
+                ArcedObject::new(ValidationTexture {
+                    _this: v.clone(),
+                    _device: device._this.upgrade().unwrap(),
+                    inner: image,
+                    desc,
+                    views: Default::default(),
+                    rtvs: Default::default(),
+                    dsvs: Default::default(),
+                })
             });
-
-            textures.push(image);
+            textures.push(out);
         }
     }
 
-    pub(crate) fn make_scratch() -> [Option<AnyArc<dyn ITexture>>; 16] {
+    pub(crate) fn make_scratch() -> [Option<TextureHandle>; 16] {
         [
             None, None, None, None, None, None, None, None, None, None, None, None, None, None,
             None, None,

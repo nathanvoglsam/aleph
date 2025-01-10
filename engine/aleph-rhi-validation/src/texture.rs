@@ -28,52 +28,39 @@
 //
 
 use std::collections::HashMap;
+use std::sync::Weak;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 
 use crate::ValidationDevice;
 
 pub struct ValidationTexture {
-    pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _this: Weak<ArcedObject<ValidationTexture>>,
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) inner: AnyArc<dyn ITexture>,
+    pub(crate) inner: TextureHandle,
+    pub(crate) desc: TextureDesc<'static>,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, Box<ValidationImageView>>>,
 }
 
-declare_interfaces!(ValidationTexture, [ITexture]);
+unsafe_impl_iobject!(ValidationTexture, "01944ed5-8290-7e00-a3f3-5eb32c267928");
 
-crate::impl_platform_interface_passthrough!(ValidationTexture);
-
-impl ITexture for ValidationTexture {
-    fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        AnyArc::map::<dyn ITexture, _>(self._this.upgrade().unwrap(), |v| v)
+impl ValidationTexture {
+    pub(crate) fn get(v: &TextureHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Texture implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> std::num::NonZeroU64 {
-        self.inner.get_id()
-    }
-
-    fn desc(&self) -> TextureDesc {
-        self.inner.desc()
-    }
-
-    fn desc_ref(&self) -> &TextureDesc {
-        self.inner.desc_ref()
-    }
-
-    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_view(
+        &self,
+        device: &ValidationDevice,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
         let mut views = self.views.lock();
         let view = if let Some(v) = views.get(desc) {
             unsafe { std::mem::transmute_copy::<_, ImageView>(v) }
@@ -81,7 +68,7 @@ impl ITexture for ValidationTexture {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
                 view_type: ValidationViewType::ResourceView,
-                image_view: self.inner.get_view(desc)?,
+                image_view: device.get_texture_view(&self.inner, desc)?,
                 desc: desc.clone(),
             });
 
@@ -93,7 +80,11 @@ impl ITexture for ValidationTexture {
         Ok(view)
     }
 
-    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_rtv(
+        &self,
+        device: &ValidationDevice,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
         let mut views = self.rtvs.lock();
         let view = if let Some(v) = views.get(desc) {
             unsafe { std::mem::transmute_copy::<_, ImageView>(v) }
@@ -101,7 +92,7 @@ impl ITexture for ValidationTexture {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
                 view_type: ValidationViewType::RenderTargetView,
-                image_view: self.inner.get_rtv(desc)?,
+                image_view: device.get_texture_rtv(&self.inner, desc)?,
                 desc: desc.clone(),
             });
 
@@ -113,7 +104,11 @@ impl ITexture for ValidationTexture {
         Ok(view)
     }
 
-    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_dsv(
+        &self,
+        device: &ValidationDevice,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
         let mut views = self.dsvs.lock();
         let view = if let Some(v) = views.get(desc) {
             unsafe { std::mem::transmute_copy::<_, ImageView>(v) }
@@ -121,7 +116,7 @@ impl ITexture for ValidationTexture {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
                 view_type: ValidationViewType::DepthStencilView,
-                image_view: self.inner.get_dsv(desc)?,
+                image_view: device.get_texture_dsv(&self.inner, desc)?,
                 desc: desc.clone(),
             });
 
@@ -150,7 +145,7 @@ pub enum ValidationViewType {
 }
 
 pub struct ValidationImageView {
-    pub _image: AnyWeak<ValidationTexture>,
+    pub _image: Weak<ArcedObject<ValidationTexture>>,
     pub view_type: ValidationViewType,
     pub image_view: ImageView,
     pub desc: ImageViewDesc,

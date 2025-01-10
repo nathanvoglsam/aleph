@@ -66,16 +66,16 @@ pub fn buffer(buffer: &BufferHandle) -> &BufferHandle {
     &buffer
         .get()
         .downcast_ref::<ValidationBuffer>()
-        .expect("Unknown IBuffer Implementation")
+        .expect("Unknown Buffer Implementation")
         .inner
 }
 
-pub fn texture(texture: &dyn ITexture) -> &dyn ITexture {
-    texture
-        .query_interface::<ValidationTexture>()
-        .expect("Unknown ITexture Implementation")
+pub fn texture(texture: &TextureHandle) -> &TextureHandle {
+    &texture
+        .get()
+        .downcast_ref::<ValidationTexture>()
+        .expect("Unknown Texture Implementation")
         .inner
-        .deref()
 }
 
 pub unsafe fn descriptor_set_handle(

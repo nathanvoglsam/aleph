@@ -304,10 +304,8 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
 
         texture_barriers.iter().for_each(|v| {
             let texture = v.texture.unwrap();
-            Self::validate_sub_resource_range_against_texture(
-                texture.desc_ref(),
-                &v.subresource_range,
-            );
+            let texture = ValidationTexture::get(texture);
+            Self::validate_sub_resource_range_against_texture(&texture.desc, &v.subresource_range);
         });
 
         let buffer_barriers: Vec<_> = buffer_barriers
@@ -342,16 +340,13 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
     unsafe fn copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
-        dst: &dyn ITexture,
+        dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     ) {
         regions.iter().for_each(|v| {
-            let desc = dst.desc();
-            let dst = dst
-                .query_interface::<ValidationTexture>()
-                .expect("Unknown ITexture Implementation");
-            Self::validate_buffer_to_texture_copy_buffer_layout(desc.format, v);
-            Self::validate_buffer_to_texture_copy_dest_region(dst, desc.format, v)
+            let dst = ValidationTexture::get(dst);
+            Self::validate_buffer_to_texture_copy_buffer_layout(dst.desc.format, v);
+            Self::validate_buffer_to_texture_copy_dest_region(dst, dst.desc.format, v)
         });
 
         let src = &ValidationBuffer::get(src).inner;
@@ -361,8 +356,8 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
 
     unsafe fn copy_texture_regions(
         &mut self,
-        src: &dyn ITexture,
-        dst: &dyn ITexture,
+        src: &TextureHandle,
+        dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     ) {
         // TODO: any validation at all
@@ -455,15 +450,15 @@ impl<T: ?Sized> ValidationEncoder<T> {
     ) {
         let dst_maximum = region.dst.origin.maximum_with_extent(&region.dst.extent);
         assert!(
-            dst_maximum.x <= dst.desc().width,
+            dst_maximum.x <= dst.desc.width,
             "Destination region must not exceed destination width"
         );
         assert!(
-            dst_maximum.y <= dst.desc().height,
+            dst_maximum.y <= dst.desc.height,
             "Destination region must not exceed destination height"
         );
         assert!(
-            dst_maximum.z <= dst.desc().depth,
+            dst_maximum.z <= dst.desc.depth,
             "Destination region must not exceed destination depth"
         );
         assert!(
@@ -549,17 +544,18 @@ impl<T: ?Sized> ValidationEncoder<T> {
 
             assert!(
                 image
-                    .desc()
+                    .object
+                    .desc
                     .usage
                     .contains(ResourceUsageFlags::RENDER_TARGET),
                 "Used texture as render target when created without RENDER_TARGET usage"
             );
             assert!(
-                !image.desc().format.is_depth_stencil(),
+                !image.object.desc.format.is_depth_stencil(),
                 "Used depth/stencil texture as a color attachment",
             );
             Self::validate_sub_resource_mips_and_slices_against_texture(
-                &image.desc(),
+                &image.object.desc,
                 &image_view.desc.sub_resources,
             );
         });
@@ -573,7 +569,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
             };
             let image = image_view._image.upgrade().unwrap();
 
-            (image.desc().width, image.desc().height)
+            (image.object.desc.width, image.object.desc.height)
         });
 
         // Reduce the sizes to a single item, asserting that they are all equal
@@ -601,25 +597,26 @@ impl<T: ?Sized> ValidationEncoder<T> {
 
             assert!(
                 image
-                    .desc()
+                    .object
+                    .desc
                     .usage
                     .contains(ResourceUsageFlags::RENDER_TARGET),
                 "Used texture as depth/stencil target when created without RENDER_TARGET usage"
             );
 
             assert!(
-                image.desc().format.is_depth_stencil(),
+                image.object.desc.format.is_depth_stencil(),
                 "Used non depth/stencil texture as a depth/stencil attachment",
             );
 
             Self::validate_sub_resource_mips_and_slices_against_texture(
-                &image.desc(),
+                &image.object.desc,
                 &image_view.desc.sub_resources,
             );
 
             // Check that the depth stencil dimensions match the color dimensions
             if let Some((width, height)) = attachment_size {
-                let (d_width, d_height) = (image.desc().width, image.desc().height);
+                let (d_width, d_height) = (image.object.desc.width, image.object.desc.height);
                 assert_eq!(width, d_width, "All attachment widths must be equal");
                 assert_eq!(height, d_height, "All attachment heights must be equal");
             }
