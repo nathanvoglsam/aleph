@@ -30,8 +30,10 @@
 pub extern crate aleph_nstr as nstr;
 pub extern crate uuid;
 
-use std::mem::needs_drop;
+use std::mem::{needs_drop, ManuallyDrop};
+use std::ops::Deref;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 use aleph_nstr::NStr;
 
@@ -43,32 +45,48 @@ pub unsafe trait IObject: Sized {
     const ID: uuid::Uuid;
 
     /// The size, in bytes, of the type implementing [`IObject`].
-    const SIZE: usize = std::mem::size_of::<Self>();
+    const SIZE: usize;
 
     /// The alignment, in bytes, of the type implementing [`IObject`].
-    const ALIGN: usize = std::mem::align_of::<Self>();
+    const ALIGN: usize;
 
     /// A name that can be used to identify the type implementing [`IObject`]. This name is not
     /// guaranteed to uniquely identify the type, only the ID may do that. This name should only
     /// be used for logging or other human visible use cases.
     const NAME: &'static NStr;
 
-    /// A type-erased destructor function that can be called on a pointer that is expected to be
-    /// pointing to a non-aliased, owned instance of the type implementing [`IObject`].
-    ///
-    /// It is the _caller's_ (of [`IObject::destructor`], not the implementor of this trait)
-    /// responsibility to ensure the pointer given to this function points to a valid, live 'Self',
-    /// and that the access to this object is correctly synchronized.
-    ///
-    /// This also takes a 'count' parameter, for denoting the number of objects to destroy. This
-    /// function will assume that the given pointer points to an array of 'count' objects and drop
-    /// all of them. It is the caller's responsibility to ensure this is correct.
-    unsafe extern "C" fn destructor(this: NonNull<()>, count: u64) {
-        let mut base = this.cast::<Self>();
-        for _ in 0..count {
-            base.drop_in_place();
-            base = base.add(1);
-        }
+    /// A static reference to an [`ObjectDescription`] instance that describes the [`IObject`].
+    const DESC: &'static ObjectDescription;
+}
+
+/// A type-erased destructor function that can be called on a pointer that is expected to be
+/// pointing to a non-aliased, owned instance of the type implementing [`IObject`].
+///
+/// It is the _caller's_ (of [`IObject::destructor`], not the implementor of this trait)
+/// responsibility to ensure the pointer given to this function points to a valid, live 'Self',
+/// and that the access to this object is correctly synchronized.
+///
+/// This also takes a 'count' parameter, for denoting the number of objects to destroy. This
+/// function will assume that the given pointer points to an array of 'count' objects and drop
+/// all of them. It is the caller's responsibility to ensure this is correct.
+pub unsafe extern "C" fn object_destructor<T: Sized>(this: NonNull<()>, count: u64) {
+    let mut base = this.cast::<T>();
+    let mut count = count;
+    while count != 0 {
+        base.drop_in_place();
+        base = base.add(1);
+        count = count - 1;
+    }
+}
+
+/// This is a 'const' wrapper function that will return a destructor function pointer if the given
+/// 'T' returns true for [`needs_drop`].
+pub const fn get_object_destructor_for<T: Sized>(
+) -> Option<unsafe extern "C" fn(NonNull<()>, count: u64)> {
+    if needs_drop::<T>() {
+        Some(object_destructor::<T>)
+    } else {
+        None
     }
 }
 
@@ -92,25 +110,135 @@ pub struct ObjectDescription {
     pub align: usize,
     pub name: &'static NStr,
     pub destructor: Option<unsafe extern "C" fn(NonNull<()>, count: u64)>,
+    pub destructor_arc: unsafe extern "C" fn(NonNull<()>, count: u64),
+    // pub destructor_box: unsafe extern "C" fn(NonNull<()>, count: u64),
 }
 
 impl ObjectDescription {
     /// Constructs a [`ObjectDescription`] for a given type `T`
     pub const fn get<T: IObject>() -> Self {
-        let destructor: Option<unsafe extern "C" fn(NonNull<()>, u64)> = if needs_drop::<T>() {
-            Some(T::destructor)
-        } else {
-            None
-        };
-
         Self {
             id: T::ID,
             size: T::SIZE,
             align: T::ALIGN,
             name: T::NAME,
-            destructor,
+            destructor: get_object_destructor_for::<T>(),
+            destructor_arc: object_destructor::<Arc<ArcedObject<T>>>,
+            // destructor_box: object_destructor::<Box<T>>,
         }
     }
+}
+
+#[repr(transparent)]
+#[derive(Clone)]
+pub struct ArcObject {
+    inner: ManuallyDrop<Arc<OpaqueArcedObject>>,
+}
+
+impl ArcObject {
+    #[inline]
+    pub fn from_object<T: IObject>(v: Arc<ArcedObject<T>>) -> Self {
+        unsafe {
+            let ptr = Arc::into_raw(v);
+            let ptr = ptr as *const OpaqueArcedObject;
+            ArcObject {
+                inner: ManuallyDrop::new(Arc::from_raw(ptr)),
+            }
+        }
+    }
+
+    ///
+    /// Gets the number of strong ([`ArcObject`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        Arc::strong_count(&self.inner)
+    }
+
+    #[inline]
+    pub fn downcast<U: IObject>(&self) -> Option<Arc<ArcedObject<U>>> {
+        unsafe {
+            if U::ID == self.inner.vtable.id {
+                let ptr = Arc::into_raw(self.inner.deref().clone());
+                let ptr = ptr as *const ArcedObject<U>;
+                let arc = Arc::from_raw(ptr);
+                Some(arc)
+            } else {
+                None
+            }
+        }
+    }
+
+    #[inline]
+    pub fn downcast_ref<U: IObject>(&self) -> Option<&U> {
+        unsafe {
+            if U::ID == self.inner.vtable.id {
+                let ptr: NonNull<OpaqueArcedObject> = NonNull::from(self.inner.as_ref());
+                Some(&ptr.cast::<ArcedObject<U>>().as_ref().object)
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl Drop for ArcObject {
+    fn drop(&mut self) {
+        unsafe {
+            let ptr = NonNull::from(&self.inner);
+            let ptr = ptr.cast::<()>();
+            let f = self.inner.vtable.destructor_arc;
+            (f)(ptr, 1)
+        }
+    }
+}
+
+#[repr(C)]
+pub struct ArcedObject<T: IObject> {
+    vtable: &'static ObjectDescription,
+    pub object: T,
+}
+
+impl<T: IObject> ArcedObject<T> {
+    /// Constructs a new [`ArcedObject`] wrapping the given object.
+    pub const fn new(object: T) -> Self {
+        Self {
+            vtable: T::DESC,
+            object,
+        }
+    }
+
+    /// Constructs a new `Arc<ArcedObject<T>>` wrapping the given object.
+    #[inline]
+    pub fn new_arc(object: T) -> Arc<ArcedObject<T>> {
+        Arc::new(Self::new(object))
+    }
+
+    /// Constructs a new `Arc<ArcedObject<T>>` wrapping the given object that is then converted into
+    /// an opaque [`ArcObject`].
+    #[inline]
+    pub fn new_arc_opaque(object: T) -> ArcObject {
+        let arc = Self::new_arc(object);
+        ArcObject::from_object(arc)
+    }
+}
+
+/// Internal object. Represents the layout we use for [`ArcObject`]'s arc which is cast to only be
+/// aware of the inner
+#[repr(C)]
+struct OpaqueArcedObject {
+    vtable: &'static ObjectDescription,
 }
 
 /// This macro can be used to implement [`IObject`] on an object as a shorthand compared to manually
@@ -124,10 +252,29 @@ impl ObjectDescription {
 #[macro_export]
 macro_rules! unsafe_impl_iobject {
     ($t: path, $id: literal) => {
+        impl $t {
+            #[doc(hidden)]
+            const fn __internal_vtable() -> &'static $crate::ObjectDescription {
+                static VTABLE: $crate::ObjectDescription = $crate::ObjectDescription {
+                    id: $crate::uuid::uuid!($id),
+                    size: ::std::mem::size_of::<$t>(),
+                    align: ::std::mem::size_of::<$t>(),
+                    name: $crate::nstr::nstr!(concat!(module_path!(), "::", stringify!($t))),
+                    destructor: $crate::get_object_destructor_for::<$t>(),
+                    destructor_arc: $crate::object_destructor::<
+                        ::std::sync::Arc<$crate::ArcedObject<$t>>,
+                    >,
+                    // destructor_box: $crate::object_destructor::<::std::boxed::Box<$t>>,
+                };
+                &VTABLE
+            }
+        }
         unsafe impl $crate::IObject for $t {
-            const ID: $crate::uuid::Uuid = $crate::uuid::uuid!($id);
-            const NAME: &'static $crate::nstr::NStr =
-                $crate::nstr::nstr!(concat!(module_path!(), "::", stringify!($t)));
+            const ID: $crate::uuid::Uuid = <$t>::__internal_vtable().id;
+            const SIZE: usize = <$t>::__internal_vtable().size;
+            const ALIGN: usize = <$t>::__internal_vtable().align;
+            const NAME: &'static $crate::nstr::NStr = <$t>::__internal_vtable().name;
+            const DESC: &'static $crate::ObjectDescription = <$t>::__internal_vtable();
         }
     };
 }
