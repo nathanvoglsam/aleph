@@ -31,7 +31,7 @@ pub extern crate aleph_nstr as nstr;
 pub extern crate uuid;
 
 use std::mem::{needs_drop, ManuallyDrop};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -207,7 +207,7 @@ impl Drop for ArcObject {
 #[repr(C)]
 pub struct ArcedObject<T: IObject> {
     vtable: &'static ObjectDescription,
-    pub object: T,
+    object: T,
 }
 
 impl<T: IObject> ArcedObject<T> {
@@ -231,6 +231,20 @@ impl<T: IObject> ArcedObject<T> {
     pub fn new_arc_opaque(object: T) -> ArcObject {
         let arc = Self::new_arc(object);
         ArcObject::from_object(arc)
+    }
+}
+
+impl<T: IObject> Deref for ArcedObject<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.object
+    }
+}
+
+impl<T: IObject> DerefMut for ArcedObject<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.object
     }
 }
 
