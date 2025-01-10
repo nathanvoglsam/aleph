@@ -52,7 +52,7 @@ use crate::internal::conv::{
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
-use crate::texture::ImageViewObject;
+use crate::texture::{ImageViewObject, Texture};
 
 pub struct Encoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
@@ -441,7 +441,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         if !texture_barriers.is_empty() {
             for barrier in texture_barriers {
                 // Grab the d3d12 resource handle from our texture impls
-                let texture = unwrap::texture(barrier.texture.unwrap());
+                let texture = Texture::get(barrier.texture.unwrap());
 
                 // Vulkan initializes layout metadata automatically when transitioning from
                 // undefined to a compressed layout. D3D12 requires a flag to force it, otherwise
@@ -532,11 +532,11 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
-        dst: &dyn ITexture,
+        dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     ) {
         let src = Buffer::get(src);
-        let dst = unwrap::texture(dst);
+        let dst = Texture::get(dst);
 
         let bytes_per_element = dst.desc.format.bytes_per_element();
         let mut src_location = D3D12_TEXTURE_COPY_LOCATION {
@@ -606,12 +606,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn copy_texture_regions(
         &mut self,
-        src: &dyn ITexture,
-        dst: &dyn ITexture,
+        src: &TextureHandle,
+        dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     ) {
-        let src = unwrap::texture(src);
-        let dst = unwrap::texture(dst);
+        let src = Texture::get(src);
+        let dst = Texture::get(dst);
 
         for region in regions {
             let subresource = src

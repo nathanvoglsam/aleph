@@ -40,7 +40,6 @@ use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
-use crate::texture::Texture;
 
 conversion_function!(
     ICommandList,
@@ -96,4 +95,3 @@ conversion_function!(
     swap_chain_d,
     swap_chain_iter
 );
-conversion_function!(ITexture, Texture, texture, texture_d, texture_iter);

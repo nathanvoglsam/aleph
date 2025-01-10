@@ -30,8 +30,10 @@
 use std::any::TypeId;
 use std::mem::{size_of, ManuallyDrop};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::{manually_drop, try_clone_value_into_slot};
 use bumpalo::Bump;
@@ -67,7 +69,7 @@ impl IGetPlatformInterface for SwapChain {
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub textures: Vec<AnyArc<Texture>>,
+    pub textures: Vec<Arc<ArcedObject<Texture>>>,
     pub dxgi_format: DXGI_FORMAT,
     pub dxgi_flags: DXGI_SWAP_CHAIN_FLAG,
 }
@@ -98,8 +100,7 @@ impl SwapChain {
                 name: None,
             };
             let dxgi_format = state.dxgi_format;
-            let texture = AnyArc::new_cyclic(move |v| Texture {
-                this: v.clone(),
+            let texture = Texture {
                 device: self.device.clone(),
                 id: self.device.object_counter.next_texture(),
                 allocation: None,
@@ -111,8 +112,8 @@ impl SwapChain {
                 rtvs: Default::default(),
                 dsvs: Default::default(),
                 image_views: Mutex::new(Bump::with_capacity(size_of::<ImageViewObject>() * 8)),
-            });
-
+            };
+            let texture = ArcedObject::new_arc(texture);
             state.textures.push(texture);
         }
 
@@ -213,7 +214,7 @@ impl ISwapChain for SwapChain {
         #[cfg(debug_assertions)]
         for v in inner.textures.iter_mut() {
             assert!(
-                v.weak_count() == 1 && v.strong_count() == 1,
+                Arc::weak_count(v) == 1 && Arc::strong_count(v) == 1,
                 "It is invalid to resize a swap chain while still holding references to its images"
             )
         }
@@ -264,12 +265,14 @@ impl ISwapChain for SwapChain {
         Ok(inner.config.clone())
     }
 
-    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]) {
+    fn get_images(&self, images: &mut [Option<TextureHandle>]) {
         let lock = self.inner.lock();
         let textures = &lock.textures;
 
         for (out, v) in images.iter_mut().zip(textures.iter()) {
-            *out = Some(v.upgrade());
+            let t = ArcObject::from_object(v.clone());
+            let t = unsafe { Some(TextureHandle::new(t)) };
+            *out = t;
         }
     }
 

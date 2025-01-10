@@ -668,10 +668,7 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_texture(
-        &self,
-        desc: &TextureDesc,
-    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
+    fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
         let alloc_desc = d3d12ma::ALLOCATION_DESC {
             Flags: d3d12ma::ALLOCATION_FLAGS::empty(),
             HeapType: D3D12_HEAP_TYPE_DEFAULT,
@@ -700,9 +697,7 @@ impl IDevice for Device {
 
         let name = desc.name.map(str::to_string);
         let desc = desc.clone().strip_name();
-
-        let texture = AnyArc::new_cyclic(move |v| Texture {
-            this: v.clone(),
+        let out = Texture {
             device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_texture(),
             allocation: Some(ManuallyDrop::new(allocation)),
@@ -714,8 +709,9 @@ impl IDevice for Device {
             rtvs: Default::default(),
             dsvs: Default::default(),
             image_views: Mutex::new(Bump::with_capacity(size_of::<ImageViewObject>() * 8)),
-        });
-        Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(TextureHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -1078,6 +1074,60 @@ impl IDevice for Device {
     fn invalidate_buffer_range(&self, buffer: &BufferHandle, _offset: u64, _len: u64) {
         let _ = Buffer::get(buffer);
         // intentional no-op
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_id(&self, texture: &TextureHandle) -> std::num::NonZeroU64 {
+        Texture::get(texture).get_id()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b> {
+        Texture::get(texture).desc()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
+        Texture::get(texture).desc_ref()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_view(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        Texture::get(texture).get_view(desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_rtv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        Texture::get(texture).get_rtv(desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_texture_dsv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        Texture::get(texture).get_dsv(desc)
     }
 }
 

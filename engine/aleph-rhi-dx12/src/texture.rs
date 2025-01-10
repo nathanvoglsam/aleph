@@ -34,7 +34,8 @@ use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::Bump;
@@ -50,7 +51,6 @@ use crate::internal::{
 };
 
 pub struct Texture {
-    pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) allocation: Option<ManuallyDrop<d3d12ma::Allocation>>,
@@ -64,9 +64,15 @@ pub struct Texture {
     pub(crate) image_views: Mutex<Bump>,
 }
 
-declare_interfaces!(Texture, [ITexture]);
+unsafe_impl_iobject!(Texture, "01944eed-1f79-7102-bbe9-d7ecf341fd63");
 
 impl Texture {
+    pub fn get(v: &TextureHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Texture implementation!")
+    }
+
     pub const fn plane_slice_for(&self, aspect: TextureCopyAspect) -> Option<u32> {
         plane_layer_for_aspect(self.desc.format, aspect)
     }
@@ -417,34 +423,22 @@ impl Texture {
     }
 }
 
-impl ITexture for Texture {
-    fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
+impl Texture {
+    pub(crate) fn get_id(&self) -> NonZeroU64 {
         self.id
     }
 
-    fn desc(&self) -> TextureDesc {
+    pub(crate) fn desc(&self) -> TextureDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &TextureDesc {
+    pub(crate) fn desc_ref(&self) -> &TextureDesc {
         &self.desc
     }
 
-    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.views.lock();
 
         let view = if let Some(view) = views.get(desc) {
@@ -488,7 +482,7 @@ impl ITexture for Texture {
         unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
     }
 
-    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.rtvs.lock();
 
         let view = if let Some(view) = views.get(desc) {
@@ -518,7 +512,7 @@ impl ITexture for Texture {
         unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
     }
 
-    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         let mut views = self.dsvs.lock();
 
         let view = if let Some(view) = views.get(desc) {
