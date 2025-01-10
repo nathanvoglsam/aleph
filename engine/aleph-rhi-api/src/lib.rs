@@ -37,6 +37,7 @@ use std::ptr::NonNull;
 
 use aleph_any::{AnyArc, IAny};
 use aleph_nstr::NStr;
+use aleph_object_system::ArcObject;
 use bitflags::bitflags;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use thiserror::Error;
@@ -374,7 +375,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError>;
 
-    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError>;
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError>;
 
     fn create_texture(
         &self,
@@ -455,6 +456,53 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
+
+    // ================
+    // BUFFER
+    // ================
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other buffer object
+    /// allocated from the same [`IDevice`] instance.
+    fn get_buffer_id(&self, buffer: &BufferHandle) -> NonZeroU64;
+
+    /// Returns a [BufferDesc] that describes this buffer object.
+    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b>;
+
+    /// Returns a [BufferDesc] that describes this buffer object, but without the name component so
+    /// we can send a reference out.
+    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b>;
+
+    /// Returns a host virtual address pointer to a region of a mappable buffer.
+    ///
+    /// [IDevice::map_buffer] will map the entire buffer.
+    ///
+    /// Writes to buffer memory through a mapped pointer won't become available to the device until
+    /// after a submission to an [IQueue], or when signalling an event/fence to the GPU. The writes
+    /// will only be made available to the device commands when submitted, or when waiting for an
+    /// event/fence to be triggered from the CPU.
+    fn map_buffer(&self, buffer: &BufferHandle) -> Result<NonNull<u8>, ResourceMapError>;
+
+    /// Unmaps the buffers memory, releasing the associated address space range to be reused.
+    fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError>;
+
+    /// Flushes any writes to mapped buffer memory for non `HOST_COHERENT` memory.
+    ///
+    /// Writes to non `HOST_COHERENT` memory will no be made available to the device until the
+    /// written range is flushed with this function.
+    ///
+    /// This should be combined with an event/fence for writes from the host to become available
+    ///
+    /// Mapped memory that is considered `HOST_COHERENT` does not need to be flushed.
+    fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64);
+
+    /// Invalidate the requested region inside the mapped buffer memory for non `HOST_COHERENT`
+    /// memory.
+    ///
+    /// Device writes to non `HOST_COHERENT` mapped memory will not be available to the host until
+    /// this function is called for the region to be read.
+    ///
+    /// Mapped memory that is considered `HOST_COHERENT` does not need to be invalidated.
+    fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64);
 }
 
 //
@@ -659,69 +707,6 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
 // _________________________________________________________________________________________________
 // Resources
 
-pub trait IBuffer: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(IBuffer);
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`IBuffer`]
-    /// allocated from the same [`IDevice`] instance.
-    fn get_id(&self) -> NonZeroU64;
-
-    /// Returns a [BufferDesc] that describes this [IBuffer]
-    fn desc(&self) -> BufferDesc;
-
-    /// Returns a [BufferDesc] that describes this [IBuffer], but without the name component so we
-    /// can send a reference out.
-    fn desc_ref(&self) -> &BufferDesc;
-
-    /// Returns a host virtual address pointer to a region of a mappable buffer.
-    ///
-    /// [IBuffer::map] will map the entire buffer.
-    ///
-    /// Writes to buffer memory through a mapped pointer won't become available to the device until
-    /// after a submission to an [IQueue], or when signalling an event/fence to the GPU. The writes
-    /// will only be made available to the device commands when submitted, or when waiting for an
-    /// event/fence to be triggered from the CPU.
-    fn map(&self) -> Result<NonNull<u8>, ResourceMapError>;
-
-    /// Unmaps the buffers memory, releasing the associated address space range to be reused.
-    fn unmap(&self) -> Result<(), ResourceUnmapError>;
-
-    /// Flushes any writes to mapped buffer memory for non `HOST_COHERENT` memory.
-    ///
-    /// Writes to non `HOST_COHERENT` memory will no be made available to the device until the
-    /// written range is flushed with this function.
-    ///
-    /// This should be combined with an event/fence for writes from the host to become available
-    ///
-    /// Mapped memory that is considered `HOST_COHERENT` does not need to be flushed.
-    fn flush_range(&self, offset: u64, len: u64);
-
-    /// Invalidate the requested region inside the mapped buffer memory for non `HOST_COHERENT`
-    /// memory.
-    ///
-    /// Device writes to non `HOST_COHERENT` mapped memory will not be available to the host until
-    /// this function is called for the region to be read.
-    ///
-    /// Mapped memory that is considered `HOST_COHERENT` does not need to be invalidated.
-    fn invalidate_range(&self, offset: u64, len: u64);
-}
-
-impl dyn IBuffer {
-    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer`]
-    pub const fn uniform_buffer_write(&self, len: u32) -> BufferDescriptorWrite {
-        BufferDescriptorWrite::uniform_buffer(self, len)
-    }
-
-    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer_offset`]
-    pub const fn uniform_buffer_offset_write(
-        &self,
-        offset: u64,
-        len: u32,
-    ) -> BufferDescriptorWrite {
-        BufferDescriptorWrite::uniform_buffer_offset(self, offset, len)
-    }
-}
-
 pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ITexture);
 
@@ -852,14 +837,14 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
 
     unsafe fn copy_buffer_regions(
         &mut self,
-        src: &dyn IBuffer,
-        dst: &dyn IBuffer,
+        src: &BufferHandle,
+        dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     );
 
     unsafe fn copy_buffer_to_texture(
         &mut self,
-        src: &dyn IBuffer,
+        src: &BufferHandle,
         dst: &dyn ITexture,
         regions: &[BufferToTextureCopyRegion],
     );
@@ -2740,6 +2725,62 @@ impl ResourceUsageFlags {
 // _________________________________________________________________________________________________
 // Resources - Buffer
 
+#[derive(Clone)]
+pub struct BufferHandle {
+    inner: ArcObject,
+}
+
+impl BufferHandle {
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`BufferHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`BufferHandle`] and get the inner [`ArcObject`]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
+impl BufferHandle {
+    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer`]
+    pub const fn uniform_buffer_write(&self, len: u32) -> BufferDescriptorWrite {
+        BufferDescriptorWrite::uniform_buffer(self, len)
+    }
+
+    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer_offset`]
+    pub const fn uniform_buffer_offset_write(
+        &self,
+        offset: u64,
+        len: u32,
+    ) -> BufferDescriptorWrite {
+        BufferDescriptorWrite::uniform_buffer_offset(self, offset, len)
+    }
+}
+
 /// Description object used for creating a new buffer.
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct BufferDesc<'a> {
@@ -3815,7 +3856,7 @@ impl ImageDescriptorWrite {
 #[derive(Clone)]
 pub struct BufferDescriptorWrite<'a> {
     /// The buffer target
-    pub buffer: &'a dyn IBuffer,
+    pub buffer: &'a BufferHandle,
 
     /// The offset in bytes from the start of buffer. Access to buffer memory via this descriptor
     /// uses addressing that is relative to this starting offset.
@@ -3831,11 +3872,11 @@ pub struct BufferDescriptorWrite<'a> {
 }
 
 impl<'a> BufferDescriptorWrite<'a> {
-    pub const fn uniform_buffer(buffer: &'a dyn IBuffer, len: u32) -> Self {
+    pub const fn uniform_buffer(buffer: &'a BufferHandle, len: u32) -> Self {
         Self::uniform_buffer_offset(buffer, 0, len)
     }
 
-    pub const fn uniform_buffer_offset(buffer: &'a dyn IBuffer, offset: u64, len: u32) -> Self {
+    pub const fn uniform_buffer_offset(buffer: &'a BufferHandle, offset: u64, len: u32) -> Self {
         Self {
             buffer,
             offset,
@@ -3864,7 +3905,7 @@ impl<'a> BufferDescriptorWrite<'a> {
 #[derive(Clone)]
 pub struct TexelBufferDescriptorWrite<'a> {
     /// The buffer target
-    pub buffer: &'a dyn IBuffer,
+    pub buffer: &'a BufferHandle,
 
     /// The texel format the buffer should be interpreted as.
     pub format: Format,
@@ -5134,7 +5175,7 @@ pub struct BufferBarrier<'a> {
     ///
     /// This field is _required_ for the barrier to be valid to issue. It may be useful to construct
     /// barrier structs without a buffer stored in them _yet_ so the field is marked as optional.
-    pub buffer: Option<&'a dyn IBuffer>,
+    pub buffer: Option<&'a BufferHandle>,
 
     /// The offset from the start of the buffer, in bytes, the barrier applies to.
     pub offset: u64,
@@ -5210,12 +5251,12 @@ impl<'a> Debug for TextureBarrier<'a> {
 
 #[derive(Clone)]
 pub struct InputAssemblyBufferBinding<'a> {
-    pub buffer: &'a dyn IBuffer,
+    pub buffer: &'a BufferHandle,
     pub offset: u64,
 }
 
 impl<'a> InputAssemblyBufferBinding<'a> {
-    pub const fn new(buffer: &'a dyn IBuffer) -> Self {
+    pub const fn new(buffer: &'a BufferHandle) -> Self {
         Self { buffer, offset: 0 }
     }
 
