@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
@@ -114,7 +113,7 @@ fn edge_pass(
 
             let set = resources
                 .descriptor_arena()
-                .allocate_set(state.edge_set_layout.as_ref())
+                .allocate_set(&state.edge_set_layout)
                 .unwrap();
             resources
                 .device()
@@ -128,11 +127,11 @@ fn edge_pass(
 
             let info = FullscreenTriangleInfo {
                 dst_view: edge_tex_view,
-                pipeline: state.edge_pipeline.as_ref(),
+                pipeline: &state.edge_pipeline,
                 extent,
                 load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: state.edge_layout.as_ref(),
+                    layout: &state.edge_layout,
                     sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
@@ -187,7 +186,7 @@ fn blend_weight_pass(
 
             let set = resources
                 .descriptor_arena()
-                .allocate_set(state.weight_set_layout.as_ref())
+                .allocate_set(&state.weight_set_layout)
                 .unwrap();
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &edge_tex_view.srv_write()),
@@ -199,11 +198,11 @@ fn blend_weight_pass(
 
             let info = FullscreenTriangleInfo {
                 dst_view: blend_tex_view,
-                pipeline: state.weight_pipeline.as_ref(),
+                pipeline: &state.weight_pipeline,
                 extent,
                 load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: state.weight_layout.as_ref(),
+                    layout: &state.weight_layout,
                     sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
@@ -267,7 +266,7 @@ fn aa_blend_resolve_pass(
 
             let set = resources
                 .descriptor_arena()
-                .allocate_set(state.blend_set_layout.as_ref())
+                .allocate_set(&state.blend_set_layout)
                 .unwrap();
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &blend.srv_write()),
@@ -278,11 +277,11 @@ fn aa_blend_resolve_pass(
 
             let info = FullscreenTriangleInfo {
                 dst_view: output_view,
-                pipeline: state.blend_pipeline.as_ref(),
+                pipeline: &state.blend_pipeline,
                 extent,
                 load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: state.blend_layout.as_ref(),
+                    layout: &state.blend_layout,
                     sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
@@ -303,17 +302,17 @@ impl IStateCacheKey for SmaaStateKey {
 }
 
 pub struct SmaaState {
-    pub linear_sampler: AnyArc<dyn ISampler>,
-    pub point_sampler: AnyArc<dyn ISampler>,
-    pub edge_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub weight_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub blend_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub edge_layout: AnyArc<dyn IPipelineLayout>,
-    pub weight_layout: AnyArc<dyn IPipelineLayout>,
-    pub blend_layout: AnyArc<dyn IPipelineLayout>,
-    pub edge_pipeline: AnyArc<dyn IGraphicsPipeline>,
-    pub weight_pipeline: AnyArc<dyn IGraphicsPipeline>,
-    pub blend_pipeline: AnyArc<dyn IGraphicsPipeline>,
+    pub linear_sampler: SamplerHandle,
+    pub point_sampler: SamplerHandle,
+    pub edge_set_layout: DescriptorSetLayoutHandle,
+    pub weight_set_layout: DescriptorSetLayoutHandle,
+    pub blend_set_layout: DescriptorSetLayoutHandle,
+    pub edge_layout: PipelineLayoutHandle,
+    pub weight_layout: PipelineLayoutHandle,
+    pub blend_layout: PipelineLayoutHandle,
+    pub edge_pipeline: GraphicsPipelineHandle,
+    pub weight_pipeline: GraphicsPipelineHandle,
+    pub blend_pipeline: GraphicsPipelineHandle,
 }
 
 impl SmaaState {
@@ -325,53 +324,47 @@ impl SmaaState {
         let linear_sampler = Self::create_linear_sampler(device);
         let point_sampler = Self::create_point_sampler(device);
 
-        let linear_sampler_ref = linear_sampler.as_ref();
-        let point_sampler_ref = linear_sampler.as_ref();
+        let edge_set_layout = Self::create_edge_layout(device, &linear_sampler, &point_sampler);
 
-        let edge_set_layout =
-            Self::create_edge_layout(device, linear_sampler_ref, point_sampler_ref);
+        let weight_set_layout = Self::create_weight_layout(device, &linear_sampler, &point_sampler);
 
-        let weight_set_layout =
-            Self::create_weight_layout(device, linear_sampler_ref, point_sampler_ref);
-
-        let blend_set_layout =
-            Self::create_blend_layout(device, linear_sampler_ref, point_sampler_ref);
+        let blend_set_layout = Self::create_blend_layout(device, &linear_sampler, &point_sampler);
 
         let edge_layout = Self::create_pipeline_layout(
             device,
-            edge_set_layout.as_ref(),
+            &edge_set_layout,
             obj_name_opt!("EdgePipelineLayout"),
         );
 
         let weight_layout = Self::create_pipeline_layout(
             device,
-            weight_set_layout.as_ref(),
+            &weight_set_layout,
             obj_name_opt!("WeightPipelineLayout"),
         );
 
         let blend_layout = Self::create_pipeline_layout(
             device,
-            blend_set_layout.as_ref(),
+            &blend_set_layout,
             obj_name_opt!("BlendPipelineLayout"),
         );
 
         let edge_pipeline = Self::create_edge_detect_pipeline_state(
             device,
-            edge_layout.as_ref(),
+            &edge_layout,
             cache.shader_db(),
             Format::Bgra8Unorm,
         );
 
         let weight_pipeline = Self::create_weight_calculate_pipeline_state(
             device,
-            weight_layout.as_ref(),
+            &weight_layout,
             cache.shader_db(),
             Format::Bgra8Unorm,
         );
 
         let blend_pipeline = Self::create_blending_pipeline_state(
             device,
-            blend_layout.as_ref(),
+            &blend_layout,
             cache.shader_db(),
             format.to_non_srgb(), // Intentional for how this pass is implemented
         );
@@ -393,9 +386,9 @@ impl SmaaState {
 
     pub fn create_edge_layout(
         device: &dyn IDevice,
-        linear_sampler: &dyn ISampler,
-        point_sampler: &dyn ISampler,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        linear_sampler: &SamplerHandle,
+        point_sampler: &SamplerHandle,
+    ) -> DescriptorSetLayoutHandle {
         let linear_sampler = [linear_sampler];
         let point_sampler = [point_sampler];
 
@@ -419,9 +412,9 @@ impl SmaaState {
 
     pub fn create_weight_layout(
         device: &dyn IDevice,
-        linear_sampler: &dyn ISampler,
-        point_sampler: &dyn ISampler,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        linear_sampler: &SamplerHandle,
+        point_sampler: &SamplerHandle,
+    ) -> DescriptorSetLayoutHandle {
         let linear_sampler = [linear_sampler];
         let point_sampler = [point_sampler];
 
@@ -447,9 +440,9 @@ impl SmaaState {
 
     pub fn create_blend_layout(
         device: &dyn IDevice,
-        linear_sampler: &dyn ISampler,
-        point_sampler: &dyn ISampler,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        linear_sampler: &SamplerHandle,
+        point_sampler: &SamplerHandle,
+    ) -> DescriptorSetLayoutHandle {
         let linear_sampler = [linear_sampler];
         let point_sampler = [point_sampler];
 
@@ -474,9 +467,9 @@ impl SmaaState {
 
     pub fn create_pipeline_layout(
         device: &dyn IDevice,
-        set_layout: &dyn IDescriptorSetLayout,
+        set_layout: &DescriptorSetLayoutHandle,
         name: Option<&str>,
-    ) -> AnyArc<dyn IPipelineLayout> {
+    ) -> PipelineLayoutHandle {
         let pipeline_layout_desc = PipelineLayoutDesc {
             set_layouts: &[set_layout],
             push_constant_blocks: &[PushConstantBlock {
@@ -493,10 +486,10 @@ impl SmaaState {
 
     pub fn create_edge_detect_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         shader_db: &ShaderDatabaseAccessor,
         format: Format,
-    ) -> AnyArc<dyn IGraphicsPipeline> {
+    ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db
             .load_stage(shaders::smaa::edge_detect::vert())
             .unwrap();
@@ -517,10 +510,10 @@ impl SmaaState {
 
     pub fn create_weight_calculate_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         shader_db: &ShaderDatabaseAccessor,
         format: Format,
-    ) -> AnyArc<dyn IGraphicsPipeline> {
+    ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db
             .load_stage(shaders::smaa::weight_calculate::vert())
             .unwrap();
@@ -541,10 +534,10 @@ impl SmaaState {
 
     pub fn create_blending_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         shader_db: &ShaderDatabaseAccessor,
         format: Format,
-    ) -> AnyArc<dyn IGraphicsPipeline> {
+    ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db
             .load_stage(shaders::smaa::blending::vert())
             .unwrap();
@@ -563,7 +556,7 @@ impl SmaaState {
         .unwrap()
     }
 
-    pub fn create_linear_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+    pub fn create_linear_sampler(device: &dyn IDevice) -> SamplerHandle {
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Linear,
             mag_filter: SamplerFilter::Linear,
@@ -577,7 +570,7 @@ impl SmaaState {
         device.create_sampler(&desc).unwrap()
     }
 
-    pub fn create_point_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+    pub fn create_point_sampler(device: &dyn IDevice) -> SamplerHandle {
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Nearest,
             mag_filter: SamplerFilter::Nearest,

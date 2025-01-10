@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::LinearDescriptorPool;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
@@ -423,7 +422,7 @@ impl MipGenerator {
                 allow_uav_writes: false,
             });
 
-            encoder.bind_graphics_pipeline(state.pipeline.as_ref());
+            encoder.bind_graphics_pipeline(&state.pipeline);
             encoder.set_viewports(&[Viewport {
                 x: 0.0,
                 y: 0.0,
@@ -446,9 +445,7 @@ impl MipGenerator {
                 writable: false,
             };
             let src_view = device.get_texture_view(texture, &desc).unwrap();
-            let set = arena
-                .allocate_set(state.layout.set_layout.as_ref())
-                .unwrap();
+            let set = arena.allocate_set(&state.layout.set_layout).unwrap();
             device.update_descriptor_sets(&[DescriptorWriteDesc {
                 set,
                 binding: 0,
@@ -457,7 +454,7 @@ impl MipGenerator {
             }]);
 
             encoder.bind_descriptor_sets(
-                state.layout.pipeline_layout.as_ref(),
+                &state.layout.pipeline_layout,
                 PipelineBindPoint::Graphics,
                 0,
                 &[set],
@@ -523,7 +520,7 @@ impl IStateCacheKey for MipGeneratorStateKey {
 
 pub struct MipGeneratorState {
     pub layout: Arc<CompositePlanesLayout>,
-    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+    pub pipeline: GraphicsPipelineHandle,
 }
 
 impl MipGeneratorState {
@@ -535,22 +532,18 @@ impl MipGeneratorState {
         let key = CompositePlanesLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| CompositePlanesLayout::new(device));
 
-        let pipeline = Self::create_pipeline_state(
-            device,
-            layout.pipeline_layout.as_ref(),
-            cache.shader_db(),
-            format,
-        );
+        let pipeline =
+            Self::create_pipeline_state(device, &layout.pipeline_layout, cache.shader_db(), format);
 
         Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         shader_db: &ShaderDatabaseAccessor,
         format: Format,
-    ) -> AnyArc<dyn IGraphicsPipeline> {
+    ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db
             .load_stage(shaders::composite_planes::vert())
             .unwrap();

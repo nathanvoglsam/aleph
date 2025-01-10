@@ -290,8 +290,7 @@ impl Drop for Renderer {
         for f in self.frame_manager.frames.iter() {
             // Wait for all our in flight frames to be done
             assert_eq!(
-                self.device
-                    .wait_fences(&[f.done_fence.as_ref()], true, u32::MAX),
+                self.device.wait_fences(&[&f.done_fence], true, u32::MAX),
                 FenceWaitResult::Complete
             );
         }
@@ -547,7 +546,7 @@ struct SwapManager {
 }
 
 impl SwapManager {
-    unsafe fn acquire_next_image(&mut self, signal_semaphore: &dyn ISemaphore) -> AcquiredImage {
+    unsafe fn acquire_next_image(&mut self, signal_semaphore: &SemaphoreHandle) -> AcquiredImage {
         // Query if the surface wants to rebuild this frame and coerce the 'needs_rebuild' flag to
         // true if it wasn't already flagged.
         self.needs_rebuild = self.needs_rebuild || self.surface.needs_rebuild();
@@ -601,7 +600,7 @@ impl SwapManager {
     unsafe fn present(
         &mut self,
         queue: &dyn IQueue,
-        wait_semaphores: &[&dyn ISemaphore],
+        wait_semaphores: &[&SemaphoreHandle],
         image: AcquiredImage,
     ) {
         let submit_result = queue.present(&QueuePresentDesc {
@@ -661,9 +660,9 @@ impl FrameManager {
         let frame = &mut self.frames[self.current];
         CurrentFrameResources {
             frame_index: self.current,
-            acquire_semaphore: frame.acquire_semaphore.as_ref(),
-            present_semaphore: frame.present_semaphore.as_ref(),
-            done_fence: frame.done_fence.as_ref(),
+            acquire_semaphore: &frame.acquire_semaphore,
+            present_semaphore: &frame.present_semaphore,
+            done_fence: &frame.done_fence,
             deletion_pool: &mut frame.deletion_pool,
         }
     }
@@ -671,13 +670,13 @@ impl FrameManager {
 
 struct FrameResources {
     /// Used for syncing on the swap chain acquisition.
-    acquire_semaphore: AnyArc<dyn ISemaphore>,
+    acquire_semaphore: SemaphoreHandle,
 
     /// Used for syncing the present operation on the completion of the frame's final submission.
-    present_semaphore: AnyArc<dyn ISemaphore>,
+    present_semaphore: SemaphoreHandle,
 
     /// Used for notifying the CPU when the GPU frame is complete.
-    done_fence: AnyArc<dyn IFence>,
+    done_fence: FenceHandle,
 
     /// Pool for placing any resource that was deleted within the frame but must remain alive until
     /// that frame is finally retired on the GPU.
@@ -697,9 +696,9 @@ impl FrameResources {
 
 struct CurrentFrameResources<'a> {
     frame_index: usize,
-    acquire_semaphore: &'a dyn ISemaphore,
-    present_semaphore: &'a dyn ISemaphore,
-    done_fence: &'a dyn IFence,
+    acquire_semaphore: &'a SemaphoreHandle,
+    present_semaphore: &'a SemaphoreHandle,
+    done_fence: &'a FenceHandle,
     deletion_pool: &'a mut DeletionPool,
 }
 

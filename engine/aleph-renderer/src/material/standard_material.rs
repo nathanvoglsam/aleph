@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_shader_db::{Fragment, ShaderName, Vertex};
 
@@ -55,10 +54,7 @@ unsafe impl IMaterial for StandardMaterial {
         shaders::deferred::main_gbuffer_vert()
     }
 
-    fn create_descriptor_set_layout(
-        &self,
-        device: &dyn IDevice,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+    fn create_descriptor_set_layout(&self, device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Linear,
             mag_filter: SamplerFilter::Linear,
@@ -72,7 +68,7 @@ unsafe impl IMaterial for StandardMaterial {
         };
         let sampler = device.create_sampler(&desc).unwrap();
 
-        let samplers = [sampler.as_ref()];
+        let samplers = [&sampler];
         let desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
             items: &[

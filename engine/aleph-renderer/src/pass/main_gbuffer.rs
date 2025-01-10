@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_math::{Mat4, Vec3};
@@ -171,7 +170,7 @@ pub fn pass(
             let camera = u_alloc.allocate_object(camera_layout).unwrap();
 
             let global_set = descriptor_arena
-                .allocate_set(common_state.global_set_layout.as_ref())
+                .allocate_set(&common_state.global_set_layout)
                 .unwrap();
             device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer(
                 global_set,
@@ -181,7 +180,7 @@ pub fn pass(
             )]);
 
             let model_set = descriptor_arena
-                .allocate_set(common_state.model_set_layout.as_ref())
+                .allocate_set(&common_state.model_set_layout)
                 .unwrap();
             device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer_dynamic(
                 model_set,
@@ -261,15 +260,15 @@ pub fn pass(
                         cache,
                         device,
                         common_state.as_ref(),
-                        current_material_instance.material.as_ref(),
+                        &current_material_instance.material,
                     )
                 })
             };
 
-            encoder.bind_graphics_pipeline(current_material_state.pipeline.as_ref());
+            encoder.bind_graphics_pipeline(&current_material_state.pipeline);
 
             encoder.bind_descriptor_sets(
-                current_material_state.pipeline_layout.as_ref(),
+                &current_material_state.pipeline_layout,
                 PipelineBindPoint::Graphics,
                 0,
                 &[global_set],
@@ -277,7 +276,7 @@ pub fn pass(
             );
 
             let material_set = descriptor_arena
-                .allocate_set(current_material_state.material_set_layout.as_ref())
+                .allocate_set(&current_material_state.material_set_layout)
                 .unwrap();
             current_material_instance
                 .material
@@ -290,7 +289,7 @@ pub fn pass(
                     material_set,
                 );
             encoder.bind_descriptor_sets(
-                current_material_state.pipeline_layout.as_ref(),
+                &current_material_state.pipeline_layout,
                 PipelineBindPoint::Graphics,
                 1,
                 &[material_set],
@@ -344,7 +343,7 @@ pub fn pass(
                             })
                         };
 
-                        encoder.bind_graphics_pipeline(current_material_state.pipeline.as_ref());
+                        encoder.bind_graphics_pipeline(&current_material_state.pipeline);
 
                         encoder.set_viewports(&[Viewport {
                             x: 0.0,
@@ -364,7 +363,7 @@ pub fn pass(
                     }
 
                     let material_set = descriptor_arena
-                        .allocate_set(current_material_state.material_set_layout.as_ref())
+                        .allocate_set(&current_material_state.material_set_layout)
                         .unwrap();
                     current_material_instance
                         .material
@@ -377,7 +376,7 @@ pub fn pass(
                             material_set,
                         );
                     encoder.bind_descriptor_sets(
-                        current_material_state.pipeline_layout.as_ref(),
+                        &current_material_state.pipeline_layout,
                         PipelineBindPoint::Graphics,
                         1,
                         &[material_set],
@@ -399,7 +398,7 @@ pub fn pass(
                     .allocate_object(ModelLayout::from_transform(t))
                     .unwrap();
                 encoder.bind_descriptor_sets(
-                    current_material_state.pipeline_layout.as_ref(),
+                    &current_material_state.pipeline_layout,
                     PipelineBindPoint::Graphics,
                     2,
                     &[model_set],
@@ -472,8 +471,8 @@ impl IStateCacheKey for MainOpaqueCommonKey {
 }
 
 pub struct MainOpaqueCommonLayout {
-    pub global_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub model_set_layout: AnyArc<dyn IDescriptorSetLayout>,
+    pub global_set_layout: DescriptorSetLayoutHandle,
+    pub model_set_layout: DescriptorSetLayoutHandle,
 }
 
 impl MainOpaqueCommonLayout {
@@ -491,9 +490,7 @@ impl MainOpaqueCommonLayout {
         }
     }
 
-    fn create_global_descriptor_set_layout(
-        device: &dyn IDevice,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+    fn create_global_descriptor_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
             items: &[DescriptorType::UniformBuffer.binding(0)],
@@ -504,9 +501,7 @@ impl MainOpaqueCommonLayout {
             .unwrap()
     }
 
-    fn create_model_descriptor_set_layout(
-        device: &dyn IDevice,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+    fn create_model_descriptor_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
             items: &[DescriptorType::UniformBufferDynamic.binding(0)],
@@ -526,11 +521,11 @@ impl IStateCacheKey for MainOpaqueMaterialKey {
 }
 
 pub struct MainOpaqueMaterialLayout {
-    pub global_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub material_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub model_set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+    pub global_set_layout: DescriptorSetLayoutHandle,
+    pub material_set_layout: DescriptorSetLayoutHandle,
+    pub model_set_layout: DescriptorSetLayoutHandle,
+    pub pipeline_layout: PipelineLayoutHandle,
+    pub pipeline: GraphicsPipelineHandle,
 }
 
 impl MainOpaqueMaterialLayout {
@@ -550,17 +545,12 @@ impl MainOpaqueMaterialLayout {
         let model_set_layout = common.model_set_layout.clone();
         let pipeline_layout = Self::create_pipeline_layout(
             device,
-            global_set_layout.as_ref(),
-            material_set_layout.as_ref(),
-            model_set_layout.as_ref(),
+            &global_set_layout,
+            &material_set_layout,
+            &model_set_layout,
         );
-        let pipeline = Self::create_pipeline_state(
-            device,
-            key,
-            cache.shader_db(),
-            pipeline_layout.as_ref(),
-            material,
-        );
+        let pipeline =
+            Self::create_pipeline_state(device, key, cache.shader_db(), &pipeline_layout, material);
 
         Self {
             global_set_layout,
@@ -574,16 +564,16 @@ impl MainOpaqueMaterialLayout {
     fn create_material_descriptor_set_layout(
         device: &dyn IDevice,
         material: &Material,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+    ) -> DescriptorSetLayoutHandle {
         material.material.create_descriptor_set_layout(device)
     }
 
     fn create_pipeline_layout(
         device: &dyn IDevice,
-        global: &dyn IDescriptorSetLayout,
-        material: &dyn IDescriptorSetLayout,
-        model: &dyn IDescriptorSetLayout,
-    ) -> AnyArc<dyn IPipelineLayout> {
+        global: &DescriptorSetLayoutHandle,
+        material: &DescriptorSetLayoutHandle,
+        model: &DescriptorSetLayoutHandle,
+    ) -> PipelineLayoutHandle {
         let pipeline_layout_desc = PipelineLayoutDesc {
             set_layouts: &[global, material, model],
             push_constant_blocks: &[],
@@ -598,9 +588,9 @@ impl MainOpaqueMaterialLayout {
         device: &dyn IDevice,
         key: &MainOpaqueMaterialKey,
         shader_db: &ShaderDatabaseAccessor,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         material: &Material,
-    ) -> AnyArc<dyn IGraphicsPipeline> {
+    ) -> GraphicsPipelineHandle {
         let rasterizer_state = RasterizerStateDesc {
             cull_mode: key.1,
             front_face: FrontFaceOrder::CounterClockwise,

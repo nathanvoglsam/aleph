@@ -29,7 +29,6 @@
 
 use std::sync::Arc;
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
@@ -124,7 +123,7 @@ pub fn pass(
 
             let set = resources
                 .descriptor_arena()
-                .allocate_set(state.layout.set_layout.as_ref())
+                .allocate_set(&state.layout.set_layout)
                 .unwrap();
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::uniform_buffer(set, 0, &buffer.uniform_buffer_write(256)),
@@ -133,11 +132,11 @@ pub fn pass(
 
             let info = FullscreenTriangleInfo {
                 dst_view,
-                pipeline: state.pipeline.as_ref(),
+                pipeline: &state.pipeline,
                 extent: src_extent,
                 load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: state.layout.pipeline_layout.as_ref(),
+                    layout: &state.layout.pipeline_layout,
                     sets: &[set],
                     first_set: 0,
                     dynamic_offsets: &[],
@@ -159,8 +158,8 @@ impl IStateCacheKey for CompositePlanesLayoutKey {
 }
 
 pub struct CompositePlanesLayout {
-    pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
+    pub set_layout: DescriptorSetLayoutHandle,
+    pub pipeline_layout: PipelineLayoutHandle,
 }
 
 impl CompositePlanesLayout {
@@ -170,8 +169,8 @@ impl CompositePlanesLayout {
 
     pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
-        let set_layout = Self::create_set_layout(device, sampler.as_ref());
-        let pipeline_layout = Self::create_pipeline_layout(device, set_layout.as_ref());
+        let set_layout = Self::create_set_layout(device, &sampler);
+        let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
 
         Self {
             set_layout: set_layout,
@@ -181,8 +180,8 @@ impl CompositePlanesLayout {
 
     pub fn create_set_layout(
         device: &dyn IDevice,
-        sampler: &dyn ISampler,
-    ) -> AnyArc<dyn IDescriptorSetLayout> {
+        sampler: &SamplerHandle,
+    ) -> DescriptorSetLayoutHandle {
         let sampler = [sampler];
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::Fragment,
@@ -202,8 +201,8 @@ impl CompositePlanesLayout {
 
     pub fn create_pipeline_layout(
         device: &dyn IDevice,
-        set_layout: &dyn IDescriptorSetLayout,
-    ) -> AnyArc<dyn IPipelineLayout> {
+        set_layout: &DescriptorSetLayoutHandle,
+    ) -> PipelineLayoutHandle {
         let pipeline_layout_desc = PipelineLayoutDesc {
             set_layouts: &[set_layout],
             push_constant_blocks: &[PushConstantBlock {
@@ -218,7 +217,7 @@ impl CompositePlanesLayout {
             .unwrap()
     }
 
-    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+    pub fn create_sampler(device: &dyn IDevice) -> SamplerHandle {
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Linear,
             mag_filter: SamplerFilter::Linear,
@@ -243,7 +242,7 @@ impl IStateCacheKey for FxaaStateKey {
 
 pub struct FxaaState {
     pub layout: Arc<CompositePlanesLayout>,
-    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+    pub pipeline: GraphicsPipelineHandle,
 }
 
 impl FxaaState {
@@ -255,22 +254,18 @@ impl FxaaState {
         let key = CompositePlanesLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| CompositePlanesLayout::new(device));
 
-        let pipeline = Self::create_pipeline_state(
-            device,
-            layout.pipeline_layout.as_ref(),
-            cache.shader_db(),
-            format,
-        );
+        let pipeline =
+            Self::create_pipeline_state(device, &layout.pipeline_layout, cache.shader_db(), format);
 
         Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         shader_db: &ShaderDatabaseAccessor,
         format: Format,
-    ) -> AnyArc<dyn IGraphicsPipeline> {
+    ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db.load_stage(shaders::fxaa::vert()).unwrap();
         let fragment_shader = shader_db.load_stage(shaders::fxaa::frag()).unwrap();
 

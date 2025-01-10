@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
@@ -155,7 +154,7 @@ pub fn pass(
             u_alloc.allocate_object(camera_layout).unwrap();
             device.unmap_buffer(uniform_buffer).unwrap();
 
-            let set = arena.allocate_set(state.set_layout.as_ref()).unwrap();
+            let set = arena.allocate_set(&state.set_layout).unwrap();
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &depth_srv.srv_write()),
                 DescriptorWriteDesc::texture(set, 1, &gbuffer0_srv.srv_write()),
@@ -169,9 +168,9 @@ pub fn pass(
                 ),
             ]);
 
-            encoder.bind_compute_pipeline(state.pipeline.as_ref());
+            encoder.bind_compute_pipeline(&state.pipeline);
             encoder.bind_descriptor_sets(
-                state.pipeline_layout.as_ref(),
+                &state.pipeline_layout,
                 PipelineBindPoint::Compute,
                 0,
                 &[set],
@@ -194,9 +193,9 @@ impl IStateCacheKey for LightResolveStateKey {
 }
 
 pub struct LightResolveState {
-    pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
-    pub pipeline: AnyArc<dyn IComputePipeline>,
+    pub set_layout: DescriptorSetLayoutHandle,
+    pub pipeline_layout: PipelineLayoutHandle,
+    pub pipeline: ComputePipelineHandle,
 }
 
 impl LightResolveState {
@@ -206,9 +205,8 @@ impl LightResolveState {
 
     pub fn new(cache: &mut StateCache, device: &dyn IDevice) -> Self {
         let set_layout = Self::create_set_layout(device);
-        let pipeline_layout = Self::create_pipeline_layout(device, set_layout.as_ref());
-        let pipeline =
-            Self::create_pipeline_state(device, pipeline_layout.as_ref(), cache.shader_db());
+        let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
+        let pipeline = Self::create_pipeline_state(device, &pipeline_layout, cache.shader_db());
 
         Self {
             set_layout,
@@ -217,7 +215,7 @@ impl LightResolveState {
         }
     }
 
-    pub fn create_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
+    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         device
             .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
                 visibility: DescriptorShaderVisibility::Compute,
@@ -236,8 +234,8 @@ impl LightResolveState {
 
     pub fn create_pipeline_layout(
         device: &dyn IDevice,
-        set_layout: &dyn IDescriptorSetLayout,
-    ) -> AnyArc<dyn IPipelineLayout> {
+        set_layout: &DescriptorSetLayoutHandle,
+    ) -> PipelineLayoutHandle {
         device
             .create_pipeline_layout(
                 &PipelineLayoutDesc::new()
@@ -249,9 +247,9 @@ impl LightResolveState {
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         shader_db: &ShaderDatabaseAccessor,
-    ) -> AnyArc<dyn IComputePipeline> {
+    ) -> ComputePipelineHandle {
         let shader_module = shader_db
             .load_data(shaders::deferred::deferred_lighting_cs())
             .unwrap();

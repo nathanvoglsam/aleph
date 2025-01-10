@@ -27,19 +27,18 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 pub struct FullscreenTriangleInfo<'a> {
     pub dst_view: ImageView,
-    pub pipeline: &'a dyn IGraphicsPipeline,
+    pub pipeline: &'a GraphicsPipelineHandle,
     pub extent: Extent2D,
     pub load_op: AttachmentLoadOp<ColorClearValue>,
     pub bindings: &'a FullscreenTriangleBindInfo<'a>,
 }
 
 pub struct FullscreenTriangleBindInfo<'a> {
-    pub layout: &'a dyn IPipelineLayout,
+    pub layout: &'a PipelineLayoutHandle,
     pub sets: &'a [DescriptorSetHandle],
     pub first_set: u32,
     pub dynamic_offsets: &'a [u32],
@@ -97,12 +96,12 @@ pub unsafe fn draw_fullscreen_triangle(
 
 pub fn create_fullscreen_triangle_pipeline(
     device: &dyn IDevice,
-    pipeline_layout: &dyn IPipelineLayout,
+    pipeline_layout: &PipelineLayoutHandle,
     format: Format,
     vertex_shader: ShaderStage,
     fragment_shader: ShaderStage,
     name: Option<&str>,
-) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
+) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
     let vertex_layout = VertexInputStateDesc::default();
 
     let input_assembly_state = InputAssemblyStateDesc {

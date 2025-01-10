@@ -60,7 +60,7 @@ pub fn pass(
     let pipeline_layout = device
         .create_pipeline_layout(
             &PipelineLayoutDesc::new()
-                .with_set_layouts(&[set_layout.as_ref()])
+                .with_set_layouts(&[&set_layout])
                 .with_name(obj_name!("TonemapLightingPipelineLayout")),
         )
         .unwrap();
@@ -73,7 +73,7 @@ pub fn pass(
     let pipeline = device
         .create_compute_pipeline(&ComputePipelineDesc {
             shader_module,
-            pipeline_layout: pipeline_layout.as_ref(),
+            pipeline_layout: &pipeline_layout,
             name: obj_name_opt!("TonemapPipeline"),
         })
         .unwrap();
@@ -116,15 +116,15 @@ pub fn pass(
                 ImageViewDesc::uav_for_texture(device, output).with_format(Format::Bgra8Unorm); // Can't take UAV of SRGB formats
             let output_uav = device.get_texture_view(output, &desc).unwrap();
 
-            let set = arena.allocate_set(set_layout.as_ref()).unwrap();
+            let set = arena.allocate_set(&set_layout).unwrap();
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &input_srv.srv_write()),
                 DescriptorWriteDesc::texture_rw(set, 1, &output_uav.uav_write()),
             ]);
 
-            encoder.bind_compute_pipeline(pipeline.as_ref());
+            encoder.bind_compute_pipeline(&pipeline);
             encoder.bind_descriptor_sets(
-                pipeline_layout.as_ref(),
+                &pipeline_layout,
                 PipelineBindPoint::Compute,
                 0,
                 &[set],
