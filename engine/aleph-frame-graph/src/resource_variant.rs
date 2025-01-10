@@ -31,33 +31,11 @@ use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 pub enum ResourceVariant {
-    Buffer(AnyArc<dyn IBuffer>),
+    Buffer(BufferHandle),
     Texture(AnyArc<dyn ITexture>),
 }
 
 impl ResourceVariant {
-    pub fn unwrap_buffer(&self) -> &dyn IBuffer {
-        match self {
-            ResourceVariant::Buffer(v) => v.as_ref(),
-            ResourceVariant::Texture(v) => {
-                let desc = v.desc();
-                let name = desc.name.unwrap_or("Unnamed Texture");
-                panic!("ResourceVariant for resource '{name}' is not a 'Buffer'");
-            }
-        }
-    }
-
-    pub fn unwrap_texture(&self) -> &dyn ITexture {
-        match self {
-            ResourceVariant::Texture(v) => v.as_ref(),
-            ResourceVariant::Buffer(v) => {
-                let desc = v.desc();
-                let name = desc.name.unwrap_or("Unnamed Buffer");
-                panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
-            }
-        }
-    }
-
     pub const fn is_buffer(&self) -> bool {
         match self {
             ResourceVariant::Buffer(_) => true,
@@ -73,8 +51,8 @@ impl ResourceVariant {
     }
 }
 
-impl From<AnyArc<dyn IBuffer>> for ResourceVariant {
-    fn from(value: AnyArc<dyn IBuffer>) -> Self {
+impl From<BufferHandle> for ResourceVariant {
+    fn from(value: BufferHandle) -> Self {
         Self::Buffer(value)
     }
 }
@@ -85,9 +63,9 @@ impl From<AnyArc<dyn ITexture>> for ResourceVariant {
     }
 }
 
-impl<'a> From<&'a dyn IBuffer> for ResourceVariant {
-    fn from(value: &'a dyn IBuffer) -> Self {
-        let value = value.upgrade();
+impl<'a> From<&'a BufferHandle> for ResourceVariant {
+    fn from(value: &'a BufferHandle) -> Self {
+        let value = value.clone();
         Self::Buffer(value)
     }
 }
@@ -96,13 +74,6 @@ impl<'a> From<&'a dyn ITexture> for ResourceVariant {
     fn from(value: &'a dyn ITexture) -> Self {
         let value = value.upgrade();
         Self::Texture(value)
-    }
-}
-
-impl<'a> From<&'a AnyArc<dyn IBuffer>> for ResourceVariant {
-    fn from(value: &'a AnyArc<dyn IBuffer>) -> Self {
-        let value = value.upgrade();
-        Self::Buffer(value)
     }
 }
 

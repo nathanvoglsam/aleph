@@ -204,8 +204,15 @@ impl<A: PassArgs> FrameGraph<A> {
                         let texture = transient_bundle
                             .get_resource(root_id)
                             .or_else(|| import_bundle.get_resource(root_id))
-                            .map(|v| v.unwrap_texture())
                             .unwrap();
+                        let texture = match texture {
+                            ResourceVariant::Buffer(v) => {
+                                let desc = self.device.buffer_desc(v);
+                                let name = desc.name.unwrap_or("Unnamed Buffer");
+                                panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
+                            }
+                            ResourceVariant::Texture(v) => v.as_ref(),
+                        };
                         texture_barriers.push(TextureBarrier {
                             texture: Some(texture),
                             subresource_range: v.subresource_range.clone(),
@@ -523,7 +530,7 @@ impl<A: PassArgs> FrameGraph<A> {
         match given {
             crate::ResourceVariant::Buffer(i) => match &root.resource_type {
                 crate::internal::ResourceType::Buffer(r) => {
-                    let i_desc = i.desc();
+                    let i_desc = self.device.buffer_desc(i);
                     self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
                 }
                 crate::internal::ResourceType::Texture(_r) => {
@@ -626,15 +633,30 @@ impl<'a> FrameGraphResources<'a> {
     }
 
     #[inline]
-    pub fn get_buffer<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn IBuffer> {
-        let r = self.get(r);
-        r.map(|v| v.unwrap_buffer())
+    pub fn get_buffer<T: Into<ResourceRef>>(&self, r: T) -> Option<&BufferHandle> {
+        let r = self.get(r)?;
+        match r {
+            ResourceVariant::Buffer(v) => Some(v),
+            ResourceVariant::Texture(v) => {
+                // let desc = self.device.texture_desc(v);
+                let desc = v.desc();
+                let name = desc.name.unwrap_or("Unnamed Texture");
+                panic!("ResourceVariant for resource '{name}' is not a 'Buffer'");
+            }
+        }
     }
 
     #[inline]
     pub fn get_texture<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn ITexture> {
-        let r = self.get(r);
-        r.map(|v| v.unwrap_texture())
+        let r = self.get(r)?;
+        match r {
+            ResourceVariant::Buffer(v) => {
+                let desc = self.device.buffer_desc(v);
+                let name = desc.name.unwrap_or("Unnamed Buffer");
+                panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
+            }
+            ResourceVariant::Texture(v) => Some(v.as_ref()),
+        }
     }
 
     pub const fn descriptor_arena(&self) -> &'a LinearDescriptorPool {
