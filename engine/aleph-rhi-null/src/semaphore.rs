@@ -27,30 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 
 use crate::NullDevice;
 
 pub struct NullSemaphore {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
 }
 
-declare_interfaces!(NullSemaphore, [ISemaphore]);
-
-crate::impl_platform_interface_passthrough!(NullSemaphore);
-
-impl ISemaphore for NullSemaphore {
-    fn upgrade(&self) -> AnyArc<dyn ISemaphore> {
-        AnyArc::map::<dyn ISemaphore, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-}
+unsafe_impl_iobject!(NullSemaphore, "01944f87-2456-7f90-9474-3d5e95298cd7");

@@ -29,35 +29,33 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
 pub struct NullDescriptorSetLayout {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
 }
 
-declare_interfaces!(NullDescriptorSetLayout, [IDescriptorSetLayout]);
+unsafe_impl_iobject!(
+    NullDescriptorSetLayout,
+    "01944fbe-044c-7c31-962e-3903d5692199"
+);
 
-crate::impl_platform_interface_passthrough!(NullDescriptorSetLayout);
-
-impl IDescriptorSetLayout for NullDescriptorSetLayout {
-    fn upgrade(&self) -> AnyArc<dyn IDescriptorSetLayout> {
-        AnyArc::map::<dyn IDescriptorSetLayout, _>(self._this.upgrade().unwrap(), |v| v)
+impl NullDescriptorSetLayout {
+    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown DescriptorSetLayout implementation!")
     }
 }

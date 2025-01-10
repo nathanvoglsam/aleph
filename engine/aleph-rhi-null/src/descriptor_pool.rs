@@ -27,14 +27,17 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
+
 use aleph_any::{declare_interfaces, AnyArc};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
 use crate::{NullDescriptorSetLayout, NullDevice};
 
 pub struct NullDescriptorPool {
     pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) _layout: AnyArc<NullDescriptorSetLayout>,
+    pub(crate) _layout: Arc<ArcedObject<NullDescriptorSetLayout>>,
     pub(crate) counter: u64,
 }
 

@@ -29,47 +29,35 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
 pub struct NullSampler {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: SamplerDesc<'static>,
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(NullSampler, [ISampler]);
+unsafe_impl_iobject!(NullSampler, "01944fbf-d462-7833-b04b-6ba813845586");
 
-crate::impl_platform_interface_passthrough!(NullSampler);
-
-impl ISampler for NullSampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self._this.upgrade().unwrap(), |v| v)
+impl NullSampler {
+    pub(crate) fn get(v: &SamplerHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Sampler implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
-    }
-
-    fn desc(&self) -> SamplerDesc {
+    pub(crate) fn desc(&self) -> SamplerDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &SamplerDesc {
+    pub(crate) fn desc_ref(&self) -> &SamplerDesc {
         &self.desc
     }
 }

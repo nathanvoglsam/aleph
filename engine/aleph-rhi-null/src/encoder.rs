@@ -40,7 +40,7 @@ impl IGetPlatformInterface for NullEncoder {
 }
 
 impl IGeneralEncoder for NullEncoder {
-    unsafe fn bind_graphics_pipeline(&mut self, _pipeline: &dyn IGraphicsPipeline) {}
+    unsafe fn bind_graphics_pipeline(&mut self, _pipeline: &GraphicsPipelineHandle) {}
 
     unsafe fn bind_vertex_buffers(
         &mut self,
@@ -87,11 +87,11 @@ impl IGeneralEncoder for NullEncoder {
 }
 
 impl IComputeEncoder for NullEncoder {
-    unsafe fn bind_compute_pipeline(&mut self, _pipeline: &dyn IComputePipeline) {}
+    unsafe fn bind_compute_pipeline(&mut self, _pipeline: &ComputePipelineHandle) {}
 
     unsafe fn bind_descriptor_sets(
         &mut self,
-        _pipeline_layout: &dyn IPipelineLayout,
+        _pipeline_layout: &PipelineLayoutHandle,
         _bind_point: PipelineBindPoint,
         _first_set: u32,
         _sets: &[DescriptorSetHandle],

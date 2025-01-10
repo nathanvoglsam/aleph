@@ -46,7 +46,7 @@ crate::impl_platform_interface_passthrough!(NullDescriptorArena);
 impl IDescriptorArena for NullDescriptorArena {
     fn allocate_set(
         &self,
-        _layout: &dyn IDescriptorSetLayout,
+        _layout: &DescriptorSetLayoutHandle,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         let handle = self.counter.get();
         self.counter.set(self.counter.get() + 1);

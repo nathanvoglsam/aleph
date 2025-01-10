@@ -27,30 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_rhi_api::*;
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 
 use crate::NullDevice;
 
 pub struct NullFence {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
 }
 
-declare_interfaces!(NullFence, [IFence]);
-
-crate::impl_platform_interface_passthrough!(NullFence);
-
-impl IFence for NullFence {
-    fn upgrade(&self) -> AnyArc<dyn IFence> {
-        AnyArc::map::<dyn IFence, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-}
+unsafe_impl_iobject!(NullFence, "01944f85-b377-7ea0-a3ef-972d804169ef");

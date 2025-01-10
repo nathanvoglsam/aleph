@@ -28,66 +28,42 @@
 //
 
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 
 use crate::{NullDevice, NullPipelineLayout};
 
 pub struct NullGraphicsPipeline {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) _pipeline_layout: AnyArc<NullPipelineLayout>,
+    pub(crate) _pipeline_layout: Arc<ArcedObject<NullPipelineLayout>>,
     pub(crate) id: NonZeroU64,
 }
 
-declare_interfaces!(NullGraphicsPipeline, [IGraphicsPipeline]);
+unsafe_impl_iobject!(NullGraphicsPipeline, "01944fbe-c91c-7cd2-8fde-0ba32aa2c01f");
 
-crate::impl_platform_interface_passthrough!(NullGraphicsPipeline);
-
-impl IGraphicsPipeline for NullGraphicsPipeline {
-    fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
-        AnyArc::map::<dyn IGraphicsPipeline, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+impl NullGraphicsPipeline {
+    pub(crate) fn get(v: &GraphicsPipelineHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown GraphicsPipeline implementation!")
     }
 }
 
 pub struct NullComputePipeline {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) _pipeline_layout: AnyArc<NullPipelineLayout>,
+    pub(crate) _pipeline_layout: Arc<ArcedObject<NullPipelineLayout>>,
     pub(crate) id: NonZeroU64,
 }
 
-declare_interfaces!(NullComputePipeline, [IComputePipeline]);
+unsafe_impl_iobject!(NullComputePipeline, "01944fbe-c91c-7cd2-8fde-0bba2e16937b");
 
-crate::impl_platform_interface_passthrough!(NullComputePipeline);
-
-impl IComputePipeline for NullComputePipeline {
-    fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
-        AnyArc::map::<dyn IComputePipeline, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+impl NullComputePipeline {
+    pub(crate) fn get(v: &ComputePipelineHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown ComputePipeline implementation!")
     }
 }

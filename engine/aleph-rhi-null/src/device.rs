@@ -29,7 +29,7 @@
 
 use std::cell::Cell;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
@@ -92,19 +92,16 @@ impl IDevice for NullDevice {
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
-    ) -> Result<AnyArc<dyn IGraphicsPipeline>, PipelineCreateError> {
-        let pipeline_layout = desc
-            .pipeline_layout
-            .query_interface::<NullPipelineLayout>()
-            .expect("Unknown IGraphicsPipeline implementation");
+    ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
+        let pipeline_layout = NullPipelineLayout::get_owned(desc.pipeline_layout);
 
-        let pipeline = AnyArc::new_cyclic(move |v| NullGraphicsPipeline {
-            _this: v.clone(),
+        let pipeline = NullGraphicsPipeline {
             _device: self._this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout,
             id: self.object_counter.next_compute_pipeline(),
-        });
-        Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
+        };
+        let v = ArcedObject::new_arc_opaque(pipeline);
+        unsafe { Ok(GraphicsPipelineHandle::new(v)) }
     }
 
     // ========================================================================================== //
@@ -113,19 +110,16 @@ impl IDevice for NullDevice {
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
-    ) -> Result<AnyArc<dyn IComputePipeline>, PipelineCreateError> {
-        let pipeline_layout = desc
-            .pipeline_layout
-            .query_interface::<NullPipelineLayout>()
-            .expect("Unknown IGraphicsPipeline implementation");
+    ) -> Result<ComputePipelineHandle, PipelineCreateError> {
+        let pipeline_layout = NullPipelineLayout::get_owned(desc.pipeline_layout);
 
-        let pipeline = AnyArc::new_cyclic(move |v| NullComputePipeline {
-            _this: v.clone(),
+        let pipeline = NullComputePipeline {
             _device: self._this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout,
             id: self.object_counter.next_compute_pipeline(),
-        });
-        Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
+        };
+        let v = ArcedObject::new_arc_opaque(pipeline);
+        unsafe { Ok(ComputePipelineHandle::new(v)) }
     }
 
     // ========================================================================================== //
@@ -134,13 +128,13 @@ impl IDevice for NullDevice {
     fn create_descriptor_set_layout(
         &self,
         _desc: &DescriptorSetLayoutDesc,
-    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
-        let layout = AnyArc::new_cyclic(move |v| NullDescriptorSetLayout {
-            _this: v.clone(),
+    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
+        let layout = NullDescriptorSetLayout {
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_set_layout(),
-        });
-        Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(layout, |v| v))
+        };
+        let v = ArcedObject::new_arc_opaque(layout);
+        unsafe { Ok(DescriptorSetLayoutHandle::new(v)) }
     }
 
     // ========================================================================================== //
@@ -150,17 +144,10 @@ impl IDevice for NullDevice {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let inner_layout = desc
-            .layout
-            .query_interface::<NullDescriptorSetLayout>()
-            .expect("Unknown IDescriptorSetLayout implementation")
-            ._this
-            .upgrade()
-            .unwrap();
-
+        let layout = NullDescriptorSetLayout::get_owned(desc.layout);
         let pool = Box::new(NullDescriptorPool {
             _device: self._this.upgrade().unwrap(),
-            _layout: inner_layout,
+            _layout: layout,
             counter: 1,
         });
 
@@ -188,13 +175,13 @@ impl IDevice for NullDevice {
     fn create_pipeline_layout(
         &self,
         _desc: &PipelineLayoutDesc,
-    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
-        let layout = AnyArc::new_cyclic(move |v| NullPipelineLayout {
-            _this: v.clone(),
+    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
+        let layout = NullPipelineLayout {
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_pipeline_layout(),
-        });
-        Ok(AnyArc::map::<dyn IPipelineLayout, _>(layout, |v| v))
+        };
+        let v = ArcedObject::new_arc_opaque(layout);
+        unsafe { Ok(PipelineLayoutHandle::new(v)) }
     }
 
     // ========================================================================================== //
@@ -236,20 +223,17 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_sampler(
-        &self,
-        desc: &SamplerDesc,
-    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
         let name = desc.name.map(String::from);
         let desc = desc.clone().strip_name();
-        let sampler = AnyArc::new_cyclic(move |v| NullSampler {
-            _this: v.clone(),
+        let sampler = NullSampler {
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_sampler(),
             desc,
             name,
-        });
-        Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
+        };
+        let v = ArcedObject::new_arc_opaque(sampler);
+        unsafe { Ok(SamplerHandle::new(v)) }
     }
 
     // ========================================================================================== //
@@ -293,23 +277,23 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_fence(&self, _signalled: bool) -> Result<AnyArc<dyn IFence>, FenceCreateError> {
-        let fence = AnyArc::new_cyclic(move |v| NullFence {
-            _this: v.clone(),
+    fn create_fence(&self, _signalled: bool) -> Result<FenceHandle, FenceCreateError> {
+        let fence = NullFence {
             _device: self._this.upgrade().unwrap(),
-        });
-        Ok(AnyArc::map::<dyn IFence, _>(fence, |v| v))
+        };
+        let fence = ArcedObject::new_arc_opaque(fence);
+        unsafe { Ok(FenceHandle::new(fence)) }
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_semaphore(&self) -> Result<AnyArc<dyn ISemaphore>, SemaphoreCreateError> {
-        let fence = AnyArc::new_cyclic(move |v| NullSemaphore {
-            _this: v.clone(),
+    fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
+        let fence = NullSemaphore {
             _device: self._this.upgrade().unwrap(),
-        });
-        Ok(AnyArc::map::<dyn ISemaphore, _>(fence, |v| v))
+        };
+        let fence = ArcedObject::new_arc_opaque(fence);
+        unsafe { Ok(SemaphoreHandle::new(fence)) }
     }
 
     // ========================================================================================== //
@@ -317,7 +301,7 @@ impl IDevice for NullDevice {
 
     fn wait_fences(
         &self,
-        _fences: &[&dyn IFence],
+        _fences: &[&FenceHandle],
         _wait_all: bool,
         _timeout: u32,
     ) -> FenceWaitResult {
@@ -327,11 +311,11 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn poll_fence(&self, _fence: &dyn IFence) -> bool {
+    fn poll_fence(&self, _fence: &FenceHandle) -> bool {
         true
     }
 
-    fn reset_fences(&self, _fences: &[&dyn IFence]) {}
+    fn reset_fences(&self, _fences: &[&FenceHandle]) {}
 
     // ========================================================================================== //
     // ========================================================================================== //
@@ -443,5 +427,60 @@ impl IDevice for NullDevice {
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
         NullTexture::get(texture).get_dsv(desc)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_sampler_id(&self, sampler: &SamplerHandle) -> std::num::NonZeroU64 {
+        NullSampler::get(sampler).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b> {
+        NullSampler::get(sampler).desc()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
+        NullSampler::get(sampler).desc_ref()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_descriptor_set_layout_id(
+        &self,
+        set_layout: &DescriptorSetLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        NullDescriptorSetLayout::get(set_layout).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_pipeline_layout_id(
+        &self,
+        pipeline_layout: &PipelineLayoutHandle,
+    ) -> std::num::NonZeroU64 {
+        NullPipelineLayout::get(pipeline_layout).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
+        NullGraphicsPipeline::get(pipeline).id
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
+        NullComputePipeline::get(pipeline).id
     }
 }

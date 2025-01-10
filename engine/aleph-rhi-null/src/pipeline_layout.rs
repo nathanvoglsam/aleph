@@ -29,35 +29,30 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
 use aleph_rhi_api::*;
 
 use crate::NullDevice;
 
 pub struct NullPipelineLayout {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
 }
 
-declare_interfaces!(NullPipelineLayout, [IPipelineLayout]);
+unsafe_impl_iobject!(NullPipelineLayout, "01944fbe-9723-7770-8756-99889b0542d9");
 
-crate::impl_platform_interface_passthrough!(NullPipelineLayout);
-
-impl IPipelineLayout for NullPipelineLayout {
-    fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {
-        AnyArc::map::<dyn IPipelineLayout, _>(self._this.upgrade().unwrap(), |v| v)
+impl NullPipelineLayout {
+    pub(crate) fn get_owned(v: &PipelineLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
+        v.clone()
+            .into_inner()
+            .downcast::<Self>()
+            .expect("Unknown PipelineLayout implementation!")
     }
 
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
-        self.id
+    pub(crate) fn get(v: &PipelineLayoutHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown PipelineLayout implementation!")
     }
 }
