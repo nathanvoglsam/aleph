@@ -211,7 +211,7 @@ impl<A: PassArgs> FrameGraph<A> {
                                 let name = desc.name.unwrap_or("Unnamed Buffer");
                                 panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
                             }
-                            ResourceVariant::Texture(v) => v.as_ref(),
+                            ResourceVariant::Texture(v) => v,
                         };
                         texture_barriers.push(TextureBarrier {
                             texture: Some(texture),
@@ -548,7 +548,7 @@ impl<A: PassArgs> FrameGraph<A> {
                     panic!("{} texture '{}' was provided a buffer", resource_type, name)
                 }
                 crate::internal::ResourceType::Texture(r) => {
-                    let i_desc = i.desc();
+                    let i_desc = self.device.texture_desc(i);
                     self.assert_matching_texture_desc(&r.desc, &i_desc, name);
                 }
                 crate::internal::ResourceType::Execution(_r) => {
@@ -638,8 +638,7 @@ impl<'a> FrameGraphResources<'a> {
         match r {
             ResourceVariant::Buffer(v) => Some(v),
             ResourceVariant::Texture(v) => {
-                // let desc = self.device.texture_desc(v);
-                let desc = v.desc();
+                let desc = self.device.texture_desc(v);
                 let name = desc.name.unwrap_or("Unnamed Texture");
                 panic!("ResourceVariant for resource '{name}' is not a 'Buffer'");
             }
@@ -647,7 +646,7 @@ impl<'a> FrameGraphResources<'a> {
     }
 
     #[inline]
-    pub fn get_texture<T: Into<ResourceRef>>(&self, r: T) -> Option<&dyn ITexture> {
+    pub fn get_texture<T: Into<ResourceRef>>(&self, r: T) -> Option<&TextureHandle> {
         let r = self.get(r)?;
         match r {
             ResourceVariant::Buffer(v) => {
@@ -655,7 +654,7 @@ impl<'a> FrameGraphResources<'a> {
                 let name = desc.name.unwrap_or("Unnamed Buffer");
                 panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
             }
-            ResourceVariant::Texture(v) => Some(v.as_ref()),
+            ResourceVariant::Texture(v) => Some(v),
         }
     }
 

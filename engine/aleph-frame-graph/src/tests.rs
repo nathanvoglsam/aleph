@@ -436,7 +436,7 @@ pub fn test_usage_schedule() {
             name: Some("imported-mock-texture"),
         })
         .unwrap();
-    let mock_texture_desc = mock_texture.desc();
+    let mock_texture_desc = device.texture_desc(&mock_texture);
 
     let mut builder = FrameGraph::<()>::builder();
 
@@ -708,7 +708,7 @@ pub fn test_usage_schedule_exec_dependency() {
             name: Some("imported-mock-texture"),
         })
         .unwrap();
-    let mock_texture_desc = mock_texture.desc();
+    let mock_texture_desc = device.texture_desc(&mock_texture);
 
     let mut builder = FrameGraph::<()>::builder();
 

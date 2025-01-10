@@ -29,7 +29,6 @@
 
 use std::mem::size_of_val;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 use crate::FrameGraphResources;
@@ -106,7 +105,7 @@ pub struct GraphChannel {
 
     /// Accumulated list of texture handles held to keep the references in the texture barrier list
     /// live.
-    pub(crate) texture_objects: Vec<Option<AnyArc<dyn ITexture>>>,
+    pub(crate) texture_objects: Vec<Option<TextureHandle>>,
 
     /// Accumulated list of manually queued texture barriers. 'deferred_texture_objects' stores
     /// owned references to the texture objects. We do some unsafe casting hackery so we can use
@@ -186,7 +185,7 @@ impl GraphChannel {
     /// This function is directly unsafe to call, but it does cause a resource barrier to be encoded
     /// which is in general unsafe. We feel it's more correct to make this unsafe to reflect this.
     pub unsafe fn deferred_texture_barrier(&mut self, barrier: TextureBarrier) {
-        let object = barrier.texture.map(|v| v.upgrade());
+        let object = barrier.texture.map(|v| v.clone());
         self.texture_objects.push(object);
         unsafe {
             // Cast away the lifetime as we keep the reference live manually in 'texture_objects'.
@@ -203,7 +202,7 @@ impl GraphChannel {
     /// which is in general unsafe. We feel it's more correct to make this unsafe to reflect this.
     pub unsafe fn deferred_texture_barriers(&mut self, barrier: &[TextureBarrier]) {
         self.texture_objects
-            .extend(barrier.iter().map(|v| v.texture.map(|v| v.upgrade())));
+            .extend(barrier.iter().map(|v| v.texture.map(|v| v.clone())));
         self.texture_barriers.extend(barrier.iter().map(|v| {
             unsafe {
                 // Cast away the lifetime as we keep the reference live manually in

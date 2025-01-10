@@ -27,12 +27,11 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 pub enum ResourceVariant {
     Buffer(BufferHandle),
-    Texture(AnyArc<dyn ITexture>),
+    Texture(TextureHandle),
 }
 
 impl ResourceVariant {
@@ -57,8 +56,8 @@ impl From<BufferHandle> for ResourceVariant {
     }
 }
 
-impl From<AnyArc<dyn ITexture>> for ResourceVariant {
-    fn from(value: AnyArc<dyn ITexture>) -> Self {
+impl From<TextureHandle> for ResourceVariant {
+    fn from(value: TextureHandle) -> Self {
         Self::Texture(value)
     }
 }
@@ -70,16 +69,9 @@ impl<'a> From<&'a BufferHandle> for ResourceVariant {
     }
 }
 
-impl<'a> From<&'a dyn ITexture> for ResourceVariant {
-    fn from(value: &'a dyn ITexture) -> Self {
-        let value = value.upgrade();
-        Self::Texture(value)
-    }
-}
-
-impl<'a> From<&'a AnyArc<dyn ITexture>> for ResourceVariant {
-    fn from(value: &'a AnyArc<dyn ITexture>) -> Self {
-        let value = value.upgrade();
+impl<'a> From<&'a TextureHandle> for ResourceVariant {
+    fn from(value: &'a TextureHandle) -> Self {
+        let value = value.clone();
         Self::Texture(value)
     }
 }
