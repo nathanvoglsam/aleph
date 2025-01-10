@@ -27,13 +27,12 @@
 // SOFTWARE.
 //
 
-use std::any::TypeId;
 use std::num::NonZeroU64;
 use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::AnyArc;
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
 use parking_lot::Mutex;
 use vulkan_alloc::vma;
@@ -41,7 +40,6 @@ use vulkan_alloc::vma;
 use crate::device::Device;
 
 pub struct Buffer {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) buffer: vk::Buffer,
@@ -51,15 +49,15 @@ pub struct Buffer {
     pub(crate) name: Option<String>,
 }
 
-declare_interfaces!(Buffer, [IBuffer]);
-
-impl IGetPlatformInterface for Buffer {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.buffer, out, target)
-    }
-}
+unsafe_impl_iobject!(Buffer, "01944e48-b650-76a1-9637-5418f9becbeb");
 
 impl Buffer {
+    pub(crate) fn get(v: &BufferHandle) -> &Self {
+        v.get()
+            .downcast_ref::<Self>()
+            .expect("Unknown Buffer implementation!")
+    }
+
     /// When creating buffer views the API user can request the full buffer's range be bound without
     /// knowing the size by specifying the size as [u32::MAX]. This function is a utility wrapper
     /// for clamping the given size to the buffer's size when a full buffer binding is requested.
@@ -82,34 +80,25 @@ impl Buffer {
     }
 }
 
-impl IBuffer for Buffer {
-    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
-        AnyArc::map::<dyn IBuffer, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
-    fn get_id(&self) -> NonZeroU64 {
+impl Buffer {
+    pub(crate) fn get_buffer_id(&self) -> std::num::NonZeroU64 {
         self.id
     }
 
-    fn desc(&self) -> BufferDesc {
+    pub(crate) fn buffer_desc(&self) -> BufferDesc {
         let mut desc = self.desc.clone();
         desc.name = self.name.as_deref();
         desc
     }
 
-    fn desc_ref(&self) -> &BufferDesc {
+    pub(crate) fn buffer_desc_ref(&self) -> &BufferDesc {
         &self.desc
     }
 
-    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
+    pub(crate) fn map_buffer(
+        &self,
+        device: &Device,
+    ) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
         let mut lock = self.map_state.lock();
 
         if let Some(ptr) = lock.ptr {
@@ -120,8 +109,7 @@ impl IBuffer for Buffer {
         debug_assert_eq!(lock.count, 0);
 
         unsafe {
-            let ptr = self
-                ._device
+            let ptr = device
                 .allocator
                 .map_memory(self.allocation)
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
@@ -135,7 +123,7 @@ impl IBuffer for Buffer {
         }
     }
 
-    fn unmap(&self) -> Result<(), ResourceUnmapError> {
+    pub(crate) fn unmap_buffer(&self, device: &Device) -> Result<(), ResourceUnmapError> {
         let mut lock = self.map_state.lock();
 
         lock.count = lock
@@ -148,24 +136,24 @@ impl IBuffer for Buffer {
         }
 
         unsafe {
-            self._device.allocator.unmap_memory(self.allocation);
+            device.allocator.unmap_memory(self.allocation);
             lock.ptr = None;
         }
         Ok(())
     }
 
-    fn flush_range(&self, offset: u64, len: u64) {
+    pub(crate) fn flush_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
-            self._device
+            device
                 .allocator
                 .flush_allocation(self.allocation, offset, len)
                 .unwrap();
         }
     }
 
-    fn invalidate_range(&self, offset: u64, len: u64) {
+    pub(crate) fn invalidate_buffer_range(&self, device: &Device, offset: u64, len: u64) {
         unsafe {
-            self._device
+            device
                 .allocator
                 .invalidate_allocation(self.allocation, offset, len)
                 .unwrap();
@@ -190,8 +178,8 @@ impl Drop for Buffer {
 
 #[derive(Default)]
 pub(crate) struct MapState {
-    count: usize,
-    ptr: Option<NonNull<u8>>,
+    pub(crate) count: usize,
+    pub(crate) ptr: Option<NonNull<u8>>,
 }
 
 unsafe impl Send for MapState {}

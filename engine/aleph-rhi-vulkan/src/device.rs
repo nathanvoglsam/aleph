@@ -31,6 +31,7 @@ use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::cstr;
@@ -579,7 +580,7 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
         // Storage buffer is always enabled as this is the most basic usage, essentially meaning
         // "bag of bytes".
         let mut usage = vk::BufferUsageFlags::empty();
@@ -645,8 +646,7 @@ impl IDevice for Device {
 
         let name = desc.name.map(String::from);
         let desc = desc.clone().strip_name();
-        let out = AnyArc::new_cyclic(move |v| Buffer {
-            _this: v.clone(),
+        let out = Buffer {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_buffer(),
             buffer,
@@ -654,8 +654,9 @@ impl IDevice for Device {
             map_state: Mutex::new(Default::default()),
             desc,
             name,
-        });
-        Ok(AnyArc::map::<dyn IBuffer, _>(out, |v| v))
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(BufferHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -991,7 +992,7 @@ impl IDevice for Device {
                     | DescriptorWrites::UniformBuffer(v)
                     | DescriptorWrites::UniformBufferDynamic(v) => {
                         let translator = v.iter().map(|v| {
-                            let buffer = unwrap::buffer(v.buffer);
+                            let buffer = v.buffer.get().downcast_ref::<Buffer>().unwrap();
                             let len = buffer.clamp_max_size_for_view(v.len);
                             vk::DescriptorBufferInfo::default()
                                 .buffer(buffer.buffer)
@@ -1120,6 +1121,55 @@ impl IDevice for Device {
 
     fn get_backend_api(&self) -> BackendAPI {
         BackendAPI::Vulkan
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn get_buffer_id(&self, buffer: &BufferHandle) -> std::num::NonZeroU64 {
+        Buffer::get(buffer).get_buffer_id()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b> {
+        Buffer::get(buffer).buffer_desc()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
+        Buffer::get(buffer).buffer_desc_ref()
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn map_buffer(&self, buffer: &BufferHandle) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
+        Buffer::get(buffer).map_buffer(self)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
+        Buffer::get(buffer).unmap_buffer(self)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
+        Buffer::get(buffer).flush_buffer_range(self, offset, len)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
+        Buffer::get(buffer).invalidate_buffer_range(self, offset, len)
     }
 }
 

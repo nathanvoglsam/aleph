@@ -36,6 +36,7 @@ use allocator_api2::vec::Vec as BVec;
 use ash::vk;
 use blink_alloc::Blink;
 
+use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
@@ -85,7 +86,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let mut buffers = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
             let mut offsets = BVec::with_capacity_in(bindings.len(), self.arena.allocator());
             for v in bindings.iter() {
-                let buffer = unwrap::buffer(v.buffer);
+                let buffer = v.buffer.get().downcast_ref::<Buffer>().unwrap();
 
                 buffers.push(buffer.buffer);
                 offsets.push(v.offset);
@@ -106,7 +107,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     ) {
-        let buffer = unwrap::buffer(binding.buffer);
+        let buffer = binding.buffer.get().downcast_ref::<Buffer>().unwrap();
 
         let index_type = match index_type {
             IndexType::U16 => vk::IndexType::UINT16,
@@ -294,13 +295,13 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn copy_buffer_regions(
         &mut self,
-        src: &dyn IBuffer,
-        dst: &dyn IBuffer,
+        src: &BufferHandle,
+        dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     ) {
         {
-            let src = unwrap::buffer(src);
-            let dst = unwrap::buffer(dst);
+            let src = src.get().downcast_ref::<Buffer>().unwrap();
+            let dst = dst.get().downcast_ref::<Buffer>().unwrap();
 
             let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
             for v in regions {
@@ -321,12 +322,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn copy_buffer_to_texture(
         &mut self,
-        src: &dyn IBuffer,
+        src: &BufferHandle,
         dst: &dyn ITexture,
         regions: &[BufferToTextureCopyRegion],
     ) {
         {
-            let src = unwrap::buffer(src);
+            let src = src.get().downcast_ref::<Buffer>().unwrap();
             let dst = unwrap::texture(dst);
 
             let mut new_regions = BVec::with_capacity_in(regions.len(), self.arena.allocator());
@@ -593,7 +594,12 @@ impl<'a> Encoder<'a> {
         }
 
         for barrier in buffer_barriers {
-            let buffer = unwrap::buffer(barrier.buffer.unwrap());
+            let buffer = barrier
+                .buffer
+                .unwrap()
+                .get()
+                .downcast_ref::<Buffer>()
+                .unwrap();
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
@@ -690,7 +696,12 @@ impl<'a> Encoder<'a> {
         }
 
         for barrier in buffer_barriers {
-            let buffer = unwrap::buffer(barrier.buffer.unwrap());
+            let buffer = barrier
+                .buffer
+                .unwrap()
+                .get()
+                .downcast_ref::<Buffer>()
+                .unwrap();
 
             let (src_family, dst_family) = if let Some(transition) = barrier.queue_transition {
                 let src_family = self._device.get_queue_family_index(transition.before_queue);
