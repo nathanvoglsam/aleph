@@ -116,11 +116,11 @@ pub fn pass(
             let gbuffer2 = resources.get_texture(data.gbuffer2).unwrap();
             let lighting = resources.get_texture(data.lighting).unwrap();
             let uniform_buffer = resources.get_buffer(data.uniform_buffer).unwrap();
-            let depth_srv = ImageView::get_srv_for(depth).unwrap();
-            let gbuffer0_srv = ImageView::get_srv_for(gbuffer0).unwrap();
-            let gbuffer1_srv = ImageView::get_srv_for(gbuffer1).unwrap();
-            let gbuffer2_srv = ImageView::get_srv_for(gbuffer2).unwrap();
-            let lighting_uav = ImageView::get_uav_for(lighting).unwrap();
+            let depth_srv = ImageView::get_srv_for(device, depth).unwrap();
+            let gbuffer0_srv = ImageView::get_srv_for(device, gbuffer0).unwrap();
+            let gbuffer1_srv = ImageView::get_srv_for(device, gbuffer1).unwrap();
+            let gbuffer2_srv = ImageView::get_srv_for(device, gbuffer2).unwrap();
+            let lighting_uav = ImageView::get_uav_for(device, lighting).unwrap();
 
             let u_ptr = device.map_buffer(uniform_buffer).unwrap();
             let u_alloc = UploadBumpAllocator::new_from_block(
@@ -178,7 +178,7 @@ pub fn pass(
                 &[],
             );
 
-            let gbuffer0_desc = gbuffer0.desc_ref();
+            let gbuffer0_desc = device.texture_desc_ref(gbuffer0);
             let group_count_x = gbuffer0_desc.width.div_ceil(8);
             let group_count_y = gbuffer0_desc.height.div_ceil(8);
             encoder.dispatch(group_count_x, group_count_y, 1);

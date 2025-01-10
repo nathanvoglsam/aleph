@@ -104,11 +104,13 @@ fn edge_pass(
         });
 
         move |encoder, _graph, resources, _args| unsafe {
+            let device = resources.device();
+
             let edge_tex = resources.get_texture(edge_tex).unwrap();
-            let edge_tex_view = ImageView::get_rtv_for(edge_tex).unwrap();
+            let edge_tex_view = ImageView::get_rtv_for(device, edge_tex).unwrap();
 
             let colour_input = resources.get_texture(colour_input).unwrap();
-            let colour_input_view = ImageView::get_srv_for(colour_input).unwrap();
+            let colour_input_view = ImageView::get_srv_for(device, colour_input).unwrap();
 
             let set = resources
                 .descriptor_arena()
@@ -170,11 +172,13 @@ fn blend_weight_pass(
         });
 
         move |encoder, _graph, resources, args| unsafe {
+            let device = resources.device();
+
             let blend_tex = resources.get_texture(blend_tex).unwrap();
-            let blend_tex_view = ImageView::get_rtv_for(blend_tex).unwrap();
+            let blend_tex_view = ImageView::get_rtv_for(device, blend_tex).unwrap();
 
             let edge_tex = resources.get_texture(edge_tex).unwrap();
-            let edge_tex_view = ImageView::get_srv_for(edge_tex).unwrap();
+            let edge_tex_view = ImageView::get_srv_for(device, edge_tex).unwrap();
 
             let area_view = args.texture_pool.get_ref(area_tex).unwrap();
             let area_view = area_view.get_default_view().unwrap();
@@ -242,25 +246,24 @@ fn aa_blend_resolve_pass(
         });
 
         move |encoder, _graph, resources, _args| unsafe {
+            let device = resources.device();
+
             // We want raw access to the encoded SRGB data. We output SRGB encoded data from the
             // shader so we need a UNORM view to ensure we don't double encode it.
             let output = resources.get_texture(output).unwrap();
-            let output_view = output
-                .get_rtv(&ImageViewDesc::rtv_for_texture(output).with_format(format.to_non_srgb()))
-                .unwrap();
+            let desc =
+                ImageViewDesc::rtv_for_texture(device, output).with_format(format.to_non_srgb());
+            let output_view = device.get_texture_rtv(output, &desc).unwrap();
 
             // We want raw access to the encoded SRGB data
             let colour_input_tex = resources.get_texture(colour_input).unwrap();
-            let colour = colour_input_tex
-                .get_view(
-                    &ImageViewDesc::srv_for_texture(colour_input_tex)
-                        .with_format(format.to_non_srgb()),
-                )
-                .unwrap();
+            let desc = ImageViewDesc::srv_for_texture(device, colour_input_tex)
+                .with_format(format.to_non_srgb());
+            let colour = device.get_texture_view(colour_input_tex, &desc).unwrap();
 
             // Blend texture is accessed directly as the native UNORM format.
             let blend_texture = resources.get_texture(blend_texture).unwrap();
-            let blend = ImageView::get_srv_for(blend_texture).unwrap();
+            let blend = ImageView::get_srv_for(device, blend_texture).unwrap();
 
             let set = resources
                 .descriptor_arena()

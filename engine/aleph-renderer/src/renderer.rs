@@ -168,6 +168,7 @@ impl RendererBuilder {
         let state_cache = StateCache::new(shader_db.clone());
 
         let swap_manager = SwapManager {
+            device: device.clone(),
             surface: self.surface.expect("RenderSurface missing!"),
             images: Vec::new(),
             desc: TextureDesc::default(),
@@ -448,7 +449,7 @@ impl Renderer {
 
             import_bundle.add_resource(
                 self.graph_manager.swap_image_id.clone().unwrap(),
-                acquired_image.image.as_ref(),
+                &acquired_image.image,
             );
 
             board.publish::<GraphSwapImageInfo>(GraphSwapImageInfo {
@@ -538,8 +539,9 @@ struct RendererConfig {
 }
 
 struct SwapManager {
+    device: AnyArc<dyn IDevice>,
     surface: Box<dyn IRenderSurface + Send + Sync>,
-    images: Vec<AnyArc<dyn ITexture>>,
+    images: Vec<aleph_rhi_api::TextureHandle>,
     desc: TextureDesc<'static>,
     needs_rebuild: bool,
 }
@@ -628,14 +630,18 @@ impl SwapManager {
         swap_chain.get_images(&mut images);
 
         self.images = images.into_iter().map(|v| v.unwrap()).collect();
-        self.desc = self.images[0].desc().strip_name();
+        self.desc = self
+            .device
+            .texture_desc_ref(&self.images[0])
+            .clone()
+            .strip_name();
         self.needs_rebuild = false;
     }
 }
 
 struct AcquiredImage {
     /// Handle to the image we ended up acquiring
-    image: AnyArc<dyn ITexture>,
+    image: aleph_rhi_api::TextureHandle,
 
     /// The image index of the image we acquired
     index: usize,

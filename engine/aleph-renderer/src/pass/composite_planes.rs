@@ -93,16 +93,21 @@ pub fn pass(
 
         let data = Payload { planes, target };
         move |encoder, _graph, resources, _args| unsafe {
-            let output = resources.get_texture(data.target).unwrap();
-            let dst_desc = output.desc_ref();
+            let device = resources.device();
 
-            let dst_view = output
-                .get_rtv(&ImageViewDesc {
-                    format: dst_desc.format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::all(dst_desc),
-                    writable: false,
-                })
+            let output = resources.get_texture(data.target).unwrap();
+            let dst_desc = device.texture_desc_ref(output);
+
+            let dst_view = device
+                .get_texture_rtv(
+                    output,
+                    &ImageViewDesc {
+                        format: dst_desc.format,
+                        view_type: ImageViewType::Tex2D,
+                        sub_resources: TextureSubResourceSet::all(dst_desc),
+                        writable: false,
+                    },
+                )
                 .unwrap();
 
             encoder.begin_rendering(&BeginRenderingInfo {
@@ -135,15 +140,18 @@ pub fn pass(
 
             for plane in data.planes.iter().copied() {
                 let plane = resources.get_texture(plane).unwrap();
-                let src_desc = plane.desc_ref();
+                let src_desc = device.texture_desc_ref(plane);
 
-                let src_view = plane
-                    .get_view(&ImageViewDesc {
-                        format: src_desc.format,
-                        view_type: ImageViewType::Tex2D,
-                        sub_resources: TextureSubResourceSet::all(src_desc),
-                        writable: false,
-                    })
+                let src_view = device
+                    .get_texture_view(
+                        plane,
+                        &ImageViewDesc {
+                            format: src_desc.format,
+                            view_type: ImageViewType::Tex2D,
+                            sub_resources: TextureSubResourceSet::all(src_desc),
+                            writable: false,
+                        },
+                    )
                     .unwrap();
                 let set = resources
                     .descriptor_arena()

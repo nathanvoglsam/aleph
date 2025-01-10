@@ -27,14 +27,13 @@
 // SOFTWARE.
 //
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 use crate::TextureObjectDesc;
 
 pub struct TextureObject {
     /// The texture object itself.
-    texture: Option<AnyArc<dyn ITexture>>,
+    texture: Option<TextureHandle>,
 
     /// The description the texture was created with.
     desc: TextureObjectDesc,
@@ -84,10 +83,14 @@ impl TextureObject {
         })
     }
 
-    pub fn update(&mut self, texture: AnyArc<dyn ITexture>) -> Option<AnyArc<dyn ITexture>> {
+    pub fn update(
+        &mut self,
+        device: &dyn IDevice,
+        texture: TextureHandle,
+    ) -> Option<TextureHandle> {
         if let Some(old_texture) = &self.texture {
-            let new_desc = texture.desc_ref();
-            let old_desc = old_texture.desc_ref();
+            let new_desc = device.texture_desc_ref(&texture);
+            let old_desc = device.texture_desc_ref(old_texture);
 
             // It is illegal for any major property of the new texture to change from the old
             // texture.
@@ -104,7 +107,7 @@ impl TextureObject {
         std::mem::swap(&mut texture, &mut self.texture);
 
         // Query the appropriate view for the new texture
-        self.recreate_default_view();
+        self.recreate_default_view(device);
 
         // And give the old texture back out to the caller
         texture
@@ -116,11 +119,12 @@ impl TextureObject {
     /// doesn't have a texture for the requested handle yet. It's possible for a handle to have
     /// no texture, such as if the handle was reserved but hasn't been initialized with
     /// [TexturePool::update_texture] yet.
-    pub fn get(&self) -> Option<&dyn ITexture> {
-        self.texture.as_ref().map(|v| v.as_ref())
+    pub const fn get(&self) -> Option<&TextureHandle> {
+        self.texture.as_ref()
     }
 
-    pub fn get_owned(&self) -> Option<AnyArc<dyn ITexture>> {
+    #[inline]
+    pub fn get_owned(&self) -> Option<TextureHandle> {
         self.texture.clone()
     }
 
@@ -152,9 +156,9 @@ impl TextureObject {
 
     /// Queries an ImageView from the texture object, replacing the default view. If there's no
     /// texture object this does nothing.
-    pub fn recreate_default_view(&mut self) {
+    pub fn recreate_default_view(&mut self, device: &dyn IDevice) {
         if let Some(texture) = &self.texture {
-            let desc = texture.desc_ref();
+            let desc = device.texture_desc_ref(texture);
 
             let view_type = match desc.dimension {
                 TextureDimension::Texture1D => {
@@ -181,13 +185,16 @@ impl TextureObject {
                 .with_mips(0, desc.mip_levels)
                 .with_levels(0, desc.array_size);
 
-            let view = texture
-                .get_view(&ImageViewDesc {
-                    format: desc.format,
-                    view_type,
-                    sub_resources,
-                    writable: false,
-                })
+            let view = device
+                .get_texture_view(
+                    texture,
+                    &ImageViewDesc {
+                        format: desc.format,
+                        view_type,
+                        sub_resources,
+                        writable: false,
+                    },
+                )
                 .unwrap();
 
             self.default_view = Some(view);

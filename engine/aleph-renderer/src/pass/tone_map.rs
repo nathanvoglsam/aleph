@@ -111,12 +111,10 @@ pub fn pass(
 
             let input = resources.get_texture(data.input).unwrap();
             let output = resources.get_texture(data.output).unwrap();
-            let input_srv = ImageView::get_srv_for(input).unwrap();
-            let output_uav = ImageViewDesc {
-                format: Format::Bgra8Unorm, // Can't take UAV of SRGB formats
-                ..ImageViewDesc::uav_for_texture(output)
-            };
-            let output_uav = output.get_view(&output_uav).unwrap();
+            let input_srv = ImageView::get_srv_for(device, input).unwrap();
+            let desc =
+                ImageViewDesc::uav_for_texture(device, output).with_format(Format::Bgra8Unorm); // Can't take UAV of SRGB formats
+            let output_uav = device.get_texture_view(output, &desc).unwrap();
 
             let set = arena.allocate_set(set_layout.as_ref()).unwrap();
             device.update_descriptor_sets(&[
@@ -133,7 +131,7 @@ pub fn pass(
                 &[],
             );
 
-            let input_desc = input.desc_ref();
+            let input_desc = device.texture_desc_ref(input);
             let group_count_x = input_desc.width.div_ceil(8);
             let group_count_y = input_desc.height.div_ceil(8);
             encoder.dispatch(group_count_x, group_count_y, 1);

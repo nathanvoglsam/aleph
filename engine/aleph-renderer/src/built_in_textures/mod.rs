@@ -55,7 +55,7 @@ pub unsafe fn create_1x1_colour_texture(
     dst.copy_from_slice(bytemuck::bytes_of(&payload));
 
     let mut object = TextureObject::new_for_desc(device, desc).unwrap();
-    object.recreate_default_view();
+    object.recreate_default_view(device);
     let handle = texture_pool.alloc(object);
 
     cmds.push_command(ResourceCommand::TextureUpload(
@@ -94,7 +94,7 @@ pub unsafe fn create_smaa_area_texture(
     }
 
     let mut object = TextureObject::new_for_desc(device, desc).unwrap();
-    object.recreate_default_view();
+    object.recreate_default_view(device);
     let handle = texture_pool.alloc(object);
 
     cmds.push_command(ResourceCommand::TextureUpload(
@@ -133,7 +133,7 @@ pub unsafe fn create_smaa_search_texture(
     }
 
     let mut object = TextureObject::new_for_desc(device, desc.clone()).unwrap();
-    object.recreate_default_view();
+    object.recreate_default_view(device);
     let handle = texture_pool.alloc(object);
 
     cmds.push_command(ResourceCommand::TextureUpload(

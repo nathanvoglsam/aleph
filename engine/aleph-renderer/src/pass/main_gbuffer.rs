@@ -147,7 +147,7 @@ pub fn pass(
             )
             .unwrap();
 
-            let extent = gbuffer0.desc_ref().get_extent_2d();
+            let extent = device.texture_desc_ref(gbuffer0).get_extent_2d();
             // let aspect_ratio = extent.width as f32 / extent.height as f32;
 
             let camera_layout = CameraLayout {
@@ -189,21 +189,10 @@ pub fn pass(
                 &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256),
             )]);
 
-            let gbuffer0_rtv = gbuffer0
-                .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer0))
-                .unwrap();
-
-            let gbuffer1_rtv = gbuffer1
-                .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer1))
-                .unwrap();
-
-            let gbuffer2_rtv = gbuffer2
-                .get_rtv(&ImageViewDesc::rtv_for_texture(gbuffer2))
-                .unwrap();
-
-            let depth_buffer_dsv = depth_buffer
-                .get_dsv(&ImageViewDesc::dsv_for_texture(depth_buffer))
-                .unwrap();
+            let gbuffer0_rtv = ImageView::get_rtv_for(device, gbuffer0).unwrap();
+            let gbuffer1_rtv = ImageView::get_rtv_for(device, gbuffer1).unwrap();
+            let gbuffer2_rtv = ImageView::get_rtv_for(device, gbuffer2).unwrap();
+            let depth_buffer_dsv = ImageView::get_dsv_for(device, depth_buffer).unwrap();
 
             // Begin a render pass targeting our back buffer
             encoder.begin_rendering(&BeginRenderingInfo {

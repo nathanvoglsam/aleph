@@ -29,7 +29,6 @@
 
 use std::mem::ManuallyDrop;
 
-use aleph_any::AnyArc;
 use aleph_device_allocators::{AllocatorPoolItem, Grave, LinearDescriptorPoolFactory};
 use aleph_rhi_api::*;
 use smallbox::space::S8;
@@ -46,7 +45,7 @@ use crate::IUploadBuffer;
 /// inside any of its internal pools, those items will be leaked.
 #[derive(Default)]
 pub struct DeletionPool {
-    textures: Vec<ManuallyDrop<AnyArc<dyn ITexture>>>,
+    textures: Vec<ManuallyDrop<TextureHandle>>,
     buffers: Vec<ManuallyDrop<BufferHandle>>,
     upload: Vec<ManuallyDrop<SmallBox<dyn IUploadBuffer, S8>>>,
     descriptor_pools: Vec<Grave<AllocatorPoolItem<LinearDescriptorPoolFactory>>>,
@@ -63,7 +62,7 @@ impl DeletionPool {
     }
 
     #[inline]
-    pub fn push_texture(&mut self, texture: AnyArc<dyn ITexture>) {
+    pub fn push_texture(&mut self, texture: TextureHandle) {
         self.textures.push(ManuallyDrop::new(texture))
     }
 
@@ -207,7 +206,7 @@ impl Default for DeletionMode {
 }
 
 #[aleph_profile::function]
-unsafe fn drop_texture_on_pool(mut v: ManuallyDrop<AnyArc<dyn ITexture>>) {
+unsafe fn drop_texture_on_pool(mut v: ManuallyDrop<TextureHandle>) {
     ManuallyDrop::drop(&mut v)
 }
 

@@ -218,7 +218,12 @@ impl TextureLoader {
         let mut release_barriers = Vec::new();
 
         for request in requests {
-            Self::process_request(&mut discard_barriers, &mut release_barriers, request);
+            Self::process_request(
+                device,
+                &mut discard_barriers,
+                &mut release_barriers,
+                request,
+            );
         }
 
         // If there are no textures to upload then we early exit (we don't want to issue empty
@@ -261,11 +266,12 @@ impl TextureLoader {
     }
 
     unsafe fn process_request<'r>(
+        device: &dyn IDevice,
         discard_barriers: &mut Vec<TextureBarrier<'r>>,
         release_barriers: &mut Vec<TextureBarrier<'r>>,
         request: &'r TextureLoadRequest,
     ) {
-        let tex_desc = request.texture.desc_ref();
+        let tex_desc = device.texture_desc_ref(&request.texture);
         let subresources = TextureSubResourceSet::all(tex_desc);
 
         let usage = request.object.desc().usage;
@@ -315,7 +321,7 @@ struct TextureLoadRequest<'a> {
     object: &'a TextureObject,
 
     /// The target texture API object
-    texture: &'a dyn ITexture,
+    texture: &'a TextureHandle,
 
     /// Request the renderer to generate the mipmaps for the texture once loaded
     mips: GenerateMips,
@@ -344,10 +350,10 @@ impl MipGenerator {
         state_cache: &Mutex<StateCache>,
         arena: &LinearDescriptorPool,
         encoder: &mut dyn IGeneralEncoder,
-        texture: &dyn ITexture,
+        texture: &TextureHandle,
         usage: ResourceUsageFlags,
     ) {
-        let desc = texture.desc_ref();
+        let desc = device.texture_desc_ref(texture);
         let format = desc.format;
 
         // If the texture only has 1 mip level then there's nothing to do, so we early exit
@@ -397,14 +403,13 @@ impl MipGenerator {
                 width: desc.width >> level,
                 height: desc.height >> level,
             };
-            let image_view = texture
-                .get_rtv(&ImageViewDesc {
-                    format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: dst_subresource_range.clone(),
-                    writable: true,
-                })
-                .unwrap();
+            let desc = ImageViewDesc {
+                format,
+                view_type: ImageViewType::Tex2D,
+                sub_resources: dst_subresource_range.clone(),
+                writable: true,
+            };
+            let image_view = device.get_texture_rtv(texture, &desc).unwrap();
             encoder.begin_rendering(&BeginRenderingInfo {
                 layer_count: 1,
                 extent: extent.clone(),
@@ -434,14 +439,13 @@ impl MipGenerator {
                 h: extent.height,
             }]);
 
-            let src_view = texture
-                .get_view(&ImageViewDesc {
-                    format,
-                    view_type: ImageViewType::Tex2D,
-                    sub_resources: TextureSubResourceSet::with_color().with_mips(level - 1, 1),
-                    writable: false,
-                })
-                .unwrap();
+            let desc = ImageViewDesc {
+                format,
+                view_type: ImageViewType::Tex2D,
+                sub_resources: TextureSubResourceSet::with_color().with_mips(level - 1, 1),
+                writable: false,
+            };
+            let src_view = device.get_texture_view(texture, &desc).unwrap();
             let set = arena
                 .allocate_set(state.layout.set_layout.as_ref())
                 .unwrap();

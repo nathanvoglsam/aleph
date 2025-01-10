@@ -98,17 +98,14 @@ pub fn pass(
             let device = resources.device();
 
             let dst = resources.get_texture(data.dst).unwrap();
-            let dst_view = dst
-                .get_rtv(&ImageViewDesc::rtv_for_texture(dst).with_format(src_format.to_non_srgb()))
-                .unwrap();
+            let desc =
+                ImageViewDesc::rtv_for_texture(device, dst).with_format(src_format.to_non_srgb());
+            let dst_view = device.get_texture_rtv(dst, &desc).unwrap();
 
             let src = resources.get_texture(data.src).unwrap();
-            let src_view = src
-                .get_view(&ImageViewDesc {
-                    format: src_format.to_non_srgb(),
-                    ..ImageViewDesc::srv_for_texture(src)
-                })
-                .unwrap();
+            let desc =
+                ImageViewDesc::srv_for_texture(device, src).with_format(src_format.to_non_srgb());
+            let src_view = device.get_texture_view(src, &desc).unwrap();
 
             let buffer = resources.get_buffer(data.uniform_buffer).unwrap();
             let u_ptr = device.map_buffer(buffer).unwrap();
