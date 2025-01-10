@@ -40,7 +40,6 @@ use aleph_renderer::{
 };
 use aleph_rhi_api::*;
 use egui::RenderData;
-use interfaces::any::AnyArc;
 
 use crate::shaders;
 
@@ -111,7 +110,7 @@ pub fn pass(
         move |encoder, _graph, resources, args| unsafe {
             let device = resources.device();
 
-            let sampler = state.layout.sampler.as_ref();
+            let sampler = &state.layout.sampler;
             let descriptor_arena = resources.descriptor_arena();
 
             let render_target = resources.get_texture(data.render_target).unwrap();
@@ -129,7 +128,7 @@ pub fn pass(
             let font_view = font_view.get_default_view().unwrap();
 
             let set = descriptor_arena
-                .allocate_set(state.layout.set_layout.as_ref())
+                .allocate_set(&state.layout.set_layout)
                 .unwrap();
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &font_view.srv_write()),
@@ -175,9 +174,9 @@ pub fn pass(
                 allow_uav_writes: false,
             });
 
-            encoder.bind_graphics_pipeline(state.pipeline.as_ref());
+            encoder.bind_graphics_pipeline(&state.pipeline);
             encoder.bind_descriptor_sets(
-                state.layout.pipeline_layout.as_ref(),
+                &state.layout.pipeline_layout,
                 PipelineBindPoint::Graphics,
                 0,
                 &[set],
@@ -335,9 +334,9 @@ impl IStateCacheKey for EguiLayoutKey {
 }
 
 pub struct EguiLayout {
-    pub sampler: AnyArc<dyn ISampler>,
-    pub set_layout: AnyArc<dyn IDescriptorSetLayout>,
-    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
+    pub sampler: SamplerHandle,
+    pub set_layout: DescriptorSetLayoutHandle,
+    pub pipeline_layout: PipelineLayoutHandle,
 }
 
 impl EguiLayout {
@@ -348,7 +347,7 @@ impl EguiLayout {
     pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
         let set_layout = Self::create_set_layout(device);
-        let pipeline_layout = Self::create_pipeline_layout(device, set_layout.as_ref());
+        let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
 
         Self {
             sampler,
@@ -357,7 +356,7 @@ impl EguiLayout {
         }
     }
 
-    pub fn create_set_layout(device: &dyn IDevice) -> AnyArc<dyn IDescriptorSetLayout> {
+    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
             items: &[
@@ -373,8 +372,8 @@ impl EguiLayout {
 
     pub fn create_pipeline_layout(
         device: &dyn IDevice,
-        set_layout: &dyn IDescriptorSetLayout,
-    ) -> AnyArc<dyn IPipelineLayout> {
+        set_layout: &DescriptorSetLayoutHandle,
+    ) -> PipelineLayoutHandle {
         let pipeline_layout_desc = PipelineLayoutDesc {
             set_layouts: &[set_layout],
             push_constant_blocks: &[PushConstantBlock {
@@ -389,7 +388,7 @@ impl EguiLayout {
             .unwrap()
     }
 
-    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
+    pub fn create_sampler(device: &dyn IDevice) -> SamplerHandle {
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Linear,
             mag_filter: SamplerFilter::Linear,
@@ -412,7 +411,7 @@ impl IStateCacheKey for EguiStateKey {
 
 pub struct EguiState {
     pub layout: Arc<EguiLayout>,
-    pub pipeline: AnyArc<dyn IGraphicsPipeline>,
+    pub pipeline: GraphicsPipelineHandle,
 }
 
 impl EguiState {
@@ -424,22 +423,18 @@ impl EguiState {
         let key = EguiLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| EguiLayout::new(device));
 
-        let pipeline = Self::create_pipeline_state(
-            device,
-            layout.pipeline_layout.as_ref(),
-            cache.shader_db(),
-            format,
-        );
+        let pipeline =
+            Self::create_pipeline_state(device, &layout.pipeline_layout, cache.shader_db(), format);
 
         Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &PipelineLayoutHandle,
         shader_db: &ShaderDatabaseAccessor,
         format: Format,
-    ) -> AnyArc<dyn IGraphicsPipeline> {
+    ) -> GraphicsPipelineHandle {
         let rasterizer_state_new = RasterizerStateDesc {
             cull_mode: CullMode::None,
             front_face: FrontFaceOrder::CounterClockwise,
