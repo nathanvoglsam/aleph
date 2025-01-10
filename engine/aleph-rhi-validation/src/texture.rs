@@ -68,7 +68,7 @@ impl ValidationTexture {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
                 view_type: ValidationViewType::ResourceView,
-                image_view: device.get_texture_view(&self.inner, desc)?,
+                image_view: device.inner.get_texture_view(&self.inner, desc)?,
                 desc: desc.clone(),
             });
 
@@ -92,7 +92,7 @@ impl ValidationTexture {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
                 view_type: ValidationViewType::RenderTargetView,
-                image_view: device.get_texture_rtv(&self.inner, desc)?,
+                image_view: device.inner.get_texture_rtv(&self.inner, desc)?,
                 desc: desc.clone(),
             });
 
@@ -116,7 +116,7 @@ impl ValidationTexture {
             let image_view = Box::new(ValidationImageView {
                 _image: self._this.clone(),
                 view_type: ValidationViewType::DepthStencilView,
-                image_view: device.get_texture_dsv(&self.inner, desc)?,
+                image_view: device.inner.get_texture_dsv(&self.inner, desc)?,
                 desc: desc.clone(),
             });
 
