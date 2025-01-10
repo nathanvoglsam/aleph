@@ -377,10 +377,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError>;
 
-    fn create_texture(
-        &self,
-        desc: &TextureDesc,
-    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError>;
+    fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError>;
 
     fn create_sampler(
         &self,
@@ -503,6 +500,39 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// Mapped memory that is considered `HOST_COHERENT` does not need to be invalidated.
     fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64);
+
+    // ================
+    // TEXTURE
+    // ================
+
+    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`ITexture`]
+    /// allocated from the same [`IDevice`] instance.
+    fn get_texture_id(&self, texture: &TextureHandle) -> NonZeroU64;
+
+    /// Returns a [TextureDesc] that describes this [ITexture]
+    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b>;
+
+    /// Returns a [TextureDesc] that describes this [ITexture], but without the name component so we
+    /// can send a reference out.
+    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b>;
+
+    fn get_texture_view(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()>;
+
+    fn get_texture_rtv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()>;
+
+    fn get_texture_dsv(
+        &self,
+        texture: &TextureHandle,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()>;
 }
 
 //
@@ -692,7 +722,7 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// If `images.len()` is < than the number of swap chain images then only the first
     /// `images.len()` swap chain images will be returned.
-    fn get_images(&self, images: &mut [Option<AnyArc<dyn ITexture>>]);
+    fn get_images(&self, images: &mut [Option<TextureHandle>]);
 
     /// Acquire an image from the swap chain for use with rendering
     ///
@@ -706,27 +736,6 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
 //
 // _________________________________________________________________________________________________
 // Resources
-
-pub trait ITexture: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(ITexture);
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other [`ITexture`]
-    /// allocated from the same [`IDevice`] instance.
-    fn get_id(&self) -> NonZeroU64;
-
-    /// Returns a [TextureDesc] that describes this [ITexture]
-    fn desc(&self) -> TextureDesc;
-
-    /// Returns a [TextureDesc] that describes this [ITexture], but without the name component so we
-    /// can send a reference out.
-    fn desc_ref(&self) -> &TextureDesc;
-
-    fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
-
-    fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
-
-    fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()>;
-}
 
 pub trait ISampler: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(ISampler);
@@ -845,14 +854,14 @@ pub trait ITransferEncoder: IGetPlatformInterface + Send {
     unsafe fn copy_buffer_to_texture(
         &mut self,
         src: &BufferHandle,
-        dst: &dyn ITexture,
+        dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     );
 
     unsafe fn copy_texture_regions(
         &mut self,
-        src: &dyn ITexture,
-        dst: &dyn ITexture,
+        src: &TextureHandle,
+        dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     );
 
@@ -2923,6 +2932,51 @@ impl Display for OptimalClearValue {
     }
 }
 
+#[derive(Clone)]
+pub struct TextureHandle {
+    inner: ArcObject,
+}
+
+impl TextureHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a texture objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
+    }
+
+    ///
+    /// Gets the number of strong ([`TextureHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
+    }
+
+    /// Unwrap the [`TextureHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
+    }
+}
+
 /// Description object used for creating a new texture.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct TextureDesc<'a> {
@@ -3943,8 +3997,9 @@ impl ImageViewDesc {
     }
 
     #[inline]
-    pub fn srv_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
-        Self::srv_for_desc(texture.desc_ref())
+    pub fn srv_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
+        let desc = device.texture_desc_ref(texture);
+        Self::srv_for_desc(desc)
     }
 
     #[inline]
@@ -3971,8 +4026,9 @@ impl ImageViewDesc {
     }
 
     #[inline]
-    pub fn uav_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
-        Self::uav_for_desc(texture.desc_ref())
+    pub fn uav_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
+        let desc = device.texture_desc_ref(texture);
+        Self::uav_for_desc(desc)
     }
 
     #[inline]
@@ -3999,8 +4055,9 @@ impl ImageViewDesc {
     }
 
     #[inline]
-    pub fn rtv_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
-        Self::rtv_for_desc(texture.desc_ref())
+    pub fn rtv_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
+        let desc = device.texture_desc_ref(texture);
+        Self::rtv_for_desc(desc)
     }
 
     #[inline]
@@ -4027,8 +4084,9 @@ impl ImageViewDesc {
     }
 
     #[inline]
-    pub fn dsv_for_texture(texture: &dyn ITexture) -> ImageViewDesc {
-        Self::rtv_for_desc(texture.desc_ref())
+    pub fn dsv_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
+        let desc = device.texture_desc_ref(texture);
+        Self::rtv_for_desc(desc)
     }
 
     #[inline]
@@ -4060,18 +4118,23 @@ pub struct ImageView(NonNull<()>);
 
 impl ImageView {
     #[inline]
-    pub fn get_rtv_for(texture: &dyn ITexture) -> Result<Self, ()> {
-        texture.get_rtv(&ImageViewDesc::rtv_for_texture(texture))
+    pub fn get_rtv_for(device: &dyn IDevice, texture: &TextureHandle) -> Result<Self, ()> {
+        device.get_texture_rtv(texture, &ImageViewDesc::rtv_for_texture(device, texture))
     }
 
     #[inline]
-    pub fn get_srv_for(texture: &dyn ITexture) -> Result<Self, ()> {
-        texture.get_view(&ImageViewDesc::srv_for_texture(texture))
+    pub fn get_dsv_for(device: &dyn IDevice, texture: &TextureHandle) -> Result<Self, ()> {
+        device.get_texture_dsv(texture, &ImageViewDesc::dsv_for_texture(device, texture))
     }
 
     #[inline]
-    pub fn get_uav_for(texture: &dyn ITexture) -> Result<Self, ()> {
-        texture.get_view(&ImageViewDesc::uav_for_texture(texture))
+    pub fn get_srv_for(device: &dyn IDevice, texture: &TextureHandle) -> Result<Self, ()> {
+        device.get_texture_view(texture, &ImageViewDesc::srv_for_texture(device, texture))
+    }
+
+    #[inline]
+    pub fn get_uav_for(device: &dyn IDevice, texture: &TextureHandle) -> Result<Self, ()> {
+        device.get_texture_view(texture, &ImageViewDesc::uav_for_texture(device, texture))
     }
 
     pub const fn descriptor_write(self, image_layout: ImageLayout) -> ImageDescriptorWrite {
@@ -5208,14 +5271,14 @@ impl<'a> Debug for BufferBarrier<'a> {
     }
 }
 
-/// Describes a resource barrier that will apply to an [ITexture] resource on a command queue
+/// Describes a resource barrier that will apply to a texture resource on a command queue
 #[derive(Clone)]
 pub struct TextureBarrier<'a> {
     /// The texture that the barrier will describe a state transition for
     ///
     /// This field is _required_ for the barrier to be valid to issue. It may be useful to construct
     /// barrier structs without a texture stored in them _yet_ so the field is marked as optional.
-    pub texture: Option<&'a dyn ITexture>,
+    pub texture: Option<&'a TextureHandle>,
 
     pub subresource_range: TextureSubResourceSet,
 
