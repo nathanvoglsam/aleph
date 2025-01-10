@@ -29,7 +29,6 @@
 
 use std::ptr::NonNull;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 use crate::{
@@ -57,9 +56,10 @@ use crate::{
 ///
 /// If buffers get evicted from cache we start losing performance so be aware.
 pub struct UploadRingBuffer {
-    buffer: AnyArc<dyn IBuffer>,
+    buffer: BufferHandle,
     base_host_address: NonNull<u8>,
     state: RingBuffer,
+    usage: ResourceUsageFlags,
 }
 
 impl IUploadAllocator for UploadRingBuffer {
@@ -100,11 +100,12 @@ impl UploadRingBuffer {
                     name,
                 })
                 .ok()?;
-            let base_host_address = buffer.map().ok()?;
+            let base_host_address = device.map_buffer(&buffer).ok()?;
             Some(Self {
                 buffer,
                 base_host_address,
                 state,
+                usage: ResourceUsageFlags::CONSTANT_BUFFER,
             })
         } else {
             None
@@ -127,7 +128,8 @@ impl UploadRingBuffer {
         //         block.
         let allocator = unsafe {
             UploadBumpAllocator::new_from_block(
-                self.buffer.as_ref(),
+                self.buffer.clone(),
+                self.usage,
                 self.base_host_address,
                 allocation.offset,
                 size,
@@ -182,8 +184,8 @@ impl UploadRingBuffer {
 
     /// Get the buffer that this is allocating from
     #[inline]
-    pub fn buffer(&self) -> &dyn IBuffer {
-        self.buffer.as_ref()
+    pub fn buffer(&self) -> &BufferHandle {
+        &self.buffer
     }
 
     /// Internal function for convertin an allocation result to our own [RawDeviceAllocationResult]

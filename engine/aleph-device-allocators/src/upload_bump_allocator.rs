@@ -29,14 +29,13 @@
 
 use std::ptr::NonNull;
 
-use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
 use crate::{AllocationResult, BumpAllocator, IUploadAllocator, RawDeviceAllocationResult};
 
 pub struct UploadBumpAllocator {
     /// The buffer object we're allocating from.
-    buffer: AnyArc<dyn IBuffer>,
+    buffer: BufferHandle,
 
     /// The base address in the host's address space of the block inside 'buffer' we're allocating
     /// from.
@@ -96,7 +95,7 @@ impl UploadBumpAllocator {
                     name,
                 })
                 .ok()?;
-            let base_host_address = buffer.map().ok()?;
+            let base_host_address = device.map_buffer(&buffer).ok()?;
             Some(Self {
                 buffer,
                 base_host_address,
@@ -125,7 +124,7 @@ impl UploadBumpAllocator {
                     name,
                 })
                 .ok()?;
-            let base_host_address = buffer.map().ok()?;
+            let base_host_address = device.map_buffer(&buffer).ok()?;
             Some(Self {
                 buffer,
                 base_host_address,
@@ -157,8 +156,13 @@ impl UploadBumpAllocator {
     ///   space.
     /// - The allocation at 'base_host_address' is valid for `offset + capacity` bytes such that any
     ///   sub-allocations from within the block could never overrun the end of the allocated block.
+    /// - 'buffer' should be a [`CpuAccessMode::Write`] buffer and the address range given should
+    ///   be within the buffer's mapped range.
+    /// - 'usage' must be compatible with the given 'buffer' object's usage flags that it was
+    ///   created with.
     pub unsafe fn new_from_block(
-        buffer: &dyn IBuffer,
+        buffer: BufferHandle,
+        usage: ResourceUsageFlags,
         base_host_address: NonNull<u8>,
         offset: usize,
         capacity: usize,
@@ -169,12 +173,13 @@ impl UploadBumpAllocator {
             //         then the offset can't overflow or escape the bounds of the allocated object.
             let offset_address = base_host_address.as_ptr().add(offset);
             let base_host_address = NonNull::new_unchecked(offset_address);
+
             Some(Self {
-                buffer: buffer.upgrade(),
+                buffer,
                 base_host_address,
                 base_device_offset: offset,
                 state,
-                usage: buffer.desc_ref().usage,
+                usage,
             })
         } else {
             None
@@ -211,8 +216,8 @@ impl UploadBumpAllocator {
 
     /// Get the buffer that this is allocating from
     #[inline]
-    pub fn buffer(&self) -> &dyn IBuffer {
-        self.buffer.as_ref()
+    pub fn buffer(&self) -> &BufferHandle {
+        &self.buffer
     }
 
     /// The [`ResourceUsageFlags`] the wrapped buffer was allocated with
