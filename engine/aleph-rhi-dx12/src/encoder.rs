@@ -118,7 +118,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let buffer_location = buffer.base_address;
             let buffer_location = buffer_location.add(v.offset);
 
-            let size_in_bytes = buffer.desc.size as u32;
+            let size_in_bytes = buffer.desc().size as u32;
 
             let view = D3D12_VERTEX_BUFFER_VIEW {
                 BufferLocation: buffer_location.get_inner().get(),
@@ -141,7 +141,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let buffer_location = buffer.base_address;
         let buffer_location = buffer_location.add(binding.offset);
 
-        let size_in_bytes = buffer.desc.size as u32;
+        let size_in_bytes = buffer.desc().size as u32;
 
         let view = D3D12_INDEX_BUFFER_VIEW {
             BufferLocation: buffer_location.get_inner().get(),
@@ -459,7 +459,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
                 let (first_plane, num_planes) = translate_barrier_texture_aspect_to_plane_range(
                     barrier.subresource_range.aspect,
-                    texture.desc.format,
+                    texture.desc().format,
                 );
 
                 let (layout_before, layout_after, access_before, access_after) =
@@ -539,7 +539,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         let src = Buffer::get(src);
         let dst = Texture::get(dst);
 
-        let bytes_per_element = dst.desc.format.bytes_per_element();
+        let bytes_per_element = dst.desc().format.bytes_per_element();
         let mut src_location = D3D12_TEXTURE_COPY_LOCATION {
             pResource: unsafe { transmute_copy(&src.resource) },
             Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,

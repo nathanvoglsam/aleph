@@ -32,14 +32,14 @@ use std::num::NonZeroU64;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 
 use crate::NullDevice;
 
 pub struct NullBuffer {
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
-    pub(crate) desc: BufferDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) desc: OwnedBufferDesc,
 }
 
 unsafe_impl_iobject!(NullBuffer, "01944e4c-c48d-7fd1-bf12-53bd50eba3a0");
@@ -51,17 +51,11 @@ impl NullBuffer {
             .expect("Unknown Buffer implementation!")
     }
 
-    pub(crate) fn get_id(&self) -> NonZeroU64 {
+    pub(crate) const fn get_id(&self) -> NonZeroU64 {
         self.id
     }
 
-    pub(crate) fn desc(&self) -> BufferDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    pub(crate) fn desc_ref(&self) -> &BufferDesc {
-        &self.desc
+    pub(crate) const fn desc(&self) -> &BufferDesc {
+        self.desc.get()
     }
 }

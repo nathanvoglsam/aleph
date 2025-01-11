@@ -581,17 +581,9 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b> {
+    fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
         let buffer = ValidationBuffer::get(buffer);
-        self.inner.buffer_desc(&buffer.inner)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
-        let buffer = ValidationBuffer::get(buffer);
-        self.inner.buffer_desc_ref(&buffer.inner)
+        self.inner.get_buffer_desc(&buffer.inner)
     }
 
     // ========================================================================================== //
@@ -640,17 +632,9 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b> {
+    fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
         let texture = ValidationTexture::get(texture);
-        self.inner.texture_desc(&texture.inner)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
-        let texture = ValidationTexture::get(texture);
-        self.inner.texture_desc_ref(&texture.inner)
+        self.inner.get_texture_desc(&texture.inner)
     }
 
     // ========================================================================================== //
@@ -700,17 +684,9 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b> {
+    fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
         let v = ValidationSampler::get(sampler);
-        self.inner.sampler_desc(&v.inner)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
-        let v = ValidationSampler::get(sampler);
-        self.inner.sampler_desc_ref(&v.inner)
+        self.inner.get_sampler_desc(&v.inner)
     }
 
     // ========================================================================================== //

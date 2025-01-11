@@ -460,12 +460,8 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// allocated from the same [`IDevice`] instance.
     fn get_buffer_id(&self, buffer: &BufferHandle) -> NonZeroU64;
 
-    /// Returns a [BufferDesc] that describes this buffer object.
-    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b>;
-
-    /// Returns a [BufferDesc] that describes this buffer object, but without the name component so
-    /// we can send a reference out.
-    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b>;
+    /// Returns a [BufferDesc] that describes this buffer object
+    fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b>;
 
     /// Returns a host virtual address pointer to a region of a mappable buffer.
     ///
@@ -508,11 +504,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     fn get_texture_id(&self, texture: &TextureHandle) -> NonZeroU64;
 
     /// Returns a [TextureDesc] that describes this texture
-    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b>;
-
-    /// Returns a [TextureDesc] that describes this texture, but without the name component so we
-    /// can send a reference out.
-    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b>;
+    fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b>;
 
     fn get_texture_view(
         &self,
@@ -540,12 +532,8 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// allocated from the same [`IDevice`] instance.
     fn get_sampler_id(&self, sampler: &SamplerHandle) -> NonZeroU64;
 
-    /// Returns a [SamplerDesc] that describes this sampler object
-    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b>;
-
-    /// Returns a [SamplerDesc] that describes this sampler, but without the name component so we
-    /// can send a reference out.
-    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b>;
+    /// Returns a [SamplerDesc] that describes this sampler
+    fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b>;
 
     // ================
     // PIPELINE
@@ -4001,7 +3989,7 @@ impl ImageViewDesc {
 
     #[inline]
     pub fn srv_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
-        let desc = device.texture_desc_ref(texture);
+        let desc = device.get_texture_desc(texture);
         Self::srv_for_desc(desc)
     }
 
@@ -4030,7 +4018,7 @@ impl ImageViewDesc {
 
     #[inline]
     pub fn uav_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
-        let desc = device.texture_desc_ref(texture);
+        let desc = device.get_texture_desc(texture);
         Self::uav_for_desc(desc)
     }
 
@@ -4059,7 +4047,7 @@ impl ImageViewDesc {
 
     #[inline]
     pub fn rtv_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
-        let desc = device.texture_desc_ref(texture);
+        let desc = device.get_texture_desc(texture);
         Self::rtv_for_desc(desc)
     }
 
@@ -4088,7 +4076,7 @@ impl ImageViewDesc {
 
     #[inline]
     pub fn dsv_for_texture(device: &dyn IDevice, texture: &TextureHandle) -> ImageViewDesc {
-        let desc = device.texture_desc_ref(texture);
+        let desc = device.get_texture_desc(texture);
         Self::rtv_for_desc(desc)
     }
 

@@ -41,6 +41,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
+use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
 use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
 use blink_alloc::BlinkAlloc;
 use bumpalo::collections::Vec as BVec;
@@ -634,8 +635,6 @@ impl IDevice for Device {
             set_name(&resource, name).unwrap();
         }
 
-        let name = desc.name.map(str::to_string);
-        let desc = desc.clone().strip_name();
         let out = Buffer {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_buffer(),
@@ -643,8 +642,7 @@ impl IDevice for Device {
             resource: ManuallyDrop::new(resource),
             base_address,
             map_state: Mutex::new(Default::default()),
-            desc,
-            name,
+            desc: OwnedBufferDesc::new(desc.clone()),
         };
         let out = ArcedObject::new_arc_opaque(out);
         unsafe { Ok(BufferHandle::new(out)) }
@@ -680,15 +678,12 @@ impl IDevice for Device {
             set_name(&resource, name).unwrap();
         }
 
-        let name = desc.name.map(str::to_string);
-        let desc = desc.clone().strip_name();
         let out = Texture {
             device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_texture(),
             allocation: Some(ManuallyDrop::new(allocation)),
             resource: ManuallyDrop::new(resource),
-            desc,
-            name,
+            desc: OwnedTextureDesc::new(desc.clone()),
             dxgi_format: resource_desc.Format,
             views: Default::default(),
             rtvs: Default::default(),
@@ -736,13 +731,10 @@ impl IDevice for Device {
             ShaderVisibility: D3D12_SHADER_VISIBILITY_ALL,
         };
 
-        let name = desc.name.map(str::to_string);
-        let desc = desc.clone().strip_name();
         let out = Sampler {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_sampler(),
-            desc,
-            name,
+            desc: OwnedSamplerDesc::new(desc.clone()),
             gpu_handle,
             static_desc,
         };
@@ -1022,15 +1014,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b> {
+    fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
         Buffer::get(buffer).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
-        Buffer::get(buffer).desc_ref()
     }
 
     // ========================================================================================== //
@@ -1073,15 +1058,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b> {
+    fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
         Texture::get(texture).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
-        Texture::get(texture).desc_ref()
     }
 
     // ========================================================================================== //
@@ -1127,15 +1105,8 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b> {
+    fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
         Sampler::get(sampler).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
-        Sampler::get(sampler).desc_ref()
     }
 
     // ========================================================================================== //

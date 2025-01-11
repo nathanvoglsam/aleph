@@ -34,6 +34,7 @@ use std::ptr::NonNull;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use parking_lot::Mutex;
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -47,8 +48,7 @@ pub struct Buffer {
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
     pub(crate) base_address: GPUDescriptorHandle,
     pub(crate) map_state: Mutex<MapState>,
-    pub(crate) desc: BufferDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) desc: OwnedBufferDesc,
 }
 
 unsafe_impl_iobject!(Buffer, "01944e61-2e75-7ec2-951d-399527ca4856");
@@ -78,13 +78,13 @@ impl Buffer {
     /// debug builds.
     pub(crate) fn clamp_max_size_for_view(&self, size: u32) -> u32 {
         if size == u32::MAX {
-            self.desc
+            self.desc()
                 .size
                 .try_into()
                 .expect("The buffer is too large to create a full range view")
         } else {
             debug_assert!(
-                (size as u64) <= self.desc.size,
+                (size as u64) <= self.desc().size,
                 "The requested view range is larger than the buffer"
             );
             size
@@ -103,14 +103,8 @@ impl Buffer {
         self.id
     }
 
-    pub(crate) fn desc(&self) -> BufferDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    pub(crate) fn desc_ref(&self) -> &BufferDesc {
-        &self.desc
+    pub(crate) const fn desc(&self) -> &BufferDesc {
+        self.desc.get()
     }
 
     pub(crate) fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {

@@ -89,8 +89,8 @@ impl TextureObject {
         texture: TextureHandle,
     ) -> Option<TextureHandle> {
         if let Some(old_texture) = &self.texture {
-            let new_desc = device.texture_desc_ref(&texture);
-            let old_desc = device.texture_desc_ref(old_texture);
+            let new_desc = device.get_texture_desc(&texture);
+            let old_desc = device.get_texture_desc(old_texture);
 
             // It is illegal for any major property of the new texture to change from the old
             // texture.
@@ -158,7 +158,7 @@ impl TextureObject {
     /// texture object this does nothing.
     pub fn recreate_default_view(&mut self, device: &dyn IDevice) {
         if let Some(texture) = &self.texture {
-            let desc = device.texture_desc_ref(texture);
+            let desc = device.get_texture_desc(texture);
 
             let view_type = match desc.dimension {
                 TextureDimension::Texture1D => {

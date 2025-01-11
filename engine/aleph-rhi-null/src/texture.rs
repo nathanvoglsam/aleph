@@ -33,14 +33,14 @@ use std::ptr::NonNull;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 
 use crate::NullDevice;
 
 pub struct NullTexture {
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
-    pub(crate) desc: TextureDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) desc: OwnedTextureDesc,
 }
 
 unsafe_impl_iobject!(NullTexture, "01944ecd-4c40-7793-83c0-d01bf99fd58f");
@@ -52,18 +52,12 @@ impl NullTexture {
             .expect("Unknown Texture implementation!")
     }
 
-    pub(crate) fn get_id(&self) -> NonZeroU64 {
+    pub(crate) const fn get_id(&self) -> NonZeroU64 {
         self.id
     }
 
-    pub(crate) fn desc(&self) -> TextureDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    pub(crate) fn desc_ref(&self) -> &TextureDesc {
-        &self.desc
+    pub(crate) const fn desc(&self) -> &TextureDesc {
+        self.desc.get()
     }
 
     pub(crate) fn get_view(&self, _desc: &ImageViewDesc) -> Result<ImageView, ()> {

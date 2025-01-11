@@ -131,7 +131,7 @@ pub fn pass(
                 &[],
             );
 
-            let input_desc = device.texture_desc_ref(input);
+            let input_desc = device.get_texture_desc(input);
             let group_count_x = input_desc.width.div_ceil(8);
             let group_count_y = input_desc.height.div_ceil(8);
             encoder.dispatch(group_count_x, group_count_y, 1);

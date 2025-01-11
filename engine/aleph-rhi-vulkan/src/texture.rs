@@ -33,6 +33,7 @@ use std::num::NonZeroU64;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk;
 use parking_lot::Mutex;
 use vulkan_alloc::vma;
@@ -51,8 +52,7 @@ pub struct Texture {
     pub(crate) views: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, vk::ImageView>>,
-    pub(crate) desc: TextureDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) desc: OwnedTextureDesc,
 }
 
 unsafe_impl_iobject!(Texture, "01944ef4-bac0-7310-aec2-60edef2587bb");
@@ -68,14 +68,8 @@ impl Texture {
         self.id
     }
 
-    pub(crate) fn desc(&self) -> TextureDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    pub(crate) fn desc_ref(&self) -> &TextureDesc {
-        &self.desc
+    pub(crate) const fn desc(&self) -> &TextureDesc {
+        self.desc.get()
     }
 
     pub(crate) fn get_view(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {

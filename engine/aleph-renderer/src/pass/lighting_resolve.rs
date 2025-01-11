@@ -131,7 +131,7 @@ pub fn pass(
             )
             .unwrap();
 
-            // let gbuffer0_desc = gbuffer0.desc_ref();
+            // let gbuffer0_desc = gbuffer0.desc();
             // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
             let camera_layout = CameraLayout {
                 view_matrix: camera_info
@@ -177,7 +177,7 @@ pub fn pass(
                 &[],
             );
 
-            let gbuffer0_desc = device.texture_desc_ref(gbuffer0);
+            let gbuffer0_desc = device.get_texture_desc(gbuffer0);
             let group_count_x = gbuffer0_desc.width.div_ceil(8);
             let group_count_y = gbuffer0_desc.height.div_ceil(8);
             encoder.dispatch(group_count_x, group_count_y, 1);

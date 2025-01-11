@@ -168,7 +168,7 @@ impl ValidationSwapChain {
         // The returned images are from the inner implementation, wrap them in ValidationTexture.
         for image in images {
             let image = image.take().unwrap();
-            let desc = device.inner.texture_desc_ref(&image).clone().strip_name();
+            let desc = device.inner.get_texture_desc(&image).clone().strip_name();
             let out = Arc::new_cyclic(|v| {
                 ArcedObject::new(ValidationTexture {
                     _this: v.clone(),

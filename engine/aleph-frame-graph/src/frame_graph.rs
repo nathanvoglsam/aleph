@@ -207,7 +207,7 @@ impl<A: PassArgs> FrameGraph<A> {
                             .unwrap();
                         let texture = match texture {
                             ResourceVariant::Buffer(v) => {
-                                let desc = self.device.buffer_desc(v);
+                                let desc = self.device.get_buffer_desc(v);
                                 let name = desc.name.unwrap_or("Unnamed Buffer");
                                 panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
                             }
@@ -530,7 +530,7 @@ impl<A: PassArgs> FrameGraph<A> {
         match given {
             crate::ResourceVariant::Buffer(i) => match &root.resource_type {
                 crate::internal::ResourceType::Buffer(r) => {
-                    let i_desc = self.device.buffer_desc(i);
+                    let i_desc = self.device.get_buffer_desc(i);
                     self.assert_matching_buffer_desc(&r.desc, &i_desc, name);
                 }
                 crate::internal::ResourceType::Texture(_r) => {
@@ -548,7 +548,7 @@ impl<A: PassArgs> FrameGraph<A> {
                     panic!("{} texture '{}' was provided a buffer", resource_type, name)
                 }
                 crate::internal::ResourceType::Texture(r) => {
-                    let i_desc = self.device.texture_desc(i);
+                    let i_desc = self.device.get_texture_desc(i);
                     self.assert_matching_texture_desc(&r.desc, &i_desc, name);
                 }
                 crate::internal::ResourceType::Execution(_r) => {
@@ -638,7 +638,7 @@ impl<'a> FrameGraphResources<'a> {
         match r {
             ResourceVariant::Buffer(v) => Some(v),
             ResourceVariant::Texture(v) => {
-                let desc = self.device.texture_desc(v);
+                let desc = self.device.get_texture_desc(v);
                 let name = desc.name.unwrap_or("Unnamed Texture");
                 panic!("ResourceVariant for resource '{name}' is not a 'Buffer'");
             }
@@ -650,7 +650,7 @@ impl<'a> FrameGraphResources<'a> {
         let r = self.get(r)?;
         match r {
             ResourceVariant::Buffer(v) => {
-                let desc = self.device.buffer_desc(v);
+                let desc = self.device.get_buffer_desc(v);
                 let name = desc.name.unwrap_or("Unnamed Buffer");
                 panic!("ResourceVariant for resource '{name}' is not a 'Texture'");
             }

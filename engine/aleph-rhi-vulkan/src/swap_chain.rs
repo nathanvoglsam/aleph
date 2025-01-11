@@ -34,6 +34,7 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_nstr::{nstr, NStr};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk;
 use parking_lot::Mutex;
 
@@ -300,8 +301,7 @@ impl SwapChain {
                     views: Default::default(),
                     rtvs: Default::default(),
                     dsvs: Default::default(),
-                    desc,
-                    name: None,
+                    desc: OwnedTextureDesc::new(desc),
                 };
                 ArcedObject::new_arc(out)
             })

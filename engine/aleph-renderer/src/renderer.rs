@@ -631,7 +631,7 @@ impl SwapManager {
         self.images = images.into_iter().map(|v| v.unwrap()).collect();
         self.desc = self
             .device
-            .texture_desc_ref(&self.images[0])
+            .get_texture_desc(&self.images[0])
             .clone()
             .strip_name();
         self.needs_rebuild = false;

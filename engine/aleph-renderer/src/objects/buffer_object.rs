@@ -62,8 +62,8 @@ impl BufferObject {
 
     pub fn update(&mut self, device: &dyn IDevice, buffer: BufferHandle) -> Option<BufferHandle> {
         if let Some(old_buffer) = &self.buffer {
-            let new_desc = device.buffer_desc_ref(&buffer);
-            let old_desc = device.buffer_desc_ref(old_buffer);
+            let new_desc = device.get_buffer_desc(&buffer);
+            let old_desc = device.get_buffer_desc(old_buffer);
 
             // It is illegal for any major property of the new buffer to change from the old
             // buffer.

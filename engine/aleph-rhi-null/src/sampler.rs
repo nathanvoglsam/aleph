@@ -32,14 +32,14 @@ use std::num::NonZeroU64;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
 
 use crate::NullDevice;
 
 pub struct NullSampler {
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
-    pub(crate) desc: SamplerDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) desc: OwnedSamplerDesc,
 }
 
 unsafe_impl_iobject!(NullSampler, "01944fbf-d462-7833-b04b-6ba813845586");
@@ -51,13 +51,7 @@ impl NullSampler {
             .expect("Unknown Sampler implementation!")
     }
 
-    pub(crate) fn desc(&self) -> SamplerDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    pub(crate) fn desc_ref(&self) -> &SamplerDesc {
-        &self.desc
+    pub(crate) const fn desc(&self) -> &SamplerDesc {
+        self.desc.get()
     }
 }

@@ -95,7 +95,7 @@ pub fn pass(
             let device = resources.device();
 
             let output = resources.get_texture(data.target).unwrap();
-            let dst_desc = device.texture_desc_ref(output);
+            let dst_desc = device.get_texture_desc(output);
 
             let dst_view = device
                 .get_texture_rtv(
@@ -139,7 +139,7 @@ pub fn pass(
 
             for plane in data.planes.iter().copied() {
                 let plane = resources.get_texture(plane).unwrap();
-                let src_desc = device.texture_desc_ref(plane);
+                let src_desc = device.get_texture_desc(plane);
 
                 let src_view = device
                     .get_texture_view(

@@ -175,7 +175,7 @@ pub fn test_handle_equality() {
             name: Some("imported-mock-resource"),
         })
         .unwrap();
-    let mock_desc = device.buffer_desc(&mock_buffer);
+    let mock_desc = device.get_buffer_desc(&mock_buffer);
 
     let mut out_create = None;
     let mut out_read_import = None;
@@ -297,7 +297,7 @@ pub fn test_usage_collection() {
             name: Some("imported-mock-resource"),
         })
         .unwrap();
-    let mock_desc = device.buffer_desc(&mock_buffer);
+    let mock_desc = device.get_buffer_desc(&mock_buffer);
 
     let mut out_create = None;
     let mut out_write_import = None;
@@ -416,7 +416,7 @@ pub fn test_usage_schedule() {
             name: Some("imported-mock-buffer"),
         })
         .unwrap();
-    let mock_buffer_desc = device.buffer_desc(&mock_buffer);
+    let mock_buffer_desc = device.get_buffer_desc(&mock_buffer);
 
     let mock_texture = device
         .create_texture(&TextureDesc {
@@ -436,7 +436,7 @@ pub fn test_usage_schedule() {
             name: Some("imported-mock-texture"),
         })
         .unwrap();
-    let mock_texture_desc = device.texture_desc(&mock_texture);
+    let mock_texture_desc = device.get_texture_desc(&mock_texture);
 
     let mut builder = FrameGraph::<()>::builder();
 
@@ -688,7 +688,7 @@ pub fn test_usage_schedule_exec_dependency() {
             name: Some("imported-mock-buffer"),
         })
         .unwrap();
-    let mock_buffer_desc = device.buffer_desc(&mock_buffer);
+    let mock_buffer_desc = device.get_buffer_desc(&mock_buffer);
 
     let mock_texture = device
         .create_texture(&TextureDesc {
@@ -708,7 +708,7 @@ pub fn test_usage_schedule_exec_dependency() {
             name: Some("imported-mock-texture"),
         })
         .unwrap();
-    let mock_texture_desc = device.texture_desc(&mock_texture);
+    let mock_texture_desc = device.get_texture_desc(&mock_texture);
 
     let mut builder = FrameGraph::<()>::builder();
 
@@ -934,7 +934,7 @@ pub fn test_usage_illegal_dependency() {
             name: Some("imported-mock-buffer"),
         })
         .unwrap();
-    let mock_buffer_desc = device.buffer_desc(&mock_buffer);
+    let mock_buffer_desc = device.get_buffer_desc(&mock_buffer);
 
     let mut builder = FrameGraph::<()>::builder();
 
@@ -1019,7 +1019,7 @@ pub fn test_usage_illegal_dependency_2() {
             name: Some("imported-mock-buffer"),
         })
         .unwrap();
-    let mock_buffer_desc = device.buffer_desc(&mock_buffer);
+    let mock_buffer_desc = device.get_buffer_desc(&mock_buffer);
 
     let mut builder = FrameGraph::<()>::builder();
 

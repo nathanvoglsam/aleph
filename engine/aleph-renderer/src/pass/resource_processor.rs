@@ -270,7 +270,7 @@ impl TextureLoader {
         release_barriers: &mut Vec<TextureBarrier<'r>>,
         request: &'r TextureLoadRequest,
     ) {
-        let tex_desc = device.texture_desc_ref(&request.texture);
+        let tex_desc = device.get_texture_desc(&request.texture);
         let subresources = TextureSubResourceSet::all(tex_desc);
 
         let usage = request.object.desc().usage;
@@ -352,7 +352,7 @@ impl MipGenerator {
         texture: &TextureHandle,
         usage: ResourceUsageFlags,
     ) {
-        let desc = device.texture_desc_ref(texture);
+        let desc = device.get_texture_desc(texture);
         let format = desc.format;
 
         // If the texture only has 1 mip level then there's nothing to do, so we early exit

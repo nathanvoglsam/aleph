@@ -33,6 +33,7 @@ use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
+use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
 
 use crate::{
     NullAdapter, NullBuffer, NullCommandList, NullComputePipeline, NullContext,
@@ -188,13 +189,10 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        let name = desc.name.map(String::from);
-        let desc = desc.clone().strip_name();
         let out = NullBuffer {
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_buffer(),
-            desc,
-            name,
+            desc: OwnedBufferDesc::new(desc.clone()),
         };
         let out = ArcedObject::new_arc_opaque(out);
         unsafe { Ok(BufferHandle::new(out)) }
@@ -208,13 +206,10 @@ impl IDevice for NullDevice {
             ResourceUsageFlags::TEXTURE_USAGE_MASK.contains(desc.usage),
             "Attempted to create a texture with usage flags meant only for buffers!"
         );
-        let name = desc.name.map(String::from);
-        let desc = desc.clone().strip_name();
         let out = NullTexture {
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_texture(),
-            desc,
-            name,
+            desc: OwnedTextureDesc::new(desc.clone()),
         };
         let out = ArcedObject::new_arc_opaque(out);
         unsafe { Ok(TextureHandle::new(out)) }
@@ -224,13 +219,10 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
 
     fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
-        let name = desc.name.map(String::from);
-        let desc = desc.clone().strip_name();
         let sampler = NullSampler {
             _device: self._this.upgrade().unwrap(),
             id: self.object_counter.next_sampler(),
-            desc,
-            name,
+            desc: OwnedSamplerDesc::new(desc.clone()),
         };
         let v = ArcedObject::new_arc_opaque(sampler);
         unsafe { Ok(SamplerHandle::new(v)) }
@@ -334,15 +326,8 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> BufferDesc<'b> {
+    fn get_buffer_desc<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
         NullBuffer::get(buffer).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn buffer_desc_ref<'b>(&self, buffer: &'b BufferHandle) -> &'b BufferDesc<'b> {
-        NullBuffer::get(buffer).desc_ref()
     }
 
     // ========================================================================================== //
@@ -385,15 +370,8 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn texture_desc<'b>(&self, texture: &'b TextureHandle) -> TextureDesc<'b> {
+    fn get_texture_desc<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
         NullTexture::get(texture).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn texture_desc_ref<'b>(&self, texture: &'b TextureHandle) -> &'b TextureDesc<'b> {
-        NullTexture::get(texture).desc_ref()
     }
 
     // ========================================================================================== //
@@ -439,15 +417,8 @@ impl IDevice for NullDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> SamplerDesc<'b> {
+    fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
         NullSampler::get(sampler).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn sampler_desc_ref<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
-        NullSampler::get(sampler).desc_ref()
     }
 
     // ========================================================================================== //

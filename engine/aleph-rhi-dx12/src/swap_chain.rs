@@ -35,6 +35,7 @@ use std::sync::Arc;
 use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::{manually_drop, try_clone_value_into_slot};
 use bumpalo::Bump;
 use parking_lot::Mutex;
@@ -105,8 +106,7 @@ impl SwapChain {
                 id: self.device.object_counter.next_texture(),
                 allocation: None,
                 resource: ManuallyDrop::new(resource),
-                desc,
-                name: None,
+                desc: OwnedTextureDesc::new(desc),
                 dxgi_format,
                 views: Default::default(),
                 rtvs: Default::default(),

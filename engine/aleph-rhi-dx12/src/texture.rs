@@ -37,6 +37,7 @@ use std::ptr::NonNull;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::Bump;
 use parking_lot::Mutex;
@@ -55,8 +56,7 @@ pub struct Texture {
     pub(crate) id: NonZeroU64,
     pub(crate) allocation: Option<ManuallyDrop<d3d12ma::Allocation>>,
     pub(crate) resource: ManuallyDrop<ID3D12Resource>,
-    pub(crate) desc: TextureDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) desc: OwnedTextureDesc,
     pub(crate) dxgi_format: DXGI_FORMAT,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, NonNull<ImageViewObject>>>,
@@ -74,7 +74,7 @@ impl Texture {
     }
 
     pub const fn plane_slice_for(&self, aspect: TextureCopyAspect) -> Option<u32> {
-        plane_layer_for_aspect(self.desc.format, aspect)
+        plane_layer_for_aspect(self.desc().format, aspect)
     }
 
     pub const fn subresource_index_for(
@@ -88,8 +88,8 @@ impl Texture {
                 mip_level,
                 array_layer,
                 plane_slice,
-                self.desc.mip_levels,
-                self.desc.array_size,
+                self.desc().mip_levels,
+                self.desc().array_size,
             ))
         } else {
             None
@@ -428,14 +428,8 @@ impl Texture {
         self.id
     }
 
-    pub(crate) fn desc(&self) -> TextureDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    pub(crate) fn desc_ref(&self) -> &TextureDesc {
-        &self.desc
+    pub(crate) const fn desc(&self) -> &TextureDesc {
+        self.desc.get()
     }
 
     pub(crate) fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {

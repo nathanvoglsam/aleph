@@ -146,7 +146,7 @@ pub fn pass(
             )
             .unwrap();
 
-            let extent = device.texture_desc_ref(gbuffer0).get_extent_2d();
+            let extent = device.get_texture_desc(gbuffer0).get_extent_2d();
             // let aspect_ratio = extent.width as f32 / extent.height as f32;
 
             let camera_layout = CameraLayout {
@@ -405,7 +405,7 @@ pub fn pass(
                     &[m.device_offset as u32],
                 );
 
-                let idx_count = device.buffer_desc_ref(idx).size / 4;
+                let idx_count = device.get_buffer_desc(idx).size / 4;
                 encoder.draw_indexed(idx_count as u32, 1, 0, 0, 0);
             }
 

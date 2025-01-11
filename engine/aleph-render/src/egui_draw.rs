@@ -117,7 +117,7 @@ pub fn pass(
             let vtx_buffer = resources.get_buffer(data.vtx_buffer).unwrap();
             let idx_buffer = resources.get_buffer(data.idx_buffer).unwrap();
 
-            let extent = device.texture_desc_ref(render_target).get_extent_2d();
+            let extent = device.get_texture_desc(render_target).get_extent_2d();
 
             let EguiPassContext {
                 font_handle,

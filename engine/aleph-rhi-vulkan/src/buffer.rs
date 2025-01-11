@@ -33,6 +33,7 @@ use std::ptr::NonNull;
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use ash::vk;
 use parking_lot::Mutex;
 use vulkan_alloc::vma;
@@ -45,8 +46,7 @@ pub struct Buffer {
     pub(crate) buffer: vk::Buffer,
     pub(crate) allocation: vma::Allocation,
     pub(crate) map_state: Mutex<MapState>,
-    pub(crate) desc: BufferDesc<'static>,
-    pub(crate) name: Option<String>,
+    pub(crate) desc: OwnedBufferDesc,
 }
 
 unsafe_impl_iobject!(Buffer, "01944e48-b650-76a1-9637-5418f9becbeb");
@@ -68,11 +68,11 @@ impl Buffer {
     /// debug builds.
     pub(crate) fn clamp_max_size_for_view(&self, size: u32) -> u64 {
         if size == u32::MAX {
-            self.desc.size
+            self.desc().size
         } else {
             let size = size as u64;
             debug_assert!(
-                size <= self.desc.size,
+                size <= self.desc().size,
                 "The requested view range is larger than the buffer"
             );
             size
@@ -85,14 +85,8 @@ impl Buffer {
         self.id
     }
 
-    pub(crate) fn buffer_desc(&self) -> BufferDesc {
-        let mut desc = self.desc.clone();
-        desc.name = self.name.as_deref();
-        desc
-    }
-
-    pub(crate) fn buffer_desc_ref(&self) -> &BufferDesc {
-        &self.desc
+    pub(crate) const fn desc(&self) -> &BufferDesc {
+        self.desc.get()
     }
 
     pub(crate) fn map_buffer(
