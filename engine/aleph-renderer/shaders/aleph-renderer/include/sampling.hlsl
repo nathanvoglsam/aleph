@@ -184,3 +184,56 @@ func ConeSampleDensity<T : __BuiltinFloatingPointType>(
 ) -> T {
 	return T(1.0) / (T(2 * PI) * (T(1.0) - cosThetaMax));
 }
+
+// Returns UV coordinates to sample an equirectangular texture based on the given direction vector.
+//
+// This is 3D cartesian to 2D spherical coordinates conversion, we assume the 3D input is a point
+// on the unit sphere (a unit vector).
+//
+// Can be used to sample an equirectangular spherical map like a cube map.
+func SampleEquirectangularMap<T : __BuiltinFloatingPointType>(
+    vector<T, 3> v
+) -> vector<T, 2>
+{
+    let invAtan = vector<T, 2>(T(0.1591), T(0.3183));
+    var uv = vector<T, 2>(atan2(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += T(0.5);
+    return uv;
+}
+
+// Function used inside OctahedralEncode and OctahedralDecode
+func OctahedralSignNotZero<T : __BuiltinFloatingPointType>(
+    vector<T, 2> v
+) -> vector<T, 2> {
+    return vector<T, 2>((v.x >= T(0.0)) ? T(1.0) : T(-1.0), (v.y >= T(0.0)) ? T(1.0) : T(-1.0));
+}
+
+// Maps a unit vector 'v' into a 2D octahedral mapped space. Returns a UV coordinate in the [0, 1]
+// range. 
+func OctahedralEncode<T : __BuiltinFloatingPointType>(
+    in vector<T, 3> v
+) -> vector<T, 2> {
+    // Project the sphere onto the octahedron, and then onto the xy plane
+    let p = v.xy * (T(1.0) / (abs(v.x) + abs(v.y) + abs(v.z)));
+
+    // Reflect the folds of the lower hemisphere over the diagonals
+    let e = (v.z <= T(0.0)) ? ((T(1.0) - abs(p.yx)) * OctahedralSignNotZero(p)) : p;
+
+    // Remap into the [0, 1] UV space
+    return e * T(0.5) + T(0.5);
+}
+
+// Maps a 2D octahedral texture coordinate in the [0, 1] range into a 3D unit vector.
+func OctahedralDecode<T : __BuiltinFloatingPointType>(
+    vector<T, 2> e
+) -> vector<T, 3>
+{
+    // Undo our remap to [0, 1] and get back to the [-1, 1] this code expects
+    e = e * T(2.0) - T(1.0);
+
+    var v = vector<T, 3>(e.xy, T(1.0) - abs(e.x) - abs(e.y));
+    if (v.z < T(0)) 
+        v.xy = (T(1.0) - abs(v.yx)) * OctahedralSignNotZero(v.xy);
+    return normalize(v);
+}

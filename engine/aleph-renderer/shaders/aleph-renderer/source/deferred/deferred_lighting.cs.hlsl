@@ -29,13 +29,14 @@
 
 #include "pbr.hlsl"
 #include "projection.hlsl"
+#include "sampling.hlsl"
 
 [[vk::binding(0, 0)]]
 Texture2D<float> g_depth : register(t0, space0);
 [[vk::binding(1, 0)]]
 Texture2D<float4> g_gbuffer0 : register(t1, space0);
 [[vk::binding(2, 0)]]
-Texture2D<float4> g_gbuffer1 : register(t2, space0);
+Texture2D<float2> g_gbuffer1 : register(t2, space0);
 [[vk::binding(3, 0)]]
 Texture2D<float4> g_gbuffer2 : register(t3, space0);
 [[vk::binding(4, 0)]]
@@ -132,7 +133,8 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         }
 
         let base_colour = g_gbuffer0.Load(texCoord).rgb;
-        let ws_normal = g_gbuffer1.Load(texCoord).xyz;
+        let ws_oct_normal = g_gbuffer1.Load(texCoord).xy;
+        let ws_normal = OctahedralDecode(ws_oct_normal);
         let gbuffer_2 = g_gbuffer2.Load(texCoord);
         let metallic = gbuffer_2.r;
         let roughness = RemapRoughness(gbuffer_2.g);

@@ -30,6 +30,7 @@
 #include "main_gbuffer.inc.hlsl"
 #include "pbr.hlsl"
 #include "normal_map.hlsl"
+#include "sampling.hlsl"
 
 [[vk_binding(0, 0)]] ConstantBuffer<CameraLayout> g_camera : register(b0, space0);
 
@@ -46,7 +47,7 @@ static float reflectance = 0.5;
 
 struct PixelOutput {
     float4 gbuffer_0: SV_Target0;
-    float4 gbuffer_1: SV_Target1;
+    float2 gbuffer_1: SV_Target1;
     float2 gbuffer_2: SV_Target2;
 };
 
@@ -74,10 +75,12 @@ PixelOutput main(in StaticMeshPixelInput input) {
     let metallic = g_mat.metal_roughness_padding.x * metal_roughness.z;
     let roughness = RemapRoughness(g_mat.metal_roughness_padding.y) * RemapRoughness(metal_roughness.y);
 
+    let mapped_normal = OctahedralEncode(n);
+
     PixelOutput output;
     output.gbuffer_0.xyz = vtx_colour * base_colour * base_colour_tex;
     output.gbuffer_0.w = 1;
-    output.gbuffer_1.xyz = n;
+    output.gbuffer_1.xy = mapped_normal;
     output.gbuffer_2.x = metallic;
     output.gbuffer_2.y = roughness;
 

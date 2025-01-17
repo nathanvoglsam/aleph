@@ -1246,7 +1246,10 @@ pub enum AttachmentLoadOp<ClearValue> {
     Clear(ClearValue),
 
     /// Specifies that the contents of the attachment are not important and can be safely discarded.
-    /// Any loads will read undefined data.
+    /// Any loads will read undefined data. This is still logically a read, unlike
+    /// [AttachmentLoadOp::None], as 'DontCare' is allowed to read the texture even if we're
+    /// not allowed to use what it reads. This is just a hint that we don't use what we read and the
+    /// driver will do whatever is fastest or possible on the device.
     DontCare,
 
     /// Specifies that the attachment is *not* loaded (unused). This is similar to
@@ -1262,6 +1265,11 @@ pub enum AttachmentStoreOp {
 
     /// Specifies that the results of rendering operations will be discarded and *not* written to
     /// memory. The contents of the attachment will become undefined.
+    /// 
+    /// This is still logically a write operation. 'DontCare' is allowed to write to the texture
+    /// if the driver requires even if we're not allowed to read what it writes. This is just a hint
+    /// to the driver that we won't read the output, and the driver is free to write anyway if it
+    /// thinks it's faster or if the device must write the attachment.
     DontCare,
 
     /// Specifies that the attachment is *not* stored to (unused). This is similar to

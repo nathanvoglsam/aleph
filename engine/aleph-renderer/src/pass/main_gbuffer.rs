@@ -79,7 +79,7 @@ pub fn pass(
 
         // WorldNormal
         let gbuffer1_desc = TextureDesc::texture_2d(b_desc.width, b_desc.height)
-            .with_format(Format::Rgba32Float)
+            .with_format(Format::Rg16Unorm)
             .with_clear_value(OptimalClearValue::ColorInt(0x00000000))
             .with_name(obj_name!("Gbuffer1"));
         let gbuffer1 = resources.create_texture(&gbuffer1_desc, ResourceUsageFlags::RENDER_TARGET);
@@ -688,7 +688,7 @@ impl MainOpaqueMaterialLayout {
             blend_state: &blend_state,
             render_target_formats: &[
                 Format::Rgba8UnormSrgb,
-                Format::Rgba32Float,
+                Format::Rg16Unorm,
                 Format::Rg8Unorm,
             ],
             depth_stencil_format: Some(Format::Depth32Float),
