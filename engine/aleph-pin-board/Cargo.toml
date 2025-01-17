@@ -42,7 +42,6 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-arena-drop-list = { workspace = true }
 aleph-identity-hasher = { workspace = true }
 blink-alloc = { workspace = true }
 parking_lot = { workspace = true }
