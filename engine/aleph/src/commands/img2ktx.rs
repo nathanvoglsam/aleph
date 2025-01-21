@@ -533,7 +533,7 @@ impl ISubcommand for Image2Ktx {
     }
 
     fn dont_log(&self) -> bool {
-        true
+        false
     }
 }
 
