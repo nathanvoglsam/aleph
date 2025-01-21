@@ -1265,7 +1265,7 @@ pub enum AttachmentStoreOp {
 
     /// Specifies that the results of rendering operations will be discarded and *not* written to
     /// memory. The contents of the attachment will become undefined.
-    /// 
+    ///
     /// This is still logically a write operation. 'DontCare' is allowed to write to the texture
     /// if the driver requires even if we're not allowed to read what it writes. This is just a hint
     /// to the driver that we won't read the output, and the driver is free to write anyway if it

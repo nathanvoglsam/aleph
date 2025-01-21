@@ -686,11 +686,7 @@ impl MainOpaqueMaterialLayout {
             rasterizer_state: &rasterizer_state,
             depth_stencil_state: &depth_stencil_state,
             blend_state: &blend_state,
-            render_target_formats: &[
-                Format::Rgba8UnormSrgb,
-                Format::Rg16Unorm,
-                Format::Rg8Unorm,
-            ],
+            render_target_formats: &[Format::Rgba8UnormSrgb, Format::Rg16Unorm, Format::Rg8Unorm],
             depth_stencil_format: Some(Format::Depth32Float),
             name: obj_name_opt!("GraphicsPipeline"),
         };
