@@ -50,6 +50,7 @@ mod rhi;
 
 use std::env::current_dir;
 use std::path::Path;
+use std::sync::LazyLock;
 
 use log::LevelFilter;
 
@@ -63,6 +64,14 @@ pub struct EngineBuilder {
 
 impl EngineBuilder {
     pub fn new() -> Self {
+        // We bake this check in always because it's relatively cheap and helps us catch mistakes
+        // which would be absolutely catastrophic. If we didn't crash here we'd very likely crash
+        // later.
+        aleph_object_system::assert_no_duplicate_ids_registered();
+
+        // Pay the object type system setup cost right at the start and save future callers.
+        LazyLock::force(&aleph_object_system::TYPES);
+
         // Initialize COM with MTA
         #[cfg(target_os = "windows")]
         unsafe {
