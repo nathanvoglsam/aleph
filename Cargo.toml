@@ -50,6 +50,7 @@ members = [
     "engine/aleph-interfaces",
     "engine/aleph-ktx",
     "engine/aleph-label",
+    "engine/aleph-malloc-info",
     "engine/aleph-math",
     "engine/aleph-nstr",
     "engine/aleph-object-system",
@@ -165,6 +166,7 @@ windows.features = [
     "Win32_System_Diagnostics_Debug",
     "Win32_System_SystemInformation",
     "Win32_System_WindowsProgramming",
+    "Win32_System_Memory",
     "Win32_Storage_StructuredStorage",
     "Win32_Security",
     "implement",
@@ -187,6 +189,7 @@ aleph-identity-hasher = { path = "./engine/aleph-identity-hasher", version = "1"
 aleph-interfaces = { path = "./engine/aleph-interfaces", version = "0.1" }
 aleph-ktx = { path = "./engine/aleph-ktx", version = "0.1" }
 aleph-label = { path = "./engine/aleph-label", version = "1" }
+aleph-malloc-info = { path = "./engine/aleph-malloc-info", version = "0.1" }
 aleph-math = { path = "./engine/aleph-math", version = "0.1" }
 aleph-nstr = { path = "./engine/aleph-nstr", version = "0.1" }
 aleph-object-system = { path = "./engine/aleph-object-system", version = "0.1" }
