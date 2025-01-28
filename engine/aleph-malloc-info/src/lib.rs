@@ -65,8 +65,7 @@ mod android {
 #[cfg(target_os = "windows")]
 mod windows {
     pub fn get_allocated_bytes() -> usize {
-        use std::mem::MaybeUninit;
-
+        use aleph_windows::Win32::System::Memory::HEAP_SUMMARY;
         use aleph_windows::Win32::System::Memory::HeapSummary;
         use aleph_windows::Win32::System::Memory::GetProcessHeap;
         use aleph_windows::Win32::Foundation::TRUE;
@@ -74,11 +73,16 @@ mod windows {
         unsafe {
             let heap = GetProcessHeap().unwrap();
 
-            let mut stats = MaybeUninit::uninit();
-            let success = HeapSummary(heap, 0, stats.as_mut_ptr());
+            let mut stats = HEAP_SUMMARY {
+                cb: size_of::<HEAP_SUMMARY>() as u32,
+                cbAllocated: 0,
+                cbCommitted: 0,
+                cbReserved: 0,
+                cbMaxReserve: 0,
+            };
+            let success = HeapSummary(heap, 0, &mut stats);
 
             if success == TRUE {
-                let stats = stats.assume_init();
                 stats.cbAllocated
             } else {
                 panic!("Failed call to 'HeapSummary'");
