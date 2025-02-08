@@ -38,7 +38,6 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 use half::f16;
 use image::imageops::FilterType;
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba, RgbaImage};
-use num_traits::ops::bytes::ToBytes;
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
