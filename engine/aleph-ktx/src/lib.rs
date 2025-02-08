@@ -46,6 +46,6 @@ pub use data_format_descriptor::{
 pub use document::{
     DocumentType, FileIndex, KtxDocument, KtxReadError, LevelIndex, SuperCompressionScheme,
 };
-pub use encoder::{CubeFacesRef, KtxDocumentDescription, LevelNum, MipChainRef, ENCODER_NAME};
+pub use encoder::{calculate_set_index, ImageSet, KtxDocumentDescription, LevelNum, ENCODER_NAME};
 pub use format::{format_type_size, is_format_prohibited, ALLOWED_FORMATS};
 pub use kvd::{KtxOrientation, KtxSwizzle};

@@ -29,14 +29,16 @@
 
 use std::io::BufWriter;
 
-use aleph_ktx::{KtxDocumentDescription, VkFormat};
+use aleph_ktx::{calculate_set_index, KtxDocumentDescription, VkFormat};
 use aleph_math::Vec3;
 use anyhow::anyhow;
 use camino::Utf8Path;
+use clap::parser::Values;
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use half::f16;
 use image::imageops::FilterType;
-use image::DynamicImage;
+use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba, RgbaImage};
+use num_traits::ops::bytes::ToBytes;
 
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
@@ -50,6 +52,7 @@ impl ISubcommand for Image2Ktx {
 
     fn description(&mut self) -> Command {
         let input = Arg::new("input")
+            .num_args(1..)
             .short('i')
             .long("input")
             .help("The input file.")
@@ -69,6 +72,12 @@ impl ISubcommand for Image2Ktx {
             .long("gen-mips")
             .help("Whether to generate a mip chain from the input image.")
             .long_help("Whether to generate a mip chain from the input image. Uses a bilinear filter by default.");
+        let is_cube = Arg::new("is-cube")
+            .action(ArgAction::SetTrue)
+            .short('c')
+            .long("is-cube")
+            .help("Whether the input image set describes a cube map.")
+            .long_help("Whether the input image set describes a cube map. Must provide six images, ordered by +X, -X, +Y, -Y, +Z, -Z");
         let is_normal_map = Arg::new("is-normal-map")
             .action(ArgAction::SetTrue)
             .short('n')
@@ -77,7 +86,6 @@ impl ISubcommand for Image2Ktx {
             .long_help("Declares that the input image is a normal map. This changes some things, like an additonal normalization operation when generating mips.");
         let to_half = Arg::new("to-half")
             .action(ArgAction::SetTrue)
-            .short('h')
             .long("to-half")
             .help("Declares that floating point input should be output in half-precision.")
             .long_help("Declares that floating point input should be output in half-precision. This only affects floating point input images like HDRIs.");
@@ -96,46 +104,107 @@ impl ISubcommand for Image2Ktx {
             .arg(mip_filter)
             .arg(is_normal_map)
             .arg(to_half)
+            .arg(is_cube)
     }
 
     fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
-        let input_arg: String = matches.remove_one("input").expect("platform is required");
-        let input = Utf8Path::new(&input_arg).to_path_buf();
+        let input_files: Values<String> = matches.remove_many("input").expect("input is required");
+        let input_files = Vec::from_iter(input_files.map(|v| Utf8Path::new(&v).to_path_buf()));
+
+        if input_files.is_empty() {
+            return Err(anyhow!("No input files given!"));
+        }
 
         let output_arg: Option<String> = matches.remove_one("output");
         let output = match output_arg {
             Some(v) => Utf8Path::new(&v).to_path_buf(),
-            None => input.with_extension("ktx2"),
+            None => {
+                // Take the name of the first input file
+                input_files[0].with_extension("ktx2")
+            }
         };
 
         let gen_mips = matches.get_flag("gen-mips");
         let is_normal_map = matches.get_flag("is-normal-map");
         let to_half = matches.get_flag("to-half");
+        let is_cube = matches.get_flag("is-cube");
 
         let mip_filter: String = matches.remove_one("mip-filter").unwrap();
         let mip_filter = mip_filter.to_lowercase();
         let mip_filter = parse_filter(&mip_filter)
             .ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
 
-        let loaded = image::ImageReader::open(&input)?
-            .with_guessed_format()?
-            .decode()?;
+        // Make sure we have enough input images to encode a cubemap(array)
+        if is_cube {
+            if input_files.len() % 6 != 0 {
+                return Err(anyhow!(
+                    "Image count must be a multiple of 6 for cube maps! Got '{}'",
+                    input_files.len()
+                ));
+            }
+        }
 
-        let color_type = loaded.color();
-        let base_width = loaded.width();
-        let base_height = loaded.height();
+        // Check if we're trying to create a texture array
+        let is_array = {
+            if is_cube {
+                // We've already checked the input set is a multiple of 6
+                input_files.len() > 6
+            } else {
+                // We are _not_ making a cube so just check if we have multiple input images
+                input_files.len() > 1
+            }
+        };
+
+        let mut loaded_files = Vec::new();
+        for input in input_files.iter() {
+            let loaded = image::ImageReader::open(&input)?
+                .with_guessed_format()?
+                .decode()?;
+            loaded_files.push(loaded);
+        }
+
+        // Validate that the input dimensions and color format match across all formats
+        for this_image in loaded_files.iter() {
+            let base_image = &loaded_files[0];
+
+            if base_image.dimensions() != this_image.dimensions() {
+                return Err(anyhow!("All input image dimensions must match!"));
+            }
+            if base_image.color() != this_image.color() {
+                return Err(anyhow!("All input image pixel formats must match!"));
+            }
+        }
+
+        // Once we've proven dimensions and color are uniform we can extract the common data to be
+        // used later
+        let color_type = loaded_files[0].color();
+        let base_width = loaded_files[0].width();
+        let base_height = loaded_files[0].height();
+        let max_mip_levels = u32::max(base_width, base_height) as f32;
+        let max_mip_levels = max_mip_levels.log2().floor() + 1.0;
+        let max_mip_levels = max_mip_levels as u32;
+
+        // If the user doesn't ask us to generate mip maps then we have to clamp to 1 level as we
+        // don't have any other mips to populate.
+        let level_num = if gen_mips { max_mip_levels as usize } else { 1 };
+
+        // Create the image array in the layout expected by the encoder to simplify our future
+        // processing code.
+        let layer_num = input_files.len();
+        let image_num = layer_num * level_num;
+        let mut images = vec![DynamicImage::ImageLuma8(ImageBuffer::new(0, 0)); image_num];
+        for (i, input_image) in loaded_files.into_iter().enumerate() {
+            let i = calculate_set_index(layer_num, level_num, i, 0);
+            images[i] = input_image;
+        }
 
         // Generate mipmaps if requested
-        let mut loaded = if gen_mips {
-            let mip_levels = u32::max(loaded.width(), loaded.height()) as f32;
-            let mip_levels = mip_levels.log2().floor() + 1.0;
-            let mip_levels = mip_levels as u32;
-            let mut chain = vec![loaded];
+        if gen_mips {
+            for layer in 0..layer_num {
+                for level in 1..level_num {
+                    let i = calculate_set_index(layer_num, level_num, layer, level - 1);
+                    let last = &images[i];
 
-            if mip_levels > 1 {
-                // The first mip is already filled by definition
-                for _ in 1..mip_levels {
-                    let last = chain.last().unwrap();
                     let new_width = (last.width() / 2).max(1);
                     let new_height = (last.height() / 2).max(1);
                     let mut next = last.resize_exact(new_width, new_height, mip_filter.into());
@@ -144,390 +213,220 @@ impl ISubcommand for Image2Ktx {
                         normalize_normal_map(&mut next)?;
                     }
 
-                    chain.push(next);
+                    let i = calculate_set_index(layer_num, level_num, layer, level);
+                    images[i] = next;
                 }
             }
-
-            chain
-        } else {
-            vec![loaded]
-        };
+        }
 
         // Setup mip state in common code to keep the match arms shorter
         let mut ktx = KtxDocumentDescription::new();
-        if gen_mips {
-            ktx.mip_levels(loaded.len() as u32);
-        } else {
-            ktx.mip_generate();
+
+        // Swizzle 3 channel formats up to 4 channels as there are almost zero GPUs on the planet
+        // that can sample from 3 channel formats
+        match color_type {
+            image::ColorType::L8 => {
+                // Intentional no-op
+            }
+            image::ColorType::La8 => {
+                // Intentional no-op
+            }
+            image::ColorType::Rgb8 => {
+                for layer in 0..layer_num {
+                    for level in 0..level_num {
+                        let i = calculate_set_index(layer_num, level_num, layer, level);
+                        let level = &mut images[i];
+
+                        let rgb = level.as_rgb8().unwrap();
+                        let swizzled = swizzle_rgb_to_rgba(
+                            rgb.as_raw().as_slice(),
+                            rgb.width(),
+                            rgb.height(),
+                            0xFF,
+                        );
+                        let swizzled =
+                            RgbaImage::from_vec(rgb.width(), rgb.height(), swizzled).unwrap();
+                        *level = DynamicImage::ImageRgba8(swizzled);
+                    }
+                }
+            }
+            image::ColorType::Rgba8 => {
+                // Intentional no-op
+            }
+            image::ColorType::L16 => {
+                // intentional no-op
+            }
+            image::ColorType::La16 => {
+                // intentional no-op
+            }
+            image::ColorType::Rgb16 => {
+                for layer in 0..layer_num {
+                    for level in 0..level_num {
+                        let i = calculate_set_index(layer_num, level_num, layer, level);
+                        let level = &mut images[i];
+
+                        let rgb = level.as_rgb16().unwrap();
+
+                        let swizzled = swizzle_rgb_to_rgba(
+                            rgb.as_raw().as_slice(),
+                            rgb.width(),
+                            rgb.height(),
+                            0xFF,
+                        );
+                        let swizzled: ImageBuffer<Rgba<u16>, Vec<u16>> =
+                            ImageBuffer::from_vec(rgb.width(), rgb.height(), swizzled).unwrap();
+                        *level = DynamicImage::ImageRgba16(swizzled);
+                    }
+                }
+            }
+            image::ColorType::Rgba16 => {
+                // intentional no-op
+            }
+            image::ColorType::Rgb32F => {
+                for layer in 0..layer_num {
+                    for level in 0..level_num {
+                        let i = calculate_set_index(layer_num, level_num, layer, level);
+                        let level = &mut images[i];
+
+                        let rgb = level.as_rgb32f().unwrap();
+
+                        let swizzled = swizzle_rgb_to_rgba(
+                            rgb.as_raw().as_slice(),
+                            rgb.width(),
+                            rgb.height(),
+                            1.0f32,
+                        );
+
+                        let swizzled: ImageBuffer<Rgba<f32>, Vec<f32>> =
+                            ImageBuffer::from_vec(rgb.width(), rgb.height(), swizzled).unwrap();
+                        *level = DynamicImage::ImageRgba32F(swizzled);
+                    }
+                }
+            }
+            image::ColorType::Rgba32F => {
+                // intentional no-op
+            }
+            _ => unimplemented!(),
+        }
+
+        // Now that our image aware conversions are done we drop down to raw buffer level.
+        let mut buffers = Vec::from_iter(images.into_iter().map(|v| match v {
+            DynamicImage::ImageLuma8(v) => DynamicBuffer::U8(v.into_raw()),
+            DynamicImage::ImageLumaA8(v) => DynamicBuffer::U8(v.into_raw()),
+            DynamicImage::ImageRgb8(v) => DynamicBuffer::U8(v.into_raw()),
+            DynamicImage::ImageRgba8(v) => DynamicBuffer::U8(v.into_raw()),
+            DynamicImage::ImageLuma16(v) => DynamicBuffer::U16(v.into_raw()),
+            DynamicImage::ImageLumaA16(v) => DynamicBuffer::U16(v.into_raw()),
+            DynamicImage::ImageRgb16(v) => DynamicBuffer::U16(v.into_raw()),
+            DynamicImage::ImageRgba16(v) => DynamicBuffer::U16(v.into_raw()),
+            DynamicImage::ImageRgb32F(v) => DynamicBuffer::F32(v.into_raw()),
+            DynamicImage::ImageRgba32F(v) => DynamicBuffer::F32(v.into_raw()),
+            _ => todo!(),
+        }));
+
+        // Perform any endian swap or per-channel conversions like dropping f32->f16
+        for buffer in buffers.iter_mut() {
+            match buffer {
+                DynamicBuffer::U8(_) => {
+                    // intentional no-op
+                }
+                DynamicBuffer::U16(v) => {
+                    for p in v.iter_mut() {
+                        *p = bytemuck::cast::<_, u16>(p.to_le_bytes());
+                    }
+                }
+                DynamicBuffer::F16(v) => {
+                    for p in v.iter_mut() {
+                        *p = bytemuck::cast::<_, f16>(p.to_le_bytes());
+                    }
+                }
+                v @ DynamicBuffer::F32(_) => {
+                    if let DynamicBuffer::F32(b) = v {
+                        if to_half {
+                            let converted = Vec::from_iter(b.iter().map(|v| {
+                                let v = f16::from_f32(*v);
+                                let v = bytemuck::cast::<_, f16>(v.to_le_bytes());
+                                v
+                            }));
+                            *v = DynamicBuffer::F16(converted);
+                        } else {
+                            let converted = Vec::from_iter(b.iter().map(|v| {
+                                let v = bytemuck::cast::<_, f32>(v.to_le_bytes());
+                                v
+                            }));
+                            *v = DynamicBuffer::F32(converted);
+                        }
+                    };
+                }
+            }
+        }
+
+        let mut image_references = Vec::new();
+        for buffer in buffers.iter() {
+            image_references.push(buffer.as_bytes());
         }
 
         match color_type {
             image::ColorType::L8 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R8_UNORM);
-
-                let mut levels = Vec::new();
-                for i in loaded.iter() {
-                    let i = i.as_luma8().unwrap();
-                    levels.push(i.as_raw().as_slice());
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::La8 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R8G8_UNORM);
-
-                let mut levels = Vec::new();
-                for i in loaded.iter() {
-                    let i = i.as_luma_alpha8().unwrap();
-                    levels.push(i.as_raw().as_slice());
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::Rgb8 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R8G8B8A8_UNORM);
-
-                let mut swizzled_levels = Vec::new();
-                for i in loaded.iter() {
-                    let i = i.as_rgb8().unwrap();
-
-                    let level =
-                        swizzle_rgb_to_rgba(i.as_raw().as_slice(), i.width(), i.height(), 0xFF);
-
-                    swizzled_levels.push(level);
-                }
-
-                let mut levels = Vec::new();
-                for i in swizzled_levels.iter() {
-                    levels.push(i.as_slice());
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::Rgba8 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R8G8B8A8_UNORM);
-
-                let mut levels = Vec::new();
-                for i in loaded.iter() {
-                    let i = i.as_rgba8().unwrap();
-                    levels.push(i.as_raw().as_slice());
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::L16 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R16_UNORM);
-
-                let mut levels = Vec::new();
-                for i in loaded.iter_mut() {
-                    let i = i.as_mut_luma16().unwrap();
-
-                    // byte swap to convert our BE to LE when needed
-                    if cfg!(target_endian = "big") {
-                        for p in i.pixels_mut() {
-                            p.0[0] = p.0[0].to_le();
-                        }
-                    }
-
-                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
-                    levels.push(level);
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::La16 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R16G16_UNORM);
-
-                let mut levels = Vec::new();
-                for i in loaded.iter_mut() {
-                    let i = i.as_mut_luma_alpha16().unwrap();
-
-                    // byte swap to convert our BE to LE when needed
-                    if cfg!(target_endian = "big") {
-                        for p in i.pixels_mut() {
-                            p.0[0] = p.0[0].to_le();
-                            p.0[1] = p.0[1].to_le();
-                        }
-                    }
-
-                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
-                    levels.push(level);
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::Rgb16 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R16G16B16A16_UNORM);
-
-                let mut swizzled_levels = Vec::new();
-                for i in loaded.iter_mut() {
-                    let i = i.as_mut_rgb16().unwrap();
-
-                    // byte swap to convert our BE to LE when needed
-                    if cfg!(target_endian = "big") {
-                        for p in i.pixels_mut() {
-                            p.0[0] = p.0[0].to_le();
-                            p.0[1] = p.0[1].to_le();
-                            p.0[2] = p.0[2].to_le();
-                        }
-                    }
-
-                    let level =
-                        swizzle_rgb_to_rgba(i.as_raw().as_slice(), i.width(), i.height(), 0xFFFF);
-
-                    swizzled_levels.push(level);
-                }
-
-                let mut levels = Vec::new();
-                for i in swizzled_levels.iter() {
-                    let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
-                    levels.push(level);
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::Rgba16 => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
                 ktx.format(VkFormat::R16G16B16A16_UNORM);
-
-                let mut levels = Vec::new();
-                for i in loaded.iter_mut() {
-                    let i = i.as_mut_rgba16().unwrap();
-
-                    // byte swap to convert our BE to LE when needed
-                    if cfg!(target_endian = "big") {
-                        for p in i.pixels_mut() {
-                            p.0[0] = p.0[0].to_le();
-                            p.0[1] = p.0[1].to_le();
-                            p.0[2] = p.0[2].to_le();
-                            p.0[3] = p.0[3].to_le();
-                        }
-                    }
-
-                    let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
-                    levels.push(level);
-                }
-
-                ktx.image_2d(base_width, base_height, &levels);
-
-                let mut writer = BufWriter::new(output_file);
-                ktx.write(&mut writer)?;
             }
             image::ColorType::Rgb32F => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
-                if to_half {
-                    ktx.format(VkFormat::R16G16B16A16_SFLOAT);
-
-                    let mut swizzled_levels = Vec::new();
-                    for i in loaded.iter_mut() {
-                        let i = i.as_rgb32f().unwrap();
-
-                        let halved = cast_f32_buffer_to_f16(i.as_raw());
-
-                        // Default value is 1.0f with a little endian swap if we're on a big endian
-                        // platform. All data must be in little endian order.
-                        let default_value = {
-                            let v = f16::from_f32(1.0);
-                            let v = v.to_le_bytes();
-                            bytemuck::cast::<_, f16>(v)
-                        };
-
-                        let level = swizzle_rgb_to_rgba(
-                            halved.as_slice(),
-                            i.width(),
-                            i.height(),
-                            default_value,
-                        );
-
-                        swizzled_levels.push(level);
-                    }
-
-                    let mut levels = Vec::new();
-                    for i in swizzled_levels.iter() {
-                        let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
-                        levels.push(level);
-                    }
-
-                    ktx.image_2d(base_width, base_height, &levels);
-
-                    let mut writer = BufWriter::new(output_file);
-                    ktx.write(&mut writer)?;
-                } else {
-                    ktx.format(VkFormat::R32G32B32A32_SFLOAT);
-
-                    let mut swizzled_levels = Vec::new();
-                    for i in loaded.iter_mut() {
-                        let i = i.as_mut_rgb32f().unwrap();
-
-                        // byte swap to convert our BE to LE when needed
-                        if cfg!(target_endian = "big") {
-                            for p in i.pixels_mut() {
-                                p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
-                                p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
-                                p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
-                            }
-                        }
-
-                        // Default value is 1.0f with a little endian swap if we're on a big endian
-                        // platform. All data must be in little endian order.
-                        let default_value = {
-                            let v = 1.0f32;
-                            let v = v.to_le_bytes();
-                            bytemuck::cast::<_, f32>(v)
-                        };
-
-                        let level = swizzle_rgb_to_rgba(
-                            i.as_raw().as_slice(),
-                            i.width(),
-                            i.height(),
-                            default_value,
-                        );
-
-                        swizzled_levels.push(level);
-                    }
-
-                    let mut levels = Vec::new();
-                    for i in swizzled_levels.iter() {
-                        let level = bytemuck::cast_slice::<_, u8>(i.as_slice());
-                        levels.push(level);
-                    }
-
-                    ktx.image_2d(base_width, base_height, &levels);
-
-                    let mut writer = BufWriter::new(output_file);
-                    ktx.write(&mut writer)?;
-                }
+                ktx.format(VkFormat::R16G16B16A16_SFLOAT);
             }
             image::ColorType::Rgba32F => {
-                let output_file = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&output)?;
-
-                if to_half {
-                    ktx.format(VkFormat::R16G16B16A16_SFLOAT);
-
-                    let mut halved_levels = Vec::new();
-                    for i in loaded.iter_mut() {
-                        let i = i.as_mut_rgba32f().unwrap();
-
-                        let halved = cast_f32_buffer_to_f16(i.as_raw());
-                        halved_levels.push(halved);
-                    }
-
-                    let mut levels = Vec::new();
-                    for halved in halved_levels.iter() {
-                        let level = bytemuck::cast_slice::<_, u8>(halved.as_slice());
-                        levels.push(level);
-                    }
-
-                    ktx.image_2d(base_width, base_height, &levels);
-
-                    let mut writer = BufWriter::new(output_file);
-                    ktx.write(&mut writer)?;
-                } else {
-                    ktx.format(VkFormat::R32G32B32A32_SFLOAT);
-
-                    let mut levels = Vec::new();
-                    for i in loaded.iter_mut() {
-                        let i = i.as_mut_rgba32f().unwrap();
-
-                        // byte swap to convert our BE to LE when needed
-                        if cfg!(target_endian = "big") {
-                            for p in i.pixels_mut() {
-                                p.0[0] = bytemuck::cast::<_, f32>(p.0[0].to_le_bytes());
-                                p.0[1] = bytemuck::cast::<_, f32>(p.0[1].to_le_bytes());
-                                p.0[2] = bytemuck::cast::<_, f32>(p.0[2].to_le_bytes());
-                                p.0[3] = bytemuck::cast::<_, f32>(p.0[3].to_le_bytes());
-                            }
-                        }
-
-                        let level = bytemuck::cast_slice::<_, u8>(i.as_raw().as_slice());
-                        levels.push(level);
-                    }
-
-                    ktx.image_2d(base_width, base_height, &levels);
-
-                    let mut writer = BufWriter::new(output_file);
-                    ktx.write(&mut writer)?;
-                }
+                ktx.format(VkFormat::R16G16B16A16_SFLOAT);
             }
-            _ => unimplemented!("Unknown Pixel Format"),
+            _ => todo!(),
         }
+
+        let output_file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&output)?;
+
+        match (is_cube, is_array) {
+            // cubemap array
+            (true, true) => {
+                ktx.cube_array(base_width, base_height, layer_num as u32 / 6, level_num as u32, &image_references);
+            },
+            // image array
+            (false, true) => {
+                ktx.image_2d_array(base_width, base_height, layer_num as u32, level_num as u32, &image_references);
+            },
+            // single cubemap
+            (true, false) => {
+                ktx.cube(base_width, base_height, level_num as u32, &image_references);
+            }
+            // single image
+            (false, false) => {
+                ktx.image_2d(base_width, base_height, level_num as u32, &image_references);
+            }
+        }
+
+        let mut writer = BufWriter::new(output_file);
+        ktx.write(&mut writer)?;
 
         Ok(())
     }
@@ -537,15 +436,22 @@ impl ISubcommand for Image2Ktx {
     }
 }
 
-fn cast_f32_buffer_to_f16(v: &[f32]) -> Vec<f16> {
-    Vec::from_iter(v.iter().map(|v| {
-        let v = f16::from_f32(*v);
-        if cfg!(target_endian = "big") {
-            bytemuck::cast::<_, f16>(v.to_le_bytes())
-        } else {
-            v
+enum DynamicBuffer {
+    U8(Vec<u8>),
+    U16(Vec<u16>),
+    F16(Vec<f16>),
+    F32(Vec<f32>),
+}
+
+impl DynamicBuffer {
+    fn as_bytes(&self) -> &[u8] {
+        match self {
+            DynamicBuffer::U8(items) => bytemuck::cast_slice::<u8, u8>(items.as_slice()),
+            DynamicBuffer::U16(items) => bytemuck::cast_slice::<u16, u8>(items.as_slice()),
+            DynamicBuffer::F16(items) => bytemuck::cast_slice::<f16, u8>(items.as_slice()),
+            DynamicBuffer::F32(items) => bytemuck::cast_slice::<f32, u8>(items.as_slice()),
         }
-    }))
+    }
 }
 
 fn swizzle_rgb_to_rgba<T: Copy + Clone>(
@@ -787,3 +693,39 @@ mod tests {
         }
     }
 }
+
+// TODO: Implement CPU Equirectangular -> Cube conversion using Rust scalar code and Intel ISPC
+//       code. We can base our sampling logic in the D3D11 spec: https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#7.18%20Texture%20Sampling
+//
+// # Important Part for Linear Sampling
+//
+// 7.18.8 Linear Sample Addressing
+//
+// Similar to the previous section, set aside how sampler state is configured and how mipmap LOD is chosen for now, and consider simply the task of linear sampling an Element from a particular miplevel of a Texture1D, given a scalar floating point texture coordinate in normalized space. Linear sampling in 1D selects the nearest two texels to the sample location and weights the texels based on the proximity of the sample location to them.
+//
+//     Given a 1D texture coordinate in normalized space U, assumed to be any float32 value.
+//     U is scaled by the Texture1D size, and 0.5f is subtracted. Call this scaledU.
+//     scaledU is converted to at least 16.8 Fixed Point(3.2.4.1). Call this fxpScaledU.
+//     The integer part of fxpScaledU is the chosen left texel. Call this tFloorU. Note that the conversion to Fixed Point(3.2.4.1) basically accomplished: tFloorU = floor(scaledU).
+//     The right texel, tCeilU is simply tFloorU + 1.
+//     The weight value wCeilU is assigned the fractional part of fxpScaledU, converted to float(3.2.4.2) (although using less than full float32 precision for computing and processing wCeilU and wFloorU is permitted).
+//     The weight value wFloorU is 1.0f - wCeilU.
+//     If tFloorU or tCeilU are out of range of the texture, D3D11_SAMPLER_STATE's AddressU mode is applied(7.18.9) to each individually.
+//     Since more than one texel is chosen, the single sample result is computed as:
+//
+//     texelFetch(tFloorU) * wFloorU +
+//     texelFetch( tCeilU) *  wCeilU
+//
+// The procedure described above applies to linear sampling of a given miplevel of a Texture2D as well:
+//
+//     Peform the texel selection to both U and V directions independently, producing 2 U texel locations and 2 V texel locations. Combined, these select 4 texels: (tFloorU,tFloorV), (tFloorU,tCeilV), (tCeilU,tFloorV), (tCeilU,tCeilV).
+//     There are also 4 weight values produced: wFloorU, wCeilU, wFloorV, wCeilV.
+//     The linear sample result is:
+//
+//     texelFetch(tFloorU,tFloorV) * wFloorU * wFloorV +
+//     texelFetch(tFloorU, tCeilV) * wFloorU *  wCeilV +
+//     texelFetch( tCeilU,tFloorV) *  wCeilU * wFloorV +
+//     texelFetch( tCeilU, tCeilV) *  wCeilU *  wCeilV
+//
+// Performing linear sampling of a miplevel of a Texture3D Resource extends the concepts described above to fetching of 8 texels.
+//

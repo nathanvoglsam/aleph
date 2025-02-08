@@ -32,8 +32,8 @@ use std::io::{Cursor, Read, Seek};
 use aleph_vk_format::VkFormat;
 
 use crate::{
-    DocumentType, KtxDocument, KtxDocumentDescription, KtxReadError, SuperCompressionScheme,
-    ENCODER_NAME,
+    calculate_set_index, DocumentType, KtxDocument, KtxDocumentDescription, KtxReadError,
+    SuperCompressionScheme, ENCODER_NAME,
 };
 
 #[test]
@@ -99,11 +99,7 @@ fn round_trip_document<R: Read + Seek>(
 
     let mut desc = KtxDocumentDescription::new();
     desc.format(doc.format());
-    if doc.requests_mip_generation() {
-        desc.mip_generate();
-    } else {
-        desc.mip_levels(doc.level_num());
-    }
+    desc.generate_mips(doc.requests_mip_generation());
 
     let mut output = Vec::new();
     match doc.document_type() {
@@ -113,7 +109,7 @@ fn round_trip_document<R: Read + Seek>(
                 let level = doc.get_level_info(i)?;
                 levels.push(&file[level.to_slice_range()]);
             }
-            desc.image_1d(doc.width(), &levels);
+            desc.image_1d(doc.width(), doc.level_num(), &levels);
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;
@@ -124,7 +120,7 @@ fn round_trip_document<R: Read + Seek>(
                 let level = doc.get_level_info(i)?;
                 levels.push(&file[level.to_slice_range()]);
             }
-            desc.image_2d(doc.width(), doc.height(), &levels);
+            desc.image_2d(doc.width(), doc.height(), doc.level_num(), &levels);
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;
@@ -135,44 +131,44 @@ fn round_trip_document<R: Read + Seek>(
                 let level = doc.get_level_info(i)?;
                 levels.push(&file[level.to_slice_range()]);
             }
-            desc.image_3d(doc.width(), doc.height(), doc.depth(), &levels);
+            desc.image_3d(
+                doc.width(),
+                doc.height(),
+                doc.depth(),
+                doc.level_num(),
+                &levels,
+            );
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;
         }
         DocumentType::Cube => {
-            let mut face_levels = [
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-                Vec::new(),
-            ];
+            let layer_num_real = doc.layer_num() as usize * 6;
 
-            for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i)?;
+            let image_num = doc.layer_num() as usize * doc.level_num() as usize * 6;
+            let mut images: Vec<&[u8]> = vec![&[]; image_num];
 
-                let face_size = level.size_uncompressed / 6;
+            for level_i in 0..doc.level_num() {
+                let level = doc.get_level_info(level_i)?;
 
-                for face in 0..6 {
-                    let face_offset = level.offset + (face_size * face);
-                    let face_end = face_offset + face_size;
-                    let face_range = face_offset as usize..face_end as usize;
-                    face_levels[face as usize].push(&file[face_range]);
+                let layer_size = level.size_uncompressed / layer_num_real as u64;
+
+                for layer in 0..layer_num_real {
+                    let layer_offset = level.offset + (layer_size * layer as u64);
+                    let layer_end = layer_offset + layer_size;
+                    let layer_range = layer_offset as usize..layer_end as usize;
+
+                    let i = calculate_set_index(
+                        layer_num_real,
+                        doc.level_num() as usize,
+                        layer as usize,
+                        level_i as usize,
+                    );
+                    images[i] = &file[layer_range];
                 }
             }
 
-            let faces = [
-                face_levels[0].as_slice(),
-                face_levels[1].as_slice(),
-                face_levels[2].as_slice(),
-                face_levels[3].as_slice(),
-                face_levels[4].as_slice(),
-                face_levels[5].as_slice(),
-            ];
-
-            desc.cube(doc.width(), doc.height(), faces);
+            desc.cube(doc.width(), doc.height(), doc.level_num(), &images);
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;
@@ -180,13 +176,11 @@ fn round_trip_document<R: Read + Seek>(
         DocumentType::Array1D => {
             let layer_num = doc.layer_num() as u64;
 
-            let mut layer_levels = Vec::new();
-            for _ in 0..layer_num {
-                layer_levels.push(Vec::new());
-            }
+            let image_num = doc.layer_num() as usize * doc.level_num() as usize;
+            let mut images: Vec<&[u8]> = vec![&[]; image_num];
 
-            for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i)?;
+            for level_i in 0..doc.level_num() {
+                let level = doc.get_level_info(level_i)?;
 
                 let layer_size = level.size_uncompressed / layer_num;
 
@@ -194,12 +188,18 @@ fn round_trip_document<R: Read + Seek>(
                     let layer_offset = level.offset + (layer_size * layer);
                     let layer_end = layer_offset + layer_size;
                     let layer_range = layer_offset as usize..layer_end as usize;
-                    layer_levels[layer as usize].push(&file[layer_range]);
+
+                    let i = calculate_set_index(
+                        doc.layer_num() as usize,
+                        doc.level_num() as usize,
+                        layer as usize,
+                        level_i as usize,
+                    );
+                    images[i] = &file[layer_range];
                 }
             }
 
-            let layers = Vec::from_iter(layer_levels.iter().map(|v| v.as_slice()));
-            desc.image_1d_array(doc.width(), &layers);
+            desc.image_1d_array(doc.width(), doc.layer_num(), doc.level_num(), &images);
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;
@@ -207,13 +207,11 @@ fn round_trip_document<R: Read + Seek>(
         DocumentType::Array2D => {
             let layer_num = doc.layer_num() as u64;
 
-            let mut layer_levels = Vec::new();
-            for _ in 0..layer_num {
-                layer_levels.push(Vec::new());
-            }
+            let image_num = doc.layer_num() as usize * doc.level_num() as usize;
+            let mut images: Vec<&[u8]> = vec![&[]; image_num];
 
-            for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i)?;
+            for level_i in 0..doc.level_num() {
+                let level = doc.get_level_info(level_i)?;
 
                 let layer_size = level.size_uncompressed / layer_num;
 
@@ -221,12 +219,24 @@ fn round_trip_document<R: Read + Seek>(
                     let layer_offset = level.offset + (layer_size * layer);
                     let layer_end = layer_offset + layer_size;
                     let layer_range = layer_offset as usize..layer_end as usize;
-                    layer_levels[layer as usize].push(&file[layer_range]);
+
+                    let i = calculate_set_index(
+                        doc.layer_num() as usize,
+                        doc.level_num() as usize,
+                        layer as usize,
+                        level_i as usize,
+                    );
+                    images[i] = &file[layer_range];
                 }
             }
 
-            let layers = Vec::from_iter(layer_levels.iter().map(|v| v.as_slice()));
-            desc.image_2d_array(doc.width(), doc.height(), &layers);
+            desc.image_2d_array(
+                doc.width(),
+                doc.height(),
+                doc.layer_num(),
+                doc.level_num(),
+                &images,
+            );
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;
@@ -234,13 +244,11 @@ fn round_trip_document<R: Read + Seek>(
         DocumentType::Array3D => {
             let layer_num = doc.layer_num() as u64;
 
-            let mut layer_levels = Vec::new();
-            for _ in 0..layer_num {
-                layer_levels.push(Vec::new());
-            }
+            let image_num = doc.layer_num() as usize * doc.level_num() as usize;
+            let mut images: Vec<&[u8]> = vec![&[]; image_num];
 
-            for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i)?;
+            for level_i in 0..doc.level_num() {
+                let level = doc.get_level_info(level_i)?;
 
                 let layer_size = level.size_uncompressed / layer_num;
 
@@ -248,62 +256,62 @@ fn round_trip_document<R: Read + Seek>(
                     let layer_offset = level.offset + (layer_size * layer);
                     let layer_end = layer_offset + layer_size;
                     let layer_range = layer_offset as usize..layer_end as usize;
-                    layer_levels[layer as usize].push(&file[layer_range]);
+
+                    let i = calculate_set_index(
+                        doc.layer_num() as usize,
+                        doc.level_num() as usize,
+                        layer as usize,
+                        level_i as usize,
+                    );
+                    images[i] = &file[layer_range];
                 }
             }
 
-            let layers = Vec::from_iter(layer_levels.iter().map(|v| v.as_slice()));
-            desc.image_3d_array(doc.width(), doc.height(), doc.depth(), &layers);
+            desc.image_3d_array(
+                doc.width(),
+                doc.height(),
+                doc.depth(),
+                doc.layer_num(),
+                doc.level_num(),
+                &images,
+            );
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;
         }
         DocumentType::CubeArray => {
-            let layer_num = doc.layer_num() as u64;
+            let layer_num_real = doc.layer_num() as usize * 6;
 
-            let mut layer_faces: Vec<[Vec<_>; 6]> = Vec::new();
-            for _ in 0..layer_num {
-                layer_faces.push([
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::new(),
-                ]);
-            }
+            let image_num = doc.layer_num() as usize * doc.level_num() as usize * 6;
+            let mut images: Vec<&[u8]> = vec![&[]; image_num];
 
-            for i in 0..doc.level_num() {
-                let level = doc.get_level_info(i)?;
+            for level_i in 0..doc.level_num() {
+                let level = doc.get_level_info(level_i)?;
 
-                let layer_size = level.size_uncompressed / layer_num;
-                let face_size = layer_size / 6;
+                let layer_size = level.size_uncompressed / layer_num_real as u64;
 
-                for layer in 0..layer_num {
-                    let layer_offset = level.offset + (layer_size * layer);
+                for layer in 0..layer_num_real {
+                    let layer_offset = level.offset + (layer_size * layer as u64);
                     let layer_end = layer_offset + layer_size;
                     let layer_range = layer_offset as usize..layer_end as usize;
-                    let layer_bytes = &file[layer_range];
-                    for face in 0..6 {
-                        let face_offset = face_size * face;
-                        let face_end = face_offset + face_size;
-                        let face_range = face_offset as usize..face_end as usize;
-                        layer_faces[layer as usize][face as usize].push(&layer_bytes[face_range]);
-                    }
+
+                    let i = calculate_set_index(
+                        layer_num_real,
+                        doc.level_num() as usize,
+                        layer as usize,
+                        level_i as usize,
+                    );
+                    images[i] = &file[layer_range];
                 }
             }
 
-            let layers = Vec::from_iter(layer_faces.iter().map(|v| {
-                [
-                    v[0].as_slice(),
-                    v[1].as_slice(),
-                    v[2].as_slice(),
-                    v[3].as_slice(),
-                    v[4].as_slice(),
-                    v[5].as_slice(),
-                ]
-            }));
-            desc.cube_array(doc.width(), doc.height(), layers.as_slice());
+            desc.cube_array(
+                doc.width(),
+                doc.height(),
+                doc.layer_num(),
+                doc.level_num(),
+                &images,
+            );
             desc.write(&mut output)?;
 
             check_round_trip(file, output, doc)?;

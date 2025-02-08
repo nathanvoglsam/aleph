@@ -36,7 +36,7 @@ use std::num::NonZero;
 use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, WriteBytesExt};
-use num_integer::lcm;
+use num_integer::{lcm, Integer};
 
 use crate::document::FILE_IDENTIFIER;
 use crate::{format_type_size, SuperCompressionScheme};
@@ -49,7 +49,8 @@ pub struct KtxDocumentDescription<'a> {
     height: u32,
     depth: u32,
     format: VkFormat,
-    level_num: LevelNum,
+    generate_mips: bool,
+    level_num: u32,
     kvd: KeyValueEntries<'a>,
     doc_type: DocumentTypeDescription<'a>,
 }
@@ -64,11 +65,12 @@ impl<'a> KtxDocumentDescription<'a> {
             height: 0,
             depth: 0,
             format: VkFormat::UNDEFINED,
-            level_num: LevelNum::Generate,
+            generate_mips: false,
+            level_num: 0,
             kvd: KeyValueEntries {
                 entries: &DEFAULT_KVD,
             },
-            doc_type: DocumentTypeDescription::Image1D { levels: &[] },
+            doc_type: DocumentTypeDescription::Image1D { images: &[] },
         }
     }
 
@@ -85,41 +87,59 @@ impl<'a> KtxDocumentDescription<'a> {
         self
     }
 
-    /// Declares that the file will contain exactly the given number of mip levels, and that the
-    /// reader should _not_ generate any more.
-    pub fn mip_levels(&mut self, levels: u32) -> &mut Self {
-        assert_ne!(levels, 0);
-        self.level_num = LevelNum::Explicit(NonZero::new(levels).unwrap());
-        self
-    }
-
     /// Declares that the file should only store the single, highest detail mip and flag to readers
     /// that they should generate the remainder of the mip chain themselves.
-    pub fn mip_generate(&mut self) -> &mut Self {
-        self.level_num = LevelNum::Generate;
+    pub fn generate_mips(&mut self, yes: bool) -> &mut Self {
+        self.generate_mips = yes;
         self
     }
 
-    pub fn image_1d(&mut self, width: u32, levels: MipChainRef<'a>) -> &mut Self {
+    pub fn image_1d(&mut self, width: u32, level_num: u32, images: ImageSet<'a>) -> &mut Self {
         assert_ne!(width, 0);
+        assert_ne!(level_num, 0);
+        assert_eq!(level_num as usize, images.len());
+
+        self.level_num = level_num;
         self.width = width;
-        self.doc_type = DocumentTypeDescription::Image1D { levels };
+        self.doc_type = DocumentTypeDescription::Image1D { images };
         self
     }
 
-    pub fn image_1d_array(&mut self, width: u32, layers: &'a [MipChainRef<'a>]) -> &mut Self {
+    pub fn image_1d_array(
+        &mut self,
+        width: u32,
+        layer_num: u32,
+        level_num: u32,
+        images: ImageSet<'a>,
+    ) -> &mut Self {
         assert_ne!(width, 0);
+        assert_ne!(level_num, 0);
+        assert_ne!(layer_num, 0);
+
+        let required_image_num = layer_num as usize * level_num as usize;
+        assert_eq!(required_image_num, images.len());
+
+        self.level_num = level_num;
         self.width = width;
-        self.doc_type = DocumentTypeDescription::Array1D { layers };
+        self.doc_type = DocumentTypeDescription::Array1D { layer_num, images };
         self
     }
 
-    pub fn image_2d(&mut self, width: u32, height: u32, levels: MipChainRef<'a>) -> &mut Self {
+    pub fn image_2d(
+        &mut self,
+        width: u32,
+        height: u32,
+        level_num: u32,
+        images: ImageSet<'a>,
+    ) -> &mut Self {
         assert_ne!(width, 0);
         assert_ne!(height, 0);
+        assert_ne!(level_num, 0);
+        assert_eq!(level_num as usize, images.len());
+        self.level_num = level_num;
         self.width = width;
         self.height = height;
-        self.doc_type = DocumentTypeDescription::Image2D { levels };
+        self.doc_type = DocumentTypeDescription::Image2D { images };
         self
     }
 
@@ -127,13 +147,22 @@ impl<'a> KtxDocumentDescription<'a> {
         &mut self,
         width: u32,
         height: u32,
-        layers: &'a [MipChainRef<'a>],
+        layer_num: u32,
+        level_num: u32,
+        images: ImageSet<'a>,
     ) -> &mut Self {
         assert_ne!(width, 0);
         assert_ne!(height, 0);
+        assert_ne!(level_num, 0);
+        assert_ne!(layer_num, 0);
+
+        let required_image_num = layer_num as usize * level_num as usize;
+        assert_eq!(required_image_num, images.len());
+
+        self.level_num = level_num;
         self.width = width;
         self.height = height;
-        self.doc_type = DocumentTypeDescription::Array2D { layers };
+        self.doc_type = DocumentTypeDescription::Array2D { layer_num, images };
         self
     }
 
@@ -142,15 +171,19 @@ impl<'a> KtxDocumentDescription<'a> {
         width: u32,
         height: u32,
         depth: u32,
-        levels: MipChainRef<'a>,
+        level_num: u32,
+        images: ImageSet<'a>,
     ) -> &mut Self {
         assert_ne!(width, 0);
         assert_ne!(height, 0);
         assert_ne!(depth, 0);
+        assert_ne!(level_num, 0);
+        assert_eq!(level_num as usize, images.len());
+        self.level_num = level_num;
         self.width = width;
         self.height = height;
         self.depth = depth;
-        self.doc_type = DocumentTypeDescription::Image3D { levels };
+        self.doc_type = DocumentTypeDescription::Image3D { images };
         self
     }
 
@@ -159,24 +192,45 @@ impl<'a> KtxDocumentDescription<'a> {
         width: u32,
         height: u32,
         depth: u32,
-        layers: &'a [MipChainRef<'a>],
+        layer_num: u32,
+        level_num: u32,
+        images: ImageSet<'a>,
     ) -> &mut Self {
         assert_ne!(width, 0);
         assert_ne!(height, 0);
         assert_ne!(depth, 0);
+        assert_ne!(level_num, 0);
+        assert_ne!(layer_num, 0);
+
+        let required_image_num = layer_num as usize * level_num as usize;
+        assert_eq!(required_image_num, images.len());
+
+        self.level_num = level_num;
         self.width = width;
         self.height = height;
         self.depth = depth;
-        self.doc_type = DocumentTypeDescription::Array3D { layers };
+        self.doc_type = DocumentTypeDescription::Array3D { layer_num, images };
         self
     }
 
-    pub fn cube(&mut self, width: u32, height: u32, faces: [MipChainRef<'a>; 6]) -> &mut Self {
+    pub fn cube(
+        &mut self,
+        width: u32,
+        height: u32,
+        level_num: u32,
+        images: ImageSet<'a>,
+    ) -> &mut Self {
         assert_ne!(width, 0);
         assert_ne!(height, 0);
+        assert_ne!(level_num, 0);
+
+        let required_image_num = 6 * level_num as usize;
+        assert_eq!(required_image_num, images.len());
+
+        self.level_num = level_num;
         self.width = width;
         self.height = height;
-        self.doc_type = DocumentTypeDescription::Cube { faces };
+        self.doc_type = DocumentTypeDescription::Cube { images };
         self
     }
 
@@ -184,13 +238,22 @@ impl<'a> KtxDocumentDescription<'a> {
         &mut self,
         width: u32,
         height: u32,
-        layers: &'a [[MipChainRef<'a>; 6]],
+        layer_num: u32,
+        level_num: u32,
+        images: ImageSet<'a>,
     ) -> &mut Self {
         assert_ne!(width, 0);
         assert_ne!(height, 0);
+        assert_ne!(level_num, 0);
+        assert_ne!(layer_num, 0);
+
+        let required_image_num = layer_num as usize * 6 * level_num as usize;
+        assert_eq!(required_image_num, images.len());
+
+        self.level_num = level_num;
         self.width = width;
         self.height = height;
-        self.doc_type = DocumentTypeDescription::CubeArray { layers };
+        self.doc_type = DocumentTypeDescription::CubeArray { layer_num, images };
         self
     }
 
@@ -212,7 +275,7 @@ impl<'a> KtxDocumentDescription<'a> {
         // The DFD offset is easy to calculate as it's simply the size of the header + size of the
         // level index. The level index is simply 3 u64 values per level stored so we can calculate
         // it all up front.
-        let level_num = self.level_num.storage_level_num() as usize;
+        let level_num = self.level_num as usize;
         let level_index_size = 3 * size_of::<u64>() * level_num;
         let dfd_offset = HEADER_SIZE + level_index_size;
         let dfd_offset: u32 = dfd_offset.try_into().expect("DFD offset overflows u32!");
@@ -243,7 +306,7 @@ impl<'a> KtxDocumentDescription<'a> {
         dst.write_u32::<LittleEndian>(self.depth)?;
         dst.write_u32::<LittleEndian>(self.doc_type.encoded_layer_count())?;
         dst.write_u32::<LittleEndian>(self.doc_type.encoded_face_count())?;
-        dst.write_u32::<LittleEndian>(self.level_num.encoded_level_num())?;
+        dst.write_u32::<LittleEndian>(self.level_num as u32)?;
         dst.write_u32::<LittleEndian>(SuperCompressionScheme::NONE.0)?;
         dst.write_u32::<LittleEndian>(dfd_offset)?;
         dst.write_u32::<LittleEndian>(dfd_bytes)?;
@@ -283,11 +346,11 @@ impl<'a> KtxDocumentDescription<'a> {
 
         let mut accum = data_base_offset as u64;
         match self.doc_type {
-            DocumentTypeDescription::Image1D { levels }
-            | DocumentTypeDescription::Image2D { levels }
-            | DocumentTypeDescription::Image3D { levels } => {
+            DocumentTypeDescription::Image1D { images }
+            | DocumentTypeDescription::Image2D { images }
+            | DocumentTypeDescription::Image3D { images } => {
                 for level_i in (0..level_num).into_iter().rev() {
-                    let level = &levels[level_i];
+                    let level = &images[level_i];
 
                     // Forward align the level to the next mip_padding boundary and write mip
                     // padding bytes
@@ -304,7 +367,7 @@ impl<'a> KtxDocumentDescription<'a> {
                     accum = accum + level.len() as u64;
                 }
             }
-            DocumentTypeDescription::Cube { faces } => {
+            DocumentTypeDescription::Cube { images } => {
                 for level_i in (0..level_num).into_iter().rev() {
                     // Forward align the level to the next mip_padding boundary and write mip
                     // padding bytes
@@ -314,8 +377,9 @@ impl<'a> KtxDocumentDescription<'a> {
                     }
                     accum = accum + padding;
 
-                    for face in faces.iter() {
-                        let level = &face[level_i];
+                    for face_i in 0..6 {
+                        let i = calculate_set_index(6, level_num, face_i, level_i);
+                        let level = images[i];
 
                         // Write all the level data
                         dst.write_all(level)?;
@@ -325,9 +389,9 @@ impl<'a> KtxDocumentDescription<'a> {
                     }
                 }
             }
-            DocumentTypeDescription::Array1D { layers }
-            | DocumentTypeDescription::Array2D { layers }
-            | DocumentTypeDescription::Array3D { layers } => {
+            DocumentTypeDescription::Array1D { layer_num, images }
+            | DocumentTypeDescription::Array2D { layer_num, images }
+            | DocumentTypeDescription::Array3D { layer_num, images } => {
                 for level_i in (0..level_num).into_iter().rev() {
                     // Forward align the level to the next mip_padding boundary and write mip
                     // padding bytes
@@ -337,8 +401,10 @@ impl<'a> KtxDocumentDescription<'a> {
                     }
                     accum = accum + padding;
 
-                    for layer in layers.iter() {
-                        let level = &layer[level_i];
+                    for layer_i in 0..layer_num as usize {
+                        let i =
+                            calculate_set_index(layer_num as usize, level_num, layer_i, level_i);
+                        let level = images[i];
 
                         // Write all the level data
                         dst.write_all(level)?;
@@ -348,7 +414,8 @@ impl<'a> KtxDocumentDescription<'a> {
                     }
                 }
             }
-            DocumentTypeDescription::CubeArray { layers } => {
+            DocumentTypeDescription::CubeArray { layer_num, images } => {
+                let layer_num_real = layer_num as usize * 6;
                 for level_i in (0..level_num).into_iter().rev() {
                     // Forward align the level to the next mip_padding boundary and write mip
                     // padding bytes
@@ -358,16 +425,15 @@ impl<'a> KtxDocumentDescription<'a> {
                     }
                     accum = accum + padding;
 
-                    for layer in layers.iter().copied() {
-                        for face in layer {
-                            let level = &face[level_i];
+                    for layer_i in 0..layer_num_real {
+                        let i = calculate_set_index(layer_num_real, level_num, layer_i, level_i);
+                        let level = images[i];
 
-                            // Write all the level data
-                            dst.write_all(level)?;
+                        // Write all the level data
+                        dst.write_all(level)?;
 
-                            // And push the offset along over the written data
-                            accum = accum + level.len() as u64;
-                        }
+                        // And push the offset along over the written data
+                        accum = accum + level.len() as u64;
                     }
                 }
             }
@@ -380,7 +446,7 @@ impl<'a> KtxDocumentDescription<'a> {
         assert_ne!(self.format, VkFormat::UNDEFINED);
         assert!(self.format.is_known());
         assert!(
-            !(self.format.is_block_compressed() && self.level_num.is_generate()),
+            !(self.format.is_block_compressed() && self.generate_mips),
             "It is illegal to request mip generation for block compressed formats"
         );
 
@@ -412,29 +478,45 @@ impl<'a> KtxDocumentDescription<'a> {
             );
         }
 
+        assert_ne!(self.level_num, 0);
+        if self.generate_mips {
+            assert_eq!(self.level_num, 1);
+        }
+
+        #[allow(unstable_name_collisions)]
         match self.doc_type {
-            DocumentTypeDescription::Image1D { levels }
-            | DocumentTypeDescription::Image2D { levels }
-            | DocumentTypeDescription::Image3D { levels } => {
-                self.validate_levels(levels, (bw, bh, bd), texel_block_size);
+            DocumentTypeDescription::Image1D { images }
+            | DocumentTypeDescription::Image2D { images }
+            | DocumentTypeDescription::Image3D { images } => {
+                assert_ne!(images.len(), 0);
+                assert_eq!(images.len(), self.level_num as usize);
+                self.validate_levels(images, (bw, bh, bd), texel_block_size);
             }
-            DocumentTypeDescription::Cube { faces } => {
-                for face in faces.iter().copied() {
-                    self.validate_levels(face, (bw, bh, bd), texel_block_size);
+            DocumentTypeDescription::Cube { images } => {
+                assert_ne!(images.len(), 0);
+                assert!(images.len().is_multiple_of(&6));
+                assert!(images.len().is_multiple_of(&(self.level_num as usize)));
+                for layer_levels in images.chunks_exact(self.level_num as usize) {
+                    self.validate_levels(layer_levels, (bw, bh, bd), texel_block_size);
                 }
             }
-            DocumentTypeDescription::Array1D { layers }
-            | DocumentTypeDescription::Array2D { layers }
-            | DocumentTypeDescription::Array3D { layers } => {
-                for layer in layers.iter().copied() {
-                    self.validate_levels(layer, (bw, bh, bd), texel_block_size);
+            DocumentTypeDescription::Array1D { layer_num, images }
+            | DocumentTypeDescription::Array2D { layer_num, images }
+            | DocumentTypeDescription::Array3D { layer_num, images } => {
+                assert_ne!(layer_num, 0);
+                assert_ne!(images.len(), 0);
+                assert!(images.len().is_multiple_of(&(self.level_num as usize)));
+                for layer_levels in images.chunks_exact(self.level_num as usize) {
+                    self.validate_levels(layer_levels, (bw, bh, bd), texel_block_size);
                 }
             }
-            DocumentTypeDescription::CubeArray { layers } => {
-                for layer in layers.iter().copied() {
-                    for face in layer {
-                        self.validate_levels(face, (bw, bh, bd), texel_block_size);
-                    }
+            DocumentTypeDescription::CubeArray { layer_num, images } => {
+                assert_ne!(layer_num, 0);
+                assert_ne!(images.len(), 0);
+                assert!(images.len().is_multiple_of(&6));
+                assert!(images.len().is_multiple_of(&(self.level_num as usize)));
+                for layer_levels in images.chunks_exact(self.level_num as usize) {
+                    self.validate_levels(layer_levels, (bw, bh, bd), texel_block_size);
                 }
             }
         }
@@ -442,19 +524,21 @@ impl<'a> KtxDocumentDescription<'a> {
 
     fn validate_levels(
         &self,
-        levels: &[&[u8]],
+        images: &[&[u8]],
         (bw, bh, bd): (u32, u32, u32),
         texel_block_size: usize,
     ) {
-        let store_num = self.level_num.storage_level_num() as usize;
-        let got_num = levels.len();
+        assert_ne!(self.level_num, 0);
+
+        let store_num = self.level_num as usize;
+        let got_num = images.len();
         assert_eq!(
             store_num, got_num,
             "Must provide exactly '{}' mip levels to encode the image. Got '{}'",
             store_num, got_num
         );
 
-        for (i, level) in levels.iter().enumerate() {
+        for (i, level) in images.iter().enumerate() {
             let storage_width = (self.width.max(1) >> i).max(1);
             let storage_height = (self.height.max(1) >> i).max(1);
             let storage_depth = (self.depth.max(1) >> i).max(1);
@@ -465,7 +549,7 @@ impl<'a> KtxDocumentDescription<'a> {
             assert_eq!(level.len(), expected_mip_size);
         }
 
-        for window in levels.windows(2) {
+        for window in images.windows(2) {
             let bigger = window[0];
             let smaller = window[1];
             assert!(
@@ -525,20 +609,98 @@ impl LevelNum {
     }
 }
 
-/// A reference to the 'n' level mip chain of an image
-pub type MipChainRef<'a> = &'a [&'a [u8]];
+/// A type alias for an array of buffer references. An [`ImageSet`] has a well defined order for how
+/// the input images should be ordered in an image set.
+///
+/// # Singular 1D/2D/3D Image
+///
+/// A single image set is super simple. It's just a slice with length 1 to the image data.
+///
+/// # Mipmapped 1D/2D/3D Image
+///
+/// A mip mapped image is the next simplest case. Logically we're still encoding a single image,
+/// just including the mip chain. This case should be ordered from such that set[0] = mip0,
+/// set[1] = mip[1], etc...
+///
+/// # Array 1D/2D/3D Image
+///
+/// This is very similar to the mip-mapped non-array case. The same ordering is expected:
+/// set[0] = arr[0], set[1] = arr[1], etc...
+///
+/// # Mipmapped Array 1D/2D/3D Image
+///
+/// This is the most complicated case. The set of images has multiple levels that need to be encoded
+/// correctly for the image to come out correctly. We use a different order to how KTX actually
+/// encodes the data into the file that is easier to work with compared to easy to serialize.
+///
+/// `set.len()` must be equal to `image_count * mip_levels` such that there is a buffer reference
+/// for each image in the array, and the associated mips.
+///
+/// The data is ordered like a topological sort of the hierarchy of `array layer -> mip level`. We
+/// order the array such that, given an array of 4 images with 2 mip levels:
+///
+/// - set[0] = arr[0].mip[0]
+/// - set[0] = arr[0].mip[1]
+/// - set[0] = arr[1].mip[0]
+/// - set[0] = arr[1].mip[1]
+/// - set[0] = arr[2].mip[0]
+/// - set[0] = arr[2].mip[1]
+/// - set[0] = arr[3].mip[0]
+/// - set[0] = arr[3].mip[1]
+///
+/// # Cube Maps
+///
+/// Cube maps are just a special case of array texture, mipmapped or otherwise, where the array
+/// length is required to be a multiple of 6. A single cube-map is just an array of 6 images with
+/// a well-known ordering. A cube-map array is just an array image where the array length is always
+/// a multiple of 6, and the cube array entries are stored one after the other.
+pub type ImageSet<'a> = &'a [&'a [u8]];
 
-pub type CubeFacesRef<'a> = [MipChainRef<'a>; 6];
+/// Calculates the index into an [`ImageSet`], assuming the given number of layers and levels in
+/// the set, for the given `layer` and `level`.
+pub fn calculate_set_index(
+    layer_num: usize,
+    level_num: usize,
+    layer: usize,
+    level: usize,
+) -> usize {
+    assert!(layer < layer_num);
+    assert!(level < level_num);
+
+    let i = layer * level_num;
+    let i = i + level;
+    i
+}
 
 enum DocumentTypeDescription<'a> {
-    Image1D { levels: MipChainRef<'a> },
-    Image2D { levels: MipChainRef<'a> },
-    Image3D { levels: MipChainRef<'a> },
-    Cube { faces: CubeFacesRef<'a> },
-    Array1D { layers: &'a [MipChainRef<'a>] },
-    Array2D { layers: &'a [MipChainRef<'a>] },
-    Array3D { layers: &'a [MipChainRef<'a>] },
-    CubeArray { layers: &'a [CubeFacesRef<'a>] },
+    Image1D {
+        images: ImageSet<'a>,
+    },
+    Image2D {
+        images: ImageSet<'a>,
+    },
+    Image3D {
+        images: ImageSet<'a>,
+    },
+    Cube {
+        images: ImageSet<'a>,
+    },
+    Array1D {
+        layer_num: u32,
+        images: ImageSet<'a>,
+    },
+    Array2D {
+        layer_num: u32,
+        images: ImageSet<'a>,
+    },
+    Array3D {
+        layer_num: u32,
+        images: ImageSet<'a>,
+    },
+    CubeArray {
+        layer_num: u32,
+        images: ImageSet<'a>,
+    },
 }
 
 impl<'a> DocumentTypeDescription<'a> {
@@ -548,10 +710,10 @@ impl<'a> DocumentTypeDescription<'a> {
             DocumentTypeDescription::Image2D { .. } => 0,
             DocumentTypeDescription::Image3D { .. } => 0,
             DocumentTypeDescription::Cube { .. } => 0,
-            DocumentTypeDescription::Array1D { layers } => layers.len() as u32,
-            DocumentTypeDescription::Array2D { layers } => layers.len() as u32,
-            DocumentTypeDescription::Array3D { layers } => layers.len() as u32,
-            DocumentTypeDescription::CubeArray { layers } => layers.len() as u32,
+            DocumentTypeDescription::Array1D { layer_num, .. } => *layer_num,
+            DocumentTypeDescription::Array2D { layer_num, .. } => *layer_num,
+            DocumentTypeDescription::Array3D { layer_num, .. } => *layer_num,
+            DocumentTypeDescription::CubeArray { layer_num, .. } => *layer_num,
         }
     }
 
@@ -596,40 +758,48 @@ impl<'a> DocumentTypeDescription<'a> {
 
         let mut level_index = [(0u64, 0u64); 32];
         match self {
-            DocumentTypeDescription::Image1D { levels }
-            | DocumentTypeDescription::Image2D { levels }
-            | DocumentTypeDescription::Image3D { levels } => {
+            DocumentTypeDescription::Image1D { images }
+            | DocumentTypeDescription::Image2D { images }
+            | DocumentTypeDescription::Image3D { images } => {
                 // Pass 1, fill out the length for each level in order from biggest to smallest
                 for level_i in 0..level_num {
-                    level_index[level_i].1 = levels[level_i].len() as u64;
+                    level_index[level_i].1 = images[level_i].len() as u64;
                 }
             }
-            DocumentTypeDescription::Cube { faces } => {
+            DocumentTypeDescription::Cube { images } => {
                 for level_i in 0..level_num {
-                    // Sum the 'i'th level of each face
-                    let size = faces.iter().map(|v| v[level_i].len() as u64).sum();
+                    let mut size = 0u64;
+                    for face_i in 0..6 {
+                        let i = calculate_set_index(6, level_num, face_i, level_i);
+                        let level = images[i];
+                        size += level.len() as u64;
+                    }
                     level_index[level_i].1 = size;
                 }
             }
-            DocumentTypeDescription::Array1D { layers }
-            | DocumentTypeDescription::Array2D { layers }
-            | DocumentTypeDescription::Array3D { layers } => {
+            DocumentTypeDescription::Array1D { layer_num, images }
+            | DocumentTypeDescription::Array2D { layer_num, images }
+            | DocumentTypeDescription::Array3D { layer_num, images } => {
                 for level_i in 0..level_num {
-                    // Sum the 'i'th level of each face
-                    let size = layers.iter().map(|v| v[level_i].len() as u64).sum();
+                    let mut size = 0u64;
+                    for layer_i in 0..*layer_num as usize {
+                        let i =
+                            calculate_set_index(*layer_num as usize, level_num, layer_i, level_i);
+                        let level = images[i];
+                        size += level.len() as u64;
+                    }
                     level_index[level_i].1 = size;
                 }
             }
-            DocumentTypeDescription::CubeArray { layers } => {
+            DocumentTypeDescription::CubeArray { layer_num, images } => {
+                let layer_num_real = *layer_num as usize * 6;
                 for level_i in 0..level_num {
-                    // Sum the 'i'th level of each face+layer
-                    let size = layers
-                        .iter()
-                        .map(|faces| {
-                            let size: u64 = faces.iter().map(|v| v[level_i].len() as u64).sum();
-                            size
-                        })
-                        .sum();
+                    let mut size = 0u64;
+                    for layer_i in 0..layer_num_real {
+                        let i = calculate_set_index(layer_num_real, level_num, layer_i, level_i);
+                        let level = images[i];
+                        size += level.len() as u64;
+                    }
                     level_index[level_i].1 = size;
                 }
             }
