@@ -331,13 +331,17 @@ impl ISubcommand for Image2Ktx {
                     // intentional no-op
                 }
                 DynamicBuffer::U16(v) => {
-                    for p in v.iter_mut() {
-                        *p = bytemuck::cast::<_, u16>(p.to_le_bytes());
+                    if cfg!(target_endian = "big") {
+                        for p in v.iter_mut() {
+                            *p = bytemuck::cast::<_, u16>(p.to_le_bytes());
+                        }
                     }
                 }
                 DynamicBuffer::F16(v) => {
-                    for p in v.iter_mut() {
-                        *p = bytemuck::cast::<_, f16>(p.to_le_bytes());
+                    if cfg!(target_endian = "big") {
+                        for p in v.iter_mut() {
+                            *p = bytemuck::cast::<_, f16>(p.to_le_bytes());
+                        }
                     }
                 }
                 v @ DynamicBuffer::F32(_) => {
@@ -350,11 +354,11 @@ impl ISubcommand for Image2Ktx {
                             }));
                             *v = DynamicBuffer::F16(converted);
                         } else {
-                            let converted = Vec::from_iter(b.iter().map(|v| {
-                                let v = bytemuck::cast::<_, f32>(v.to_le_bytes());
-                                v
-                            }));
-                            *v = DynamicBuffer::F32(converted);
+                            if cfg!(target_endian = "big") {
+                                for p in b.iter_mut() {
+                                    *p = bytemuck::cast::<_, f32>(p.to_le_bytes());
+                                }
+                            }
                         }
                     };
                 }
