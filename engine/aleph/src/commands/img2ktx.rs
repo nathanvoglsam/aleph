@@ -409,18 +409,22 @@ impl ISubcommand for Image2Ktx {
         match (is_cube, is_array) {
             // cubemap array
             (true, true) => {
+                log::info!("Writing Cube Array with '{layer_num}' images.");
                 ktx.cube_array(base_width, base_height, layer_num as u32 / 6, level_num as u32, &image_references);
             },
             // image array
             (false, true) => {
+                log::info!("Writing Image Array with '{layer_num}' images.");
                 ktx.image_2d_array(base_width, base_height, layer_num as u32, level_num as u32, &image_references);
             },
             // single cubemap
             (true, false) => {
+                log::info!("Writing Cube");
                 ktx.cube(base_width, base_height, level_num as u32, &image_references);
             }
             // single image
             (false, false) => {
+                log::info!("Writing Image");
                 ktx.image_2d(base_width, base_height, level_num as u32, &image_references);
             }
         }
