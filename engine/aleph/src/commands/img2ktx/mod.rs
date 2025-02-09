@@ -334,10 +334,6 @@ impl ISubcommand for Image2Ktx {
             _ => unimplemented!(),
         }
 
-        if equi_to_cube {
-            ktx.format(VkFormat::R32G32B32A32_SFLOAT);
-        }
-
         // If we've converted from an equirectangular map to a cube map then we need to change the
         // output resolution to the chosen cube face dimensions instead of the source image
         // dimensions
