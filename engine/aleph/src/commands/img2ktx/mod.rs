@@ -94,6 +94,14 @@ impl ISubcommand for Image2Ktx {
             .long("equi-to-cube")
             .help("Convert an equirectangular map to a cube map.")
             .long_help("Declares that the input is an equirectangular environment map, and we should convert it to a cube map.");
+        let cube_size = Arg::new("cube-size")
+            .long("cube-size")
+            .help("The width/height of the cube faces to output when generating cube maps.")
+            .long_help("The width/height, in texels, of the cube faces to output when generating cube maps. Use with --equi-to-cube, etc.This only applies when synthesizing a cube map from a non-cube input. Defaults to 512.")
+            .default_value("bilinear")
+            .value_parser(clap::value_parser!(u32))
+            .default_value("512")
+            .required(false);
         let is_normal_map = Arg::new("is-normal-map")
             .action(ArgAction::SetTrue)
             .short('n')
@@ -122,6 +130,7 @@ impl ISubcommand for Image2Ktx {
             .arg(to_half)
             .arg(is_cube)
             .arg(equi_to_cube)
+            .arg(cube_size)
     }
 
     fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -151,6 +160,8 @@ impl ISubcommand for Image2Ktx {
         let mip_filter = mip_filter.to_lowercase();
         let mip_filter = parse_filter(&mip_filter)
             .ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
+
+        let cube_size: u32 = matches.remove_one("cube-size").unwrap();
 
         // Make sure we have enough input images to encode a cubemap(array)
         if is_cube {
@@ -246,7 +257,7 @@ impl ISubcommand for Image2Ktx {
         images.validate_image_types();
 
         if equi_to_cube {
-            let face_dimensions = UVec2::new(1024, 1024);
+            let face_dimensions = UVec2::new(cube_size, cube_size);
             images.equirectangular_to_cube_map(face_dimensions)?;
         }
 
