@@ -66,6 +66,9 @@ impl DynamicBuffer {
             DynamicBuffer::F32(v) => {
                 let old = std::mem::take(v);
                 let new = Vec::from_iter(old.into_iter().map(|v| {
+                    const MIN: f32 = f16::MIN.to_f32_const();
+                    const MAX: f32 = f16::MAX.to_f32_const();
+                    let v = v.clamp(MIN, MAX);
                     let v = f16::from_f32(v);
                     v
                 }));
