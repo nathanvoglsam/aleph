@@ -43,7 +43,7 @@ use crate::commands::img2ktx::{
 /// The purpose of this type is to track the type of an image dynamically as it flows through the
 /// image conditioning pipeline. We have a number of filters and processes we can run on textures
 /// in order to
-pub enum TextureVariant {
+pub enum TextureType {
     /// A single image. This may contain multiple images which define a mip chain.
     Single {
         /// The size of mip 0 of the image.
@@ -102,51 +102,51 @@ pub enum TextureVariant {
     },
 }
 
-impl TextureVariant {
+impl TextureType {
     /// Returns the dimensions of the underlying texture. This encodes the size of mip 0. For cubes
     /// this encodes the size of mip 0 of each face.
     pub fn dimensions(&self) -> UVec2 {
         match self {
-            TextureVariant::Single { dimensions, .. } => *dimensions,
-            TextureVariant::Array { dimensions, .. } => *dimensions,
-            TextureVariant::Cube { dimensions, .. } => *dimensions,
-            TextureVariant::CubeArray { dimensions, .. } => *dimensions,
+            TextureType::Single { dimensions, .. } => *dimensions,
+            TextureType::Array { dimensions, .. } => *dimensions,
+            TextureType::Cube { dimensions, .. } => *dimensions,
+            TextureType::CubeArray { dimensions, .. } => *dimensions,
         }
     }
 
     pub fn layer_num(&self) -> u32 {
         match self {
-            TextureVariant::Single { .. } => 1,
-            TextureVariant::Array { layer_num, .. } => *layer_num,
-            TextureVariant::Cube { .. } => 6,
-            TextureVariant::CubeArray { cube_num, .. } => *cube_num * 6,
+            TextureType::Single { .. } => 1,
+            TextureType::Array { layer_num, .. } => *layer_num,
+            TextureType::Cube { .. } => 6,
+            TextureType::CubeArray { cube_num, .. } => *cube_num * 6,
         }
     }
 
     pub fn level_num(&self) -> u32 {
         match self {
-            TextureVariant::Single { level_num, .. } => *level_num,
-            TextureVariant::Array { level_num, .. } => *level_num,
-            TextureVariant::Cube { level_num, .. } => *level_num,
-            TextureVariant::CubeArray { level_num, .. } => *level_num,
+            TextureType::Single { level_num, .. } => *level_num,
+            TextureType::Array { level_num, .. } => *level_num,
+            TextureType::Cube { level_num, .. } => *level_num,
+            TextureType::CubeArray { level_num, .. } => *level_num,
         }
     }
 
     pub fn images_ref(&self) -> &[DynamicImage] {
         match self {
-            TextureVariant::Single { images, .. } => images.as_slice(),
-            TextureVariant::Array { images, .. } => images.as_slice(),
-            TextureVariant::Cube { images, .. } => images.as_slice(),
-            TextureVariant::CubeArray { images, .. } => images.as_slice(),
+            TextureType::Single { images, .. } => images.as_slice(),
+            TextureType::Array { images, .. } => images.as_slice(),
+            TextureType::Cube { images, .. } => images.as_slice(),
+            TextureType::CubeArray { images, .. } => images.as_slice(),
         }
     }
 
     pub fn images_mut(&mut self) -> &mut [DynamicImage] {
         match self {
-            TextureVariant::Single { images, .. } => images.as_mut_slice(),
-            TextureVariant::Array { images, .. } => images.as_mut_slice(),
-            TextureVariant::Cube { images, .. } => images.as_mut_slice(),
-            TextureVariant::CubeArray { images, .. } => images.as_mut_slice(),
+            TextureType::Single { images, .. } => images.as_mut_slice(),
+            TextureType::Array { images, .. } => images.as_mut_slice(),
+            TextureType::Cube { images, .. } => images.as_mut_slice(),
+            TextureType::CubeArray { images, .. } => images.as_mut_slice(),
         }
     }
 
@@ -193,10 +193,10 @@ impl TextureVariant {
 
     fn image_count_with_levels(&self, level_num: u32) -> u32 {
         match self {
-            TextureVariant::Single { .. } => level_num,
-            TextureVariant::Array { layer_num, .. } => *layer_num * level_num,
-            TextureVariant::Cube { .. } => level_num * 6,
-            TextureVariant::CubeArray {
+            TextureType::Single { .. } => level_num,
+            TextureType::Array { layer_num, .. } => *layer_num * level_num,
+            TextureType::Cube { .. } => level_num * 6,
+            TextureType::CubeArray {
                 level_num,
                 cube_num,
                 ..
@@ -206,15 +206,15 @@ impl TextureVariant {
 
     fn take_images(&mut self) -> Vec<DynamicImage> {
         match self {
-            TextureVariant::Single { images, .. } => std::mem::take(images),
-            TextureVariant::Array { images, .. } => std::mem::take(images),
-            TextureVariant::Cube { images, .. } => std::mem::take(images),
-            TextureVariant::CubeArray { images, .. } => std::mem::take(images),
+            TextureType::Single { images, .. } => std::mem::take(images),
+            TextureType::Array { images, .. } => std::mem::take(images),
+            TextureType::Cube { images, .. } => std::mem::take(images),
+            TextureType::CubeArray { images, .. } => std::mem::take(images),
         }
     }
 }
 
-impl TextureVariant {
+impl TextureType {
     pub fn generate_mips(&mut self, filter: imageops::FilterType) {
         assert_eq!(self.level_num(), 1);
         self.validate_image_count();
@@ -251,25 +251,25 @@ impl TextureVariant {
         }
 
         match self {
-            TextureVariant::Single {
+            TextureType::Single {
                 level_num, images, ..
             } => {
                 *images = new_images;
                 *level_num = new_level_num;
             }
-            TextureVariant::Array {
+            TextureType::Array {
                 level_num, images, ..
             } => {
                 *images = new_images;
                 *level_num = new_level_num;
             }
-            TextureVariant::Cube {
+            TextureType::Cube {
                 level_num, images, ..
             } => {
                 *images = new_images;
                 *level_num = new_level_num;
             }
-            TextureVariant::CubeArray {
+            TextureType::CubeArray {
                 level_num, images, ..
             } => {
                 *images = new_images;
@@ -348,7 +348,7 @@ impl TextureVariant {
 
     pub fn equirectangular_to_cube_map(&mut self, face_dimensions: UVec2) -> anyhow::Result<()> {
         let new_self = match self {
-            TextureVariant::Single {
+            TextureType::Single {
                 level_num, images, ..
             } => {
                 if *level_num > 1 {
@@ -373,13 +373,13 @@ impl TextureVariant {
                     new_images.push(nz);
                 }
 
-                TextureVariant::Cube {
+                TextureType::Cube {
                     dimensions: face_dimensions,
                     level_num: 1,
                     images: new_images,
                 }
             }
-            TextureVariant::Array {
+            TextureType::Array {
                 level_num,
                 layer_num,
                 images,
@@ -407,19 +407,19 @@ impl TextureVariant {
                     new_images.push(nz);
                 }
 
-                TextureVariant::CubeArray {
+                TextureType::CubeArray {
                     dimensions: face_dimensions,
                     cube_num: *layer_num,
                     level_num: 1,
                     images: new_images,
                 }
             }
-            TextureVariant::Cube { .. } => {
+            TextureType::Cube { .. } => {
                 return Err(anyhow!(
                     "Can't perform equirectangular conversion on a cubemap input!"
                 ));
             }
-            TextureVariant::CubeArray { .. } => {
+            TextureType::CubeArray { .. } => {
                 return Err(anyhow!(
                     "Can't perform equirectangular conversion on a cubemap input!"
                 ));

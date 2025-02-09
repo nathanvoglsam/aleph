@@ -29,8 +29,8 @@
 
 mod dynamic_buffer;
 mod equirectangular_conversion;
-mod iawt;
 mod sampled_image;
+mod texture_type;
 mod unorm_conversion;
 
 pub use dynamic_buffer::*;
@@ -49,7 +49,7 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 use image::imageops::FilterType;
 use image::GenericImageView;
 
-use crate::commands::img2ktx::iawt::TextureVariant;
+use crate::commands::img2ktx::texture_type::TextureType;
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 
@@ -199,7 +199,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Input is Cube Array with '{}' images.", input_files.len());
                 let dimensions = loaded_files[0].dimensions();
                 let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureVariant::CubeArray {
+                TextureType::CubeArray {
                     dimensions,
                     cube_num: (input_files.len() / 6) as u32,
                     level_num: 1,
@@ -211,7 +211,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Input is Image Array with '{}' images.", input_files.len());
                 let dimensions = loaded_files[0].dimensions();
                 let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureVariant::Array {
+                TextureType::Array {
                     dimensions,
                     layer_num: input_files.len() as u32,
                     level_num: 1,
@@ -223,7 +223,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Input is Cube");
                 let dimensions = loaded_files[0].dimensions();
                 let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureVariant::Cube {
+                TextureType::Cube {
                     dimensions,
                     level_num: 1,
                     images: loaded_files,
@@ -234,7 +234,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Input is Image");
                 let dimensions = loaded_files[0].dimensions();
                 let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureVariant::Single {
+                TextureType::Single {
                     dimensions,
                     level_num: 1,
                     images: loaded_files,
@@ -331,7 +331,7 @@ impl ISubcommand for Image2Ktx {
                     ktx.format(VkFormat::R32G32B32A32_SFLOAT);
                 }
             }
-            _ => todo!(),
+            _ => unimplemented!(),
         }
 
         if equi_to_cube {
@@ -342,7 +342,7 @@ impl ISubcommand for Image2Ktx {
         // output resolution to the chosen cube face dimensions instead of the source image
         // dimensions
         match images {
-            TextureVariant::Single {
+            TextureType::Single {
                 dimensions,
                 level_num,
                 ..
@@ -350,7 +350,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Writing Image");
                 ktx.image_2d(dimensions.x, dimensions.y, level_num, &image_references);
             }
-            TextureVariant::Array {
+            TextureType::Array {
                 dimensions,
                 layer_num,
                 level_num,
@@ -365,7 +365,7 @@ impl ISubcommand for Image2Ktx {
                     &image_references,
                 );
             }
-            TextureVariant::Cube {
+            TextureType::Cube {
                 dimensions,
                 level_num,
                 ..
@@ -373,7 +373,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Writing Cube");
                 ktx.cube(dimensions.x, dimensions.y, level_num, &image_references);
             }
-            TextureVariant::CubeArray {
+            TextureType::CubeArray {
                 dimensions,
                 cube_num,
                 level_num,
@@ -418,39 +418,3 @@ fn parse_filter(v: &str) -> Option<FilterType> {
     };
     Some(v)
 }
-
-// TODO: Implement CPU Equirectangular -> Cube conversion using Rust scalar code and Intel ISPC
-//       code. We can base our sampling logic in the D3D11 spec: https://microsoft.github.io/DirectX-Specs/d3d/archive/D3D11_3_FunctionalSpec.htm#7.18%20Texture%20Sampling
-//
-// # Important Part for Linear Sampling
-//
-// 7.18.8 Linear Sample Addressing
-//
-// Similar to the previous section, set aside how sampler state is configured and how mipmap LOD is chosen for now, and consider simply the task of linear sampling an Element from a particular miplevel of a Texture1D, given a scalar floating point texture coordinate in normalized space. Linear sampling in 1D selects the nearest two texels to the sample location and weights the texels based on the proximity of the sample location to them.
-//
-//     Given a 1D texture coordinate in normalized space U, assumed to be any float32 value.
-//     U is scaled by the Texture1D size, and 0.5f is subtracted. Call this scaledU.
-//     scaledU is converted to at least 16.8 Fixed Point(3.2.4.1). Call this fxpScaledU.
-//     The integer part of fxpScaledU is the chosen left texel. Call this tFloorU. Note that the conversion to Fixed Point(3.2.4.1) basically accomplished: tFloorU = floor(scaledU).
-//     The right texel, tCeilU is simply tFloorU + 1.
-//     The weight value wCeilU is assigned the fractional part of fxpScaledU, converted to float(3.2.4.2) (although using less than full float32 precision for computing and processing wCeilU and wFloorU is permitted).
-//     The weight value wFloorU is 1.0f - wCeilU.
-//     If tFloorU or tCeilU are out of range of the texture, D3D11_SAMPLER_STATE's AddressU mode is applied(7.18.9) to each individually.
-//     Since more than one texel is chosen, the single sample result is computed as:
-//
-//     texelFetch(tFloorU) * wFloorU +
-//     texelFetch( tCeilU) *  wCeilU
-//
-// The procedure described above applies to linear sampling of a given miplevel of a Texture2D as well:
-//
-//     Peform the texel selection to both U and V directions independently, producing 2 U texel locations and 2 V texel locations. Combined, these select 4 texels: (tFloorU,tFloorV), (tFloorU,tCeilV), (tCeilU,tFloorV), (tCeilU,tCeilV).
-//     There are also 4 weight values produced: wFloorU, wCeilU, wFloorV, wCeilV.
-//     The linear sample result is:
-//
-//     texelFetch(tFloorU,tFloorV) * wFloorU * wFloorV +
-//     texelFetch(tFloorU, tCeilV) * wFloorU *  wCeilV +
-//     texelFetch( tCeilU,tFloorV) *  wCeilU * wFloorV +
-//     texelFetch( tCeilU, tCeilV) *  wCeilU *  wCeilV
-//
-// Performing linear sampling of a miplevel of a Texture3D Resource extends the concepts described above to fetching of 8 texels.
-//

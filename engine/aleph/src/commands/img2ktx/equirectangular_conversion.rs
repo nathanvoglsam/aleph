@@ -36,6 +36,8 @@ pub trait IFaceSelector {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3;
 
     fn get_mapped(u: f32, v: f32) -> Vec3 {
+        let u = u * 2.0 - 1.0;
+        let v = v * 2.0 - 1.0;
         let dir = Self::map_uv_to_direction(u, v);
         dir.normalized()
     }
@@ -45,9 +47,7 @@ pub struct PosX;
 
 impl IFaceSelector for PosX {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3 {
-        let u = u * 2.0 - 1.0;
-        let v = v * 2.0 - 1.0;
-        Vec3::new(1.0, v, -u)
+        Vec3::new(1.0, -v, -u)
     }
 }
 
@@ -55,9 +55,7 @@ pub struct NegX;
 
 impl IFaceSelector for NegX {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3 {
-        let u = u * 2.0 - 1.0;
-        let v = v * 2.0 - 1.0;
-        Vec3::new(-1.0, v, u)
+        Vec3::new(-1.0, -v, u)
     }
 }
 
@@ -65,9 +63,7 @@ pub struct PosY;
 
 impl IFaceSelector for PosY {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3 {
-        let u = u * 2.0 - 1.0;
-        let v = v * 2.0 - 1.0;
-        Vec3::new(u, -1.0, v)
+        Vec3::new(u, 1.0, v)
     }
 }
 
@@ -75,9 +71,7 @@ pub struct NegY;
 
 impl IFaceSelector for NegY {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3 {
-        let u = u * 2.0 - 1.0;
-        let v = v * 2.0 - 1.0;
-        Vec3::new(u, 1.0, -v)
+        Vec3::new(u, -1.0, -v)
     }
 }
 
@@ -85,9 +79,7 @@ pub struct PosZ;
 
 impl IFaceSelector for PosZ {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3 {
-        let u = u * 2.0 - 1.0;
-        let v = v * 2.0 - 1.0;
-        Vec3::new(u, v, 1.0)
+        Vec3::new(u, -v, 1.0)
     }
 }
 
@@ -95,9 +87,7 @@ pub struct NegZ;
 
 impl IFaceSelector for NegZ {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3 {
-        let u = u * 2.0 - 1.0;
-        let v = v * 2.0 - 1.0;
-        Vec3::new(-u, v, -1.0)
+        Vec3::new(-u, -v, -1.0)
     }
 }
 
@@ -347,5 +337,5 @@ fn sample_spherical_map(v: Vec3) -> Vec2 {
     let uv = Vec2::new(f32::atan2(v.z, v.x), f32::asin(v.y));
     let uv = uv * INV_ATAN;
     let uv = uv + Vec2::broadcast(0.5f32);
-    uv
+    Vec2::new(uv.x, 1.0 - uv.y)
 }
