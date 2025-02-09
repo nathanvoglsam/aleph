@@ -260,9 +260,6 @@ pub fn equi_to_cube<F: IFaceSelector, O: IOutputMapper>(
 
             // Perform a bilinear filtered sample of the equirectangular texture at the appropriate
             // coordinate to fill our cube face.
-            // TODO: It might be worth precomputing mips for the source panorama and doing a
-            //       trilinear sample for better quality at the poles. We will have significant
-            //       aliasing there due to the properties of spherical coordinates.
             let p = sampler.sample_image(equi_uv);
             let p = O::map_fragment_to_output(p);
             dst.put_pixel(x, y, p);
@@ -331,11 +328,11 @@ pub fn equi_to_cube_dyn<F: IFaceSelector>(
     }
 }
 
-fn sample_spherical_map(v: Vec3) -> Vec2 {
-    /// (1/2PI, 1/PI)
-    const INV_ATAN: Vec2 = Vec2::new(0.15915494309, 0.31830988618);
-    let uv = Vec2::new(f32::atan2(v.z, v.x), f32::asin(v.y));
-    let uv = uv * INV_ATAN;
-    let uv = uv + Vec2::broadcast(0.5f32);
-    Vec2::new(uv.x, 1.0 - uv.y)
+fn sample_spherical_map(s: Vec3) -> Vec2 {
+    use std::f32::consts::PI;
+    let xf = f32::atan2(s.x, s.z) * (1.0 / PI);     // range [-1.0, 1.0]
+    let yf = f32::asin(s.y) * (2.0 / PI);           // range [-1.0, 1.0]
+    let xf = (xf + 1.0) * 0.5;                      // range [0, 1.0]
+    let yf = (1.0 - yf) * 0.5;                      // range [0, 1.0]
+    return Vec2::new(xf, yf);
 }
