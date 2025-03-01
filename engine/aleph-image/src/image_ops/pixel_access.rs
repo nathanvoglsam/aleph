@@ -101,6 +101,5 @@ impl<T: PixelFormat> IPixelAccess for ImageBuffer<T> {
 }
 
 const fn calculate_index(x: u32, y: u32, width: u32, _height: u32, components: usize) -> usize {
-    let row_stride = width as usize * components;
-    (row_stride * y as usize) + (x as usize * components)
+    (y as usize * width as usize + x as usize) * components
 }

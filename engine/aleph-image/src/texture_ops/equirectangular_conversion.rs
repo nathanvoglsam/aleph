@@ -99,7 +99,7 @@ pub fn equi_to_cube<F: IFaceSelector, O: PixelFormat>(
     face_dimension: UVec2,
 ) -> ImageBuffer<O> {
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
-    let dim_f32 = Vec2::new(face_dimension.x as f32, face_dimension.y as f32);
+    let dim_f32 = dst.dimensions_f32();
 
     for y in 0..dst.height() {
         let v = (y as f32 + 0.5) / dim_f32.y;
