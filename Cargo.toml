@@ -47,6 +47,7 @@ members = [
     "engine/aleph-frame-graph",
     "engine/aleph-hibitset",
     "engine/aleph-identity-hasher",
+    "engine/aleph-image",
     "engine/aleph-interfaces",
     "engine/aleph-ktx",
     "engine/aleph-label",
@@ -117,9 +118,9 @@ egui = "0.30"
 egui_plot = "0.30"
 embed-resource = "3"
 env_logger = "0.11.0"
-half = { version = "2", features = ["alloc", "bytemuck"] }
+half = { version = "2", features = ["alloc", "bytemuck", "num-traits"] }
 ignore = "0.4"
-image = "0.25"
+image = {version = "0.25", default-features = false, features = ["default-formats"] }
 libc = "0.2"
 libloading = "0.8"
 log = { version = "0.4", features = ["release_max_level_debug"] }
@@ -187,6 +188,7 @@ aleph-engine-build = { path = "./engine/aleph-engine-build", version = "0.1" }
 aleph-frame-graph = { path = "./engine/aleph-frame-graph", version = "0.1" }
 aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
 aleph-identity-hasher = { path = "./engine/aleph-identity-hasher", version = "1" }
+aleph-image = { path = "./engine/aleph-image", version = "0.1" }
 aleph-interfaces = { path = "./engine/aleph-interfaces", version = "0.1" }
 aleph-ktx = { path = "./engine/aleph-ktx", version = "0.1" }
 aleph-label = { path = "./engine/aleph-label", version = "1" }
