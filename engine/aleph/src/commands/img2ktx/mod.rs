@@ -27,29 +27,16 @@
 // SOFTWARE.
 //
 
-mod dynamic_buffer;
-mod equirectangular_conversion;
-mod sampled_image;
-mod texture_type;
-mod unorm_conversion;
-
-pub use dynamic_buffer::*;
-pub use equirectangular_conversion::*;
-pub use sampled_image::*;
-pub use unorm_conversion::*;
-
 use std::io::BufWriter;
 
+use aleph_image::{DynamicImageBuffer, IPixelStorage, ResizeFilter, TextureBuffer};
 use aleph_ktx::{KtxDocumentDescription, VkFormat};
 use aleph_math::UVec2;
 use anyhow::anyhow;
 use camino::Utf8Path;
 use clap::parser::Values;
 use clap::{Arg, ArgAction, ArgMatches, Command};
-use image::imageops::FilterType;
-use image::GenericImageView;
 
-use crate::commands::img2ktx::texture_type::TextureType;
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 
@@ -189,6 +176,7 @@ impl ISubcommand for Image2Ktx {
             let loaded = image::ImageReader::open(&input)?
                 .with_guessed_format()?
                 .decode()?;
+            let loaded = DynamicImageBuffer::from_image(loaded);
             loaded_files.push(loaded);
         }
 
@@ -199,7 +187,7 @@ impl ISubcommand for Image2Ktx {
             if base_image.dimensions() != this_image.dimensions() {
                 return Err(anyhow!("All input image dimensions must match!"));
             }
-            if base_image.color() != this_image.color() {
+            if base_image.color_type() != this_image.color_type() {
                 return Err(anyhow!("All input image pixel formats must match!"));
             }
         }
@@ -209,8 +197,7 @@ impl ISubcommand for Image2Ktx {
             (true, true) => {
                 log::info!("Input is Cube Array with '{}' images.", input_files.len());
                 let dimensions = loaded_files[0].dimensions();
-                let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureType::CubeArray {
+                TextureBuffer::CubeArray {
                     dimensions,
                     cube_num: (input_files.len() / 6) as u32,
                     level_num: 1,
@@ -221,8 +208,7 @@ impl ISubcommand for Image2Ktx {
             (false, true) => {
                 log::info!("Input is Image Array with '{}' images.", input_files.len());
                 let dimensions = loaded_files[0].dimensions();
-                let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureType::Array {
+                TextureBuffer::Array {
                     dimensions,
                     layer_num: input_files.len() as u32,
                     level_num: 1,
@@ -233,8 +219,7 @@ impl ISubcommand for Image2Ktx {
             (true, false) => {
                 log::info!("Input is Cube");
                 let dimensions = loaded_files[0].dimensions();
-                let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureType::Cube {
+                TextureBuffer::Cube {
                     dimensions,
                     level_num: 1,
                     images: loaded_files,
@@ -244,8 +229,7 @@ impl ISubcommand for Image2Ktx {
             (false, false) => {
                 log::info!("Input is Image");
                 let dimensions = loaded_files[0].dimensions();
-                let dimensions = UVec2::new(dimensions.0, dimensions.1);
-                TextureType::Single {
+                TextureBuffer::Single {
                     dimensions,
                     level_num: 1,
                     images: loaded_files,
@@ -272,28 +256,22 @@ impl ISubcommand for Image2Ktx {
         // Swizzle 3 channel formats up to 4 channels as there are almost zero GPUs on the planet
         // that can sample from 3 channel formats
         match images.get_color_type() {
-            image::ColorType::L8 => {}
-            image::ColorType::La8 => {}
-            image::ColorType::Rgb8 => images.swizzle_rgb_to_rgba()?,
-            image::ColorType::Rgba8 => {}
-            image::ColorType::L16 => {}
-            image::ColorType::La16 => {}
-            image::ColorType::Rgb16 => images.swizzle_rgb_to_rgba()?,
-            image::ColorType::Rgba16 => {}
-            image::ColorType::Rgb32F => images.swizzle_rgb_to_rgba()?,
-            image::ColorType::Rgba32F => {}
-            _ => unimplemented!(),
+            aleph_image::ColorType::RGB8Unorm => images.swizzle_rgb_to_rgba()?,
+            aleph_image::ColorType::RGB16Unorm => images.swizzle_rgb_to_rgba()?,
+            aleph_image::ColorType::RGB32Unorm => images.swizzle_rgb_to_rgba()?,
+            _ => {}
+        }
+
+        for i in images.images_mut() {
+            if to_half {
+                i.to_half();
+            }
+            i.to_little_endian();
         }
 
         let final_color_type = images.get_color_type();
 
-        let mut buffers = images.take_images_as_buffers();
-        for buffer in buffers.iter_mut() {
-            if to_half {
-                buffer.to_half();
-            }
-            buffer.to_little_endian();
-        }
+        let buffers = images.take_images_as_buffers();
 
         let mut image_references = Vec::new();
         for buffer in buffers.iter() {
@@ -304,52 +282,33 @@ impl ISubcommand for Image2Ktx {
         let mut ktx = KtxDocumentDescription::new();
 
         match final_color_type {
-            image::ColorType::L8 => {
-                ktx.format(VkFormat::R8_UNORM);
-            }
-            image::ColorType::La8 => {
-                ktx.format(VkFormat::R8G8_UNORM);
-            }
-            image::ColorType::Rgb8 => {
-                ktx.format(VkFormat::R8G8B8A8_UNORM);
-            }
-            image::ColorType::Rgba8 => {
-                ktx.format(VkFormat::R8G8B8A8_UNORM);
-            }
-            image::ColorType::L16 => {
-                ktx.format(VkFormat::R16_UNORM);
-            }
-            image::ColorType::La16 => {
-                ktx.format(VkFormat::R16G16_UNORM);
-            }
-            image::ColorType::Rgb16 => {
-                ktx.format(VkFormat::R16G16B16A16_UNORM);
-            }
-            image::ColorType::Rgba16 => {
-                ktx.format(VkFormat::R16G16B16A16_UNORM);
-            }
-            image::ColorType::Rgb32F => {
-                if to_half {
-                    ktx.format(VkFormat::R16G16B16A16_SFLOAT);
-                } else {
-                    ktx.format(VkFormat::R32G32B32A32_SFLOAT);
-                }
-            }
-            image::ColorType::Rgba32F => {
-                if to_half {
-                    ktx.format(VkFormat::R16G16B16A16_SFLOAT);
-                } else {
-                    ktx.format(VkFormat::R32G32B32A32_SFLOAT);
-                }
-            }
-            _ => unimplemented!(),
-        }
+            aleph_image::ColorType::R8Unorm => ktx.format(VkFormat::R8_UNORM),
+            aleph_image::ColorType::RG8Unorm => ktx.format(VkFormat::R8G8_UNORM),
+            aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
+            aleph_image::ColorType::RGBA8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
+            aleph_image::ColorType::R16Unorm => ktx.format(VkFormat::R16_UNORM),
+            aleph_image::ColorType::RG16Unorm => ktx.format(VkFormat::R16G16_UNORM),
+            aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
+            aleph_image::ColorType::RGBA16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
+            aleph_image::ColorType::R32Unorm => unimplemented!(),
+            aleph_image::ColorType::RG32Unorm => unimplemented!(),
+            aleph_image::ColorType::RGB32Unorm => unimplemented!(),
+            aleph_image::ColorType::RGBA32Unorm => unimplemented!(),
+            aleph_image::ColorType::R16Float => ktx.format(VkFormat::R16_SFLOAT),
+            aleph_image::ColorType::RG16Float => ktx.format(VkFormat::R16G16_SFLOAT),
+            aleph_image::ColorType::RGB16Float => ktx.format(VkFormat::R16G16B16_SFLOAT),
+            aleph_image::ColorType::RGBA16Float => ktx.format(VkFormat::R16G16B16A16_SFLOAT),
+            aleph_image::ColorType::R32Float => ktx.format(VkFormat::R32_SFLOAT),
+            aleph_image::ColorType::RG32Float => ktx.format(VkFormat::R32G32_SFLOAT),
+            aleph_image::ColorType::RGB32Float => ktx.format(VkFormat::R32G32B32_SFLOAT),
+            aleph_image::ColorType::RGBA32Float => ktx.format(VkFormat::R32G32B32A32_SFLOAT),
+        };
 
         // If we've converted from an equirectangular map to a cube map then we need to change the
         // output resolution to the chosen cube face dimensions instead of the source image
         // dimensions
         match images {
-            TextureType::Single {
+            TextureBuffer::Single {
                 dimensions,
                 level_num,
                 ..
@@ -357,7 +316,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Writing Image");
                 ktx.image_2d(dimensions.x, dimensions.y, level_num, &image_references);
             }
-            TextureType::Array {
+            TextureBuffer::Array {
                 dimensions,
                 layer_num,
                 level_num,
@@ -372,7 +331,7 @@ impl ISubcommand for Image2Ktx {
                     &image_references,
                 );
             }
-            TextureType::Cube {
+            TextureBuffer::Cube {
                 dimensions,
                 level_num,
                 ..
@@ -380,7 +339,7 @@ impl ISubcommand for Image2Ktx {
                 log::info!("Writing Cube");
                 ktx.cube(dimensions.x, dimensions.y, level_num, &image_references);
             }
-            TextureType::CubeArray {
+            TextureBuffer::CubeArray {
                 dimensions,
                 cube_num,
                 level_num,
@@ -414,13 +373,13 @@ impl ISubcommand for Image2Ktx {
     }
 }
 
-fn parse_filter(v: &str) -> Option<FilterType> {
+fn parse_filter(v: &str) -> Option<ResizeFilter> {
     let v = match v {
-        "nearest" => FilterType::Nearest,
-        "bilinear" => FilterType::Triangle,
-        "cubic" => FilterType::CatmullRom,
-        "gaussian" => FilterType::Gaussian,
-        "lanczos3" => FilterType::Lanczos3,
+        "nearest" => ResizeFilter::Nearest,
+        "bilinear" => ResizeFilter::Linear,
+        "cubic" => ResizeFilter::Cubic,
+        "gaussian" => ResizeFilter::Gaussian,
+        "lanczos3" => ResizeFilter::Lanczos3,
         _ => return None,
     };
     Some(v)

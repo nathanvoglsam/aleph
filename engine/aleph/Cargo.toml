@@ -62,9 +62,9 @@ rkyv = { workspace = true }
 uuid = { workspace = true }
 image = { workspace = true }
 bytemuck = { workspace = true }
-half = { workspace = true }
 num-traits = { workspace = true }
 
+aleph-image = { workspace = true }
 aleph-math = { workspace = true }
 aleph-target = { workspace = true }
 aleph-shader-db = { workspace = true }
