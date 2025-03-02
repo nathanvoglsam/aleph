@@ -51,7 +51,7 @@ pub fn uniform_sample_sphere(u1: f32, u2: f32) -> Vec3 {
     let y = sin_theta * f32::sin(phi);
     let z = cos_theta;
 
-    return Vec3::new(x, y, z);
+    Vec3::new(x, y, z)
 }
 
 /// PDF for 'UniformSampleSphere'
@@ -59,7 +59,7 @@ pub fn uniform_sample_sphere(u1: f32, u2: f32) -> Vec3 {
 /// The probability density is constant over the domain for a given radius.
 pub const fn sphere_sample_density(radius: f32) -> f32 {
     // reciprocal of the surface area of a sphere
-    return 1.0 / (4.0 * PI * radius * radius);
+    1.0 / (4.0 * PI * radius * radius)
 }
 
 /// Maps the two input params, in the range [0, 1), into a uniform distribution of points on the
@@ -77,7 +77,7 @@ pub fn uniform_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
     let y = sin_theta * f32::sin(phi);
     let z = cos_theta;
 
-    return Vec3::new(x, y, z);
+    Vec3::new(x, y, z)
 }
 
 /// PDF for 'UniformSampleHemisphere'
@@ -85,7 +85,7 @@ pub fn uniform_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
 /// The probability density is constant over the domain for a given radius.
 pub const fn hemisphere_sample_density(radius: f32) -> f32 {
     // reciprocal of the surface area of a hemisphere
-    return 1.0 / (2.0 * PI * radius * radius);
+    1.0 / (2.0 * PI * radius * radius)
 }
 
 /// Maps the two input params, in the range [0, 1), into a uniform distribution of points on the
@@ -100,7 +100,7 @@ pub fn uniform_sample_disk(u1: f32, u2: f32) -> Vec2 {
     let r = f32::sqrt(u1);
     let phi = 2.0 * PI * u2;
 
-    return Vec2::new(r * f32::cos(phi), r * f32::sin(phi));
+    Vec2::new(r * f32::cos(phi), r * f32::sin(phi))
 }
 
 /// PDF for 'UniformSampleDisk'
@@ -108,7 +108,7 @@ pub fn uniform_sample_disk(u1: f32, u2: f32) -> Vec2 {
 /// The probability density is constant over the domain for a given radius.
 pub const fn disk_sample_density(radius: f32) -> f32 {
     // reciprocal of the area of a circle
-    return 1.0 / (PI * radius * radius);
+    1.0 / (PI * radius * radius)
 }
 
 /// Maps the two input params, in the range [0, 1), into a uniform distribution of points on the
@@ -126,7 +126,7 @@ pub fn cosine_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
 
     // Faster form based on the observation that r = sqrt(u1) -> r^2 = u1. (see UniformSampleDisk).
     let z = f32::sqrt(f32::max(0.0, 1.0 - u1));
-    return Vec3::new(p.x, p.y, z);
+    Vec3::new(p.x, p.y, z)
 }
 
 /// PDF for 'CosineSampleHemisphere'
@@ -139,7 +139,7 @@ pub fn cosine_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
 /// 'cosTheta' approaches 1 (where the sample point and focus align) this expression yields larger
 /// values.
 pub const fn cosine_hemisphere_sample_density(cos_theta: f32) -> f32 {
-    return cos_theta * FRAC_1_PI;
+    cos_theta * FRAC_1_PI
 }
 
 /// Maps the two input params, in the range [0, 1), into a uniform distribution of points on the
@@ -154,18 +154,18 @@ pub fn uniform_sample_cone(u1: f32, u2: f32, cos_theta_max: f32) -> Vec3 {
     let sin_theta = f32::sqrt(1.0 - cos_theta * cos_theta);
     let phi = 2.0 * PI * u2;
 
-    return Vec3::new(
+    Vec3::new(
         sin_theta * f32::cos(phi),
         sin_theta * f32::sin(phi),
         cos_theta,
-    );
+    )
 }
 
 /// PDF for 'UniformSampleCone'
 ///
 /// The probability density is constant over the domain for a given 'cosThetaMax'.
 pub const fn cone_sample_density(cos_theta_max: f32) -> f32 {
-    return 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
+    1.0 / (2.0 * PI * (1.0 - cos_theta_max))
 }
 
 /// Returns UV coordinates to sample an equirectangular texture based on the given direction vector.
@@ -181,14 +181,14 @@ pub fn sample_spherical_map(s: Vec3) -> Vec2 {
     let yf = f32::asin(s.y) * (2.0 / PI); // range [-1.0, 1.0]
     let xf = (xf + 1.0) * 0.5; // range [0, 1.0]
     let yf = (1.0 - yf) * 0.5; // range [0, 1.0]
-    return Vec2::new(xf, yf);
+    Vec2::new(xf, yf)
 }
 
 /// Function used inside [`octahedral_encode`] and [`octahedral_decode`]
 pub fn octahedral_sign_not_zero(v: Vec2) -> Vec2 {
     let x = if v.x >= 0.0 { 1.0 } else { -1.0 };
     let y = if v.y >= 0.0 { 1.0 } else { -1.0 };
-    return Vec2::new(x, y);
+    Vec2::new(x, y)
 }
 
 /// Maps a unit vector 'v' into a 2D octahedral mapped space. Returns a UV coordinate in the [0, 1]
@@ -207,7 +207,7 @@ pub fn octahedral_encode(v: Vec3) -> Vec2 {
 
     // Remap into the [0, 1] UV space
     let p5 = Vec2::broadcast(0.5);
-    return e * p5 + p5;
+    e * p5 + p5
 }
 
 /// Maps a 2D octahedral texture coordinate in the [0, 1] range into a 3D unit vector.
@@ -222,5 +222,5 @@ pub fn octahedral_decode(e: Vec2) -> Vec3 {
         v.x = xy.x;
         v.y = xy.y;
     }
-    return v.normalized();
+    v.normalized()
 }
