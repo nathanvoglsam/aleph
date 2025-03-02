@@ -80,12 +80,31 @@ impl ISubcommand for Image2Ktx {
             .short('e')
             .long("equi-to-cube")
             .help("Convert an equirectangular map to a cube map.")
-            .long_help("Declares that the input is an equirectangular environment map, and we should convert it to a cube map.");
+            .long_help("Declares that the input is an equirectangular environment map, and we should convert it to a cube map.")
+            .conflicts_with_all(["equi-to-oct", "oct-to-cube"]);
+        let oct_to_cube = Arg::new("oct-to-cube")
+            .action(ArgAction::SetTrue)
+            .long("oct-to-cube")
+            .help("Convert an octahedral map to a cube map.")
+            .long_help("Declares that the input is an octahedral environment map, and we should convert it to a cube map.")
+            .conflicts_with_all(["equi-to-oct", "equi-to-cube"]);
+        let equi_to_oct = Arg::new("equi-to-oct")
+            .action(ArgAction::SetTrue)
+            .long("equi-to-oct")
+            .help("Convert an equirectangular map to an octahedral map.")
+            .long_help("Declares that the input is an equirectangular environment map, and we should convert it to an octahedral map.")
+            .conflicts_with_all(["equi-to-cube", "oct-to-cube"]);
         let cube_size = Arg::new("cube-size")
             .long("cube-size")
             .help("The width/height of the cube faces to output when generating cube maps.")
-            .long_help("The width/height, in texels, of the cube faces to output when generating cube maps. Use with --equi-to-cube, etc.This only applies when synthesizing a cube map from a non-cube input. Defaults to 512.")
-            .default_value("bilinear")
+            .long_help("The width/height, in texels, of the cube faces to output when generating cube maps. Use with --equi-to-cube, etc. This only applies when synthesizing a cube map from a non-cube input. Defaults to 512.")
+            .value_parser(clap::value_parser!(u32))
+            .default_value("512")
+            .required(false);
+        let oct_size = Arg::new("oct-size")
+            .long("oct-size")
+            .help("The width/height of the octahedral map to output when generating octahedral maps.")
+            .long_help("The width/height, in texels, of the texture to output when generating octahedral maps. Use with --equi-to-oct, etc. This only applies when synthesizing an octahedral map from a non-cube input. Defaults to 512.")
             .value_parser(clap::value_parser!(u32))
             .default_value("512")
             .required(false);
@@ -117,7 +136,10 @@ impl ISubcommand for Image2Ktx {
             .arg(to_half)
             .arg(is_cube)
             .arg(equi_to_cube)
+            .arg(oct_to_cube)
+            .arg(equi_to_oct)
             .arg(cube_size)
+            .arg(oct_size)
     }
 
     fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -142,6 +164,18 @@ impl ISubcommand for Image2Ktx {
         let to_half = matches.get_flag("to-half");
         let is_cube = matches.get_flag("is-cube");
         let equi_to_cube = matches.get_flag("equi-to-cube");
+        let oct_to_cube = matches.get_flag("oct-to-cube");
+        let equi_to_oct = matches.get_flag("equi-to-oct");
+
+        let conversions_enabled = [equi_to_cube, oct_to_cube, equi_to_oct]
+            .into_iter()
+            .filter(|&v| v)
+            .count();
+        if conversions_enabled > 1 {
+            return Err(anyhow!(
+                "Can't have more than one conversion operation enabled at once"
+            ));
+        }
 
         let mip_filter: String = matches.remove_one("mip-filter").unwrap();
         let mip_filter = mip_filter.to_lowercase();
@@ -149,6 +183,7 @@ impl ISubcommand for Image2Ktx {
             .ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
 
         let cube_size: u32 = matches.remove_one("cube-size").unwrap();
+        let oct_size: u32 = matches.remove_one("oct-size").unwrap();
 
         // Make sure we have enough input images to encode a cubemap(array)
         if is_cube {
@@ -243,6 +278,16 @@ impl ISubcommand for Image2Ktx {
         if equi_to_cube {
             let face_dimensions = UVec2::new(cube_size, cube_size);
             images.equirectangular_to_cube_map(face_dimensions)?;
+        }
+
+        if oct_to_cube {
+            let face_dimensions = UVec2::new(cube_size, cube_size);
+            images.octahedral_to_cube_map(face_dimensions)?;
+        }
+
+        if equi_to_oct {
+            let face_dimensions = UVec2::new(oct_size, oct_size);
+            images.equirectangular_to_octahedral_map(face_dimensions)?;
         }
 
         if gen_mips {
