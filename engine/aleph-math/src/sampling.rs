@@ -167,3 +167,60 @@ pub fn uniform_sample_cone(u1: f32, u2: f32, cos_theta_max: f32) -> Vec3 {
 pub const fn cone_sample_density(cos_theta_max: f32) -> f32 {
     return 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
 }
+
+/// Returns UV coordinates to sample an equirectangular texture based on the given direction vector.
+///
+/// This is 3D cartesian to 2D spherical coordinates conversion, we assume the 3D input is a point
+/// on the unit sphere (a unit vector).
+///
+/// Can be used to sample an equirectangular spherical map as if it were a cube map.
+#[inline]
+pub fn sample_spherical_map(s: Vec3) -> Vec2 {
+    use std::f32::consts::PI;
+    let xf = f32::atan2(s.x, s.z) * (1.0 / PI); // range [-1.0, 1.0]
+    let yf = f32::asin(s.y) * (2.0 / PI); // range [-1.0, 1.0]
+    let xf = (xf + 1.0) * 0.5; // range [0, 1.0]
+    let yf = (1.0 - yf) * 0.5; // range [0, 1.0]
+    return Vec2::new(xf, yf);
+}
+
+/// Function used inside [`octahedral_encode`] and [`octahedral_decode`]
+pub fn octahedral_sign_not_zero(v: Vec2) -> Vec2 {
+    let x = if v.x >= 0.0 { 1.0 } else { -1.0 };
+    let y = if v.y >= 0.0 { 1.0 } else { -1.0 };
+    return Vec2::new(x, y);
+}
+
+/// Maps a unit vector 'v' into a 2D octahedral mapped space. Returns a UV coordinate in the [0, 1]
+/// range.
+pub fn octahedral_encode(v: Vec3) -> Vec2 {
+    // Project the sphere onto the octahedron, and then onto the xy plane
+    let p = v.xy() * (1.0 / (f32::abs(v.x) + f32::abs(v.y) + f32::abs(v.z)));
+
+    // Reflect the folds of the lower hemisphere over the diagonals
+    let e = if v.z <= 0.0 {
+        let yx = Vec2::new(p.y, p.x);
+        (Vec2::broadcast(1.0) - yx.abs()) * octahedral_sign_not_zero(p)
+    } else {
+        p
+    };
+
+    // Remap into the [0, 1] UV space
+    let p5 = Vec2::broadcast(0.5);
+    return e * p5 + p5;
+}
+
+/// Maps a 2D octahedral texture coordinate in the [0, 1] range into a 3D unit vector.
+pub fn octahedral_decode(e: Vec2) -> Vec3 {
+    // Undo our remap to [0, 1] and get back to the [-1, 1] this code expects
+    let e = e * Vec2::broadcast(2.0) - Vec2::broadcast(1.0);
+
+    let mut v = Vec3::new(e.x, e.y, 1.0 - f32::abs(e.x) - f32::abs(e.y));
+    if v.z < 0.0 {
+        let yx = Vec2::new(v.y, v.x);
+        let xy = (Vec2::broadcast(1.0) - yx.abs()) * octahedral_sign_not_zero(v.xy());
+        v.x = xy.x;
+        v.y = xy.y;
+    }
+    return v.normalized();
+}
