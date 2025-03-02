@@ -35,8 +35,8 @@ use crate::texture_ops::equirectangular_conversion::{
 };
 use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
 use crate::{
-    ColorType, DynamicBuffer, DynamicImageBuffer, IPixelStorage, IResizeImage, ImageBuffer,
-    PixRGBA, ResizeFilter, TextureOpError, TextureOpResult,
+    ColorType, DynamicImageBuffer, IPixelStorage, IResizeImage, ImageBuffer, PixRGBA, ResizeFilter,
+    TextureOpError, TextureOpResult,
 };
 
 /// Type that closes over the types of textures we support working with. This includes the types
@@ -173,31 +173,31 @@ impl TextureBuffer {
         assert_eq!(self.images_ref().len(), expected_count as usize);
     }
 
-    pub fn take_images_as_buffers(&mut self) -> Vec<DynamicBuffer> {
+    pub fn get_buffer_references(&self) -> Vec<&[u8]> {
         self.validate_image_count();
         self.validate_image_types();
 
-        let buffers = Vec::from_iter(self.take_images().into_iter().map(|v| match v {
-            DynamicImageBuffer::R8Unorm(i) => DynamicBuffer::U8(i.into_data()),
-            DynamicImageBuffer::RG8Unorm(i) => DynamicBuffer::U8(i.into_data()),
-            DynamicImageBuffer::RGB8Unorm(i) => DynamicBuffer::U8(i.into_data()),
-            DynamicImageBuffer::RGBA8Unorm(i) => DynamicBuffer::U8(i.into_data()),
-            DynamicImageBuffer::R16Unorm(i) => DynamicBuffer::U16(i.into_data()),
-            DynamicImageBuffer::RG16Unorm(i) => DynamicBuffer::U16(i.into_data()),
-            DynamicImageBuffer::RGB16Unorm(i) => DynamicBuffer::U16(i.into_data()),
-            DynamicImageBuffer::RGBA16Unorm(i) => DynamicBuffer::U16(i.into_data()),
-            DynamicImageBuffer::R32Unorm(i) => DynamicBuffer::U32(i.into_data()),
-            DynamicImageBuffer::RG32Unorm(i) => DynamicBuffer::U32(i.into_data()),
-            DynamicImageBuffer::RGB32Unorm(i) => DynamicBuffer::U32(i.into_data()),
-            DynamicImageBuffer::RGBA32Unorm(i) => DynamicBuffer::U32(i.into_data()),
-            DynamicImageBuffer::R16Float(i) => DynamicBuffer::F16(i.into_data()),
-            DynamicImageBuffer::RG16Float(i) => DynamicBuffer::F16(i.into_data()),
-            DynamicImageBuffer::RGB16Float(i) => DynamicBuffer::F16(i.into_data()),
-            DynamicImageBuffer::RGBA16Float(i) => DynamicBuffer::F16(i.into_data()),
-            DynamicImageBuffer::R32Float(i) => DynamicBuffer::F32(i.into_data()),
-            DynamicImageBuffer::RG32Float(i) => DynamicBuffer::F32(i.into_data()),
-            DynamicImageBuffer::RGB32Float(i) => DynamicBuffer::F32(i.into_data()),
-            DynamicImageBuffer::RGBA32Float(i) => DynamicBuffer::F32(i.into_data()),
+        let buffers = Vec::from_iter(self.images_ref().iter().map(|v| match v {
+            DynamicImageBuffer::R8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RG8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGB8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGBA8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::R16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RG16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGB16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGBA16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::R32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RG32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGB32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGBA32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::R16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RG16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGB16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGBA16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::R32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RG32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGB32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
+            DynamicImageBuffer::RGBA32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
         }));
         buffers
     }
