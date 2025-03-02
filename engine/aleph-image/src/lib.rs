@@ -40,4 +40,4 @@ pub use pixel_format::{
     FromImagePixel, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat,
 };
 pub use texture::TextureBuffer;
-pub use texture_ops::{TextureOpError, TextureOpResult};
+pub use texture_ops::*;

@@ -39,23 +39,12 @@ use crate::{IPixelAccess, IPixelStorage, ImageBuffer, PixelFormat};
 /// a normalized uv space using floating point coordinates, and all accesses yield a 4-component
 /// floating point vector with the resulting value mapped from the in-memory format.
 ///
-/// # Specifics
-///
-/// In GPU parlance this interface exposes only a single sampling mode that is very similar to what
-/// would be described as:
-/// - ADDRESS_MODE_WRAP on all axis
-/// - FILTER_MODE_LINEAR
-/// - No mip-mapping
-///
-/// Or could also be described as a bilinear texture sample. We do _not_ implement trilinear
-/// filtering (filtering across mip levels).
-///
 /// # Implementation
 ///
 /// We follow the implemented as specified in the Direct3D11 texture sampling specification, using
-/// their specified behavior for our addressing mode (wrapping) and bilinear filtering, with some
-/// things omitted. Specifically we _do not_ implement any of the fixed point conversions. All
-/// operations are done in floating point.
+/// their specified behavior for our addressing modes and bilinear filtering, with some things
+/// omitted. Specifically we _do not_ implement any of the fixed point conversions. All operations
+/// are done in floating point.
 ///
 /// # Shaders?
 ///
@@ -76,8 +65,9 @@ pub trait IPixelSample: IPixelAccess {
     /// - Unorm images are mapped into the 0..1 range.
     /// - Float images have each channel loaded directly, widening to fp32 if needed.
     ///
-    /// Accesses use a wrapping address mode. Logically this means coordinates are taken modulo 1.
-    /// There are no bounds, logically the image repeats infinitely.
+    /// The addressing mode for the U and V coordinate is configurable for each axis separately. The
+    /// [`IAddressMode`] interface provides the functionality needed. The 'U' and 'V' generic
+    /// parameters configure the address mode for the U and V axis respectively.
     ///
     /// Samples are filterd using a bilinear kernel. Each pixel in the source image defines an
     /// explicit sample at a texel center in our normalized coordinate space. This means that to
@@ -92,17 +82,65 @@ pub trait IPixelSample: IPixelAccess {
     /// Using coordinates with a large magnitude will reduce the precision of the sampling. Sampling
     /// is also sensitive to precision via the underlying dimensions of the image. It is recommended
     /// to avoid passing in large UV coordinates, especially for large textures.
-    fn sample(&self, uv: Vec2) -> Vec4;
+    fn sample<U: IAddressMode, V: IAddressMode>(&self, uv: Vec2) -> Vec4;
+}
+
+/// Generic interface for address mode implementations. Used by [`IPixelSample`] to allow
+/// configuring the addressing mode for UV coordinates using a monomorphized interface.
+pub trait IAddressMode {
+    fn reduce_range(u: f32) -> f32;
+    fn apply(dim: f32, scaled_u: f32) -> f32;
+}
+
+/// Implements [`IAddressMode`] following the 'D3D11_TEXTURE_ADDRESS_CLAMP' addressming mode.
+pub struct AddressModeClamp;
+
+impl IAddressMode for AddressModeClamp {
+    #[inline(always)]
+    fn reduce_range(u: f32) -> f32 {
+        if u <= -10.0 {
+            -10.0
+        } else if u >= 10.0 {
+            10.0
+        } else {
+            u
+        }
+    }
+
+    #[inline(always)]
+    fn apply(dim: f32, scaled_u: f32) -> f32 {
+        f32::max(0.0, f32::min(scaled_u, dim - 1.0))
+    }
+}
+
+/// Implements [`IAddressMode`] following the 'D3D11_TEXTURE_ADDRESS_WRAP' addressming mode.
+pub struct AddressModeWrap;
+
+impl IAddressMode for AddressModeWrap {
+    #[inline(always)]
+    fn reduce_range(x: f32) -> f32 {
+        x.fract()
+    }
+
+    #[inline(always)]
+    fn apply(dim: f32, scaled_u: f32) -> f32 {
+        let x = scaled_u % dim;
+        if x < 0.0 {
+            x + dim
+        } else {
+            x
+        }
+    }
 }
 
 impl<T: PixelFormat> IPixelSample for ImageBuffer<T> {
-    fn sample(&self, uv: Vec2) -> Vec4 {
+    fn sample<U: IAddressMode, V: IAddressMode>(&self, uv: Vec2) -> Vec4 {
         let dims_f32 = self.dimensions_f32();
 
         let (t_floor_u, t_ceil_u, w_floor_u, w_ceil_u) =
-            texel_coord_to_sample_pos_and_weights(dims_f32.x, uv.x);
+            texel_coord_to_sample_pos_and_weights::<U>(dims_f32.x, uv.x);
         let (t_floor_v, t_ceil_v, w_floor_v, w_ceil_v) =
-            texel_coord_to_sample_pos_and_weights(dims_f32.y, uv.y);
+            texel_coord_to_sample_pos_and_weights::<V>(dims_f32.y, uv.y);
 
         let sample_0 = self.load(t_floor_u as u32, t_floor_v as u32).as_vec4();
         let sample_0 = sample_0 * w_floor_u * w_floor_v;
@@ -120,31 +158,21 @@ impl<T: PixelFormat> IPixelSample for ImageBuffer<T> {
     }
 }
 
-fn texel_coord_to_sample_pos_and_weights(dim: f32, x: f32) -> (f32, f32, f32, f32) {
-    let x = reduce_range_wrap(x);
+fn texel_coord_to_sample_pos_and_weights<M: IAddressMode>(
+    dim: f32,
+    x: f32,
+) -> (f32, f32, f32, f32) {
+    let x = M::reduce_range(x);
     let scaled = x * dim - 0.5;
 
     let floor = scaled.floor();
-    let floor = sample_address_wrap(dim, floor);
+    let floor = M::apply(dim, floor);
 
     let ceil = floor + 1.0;
-    let ceil = sample_address_wrap(dim, ceil);
+    let ceil = M::apply(dim, ceil);
 
     let ceil_w = scaled.fract();
     let floor_w = 1.0 - ceil_w;
 
     (floor, ceil, floor_w, ceil_w)
-}
-
-fn reduce_range_wrap(x: f32) -> f32 {
-    x.fract()
-}
-
-fn sample_address_wrap(dim: f32, x: f32) -> f32 {
-    let x = x % dim;
-    if x < 0.0 {
-        x + dim
-    } else {
-        x
-    }
 }

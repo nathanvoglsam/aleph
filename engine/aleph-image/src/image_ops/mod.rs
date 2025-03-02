@@ -33,6 +33,6 @@ mod pixel_storage;
 mod resize;
 
 pub use pixel_access::IPixelAccess;
-pub use pixel_sample::IPixelSample;
+pub use pixel_sample::{AddressModeClamp, AddressModeWrap, IAddressMode, IPixelSample};
 pub use pixel_storage::IPixelStorage;
 pub use resize::{IResizeImage, ResizeFilter};
