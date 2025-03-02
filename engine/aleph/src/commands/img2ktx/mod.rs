@@ -270,13 +270,7 @@ impl ISubcommand for Image2Ktx {
         }
 
         let final_color_type = images.get_color_type();
-
-        let buffers = images.take_images_as_buffers();
-
-        let mut image_references = Vec::new();
-        for buffer in buffers.iter() {
-            image_references.push(buffer.as_bytes());
-        }
+        let image_references = images.get_buffer_references();
 
         // Setup mip state in common code to keep the match arms shorter
         let mut ktx = KtxDocumentDescription::new();
