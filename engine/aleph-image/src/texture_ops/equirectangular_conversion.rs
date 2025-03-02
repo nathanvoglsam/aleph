@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_math::{UVec2, Vec2, Vec3};
+use aleph_math::sampling::sample_spherical_map;
+use aleph_math::{UVec2, Vec3};
 use half::f16;
 
 use crate::{
@@ -274,13 +275,4 @@ pub fn equi_to_cube_dyn<F: IFaceSelector>(
             DynamicImageBuffer::RGBA32Float(new)
         }
     }
-}
-
-fn sample_spherical_map(s: Vec3) -> Vec2 {
-    use std::f32::consts::PI;
-    let xf = f32::atan2(s.x, s.z) * (1.0 / PI); // range [-1.0, 1.0]
-    let yf = f32::asin(s.y) * (2.0 / PI); // range [-1.0, 1.0]
-    let xf = (xf + 1.0) * 0.5; // range [0, 1.0]
-    let yf = (1.0 - yf) * 0.5; // range [0, 1.0]
-    return Vec2::new(xf, yf);
 }
