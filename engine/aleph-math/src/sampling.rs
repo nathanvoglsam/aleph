@@ -41,6 +41,7 @@ use ultraviolet::{Vec2, Vec3};
 ///
 /// Following along, given u1 and u2 are pulled from a uniform random distribution in the [0, 1)
 /// range, this function will return uniformly random points on the surface of the sphere.
+#[inline]
 pub fn uniform_sample_sphere(u1: f32, u2: f32) -> Vec3 {
     let phi = 2.0 * PI * u2;
     let cos_theta = 1.0 - 2.0 * u1;
@@ -56,7 +57,7 @@ pub fn uniform_sample_sphere(u1: f32, u2: f32) -> Vec3 {
 /// PDF for 'UniformSampleSphere'
 ///
 /// The probability density is constant over the domain for a given radius.
-pub fn sphere_sample_density(radius: f32) -> f32 {
+pub const fn sphere_sample_density(radius: f32) -> f32 {
     // reciprocal of the surface area of a sphere
     return 1.0 / (4.0 * PI * radius * radius);
 }
@@ -66,6 +67,7 @@ pub fn sphere_sample_density(radius: f32) -> f32 {
 ///
 /// Following along, given u1 and u2 are pulled from a uniform random distribution in the [0, 1)
 /// range, this function will return uniformly random points on the surface of the hemisphere.
+#[inline]
 pub fn uniform_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
     let phi = 2.0 * PI * u2;
     let cos_theta = u1;
@@ -81,7 +83,7 @@ pub fn uniform_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
 /// PDF for 'UniformSampleHemisphere'
 ///
 /// The probability density is constant over the domain for a given radius.
-pub fn hemisphere_sample_density(radius: f32) -> f32 {
+pub const fn hemisphere_sample_density(radius: f32) -> f32 {
     // reciprocal of the surface area of a hemisphere
     return 1.0 / (2.0 * PI * radius * radius);
 }
@@ -93,6 +95,7 @@ pub fn hemisphere_sample_density(radius: f32) -> f32 {
 /// range, this function will return uniformly random points on the surface of the disk.
 ///
 /// The disk is aligned along the XY plane.
+#[inline]
 pub fn uniform_sample_disk(u1: f32, u2: f32) -> Vec2 {
     let r = f32::sqrt(u1);
     let phi = 2.0 * PI * u2;
@@ -103,7 +106,7 @@ pub fn uniform_sample_disk(u1: f32, u2: f32) -> Vec2 {
 /// PDF for 'UniformSampleDisk'
 ///
 /// The probability density is constant over the domain for a given radius.
-pub fn disk_sample_density(radius: f32) -> f32 {
+pub const fn disk_sample_density(radius: f32) -> f32 {
     // reciprocal of the area of a circle
     return 1.0 / (PI * radius * radius);
 }
@@ -113,6 +116,7 @@ pub fn disk_sample_density(radius: f32) -> f32 {
 ///
 /// Following along, given u1 and u2 are pulled from a uniform random distribution in the [0, 1)
 /// range, this function will return uniformly random points on the surface of the hemisphere.
+#[inline]
 pub fn cosine_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
     let p = uniform_sample_disk(u1, u2);
 
@@ -134,7 +138,7 @@ pub fn cosine_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
 /// Logically it also shows the density of points increases towards the focus of the hemisphere. As
 /// 'cosTheta' approaches 1 (where the sample point and focus align) this expression yields larger
 /// values.
-pub fn cosine_hemisphere_sample_density(cos_theta: f32) -> f32 {
+pub const fn cosine_hemisphere_sample_density(cos_theta: f32) -> f32 {
     return cos_theta * FRAC_1_PI;
 }
 
@@ -144,6 +148,7 @@ pub fn cosine_hemisphere_sample_density(cos_theta: f32) -> f32 {
 ///
 /// Following along, given u1 and u2 are pulled from a uniform random distribution in the [0, 1)
 /// range, this function will return uniformly random points on the surface of the cone.
+#[inline]
 pub fn uniform_sample_cone(u1: f32, u2: f32, cos_theta_max: f32) -> Vec3 {
     let cos_theta = (1.0 - u1) + (u1 * cos_theta_max);
     let sin_theta = f32::sqrt(1.0 - cos_theta * cos_theta);
@@ -159,6 +164,6 @@ pub fn uniform_sample_cone(u1: f32, u2: f32, cos_theta_max: f32) -> Vec3 {
 /// PDF for 'UniformSampleCone'
 ///
 /// The probability density is constant over the domain for a given 'cosThetaMax'.
-pub fn cone_sample_density(cos_theta_max: f32) -> f32 {
+pub const fn cone_sample_density(cos_theta_max: f32) -> f32 {
     return 1.0 / (2.0 * PI * (1.0 - cos_theta_max));
 }
