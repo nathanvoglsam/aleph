@@ -36,37 +36,58 @@ use image::{Luma, LumaA, Pixel, Rgb, Rgba};
 
 use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
 
+/// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
 pub struct PixR<T: PixelChannelType>([T; 1]);
 
+/// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
 pub struct PixRG<T: PixelChannelType>([T; 2]);
 
+/// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
 pub struct PixRGB<T: PixelChannelType>([T; 3]);
 
+/// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
 pub struct PixRGBA<T: PixelChannelType>([T; 4]);
 
+/// The interface exposed by our pixel types. This provides basic, generic read/write access to
+/// individual pixels as well as generic conversion operations to and from a floating point vec4
+/// representation.
 pub trait PixelFormat {
+    /// The channel type the implementing pixel type stores.
     type Storage: PixelChannelType;
 
+    /// The number of components this pixel format contains
     const COMPONENTS: usize;
 
+    /// Loads a pixel from a flat array of [`PixelFormat::Storage`] elements. This will load exactly
+    /// [`PixelFormat::COMPONENTS`] elements from the given array.
     fn from_storage(v: &[Self::Storage]) -> Self;
 
+    /// Stores a pixel into the target array. This will store exactly [`PixelFormat::COMPONENTS`]
+    /// into the array, overwriting the first 'n' elements in the array.
     fn write_at(&self, v: &mut [Self::Storage]);
 
+    /// Converts the pixel into a universal fp32, vec4 representation. Pixel formats with less than
+    /// 4 channels will have any missing channels default to 0.
+    ///
+    /// This should internally use [`PixelChannelType::into_float`] to convert from the storage
+    /// type into the floating point pixel. This includes any Unorm mapping required.
     fn as_vec4(&self) -> Vec4 {
         self.as_vec4_with_default(0.0)
     }
 
+    /// A twin to [`PixelFormat::as_vec4`] that offers a configurable default value.
     fn as_vec4_with_default(&self, default: f32) -> Vec4;
 
+    /// The inverse of [`PixelFormat::as_vec4`]. Converts the given floating point sample _back_
+    /// into the matching encoded pixel value.
     fn from_vec4(v: Vec4) -> Self;
 }
 
@@ -200,6 +221,10 @@ impl<T: PixelChannelType> PixelFormat for PixRGBA<T> {
     }
 }
 
+/// This is a (largely internal) trait used to enable our generic conversions from the 'image'
+/// crate's [`image::ImageBuffer`] type into our own [`crate::ImageBuffer`] type. This allows us
+/// to get the appropriate [`image::Pixel`] type for one of our own [`crate::PixelFormat`] types
+/// in generic code.
 pub trait FromImagePixel: PixelFormat {
     type Source: Pixel<Subpixel = Self::Storage>;
 }
@@ -236,13 +261,30 @@ where
     type Source = Rgba<P>;
 }
 
+/// Interface expected of a numerical type that forms one channel of a whole pixel.
+///
+/// This is the '16Float' or '8Unorm' of the whole pixel format description ('RG8Unorm').
+///
+/// This trait is effectively constrained such that only basic numeric types can be used
+/// (efficiently).
 pub trait PixelChannelType:
     Copy + Clone + PartialEq + PartialOrd + Default + Sized + Pod + AnyBitPattern + NoUninit
 {
+    /// Converts the value 'self' into the appropriate floating point representation.
+    ///
+    /// This is where our sample mapping occurs. Unorm conversion happens here.
+    ///
+    /// - Unorm formats map to a float in the 0..1 range.
+    /// - Float formats map directly, without clamping. This may produce NaNs if narrowing from
+    ///   fp64. However we don't currently implement this trait for fp64
     fn into_float(self) -> f32;
 
+    /// This is the inverse of [`PixelChannelType::into_float`] that performs the inverse operation
+    /// to map back from a float into the pixel channel format.
     fn from_float(v: f32) -> Self;
 
+    /// Performs an in-place conversion from native-endian to little-endian. This is a no-op on
+    /// little endian platforms, and an endian swap operation on big endian platforms.
     fn to_le(&mut self);
 }
 

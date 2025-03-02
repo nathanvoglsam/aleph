@@ -35,6 +35,13 @@ use crate::{
     PixRGB, PixRGBA, PixelFormat,
 };
 
+/// Semi-private trate used as part of the parametrization of [`equi_to_cube`]. Represents a compile
+/// time interface for mapping a UV coordinate for a specific cube face back into the direction
+/// vector that would refer to it as part of sampling a cube map.
+///
+/// This is used as a generic parameter for the [`equi_to_cube`] function to map 2D coordinates for
+/// a face back to 3D coordinates. The 3D coordinates are then used to sample the source environment
+/// map so we can fill out the cube faces.
 pub trait IFaceSelector {
     fn map_uv_to_direction(u: f32, v: f32) -> Vec3;
 
@@ -46,6 +53,7 @@ pub trait IFaceSelector {
     }
 }
 
+/// Face selector ([`IFaceSelector`]) for the +X cube face
 pub struct FacePosX;
 
 impl IFaceSelector for FacePosX {
@@ -54,6 +62,7 @@ impl IFaceSelector for FacePosX {
     }
 }
 
+/// Face selector ([`IFaceSelector`]) for the -X cube face
 pub struct FaceNegX;
 
 impl IFaceSelector for FaceNegX {
@@ -62,6 +71,7 @@ impl IFaceSelector for FaceNegX {
     }
 }
 
+/// Face selector ([`IFaceSelector`]) for the +Y cube face
 pub struct FacePosY;
 
 impl IFaceSelector for FacePosY {
@@ -70,6 +80,7 @@ impl IFaceSelector for FacePosY {
     }
 }
 
+/// Face selector ([`IFaceSelector`]) for the -Y cube face
 pub struct FaceNegY;
 
 impl IFaceSelector for FaceNegY {
@@ -78,6 +89,7 @@ impl IFaceSelector for FaceNegY {
     }
 }
 
+/// Face selector ([`IFaceSelector`]) for the +Z cube face
 pub struct FacePosZ;
 
 impl IFaceSelector for FacePosZ {
@@ -86,6 +98,7 @@ impl IFaceSelector for FacePosZ {
     }
 }
 
+/// Face selector ([`IFaceSelector`]) for the -Z cube face
 pub struct FaceNegZ;
 
 impl IFaceSelector for FaceNegZ {
@@ -94,6 +107,33 @@ impl IFaceSelector for FaceNegZ {
     }
 }
 
+/// Assuming the input image is an equirectangular environment map, this function will compute the
+/// requested face of a cubemap by sampling the source image as an equirectangular environment map.
+///
+/// By calling this function 6 times, one for each cube face, you can create a complate cubemap
+/// from an input equirectangular environment map.
+///
+/// # Why?
+///
+/// Spherical coordinates are not a good choice for parametrizing a lookup table. The coordinates
+/// can be expensive to work with (trig functions), and there are singularities in the parameter
+/// space (the poles). The sample distribution is poor, wasting most pixels on the poles, and can
+/// lead to poor filtering quality. The _only_ positive is that the 2D parameter space.
+///
+/// Cube maps are superior in a number of ways:
+/// - Much more consistent sample distribution
+/// - No singularities
+/// - Efficient, native support on the GPU
+///
+/// This function forms the basis of a pipeline to convert spherical maps into cube maps.
+///
+/// # What else?
+///
+/// There are other, better methods to store an environment map in a 2D texture. Octahedral maps are
+/// efficient to address, have a vastly superior sample distribution, and take advantage of GPU
+/// hardware for seemless filtering. They can be made much smaller than cube maps and are much
+/// easier to manage in a render pipeline (they're just 2D images). They are also a fantastic
+/// choice to consider.
 pub fn equi_to_cube<F: IFaceSelector, O: PixelFormat>(
     src: &impl IPixelSample,
     face_dimension: UVec2,
@@ -122,6 +162,8 @@ pub fn equi_to_cube<F: IFaceSelector, O: PixelFormat>(
     dst
 }
 
+/// Wrapper over [`equi_to_cube`] for a [`DynamicImageBuffer`]. The correct conversion
+/// implementation and output mapper is selected based on the dynamic type of the image.
 pub fn equi_to_cube_dyn<F: IFaceSelector>(
     src: &DynamicImageBuffer,
     face_dimension: UVec2,

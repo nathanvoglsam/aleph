@@ -34,7 +34,7 @@ mod texture;
 mod texture_ops;
 mod utils;
 
-pub use image_buffer::{ColorType, DynamicBuffer, DynamicImageBuffer, ImageBuffer};
+pub use image_buffer::{ColorType, DynamicImageBuffer, ImageBuffer};
 pub use image_ops::*;
 pub use pixel_format::{
     FromImagePixel, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat,

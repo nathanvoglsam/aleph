@@ -31,7 +31,67 @@ use aleph_math::{Vec2, Vec4};
 
 use crate::{IPixelAccess, IPixelStorage, ImageBuffer, PixelFormat};
 
+/// An extended interface built atop [`IPixelAccess`] that enables bilinear sampling of the
+/// underlying image using normalized image coordinates.
+///
+/// This is an extension over, and distinct from, direct pixel access. Sampling can be performed
+/// without knowledge of the underlying image's dimensions _or_ format. The input coordinate is in
+/// a normalized uv space using floating point coordinates, and all accesses yield a 4-component
+/// floating point vector with the resulting value mapped from the in-memory format.
+///
+/// # Specifics
+///
+/// In GPU parlance this interface exposes only a single sampling mode that is very similar to what
+/// would be described as:
+/// - ADDRESS_MODE_WRAP on all axis
+/// - FILTER_MODE_LINEAR
+/// - No mip-mapping
+///
+/// Or could also be described as a bilinear texture sample. We do _not_ implement trilinear
+/// filtering (filtering across mip levels).
+///
+/// # Implementation
+///
+/// We follow the implemented as specified in the Direct3D11 texture sampling specification, using
+/// their specified behavior for our addressing mode (wrapping) and bilinear filtering, with some
+/// things omitted. Specifically we _do not_ implement any of the fixed point conversions. All
+/// operations are done in floating point.
+///
+/// # Shaders?
+///
+/// This interface is a CPU implementation of what contemporary shading languages provide for image
+/// sampling on the GPU. This interface provides similar capabilities.
 pub trait IPixelSample: IPixelAccess {
+    /// Performs a bilinear sample of the image at the given uv coordinate.
+    ///
+    /// The input coordinates are in a normalized space where 0..1 ranges across the width/height of
+    /// the underlying image. Images can be sampled without knowledge of the underlying size of the
+    /// image.
+    ///
+    /// The resulting value is always a Vec4, mapped from the underlying pixel representation. The
+    /// mapping rules are simple:
+    /// - The Vec4's xyzw fields map to rgba in the source image.
+    /// - Channels missing in the source image are mapped to zero. Loading an RG format image will
+    ///   yield a Vec4 containing rg00.
+    /// - Unorm images are mapped into the 0..1 range.
+    /// - Float images have each channel loaded directly, widening to fp32 if needed.
+    ///
+    /// Accesses use a wrapping address mode. Logically this means coordinates are taken modulo 1.
+    /// There are no bounds, logically the image repeats infinitely.
+    ///
+    /// Samples are filterd using a bilinear kernel. Each pixel in the source image defines an
+    /// explicit sample at a texel center in our normalized coordinate space. This means that to
+    /// sample exactly the value at [0,0] as fetched from [`IPixelAccess::load`] you would sample
+    /// the texture at [0.5, 0.5]. The famous half-pixel offset. The sample filter takes 4 taps of
+    /// the stored image and performs linear interpolation across each axis to interpolate a
+    /// continuous function from the discrete samples stored in the image.
+    ///
+    /// # Precision
+    ///
+    /// The sampling behavior is sensitive to floating point precision in the input coordinates.
+    /// Using coordinates with a large magnitude will reduce the precision of the sampling. Sampling
+    /// is also sensitive to precision via the underlying dimensions of the image. It is recommended
+    /// to avoid passing in large UV coordinates, especially for large textures.
     fn sample(&self, uv: Vec2) -> Vec4;
 }
 

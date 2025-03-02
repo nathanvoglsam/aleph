@@ -31,6 +31,7 @@ use image::{Luma, LumaA, Pixel, Primitive, Rgb, Rgba};
 
 use crate::{ImageBuffer, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType};
 
+/// Enumeration of resize filters that are supported by the [`IResizeImage`] interface.
 #[derive(Clone, Copy, Debug, PartialEq, Hash)]
 pub enum ResizeFilter {
     /// Nearest Neighbor
@@ -61,7 +62,18 @@ impl ResizeFilter {
     }
 }
 
+/// Interface exposed by some image container that supports computing a copy of the source image at
+/// the requested size using the requested filter.
 pub trait IResizeImage {
+    /// Produces a copy of the source image, resized to the requested dimensions using the requested
+    /// filter. Aspect ratio is not maintained. The image will be stretched to fit the new requested
+    /// dimensions.
+    ///
+    /// # Support
+    ///
+    /// Not all of our [`ImageBuffer`] formats support this. We delegate the implementation to the
+    /// 'image' crate, which doesn't support operating on the fp16 type we use, so fp16 types do
+    /// not support being resized.
     fn resize(&self, new_x: u32, new_y: u32, filter: ResizeFilter) -> Self;
 }
 

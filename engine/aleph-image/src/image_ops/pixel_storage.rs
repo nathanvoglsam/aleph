@@ -31,27 +31,43 @@ use aleph_math::{UVec2, Vec2};
 
 use crate::{ImageBuffer, PixelFormat};
 
+/// The interface exposed by a type that stores a 2D grid of pixels. Implementing this trait does
+/// not imply the ability to access those pixels.
+///
+/// This trait only implies that the type stores the pixels, and allows querying some
+/// characteristics of the image that is stored such as the dimensions.
 pub trait IPixelStorage {
+    /// The width/height of the image in pixels.
     fn dimensions(&self) -> UVec2;
 
+    /// The width/height of the image in pixels, but returned as a floating point value.
+    ///
+    /// # Why?
+    ///
+    /// This extra interface allows images to pre-calculate the width/height fp32 values. Some code
+    /// ([`crate::IPixelSample`]) needs these as a float, and will be called in hot loops. The cost
+    /// of the cast will add up if performed every iteration and relying on loop-invariant code
+    /// motion to hoist the conversions across function boundaries is brittle.
     fn dimensions_f32(&self) -> Vec2;
 
+    /// Returns the width of the image in pixels
     fn width(&self) -> u32 {
         self.dimensions().x
     }
 
+    /// Returns the height of the image in pixels
     fn height(&self) -> u32 {
         self.dimensions().y
     }
 }
 
 impl<T: PixelFormat> IPixelStorage for ImageBuffer<T> {
-    #[inline]
+    #[inline(always)]
     fn dimensions(&self) -> UVec2 {
         UVec2::new(self.width, self.height)
     }
 
-    #[inline]
+    #[inline(always)]
     fn dimensions_f32(&self) -> Vec2 {
         Vec2::new(self.width_f32, self.height_f32)
     }

@@ -31,6 +31,7 @@ pub mod equirectangular_conversion;
 
 use thiserror::Error;
 
+/// Errors that may occur when performing texture operations on a [`crate::TextureBuffer`].
 #[derive(Error, Debug)]
 pub enum TextureOpError {
     #[error("The source image format is invalid for the requested image operation")]

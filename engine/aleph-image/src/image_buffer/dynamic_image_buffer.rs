@@ -31,6 +31,21 @@ use half::f16;
 
 use crate::{IPixelStorage, IResizeImage, ImageBuffer, PixR, PixRG, PixRGB, PixRGBA};
 
+/// A 'dynamically typed' wrapper over [`ImageBuffer`] that closes over all our primarily supported
+/// image formats.
+///
+/// An image may change format several times through the image pipeline, perhaps being starting as
+/// an fp32 3 channel format before being processed and then compressed down to an fp16 4 channel
+/// format ready for use on the GPU. This tool enables this by closing over our supported image
+/// types and allows operating on them under a dynamically typed regime.
+///
+/// Non-type specific interfaces are implemented and exposed to simplify interacting with dynamic
+/// images where possible. Some interfaces like [`crate::IPixelAccess`] can not be implemented as
+/// the results of pixel access are generic over the implementing [`ImageBuffer`].
+/// [`crate::IPixelSample`] _could_ be implemented, however we chose to not expose this interface
+/// for dynamic images as the performance cost of the dynamic type check for every sample operation
+/// would be expensive. Only monomorphized code should be used to sample textures for maximum
+/// performance.
 #[derive(Clone)]
 pub enum DynamicImageBuffer {
     R8Unorm(ImageBuffer<PixR<u8>>),
@@ -56,6 +71,10 @@ pub enum DynamicImageBuffer {
 }
 
 impl DynamicImageBuffer {
+    /// Returns the [`ColorType`] of this image.
+    ///
+    /// [`ColorType`] is a sister enum to [`DynamicImageBuffer`], using the same set of variants
+    /// but without the associated data.
     pub const fn color_type(&self) -> ColorType {
         match self {
             DynamicImageBuffer::R8Unorm(_) => ColorType::R8Unorm,
@@ -81,6 +100,9 @@ impl DynamicImageBuffer {
         }
     }
 
+    /// Converts an image from the 'image' crate ([`image::DynamicImage`]) into our own
+    /// [`ImageBuffer`] and wraps it into a [`DynamicImageBuffer`] of the correct type. This simply
+    /// repackages the data and does not perform any copies or new allocations.
     pub fn from_image(image: image::DynamicImage) -> Self {
         match image {
             image::DynamicImage::ImageLuma8(i) => Self::R8Unorm(ImageBuffer::from_image(i)),
@@ -97,6 +119,18 @@ impl DynamicImageBuffer {
         }
     }
 
+    /// Converts the data of the image in place into a little endian byte order.
+    ///
+    /// # Info
+    ///
+    /// On little endian systems (i.e. almost certainly the computer you're reading this on) this
+    /// does nothing as the data is already in memory in little endian byte order.
+    ///
+    /// On a big endian system this would be required to package the data for upload to the GPU.
+    ///
+    /// # Dynamic?
+    ///
+    /// This just delegates to each variant's [`ImageBuffer::to_little_endian`] function.
     pub fn to_little_endian(&mut self) {
         match self {
             DynamicImageBuffer::R8Unorm(i) => i.to_little_endian(),
@@ -122,6 +156,18 @@ impl DynamicImageBuffer {
         }
     }
 
+    /// Performs a type conversion of the underlying image from it's source type into a compatible
+    /// fp16 type. The conversion rules are specific to each type.
+    ///
+    /// # Rules
+    ///
+    /// - Channel count will remain the same:
+    ///     - R8Unorm -> R16Float
+    ///     - RGBA32Float -> RGBA16Float
+    /// - Unorm types will remain normalized as a float. The result values will range from 0-1.
+    /// - Float types will directly convert from their source representation to the destination.
+    ///     - Wider floats will clamp to the value range of a half so as to avoid introducing NaNs
+    ///       into the resulting data.
     pub fn to_half(&mut self) {
         *self = match self {
             DynamicImageBuffer::R8Unorm(i) => Self::R16Float(i.to_half()),
@@ -136,10 +182,10 @@ impl DynamicImageBuffer {
             DynamicImageBuffer::RG32Unorm(i) => Self::RG16Float(i.to_half()),
             DynamicImageBuffer::RGB32Unorm(i) => Self::RGB16Float(i.to_half()),
             DynamicImageBuffer::RGBA32Unorm(i) => Self::RGBA16Float(i.to_half()),
-            DynamicImageBuffer::R16Float(i) => Self::R16Float(i.to_half()),
-            DynamicImageBuffer::RG16Float(i) => Self::RG16Float(i.to_half()),
-            DynamicImageBuffer::RGB16Float(i) => Self::RGB16Float(i.to_half()),
-            DynamicImageBuffer::RGBA16Float(i) => Self::RGBA16Float(i.to_half()),
+            DynamicImageBuffer::R16Float(i) => Self::R16Float(i.clone()),
+            DynamicImageBuffer::RG16Float(i) => Self::RG16Float(i.clone()),
+            DynamicImageBuffer::RGB16Float(i) => Self::RGB16Float(i.clone()),
+            DynamicImageBuffer::RGBA16Float(i) => Self::RGBA16Float(i.clone()),
             DynamicImageBuffer::R32Float(i) => Self::R16Float(i.to_half()),
             DynamicImageBuffer::RG32Float(i) => Self::RG16Float(i.to_half()),
             DynamicImageBuffer::RGB32Float(i) => Self::RGB16Float(i.to_half()),
@@ -240,19 +286,19 @@ impl IResizeImage for DynamicImageBuffer {
                 DynamicImageBuffer::RGBA32Unorm(i.resize(new_x, new_y, filter))
             }
             DynamicImageBuffer::R16Float(_i) => {
-                unimplemented!()
+                unimplemented!("No resize kernels available for native fp16")
                 // DynamicImageBuffer::R16Float(i.resize(new_x, new_y, filter))
             }
             DynamicImageBuffer::RG16Float(_i) => {
-                unimplemented!()
+                unimplemented!("No resize kernels available for native fp16")
                 // DynamicImageBuffer::RG16Float(i.resize(new_x, new_y, filter))
             }
             DynamicImageBuffer::RGB16Float(_i) => {
-                unimplemented!()
+                unimplemented!("No resize kernels available for native fp16")
                 // DynamicImageBuffer::RGB16Float(i.resize(new_x, new_y, filter))
             }
             DynamicImageBuffer::RGBA16Float(_i) => {
-                unimplemented!()
+                unimplemented!("No resize kernels available for native fp16")
                 // DynamicImageBuffer::RGBA16Float(i.resize(new_x, new_y, filter))
             }
             DynamicImageBuffer::R32Float(i) => {
@@ -302,6 +348,9 @@ from_image_buffer_impl!(ImageBuffer<PixRG<f32>>, RG32Float);
 from_image_buffer_impl!(ImageBuffer<PixRGB<f32>>, RGB32Float);
 from_image_buffer_impl!(ImageBuffer<PixRGBA<f32>>, RGBA32Float);
 
+/// A twin to [`DynamicImageBuffer`] that closes over the same set of enum variants but without the
+/// associated data. This is used to deal with the 'type' of a [`DynamicImageBuffer`] separate from
+/// any specific buffer.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ColorType {
     R8Unorm,

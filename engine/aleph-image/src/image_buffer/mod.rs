@@ -27,10 +27,8 @@
 // SOFTWARE.
 //
 
-mod dynamic_buffer;
 mod dynamic_image_buffer;
 
-pub use dynamic_buffer::DynamicBuffer;
 pub use dynamic_image_buffer::{ColorType, DynamicImageBuffer};
 
 use half::f16;

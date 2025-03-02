@@ -29,9 +29,27 @@
 
 use crate::{IPixelStorage, ImageBuffer, PixelFormat};
 
+/// An extended interface built atop [`IPixelStorage`] that types that allow accessing the pixels
+/// in their stored image should implement.
+///
+/// This is an extended capability over [`IPixelAccess`] as some image storage types can not provide
+/// access to individual pixels within the image (i.e. [`crate::DynamicImageBuffer`]). This
+/// interface has an associated type [`IPixelAccess::Result`] which is derived from the pixel format
+/// of the image. If the format is not known at compile time the interface can't be implemented.
+///
+/// # The Interface
+///
+/// This trait is simple. It exposes various functions for load/store to the pixel grid using the
+/// associated [`PixelFormat`] type. All functions take direct pixel coordinates. That is: values
+/// in the range 0..width, 0..height.
 pub trait IPixelAccess: IPixelStorage {
+    /// The type of pixel the image stores, and the type of the value [`IPixelAccess::load`] will
+    /// return. This will be derived from the type of data the image stores, defined by the number
+    /// of channels and the data type of those channels (i.e. RGBA8Unorm, R16Float, etc).
     type Result: PixelFormat;
 
+    /// Wrapper over [`IPixelAccess::load_checked`] that panics if the requested pixel is out of
+    /// bounds of the underlying image.
     fn load(&self, x: u32, y: u32) -> Self::Result {
         match self.load_checked(x, y) {
             Some(v) => v,
@@ -50,12 +68,26 @@ pub trait IPixelAccess: IPixelStorage {
         }
     }
 
+    /// Loads the pixel stored at the given x/y coordinate.
+    ///
+    /// Returns [`None`] if the coordinate is out-of-bounds.
     fn load_checked(&self, x: u32, y: u32) -> Option<Self::Result>;
 
+    /// Unsafe wrapper over [`IPixelAccess::load_checked`] that assumes the pixel coordinates are in
+    /// bounds. No bounds checks are performed and out-of-bounds values will trigger undefined
+    /// behavior.
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to:
+    /// - Ensure that 'x' is < width.
+    /// - Ensure that 'y' is < height.
     unsafe fn load_unchecked(&self, x: u32, y: u32) -> Self::Result {
         self.load_checked(x, y).unwrap_unchecked()
     }
 
+    /// Wrapper over [`IPixelAccess::store_checked`] that panics if the requested pixel is out of
+    /// bounds of the underlying image.
     fn store(&mut self, x: u32, y: u32, v: Self::Result) {
         match self.store_checked(x, y, v) {
             Some(v) => v,
@@ -67,8 +99,20 @@ pub trait IPixelAccess: IPixelStorage {
         }
     }
 
+    /// Replaces the pixel value at the requested x/y coordinate with the given value.
+    ///
+    /// Returns [`None`] if the coordinate is out-of-bounds.
     fn store_checked(&mut self, x: u32, y: u32, v: Self::Result) -> Option<()>;
 
+    /// Unsafe wrapper over [`IPixelAccess::store_unchecked`] that assumes the pixel coordinates are
+    /// in bounds. No bounds checks are performed and out-of-bounds values will trigger undefined
+    /// behavior.
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to:
+    /// - Ensure that 'x' is < width.
+    /// - Ensure that 'y' is < height.
     unsafe fn store_unchecked(&mut self, x: u32, y: u32, v: Self::Result) {
         self.store_checked(x, y, v).unwrap_unchecked()
     }
