@@ -65,19 +65,16 @@ impl ISubcommand for Image2Ktx {
             .required(false);
         let gen_mips = Arg::new("gen-mips")
             .action(ArgAction::SetTrue)
-            .short('g')
             .long("gen-mips")
             .help("Whether to generate a mip chain from the input image.")
             .long_help("Whether to generate a mip chain from the input image. Uses a bilinear filter by default.");
         let is_cube = Arg::new("is-cube")
             .action(ArgAction::SetTrue)
-            .short('c')
             .long("is-cube")
             .help("Whether the input image set describes a cube map.")
             .long_help("Whether the input image set describes a cube map. Must provide six images, ordered by +X, -X, +Y, -Y, +Z, -Z");
         let equi_to_cube = Arg::new("equi-to-cube")
             .action(ArgAction::SetTrue)
-            .short('e')
             .long("equi-to-cube")
             .help("Convert an equirectangular map to a cube map.")
             .long_help("Declares that the input is an equirectangular environment map, and we should convert it to a cube map.")
@@ -110,7 +107,6 @@ impl ISubcommand for Image2Ktx {
             .required(false);
         let is_normal_map = Arg::new("is-normal-map")
             .action(ArgAction::SetTrue)
-            .short('n')
             .long("is-normal-map")
             .help("Declares that the input image is a normal map.")
             .long_help("Declares that the input image is a normal map. This changes some things, like an additonal normalization operation when generating mips.");
@@ -120,7 +116,6 @@ impl ISubcommand for Image2Ktx {
             .help("Declares that floating point input should be output in half-precision.")
             .long_help("Declares that floating point input should be output in half-precision. This only affects floating point input images like HDRIs.");
         let mip_filter = Arg::new("mip-filter")
-            .short('f')
             .long("mip-filter")
             .help("The type of filter to use when downsampling mips.")
             .long_help("The type of filter to use when downsampling mips. Options: nearest, bilinear, cubic, gaussian, lanczos3")
