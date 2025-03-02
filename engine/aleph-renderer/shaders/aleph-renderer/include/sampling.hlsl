@@ -190,16 +190,16 @@ func ConeSampleDensity<T : __BuiltinFloatingPointType>(
 // This is 3D cartesian to 2D spherical coordinates conversion, we assume the 3D input is a point
 // on the unit sphere (a unit vector).
 //
-// Can be used to sample an equirectangular spherical map like a cube map.
+// Can be used to sample an equirectangular spherical map as if it were a cube map.
 func SampleEquirectangularMap<T : __BuiltinFloatingPointType>(
     vector<T, 3> v
 ) -> vector<T, 2>
 {
-    let invAtan = vector<T, 2>(T(0.1591), T(0.3183));
-    var uv = vector<T, 2>(atan2(v.z, v.x), asin(v.y));
-    uv *= invAtan;
-    uv += T(0.5);
-    return uv;
+    let x1 = atan2(v.x, v.z) * T(1 / PI);   // range [-1.0, 1.0]
+    let y1 = asin(v.y) * T(2.0 / PI);       // range [-1.0, 1.0]
+    let x2 = (x1 + T(1.0)) * T(0.5);        // range [0, 1.0]
+    let y2 = (T(1.0) - y1) * T(0.5);        // range [0, 1.0]
+    return vector<T, 2>(x2, y2);
 }
 
 // Function used inside OctahedralEncode and OctahedralDecode
