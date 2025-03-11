@@ -183,6 +183,25 @@ pub fn sample_spherical_map(s: Vec3) -> Vec2 {
     let yf = (1.0 - yf) * 0.5; // range [0, 1.0]
     Vec2::new(xf, yf)
 }
+ 
+/// The inverse of [`sample_spherical_map`], will map a uv in the [0,1] range back to a 3D direction
+/// vector that it represents in an equirectangular map.
+#[inline]
+pub fn equirectangular_uv_to_direction(uv: Vec2) -> Vec3 {
+    use std::f32::consts::PI;
+    use std::f32::consts::FRAC_PI_2;
+
+    let u = (uv.x * 2.0) - 1.0;
+    let v = (uv.y * 2.0) - 1.0;
+    let long = u * PI;
+    let lat = v * FRAC_PI_2;
+
+    let x = lat.cos() * long.sin();
+    let y = -lat.sin();
+    let z = lat.cos() * long.cos();
+
+    Vec3::new(x,y,z)
+}
 
 /// Function used inside [`octahedral_encode`] and [`octahedral_decode`]
 #[inline]
@@ -226,4 +245,20 @@ pub fn octahedral_decode(e: Vec2) -> Vec3 {
         v.y = xy.y;
     }
     v.normalized()
+}
+
+#[cfg(test)]
+mod tests {
+    use ultraviolet::Vec2;
+
+    use crate::sampling::{equirectangular_uv_to_direction, sample_spherical_map};
+
+    #[test]
+    fn equi_and_back_again() {
+        let a = Vec2::new(0.25, 0.25);
+        let b = equirectangular_uv_to_direction(a);
+        let c = sample_spherical_map(b);
+
+        assert_eq!(a, c);
+    }
 }
