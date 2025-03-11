@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
-use aleph_math::sampling::{octahedral_decode, sample_spherical_map};
+use aleph_math::sampling::{
+    equirectangular_uv_to_direction, octahedral_decode, sample_spherical_map,
+};
 use aleph_math::{UVec2, Vec2};
 use half::f16;
 
 use crate::texture_ops::IFaceSelector;
 use crate::{
-    AddressModeClamp, AddressModeWrap, DynamicImageBuffer, IPixelAccess, IPixelSample,
+    AddressModeClamp, AddressModeWrap, CubeSampler, DynamicImageBuffer, IPixelAccess, IPixelSample,
     IPixelStorage, ImageBuffer, PixR, PixRG, PixRGB, PixRGBA, PixelFormat,
 };
 
@@ -357,4 +359,28 @@ pub fn equi_to_octahedral_dyn(
             DynamicImageBuffer::RGBA32Float(new)
         }
     }
+}
+
+pub fn cube_to_equi<O: PixelFormat>(src: &CubeSampler<O>, face_dimension: UVec2) -> ImageBuffer<O> {
+    let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
+    let dim_f32 = dst.dimensions_f32();
+
+    for y in 0..dst.height() {
+        let v = (y as f32 + 0.5) / dim_f32.y;
+        for x in 0..dst.width() {
+            let u = (x as f32 + 0.5) / dim_f32.x;
+
+            // Use our face selector interface to map the uv space onto the requested cube direction
+            // that we want to sample.
+            let dir = equirectangular_uv_to_direction(Vec2::new(u, v));
+
+            // Perform a bilinear filtered sample of the equirectangular texture at the appropriate
+            // coordinate to fill our cube face.
+            let p = src.point_sample::<AddressModeClamp, AddressModeClamp>(dir);
+            let p = O::from_vec4(p);
+            dst.store(x, y, p);
+        }
+    }
+
+    dst
 }

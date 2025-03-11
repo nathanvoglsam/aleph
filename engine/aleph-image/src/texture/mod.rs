@@ -32,9 +32,10 @@ use half::f16;
 
 use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
 use crate::{
-    equi_to_cube_dyn, equi_to_octahedral_dyn, octahedral_to_cube_dyn, ColorType,
-    DynamicImageBuffer, FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IPixelStorage,
-    IResizeImage, ImageBuffer, PixRGBA, ResizeFilter, TextureOpError, TextureOpResult,
+    cube_to_equi, cube_to_octahedral, equi_to_cube_dyn, equi_to_octahedral_dyn,
+    octahedral_to_cube_dyn, ColorType, CubeSampler, DowncastImageBuffer, DynamicImageBuffer,
+    FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IPixelStorage, IResizeImage,
+    ImageBuffer, PixRGBA, PixelFormat, ResizeFilter, TextureOpError, TextureOpResult,
 };
 
 /// Type that closes over the types of textures we support working with. This includes the types
@@ -450,6 +451,91 @@ impl TextureBuffer {
         Ok(())
     }
 
+    pub fn cube_map_to_octahedral_map(&mut self, face_dimensions: UVec2) -> TextureOpResult<()> {
+        let new_self = match self {
+            TextureBuffer::Single { .. } => {
+                return Err(TextureOpError::InvalidSrcType);
+            }
+            TextureBuffer::Array { .. } => {
+                return Err(TextureOpError::InvalidSrcType);
+            }
+            TextureBuffer::Cube {
+                level_num, images, ..
+            } => {
+                if *level_num > 1 {
+                    return Err(TextureOpError::InvalidSrcType);
+                }
+
+                let mut accessor = CubeToOctAccess {
+                    dim: face_dimensions,
+                    out: None,
+                };
+                cube_sampler_access(images, &mut accessor);
+
+                let new_images = vec![accessor.out.unwrap()];
+                TextureBuffer::Single {
+                    dimensions: face_dimensions,
+                    level_num: 1,
+                    images: new_images,
+                }
+            }
+            TextureBuffer::CubeArray { .. } => {
+                return Err(TextureOpError::InvalidSrcType);
+            }
+        };
+
+        new_self.validate_image_count();
+        new_self.validate_image_types();
+
+        *self = new_self;
+
+        Ok(())
+    }
+
+    pub fn cube_map_to_equirectangular_map(
+        &mut self,
+        face_dimensions: UVec2,
+    ) -> TextureOpResult<()> {
+        let new_self = match self {
+            TextureBuffer::Single { .. } => {
+                return Err(TextureOpError::InvalidSrcType);
+            }
+            TextureBuffer::Array { .. } => {
+                return Err(TextureOpError::InvalidSrcType);
+            }
+            TextureBuffer::Cube {
+                level_num, images, ..
+            } => {
+                if *level_num > 1 {
+                    return Err(TextureOpError::InvalidSrcType);
+                }
+
+                let mut accessor = CubeToEquiAccess {
+                    dim: face_dimensions,
+                    out: None,
+                };
+                cube_sampler_access(images, &mut accessor);
+
+                let new_images = vec![accessor.out.unwrap()];
+                TextureBuffer::Single {
+                    dimensions: face_dimensions,
+                    level_num: 1,
+                    images: new_images,
+                }
+            }
+            TextureBuffer::CubeArray { .. } => {
+                return Err(TextureOpError::InvalidSrcType);
+            }
+        };
+
+        new_self.validate_image_count();
+        new_self.validate_image_types();
+
+        *self = new_self;
+
+        Ok(())
+    }
+
     pub fn equirectangular_to_octahedral_map(
         &mut self,
         face_dimensions: UVec2,
@@ -764,4 +850,155 @@ fn calculate_set_index(layer_num: usize, level_num: usize, layer: usize, level: 
     let i = layer * level_num;
     let i = i + level;
     i
+}
+
+trait ICubeSamplerAccess {
+    fn access<T: PixelFormat>(&mut self, sampler: &CubeSampler<T>)
+    where
+        DynamicImageBuffer: From<ImageBuffer<T>>;
+}
+
+struct CubeToOctAccess {
+    dim: UVec2,
+    out: Option<DynamicImageBuffer>,
+}
+
+impl ICubeSamplerAccess for CubeToOctAccess {
+    fn access<T: PixelFormat>(&mut self, sampler: &CubeSampler<T>)
+    where
+        DynamicImageBuffer: From<ImageBuffer<T>>,
+    {
+        let out = cube_to_octahedral(sampler, self.dim);
+        self.out = Some(DynamicImageBuffer::from(out));
+    }
+}
+
+struct CubeToEquiAccess {
+    dim: UVec2,
+    out: Option<DynamicImageBuffer>,
+}
+
+impl ICubeSamplerAccess for CubeToEquiAccess {
+    fn access<T: PixelFormat>(&mut self, sampler: &CubeSampler<T>)
+    where
+        DynamicImageBuffer: From<ImageBuffer<T>>,
+    {
+        let out = cube_to_equi(sampler, self.dim);
+        self.out = Some(DynamicImageBuffer::from(out));
+    }
+}
+
+fn cube_sampler_access<A: ICubeSamplerAccess>(images: &[DynamicImageBuffer], a: &mut A) {
+    assert!(
+        images.len() >= 6,
+        "At least 6 images are needed to form a texture cube"
+    );
+
+    let first = &images[0];
+
+    match first {
+        DynamicImageBuffer::R8Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RG8Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGB8Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGBA8Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::R16Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RG16Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGB16Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGBA16Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::R32Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RG32Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGB32Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGBA32Unorm(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::R16Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RG16Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGB16Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGBA16Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::R32Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RG32Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGB32Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+        DynamicImageBuffer::RGBA32Float(i) => {
+            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
+            a.access(&sampler);
+        }
+    }
+}
+
+/// Kind of awful thing we use to construct a statically typed CubeSampler from our array of
+/// dynamically typed cube images. This is part of [`cube_sampler_access`], where we use a match
+/// to get a concrete type in a dynamic context and then rely on type coercion to deduce what T
+/// should be without naming it (as that would suck to type out).
+///
+/// We _could_ just name the type in [`cube_sampler_access`], but this works too.
+fn downcast_rest_to_cube_sampler<'a, T: PixelFormat>(
+    first: &'a ImageBuffer<T>,
+    images: &'a [DynamicImageBuffer],
+) -> CubeSampler<'a, T>
+where
+    DynamicImageBuffer: DowncastImageBuffer<ImageBuffer<T>>,
+{
+    CubeSampler::new(
+        first,
+        images[0].downcast_image_buffer().unwrap(),
+        images[1].downcast_image_buffer().unwrap(),
+        images[2].downcast_image_buffer().unwrap(),
+        images[3].downcast_image_buffer().unwrap(),
+        images[4].downcast_image_buffer().unwrap(),
+    )
 }
