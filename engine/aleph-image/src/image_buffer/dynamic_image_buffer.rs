@@ -348,6 +348,45 @@ from_image_buffer_impl!(ImageBuffer<PixRG<f32>>, RG32Float);
 from_image_buffer_impl!(ImageBuffer<PixRGB<f32>>, RGB32Float);
 from_image_buffer_impl!(ImageBuffer<PixRGBA<f32>>, RGBA32Float);
 
+/// Trait for doing a runtime checked downcast to a specific concrete [`ImageBuffer`] type.
+pub trait DowncastImageBuffer<Target> {
+    fn downcast_image_buffer(&self) -> Option<&Target>;
+}
+
+macro_rules! downcast_image_buffer_impl {
+    ($x: path, $v: ident) => {
+        impl DowncastImageBuffer<$x> for DynamicImageBuffer {
+            fn downcast_image_buffer(&self) -> Option<&$x> {
+                match self {
+                    Self::$v(v) => Some(v),
+                    _ => None,
+                }
+            }
+        }
+    };
+}
+
+downcast_image_buffer_impl!(ImageBuffer<PixR<u8>>, R8Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRG<u8>>, RG8Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRGB<u8>>, RGB8Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRGBA<u8>>, RGBA8Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixR<u16>>, R16Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRG<u16>>, RG16Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRGB<u16>>, RGB16Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRGBA<u16>>, RGBA16Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixR<u32>>, R32Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRG<u32>>, RG32Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRGB<u32>>, RGB32Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixRGBA<u32>>, RGBA32Unorm);
+downcast_image_buffer_impl!(ImageBuffer<PixR<f16>>, R16Float);
+downcast_image_buffer_impl!(ImageBuffer<PixRG<f16>>, RG16Float);
+downcast_image_buffer_impl!(ImageBuffer<PixRGB<f16>>, RGB16Float);
+downcast_image_buffer_impl!(ImageBuffer<PixRGBA<f16>>, RGBA16Float);
+downcast_image_buffer_impl!(ImageBuffer<PixR<f32>>, R32Float);
+downcast_image_buffer_impl!(ImageBuffer<PixRG<f32>>, RG32Float);
+downcast_image_buffer_impl!(ImageBuffer<PixRGB<f32>>, RGB32Float);
+downcast_image_buffer_impl!(ImageBuffer<PixRGBA<f32>>, RGBA32Float);
+
 /// A twin to [`DynamicImageBuffer`] that closes over the same set of enum variants but without the
 /// associated data. This is used to deal with the 'type' of a [`DynamicImageBuffer`] separate from
 /// any specific buffer.

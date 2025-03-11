@@ -29,12 +29,17 @@
 
 mod dynamic_image_buffer;
 
-pub use dynamic_image_buffer::{ColorType, DynamicImageBuffer};
+pub use dynamic_image_buffer::{ColorType, DowncastImageBuffer, DynamicImageBuffer};
 
 use half::f16;
 
 use crate::{FromImagePixel, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat};
 
+/// An owned image container. Encapsulates a width/height, pixel format and backing buffer into a
+/// single object that contains an image.
+///
+/// Exposes operations for allocating new textures, constructing textures with existing buffers, as
+/// well as a number of traits for accessing the pixels of the image.
 pub struct ImageBuffer<T: PixelFormat> {
     pub(crate) width: u32,
     pub(crate) height: u32,
@@ -44,6 +49,7 @@ pub struct ImageBuffer<T: PixelFormat> {
 }
 
 impl<T: PixelFormat> ImageBuffer<T> {
+    /// Constructs a new, default initialized texture of the given dimensions.
     pub fn new(width: u32, height: u32) -> Self {
         assert!(width <= 65535);
         assert!(height <= 65535);
@@ -61,6 +67,12 @@ impl<T: PixelFormat> ImageBuffer<T> {
         }
     }
 
+    /// Constructs a new texture with the given dimensions, taking ownership of the data and
+    /// adopting it as the image's backing buffer.
+    ///
+    /// # Panic
+    ///
+    /// Will panic if 'data.len()' != 'width * height * PixelFormat::CHANNELS'.
     pub fn from_data(width: u32, height: u32, data: Vec<T::Storage>) -> Self {
         assert!(width <= 65535);
         assert!(height <= 65535);
@@ -76,26 +88,35 @@ impl<T: PixelFormat> ImageBuffer<T> {
         }
     }
 
+    /// Unwrap the image back to the raw buffer
     pub fn into_data(self) -> Vec<T::Storage> {
         self.data
     }
 
+    /// Access the image's backing buffer as a flat array.
     #[inline]
     pub fn data(&self) -> &[T::Storage] {
         self.data.as_slice()
     }
 
+    /// Access the image's backing buffer as a flat array.
     #[inline]
     pub fn data_mut(&mut self) -> &mut [T::Storage] {
         self.data.as_mut_slice()
     }
 
+    /// Calculates the expected/required length of a backing `Vec` for an image of the given
+    /// dimensions for the pixel format `T`.
     pub const fn calculate_element_count(width: u32, height: u32) -> usize {
         let pixels = width as usize * height as usize;
         let elements = pixels * T::COMPONENTS;
         elements
     }
 
+    /// Converts the image buffer into little endian byte order in-place.
+    ///
+    /// This is a no-op on little endian platforms. On big-endian platforms a byte order swap will
+    /// occur.
     pub fn to_little_endian(&mut self) {
         if !cfg!(target_endian = "big") {
             return;
