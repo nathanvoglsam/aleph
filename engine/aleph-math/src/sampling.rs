@@ -185,6 +185,7 @@ pub fn sample_spherical_map(s: Vec3) -> Vec2 {
 }
 
 /// Function used inside [`octahedral_encode`] and [`octahedral_decode`]
+#[inline]
 pub fn octahedral_sign_not_zero(v: Vec2) -> Vec2 {
     let x = if v.x >= 0.0 { 1.0 } else { -1.0 };
     let y = if v.y >= 0.0 { 1.0 } else { -1.0 };
@@ -193,6 +194,7 @@ pub fn octahedral_sign_not_zero(v: Vec2) -> Vec2 {
 
 /// Maps a unit vector 'v' into a 2D octahedral mapped space. Returns a UV coordinate in the [0, 1]
 /// range.
+#[inline]
 pub fn octahedral_encode(v: Vec3) -> Vec2 {
     // Project the sphere onto the octahedron, and then onto the xy plane
     let p = v.xy() * (1.0 / (f32::abs(v.x) + f32::abs(v.y) + f32::abs(v.z)));
@@ -211,6 +213,7 @@ pub fn octahedral_encode(v: Vec3) -> Vec2 {
 }
 
 /// Maps a 2D octahedral texture coordinate in the [0, 1] range into a 3D unit vector.
+#[inline]
 pub fn octahedral_decode(e: Vec2) -> Vec3 {
     // Undo our remap to [0, 1] and get back to the [-1, 1] this code expects
     let e = e * Vec2::broadcast(2.0) - Vec2::broadcast(1.0);
