@@ -51,6 +51,36 @@ use crate::{IPixelAccess, IPixelStorage, ImageBuffer, PixelFormat};
 /// This interface is a CPU implementation of what contemporary shading languages provide for image
 /// sampling on the GPU. This interface provides similar capabilities.
 pub trait IPixelSample: IPixelAccess {
+    /// Performs a single sample of the image at the given uv coordinate.
+    ///
+    /// The input coordinates are in a normalized space where 0..1 ranges across the width/height of
+    /// the underlying image. Images can be sampled without knowledge of the underlying size of the
+    /// image.
+    ///
+    /// The resulting value is always a Vec4, mapped from the underlying pixel representation. The
+    /// mapping rules are simple:
+    /// - The Vec4's xyzw fields map to rgba in the source image.
+    /// - Channels missing in the source image are mapped to zero. Loading an RG format image will
+    ///   yield a Vec4 containing rg00.
+    /// - Unorm images are mapped into the 0..1 range.
+    /// - Float images have each channel loaded directly, widening to fp32 if needed.
+    ///
+    /// The addressing mode for the U and V coordinate is configurable for each axis separately. The
+    /// [`IAddressMode`] interface provides the functionality needed. The 'U' and 'V' generic
+    /// parameters configure the address mode for the U and V axis respectively.
+    ///
+    /// The sampling operation is unfiltered and will follow the point sampling rules specified in
+    /// the d3d11 spec. Only a single tap of the texture will be taken, with the point snapped to
+    /// a pixel by taking the floor of the uv as mapped into the size range of the texture.
+    ///
+    /// # Precision
+    ///
+    /// The sampling behavior is sensitive to floating point precision in the input coordinates.
+    /// Using coordinates with a large magnitude will reduce the precision of the sampling. Sampling
+    /// is also sensitive to precision via the underlying dimensions of the image. It is recommended
+    /// to avoid passing in large UV coordinates, especially for large textures.
+    fn point_sample<U: IAddressMode, V: IAddressMode>(&self, uv: Vec2) -> Vec4;
+
     /// Performs a bilinear sample of the image at the given uv coordinate.
     ///
     /// The input coordinates are in a normalized space where 0..1 ranges across the width/height of
@@ -134,6 +164,15 @@ impl IAddressMode for AddressModeWrap {
 }
 
 impl<T: PixelFormat> IPixelSample for ImageBuffer<T> {
+    fn point_sample<U: IAddressMode, V: IAddressMode>(&self, uv: Vec2) -> Vec4 {
+        let dims_f32 = self.dimensions_f32();
+
+        let u = point_texel_coord_to_sample_pos::<U>(dims_f32.x, uv.x);
+        let v = point_texel_coord_to_sample_pos::<V>(dims_f32.y, uv.y);
+
+        self.load(u as u32, v as u32).as_vec4()
+    }
+
     fn sample<U: IAddressMode, V: IAddressMode>(&self, uv: Vec2) -> Vec4 {
         let dims_f32 = self.dimensions_f32();
 
@@ -175,4 +214,14 @@ fn texel_coord_to_sample_pos_and_weights<M: IAddressMode>(
     let floor_w = 1.0 - ceil_w;
 
     (floor, ceil, floor_w, ceil_w)
+}
+
+fn point_texel_coord_to_sample_pos<M: IAddressMode>(dim: f32, x: f32) -> f32 {
+    let x = M::reduce_range(x);
+    let scaled = x * dim;
+
+    let floor = scaled.floor();
+    let floor = M::apply(dim, floor);
+
+    floor
 }
