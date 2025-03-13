@@ -27,341 +27,21 @@
 // SOFTWARE.
 //
 
-use aleph_math::sampling::{
-    equirectangular_uv_to_direction, octahedral_decode, sample_spherical_map,
-};
+use aleph_math::sampling::equirectangular_uv_to_direction;
 use aleph_math::{UVec2, Vec2};
 use half::f16;
 
-use crate::texture_ops::IFaceSelector;
 use crate::{
-    AddressModeClamp, AddressModeWrap, CubeSampler, DynamicImageBuffer, IPixelAccess, IPixelSample,
-    IPixelStorage, ImageBuffer, PixR, PixRG, PixRGB, PixRGBA, PixelFormat,
+    DynamicImageBuffer, IDirectionalSampler, IPixelAccess, IPixelStorage, ImageBuffer,
+    OctahderalDirectionalSampler, PixR, PixRG, PixRGB, PixRGBA, PixelFormat,
 };
 
-/// Assuming the input image is an equirectangular environment map, this function will compute the
-/// requested face of a cubemap by sampling the source image as an equirectangular environment map.
-///
-/// By calling this function 6 times, one for each cube face, you can create a complate cubemap
-/// from an input equirectangular environment map.
-///
-/// # Why?
-///
-/// Spherical coordinates are not a good choice for parametrizing a lookup table. The coordinates
-/// can be expensive to work with (trig functions), and there are singularities in the parameter
-/// space (the poles). The sample distribution is poor, wasting most pixels on the poles, and can
-/// lead to poor filtering quality. The _only_ positive is the 2D parameter space.
-///
-/// Cube maps are superior in a number of ways:
-/// - Much more consistent sample distribution
-/// - No singularities
-/// - Efficient, native support on the GPU
-///
-/// This function forms the basis of a pipeline to convert spherical maps into cube maps.
-///
-/// # What else?
-///
-/// There are other, better methods to store an environment map in a 2D texture. Octahedral maps are
-/// efficient to address, have a vastly superior sample distribution, and take advantage of GPU
-/// hardware for seemless filtering. They can be made much smaller than cube maps and are much
-/// easier to manage in a render pipeline (they're just 2D images). They are also a fantastic
-/// choice to consider.
-pub fn equi_to_cube<F: IFaceSelector, O: PixelFormat>(
-    src: &impl IPixelSample,
+/// This function will resample the input image into an equivalent environment map in an
+/// equirectangular encoding.
+pub fn image_to_equi<O: PixelFormat>(
+    src: &impl IDirectionalSampler,
     face_dimension: UVec2,
 ) -> ImageBuffer<O> {
-    let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
-    let dim_f32 = dst.dimensions_f32();
-
-    for y in 0..dst.height() {
-        let v = (y as f32 + 0.5) / dim_f32.y;
-        for x in 0..dst.width() {
-            let u = (x as f32 + 0.5) / dim_f32.x;
-
-            // Use our face selector interface to map the uv space onto the requested cube direction
-            // that we want to sample.
-            let dir = F::get_mapped(u, v);
-            let equi_uv = sample_spherical_map(dir);
-
-            // Perform a bilinear filtered sample of the equirectangular texture at the appropriate
-            // coordinate to fill our cube face.
-            let p = src.sample::<AddressModeWrap, AddressModeClamp>(equi_uv);
-            let p = O::from_vec4(p);
-            dst.store(x, y, p);
-        }
-    }
-
-    dst
-}
-
-/// Wrapper over [`equi_to_cube`] for a [`DynamicImageBuffer`]. The correct conversion
-/// implementation and output mapper is selected based on the dynamic type of the image.
-pub fn equi_to_cube_dyn<F: IFaceSelector>(
-    src: &DynamicImageBuffer,
-    face_dimension: UVec2,
-) -> DynamicImageBuffer {
-    match src {
-        DynamicImageBuffer::R8Unorm(src) => {
-            type Out = PixR<u8>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::R8Unorm(new)
-        }
-        DynamicImageBuffer::RG8Unorm(src) => {
-            type Out = PixRG<u8>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RG8Unorm(new)
-        }
-        DynamicImageBuffer::RGB8Unorm(src) => {
-            type Out = PixRGB<u8>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGB8Unorm(new)
-        }
-        DynamicImageBuffer::RGBA8Unorm(src) => {
-            type Out = PixRGBA<u8>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA8Unorm(new)
-        }
-
-        DynamicImageBuffer::R16Unorm(src) => {
-            type Out = PixR<u16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::R16Unorm(new)
-        }
-        DynamicImageBuffer::RG16Unorm(src) => {
-            type Out = PixRG<u16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RG16Unorm(new)
-        }
-        DynamicImageBuffer::RGB16Unorm(src) => {
-            type Out = PixRGB<u16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGB16Unorm(new)
-        }
-        DynamicImageBuffer::RGBA16Unorm(src) => {
-            type Out = PixRGBA<u16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA16Unorm(new)
-        }
-
-        DynamicImageBuffer::R32Unorm(src) => {
-            type Out = PixR<u32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::R32Unorm(new)
-        }
-        DynamicImageBuffer::RG32Unorm(src) => {
-            type Out = PixRG<u32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RG32Unorm(new)
-        }
-        DynamicImageBuffer::RGB32Unorm(src) => {
-            type Out = PixRGB<u32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGB32Unorm(new)
-        }
-        DynamicImageBuffer::RGBA32Unorm(src) => {
-            type Out = PixRGBA<u32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA32Unorm(new)
-        }
-
-        DynamicImageBuffer::R16Float(src) => {
-            type Out = PixR<f16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::R16Float(new)
-        }
-        DynamicImageBuffer::RG16Float(src) => {
-            type Out = PixRG<f16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RG16Float(new)
-        }
-        DynamicImageBuffer::RGB16Float(src) => {
-            type Out = PixRGB<f16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGB16Float(new)
-        }
-        DynamicImageBuffer::RGBA16Float(src) => {
-            type Out = PixRGBA<f16>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA16Float(new)
-        }
-
-        DynamicImageBuffer::R32Float(src) => {
-            type Out = PixR<f32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::R32Float(new)
-        }
-        DynamicImageBuffer::RG32Float(src) => {
-            type Out = PixRG<f32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RG32Float(new)
-        }
-        DynamicImageBuffer::RGB32Float(src) => {
-            type Out = PixRGB<f32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGB32Float(new)
-        }
-        DynamicImageBuffer::RGBA32Float(src) => {
-            type Out = PixRGBA<f32>;
-            let new = equi_to_cube::<F, Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA32Float(new)
-        }
-    }
-}
-
-/// Assuming the input image is an equirectangular environment map, this function will resample the
-/// input image into an equivalent environment map in an octahedral encoding.
-///
-/// # Why?
-///
-/// Spherical coordinates are not a good choice for parametrizing a lookup table. The coordinates
-/// can be expensive to work with (trig functions), and there are singularities in the parameter
-/// space (the poles). The sample distribution is poor, wasting most pixels on the poles, and can
-/// lead to poor filtering quality. The _only_ positive is the 2D parameter space.
-///
-/// Octahedral maps have a vastly superior sample distribution while remaining a 2D image.
-pub fn equi_to_octahedral<O: PixelFormat>(
-    src: &impl IPixelSample,
-    face_dimension: UVec2,
-) -> ImageBuffer<O> {
-    let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
-    let dim_f32 = dst.dimensions_f32();
-
-    for y in 0..dst.height() {
-        let v = (y as f32 + 0.5) / dim_f32.y;
-        for x in 0..dst.width() {
-            let u = (x as f32 + 0.5) / dim_f32.x;
-
-            // Use our face selector interface to map the uv space onto the requested cube direction
-            // that we want to sample.
-            let dir = octahedral_decode(Vec2::new(u, v));
-            let equi_uv = sample_spherical_map(dir);
-
-            // Perform a bilinear filtered sample of the equirectangular texture at the appropriate
-            // coordinate to fill our cube face.
-            let p = src.sample::<AddressModeWrap, AddressModeClamp>(equi_uv);
-            let p = O::from_vec4(p);
-            dst.store(x, y, p);
-        }
-    }
-
-    dst
-}
-
-/// Wrapper over [`equi_to_octahedral`] for a [`DynamicImageBuffer`]. The correct conversion
-/// implementation and output mapper is selected based on the dynamic type of the image.
-pub fn equi_to_octahedral_dyn(
-    src: &DynamicImageBuffer,
-    face_dimension: UVec2,
-) -> DynamicImageBuffer {
-    match src {
-        DynamicImageBuffer::R8Unorm(src) => {
-            type Out = PixR<u8>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::R8Unorm(new)
-        }
-        DynamicImageBuffer::RG8Unorm(src) => {
-            type Out = PixRG<u8>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RG8Unorm(new)
-        }
-        DynamicImageBuffer::RGB8Unorm(src) => {
-            type Out = PixRGB<u8>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGB8Unorm(new)
-        }
-        DynamicImageBuffer::RGBA8Unorm(src) => {
-            type Out = PixRGBA<u8>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA8Unorm(new)
-        }
-
-        DynamicImageBuffer::R16Unorm(src) => {
-            type Out = PixR<u16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::R16Unorm(new)
-        }
-        DynamicImageBuffer::RG16Unorm(src) => {
-            type Out = PixRG<u16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RG16Unorm(new)
-        }
-        DynamicImageBuffer::RGB16Unorm(src) => {
-            type Out = PixRGB<u16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGB16Unorm(new)
-        }
-        DynamicImageBuffer::RGBA16Unorm(src) => {
-            type Out = PixRGBA<u16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA16Unorm(new)
-        }
-
-        DynamicImageBuffer::R32Unorm(src) => {
-            type Out = PixR<u32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::R32Unorm(new)
-        }
-        DynamicImageBuffer::RG32Unorm(src) => {
-            type Out = PixRG<u32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RG32Unorm(new)
-        }
-        DynamicImageBuffer::RGB32Unorm(src) => {
-            type Out = PixRGB<u32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGB32Unorm(new)
-        }
-        DynamicImageBuffer::RGBA32Unorm(src) => {
-            type Out = PixRGBA<u32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA32Unorm(new)
-        }
-
-        DynamicImageBuffer::R16Float(src) => {
-            type Out = PixR<f16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::R16Float(new)
-        }
-        DynamicImageBuffer::RG16Float(src) => {
-            type Out = PixRG<f16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RG16Float(new)
-        }
-        DynamicImageBuffer::RGB16Float(src) => {
-            type Out = PixRGB<f16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGB16Float(new)
-        }
-        DynamicImageBuffer::RGBA16Float(src) => {
-            type Out = PixRGBA<f16>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA16Float(new)
-        }
-
-        DynamicImageBuffer::R32Float(src) => {
-            type Out = PixR<f32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::R32Float(new)
-        }
-        DynamicImageBuffer::RG32Float(src) => {
-            type Out = PixRG<f32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RG32Float(new)
-        }
-        DynamicImageBuffer::RGB32Float(src) => {
-            type Out = PixRGB<f32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGB32Float(new)
-        }
-        DynamicImageBuffer::RGBA32Float(src) => {
-            type Out = PixRGBA<f32>;
-            let new = equi_to_octahedral::<Out>(src, face_dimension);
-            DynamicImageBuffer::RGBA32Float(new)
-        }
-    }
-}
-
-pub fn cube_to_equi<O: PixelFormat>(src: &CubeSampler<O>, face_dimension: UVec2) -> ImageBuffer<O> {
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
 
@@ -373,14 +53,128 @@ pub fn cube_to_equi<O: PixelFormat>(src: &CubeSampler<O>, face_dimension: UVec2)
             // Use our face selector interface to map the uv space onto the requested cube direction
             // that we want to sample.
             let dir = equirectangular_uv_to_direction(Vec2::new(u, v));
-
-            // Perform a bilinear filtered sample of the equirectangular texture at the appropriate
-            // coordinate to fill our cube face.
-            let p = src.point_sample::<AddressModeClamp, AddressModeClamp>(dir);
+            let p = src.sample(dir);
             let p = O::from_vec4(p);
             dst.store(x, y, p);
         }
     }
 
     dst
+}
+
+/// Wrapper over [`image_to_equi`] for a [`DynamicImageBuffer`]. The correct conversion
+/// implementation and output mapper is selected based on the dynamic type of the image.
+///
+/// This will assume the input is an octahedral environment map and sample it as one to produce
+/// an equirectangular environment map.
+pub fn octahedral_to_equi_dyn(
+    src: &DynamicImageBuffer,
+    face_dimension: UVec2,
+) -> DynamicImageBuffer {
+    match src {
+        DynamicImageBuffer::R8Unorm(src) => {
+            type Out = PixR<u8>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::R8Unorm(new)
+        }
+        DynamicImageBuffer::RG8Unorm(src) => {
+            type Out = PixRG<u8>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RG8Unorm(new)
+        }
+        DynamicImageBuffer::RGB8Unorm(src) => {
+            type Out = PixRGB<u8>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGB8Unorm(new)
+        }
+        DynamicImageBuffer::RGBA8Unorm(src) => {
+            type Out = PixRGBA<u8>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGBA8Unorm(new)
+        }
+
+        DynamicImageBuffer::R16Unorm(src) => {
+            type Out = PixR<u16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::R16Unorm(new)
+        }
+        DynamicImageBuffer::RG16Unorm(src) => {
+            type Out = PixRG<u16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RG16Unorm(new)
+        }
+        DynamicImageBuffer::RGB16Unorm(src) => {
+            type Out = PixRGB<u16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGB16Unorm(new)
+        }
+        DynamicImageBuffer::RGBA16Unorm(src) => {
+            type Out = PixRGBA<u16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGBA16Unorm(new)
+        }
+
+        DynamicImageBuffer::R32Unorm(src) => {
+            type Out = PixR<u32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::R32Unorm(new)
+        }
+        DynamicImageBuffer::RG32Unorm(src) => {
+            type Out = PixRG<u32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RG32Unorm(new)
+        }
+        DynamicImageBuffer::RGB32Unorm(src) => {
+            type Out = PixRGB<u32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGB32Unorm(new)
+        }
+        DynamicImageBuffer::RGBA32Unorm(src) => {
+            type Out = PixRGBA<u32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGBA32Unorm(new)
+        }
+
+        DynamicImageBuffer::R16Float(src) => {
+            type Out = PixR<f16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::R16Float(new)
+        }
+        DynamicImageBuffer::RG16Float(src) => {
+            type Out = PixRG<f16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RG16Float(new)
+        }
+        DynamicImageBuffer::RGB16Float(src) => {
+            type Out = PixRGB<f16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGB16Float(new)
+        }
+        DynamicImageBuffer::RGBA16Float(src) => {
+            type Out = PixRGBA<f16>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGBA16Float(new)
+        }
+
+        DynamicImageBuffer::R32Float(src) => {
+            type Out = PixR<f32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::R32Float(new)
+        }
+        DynamicImageBuffer::RG32Float(src) => {
+            type Out = PixRG<f32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RG32Float(new)
+        }
+        DynamicImageBuffer::RGB32Float(src) => {
+            type Out = PixRGB<f32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGB32Float(new)
+        }
+        DynamicImageBuffer::RGBA32Float(src) => {
+            type Out = PixRGBA<f32>;
+            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            DynamicImageBuffer::RGBA32Float(new)
+        }
+    }
 }

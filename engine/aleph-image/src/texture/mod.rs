@@ -32,7 +32,7 @@ use half::f16;
 
 use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
 use crate::{
-    cube_to_equi, cube_to_octahedral, equi_to_cube_dyn, equi_to_octahedral_dyn,
+    equi_to_cube_dyn, equi_to_octahedral_dyn, image_to_equi, image_to_octahedral,
     octahedral_to_cube_dyn, ColorType, CubeSampler, DowncastImageBuffer, DynamicImageBuffer,
     FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IPixelStorage, IResizeImage,
     ImageBuffer, PixRGBA, PixelFormat, ResizeFilter, TextureOpError, TextureOpResult,
@@ -868,7 +868,7 @@ impl ICubeSamplerAccess for CubeToOctAccess {
     where
         DynamicImageBuffer: From<ImageBuffer<T>>,
     {
-        let out = cube_to_octahedral(sampler, self.dim);
+        let out = image_to_octahedral(sampler, self.dim);
         self.out = Some(DynamicImageBuffer::from(out));
     }
 }
@@ -883,7 +883,7 @@ impl ICubeSamplerAccess for CubeToEquiAccess {
     where
         DynamicImageBuffer: From<ImageBuffer<T>>,
     {
-        let out = cube_to_equi(sampler, self.dim);
+        let out = image_to_equi(sampler, self.dim);
         self.out = Some(DynamicImageBuffer::from(out));
     }
 }

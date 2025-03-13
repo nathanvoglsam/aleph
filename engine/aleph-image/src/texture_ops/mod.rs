@@ -27,11 +27,15 @@
 // SOFTWARE.
 //
 
+mod cube_conversion;
 mod cube_sample;
+mod directional_sampler;
 mod equirectangular_conversion;
 mod octahedral_conversion;
 
+pub use cube_conversion::*;
 pub use cube_sample::CubeSampler;
+pub use directional_sampler::*;
 pub use equirectangular_conversion::*;
 pub use octahedral_conversion::*;
 
