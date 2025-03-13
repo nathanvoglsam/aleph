@@ -48,13 +48,13 @@ pub fn uniform_sample_sphere(u1: f32, u2: f32) -> Vec3 {
     let sin_theta = f32::sqrt(f32::max(0.0, 1.0 - cos_theta * cos_theta));
 
     let x = sin_theta * f32::cos(phi);
-    let y = sin_theta * f32::sin(phi);
-    let z = cos_theta;
+    let y = cos_theta; // Slight tweak over reference to output 'y-up' samples
+    let z = sin_theta * f32::sin(phi);
 
     Vec3::new(x, y, z)
 }
 
-/// PDF for 'UniformSampleSphere'
+/// PDF for [`uniform_sample_sphere`]
 ///
 /// The probability density is constant over the domain for a given radius.
 pub const fn sphere_sample_density(radius: f32) -> f32 {
@@ -74,13 +74,13 @@ pub fn uniform_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
     let sin_theta = f32::sqrt(f32::max(0.0, 1.0 - cos_theta * cos_theta));
 
     let x = sin_theta * f32::cos(phi);
-    let y = sin_theta * f32::sin(phi);
-    let z = cos_theta;
+    let y = cos_theta; // Slight tweak over reference to output 'y-up' samples
+    let z = sin_theta * f32::sin(phi);
 
     Vec3::new(x, y, z)
 }
 
-/// PDF for 'UniformSampleHemisphere'
+/// PDF for [`uniform_sample_hemisphere`]
 ///
 /// The probability density is constant over the domain for a given radius.
 pub const fn hemisphere_sample_density(radius: f32) -> f32 {
@@ -103,7 +103,7 @@ pub fn uniform_sample_disk(u1: f32, u2: f32) -> Vec2 {
     Vec2::new(r * f32::cos(phi), r * f32::sin(phi))
 }
 
-/// PDF for 'UniformSampleDisk'
+/// PDF for [`uniform_sample_disk`]
 ///
 /// The probability density is constant over the domain for a given radius.
 pub const fn disk_sample_density(radius: f32) -> f32 {
@@ -111,8 +111,8 @@ pub const fn disk_sample_density(radius: f32) -> f32 {
     1.0 / (PI * radius * radius)
 }
 
-/// Maps the two input params, in the range [0, 1), into a uniform distribution of points on the
-/// surface of a unit hemisphere.
+/// Maps the two input params, in the range [0, 1), into a cosine weighted distribution of points on
+/// the surface of a unit hemisphere.
 ///
 /// Following along, given u1 and u2 are pulled from a uniform random distribution in the [0, 1)
 /// range, this function will return uniformly random points on the surface of the hemisphere.
@@ -126,10 +126,10 @@ pub fn cosine_sample_hemisphere(u1: f32, u2: f32) -> Vec3 {
 
     // Faster form based on the observation that r = sqrt(u1) -> r^2 = u1. (see UniformSampleDisk).
     let z = f32::sqrt(f32::max(0.0, 1.0 - u1));
-    Vec3::new(p.x, p.y, z)
+    Vec3::new(p.x, z, p.y) // Map z to y to output 'y-up' samples
 }
 
-/// PDF for 'CosineSampleHemisphere'
+/// PDF for [`cosine_sample_hemisphere`]
 ///
 /// 'cosTheta' represents the cosine of the angle between the base of the hemisphere and the focus
 /// of the hemisphere. If we assume a distribution focused around a vector L, and sample vector N,
@@ -154,14 +154,15 @@ pub fn uniform_sample_cone(u1: f32, u2: f32, cos_theta_max: f32) -> Vec3 {
     let sin_theta = f32::sqrt(1.0 - cos_theta * cos_theta);
     let phi = 2.0 * PI * u2;
 
+    // Slight tweak over reference to output 'y-up' samples
     Vec3::new(
         sin_theta * f32::cos(phi),
-        sin_theta * f32::sin(phi),
         cos_theta,
+        sin_theta * f32::sin(phi),
     )
 }
 
-/// PDF for 'UniformSampleCone'
+/// PDF for [`uniform_sample_cone`]
 ///
 /// The probability density is constant over the domain for a given 'cosThetaMax'.
 pub const fn cone_sample_density(cos_theta_max: f32) -> f32 {
@@ -215,6 +216,10 @@ pub fn octahedral_sign_not_zero(v: Vec2) -> Vec2 {
 /// range.
 #[inline]
 pub fn octahedral_encode(v: Vec3) -> Vec2 {
+    // Remap into 'z-up' as the reference implementation expects 'z' to be up but we use a 'y-up'
+    // coordinate system
+    let v = Vec3::new(v.x, v.z, v.y);
+
     // Project the sphere onto the octahedron, and then onto the xy plane
     let p = v.xy() * (1.0 / (f32::abs(v.x) + f32::abs(v.y) + f32::abs(v.z)));
 
@@ -244,6 +249,10 @@ pub fn octahedral_decode(e: Vec2) -> Vec3 {
         v.x = xy.x;
         v.y = xy.y;
     }
+
+    // Remap into 'y-up' as the reference implementation maps up to 'z'
+    let v = Vec3::new(v.x, v.z, v.y); 
+
     v.normalized()
 }
 
