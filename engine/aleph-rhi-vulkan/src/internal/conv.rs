@@ -70,6 +70,7 @@ pub const fn texture_format_to_vk(format: Format) -> vk::Format {
         Format::Bgra8UnormSrgb => vk::Format::B8G8R8A8_SRGB,
         Format::Rgb10a2Unorm => vk::Format::A2B10G10R10_UNORM_PACK32,
         Format::Rg11b10Float => vk::Format::B10G11R11_UFLOAT_PACK32,
+        Format::Rgb9e5Float => vk::Format::E5B9G9R9_UFLOAT_PACK32,
         Format::Rgba16Uint => vk::Format::R16G16B16A16_UINT,
         Format::Rgba16Sint => vk::Format::R16G16B16A16_SINT,
         Format::Rgba16Unorm => vk::Format::R16G16B16A16_UNORM,
