@@ -142,6 +142,23 @@ pub const fn cosine_hemisphere_sample_density(cos_theta: f32) -> f32 {
     cos_theta * FRAC_1_PI
 }
 
+/// Maps the two input params, in the range [0, 1), into points on the surface of a unit
+/// hemisphere following the GGX distribution.
+///
+/// 'a' is roughness.
+#[inline]
+pub fn ggx_sample_hemisphere(u1: f32, u2: f32, a: f32) -> Vec3 {
+    let phi = 2.0 * PI * u1;
+    let cos_theta = f32::sqrt((1.0 - u2) / (1.0 + (a * a - 1.0) * u2));
+    let sin_theta = f32::sqrt(1.0 - cos_theta * cos_theta);
+
+    // Slight tweak over reference to output 'y-up' samples
+    let x = f32::cos(phi) * sin_theta;
+    let y = cos_theta;
+    let z = f32::sin(phi) * sin_theta;
+    Vec3::new(x, y, z)
+}
+
 /// Maps the two input params, in the range [0, 1), into a uniform distribution of points on the
 /// surface of a unit cone. This only includes the outer surface of the cone. That is, all vectors
 /// sampled from this function are of length = 1.
@@ -253,6 +270,28 @@ pub fn octahedral_decode(e: Vec2) -> Vec3 {
     // Remap into 'y-up' as the reference implementation maps up to 'z'
     let v = Vec3::new(v.x, v.z, v.y); 
 
+    v.normalized()
+}
+
+/// This function will, given a 'y-up' sample point on the unit sphere, rotate the input sample
+/// such that up in the input sample space is aligned with the given basis vector 'n'.
+/// 
+/// The input vector is rotated into a new basis where the 'n' vector defines up (y). 
+/// 
+/// Very important for, say, sampling in a hemisphere centered on some normal vector. 
+#[inline]
+pub fn center_sample_around_normal(sample: Vec3, n: Vec3) -> Vec3 {
+    let k = sample;
+
+    let up = if f32::abs(n.z) < 0.999 {
+        Vec3::unit_y()
+    } else {
+        Vec3::unit_z()
+    };
+    let tangent = up.cross(n).normalized();
+    let bitangent = n.cross(tangent);
+
+    let v = tangent * k.x + n * k.y + bitangent * k.z;
     v.normalized()
 }
 
