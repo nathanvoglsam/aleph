@@ -31,6 +31,7 @@ pub use to_double::ToDouble;
 pub use to_single::ToSingle;
 pub use ultraviolet::*;
 
+pub mod rgbe;
 pub mod drobot;
 pub mod sampling;
 
