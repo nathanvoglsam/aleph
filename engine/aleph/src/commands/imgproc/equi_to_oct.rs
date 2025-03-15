@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_image::TextureBuffer;
+use aleph_image::{SphericalMapping, TextureBuffer};
 use aleph_math::UVec2;
 use anyhow::anyhow;
 use clap::{Arg, ArgMatches, Command};
@@ -99,7 +99,8 @@ impl ISubcommand for EquiToOct {
 
         // PERFORM THE TEXTURE PROCESSING
         let face_dimensions = UVec2::new(size, size);
-        images.equirectangular_to_octahedral_map(face_dimensions)?;
+        images
+            .spherical_map_to_octahedral_map(SphericalMapping::Equirectangular, face_dimensions)?;
 
         if gen_mips {
             images.generate_mips(mip_filter.into());
