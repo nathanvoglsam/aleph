@@ -270,6 +270,12 @@ where
 pub trait PixelChannelType:
     Copy + Clone + PartialEq + PartialOrd + Default + Sized + Pod + AnyBitPattern + NoUninit
 {
+    /// The zero value for this pixel channel.
+    ///
+    /// Useful for getting a zero value in a const context for zero-initializing arrays in generic
+    /// code.
+    const ZERO: Self;
+
     /// Converts the value 'self' into the appropriate floating point representation.
     ///
     /// This is where our sample mapping occurs. Unorm conversion happens here.
@@ -289,6 +295,8 @@ pub trait PixelChannelType:
 }
 
 impl PixelChannelType for u8 {
+    const ZERO: Self = 0;
+
     #[inline(always)]
     fn into_float(self) -> f32 {
         unorm_u8_to_f32(self)
@@ -304,6 +312,8 @@ impl PixelChannelType for u8 {
 }
 
 impl PixelChannelType for u16 {
+    const ZERO: Self = 0;
+
     #[inline(always)]
     fn into_float(self) -> f32 {
         unorm_u16_to_f32(self)
@@ -324,6 +334,8 @@ impl PixelChannelType for u16 {
 }
 
 impl PixelChannelType for u32 {
+    const ZERO: Self = 0;
+
     #[inline(always)]
     fn into_float(self) -> f32 {
         // // TODO: this likely sucks
@@ -356,6 +368,8 @@ impl PixelChannelType for u32 {
 }
 
 impl PixelChannelType for f16 {
+    const ZERO: Self = f16::from_f32_const(0.0);
+
     #[inline(always)]
     fn into_float(self) -> f32 {
         f16::to_f32(self)
@@ -373,6 +387,8 @@ impl PixelChannelType for f16 {
 }
 
 impl PixelChannelType for f32 {
+    const ZERO: Self = 0.0;
+
     #[inline(always)]
     fn into_float(self) -> f32 {
         self
