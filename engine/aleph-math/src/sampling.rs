@@ -268,17 +268,17 @@ pub fn octahedral_decode(e: Vec2) -> Vec3 {
     }
 
     // Remap into 'y-up' as the reference implementation maps up to 'z'
-    let v = Vec3::new(v.x, v.z, v.y); 
+    let v = Vec3::new(v.x, v.z, v.y);
 
     v.normalized()
 }
 
 /// This function will, given a 'y-up' sample point on the unit sphere, rotate the input sample
 /// such that up in the input sample space is aligned with the given basis vector 'n'.
-/// 
-/// The input vector is rotated into a new basis where the 'n' vector defines up (y). 
-/// 
-/// Very important for, say, sampling in a hemisphere centered on some normal vector. 
+///
+/// The input vector is rotated into a new basis where the 'n' vector defines up (y).
+///
+/// Very important for, say, sampling in a hemisphere centered on some normal vector.
 #[inline]
 pub fn center_sample_around_normal(sample: Vec3, n: Vec3) -> Vec3 {
     let k = sample;
