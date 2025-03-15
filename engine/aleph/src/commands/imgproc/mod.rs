@@ -106,7 +106,6 @@ fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<Textu
 
             let dimensions = UVec2::new(doc.width(), doc.height());
             let level_num = doc.level_num();
-            let images = vec![];
             let tex = TextureBuffer::Single {
                 dimensions,
                 level_num,
@@ -131,7 +130,6 @@ fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<Textu
             }
 
             let dimensions = UVec2::new(doc.width(), doc.height());
-            let images = vec![];
             let tex = TextureBuffer::Array {
                 dimensions,
                 level_num: level_num as u32,
@@ -157,7 +155,6 @@ fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<Textu
             }
 
             let dimensions = UVec2::new(doc.width(), doc.height());
-            let images = vec![];
             let tex = TextureBuffer::Cube {
                 dimensions,
                 level_num: level_num as u32,
@@ -183,7 +180,6 @@ fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<Textu
 
             let dimensions = UVec2::new(doc.width(), doc.height());
             let cube_num = doc.layer_num() / doc.face_num();
-            let images = vec![];
             let tex = TextureBuffer::CubeArray {
                 dimensions,
                 level_num: level_num as u32,
