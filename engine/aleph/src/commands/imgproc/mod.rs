@@ -27,8 +27,15 @@
 // SOFTWARE.
 //
 
+mod equi_to_cube;
+mod equi_to_oct;
+mod gen_mips;
+mod oct_to_cube;
+mod oct_to_equi;
+
 use std::fs::File;
 use std::io::{BufWriter, Read, Seek};
+use std::path::Path;
 
 use aleph_image::{
     layer_and_level_from_set_index, DynamicImageBuffer, ImageBuffer, PixR, PixRG, PixRGB, PixRGBA,
@@ -37,404 +44,26 @@ use aleph_image::{
 use aleph_ktx::{KtxDocument, KtxDocumentDescription, VkFormat};
 use aleph_math::UVec2;
 use anyhow::anyhow;
-use camino::Utf8Path;
-use clap::{Arg, ArgAction, ArgMatches, Command};
+use camino::{Utf8Path, Utf8PathBuf};
+use clap::{Arg, ArgAction, ArgMatches};
 use half::f16;
 
-use crate::commands::ISubcommand;
-use crate::project::AlephProject;
+use crate::commands::imgproc::equi_to_cube::EquiToCube;
+use crate::commands::imgproc::equi_to_oct::EquiToOct;
+use crate::commands::imgproc::gen_mips::GenMips;
+use crate::commands::imgproc::oct_to_cube::OctToCube;
+use crate::commands::imgproc::oct_to_equi::OctToEqui;
+use crate::commands::SubcommandSet;
 
-pub struct ImgProc;
-
-impl ISubcommand for ImgProc {
-    fn name(&self) -> &'static str {
-        "imgproc"
-    }
-
-    fn description(&mut self) -> Command {
-        let input = Arg::new("input")
-            .short('i')
-            .long("input")
-            .help("The input file.")
-            .long_help("The input file. Supports ktx2.")
-            .required(true);
-        let output = Arg::new("output")
-            .short('o')
-            .long("output")
-            .help("The output file.")
-            .long_help(
-                "The output file. If unspecified the filename is derived from the input name.",
-            )
-            .required(false);
-        let gen_mips = Arg::new("gen-mips")
-            .action(ArgAction::SetTrue)
-            .long("gen-mips")
-            .help("Whether to generate a mip chain from the input image.")
-            .long_help("Whether to generate a mip chain from the input image. Uses a bilinear filter by default.");
-        let equi_to_cube = Arg::new("equi-to-cube")
-            .action(ArgAction::SetTrue)
-            .long("equi-to-cube")
-            .help("Convert an equirectangular map to a cube map.")
-            .long_help("Declares that the input is an equirectangular environment map, and we should convert it to a cube map.")
-            .conflicts_with_all(["equi-to-oct", "oct-to-cube"]);
-        let oct_to_cube = Arg::new("oct-to-cube")
-            .action(ArgAction::SetTrue)
-            .long("oct-to-cube")
-            .help("Convert an octahedral map to a cube map.")
-            .long_help("Declares that the input is an octahedral environment map, and we should convert it to a cube map.")
-            .conflicts_with_all(["equi-to-oct", "equi-to-cube"]);
-        let equi_to_oct = Arg::new("equi-to-oct")
-            .action(ArgAction::SetTrue)
-            .long("equi-to-oct")
-            .help("Convert an equirectangular map to an octahedral map.")
-            .long_help("Declares that the input is an equirectangular environment map, and we should convert it to an octahedral map.")
-            .conflicts_with_all(["equi-to-cube", "oct-to-cube"]);
-        let cube_size = Arg::new("cube-size")
-            .long("cube-size")
-            .help("The width/height of the cube faces to output when generating cube maps.")
-            .long_help("The width/height, in texels, of the cube faces to output when generating cube maps. Use with --equi-to-cube, etc. This only applies when synthesizing a cube map from a non-cube input. Defaults to 512.")
-            .value_parser(clap::value_parser!(u32))
-            .default_value("512")
-            .required(false);
-        let oct_size = Arg::new("oct-size")
-            .long("oct-size")
-            .help("The width/height of the octahedral map to output when generating octahedral maps.")
-            .long_help("The width/height, in texels, of the texture to output when generating octahedral maps. Use with --equi-to-oct, etc. This only applies when synthesizing an octahedral map from a non-cube input. Defaults to 512.")
-            .value_parser(clap::value_parser!(u32))
-            .default_value("512")
-            .required(false);
-        let is_normal_map = Arg::new("is-normal-map")
-            .action(ArgAction::SetTrue)
-            .long("is-normal-map")
-            .help("Declares that the input image is a normal map.")
-            .long_help("Declares that the input image is a normal map. This changes some things, like an additonal normalization operation when generating mips.");
-        let to_half = Arg::new("to-half")
-            .action(ArgAction::SetTrue)
-            .long("to-half")
-            .help("Declares that floating point input should be output in half-precision.")
-            .long_help("Declares that floating point input should be output in half-precision. This only affects floating point input images like HDRIs.");
-        let mip_filter = Arg::new("mip-filter")
-            .long("mip-filter")
-            .help("The type of filter to use when downsampling mips.")
-            .long_help("The type of filter to use when downsampling mips. Options: nearest, bilinear, cubic, gaussian, lanczos3")
-            .default_value("bilinear")
-            .required(false);
-        Command::new(self.name())
-            .about("Converts the given input image into the KTX2 format")
-            .arg(input)
-            .arg(output)
-            .arg(gen_mips)
-            .arg(mip_filter)
-            .arg(is_normal_map)
-            .arg(to_half)
-            .arg(equi_to_cube)
-            .arg(oct_to_cube)
-            .arg(equi_to_oct)
-            .arg(cube_size)
-            .arg(oct_size)
-    }
-
-    fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
-        let input_file: String = matches.remove_one("input").expect("input is required");
-        let input_file = Utf8Path::new(&input_file).to_path_buf();
-
-        let output_arg: Option<String> = matches.remove_one("output");
-        let output = match output_arg {
-            Some(v) => Utf8Path::new(&v).to_path_buf(),
-            None => {
-                // Take the name of the first input file
-                input_file.with_extension("ktx2")
-            }
-        };
-
-        let gen_mips = matches.get_flag("gen-mips");
-        let is_normal_map = matches.get_flag("is-normal-map");
-        let to_half = matches.get_flag("to-half");
-        let equi_to_cube = matches.get_flag("equi-to-cube");
-        let oct_to_cube = matches.get_flag("oct-to-cube");
-        let equi_to_oct = matches.get_flag("equi-to-oct");
-
-        let conversions_enabled = [equi_to_cube, oct_to_cube, equi_to_oct]
-            .into_iter()
-            .filter(|&v| v)
-            .count();
-        if conversions_enabled > 1 {
-            return Err(anyhow!(
-                "Can't have more than one conversion operation enabled at once"
-            ));
-        }
-
-        let mip_filter: String = matches.remove_one("mip-filter").unwrap();
-        let mip_filter = mip_filter.to_lowercase();
-        let mip_filter = parse_filter(&mip_filter)
-            .ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
-
-        let cube_size: u32 = matches.remove_one("cube-size").unwrap();
-        let oct_size: u32 = matches.remove_one("oct-size").unwrap();
-
-        let mut images = {
-            let file = File::open(&input_file)?;
-            let mapped = unsafe { memmap2::Mmap::map(&file)? };
-            let doc = KtxDocument::from_slice(&mapped)?;
-
-            match doc.document_type() {
-                aleph_ktx::DocumentType::Image1D => unimplemented!(),
-                aleph_ktx::DocumentType::Image3D => unimplemented!(),
-                aleph_ktx::DocumentType::Array1D => unimplemented!(),
-                aleph_ktx::DocumentType::Array3D => unimplemented!(),
-                aleph_ktx::DocumentType::Image2D => {
-                    let layer_num = doc.layer_num() as usize;
-                    let level_num = doc.level_num() as usize;
-                    let image_count = layer_num * level_num;
-                    let mut images = Vec::new();
-                    for i in 0..image_count {
-                        let (layer, level) =
-                            layer_and_level_from_set_index(layer_num, level_num, i);
-                        let img = dynamic_image_buffer_from_ktx(
-                            &mapped,
-                            &doc,
-                            u32::try_from(layer).unwrap(),
-                            u32::try_from(level).unwrap(),
-                        )?;
-                        images.push(img);
-                    }
-
-                    let dimensions = UVec2::new(doc.width(), doc.height());
-                    let level_num = doc.level_num();
-                    let images = vec![];
-                    let tex = TextureBuffer::Single {
-                        dimensions,
-                        level_num,
-                        images,
-                    };
-                    tex
-                }
-                aleph_ktx::DocumentType::Array2D => {
-                    let layer_num = doc.layer_num() as usize;
-                    let level_num = doc.level_num() as usize;
-                    let image_count = layer_num * level_num;
-                    let mut images = Vec::new();
-                    for i in 0..image_count {
-                        let (layer, level) =
-                            layer_and_level_from_set_index(layer_num, level_num, i);
-                        let img = dynamic_image_buffer_from_ktx(
-                            &mapped,
-                            &doc,
-                            u32::try_from(layer).unwrap(),
-                            u32::try_from(level).unwrap(),
-                        )?;
-                        images.push(img);
-                    }
-
-                    let dimensions = UVec2::new(doc.width(), doc.height());
-                    let images = vec![];
-                    let tex = TextureBuffer::Array {
-                        dimensions,
-                        level_num: level_num as u32,
-                        layer_num: layer_num as u32,
-                        images,
-                    };
-                    tex
-                }
-                aleph_ktx::DocumentType::Cube => {
-                    let layer_num = doc.layer_num() as usize;
-                    let level_num = doc.level_num() as usize;
-                    let image_count = layer_num * level_num;
-                    let mut images = Vec::new();
-                    for i in 0..image_count {
-                        let (layer, level) =
-                            layer_and_level_from_set_index(layer_num, level_num, i);
-                        let img = dynamic_image_buffer_from_ktx(
-                            &mapped,
-                            &doc,
-                            u32::try_from(layer).unwrap(),
-                            u32::try_from(level).unwrap(),
-                        )?;
-                        images.push(img);
-                    }
-
-                    let dimensions = UVec2::new(doc.width(), doc.height());
-                    let images = vec![];
-                    let tex = TextureBuffer::Cube {
-                        dimensions,
-                        level_num: level_num as u32,
-                        images,
-                    };
-                    tex
-                }
-                aleph_ktx::DocumentType::CubeArray => {
-                    let layer_num = doc.layer_num() as usize;
-                    let level_num = doc.level_num() as usize;
-                    let image_count = layer_num * level_num;
-                    let mut images = Vec::new();
-                    for i in 0..image_count {
-                        let (layer, level) =
-                            layer_and_level_from_set_index(layer_num, level_num, i);
-                        let img = dynamic_image_buffer_from_ktx(
-                            &mapped,
-                            &doc,
-                            u32::try_from(layer).unwrap(),
-                            u32::try_from(level).unwrap(),
-                        )?;
-                        images.push(img);
-                    }
-
-                    let dimensions = UVec2::new(doc.width(), doc.height());
-                    let cube_num = doc.layer_num() / doc.face_num();
-                    let images = vec![];
-                    let tex = TextureBuffer::CubeArray {
-                        dimensions,
-                        level_num: level_num as u32,
-                        cube_num,
-                        images,
-                    };
-                    tex
-                }
-            }
-        };
-
-        images.validate_image_count();
-        images.validate_image_types();
-
-        if equi_to_cube {
-            let face_dimensions = UVec2::new(cube_size, cube_size);
-            images.equirectangular_to_cube_map(face_dimensions)?;
-
-            // let mut face_dimensions = face_dimensions;
-            // face_dimensions.x *= 2;
-            // images.cube_map_to_equirectangular_map(face_dimensions)?;
-        }
-
-        if oct_to_cube {
-            let face_dimensions = UVec2::new(cube_size, cube_size);
-            images.octahedral_to_cube_map(face_dimensions)?;
-        }
-
-        if equi_to_oct {
-            let face_dimensions = UVec2::new(oct_size, oct_size);
-            images.equirectangular_to_octahedral_map(face_dimensions)?;
-        }
-
-        if gen_mips {
-            images.generate_mips(mip_filter.into());
-        }
-
-        if is_normal_map {
-            images.normalize()?;
-        }
-
-        // Swizzle 3 channel formats up to 4 channels as there are almost zero GPUs on the planet
-        // that can sample from 3 channel formats
-        match images.get_color_type() {
-            aleph_image::ColorType::RGB8Unorm => images.swizzle_rgb_to_rgba()?,
-            aleph_image::ColorType::RGB16Unorm => images.swizzle_rgb_to_rgba()?,
-            aleph_image::ColorType::RGB32Unorm => images.swizzle_rgb_to_rgba()?,
-            _ => {}
-        }
-
-        for i in images.images_mut() {
-            if to_half {
-                i.to_half();
-            }
-            i.to_little_endian();
-        }
-
-        let final_color_type = images.get_color_type();
-        let image_references = images.get_buffer_references();
-
-        // Setup mip state in common code to keep the match arms shorter
-        let mut ktx = KtxDocumentDescription::new();
-
-        match final_color_type {
-            aleph_image::ColorType::R8Unorm => ktx.format(VkFormat::R8_UNORM),
-            aleph_image::ColorType::RG8Unorm => ktx.format(VkFormat::R8G8_UNORM),
-            aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
-            aleph_image::ColorType::RGBA8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
-            aleph_image::ColorType::R16Unorm => ktx.format(VkFormat::R16_UNORM),
-            aleph_image::ColorType::RG16Unorm => ktx.format(VkFormat::R16G16_UNORM),
-            aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
-            aleph_image::ColorType::RGBA16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
-            aleph_image::ColorType::R32Unorm => unimplemented!(),
-            aleph_image::ColorType::RG32Unorm => unimplemented!(),
-            aleph_image::ColorType::RGB32Unorm => unimplemented!(),
-            aleph_image::ColorType::RGBA32Unorm => unimplemented!(),
-            aleph_image::ColorType::R16Float => ktx.format(VkFormat::R16_SFLOAT),
-            aleph_image::ColorType::RG16Float => ktx.format(VkFormat::R16G16_SFLOAT),
-            aleph_image::ColorType::RGB16Float => ktx.format(VkFormat::R16G16B16_SFLOAT),
-            aleph_image::ColorType::RGBA16Float => ktx.format(VkFormat::R16G16B16A16_SFLOAT),
-            aleph_image::ColorType::R32Float => ktx.format(VkFormat::R32_SFLOAT),
-            aleph_image::ColorType::RG32Float => ktx.format(VkFormat::R32G32_SFLOAT),
-            aleph_image::ColorType::RGB32Float => ktx.format(VkFormat::R32G32B32_SFLOAT),
-            aleph_image::ColorType::RGBA32Float => ktx.format(VkFormat::R32G32B32A32_SFLOAT),
-        };
-
-        // If we've converted from an equirectangular map to a cube map then we need to change the
-        // output resolution to the chosen cube face dimensions instead of the source image
-        // dimensions
-        match images {
-            TextureBuffer::Single {
-                dimensions,
-                level_num,
-                ..
-            } => {
-                log::info!("Writing Image");
-                ktx.image_2d(dimensions.x, dimensions.y, level_num, &image_references);
-            }
-            TextureBuffer::Array {
-                dimensions,
-                layer_num,
-                level_num,
-                ..
-            } => {
-                log::info!("Writing Image Array with '{layer_num}' images.");
-                ktx.image_2d_array(
-                    dimensions.x,
-                    dimensions.y,
-                    layer_num,
-                    level_num,
-                    &image_references,
-                );
-            }
-            TextureBuffer::Cube {
-                dimensions,
-                level_num,
-                ..
-            } => {
-                log::info!("Writing Cube");
-                ktx.cube(dimensions.x, dimensions.y, level_num, &image_references);
-            }
-            TextureBuffer::CubeArray {
-                dimensions,
-                cube_num,
-                level_num,
-                ..
-            } => {
-                log::info!("Writing Cube Array with '{}' images.", cube_num * 6);
-                ktx.cube_array(
-                    dimensions.x,
-                    dimensions.y,
-                    cube_num,
-                    level_num,
-                    &image_references,
-                );
-            }
-        }
-
-        let output_file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(&output)?;
-
-        let mut writer = BufWriter::new(output_file);
-        ktx.write(&mut writer)?;
-
-        Ok(())
-    }
-
-    fn dont_log(&self) -> bool {
-        false
-    }
+pub fn make() -> SubcommandSet {
+    let mut subcommands =
+        SubcommandSet::new("imgproc").about("Commands for processing images within");
+    subcommands.register_subcommand(EquiToCube);
+    subcommands.register_subcommand(EquiToOct);
+    subcommands.register_subcommand(OctToCube);
+    subcommands.register_subcommand(OctToEqui);
+    subcommands.register_subcommand(GenMips);
+    subcommands
 }
 
 fn parse_filter(v: &str) -> Option<ResizeFilter> {
@@ -447,6 +76,128 @@ fn parse_filter(v: &str) -> Option<ResizeFilter> {
         _ => return None,
     };
     Some(v)
+}
+
+fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<TextureBuffer> {
+    let file = File::open(file)?;
+    let mapped = unsafe { memmap2::Mmap::map(&file)? };
+    let doc = KtxDocument::from_slice(&mapped)?;
+
+    let tex = match doc.document_type() {
+        aleph_ktx::DocumentType::Image1D => unimplemented!(),
+        aleph_ktx::DocumentType::Image3D => unimplemented!(),
+        aleph_ktx::DocumentType::Array1D => unimplemented!(),
+        aleph_ktx::DocumentType::Array3D => unimplemented!(),
+        aleph_ktx::DocumentType::Image2D => {
+            let layer_num = doc.layer_num() as usize;
+            let level_num = doc.level_num() as usize;
+            let image_count = layer_num * level_num;
+            let mut images = Vec::new();
+            for i in 0..image_count {
+                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
+                let img = dynamic_image_buffer_from_ktx(
+                    &mapped,
+                    &doc,
+                    u32::try_from(layer).unwrap(),
+                    u32::try_from(level).unwrap(),
+                )?;
+                images.push(img);
+            }
+
+            let dimensions = UVec2::new(doc.width(), doc.height());
+            let level_num = doc.level_num();
+            let images = vec![];
+            let tex = TextureBuffer::Single {
+                dimensions,
+                level_num,
+                images,
+            };
+            tex
+        }
+        aleph_ktx::DocumentType::Array2D => {
+            let layer_num = doc.layer_num() as usize;
+            let level_num = doc.level_num() as usize;
+            let image_count = layer_num * level_num;
+            let mut images = Vec::new();
+            for i in 0..image_count {
+                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
+                let img = dynamic_image_buffer_from_ktx(
+                    &mapped,
+                    &doc,
+                    u32::try_from(layer).unwrap(),
+                    u32::try_from(level).unwrap(),
+                )?;
+                images.push(img);
+            }
+
+            let dimensions = UVec2::new(doc.width(), doc.height());
+            let images = vec![];
+            let tex = TextureBuffer::Array {
+                dimensions,
+                level_num: level_num as u32,
+                layer_num: layer_num as u32,
+                images,
+            };
+            tex
+        }
+        aleph_ktx::DocumentType::Cube => {
+            let layer_num = doc.layer_num() as usize;
+            let level_num = doc.level_num() as usize;
+            let image_count = layer_num * level_num;
+            let mut images = Vec::new();
+            for i in 0..image_count {
+                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
+                let img = dynamic_image_buffer_from_ktx(
+                    &mapped,
+                    &doc,
+                    u32::try_from(layer).unwrap(),
+                    u32::try_from(level).unwrap(),
+                )?;
+                images.push(img);
+            }
+
+            let dimensions = UVec2::new(doc.width(), doc.height());
+            let images = vec![];
+            let tex = TextureBuffer::Cube {
+                dimensions,
+                level_num: level_num as u32,
+                images,
+            };
+            tex
+        }
+        aleph_ktx::DocumentType::CubeArray => {
+            let layer_num = doc.layer_num() as usize;
+            let level_num = doc.level_num() as usize;
+            let image_count = layer_num * level_num;
+            let mut images = Vec::new();
+            for i in 0..image_count {
+                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
+                let img = dynamic_image_buffer_from_ktx(
+                    &mapped,
+                    &doc,
+                    u32::try_from(layer).unwrap(),
+                    u32::try_from(level).unwrap(),
+                )?;
+                images.push(img);
+            }
+
+            let dimensions = UVec2::new(doc.width(), doc.height());
+            let cube_num = doc.layer_num() / doc.face_num();
+            let images = vec![];
+            let tex = TextureBuffer::CubeArray {
+                dimensions,
+                level_num: level_num as u32,
+                cube_num,
+                images,
+            };
+            tex
+        }
+    };
+
+    tex.validate_image_count();
+    tex.validate_image_types();
+
+    Ok(tex)
 }
 
 fn dynamic_image_buffer_from_ktx<R: Read + Seek>(
@@ -582,4 +333,213 @@ where
     // Finally we can construct the image and wrap it in the matching dynamic type
     let img = ImageBuffer::<P>::from_data(doc.width(), doc.height(), data);
     DynamicImageBuffer::from(img)
+}
+
+fn prepare_texture_for_gpu(tex: &mut TextureBuffer, to_half: bool) -> anyhow::Result<()> {
+    // Swizzle 3 channel formats up to 4 channels as there are almost zero GPUs on the planet
+    // that can sample from 3 channel formats
+    match tex.get_color_type() {
+        aleph_image::ColorType::RGB8Unorm => tex.swizzle_rgb_to_rgba()?,
+        aleph_image::ColorType::RGB16Unorm => tex.swizzle_rgb_to_rgba()?,
+        aleph_image::ColorType::RGB32Unorm => tex.swizzle_rgb_to_rgba()?,
+        _ => {}
+    }
+
+    // Convert to half precision as the very final step before the le byteswap.
+    for i in tex.images_mut() {
+        if to_half {
+            i.to_half();
+        }
+        // This will be a no-op on LE platforms
+        i.to_little_endian();
+    }
+
+    Ok(())
+}
+
+fn write_texture_to_ktx_file<P: AsRef<Path>>(tex: &TextureBuffer, dst: P) -> anyhow::Result<()> {
+    tex.validate_image_count();
+    tex.validate_image_types();
+
+    let final_color_type = tex.get_color_type();
+    let image_references = tex.get_buffer_references();
+
+    // Setup mip state in common code to keep the match arms shorter
+    let mut ktx = KtxDocumentDescription::new();
+
+    match final_color_type {
+        aleph_image::ColorType::R8Unorm => ktx.format(VkFormat::R8_UNORM),
+        aleph_image::ColorType::RG8Unorm => ktx.format(VkFormat::R8G8_UNORM),
+        aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
+        aleph_image::ColorType::RGBA8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
+        aleph_image::ColorType::R16Unorm => ktx.format(VkFormat::R16_UNORM),
+        aleph_image::ColorType::RG16Unorm => ktx.format(VkFormat::R16G16_UNORM),
+        aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
+        aleph_image::ColorType::RGBA16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
+        aleph_image::ColorType::R32Unorm => unimplemented!(),
+        aleph_image::ColorType::RG32Unorm => unimplemented!(),
+        aleph_image::ColorType::RGB32Unorm => unimplemented!(),
+        aleph_image::ColorType::RGBA32Unorm => unimplemented!(),
+        aleph_image::ColorType::R16Float => ktx.format(VkFormat::R16_SFLOAT),
+        aleph_image::ColorType::RG16Float => ktx.format(VkFormat::R16G16_SFLOAT),
+        aleph_image::ColorType::RGB16Float => ktx.format(VkFormat::R16G16B16_SFLOAT),
+        aleph_image::ColorType::RGBA16Float => ktx.format(VkFormat::R16G16B16A16_SFLOAT),
+        aleph_image::ColorType::R32Float => ktx.format(VkFormat::R32_SFLOAT),
+        aleph_image::ColorType::RG32Float => ktx.format(VkFormat::R32G32_SFLOAT),
+        aleph_image::ColorType::RGB32Float => ktx.format(VkFormat::R32G32B32_SFLOAT),
+        aleph_image::ColorType::RGBA32Float => ktx.format(VkFormat::R32G32B32A32_SFLOAT),
+    };
+
+    match tex {
+        TextureBuffer::Single {
+            dimensions,
+            level_num,
+            ..
+        } => {
+            log::info!("Writing Image");
+            ktx.image_2d(dimensions.x, dimensions.y, *level_num, &image_references);
+        }
+        TextureBuffer::Array {
+            dimensions,
+            layer_num,
+            level_num,
+            ..
+        } => {
+            log::info!("Writing Image Array with '{layer_num}' images.");
+            ktx.image_2d_array(
+                dimensions.x,
+                dimensions.y,
+                *layer_num,
+                *level_num,
+                &image_references,
+            );
+        }
+        TextureBuffer::Cube {
+            dimensions,
+            level_num,
+            ..
+        } => {
+            log::info!("Writing Cube");
+            ktx.cube(dimensions.x, dimensions.y, *level_num, &image_references);
+        }
+        TextureBuffer::CubeArray {
+            dimensions,
+            cube_num,
+            level_num,
+            ..
+        } => {
+            log::info!("Writing Cube Array with '{}' images.", cube_num * 6);
+            ktx.cube_array(
+                dimensions.x,
+                dimensions.y,
+                *cube_num,
+                *level_num,
+                &image_references,
+            );
+        }
+    }
+
+    let output_file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(dst)?;
+
+    let mut writer = BufWriter::new(output_file);
+    ktx.write(&mut writer)?;
+
+    Ok(())
+}
+
+fn input_arg() -> Arg {
+    Arg::new("input")
+        .short('i')
+        .long("input")
+        .help("The input file.")
+        .long_help("The input file. Supports ktx2.")
+        .required(true)
+}
+
+fn output_arg() -> Arg {
+    Arg::new("output")
+        .short('o')
+        .long("output")
+        .help("The output file.")
+        .long_help("The output file. If unspecified the filename is derived from the input name.")
+        .required(false)
+}
+
+fn gen_mips_arg() -> Arg {
+    Arg::new("gen-mips")
+        .action(ArgAction::SetTrue)
+        .long("gen-mips")
+        .help("Whether to generate a mip chain from the input image.")
+        .long_help("Whether to generate a mip chain from the input image. Uses a bilinear filter by default.")
+}
+
+fn mip_filter_arg() -> Arg {
+    Arg::new("mip-filter")
+        .long("mip-filter")
+        .help("The type of filter to use when downsampling mips.")
+        .long_help("The type of filter to use when downsampling mips. Options: nearest, bilinear, cubic, gaussian, lanczos3")
+        .default_value("bilinear")
+        .required(false)
+}
+
+fn to_half_arg() -> Arg {
+    Arg::new("to-half")
+        .action(ArgAction::SetTrue)
+        .long("to-half")
+        .help("Declares that floating point input should be output in half-precision.")
+        .long_help("Declares that floating point input should be output in half-precision. This only affects floating point input images like HDRIs.")
+}
+
+fn is_normal_map_arg() -> Arg {
+    Arg::new("is-normal-map")
+        .action(ArgAction::SetTrue)
+        .long("is-normal-map")
+        .help("Declares that the input image is a normal map.")
+        .long_help("Declares that the input image is a normal map. This changes some things, like an additonal normalization operation when generating mips.")
+}
+
+fn get_input_match(matches: &mut ArgMatches) -> Utf8PathBuf {
+    let input: String = matches.remove_one("input").expect("input is required");
+    let input = Utf8Path::new(&input).to_path_buf();
+    input
+}
+
+fn get_output_match(matches: &mut ArgMatches, input: &Utf8PathBuf) -> Utf8PathBuf {
+    let output_arg: Option<String> = matches.remove_one("output");
+    let output = match output_arg {
+        Some(v) => Utf8Path::new(&v).to_path_buf(),
+        None => {
+            // Take the name of the first input file
+            input.with_extension("ktx2")
+        }
+    };
+    output
+}
+
+fn get_gen_mips_matches(matches: &mut ArgMatches) -> anyhow::Result<(bool, ResizeFilter)> {
+    let gen_mips = matches.get_flag("gen-mips");
+
+    let mip_filter = get_mip_filter_matches(matches)?;
+
+    Ok((gen_mips, mip_filter))
+}
+
+fn get_mip_filter_matches(matches: &mut ArgMatches) -> anyhow::Result<ResizeFilter> {
+    let mip_filter: String = matches.remove_one("mip-filter").unwrap();
+    let mip_filter = mip_filter.to_lowercase();
+    let mip_filter =
+        parse_filter(&mip_filter).ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
+    Ok(mip_filter)
+}
+
+fn get_to_half_match(matches: &mut ArgMatches) -> bool {
+    matches.get_flag("to-half")
+}
+
+fn get_is_normal_map_match(matches: &mut ArgMatches) -> bool {
+    matches.get_flag("is-normal-map")
 }
