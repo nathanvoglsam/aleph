@@ -242,20 +242,26 @@ impl TextureBuffer {
             vec![DynamicImageBuffer::R8Unorm(ImageBuffer::new(0, 0)); new_image_num as usize];
 
         for (i, input_image) in old_images.into_iter().enumerate() {
-            let i = calculate_set_index(layer_num, new_level_num as usize, i, 0);
+            let i = set_index_for_layer_and_level(layer_num, new_level_num as usize, i, 0);
             new_images[i] = input_image;
         }
 
         for layer in 0..layer_num {
             for level in 1..new_level_num as usize {
-                let i = calculate_set_index(layer_num, new_level_num as usize, layer, level - 1);
+                let i = set_index_for_layer_and_level(
+                    layer_num,
+                    new_level_num as usize,
+                    layer,
+                    level - 1,
+                );
                 let last = &new_images[i];
 
                 let new_width = (last.width() / 2).max(1);
                 let new_height = (last.height() / 2).max(1);
                 let next = last.resize(new_width, new_height, filter);
 
-                let i = calculate_set_index(layer_num, new_level_num as usize, layer, level);
+                let i =
+                    set_index_for_layer_and_level(layer_num, new_level_num as usize, layer, level);
                 new_images[i] = next;
             }
         }
@@ -843,13 +849,37 @@ fn swizzle_rgb_to_rgba<T: Copy + Clone>(
     level
 }
 
-fn calculate_set_index(layer_num: usize, level_num: usize, layer: usize, level: usize) -> usize {
+/// Calculates the index for an image, assuming some image set with 'layer_num' and 'level_num'
+/// images.
+pub const fn set_index_for_layer_and_level(
+    layer_num: usize,
+    level_num: usize,
+    layer: usize,
+    level: usize,
+) -> usize {
     assert!(layer < layer_num);
     assert!(level < level_num);
 
     let i = layer * level_num;
     let i = i + level;
     i
+}
+
+/// Calculates the layer and level index of an image, assuming some image set with 'layer_num' and
+/// 'level_num' images. This is the inverse of [`calculate_set_index`].
+///
+/// Returns (layer, level)
+pub const fn layer_and_level_from_set_index(
+    layer_num: usize,
+    level_num: usize,
+    i: usize,
+) -> (usize, usize) {
+    let max_images = layer_num * level_num;
+    assert!(i < max_images);
+
+    let layer = i / level_num;
+    let level = i % level_num;
+    (layer, level)
 }
 
 trait ICubeSamplerAccess {
@@ -1001,4 +1031,30 @@ where
         images[3].downcast_image_buffer().unwrap(),
         images[4].downcast_image_buffer().unwrap(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{layer_and_level_from_set_index, set_index_for_layer_and_level};
+
+    #[test]
+    fn set_mapper_associates() {
+        fn test_for(layer_num: usize, level_num: usize) {
+            for layer in 0..layer_num {
+                for level in 0..level_num {
+                    let i = set_index_for_layer_and_level(layer_num, level_num, layer, level);
+                    let (i_layer, i_level) =
+                        layer_and_level_from_set_index(layer_num, level_num, i);
+                    assert_eq!(layer, i_layer);
+                    assert_eq!(level, i_level);
+                }
+            }
+        }
+
+        for layer_num in 1..=128 {
+            for level_num in 1..=128 {
+                test_for(layer_num, level_num);
+            }
+        }
+    }
 }
