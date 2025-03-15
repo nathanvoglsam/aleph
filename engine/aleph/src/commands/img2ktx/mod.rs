@@ -29,9 +29,8 @@
 
 use std::io::BufWriter;
 
-use aleph_image::{DynamicImageBuffer, IPixelStorage, ResizeFilter, TextureBuffer};
+use aleph_image::{DynamicImageBuffer, IPixelStorage, TextureBuffer};
 use aleph_ktx::{KtxDocumentDescription, VkFormat};
-use aleph_math::UVec2;
 use anyhow::anyhow;
 use camino::Utf8Path;
 use clap::parser::Values;
@@ -40,7 +39,7 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 
-pub struct Image2Ktx {}
+pub struct Image2Ktx;
 
 impl ISubcommand for Image2Ktx {
     fn name(&self) -> &'static str {
@@ -63,78 +62,16 @@ impl ISubcommand for Image2Ktx {
                 "The output file. If unspecified the filename is derived from the input name.",
             )
             .required(false);
-        let gen_mips = Arg::new("gen-mips")
-            .action(ArgAction::SetTrue)
-            .long("gen-mips")
-            .help("Whether to generate a mip chain from the input image.")
-            .long_help("Whether to generate a mip chain from the input image. Uses a bilinear filter by default.");
         let is_cube = Arg::new("is-cube")
             .action(ArgAction::SetTrue)
             .long("is-cube")
             .help("Whether the input image set describes a cube map.")
             .long_help("Whether the input image set describes a cube map. Must provide six images, ordered by +X, -X, +Y, -Y, +Z, -Z");
-        let equi_to_cube = Arg::new("equi-to-cube")
-            .action(ArgAction::SetTrue)
-            .long("equi-to-cube")
-            .help("Convert an equirectangular map to a cube map.")
-            .long_help("Declares that the input is an equirectangular environment map, and we should convert it to a cube map.")
-            .conflicts_with_all(["equi-to-oct", "oct-to-cube"]);
-        let oct_to_cube = Arg::new("oct-to-cube")
-            .action(ArgAction::SetTrue)
-            .long("oct-to-cube")
-            .help("Convert an octahedral map to a cube map.")
-            .long_help("Declares that the input is an octahedral environment map, and we should convert it to a cube map.")
-            .conflicts_with_all(["equi-to-oct", "equi-to-cube"]);
-        let equi_to_oct = Arg::new("equi-to-oct")
-            .action(ArgAction::SetTrue)
-            .long("equi-to-oct")
-            .help("Convert an equirectangular map to an octahedral map.")
-            .long_help("Declares that the input is an equirectangular environment map, and we should convert it to an octahedral map.")
-            .conflicts_with_all(["equi-to-cube", "oct-to-cube"]);
-        let cube_size = Arg::new("cube-size")
-            .long("cube-size")
-            .help("The width/height of the cube faces to output when generating cube maps.")
-            .long_help("The width/height, in texels, of the cube faces to output when generating cube maps. Use with --equi-to-cube, etc. This only applies when synthesizing a cube map from a non-cube input. Defaults to 512.")
-            .value_parser(clap::value_parser!(u32))
-            .default_value("512")
-            .required(false);
-        let oct_size = Arg::new("oct-size")
-            .long("oct-size")
-            .help("The width/height of the octahedral map to output when generating octahedral maps.")
-            .long_help("The width/height, in texels, of the texture to output when generating octahedral maps. Use with --equi-to-oct, etc. This only applies when synthesizing an octahedral map from a non-cube input. Defaults to 512.")
-            .value_parser(clap::value_parser!(u32))
-            .default_value("512")
-            .required(false);
-        let is_normal_map = Arg::new("is-normal-map")
-            .action(ArgAction::SetTrue)
-            .long("is-normal-map")
-            .help("Declares that the input image is a normal map.")
-            .long_help("Declares that the input image is a normal map. This changes some things, like an additonal normalization operation when generating mips.");
-        let to_half = Arg::new("to-half")
-            .action(ArgAction::SetTrue)
-            .long("to-half")
-            .help("Declares that floating point input should be output in half-precision.")
-            .long_help("Declares that floating point input should be output in half-precision. This only affects floating point input images like HDRIs.");
-        let mip_filter = Arg::new("mip-filter")
-            .long("mip-filter")
-            .help("The type of filter to use when downsampling mips.")
-            .long_help("The type of filter to use when downsampling mips. Options: nearest, bilinear, cubic, gaussian, lanczos3")
-            .default_value("bilinear")
-            .required(false);
         Command::new(self.name())
             .about("Converts the given input image into the KTX2 format")
             .arg(input)
             .arg(output)
-            .arg(gen_mips)
-            .arg(mip_filter)
-            .arg(is_normal_map)
-            .arg(to_half)
             .arg(is_cube)
-            .arg(equi_to_cube)
-            .arg(oct_to_cube)
-            .arg(equi_to_oct)
-            .arg(cube_size)
-            .arg(oct_size)
     }
 
     fn exec(&mut self, _project: &AlephProject, mut matches: ArgMatches) -> anyhow::Result<()> {
@@ -154,31 +91,7 @@ impl ISubcommand for Image2Ktx {
             }
         };
 
-        let gen_mips = matches.get_flag("gen-mips");
-        let is_normal_map = matches.get_flag("is-normal-map");
-        let to_half = matches.get_flag("to-half");
         let is_cube = matches.get_flag("is-cube");
-        let equi_to_cube = matches.get_flag("equi-to-cube");
-        let oct_to_cube = matches.get_flag("oct-to-cube");
-        let equi_to_oct = matches.get_flag("equi-to-oct");
-
-        let conversions_enabled = [equi_to_cube, oct_to_cube, equi_to_oct]
-            .into_iter()
-            .filter(|&v| v)
-            .count();
-        if conversions_enabled > 1 {
-            return Err(anyhow!(
-                "Can't have more than one conversion operation enabled at once"
-            ));
-        }
-
-        let mip_filter: String = matches.remove_one("mip-filter").unwrap();
-        let mip_filter = mip_filter.to_lowercase();
-        let mip_filter = parse_filter(&mip_filter)
-            .ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
-
-        let cube_size: u32 = matches.remove_one("cube-size").unwrap();
-        let oct_size: u32 = matches.remove_one("oct-size").unwrap();
 
         // Make sure we have enough input images to encode a cubemap(array)
         if is_cube {
@@ -270,29 +183,6 @@ impl ISubcommand for Image2Ktx {
         images.validate_image_count();
         images.validate_image_types();
 
-        if equi_to_cube {
-            let face_dimensions = UVec2::new(cube_size, cube_size);
-            images.equirectangular_to_cube_map(face_dimensions)?;
-        }
-
-        if oct_to_cube {
-            let face_dimensions = UVec2::new(cube_size, cube_size);
-            images.octahedral_to_cube_map(face_dimensions)?;
-        }
-
-        if equi_to_oct {
-            let face_dimensions = UVec2::new(oct_size, oct_size);
-            images.equirectangular_to_octahedral_map(face_dimensions)?;
-        }
-
-        if gen_mips {
-            images.generate_mips(mip_filter.into());
-        }
-
-        if is_normal_map {
-            images.normalize()?;
-        }
-
         // Swizzle 3 channel formats up to 4 channels as there are almost zero GPUs on the planet
         // that can sample from 3 channel formats
         match images.get_color_type() {
@@ -303,9 +193,6 @@ impl ISubcommand for Image2Ktx {
         }
 
         for i in images.images_mut() {
-            if to_half {
-                i.to_half();
-            }
             i.to_little_endian();
         }
 
@@ -405,16 +292,4 @@ impl ISubcommand for Image2Ktx {
     fn dont_log(&self) -> bool {
         false
     }
-}
-
-fn parse_filter(v: &str) -> Option<ResizeFilter> {
-    let v = match v {
-        "nearest" => ResizeFilter::Nearest,
-        "bilinear" => ResizeFilter::Linear,
-        "cubic" => ResizeFilter::Cubic,
-        "gaussian" => ResizeFilter::Gaussian,
-        "lanczos3" => ResizeFilter::Lanczos3,
-        _ => return None,
-    };
-    Some(v)
 }

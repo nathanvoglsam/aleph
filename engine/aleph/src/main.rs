@@ -28,7 +28,7 @@
 //
 
 use crate::commands::{
-    Build, Bundle, GenConfigs, GenProj, GenVsCode, Image2Ktx, SubcommandSet, Uuid,
+    Build, Bundle, GenConfigs, GenProj, GenVsCode, Image2Ktx, ImgProc, SubcommandSet, Uuid,
 };
 
 mod commands;
@@ -50,7 +50,8 @@ mod vscode_settings;
 
 fn main() -> anyhow::Result<()> {
     let mut subcommands = SubcommandSet::new(env!("CARGO_PKG_NAME"));
-    subcommands.register_subcommand(Image2Ktx {});
+    subcommands.register_subcommand(Image2Ktx);
+    subcommands.register_subcommand(ImgProc);
     subcommands.register_subcommand(Uuid {});
     subcommands.register_subcommand(GenProj {});
     subcommands.register_subcommand(GenVsCode {});

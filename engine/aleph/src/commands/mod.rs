@@ -33,6 +33,7 @@ mod genconfigs;
 mod genproj;
 mod genvscode;
 mod img2ktx;
+mod imgproc;
 pub mod shaders;
 mod uuid;
 
@@ -43,6 +44,7 @@ pub use genconfigs::GenConfigs;
 pub use genproj::GenProj;
 pub use genvscode::GenVsCode;
 pub use img2ktx::Image2Ktx;
+pub use imgproc::ImgProc;
 pub use uuid::Uuid;
 
 use crate::project::AlephProject;
