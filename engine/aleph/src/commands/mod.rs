@@ -65,7 +65,7 @@ pub trait ISubcommand {
 pub struct SubcommandSet {
     name: &'static str,
     about: &'static str,
-    subcommands: std::collections::HashMap<String, Box<dyn ISubcommand>>,
+    subcommands: std::collections::BTreeMap<String, Box<dyn ISubcommand>>,
 }
 
 impl SubcommandSet {
