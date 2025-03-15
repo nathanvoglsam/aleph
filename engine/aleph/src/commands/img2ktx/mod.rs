@@ -183,15 +183,6 @@ impl ISubcommand for Image2Ktx {
         images.validate_image_count();
         images.validate_image_types();
 
-        // Swizzle 3 channel formats up to 4 channels as there are almost zero GPUs on the planet
-        // that can sample from 3 channel formats
-        match images.get_color_type() {
-            aleph_image::ColorType::RGB8Unorm => images.swizzle_rgb_to_rgba()?,
-            aleph_image::ColorType::RGB16Unorm => images.swizzle_rgb_to_rgba()?,
-            aleph_image::ColorType::RGB32Unorm => images.swizzle_rgb_to_rgba()?,
-            _ => {}
-        }
-
         for i in images.images_mut() {
             i.to_little_endian();
         }
@@ -205,11 +196,11 @@ impl ISubcommand for Image2Ktx {
         match final_color_type {
             aleph_image::ColorType::R8Unorm => ktx.format(VkFormat::R8_UNORM),
             aleph_image::ColorType::RG8Unorm => ktx.format(VkFormat::R8G8_UNORM),
-            aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
+            aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8_UNORM),
             aleph_image::ColorType::RGBA8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
             aleph_image::ColorType::R16Unorm => ktx.format(VkFormat::R16_UNORM),
             aleph_image::ColorType::RG16Unorm => ktx.format(VkFormat::R16G16_UNORM),
-            aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
+            aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16_UNORM),
             aleph_image::ColorType::RGBA16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
             aleph_image::ColorType::R32Unorm => unimplemented!(),
             aleph_image::ColorType::RG32Unorm => unimplemented!(),

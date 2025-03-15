@@ -370,11 +370,11 @@ fn write_texture_to_ktx_file<P: AsRef<Path>>(tex: &TextureBuffer, dst: P) -> any
     match final_color_type {
         aleph_image::ColorType::R8Unorm => ktx.format(VkFormat::R8_UNORM),
         aleph_image::ColorType::RG8Unorm => ktx.format(VkFormat::R8G8_UNORM),
-        aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
+        aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8_UNORM),
         aleph_image::ColorType::RGBA8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
         aleph_image::ColorType::R16Unorm => ktx.format(VkFormat::R16_UNORM),
         aleph_image::ColorType::RG16Unorm => ktx.format(VkFormat::R16G16_UNORM),
-        aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
+        aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16_UNORM),
         aleph_image::ColorType::RGBA16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
         aleph_image::ColorType::R32Unorm => unimplemented!(),
         aleph_image::ColorType::RG32Unorm => unimplemented!(),
