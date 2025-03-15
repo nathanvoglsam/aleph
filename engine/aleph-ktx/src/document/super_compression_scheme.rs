@@ -159,3 +159,25 @@ impl Debug for SuperCompressionScheme {
         })
     }
 }
+
+impl std::fmt::Display for SuperCompressionScheme {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        fmt.write_str(match *self {
+            Self::NONE => "NONE",
+            Self::BASIS_LZ => "BASIS_LZ",
+            Self::ZSTD => "ZSTD",
+            Self::ZLIB => "ZLIB",
+            _ => {
+                if self.is_in_ktx_reserved() {
+                    "(unknown):KTX_RESERVED"
+                } else if self.is_in_vendor_reserved() {
+                    "(unknown):VENDOR_RESERVED"
+                } else if self.is_in_invalid_reserved() {
+                    "(unknown):INVALID_RESERVED"
+                } else {
+                    "(unknown)"
+                }
+            }
+        })
+    }
+}

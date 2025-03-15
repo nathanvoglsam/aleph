@@ -41,6 +41,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 pub use file_index::FileIndex;
 pub use level_index::LevelIndex;
 pub use super_compression_scheme::SuperCompressionScheme;
+use thiserror::Error;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::is_format_prohibited;
@@ -53,106 +54,91 @@ use crate::{
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
 /// of bytes
 ///
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum KtxReadError {
-    /// Could not find the requested key in the KVD section
+    #[error("Could not find the requested key in the KVD section")]
     NoSuchKey,
 
-    /// This error is produced when the stream of bytes does not contain a ktx file. This will
-    /// usually be thrown if file identifier is invalid
+    #[error("The stream of bytes does not contain a ktx file.")]
     NotKtxDocument,
 
-    /// A file reading function was called but the reader has been taken from the document.
+    #[error("A file reading function was called but the reader has been taken from the document.")]
     NoReader,
 
-    /// The KTX file tried to specify a prohibited format
+    #[error("The KTX file tried to specify a prohibited format. Got '{0}'.")]
     ProhibitedFormat(VkFormat),
 
-    /// The KTX file specified a format this implementation doesn't support
+    #[error("The KTX file specified a format this implementation doesn't support. Get '{0}'.")]
     UnsupportedFormat(VkFormat),
 
-    /// The declared typeSize field does not match the value expected by the format
+    #[error(
+        "The declared typeSize field does not match the value expected by the format. Get '{0}'."
+    )]
     InvalidTypeSize(u32),
 
-    /// The KTX file specified a super compression scheme that this implementation doesn't support
+    #[error("The KTX file specified a super compression scheme that this implementation doesn't support. Got '{0}'.")]
     UnsupportedSuperCompressionScheme(SuperCompressionScheme),
 
-    /// The file's format is incorrect for the declared supercompression scheme.
+    #[error(
+        "The file's format is incorrect for the declared supercompression scheme. Got '{0}, {1}'."
+    )]
     InvalidFormatForSuperCompressionScheme(SuperCompressionScheme, VkFormat),
 
-    /// The super compression global data is either missing or broken.
+    #[error("The super compression global data is either missing or broken.")]
     BadSuperCompressionGlobalData,
 
-    /// The declared dimensions are invalid for the declared format
+    #[error("The declared dimensions are invalid for the declared format. Get '{0:?}'.")]
     InvalidDimensions((u32, u32, u32)),
 
-    /// The depth value in `pixelDepth` must be 0 for cube maps `faceCount == 6`
+    #[error(
+        "The depth value in `pixelDepth` must be 0 for cube maps `faceCount == 6`. Got '{0}'."
+    )]
     InvalidDepthForCubeMap(u32),
 
-    /// `faceCount` must be either 1 or 6 (single image or cube map)
+    #[error("`faceCount` must be either 1 or 6 (single image or cube map). Get '{0}'.")]
     InvalidFaceCount(u32),
 
-    /// The `levelCount` value specified too many image levels for the size of the image
+    #[error("The `levelCount` value specified too many image levels for the size of the image. Got '{0}'.")]
     TooManyLevels(u32),
 
-    /// The image uses a block format but has specified `layerCount` of 0, which is invalid
+    #[error("The image uses a block format but has specified `layerCount` of 0, which is invalid. Got '{0}'.")]
     InvalidLevelCountForBlockFormat(u32),
 
-    /// The `kvdByteOffset` must be 0 if `kvdByteLength` is 0, otherwise it is considered an error
+    #[error("The `kvdByteOffset` must be 0 if `kvdByteLength` is 0. Get '{0}'.")]
     InvalidKeyValueDataOffset(u32),
 
-    /// We found a key in the key/value data but the data is malformed.
+    #[error("We found a key in the key/value data but the data is malformed.")]
     BadKeyValueData,
 
-    /// We found a key in the key/value data but the target buffer is too small to extract the data.
-    /// This error will also contain the number of bytes that we would've needed.
+    #[error("We found a key in the key/value data but the target buffer is too small to extract the data. Got {0}.")]
     DestBufferTooSmall(usize),
 
-    /// The `sgdByteOffset` must be 0 if `sgdByteLength` is 0, otherwise it is considered an error
+    #[error("The `sgdByteOffset` must be 0 if `sgdByteLength` is 0, otherwise it is considered an error. Got '{0}'.")]
     InvalidSuperCompressionGlobalDataOffset(u64),
 
-    /// If a compression scheme wants global data but none is provided in the file
+    #[error("Compression scheme wants global data but none is provided in the file: {0}")]
     CompressionSchemeGlobalDataNotFound(SuperCompressionScheme),
 
-    /// Uncompressed size in a level index was invalid
+    #[error("Uncompressed size in a level index was invalid.")]
     InvalidLevelIndexUncompressedSize,
 
-    /// Produced if the document describes an invalid image type
+    #[error("Produced if the document describes an invalid image type.")]
     InvalidDocumentType,
 
-    /// Whether the dimensions in the image are invalid (i.e 0,0,0)
+    #[error("Whether the dimensions in the image are invalid (i.e 0,0,0).")]
     InvalidImageDimensions,
 
-    /// An error when reading the data format descriptor
-    DFDError(DFDError),
+    #[error("An error when reading the data format descriptor.")]
+    DFDError(#[from] DFDError),
 
-    /// An error occurred when trying to read a key's name from the file which lead to the read
-    /// over-running the declared size of the pair. Likely a missing null terminator
+    #[error("An error occurred when trying to read a key's name from the file which lead to the read over-running the declared size of the pair. Likely a missing null terminator.")]
     InvalidKeyMissingNullTerminator,
 
-    /// An error occurred while reading the data itself
-    IOError(std::io::Error),
+    #[error("An error occurred while reading the data itself: {0}.")]
+    IOError(#[from] std::io::Error),
 
-    /// An error occured with something to do with unicode
-    FromUtf8Error(std::string::FromUtf8Error),
-}
-
-impl From<std::io::Error> for KtxReadError {
-    fn from(err: std::io::Error) -> Self {
-        KtxReadError::IOError(err)
-    }
-}
-
-impl From<std::string::FromUtf8Error> for KtxReadError {
-    fn from(err: std::string::FromUtf8Error) -> Self {
-        KtxReadError::FromUtf8Error(err)
-    }
-}
-
-impl From<DFDError> for KtxReadError {
-    fn from(err: DFDError) -> Self {
-        KtxReadError::DFDError(err)
-    }
+    #[error("An error occured with something to do with unicode: {0}.")]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
 }
 
 ///

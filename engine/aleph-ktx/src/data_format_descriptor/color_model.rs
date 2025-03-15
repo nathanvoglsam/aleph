@@ -175,6 +175,44 @@ impl ColorModel {
     }
 }
 
+impl std::fmt::Display for ColorModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            ColorModel::Unspecified => "UNSPECIFIED",
+            ColorModel::RGBSDA => "RGBSDA",
+            ColorModel::YUVSDA => "YUVSDA",
+            ColorModel::YIQSDA => "YIQSDA",
+            ColorModel::LABSDA => "LABSDA",
+            ColorModel::CMYKA => "CMYKA",
+            ColorModel::XYZW => "XYZW",
+            ColorModel::HSVAAng => "HSVA_ANG",
+            ColorModel::HSLAAng => "HSLA_ANG",
+            ColorModel::HSVAHex => "HSVA_HEX",
+            ColorModel::HSLAHex => "HSLA_HEX",
+            ColorModel::YCGCOA => "YCGCOA",
+            ColorModel::YCCBCCRC => "YCCBCCRC",
+            ColorModel::ICTCP => "ICTCP",
+            ColorModel::CIEXYZ => "CIEXYZ",
+            ColorModel::CIEXYY => "CIEXYY",
+            ColorModel::BC1A => "BC1A",
+            ColorModel::BC2 => "BC2",
+            ColorModel::BC3 => "BC3",
+            ColorModel::BC4 => "BC4",
+            ColorModel::BC5 => "BC5",
+            ColorModel::BC6H => "BC6H",
+            ColorModel::BC7 => "BC7",
+            ColorModel::ETC1 => "ETC1",
+            ColorModel::ETC2 => "ETC2",
+            ColorModel::ASTC => "ASTC",
+            ColorModel::ETC1S => "ETC1S",
+            ColorModel::PVRTC => "PVRTC",
+            ColorModel::PVRTC2 => "PVRTC2",
+            ColorModel::UASTC => "UASTC",
+        };
+        f.write_str(name)
+    }
+}
+
 const MODEL_UNSPECIFIED: u8 = 0;
 const MODEL_RGBSDA: u8 = 1;
 const MODEL_YUVSDA: u8 = 2;

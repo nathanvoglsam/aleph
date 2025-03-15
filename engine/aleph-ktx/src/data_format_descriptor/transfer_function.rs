@@ -84,3 +84,13 @@ impl TransferFunction {
         }
     }
 }
+
+impl std::fmt::Display for TransferFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            TransferFunction::Linear => "Linear",
+            TransferFunction::SRGB => "SRGB",
+        };
+        f.write_str(name)
+    }
+}

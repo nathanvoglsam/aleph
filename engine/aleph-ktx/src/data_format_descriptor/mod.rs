@@ -48,6 +48,7 @@ pub use color_model::ColorModel;
 pub use color_primaries::ColorPrimaries;
 pub use flags::{DFDFlags, SampleFlags};
 pub use sample_info::{SampleInfo, SampleInfoIterator};
+use thiserror::Error;
 pub use transfer_function::TransferFunction;
 
 use crate::document::FileIndex;
@@ -56,51 +57,51 @@ use crate::{KtxReadError, SuperCompressionScheme};
 ///
 /// The set of errors that can be produced when reading the DFD section of a ktx file
 ///
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Error, PartialEq, Eq, Debug)]
 pub enum DFDError {
-    /// The dfd vendor id is non zero (we don't support any vendor extensions)
+    #[error("The dfd vendor id is non zero (we don't support any vendor extensions). Got '{0}'.")]
     InvalidVendor(u32),
 
-    /// The dfd descriptor type is non zero (we don't support any other types)
+    #[error("The dfd descriptor type is non zero (we don't support any other types). Got '{0}'.")]
     InvalidDescriptorType(u16),
 
-    /// The `dfdTotalSize` is invalid
+    #[error("The `dfdTotalSize` is invalid. Got '{0}'.")]
     InvalidTotalSize(u32),
 
-    /// The `versionNumber` is not 2 (the only DFD version we support)
+    #[error("The `versionNumber` is not 2 (the only DFD version we support). Got '{0}'.")]
     InvalidVersionNumber(u16),
 
-    /// The `flags` value is invalid
+    #[error("The `flags` value is invalid. Got '{0}'.")]
     InvalidFlags(u8),
 
-    /// The `transferFunction` value is invalid
+    #[error("The `transferFunction` value is invalid. Got '{0}'.")]
     InvalidTransferFunction(u8),
 
-    /// The `transferFunction` value is invalid
+    #[error("The `transferFunction` value is invalid. Got '{0}'.")]
     InvalidColorModel(u8),
 
-    /// The `transferFunction` value is invalid
+    #[error("The `transferFunction` value is invalid. Got '{0}'.")]
     InvalidColorPrimaries(u8),
 
-    /// The descriptor does not match what the KTX's declare VkFormat claims it should be
+    #[error("The descriptor does not match what the KTX's declare VkFormat claims it should be")]
     DescriptorFormatMismatch,
 
-    /// The `colorModel` value is not of the expected value for the format specified earlier
+    #[error("The `colorModel` value is not of the expected value for the format specified earlier. Got '{0}, {1}'.")]
     ColorModelMismatch(VkFormat, ColorModel),
 
-    /// The `transferFunction` value was not compatible with the format specified earlier
+    #[error("The `transferFunction` value was not compatible with the format specified earlier. Got '{0}, {1}'.")]
     TransferFunctionMismatch(VkFormat, TransferFunction),
 
-    /// If the block width (`texelBlockDimension0`) was invalid
+    #[error("The block width (`texelBlockDimension0`) was invalid. Got '{0}'.")]
     InvalidBlockWidth(u32),
 
-    /// If the block height (`texelBlockDimension1`) was invalid
+    #[error("The block height (`texelBlockDimension1`) was invalid. Got '{0}'.")]
     InvalidBlockHeight(u32),
 
-    /// If the block depth (`texelBlockDimension2`) was invalid
+    #[error("The block depth (`texelBlockDimension2`) was invalid. Got '{0}'.")]
     InvalidBlockDepth(u32),
 
-    /// If the block 4th dimension (`texelBlockDimension3`) was invalid
+    #[error("The block 4th dimension (`texelBlockDimension3`) was invalid. Got '{0}'.")]
     InvalidBlock4thDimension(u32),
 }
 
