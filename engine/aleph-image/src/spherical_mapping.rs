@@ -27,19 +27,8 @@
 // SOFTWARE.
 //
 
-mod image_buffer;
-mod image_ops;
-mod pixel_format;
-mod spherical_mapping;
-mod texture;
-mod texture_ops;
-mod utils;
-
-pub use image_buffer::{ColorType, DowncastImageBuffer, DynamicImageBuffer, ImageBuffer};
-pub use image_ops::*;
-pub use pixel_format::{
-    FromImagePixel, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat,
-};
-pub use spherical_mapping::SphericalMapping;
-pub use texture::{layer_and_level_from_set_index, set_index_for_layer_and_level, TextureBuffer};
-pub use texture_ops::*;
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum SphericalMapping {
+    Equirectangular,
+    Octahedral,
+}

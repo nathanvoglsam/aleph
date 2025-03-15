@@ -29,11 +29,10 @@
 
 use aleph_math::sampling::equirectangular_uv_to_direction;
 use aleph_math::{UVec2, Vec2};
-use half::f16;
 
 use crate::{
     DynamicImageBuffer, IDirectionalSampler, IPixelAccess, IPixelStorage, ImageBuffer,
-    OctahderalDirectionalSampler, PixR, PixRG, PixRGB, PixRGBA, PixelFormat,
+    OctahderalDirectionalSampler, PixelFormat,
 };
 
 /// This function will resample the input image into an equivalent environment map in an
@@ -73,107 +72,87 @@ pub fn octahedral_to_equi_dyn(
 ) -> DynamicImageBuffer {
     match src {
         DynamicImageBuffer::R8Unorm(src) => {
-            type Out = PixR<u8>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::R8Unorm(new)
         }
         DynamicImageBuffer::RG8Unorm(src) => {
-            type Out = PixRG<u8>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RG8Unorm(new)
         }
         DynamicImageBuffer::RGB8Unorm(src) => {
-            type Out = PixRGB<u8>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGB8Unorm(new)
         }
         DynamicImageBuffer::RGBA8Unorm(src) => {
-            type Out = PixRGBA<u8>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGBA8Unorm(new)
         }
 
         DynamicImageBuffer::R16Unorm(src) => {
-            type Out = PixR<u16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::R16Unorm(new)
         }
         DynamicImageBuffer::RG16Unorm(src) => {
-            type Out = PixRG<u16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RG16Unorm(new)
         }
         DynamicImageBuffer::RGB16Unorm(src) => {
-            type Out = PixRGB<u16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGB16Unorm(new)
         }
         DynamicImageBuffer::RGBA16Unorm(src) => {
-            type Out = PixRGBA<u16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGBA16Unorm(new)
         }
 
         DynamicImageBuffer::R32Unorm(src) => {
-            type Out = PixR<u32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::R32Unorm(new)
         }
         DynamicImageBuffer::RG32Unorm(src) => {
-            type Out = PixRG<u32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RG32Unorm(new)
         }
         DynamicImageBuffer::RGB32Unorm(src) => {
-            type Out = PixRGB<u32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGB32Unorm(new)
         }
         DynamicImageBuffer::RGBA32Unorm(src) => {
-            type Out = PixRGBA<u32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGBA32Unorm(new)
         }
 
         DynamicImageBuffer::R16Float(src) => {
-            type Out = PixR<f16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::R16Float(new)
         }
         DynamicImageBuffer::RG16Float(src) => {
-            type Out = PixRG<f16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RG16Float(new)
         }
         DynamicImageBuffer::RGB16Float(src) => {
-            type Out = PixRGB<f16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGB16Float(new)
         }
         DynamicImageBuffer::RGBA16Float(src) => {
-            type Out = PixRGBA<f16>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGBA16Float(new)
         }
 
         DynamicImageBuffer::R32Float(src) => {
-            type Out = PixR<f32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::R32Float(new)
         }
         DynamicImageBuffer::RG32Float(src) => {
-            type Out = PixRG<f32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RG32Float(new)
         }
         DynamicImageBuffer::RGB32Float(src) => {
-            type Out = PixRGB<f32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGB32Float(new)
         }
         DynamicImageBuffer::RGBA32Float(src) => {
-            type Out = PixRGBA<f32>;
-            let new = image_to_equi::<Out>(&OctahderalDirectionalSampler(src), face_dimension);
+            let new = image_to_equi(&OctahderalDirectionalSampler(src), face_dimension);
             DynamicImageBuffer::RGBA32Float(new)
         }
     }

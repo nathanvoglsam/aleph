@@ -33,9 +33,10 @@ use half::f16;
 use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
 use crate::{
     equi_to_cube_dyn, equi_to_octahedral_dyn, image_to_equi, image_to_octahedral,
-    octahedral_to_cube_dyn, ColorType, CubeSampler, DowncastImageBuffer, DynamicImageBuffer,
-    FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IPixelStorage, IResizeImage,
-    ImageBuffer, PixRGBA, PixelFormat, ResizeFilter, TextureOpError, TextureOpResult,
+    octahedral_to_cube_dyn, octahedral_to_equi_dyn, ColorType, CubeSampler, DowncastImageBuffer,
+    DynamicImageBuffer, FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IPixelStorage,
+    IResizeImage, ImageBuffer, PixRGBA, PixelFormat, ResizeFilter, SphericalMapping,
+    TextureOpError, TextureOpResult,
 };
 
 /// Type that closes over the types of textures we support working with. This includes the types
@@ -377,7 +378,12 @@ impl TextureBuffer {
         Ok(())
     }
 
-    pub fn equirectangular_to_cube_map(&mut self, face_dimensions: UVec2) -> TextureOpResult<()> {
+    /// Converts a spherical map with the given parametrization 'mapping_2d' into a cube map.
+    pub fn spherical_map_to_cube_map(
+        &mut self,
+        mapping_2d: SphericalMapping,
+        face_dimensions: UVec2,
+    ) -> TextureOpResult<()> {
         let new_self = match self {
             TextureBuffer::Single {
                 level_num, images, ..
@@ -388,18 +394,36 @@ impl TextureBuffer {
 
                 let mut new_images = Vec::new();
                 for image in images.drain(..) {
-                    let px = equi_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                    let nx = equi_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                    let py = equi_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                    let ny = equi_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                    let pz = equi_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                    let nz = equi_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
-                    new_images.push(px);
-                    new_images.push(nx);
-                    new_images.push(py);
-                    new_images.push(ny);
-                    new_images.push(pz);
-                    new_images.push(nz);
+                    match mapping_2d {
+                        SphericalMapping::Equirectangular => {
+                            let px = equi_to_cube_dyn::<FacePosX>(&image, face_dimensions);
+                            let nx = equi_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
+                            let py = equi_to_cube_dyn::<FacePosY>(&image, face_dimensions);
+                            let ny = equi_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
+                            let pz = equi_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
+                            let nz = equi_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            new_images.push(px);
+                            new_images.push(nx);
+                            new_images.push(py);
+                            new_images.push(ny);
+                            new_images.push(pz);
+                            new_images.push(nz);
+                        }
+                        SphericalMapping::Octahedral => {
+                            let px = octahedral_to_cube_dyn::<FacePosX>(&image, face_dimensions);
+                            let nx = octahedral_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
+                            let py = octahedral_to_cube_dyn::<FacePosY>(&image, face_dimensions);
+                            let ny = octahedral_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
+                            let pz = octahedral_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
+                            let nz = octahedral_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            new_images.push(px);
+                            new_images.push(nx);
+                            new_images.push(py);
+                            new_images.push(ny);
+                            new_images.push(pz);
+                            new_images.push(nz);
+                        }
+                    }
                 }
 
                 TextureBuffer::Cube {
@@ -420,18 +444,36 @@ impl TextureBuffer {
 
                 let mut new_images = Vec::new();
                 for image in images.drain(..) {
-                    let px = equi_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                    let nx = equi_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                    let py = equi_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                    let ny = equi_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                    let pz = equi_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                    let nz = equi_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
-                    new_images.push(px);
-                    new_images.push(nx);
-                    new_images.push(py);
-                    new_images.push(ny);
-                    new_images.push(pz);
-                    new_images.push(nz);
+                    match mapping_2d {
+                        SphericalMapping::Equirectangular => {
+                            let px = equi_to_cube_dyn::<FacePosX>(&image, face_dimensions);
+                            let nx = equi_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
+                            let py = equi_to_cube_dyn::<FacePosY>(&image, face_dimensions);
+                            let ny = equi_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
+                            let pz = equi_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
+                            let nz = equi_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            new_images.push(px);
+                            new_images.push(nx);
+                            new_images.push(py);
+                            new_images.push(ny);
+                            new_images.push(pz);
+                            new_images.push(nz);
+                        }
+                        SphericalMapping::Octahedral => {
+                            let px = octahedral_to_cube_dyn::<FacePosX>(&image, face_dimensions);
+                            let nx = octahedral_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
+                            let py = octahedral_to_cube_dyn::<FacePosY>(&image, face_dimensions);
+                            let ny = octahedral_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
+                            let pz = octahedral_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
+                            let nz = octahedral_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            new_images.push(px);
+                            new_images.push(nx);
+                            new_images.push(py);
+                            new_images.push(ny);
+                            new_images.push(pz);
+                            new_images.push(nz);
+                        }
+                    }
                 }
 
                 TextureBuffer::CubeArray {
@@ -441,9 +483,15 @@ impl TextureBuffer {
                     images: new_images,
                 }
             }
-            TextureBuffer::Cube { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
+            TextureBuffer::Cube {
+                dimensions,
+                level_num,
+                images,
+            } => TextureBuffer::Cube {
+                dimensions: *dimensions,
+                level_num: *level_num,
+                images: images.clone(),
+            },
             TextureBuffer::CubeArray { .. } => {
                 return Err(TextureOpError::InvalidSrcType);
             }
@@ -457,57 +505,67 @@ impl TextureBuffer {
         Ok(())
     }
 
-    pub fn cube_map_to_octahedral_map(&mut self, face_dimensions: UVec2) -> TextureOpResult<()> {
+    pub fn spherical_map_to_equirectangular_map(
+        &mut self,
+        mapping_2d: SphericalMapping,
+        face_dimensions: UVec2,
+    ) -> TextureOpResult<()> {
         let new_self = match self {
-            TextureBuffer::Single { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
-            TextureBuffer::Array { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
-            TextureBuffer::Cube {
+            TextureBuffer::Single {
                 level_num, images, ..
             } => {
                 if *level_num > 1 {
                     return Err(TextureOpError::InvalidSrcType);
                 }
 
-                let mut accessor = CubeToOctAccess {
-                    dim: face_dimensions,
-                    out: None,
-                };
-                cube_sampler_access(images, &mut accessor);
+                let mut new_images = Vec::new();
+                for image in images.drain(..) {
+                    match mapping_2d {
+                        SphericalMapping::Equirectangular => {
+                            new_images.push(image);
+                        }
+                        SphericalMapping::Octahedral => {
+                            let i = octahedral_to_equi_dyn(&image, face_dimensions);
+                            new_images.push(i);
+                        }
+                    }
+                }
 
-                let new_images = vec![accessor.out.unwrap()];
                 TextureBuffer::Single {
                     dimensions: face_dimensions,
                     level_num: 1,
                     images: new_images,
                 }
             }
-            TextureBuffer::CubeArray { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
-        };
+            TextureBuffer::Array {
+                level_num,
+                layer_num,
+                images,
+                ..
+            } => {
+                if *level_num > 1 {
+                    return Err(TextureOpError::InvalidSrcType);
+                }
 
-        new_self.validate_image_count();
-        new_self.validate_image_types();
+                let mut new_images = Vec::new();
+                for image in images.drain(..) {
+                    match mapping_2d {
+                        SphericalMapping::Equirectangular => {
+                            new_images.push(image);
+                        }
+                        SphericalMapping::Octahedral => {
+                            let i = octahedral_to_equi_dyn(&image, face_dimensions);
+                            new_images.push(i);
+                        }
+                    }
+                }
 
-        *self = new_self;
-
-        Ok(())
-    }
-
-    pub fn cube_map_to_equirectangular_map(
-        &mut self,
-        face_dimensions: UVec2,
-    ) -> TextureOpResult<()> {
-        let new_self = match self {
-            TextureBuffer::Single { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
-            TextureBuffer::Array { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
+                TextureBuffer::Array {
+                    dimensions: face_dimensions,
+                    layer_num: *layer_num,
+                    level_num: 1,
+                    images: new_images,
+                }
             }
             TextureBuffer::Cube {
                 level_num, images, ..
@@ -542,8 +600,9 @@ impl TextureBuffer {
         Ok(())
     }
 
-    pub fn equirectangular_to_octahedral_map(
+    pub fn spherical_map_to_octahedral_map(
         &mut self,
+        mapping_2d: SphericalMapping,
         face_dimensions: UVec2,
     ) -> TextureOpResult<()> {
         let new_self = match self {
@@ -556,8 +615,15 @@ impl TextureBuffer {
 
                 let mut new_images = Vec::new();
                 for image in images.drain(..) {
-                    let i = equi_to_octahedral_dyn(&image, face_dimensions);
-                    new_images.push(i);
+                    match mapping_2d {
+                        SphericalMapping::Equirectangular => {
+                            let i = equi_to_octahedral_dyn(&image, face_dimensions);
+                            new_images.push(i);
+                        }
+                        SphericalMapping::Octahedral => {
+                            new_images.push(image);
+                        }
+                    }
                 }
 
                 TextureBuffer::Single {
@@ -578,8 +644,15 @@ impl TextureBuffer {
 
                 let mut new_images = Vec::new();
                 for image in images.drain(..) {
-                    let i = equi_to_octahedral_dyn(&image, face_dimensions);
-                    new_images.push(i);
+                    match mapping_2d {
+                        SphericalMapping::Equirectangular => {
+                            let i = equi_to_octahedral_dyn(&image, face_dimensions);
+                            new_images.push(i);
+                        }
+                        SphericalMapping::Octahedral => {
+                            new_images.push(image);
+                        }
+                    }
                 }
 
                 TextureBuffer::Array {
@@ -589,88 +662,25 @@ impl TextureBuffer {
                     images: new_images,
                 }
             }
-            TextureBuffer::Cube { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
-            TextureBuffer::CubeArray { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
-        };
-
-        new_self.validate_image_count();
-        new_self.validate_image_types();
-
-        *self = new_self;
-
-        Ok(())
-    }
-
-    pub fn octahedral_to_cube_map(&mut self, face_dimensions: UVec2) -> TextureOpResult<()> {
-        let new_self = match self {
-            TextureBuffer::Single {
+            TextureBuffer::Cube {
                 level_num, images, ..
             } => {
                 if *level_num > 1 {
                     return Err(TextureOpError::InvalidSrcType);
                 }
 
-                let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    let px = octahedral_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                    let nx = octahedral_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                    let py = octahedral_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                    let ny = octahedral_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                    let pz = octahedral_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                    let nz = octahedral_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
-                    new_images.push(px);
-                    new_images.push(nx);
-                    new_images.push(py);
-                    new_images.push(ny);
-                    new_images.push(pz);
-                    new_images.push(nz);
-                }
+                let mut accessor = CubeToOctAccess {
+                    dim: face_dimensions,
+                    out: None,
+                };
+                cube_sampler_access(images, &mut accessor);
 
-                TextureBuffer::Cube {
+                let new_images = vec![accessor.out.unwrap()];
+                TextureBuffer::Single {
                     dimensions: face_dimensions,
                     level_num: 1,
                     images: new_images,
                 }
-            }
-            TextureBuffer::Array {
-                level_num,
-                layer_num,
-                images,
-                ..
-            } => {
-                if *level_num > 1 {
-                    return Err(TextureOpError::InvalidSrcType);
-                }
-
-                let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    let px = octahedral_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                    let nx = octahedral_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                    let py = octahedral_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                    let ny = octahedral_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                    let pz = octahedral_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                    let nz = octahedral_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
-                    new_images.push(px);
-                    new_images.push(nx);
-                    new_images.push(py);
-                    new_images.push(ny);
-                    new_images.push(pz);
-                    new_images.push(nz);
-                }
-
-                TextureBuffer::CubeArray {
-                    dimensions: face_dimensions,
-                    cube_num: *layer_num,
-                    level_num: 1,
-                    images: new_images,
-                }
-            }
-            TextureBuffer::Cube { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
             }
             TextureBuffer::CubeArray { .. } => {
                 return Err(TextureOpError::InvalidSrcType);
@@ -684,6 +694,39 @@ impl TextureBuffer {
 
         Ok(())
     }
+}
+
+/// Calculates the index for an image, assuming some image set with 'layer_num' and 'level_num'
+/// images.
+pub const fn set_index_for_layer_and_level(
+    layer_num: usize,
+    level_num: usize,
+    layer: usize,
+    level: usize,
+) -> usize {
+    assert!(layer < layer_num);
+    assert!(level < level_num);
+
+    let i = layer * level_num;
+    let i = i + level;
+    i
+}
+
+/// Calculates the layer and level index of an image, assuming some image set with 'layer_num' and
+/// 'level_num' images. This is the inverse of [`calculate_set_index`].
+///
+/// Returns (layer, level)
+pub const fn layer_and_level_from_set_index(
+    layer_num: usize,
+    level_num: usize,
+    i: usize,
+) -> (usize, usize) {
+    let max_images = layer_num * level_num;
+    assert!(i < max_images);
+
+    let layer = i / level_num;
+    let level = i % level_num;
+    (layer, level)
 }
 
 fn normalize_normal_map(i: &mut DynamicImageBuffer) -> TextureOpResult<()> {
@@ -847,39 +890,6 @@ fn swizzle_rgb_to_rgba<T: Copy + Clone>(
     }
 
     level
-}
-
-/// Calculates the index for an image, assuming some image set with 'layer_num' and 'level_num'
-/// images.
-pub const fn set_index_for_layer_and_level(
-    layer_num: usize,
-    level_num: usize,
-    layer: usize,
-    level: usize,
-) -> usize {
-    assert!(layer < layer_num);
-    assert!(level < level_num);
-
-    let i = layer * level_num;
-    let i = i + level;
-    i
-}
-
-/// Calculates the layer and level index of an image, assuming some image set with 'layer_num' and
-/// 'level_num' images. This is the inverse of [`calculate_set_index`].
-///
-/// Returns (layer, level)
-pub const fn layer_and_level_from_set_index(
-    layer_num: usize,
-    level_num: usize,
-    i: usize,
-) -> (usize, usize) {
-    let max_images = layer_num * level_num;
-    assert!(i < max_images);
-
-    let layer = i / level_num;
-    let level = i % level_num;
-    (layer, level)
 }
 
 trait ICubeSamplerAccess {
