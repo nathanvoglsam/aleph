@@ -41,5 +41,8 @@ pub use pixel_format::{
     FromImagePixel, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat,
 };
 pub use spherical_mapping::SphericalMapping;
-pub use texture::{layer_and_level_from_set_index, set_index_for_layer_and_level, TextureBuffer};
+pub use texture::{
+    layer_and_level_from_set_index, set_index_for_layer_and_level, DynamicTextureBuffer,
+    TextureBuffer, TextureType,
+};
 pub use texture_ops::*;

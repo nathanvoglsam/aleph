@@ -27,15 +27,18 @@
 // SOFTWARE.
 //
 
+mod dynamic_texture_buffer;
+
+pub use dynamic_texture_buffer::DynamicTextureBuffer;
+
 use aleph_math::{UVec2, Vec3};
 use half::f16;
 
-use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
 use crate::{
-    equi_to_cube_dyn, equi_to_octahedral_dyn, image_to_equi, image_to_octahedral,
-    octahedral_to_cube_dyn, octahedral_to_equi_dyn, ColorType, CubeSampler, DowncastImageBuffer,
-    DynamicImageBuffer, FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IPixelStorage,
-    IResizeImage, ImageBuffer, PixRGBA, PixelFormat, ResizeFilter, SphericalMapping,
+    image_to_cube, image_to_equi, image_to_octahedral, CubeSampler,
+    EquirectangularDirectionalSampler, FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ,
+    IPixelAccess, IPixelStorage, IResizeImage, ImageBuffer, OctahderalDirectionalSampler, PixR,
+    PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat, ResizeFilter, SphericalMapping,
     TextureOpError, TextureOpResult,
 };
 
@@ -45,7 +48,8 @@ use crate::{
 /// The purpose of this type is to track the type of an image dynamically as it flows through the
 /// image conditioning pipeline. We have a number of filters and processes we can run on textures
 /// in order to
-pub enum TextureBuffer {
+#[derive(Clone)]
+pub enum TextureBuffer<T: PixelFormat> {
     /// A single image. This may contain multiple images which define a mip chain.
     Single {
         /// The size of mip 0 of the image.
@@ -56,7 +60,7 @@ pub enum TextureBuffer {
 
         /// The list of images that form the 'single' image variant. Length must be equal to
         /// 'level_num', and not zero.
-        images: Vec<DynamicImageBuffer>,
+        images: Vec<ImageBuffer<T>>,
     },
     /// An array of single images, potentially including a mip chain for each.
     Array {
@@ -71,7 +75,7 @@ pub enum TextureBuffer {
 
         /// The list of images that form the array. Length must be equal to
         /// 'level_num * layer_num', and not zero.
-        images: Vec<DynamicImageBuffer>,
+        images: Vec<ImageBuffer<T>>,
     },
     /// A singular cube map image. This is similar to [`TextureVariant::Array`] that assumes
     /// 'layer_num = 6'.
@@ -84,7 +88,7 @@ pub enum TextureBuffer {
 
         /// The list of images that form the 'cube' image variant. Length must be equal to
         /// 'level_num * 6', and not zero.
-        images: Vec<DynamicImageBuffer>,
+        images: Vec<ImageBuffer<T>>,
     },
     /// A special case of [`TextureVariant::Array`] that encodes an array of cube maps. Instead we
     /// have 'cube_num' and derive the total image number as 'cube_num * 6'.
@@ -100,14 +104,14 @@ pub enum TextureBuffer {
 
         /// list of images that form the 'cube array' image variant. Length must be equal to
         /// 'level_num * cube_num * 6', and not zero.
-        images: Vec<DynamicImageBuffer>,
+        images: Vec<ImageBuffer<T>>,
     },
 }
 
-impl TextureBuffer {
+impl<T: PixelFormat> TextureBuffer<T> {
     /// Returns the dimensions of the underlying texture. This encodes the size of mip 0. For cubes
     /// this encodes the size of mip 0 of each face.
-    pub fn dimensions(&self) -> UVec2 {
+    pub const fn dimensions(&self) -> UVec2 {
         match self {
             TextureBuffer::Single { dimensions, .. } => *dimensions,
             TextureBuffer::Array { dimensions, .. } => *dimensions,
@@ -116,7 +120,7 @@ impl TextureBuffer {
         }
     }
 
-    pub fn layer_num(&self) -> u32 {
+    pub const fn layer_num(&self) -> u32 {
         match self {
             TextureBuffer::Single { .. } => 1,
             TextureBuffer::Array { layer_num, .. } => *layer_num,
@@ -125,7 +129,7 @@ impl TextureBuffer {
         }
     }
 
-    pub fn level_num(&self) -> u32 {
+    pub const fn level_num(&self) -> u32 {
         match self {
             TextureBuffer::Single { level_num, .. } => *level_num,
             TextureBuffer::Array { level_num, .. } => *level_num,
@@ -134,7 +138,7 @@ impl TextureBuffer {
         }
     }
 
-    pub fn images_ref(&self) -> &[DynamicImageBuffer] {
+    pub fn images_ref(&self) -> &[ImageBuffer<T>] {
         match self {
             TextureBuffer::Single { images, .. } => images.as_slice(),
             TextureBuffer::Array { images, .. } => images.as_slice(),
@@ -143,7 +147,7 @@ impl TextureBuffer {
         }
     }
 
-    pub fn images_mut(&mut self) -> &mut [DynamicImageBuffer] {
+    pub fn images_mut(&mut self) -> &mut [ImageBuffer<T>] {
         match self {
             TextureBuffer::Single { images, .. } => images.as_mut_slice(),
             TextureBuffer::Array { images, .. } => images.as_mut_slice(),
@@ -152,18 +156,13 @@ impl TextureBuffer {
         }
     }
 
-    pub fn get_color_type(&self) -> ColorType {
-        self.validate_image_types();
-        let images = self.images_ref();
-        images[0].color_type()
-    }
-
-    pub fn validate_image_types(&self) {
-        let images = self.images_ref();
-
-        let base = images[0].color_type();
-        let all_images_same_color_type = images.iter().all(|v| v.color_type() == base);
-        assert!(all_images_same_color_type);
+    pub const fn get_texture_type(&self) -> TextureType {
+        match self {
+            TextureBuffer::Single { .. } => TextureType::Single,
+            TextureBuffer::Array { .. } => TextureType::Array,
+            TextureBuffer::Cube { .. } => TextureType::Cube,
+            TextureBuffer::CubeArray { .. } => TextureType::CubeArray,
+        }
     }
 
     pub fn validate_image_count(&self) {
@@ -175,34 +174,16 @@ impl TextureBuffer {
 
     pub fn get_buffer_references(&self) -> Vec<&[u8]> {
         self.validate_image_count();
-        self.validate_image_types();
 
-        let buffers = Vec::from_iter(self.images_ref().iter().map(|v| match v {
-            DynamicImageBuffer::R8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RG8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGB8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGBA8Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::R16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RG16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGB16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGBA16Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::R32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RG32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGB32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGBA32Unorm(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::R16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RG16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGB16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGBA16Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::R32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RG32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGB32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-            DynamicImageBuffer::RGBA32Float(i) => bytemuck::cast_slice::<_, u8>(i.data()),
-        }));
+        let buffers = Vec::from_iter(
+            self.images_ref()
+                .iter()
+                .map(|v| bytemuck::cast_slice::<_, u8>(v.data())),
+        );
         buffers
     }
 
-    fn image_count_with_levels(&self, level_num: u32) -> u32 {
+    const fn image_count_with_levels(&self, level_num: u32) -> u32 {
         match self {
             TextureBuffer::Single { .. } => level_num,
             TextureBuffer::Array { layer_num, .. } => *layer_num * level_num,
@@ -215,7 +196,7 @@ impl TextureBuffer {
         }
     }
 
-    fn take_images(&mut self) -> Vec<DynamicImageBuffer> {
+    fn take_images(&mut self) -> Vec<ImageBuffer<T>> {
         match self {
             TextureBuffer::Single { images, .. } => std::mem::take(images),
             TextureBuffer::Array { images, .. } => std::mem::take(images),
@@ -225,7 +206,11 @@ impl TextureBuffer {
     }
 }
 
-impl TextureBuffer {
+impl<T> TextureBuffer<T>
+where
+    T: PixelFormat,
+    ImageBuffer<T>: IResizeImage,
+{
     pub fn generate_mips(&mut self, filter: ResizeFilter) {
         assert_eq!(self.level_num(), 1);
         self.validate_image_count();
@@ -239,8 +224,7 @@ impl TextureBuffer {
         let new_level_num = new_level_num as u32;
         let new_image_num = self.image_count_with_levels(new_level_num);
 
-        let mut new_images =
-            vec![DynamicImageBuffer::R8Unorm(ImageBuffer::new(0, 0)); new_image_num as usize];
+        let mut new_images = vec![ImageBuffer::new(0, 0); new_image_num as usize];
 
         for (i, input_image) in old_images.into_iter().enumerate() {
             let i = set_index_for_layer_and_level(layer_num, new_level_num as usize, i, 0);
@@ -294,90 +278,110 @@ impl TextureBuffer {
             }
         }
     }
+}
 
-    pub fn normalize(&mut self) -> TextureOpResult<()> {
+impl<C> TextureBuffer<PixRGB<C>>
+where
+    C: PixelChannelType,
+{
+    /// Assuming that the input image is a 3-channel UNORM packed normal map, this will perform
+    /// an in-place renormalization step to ensure the stored normals are of unit length.
+    ///
+    /// This is important if mip maps of an input normal map were generated as the downsample filter
+    /// will not maintain a normalized result.
+    pub fn normalize(&mut self) {
         for image in self.images_mut() {
-            normalize_normal_map(image)?;
+            image.filter_pixels_mut(|_pos, p| {
+                let n = p.as_vec4().truncated();
+
+                // The image we've just loaded is compressed into the [0,1] range, we need to unpack
+                // it back into the [-1,1] range
+                let n = n * Vec3::broadcast(2.0);
+                let n = n - Vec3::broadcast(1.0);
+
+                // Perform the renormalization and pack back into the [0,1] range
+                let n = n.normalized();
+                let n = n + Vec3::broadcast(1.0);
+                let n = n / Vec3::broadcast(2.0);
+
+                // Pack back into a pixel (unorm conversion)
+                let x = C::from_float(n.x);
+                let y = C::from_float(n.y);
+                let z = C::from_float(n.z);
+                PixRGB([x, y, z])
+            });
         }
-        Ok(())
     }
+}
 
-    pub fn swizzle_rgb_to_rgba(&mut self) -> TextureOpResult<()> {
-        let color_type = self.get_color_type();
+impl<C, P> TextureBuffer<P>
+where
+    C: PixelChannelType,
+    P: PixelFormat<Storage = C>,
+{
+    pub fn swizzle_rgb_to_rgba(&mut self, fill: C) -> TextureOpResult<TextureBuffer<PixRGBA<C>>> {
+        let mut new_images = Vec::new();
+        for image in self.images_ref() {
+            let mut new = ImageBuffer::<PixRGBA<C>>::new(self.dimensions().x, self.dimensions().y);
+            new.filter_pixels_mut(|pos, _| {
+                let p: P = image.load(pos.x, pos.y);
 
-        match color_type {
-            ColorType::RGB8Unorm => {}
-            ColorType::RGB16Unorm => {}
-            ColorType::RGB32Unorm => {}
-            ColorType::RGB16Float => {}
-            ColorType::RGB32Float => {}
-            _ => return Err(TextureOpError::InvalidSrcFormat),
+                let mut new = [fill, fill, fill, fill];
+                p.write_at(&mut new);
+
+                PixRGBA(new)
+            });
+            new_images.push(new);
         }
 
-        for image in self.images_mut() {
-            let new_image = match image {
-                DynamicImageBuffer::RGB8Unorm(image) => {
-                    let swizzled =
-                        swizzle_rgb_to_rgba(image.data(), image.width(), image.height(), 0xFF);
-                    let swizzled = ImageBuffer::<PixRGBA<_>>::from_data(
-                        image.width(),
-                        image.height(),
-                        swizzled,
-                    );
-                    DynamicImageBuffer::RGBA8Unorm(swizzled)
-                }
-                DynamicImageBuffer::RGB16Unorm(image) => {
-                    let swizzled =
-                        swizzle_rgb_to_rgba(image.data(), image.width(), image.height(), 0xFFFF);
-                    let swizzled = ImageBuffer::<PixRGBA<_>>::from_data(
-                        image.width(),
-                        image.height(),
-                        swizzled,
-                    );
-                    DynamicImageBuffer::RGBA16Unorm(swizzled)
-                }
-                DynamicImageBuffer::RGB32Unorm(image) => {
-                    let swizzled = swizzle_rgb_to_rgba(
-                        image.data(),
-                        image.width(),
-                        image.height(),
-                        0xFFFFFFFF,
-                    );
-                    let swizzled = ImageBuffer::<PixRGBA<_>>::from_data(
-                        image.width(),
-                        image.height(),
-                        swizzled,
-                    );
-                    DynamicImageBuffer::RGBA32Unorm(swizzled)
-                }
-                DynamicImageBuffer::RGB16Float(image) => {
-                    let swizzled =
-                        swizzle_rgb_to_rgba(image.data(), image.width(), image.height(), f16::ONE);
-                    let swizzled = ImageBuffer::<PixRGBA<_>>::from_data(
-                        image.width(),
-                        image.height(),
-                        swizzled,
-                    );
-                    DynamicImageBuffer::RGBA16Float(swizzled)
-                }
-                DynamicImageBuffer::RGB32Float(image) => {
-                    let swizzled =
-                        swizzle_rgb_to_rgba(image.data(), image.width(), image.height(), 1.0);
-                    let swizzled = ImageBuffer::<PixRGBA<_>>::from_data(
-                        image.width(),
-                        image.height(),
-                        swizzled,
-                    );
-                    DynamicImageBuffer::RGBA32Float(swizzled)
-                }
-                _ => unreachable!(),
-            };
-            *image = new_image;
-        }
+        let out = match self {
+            TextureBuffer::Single {
+                dimensions,
+                level_num,
+                ..
+            } => TextureBuffer::Single {
+                dimensions: *dimensions,
+                level_num: *level_num,
+                images: new_images,
+            },
+            TextureBuffer::Array {
+                dimensions,
+                level_num,
+                layer_num,
+                ..
+            } => TextureBuffer::Array {
+                dimensions: *dimensions,
+                level_num: *level_num,
+                layer_num: *layer_num,
+                images: new_images,
+            },
+            TextureBuffer::Cube {
+                dimensions,
+                level_num,
+                ..
+            } => TextureBuffer::Cube {
+                dimensions: *dimensions,
+                level_num: *level_num,
+                images: new_images,
+            },
+            TextureBuffer::CubeArray {
+                dimensions,
+                level_num,
+                cube_num,
+                ..
+            } => TextureBuffer::CubeArray {
+                dimensions: *dimensions,
+                level_num: *level_num,
+                cube_num: *cube_num,
+                images: new_images,
+            },
+        };
 
-        Ok(())
+        Ok(out)
     }
+}
 
+impl<T: PixelFormat> TextureBuffer<T> {
     /// Converts a spherical map with the given parametrization 'mapping_2d' into a cube map.
     pub fn spherical_map_to_cube_map(
         &mut self,
@@ -396,12 +400,13 @@ impl TextureBuffer {
                 for image in images.drain(..) {
                     match mapping_2d {
                         SphericalMapping::Equirectangular => {
-                            let px = equi_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                            let nx = equi_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                            let py = equi_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                            let ny = equi_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                            let pz = equi_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                            let nz = equi_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            let src = EquirectangularDirectionalSampler(&image);
+                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
+                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
+                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
+                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
+                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
+                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
                             new_images.push(px);
                             new_images.push(nx);
                             new_images.push(py);
@@ -410,12 +415,13 @@ impl TextureBuffer {
                             new_images.push(nz);
                         }
                         SphericalMapping::Octahedral => {
-                            let px = octahedral_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                            let nx = octahedral_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                            let py = octahedral_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                            let ny = octahedral_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                            let pz = octahedral_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                            let nz = octahedral_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            let src = OctahderalDirectionalSampler(&image);
+                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
+                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
+                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
+                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
+                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
+                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
                             new_images.push(px);
                             new_images.push(nx);
                             new_images.push(py);
@@ -446,12 +452,13 @@ impl TextureBuffer {
                 for image in images.drain(..) {
                     match mapping_2d {
                         SphericalMapping::Equirectangular => {
-                            let px = equi_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                            let nx = equi_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                            let py = equi_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                            let ny = equi_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                            let pz = equi_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                            let nz = equi_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            let src = EquirectangularDirectionalSampler(&image);
+                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
+                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
+                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
+                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
+                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
+                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
                             new_images.push(px);
                             new_images.push(nx);
                             new_images.push(py);
@@ -460,12 +467,13 @@ impl TextureBuffer {
                             new_images.push(nz);
                         }
                         SphericalMapping::Octahedral => {
-                            let px = octahedral_to_cube_dyn::<FacePosX>(&image, face_dimensions);
-                            let nx = octahedral_to_cube_dyn::<FaceNegX>(&image, face_dimensions);
-                            let py = octahedral_to_cube_dyn::<FacePosY>(&image, face_dimensions);
-                            let ny = octahedral_to_cube_dyn::<FaceNegY>(&image, face_dimensions);
-                            let pz = octahedral_to_cube_dyn::<FacePosZ>(&image, face_dimensions);
-                            let nz = octahedral_to_cube_dyn::<FaceNegZ>(&image, face_dimensions);
+                            let src = OctahderalDirectionalSampler(&image);
+                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
+                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
+                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
+                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
+                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
+                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
                             new_images.push(px);
                             new_images.push(nx);
                             new_images.push(py);
@@ -498,7 +506,6 @@ impl TextureBuffer {
         };
 
         new_self.validate_image_count();
-        new_self.validate_image_types();
 
         *self = new_self;
 
@@ -525,7 +532,8 @@ impl TextureBuffer {
                             new_images.push(image);
                         }
                         SphericalMapping::Octahedral => {
-                            let i = octahedral_to_equi_dyn(&image, face_dimensions);
+                            let src = OctahderalDirectionalSampler(&image);
+                            let i = image_to_equi(&src, face_dimensions);
                             new_images.push(i);
                         }
                     }
@@ -554,7 +562,8 @@ impl TextureBuffer {
                             new_images.push(image);
                         }
                         SphericalMapping::Octahedral => {
-                            let i = octahedral_to_equi_dyn(&image, face_dimensions);
+                            let src = OctahderalDirectionalSampler(&image);
+                            let i = image_to_equi(&src, face_dimensions);
                             new_images.push(i);
                         }
                     }
@@ -574,13 +583,10 @@ impl TextureBuffer {
                     return Err(TextureOpError::InvalidSrcType);
                 }
 
-                let mut accessor = CubeToEquiAccess {
-                    dim: face_dimensions,
-                    out: None,
-                };
-                cube_sampler_access(images, &mut accessor);
+                let src = CubeSampler::new_from_slice(images);
+                let new = image_to_equi(&src, face_dimensions);
 
-                let new_images = vec![accessor.out.unwrap()];
+                let new_images = vec![new];
                 TextureBuffer::Single {
                     dimensions: face_dimensions,
                     level_num: 1,
@@ -593,7 +599,6 @@ impl TextureBuffer {
         };
 
         new_self.validate_image_count();
-        new_self.validate_image_types();
 
         *self = new_self;
 
@@ -617,7 +622,8 @@ impl TextureBuffer {
                 for image in images.drain(..) {
                     match mapping_2d {
                         SphericalMapping::Equirectangular => {
-                            let i = equi_to_octahedral_dyn(&image, face_dimensions);
+                            let src = EquirectangularDirectionalSampler(&image);
+                            let i = image_to_octahedral(&src, face_dimensions);
                             new_images.push(i);
                         }
                         SphericalMapping::Octahedral => {
@@ -646,7 +652,8 @@ impl TextureBuffer {
                 for image in images.drain(..) {
                     match mapping_2d {
                         SphericalMapping::Equirectangular => {
-                            let i = equi_to_octahedral_dyn(&image, face_dimensions);
+                            let src = EquirectangularDirectionalSampler(&image);
+                            let i = image_to_octahedral(&src, face_dimensions);
                             new_images.push(i);
                         }
                         SphericalMapping::Octahedral => {
@@ -669,13 +676,10 @@ impl TextureBuffer {
                     return Err(TextureOpError::InvalidSrcType);
                 }
 
-                let mut accessor = CubeToOctAccess {
-                    dim: face_dimensions,
-                    out: None,
-                };
-                cube_sampler_access(images, &mut accessor);
+                let src = CubeSampler::new_from_slice(images);
+                let new = image_to_octahedral(&src, face_dimensions);
 
-                let new_images = vec![accessor.out.unwrap()];
+                let new_images = vec![new];
                 TextureBuffer::Single {
                     dimensions: face_dimensions,
                     level_num: 1,
@@ -688,12 +692,272 @@ impl TextureBuffer {
         };
 
         new_self.validate_image_count();
-        new_self.validate_image_types();
 
         *self = new_self;
 
         Ok(())
     }
+
+    pub fn to_little_endian(&mut self) {
+        match self {
+            TextureBuffer::Single { images, .. } => {
+                images.iter_mut().for_each(|v| v.to_little_endian());
+            }
+            TextureBuffer::Array { images, .. } => {
+                images.iter_mut().for_each(|v| v.to_little_endian());
+            }
+            TextureBuffer::Cube { images, .. } => {
+                images.iter_mut().for_each(|v| v.to_little_endian());
+            }
+            TextureBuffer::CubeArray { images, .. } => {
+                images.iter_mut().for_each(|v| v.to_little_endian());
+            }
+        }
+    }
+}
+
+impl<P: PixelChannelType> TextureBuffer<PixR<P>> {
+    pub fn to_half(&self) -> TextureBuffer<PixR<f16>> {
+        match self {
+            TextureBuffer::Single {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Single {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Array {
+                dimensions,
+                level_num,
+                layer_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Array {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    layer_num: *layer_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Cube {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Cube {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::CubeArray {
+                dimensions,
+                level_num,
+                cube_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::CubeArray {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    cube_num: *cube_num,
+                    images: new,
+                }
+            }
+        }
+    }
+}
+
+impl<P: PixelChannelType> TextureBuffer<PixRG<P>> {
+    pub fn to_half(&self) -> TextureBuffer<PixRG<f16>> {
+        match self {
+            TextureBuffer::Single {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Single {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Array {
+                dimensions,
+                level_num,
+                layer_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Array {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    layer_num: *layer_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Cube {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Cube {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::CubeArray {
+                dimensions,
+                level_num,
+                cube_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::CubeArray {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    cube_num: *cube_num,
+                    images: new,
+                }
+            }
+        }
+    }
+}
+
+impl<P: PixelChannelType> TextureBuffer<PixRGB<P>> {
+    pub fn to_half(&self) -> TextureBuffer<PixRGB<f16>> {
+        match self {
+            TextureBuffer::Single {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Single {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Array {
+                dimensions,
+                level_num,
+                layer_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Array {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    layer_num: *layer_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Cube {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Cube {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::CubeArray {
+                dimensions,
+                level_num,
+                cube_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::CubeArray {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    cube_num: *cube_num,
+                    images: new,
+                }
+            }
+        }
+    }
+}
+
+impl<P: PixelChannelType> TextureBuffer<PixRGBA<P>> {
+    pub fn to_half(&self) -> TextureBuffer<PixRGBA<f16>> {
+        match self {
+            TextureBuffer::Single {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Single {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Array {
+                dimensions,
+                level_num,
+                layer_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Array {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    layer_num: *layer_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::Cube {
+                dimensions,
+                level_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::Cube {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    images: new,
+                }
+            }
+            TextureBuffer::CubeArray {
+                dimensions,
+                level_num,
+                cube_num,
+                images,
+            } => {
+                let new = Vec::from_iter(images.iter().map(|v| v.to_half()));
+                TextureBuffer::CubeArray {
+                    dimensions: *dimensions,
+                    level_num: *level_num,
+                    cube_num: *cube_num,
+                    images: new,
+                }
+            }
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum TextureType {
+    Single,
+    Array,
+    Cube,
+    CubeArray,
 }
 
 /// Calculates the index for an image, assuming some image set with 'layer_num' and 'level_num'
@@ -727,320 +991,6 @@ pub const fn layer_and_level_from_set_index(
     let layer = i / level_num;
     let level = i % level_num;
     (layer, level)
-}
-
-fn normalize_normal_map(i: &mut DynamicImageBuffer) -> TextureOpResult<()> {
-    match i {
-        DynamicImageBuffer::RGB8Unorm(i) => {
-            for p in i.data_mut().chunks_exact_mut(3) {
-                let x = unorm_u8_to_f32(p[0]);
-                let y = unorm_u8_to_f32(p[1]);
-                let z = unorm_u8_to_f32(p[2]);
-
-                // Expand the UNORM into the full encoded normal range
-                let n = Vec3::new(x, y, z);
-                let n = n * Vec3::broadcast(2.0);
-                let n = n - Vec3::broadcast(1.0);
-
-                // The actual normalization we want to do
-                let n = n.normalized();
-
-                // Map back into packed representation
-                let x = (n.x + 1.0) / 2.0;
-                let y = (n.y + 1.0) / 2.0;
-                let z = (n.z + 1.0) / 2.0;
-
-                p[0] = f32_to_unorm_u8(x);
-                p[1] = f32_to_unorm_u8(y);
-                p[2] = f32_to_unorm_u8(z);
-            }
-        }
-        DynamicImageBuffer::RGBA8Unorm(i) => {
-            for p in i.data_mut().chunks_exact_mut(4) {
-                let x = unorm_u8_to_f32(p[0]);
-                let y = unorm_u8_to_f32(p[1]);
-                let z = unorm_u8_to_f32(p[2]);
-
-                // Expand the UNORM into the full encoded normal range
-                let n = Vec3::new(x, y, z);
-                let n = n * Vec3::broadcast(2.0);
-                let n = n - Vec3::broadcast(1.0);
-
-                // The actual normalization we want to do
-                let n = n.normalized();
-
-                // Map back into packed representation
-                let x = (n.x + 1.0) / 2.0;
-                let y = (n.y + 1.0) / 2.0;
-                let z = (n.z + 1.0) / 2.0;
-
-                p[0] = f32_to_unorm_u8(x);
-                p[1] = f32_to_unorm_u8(y);
-                p[2] = f32_to_unorm_u8(z);
-            }
-        }
-        DynamicImageBuffer::RGB16Unorm(i) => {
-            for p in i.data_mut().chunks_exact_mut(3) {
-                let x = unorm_u16_to_f32(p[0]);
-                let y = unorm_u16_to_f32(p[1]);
-                let z = unorm_u16_to_f32(p[2]);
-
-                // Expand the UNORM into the full encoded normal range
-                let n = Vec3::new(x, y, z);
-                let n = n * Vec3::broadcast(2.0);
-                let n = n - Vec3::broadcast(1.0);
-
-                // The actual normalization we want to do
-                let n = n.normalized();
-
-                // Map back into UNORM
-                let x = (n.x + 1.0) / 2.0;
-                let y = (n.y + 1.0) / 2.0;
-                let z = (n.z + 1.0) / 2.0;
-
-                p[0] = f32_to_unorm_u16(x);
-                p[1] = f32_to_unorm_u16(y);
-                p[2] = f32_to_unorm_u16(z);
-            }
-        }
-        DynamicImageBuffer::RGBA16Unorm(i) => {
-            for p in i.data_mut().chunks_exact_mut(4) {
-                let x = unorm_u16_to_f32(p[0]);
-                let y = unorm_u16_to_f32(p[1]);
-                let z = unorm_u16_to_f32(p[2]);
-
-                // Expand the UNORM into the full encoded normal range
-                let n = Vec3::new(x, y, z);
-                let n = n * Vec3::broadcast(2.0);
-                let n = n - Vec3::broadcast(1.0);
-
-                // The actual normalization we want to do
-                let n = n.normalized();
-
-                // Map back into UNORM
-                let x = (n.x + 1.0) / 2.0;
-                let y = (n.y + 1.0) / 2.0;
-                let z = (n.z + 1.0) / 2.0;
-
-                p[0] = f32_to_unorm_u16(x);
-                p[1] = f32_to_unorm_u16(y);
-                p[2] = f32_to_unorm_u16(z);
-            }
-        }
-        DynamicImageBuffer::RGB32Float(i) => {
-            for p in i.data_mut().chunks_exact_mut(3) {
-                let n = Vec3::new(p[0], p[1], p[2]);
-
-                // The actual normalization we want to do
-                let n = n.normalized();
-
-                p[0] = n.x;
-                p[1] = n.y;
-                p[2] = n.z;
-            }
-        }
-        DynamicImageBuffer::RGBA32Float(i) => {
-            for p in i.data_mut().chunks_exact_mut(4) {
-                let n = Vec3::new(p[0], p[1], p[2]);
-
-                // The actual normalization we want to do
-                let n = n.normalized();
-
-                p[0] = n.x;
-                p[1] = n.y;
-                p[2] = n.z;
-            }
-        }
-        _ => return Err(TextureOpError::InvalidSrcFormat),
-    }
-    Ok(())
-}
-
-fn swizzle_rgb_to_rgba<T: Copy + Clone>(
-    src: &[T],
-    width: u32,
-    height: u32,
-    default_value: T,
-) -> Vec<T> {
-    let mut level: Vec<T> = Vec::new();
-    let bytes = width as usize * height as usize * 4;
-    level.resize(bytes, default_value);
-
-    let src_row_width = width as usize * 3;
-    let dst_row_width = width as usize * 4;
-
-    for row in 0..height as usize {
-        let dst_row_start = row * dst_row_width;
-        let dst_row_end = dst_row_start + dst_row_width;
-        let dst = &mut level[dst_row_start..dst_row_end];
-
-        let src_row_start = row * src_row_width;
-        let src_row_end = src_row_start + src_row_width;
-        let src = &src[src_row_start..src_row_end];
-
-        for col in 0..width as usize {
-            let dst_base = col as usize * 4;
-            let dst = &mut dst[dst_base..dst_base + 3];
-
-            let src_base = col as usize * 3;
-            let src = &src[src_base..src_base + 3];
-
-            dst.copy_from_slice(src);
-        }
-    }
-
-    level
-}
-
-trait ICubeSamplerAccess {
-    fn access<T: PixelFormat>(&mut self, sampler: &CubeSampler<T>)
-    where
-        DynamicImageBuffer: From<ImageBuffer<T>>;
-}
-
-struct CubeToOctAccess {
-    dim: UVec2,
-    out: Option<DynamicImageBuffer>,
-}
-
-impl ICubeSamplerAccess for CubeToOctAccess {
-    fn access<T: PixelFormat>(&mut self, sampler: &CubeSampler<T>)
-    where
-        DynamicImageBuffer: From<ImageBuffer<T>>,
-    {
-        let out = image_to_octahedral(sampler, self.dim);
-        self.out = Some(DynamicImageBuffer::from(out));
-    }
-}
-
-struct CubeToEquiAccess {
-    dim: UVec2,
-    out: Option<DynamicImageBuffer>,
-}
-
-impl ICubeSamplerAccess for CubeToEquiAccess {
-    fn access<T: PixelFormat>(&mut self, sampler: &CubeSampler<T>)
-    where
-        DynamicImageBuffer: From<ImageBuffer<T>>,
-    {
-        let out = image_to_equi(sampler, self.dim);
-        self.out = Some(DynamicImageBuffer::from(out));
-    }
-}
-
-fn cube_sampler_access<A: ICubeSamplerAccess>(images: &[DynamicImageBuffer], a: &mut A) {
-    assert!(
-        images.len() >= 6,
-        "At least 6 images are needed to form a texture cube"
-    );
-
-    let first = &images[0];
-
-    match first {
-        DynamicImageBuffer::R8Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RG8Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGB8Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGBA8Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::R16Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RG16Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGB16Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGBA16Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::R32Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RG32Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGB32Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGBA32Unorm(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::R16Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RG16Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGB16Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGBA16Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::R32Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RG32Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGB32Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-        DynamicImageBuffer::RGBA32Float(i) => {
-            let sampler = downcast_rest_to_cube_sampler(i, &images[1..]);
-            a.access(&sampler);
-        }
-    }
-}
-
-/// Kind of awful thing we use to construct a statically typed CubeSampler from our array of
-/// dynamically typed cube images. This is part of [`cube_sampler_access`], where we use a match
-/// to get a concrete type in a dynamic context and then rely on type coercion to deduce what T
-/// should be without naming it (as that would suck to type out).
-///
-/// We _could_ just name the type in [`cube_sampler_access`], but this works too.
-fn downcast_rest_to_cube_sampler<'a, T: PixelFormat>(
-    first: &'a ImageBuffer<T>,
-    images: &'a [DynamicImageBuffer],
-) -> CubeSampler<'a, T>
-where
-    DynamicImageBuffer: DowncastImageBuffer<ImageBuffer<T>>,
-{
-    CubeSampler::new(
-        first,
-        images[0].downcast_image_buffer().unwrap(),
-        images[1].downcast_image_buffer().unwrap(),
-        images[2].downcast_image_buffer().unwrap(),
-        images[3].downcast_image_buffer().unwrap(),
-        images[4].downcast_image_buffer().unwrap(),
-    )
 }
 
 #[cfg(test)]

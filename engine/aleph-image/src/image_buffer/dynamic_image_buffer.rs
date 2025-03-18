@@ -168,8 +168,8 @@ impl DynamicImageBuffer {
     /// - Float types will directly convert from their source representation to the destination.
     ///     - Wider floats will clamp to the value range of a half so as to avoid introducing NaNs
     ///       into the resulting data.
-    pub fn to_half(&mut self) {
-        *self = match self {
+    pub fn to_half(&self) -> DynamicImageBuffer {
+        match self {
             Self::R8Unorm(i) => Self::R16Float(i.to_half()),
             Self::RG8Unorm(i) => Self::RG16Float(i.to_half()),
             Self::RGB8Unorm(i) => Self::RGB16Float(i.to_half()),
@@ -350,13 +350,21 @@ from_image_buffer_impl!(ImageBuffer<PixRGBA<f32>>, RGBA32Float);
 
 /// Trait for doing a runtime checked downcast to a specific concrete [`ImageBuffer`] type.
 pub trait DowncastImageBuffer<Target> {
-    fn downcast_image_buffer(&self) -> Option<&Target>;
+    fn downcast_image_buffer(self) -> Option<Target>;
+    fn downcast_image_buffer_ref(&self) -> Option<&Target>;
 }
 
 macro_rules! downcast_image_buffer_impl {
     ($x: path, $v: ident) => {
         impl DowncastImageBuffer<$x> for DynamicImageBuffer {
-            fn downcast_image_buffer(&self) -> Option<&$x> {
+            fn downcast_image_buffer(self) -> Option<$x> {
+                match self {
+                    Self::$v(v) => Some(v),
+                    _ => None,
+                }
+            }
+
+            fn downcast_image_buffer_ref(&self) -> Option<&$x> {
                 match self {
                     Self::$v(v) => Some(v),
                     _ => None,

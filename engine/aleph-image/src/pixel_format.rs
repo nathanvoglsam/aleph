@@ -39,22 +39,22 @@ use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixR<T: PixelChannelType>([T; 1]);
+pub struct PixR<T: PixelChannelType>(pub [T; 1]);
 
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixRG<T: PixelChannelType>([T; 2]);
+pub struct PixRG<T: PixelChannelType>(pub [T; 2]);
 
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixRGB<T: PixelChannelType>([T; 3]);
+pub struct PixRGB<T: PixelChannelType>(pub [T; 3]);
 
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
 #[repr(transparent)]
-pub struct PixRGBA<T: PixelChannelType>([T; 4]);
+pub struct PixRGBA<T: PixelChannelType>(pub [T; 4]);
 
 /// The interface exposed by our pixel types. This provides basic, generic read/write access to
 /// individual pixels as well as generic conversion operations to and from a floating point vec4
