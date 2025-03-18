@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_image::{SphericalMapping, TextureBuffer};
+use aleph_image::{SphericalMapping, TextureType};
 use aleph_math::UVec2;
 use anyhow::anyhow;
 use clap::{Arg, ArgMatches, Command};
@@ -82,16 +82,17 @@ impl ISubcommand for EquiToOct {
         // LOAD TEXTURES AND VALIDATE INPUT IS COMPATIBLE WITH THE PROCESS
         let mut images = load_ktx_document_to_texture(&input)?;
 
-        match &images {
-            TextureBuffer::Single { level_num, .. } | TextureBuffer::Array { level_num, .. } => {
-                if *level_num > 1 {
+        match images.get_texture_type() {
+            TextureType::Single | TextureType::Array => {
+                let level_num = images.level_num();
+                if level_num > 1 {
                     log::error!("Can't run 'equi_to_oct' on a texture with mip maps!");
                     return Err(anyhow!(
                         "Can't run 'equi_to_oct' on a texture with mip maps!"
                     ));
                 }
             }
-            TextureBuffer::Cube { .. } | TextureBuffer::CubeArray { .. } => {
+            TextureType::Cube | TextureType::CubeArray => {
                 log::error!("Can't run 'equi_to_oct' on a cubemap input!");
                 return Err(anyhow!("Can't run 'equi_to_oct' on a cubemap input!"));
             }
@@ -103,7 +104,7 @@ impl ISubcommand for EquiToOct {
             .spherical_map_to_octahedral_map(SphericalMapping::Equirectangular, face_dimensions)?;
 
         if gen_mips {
-            images.generate_mips(mip_filter.into());
+            images.generate_mips(mip_filter.into())?;
         }
 
         // OUTPUT MAPPING AND TYPE CONVERSIONS

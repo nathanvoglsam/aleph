@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+mod convolve_diffuse;
 mod equi_to_cube;
 mod equi_to_oct;
 mod gen_mips;
@@ -38,8 +39,8 @@ use std::io::{BufWriter, Read, Seek};
 use std::path::Path;
 
 use aleph_image::{
-    layer_and_level_from_set_index, DynamicImageBuffer, ImageBuffer, PixR, PixRG, PixRGB, PixRGBA,
-    PixelChannelType, PixelFormat, ResizeFilter, TextureBuffer,
+    layer_and_level_from_set_index, ColorType, DynamicTextureBuffer, ImageBuffer, PixR, PixRG,
+    PixRGB, PixRGBA, PixelChannelType, PixelFormat, ResizeFilter, TextureBuffer, TextureType,
 };
 use aleph_ktx::{KtxDocument, KtxDocumentDescription, VkFormat};
 use aleph_math::UVec2;
@@ -78,32 +79,144 @@ fn parse_filter(v: &str) -> Option<ResizeFilter> {
     Some(v)
 }
 
-fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<TextureBuffer> {
+fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<DynamicTextureBuffer> {
     let file = File::open(file)?;
     let mapped = unsafe { memmap2::Mmap::map(&file)? };
     let doc = KtxDocument::from_slice(&mapped)?;
 
+    let tex = dynamic_texture_buffer_from_ktx(&mapped, &doc)?;
+
+    tex.validate_image_count();
+
+    Ok(tex)
+}
+
+fn dynamic_texture_buffer_from_ktx<R: Read + Seek>(
+    data: &[u8],
+    doc: &KtxDocument<R>,
+) -> anyhow::Result<DynamicTextureBuffer> {
+    let img = match doc.format() {
+        VkFormat::R8_UNORM | VkFormat::R8_SRGB => {
+            type C = u8;
+            type P = PixR<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::R8Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R8G8_UNORM | VkFormat::R8G8_SRGB => {
+            type C = u8;
+            type P = PixRG<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RG8Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R8G8B8_UNORM | VkFormat::R8G8B8_SRGB => {
+            type C = u8;
+            type P = PixRGB<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGB8Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R8G8B8A8_UNORM | VkFormat::R8G8B8A8_SRGB => {
+            type C = u8;
+            type P = PixRGBA<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGBA8Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16_UNORM => {
+            type C = u16;
+            type P = PixR<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::R16Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16G16_UNORM => {
+            type C = u16;
+            type P = PixRG<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RG16Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16G16B16_UNORM => {
+            type C = u16;
+            type P = PixRGB<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGB16Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16G16B16A16_UNORM => {
+            type C = u16;
+            type P = PixRGBA<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGBA16Unorm(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16_SFLOAT => {
+            type C = f16;
+            type P = PixR<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::R16Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16G16_SFLOAT => {
+            type C = f16;
+            type P = PixRG<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RG16Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16G16B16_SFLOAT => {
+            type C = f16;
+            type P = PixRGB<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGB16Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R16G16B16A16_SFLOAT => {
+            type C = f16;
+            type P = PixRGBA<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGBA16Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R32_SFLOAT => {
+            type C = f32;
+            type P = PixR<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::R32Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R32G32_SFLOAT => {
+            type C = f32;
+            type P = PixRG<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RG32Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R32G32B32_SFLOAT => {
+            type C = f32;
+            type P = PixRGB<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGB32Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        VkFormat::R32G32B32A32_SFLOAT => {
+            type C = f32;
+            type P = PixRGBA<C>;
+            let images = load_all_from_ktx::<R, C, P>(data, doc)?;
+            DynamicTextureBuffer::RGBA32Float(bundle_all_from_ktx::<R, P>(doc, images)?)
+        }
+        _ => {
+            log::error!("Unsupported format '{}'", doc.format());
+            return Err(anyhow!("Unsupported format '{}'", doc.format()));
+        }
+    };
+
+    img.validate_image_count();
+
+    Ok(img)
+}
+
+fn bundle_all_from_ktx<R, P>(
+    doc: &KtxDocument<R>,
+    images: Vec<ImageBuffer<P>>,
+) -> anyhow::Result<TextureBuffer<P>>
+where
+    R: Read + Seek,
+    P: PixelFormat,
+{
     let tex = match doc.document_type() {
         aleph_ktx::DocumentType::Image1D => unimplemented!(),
         aleph_ktx::DocumentType::Image3D => unimplemented!(),
         aleph_ktx::DocumentType::Array1D => unimplemented!(),
         aleph_ktx::DocumentType::Array3D => unimplemented!(),
         aleph_ktx::DocumentType::Image2D => {
-            let layer_num = doc.layer_num() as usize;
-            let level_num = doc.level_num() as usize;
-            let image_count = layer_num * level_num;
-            let mut images = Vec::new();
-            for i in 0..image_count {
-                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
-                let img = dynamic_image_buffer_from_ktx(
-                    &mapped,
-                    &doc,
-                    u32::try_from(layer).unwrap(),
-                    u32::try_from(level).unwrap(),
-                )?;
-                images.push(img);
-            }
-
             let dimensions = UVec2::new(doc.width(), doc.height());
             let level_num = doc.level_num();
             let tex = TextureBuffer::Single {
@@ -114,75 +227,34 @@ fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<Textu
             tex
         }
         aleph_ktx::DocumentType::Array2D => {
-            let layer_num = doc.layer_num() as usize;
-            let level_num = doc.level_num() as usize;
-            let image_count = layer_num * level_num;
-            let mut images = Vec::new();
-            for i in 0..image_count {
-                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
-                let img = dynamic_image_buffer_from_ktx(
-                    &mapped,
-                    &doc,
-                    u32::try_from(layer).unwrap(),
-                    u32::try_from(level).unwrap(),
-                )?;
-                images.push(img);
-            }
-
             let dimensions = UVec2::new(doc.width(), doc.height());
+            let level_num = doc.level_num();
+            let layer_num = doc.layer_num();
             let tex = TextureBuffer::Array {
                 dimensions,
-                level_num: level_num as u32,
-                layer_num: layer_num as u32,
+                level_num,
+                layer_num,
                 images,
             };
             tex
         }
         aleph_ktx::DocumentType::Cube => {
-            let layer_num = doc.layer_num() as usize;
-            let level_num = doc.level_num() as usize;
-            let image_count = layer_num * level_num;
-            let mut images = Vec::new();
-            for i in 0..image_count {
-                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
-                let img = dynamic_image_buffer_from_ktx(
-                    &mapped,
-                    &doc,
-                    u32::try_from(layer).unwrap(),
-                    u32::try_from(level).unwrap(),
-                )?;
-                images.push(img);
-            }
-
             let dimensions = UVec2::new(doc.width(), doc.height());
+            let level_num = doc.level_num();
             let tex = TextureBuffer::Cube {
                 dimensions,
-                level_num: level_num as u32,
+                level_num,
                 images,
             };
             tex
         }
         aleph_ktx::DocumentType::CubeArray => {
-            let layer_num = doc.layer_num() as usize;
-            let level_num = doc.level_num() as usize;
-            let image_count = layer_num * level_num;
-            let mut images = Vec::new();
-            for i in 0..image_count {
-                let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
-                let img = dynamic_image_buffer_from_ktx(
-                    &mapped,
-                    &doc,
-                    u32::try_from(layer).unwrap(),
-                    u32::try_from(level).unwrap(),
-                )?;
-                images.push(img);
-            }
-
             let dimensions = UVec2::new(doc.width(), doc.height());
+            let level_num = doc.level_num();
             let cube_num = doc.layer_num() / doc.face_num();
             let tex = TextureBuffer::CubeArray {
                 dimensions,
-                level_num: level_num as u32,
+                level_num,
                 cube_num,
                 images,
             };
@@ -191,117 +263,44 @@ fn load_ktx_document_to_texture<P: AsRef<Path>>(file: P) -> anyhow::Result<Textu
     };
 
     tex.validate_image_count();
-    tex.validate_image_types();
 
     Ok(tex)
 }
 
-fn dynamic_image_buffer_from_ktx<R: Read + Seek>(
+fn load_all_from_ktx<R, C, P>(
     data: &[u8],
     doc: &KtxDocument<R>,
-    layer: u32,
-    level: u32,
-) -> anyhow::Result<DynamicImageBuffer> {
-    let src = doc
-        .get_level_info(level)
-        .inspect_err(|e| log::error!("Failed to get level {level} in KTX doc: {e:?}"))?;
-    let src = &data[src.to_slice_range()];
-
-    let img = match doc.format() {
-        VkFormat::R8_UNORM | VkFormat::R8_SRGB => {
-            type C = u8;
-            type P = PixR<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R8G8_UNORM | VkFormat::R8G8_SRGB => {
-            type C = u8;
-            type P = PixRG<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R8G8B8_UNORM | VkFormat::R8G8B8_SRGB => {
-            type C = u8;
-            type P = PixRGB<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R8G8B8A8_UNORM | VkFormat::R8G8B8A8_SRGB => {
-            type C = u8;
-            type P = PixRGBA<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16_UNORM => {
-            type C = u16;
-            type P = PixR<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16G16_UNORM => {
-            type C = u16;
-            type P = PixRG<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16G16B16_UNORM => {
-            type C = u16;
-            type P = PixRGB<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16G16B16A16_UNORM => {
-            type C = u16;
-            type P = PixRGBA<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16_SFLOAT => {
-            type C = f16;
-            type P = PixR<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16G16_SFLOAT => {
-            type C = f16;
-            type P = PixRG<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16G16B16_SFLOAT => {
-            type C = f16;
-            type P = PixRGB<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R16G16B16A16_SFLOAT => {
-            type C = f16;
-            type P = PixRGBA<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R32_SFLOAT => {
-            type C = f32;
-            type P = PixR<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R32G32_SFLOAT => {
-            type C = f32;
-            type P = PixRG<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R32G32B32_SFLOAT => {
-            type C = f32;
-            type P = PixRGB<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        VkFormat::R32G32B32A32_SFLOAT => {
-            type C = f32;
-            type P = PixRGBA<C>;
-            load_from_ktx::<R, C, P>(src, doc, layer)
-        }
-        _ => {
-            log::error!("Unsupported format '{}'", doc.format());
-            return Err(anyhow!("Unsupported format '{}'", doc.format()));
-        }
-    };
-    Ok(img)
-}
-
-fn load_from_ktx<R, C, P>(level_data: &[u8], doc: &KtxDocument<R>, layer: u32) -> DynamicImageBuffer
+) -> anyhow::Result<Vec<ImageBuffer<P>>>
 where
     R: Read + Seek,
     C: PixelChannelType,
     P: PixelFormat<Storage = C>,
-    DynamicImageBuffer: From<ImageBuffer<P>>,
+{
+    let layer_num = doc.layer_num() as usize;
+    let level_num = doc.level_num() as usize;
+    let image_count = layer_num * level_num;
+    let mut images = Vec::new();
+    for i in 0..image_count {
+        let (layer, level) = layer_and_level_from_set_index(layer_num, level_num, i);
+        let layer = u32::try_from(layer).unwrap();
+        let level = u32::try_from(level).unwrap();
+
+        let src = doc
+            .get_level_info(level)
+            .inspect_err(|e| log::error!("Failed to get level {level} in KTX doc: {e:?}"))?;
+        let src = &data[src.to_slice_range()];
+
+        let img = load_from_ktx::<R, C, P>(src, doc, layer);
+        images.push(img);
+    }
+    Ok(images)
+}
+
+fn load_from_ktx<R, C, P>(level_data: &[u8], doc: &KtxDocument<R>, layer: u32) -> ImageBuffer<P>
+where
+    R: Read + Seek,
+    C: PixelChannelType,
+    P: PixelFormat<Storage = C>,
 {
     // Number of elements we expect the texture to have. This is the count of individual 'C' values
     // we expect the data to contain. The actual byte size of the texture is...
@@ -326,36 +325,47 @@ where
     // Copy out of the mmapped document and into our destination image.
     data_bytes.copy_from_slice(src);
 
-    // Finally we can construct the image and wrap it in the matching dynamic type
-    let img = ImageBuffer::<P>::from_data(doc.width(), doc.height(), data);
-    DynamicImageBuffer::from(img)
+    // Finally we can construct the image
+    ImageBuffer::<P>::from_data(doc.width(), doc.height(), data)
 }
 
-fn prepare_texture_for_gpu(tex: &mut TextureBuffer, to_half: bool) -> anyhow::Result<()> {
+fn prepare_texture_for_gpu(tex: &mut DynamicTextureBuffer, to_half: bool) -> anyhow::Result<()> {
     // Swizzle 3 channel formats up to 4 channels as there are almost zero GPUs on the planet
     // that can sample from 3 channel formats
-    match tex.get_color_type() {
-        aleph_image::ColorType::RGB8Unorm => tex.swizzle_rgb_to_rgba()?,
-        aleph_image::ColorType::RGB16Unorm => tex.swizzle_rgb_to_rgba()?,
-        aleph_image::ColorType::RGB32Unorm => tex.swizzle_rgb_to_rgba()?,
+    match tex {
+        DynamicTextureBuffer::RGB8Unorm(v) => {
+            *tex = DynamicTextureBuffer::RGBA8Unorm(v.swizzle_rgb_to_rgba(1)?)
+        }
+        DynamicTextureBuffer::RGB16Unorm(v) => {
+            *tex = DynamicTextureBuffer::RGBA16Unorm(v.swizzle_rgb_to_rgba(1)?)
+        }
+        DynamicTextureBuffer::RGB32Unorm(v) => {
+            *tex = DynamicTextureBuffer::RGBA32Unorm(v.swizzle_rgb_to_rgba(1)?)
+        }
+        DynamicTextureBuffer::RGB16Float(v) => {
+            *tex = DynamicTextureBuffer::RGBA16Float(v.swizzle_rgb_to_rgba(f16::from_f32(1.0))?)
+        }
+        DynamicTextureBuffer::RGB32Float(v) => {
+            *tex = DynamicTextureBuffer::RGBA32Float(v.swizzle_rgb_to_rgba(1.0)?)
+        }
         _ => {}
     }
 
     // Convert to half precision as the very final step before the le byteswap.
-    for i in tex.images_mut() {
-        if to_half {
-            i.to_half();
-        }
-        // This will be a no-op on LE platforms
-        i.to_little_endian();
+    if to_half {
+        *tex = tex.to_half()?;
     }
+
+    tex.to_little_endian()?;
 
     Ok(())
 }
 
-fn write_texture_to_ktx_file<P: AsRef<Path>>(tex: &TextureBuffer, dst: P) -> anyhow::Result<()> {
+fn write_texture_to_ktx_file<P: AsRef<Path>>(
+    tex: &DynamicTextureBuffer,
+    dst: P,
+) -> anyhow::Result<()> {
     tex.validate_image_count();
-    tex.validate_image_types();
 
     let final_color_type = tex.get_color_type();
     let image_references = tex.get_buffer_references();
@@ -364,72 +374,65 @@ fn write_texture_to_ktx_file<P: AsRef<Path>>(tex: &TextureBuffer, dst: P) -> any
     let mut ktx = KtxDocumentDescription::new();
 
     match final_color_type {
-        aleph_image::ColorType::R8Unorm => ktx.format(VkFormat::R8_UNORM),
-        aleph_image::ColorType::RG8Unorm => ktx.format(VkFormat::R8G8_UNORM),
-        aleph_image::ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8_UNORM),
-        aleph_image::ColorType::RGBA8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
-        aleph_image::ColorType::R16Unorm => ktx.format(VkFormat::R16_UNORM),
-        aleph_image::ColorType::RG16Unorm => ktx.format(VkFormat::R16G16_UNORM),
-        aleph_image::ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16_UNORM),
-        aleph_image::ColorType::RGBA16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
-        aleph_image::ColorType::R32Unorm => unimplemented!(),
-        aleph_image::ColorType::RG32Unorm => unimplemented!(),
-        aleph_image::ColorType::RGB32Unorm => unimplemented!(),
-        aleph_image::ColorType::RGBA32Unorm => unimplemented!(),
-        aleph_image::ColorType::R16Float => ktx.format(VkFormat::R16_SFLOAT),
-        aleph_image::ColorType::RG16Float => ktx.format(VkFormat::R16G16_SFLOAT),
-        aleph_image::ColorType::RGB16Float => ktx.format(VkFormat::R16G16B16_SFLOAT),
-        aleph_image::ColorType::RGBA16Float => ktx.format(VkFormat::R16G16B16A16_SFLOAT),
-        aleph_image::ColorType::R32Float => ktx.format(VkFormat::R32_SFLOAT),
-        aleph_image::ColorType::RG32Float => ktx.format(VkFormat::R32G32_SFLOAT),
-        aleph_image::ColorType::RGB32Float => ktx.format(VkFormat::R32G32B32_SFLOAT),
-        aleph_image::ColorType::RGBA32Float => ktx.format(VkFormat::R32G32B32A32_SFLOAT),
+        ColorType::R8Unorm => ktx.format(VkFormat::R8_UNORM),
+        ColorType::RG8Unorm => ktx.format(VkFormat::R8G8_UNORM),
+        ColorType::RGB8Unorm => ktx.format(VkFormat::R8G8B8_UNORM),
+        ColorType::RGBA8Unorm => ktx.format(VkFormat::R8G8B8A8_UNORM),
+        ColorType::R16Unorm => ktx.format(VkFormat::R16_UNORM),
+        ColorType::RG16Unorm => ktx.format(VkFormat::R16G16_UNORM),
+        ColorType::RGB16Unorm => ktx.format(VkFormat::R16G16B16_UNORM),
+        ColorType::RGBA16Unorm => ktx.format(VkFormat::R16G16B16A16_UNORM),
+        ColorType::R32Unorm => unimplemented!(),
+        ColorType::RG32Unorm => unimplemented!(),
+        ColorType::RGB32Unorm => unimplemented!(),
+        ColorType::RGBA32Unorm => unimplemented!(),
+        ColorType::R16Float => ktx.format(VkFormat::R16_SFLOAT),
+        ColorType::RG16Float => ktx.format(VkFormat::R16G16_SFLOAT),
+        ColorType::RGB16Float => ktx.format(VkFormat::R16G16B16_SFLOAT),
+        ColorType::RGBA16Float => ktx.format(VkFormat::R16G16B16A16_SFLOAT),
+        ColorType::R32Float => ktx.format(VkFormat::R32_SFLOAT),
+        ColorType::RG32Float => ktx.format(VkFormat::R32G32_SFLOAT),
+        ColorType::RGB32Float => ktx.format(VkFormat::R32G32B32_SFLOAT),
+        ColorType::RGBA32Float => ktx.format(VkFormat::R32G32B32A32_SFLOAT),
     };
 
-    match tex {
-        TextureBuffer::Single {
-            dimensions,
-            level_num,
-            ..
-        } => {
+    match tex.get_texture_type() {
+        TextureType::Single => {
+            let dimensions = tex.dimensions();
+            let level_num = tex.level_num();
+
             log::info!("Writing Image");
-            ktx.image_2d(dimensions.x, dimensions.y, *level_num, &image_references);
+            ktx.image_2d(dimensions.x, dimensions.y, level_num, &image_references);
         }
-        TextureBuffer::Array {
-            dimensions,
-            layer_num,
-            level_num,
-            ..
-        } => {
+        TextureType::Array => {
+            let dimensions = tex.dimensions();
+            let layer_num = tex.layer_num();
+            let level_num = tex.level_num();
             log::info!("Writing Image Array with '{layer_num}' images.");
             ktx.image_2d_array(
                 dimensions.x,
                 dimensions.y,
-                *layer_num,
-                *level_num,
+                layer_num,
+                level_num,
                 &image_references,
             );
         }
-        TextureBuffer::Cube {
-            dimensions,
-            level_num,
-            ..
-        } => {
+        TextureType::Cube => {
+            let dimensions = tex.dimensions();
+            let level_num = tex.level_num();
             log::info!("Writing Cube");
-            ktx.cube(dimensions.x, dimensions.y, *level_num, &image_references);
+            ktx.cube(dimensions.x, dimensions.y, level_num, &image_references);
         }
-        TextureBuffer::CubeArray {
-            dimensions,
-            cube_num,
-            level_num,
-            ..
-        } => {
-            log::info!("Writing Cube Array with '{}' images.", cube_num * 6);
+        TextureType::CubeArray => {
+            let dimensions = tex.dimensions();
+            let layer_num = tex.layer_num();
+            let level_num = tex.level_num();
+            log::info!("Writing Cube Array with '{}' images.", layer_num);
             ktx.cube_array(
                 dimensions.x,
                 dimensions.y,
-                *cube_num,
-                *level_num,
+                layer_num / 6,
+                level_num,
                 &image_references,
             );
         }
