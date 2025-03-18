@@ -29,6 +29,7 @@
 
 mod dynamic_image_buffer;
 
+use aleph_math::UVec2;
 pub use dynamic_image_buffer::{ColorType, DowncastImageBuffer, DynamicImageBuffer};
 
 use half::f16;
@@ -103,6 +104,43 @@ impl<T: PixelFormat> ImageBuffer<T> {
     #[inline]
     pub fn data_mut(&mut self) -> &mut [T::Storage] {
         self.data.as_mut_slice()
+    }
+
+    /// Run a function over all the pixels in an image
+    #[inline]
+    pub fn filter_pixels<F>(&self, mut f: F)
+    where
+        F: FnMut(UVec2, T),
+    {
+        let iter = self.data.chunks_exact(T::COMPONENTS).enumerate();
+        for (i, p) in iter {
+            let y = i as u32 / self.width;
+            let x = i as u32 % self.width;
+
+            let p = T::from_storage(p);
+            f(UVec2::new(x, y), p)
+        }
+    }
+
+    /// Run a function over all the pixels in an image. This is an alternate version of
+    /// [`ImageBuffer::filter_pixels`] that produces new pixels from the input and will update the
+    /// image in place with those new pixels.
+    ///
+    /// This can be thought of as a 1x1 filter.
+    #[inline]
+    pub fn filter_pixels_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(UVec2, T) -> T,
+    {
+        let iter = self.data.chunks_exact_mut(T::COMPONENTS).enumerate();
+        for (i, pb) in iter {
+            let y = i as u32 / self.width;
+            let x = i as u32 % self.width;
+
+            let p = T::from_storage(pb);
+            let p = f(UVec2::new(x, y), p);
+            T::write_at(&p, pb);
+        }
     }
 
     /// Calculates the expected/required length of a backing `Vec` for an image of the given
