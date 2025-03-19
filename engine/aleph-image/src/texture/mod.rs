@@ -387,7 +387,7 @@ impl<T: PixelFormat> TextureBuffer<T> {
         src_mapping_2d: SphericalMapping,
         dst_mapping: EnvironmentMapProjection,
         face_dimensions: UVec2,
-        samples: usize,
+        samples: u32,
     ) -> TextureOpResult<TextureBuffer<T>> {
         fn integrate_2d_src<TT: PixelFormat>(
             dst: &mut Vec<ImageBuffer<TT>>,
@@ -395,7 +395,7 @@ impl<T: PixelFormat> TextureBuffer<T> {
             src_mapping: EnvironmentMapProjection,
             dst_mapping: EnvironmentMapProjection,
             face_dimensions: UVec2,
-            samples: usize,
+            samples: u32,
         ) {
             match dst_mapping {
                 EnvironmentMapProjection::Equirectangular => match src_mapping {

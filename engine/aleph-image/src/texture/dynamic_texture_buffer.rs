@@ -276,7 +276,7 @@ impl DynamicTextureBuffer {
         src_mapping_2d: SphericalMapping,
         dst_mapping: EnvironmentMapProjection,
         face_dimensions: UVec2,
-        samples: usize,
+        samples: u32,
     ) -> TextureOpResult<DynamicTextureBuffer> {
         let out = impl_for_all_variants_wrap!(
             self,

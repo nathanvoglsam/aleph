@@ -56,7 +56,7 @@ pub fn integrate_irradiance_for_direction(
     src: &impl IDirectionalSampler,
     random: &mut impl Rng,
     n: Vec3,
-    samples: usize,
+    samples: u32,
 ) -> Vec4 {
     // This function will importance sample the hemisphere centered on 'n' using a cosine
     // distribution.
@@ -103,7 +103,7 @@ pub fn integrate_irradiance_for_direction(
 pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
     src: &impl IDirectionalSampler,
     face_dimension: UVec2,
-    samples: usize,
+    samples: u32,
 ) -> ImageBuffer<O> {
     use rand::SeedableRng;
 
@@ -133,7 +133,7 @@ pub(crate) fn integrate_irradiance_to_whole_cube<O: PixelFormat>(
     dst: &mut Vec<ImageBuffer<O>>,
     src: &impl IDirectionalSampler,
     face_dimensions: UVec2,
-    samples: usize,
+    samples: u32,
 ) {
     dst.push(integrate_irradiance_to_cube::<FacePosX, _>(
         src,
@@ -170,7 +170,7 @@ pub(crate) fn integrate_irradiance_to_whole_cube<O: PixelFormat>(
 pub fn integrate_irradiance_to_equi<O: PixelFormat>(
     src: &impl IDirectionalSampler,
     face_dimension: UVec2,
-    samples: usize,
+    samples: u32,
 ) -> ImageBuffer<O> {
     use rand::SeedableRng;
 
@@ -199,7 +199,7 @@ pub fn integrate_irradiance_to_equi<O: PixelFormat>(
 pub fn integrate_irradiance_to_octahedral<O: PixelFormat>(
     src: &impl IDirectionalSampler,
     face_dimension: UVec2,
-    samples: usize,
+    samples: u32,
 ) -> ImageBuffer<O> {
     use rand::SeedableRng;
 
