@@ -27,8 +27,41 @@
 // SOFTWARE.
 //
 
+/// The set of supported 2D environment map projection schemes.
+///
+/// This only includes 2D projections which map all the points on the surface of a sphere onto a
+/// single 2D texture. Other schemes like [`EnvironmentMapProjection::Cube`] are not enumerated here
+/// as they use multiple textures.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum SphericalMapping {
+    /// A 2D projection using an equirectangular projection function.
     Equirectangular,
+
+    /// A 2D projection using an octahedral projection function.
     Octahedral,
+}
+
+impl Into<EnvironmentMapProjection> for SphericalMapping {
+    #[inline(always)]
+    fn into(self) -> EnvironmentMapProjection {
+        match self {
+            SphericalMapping::Equirectangular => EnvironmentMapProjection::Equirectangular,
+            SphericalMapping::Octahedral => EnvironmentMapProjection::Octahedral,
+        }
+    }
+}
+
+/// The set of supported environment map projection schemes
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum EnvironmentMapProjection {
+    /// A 2D projection using an equirectangular projection function.
+    Equirectangular,
+
+    /// A 2D projection using an octahedral projection function.
+    Octahedral,
+
+    /// A 2.5D projection that uses 6 images arranged into a cube to define the environment map.
+    ///
+    /// AKA: A cube map.
+    Cube,
 }

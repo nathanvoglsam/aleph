@@ -35,11 +35,11 @@ use aleph_math::{UVec2, Vec3};
 use half::f16;
 
 use crate::{
-    image_to_cube, image_to_equi, image_to_octahedral, CubeSampler,
-    EquirectangularDirectionalSampler, FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ,
-    IPixelAccess, IPixelStorage, IResizeImage, ImageBuffer, OctahderalDirectionalSampler, PixR,
-    PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat, ResizeFilter, SphericalMapping,
-    TextureOpError, TextureOpResult,
+    image_to_equi, image_to_octahedral, image_to_whole_cube, integrate_irradiance_to_equi,
+    integrate_irradiance_to_octahedral, integrate_irradiance_to_whole_cube, CubeSampler,
+    EnvironmentMapProjection, EquirectangularDirectionalSampler, IPixelAccess, IPixelStorage,
+    IResizeImage, ImageBuffer, OctahderalDirectionalSampler, PixR, PixRG, PixRGB, PixRGBA,
+    PixelChannelType, PixelFormat, ResizeFilter, SphericalMapping, TextureOpError, TextureOpResult,
 };
 
 /// Type that closes over the types of textures we support working with. This includes the types
@@ -382,12 +382,86 @@ where
 }
 
 impl<T: PixelFormat> TextureBuffer<T> {
-    /// Converts a spherical map with the given parametrization 'mapping_2d' into a cube map.
-    pub fn spherical_map_to_cube_map(
+    pub fn integrate_irradiance(
         &mut self,
-        mapping_2d: SphericalMapping,
+        src_mapping_2d: SphericalMapping,
+        dst_mapping: EnvironmentMapProjection,
         face_dimensions: UVec2,
-    ) -> TextureOpResult<()> {
+        samples: usize,
+    ) -> TextureOpResult<TextureBuffer<T>> {
+        fn integrate_2d_src<TT: PixelFormat>(
+            dst: &mut Vec<ImageBuffer<TT>>,
+            images: &[ImageBuffer<TT>],
+            src_mapping: EnvironmentMapProjection,
+            dst_mapping: EnvironmentMapProjection,
+            face_dimensions: UVec2,
+            samples: usize,
+        ) {
+            match dst_mapping {
+                EnvironmentMapProjection::Equirectangular => match src_mapping {
+                    EnvironmentMapProjection::Equirectangular => {
+                        for image in images {
+                            let src = EquirectangularDirectionalSampler(image);
+                            let m = integrate_irradiance_to_equi(&src, face_dimensions, samples);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Octahedral => {
+                        for image in images {
+                            let src = OctahderalDirectionalSampler(image);
+                            let m = integrate_irradiance_to_equi(&src, face_dimensions, samples);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Cube => {
+                        let src = CubeSampler::new_from_slice(images);
+                        let m = integrate_irradiance_to_equi(&src, face_dimensions, samples);
+                        dst.push(m);
+                    }
+                },
+                EnvironmentMapProjection::Octahedral => match src_mapping {
+                    EnvironmentMapProjection::Equirectangular => {
+                        for image in images {
+                            let src = EquirectangularDirectionalSampler(image);
+                            let m =
+                                integrate_irradiance_to_octahedral(&src, face_dimensions, samples);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Octahedral => {
+                        for image in images {
+                            let src = OctahderalDirectionalSampler(image);
+                            let m =
+                                integrate_irradiance_to_octahedral(&src, face_dimensions, samples);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Cube => {
+                        let src = CubeSampler::new_from_slice(images);
+                        let m = integrate_irradiance_to_octahedral(&src, face_dimensions, samples);
+                        dst.push(m);
+                    }
+                },
+                EnvironmentMapProjection::Cube => match src_mapping {
+                    EnvironmentMapProjection::Equirectangular => {
+                        for image in images {
+                            let src = EquirectangularDirectionalSampler(image);
+                            integrate_irradiance_to_whole_cube(dst, &src, face_dimensions, samples);
+                        }
+                    }
+                    EnvironmentMapProjection::Octahedral => {
+                        for image in images {
+                            let src = OctahderalDirectionalSampler(image);
+                            integrate_irradiance_to_whole_cube(dst, &src, face_dimensions, samples);
+                        }
+                    }
+                    EnvironmentMapProjection::Cube => {
+                        let src = CubeSampler::new_from_slice(images);
+                        integrate_irradiance_to_whole_cube(dst, &src, face_dimensions, samples);
+                    }
+                },
+            }
+        }
         let new_self = match self {
             TextureBuffer::Single {
                 level_num, images, ..
@@ -397,45 +471,31 @@ impl<T: PixelFormat> TextureBuffer<T> {
                 }
 
                 let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    match mapping_2d {
-                        SphericalMapping::Equirectangular => {
-                            let src = EquirectangularDirectionalSampler(&image);
-                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
-                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
-                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
-                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
-                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
-                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
-                            new_images.push(px);
-                            new_images.push(nx);
-                            new_images.push(py);
-                            new_images.push(ny);
-                            new_images.push(pz);
-                            new_images.push(nz);
-                        }
-                        SphericalMapping::Octahedral => {
-                            let src = OctahderalDirectionalSampler(&image);
-                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
-                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
-                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
-                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
-                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
-                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
-                            new_images.push(px);
-                            new_images.push(nx);
-                            new_images.push(py);
-                            new_images.push(ny);
-                            new_images.push(pz);
-                            new_images.push(nz);
-                        }
-                    }
-                }
+                integrate_2d_src(
+                    &mut new_images,
+                    images,
+                    src_mapping_2d.into(),
+                    dst_mapping,
+                    face_dimensions,
+                    samples,
+                );
 
-                TextureBuffer::Cube {
-                    dimensions: face_dimensions,
-                    level_num: 1,
-                    images: new_images,
+                match dst_mapping {
+                    EnvironmentMapProjection::Equirectangular => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Octahedral => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Cube => TextureBuffer::Cube {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
                 }
             }
             TextureBuffer::Array {
@@ -449,57 +509,77 @@ impl<T: PixelFormat> TextureBuffer<T> {
                 }
 
                 let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    match mapping_2d {
-                        SphericalMapping::Equirectangular => {
-                            let src = EquirectangularDirectionalSampler(&image);
-                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
-                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
-                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
-                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
-                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
-                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
-                            new_images.push(px);
-                            new_images.push(nx);
-                            new_images.push(py);
-                            new_images.push(ny);
-                            new_images.push(pz);
-                            new_images.push(nz);
-                        }
-                        SphericalMapping::Octahedral => {
-                            let src = OctahderalDirectionalSampler(&image);
-                            let px = image_to_cube::<FacePosX, _>(&src, face_dimensions);
-                            let nx = image_to_cube::<FaceNegX, _>(&src, face_dimensions);
-                            let py = image_to_cube::<FacePosY, _>(&src, face_dimensions);
-                            let ny = image_to_cube::<FaceNegY, _>(&src, face_dimensions);
-                            let pz = image_to_cube::<FacePosZ, _>(&src, face_dimensions);
-                            let nz = image_to_cube::<FaceNegZ, _>(&src, face_dimensions);
-                            new_images.push(px);
-                            new_images.push(nx);
-                            new_images.push(py);
-                            new_images.push(ny);
-                            new_images.push(pz);
-                            new_images.push(nz);
-                        }
-                    }
+
+                for bundle in images.chunks_exact(1) {
+                    integrate_2d_src(
+                        &mut new_images,
+                        bundle,
+                        src_mapping_2d.into(),
+                        dst_mapping,
+                        face_dimensions,
+                        samples,
+                    );
                 }
 
-                TextureBuffer::CubeArray {
-                    dimensions: face_dimensions,
-                    cube_num: *layer_num,
-                    level_num: 1,
-                    images: new_images,
+                match dst_mapping {
+                    EnvironmentMapProjection::Equirectangular => TextureBuffer::Array {
+                        dimensions: face_dimensions,
+                        layer_num: *layer_num,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Octahedral => TextureBuffer::Array {
+                        dimensions: face_dimensions,
+                        layer_num: *layer_num,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Cube => TextureBuffer::CubeArray {
+                        dimensions: face_dimensions,
+                        cube_num: *layer_num,
+                        level_num: 1,
+                        images: new_images,
+                    },
                 }
             }
             TextureBuffer::Cube {
-                dimensions,
-                level_num,
-                images,
-            } => TextureBuffer::Cube {
-                dimensions: *dimensions,
-                level_num: *level_num,
-                images: images.clone(),
-            },
+                level_num, images, ..
+            } => {
+                if *level_num > 1 {
+                    return Err(TextureOpError::InvalidSrcType);
+                }
+
+                let mut new_images = Vec::new();
+
+                for bundle in images.chunks_exact(6) {
+                    integrate_2d_src(
+                        &mut new_images,
+                        bundle,
+                        EnvironmentMapProjection::Cube,
+                        dst_mapping,
+                        face_dimensions,
+                        samples,
+                    );
+                }
+
+                match dst_mapping {
+                    EnvironmentMapProjection::Equirectangular => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Octahedral => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Cube => TextureBuffer::Cube {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                }
+            }
             TextureBuffer::CubeArray { .. } => {
                 return Err(TextureOpError::InvalidSrcType);
             }
@@ -507,16 +587,85 @@ impl<T: PixelFormat> TextureBuffer<T> {
 
         new_self.validate_image_count();
 
-        *self = new_self;
-
-        Ok(())
+        Ok(new_self)
     }
 
-    pub fn spherical_map_to_equirectangular_map(
+    pub fn reproject_environment_map(
         &mut self,
-        mapping_2d: SphericalMapping,
+        src_mapping_2d: SphericalMapping,
+        dst_mapping: EnvironmentMapProjection,
         face_dimensions: UVec2,
-    ) -> TextureOpResult<()> {
+    ) -> TextureOpResult<TextureBuffer<T>> {
+        fn reproject_2d_src<TT: PixelFormat>(
+            dst: &mut Vec<ImageBuffer<TT>>,
+            images: &[ImageBuffer<TT>],
+            src_mapping: EnvironmentMapProjection,
+            dst_mapping: EnvironmentMapProjection,
+            face_dimensions: UVec2,
+        ) {
+            match dst_mapping {
+                EnvironmentMapProjection::Equirectangular => match src_mapping {
+                    EnvironmentMapProjection::Equirectangular => {
+                        for image in images {
+                            let src = EquirectangularDirectionalSampler(image);
+                            let m = image_to_equi(&src, face_dimensions);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Octahedral => {
+                        for image in images {
+                            let src = OctahderalDirectionalSampler(image);
+                            let m = image_to_equi(&src, face_dimensions);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Cube => {
+                        let src = CubeSampler::new_from_slice(images);
+                        let m = image_to_equi(&src, face_dimensions);
+                        dst.push(m);
+                    }
+                },
+                EnvironmentMapProjection::Octahedral => match src_mapping {
+                    EnvironmentMapProjection::Equirectangular => {
+                        for image in images {
+                            let src = EquirectangularDirectionalSampler(image);
+                            let m = image_to_octahedral(&src, face_dimensions);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Octahedral => {
+                        for image in images {
+                            let src = OctahderalDirectionalSampler(image);
+                            let m = image_to_octahedral(&src, face_dimensions);
+                            dst.push(m);
+                        }
+                    }
+                    EnvironmentMapProjection::Cube => {
+                        let src = CubeSampler::new_from_slice(images);
+                        let m = image_to_octahedral(&src, face_dimensions);
+                        dst.push(m);
+                    }
+                },
+                EnvironmentMapProjection::Cube => match src_mapping {
+                    EnvironmentMapProjection::Equirectangular => {
+                        for image in images {
+                            let src = EquirectangularDirectionalSampler(image);
+                            image_to_whole_cube(dst, &src, face_dimensions);
+                        }
+                    }
+                    EnvironmentMapProjection::Octahedral => {
+                        for image in images {
+                            let src = OctahderalDirectionalSampler(image);
+                            image_to_whole_cube(dst, &src, face_dimensions);
+                        }
+                    }
+                    EnvironmentMapProjection::Cube => {
+                        let src = CubeSampler::new_from_slice(images);
+                        image_to_whole_cube(dst, &src, face_dimensions);
+                    }
+                },
+            }
+        }
         let new_self = match self {
             TextureBuffer::Single {
                 level_num, images, ..
@@ -526,23 +675,30 @@ impl<T: PixelFormat> TextureBuffer<T> {
                 }
 
                 let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    match mapping_2d {
-                        SphericalMapping::Equirectangular => {
-                            new_images.push(image);
-                        }
-                        SphericalMapping::Octahedral => {
-                            let src = OctahderalDirectionalSampler(&image);
-                            let i = image_to_equi(&src, face_dimensions);
-                            new_images.push(i);
-                        }
-                    }
-                }
+                reproject_2d_src(
+                    &mut new_images,
+                    images,
+                    src_mapping_2d.into(),
+                    dst_mapping,
+                    face_dimensions,
+                );
 
-                TextureBuffer::Single {
-                    dimensions: face_dimensions,
-                    level_num: 1,
-                    images: new_images,
+                match dst_mapping {
+                    EnvironmentMapProjection::Equirectangular => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Octahedral => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Cube => TextureBuffer::Cube {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
                 }
             }
             TextureBuffer::Array {
@@ -556,117 +712,36 @@ impl<T: PixelFormat> TextureBuffer<T> {
                 }
 
                 let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    match mapping_2d {
-                        SphericalMapping::Equirectangular => {
-                            new_images.push(image);
-                        }
-                        SphericalMapping::Octahedral => {
-                            let src = OctahderalDirectionalSampler(&image);
-                            let i = image_to_equi(&src, face_dimensions);
-                            new_images.push(i);
-                        }
-                    }
+
+                for bundle in images.chunks_exact(1) {
+                    reproject_2d_src(
+                        &mut new_images,
+                        bundle,
+                        src_mapping_2d.into(),
+                        dst_mapping,
+                        face_dimensions,
+                    );
                 }
 
-                TextureBuffer::Array {
-                    dimensions: face_dimensions,
-                    layer_num: *layer_num,
-                    level_num: 1,
-                    images: new_images,
-                }
-            }
-            TextureBuffer::Cube {
-                level_num, images, ..
-            } => {
-                if *level_num > 1 {
-                    return Err(TextureOpError::InvalidSrcType);
-                }
-
-                let src = CubeSampler::new_from_slice(images);
-                let new = image_to_equi(&src, face_dimensions);
-
-                let new_images = vec![new];
-                TextureBuffer::Single {
-                    dimensions: face_dimensions,
-                    level_num: 1,
-                    images: new_images,
-                }
-            }
-            TextureBuffer::CubeArray { .. } => {
-                return Err(TextureOpError::InvalidSrcType);
-            }
-        };
-
-        new_self.validate_image_count();
-
-        *self = new_self;
-
-        Ok(())
-    }
-
-    pub fn spherical_map_to_octahedral_map(
-        &mut self,
-        mapping_2d: SphericalMapping,
-        face_dimensions: UVec2,
-    ) -> TextureOpResult<()> {
-        let new_self = match self {
-            TextureBuffer::Single {
-                level_num, images, ..
-            } => {
-                if *level_num > 1 {
-                    return Err(TextureOpError::InvalidSrcType);
-                }
-
-                let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    match mapping_2d {
-                        SphericalMapping::Equirectangular => {
-                            let src = EquirectangularDirectionalSampler(&image);
-                            let i = image_to_octahedral(&src, face_dimensions);
-                            new_images.push(i);
-                        }
-                        SphericalMapping::Octahedral => {
-                            new_images.push(image);
-                        }
-                    }
-                }
-
-                TextureBuffer::Single {
-                    dimensions: face_dimensions,
-                    level_num: 1,
-                    images: new_images,
-                }
-            }
-            TextureBuffer::Array {
-                level_num,
-                layer_num,
-                images,
-                ..
-            } => {
-                if *level_num > 1 {
-                    return Err(TextureOpError::InvalidSrcType);
-                }
-
-                let mut new_images = Vec::new();
-                for image in images.drain(..) {
-                    match mapping_2d {
-                        SphericalMapping::Equirectangular => {
-                            let src = EquirectangularDirectionalSampler(&image);
-                            let i = image_to_octahedral(&src, face_dimensions);
-                            new_images.push(i);
-                        }
-                        SphericalMapping::Octahedral => {
-                            new_images.push(image);
-                        }
-                    }
-                }
-
-                TextureBuffer::Array {
-                    dimensions: face_dimensions,
-                    layer_num: *layer_num,
-                    level_num: 1,
-                    images: new_images,
+                match dst_mapping {
+                    EnvironmentMapProjection::Equirectangular => TextureBuffer::Array {
+                        dimensions: face_dimensions,
+                        layer_num: *layer_num,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Octahedral => TextureBuffer::Array {
+                        dimensions: face_dimensions,
+                        layer_num: *layer_num,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Cube => TextureBuffer::CubeArray {
+                        dimensions: face_dimensions,
+                        cube_num: *layer_num,
+                        level_num: 1,
+                        images: new_images,
+                    },
                 }
             }
             TextureBuffer::Cube {
@@ -676,14 +751,34 @@ impl<T: PixelFormat> TextureBuffer<T> {
                     return Err(TextureOpError::InvalidSrcType);
                 }
 
-                let src = CubeSampler::new_from_slice(images);
-                let new = image_to_octahedral(&src, face_dimensions);
+                let mut new_images = Vec::new();
 
-                let new_images = vec![new];
-                TextureBuffer::Single {
-                    dimensions: face_dimensions,
-                    level_num: 1,
-                    images: new_images,
+                for bundle in images.chunks_exact(6) {
+                    reproject_2d_src(
+                        &mut new_images,
+                        bundle,
+                        EnvironmentMapProjection::Cube,
+                        dst_mapping,
+                        face_dimensions,
+                    );
+                }
+
+                match dst_mapping {
+                    EnvironmentMapProjection::Equirectangular => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Octahedral => TextureBuffer::Single {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
+                    EnvironmentMapProjection::Cube => TextureBuffer::Cube {
+                        dimensions: face_dimensions,
+                        level_num: 1,
+                        images: new_images,
+                    },
                 }
             }
             TextureBuffer::CubeArray { .. } => {
@@ -693,9 +788,7 @@ impl<T: PixelFormat> TextureBuffer<T> {
 
         new_self.validate_image_count();
 
-        *self = new_self;
-
-        Ok(())
+        Ok(new_self)
     }
 
     pub fn to_little_endian(&mut self) {

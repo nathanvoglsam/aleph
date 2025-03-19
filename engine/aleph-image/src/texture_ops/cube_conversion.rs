@@ -30,7 +30,8 @@
 use aleph_math::UVec2;
 
 use crate::{
-    IDirectionalSampler, IFaceSelector, IPixelAccess, IPixelStorage, ImageBuffer, PixelFormat,
+    FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IDirectionalSampler, IFaceSelector,
+    IPixelAccess, IPixelStorage, ImageBuffer, PixelFormat,
 };
 
 /// This function will compute the requested face of a cubemap by sampling the source environment
@@ -60,4 +61,17 @@ pub fn image_to_cube<F: IFaceSelector, O: PixelFormat>(
     }
 
     dst
+}
+
+pub(crate) fn image_to_whole_cube<O: PixelFormat>(
+    dst: &mut Vec<ImageBuffer<O>>,
+    src: &impl IDirectionalSampler,
+    face_dimensions: UVec2,
+) {
+    dst.push(image_to_cube::<FacePosX, _>(src, face_dimensions));
+    dst.push(image_to_cube::<FaceNegX, _>(src, face_dimensions));
+    dst.push(image_to_cube::<FacePosY, _>(src, face_dimensions));
+    dst.push(image_to_cube::<FaceNegY, _>(src, face_dimensions));
+    dst.push(image_to_cube::<FacePosZ, _>(src, face_dimensions));
+    dst.push(image_to_cube::<FaceNegZ, _>(src, face_dimensions));
 }

@@ -32,8 +32,8 @@ use half::f16;
 
 use crate::texture::TextureType;
 use crate::{
-    ColorType, PixR, PixRG, PixRGB, PixRGBA, ResizeFilter, SphericalMapping, TextureBuffer,
-    TextureOpError, TextureOpResult,
+    ColorType, EnvironmentMapProjection, PixR, PixRG, PixRGB, PixRGBA, ResizeFilter,
+    SphericalMapping, TextureBuffer, TextureOpError, TextureOpResult,
 };
 
 #[derive(Clone)]
@@ -83,6 +83,33 @@ macro_rules! impl_for_all_variants {
             Self::RG32Float($n) => $f,
             Self::RGB32Float($n) => $f,
             Self::RGBA32Float($n) => $f,
+        }
+    };
+}
+
+macro_rules! impl_for_all_variants_wrap {
+    ($self: ident, $n: ident, $f: expr) => {
+        match $self {
+            Self::R8Unorm($n) => Self::R8Unorm($f),
+            Self::RG8Unorm($n) => Self::RG8Unorm($f),
+            Self::RGB8Unorm($n) => Self::RGB8Unorm($f),
+            Self::RGBA8Unorm($n) => Self::RGBA8Unorm($f),
+            Self::R16Unorm($n) => Self::R16Unorm($f),
+            Self::RG16Unorm($n) => Self::RG16Unorm($f),
+            Self::RGB16Unorm($n) => Self::RGB16Unorm($f),
+            Self::RGBA16Unorm($n) => Self::RGBA16Unorm($f),
+            Self::R32Unorm($n) => Self::R32Unorm($f),
+            Self::RG32Unorm($n) => Self::RG32Unorm($f),
+            Self::RGB32Unorm($n) => Self::RGB32Unorm($f),
+            Self::RGBA32Unorm($n) => Self::RGBA32Unorm($f),
+            Self::R16Float($n) => Self::R16Float($f),
+            Self::RG16Float($n) => Self::RG16Float($f),
+            Self::RGB16Float($n) => Self::RGB16Float($f),
+            Self::RGBA16Float($n) => Self::RGBA16Float($f),
+            Self::R32Float($n) => Self::R32Float($f),
+            Self::RG32Float($n) => Self::RG32Float($f),
+            Self::RGB32Float($n) => Self::RGB32Float($f),
+            Self::RGBA32Float($n) => Self::RGBA32Float($f),
         }
     };
 }
@@ -243,39 +270,34 @@ impl DynamicTextureBuffer {
         Ok(())
     }
 
-    pub fn spherical_map_to_cube_map(
+    #[must_use]
+    pub fn integrate_irradiance(
         &mut self,
-        mapping_2d: SphericalMapping,
+        src_mapping_2d: SphericalMapping,
+        dst_mapping: EnvironmentMapProjection,
         face_dimensions: UVec2,
-    ) -> TextureOpResult<()> {
-        impl_for_all_variants!(
+        samples: usize,
+    ) -> TextureOpResult<DynamicTextureBuffer> {
+        let out = impl_for_all_variants_wrap!(
             self,
             n,
-            n.spherical_map_to_cube_map(mapping_2d, face_dimensions)
-        )
+            n.integrate_irradiance(src_mapping_2d, dst_mapping, face_dimensions, samples)?
+        );
+        Ok(out)
     }
 
-    pub fn spherical_map_to_equirectangular_map(
+    #[must_use]
+    pub fn reproject_environment_map(
         &mut self,
-        mapping_2d: SphericalMapping,
+        src_mapping_2d: SphericalMapping,
+        dst_mapping: EnvironmentMapProjection,
         face_dimensions: UVec2,
-    ) -> TextureOpResult<()> {
-        impl_for_all_variants!(
+    ) -> TextureOpResult<DynamicTextureBuffer> {
+        let out = impl_for_all_variants_wrap!(
             self,
             n,
-            n.spherical_map_to_equirectangular_map(mapping_2d, face_dimensions)
-        )
-    }
-
-    pub fn spherical_map_to_octahedral_map(
-        &mut self,
-        mapping_2d: SphericalMapping,
-        face_dimensions: UVec2,
-    ) -> TextureOpResult<()> {
-        impl_for_all_variants!(
-            self,
-            n,
-            n.spherical_map_to_octahedral_map(mapping_2d, face_dimensions)
-        )
+            n.reproject_environment_map(src_mapping_2d, dst_mapping, face_dimensions)?
+        );
+        Ok(out)
     }
 }
