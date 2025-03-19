@@ -106,7 +106,6 @@ pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
     samples: usize,
 ) -> ImageBuffer<O> {
     use rand::SeedableRng;
-    use std::f32::consts::PI;
 
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
@@ -121,7 +120,7 @@ pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
             // Use our face selector interface to map the uv space onto the requested cube direction
             // that we want to sample.
             let dir = F::get_mapped(u, v);
-            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples) * PI;
+            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples);
             let p = O::from_vec4(p);
             dst.store(x, y, p);
         }
@@ -174,7 +173,6 @@ pub fn integrate_irradiance_to_equi<O: PixelFormat>(
     samples: usize,
 ) -> ImageBuffer<O> {
     use rand::SeedableRng;
-    use std::f32::consts::PI;
 
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
@@ -189,7 +187,7 @@ pub fn integrate_irradiance_to_equi<O: PixelFormat>(
             // Use our face selector interface to map the uv space onto the requested cube direction
             // that we want to sample.
             let dir = equirectangular_uv_to_direction(Vec2::new(u, v));
-            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples) * PI;
+            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples);
             let p = O::from_vec4(p);
             dst.store(x, y, p);
         }
@@ -204,7 +202,6 @@ pub fn integrate_irradiance_to_octahedral<O: PixelFormat>(
     samples: usize,
 ) -> ImageBuffer<O> {
     use rand::SeedableRng;
-    use std::f32::consts::PI;
 
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
@@ -219,7 +216,7 @@ pub fn integrate_irradiance_to_octahedral<O: PixelFormat>(
             // Use our face selector interface to map the uv space onto the requested cube direction
             // that we want to sample.
             let dir = octahedral_decode(Vec2::new(u, v));
-            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples) * PI;
+            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples);
             let p = O::from_vec4(p);
             dst.store(x, y, p);
         }
