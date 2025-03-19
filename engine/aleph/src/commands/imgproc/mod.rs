@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-mod convolve_diffuse;
 mod equi_to_cube;
 mod equi_to_oct;
 mod gen_mips;
+mod integrate_irradiance;
 mod oct_to_cube;
 mod oct_to_equi;
 
@@ -39,8 +39,9 @@ use std::io::{BufWriter, Read, Seek};
 use std::path::Path;
 
 use aleph_image::{
-    layer_and_level_from_set_index, ColorType, DynamicTextureBuffer, ImageBuffer, PixR, PixRG,
-    PixRGB, PixRGBA, PixelChannelType, PixelFormat, ResizeFilter, TextureBuffer, TextureType,
+    layer_and_level_from_set_index, ColorType, DynamicTextureBuffer, EnvironmentMapProjection,
+    ImageBuffer, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat, ResizeFilter,
+    SphericalMapping, TextureBuffer, TextureType,
 };
 use aleph_ktx::{KtxDocument, KtxDocumentDescription, VkFormat};
 use aleph_math::UVec2;
@@ -52,6 +53,7 @@ use half::f16;
 use crate::commands::imgproc::equi_to_cube::EquiToCube;
 use crate::commands::imgproc::equi_to_oct::EquiToOct;
 use crate::commands::imgproc::gen_mips::GenMips;
+use crate::commands::imgproc::integrate_irradiance::IntegrateIrradiance;
 use crate::commands::imgproc::oct_to_cube::OctToCube;
 use crate::commands::imgproc::oct_to_equi::OctToEqui;
 use crate::commands::SubcommandSet;
@@ -59,6 +61,7 @@ use crate::commands::SubcommandSet;
 pub fn make() -> SubcommandSet {
     let mut subcommands =
         SubcommandSet::new("imgproc").about("Commands for processing images within");
+    subcommands.register_subcommand(IntegrateIrradiance);
     subcommands.register_subcommand(EquiToCube);
     subcommands.register_subcommand(EquiToOct);
     subcommands.register_subcommand(OctToCube);
@@ -74,6 +77,25 @@ fn parse_filter(v: &str) -> Option<ResizeFilter> {
         "cubic" => ResizeFilter::Cubic,
         "gaussian" => ResizeFilter::Gaussian,
         "lanczos3" => ResizeFilter::Lanczos3,
+        _ => return None,
+    };
+    Some(v)
+}
+
+fn parse_spherical_type(v: &str) -> Option<SphericalMapping> {
+    let v = match v {
+        "equi" | "equirectangular" => SphericalMapping::Equirectangular,
+        "oct" | "octahedral" => SphericalMapping::Octahedral,
+        _ => return None,
+    };
+    Some(v)
+}
+
+fn parse_env_type(v: &str) -> Option<EnvironmentMapProjection> {
+    let v = match v {
+        "equi" | "equirectangular" => EnvironmentMapProjection::Equirectangular,
+        "oct" | "octahedral" => EnvironmentMapProjection::Octahedral,
+        "cube" => EnvironmentMapProjection::Cube,
         _ => return None,
     };
     Some(v)
@@ -485,6 +507,24 @@ fn mip_filter_arg() -> Arg {
         .required(false)
 }
 
+fn input_env_map_type_arg() -> Arg {
+    Arg::new("in-proj")
+        .long("in-proj")
+        .help("The type of environment map projection the input texture contains.")
+        .long_help("The type of environment map projection the input texture contains. Options: equi/equirectangular, oct/octahedral")
+        .default_value("equirectangular")
+        .required(false)
+}
+
+fn output_env_map_type_arg() -> Arg {
+    Arg::new("out-proj")
+        .long("out-proj")
+        .help("The environment map projection to output to.")
+        .long_help("The environment map projection to output to. Options: equi/equirectangular, oct/octahedral, cube")
+        .default_value("cube")
+        .required(false)
+}
+
 fn to_half_arg() -> Arg {
     Arg::new("to-half")
         .action(ArgAction::SetTrue)
@@ -533,6 +573,22 @@ fn get_mip_filter_matches(matches: &mut ArgMatches) -> anyhow::Result<ResizeFilt
     let mip_filter =
         parse_filter(&mip_filter).ok_or_else(|| anyhow!("Unknown filter \"{}\"", &mip_filter))?;
     Ok(mip_filter)
+}
+
+fn get_input_env_map_type_matches(matches: &mut ArgMatches) -> anyhow::Result<SphericalMapping> {
+    let v: String = matches.remove_one("in-proj").unwrap();
+    let v = v.to_lowercase();
+    let v = parse_spherical_type(&v).ok_or_else(|| anyhow!("Unknown env map type \"{}\"", &v))?;
+    Ok(v)
+}
+
+fn get_output_env_map_type_matches(
+    matches: &mut ArgMatches,
+) -> anyhow::Result<EnvironmentMapProjection> {
+    let v: String = matches.remove_one("out-proj").unwrap();
+    let v = v.to_lowercase();
+    let v = parse_env_type(&v).ok_or_else(|| anyhow!("Unknown env map type \"{}\"", &v))?;
+    Ok(v)
 }
 
 fn get_to_half_match(matches: &mut ArgMatches) -> bool {

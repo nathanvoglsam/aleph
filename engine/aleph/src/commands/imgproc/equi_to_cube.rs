@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_image::{SphericalMapping, TextureType};
+use aleph_image::{EnvironmentMapProjection, SphericalMapping, TextureType};
 use aleph_math::UVec2;
 use anyhow::anyhow;
 use clap::{Arg, ArgMatches, Command};
@@ -100,7 +100,11 @@ impl ISubcommand for EquiToCube {
 
         // PERFORM THE TEXTURE PROCESSING
         let face_dimensions = UVec2::new(size, size);
-        images.spherical_map_to_cube_map(SphericalMapping::Equirectangular, face_dimensions)?;
+        images = images.reproject_environment_map(
+            SphericalMapping::Equirectangular,
+            EnvironmentMapProjection::Cube,
+            face_dimensions,
+        )?;
 
         if gen_mips {
             images.generate_mips(mip_filter.into())?;

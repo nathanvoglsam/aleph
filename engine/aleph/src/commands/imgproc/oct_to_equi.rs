@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_image::{SphericalMapping, TextureType};
+use aleph_image::{EnvironmentMapProjection, SphericalMapping, TextureType};
 use aleph_math::UVec2;
 use anyhow::anyhow;
 use clap::{Arg, ArgMatches, Command};
@@ -100,8 +100,11 @@ impl ISubcommand for OctToEqui {
 
         // PERFORM THE TEXTURE PROCESSING
         let face_dimensions = UVec2::new(size, size);
-        images
-            .spherical_map_to_equirectangular_map(SphericalMapping::Octahedral, face_dimensions)?;
+        images = images.reproject_environment_map(
+            SphericalMapping::Octahedral,
+            EnvironmentMapProjection::Equirectangular,
+            face_dimensions,
+        )?;
 
         if gen_mips {
             images.generate_mips(mip_filter.into())?;
