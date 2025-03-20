@@ -32,6 +32,7 @@ pub use to_single::ToSingle;
 pub use ultraviolet::*;
 
 pub mod drobot;
+pub mod hammersley;
 pub mod rgbe;
 pub mod sampling;
 
