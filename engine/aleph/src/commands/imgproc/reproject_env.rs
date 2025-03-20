@@ -27,24 +27,23 @@
 // SOFTWARE.
 //
 
-use aleph_image::{EnvironmentMapProjection, SphericalMapping, TextureType};
 use aleph_math::UVec2;
-use anyhow::anyhow;
 use clap::{Arg, ArgMatches, Command};
 
 use crate::commands::imgproc::{
-    gen_mips_arg, get_gen_mips_matches, get_input_match, get_output_match, get_to_half_match,
-    input_arg, load_ktx_document_to_texture, mip_filter_arg, output_arg, prepare_texture_for_gpu,
-    to_half_arg, write_texture_to_ktx_file,
+    gen_mips_arg, get_gen_mips_matches, get_input_env_map_type_matches, get_input_match,
+    get_output_env_map_type_matches, get_output_match, get_to_half_match, input_arg,
+    input_env_map_type_arg, load_ktx_document_to_texture, mip_filter_arg, output_arg,
+    output_env_map_type_arg, prepare_texture_for_gpu, to_half_arg, write_texture_to_ktx_file,
 };
 use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 
-pub struct OctToCube;
+pub struct ReprojectEnv;
 
-impl ISubcommand for OctToCube {
+impl ISubcommand for ReprojectEnv {
     fn name(&self) -> &'static str {
-        "oct_to_cube"
+        "reproject_env"
     }
 
     fn description(&mut self) -> Command {
@@ -52,20 +51,24 @@ impl ISubcommand for OctToCube {
         let output = output_arg();
         let gen_mips = gen_mips_arg();
         let mip_filter = mip_filter_arg();
+        let in_proj = input_env_map_type_arg();
+        let out_proj = output_env_map_type_arg();
         let size = Arg::new("size")
             .long("size")
-            .help("The width/height of a cube map face to output when generating cube maps.")
-            .long_help("The width/height of a cube map face to output when generating cube maps.")
+            .help("The width/height of a cube map face or texture to output.")
+            .long_help("The width/height of a cube map face or texture to output. Equirectangular maps will deduce have height = width/2.")
             .value_parser(clap::value_parser!(u32))
             .default_value("512")
             .required(false);
         let to_half = to_half_arg();
         Command::new(self.name())
-            .about("Converts the given input image, assuming it is a 2D octahedral map, into an equivalent cube map")
+            .about("Convolves the given environment map into a diffuse irradiance map.")
             .arg(input)
             .arg(output)
             .arg(gen_mips)
             .arg(mip_filter)
+            .arg(in_proj)
+            .arg(out_proj)
             .arg(to_half)
             .arg(size)
     }
@@ -76,35 +79,21 @@ impl ISubcommand for OctToCube {
         let output = get_output_match(&mut matches, &input);
         let (gen_mips, mip_filter) = get_gen_mips_matches(&mut matches)?;
         let to_half = get_to_half_match(&mut matches);
+        let in_proj = get_input_env_map_type_matches(&mut matches).unwrap();
+        let out_proj = get_output_env_map_type_matches(&mut matches).unwrap();
 
         let size: u32 = matches.remove_one("size").unwrap();
 
         // LOAD TEXTURES AND VALIDATE INPUT IS COMPATIBLE WITH THE PROCESS
         let mut images = load_ktx_document_to_texture(&input)?;
 
-        match images.get_texture_type() {
-            TextureType::Single | TextureType::Array => {
-                let level_num = images.level_num();
-                if level_num > 1 {
-                    log::error!("Can't run 'oct_to_cube' on a texture with mip maps!");
-                    return Err(anyhow!(
-                        "Can't run 'oct_to_cube' on a texture with mip maps!"
-                    ));
-                }
-            }
-            TextureType::Cube | TextureType::CubeArray => {
-                log::error!("Can't run 'oct_to_cube' on a cubemap input!");
-                return Err(anyhow!("Can't run 'oct_to_cube' on a cubemap input!"));
-            }
-        }
-
         // PERFORM THE TEXTURE PROCESSING
-        let face_dimensions = UVec2::new(size, size);
-        images = images.reproject_environment_map(
-            SphericalMapping::Octahedral,
-            EnvironmentMapProjection::Cube,
-            face_dimensions,
-        )?;
+        let face_dimensions = match out_proj {
+            aleph_image::EnvironmentMapProjection::Equirectangular => UVec2::new(size, size / 2),
+            aleph_image::EnvironmentMapProjection::Octahedral => UVec2::new(size, size),
+            aleph_image::EnvironmentMapProjection::Cube => UVec2::new(size, size),
+        };
+        images = images.reproject_environment_map(in_proj, out_proj, face_dimensions)?;
 
         if gen_mips {
             images.generate_mips(mip_filter.into())?;

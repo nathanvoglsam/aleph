@@ -27,12 +27,9 @@
 // SOFTWARE.
 //
 
-mod equi_to_cube;
-mod equi_to_oct;
 mod gen_mips;
 mod integrate_irradiance;
-mod oct_to_cube;
-mod oct_to_equi;
+mod reproject_env;
 
 use std::fs::File;
 use std::io::{BufWriter, Read, Seek};
@@ -50,22 +47,16 @@ use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Arg, ArgAction, ArgMatches};
 use half::f16;
 
-use crate::commands::imgproc::equi_to_cube::EquiToCube;
-use crate::commands::imgproc::equi_to_oct::EquiToOct;
 use crate::commands::imgproc::gen_mips::GenMips;
 use crate::commands::imgproc::integrate_irradiance::IntegrateIrradiance;
-use crate::commands::imgproc::oct_to_cube::OctToCube;
-use crate::commands::imgproc::oct_to_equi::OctToEqui;
+use crate::commands::imgproc::reproject_env::ReprojectEnv;
 use crate::commands::SubcommandSet;
 
 pub fn make() -> SubcommandSet {
     let mut subcommands =
         SubcommandSet::new("imgproc").about("Commands for processing images within");
     subcommands.register_subcommand(IntegrateIrradiance);
-    subcommands.register_subcommand(EquiToCube);
-    subcommands.register_subcommand(EquiToOct);
-    subcommands.register_subcommand(OctToCube);
-    subcommands.register_subcommand(OctToEqui);
+    subcommands.register_subcommand(ReprojectEnv);
     subcommands.register_subcommand(GenMips);
     subcommands
 }

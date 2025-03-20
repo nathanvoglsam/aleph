@@ -53,8 +53,8 @@ impl ISubcommand for IntegrateIrradiance {
         let out_proj = output_env_map_type_arg();
         let size = Arg::new("size")
             .long("size")
-            .help("The width/height of a cube map face to output when generating cube maps.")
-            .long_help("The width/height of a cube map face to output when generating cube maps. Equirectangular maps will deduce have height = width/2.")
+            .help("The width/height of a cube map face or texture to output.")
+            .long_help("The width/height of a cube map face or texture to output. Equirectangular maps will deduce have height = width/2.")
             .value_parser(clap::value_parser!(u32))
             .default_value("512")
             .required(false);
