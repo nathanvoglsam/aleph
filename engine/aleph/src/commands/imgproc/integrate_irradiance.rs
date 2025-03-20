@@ -54,7 +54,7 @@ impl ISubcommand for IntegrateIrradiance {
         let size = Arg::new("size")
             .long("size")
             .help("The width/height of a cube map face to output when generating cube maps.")
-            .long_help("The width/height of a cube map face to output when generating cube maps. Defaults to 512.")
+            .long_help("The width/height of a cube map face to output when generating cube maps. Equirectangular maps will deduce have height = width/2.")
             .value_parser(clap::value_parser!(u32))
             .default_value("512")
             .required(false);
@@ -92,9 +92,12 @@ impl ISubcommand for IntegrateIrradiance {
         let mut images = load_ktx_document_to_texture(&input)?;
 
         // PERFORM THE TEXTURE PROCESSING
-        let face_dimensions = UVec2::new(size, size);
-        images =
-            images.integrate_irradiance(in_proj, out_proj, face_dimensions, samples as usize)?;
+        let face_dimensions = match out_proj {
+            aleph_image::EnvironmentMapProjection::Equirectangular => UVec2::new(size, size / 2),
+            aleph_image::EnvironmentMapProjection::Octahedral => UVec2::new(size, size),
+            aleph_image::EnvironmentMapProjection::Cube => UVec2::new(size, size),
+        };
+        images = images.integrate_irradiance(in_proj, out_proj, face_dimensions, samples)?;
 
         // OUTPUT MAPPING AND TYPE CONVERSIONS
         prepare_texture_for_gpu(&mut images, to_half)?;

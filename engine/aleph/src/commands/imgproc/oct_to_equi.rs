@@ -54,8 +54,8 @@ impl ISubcommand for OctToEqui {
         let mip_filter = mip_filter_arg();
         let size = Arg::new("size")
             .long("size")
-            .help("The width/height of the equirectangular map to output when generating equirectangular maps.")
-            .long_help("The width/height, in texels, of the texture to output when generating equirectangular maps. Defaults to 512.")
+            .help("The width of the equirectangular map to output when generating equirectangular maps.")
+            .long_help("The width, in texels, of the texture to output when generating equirectangular maps. Height is derived as width/2.")
             .value_parser(clap::value_parser!(u32))
             .default_value("512")
             .required(false);
@@ -99,7 +99,7 @@ impl ISubcommand for OctToEqui {
         }
 
         // PERFORM THE TEXTURE PROCESSING
-        let face_dimensions = UVec2::new(size, size);
+        let face_dimensions = UVec2::new(size, size / 2);
         images = images.reproject_environment_map(
             SphericalMapping::Octahedral,
             EnvironmentMapProjection::Equirectangular,

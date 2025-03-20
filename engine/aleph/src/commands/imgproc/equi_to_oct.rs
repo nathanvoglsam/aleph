@@ -55,7 +55,7 @@ impl ISubcommand for EquiToOct {
         let size = Arg::new("size")
             .long("size")
             .help("The width/height of the octahedral map to output when generating octahedral maps.")
-            .long_help("The width/height, in texels, of the texture to output when generating octahedral maps. Defaults to 512.")
+            .long_help("The width/height, in texels, of the texture to output when generating octahedral maps.")
             .value_parser(clap::value_parser!(u32))
             .default_value("512")
             .required(false);

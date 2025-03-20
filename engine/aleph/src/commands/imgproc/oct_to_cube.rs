@@ -55,7 +55,7 @@ impl ISubcommand for OctToCube {
         let size = Arg::new("size")
             .long("size")
             .help("The width/height of a cube map face to output when generating cube maps.")
-            .long_help("The width/height of a cube map face to output when generating cube maps. Defaults to 512.")
+            .long_help("The width/height of a cube map face to output when generating cube maps.")
             .value_parser(clap::value_parser!(u32))
             .default_value("512")
             .required(false);
