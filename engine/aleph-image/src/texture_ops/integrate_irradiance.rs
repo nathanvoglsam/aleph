@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
+use aleph_math::hammersley::hammersley;
 use aleph_math::sampling::{
     center_sample_around_normal, cosine_sample_hemisphere, equirectangular_uv_to_direction,
     octahedral_decode,
 };
 use aleph_math::{UVec2, Vec2, Vec3, Vec4};
-use rand::Rng;
 
 use crate::{
     FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IDirectionalSampler, IFaceSelector,
@@ -52,9 +52,8 @@ use crate::{
 ///
 /// You _can_ correct this by performing the multiplication yourself by taking
 /// `integrate_irradiance_for_direction(...) * PI`.
-pub fn integrate_irradiance_for_direction(
+pub fn integrate_irradiance_for_n(
     src: &impl IDirectionalSampler,
-    random: &mut impl Rng,
     n: Vec3,
     samples: u32,
 ) -> Vec4 {
@@ -82,13 +81,13 @@ pub fn integrate_irradiance_for_direction(
     // That term can be factored in at a later
     let mut acc = Vec4::zero();
 
-    for _ in 0..samples {
-        let u1 = random.random::<f32>();
-        let u2 = random.random::<f32>();
+    for i in 0..samples {
+        let u = hammersley(i, samples);
+        let u1 = u.x;
+        let u2 = u.y;
+
         let k = cosine_sample_hemisphere(u1, u2);
-
         let l = center_sample_around_normal(k, n);
-
         let nol = n.dot(l);
 
         // The PDF is not used as the full term that we're integrating cancels out with the PDF
@@ -97,7 +96,53 @@ pub fn integrate_irradiance_for_direction(
         }
     }
 
-    acc * (1.0 / samples as f32)
+    acc * (1.0 / (samples) as f32)
+}
+
+/// Alternate implementation of [`integrate_irradiance_for_n`] that uses a discrete sampling method
+/// in spherical coordinates instead of a Monte Carlo integrator.
+/// 
+/// 'phi_samples' is the number of samples to take around the hemisphere. This is the number of
+/// samples to take along the latitudinal axis. An angle 'dp' is taken as the sampling increment
+/// for both latitude _and_ longitude. This angle is (2PI / samples).
+pub fn integrate_irradiance_for_n_discrete(
+    src: &impl IDirectionalSampler,
+    n: Vec3,
+    phi_samples: u32,
+) -> Vec4 {
+    use std::f32::consts::PI;
+
+    let mut acc = Vec4::zero();
+
+    let d = (2.0 * PI) / phi_samples as f32;
+    let mut total_samples = 0u32;
+    let mut phi = 0.0;
+    while phi < 2.0 * PI {
+        let mut theta = 0.0;
+        while theta < 0.5 * PI {
+            let x = f32::sin(theta) * f32::cos(phi);
+            let y = f32::cos(theta);
+            let z = f32::sin(theta) * f32::sin(phi);
+            let k = Vec3::new(x, y, z);
+            let l = center_sample_around_normal(k, n);
+
+            let sample = src.sample(l);
+            let sample = sample * f32::cos(theta) * f32::sin(theta);
+            acc += sample;
+
+            total_samples += 1;
+            theta += d;
+        }
+        phi += d;
+    }
+
+    // The extra PI is needed here as it is part of what you would call the PDF for our distribution
+    // and is important to match the Monte Carlo integator. This should not be confused with the
+    // multiplication by PI that we leave out of the Monte Carlo integrators.
+    //
+    // The Monte Carlo integrators skip a multiply by PI as it cancels with the lambertian diffuse
+    // term. This multiplication _is_ necessary to produce compatible output.
+    acc * (1.0 / total_samples as f32) * PI
 }
 
 pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
@@ -105,12 +150,9 @@ pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
     face_dimension: UVec2,
     samples: u32,
 ) -> ImageBuffer<O> {
-    use rand::SeedableRng;
 
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
-
-    let mut rng = rand_xoshiro::Xoshiro256PlusPlus::from_os_rng();
 
     for y in 0..dst.height() {
         let v = (y as f32 + 0.5) / dim_f32.y;
@@ -120,7 +162,7 @@ pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
             // Use our face selector interface to map the uv space onto the requested cube direction
             // that we want to sample.
             let dir = F::get_mapped(u, v);
-            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples);
+            let p = integrate_irradiance_for_n(src, dir, samples);
             let p = O::from_vec4(p);
             dst.store(x, y, p);
         }
@@ -131,7 +173,7 @@ pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
 
 pub(crate) fn integrate_irradiance_to_whole_cube<O: PixelFormat>(
     dst: &mut Vec<ImageBuffer<O>>,
-    src: &impl IDirectionalSampler,
+    src: &(impl IDirectionalSampler + Sync),
     face_dimensions: UVec2,
     samples: u32,
 ) {
@@ -172,12 +214,9 @@ pub fn integrate_irradiance_to_equi<O: PixelFormat>(
     face_dimension: UVec2,
     samples: u32,
 ) -> ImageBuffer<O> {
-    use rand::SeedableRng;
 
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
-
-    let mut rng = rand_xoshiro::Xoshiro256PlusPlus::from_os_rng();
 
     for y in 0..dst.height() {
         let v = (y as f32 + 0.5) / dim_f32.y;
@@ -187,7 +226,7 @@ pub fn integrate_irradiance_to_equi<O: PixelFormat>(
             // Use our face selector interface to map the uv space onto the requested cube direction
             // that we want to sample.
             let dir = equirectangular_uv_to_direction(Vec2::new(u, v));
-            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples);
+            let p = integrate_irradiance_for_n(src, dir, samples);
             let p = O::from_vec4(p);
             dst.store(x, y, p);
         }
@@ -201,12 +240,9 @@ pub fn integrate_irradiance_to_octahedral<O: PixelFormat>(
     face_dimension: UVec2,
     samples: u32,
 ) -> ImageBuffer<O> {
-    use rand::SeedableRng;
 
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
-
-    let mut rng = rand_xoshiro::Xoshiro256PlusPlus::from_os_rng();
 
     for y in 0..dst.height() {
         let v = (y as f32 + 0.5) / dim_f32.y;
@@ -216,7 +252,7 @@ pub fn integrate_irradiance_to_octahedral<O: PixelFormat>(
             // Use our face selector interface to map the uv space onto the requested cube direction
             // that we want to sample.
             let dir = octahedral_decode(Vec2::new(u, v));
-            let p = integrate_irradiance_for_direction(src, &mut rng, dir, samples);
+            let p = integrate_irradiance_for_n(src, dir, samples);
             let p = O::from_vec4(p);
             dst.store(x, y, p);
         }
