@@ -29,7 +29,7 @@
 
 use aleph_math::{UVec2, Vec2};
 
-use crate::{ImageBuffer, PixelFormat};
+use crate::{ImageBuffer, ImageView, ImageViewMut, PixelFormat};
 
 /// The interface exposed by a type that stores a 2D grid of pixels. Implementing this trait does
 /// not imply the ability to access those pixels.
@@ -62,6 +62,30 @@ pub trait IPixelStorage {
 }
 
 impl<T: PixelFormat> IPixelStorage for ImageBuffer<T> {
+    #[inline(always)]
+    fn dimensions(&self) -> UVec2 {
+        UVec2::new(self.width, self.height)
+    }
+
+    #[inline(always)]
+    fn dimensions_f32(&self) -> Vec2 {
+        Vec2::new(self.width_f32, self.height_f32)
+    }
+}
+
+impl<'a, T: PixelFormat> IPixelStorage for ImageView<'a, T> {
+    #[inline(always)]
+    fn dimensions(&self) -> UVec2 {
+        UVec2::new(self.width, self.height)
+    }
+
+    #[inline(always)]
+    fn dimensions_f32(&self) -> Vec2 {
+        Vec2::new(self.width_f32, self.height_f32)
+    }
+}
+
+impl<'a, T: PixelFormat> IPixelStorage for ImageViewMut<'a, T> {
     #[inline(always)]
     fn dimensions(&self) -> UVec2 {
         UVec2::new(self.width, self.height)

@@ -29,7 +29,7 @@
 
 use aleph_math::{Vec2, Vec4};
 
-use crate::{IPixelAccess, IPixelStorage, ImageBuffer, PixelFormat};
+use crate::{IPixelAccess, PixelFormat};
 
 /// An extended interface built atop [`IPixelAccess`] that enables bilinear sampling of the
 /// underlying image using normalized image coordinates.
@@ -163,7 +163,11 @@ impl IAddressMode for AddressModeWrap {
     }
 }
 
-impl<T: PixelFormat> IPixelSample for ImageBuffer<T> {
+impl<B, P> IPixelSample for B
+where
+    P: PixelFormat,
+    B: IPixelAccess<Result = P>,
+{
     fn point_sample<U: IAddressMode, V: IAddressMode>(&self, uv: Vec2) -> Vec4 {
         let dims_f32 = self.dimensions_f32();
 

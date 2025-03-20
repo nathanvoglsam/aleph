@@ -33,10 +33,12 @@ use aleph_math::sampling::{
     octahedral_decode,
 };
 use aleph_math::{UVec2, Vec2, Vec3, Vec4};
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use rayon::slice::ParallelSliceMut;
 
 use crate::{
     FaceNegX, FaceNegY, FaceNegZ, FacePosX, FacePosY, FacePosZ, IDirectionalSampler, IFaceSelector,
-    IPixelAccess, IPixelStorage, ImageBuffer, PixelFormat,
+    IPixelAccess, IPixelStorage, ImageBuffer, ImageViewMut, PixelFormat,
 };
 
 /// Performs a Monte Carlo integration of the input environment map.
@@ -52,11 +54,7 @@ use crate::{
 ///
 /// You _can_ correct this by performing the multiplication yourself by taking
 /// `integrate_irradiance_for_direction(...) * PI`.
-pub fn integrate_irradiance_for_n(
-    src: &impl IDirectionalSampler,
-    n: Vec3,
-    samples: u32,
-) -> Vec4 {
+pub fn integrate_irradiance_for_n(src: &impl IDirectionalSampler, n: Vec3, samples: u32) -> Vec4 {
     // This function will importance sample the hemisphere centered on 'n' using a cosine
     // distribution.
     //
@@ -101,7 +99,7 @@ pub fn integrate_irradiance_for_n(
 
 /// Alternate implementation of [`integrate_irradiance_for_n`] that uses a discrete sampling method
 /// in spherical coordinates instead of a Monte Carlo integrator.
-/// 
+///
 /// 'phi_samples' is the number of samples to take around the hemisphere. This is the number of
 /// samples to take along the latitudinal axis. An angle 'dp' is taken as the sampling increment
 /// for both latitude _and_ longitude. This angle is (2PI / samples).
@@ -146,27 +144,32 @@ pub fn integrate_irradiance_for_n_discrete(
 }
 
 pub fn integrate_irradiance_to_cube<F: IFaceSelector, O: PixelFormat>(
-    src: &impl IDirectionalSampler,
+    src: &(impl IDirectionalSampler + Sync),
     face_dimension: UVec2,
     samples: u32,
 ) -> ImageBuffer<O> {
-
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
 
-    for y in 0..dst.height() {
-        let v = (y as f32 + 0.5) / dim_f32.y;
-        for x in 0..dst.width() {
-            let u = (x as f32 + 0.5) / dim_f32.x;
+    let chunk_size = O::COMPONENTS * face_dimension.y as usize;
+    dst.data_mut()
+        .par_chunks_exact_mut(chunk_size)
+        .enumerate()
+        .for_each(|(y, data)| {
+            let mut view = ImageViewMut::from_data(face_dimension.x, 1, data);
 
-            // Use our face selector interface to map the uv space onto the requested cube direction
-            // that we want to sample.
-            let dir = F::get_mapped(u, v);
-            let p = integrate_irradiance_for_n(src, dir, samples);
-            let p = O::from_vec4(p);
-            dst.store(x, y, p);
-        }
-    }
+            let v = (y as f32 + 0.5) / dim_f32.y;
+            for x in 0..view.width() {
+                let u = (x as f32 + 0.5) / dim_f32.x;
+
+                // Use our face selector interface to map the uv space onto the requested cube direction
+                // that we want to sample.
+                let dir = F::get_mapped(u, v);
+                let p = integrate_irradiance_for_n(src, dir, samples);
+                let p = O::from_vec4(p);
+                view.store(x, 0, p);
+            }
+        });
 
     dst
 }
@@ -210,53 +213,63 @@ pub(crate) fn integrate_irradiance_to_whole_cube<O: PixelFormat>(
 }
 
 pub fn integrate_irradiance_to_equi<O: PixelFormat>(
-    src: &impl IDirectionalSampler,
+    src: &(impl IDirectionalSampler + Sync),
     face_dimension: UVec2,
     samples: u32,
 ) -> ImageBuffer<O> {
-
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
 
-    for y in 0..dst.height() {
-        let v = (y as f32 + 0.5) / dim_f32.y;
-        for x in 0..dst.width() {
-            let u = (x as f32 + 0.5) / dim_f32.x;
+    let chunk_size = O::COMPONENTS * face_dimension.y as usize;
+    dst.data_mut()
+        .par_chunks_exact_mut(chunk_size)
+        .enumerate()
+        .for_each(|(y, data)| {
+            let mut view = ImageViewMut::from_data(face_dimension.x, 1, data);
 
-            // Use our face selector interface to map the uv space onto the requested cube direction
-            // that we want to sample.
-            let dir = equirectangular_uv_to_direction(Vec2::new(u, v));
-            let p = integrate_irradiance_for_n(src, dir, samples);
-            let p = O::from_vec4(p);
-            dst.store(x, y, p);
-        }
-    }
+            let v = (y as f32 + 0.5) / dim_f32.y;
+            for x in 0..view.width() {
+                let u = (x as f32 + 0.5) / dim_f32.x;
+
+                // Use our face selector interface to map the uv space onto the requested cube direction
+                // that we want to sample.
+                let dir = equirectangular_uv_to_direction(Vec2::new(u, v));
+                let p = integrate_irradiance_for_n(src, dir, samples);
+                let p = O::from_vec4(p);
+                view.store(x, 0, p);
+            }
+        });
 
     dst
 }
 
 pub fn integrate_irradiance_to_octahedral<O: PixelFormat>(
-    src: &impl IDirectionalSampler,
+    src: &(impl IDirectionalSampler + Sync),
     face_dimension: UVec2,
     samples: u32,
 ) -> ImageBuffer<O> {
-
     let mut dst = ImageBuffer::<O>::new(face_dimension.x, face_dimension.y);
     let dim_f32 = dst.dimensions_f32();
 
-    for y in 0..dst.height() {
-        let v = (y as f32 + 0.5) / dim_f32.y;
-        for x in 0..dst.width() {
-            let u = (x as f32 + 0.5) / dim_f32.x;
+    let chunk_size = O::COMPONENTS * face_dimension.y as usize;
+    dst.data_mut()
+        .par_chunks_exact_mut(chunk_size)
+        .enumerate()
+        .for_each(|(y, data)| {
+            let mut view = ImageViewMut::from_data(face_dimension.x, 1, data);
 
-            // Use our face selector interface to map the uv space onto the requested cube direction
-            // that we want to sample.
-            let dir = octahedral_decode(Vec2::new(u, v));
-            let p = integrate_irradiance_for_n(src, dir, samples);
-            let p = O::from_vec4(p);
-            dst.store(x, y, p);
-        }
-    }
+            let v = (y as f32 + 0.5) / dim_f32.y;
+            for x in 0..view.width() {
+                let u = (x as f32 + 0.5) / dim_f32.x;
+
+                // Use our face selector interface to map the uv space onto the requested cube direction
+                // that we want to sample.
+                let dir = octahedral_decode(Vec2::new(u, v));
+                let p = integrate_irradiance_for_n(src, dir, samples);
+                let p = O::from_vec4(p);
+                view.store(x, 0, p);
+            }
+        });
 
     dst
 }

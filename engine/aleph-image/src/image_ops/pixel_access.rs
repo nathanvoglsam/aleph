@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{IPixelStorage, ImageBuffer, PixelFormat};
+use crate::{IPixelStorage, ImageBuffer, ImageView, ImageViewMut, PixelFormat};
 
 /// An extended interface built atop [`IPixelStorage`] that types that allow accessing the pixels
 /// in their stored image should implement.
@@ -119,6 +119,52 @@ pub trait IPixelAccess: IPixelStorage {
 }
 
 impl<T: PixelFormat> IPixelAccess for ImageBuffer<T> {
+    type Result = T;
+
+    #[inline]
+    fn load_checked(&self, x: u32, y: u32) -> Option<Self::Result> {
+        let i = calculate_index(x, y, self.width, self.height, T::COMPONENTS);
+        let i_end = i + T::COMPONENTS;
+        if let Some(v) = self.data.get(i..i_end) {
+            Some(T::from_storage(v))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn store_checked(&mut self, x: u32, y: u32, v: T) -> Option<()> {
+        let i = calculate_index(x, y, self.width, self.height, T::COMPONENTS);
+        let i_end = i + T::COMPONENTS;
+        if let Some(dst) = self.data.get_mut(i..i_end) {
+            Some(v.write_at(dst))
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, T: PixelFormat> IPixelAccess for ImageView<'a, T> {
+    type Result = T;
+
+    #[inline]
+    fn load_checked(&self, x: u32, y: u32) -> Option<Self::Result> {
+        let i = calculate_index(x, y, self.width, self.height, T::COMPONENTS);
+        let i_end = i + T::COMPONENTS;
+        if let Some(v) = self.data.get(i..i_end) {
+            Some(T::from_storage(v))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn store_checked(&mut self, _x: u32, _y: u32, _v: T) -> Option<()> {
+        unimplemented!("Can't store to a read-only view")
+    }
+}
+
+impl<'a, T: PixelFormat> IPixelAccess for ImageViewMut<'a, T> {
     type Result = T;
 
     #[inline]

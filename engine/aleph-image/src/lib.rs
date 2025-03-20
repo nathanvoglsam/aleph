@@ -29,6 +29,7 @@
 
 mod image_buffer;
 mod image_ops;
+mod image_view;
 mod pixel_format;
 mod spherical_mapping;
 mod texture;
@@ -37,6 +38,7 @@ mod utils;
 
 pub use image_buffer::{ColorType, DowncastImageBuffer, DynamicImageBuffer, ImageBuffer};
 pub use image_ops::*;
+pub use image_view::{ImageView, ImageViewMut};
 pub use pixel_format::{
     FromImagePixel, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat,
 };
