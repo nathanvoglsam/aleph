@@ -268,7 +268,17 @@ where
 /// This trait is effectively constrained such that only basic numeric types can be used
 /// (efficiently).
 pub trait PixelChannelType:
-    Copy + Clone + PartialEq + PartialOrd + Default + Sized + Pod + AnyBitPattern + NoUninit
+    Copy
+    + Clone
+    + PartialEq
+    + PartialOrd
+    + Default
+    + Sized
+    + Pod
+    + AnyBitPattern
+    + NoUninit
+    + Send
+    + Sync
 {
     /// The zero value for this pixel channel.
     ///
