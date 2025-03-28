@@ -30,7 +30,7 @@
 // use std::any::TypeId;
 use std::hash::{Hash, Hasher};
 
-/// Internal utility for extracting a u64 from small values like integers. Uses the 'write_<int>'
+/// Internal utility for extracting a u64 from small values like integers. Uses the `write_<int>`
 /// specializations to extract a u64 that  gives us.
 ///
 /// This wrapper should be zero cost, and functionally should just amount to transmuting the bits

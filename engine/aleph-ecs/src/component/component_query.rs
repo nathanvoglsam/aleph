@@ -46,7 +46,7 @@ pub trait ReadOnlyComponentQuery: Send + Sync {
 
 /// Type of values yielded by a query
 ///
-/// Once rust offers generic associated types, this will be moved into [`Query`].
+/// Once rust offers generic associated types, this will be moved into [`ComponentQuery`].
 pub type ComponentQueryItem<'a, Q> = <<Q as ComponentQuery>::Fetch as Fetch<'a>>::Item;
 
 #[allow(clippy::missing_safety_doc)]

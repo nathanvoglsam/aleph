@@ -107,7 +107,7 @@ fn pkg_location() -> PathBuf {
 ///
 /// To use custom values declare the symbols manually like this:
 ///
-/// ```{skip}
+/// ```ignore
 /// #[used]
 /// #[no_mangle]
 /// #[allow(non_upper_case_globals)]
