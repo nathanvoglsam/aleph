@@ -36,7 +36,7 @@ pub struct PerformanceAPI_SuppressTailCallOptimization {
     _private: [u64; 3],
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn PerformanceAPI_SetCurrentThreadName(in_thread_name: *const c_char);
     pub fn PerformanceAPI_SetCurrentThreadName_N(
         in_thread_name: *const c_char,
