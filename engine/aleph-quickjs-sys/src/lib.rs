@@ -262,7 +262,7 @@ mod non_nan_boxed {
                 false
             } else {
                 let d = unsafe { self.u.float64 };
-                let d: u64 = unsafe { std::mem::transmute(d) };
+                let d: u64 = d.to_bits();
                 (d & 0x7fffffffffffffff) > 0x7ff0000000000000
             }
         }
@@ -390,11 +390,13 @@ impl JSValue {
     }
 
     pub unsafe fn new_string(ctx: NonNull<JSContext>, str: *const c_char) -> JSValue {
-        let len = {
-            let str = CStr::from_ptr(str);
-            str.count_bytes()
-        };
-        JS_NewStringLen(ctx, str, len)
+        unsafe {
+            let len = {
+                let str = CStr::from_ptr(str);
+                str.count_bytes()
+            };
+            JS_NewStringLen(ctx, str, len)
+        }
     }
 
     pub const fn get_obj(&self) -> *mut JSObject {
@@ -489,57 +491,65 @@ impl JSValue {
 
     #[inline]
     pub unsafe fn get_ref_count(&self) -> Option<c_int> {
-        self.get_ref_count_header().map(|v| v.ref_count.get())
+        unsafe { self.get_ref_count_header().map(|v| v.ref_count.get()) }
     }
 
     #[inline]
     pub unsafe fn decrement_ref_count(&self) -> Option<c_int> {
-        if let Some(p) = self.get_ref_count_header() {
-            // We opt into checked sub on the Rust side for some extra safety guarantees.
-            let rc = p.ref_count.get();
-            let new_rc = rc.checked_sub(1).unwrap();
-            p.ref_count.set(new_rc);
+        unsafe {
+            if let Some(p) = self.get_ref_count_header() {
+                // We opt into checked sub on the Rust side for some extra safety guarantees.
+                let rc = p.ref_count.get();
+                let new_rc = rc.checked_sub(1).unwrap();
+                p.ref_count.set(new_rc);
 
-            // Check our ref counting is balanced, at least on debug builds anyway. It shouldn't be
-            // possible to do this within the bounds of our safe wrappers.
-            debug_assert!(new_rc >= 0);
+                // Check our ref counting is balanced, at least on debug builds anyway. It shouldn't be
+                // possible to do this within the bounds of our safe wrappers.
+                debug_assert!(new_rc >= 0);
 
-            Some(new_rc)
-        } else {
-            None
+                Some(new_rc)
+            } else {
+                None
+            }
         }
     }
 
     #[inline]
     pub unsafe fn increment_ref_count(&self) -> Option<c_int> {
-        if let Some(p) = self.get_ref_count_header() {
-            // We opt into checked add on the Rust side for some extra safety guarantees.
-            let rc = p.ref_count.get();
-            let new_rc = rc.checked_add(1).unwrap();
-            p.ref_count.set(new_rc);
+        unsafe {
+            if let Some(p) = self.get_ref_count_header() {
+                // We opt into checked add on the Rust side for some extra safety guarantees.
+                let rc = p.ref_count.get();
+                let new_rc = rc.checked_add(1).unwrap();
+                p.ref_count.set(new_rc);
 
-            Some(new_rc)
-        } else {
-            None
+                Some(new_rc)
+            } else {
+                None
+            }
         }
     }
 
     #[inline]
     pub unsafe fn free_value(&self, ctx: NonNull<JSContext>) {
-        if let Some(rc) = self.decrement_ref_count() {
-            // If the 'rc' is now 0 we free the value.
-            if rc <= 0 {
-                __JS_FreeValue(ctx, *self);
+        unsafe {
+            if let Some(rc) = self.decrement_ref_count() {
+                // If the 'rc' is now 0 we free the value.
+                if rc <= 0 {
+                    __JS_FreeValue(ctx, *self);
+                }
             }
         }
     }
 
     #[inline]
     pub unsafe fn free_value_rt(&self, rt: NonNull<JSRuntime>) {
-        if let Some(rc) = self.decrement_ref_count() {
-            // If the 'rc' is now 0 we free the value.
-            if rc <= 0 {
-                __JS_FreeValueRT(rt, *self);
+        unsafe {
+            if let Some(rc) = self.decrement_ref_count() {
+                // If the 'rc' is now 0 we free the value.
+                if rc <= 0 {
+                    __JS_FreeValueRT(rt, *self);
+                }
             }
         }
     }
@@ -1335,11 +1345,11 @@ pub unsafe fn JS_ToCStringLen(
     plen: *mut usize,
     v1: JSValue,
 ) -> *const c_char {
-    JS_ToCStringLen2(ctx, plen, v1, JSBool::FALSE)
+    unsafe { JS_ToCStringLen2(ctx, plen, v1, JSBool::FALSE) }
 }
 
 pub unsafe fn JS_ToCString(ctx: NonNull<JSContext>, v1: JSValue) -> *const c_char {
-    JS_ToCStringLen2(ctx, std::ptr::null_mut(), v1, JSBool::FALSE)
+    unsafe { JS_ToCStringLen2(ctx, std::ptr::null_mut(), v1, JSBool::FALSE) }
 }
 
 pub unsafe fn JS_NewCFunction(
@@ -1348,7 +1358,7 @@ pub unsafe fn JS_NewCFunction(
     name: *const c_char,
     length: c_int,
 ) -> JSValue {
-    JS_NewCFunction2(ctx, func, name, length, JSCFunctionEnum::GENERIC, 0)
+    unsafe { JS_NewCFunction2(ctx, func, name, length, JSCFunctionEnum::GENERIC, 0) }
 }
 
 pub unsafe fn JS_NewCFunctionMagic(
@@ -1359,13 +1369,15 @@ pub unsafe fn JS_NewCFunctionMagic(
     cproto: JSCFunctionEnum,
     magic: c_int,
 ) -> JSValue {
-    let ft = JSCFunctionType {
-        generic_magic: func,
-    };
-    JS_NewCFunction2(ctx, ft.generic, name, length, cproto, magic)
+    unsafe {
+        let ft = JSCFunctionType {
+            generic_magic: func,
+        };
+        JS_NewCFunction2(ctx, ft.generic, name, length, cproto, magic)
+    }
 }
 
-extern "C" {
+unsafe extern "C" {
     #![cfg_attr(rustfmt, rustfmt_skip)]
 
     pub fn JS_NewRuntime() -> Option<NonNull<JSRuntime>>;
