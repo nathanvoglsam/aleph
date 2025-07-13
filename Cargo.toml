@@ -87,7 +87,7 @@ members = [
 ]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 repository = "https://github.com/nathanvoglsam/aleph"
 license = "MIT"
@@ -96,7 +96,7 @@ license = "MIT"
 
 # Third Party Crates
 allocator-api2 = "0.2"
-android_logger = "0.14"
+android_logger = "0.15"
 anyhow = "1"
 ash = { version = "0.38", default-features = false, features = ["debug"] }
 bitflags = "2"
@@ -104,18 +104,18 @@ bumpalo = { version = "3", features = ["boxed", "collections", "allocator-api2"]
 blink-alloc = { version = "0.3" }
 bytemuck = { version = "1", features = ["derive"] }
 byteorder = "1"
-cargo_metadata = "0.19"
+cargo_metadata = "0.21"
 camino = "1"
 cc = "1"
 clap = "4"
 cmake = "0.1"
-console = "0.15"
+console = "0.16"
 crossbeam = "0.8"
 ctor = "0.2"
 ctrlc = "3"
 dunce = "1"
-egui = "0.30"
-egui_plot = "0.30"
+egui = { version = "0.32", features = ["bytemuck"] }
+egui_plot = "0.33"
 embed-resource = "3"
 env_logger = "0.11.0"
 half = { version = "2", features = ["alloc", "bytemuck", "num-traits"] }
@@ -131,21 +131,21 @@ raw-cpuid = "11"
 raw-window-handle = "0.6"
 rayon = "1"
 rkyv = "0.8"
-sdl2 = { version = "0.37", features = ["raw-window-handle"] }
-sdl2-sys = { version = "^0.37" }
+sdl2 = { version = "0.38", features = ["raw-window-handle"] }
+sdl2-sys = { version = "^0.38" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 smallbox = "0.8"
-sysinfo = "0.33"
+sysinfo = "0.36"
 tera = "1"
 thiserror = "2"
-toml = "0.8"
-tracy-client = "0.17"
-ultraviolet = { version = "0.9", features = ["f64", "int"] }
+toml = "0.9"
+tracy-client = "0.18"
+ultraviolet = { version = "0.10", features = ["f64", "int"] }
 wide = { version = "0.7" }
 utf16_lit = "2"
 uuid = { version = "1", features = ["v7"] }
-zip = "2"
+zip = "4"
 num-integer = "0.1"
 num-traits = "0.2"
 arrayvec = "0.7"
