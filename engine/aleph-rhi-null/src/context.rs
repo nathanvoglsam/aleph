@@ -30,7 +30,7 @@
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 

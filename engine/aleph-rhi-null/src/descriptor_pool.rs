@@ -29,7 +29,7 @@
 
 use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 

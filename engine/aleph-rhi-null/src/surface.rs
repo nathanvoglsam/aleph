@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
+use aleph_any::{AnyArc, AnyWeak, QueryInterface, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::{NullContext, NullDevice, NullSwapChain};

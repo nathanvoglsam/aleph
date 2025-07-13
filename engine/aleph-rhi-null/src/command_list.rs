@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_any::{declare_interfaces, AnyArc};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::{NullDevice, NullEncoder};
