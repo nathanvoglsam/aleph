@@ -82,10 +82,9 @@ impl<T: IAllocatorFactory> AllocatorPool<T> {
     /// Will return one ready to use [`IAllocatorFactory::Out`] item. This may be an existing item
     /// being reused or it could be a freshly allocated item if the queue was exhausted.
     pub fn get(&self) -> AllocatorPoolItem<T> {
-        let item = if let Some(item) = self.queue.pop() {
-            item
-        } else {
-            self.factory.build()
+        let item = match self.queue.pop() {
+            Some(item) => item,
+            _ => self.factory.build(),
         };
         AllocatorPoolItem {
             pool: self.this.upgrade().unwrap(),

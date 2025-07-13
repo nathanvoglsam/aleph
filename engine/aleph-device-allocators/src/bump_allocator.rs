@@ -30,7 +30,7 @@
 use std::cell::Cell;
 use std::num::NonZeroUsize;
 
-use crate::{forward_align_offset, AllocationResult};
+use crate::{AllocationResult, forward_align_offset};
 
 /// A virtual bump allocator. Controls a 'capcity' sized block of memory in some region of
 /// memory managed outside of the [BumpAllocator] object.

@@ -171,16 +171,18 @@ impl UploadBumpAllocator {
             // Safety: It is the caller's responsibility to ensure that the block starting at
             //         'offset' is good for 'capacity' bytes. If this requirement is met correctly
             //         then the offset can't overflow or escape the bounds of the allocated object.
-            let offset_address = base_host_address.as_ptr().add(offset);
-            let base_host_address = NonNull::new_unchecked(offset_address);
+            unsafe {
+                let offset_address = base_host_address.as_ptr().add(offset);
+                let base_host_address = NonNull::new_unchecked(offset_address);
 
-            Some(Self {
-                buffer,
-                base_host_address,
-                base_device_offset: offset,
-                state,
-                usage,
-            })
+                Some(Self {
+                    buffer,
+                    base_host_address,
+                    base_device_offset: offset,
+                    state,
+                    usage,
+                })
+            }
         } else {
             None
         }

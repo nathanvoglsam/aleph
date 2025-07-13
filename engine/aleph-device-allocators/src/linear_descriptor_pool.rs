@@ -167,7 +167,7 @@ impl LinearDescriptorPool {
     /// by this operation are in use on the host or device.
     pub unsafe fn reset(&self) {
         let active = self.active.take().unwrap();
-        active.reset();
+        unsafe { active.reset() };
         self.active.set(Some(active));
 
         let mut exhausted = self.exhausted.take();
