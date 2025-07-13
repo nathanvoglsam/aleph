@@ -441,7 +441,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// If the fences are never signalled this function will deadlock
     fn wait_fences(&self, fences: &[&FenceHandle], wait_all: bool, timeout: u32)
-        -> FenceWaitResult;
+    -> FenceWaitResult;
 
     /// Polls, and returns, whether the fence has been signalled by the device.
     fn poll_fence(&self, fence: &FenceHandle) -> bool;
