@@ -35,7 +35,7 @@ use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_rhi_api::*;
 use arrayvec::ArrayVec;
 use smallbox::space::S8;
-use smallbox::{smallbox, SmallBox};
+use smallbox::{SmallBox, smallbox};
 
 use crate::{IUploadBuffer, SharedUploadBuffer};
 
@@ -508,9 +508,5 @@ impl TextureUploadDesc {
 }
 
 const fn const_max(a: u32, b: u32) -> u32 {
-    if a < b {
-        b
-    } else {
-        a
-    }
+    if a < b { b } else { a }
 }

@@ -34,14 +34,14 @@ use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
-use crate::pass::utils::{
-    create_fullscreen_triangle_pipeline, draw_fullscreen_triangle, FullscreenTriangleBindInfo,
-    FullscreenTriangleInfo,
-};
 use crate::pass::GraphArgs;
+use crate::pass::utils::{
+    FullscreenTriangleBindInfo, FullscreenTriangleInfo, create_fullscreen_triangle_pipeline,
+    draw_fullscreen_triangle,
+};
 use crate::{
-    shaders, DefaultResources, IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor,
-    StateCache, TextureHandle,
+    DefaultResources, IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache,
+    TextureHandle, shaders,
 };
 
 pub fn pass(

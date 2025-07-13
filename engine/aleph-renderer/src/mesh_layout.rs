@@ -175,7 +175,7 @@ impl MeshLayoutIdFields {
         let high = (self.render_id as u32) << 16;
         let word = low | high;
         // Safety: The low half is guaranteed to be non zero so this is safe
-        let word = NonZeroU32::new_unchecked(word);
+        let word = unsafe { NonZeroU32::new_unchecked(word) };
         MeshLayoutId(word)
     }
 }

@@ -36,11 +36,11 @@ use aleph_pin_board::{BoardParamId, PinBoard};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 
-use crate::pass::composite_planes::CompositePlanesLayout;
 use crate::pass::GraphArgs;
+use crate::pass::composite_planes::CompositePlanesLayout;
 use crate::{
-    shaders, BufferObject, BufferUploadDesc, IStateCacheKey, ResourceCommand,
-    ResourceCommandBuffer, ShaderDatabaseAccessor, StateCache, TextureObject, TextureUploadDesc,
+    BufferObject, BufferUploadDesc, IStateCacheKey, ResourceCommand, ResourceCommandBuffer,
+    ShaderDatabaseAccessor, StateCache, TextureObject, TextureUploadDesc, shaders,
 };
 
 pub struct ResourceProcessorParam {
@@ -146,18 +146,20 @@ impl BufferLoader {
             return;
         }
 
-        // Prepare all our resources in a single barrier command rather than 'n' barriers
-        encoder.resource_barrier(&[], &discard_barriers, &[]);
+        unsafe {
+            // Prepare all our resources in a single barrier command rather than 'n' barriers
+            encoder.resource_barrier(&[], &discard_barriers, &[]);
 
-        for r in requests.iter() {
-            let buffer = r.object.get().unwrap();
+            for r in requests.iter() {
+                let buffer = r.object.get().unwrap();
 
-            let region = r.data.get_copy_region(r.object.desc(), 0);
-            encoder.copy_buffer_regions(r.data.buffer.buffer(), buffer, &[region]);
+                let region = r.data.get_copy_region(r.object.desc(), 0);
+                encoder.copy_buffer_regions(r.data.buffer.buffer(), buffer, &[region]);
+            }
+
+            // Sync our uploaded resources with the access scopes we consider them safe to use
+            encoder.resource_barrier(&[], &release_barriers, &[]);
         }
-
-        // Sync our uploaded resources with the access scopes we consider them safe to use
-        encoder.resource_barrier(&[], &release_barriers, &[]);
     }
 
     fn process_request<'r>(
@@ -217,12 +219,14 @@ impl TextureLoader {
         let mut release_barriers = Vec::new();
 
         for request in requests {
-            Self::process_request(
-                device,
-                &mut discard_barriers,
-                &mut release_barriers,
-                request,
-            );
+            unsafe {
+                Self::process_request(
+                    device,
+                    &mut discard_barriers,
+                    &mut release_barriers,
+                    request,
+                );
+            }
         }
 
         // If there are no textures to upload then we early exit (we don't want to issue empty
@@ -231,22 +235,24 @@ impl TextureLoader {
             return;
         }
 
-        // Prepare all our resources in a single barrier command rather than 'n' barriers
-        encoder.resource_barrier(&[], &[], &discard_barriers);
+        unsafe {
+            // Prepare all our resources in a single barrier command rather than 'n' barriers
+            encoder.resource_barrier(&[], &[], &discard_barriers);
 
-        for r in requests.iter() {
-            let data = r.data;
-            for level in data.data.level_range() {
-                let desc = r.object.desc();
-                let texture = r.texture;
-                let region = data.get_copy_region(desc, level, TextureCopyAspect::Color);
-                encoder.copy_buffer_to_texture(r.data.buffer.buffer(), texture, &[region]);
+            for r in requests.iter() {
+                let data = r.data;
+                for level in data.data.level_range() {
+                    let desc = r.object.desc();
+                    let texture = r.texture;
+                    let region = data.get_copy_region(desc, level, TextureCopyAspect::Color);
+                    encoder.copy_buffer_to_texture(r.data.buffer.buffer(), texture, &[region]);
+                }
             }
-        }
 
-        // Sync our uploaded resources with the access scopes we consider them safe to use
-        if !release_barriers.is_empty() {
-            encoder.resource_barrier(&[], &[], &release_barriers);
+            // Sync our uploaded resources with the access scopes we consider them safe to use
+            if !release_barriers.is_empty() {
+                encoder.resource_barrier(&[], &[], &release_barriers);
+            }
         }
 
         for r in requests.iter() {
@@ -254,7 +260,16 @@ impl TextureLoader {
                 GenerateMips::Yes => {
                     let desc = r.object.desc();
                     let texture = r.texture;
-                    MipGenerator::record(device, state_cache, arena, encoder, texture, desc.usage);
+                    unsafe {
+                        MipGenerator::record(
+                            device,
+                            state_cache,
+                            arena,
+                            encoder,
+                            texture,
+                            desc.usage,
+                        )
+                    };
                 }
                 GenerateMips::No => {
                     // Do nothing here, the texture has been correctly synced with the outside
@@ -395,90 +410,92 @@ impl MipGenerator {
                 queue_transition: None,
             });
 
-            encoder.resource_barrier(&[], &[], &barrier_queue);
-            barrier_queue.clear();
+            unsafe {
+                encoder.resource_barrier(&[], &[], &barrier_queue);
+                barrier_queue.clear();
 
-            let extent = Extent2D {
-                width: desc.width >> level,
-                height: desc.height >> level,
-            };
-            let desc = ImageViewDesc {
-                format,
-                view_type: ImageViewType::Tex2D,
-                sub_resources: dst_subresource_range.clone(),
-                writable: true,
-            };
-            let image_view = device.get_texture_rtv(texture, &desc).unwrap();
-            encoder.begin_rendering(&BeginRenderingInfo {
-                layer_count: 1,
-                extent: extent.clone(),
-                color_attachments: &[RenderingColorAttachmentInfo {
-                    image_view,
-                    image_layout: ImageLayout::ColorAttachment,
-                    load_op: AttachmentLoadOp::DontCare,
-                    store_op: AttachmentStoreOp::Store,
-                }],
-                depth_stencil_attachment: None,
-                allow_uav_writes: false,
-            });
+                let extent = Extent2D {
+                    width: desc.width >> level,
+                    height: desc.height >> level,
+                };
+                let desc = ImageViewDesc {
+                    format,
+                    view_type: ImageViewType::Tex2D,
+                    sub_resources: dst_subresource_range.clone(),
+                    writable: true,
+                };
+                let image_view = device.get_texture_rtv(texture, &desc).unwrap();
+                encoder.begin_rendering(&BeginRenderingInfo {
+                    layer_count: 1,
+                    extent: extent.clone(),
+                    color_attachments: &[RenderingColorAttachmentInfo {
+                        image_view,
+                        image_layout: ImageLayout::ColorAttachment,
+                        load_op: AttachmentLoadOp::DontCare,
+                        store_op: AttachmentStoreOp::Store,
+                    }],
+                    depth_stencil_attachment: None,
+                    allow_uav_writes: false,
+                });
 
-            encoder.bind_graphics_pipeline(&state.pipeline);
-            encoder.set_viewports(&[Viewport {
-                x: 0.0,
-                y: 0.0,
-                width: extent.width as f32,
-                height: extent.height as f32,
-                min_depth: 0.0,
-                max_depth: 1.0,
-            }]);
-            encoder.set_scissor_rects(&[Rect {
-                x: 0,
-                y: 0,
-                w: extent.width,
-                h: extent.height,
-            }]);
+                encoder.bind_graphics_pipeline(&state.pipeline);
+                encoder.set_viewports(&[Viewport {
+                    x: 0.0,
+                    y: 0.0,
+                    width: extent.width as f32,
+                    height: extent.height as f32,
+                    min_depth: 0.0,
+                    max_depth: 1.0,
+                }]);
+                encoder.set_scissor_rects(&[Rect {
+                    x: 0,
+                    y: 0,
+                    w: extent.width,
+                    h: extent.height,
+                }]);
 
-            let desc = ImageViewDesc {
-                format,
-                view_type: ImageViewType::Tex2D,
-                sub_resources: TextureSubResourceSet::with_color().with_mips(level - 1, 1),
-                writable: false,
-            };
-            let src_view = device.get_texture_view(texture, &desc).unwrap();
-            let set = arena.allocate_set(&state.layout.set_layout).unwrap();
-            device.update_descriptor_sets(&[DescriptorWriteDesc {
-                set,
-                binding: 0,
-                array_element: 0,
-                writes: DescriptorWrites::Texture(&[ImageDescriptorWrite::srv(src_view)]),
-            }]);
+                let desc = ImageViewDesc {
+                    format,
+                    view_type: ImageViewType::Tex2D,
+                    sub_resources: TextureSubResourceSet::with_color().with_mips(level - 1, 1),
+                    writable: false,
+                };
+                let src_view = device.get_texture_view(texture, &desc).unwrap();
+                let set = arena.allocate_set(&state.layout.set_layout).unwrap();
+                device.update_descriptor_sets(&[DescriptorWriteDesc {
+                    set,
+                    binding: 0,
+                    array_element: 0,
+                    writes: DescriptorWrites::Texture(&[ImageDescriptorWrite::srv(src_view)]),
+                }]);
 
-            encoder.bind_descriptor_sets(
-                &state.layout.pipeline_layout,
-                PipelineBindPoint::Graphics,
-                0,
-                &[set],
-                &[],
-            );
+                encoder.bind_descriptor_sets(
+                    &state.layout.pipeline_layout,
+                    PipelineBindPoint::Graphics,
+                    0,
+                    &[set],
+                    &[],
+                );
 
-            let src_level = (level - 1) as f32;
-            encoder.set_push_constant_block(0, bytemuck::bytes_of(&src_level));
+                let src_level = (level - 1) as f32;
+                encoder.set_push_constant_block(0, bytemuck::bytes_of(&src_level));
 
-            encoder.draw(3, 1, 0, 0);
+                encoder.draw(3, 1, 0, 0);
 
-            encoder.end_rendering();
+                encoder.end_rendering();
 
-            barrier_queue.push(TextureBarrier {
-                texture: Some(texture),
-                subresource_range: dst_subresource_range,
-                before_sync: BarrierSync::RENDER_TARGET,
-                after_sync: BarrierSync::PIXEL_SHADING,
-                before_access: BarrierAccess::RENDER_TARGET_WRITE,
-                after_access: BarrierAccess::SHADER_READ,
-                before_layout: ImageLayout::ColorAttachment,
-                after_layout: ImageLayout::ShaderReadOnly,
-                queue_transition: None,
-            });
+                barrier_queue.push(TextureBarrier {
+                    texture: Some(texture),
+                    subresource_range: dst_subresource_range,
+                    before_sync: BarrierSync::RENDER_TARGET,
+                    after_sync: BarrierSync::PIXEL_SHADING,
+                    before_access: BarrierAccess::RENDER_TARGET_WRITE,
+                    after_access: BarrierAccess::SHADER_READ,
+                    before_layout: ImageLayout::ColorAttachment,
+                    after_layout: ImageLayout::ShaderReadOnly,
+                    queue_transition: None,
+                });
+            }
         }
 
         // Adjust the last barrier, which instead of syncing with usage as an srv is instead syncing
@@ -506,7 +523,10 @@ impl MipGenerator {
             queue_transition: None,
         });
 
-        encoder.resource_barrier(&[], &[], &barrier_queue);
+        unsafe {
+            encoder.resource_barrier(&[], &[], &barrier_queue);
+        }
+
         barrier_queue.clear();
     }
 }

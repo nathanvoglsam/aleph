@@ -43,10 +43,10 @@ use crate::deletion_pool::DeletionMode;
 use crate::pass::resource_processor::ResourceProcessorParam;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    built_in_textures, BufferHandle, BufferObject, BufferPool, DeletionPool,
-    MaterialInstanceHandle, MaterialInstanceObject, MaterialInstancePool, ResourceCommand,
-    ResourceCommandBuffer, ShaderDatabaseAccessor, StateCache, TextureHandle, TextureObject,
-    TexturePool,
+    BufferHandle, BufferObject, BufferPool, DeletionPool, MaterialInstanceHandle,
+    MaterialInstanceObject, MaterialInstancePool, ResourceCommand, ResourceCommandBuffer,
+    ShaderDatabaseAccessor, StateCache, TextureHandle, TextureObject, TexturePool,
+    built_in_textures,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -362,125 +362,133 @@ impl Renderer {
     }
 
     pub unsafe fn draw_next_frame(&mut self, options: &DrawOptions, board: &mut BoardScope) {
-        let CurrentFrameResources {
-            frame_index,
-            acquire_semaphore,
-            present_semaphore,
-            done_fence,
-            deletion_pool,
-        } = self.frame_manager.get_next_frame();
+        unsafe {
+            let CurrentFrameResources {
+                frame_index,
+                acquire_semaphore,
+                present_semaphore,
+                done_fence,
+                deletion_pool,
+            } = self.frame_manager.get_next_frame();
 
-        // If we're producing frames faster than the GPU is producing them and we run out of frames
-        // in flight then we need to wait for the oldest frame to complete before we can start
-        // doing anything.
-        //
-        // This will stall until the oldest frame is complete, applying back pressure up the
-        // pipeline.
-        assert_eq!(
-            self.device.wait_fences(&[done_fence], true, u32::MAX),
-            FenceWaitResult::Complete
-        );
-        self.device.reset_fences(&[done_fence]);
+            // If we're producing frames faster than the GPU is producing them and we run out of frames
+            // in flight then we need to wait for the oldest frame to complete before we can start
+            // doing anything.
+            //
+            // This will stall until the oldest frame is complete, applying back pressure up the
+            // pipeline.
+            assert_eq!(
+                self.device.wait_fences(&[done_fence], true, u32::MAX),
+                FenceWaitResult::Complete
+            );
+            self.device.reset_fences(&[done_fence]);
 
-        // We are now definitely recording the frame, we've proven it has been retired on the GPU
-        // timeline and that means we can purge anything that was being held alive for that GPU
-        // frame in the deletion pool.
-        deletion_pool.purge(DeletionMode::Deferred);
+            // We are now definitely recording the frame, we've proven it has been retired on the GPU
+            // timeline and that means we can purge anything that was being held alive for that GPU
+            // frame in the deletion pool.
+            deletion_pool.purge(DeletionMode::Deferred);
 
-        let linear_descriptor_pool = self.linear_descriptor_pools.get();
-        linear_descriptor_pool.reset();
+            let linear_descriptor_pool = self.linear_descriptor_pools.get();
+            linear_descriptor_pool.reset();
 
-        // Acquire the next image from the swap chain. This will also trigger rebuilding the swap
-        // chain if it is out of date.
-        //
-        // If the swap chain is rebuilt we will acquire an image from the swap chain after we have
-        // rebuilt it and hand that out, this papers over rebuilds.
-        //
-        // If we rebuild we do need to rebuild the swap chain though!
-        let acquired_image = self.swap_manager.acquire_next_image(acquire_semaphore);
+            // Acquire the next image from the swap chain. This will also trigger rebuilding the swap
+            // chain if it is out of date.
+            //
+            // If the swap chain is rebuilt we will acquire an image from the swap chain after we have
+            // rebuilt it and hand that out, this papers over rebuilds.
+            //
+            // If we rebuild we do need to rebuild the swap chain though!
+            let acquired_image = self.swap_manager.acquire_next_image(acquire_semaphore);
 
-        // If the swap chain was rebuilt (or this is the first frame and we haven't built the frame
-        // graph yet) we need to (re)build the frame graph!
-        if self.graph_manager.frame_graph.is_none()
-            || acquired_image.rebuilt
-            || options.force_rebuild_frame_graph
-        {
-            if options.force_rebuild_frame_graph {
-                self.device.wait_idle();
+            // If the swap chain was rebuilt (or this is the first frame and we haven't built the frame
+            // graph yet) we need to (re)build the frame graph!
+            if self.graph_manager.frame_graph.is_none()
+                || acquired_image.rebuilt
+                || options.force_rebuild_frame_graph
+            {
+                if options.force_rebuild_frame_graph {
+                    self.device.wait_idle();
+                }
+                self.graph_manager.build_graph(
+                    &self.config,
+                    self.state_cache.get_mut(),
+                    &self.default_resources,
+                    self.device.as_ref(),
+                    &self.swap_manager,
+                );
             }
-            self.graph_manager.build_graph(
-                &self.config,
-                self.state_cache.get_mut(),
-                &self.default_resources,
-                self.device.as_ref(),
-                &self.swap_manager,
-            );
+
+            let mut list = self
+                .device
+                .create_command_list(&CommandListDesc {
+                    queue_type: QueueType::General,
+                    name: None,
+                })
+                .unwrap();
+
+            {
+                let mut encoder = list.begin_general().unwrap();
+
+                let resource_commands = std::mem::take(&mut self.resource_commands);
+
+                // Push all the upload buffers into the deletion pool so they live long enough to be
+                // used on the GPU timeline.
+                // TODO: is there a better way of doing this? do it on the render thread?
+                resource_commands.walk(|_, c| match c {
+                    ResourceCommand::BufferUpload(_, d) => {
+                        deletion_pool.push_buffer(d.buffer.buffer().clone());
+                    }
+                    ResourceCommand::TextureUpload(_, _, d) => {
+                        deletion_pool.push_buffer(d.buffer.buffer().clone());
+                    }
+                });
+
+                board.publish::<ResourceProcessorParam>(ResourceProcessorParam {
+                    resource_commands,
+                });
+
+                let mut import_bundle = ImportBundle::default();
+
+                import_bundle.add_resource(
+                    self.graph_manager.swap_image_id.clone().unwrap(),
+                    &acquired_image.image,
+                );
+
+                board.publish::<GraphSwapImageInfo>(GraphSwapImageInfo {
+                    desc: self.swap_manager.desc.clone(),
+                });
+                let args = GraphArgsLayout {
+                    board,
+                    texture_pool: &self.texture_pool,
+                    buffer_pool: &self.buffer_pool,
+                    material_instance_pool: &self.material_instance_pool,
+                    state_cache: &self.state_cache,
+                };
+
+                self.graph_manager.execute_graph(
+                    frame_index,
+                    &import_bundle,
+                    encoder.as_mut(),
+                    &args,
+                );
+
+                encoder.close().unwrap();
+            }
+
+            deletion_pool.push_descriptor_pool(linear_descriptor_pool.into());
+
+            self.queue
+                .submit(&QueueSubmitDesc {
+                    command_lists: &[Some(list).into()],
+                    wait_semaphores: &[acquire_semaphore],
+                    signal_semaphores: &[present_semaphore],
+                    fence: Some(done_fence),
+                })
+                .unwrap();
+
+            self.swap_manager
+                .present(self.queue.as_ref(), &[present_semaphore], acquired_image);
         }
-
-        let mut list = self
-            .device
-            .create_command_list(&CommandListDesc {
-                queue_type: QueueType::General,
-                name: None,
-            })
-            .unwrap();
-
-        {
-            let mut encoder = list.begin_general().unwrap();
-
-            let resource_commands = std::mem::take(&mut self.resource_commands);
-
-            // Push all the upload buffers into the deletion pool so they live long enough to be
-            // used on the GPU timeline.
-            // TODO: is there a better way of doing this? do it on the render thread?
-            resource_commands.walk(|_, c| match c {
-                ResourceCommand::BufferUpload(_, d) => {
-                    deletion_pool.push_buffer(d.buffer.buffer().clone());
-                }
-                ResourceCommand::TextureUpload(_, _, d) => {
-                    deletion_pool.push_buffer(d.buffer.buffer().clone());
-                }
-            });
-
-            board.publish::<ResourceProcessorParam>(ResourceProcessorParam { resource_commands });
-
-            let mut import_bundle = ImportBundle::default();
-
-            import_bundle.add_resource(
-                self.graph_manager.swap_image_id.clone().unwrap(),
-                &acquired_image.image,
-            );
-
-            board.publish::<GraphSwapImageInfo>(GraphSwapImageInfo {
-                desc: self.swap_manager.desc.clone(),
-            });
-            let args = GraphArgsLayout {
-                board,
-                texture_pool: &self.texture_pool,
-                buffer_pool: &self.buffer_pool,
-                material_instance_pool: &self.material_instance_pool,
-                state_cache: &self.state_cache,
-            };
-
-            self.graph_manager
-                .execute_graph(frame_index, &import_bundle, encoder.as_mut(), &args);
-
-            encoder.close().unwrap();
-        }
-
-        deletion_pool.push_descriptor_pool(linear_descriptor_pool.into());
-
-        self.queue
-            .submit(&QueueSubmitDesc {
-                command_lists: &[Some(list).into()],
-                wait_semaphores: &[acquire_semaphore],
-                signal_semaphores: &[present_semaphore],
-                fence: Some(done_fence),
-            })
-            .unwrap();
-
-        self.swap_manager
-            .present(self.queue.as_ref(), &[present_semaphore], acquired_image);
     }
 }
 
@@ -561,11 +569,12 @@ impl SwapManager {
                 rebuilt = true; // Flag if we had to rebuild before giving out the image.
             }
 
-            let acquired_index = match self
-                .surface
-                .get_swap_chain()
-                .acquire_next_image(&AcquireDesc { signal_semaphore })
-            {
+            let acquired_index = unsafe {
+                self.surface
+                    .get_swap_chain()
+                    .acquire_next_image(&AcquireDesc { signal_semaphore })
+            };
+            let acquired_index = match acquired_index {
                 Ok(i) => i,
                 Err(ImageAcquireError::SubOptimal(i)) => {
                     // We should queue a rebuild for the next frame, but we can still render with
@@ -603,11 +612,13 @@ impl SwapManager {
         wait_semaphores: &[&SemaphoreHandle],
         image: AcquiredImage,
     ) {
-        let submit_result = queue.present(&QueuePresentDesc {
-            swap_chain: self.surface.get_swap_chain(),
-            image_index: image.index as u32,
-            wait_semaphores,
-        });
+        let submit_result = unsafe {
+            queue.present(&QueuePresentDesc {
+                swap_chain: self.surface.get_swap_chain(),
+                image_index: image.index as u32,
+                wait_semaphores,
+            })
+        };
         match submit_result {
             Ok(_) => {}
             Err(QueuePresentError::OutOfDate) | Err(QueuePresentError::SubOptimal) => {
@@ -721,7 +732,7 @@ struct GraphManager {
 }
 
 impl GraphManager {
-    #[aleph_profile::function]
+    //#[aleph_profile::function]
     unsafe fn build_graph(
         &mut self,
         config: &RendererConfig,
@@ -736,16 +747,19 @@ impl GraphManager {
             desc: swap_manager.desc.clone(),
         });
 
-        let (builder, swap_id) = self.register_graph_passes(state_cache, default_resources, device);
+        unsafe {
+            let (builder, swap_id) =
+                self.register_graph_passes(state_cache, default_resources, device);
 
-        let mut frame_graph = builder.build(device);
-        frame_graph.allocate_transients(config.frames_in_flight);
+            let mut frame_graph = builder.build(device);
+            frame_graph.allocate_transients(config.frames_in_flight);
 
-        self.frame_graph = Some(frame_graph);
-        self.swap_image_id = Some(swap_id);
+            self.frame_graph = Some(frame_graph);
+            self.swap_image_id = Some(swap_id);
+        }
     }
 
-    #[aleph_profile::function]
+    //#[aleph_profile::function]
     unsafe fn register_graph_passes(
         &mut self,
         state_cache: &mut StateCache,
@@ -783,7 +797,9 @@ impl GraphManager {
         encoder: &mut dyn IGeneralEncoder,
         args: &GraphArgsLayout,
     ) {
-        let fg = self.frame_graph.as_mut().unwrap();
-        fg.execute(frame_index, import_bundle, encoder, args)
+        unsafe {
+            let fg = self.frame_graph.as_mut().unwrap();
+            fg.execute(frame_index, import_bundle, encoder, args)
+        }
     }
 }

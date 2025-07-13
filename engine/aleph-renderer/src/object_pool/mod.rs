@@ -161,8 +161,8 @@ impl<T: Copy> ObjectPool<T> {
 mod tests {
     use std::num::NonZeroU8;
 
-    use crate::test_utils::DropCanary;
     use crate::ObjectPool;
+    use crate::test_utils::DropCanary;
 
     #[test]
     pub fn test_object_pool_alloc_free() {

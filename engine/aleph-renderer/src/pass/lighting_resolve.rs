@@ -35,7 +35,7 @@ use aleph_rhi_api::*;
 
 use crate::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::{shaders, CameraInfo, IStateCacheKey, ShaderDatabaseAccessor, StateCache};
+use crate::{CameraInfo, IStateCacheKey, ShaderDatabaseAccessor, StateCache, shaders};
 
 struct LightingResolvePassPayload {
     depth: ResourceRef,

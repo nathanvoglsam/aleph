@@ -32,13 +32,13 @@ mod standard_material;
 pub use standard_material::{StandardMaterial, StandardMaterialLayout};
 
 use std::num::NonZero;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use aleph_rhi_api::*;
 use aleph_shader_db::{Fragment, ShaderName, Vertex};
 use smallbox::space::S2;
-use smallbox::{smallbox, SmallBox};
+use smallbox::{SmallBox, smallbox};
 
 use crate::{BufferPool, MaterialBinding, MaterialInstanceObject, TexturePool};
 

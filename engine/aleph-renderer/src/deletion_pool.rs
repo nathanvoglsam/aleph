@@ -31,8 +31,8 @@ use std::mem::ManuallyDrop;
 
 use aleph_device_allocators::{AllocatorPoolItem, Grave, LinearDescriptorPoolFactory};
 use aleph_rhi_api::*;
-use smallbox::space::S8;
 use smallbox::SmallBox;
+use smallbox::space::S8;
 
 use crate::IUploadBuffer;
 
@@ -102,10 +102,12 @@ impl DeletionPool {
     #[inline]
     pub unsafe fn purge(&mut self, mode: DeletionMode) {
         // Drain the pools and explicitly drop the contained elements.
-        self.purge_textures(mode);
-        self.purge_buffers(mode);
-        self.purge_uploads(mode);
-        self.purge_descriptor_pools(mode);
+        unsafe {
+            self.purge_textures(mode);
+            self.purge_buffers(mode);
+            self.purge_uploads(mode);
+            self.purge_descriptor_pools(mode);
+        }
     }
 
     /// Alternate version of [`DeletionPool::purge`] that only purges the
@@ -117,7 +119,7 @@ impl DeletionPool {
     #[inline]
     pub unsafe fn purge_textures(&mut self, mode: DeletionMode) {
         // Drain the pools and explicitly drop the contained elements.
-        self.textures.drain(..).for_each(|mut v| {
+        self.textures.drain(..).for_each(|mut v| unsafe {
             if v.strong_count() == 1 && mode == DeletionMode::Deferred {
                 rayon::spawn(move || drop_texture_on_pool(v));
             } else {
@@ -135,7 +137,7 @@ impl DeletionPool {
     #[inline]
     pub unsafe fn purge_buffers(&mut self, mode: DeletionMode) {
         // Drain the pools and explicitly drop the contained elements.
-        self.buffers.drain(..).for_each(|mut v| {
+        self.buffers.drain(..).for_each(|mut v| unsafe {
             if v.strong_count() == 1 && mode == DeletionMode::Deferred {
                 rayon::spawn(move || drop_buffer_on_pool(v));
             } else {
@@ -153,7 +155,7 @@ impl DeletionPool {
     #[inline]
     pub unsafe fn purge_uploads(&mut self, mode: DeletionMode) {
         // Drain the pools and explicitly drop the contained elements.
-        self.upload.drain(..).for_each(|mut v| {
+        self.upload.drain(..).for_each(|mut v| unsafe {
             if v.buffer().strong_count() == 1 && mode == DeletionMode::Deferred {
                 rayon::spawn(move || drop_upload_on_pool(v));
             } else {
@@ -207,15 +209,15 @@ impl Default for DeletionMode {
 
 #[aleph_profile::function]
 unsafe fn drop_texture_on_pool(mut v: ManuallyDrop<TextureHandle>) {
-    ManuallyDrop::drop(&mut v)
+    unsafe { ManuallyDrop::drop(&mut v) }
 }
 
 #[aleph_profile::function]
 unsafe fn drop_buffer_on_pool(mut v: ManuallyDrop<BufferHandle>) {
-    ManuallyDrop::drop(&mut v)
+    unsafe { ManuallyDrop::drop(&mut v) }
 }
 
 #[aleph_profile::function]
 unsafe fn drop_upload_on_pool(mut v: ManuallyDrop<SmallBox<dyn IUploadBuffer, S8>>) {
-    ManuallyDrop::drop(&mut v)
+    unsafe { ManuallyDrop::drop(&mut v) }
 }

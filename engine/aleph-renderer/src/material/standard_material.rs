@@ -33,8 +33,8 @@ use aleph_rhi_api::*;
 use aleph_shader_db::{Fragment, ShaderName, Vertex};
 
 use crate::{
-    shaders, BufferPool, IMaterial, Material, MaterialBinding, MaterialBindingType,
-    MaterialInstanceObject, TexturePool,
+    BufferPool, IMaterial, Material, MaterialBinding, MaterialBindingType, MaterialInstanceObject,
+    TexturePool, shaders,
 };
 
 pub struct StandardMaterial();
@@ -128,16 +128,18 @@ unsafe impl IMaterial for StandardMaterial {
         let image_view_nrm = texture_pool.get_ref(image_view_nrm).unwrap();
         let image_view_nrm = image_view_nrm.get_default_view().unwrap();
 
-        device.update_descriptor_sets(&[
-            DescriptorWriteDesc::uniform_buffer(
-                dst,
-                0,
-                &BufferDescriptorWrite::uniform_buffer(constants, 256),
-            ),
-            DescriptorWriteDesc::texture(dst, 1, &ImageDescriptorWrite::srv(image_view_c)),
-            DescriptorWriteDesc::texture(dst, 2, &ImageDescriptorWrite::srv(image_view_mr)),
-            DescriptorWriteDesc::texture(dst, 3, &ImageDescriptorWrite::srv(image_view_nrm)),
-        ]);
+        unsafe {
+            device.update_descriptor_sets(&[
+                DescriptorWriteDesc::uniform_buffer(
+                    dst,
+                    0,
+                    &BufferDescriptorWrite::uniform_buffer(constants, 256),
+                ),
+                DescriptorWriteDesc::texture(dst, 1, &ImageDescriptorWrite::srv(image_view_c)),
+                DescriptorWriteDesc::texture(dst, 2, &ImageDescriptorWrite::srv(image_view_mr)),
+                DescriptorWriteDesc::texture(dst, 3, &ImageDescriptorWrite::srv(image_view_nrm)),
+            ]);
+        }
     }
 }
 

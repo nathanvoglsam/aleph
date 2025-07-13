@@ -176,7 +176,7 @@ impl CacheArc {
 
     pub(crate) unsafe fn get_unchecked<T: Send + Sync + 'static>(&self) -> Arc<T> {
         let v = self.ptr.cast::<T>();
-        let v = Arc::from_raw(v.as_ptr());
+        let v = unsafe { Arc::from_raw(v.as_ptr()) };
 
         // Take an owned copy of the object then leak the old one we materialized from the pointer
         // so we don't decrement the refcount incorrectly and trigger use after free.
@@ -188,7 +188,7 @@ impl CacheArc {
 
     pub(crate) unsafe fn into_inner_unchecked<T: Send + Sync + 'static>(self) -> Arc<T> {
         let v = self.ptr.cast::<T>();
-        let v = Arc::from_raw(v.as_ptr());
+        let v = unsafe { Arc::from_raw(v.as_ptr()) };
 
         // Make sure we don't drop the TypedTableArc and drop the Arc we just gave out incorrectly
         std::mem::forget(self);
@@ -198,7 +198,7 @@ impl CacheArc {
 
     unsafe fn free_fn<T: Send + Sync + 'static>(v: NonNull<()>) {
         let v = v.cast::<T>().as_ptr();
-        let v = Arc::from_raw(v);
+        let v = unsafe { Arc::from_raw(v) };
         drop(v);
     }
 }

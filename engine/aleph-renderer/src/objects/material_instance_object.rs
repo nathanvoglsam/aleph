@@ -62,10 +62,11 @@ impl MaterialInstanceObject {
     /// binding is valid to use within the context of this material. This could mean synchronization
     /// state, or it could mean resource usage flags, or other requirements.
     pub fn update_binding(&mut self, binding: u32, v: MaterialBinding) {
-        debug_assert!(self
-            .material
-            .material
-            .check_binding_type(binding, v.binding_type()));
+        debug_assert!(
+            self.material
+                .material
+                .check_binding_type(binding, v.binding_type())
+        );
         match (v, &mut self.bindings[binding as usize]) {
             (MaterialBinding::Texture(v), MaterialBinding::Texture(dst)) => {
                 *dst = v;

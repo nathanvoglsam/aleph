@@ -34,7 +34,7 @@ use aleph_rhi_api::*;
 
 use crate::pass::lighting_resolve::LightingResolvePassOutput;
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::{shaders, RenderPlaneOutput, StateCache};
+use crate::{RenderPlaneOutput, StateCache, shaders};
 
 struct TonemapPassPayload {
     input: ResourceRef,

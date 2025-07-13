@@ -28,10 +28,10 @@
 //
 
 use std::cell::UnsafeCell;
-use std::mem::{needs_drop, ManuallyDrop, MaybeUninit};
+use std::mem::{ManuallyDrop, MaybeUninit, needs_drop};
 use std::num::NonZeroUsize;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use thiserror::Error;
 

@@ -35,7 +35,7 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::{shaders, IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache};
+use crate::{IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache, shaders};
 
 struct Payload {
     planes: Vec<ResourceRef>,

@@ -33,7 +33,7 @@ use std::ptr::NonNull;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_rhi_api::*;
 use smallbox::space::S8;
-use smallbox::{smallbox, SmallBox};
+use smallbox::{SmallBox, smallbox};
 
 use crate::{IUploadBuffer, SharedUploadBuffer};
 

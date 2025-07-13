@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::alloc::{handle_alloc_error, Layout};
+use std::alloc::{Layout, handle_alloc_error};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
@@ -35,7 +35,7 @@ use std::ptr::NonNull;
 use aleph_atomic_borrow::AtomicBorrow;
 use aleph_math::{DVec3, Rotor3, Vec3};
 use aleph_object_system::uuid::Uuid;
-use aleph_object_system::{unsafe_impl_iobject, IObject, ObjectDescription};
+use aleph_object_system::{IObject, ObjectDescription, unsafe_impl_iobject};
 use aleph_pin_board::BoardParamId;
 use allocator_api2::alloc::{Allocator, Global};
 
@@ -317,18 +317,20 @@ impl Storage {
     /// It is the caller's responsibility to ensure the 'src' points to an object of the type this
     /// storage is supposed to be storing.
     unsafe fn push(&mut self, transform: RenderTransform, src: NonNull<u8>) {
-        // Grow the buffer if there's not enough space
-        if self.bytes.len() <= self.len() * self.t_size {
-            // Take max(self.len, 1) to handle the len=0 case which would never grow the buffer
-            let new_len = (self.len() * 2).max(1) * self.t_size;
-            self.bytes.resize(new_len);
+        unsafe {
+            // Grow the buffer if there's not enough space
+            if self.bytes.len() <= self.len() * self.t_size {
+                // Take max(self.len, 1) to handle the len=0 case which would never grow the buffer
+                let new_len = (self.len() * 2).max(1) * self.t_size;
+                self.bytes.resize(new_len);
+            }
+
+            let dst = self.bytes.as_ptr();
+            let dst = dst.add(self.t_size * self.len());
+            dst.copy_from_nonoverlapping(src.cast(), self.t_size);
+
+            self.transforms.push(transform);
         }
-
-        let dst = self.bytes.as_ptr();
-        let dst = dst.add(self.t_size * self.len());
-        dst.copy_from_nonoverlapping(src.cast(), self.t_size);
-
-        self.transforms.push(transform);
     }
 
     fn clear(&mut self) {
@@ -530,9 +532,11 @@ impl<A: Allocator> RawBytes<A> {
             Err(_) => handle_alloc_error(layout),
         };
 
-        let src = self.slice.as_ref().as_ptr();
-        let dst = v.as_mut().as_mut_ptr();
-        dst.copy_from_nonoverlapping(src, self.slice.len());
+        unsafe {
+            let src = self.slice.as_ref().as_ptr();
+            let dst = v.as_mut().as_mut_ptr();
+            dst.copy_from_nonoverlapping(src, self.slice.len());
+        }
 
         self.slice = v;
     }
