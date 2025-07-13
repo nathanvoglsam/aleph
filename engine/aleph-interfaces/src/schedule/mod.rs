@@ -28,7 +28,7 @@
 //
 
 use ecs::World;
-use label::{make_label, Label};
+use label::{Label, make_label};
 use object_system::unsafe_impl_iobject;
 
 pub struct WorldResource(pub World);

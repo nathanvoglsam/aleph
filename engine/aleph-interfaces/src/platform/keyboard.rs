@@ -30,8 +30,8 @@
 use std::fmt::Display;
 
 use any::*;
-use smallbox::space::S1;
 use smallbox::SmallBox;
+use smallbox::space::S1;
 
 ///
 /// This interface represents the API expected of something that gives the engine access to a

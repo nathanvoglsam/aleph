@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::any::{type_name, TypeId};
+use std::any::{TypeId, type_name};
 
 use any::IAny;
 use ecs::World;

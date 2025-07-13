@@ -28,8 +28,8 @@
 //
 
 use any::*;
-use smallbox::space::S1;
 use smallbox::SmallBox;
+use smallbox::space::S1;
 
 use crate::platform::{KeyboardEvent, MouseEvent, WindowEvent};
 

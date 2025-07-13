@@ -32,8 +32,8 @@ use std::ptr::NonNull;
 
 use any::*;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
-use smallbox::space::S1;
 use smallbox::SmallBox;
+use smallbox::space::S1;
 
 /// An enum of window events.
 #[derive(Clone, Debug)]
