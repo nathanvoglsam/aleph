@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::collections::{vec_deque, VecDeque};
+use std::collections::{VecDeque, vec_deque};
 
 use egui::{CollapsingHeader, Context, Grid, Window};
 use egui_plot::{Bar, BarChart, Legend, Plot};
@@ -112,7 +112,7 @@ pub fn frame_stats(ctx: &Context, frame_time_history: &FrameTimeHistory) {
                                 .enumerate()
                                 .map(|(i, v)| Bar::new(i as _, *v))
                                 .collect();
-                            let chart = BarChart::new(bars).name("Frame Time");
+                            let chart = BarChart::new("Frame Time", bars).name("Frame Time");
                             ui.bar_chart(chart);
                         });
                 });

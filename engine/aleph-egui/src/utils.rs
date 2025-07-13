@@ -74,8 +74,12 @@ pub fn process_egui_output(
     mouse: &dyn IMouse,
     clipboard: &dyn IClipboard,
 ) {
-    if !output.copied_text.is_empty() {
-        clipboard.set(&output.copied_text);
+    for command in output.commands {
+        match command {
+            egui::OutputCommand::CopyText(text) => clipboard.set(&text),
+            egui::OutputCommand::CopyImage(_color_image) => {}
+            egui::OutputCommand::OpenUrl(_open_url) => {}
+        }
     }
 
     match output.cursor_icon {
