@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::alloc::{handle_alloc_error, Layout};
+use std::alloc::{Layout, handle_alloc_error};
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::mem::MaybeUninit;
