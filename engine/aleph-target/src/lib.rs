@@ -30,8 +30,8 @@
 extern crate aleph_target_build as aleph_target;
 
 pub use aleph_target::{
-    get_architecture_from, get_platform_from, recreate_triple, Architecture, BuildType, Platform,
-    Profile,
+    Architecture, BuildType, Platform, Profile, get_architecture_from, get_platform_from,
+    recreate_triple,
 };
 
 pub mod build {
