@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{VkFormat, ALL_FORMATS};
+use crate::{ALL_FORMATS, VkFormat};
 
 #[test]
 fn all_formats_enumerated() {
