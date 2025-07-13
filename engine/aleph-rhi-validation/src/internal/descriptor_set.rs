@@ -60,29 +60,31 @@ impl DescriptorSet {
 
     #[inline(always)]
     pub unsafe fn validate(handle: DescriptorSetHandle, expected_pool_id: Option<u64>) {
-        let inner: NonNull<()> = handle.into();
-        let inner: NonNull<Self> = inner.cast();
-        let inner = inner.as_ref();
+        unsafe {
+            let inner: NonNull<()> = handle.into();
+            let inner: NonNull<Self> = inner.cast();
+            let inner = inner.as_ref();
 
-        // To validate that the DescriptorSetHandle points to an object of type DescriptorSet we
-        // use a magic header field that will *always* be initialized to the same value.
-        // Checking for the correct value can reject the assumption that the pointer is valid.
-        //
-        // It can't prove it though.
-        assert_eq!(
-            inner._magic_header,
-            DescriptorSet::MAGIC_HEADER_VAL,
-            "DescriptorSet header doesn't match expected value. Garbage pointer detected."
-        );
-
-        if let Some(expected_pool_id) = expected_pool_id {
-            // To validate the set goes back to the correct pool we generate a globally unique ID
-            // for the pool and store it in all the sets it allocates. If we get a set that has a
-            // different pool id then we know it must be from another pool.
+            // To validate that the DescriptorSetHandle points to an object of type DescriptorSet we
+            // use a magic header field that will *always* be initialized to the same value.
+            // Checking for the correct value can reject the assumption that the pointer is valid.
+            //
+            // It can't prove it though.
             assert_eq!(
-                inner._pool_id, expected_pool_id,
-                "Released a DescriptorSet to a pool other than where it was allocated from."
+                inner._magic_header,
+                DescriptorSet::MAGIC_HEADER_VAL,
+                "DescriptorSet header doesn't match expected value. Garbage pointer detected."
             );
+
+            if let Some(expected_pool_id) = expected_pool_id {
+                // To validate the set goes back to the correct pool we generate a globally unique ID
+                // for the pool and store it in all the sets it allocates. If we get a set that has a
+                // different pool id then we know it must be from another pool.
+                assert_eq!(
+                    inner._pool_id, expected_pool_id,
+                    "Released a DescriptorSet to a pool other than where it was allocated from."
+                );
+            }
         }
     }
 
@@ -122,9 +124,11 @@ impl DescriptorSet {
     ///       *will* be interpreted as the incorrect type.
     ///
     pub unsafe fn ref_from_handle(handle: &DescriptorSetHandle) -> &DescriptorSet {
-        let ptr = Self::ptr_from_handle(*handle);
+        unsafe {
+            let ptr = Self::ptr_from_handle(*handle);
 
-        // Safety: all left to the caller lmao
-        ptr.as_ref()
+            // Safety: all left to the caller lmao
+            ptr.as_ref()
+        }
     }
 }

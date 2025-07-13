@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
@@ -145,7 +145,7 @@ impl ISwapChain for ValidationSwapChain {
             signal_semaphore: &ValidationSemaphore::get(desc.signal_semaphore).inner,
         };
 
-        self.inner.acquire_next_image(&new_desc)
+        unsafe { self.inner.acquire_next_image(&new_desc) }
     }
 }
 

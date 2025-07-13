@@ -51,7 +51,7 @@ pub struct ValidationEncoder<T: ?Sized> {
 
 impl<'a, T: IGetPlatformInterface + ?Sized + 'a> IGetPlatformInterface for ValidationEncoder<T> {
     unsafe fn __query_platform_interface(&self, _target: TypeId, out: *mut ()) -> Option<()> {
-        self.inner.__query_platform_interface(_target, out)
+        unsafe { self.inner.__query_platform_interface(_target, out) }
     }
 }
 
@@ -62,8 +62,9 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             "Called a general command on a non-general capable command list"
         );
         let pipeline = ValidationGraphicsPipeline::get_owned(pipeline);
-
-        self.inner.bind_graphics_pipeline(&pipeline.inner);
+        unsafe {
+            self.inner.bind_graphics_pipeline(&pipeline.inner);
+        }
 
         // We need to know if/what pipeline is bound for validation purposes
         self.bound_graphics_pipeline = Some(pipeline);
@@ -83,7 +84,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             .iter()
             .map(get_as_unwrapped::input_assembly_buffer_binding)
             .collect();
-        self.inner.bind_vertex_buffers(first_binding, &bindings)
+        unsafe { self.inner.bind_vertex_buffers(first_binding, &bindings) }
     }
 
     unsafe fn bind_index_buffer(
@@ -97,7 +98,8 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         );
 
         let binding = get_as_unwrapped::input_assembly_buffer_binding(binding);
-        self.inner.bind_index_buffer(index_type, &binding)
+
+        unsafe { self.inner.bind_index_buffer(index_type, &binding) }
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
@@ -106,7 +108,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             "Called a general command on a non-general capable command list"
         );
 
-        self.inner.set_viewports(viewports)
+        unsafe { self.inner.set_viewports(viewports) }
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
@@ -115,7 +117,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             "Called a general command on a non-general capable command list"
         );
 
-        self.inner.set_scissor_rects(rects)
+        unsafe { self.inner.set_scissor_rects(rects) }
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
@@ -133,7 +135,8 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         let block = &pipeline._pipeline_layout.push_constant_blocks[block_index];
 
         Self::validate_push_constant_data_buffer(data, block);
-        self.inner.set_push_constant_block(block_index, data)
+
+        unsafe { self.inner.set_push_constant_block(block_index, data) }
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
@@ -168,7 +171,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         self.render_pass_open = true;
 
-        self.inner.begin_rendering(&info)
+        unsafe { self.inner.begin_rendering(&info) }
     }
 
     unsafe fn end_rendering(&mut self) {
@@ -181,7 +184,9 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             "Can't call end_rendering while a render-pass has already been opened"
         );
 
-        self.inner.end_rendering();
+        unsafe {
+            self.inner.end_rendering();
+        }
 
         self.render_pass_open = false;
     }
@@ -198,8 +203,10 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             "Called a general command on a non-general capable command list"
         );
 
-        self.inner
-            .draw(vertex_count, instance_count, first_vertex, first_instance)
+        unsafe {
+            self.inner
+                .draw(vertex_count, instance_count, first_vertex, first_instance)
+        }
     }
 
     unsafe fn draw_indexed(
@@ -215,13 +222,15 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
             "Called a general command on a non-general capable command list"
         );
 
-        self.inner.draw_indexed(
-            index_count,
-            instance_count,
-            first_index,
-            first_instance,
-            vertex_offset,
-        )
+        unsafe {
+            self.inner.draw_indexed(
+                index_count,
+                instance_count,
+                first_index,
+                first_instance,
+                vertex_offset,
+            )
+        }
     }
 }
 
@@ -234,7 +243,9 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
 
         let pipeline = ValidationComputePipeline::get_owned(pipeline);
 
-        self.inner.bind_compute_pipeline(&pipeline.inner);
+        unsafe {
+            self.inner.bind_compute_pipeline(&pipeline.inner);
+        }
 
         // We need to know if/what pipeline is bound for validation purposes
         self.bound_compute_pipeline = Some(pipeline);
@@ -255,18 +266,20 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
 
         let pipeline_layout = &ValidationPipelineLayout::get(pipeline_layout).inner;
 
-        let sets: Vec<_> = sets
-            .iter()
-            .map(|&v| get_as_unwrapped::descriptor_set_handle(v, None))
-            .collect();
+        unsafe {
+            let sets: Vec<_> = sets
+                .iter()
+                .map(|&v| get_as_unwrapped::descriptor_set_handle(v, None))
+                .collect();
 
-        self.inner.bind_descriptor_sets(
-            pipeline_layout,
-            bind_point,
-            first_set,
-            &sets,
-            dynamic_offsets,
-        )
+            self.inner.bind_descriptor_sets(
+                pipeline_layout,
+                bind_point,
+                first_set,
+                &sets,
+                dynamic_offsets,
+            )
+        }
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
@@ -275,8 +288,10 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
             "Called a compute command on a non-compute command list"
         );
 
-        self.inner
-            .dispatch(group_count_x, group_count_y, group_count_z)
+        unsafe {
+            self.inner
+                .dispatch(group_count_x, group_count_y, group_count_z)
+        }
     }
 }
 
@@ -312,8 +327,10 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
             log::warn!("ITransferEncoder::resource_barrier called with 0 barriers!");
         }
 
-        self.inner
-            .resource_barrier(global_barriers, &buffer_barriers, &texture_barriers)
+        unsafe {
+            self.inner
+                .resource_barrier(global_barriers, &buffer_barriers, &texture_barriers)
+        }
     }
 
     unsafe fn copy_buffer_regions(
@@ -324,7 +341,7 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
     ) {
         let src = &ValidationBuffer::get(src).inner;
         let dst = &ValidationBuffer::get(dst).inner;
-        self.inner.copy_buffer_regions(src, dst, regions)
+        unsafe { self.inner.copy_buffer_regions(src, dst, regions) }
     }
 
     unsafe fn copy_buffer_to_texture(
@@ -341,7 +358,10 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
 
         let src = &ValidationBuffer::get(src).inner;
         let dst = get_as_unwrapped::texture(dst);
-        self.inner.copy_buffer_to_texture(src, dst, regions);
+
+        unsafe {
+            self.inner.copy_buffer_to_texture(src, dst, regions);
+        }
     }
 
     unsafe fn copy_texture_regions(
@@ -353,23 +373,24 @@ impl<'a, T: ITransferEncoder + ?Sized + 'a> ITransferEncoder for ValidationEncod
         // TODO: any validation at all
         let src = get_as_unwrapped::texture(src);
         let dst = get_as_unwrapped::texture(dst);
-        self.inner.copy_texture_regions(src, dst, regions)
+
+        unsafe { self.inner.copy_texture_regions(src, dst, regions) }
     }
 
     unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
-        self.inner.close()
+        unsafe { self.inner.close() }
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        self.inner.set_marker(color, message)
+        unsafe { self.inner.set_marker(color, message) }
     }
 
     unsafe fn begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        self.inner.begin_event(color, message)
+        unsafe { self.inner.begin_event(color, message) }
     }
 
     unsafe fn end_event(&mut self) {
-        self.inner.end_event()
+        unsafe { self.inner.end_event() }
     }
 }
 

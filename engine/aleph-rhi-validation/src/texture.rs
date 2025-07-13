@@ -31,7 +31,7 @@ use std::collections::HashMap;
 use std::sync::Weak;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
+use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 

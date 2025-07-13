@@ -159,7 +159,7 @@ impl IQueue for ValidationQueue {
         }
 
         get_as_unwrapped::queue_submit_desc(desc, |inner_desc| {
-            let result = self.inner.submit(inner_desc);
+            let result = unsafe { self.inner.submit(inner_desc) };
 
             // for v in desc.wait_semaphores {
             //     let v = v
@@ -212,7 +212,9 @@ impl IQueue for ValidationQueue {
             );
         }
 
-        get_as_unwrapped::queue_present_desc(desc, |inner_desc| self.inner.present(inner_desc))
+        get_as_unwrapped::queue_present_desc(desc, |inner_desc| unsafe {
+            self.inner.present(inner_desc)
+        })
     }
 }
 

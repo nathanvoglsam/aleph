@@ -31,10 +31,10 @@ use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU32;
 use std::ops::Deref;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
@@ -424,13 +424,15 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
-        writes
-            .iter()
-            .for_each(|v| Self::validate_descriptor_write(v));
+        unsafe {
+            writes
+                .iter()
+                .for_each(|v| Self::validate_descriptor_write(v));
 
-        get_as_unwrapped::descriptor_set_updates(writes, |writes| {
-            self.inner.update_descriptor_sets(writes)
-        })
+            get_as_unwrapped::descriptor_set_updates(writes, |writes| {
+                self.inner.update_descriptor_sets(writes)
+            })
+        }
     }
 
     // ========================================================================================== //
@@ -777,7 +779,7 @@ impl ValidationDevice {
     /// set being written to is still live and valid, and the caller's responsibility to synchronize
     /// access.
     pub unsafe fn validate_descriptor_write(write: &DescriptorWriteDesc) {
-        let set = DescriptorSet::ref_from_handle(&write.set);
+        let set = unsafe { DescriptorSet::ref_from_handle(&write.set) };
         let layout = set._layout.deref();
 
         // Checks if the binding is actually present in the descriptor set.
@@ -833,8 +835,9 @@ impl ValidationDevice {
         match &write.writes {
             DescriptorWrites::Texture(writes) => {
                 for v in writes.iter() {
-                    let image_view =
-                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view);
+                    let image_view = unsafe {
+                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
+                    };
 
                     Self::validate_image_view_type(image_view);
 
@@ -848,8 +851,9 @@ impl ValidationDevice {
             }
             DescriptorWrites::TextureRW(writes) => {
                 for v in writes.iter() {
-                    let image_view =
-                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view);
+                    let image_view = unsafe {
+                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
+                    };
 
                     Self::validate_image_view_type(image_view);
 

@@ -51,7 +51,7 @@
 use std::cell::Cell;
 use std::ptr::NonNull;
 
-use aleph_any::{box_downcast, QueryInterface};
+use aleph_any::{QueryInterface, box_downcast};
 use aleph_rhi_api::*;
 
 use crate::internal::descriptor_set::DescriptorSet;
@@ -81,11 +81,13 @@ pub unsafe fn descriptor_set_handle(
     handle: DescriptorSetHandle,
     expected_pool_id: Option<u64>,
 ) -> DescriptorSetHandle {
-    // Unwrap and validate to get the inner DescriptorSetHandle
-    DescriptorSet::validate(handle, expected_pool_id);
-    let inner: NonNull<()> = handle.into();
-    let inner: NonNull<DescriptorSet> = inner.cast();
-    inner.as_ref().inner
+    unsafe {
+        // Unwrap and validate to get the inner DescriptorSetHandle
+        DescriptorSet::validate(handle, expected_pool_id);
+        let inner: NonNull<()> = handle.into();
+        let inner: NonNull<DescriptorSet> = inner.cast();
+        inner.as_ref().inner
+    }
 }
 
 pub fn pipeline_layout_desc<Return>(

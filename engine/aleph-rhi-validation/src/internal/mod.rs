@@ -40,7 +40,7 @@ macro_rules! impl_platform_interface_passthrough {
                 target: ::core::any::TypeId,
                 out: *mut (),
             ) -> ::core::option::Option<()> {
-                self.inner.__query_platform_interface(target, out)
+                unsafe { self.inner.__query_platform_interface(target, out) }
             }
         }
     };

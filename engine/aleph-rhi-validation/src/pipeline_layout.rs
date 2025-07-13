@@ -28,7 +28,7 @@
 //
 
 use aleph_any::AnyArc;
-use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
+use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 
 use crate::ValidationDevice;

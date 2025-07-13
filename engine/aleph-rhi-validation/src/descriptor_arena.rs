@@ -31,7 +31,7 @@ use std::cell::Cell;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
@@ -134,11 +134,13 @@ impl ValidationDescriptorArena {
 
         // Safety: It's the caller's responsibility to ensure 'set_index' is in bounds. The pointer
         // is guaranteed to be valid if the index is in bounds.
-        let handle = NonNull::new_unchecked(handle).cast::<()>();
+        unsafe {
+            let handle = NonNull::new_unchecked(handle).cast::<()>();
 
-        // Safety: no actual unsafe code here, just a warning to make sure people don't use this
-        //         unless they absolutely need to.
-        DescriptorSetHandle::from_raw(handle)
+            // Safety: no actual unsafe code here, just a warning to make sure people don't use this
+            //         unless they absolutely need to.
+            DescriptorSetHandle::from_raw(handle)
+        }
     }
 
     fn validate_set_handle(&self, set: DescriptorSetHandle) {
@@ -230,27 +232,31 @@ impl IDescriptorArena for ValidationDescriptorArena {
     }
 
     unsafe fn free(&self, sets: &[DescriptorSetHandle]) {
-        for &set in sets {
-            self.validate_set_handle(set);
+        unsafe {
+            for &set in sets {
+                self.validate_set_handle(set);
 
-            // Does further validation based on reading the set object itself
-            DescriptorSet::validate(set, Some(self.pool_id));
+                // Does further validation based on reading the set object itself
+                DescriptorSet::validate(set, Some(self.pool_id));
 
-            let inner: NonNull<()> = set.into();
-            let inner: NonNull<DescriptorSet> = inner.cast();
-            let inner = inner.as_ref();
+                let inner: NonNull<()> = set.into();
+                let inner: NonNull<DescriptorSet> = inner.cast();
+                let inner = inner.as_ref();
 
-            // Validation is done, free the set.
-            self.inner.free(&[inner.inner]);
+                // Validation is done, free the set.
+                self.inner.free(&[inner.inner]);
 
-            let mut free_list = self.free_list.take();
-            free_list.push(set);
-            self.free_list.set(free_list);
+                let mut free_list = self.free_list.take();
+                free_list.push(set);
+                self.free_list.set(free_list);
+            }
         }
     }
 
     unsafe fn reset(&self) {
-        self.inner.reset();
+        unsafe {
+            self.inner.reset();
+        }
 
         let mut set_objects = self.set_objects.take();
         set_objects.clear();
