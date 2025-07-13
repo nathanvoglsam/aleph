@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::table::VK_TO_DFD;
 use crate::LONGEST_DFD;
+use crate::table::VK_TO_DFD;
 
 #[test]
 fn sizes_are_sensible() {
