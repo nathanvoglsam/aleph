@@ -32,8 +32,8 @@
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
-use windows::utils::WeakRef;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::utils::WeakRef;
 
 use crate::raw::{
     D3D12MA_Allocation_GetAlignment, D3D12MA_Allocation_GetHeap, D3D12MA_Allocation_GetName,

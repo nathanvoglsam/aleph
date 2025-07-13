@@ -40,8 +40,8 @@ use crate::raw::{
     D3D12MA_VirtualBlock_SetAllocationPrivateData,
 };
 use crate::{
-    DetailedStatistics, Statistics, VirtualAllocation, VIRTUAL_ALLOCATION_DESC,
-    VIRTUAL_ALLOCATION_INFO, VIRTUAL_BLOCK_DESC,
+    DetailedStatistics, Statistics, VIRTUAL_ALLOCATION_DESC, VIRTUAL_ALLOCATION_INFO,
+    VIRTUAL_BLOCK_DESC, VirtualAllocation,
 };
 
 #[repr(transparent)]
@@ -72,15 +72,17 @@ impl VirtualBlock {
         &self,
         allocation: VirtualAllocation,
     ) -> VIRTUAL_ALLOCATION_INFO {
-        let mut info = VIRTUAL_ALLOCATION_INFO {
-            Offset: 0,
-            Size: 0,
-            pPrivateData: std::ptr::null_mut(),
-        };
+        unsafe {
+            let mut info = VIRTUAL_ALLOCATION_INFO {
+                Offset: 0,
+                Size: 0,
+                pPrivateData: std::ptr::null_mut(),
+            };
 
-        D3D12MA_VirtualBlock_GetAllocationInfo(self.0.as_ptr(), allocation, &mut info);
+            D3D12MA_VirtualBlock_GetAllocationInfo(self.0.as_ptr(), allocation, &mut info);
 
-        info
+            info
+        }
     }
 
     #[inline(always)]
@@ -103,7 +105,7 @@ impl VirtualBlock {
     /// both alive (hasn't been freed) and was allocated from this allocator.
     #[inline(always)]
     pub unsafe fn FreeAllocation(&mut self, allocation: VirtualAllocation) {
-        D3D12MA_VirtualBlock_FreeAllocation(self.0.as_ptr(), allocation)
+        unsafe { D3D12MA_VirtualBlock_FreeAllocation(self.0.as_ptr(), allocation) }
     }
 
     #[inline(always)]
@@ -122,7 +124,13 @@ impl VirtualBlock {
         allocation: VirtualAllocation,
         pPrivateData: *mut c_void,
     ) {
-        D3D12MA_VirtualBlock_SetAllocationPrivateData(self.0.as_ptr(), allocation, pPrivateData);
+        unsafe {
+            D3D12MA_VirtualBlock_SetAllocationPrivateData(
+                self.0.as_ptr(),
+                allocation,
+                pPrivateData,
+            );
+        }
     }
 
     #[inline(always)]
