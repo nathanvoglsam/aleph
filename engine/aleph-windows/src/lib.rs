@@ -33,7 +33,7 @@ extern crate windows;
 
 #[cfg(all(target_vendor = "uwp", target_os = "windows"))]
 pub use windows::System;
-pub use windows::{core, Win32};
+pub use windows::{Win32, core};
 
 pub mod utils;
 pub use crate::utils::name_current_thread;

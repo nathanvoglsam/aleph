@@ -42,10 +42,10 @@ pub use d3d12_component_mapping::{D3D12ComponentMapping, D3D12ComponentMappingVa
 pub use descriptor_handles::{CPUDescriptorHandle, GPUDescriptorHandle};
 use once_cell::sync::OnceCell;
 
-use crate::core::{Interface, PCSTR, PCWSTR};
 use crate::Win32::Foundation::*;
 use crate::Win32::Graphics::Direct3D12::*;
 use crate::Win32::System::LibraryLoader::*;
+use crate::core::{Interface, PCSTR, PCWSTR};
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -110,11 +110,7 @@ impl From<Bool> for u32 {
 impl From<u32> for Bool {
     #[inline]
     fn from(v: u32) -> Self {
-        if v != 0 {
-            Bool(1)
-        } else {
-            Bool(0)
-        }
+        if v != 0 { Bool(1) } else { Bool(0) }
     }
 }
 
@@ -157,19 +153,21 @@ impl<T: Sized> DynamicLoadCell<T> {
     ///
     #[inline]
     pub unsafe fn get(&self) -> windows::core::Result<&T> {
-        self.cell.get_or_try_init(|| {
-            // Attempt to load the library
-            let h_module: HMODULE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))?;
+        unsafe {
+            self.cell.get_or_try_init(|| {
+                // Attempt to load the library
+                let h_module: HMODULE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))?;
 
-            if h_module.is_invalid() {
-                return Err(windows::core::Error::from(E_NOINTERFACE));
-            }
+                if h_module.is_invalid() {
+                    return Err(windows::core::Error::from(E_NOINTERFACE));
+                }
 
-            // Attempt to find the function pointer we're after
-            GetProcAddress(h_module, PCSTR(self.fn_name.as_ptr()))
-                .ok_or(windows::core::Error::from(E_FAIL))
-                .map(|v| std::mem::transmute_copy::<_, T>(&v))
-        })
+                // Attempt to find the function pointer we're after
+                GetProcAddress(h_module, PCSTR(self.fn_name.as_ptr()))
+                    .ok_or(windows::core::Error::from(E_FAIL))
+                    .map(|v| std::mem::transmute_copy::<_, T>(&v))
+            })
+        }
     }
 }
 
@@ -185,15 +183,17 @@ impl<T: Sized> DynamicLoadCell<T> {
 ///
 #[inline]
 pub unsafe fn name_current_thread(name: &[u16]) -> crate::windows::core::Result<()> {
-    use crate::Win32::System::Threading::{GetCurrentThread, SetThreadDescription};
+    unsafe {
+        use crate::Win32::System::Threading::{GetCurrentThread, SetThreadDescription};
 
-    let handle: HANDLE = GetCurrentThread();
-    if handle.is_invalid() {
-        GetLastError().ok()?
+        let handle: HANDLE = GetCurrentThread();
+        if handle.is_invalid() {
+            GetLastError().ok()?
+        }
+        let _ = SetThreadDescription(handle, PCWSTR(name.as_ptr()));
+
+        Ok(())
     }
-    let _ = SetThreadDescription(handle, PCWSTR(name.as_ptr()));
-
-    Ok(())
 }
 
 #[inline]
