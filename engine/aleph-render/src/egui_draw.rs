@@ -269,22 +269,24 @@ unsafe fn record_job_commands(
     vtx_base: usize,
     idx_base: usize,
 ) {
-    if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
-        let scissor_rect = calculate_clip_rect(job, swap_extent, pixels_per_point);
+    unsafe {
+        if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
+            let scissor_rect = calculate_clip_rect(job, swap_extent, pixels_per_point);
 
-        // Reject the command if the scissor rect is 0 as we'll never actually draw anything
-        if (scissor_rect.w * scissor_rect.h) == 0 {
-            return;
+            // Reject the command if the scissor rect is 0 as we'll never actually draw anything
+            if (scissor_rect.w * scissor_rect.h) == 0 {
+                return;
+            }
+
+            encoder.set_scissor_rects(&[scissor_rect]);
+            encoder.draw_indexed(
+                triangles.indices.len() as _,
+                1,
+                idx_base as _,
+                0,
+                vtx_base as _,
+            );
         }
-
-        encoder.set_scissor_rects(&[scissor_rect]);
-        encoder.draw_indexed(
-            triangles.indices.len() as _,
-            1,
-            idx_base as _,
-            0,
-            vtx_base as _,
-        );
     }
 }
 

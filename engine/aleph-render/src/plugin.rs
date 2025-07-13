@@ -40,7 +40,7 @@ use aleph_renderer::{
 };
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
-use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
+use interfaces::any::{AnyArc, QueryInterface, declare_interfaces};
 use interfaces::components::{self, Camera, Transform, TransformHistory};
 use interfaces::label::make_label;
 use interfaces::make_plugin_description_for_crate;
