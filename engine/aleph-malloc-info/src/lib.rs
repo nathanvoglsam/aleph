@@ -67,8 +67,8 @@ mod windows {
     pub fn get_allocated_bytes() -> usize {
         use aleph_windows::Win32::Foundation::TRUE;
         use aleph_windows::Win32::System::Memory::GetProcessHeap;
-        use aleph_windows::Win32::System::Memory::HeapSummary;
         use aleph_windows::Win32::System::Memory::HEAP_SUMMARY;
+        use aleph_windows::Win32::System::Memory::HeapSummary;
 
         unsafe {
             let heap = GetProcessHeap().unwrap();
