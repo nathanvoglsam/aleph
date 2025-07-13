@@ -46,8 +46,8 @@ use thiserror::Error;
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::is_format_prohibited;
 use crate::{
-    format_type_size, ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle,
-    TransferFunction,
+    ColorPrimaries, DFDError, DFDFlags, KtxOrientation, KtxSwizzle, TransferFunction,
+    format_type_size,
 };
 
 ///
@@ -76,7 +76,9 @@ pub enum KtxReadError {
     )]
     InvalidTypeSize(u32),
 
-    #[error("The KTX file specified a super compression scheme that this implementation doesn't support. Got '{0}'.")]
+    #[error(
+        "The KTX file specified a super compression scheme that this implementation doesn't support. Got '{0}'."
+    )]
     UnsupportedSuperCompressionScheme(SuperCompressionScheme),
 
     #[error(
@@ -90,18 +92,20 @@ pub enum KtxReadError {
     #[error("The declared dimensions are invalid for the declared format. Get '{0:?}'.")]
     InvalidDimensions((u32, u32, u32)),
 
-    #[error(
-        "The depth value in `pixelDepth` must be 0 for cube maps `faceCount == 6`. Got '{0}'."
-    )]
+    #[error("The depth value in `pixelDepth` must be 0 for cube maps `faceCount == 6`. Got '{0}'.")]
     InvalidDepthForCubeMap(u32),
 
     #[error("`faceCount` must be either 1 or 6 (single image or cube map). Get '{0}'.")]
     InvalidFaceCount(u32),
 
-    #[error("The `levelCount` value specified too many image levels for the size of the image. Got '{0}'.")]
+    #[error(
+        "The `levelCount` value specified too many image levels for the size of the image. Got '{0}'."
+    )]
     TooManyLevels(u32),
 
-    #[error("The image uses a block format but has specified `layerCount` of 0, which is invalid. Got '{0}'.")]
+    #[error(
+        "The image uses a block format but has specified `layerCount` of 0, which is invalid. Got '{0}'."
+    )]
     InvalidLevelCountForBlockFormat(u32),
 
     #[error("The `kvdByteOffset` must be 0 if `kvdByteLength` is 0. Get '{0}'.")]
@@ -110,10 +114,14 @@ pub enum KtxReadError {
     #[error("We found a key in the key/value data but the data is malformed.")]
     BadKeyValueData,
 
-    #[error("We found a key in the key/value data but the target buffer is too small to extract the data. Got {0}.")]
+    #[error(
+        "We found a key in the key/value data but the target buffer is too small to extract the data. Got {0}."
+    )]
     DestBufferTooSmall(usize),
 
-    #[error("The `sgdByteOffset` must be 0 if `sgdByteLength` is 0, otherwise it is considered an error. Got '{0}'.")]
+    #[error(
+        "The `sgdByteOffset` must be 0 if `sgdByteLength` is 0, otherwise it is considered an error. Got '{0}'."
+    )]
     InvalidSuperCompressionGlobalDataOffset(u64),
 
     #[error("Compression scheme wants global data but none is provided in the file: {0}")]
@@ -131,7 +139,9 @@ pub enum KtxReadError {
     #[error("An error when reading the data format descriptor.")]
     DFDError(#[from] DFDError),
 
-    #[error("An error occurred when trying to read a key's name from the file which lead to the read over-running the declared size of the pair. Likely a missing null terminator.")]
+    #[error(
+        "An error occurred when trying to read a key's name from the file which lead to the read over-running the declared size of the pair. Likely a missing null terminator."
+    )]
     InvalidKeyMissingNullTerminator,
 
     #[error("An error occurred while reading the data itself: {0}.")]

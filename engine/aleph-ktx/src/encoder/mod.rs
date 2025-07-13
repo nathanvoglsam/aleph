@@ -33,13 +33,13 @@ mod tests;
 use std::io::Write;
 use std::num::NonZero;
 
-use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::VkFormat;
+use aleph_vk2dfd::vk2dfd;
 use byteorder::{LittleEndian, WriteBytesExt};
-use num_integer::{lcm, Integer};
+use num_integer::lcm;
 
 use crate::document::FILE_IDENTIFIER;
-use crate::{format_type_size, SuperCompressionScheme};
+use crate::{SuperCompressionScheme, format_type_size};
 
 /// The name of the encoder, as will be written into the KTX key/value data
 pub const ENCODER_NAME: &str = concat!(env!("CARGO_PKG_NAME"), "-", env!("CARGO_PKG_VERSION"));
@@ -494,8 +494,8 @@ impl<'a> KtxDocumentDescription<'a> {
             }
             DocumentTypeDescription::Cube { images } => {
                 assert_ne!(images.len(), 0);
-                assert!(images.len().is_multiple_of(&6));
-                assert!(images.len().is_multiple_of(&(self.level_num as usize)));
+                assert!(images.len().is_multiple_of(6));
+                assert!(images.len().is_multiple_of(self.level_num as usize));
                 for layer_levels in images.chunks_exact(self.level_num as usize) {
                     self.validate_levels(layer_levels, (bw, bh, bd), texel_block_size);
                 }
@@ -505,7 +505,7 @@ impl<'a> KtxDocumentDescription<'a> {
             | DocumentTypeDescription::Array3D { layer_num, images } => {
                 assert_ne!(layer_num, 0);
                 assert_ne!(images.len(), 0);
-                assert!(images.len().is_multiple_of(&(self.level_num as usize)));
+                assert!(images.len().is_multiple_of(self.level_num as usize));
                 for layer_levels in images.chunks_exact(self.level_num as usize) {
                     self.validate_levels(layer_levels, (bw, bh, bd), texel_block_size);
                 }
@@ -513,8 +513,8 @@ impl<'a> KtxDocumentDescription<'a> {
             DocumentTypeDescription::CubeArray { layer_num, images } => {
                 assert_ne!(layer_num, 0);
                 assert_ne!(images.len(), 0);
-                assert!(images.len().is_multiple_of(&6));
-                assert!(images.len().is_multiple_of(&(self.level_num as usize)));
+                assert!(images.len().is_multiple_of(6));
+                assert!(images.len().is_multiple_of(self.level_num as usize));
                 for layer_levels in images.chunks_exact(self.level_num as usize) {
                     self.validate_levels(layer_levels, (bw, bh, bd), texel_block_size);
                 }

@@ -29,7 +29,7 @@
 
 use aleph_vk_format::ALL_FORMATS;
 
-use crate::format::{format_type_size, is_format_prohibited, ALLOWED_FORMATS};
+use crate::format::{ALLOWED_FORMATS, format_type_size, is_format_prohibited};
 
 #[test]
 fn all_formats_handled_prohibited() {

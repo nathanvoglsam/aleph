@@ -29,10 +29,10 @@
 
 use std::io::BufReader;
 
-use aleph_vk2dfd::vk2dfd;
 use aleph_vk_format::ALL_FORMATS;
+use aleph_vk2dfd::vk2dfd;
 
-use crate::{is_format_prohibited, KtxDocument, KtxReadError};
+use crate::{KtxDocument, KtxReadError, is_format_prohibited};
 
 static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &[u8] =
     include_bytes!("../test_images/cubemap_yokohama_astc_8x8_srgb.ktx2");

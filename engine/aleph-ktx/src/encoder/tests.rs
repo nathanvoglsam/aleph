@@ -32,8 +32,8 @@ use std::io::{Cursor, Read, Seek};
 use aleph_vk_format::VkFormat;
 
 use crate::{
-    calculate_set_index, DocumentType, KtxDocument, KtxDocumentDescription, KtxReadError,
-    SuperCompressionScheme, ENCODER_NAME,
+    DocumentType, ENCODER_NAME, KtxDocument, KtxDocumentDescription, KtxReadError,
+    SuperCompressionScheme, calculate_set_index,
 };
 
 #[test]

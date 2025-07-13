@@ -36,8 +36,8 @@ mod transfer_function;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use aleph_vk2dfd::{vk2dfd, LONGEST_DFD};
 use aleph_vk_format::VkFormat;
+use aleph_vk2dfd::{LONGEST_DFD, vk2dfd};
 use byteorder::{LittleEndian, ReadBytesExt};
 pub use channel_type::{
     ASTCChannelType, BC1ChannelType, BC2ChannelType, BC3ChannelType, BC4ChannelType,
@@ -86,10 +86,14 @@ pub enum DFDError {
     #[error("The descriptor does not match what the KTX's declare VkFormat claims it should be")]
     DescriptorFormatMismatch,
 
-    #[error("The `colorModel` value is not of the expected value for the format specified earlier. Got '{0}, {1}'.")]
+    #[error(
+        "The `colorModel` value is not of the expected value for the format specified earlier. Got '{0}, {1}'."
+    )]
     ColorModelMismatch(VkFormat, ColorModel),
 
-    #[error("The `transferFunction` value was not compatible with the format specified earlier. Got '{0}, {1}'.")]
+    #[error(
+        "The `transferFunction` value was not compatible with the format specified earlier. Got '{0}, {1}'."
+    )]
     TransferFunctionMismatch(VkFormat, TransferFunction),
 
     #[error("The block width (`texelBlockDimension0`) was invalid. Got '{0}'.")]
