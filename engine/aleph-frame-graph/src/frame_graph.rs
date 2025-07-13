@@ -150,7 +150,9 @@ impl<A: PassArgs> FrameGraph<A> {
         //
         // We could record in parallel by allocating command buffers ourselves and doing a parallel
         // iteration over the execution bundles list.
-        self.execute_pre_assertions(frame_index, import_bundle);
+        unsafe {
+            self.execute_pre_assertions(frame_index, import_bundle);
+        }
 
         let transient_bundle = &self.transient_bundles[frame_index];
         let linear_descriptor_pool = self.linear_descriptor_pools.get();
@@ -163,7 +165,9 @@ impl<A: PassArgs> FrameGraph<A> {
         //
         // Safety: It is up to the caller to ensure that none of the descriptors that were allocated
         //         into this pool were in use or can ever be used again.
-        linear_descriptor_pool.reset();
+        unsafe {
+            linear_descriptor_pool.reset();
+        }
 
         let resources = FrameGraphResources {
             device: self.device.as_ref(),
@@ -172,7 +176,9 @@ impl<A: PassArgs> FrameGraph<A> {
             linear_descriptor_pool: linear_descriptor_pool.as_ref(),
         };
 
-        encoder.begin_event(Color::BLUE, nstr!("FrameGraph::execute"));
+        unsafe {
+            encoder.begin_event(Color::BLUE, nstr!("FrameGraph::execute"));
+        }
 
         let mut graph_channel = GraphChannel {
             has_global_or_buffer_barrier: false,
@@ -234,7 +240,9 @@ impl<A: PassArgs> FrameGraph<A> {
                 } else {
                     &[]
                 };
-                encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
+                unsafe {
+                    encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
+                }
             }
 
             // Clear the texture objects from the graph channel now that we've issued the barriers
@@ -254,15 +262,17 @@ impl<A: PassArgs> FrameGraph<A> {
                     continue;
                 }
 
-                encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
-                {
-                    aleph_profile::scope_named!("FrameGraphPass", render_pass.name.as_ref());
+                unsafe {
+                    encoder.begin_event(Color::GREEN, render_pass.name.as_ref());
+                    {
+                        aleph_profile::scope_named!("FrameGraphPass", render_pass.name.as_ref());
 
-                    render_pass
-                        .pass
-                        .execute(encoder, &mut graph_channel, &resources, args);
+                        render_pass
+                            .pass
+                            .execute(encoder, &mut graph_channel, &resources, args);
+                    }
+                    encoder.end_event();
                 }
-                encoder.end_event();
             }
         }
 
@@ -279,11 +289,15 @@ impl<A: PassArgs> FrameGraph<A> {
                 } else {
                     &[]
                 };
-                encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
+                unsafe {
+                    encoder.resource_barrier(memory_barrier, &[], &texture_barriers);
+                }
             }
         }
 
-        encoder.end_event();
+        unsafe {
+            encoder.end_event();
+        }
 
         self.deletion_pools[frame_index]
             .descriptor_pools
@@ -424,10 +438,12 @@ impl<A: PassArgs> FrameGraph<A> {
                 let imported_resource = import_bundle.imports.get(v);
                 let transient_resource = transient_bundle.transients.get(v);
 
-                let name = root_resource
-                    .resource_type
-                    .name()
-                    .unwrap_or("Unnamed resource");
+                let name = unsafe {
+                    root_resource
+                        .resource_type
+                        .name()
+                        .unwrap_or("Unnamed resource")
+                };
 
                 let is_import = root_resource.resource_type.is_import();
                 assert!(
@@ -470,10 +486,12 @@ impl<A: PassArgs> FrameGraph<A> {
                 let v = u16::try_from(v).unwrap();
                 let imported_resource = import_bundle.imports.get(&v);
                 let transient_resource = transient_bundle.transients.get(&v);
-                let name = root_resource
-                    .resource_type
-                    .name()
-                    .unwrap_or("Unnamed resource");
+                let name = unsafe {
+                    root_resource
+                        .resource_type
+                        .name()
+                        .unwrap_or("Unnamed resource")
+                };
 
                 let is_exec = matches!(
                     &root_resource.resource_type,

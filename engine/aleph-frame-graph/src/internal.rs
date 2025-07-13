@@ -242,10 +242,12 @@ impl ResourceType {
     /// In our case these are allocated into the frame graph's bump arena so they remain valid as
     /// long as the arena is valid. Assuming you only ever access the string immutably.
     pub(crate) unsafe fn name(&self) -> Option<&str> {
-        match self {
-            ResourceType::Buffer(v) => v.desc.name.map(|v| v.as_ref()),
-            ResourceType::Texture(v) => v.desc.name.map(|v| v.as_ref()),
-            ResourceType::Execution(v) => v.name.map(|v| v.as_ref()),
+        unsafe {
+            match self {
+                ResourceType::Buffer(v) => v.desc.name.map(|v| v.as_ref()),
+                ResourceType::Texture(v) => v.desc.name.map(|v| v.as_ref()),
+                ResourceType::Execution(v) => v.name.map(|v| v.as_ref()),
+            }
         }
     }
 }
@@ -349,11 +351,7 @@ impl VersionIndex {
 
     pub const fn new(v: u32) -> Option<VersionIndex> {
         let v = Self(v);
-        if v.is_valid() {
-            Some(v)
-        } else {
-            None
-        }
+        if v.is_valid() { Some(v) } else { None }
     }
 
     pub const fn is_valid(&self) -> bool {

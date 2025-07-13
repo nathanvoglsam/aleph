@@ -60,8 +60,8 @@ use thiserror::Error;
 
 use crate::render_pass::{CallbackRenderPass, PassArgs};
 use crate::resource::ResourceId;
-use crate::{internal::*, GraphChannel};
 use crate::{FrameGraph, FrameGraphResources, IRenderPass, ResourceMut, ResourceRef};
+use crate::{GraphChannel, internal::*};
 
 #[derive(Error, Debug)]
 pub enum GraphBuildError {
