@@ -329,20 +329,24 @@ impl HiBitSet {
 
     #[inline]
     unsafe fn set_bit_in_level(level: &mut [u64], index: usize, shift: usize) {
-        let bit = 1 << shift;
-        *level.get_unchecked_mut(index) |= bit;
+        unsafe {
+            let bit = 1 << shift;
+            *level.get_unchecked_mut(index) |= bit;
+        }
     }
 
     #[inline]
     unsafe fn unset_bit_in_level(level: &mut [u64], index: usize, shift: usize) -> u64 {
-        let bit = 1 << shift;
-        let v = *level.get_unchecked_mut(index);
-        let v = v & !bit;
-        *level.get_unchecked_mut(index) = v;
+        unsafe {
+            let bit = 1 << shift;
+            let v = *level.get_unchecked_mut(index);
+            let v = v & !bit;
+            *level.get_unchecked_mut(index) = v;
 
-        // We return 'v' so callers can check if all the bits in a block are unset so we can update
-        // the acceleration hierarchy
-        v
+            // We return 'v' so callers can check if all the bits in a block are unset so we can update
+            // the acceleration hierarchy
+            v
+        }
     }
 
     const fn index_to_level_0_index(i: usize) -> usize {
