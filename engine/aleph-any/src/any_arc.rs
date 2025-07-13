@@ -211,7 +211,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     /// [unsized coercion]: https://doc.rust-lang.org/reference/type-coercions.html#unsized-coercions
     #[inline]
     pub unsafe fn from_raw(ptr: *const T) -> Self {
-        Self(Arc::from_raw(ptr))
+        unsafe { Self(Arc::from_raw(ptr)) }
     }
 
     /// Consumes the `AnyArc`, returning the wrapped pointer.

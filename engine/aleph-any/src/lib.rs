@@ -73,7 +73,7 @@ mod any_arc;
 #[cfg(test)]
 mod tests;
 
-pub use any::{box_downcast, box_downcast_unchecked, IAny, QueryInterface, TraitObject};
+pub use any::{IAny, QueryInterface, TraitObject, box_downcast, box_downcast_unchecked};
 pub use any_arc::{AnyArc, AnyWeak};
 
 /// This macro is used for implementing IAny for a concrete type. This will correctly generate the

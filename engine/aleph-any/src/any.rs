@@ -137,7 +137,9 @@ pub fn box_downcast<From: IAny + ?Sized, Into: IAny + Sized>(
 pub unsafe fn box_downcast_unchecked<From: IAny + ?Sized, Into: IAny + Sized>(
     v: Box<From>,
 ) -> Box<Into> {
-    debug_assert!(is_type_equal::<From, Into>(v.as_ref()));
-    let ptr = Box::into_raw(v);
-    Box::from_raw(ptr as *mut Into)
+    unsafe {
+        debug_assert!(is_type_equal::<From, Into>(v.as_ref()));
+        let ptr = Box::into_raw(v);
+        Box::from_raw(ptr as *mut Into)
+    }
 }
