@@ -59,26 +59,32 @@ pub type LibraryType = ();
 
 #[cfg(not(target_os = "ios"))]
 pub unsafe fn load() -> Option<(LibraryType, ash::Entry)> {
-    unsafe fn load_from(path: impl AsRef<std::ffi::OsStr>) -> Option<(LibraryType, ash::Entry)> {
-        let lib = LibraryType::new(path).ok()?;
+    unsafe {
+        unsafe fn load_from(
+            path: impl AsRef<std::ffi::OsStr>,
+        ) -> Option<(LibraryType, ash::Entry)> {
+            unsafe {
+                let lib = LibraryType::new(path).ok()?;
 
-        let static_fn = ash::StaticFn::load_checked(|name| {
-            lib.get(name.to_bytes_with_nul())
-                .map(|symbol| *symbol)
-                .unwrap_or(core::ptr::null_mut())
-        })
-        .ok()?;
+                let static_fn = ash::StaticFn::load_checked(|name| {
+                    lib.get(name.to_bytes_with_nul())
+                        .map(|symbol| *symbol)
+                        .unwrap_or(core::ptr::null_mut())
+                })
+                .ok()?;
 
-        Some((lib, ash::Entry::from_static_fn(static_fn)))
-    }
-
-    for lib in platform_library_search_stack() {
-        let result = load_from(lib);
-        if result.is_some() {
-            return result;
+                Some((lib, ash::Entry::from_static_fn(static_fn)))
+            }
         }
+
+        for lib in platform_library_search_stack() {
+            let result = load_from(lib);
+            if result.is_some() {
+                return result;
+            }
+        }
+        None
     }
-    None
 }
 
 #[cfg(target_os = "ios")]

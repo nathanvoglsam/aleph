@@ -60,24 +60,26 @@ pub struct Encoder<'a> {
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::CommandBuffer>(&self._buffer, out, target)
+        unsafe { try_clone_value_into_slot::<vk::CommandBuffer>(&self._buffer, out, target) }
     }
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
-        let concrete = GraphicsPipeline::get_owned(pipeline);
+        unsafe {
+            let concrete = GraphicsPipeline::get_owned(pipeline);
 
-        // Binds the pipeline
-        self._device.device.cmd_bind_pipeline(
-            self._buffer,
-            vk::PipelineBindPoint::GRAPHICS,
-            concrete.pipeline,
-        );
+            // Binds the pipeline
+            self._device.device.cmd_bind_pipeline(
+                self._buffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                concrete.pipeline,
+            );
 
-        // We need the currently bound pipeline while recording commands to access things like
-        // the pipeline layout for handling binding descriptors.
-        self.bound_graphics_pipeline = Some(concrete);
+            // We need the currently bound pipeline while recording commands to access things like
+            // the pipeline layout for handling binding descriptors.
+            self.bound_graphics_pipeline = Some(concrete);
+        }
     }
 
     unsafe fn bind_vertex_buffers(
@@ -95,12 +97,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 offsets.push(v.offset);
             }
 
-            self._device.device.cmd_bind_vertex_buffers(
-                self._buffer,
-                first_binding,
-                &buffers,
-                &offsets,
-            );
+            unsafe {
+                self._device.device.cmd_bind_vertex_buffers(
+                    self._buffer,
+                    first_binding,
+                    &buffers,
+                    &offsets,
+                );
+            }
         }
         self.arena.reset();
     }
@@ -117,12 +121,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             IndexType::U32 => vk::IndexType::UINT32,
         };
 
-        self._device.device.cmd_bind_index_buffer(
-            self._buffer,
-            buffer.buffer,
-            binding.offset,
-            index_type,
-        )
+        unsafe {
+            self._device.device.cmd_bind_index_buffer(
+                self._buffer,
+                buffer.buffer,
+                binding.offset,
+                index_type,
+            )
+        }
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
@@ -140,9 +146,11 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 );
             }
 
-            self._device
-                .device
-                .cmd_set_viewport(self._buffer, 0, &new_viewports);
+            unsafe {
+                self._device
+                    .device
+                    .cmd_set_viewport(self._buffer, 0, &new_viewports);
+            }
         }
 
         self.arena.reset();
@@ -160,9 +168,11 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 new_rects.push(rect);
             }
 
-            self._device
-                .device
-                .cmd_set_scissor(self._buffer, 0, &new_rects);
+            unsafe {
+                self._device
+                    .device
+                    .cmd_set_scissor(self._buffer, 0, &new_rects);
+            }
         }
 
         self.arena.reset();
@@ -178,24 +188,30 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let info = &pipeline_layout.push_constant_blocks[block_index];
 
-        self._device.device.cmd_push_constants(
-            self._buffer,
-            pipeline_layout.pipeline_layout,
-            info.stage_flags,
-            info.offset,
-            data,
-        )
+        unsafe {
+            self._device.device.cmd_push_constants(
+                self._buffer,
+                pipeline_layout.pipeline_layout,
+                info.stage_flags,
+                info.offset,
+                data,
+            )
+        }
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        self.begin_rendering_dynamic(info);
-        self.arena.reset();
+        unsafe {
+            self.begin_rendering_dynamic(info);
+            self.arena.reset();
+        }
     }
 
     unsafe fn end_rendering(&mut self) {
-        self._device
-            .dynamic_rendering
-            .cmd_end_rendering(self._buffer);
+        unsafe {
+            self._device
+                .dynamic_rendering
+                .cmd_end_rendering(self._buffer);
+        }
     }
 
     unsafe fn draw(
@@ -205,13 +221,15 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_vertex: u32,
         first_instance: u32,
     ) {
-        self._device.device.cmd_draw(
-            self._buffer,
-            vertex_count,
-            instance_count,
-            first_vertex,
-            first_instance,
-        )
+        unsafe {
+            self._device.device.cmd_draw(
+                self._buffer,
+                vertex_count,
+                instance_count,
+                first_vertex,
+                first_instance,
+            )
+        }
     }
 
     unsafe fn draw_indexed(
@@ -222,14 +240,16 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        self._device.device.cmd_draw_indexed(
-            self._buffer,
-            index_count,
-            instance_count,
-            first_index,
-            vertex_offset,
-            first_instance,
-        )
+        unsafe {
+            self._device.device.cmd_draw_indexed(
+                self._buffer,
+                index_count,
+                instance_count,
+                first_index,
+                vertex_offset,
+                first_instance,
+            )
+        }
     }
 }
 
@@ -238,11 +258,13 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         let concrete = ComputePipeline::get_owned(pipeline);
 
         // Binds the pipeline
-        self._device.device.cmd_bind_pipeline(
-            self._buffer,
-            vk::PipelineBindPoint::COMPUTE,
-            concrete.pipeline,
-        );
+        unsafe {
+            self._device.device.cmd_bind_pipeline(
+                self._buffer,
+                vk::PipelineBindPoint::COMPUTE,
+                concrete.pipeline,
+            );
+        }
 
         // We need the currently bound pipeline while recording commands to access things like
         // the pipeline layout for handling binding descriptors.
@@ -257,10 +279,10 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         sets: &[DescriptorSetHandle],
         dynamic_offsets: &[u32],
     ) {
-        {
-            let pipeline_layout = PipelineLayout::get(pipeline_layout);
-            let bind_point = pipeline_bind_point_to_vk(bind_point);
+        let pipeline_layout = PipelineLayout::get(pipeline_layout);
+        let bind_point = pipeline_bind_point_to_vk(bind_point);
 
+        unsafe {
             let new_sets: &[vk::DescriptorSet] = std::mem::transmute(sets);
 
             self._device.device.cmd_bind_descriptor_sets(
@@ -275,9 +297,14 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        self._device
-            .device
-            .cmd_dispatch(self._buffer, group_count_x, group_count_y, group_count_z);
+        unsafe {
+            self._device.device.cmd_dispatch(
+                self._buffer,
+                group_count_x,
+                group_count_y,
+                group_count_z,
+            );
+        }
     }
 }
 
@@ -288,12 +315,19 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
     ) {
-        if let Some(loader) = self._device.synchronization_2.clone() {
-            self.resource_barrier_sync2(&loader, global_barriers, buffer_barriers, texture_barriers)
-        } else {
-            self.resource_barrier_fallback(global_barriers, buffer_barriers, texture_barriers)
+        unsafe {
+            if let Some(loader) = self._device.synchronization_2.clone() {
+                self.resource_barrier_sync2(
+                    &loader,
+                    global_barriers,
+                    buffer_barriers,
+                    texture_barriers,
+                )
+            } else {
+                self.resource_barrier_fallback(global_barriers, buffer_barriers, texture_barriers)
+            }
+            self.arena.reset();
         }
-        self.arena.reset();
     }
 
     unsafe fn copy_buffer_regions(
@@ -316,9 +350,14 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 );
             }
 
-            self._device
-                .device
-                .cmd_copy_buffer(self._buffer, src.buffer, dst.buffer, &new_regions);
+            unsafe {
+                self._device.device.cmd_copy_buffer(
+                    self._buffer,
+                    src.buffer,
+                    dst.buffer,
+                    &new_regions,
+                );
+            }
         }
         self.arena.reset();
     }
@@ -359,13 +398,15 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 );
             }
 
-            self._device.device.cmd_copy_buffer_to_image(
-                self._buffer,
-                src.buffer,
-                dst.image,
-                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                &new_regions,
-            );
+            unsafe {
+                self._device.device.cmd_copy_buffer_to_image(
+                    self._buffer,
+                    src.buffer,
+                    dst.image,
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &new_regions,
+                );
+            }
         }
         self.arena.reset();
     }
@@ -414,14 +455,16 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 });
             }
 
-            self._device.device.cmd_copy_image(
-                self._buffer,
-                src.image,
-                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                dst.image,
-                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                &new_regions,
-            )
+            unsafe {
+                self._device.device.cmd_copy_image(
+                    self._buffer,
+                    src.image,
+                    vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                    dst.image,
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &new_regions,
+                )
+            }
         }
         self.arena.reset();
     }
@@ -432,7 +475,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let info = vk::DebugUtilsLabelEXT::default()
                 .label_name(message.to_cstr())
                 .color(color);
-            loader.cmd_insert_debug_utils_label(self._buffer, &info);
+            unsafe {
+                loader.cmd_insert_debug_utils_label(self._buffer, &info);
+            }
         }
         self.arena.reset();
     }
@@ -443,28 +488,30 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             let info = vk::DebugUtilsLabelEXT::default()
                 .label_name(message.to_cstr())
                 .color(color);
-            loader.cmd_begin_debug_utils_label(self._buffer, &info);
+            unsafe {
+                loader.cmd_begin_debug_utils_label(self._buffer, &info);
+            }
         }
         self.arena.reset();
     }
 
     unsafe fn end_event(&mut self) {
         if let Some(loader) = self._device.debug_loader.as_ref() {
-            loader.cmd_end_debug_utils_label(self._buffer)
+            unsafe { loader.cmd_end_debug_utils_label(self._buffer) }
         }
     }
 
     unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
         match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
-            ListState::Open => {
+            ListState::Open => unsafe {
                 self._device
                     .device
                     .end_command_buffer(self._buffer)
                     .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
                 self._parent.state = ListState::Closed;
                 Ok(())
-            }
+            },
             ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
         }
     }
@@ -475,7 +522,7 @@ impl<'a> Encoder<'a> {
         let mut color_attachments =
             BVec::with_capacity_in(info.color_attachments.len(), self.arena.allocator());
         for v in info.color_attachments {
-            let image_view: vk::ImageView = std::mem::transmute(v.image_view);
+            let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
 
             let mut info = vk::RenderingAttachmentInfo::default()
                 .image_view(image_view)
@@ -493,7 +540,7 @@ impl<'a> Encoder<'a> {
 
         let (depth_attachment, stencil_attachment) = if let Some(v) = info.depth_stencil_attachment
         {
-            let image_view: vk::ImageView = std::mem::transmute(v.image_view);
+            let image_view: vk::ImageView = unsafe { std::mem::transmute(v.image_view) };
 
             let depth_info = if !matches!(&v.depth_load_op, &AttachmentLoadOp::None) {
                 let mut info = vk::RenderingAttachmentInfo::default()
@@ -563,9 +610,11 @@ impl<'a> Encoder<'a> {
             info = info.stencil_attachment(v);
         }
 
-        self._device
-            .dynamic_rendering
-            .cmd_begin_rendering(self._buffer, &info);
+        unsafe {
+            self._device
+                .dynamic_rendering
+                .cmd_begin_rendering(self._buffer, &info);
+        }
     }
 
     unsafe fn resource_barrier_fallback(
@@ -657,15 +706,17 @@ impl<'a> Encoder<'a> {
             );
         }
 
-        self._device.device.cmd_pipeline_barrier(
-            self._buffer,
-            src_stage_mask,
-            dst_stage_mask,
-            vk::DependencyFlags::default(),
-            &translated_global_barriers,
-            &translated_buffer_barriers,
-            &translated_texture_barriers,
-        );
+        unsafe {
+            self._device.device.cmd_pipeline_barrier(
+                self._buffer,
+                src_stage_mask,
+                dst_stage_mask,
+                vk::DependencyFlags::default(),
+                &translated_global_barriers,
+                &translated_buffer_barriers,
+                &translated_texture_barriers,
+            );
+        }
     }
 
     unsafe fn resource_barrier_sync2(
@@ -751,6 +802,9 @@ impl<'a> Encoder<'a> {
             .memory_barriers(&translated_global_barriers)
             .buffer_memory_barriers(&translated_buffer_barriers)
             .image_memory_barriers(&translated_texture_barriers);
-        loader.cmd_pipeline_barrier2(self._buffer, &info);
+
+        unsafe {
+            loader.cmd_pipeline_barrier2(self._buffer, &info);
+        }
     }
 }

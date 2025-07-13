@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -52,7 +52,7 @@ declare_interfaces!(DescriptorPool, [IDescriptorPool]);
 
 impl IGetPlatformInterface for DescriptorPool {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(&self.descriptor_pool, out, target)
+        unsafe { try_clone_value_into_slot(&self.descriptor_pool, out, target) }
     }
 }
 
@@ -128,19 +128,23 @@ impl IDescriptorPool for DescriptorPool {
     }
 
     unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
-        let descriptor_sets =
-            core::slice::from_raw_parts(sets.as_ptr() as *const vk::DescriptorSet, sets.len());
-        self._device
-            .device
-            .free_descriptor_sets(self.descriptor_pool, descriptor_sets)
-            .unwrap()
+        unsafe {
+            let descriptor_sets =
+                core::slice::from_raw_parts(sets.as_ptr() as *const vk::DescriptorSet, sets.len());
+            self._device
+                .device
+                .free_descriptor_sets(self.descriptor_pool, descriptor_sets)
+                .unwrap()
+        }
     }
 
     unsafe fn reset(&mut self) {
-        self._device
-            .device
-            .reset_descriptor_pool(self.descriptor_pool, Default::default())
-            .unwrap();
+        unsafe {
+            self._device
+                .device
+                .reset_descriptor_pool(self.descriptor_pool, Default::default())
+                .unwrap();
+        }
     }
 }
 

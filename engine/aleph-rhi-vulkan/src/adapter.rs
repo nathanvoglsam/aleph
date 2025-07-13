@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::ffi::CStr;
 use std::mem::ManuallyDrop;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -56,7 +56,9 @@ declare_interfaces!(Adapter, [IAdapter]);
 
 impl IGetPlatformInterface for Adapter {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::PhysicalDevice>(&self.physical_device, out, target)
+        unsafe {
+            try_clone_value_into_slot::<vk::PhysicalDevice>(&self.physical_device, out, target)
+        }
     }
 }
 
@@ -377,22 +379,25 @@ impl<'a> FoundQueueFamilies<'a> {
     }
 
     unsafe fn build_queue_objects(&self, device: &mut Device) {
-        let device_loader = &device.device;
+        unsafe {
+            let device_loader = &device.device;
 
-        if let Some(info) = self.general.as_ref() {
-            let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
-            let queue = Queue::new(handle, device, QueueType::General, info.queue_info.clone());
-            device.general_queue = Some(queue);
-        }
-        if let Some(info) = self.compute.as_ref() {
-            let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
-            let queue = Queue::new(handle, device, QueueType::Compute, info.queue_info.clone());
-            device.compute_queue = Some(queue);
-        }
-        if let Some(info) = self.transfer.as_ref() {
-            let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
-            let queue = Queue::new(handle, device, QueueType::Transfer, info.queue_info.clone());
-            device.transfer_queue = Some(queue);
+            if let Some(info) = self.general.as_ref() {
+                let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
+                let queue = Queue::new(handle, device, QueueType::General, info.queue_info.clone());
+                device.general_queue = Some(queue);
+            }
+            if let Some(info) = self.compute.as_ref() {
+                let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
+                let queue = Queue::new(handle, device, QueueType::Compute, info.queue_info.clone());
+                device.compute_queue = Some(queue);
+            }
+            if let Some(info) = self.transfer.as_ref() {
+                let handle = device_loader.get_device_queue(info.queue_info.family_index, 0);
+                let queue =
+                    Queue::new(handle, device, QueueType::Transfer, info.queue_info.clone());
+                device.transfer_queue = Some(queue);
+            }
         }
     }
 }

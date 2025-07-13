@@ -59,27 +59,29 @@ unsafe extern "system" fn allocation(
     alignment: usize,
     _allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
-    let user_data = p_user_data.cast::<BlinkAlloc>();
-    let allocator = user_data.as_ref().unwrap_unchecked();
+    unsafe {
+        let user_data = p_user_data.cast::<BlinkAlloc>();
+        let allocator = user_data.as_ref().unwrap_unchecked();
 
-    let alignment = alignment.min(align_of::<Layout>());
-    let extra_capacity = size_of::<Layout>().max(alignment);
-    let size = size + extra_capacity;
+        let alignment = alignment.min(align_of::<Layout>());
+        let extra_capacity = size_of::<Layout>().max(alignment);
+        let size = size + extra_capacity;
 
-    let layout = Layout::from_size_align_unchecked(size, alignment);
-    let result = Allocator::allocate(allocator, layout);
+        let layout = Layout::from_size_align_unchecked(size, alignment);
+        let result = Allocator::allocate(allocator, layout);
 
-    match result {
-        Ok(v) => {
-            let v = v.cast::<u8>();
-            let object = v.as_ptr().add(extra_capacity);
+        match result {
+            Ok(v) => {
+                let v = v.cast::<u8>();
+                let object = v.as_ptr().add(extra_capacity);
 
-            let layout_ptr = object.sub(size_of::<Layout>());
-            layout_ptr.cast::<Layout>().write(layout);
+                let layout_ptr = object.sub(size_of::<Layout>());
+                layout_ptr.cast::<Layout>().write(layout);
 
-            object.cast()
+                object.cast()
+            }
+            Err(_err) => std::ptr::null_mut(),
         }
-        Err(_err) => std::ptr::null_mut(),
     }
 }
 
@@ -90,40 +92,44 @@ unsafe extern "system" fn reallocation(
     alignment: usize,
     allocation_scope: vk::SystemAllocationScope,
 ) -> *mut c_void {
-    let new_ptr = allocation(p_user_data, size, alignment, allocation_scope).cast::<u8>();
-    if !new_ptr.is_null() {
-        // Pull the layout from the block directly behind the allocation pointer
-        let ptr = p_original.cast::<Layout>().sub(1);
-        let old_layout = ptr.read();
+    unsafe {
+        let new_ptr = allocation(p_user_data, size, alignment, allocation_scope).cast::<u8>();
+        if !new_ptr.is_null() {
+            // Pull the layout from the block directly behind the allocation pointer
+            let ptr = p_original.cast::<Layout>().sub(1);
+            let old_layout = ptr.read();
 
-        // Copy old data to the new block, copying the smaller of either old size or new size so we
-        // don't overrun the buffer bounds
-        let src = p_original.cast::<u8>();
-        let count = old_layout.size().min(size);
-        new_ptr.copy_from(src, count);
+            // Copy old data to the new block, copying the smaller of either old size or new size so we
+            // don't overrun the buffer bounds
+            let src = p_original.cast::<u8>();
+            let count = old_layout.size().min(size);
+            new_ptr.copy_from(src, count);
 
-        // Free the original block
-        free(p_user_data, p_original);
+            // Free the original block
+            free(p_user_data, p_original);
 
-        new_ptr.cast()
-    } else {
-        std::ptr::null_mut()
+            new_ptr.cast()
+        } else {
+            std::ptr::null_mut()
+        }
     }
 }
 
 unsafe extern "system" fn free(p_user_data: *mut c_void, p_memory: *mut c_void) {
-    let user_data = p_user_data.cast::<BlinkAlloc>();
-    let allocator = user_data.as_ref().unwrap_unchecked();
+    unsafe {
+        let user_data = p_user_data.cast::<BlinkAlloc>();
+        let allocator = user_data.as_ref().unwrap_unchecked();
 
-    // Pull the layout from the block directly behind the allocation pointer
-    let ptr = p_memory.cast::<Layout>().sub(1);
-    let layout = ptr.read();
+        // Pull the layout from the block directly behind the allocation pointer
+        let ptr = p_memory.cast::<Layout>().sub(1);
+        let layout = ptr.read();
 
-    // Real pointer to send to the allocator is one 'extra_capacity' block back from the pointer we
-    // give out so we need to get the real pointer back
-    let alignment = layout.align().min(align_of::<Layout>());
-    let extra_capacity = size_of::<Layout>().max(alignment);
-    let real_ptr = p_memory.byte_sub(extra_capacity);
+        // Real pointer to send to the allocator is one 'extra_capacity' block back from the pointer we
+        // give out so we need to get the real pointer back
+        let alignment = layout.align().min(align_of::<Layout>());
+        let extra_capacity = size_of::<Layout>().max(alignment);
+        let real_ptr = p_memory.byte_sub(extra_capacity);
 
-    Allocator::deallocate(allocator, NonNull::new_unchecked(real_ptr).cast(), layout);
+        Allocator::deallocate(allocator, NonNull::new_unchecked(real_ptr).cast(), layout);
+    }
 }

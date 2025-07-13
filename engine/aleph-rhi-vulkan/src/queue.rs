@@ -33,7 +33,7 @@ use std::ptr;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
+use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use ash::vk;
@@ -119,7 +119,7 @@ impl IAny for Queue {
 
 impl IGetPlatformInterface for Queue {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<vk::Queue>(&self.handle, out, target)
+        unsafe { try_clone_value_into_slot::<vk::Queue>(&self.handle, out, target) }
     }
 }
 
@@ -344,7 +344,7 @@ impl IQueue for Queue {
             .command_buffers(&command_buffers)
             .push_next(&mut timeline_info);
 
-        {
+        unsafe {
             let _lock = self.submit_lock.lock();
             device
                 .device

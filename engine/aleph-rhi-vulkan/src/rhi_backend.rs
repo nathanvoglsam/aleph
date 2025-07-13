@@ -5,7 +5,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_any::AnyArc;
 use aleph_rhi_api::{ContextCreateError, IContext};
-use aleph_rhi_impl_utils::cstr;
 use ash::vk;
 use libloading::Library;
 
@@ -195,7 +194,7 @@ impl VulkanLoader {
                 settings.push(
                     vk::LayerSettingEXT::default()
                         .layer_name(VALIDATION_LAYER_NAME)
-                        .setting_name(cstr!("validate_sync"))
+                        .setting_name(c"validate_sync")
                         .values_bool(&VTRUE),
                 );
 
@@ -521,14 +520,14 @@ fn diff_lists<'a>(
 
 fn app_and_engine_info<'a>() -> vk::ApplicationInfo<'a> {
     vk::ApplicationInfo::default()
-        .application_name(cstr!("aleph-gpu"))
+        .application_name(c"aleph-gpu")
         .application_version(vk::make_api_version(
             0,
             aleph_rhi_api::API_VERSION_MAJOR.parse().unwrap(),
             aleph_rhi_api::API_VERSION_MINOR.parse().unwrap(),
             aleph_rhi_api::API_VERSION_PATCH.parse().unwrap(),
         ))
-        .engine_name(cstr!("aleph-gpu-vulkan"))
+        .engine_name(c"aleph-gpu-vulkan")
         .engine_version(vk::make_api_version(
             0,
             env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
@@ -591,7 +590,7 @@ impl Extensions {
     }
 }
 
-const VALIDATION_LAYER_NAME: &'static CStr = cstr!("VK_LAYER_KHRONOS_validation");
+const VALIDATION_LAYER_NAME: &'static CStr = c"VK_LAYER_KHRONOS_validation";
 
 #[allow(unused)]
 static VTRUE: [vk::Bool32; 1] = [vk::TRUE];

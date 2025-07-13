@@ -30,11 +30,10 @@
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
-use aleph_rhi_impl_utils::cstr;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
 use allocator_api2::vec::Vec as BVec;
@@ -211,7 +210,7 @@ impl IDevice for Device {
                 let info = vk::PipelineShaderStageCreateInfo::default()
                     .stage(shader_type_to_vk(shader_type))
                     .module(module)
-                    .name(cstr!("main"));
+                    .name(c"main");
                 stages.push(info);
             }
 
@@ -282,7 +281,7 @@ impl IDevice for Device {
                     vk::PipelineShaderStageCreateInfo::default()
                         .stage(vk::ShaderStageFlags::COMPUTE)
                         .module(module)
-                        .name(cstr!("main")),
+                        .name(c"main"),
                 );
 
             let pipeline = unsafe {
@@ -934,7 +933,7 @@ impl IDevice for Device {
                 let d_type = write.writes.descriptor_type();
                 let d_type = descriptor_type_to_vk(d_type);
                 let new_write = vk::WriteDescriptorSet::default()
-                    .dst_set(std::mem::transmute(write.set))
+                    .dst_set(unsafe { std::mem::transmute(write.set) })
                     .dst_binding(write.binding)
                     .dst_array_element(write.array_element)
                     .descriptor_type(d_type);
@@ -961,7 +960,7 @@ impl IDevice for Device {
                     | DescriptorWrites::Texture(v) => {
                         let translator = v.iter().map(|v| {
                             vk::DescriptorImageInfo::default()
-                                .image_view(std::mem::transmute(v.image_view))
+                                .image_view(unsafe { std::mem::transmute(v.image_view) })
                                 .image_layout(image_layout_to_vk(v.image_layout))
                         });
                         let mut image_infos = BVec::new_in(bump.allocator());
@@ -992,7 +991,7 @@ impl IDevice for Device {
                 descriptor_writes.push(new_write);
             }
 
-            self.device.update_descriptor_sets(&descriptor_writes, &[]);
+            unsafe { self.device.update_descriptor_sets(&descriptor_writes, &[]) };
         })
     }
 
@@ -1493,7 +1492,9 @@ pub struct FreeCommandList {
 
 impl FreeCommandList {
     pub unsafe fn collect(&self, device: &Device) {
-        device.device.destroy_command_pool(self.pool, None);
+        unsafe {
+            device.device.destroy_command_pool(self.pool, None);
+        }
     }
 }
 
@@ -1530,16 +1531,18 @@ impl CommandListPool {
     }
 
     pub unsafe fn collect(&self, device: &Device) {
-        while let Some(list) = self.general.pop() {
-            list.collect(device);
-        }
+        unsafe {
+            while let Some(list) = self.general.pop() {
+                list.collect(device);
+            }
 
-        while let Some(list) = self.compute.pop() {
-            list.collect(device);
-        }
+            while let Some(list) = self.compute.pop() {
+                list.collect(device);
+            }
 
-        while let Some(list) = self.transfer.pop() {
-            list.collect(device);
+            while let Some(list) = self.transfer.pop() {
+                list.collect(device);
+            }
         }
     }
 }

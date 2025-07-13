@@ -30,8 +30,8 @@
 use std::any::TypeId;
 use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
-use aleph_nstr::{nstr, NStr};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
@@ -149,12 +149,14 @@ impl ISwapChain for SwapChain {
         let loader = self.device.swapchain.as_ref().unwrap();
 
         let inner = self.inner.lock();
-        let result = loader.acquire_next_image(
-            inner.swap_chain,
-            u64::MAX,
-            semaphore.semaphore,
-            vk::Fence::null(),
-        );
+        let result = unsafe {
+            loader.acquire_next_image(
+                inner.swap_chain,
+                u64::MAX,
+                semaphore.semaphore,
+                vk::Fence::null(),
+            )
+        };
 
         match result {
             Ok((i, false)) => Ok(i),
@@ -238,17 +240,21 @@ impl SwapChain {
             .clipped(true);
         let swap_create_info = swap_create_info.push_next(&mut format_list);
 
-        inner.swap_chain = swapchain_loader
-            .create_swapchain(&swap_create_info, None)
-            .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+        inner.swap_chain = unsafe {
+            swapchain_loader
+                .create_swapchain(&swap_create_info, None)
+                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+        };
 
         if old_swapchain != vk::SwapchainKHR::null() {
-            swapchain_loader.destroy_swapchain(old_swapchain, None);
+            unsafe { swapchain_loader.destroy_swapchain(old_swapchain, None) };
         }
 
-        let images = swapchain_loader
-            .get_swapchain_images(inner.swap_chain)
-            .map_err(|e| log::error!("Platform Error: {:#?}", e))?;
+        let images = unsafe {
+            swapchain_loader
+                .get_swapchain_images(inner.swap_chain)
+                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+        };
 
         const SWAP_NAMES: [&'static NStr; 8] = [
             nstr!(obj_name!("SwapImage-0")),

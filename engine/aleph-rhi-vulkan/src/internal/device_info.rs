@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::ffi::{c_char, CStr};
+use std::ffi::{CStr, c_char};
 
 use ash::vk;
 
@@ -416,28 +416,30 @@ impl DeviceInfo {
         extensions: &[vk::ExtensionProperties],
         wanted: *const c_char,
     ) -> bool {
-        Self::list_contains_extension_cstr(extensions, CStr::from_ptr(wanted))
+        unsafe { Self::list_contains_extension_cstr(extensions, CStr::from_ptr(wanted)) }
     }
 
     unsafe fn list_contains_extension_cstr(
         extensions: &[vk::ExtensionProperties],
         wanted: &CStr,
     ) -> bool {
-        Self::list_contains_extension(extensions, wanted.to_str().unwrap_unchecked())
+        unsafe { Self::list_contains_extension(extensions, wanted.to_str().unwrap_unchecked()) }
     }
 
     unsafe fn list_contains_extension(
         extensions: &[vk::ExtensionProperties],
         wanted: &str,
     ) -> bool {
-        extensions
-            .iter()
-            .map(|v| {
-                CStr::from_ptr(v.extension_name.as_ptr())
-                    .to_str()
-                    .unwrap_unchecked()
-            })
-            .any(|v| v == wanted)
+        unsafe {
+            extensions
+                .iter()
+                .map(|v| {
+                    CStr::from_ptr(v.extension_name.as_ptr())
+                        .to_str()
+                        .unwrap_unchecked()
+                })
+                .any(|v| v == wanted)
+        }
     }
 }
 

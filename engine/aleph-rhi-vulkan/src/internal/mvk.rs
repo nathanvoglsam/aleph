@@ -29,7 +29,7 @@
 
 #![allow(unused)]
 
-use std::ffi::{c_char, CStr};
+use std::ffi::{CStr, c_char};
 use std::fmt::{Display, Formatter};
 use std::ptr::NonNull;
 
