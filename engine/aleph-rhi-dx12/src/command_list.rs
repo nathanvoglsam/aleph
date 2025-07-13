@@ -29,7 +29,7 @@
 
 use std::any::TypeId;
 
-use aleph_any::{declare_interfaces, AnyArc};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::Bump;
@@ -51,13 +51,15 @@ declare_interfaces!(CommandList, [ICommandList]);
 
 impl IGetPlatformInterface for CommandList {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        if try_clone_value_into_slot(&self.list, out, target).is_some() {
-            return Some(());
-        };
-        if try_clone_value_into_slot(&self.allocator, out, target).is_some() {
-            return Some(());
-        };
-        None
+        unsafe {
+            if try_clone_value_into_slot(&self.list, out, target).is_some() {
+                return Some(());
+            };
+            if try_clone_value_into_slot(&self.allocator, out, target).is_some() {
+                return Some(());
+            };
+            None
+        }
     }
 }
 

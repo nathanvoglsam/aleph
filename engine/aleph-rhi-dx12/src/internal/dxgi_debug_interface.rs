@@ -62,16 +62,18 @@ mod windows {
     }
 
     pub unsafe fn register_on_exit_callback() {
-        let _sink = atexit(exit_callback);
+        unsafe {
+            let _sink = atexit(exit_callback);
+        }
     }
 }
 
 #[cfg(all(target_os = "windows", not(target_vendor = "uwp")))]
 mod pc {
     use utf16_lit::utf16_null;
+    use windows::Win32::Foundation::*;
     use windows::core::Interface;
     use windows::utils::DynamicLoadCell;
-    use windows::Win32::Foundation::*;
 
     type PFN_DXGI_GET_DEBUG_INTERFACE = Option<
         extern "system" fn(
@@ -86,25 +88,27 @@ mod pc {
     pub unsafe fn dxgi_get_debug_interface<T: Interface>(
         enable_exit_callback: bool,
     ) -> windows::core::Result<T> {
-        if enable_exit_callback {
-            super::windows::register_on_exit_callback();
+        unsafe {
+            if enable_exit_callback {
+                super::windows::register_on_exit_callback();
+            }
+
+            let create_fn = CREATE_FN.get()?;
+            let create_fn = create_fn
+                .as_ref()
+                .ok_or(windows::core::Error::from(E_FAIL))?;
+
+            let mut result__ = None;
+            create_fn(&<T as Interface>::IID, &mut result__ as *mut _ as *mut _)
+                .map(|| result__.unwrap())
         }
-
-        let create_fn = CREATE_FN.get()?;
-        let create_fn = create_fn
-            .as_ref()
-            .ok_or(windows::core::Error::from(E_FAIL))?;
-
-        let mut result__ = None;
-        create_fn(&<T as Interface>::IID, &mut result__ as *mut _ as *mut _)
-            .map(|| result__.unwrap())
     }
 }
 
 #[cfg(all(target_os = "windows", target_vendor = "uwp"))]
 mod uwp {
-    use windows::core::Interface;
     use windows::Win32::Graphics::Dxgi::*;
+    use windows::core::Interface;
 
     pub unsafe fn dxgi_get_debug_interface<T: Interface>(
         enable_exit_callback: bool,

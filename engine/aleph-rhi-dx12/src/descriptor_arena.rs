@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use std::alloc::{handle_alloc_error, Layout, LayoutError};
+use std::alloc::{Layout, LayoutError, handle_alloc_error};
 use std::any::TypeId;
 use std::cell::Cell;
-use std::mem::{transmute, MaybeUninit};
+use std::mem::{MaybeUninit, transmute};
 use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use allocator_api2::alloc::{Allocator, Global};
@@ -119,9 +119,11 @@ impl IDescriptorArena for DescriptorArenaLinear {
     }
 
     unsafe fn reset(&self) {
-        self.descriptor_bump_index.set(0);
-        self.num_sets.set(0);
-        self.set_pool.reset_unchecked();
+        unsafe {
+            self.descriptor_bump_index.set(0);
+            self.num_sets.set(0);
+            self.set_pool.reset_unchecked();
+        }
     }
 }
 
@@ -383,7 +385,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
         let mut resource_pool = self.resource_pool.take().unwrap();
 
         for &handle in sets {
-            Self::deallocate_set(&mut resource_pool, handle);
+            unsafe { Self::deallocate_set(&mut resource_pool, handle) };
 
             let index = live_handles
                 .iter()
@@ -400,7 +402,9 @@ impl IDescriptorArena for DescriptorArenaHeap {
     }
 
     unsafe fn reset(&self) {
-        self.set_pool.reset_pool();
+        unsafe {
+            self.set_pool.reset_pool();
+        }
 
         let mut resource_pool = self.resource_pool.take().unwrap();
         resource_pool.reset();
@@ -421,7 +425,7 @@ impl DescriptorArenaHeap {
         let num_samplers = set_layout.sampler_tables.len();
         let num_resources = set_layout.resource_num;
 
-        let v = DescriptorSet::ptr_from_handle(handle).as_mut();
+        let v = unsafe { DescriptorSet::ptr_from_handle(handle).as_mut() };
         v._layout = NonNull::from(set_layout);
 
         if num_resources != 0 {
@@ -447,7 +451,8 @@ impl DescriptorArenaHeap {
                 Ok(v) => v,
                 Err(_) => handle_alloc_error(layout),
             };
-            let dynamic_cbs = std::slice::from_raw_parts(result.cast().as_ptr(), num_dynamic_cbs);
+            let dynamic_cbs =
+                unsafe { std::slice::from_raw_parts(result.cast().as_ptr(), num_dynamic_cbs) };
             v.dynamic_constant_buffers = NonNull::from(dynamic_cbs);
         } else {
             v.dynamic_constant_buffers = NonNull::from(&[])
@@ -460,7 +465,8 @@ impl DescriptorArenaHeap {
                 Ok(v) => v,
                 Err(_) => handle_alloc_error(layout),
             };
-            let samplers = std::slice::from_raw_parts(result.cast().as_ptr(), num_dynamic_cbs);
+            let samplers =
+                unsafe { std::slice::from_raw_parts(result.cast().as_ptr(), num_dynamic_cbs) };
             v.samplers = NonNull::from(samplers);
         } else {
             v.samplers = NonNull::from(&[])
@@ -470,29 +476,31 @@ impl DescriptorArenaHeap {
     }
 
     unsafe fn deallocate_set(resource_pool: &mut OffsetAllocator, handle: DescriptorSetHandle) {
-        let global_alloc = Global;
+        unsafe {
+            let global_alloc = Global;
 
-        let set = DescriptorSet::ptr_from_handle(handle).as_mut();
+            let set = DescriptorSet::ptr_from_handle(handle).as_mut();
 
-        let dynamic_cbs = set.dynamic_constant_buffers.as_ref();
-        if !dynamic_cbs.is_empty() {
-            let layout = Layout::for_value(dynamic_cbs);
-            global_alloc.deallocate(set.dynamic_constant_buffers.cast(), layout);
+            let dynamic_cbs = set.dynamic_constant_buffers.as_ref();
+            if !dynamic_cbs.is_empty() {
+                let layout = Layout::for_value(dynamic_cbs);
+                global_alloc.deallocate(set.dynamic_constant_buffers.cast(), layout);
+            }
+
+            let samplers = set.samplers.as_ref();
+            if !samplers.is_empty() {
+                let layout = Layout::for_value(samplers);
+                global_alloc.deallocate(set.samplers.cast(), layout);
+            }
+
+            if !set.resource_allocation.is_fail() {
+                resource_pool.free(set.resource_allocation);
+                set.resource_allocation = Default::default();
+            }
+
+            set.resource_handle_cpu = None;
+            set.resource_handle_gpu = None;
         }
-
-        let samplers = set.samplers.as_ref();
-        if !samplers.is_empty() {
-            let layout = Layout::for_value(samplers);
-            global_alloc.deallocate(set.samplers.cast(), layout);
-        }
-
-        if !set.resource_allocation.is_fail() {
-            resource_pool.free(set.resource_allocation);
-            set.resource_allocation = Default::default();
-        }
-
-        set.resource_handle_cpu = None;
-        set.resource_handle_gpu = None;
     }
 }
 

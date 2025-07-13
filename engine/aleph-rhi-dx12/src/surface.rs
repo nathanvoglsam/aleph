@@ -29,7 +29,7 @@
 
 use std::any::TypeId;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 use raw_window_handle::{HandleError, HasWindowHandle, RawWindowHandle, WindowHandle};
@@ -153,10 +153,12 @@ impl Surface {
         };
 
         // Create the actual swap chain object
-        let swap_chain = unsafe {
+        let swap_chain = {
             let factory = self.context.factory.as_ref().unwrap().lock();
-            dxgi_create_swap_chain(&factory, &queue, self, &desc)
-                .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+            unsafe {
+                dxgi_create_swap_chain(&factory, &queue, self, &desc)
+                    .map_err(|e| log::error!("Platform Error: {:#?}", e))?
+            }
         };
 
         let inner = SwapChainState {
@@ -175,7 +177,7 @@ impl Surface {
             acquired: Default::default(),
         });
 
-        {
+        unsafe {
             let mut state = swap_chain.inner.lock();
             swap_chain
                 .recreate_swap_images(&mut state, desc.BufferCount)

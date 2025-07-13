@@ -31,9 +31,9 @@
 #![warn(unused_imports)]
 
 use utf16_lit::utf16_null;
+use windows::Win32::Graphics::Direct3D12::*;
 use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
-use windows::Win32::Graphics::Direct3D12::*;
 
 pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
     DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12GetDebugInterface\0");
@@ -44,24 +44,28 @@ pub struct DebugInterface(pub(crate) ID3D12Debug);
 impl DebugInterface {
     #[inline]
     pub unsafe fn new() -> windows::core::Result<Self> {
-        let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
-        let mut debug: Option<ID3D12Debug> = None;
-        let ptr = &mut debug;
-        let ptr = ptr as *mut Option<ID3D12Debug>;
-        let ptr = ptr as *mut *mut ::std::ffi::c_void;
-        create_fn(&ID3D12Debug::IID, ptr).map(|| Self(debug.unwrap()))
+        unsafe {
+            let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
+            let mut debug: Option<ID3D12Debug> = None;
+            let ptr = &mut debug;
+            let ptr = ptr as *mut Option<ID3D12Debug>;
+            let ptr = ptr as *mut *mut ::std::ffi::c_void;
+            create_fn(&ID3D12Debug::IID, ptr).map(|| Self(debug.unwrap()))
+        }
     }
 
     #[inline]
     pub unsafe fn enable_debug_layer(&self) {
-        self.0.EnableDebugLayer()
+        unsafe { self.0.EnableDebugLayer() }
     }
 
     #[inline]
     pub unsafe fn set_enable_gpu_validation(&self, enable: bool) -> windows::core::Result<()> {
-        let casted = self.0.cast::<ID3D12Debug1>()?;
-        casted.SetEnableGPUBasedValidation(enable);
-        Ok(())
+        unsafe {
+            let casted = self.0.cast::<ID3D12Debug1>()?;
+            casted.SetEnableGPUBasedValidation(enable);
+            Ok(())
+        }
     }
 
     #[inline]
@@ -69,9 +73,11 @@ impl DebugInterface {
         &self,
         enable: bool,
     ) -> windows::core::Result<()> {
-        let casted = self.0.cast::<ID3D12Debug1>()?;
-        casted.SetEnableSynchronizedCommandQueueValidation(enable);
-        Ok(())
+        unsafe {
+            let casted = self.0.cast::<ID3D12Debug1>()?;
+            casted.SetEnableSynchronizedCommandQueueValidation(enable);
+            Ok(())
+        }
     }
 }
 

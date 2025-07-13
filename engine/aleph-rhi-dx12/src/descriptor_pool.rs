@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use std::alloc::{handle_alloc_error, Layout};
+use std::alloc::{Layout, handle_alloc_error};
 use std::any::TypeId;
 use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-use aleph_any::{declare_interfaces, AnyArc};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use allocator_api2::alloc::Allocator;
@@ -224,9 +224,11 @@ impl IDescriptorPool for DescriptorPool {
     }
 
     unsafe fn reset(&mut self) {
-        self.set_pool.reset_pool();
-        self.set_array_pool.reset_unchecked();
-        self.descriptor_bump_index = 0;
+        unsafe {
+            self.set_pool.reset_pool();
+            self.set_array_pool.reset_unchecked();
+            self.descriptor_bump_index = 0;
+        }
     }
 }
 

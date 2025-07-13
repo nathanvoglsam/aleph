@@ -28,9 +28,9 @@
 //
 
 use utf16_lit::utf16_null;
-use windows::core::{Interface, GUID};
-use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::{GUID, Interface};
+use windows::utils::DynamicLoadCell;
 
 type CreateFn =
     extern "system" fn(u32, *const GUID, *mut *mut ::std::ffi::c_void) -> windows::core::HRESULT;

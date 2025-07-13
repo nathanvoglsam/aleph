@@ -36,8 +36,8 @@ use std::sync::Arc;
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
-use bumpalo::collections::Vec as BumpVec;
 use bumpalo::Bump;
+use bumpalo::collections::Vec as BumpVec;
 use pix::{begin_event_cstr_on_list, end_event_on_list, set_marker_cstr_on_list};
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -69,40 +69,42 @@ pub struct Encoder<'a> {
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<ID3D12GraphicsCommandList7>(&self._list, out, target)
+        unsafe { try_clone_value_into_slot::<ID3D12GraphicsCommandList7>(&self._list, out, target) }
     }
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &GraphicsPipelineHandle) {
-        let concrete = GraphicsPipeline::get_owned(pipeline);
+        unsafe {
+            let concrete = GraphicsPipeline::get_owned(pipeline);
 
-        // Binds the pipeline
-        self._list.SetPipelineState(&concrete.pipeline);
+            // Binds the pipeline
+            self._list.SetPipelineState(&concrete.pipeline);
 
-        // A pipeline is inseparable from its' root signature so we need to bind it here too
-        self._list
-            .SetGraphicsRootSignature(&concrete.pipeline_layout.root_signature);
+            // A pipeline is inseparable from its' root signature so we need to bind it here too
+            self._list
+                .SetGraphicsRootSignature(&concrete.pipeline_layout.root_signature);
 
-        // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
-        // defers the full specification to this call below. Vulkan can't implement D3D12's
-        // behavior so we have to be like vulkan here so we also set the primitive topology
-        self._list
-            .IASetPrimitiveTopology(concrete.primitive_topology);
+            // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
+            // defers the full specification to this call below. Vulkan can't implement D3D12's
+            // behavior so we have to be like vulkan here so we also set the primitive topology
+            self._list
+                .IASetPrimitiveTopology(concrete.primitive_topology);
 
-        if let Some((min, max)) = concrete.depth_bounds {
-            self._list.OMSetDepthBounds(min, max);
+            if let Some((min, max)) = concrete.depth_bounds {
+                self._list.OMSetDepthBounds(min, max);
+            }
+
+            // Update the state for input binding strides. These get read when binding vertex
+            // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
+            // d3d12 takes them in 'IASetVertexBuffers'.
+            self.input_binding_strides = concrete.input_binding_strides;
+
+            // We need the currently bound pipeline while recording commands to access things like
+            // the pipeline layout for handling binding descriptors.
+            self.bound_graphics_pipeline = Some(concrete);
+            self.bound_graphics_sets.iter_mut().for_each(|v| *v = None);
         }
-
-        // Update the state for input binding strides. These get read when binding vertex
-        // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
-        // d3d12 takes them in 'IASetVertexBuffers'.
-        self.input_binding_strides = concrete.input_binding_strides;
-
-        // We need the currently bound pipeline while recording commands to access things like
-        // the pipeline layout for handling binding descriptors.
-        self.bound_graphics_pipeline = Some(concrete);
-        self.bound_graphics_sets.iter_mut().for_each(|v| *v = None);
     }
 
     unsafe fn bind_vertex_buffers(
@@ -128,7 +130,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             views.push(view);
         }
 
-        self._list.IASetVertexBuffers(first_binding, Some(&views));
+        unsafe {
+            self._list.IASetVertexBuffers(first_binding, Some(&views));
+        }
     }
 
     unsafe fn bind_index_buffer(
@@ -151,7 +155,10 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 IndexType::U32 => DXGI_FORMAT_R32_UINT,
             },
         };
-        self._list.IASetIndexBuffer(Some(&view));
+
+        unsafe {
+            self._list.IASetIndexBuffer(Some(&view));
+        }
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
@@ -168,7 +175,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             });
         }
 
-        self._list.RSSetViewports(&new_viewports);
+        unsafe {
+            self._list.RSSetViewports(&new_viewports);
+        }
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
@@ -182,7 +191,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             });
         }
 
-        self._list.RSSetScissorRects(&new_rects);
+        unsafe {
+            self._list.RSSetScissorRects(&new_rects);
+        }
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
@@ -196,12 +207,15 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let num32_bit_values_to_set = (data.len() / 4) as u32;
         let p_src_data = data.as_ptr();
-        self._list.SetGraphicsRoot32BitConstants(
-            block.root_parameter_index,
-            num32_bit_values_to_set,
-            p_src_data as *const _,
-            0,
-        );
+
+        unsafe {
+            self._list.SetGraphicsRoot32BitConstants(
+                block.root_parameter_index,
+                num32_bit_values_to_set,
+                p_src_data as *const _,
+                0,
+            );
+        }
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
@@ -209,17 +223,19 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             BumpVec::with_capacity_in(info.color_attachments.len(), &self.arena);
 
         for attachment in info.color_attachments {
-            let view = std::mem::transmute::<_, *const ImageViewObject>(attachment.image_view);
-            let descriptor = (*view).handle;
-            let format = (*view).format;
-            color_attachments.push(translate_rendering_color_attachment(
-                attachment,
-                descriptor,
-                Some(format),
-            ));
+            unsafe {
+                let view = std::mem::transmute::<_, *const ImageViewObject>(attachment.image_view);
+                let descriptor = (*view).handle;
+                let format = (*view).format;
+                color_attachments.push(translate_rendering_color_attachment(
+                    attachment,
+                    descriptor,
+                    Some(format),
+                ));
+            }
         }
 
-        let depth_stencil = info.depth_stencil_attachment.map(|attachment| {
+        let depth_stencil = info.depth_stencil_attachment.map(|attachment| unsafe {
             let view = std::mem::transmute::<_, *const ImageViewObject>(attachment.image_view);
             let descriptor = (*view).handle;
             let format = (*view).format;
@@ -237,12 +253,16 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             D3D12_RENDER_PASS_FLAG_NONE
         };
 
-        self._list
-            .BeginRenderPass(Some(&color_attachments), Some(depth_stencil_ref), flags);
+        unsafe {
+            self._list
+                .BeginRenderPass(Some(&color_attachments), Some(depth_stencil_ref), flags);
+        }
     }
 
     unsafe fn end_rendering(&mut self) {
-        self._list.EndRenderPass();
+        unsafe {
+            self._list.EndRenderPass();
+        }
     }
 
     unsafe fn draw(
@@ -252,8 +272,10 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_vertex: u32,
         first_instance: u32,
     ) {
-        self._list
-            .DrawInstanced(vertex_count, instance_count, first_vertex, first_instance)
+        unsafe {
+            self._list
+                .DrawInstanced(vertex_count, instance_count, first_vertex, first_instance)
+        }
     }
 
     unsafe fn draw_indexed(
@@ -264,31 +286,35 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        self._list.DrawIndexedInstanced(
-            index_count,
-            instance_count,
-            first_index,
-            vertex_offset,
-            first_instance,
-        )
+        unsafe {
+            self._list.DrawIndexedInstanced(
+                index_count,
+                instance_count,
+                first_index,
+                vertex_offset,
+                first_instance,
+            )
+        }
     }
 }
 
 impl<'a> IComputeEncoder for Encoder<'a> {
     unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle) {
-        let concrete = ComputePipeline::get_owned(pipeline);
+        unsafe {
+            let concrete = ComputePipeline::get_owned(pipeline);
 
-        // Binds the pipeline
-        self._list.SetPipelineState(&concrete.pipeline);
+            // Binds the pipeline
+            self._list.SetPipelineState(&concrete.pipeline);
 
-        // A pipeline is inseparable from its' root signature so we need to bind it here too
-        self._list
-            .SetComputeRootSignature(&concrete.pipeline_layout.root_signature);
+            // A pipeline is inseparable from its' root signature so we need to bind it here too
+            self._list
+                .SetComputeRootSignature(&concrete.pipeline_layout.root_signature);
 
-        // We need the currently bound pipeline while recording commands to access things like
-        // the pipeline layout for handling binding descriptors.
-        self.bound_compute_pipeline = Some(concrete);
-        self.bound_compute_sets.iter_mut().for_each(|v| *v = None);
+            // We need the currently bound pipeline while recording commands to access things like
+            // the pipeline layout for handling binding descriptors.
+            self.bound_compute_pipeline = Some(concrete);
+            self.bound_compute_sets.iter_mut().for_each(|v| *v = None);
+        }
     }
 
     unsafe fn bind_descriptor_sets(
@@ -316,7 +342,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             // Safety: No checks, all up to the caller to ensure this is safe
             let v: NonNull<()> = (*set).into();
             let v: NonNull<DescriptorSet> = v.cast();
-            let v = v.as_ref();
+            let v = unsafe { v.as_ref() };
 
             // Computes the index of the set within the pipeline layout.
             let set_global_index = first_set as usize + set_index;
@@ -326,7 +352,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
             // We always place dynamic constant buffers before the tables in the root signature so
             // they get treated as 'higher priority'
-            let dynamic_constant_buffers = v.dynamic_constant_buffers.as_ref();
+            let dynamic_constant_buffers = unsafe { v.dynamic_constant_buffers.as_ref() };
 
             // Create a sub-slice of the dynamic offsets list that contains the offsets that
             // apply for the current descriptor set
@@ -337,7 +363,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             for (&dynamic_cb, &offset) in dynamic_constant_buffers.iter().zip(set_dynamic_offsets) {
                 let offset = offset as u64;
                 let dynamic_cb = dynamic_cb + offset;
-                dynamic_bind_fn(self, param_index, dynamic_cb);
+                unsafe { dynamic_bind_fn(self, param_index, dynamic_cb) };
             }
 
             // Consume the offsets we just updated ready for the next set
@@ -355,7 +381,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                 // slot
                 let mut param_index = param_index + dynamic_constant_buffers.len() as u32;
                 if let Some(handle) = v.resource_handle_gpu {
-                    bind_fn(self, param_index, handle.into());
+                    unsafe { bind_fn(self, param_index, handle.into()) };
 
                     // Increment the param index, as the samplers will always be placed in the following
                     // root parameter indices.
@@ -364,17 +390,19 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
                 // Next we bind the samplers, which are separated out and bound as one table for each
                 // sampler to work around limits making a single table of samplers impractical.
-                let samplers = v.samplers.as_ref();
+                let samplers = unsafe { v.samplers.as_ref() };
                 for (i, sampler) in samplers.iter().cloned().enumerate() {
-                    bind_fn(self, param_index + i as u32, sampler.unwrap().into());
+                    unsafe { bind_fn(self, param_index + i as u32, sampler.unwrap().into()) };
                 }
             }
         }
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        self._list
-            .Dispatch(group_count_x, group_count_y, group_count_z);
+        unsafe {
+            self._list
+                .Dispatch(group_count_x, group_count_y, group_count_z);
+        }
     }
 }
 
@@ -424,7 +452,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
                     AccessBefore: barrier_access_to_dx12(barrier.before_access),
                     AccessAfter: barrier_access_to_dx12(barrier.after_access),
-                    pResource: transmute_copy(&resource.resource),
+                    pResource: unsafe { transmute_copy(&resource.resource) },
                     Offset: barrier.offset,
                     Size: barrier.size,
                 });
@@ -486,7 +514,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     AccessAfter: access_after,
                     LayoutBefore: layout_before,
                     LayoutAfter: layout_after,
-                    pResource: transmute_copy(&texture.resource),
+                    pResource: unsafe { transmute_copy(&texture.resource) },
                     Subresources: D3D12_BARRIER_SUBRESOURCE_RANGE {
                         IndexOrFirstMipLevel: barrier.subresource_range.base_mip_level,
                         NumMipLevels: barrier.subresource_range.num_mip_levels,
@@ -507,7 +535,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             });
         }
 
-        self._list.Barrier(&barrier_groups);
+        unsafe {
+            self._list.Barrier(&barrier_groups);
+        }
     }
 
     unsafe fn copy_buffer_regions(
@@ -520,13 +550,15 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         let dst = Buffer::get(dst);
 
         for region in regions {
-            self._list.CopyBufferRegion(
-                dst.resource.deref(),
-                region.dst_offset,
-                src.resource.deref(),
-                region.src_offset,
-                region.size,
-            );
+            unsafe {
+                self._list.CopyBufferRegion(
+                    dst.resource.deref(),
+                    region.dst_offset,
+                    src.resource.deref(),
+                    region.src_offset,
+                    region.size,
+                );
+            }
         }
     }
 
@@ -587,21 +619,23 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             dst_location.Anonymous.SubresourceIndex = index.unwrap_or(0);
 
             // Translate the source layout description to D3D12's 'subresource footprint'
-            let footprint = &mut src_location.Anonymous.PlacedFootprint;
+            let footprint = unsafe { &mut src_location.Anonymous.PlacedFootprint };
             footprint.Offset = region.src.offset;
             footprint.Footprint.Width = region.src.extent.width;
             footprint.Footprint.Height = region.src.extent.height;
             footprint.Footprint.Depth = region.src.extent.depth;
             footprint.Footprint.RowPitch = region.src.row_pitch * bytes_per_element;
 
-            self._list.CopyTextureRegion(
-                &dst_location,
-                region.dst.origin.x,
-                region.dst.origin.y,
-                region.dst.origin.z,
-                &src_location,
-                Some(&src_box),
-            );
+            unsafe {
+                self._list.CopyTextureRegion(
+                    &dst_location,
+                    region.dst.origin.x,
+                    region.dst.origin.y,
+                    region.dst.origin.z,
+                    &src_location,
+                    Some(&src_box),
+                );
+            }
         }
     }
 
@@ -654,41 +688,51 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 back: region.src.offset.z + region.extent.depth,
             };
 
-            self._list.CopyTextureRegion(
-                &dst,
-                region.dst.offset.x,
-                region.dst.offset.y,
-                region.dst.offset.z,
-                &src,
-                Some(&src_box),
-            );
+            unsafe {
+                self._list.CopyTextureRegion(
+                    &dst,
+                    region.dst.offset.x,
+                    region.dst.offset.y,
+                    region.dst.offset.z,
+                    &src,
+                    Some(&src_box),
+                );
+            }
         }
     }
 
     unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {
-        match self._parent.state {
-            ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
-            ListState::Open => {
-                self._list
-                    .Close()
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-                self._parent.state = ListState::Closed;
-                Ok(())
+        unsafe {
+            match self._parent.state {
+                ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
+                ListState::Open => {
+                    self._list
+                        .Close()
+                        .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                    self._parent.state = ListState::Closed;
+                    Ok(())
+                }
+                ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
             }
-            ListState::Closed => Err(CommandListCloseError::AlreadyClosed),
         }
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        set_marker_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
+        unsafe {
+            set_marker_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
+        }
     }
 
     unsafe fn begin_event(&mut self, color: Color, message: &aleph_nstr::NStr) {
-        begin_event_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
+        unsafe {
+            begin_event_cstr_on_list(&self._list, color.0.into(), message.to_cstr());
+        }
     }
 
     unsafe fn end_event(&mut self) {
-        end_event_on_list(&self._list);
+        unsafe {
+            end_event_on_list(&self._list);
+        }
     }
 }
 
@@ -749,18 +793,22 @@ unsafe fn set_compute_root_constant_buffer_view(
     rootparameterindex: u32,
     buffer_location: u64,
 ) {
-    encoder
-        ._list
-        .SetComputeRootConstantBufferView(rootparameterindex, buffer_location)
+    unsafe {
+        encoder
+            ._list
+            .SetComputeRootConstantBufferView(rootparameterindex, buffer_location)
+    }
 }
 unsafe fn set_graphics_root_constant_buffer_view(
     encoder: &Encoder,
     rootparameterindex: u32,
     buffer_location: u64,
 ) {
-    encoder
-        ._list
-        .SetGraphicsRootConstantBufferView(rootparameterindex, buffer_location)
+    unsafe {
+        encoder
+            ._list
+            .SetGraphicsRootConstantBufferView(rootparameterindex, buffer_location)
+    }
 }
 
 unsafe fn set_compute_descriptor_table(
@@ -768,16 +816,20 @@ unsafe fn set_compute_descriptor_table(
     rootparameterindex: u32,
     basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
 ) {
-    encoder
-        ._list
-        .SetComputeRootDescriptorTable(rootparameterindex, basedescriptor)
+    unsafe {
+        encoder
+            ._list
+            .SetComputeRootDescriptorTable(rootparameterindex, basedescriptor)
+    }
 }
 unsafe fn set_graphics_descriptor_table(
     encoder: &Encoder,
     rootparameterindex: u32,
     basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
 ) {
-    encoder
-        ._list
-        .SetGraphicsRootDescriptorTable(rootparameterindex, basedescriptor)
+    unsafe {
+        encoder
+            ._list
+            .SetGraphicsRootDescriptorTable(rootparameterindex, basedescriptor)
+    }
 }

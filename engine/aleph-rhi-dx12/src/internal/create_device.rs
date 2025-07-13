@@ -28,11 +28,11 @@
 //
 
 use utf16_lit::utf16_null;
-use windows::core::{IUnknown, Interface};
-use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::{IUnknown, Interface};
+use windows::utils::DynamicLoadCell;
 
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
     DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");

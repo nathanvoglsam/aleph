@@ -32,18 +32,18 @@ use std::ffi::c_void;
 use std::ops::Deref;
 use std::ptr::NonNull;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conv::pci_id_to_vendor;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use parking_lot::Mutex;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
-use windows::core::Interface;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::Interface;
 
 use crate::adapter::Adapter;
 use crate::internal::adapter_description_decoder::adapter_description_string;
@@ -65,19 +65,21 @@ declare_interfaces!(Context, [IContext]);
 
 impl IGetPlatformInterface for Context {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        let factory = self.factory.as_ref().unwrap().lock();
-        if try_clone_value_into_slot::<IDXGIFactory2>(factory.deref(), out, target).is_some() {
-            return Some(());
-        };
-
-        if let Some(debug) = self.dxgi_debug.as_ref() {
-            let lock = debug.lock();
-            if try_clone_value_into_slot::<IDXGIDebug>(lock.deref(), out, target).is_some() {
+        unsafe {
+            let factory = self.factory.as_ref().unwrap().lock();
+            if try_clone_value_into_slot::<IDXGIFactory2>(factory.deref(), out, target).is_some() {
                 return Some(());
             };
-        }
 
-        None
+            if let Some(debug) = self.dxgi_debug.as_ref() {
+                let lock = debug.lock();
+                if try_clone_value_into_slot::<IDXGIDebug>(lock.deref(), out, target).is_some() {
+                    return Some(());
+                };
+            }
+
+            None
+        }
     }
 }
 
@@ -171,11 +173,7 @@ impl Context {
             failed = true;
         }
 
-        if failed {
-            None
-        } else {
-            Some(())
-        }
+        if failed { None } else { Some(()) }
     }
 
     fn adapter_meets_requirements(

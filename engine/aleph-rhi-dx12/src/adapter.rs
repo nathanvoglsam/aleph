@@ -30,7 +30,7 @@
 use std::any::TypeId;
 use std::ops::Deref;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
@@ -69,7 +69,7 @@ declare_interfaces!(Adapter, [IAdapter]);
 
 impl IGetPlatformInterface for Adapter {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot(self.adapter.lock().deref(), out, target)
+        unsafe { try_clone_value_into_slot(self.adapter.lock().deref(), out, target) }
     }
 }
 

@@ -28,21 +28,21 @@
 //
 
 use std::any::TypeId;
-use std::mem::{size_of, ManuallyDrop};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::mem::{ManuallyDrop, size_of};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::{manually_drop, try_clone_value_into_slot};
 use bumpalo::Bump;
 use parking_lot::Mutex;
-use windows::core::IUnknown;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::IUnknown;
 
 use crate::device::Device;
 use crate::internal::set_name::set_name;
@@ -64,7 +64,7 @@ declare_interfaces!(SwapChain, [ISwapChain]);
 
 impl IGetPlatformInterface for SwapChain {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<IDXGISwapChain4>(&self.swap_chain, out, target)
+        unsafe { try_clone_value_into_slot::<IDXGISwapChain4>(&self.swap_chain, out, target) }
     }
 }
 
@@ -84,7 +84,7 @@ impl SwapChain {
         use ResourceUsageFlags as F;
         state.textures.clear();
         for i in 0..count {
-            let resource = self.swap_chain.GetBuffer::<ID3D12Resource>(i)?;
+            let resource = unsafe { self.swap_chain.GetBuffer::<ID3D12Resource>(i)? };
             set_name(&resource, &format!("SwapImage-{i}"))?;
             let desc = TextureDesc {
                 width: state.config.width,
@@ -149,19 +149,20 @@ impl SwapChain {
         static NODE_MASKS: [u32; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         let p_creation_node_mask = NODE_MASKS.as_ptr();
 
-        // Arg unpack
-        let pp_present_queue = queues.as_ptr() as *mut ID3D12CommandQueue;
-        let pp_present_queue = pp_present_queue as *mut Option<IUnknown>;
-
-        self.swap_chain.ResizeBuffers1(
-            buffer_count,
-            width,
-            height,
-            format,
-            flags,
-            p_creation_node_mask,
-            pp_present_queue,
-        )
+        unsafe {
+            // Arg unpack
+            let pp_present_queue = queues.as_ptr() as *mut ID3D12CommandQueue;
+            let pp_present_queue = pp_present_queue as *mut Option<IUnknown>;
+            self.swap_chain.ResizeBuffers1(
+                buffer_count,
+                width,
+                height,
+                format,
+                flags,
+                p_creation_node_mask,
+                pp_present_queue,
+            )
+        }
     }
 }
 
@@ -285,12 +286,14 @@ impl ISwapChain for SwapChain {
             panic!("Attempted to acquire an image while one is already acquired");
         }
 
-        let index = self.swap_chain.GetCurrentBackBufferIndex();
+        let index = unsafe { self.swap_chain.GetCurrentBackBufferIndex() };
 
         let semaphore = Semaphore::get(desc.signal_semaphore);
-        semaphore
-            .signal_from_cpu()
-            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+        unsafe {
+            semaphore
+                .signal_from_cpu()
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+        }
 
         Ok(index)
     }

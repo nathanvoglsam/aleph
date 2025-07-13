@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use std::alloc::{handle_alloc_error, Layout};
+use std::alloc::{Layout, handle_alloc_error};
 use std::cell::Cell;
-use std::mem::{size_of, MaybeUninit};
+use std::mem::{MaybeUninit, size_of};
 use std::ptr::NonNull;
 
 use aleph_rhi_api::*;
@@ -164,12 +164,14 @@ impl DescriptorSetPool {
     }
 
     pub unsafe fn reset_pool(&self) {
-        self.num_sets.set(0);
+        unsafe {
+            self.num_sets.set(0);
 
-        let mut free_list = self.free_list.take();
-        free_list.clear();
-        self.free_list.set(free_list);
+            let mut free_list = self.free_list.take();
+            free_list.clear();
+            self.free_list.set(free_list);
 
-        self.pool.reset_unchecked();
+            self.pool.reset_unchecked();
+        }
     }
 }

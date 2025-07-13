@@ -29,8 +29,8 @@
 
 use std::ffi::CStr;
 
-use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::core::Interface;
 
 pub unsafe fn device_register_message_callback<
     'a,
@@ -40,52 +40,58 @@ pub unsafe fn device_register_message_callback<
     device: D,
     callback: T,
 ) -> windows::core::Result<u32> {
-    let device = device.into();
+    unsafe {
+        let device = device.into();
 
-    /// Internal callback that wraps the closure in an FFI compatible function
-    unsafe extern "system" fn raw_callback<
-        X: Fn(D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY, D3D12_MESSAGE_ID, &CStr) + 'static,
-    >(
-        category: D3D12_MESSAGE_CATEGORY,
-        severity: D3D12_MESSAGE_SEVERITY,
-        id: D3D12_MESSAGE_ID,
-        pdescription: windows::core::PCSTR,
-        pcontext: *mut core::ffi::c_void,
-    ) {
-        // Cast to the concrete type and get a reference
-        let context = pcontext as *const X;
-        let context = context.as_ref().unwrap();
+        /// Internal callback that wraps the closure in an FFI compatible function
+        unsafe extern "system" fn raw_callback<
+            X: Fn(D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY, D3D12_MESSAGE_ID, &CStr) + 'static,
+        >(
+            category: D3D12_MESSAGE_CATEGORY,
+            severity: D3D12_MESSAGE_SEVERITY,
+            id: D3D12_MESSAGE_ID,
+            pdescription: windows::core::PCSTR,
+            pcontext: *mut core::ffi::c_void,
+        ) {
+            unsafe {
+                // Cast to the concrete type and get a reference
+                let context = pcontext as *const X;
+                let context = context.as_ref().unwrap();
 
-        let description = CStr::from_ptr(pdescription.0 as *const _);
+                let description = CStr::from_ptr(pdescription.0 as *const _);
 
-        // Call the actual callback
-        context(category, severity, id, description);
+                // Call the actual callback
+                context(category, severity, id, description);
+            }
+        }
+
+        let casted: ID3D12InfoQueue1 = device.cast::<ID3D12InfoQueue1>()?;
+        let mut cookie = 0;
+
+        let boxed = Box::new(callback);
+        let leak = Box::leak(boxed);
+
+        casted.RegisterMessageCallback(
+            Some(raw_callback::<T>),
+            D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+            leak as *mut _ as *mut core::ffi::c_void,
+            &mut cookie,
+        )?;
+
+        Ok(cookie)
     }
-
-    let casted: ID3D12InfoQueue1 = device.cast::<ID3D12InfoQueue1>()?;
-    let mut cookie = 0;
-
-    let boxed = Box::new(callback);
-    let leak = Box::leak(boxed);
-
-    casted.RegisterMessageCallback(
-        Some(raw_callback::<T>),
-        D3D12_MESSAGE_CALLBACK_FLAG_NONE,
-        leak as *mut _ as *mut core::ffi::c_void,
-        &mut cookie,
-    )?;
-
-    Ok(cookie)
 }
 
 pub unsafe fn device_unregister_message_callback<'a, T: Into<&'a ID3D12Device>>(
     device: T,
     cookie: u32,
 ) -> windows::core::Result<()> {
-    let device = device.into();
-    let casted: ID3D12InfoQueue1 = device.cast::<ID3D12InfoQueue1>()?;
-    casted.UnregisterMessageCallback(cookie)?;
-    Ok(())
+    unsafe {
+        let device = device.into();
+        let casted: ID3D12InfoQueue1 = device.cast::<ID3D12InfoQueue1>()?;
+        casted.UnregisterMessageCallback(cookie)?;
+        Ok(())
+    }
 }
 
 pub const fn category_name(category: &D3D12_MESSAGE_CATEGORY) -> Option<&'static str> {
@@ -105,6 +111,7 @@ pub const fn category_name(category: &D3D12_MESSAGE_CATEGORY) -> Option<&'static
     }
 }
 
+#[rustfmt::skip]
 pub const fn message_id_name(id: &D3D12_MESSAGE_ID) -> Option<&'static str> {
     match *id {
         D3D12_MESSAGE_ID_UNKNOWN => Some("UNKNOWN"),

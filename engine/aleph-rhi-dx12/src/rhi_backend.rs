@@ -62,42 +62,46 @@ impl D3D12Loader {
 }
 
 unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<DebugInterface> {
-    if want_debug {
-        log::debug!("D3D12 debug layers requested");
-        if let Ok(debug) = DebugInterface::new() {
-            debug.enable_debug_layer();
-            log::debug!("D3D12 debug layers enabled");
-            if gpu_assisted {
-                log::debug!("D3D12 gpu validation requested");
-                if debug.set_enable_gpu_validation(true).is_ok() {
-                    log::debug!("D3D12 gpu validation enabled");
-                } else {
-                    log::debug!("D3D12 gpu validation not enabled");
+    unsafe {
+        if want_debug {
+            log::debug!("D3D12 debug layers requested");
+            if let Ok(debug) = DebugInterface::new() {
+                debug.enable_debug_layer();
+                log::debug!("D3D12 debug layers enabled");
+                if gpu_assisted {
+                    log::debug!("D3D12 gpu validation requested");
+                    if debug.set_enable_gpu_validation(true).is_ok() {
+                        log::debug!("D3D12 gpu validation enabled");
+                    } else {
+                        log::debug!("D3D12 gpu validation not enabled");
+                    }
                 }
+                Some(debug)
+            } else {
+                None
             }
-            Some(debug)
         } else {
             None
         }
-    } else {
-        None
     }
 }
 
 unsafe fn setup_dxgi_debug_interface(debug: bool) -> Option<IDXGIDebug> {
-    if debug {
-        log::debug!("DXGI debug interface requested");
-        match dxgi_get_debug_interface(true) {
-            Ok(v) => {
-                log::debug!("DXGI debug interface loaded");
-                Some(v)
+    unsafe {
+        if debug {
+            log::debug!("DXGI debug interface requested");
+            match dxgi_get_debug_interface(true) {
+                Ok(v) => {
+                    log::debug!("DXGI debug interface loaded");
+                    Some(v)
+                }
+                Err(e) => {
+                    log::debug!("DXGI debug interface not loaded: {:#?}", e);
+                    None
+                }
             }
-            Err(e) => {
-                log::debug!("DXGI debug interface not loaded: {:#?}", e);
-                None
-            }
+        } else {
+            None
         }
-    } else {
-        None
     }
 }

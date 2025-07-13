@@ -30,31 +30,31 @@
 use std::any::TypeId;
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::mem::{size_of, transmute_copy, ManuallyDrop};
+use std::mem::{ManuallyDrop, size_of, transmute_copy};
 use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
 
-use aleph_any::{declare_interfaces, AnyArc, AnyWeak};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
-use aleph_rhi_impl_utils::{cstr, try_clone_value_into_slot};
+use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use blink_alloc::BlinkAlloc;
-use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
+use bumpalo::collections::Vec as BVec;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
-use windows::core::PCSTR;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::System::Threading::*;
+use windows::core::PCSTR;
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
@@ -115,7 +115,7 @@ declare_interfaces!(Device, [IDevice]);
 
 impl IGetPlatformInterface for Device {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<ID3D12Device10>(&self.device, out, target)
+        unsafe { try_clone_value_into_slot::<ID3D12Device10>(&self.device, out, target) }
     }
 }
 
@@ -849,8 +849,10 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
-        for set_write in writes {
-            self.update_descriptor_set(set_write);
+        unsafe {
+            for set_write in writes {
+                self.update_descriptor_set(set_write);
+            }
         }
     }
 
@@ -1221,7 +1223,7 @@ impl Device {
             // This requires some modification to existing shaders to be compatible but makes
             // mapping Vulkan easier. It is also much simpler, just an "index" compared to a string
             // identifier + index combo.
-            let semantic_name = cstr!("A");
+            let semantic_name = c"A";
             let semantic_index = attribute.location;
 
             // Input slot directly translates to Vulkan's concept of a vertex attribute binding
@@ -1633,65 +1635,67 @@ impl Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_set(&self, set_write: &DescriptorWriteDesc) {
-        let mut set = DescriptorSet::ptr_from_handle(set_write.set);
-        let set_layout = {
-            let set = set.as_ref();
-            let layout = set._layout.as_ref();
-            layout
-        };
-        let binding_layout = set_layout
-            .get_binding_info(set_write.binding)
-            .unwrap()
-            .layout;
+        unsafe {
+            let mut set = DescriptorSet::ptr_from_handle(set_write.set);
+            let set_layout = {
+                let set = set.as_ref();
+                let layout = set._layout.as_ref();
+                layout
+            };
+            let binding_layout = set_layout
+                .get_binding_info(set_write.binding)
+                .unwrap()
+                .layout;
 
-        match set_write.writes {
-            DescriptorWrites::Sampler(writes) => {
-                self.update_sampler_descriptors(set_write.binding, set, &binding_layout, writes)
-            }
-            DescriptorWrites::TexelBufferRW(writes) | DescriptorWrites::TexelBuffer(writes) => self
-                .update_texel_buffer_descriptors(
+            match set_write.writes {
+                DescriptorWrites::Sampler(writes) => {
+                    self.update_sampler_descriptors(set_write.binding, set, &binding_layout, writes)
+                }
+                DescriptorWrites::TexelBufferRW(writes) | DescriptorWrites::TexelBuffer(writes) => {
+                    self.update_texel_buffer_descriptors(
+                        set_write.array_element,
+                        set,
+                        binding_layout,
+                        writes,
+                        set_write.writes.descriptor_type(),
+                    )
+                }
+                DescriptorWrites::TextureRW(writes) | DescriptorWrites::Texture(writes) => self
+                    .update_image_descriptors(set_write.array_element, set, binding_layout, writes),
+                DescriptorWrites::ByteAddressBufferRW(writes)
+                | DescriptorWrites::ByteAddressBuffer(writes)
+                | DescriptorWrites::StructuredBufferRW(writes)
+                | DescriptorWrites::StructuredBuffer(writes)
+                | DescriptorWrites::UniformBuffer(writes) => self.update_buffer_descriptors(
                     set_write.array_element,
                     set,
                     binding_layout,
                     writes,
                     set_write.writes.descriptor_type(),
                 ),
-            DescriptorWrites::TextureRW(writes) | DescriptorWrites::Texture(writes) => {
-                self.update_image_descriptors(set_write.array_element, set, binding_layout, writes)
-            }
-            DescriptorWrites::ByteAddressBufferRW(writes)
-            | DescriptorWrites::ByteAddressBuffer(writes)
-            | DescriptorWrites::StructuredBufferRW(writes)
-            | DescriptorWrites::StructuredBuffer(writes)
-            | DescriptorWrites::UniformBuffer(writes) => self.update_buffer_descriptors(
-                set_write.array_element,
-                set,
-                binding_layout,
-                writes,
-                set_write.writes.descriptor_type(),
-            ),
-            DescriptorWrites::UniformBufferDynamic(writes) => {
-                let dynamic_cb_index = set_layout
-                    .dynamic_constant_buffers
-                    .iter()
-                    .enumerate()
-                    .find(|v| v.1.ShaderRegister == set_write.binding)
-                    .map(|v| v.0)
-                    .unwrap();
-                let set = set.as_mut();
-                let dynamic_cbs = set.dynamic_constant_buffers.as_mut();
-                let dynamic_cbs = &mut dynamic_cbs[dynamic_cb_index..];
+                DescriptorWrites::UniformBufferDynamic(writes) => {
+                    let dynamic_cb_index = set_layout
+                        .dynamic_constant_buffers
+                        .iter()
+                        .enumerate()
+                        .find(|v| v.1.ShaderRegister == set_write.binding)
+                        .map(|v| v.0)
+                        .unwrap();
+                    let set = set.as_mut();
+                    let dynamic_cbs = set.dynamic_constant_buffers.as_mut();
+                    let dynamic_cbs = &mut dynamic_cbs[dynamic_cb_index..];
 
-                for (i, v) in writes.iter().enumerate() {
-                    let buffer = Buffer::get(v.buffer);
-                    let buffer = buffer.base_address.add(v.offset);
-                    dynamic_cbs[i] = buffer.get_inner().get();
+                    for (i, v) in writes.iter().enumerate() {
+                        let buffer = Buffer::get(v.buffer);
+                        let buffer = buffer.base_address.add(v.offset);
+                        dynamic_cbs[i] = buffer.get_inner().get();
+                    }
                 }
-            }
-            DescriptorWrites::InputAttachment(_) => {
-                unimplemented!()
-            }
-        };
+                DescriptorWrites::InputAttachment(_) => {
+                    unimplemented!()
+                }
+            };
+        }
     }
 
     // ========================================================================================== //
@@ -1711,26 +1715,27 @@ impl Device {
         // Linear search is best here as the 'sampler_tables' array is rarely if _ever_ going to
         // have more than a few elements. Linear search is best for tiny search spaces on modern
         // GPUs.
-        let sampler_index = set
-            ._layout
-            .as_ref()
-            .sampler_tables
-            .iter()
-            .enumerate()
-            .find_map(|(i, v)| {
-                if v.BaseShaderRegister == binding {
-                    Some(i)
-                } else {
-                    None
-                }
-            })
-            .unwrap();
+        let sampler_index = unsafe {
+            set._layout
+                .as_ref()
+                .sampler_tables
+                .iter()
+                .enumerate()
+                .find_map(|(i, v)| {
+                    if v.BaseShaderRegister == binding {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap()
+        };
 
         // We don't support sampler arrays so we assert if someone tries to write one
         debug_assert_eq!(writes.len(), 1, "No support for sampler arrays currently");
 
         for (_i, v) in writes.iter().enumerate() {
-            let target = set.samplers.as_mut();
+            let target = unsafe { set.samplers.as_mut() };
             let sampler = Sampler::get(v.sampler);
 
             // Copy the gpu descriptor handle into the descriptor set's internal list of samplers.
@@ -1755,30 +1760,32 @@ impl Device {
         binding_layout: DescriptorBindingLayout,
         writes: &[ImageDescriptorWrite],
     ) {
-        let set = set.as_ref();
+        unsafe {
+            let set = set.as_ref();
 
-        for (i, v) in writes.iter().enumerate() {
-            // SAFETY: It is the caller's responsibility to ensure that the view points to a live
-            //         and valid ImageViewObject. The objects are immutable so parallel access is
-            //         safe implicitly.
-            let src = std::mem::transmute::<_, *const ImageViewObject>(v.image_view);
-            let src = (*src).handle;
+            for (i, v) in writes.iter().enumerate() {
+                // SAFETY: It is the caller's responsibility to ensure that the view points to a live
+                //         and valid ImageViewObject. The objects are immutable so parallel access is
+                //         safe implicitly.
+                let src = std::mem::transmute::<_, *const ImageViewObject>(v.image_view);
+                let src = (*src).handle;
 
-            let (dst, _) = set.assume_r_handle();
-            let dst = Self::calculate_dst_handle(
-                dst,
-                self.descriptor_heap_info.resource_inc,
-                binding_layout.base,
-                array_base,
-                i,
-            );
+                let (dst, _) = set.assume_r_handle();
+                let dst = Self::calculate_dst_handle(
+                    dst,
+                    self.descriptor_heap_info.resource_inc,
+                    binding_layout.base,
+                    array_base,
+                    i,
+                );
 
-            self.device.CopyDescriptorsSimple(
-                1,
-                dst.into(),
-                src.into(),
-                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-            );
+                self.device.CopyDescriptorsSimple(
+                    1,
+                    dst.into(),
+                    src.into(),
+                    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                );
+            }
         }
     }
 
@@ -1793,38 +1800,40 @@ impl Device {
         writes: &[BufferDescriptorWrite],
         d_type: DescriptorType,
     ) {
-        let set = set.as_ref();
+        unsafe {
+            let set = set.as_ref();
 
-        for (i, v) in writes.iter().enumerate() {
-            let (dst, _) = set.assume_r_handle();
+            for (i, v) in writes.iter().enumerate() {
+                let (dst, _) = set.assume_r_handle();
 
-            let buffer = Buffer::get(v.buffer);
+                let buffer = Buffer::get(v.buffer);
 
-            let dst = Self::calculate_dst_handle(
-                dst,
-                self.descriptor_heap_info.resource_inc,
-                binding_layout.base,
-                array_base,
-                i,
-            );
+                let dst = Self::calculate_dst_handle(
+                    dst,
+                    self.descriptor_heap_info.resource_inc,
+                    binding_layout.base,
+                    array_base,
+                    i,
+                );
 
-            match d_type {
-                DescriptorType::UniformBuffer => {
-                    self.update_uniform_buffer_descriptor(v, buffer, dst);
+                match d_type {
+                    DescriptorType::UniformBuffer => {
+                        self.update_uniform_buffer_descriptor(v, buffer, dst);
+                    }
+                    DescriptorType::ByteAddressBuffer => {
+                        self.update_byte_address_buffer_descriptor_srv(v, buffer, dst);
+                    }
+                    DescriptorType::ByteAddressBufferRW => {
+                        self.update_byte_address_buffer_descriptor_uav(v, buffer, dst);
+                    }
+                    DescriptorType::StructuredBuffer => {
+                        self.update_structured_buffer_descriptor_srv(v, buffer, dst);
+                    }
+                    DescriptorType::StructuredBufferRW => {
+                        self.update_structured_buffer_descriptor_uav(v, buffer, dst);
+                    }
+                    _ => {}
                 }
-                DescriptorType::ByteAddressBuffer => {
-                    self.update_byte_address_buffer_descriptor_srv(v, buffer, dst);
-                }
-                DescriptorType::ByteAddressBufferRW => {
-                    self.update_byte_address_buffer_descriptor_uav(v, buffer, dst);
-                }
-                DescriptorType::StructuredBuffer => {
-                    self.update_structured_buffer_descriptor_srv(v, buffer, dst);
-                }
-                DescriptorType::StructuredBufferRW => {
-                    self.update_structured_buffer_descriptor_uav(v, buffer, dst);
-                }
-                _ => {}
             }
         }
     }
@@ -1840,29 +1849,31 @@ impl Device {
         writes: &[TexelBufferDescriptorWrite],
         d_type: DescriptorType,
     ) {
-        let set = set.as_ref();
+        unsafe {
+            let set = set.as_ref();
 
-        for (i, v) in writes.iter().enumerate() {
-            let (dst, _) = set.assume_r_handle();
+            for (i, v) in writes.iter().enumerate() {
+                let (dst, _) = set.assume_r_handle();
 
-            let buffer = Buffer::get(v.buffer);
+                let buffer = Buffer::get(v.buffer);
 
-            let dst = Self::calculate_dst_handle(
-                dst,
-                self.descriptor_heap_info.resource_inc,
-                binding_layout.base,
-                array_base,
-                i,
-            );
+                let dst = Self::calculate_dst_handle(
+                    dst,
+                    self.descriptor_heap_info.resource_inc,
+                    binding_layout.base,
+                    array_base,
+                    i,
+                );
 
-            match d_type {
-                DescriptorType::TexelBuffer => {
-                    self.update_texel_buffer_descriptor_srv(v, buffer, dst);
+                match d_type {
+                    DescriptorType::TexelBuffer => {
+                        self.update_texel_buffer_descriptor_srv(v, buffer, dst);
+                    }
+                    DescriptorType::TexelBufferRW => {
+                        self.update_texel_buffer_descriptor_uav(v, buffer, dst);
+                    }
+                    _ => {}
                 }
-                DescriptorType::TexelBufferRW => {
-                    self.update_texel_buffer_descriptor_uav(v, buffer, dst);
-                }
-                _ => {}
             }
         }
     }
@@ -1876,16 +1887,18 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        // Calculates the 'BufferLocation' value, as D3D12 takes a raw virtual address to
-        // the start of the CBV, rather than a ID3D12Resource + offset.
-        let location = buffer.base_address.add(write.offset).get_inner().get();
+        unsafe {
+            // Calculates the 'BufferLocation' value, as D3D12 takes a raw virtual address to
+            // the start of the CBV, rather than a ID3D12Resource + offset.
+            let location = buffer.base_address.add(write.offset).get_inner().get();
 
-        let view = D3D12_CONSTANT_BUFFER_VIEW_DESC {
-            BufferLocation: location,
-            SizeInBytes: write.len,
-        };
-        self.device
-            .CreateConstantBufferView(Some(&view), dst.into());
+            let view = D3D12_CONSTANT_BUFFER_VIEW_DESC {
+                BufferLocation: location,
+                SizeInBytes: write.len,
+            };
+            self.device
+                .CreateConstantBufferView(Some(&view), dst.into());
+        }
     }
 
     // ========================================================================================== //
@@ -1897,23 +1910,25 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        let len = buffer.clamp_max_size_for_view(write.len);
+        unsafe {
+            let len = buffer.clamp_max_size_for_view(write.len);
 
-        let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
-            Format: DXGI_FORMAT_R32_TYPELESS,
-            ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
-            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                Buffer: D3D12_BUFFER_SRV {
-                    FirstElement: write.offset / 4,
-                    NumElements: len / 4,
-                    StructureByteStride: 0,
-                    Flags: D3D12_BUFFER_SRV_FLAG_RAW,
+            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                Format: DXGI_FORMAT_R32_TYPELESS,
+                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+                Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_SRV {
+                        FirstElement: write.offset / 4,
+                        NumElements: len / 4,
+                        StructureByteStride: 0,
+                        Flags: D3D12_BUFFER_SRV_FLAG_RAW,
+                    },
                 },
-            },
-        };
-        self.device
-            .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
+            };
+            self.device
+                .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
+        }
     }
 
     // ========================================================================================== //
@@ -1925,27 +1940,29 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        let len = buffer.clamp_max_size_for_view(write.len);
+        unsafe {
+            let len = buffer.clamp_max_size_for_view(write.len);
 
-        let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
-            Format: DXGI_FORMAT_R32_TYPELESS,
-            ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
-            Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-                Buffer: D3D12_BUFFER_UAV {
-                    FirstElement: write.offset / 4,
-                    NumElements: len / 4,
-                    StructureByteStride: 0,
-                    CounterOffsetInBytes: 0,
-                    Flags: D3D12_BUFFER_UAV_FLAG_RAW,
+            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+                Format: DXGI_FORMAT_R32_TYPELESS,
+                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_UAV {
+                        FirstElement: write.offset / 4,
+                        NumElements: len / 4,
+                        StructureByteStride: 0,
+                        CounterOffsetInBytes: 0,
+                        Flags: D3D12_BUFFER_UAV_FLAG_RAW,
+                    },
                 },
-            },
-        };
-        self.device.CreateUnorderedAccessView(
-            buffer.resource.deref(),
-            None,
-            Some(&view),
-            dst.into(),
-        );
+            };
+            self.device.CreateUnorderedAccessView(
+                buffer.resource.deref(),
+                None,
+                Some(&view),
+                dst.into(),
+            );
+        }
     }
 
     // ========================================================================================== //
@@ -1957,25 +1974,27 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        let len = buffer.clamp_max_size_for_view(write.len);
+        unsafe {
+            let len = buffer.clamp_max_size_for_view(write.len);
 
-        let first_element = write.offset / write.structure_byte_stride as u64;
-        let num_elements = len / write.structure_byte_stride;
-        let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
-            Format: DXGI_FORMAT_UNKNOWN,
-            ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
-            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                Buffer: D3D12_BUFFER_SRV {
-                    FirstElement: first_element,
-                    NumElements: num_elements,
-                    StructureByteStride: write.structure_byte_stride,
-                    Flags: Default::default(),
+            let first_element = write.offset / write.structure_byte_stride as u64;
+            let num_elements = len / write.structure_byte_stride;
+            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                Format: DXGI_FORMAT_UNKNOWN,
+                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+                Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_SRV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: write.structure_byte_stride,
+                        Flags: Default::default(),
+                    },
                 },
-            },
-        };
-        self.device
-            .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
+            };
+            self.device
+                .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
+        }
     }
 
     // ========================================================================================== //
@@ -1987,29 +2006,31 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        let len = buffer.clamp_max_size_for_view(write.len);
+        unsafe {
+            let len = buffer.clamp_max_size_for_view(write.len);
 
-        let first_element = write.offset / write.structure_byte_stride as u64;
-        let num_elements = len / write.structure_byte_stride;
-        let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
-            Format: DXGI_FORMAT_UNKNOWN,
-            ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
-            Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-                Buffer: D3D12_BUFFER_UAV {
-                    FirstElement: first_element,
-                    NumElements: num_elements,
-                    StructureByteStride: write.structure_byte_stride,
-                    CounterOffsetInBytes: 0,
-                    Flags: Default::default(),
+            let first_element = write.offset / write.structure_byte_stride as u64;
+            let num_elements = len / write.structure_byte_stride;
+            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+                Format: DXGI_FORMAT_UNKNOWN,
+                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_UAV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: write.structure_byte_stride,
+                        CounterOffsetInBytes: 0,
+                        Flags: Default::default(),
+                    },
                 },
-            },
-        };
-        self.device.CreateUnorderedAccessView(
-            buffer.resource.deref(),
-            None,
-            Some(&view),
-            dst.into(),
-        );
+            };
+            self.device.CreateUnorderedAccessView(
+                buffer.resource.deref(),
+                None,
+                Some(&view),
+                dst.into(),
+            );
+        }
     }
 
     // ========================================================================================== //
@@ -2021,27 +2042,29 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        let len = buffer.clamp_max_size_for_view(write.len);
+        unsafe {
+            let len = buffer.clamp_max_size_for_view(write.len);
 
-        let format = texture_format_to_dxgi(write.format);
-        let bytes_per_element = write.format.bytes_per_element();
-        let first_element = write.offset / bytes_per_element as u64;
-        let num_elements = len / bytes_per_element;
-        let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
-            Format: format,
-            ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
-            Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                Buffer: D3D12_BUFFER_SRV {
-                    FirstElement: first_element,
-                    NumElements: num_elements,
-                    StructureByteStride: 0,
-                    Flags: Default::default(),
+            let format = texture_format_to_dxgi(write.format);
+            let bytes_per_element = write.format.bytes_per_element();
+            let first_element = write.offset / bytes_per_element as u64;
+            let num_elements = len / bytes_per_element;
+            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                Format: format,
+                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+                Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_SRV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: 0,
+                        Flags: Default::default(),
+                    },
                 },
-            },
-        };
-        self.device
-            .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
+            };
+            self.device
+                .CreateShaderResourceView(buffer.resource.deref(), Some(&view), dst.into());
+        }
     }
 
     // ========================================================================================== //
@@ -2053,31 +2076,33 @@ impl Device {
         buffer: &Buffer,
         dst: CPUDescriptorHandle,
     ) {
-        let len = buffer.clamp_max_size_for_view(write.len);
+        unsafe {
+            let len = buffer.clamp_max_size_for_view(write.len);
 
-        let format = texture_format_to_dxgi(write.format);
-        let bytes_per_element = write.format.bytes_per_element();
-        let first_element = write.offset / bytes_per_element as u64;
-        let num_elements = len / bytes_per_element;
-        let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
-            Format: format,
-            ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
-            Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-                Buffer: D3D12_BUFFER_UAV {
-                    FirstElement: first_element,
-                    NumElements: num_elements,
-                    StructureByteStride: 0,
-                    CounterOffsetInBytes: 0,
-                    Flags: Default::default(),
+            let format = texture_format_to_dxgi(write.format);
+            let bytes_per_element = write.format.bytes_per_element();
+            let first_element = write.offset / bytes_per_element as u64;
+            let num_elements = len / bytes_per_element;
+            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+                Format: format,
+                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_UAV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: 0,
+                        CounterOffsetInBytes: 0,
+                        Flags: Default::default(),
+                    },
                 },
-            },
-        };
-        self.device.CreateUnorderedAccessView(
-            buffer.resource.deref(),
-            None,
-            Some(&view),
-            dst.into(),
-        );
+            };
+            self.device.CreateUnorderedAccessView(
+                buffer.resource.deref(),
+                None,
+                Some(&view),
+                dst.into(),
+            );
+        }
     }
 
     // ========================================================================================== //

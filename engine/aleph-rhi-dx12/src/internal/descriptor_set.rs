@@ -67,9 +67,11 @@ impl DescriptorSet {
     #[track_caller]
     #[inline(always)]
     pub unsafe fn assume_r_handle(&self) -> (CPUDescriptorHandle, GPUDescriptorHandle) {
-        let cpu = self.resource_handle_cpu.unwrap_unchecked();
-        let gpu = self.resource_handle_gpu.unwrap_unchecked();
-        (cpu, gpu)
+        unsafe {
+            let cpu = self.resource_handle_cpu.unwrap_unchecked();
+            let gpu = self.resource_handle_gpu.unwrap_unchecked();
+            (cpu, gpu)
+        }
     }
 
     /// Grabs the pointer inside a [DescriptorSetHandle] as a non-null [DescriptorSet] ptr

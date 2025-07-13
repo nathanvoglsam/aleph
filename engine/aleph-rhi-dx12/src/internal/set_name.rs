@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use windows::core::PCWSTR;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::core::PCWSTR;
 
 pub fn set_name<'a, T: Into<&'a ID3D12Object>>(object: T, name: &str) -> windows::core::Result<()> {
     let object = object.into();

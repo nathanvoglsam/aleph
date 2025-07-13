@@ -36,8 +36,8 @@ use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use parking_lot::Mutex;
-use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::utils::GPUDescriptorHandle;
 
 use crate::device::Device;
 

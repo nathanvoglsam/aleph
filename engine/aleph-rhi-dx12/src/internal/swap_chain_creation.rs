@@ -28,10 +28,10 @@
 //
 
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use windows::core::{IInspectable, IUnknown, Interface};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::{IInspectable, IUnknown, Interface};
 
 pub unsafe fn dxgi_create_swap_chain(
     factory: &IDXGIFactory2,
@@ -39,23 +39,30 @@ pub unsafe fn dxgi_create_swap_chain(
     window_handle: &impl HasWindowHandle,
     swap_chain_desc: &DXGI_SWAP_CHAIN_DESC1,
 ) -> windows::core::Result<IDXGISwapChain4> {
-    let window_handle = window_handle.window_handle().unwrap().as_raw();
+    unsafe {
+        let window_handle = window_handle.window_handle().unwrap().as_raw();
 
-    // Create the swapchain
-    let swapchain = match window_handle {
-        RawWindowHandle::Win32(hwnd) => {
-            let hwnd = HWND(hwnd.hwnd.get() as *mut _);
-            dxgi_create_swap_chain_for_hwnd(factory, queue, hwnd, swap_chain_desc)?
-        }
-        RawWindowHandle::WinRt(core_window) => {
-            let core_window = core_window.core_window;
-            let core_window: IInspectable = std::mem::transmute(core_window);
-            dxgi_create_swap_chain_for_core_window(factory, queue, core_window, swap_chain_desc)?
-        }
-        _ => panic!("Unsupported window handle"),
-    };
+        // Create the swapchain
+        let swapchain = match window_handle {
+            RawWindowHandle::Win32(hwnd) => {
+                let hwnd = HWND(hwnd.hwnd.get() as *mut _);
+                dxgi_create_swap_chain_for_hwnd(factory, queue, hwnd, swap_chain_desc)?
+            }
+            RawWindowHandle::WinRt(core_window) => {
+                let core_window = core_window.core_window;
+                let core_window: IInspectable = std::mem::transmute(core_window);
+                dxgi_create_swap_chain_for_core_window(
+                    factory,
+                    queue,
+                    core_window,
+                    swap_chain_desc,
+                )?
+            }
+            _ => panic!("Unsupported window handle"),
+        };
 
-    Ok(swapchain)
+        Ok(swapchain)
+    }
 }
 
 pub unsafe fn dxgi_create_swap_chain_for_hwnd(
@@ -64,8 +71,10 @@ pub unsafe fn dxgi_create_swap_chain_for_hwnd(
     hwnd: HWND,
     desc: &DXGI_SWAP_CHAIN_DESC1,
 ) -> windows::core::Result<IDXGISwapChain4> {
-    let swapchain = factory.CreateSwapChainForHwnd(queue, hwnd, desc, None, None)?;
-    swapchain.cast::<IDXGISwapChain4>()
+    unsafe {
+        let swapchain = factory.CreateSwapChainForHwnd(queue, hwnd, desc, None, None)?;
+        swapchain.cast::<IDXGISwapChain4>()
+    }
 }
 
 pub unsafe fn dxgi_create_swap_chain_for_core_window(
@@ -74,7 +83,9 @@ pub unsafe fn dxgi_create_swap_chain_for_core_window(
     core_window: IInspectable,
     desc: &DXGI_SWAP_CHAIN_DESC1,
 ) -> windows::core::Result<IDXGISwapChain4> {
-    let core_window = core_window.cast::<IUnknown>()?;
-    let swapchain = factory.CreateSwapChainForCoreWindow(queue, &core_window, desc, None)?;
-    swapchain.cast::<IDXGISwapChain4>()
+    unsafe {
+        let core_window = core_window.cast::<IUnknown>()?;
+        let swapchain = factory.CreateSwapChainForCoreWindow(queue, &core_window, desc, None)?;
+        swapchain.cast::<IDXGISwapChain4>()
+    }
 }

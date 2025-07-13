@@ -121,29 +121,31 @@ pub const fn plane_layer_for_aspect_flag(format: Format, aspect: TextureAspect) 
 /// Calls `GetLastError` internally on error
 ///
 pub unsafe fn handle_wait_result(result: WAIT_EVENT) -> bool {
-    use windows::Win32::Foundation::*;
+    unsafe {
+        use windows::Win32::Foundation::*;
 
-    // Successfully waited on the event
-    if result == WAIT_OBJECT_0 {
-        return true;
+        // Successfully waited on the event
+        if result == WAIT_OBJECT_0 {
+            return true;
+        }
+
+        // Timeout is an error as we're supposed to block until the event is signalled
+        if result == WAIT_TIMEOUT {
+            return false;
+        }
+
+        // Handle the error case
+        if result == WAIT_FAILED {
+            GetLastError().to_hresult().unwrap();
+            unreachable!("WaitForSingleObject failed");
+        }
+
+        // This shouldn't even be possible to observe as the event is thread-local so can't
+        // event be observed across threads. But handle it anyway as you never know
+        if result == WAIT_ABANDONED {
+            panic!("Event was abandoned by owning thread");
+        }
+
+        unreachable!("Unexpected result value");
     }
-
-    // Timeout is an error as we're supposed to block until the event is signalled
-    if result == WAIT_TIMEOUT {
-        return false;
-    }
-
-    // Handle the error case
-    if result == WAIT_FAILED {
-        GetLastError().to_hresult().unwrap();
-        unreachable!("WaitForSingleObject failed");
-    }
-
-    // This shouldn't even be possible to observe as the event is thread-local so can't
-    // event be observed across threads. But handle it anyway as you never know
-    if result == WAIT_ABANDONED {
-        panic!("Event was abandoned by owning thread");
-    }
-
-    unreachable!("Unexpected result value");
 }

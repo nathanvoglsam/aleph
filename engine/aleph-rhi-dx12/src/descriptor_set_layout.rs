@@ -38,7 +38,7 @@ use std::collections::HashMap;
 use std::num::NonZeroU64;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{unsafe_impl_iobject, ArcedObject};
+use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use windows::Win32::Graphics::Direct3D12::*;
 

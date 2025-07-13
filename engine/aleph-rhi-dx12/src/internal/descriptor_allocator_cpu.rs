@@ -32,8 +32,8 @@ use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
 use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
-use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::utils::CPUDescriptorHandle;
 
 pub struct DescriptorAllocatorCPU {
     /// Device handle so we can create new blocks on demand

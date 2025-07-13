@@ -41,9 +41,9 @@ use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::Bump;
 use parking_lot::Mutex;
-use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::utils::CPUDescriptorHandle;
 
 use crate::device::Device;
 use crate::internal::conv::{texture_format_to_dxgi, texture_format_to_dxgi_view};
@@ -539,13 +539,15 @@ impl Texture {
 
 impl IGetPlatformInterface for Texture {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        if try_clone_value_into_slot::<ID3D12Resource>(&self.resource, out, target).is_some() {
-            return Some(());
+        unsafe {
+            if try_clone_value_into_slot::<ID3D12Resource>(&self.resource, out, target).is_some() {
+                return Some(());
+            }
+            if try_clone_value_into_slot::<DXGI_FORMAT>(&self.dxgi_format, out, target).is_some() {
+                return Some(());
+            }
+            None
         }
-        if try_clone_value_into_slot::<DXGI_FORMAT>(&self.dxgi_format, out, target).is_some() {
-            return Some(());
-        }
-        None
     }
 }
 

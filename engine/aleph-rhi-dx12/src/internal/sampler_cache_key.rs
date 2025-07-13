@@ -28,7 +28,6 @@
 //
 
 use std::hash::{Hash, Hasher};
-use std::mem::transmute;
 
 use aleph_rhi_api::SamplerDesc;
 
@@ -41,11 +40,13 @@ impl<'a> SamplerCacheKey<'a> {
     }
 
     pub unsafe fn from_desc<'b>(desc: &'b SamplerDesc<'a>) -> &'b SamplerCacheKey<'a> {
-        let info = desc as *const SamplerDesc<'a> as *const SamplerCacheKey<'a>;
-        // Safety: This is safe because both types have the same layout (repr transparent) and the
-        //         lifetime is correctly passed across. This is just a slightly different view of
-        //         the same type
-        &*info
+        unsafe {
+            let info = desc as *const SamplerDesc<'a> as *const SamplerCacheKey<'a>;
+            // Safety: This is safe because both types have the same layout (repr transparent) and the
+            //         lifetime is correctly passed across. This is just a slightly different view of
+            //         the same type
+            &*info
+        }
     }
 }
 
@@ -99,27 +100,19 @@ impl<'a> PartialEq for SamplerCacheKey<'a> {
 impl<'a> Eq for SamplerCacheKey<'a> {}
 
 fn cmp<T: PartialEq + Eq>(l: &T, r: &T) -> Option<()> {
-    if l.eq(r) {
-        Some(())
-    } else {
-        None
-    }
+    if l.eq(r) { Some(()) } else { None }
 }
 
 fn cmp_f32(l: &f32, r: &f32) -> Option<()> {
     debug_assert!(l.is_finite());
     debug_assert!(r.is_finite());
-    let l: u32 = unsafe { transmute(*l) };
-    let r: u32 = unsafe { transmute(*r) };
-    if l.eq(&r) {
-        Some(())
-    } else {
-        None
-    }
+    let l: u32 = l.to_bits();
+    let r: u32 = r.to_bits();
+    if l.eq(&r) { Some(()) } else { None }
 }
 
 fn hash_f32<H: Hasher>(v: f32, state: &mut H) {
     debug_assert!(v.is_finite());
-    let v: u32 = unsafe { transmute(v) };
+    let v: u32 = v.to_bits();
     v.hash(state);
 }

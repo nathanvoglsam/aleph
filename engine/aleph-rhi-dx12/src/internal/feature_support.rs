@@ -33,12 +33,12 @@
 
 use std::mem::MaybeUninit;
 
-use windows::core::{Error, HRESULT};
 use windows::Win32::Foundation::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::{Error, HRESULT};
 
 #[derive(Debug)]
 pub struct FeatureSupport {
@@ -320,11 +320,13 @@ impl FeatureSupport {
             let mut data = D3D12_FEATURE_DATA_SHADER_MODEL {
                 HighestShaderModel: model,
             };
-            let result: Result<(), _> = device.CheckFeatureSupport(
-                D3D12_FEATURE_SHADER_MODEL,
-                &mut data as *mut D3D12_FEATURE_DATA_SHADER_MODEL as *mut _,
-                std::mem::size_of_val(&data) as u32,
-            );
+            let result: Result<(), _> = unsafe {
+                device.CheckFeatureSupport(
+                    D3D12_FEATURE_SHADER_MODEL,
+                    &mut data as *mut D3D12_FEATURE_DATA_SHADER_MODEL as *mut _,
+                    std::mem::size_of_val(&data) as u32,
+                )
+            };
 
             match result.map_err(HRESULT::from) {
                 Ok(_) => {
@@ -359,11 +361,13 @@ impl FeatureSupport {
                 HighestVersion: version,
             };
 
-            let result: Result<(), _> = device.CheckFeatureSupport(
-                D3D12_FEATURE_ROOT_SIGNATURE,
-                &mut data as *mut D3D12_FEATURE_DATA_ROOT_SIGNATURE as *mut _,
-                std::mem::size_of_val(&data) as u32,
-            );
+            let result: Result<(), _> = unsafe {
+                device.CheckFeatureSupport(
+                    D3D12_FEATURE_ROOT_SIGNATURE,
+                    &mut data as *mut D3D12_FEATURE_DATA_ROOT_SIGNATURE as *mut _,
+                    std::mem::size_of_val(&data) as u32,
+                )
+            };
 
             match result.map_err(HRESULT::from) {
                 Ok(_) => {
@@ -407,11 +411,13 @@ impl FeatureSupport {
             MaxSupportedFeatureLevel: Default::default(),
         };
 
-        let result: Result<(), _> = device.CheckFeatureSupport(
-            D3D12_FEATURE_FEATURE_LEVELS,
-            &mut levels as *mut D3D12_FEATURE_DATA_FEATURE_LEVELS as *mut _,
-            std::mem::size_of_val(&levels) as u32,
-        );
+        let result: Result<(), _> = unsafe {
+            device.CheckFeatureSupport(
+                D3D12_FEATURE_FEATURE_LEVELS,
+                &mut levels as *mut D3D12_FEATURE_DATA_FEATURE_LEVELS as *mut _,
+                std::mem::size_of_val(&levels) as u32,
+            )
+        };
 
         match result.map_err(HRESULT::from) {
             Ok(_) => Ok(levels.MaxSupportedFeatureLevel),
@@ -790,11 +796,13 @@ unsafe fn load_options_or_default<T>(
     device: &ID3D12Device,
     feature: D3D12_FEATURE,
 ) -> windows::core::Result<T> {
-    let mut data = MaybeUninit::<T>::uninit();
-    let result: Result<(), _> = device.CheckFeatureSupport(
-        feature,
-        data.as_mut_ptr() as *mut _,
-        std::mem::size_of_val(&data) as u32,
-    );
-    result.map(|_| data.assume_init())
+    unsafe {
+        let mut data = MaybeUninit::<T>::uninit();
+        let result: Result<(), _> = device.CheckFeatureSupport(
+            feature,
+            data.as_mut_ptr() as *mut _,
+            std::mem::size_of_val(&data) as u32,
+        );
+        result.map(|_| data.assume_init())
+    }
 }

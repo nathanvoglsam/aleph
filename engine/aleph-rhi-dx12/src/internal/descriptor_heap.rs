@@ -32,8 +32,8 @@ use std::num::{NonZeroU64, NonZeroUsize};
 use aleph_rhi_impl_utils::offset_allocator;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
 use parking_lot::Mutex;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 pub struct DescriptorHeap {
     /// The device the heap belongs to

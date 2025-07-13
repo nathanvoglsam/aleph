@@ -32,8 +32,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use aleph_rhi_api::SamplerDesc;
 use parking_lot::RwLock;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Graphics::Direct3D12::*;
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::internal::conv::{
     border_color_to_dx12, compare_op_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,

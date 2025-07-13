@@ -82,16 +82,18 @@ impl Fence {
     /// FFI to ID3D12CommandQueue::Signal
     ///
     pub unsafe fn signal_on_queue(&self, queue: &ID3D12CommandQueue) -> windows::core::Result<()> {
-        // Fetch add means we get the value we want to signal + increment to the next value fully
-        // atomically. The subsequent 'wait' operation will use 'value - 1'.
-        let signal_val = self.value.fetch_add(1, Ordering::Relaxed);
+        unsafe {
+            // Fetch add means we get the value we want to signal + increment to the next value fully
+            // atomically. The subsequent 'wait' operation will use 'value - 1'.
+            let signal_val = self.value.fetch_add(1, Ordering::Relaxed);
 
-        // If we somehow managed to run a single renderer instance for 243 million years (assuming
-        // you signalled the same semaphore 2400 times per second) then this will overflow.
-        //
-        // If you see this panic message, let me know how humanity is going.
-        assert_ne!(signal_val, u64::MAX, "Semaphore internal value overflow!");
+            // If we somehow managed to run a single renderer instance for 243 million years (assuming
+            // you signalled the same semaphore 2400 times per second) then this will overflow.
+            //
+            // If you see this panic message, let me know how humanity is going.
+            assert_ne!(signal_val, u64::MAX, "Semaphore internal value overflow!");
 
-        queue.Signal(&self.fence, signal_val)
+            queue.Signal(&self.fence, signal_val)
+        }
     }
 }

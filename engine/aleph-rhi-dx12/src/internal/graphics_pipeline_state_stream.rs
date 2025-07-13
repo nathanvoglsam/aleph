@@ -33,12 +33,12 @@
 use std::ffi::c_void;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
-use std::mem::{size_of, ManuallyDrop};
+use std::mem::{ManuallyDrop, size_of};
 use std::ops::Deref;
 
-use windows::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
 
 pub struct GraphicsPipelineStateStreamBuilder<'a> {
     root_signature: Option<ID3D12RootSignature>,

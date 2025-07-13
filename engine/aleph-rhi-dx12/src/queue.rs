@@ -33,15 +33,15 @@ use std::ptr;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use aleph_any::{box_downcast, AnyArc, AnyWeak, IAny, TraitObject};
+use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use crossbeam::queue::ArrayQueue;
 use parking_lot::Mutex;
 use pix::{begin_event_cstr_on_queue, end_event_on_queue, set_marker_cstr_on_queue};
-use windows::core::Interface;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
+use windows::core::Interface;
 
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
@@ -117,7 +117,7 @@ impl IAny for Queue {
 
 impl IGetPlatformInterface for Queue {
     unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
-        try_clone_value_into_slot::<ID3D12CommandQueue>(&self.handle, out, target)
+        unsafe { try_clone_value_into_slot::<ID3D12CommandQueue>(&self.handle, out, target) }
     }
 }
 
@@ -172,8 +172,10 @@ impl Queue {
         // caused an overflow and broken our monotonicity requirement.
         assert_ne!(old_index, u64::MAX, "last_submitted_index integer overflow");
 
-        // Signal new_index, new_index is the submission ID.
-        self.handle.Signal(&self.fence, new_index)?;
+        unsafe {
+            // Signal new_index, new_index is the submission ID.
+            self.handle.Signal(&self.fence, new_index)?;
+        }
 
         Ok(new_index)
     }
@@ -322,134 +324,138 @@ impl IQueue for Queue {
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
-        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
-        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
-        // either.
-        let _lock = self.submit_lock.lock();
+        unsafe {
+            // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
+            // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
+            // either.
+            let _lock = self.submit_lock.lock();
 
-        // 'Wait' on all the wait_semaphores in a loop, as we're emulating vulkan like semaphore
-        // objects that predicate a submission
-        for semaphore in desc.wait_semaphores {
-            let semaphore = Semaphore::get(semaphore);
-            semaphore
-                .wait_on_queue(&self.handle)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-        }
-
-        let mut lists: Vec<Box<CommandList>> = Vec::with_capacity(desc.command_lists.len());
-        let mut handles: Vec<Option<ID3D12CommandList>> =
-            Vec::with_capacity(desc.command_lists.len());
-        for list in desc.command_lists {
-            let list = list.take().unwrap();
-            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
-
-            // Get the command list to submit
-            handles.push(Some(list.list.cast().unwrap()));
-
-            // Add the bundle to our list
-            lists.push(list);
-        }
-
-        // Assert the command list is in the correct state for submission
-        for list in lists.iter_mut() {
-            if list.state != ListState::Closed {
-                return Err(QueueSubmitError::InvalidCommandListState);
+            // 'Wait' on all the wait_semaphores in a loop, as we're emulating vulkan like semaphore
+            // objects that predicate a submission
+            for semaphore in desc.wait_semaphores {
+                let semaphore = Semaphore::get(semaphore);
+                semaphore
+                    .wait_on_queue(&self.handle)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
             }
-        }
 
-        self.handle.ExecuteCommandLists(&handles);
+            let mut lists: Vec<Box<CommandList>> = Vec::with_capacity(desc.command_lists.len());
+            let mut handles: Vec<Option<ID3D12CommandList>> =
+                Vec::with_capacity(desc.command_lists.len());
+            for list in desc.command_lists {
+                let list = list.take().unwrap();
+                let list = box_downcast::<_, CommandList>(list).ok().unwrap();
 
-        // 'Signal' all the 'signal_semaphores' in a loop, as we're emulating vulkan like
-        // semaphore objects.
-        for semaphore in desc.signal_semaphores {
-            let semaphore = Semaphore::get(semaphore);
-            semaphore
-                .signal_on_queue(&self.handle)
+                // Get the command list to submit
+                handles.push(Some(list.list.cast().unwrap()));
+
+                // Add the bundle to our list
+                lists.push(list);
+            }
+
+            // Assert the command list is in the correct state for submission
+            for list in lists.iter_mut() {
+                if list.state != ListState::Closed {
+                    return Err(QueueSubmitError::InvalidCommandListState);
+                }
+            }
+
+            self.handle.ExecuteCommandLists(&handles);
+
+            // 'Signal' all the 'signal_semaphores' in a loop, as we're emulating vulkan like
+            // semaphore objects.
+            for semaphore in desc.signal_semaphores {
+                let semaphore = Semaphore::get(semaphore);
+                semaphore
+                    .signal_on_queue(&self.handle)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            }
+
+            // Signal the fence, if one is provided, to let CPU know the submitted commands are
+            // now fully retired.
+            if let Some(fence) = desc.fence.map(Fence::get) {
+                fence
+                    .signal_on_queue(&self.handle)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            }
+
+            // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
+            // it to be decremented.
+            let index = self
+                .record_submission_index_signal()
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+
+            self.in_flight
+                .push(QueueSubmission { index, lists })
+                .ok()
+                .expect("Overflowed in-flight submission tracking buffer");
+
+            Ok(())
         }
-
-        // Signal the fence, if one is provided, to let CPU know the submitted commands are
-        // now fully retired.
-        if let Some(fence) = desc.fence.map(Fence::get) {
-            fence
-                .signal_on_queue(&self.handle)
-                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-        }
-
-        // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
-        // it to be decremented.
-        let index = self
-            .record_submission_index_signal()
-            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-
-        self.in_flight
-            .push(QueueSubmission { index, lists })
-            .ok()
-            .expect("Overflowed in-flight submission tracking buffer");
-
-        Ok(())
     }
 
     unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
-        let swap_chain = unwrap::swap_chain(desc.swap_chain);
-        let swap_state = swap_chain.inner.lock();
+        unsafe {
+            let swap_chain = unwrap::swap_chain(desc.swap_chain);
+            let swap_state = swap_chain.inner.lock();
 
-        // Checks if the queue supports present operations. While this could use a debug_assert
-        // instead like other validation code, the cost of this check compared to the cost of the
-        // present call is tiny.
-        if !swap_chain.present_supported_on_queue(self.queue_type) {
-            return Err(QueuePresentError::QueuePresentationNotSupported(
-                self.queue_type,
-            ));
-        }
+            // Checks if the queue supports present operations. While this could use a debug_assert
+            // instead like other validation code, the cost of this check compared to the cost of the
+            // present call is tiny.
+            if !swap_chain.present_supported_on_queue(self.queue_type) {
+                return Err(QueuePresentError::QueuePresentationNotSupported(
+                    self.queue_type,
+                ));
+            }
 
-        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
-        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
-        // either.
-        let _lock = self.submit_lock.lock();
+            // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
+            // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
+            // either.
+            let _lock = self.submit_lock.lock();
 
-        for semaphore in desc.wait_semaphores {
-            let semaphore = Semaphore::get(semaphore);
-            semaphore
-                .wait_on_queue(&self.handle)
+            for semaphore in desc.wait_semaphores {
+                let semaphore = Semaphore::get(semaphore);
+                semaphore
+                    .wait_on_queue(&self.handle)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+            }
+
+            let flags = if swap_state
+                .dxgi_flags
+                .contains(DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)
+            {
+                DXGI_PRESENT_ALLOW_TEARING
+            } else {
+                DXGI_PRESENT::default()
+            };
+            let presentation_params = DXGI_PRESENT_PARAMETERS {
+                DirtyRectsCount: 0,
+                pDirtyRects: std::ptr::null_mut(),
+                pScrollRect: std::ptr::null_mut(),
+                pScrollOffset: std::ptr::null_mut(),
+            };
+            swap_chain
+                .swap_chain
+                .Present1(0, flags, &presentation_params)
+                .ok()
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+
+            if swap_chain
+                .acquired
+                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+                .is_err()
+            {
+                panic!("Attempted to present an image without having first acquired one");
+            }
+
+            // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
+            // it to be decremented.
+            let _index = self
+                .record_submission_index_signal()
+                .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+
+            Ok(())
         }
-
-        let flags = if swap_state
-            .dxgi_flags
-            .contains(DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING)
-        {
-            DXGI_PRESENT_ALLOW_TEARING
-        } else {
-            DXGI_PRESENT::default()
-        };
-        let presentation_params = DXGI_PRESENT_PARAMETERS {
-            DirtyRectsCount: 0,
-            pDirtyRects: std::ptr::null_mut(),
-            pScrollRect: std::ptr::null_mut(),
-            pScrollOffset: std::ptr::null_mut(),
-        };
-        swap_chain
-            .swap_chain
-            .Present1(0, flags, &presentation_params)
-            .ok()
-            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-
-        if swap_chain
-            .acquired
-            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-            .is_err()
-        {
-            panic!("Attempted to present an image without having first acquired one");
-        }
-
-        // Safety: We simply never, ever decrement last_submitted_index. Ever. It's impossible for
-        // it to be decremented.
-        let _index = self
-            .record_submission_index_signal()
-            .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-
-        Ok(())
     }
 }
 
