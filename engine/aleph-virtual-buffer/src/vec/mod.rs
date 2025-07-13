@@ -31,7 +31,7 @@ use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
 use std::mem::{needs_drop, size_of};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
-use std::slice::{from_raw_parts, from_raw_parts_mut, SliceIndex};
+use std::slice::{SliceIndex, from_raw_parts, from_raw_parts_mut};
 
 use crate::VirtualBuffer;
 
@@ -482,7 +482,6 @@ unsafe impl<T: Sync> Sync for VirtualVec<T> {}
 impl<T> Deref for VirtualVec<T> {
     type Target = [T];
     #[inline(always)]
-    #[must_use]
     fn deref(&self) -> &Self::Target {
         self.as_slice()
     }
@@ -490,7 +489,6 @@ impl<T> Deref for VirtualVec<T> {
 
 impl<T> DerefMut for VirtualVec<T> {
     #[inline(always)]
-    #[must_use]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_slice_mut()
     }
@@ -502,7 +500,6 @@ where
 {
     type Output = <I as SliceIndex<[T]>>::Output;
     #[inline(always)]
-    #[must_use]
     fn index(&self, index: I) -> &Self::Output {
         &self.deref()[index]
     }
@@ -513,7 +510,6 @@ where
     I: SliceIndex<[T]>,
 {
     #[inline(always)]
-    #[must_use]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut self.deref_mut()[index]
     }

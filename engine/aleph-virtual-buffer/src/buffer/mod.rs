@@ -154,7 +154,7 @@ impl VirtualBuffer {
     /// `Self::requires_committing`.
     ///
     pub const unsafe fn as_slice(&self) -> &[u8] {
-        from_raw_parts(self.data().as_ptr(), self.len)
+        unsafe { from_raw_parts(self.data().as_ptr(), self.len) }
     }
 
     ///
@@ -169,7 +169,7 @@ impl VirtualBuffer {
     /// `Self::requires_committing`.
     ///
     pub unsafe fn as_slice_mut(&mut self) -> &mut [u8] {
-        from_raw_parts_mut(self.data().as_ptr(), self.len)
+        unsafe { from_raw_parts_mut(self.data().as_ptr(), self.len) }
     }
 
     ///

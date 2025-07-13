@@ -31,58 +31,66 @@
 
 use aleph_windows as windows;
 use windows::Win32::System::Memory::{
-    VirtualAlloc, VirtualFree, MEM_COMMIT, MEM_DECOMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE,
-    PAGE_TYPE,
+    MEM_COMMIT, MEM_DECOMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE, PAGE_TYPE, VirtualAlloc,
+    VirtualFree,
 };
 
 use crate::VirtualBuffer;
 
 #[inline]
 pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuffer> {
-    let alloc_type = MEM_RESERVE;
-    let page_type = PAGE_READWRITE;
+    unsafe {
+        let alloc_type = MEM_RESERVE;
+        let page_type = PAGE_READWRITE;
 
-    let result = VirtualAlloc(None, pages * page_size(), MEM_RESERVE, page_type);
+        let result = VirtualAlloc(None, pages * page_size(), MEM_RESERVE, page_type);
 
-    if let Some(data) = std::ptr::NonNull::new(result) {
-        Ok(VirtualBuffer {
-            data: data.cast(),
-            len: pages * page_size(),
-        })
-    } else {
-        Err(std::io::Error::last_os_error())
+        if let Some(data) = std::ptr::NonNull::new(result) {
+            Ok(VirtualBuffer {
+                data: data.cast(),
+                len: pages * page_size(),
+            })
+        } else {
+            Err(std::io::Error::last_os_error())
+        }
     }
 }
 
 #[inline]
 pub unsafe fn free_virtual_buffer(base: *mut u8, _pages: usize) -> std::io::Result<()> {
-    let free_type = MEM_RELEASE;
+    unsafe {
+        let free_type = MEM_RELEASE;
 
-    // The number of pages to free isn't needed on the windows implementation
-    VirtualFree(base as _, 0, free_type)?;
-    Ok(())
-}
-
-#[inline]
-pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    let alloc_type = MEM_COMMIT;
-    let page_type = PAGE_READWRITE;
-
-    let result = VirtualAlloc(Some(base as _), pages * page_size(), alloc_type, page_type);
-
-    if result.is_null() {
-        Err(std::io::Error::last_os_error())
-    } else {
+        // The number of pages to free isn't needed on the windows implementation
+        VirtualFree(base as _, 0, free_type)?;
         Ok(())
     }
 }
 
 #[inline]
-pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    let free_type = MEM_DECOMMIT;
+pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
+    unsafe {
+        let alloc_type = MEM_COMMIT;
+        let page_type = PAGE_READWRITE;
 
-    VirtualFree(base as _, pages * page_size(), free_type)?;
-    Ok(())
+        let result = VirtualAlloc(Some(base as _), pages * page_size(), alloc_type, page_type);
+
+        if result.is_null() {
+            Err(std::io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[inline]
+pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
+    unsafe {
+        let free_type = MEM_DECOMMIT;
+
+        VirtualFree(base as _, pages * page_size(), free_type)?;
+        Ok(())
+    }
 }
 
 pub const fn page_size() -> usize {
