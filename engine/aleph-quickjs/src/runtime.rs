@@ -32,9 +32,9 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
+use crate::Context;
 use crate::context::InnerContext;
 use crate::opaque_box::{OpaqueBox, UntypedOpaqueBox};
-use crate::Context;
 
 #[derive(Clone)]
 pub struct Runtime(pub(crate) Rc<InnerRuntime>);
@@ -52,13 +52,13 @@ impl Runtime {
 
     #[inline]
     pub fn to_raw(&self) -> NonNull<raw::JSRuntime> {
-        self.0 .0
+        self.0.0
     }
 
     #[inline]
     pub fn new_context(&self) -> Option<Context> {
         unsafe {
-            let ctx = raw::JS_NewContext(self.0 .0)?;
+            let ctx = raw::JS_NewContext(self.0.0)?;
             let ctx = InnerContext {
                 ctx,
                 rt: self.clone(),
@@ -71,7 +71,7 @@ impl Runtime {
     #[inline]
     pub fn gc(&self) {
         unsafe {
-            raw::JS_RunGC(self.0 .0);
+            raw::JS_RunGC(self.0.0);
         }
     }
 
@@ -80,7 +80,7 @@ impl Runtime {
     pub fn compute_memory_usage(&self) -> raw::JSMemoryUsage {
         unsafe {
             let mut usage = raw::JSMemoryUsage::default();
-            raw::JS_ComputeMemoryUsage(self.0 .0, &mut usage);
+            raw::JS_ComputeMemoryUsage(self.0.0, &mut usage);
             usage
         }
     }
@@ -91,14 +91,14 @@ impl Runtime {
 
         unsafe {
             let opaque = OpaqueBox::new(v);
-            raw::JS_SetRuntimeOpaque(self.0 .0, opaque.as_ptr() as *mut c_void);
+            raw::JS_SetRuntimeOpaque(self.0.0, opaque.as_ptr() as *mut c_void);
         }
     }
 
     #[inline]
     pub fn get_opaque<T: Any + Sized>(&self) -> Option<&T> {
         unsafe {
-            let old = raw::JS_GetRuntimeOpaque(self.0 .0);
+            let old = raw::JS_GetRuntimeOpaque(self.0.0);
             let old = NonNull::new(old);
             if let Some(old) = old {
                 let old = old.cast::<UntypedOpaqueBox>().as_ref();
@@ -112,14 +112,14 @@ impl Runtime {
     #[inline]
     pub fn remove_opaque(&self) {
         unsafe {
-            let old = raw::JS_GetRuntimeOpaque(self.0 .0);
+            let old = raw::JS_GetRuntimeOpaque(self.0.0);
             let old = NonNull::new(old);
             if let Some(old) = old {
                 let old = old.cast::<UntypedOpaqueBox>();
                 UntypedOpaqueBox::drop_inner(old);
             }
 
-            raw::JS_SetRuntimeOpaque(self.0 .0, std::ptr::null_mut());
+            raw::JS_SetRuntimeOpaque(self.0.0, std::ptr::null_mut());
         }
     }
 }

@@ -32,7 +32,7 @@ use std::ffi::*;
 use std::ptr::NonNull;
 use std::rc::Rc;
 
-use aleph_nstr::{nstr, NStr};
+use aleph_nstr::{NStr, nstr};
 use raw::*;
 
 use crate::{Context, NumberVariant, RefValue, Runtime};

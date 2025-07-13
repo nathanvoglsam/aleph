@@ -413,11 +413,14 @@ impl RefValue {
 
     #[inline]
     pub fn get_property_str(&self, prop: &str) -> RefValue {
-        if let Some(a) = self.c.new_atom(prop) {
-            let v = self.get_property(&a);
-            v
-        } else {
-            panic!()
+        match self.c.new_atom(prop) {
+            Some(a) => {
+                let v = self.get_property(&a);
+                v
+            }
+            _ => {
+                panic!()
+            }
         }
     }
 
@@ -432,10 +435,11 @@ impl RefValue {
 
     #[inline]
     pub fn set_property_str(&self, prop: &str, v: &impl DupRawValue) -> c_int {
-        if let Some(a) = self.c.new_atom(prop) {
-            self.set_property(&a, v)
-        } else {
-            panic!()
+        match self.c.new_atom(prop) {
+            Some(a) => self.set_property(&a, v),
+            _ => {
+                panic!()
+            }
         }
     }
 
@@ -454,10 +458,11 @@ impl RefValue {
 
     #[inline]
     pub fn delete_property_str(&self, prop: &str) -> c_int {
-        if let Some(a) = self.c.new_atom(prop) {
-            self.delete_property(&a)
-        } else {
-            panic!()
+        match self.c.new_atom(prop) {
+            Some(a) => self.delete_property(&a),
+            _ => {
+                panic!()
+            }
         }
     }
 
@@ -685,11 +690,7 @@ impl Object {
 
     /// Convert the [`RefValue`] into an [`Object`] if this value contains a JS 'object' value.
     pub const fn from_value(v: RefValue) -> Result<Self, RefValue> {
-        if v.is_object() {
-            Ok(Self(v))
-        } else {
-            Err(v)
-        }
+        if v.is_object() { Ok(Self(v)) } else { Err(v) }
     }
 
     /// Get the inner [`RefValue`].
@@ -806,10 +807,12 @@ impl Object {
 
 impl Object {
     pub(crate) unsafe fn from_raw(c: &Context, v: JSValue) -> Option<Self> {
-        if v.is_object() {
-            Some(Self(RefValue::from_raw(c, v)))
-        } else {
-            None
+        unsafe {
+            if v.is_object() {
+                Some(Self(RefValue::from_raw(c, v)))
+            } else {
+                None
+            }
         }
     }
 }

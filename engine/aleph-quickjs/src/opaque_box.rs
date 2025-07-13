@@ -47,8 +47,10 @@ impl UntypedOpaqueBox {
     }
 
     pub(crate) unsafe fn drop_inner(v: NonNull<Self>) {
-        let dropper = v.as_ref().dropper;
-        (dropper)(v)
+        unsafe {
+            let dropper = v.as_ref().dropper;
+            (dropper)(v)
+        }
     }
 }
 
@@ -72,7 +74,9 @@ impl<T: Any + Sized> OpaqueBox<T> {
     }
 
     pub(crate) unsafe fn dropper_fn(v: NonNull<UntypedOpaqueBox>) {
-        let v = v.cast::<OpaqueBox<T>>();
-        let _ = Box::from_raw(v.as_ptr());
+        unsafe {
+            let v = v.cast::<OpaqueBox<T>>();
+            let _ = Box::from_raw(v.as_ptr());
+        }
     }
 }
