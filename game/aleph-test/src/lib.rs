@@ -32,7 +32,7 @@ aleph_dx12_agility_sdk::export_standard_agility_sdk_symbols!();
 
 mod game;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn SDL_main(
     _argc: std::ffi::c_int,
     _argv: *const *const std::ffi::c_char,

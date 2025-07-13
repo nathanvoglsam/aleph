@@ -31,13 +31,13 @@ extern crate aleph_engine as aleph;
 
 use std::path::Path;
 
+use aleph::Engine;
 use aleph::interfaces::make_plugin_description_for_crate;
 use aleph::interfaces::plugin::{IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription};
 use aleph::interfaces::renderer::Renderer;
 use aleph::interfaces::schedule::CoreStage;
-use aleph::Engine;
-use aleph_egui::widgets::{frame_stats, FrameTimeHistory};
 use aleph_egui::IEguiContextProvider;
+use aleph_egui::widgets::{FrameTimeHistory, frame_stats};
 use aleph_engine::interfaces::components::{Camera, StaticMesh, Transform, TransformHistory};
 use aleph_engine::interfaces::label::make_label;
 use aleph_engine::interfaces::math::{DVec3, Rotor3, Vec3};
@@ -55,7 +55,7 @@ use crate::game::async_texture_loader::AsyncTextureLoader;
 use crate::game::config::Config;
 use crate::game::cube_mesh::upload_cube_buffers;
 use crate::game::free_camera::FreeCamera;
-use crate::game::gltf_loader::{load_scene, BumpThingy, PollResult};
+use crate::game::gltf_loader::{BumpThingy, PollResult, load_scene};
 use crate::game::throbber_logic::ThrobberLogic;
 
 pub fn engine_runner() {
