@@ -112,6 +112,15 @@ impl EguiFontTexture {
                     let pos = (position[0], position[1]);
                     self.font_texture.apply_patch_to_font_texture(image, pos);
                 } else {
+                    // Protect the texture from growing over the size we've allocated for it
+                    assert!(image.width() <= 8192);
+                    assert!(image.height() <= 8192);
+
+                    // Update the texture's logical size (there is always an allocation for
+                    // 8192x8192 pixels, we just reuse the buffer when we resize).
+                    self.font_texture.width = image.width();
+                    self.font_texture.height = image.height();
+
                     self.font_texture.apply_patch_to_font_texture(image, (0, 0));
                 }
             }
