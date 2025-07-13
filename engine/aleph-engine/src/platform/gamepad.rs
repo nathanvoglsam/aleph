@@ -33,7 +33,7 @@ use std::hash::BuildHasherDefault;
 use std::ops::Deref;
 
 use aleph_identity_hasher::IdentityHasher;
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{AnyArc, declare_interfaces};
 use interfaces::platform::{
     GamepadAxis, GamepadAxisMotion, GamepadButton, GamepadButtonDown, GamepadButtonUp,
     GamepadEvent, GamepadId, GamepadState, IGamepads, IGamepadsAccessor,

@@ -75,7 +75,7 @@ impl EngineBuilder {
         // Initialize COM with MTA
         #[cfg(target_os = "windows")]
         unsafe {
-            use aleph_windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
+            use aleph_windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
             CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
         }
 
@@ -90,7 +90,7 @@ impl EngineBuilder {
                 // Initialize COM with MTA
                 #[cfg(target_os = "windows")]
                 unsafe {
-                    use aleph_windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
+                    use aleph_windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
                     CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
                 }
                 name_for_pool_thread_i(i);

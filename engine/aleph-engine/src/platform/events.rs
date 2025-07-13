@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{AnyArc, declare_interfaces};
 use interfaces::platform::{Event, IEvents, IEventsLock};
 use parking_lot::{RwLock, RwLockReadGuard};
 use smallbox::space::S1;
-use smallbox::{smallbox, SmallBox};
+use smallbox::{SmallBox, smallbox};
 
 ///
 /// The struct that provides the context for, and implements, `IEvents`

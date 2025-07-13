@@ -36,11 +36,11 @@ use interfaces::schedule::CoreStage;
 use interfaces::scheduler::{Schedule, SystemSchedule, TypedTable};
 
 use crate::interfaces::plugin::IPlugin;
-use crate::platform::{platform_interfaces, PlatformSDL2};
+use crate::platform::{PlatformSDL2, platform_interfaces};
 use crate::plugin_registry::quit_handle::QuitHandleImpl;
 use crate::plugin_registry::registrar::PluginRegistrar;
 use crate::plugin_registry::{PluginEntry, PluginRegistry};
-use crate::rhi::{rhi_interfaces, Rhi};
+use crate::rhi::{Rhi, rhi_interfaces};
 
 ///
 ///

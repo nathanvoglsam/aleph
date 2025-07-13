@@ -30,14 +30,14 @@
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{AnyArc, declare_interfaces};
 use interfaces::platform::{
     Cursor, Event, IMouse, IMouseEventsLock, MouseButton, MouseButtonDownEvent, MouseButtonUpEvent,
     MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection, MouseWheelEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use smallbox::space::S1;
-use smallbox::{smallbox, SmallBox};
+use smallbox::{SmallBox, smallbox};
 
 ///
 /// Internal enum for representing a mouse request

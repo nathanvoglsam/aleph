@@ -29,14 +29,14 @@
 
 use std::collections::HashMap;
 
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{AnyArc, declare_interfaces};
 use interfaces::platform::{
     Event, IKeyboard, IKeyboardEventsLock, IKeyboardStateLock, KeyCode, KeyDownEvent, KeyMod,
     KeyUpEvent, KeyboardEvent, ScanCode, TextInputEvent,
 };
 use parking_lot::{RwLock, RwLockReadGuard};
 use smallbox::space::S1;
-use smallbox::{smallbox, SmallBox};
+use smallbox::{SmallBox, smallbox};
 
 ///
 /// Represents the state of the keyboard this frame

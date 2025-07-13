@@ -29,7 +29,7 @@
 
 use std::any::TypeId;
 
-use aleph_interfaces::any::{declare_interfaces, AnyArc};
+use aleph_interfaces::any::{AnyArc, declare_interfaces};
 use aleph_interfaces::platform::IWindow;
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::*;

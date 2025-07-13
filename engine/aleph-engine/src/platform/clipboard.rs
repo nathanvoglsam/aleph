@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{CStr, CString, c_void};
 use std::marker::PhantomData;
 
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{AnyArc, declare_interfaces};
 use interfaces::platform::IClipboard;
 
 ///

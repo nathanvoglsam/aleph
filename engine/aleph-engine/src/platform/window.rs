@@ -31,7 +31,7 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{AnyArc, declare_interfaces};
 use interfaces::platform::{
     Event, HasDisplayHandle, HasWindowHandle, IWindow, IWindowEventsLock, RawDisplayHandle,
     RawWindowHandle, WindowEvent,
@@ -39,7 +39,7 @@ use interfaces::platform::{
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use raw_window_handle::{DisplayHandle, HandleError, WindowHandle};
 use smallbox::space::S1;
-use smallbox::{smallbox, SmallBox};
+use smallbox::{SmallBox, smallbox};
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more

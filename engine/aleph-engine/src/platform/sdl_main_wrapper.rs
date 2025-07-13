@@ -110,7 +110,7 @@ mod common {
 mod uwp {
     use std::ffi::{c_int, c_void};
 
-    use crate::sdl_main_wrapper::common::{main_wrapper, send_payload, MainFn, PayloadHack};
+    use crate::sdl_main_wrapper::common::{MainFn, PayloadHack, main_wrapper, send_payload};
 
     extern "C" {
         fn SDL_WinRTRunApp(main: MainFn, reserved: *const c_void) -> c_int;
@@ -134,7 +134,7 @@ pub use uwp::intercept_main;
 mod ios {
     use std::ffi::{c_char, c_int};
 
-    use crate::sdl_main_wrapper::common::{main_wrapper, send_payload, MainFn, PayloadHack};
+    use crate::sdl_main_wrapper::common::{MainFn, PayloadHack, main_wrapper, send_payload};
 
     extern "C" {
         fn SDL_UIKitRunApp(argc: c_int, argv: *const *const c_char, main: MainFn) -> c_int;
