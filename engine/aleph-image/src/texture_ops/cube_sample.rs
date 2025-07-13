@@ -29,7 +29,7 @@
 
 use aleph_math::{Vec2, Vec3, Vec4};
 
-use crate::{IAddressMode, IPixelAccess, IPixelSample, ImageBuffer, PixelFormat};
+use crate::{IAddressMode, IPixelSample, ImageBuffer, PixelFormat};
 
 pub struct CubeSampler<'a, T: PixelFormat> {
     images: [&'a ImageBuffer<T>; 6],

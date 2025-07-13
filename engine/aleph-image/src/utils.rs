@@ -53,7 +53,7 @@ pub fn f32_to_unorm_u16(v: f32) -> u16 {
 
 #[cfg(test)]
 mod tests {
-    use super::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
+    use super::{f32_to_unorm_u8, f32_to_unorm_u16, unorm_u8_to_f32, unorm_u16_to_f32};
 
     #[test]
     fn unorm_u8_to_f32_associates() {

@@ -35,11 +35,12 @@ use aleph_math::{UVec2, Vec3};
 use half::f16;
 
 use crate::{
-    image_to_equi, image_to_octahedral, image_to_whole_cube, integrate_irradiance_to_equi,
-    integrate_irradiance_to_octahedral, integrate_irradiance_to_whole_cube, CubeSampler,
-    EnvironmentMapProjection, EquirectangularDirectionalSampler, IPixelAccess, IPixelStorage,
-    IResizeImage, ImageBuffer, OctahderalDirectionalSampler, PixR, PixRG, PixRGB, PixRGBA,
-    PixelChannelType, PixelFormat, ResizeFilter, SphericalMapping, TextureOpError, TextureOpResult,
+    CubeSampler, EnvironmentMapProjection, EquirectangularDirectionalSampler, IPixelAccess,
+    IPixelStorage, IResizeImage, ImageBuffer, OctahderalDirectionalSampler, PixR, PixRG, PixRGB,
+    PixRGBA, PixelChannelType, PixelFormat, ResizeFilter, SphericalMapping, TextureOpError,
+    TextureOpResult, image_to_equi, image_to_octahedral, image_to_whole_cube,
+    integrate_irradiance_to_equi, integrate_irradiance_to_octahedral,
+    integrate_irradiance_to_whole_cube,
 };
 
 /// Type that closes over the types of textures we support working with. This includes the types

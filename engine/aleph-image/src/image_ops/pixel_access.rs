@@ -83,7 +83,7 @@ pub trait IPixelAccess: IPixelStorage {
     /// - Ensure that 'x' is < width.
     /// - Ensure that 'y' is < height.
     unsafe fn load_unchecked(&self, x: u32, y: u32) -> Self::Result {
-        self.load_checked(x, y).unwrap_unchecked()
+        unsafe { self.load_checked(x, y).unwrap_unchecked() }
     }
 
     /// Wrapper over [`IPixelAccess::store_checked`] that panics if the requested pixel is out of
@@ -114,7 +114,7 @@ pub trait IPixelAccess: IPixelStorage {
     /// - Ensure that 'x' is < width.
     /// - Ensure that 'y' is < height.
     unsafe fn store_unchecked(&mut self, x: u32, y: u32, v: Self::Result) {
-        self.store_checked(x, y, v).unwrap_unchecked()
+        unsafe { self.store_checked(x, y, v).unwrap_unchecked() }
     }
 }
 

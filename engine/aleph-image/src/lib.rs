@@ -44,7 +44,7 @@ pub use pixel_format::{
 };
 pub use spherical_mapping::{EnvironmentMapProjection, SphericalMapping};
 pub use texture::{
-    layer_and_level_from_set_index, set_index_for_layer_and_level, DynamicTextureBuffer,
-    TextureBuffer, TextureType,
+    DynamicTextureBuffer, TextureBuffer, TextureType, layer_and_level_from_set_index,
+    set_index_for_layer_and_level,
 };
 pub use texture_ops::*;

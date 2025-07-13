@@ -155,11 +155,7 @@ impl IAddressMode for AddressModeWrap {
     #[inline(always)]
     fn apply(dim: f32, scaled_u: f32) -> f32 {
         let x = scaled_u % dim;
-        if x < 0.0 {
-            x + dim
-        } else {
-            x
-        }
+        if x < 0.0 { x + dim } else { x }
     }
 }
 

@@ -34,7 +34,7 @@ use bytemuck::{AnyBitPattern, NoUninit, Pod, Zeroable};
 use half::f16;
 use image::{Luma, LumaA, Pixel, Rgb, Rgba};
 
-use crate::utils::{f32_to_unorm_u16, f32_to_unorm_u8, unorm_u16_to_f32, unorm_u8_to_f32};
+use crate::utils::{f32_to_unorm_u8, f32_to_unorm_u16, unorm_u8_to_f32, unorm_u16_to_f32};
 
 /// A single channel pixel with a generic channel type.
 #[derive(Copy, Clone, Zeroable, Pod)]
