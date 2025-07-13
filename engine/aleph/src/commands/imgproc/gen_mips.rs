@@ -31,12 +31,12 @@ use aleph_image::TextureType;
 use anyhow::anyhow;
 use clap::{ArgMatches, Command};
 
+use crate::commands::ISubcommand;
 use crate::commands::imgproc::{
     get_input_match, get_is_normal_map_match, get_mip_filter_matches, get_output_match,
     get_to_half_match, input_arg, is_normal_map_arg, load_ktx_document_to_texture, mip_filter_arg,
     output_arg, prepare_texture_for_gpu, to_half_arg, write_texture_to_ktx_file,
 };
-use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 
 pub struct GenMips;

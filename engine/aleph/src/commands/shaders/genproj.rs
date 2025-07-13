@@ -36,14 +36,14 @@ use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 use rayon::prelude::*;
 
-use crate::commands::{config_arg, platform_arg, ISubcommand};
+use crate::commands::{ISubcommand, config_arg, platform_arg};
 use crate::project::AlephProject;
 use crate::shader_system::{
     ShaderCompilationParams, ShaderCrateContext, ShaderFile, ShaderModuleContext,
     ShaderModuleDefinition, ShaderModuleDefinitionFile, ShaderProjectContext, ShaderSubproject,
     ShaderTargetLanguage,
 };
-use crate::utils::{dunce_utf8, ninja, BuildPlatform};
+use crate::utils::{BuildPlatform, dunce_utf8, ninja};
 
 pub struct GenShaderProj {}
 
@@ -441,7 +441,8 @@ fn sorted_dir_listing(item: &Utf8Path) -> std::io::Result<SortedDirListingIter> 
 
 fn write_imports(output: &mut impl std::fmt::Write, indent: &str) -> std::fmt::Result {
     writeln!(output, "{indent}#[allow(unused)]")?;
-    writeln!(output,
+    writeln!(
+        output,
         "{indent}use aleph_shader_db::{{ Amplification, Compute, Domain, Fragment, Geometry, Hull, Mesh, ShaderName, Vertex }};"
     )?;
     writeln!(output)?;

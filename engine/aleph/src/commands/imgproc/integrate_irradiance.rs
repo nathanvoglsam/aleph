@@ -30,13 +30,13 @@
 use aleph_math::UVec2;
 use clap::{Arg, ArgMatches, Command};
 
+use crate::commands::ISubcommand;
 use crate::commands::imgproc::{
     get_input_env_map_type_matches, get_input_match, get_output_env_map_type_matches,
     get_output_match, get_to_half_match, input_arg, input_env_map_type_arg,
     load_ktx_document_to_texture, output_arg, output_env_map_type_arg, prepare_texture_for_gpu,
     to_half_arg, write_texture_to_ktx_file,
 };
-use crate::commands::ISubcommand;
 use crate::project::AlephProject;
 
 pub struct IntegrateIrradiance;

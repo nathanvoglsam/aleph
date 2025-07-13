@@ -29,16 +29,16 @@
 
 use std::process::Command;
 
-use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::Profile;
+use aleph_target::build::{target_architecture, target_platform};
 use anyhow::anyhow;
 use clap::{Arg, ArgAction, ArgMatches};
 
-use crate::commands::{arch_arg, config_arg, platform_arg, ISubcommand};
+use crate::commands::{ISubcommand, arch_arg, config_arg, platform_arg};
 use crate::project::AlephProject;
 use crate::utils::{
-    architecture_from_arg, resolve_absolute_or_root_relative_path, resolve_ndk_from_proj_or_env,
-    BuildPlatform, Target,
+    BuildPlatform, Target, architecture_from_arg, resolve_absolute_or_root_relative_path,
+    resolve_ndk_from_proj_or_env,
 };
 
 pub struct Build {}
@@ -91,7 +91,11 @@ impl ISubcommand for Build {
             p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux)
                 if p != native_build_platform =>
             {
-                log::error!("Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling", p, native_build_platform);
+                log::error!(
+                    "Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling",
+                    p,
+                    native_build_platform
+                );
                 return Err(anyhow!(
                     "Trying to build platform '{}' on host '{}'.",
                     p,
@@ -106,10 +110,14 @@ impl ISubcommand for Build {
         let build_std = matches.get_flag("build-std");
 
         if build_std && matches!(platform, BuildPlatform::Android) {
-            log::warn!("--build-std flag specified for Android, but Android does not support this flag. --build-std will be ignored!");
+            log::warn!(
+                "--build-std flag specified for Android, but Android does not support this flag. --build-std will be ignored!"
+            );
         }
         if build_std && matches!(platform, BuildPlatform::Uwp) {
-            log::warn!("--build-std flag specified for UWP, but UWP does not require this flag. UWP always builds with build-std");
+            log::warn!(
+                "--build-std flag specified for UWP, but UWP does not require this flag. UWP always builds with build-std"
+            );
         }
 
         match target.platform {

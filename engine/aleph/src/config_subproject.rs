@@ -27,16 +27,16 @@
 // SOFTWARE.
 //
 
-use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
+use bumpalo::collections::Vec as BVec;
 use camino::Utf8Path;
 use cargo_metadata::Package;
 
 use crate::crate_metadata::{AlephCrateMetadata, ProjectCrateMetadata};
 use crate::project::AlephProject;
 use crate::subproject::{ISubproject, SubprojectCrateContext, SubprojectProjectContext};
-use crate::utils::dunce_utf8::simplified;
 use crate::utils::BumpExt;
+use crate::utils::dunce_utf8::simplified;
 
 #[derive(Debug)]
 pub struct ConfigSubproject();

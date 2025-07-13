@@ -33,8 +33,8 @@ mod project_context;
 
 use std::fmt::Debug;
 
-use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
+use bumpalo::collections::Vec as BVec;
 use cargo_metadata::Package;
 pub use crate_context::SubprojectCrateContext;
 pub use module_context::SubprojectModuleContext;

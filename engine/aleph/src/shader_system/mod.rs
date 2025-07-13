@@ -354,21 +354,21 @@ impl ShaderCompilationParams {
                         "Define '{}' for shader module '{}' has invalid type 'Datetime'",
                         name,
                         &ctx.module_name,
-                    ))
+                    ));
                 }
                 toml::Value::Array(_) => {
                     return Err(anyhow!(
                         "Define '{}' for shader module '{}' has invalid type 'Array'",
                         name,
                         &ctx.module_name,
-                    ))
+                    ));
                 }
                 toml::Value::Table(_) => {
                     return Err(anyhow!(
                         "Define '{}' for shader module '{}' has invalid type 'Table'",
                         name,
                         &ctx.module_name,
-                    ))
+                    ));
                 }
             }
         }

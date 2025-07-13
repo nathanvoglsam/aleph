@@ -33,18 +33,18 @@ use camino::Utf8Path;
 use clap::{ArgMatches, Command};
 use tera::{Context, Tera};
 
-use crate::commands::{arch_arg, platform_arg, ISubcommand};
+use crate::commands::{ISubcommand, arch_arg, platform_arg};
 use crate::project::AlephProject;
 use crate::project_schema::{
     AndroidBrandingSchema, AndroidSchema, GameSchema, UwpBrandingSchema, UwpSchema,
 };
 use crate::templates::{
-    android_project_bundle, uwp_project_bundle, ANDROID_ACTIVITY_SOURCE_TEMPLATE,
-    LOCAL_PROPERTIES_TEMPLATE,
+    ANDROID_ACTIVITY_SOURCE_TEMPLATE, LOCAL_PROPERTIES_TEMPLATE, android_project_bundle,
+    uwp_project_bundle,
 };
 use crate::utils::{
-    architecture_from_arg, extract_zip, resolve_absolute_or_root_relative_path, BuildPlatform,
-    Target,
+    BuildPlatform, Target, architecture_from_arg, extract_zip,
+    resolve_absolute_or_root_relative_path,
 };
 
 pub struct GenProj {}

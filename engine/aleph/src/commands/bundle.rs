@@ -29,20 +29,20 @@
 
 use std::process::Command;
 
-use aleph_target::build::target_platform;
 use aleph_target::Profile;
+use aleph_target::build::target_platform;
 use anyhow::anyhow;
 use bumpalo::Bump;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 
-use crate::commands::{arch_arg, config_arg, platform_arg, ISubcommand};
+use crate::commands::{ISubcommand, arch_arg, config_arg, platform_arg};
 use crate::project::AlephProject;
 use crate::shader_system::ShaderSubproject;
 use crate::utils::dunce_utf8::simplified;
 use crate::utils::{
-    architecture_from_arg, get_gradlew_name, resolve_absolute_or_root_relative_path,
-    resolve_ndk_from_proj_or_env, BuildPlatform, Target,
+    BuildPlatform, Target, architecture_from_arg, get_gradlew_name,
+    resolve_absolute_or_root_relative_path, resolve_ndk_from_proj_or_env,
 };
 
 pub struct Bundle {}
@@ -93,7 +93,11 @@ impl ISubcommand for Bundle {
             p @ (BuildPlatform::Windows | BuildPlatform::MacOS | BuildPlatform::Linux)
                 if p != native_build_platform =>
             {
-                log::error!("Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling", p, native_build_platform);
+                log::error!(
+                    "Trying to build platform '{}' on host '{}'. This platform does not support cross-compiling",
+                    p,
+                    native_build_platform
+                );
                 return Err(anyhow!(
                     "Trying to build platform '{}' on host '{}'.",
                     p,

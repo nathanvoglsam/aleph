@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use bumpalo::collections::Vec as BVec;
 use bumpalo::Bump;
+use bumpalo::collections::Vec as BVec;
 use camino::Utf8Path;
 use cargo_metadata::Package;
 

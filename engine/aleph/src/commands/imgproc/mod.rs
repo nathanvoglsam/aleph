@@ -36,9 +36,9 @@ use std::io::{BufWriter, Read, Seek};
 use std::path::Path;
 
 use aleph_image::{
-    layer_and_level_from_set_index, ColorType, DynamicTextureBuffer, EnvironmentMapProjection,
-    ImageBuffer, PixR, PixRG, PixRGB, PixRGBA, PixelChannelType, PixelFormat, ResizeFilter,
-    SphericalMapping, TextureBuffer, TextureType,
+    ColorType, DynamicTextureBuffer, EnvironmentMapProjection, ImageBuffer, PixR, PixRG, PixRGB,
+    PixRGBA, PixelChannelType, PixelFormat, ResizeFilter, SphericalMapping, TextureBuffer,
+    TextureType, layer_and_level_from_set_index,
 };
 use aleph_ktx::{KtxDocument, KtxDocumentDescription, VkFormat};
 use aleph_math::UVec2;
@@ -47,10 +47,10 @@ use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Arg, ArgAction, ArgMatches};
 use half::f16;
 
+use crate::commands::SubcommandSet;
 use crate::commands::imgproc::gen_mips::GenMips;
 use crate::commands::imgproc::integrate_irradiance::IntegrateIrradiance;
 use crate::commands::imgproc::reproject_env::ReprojectEnv;
-use crate::commands::SubcommandSet;
 
 pub fn make() -> SubcommandSet {
     let mut subcommands =

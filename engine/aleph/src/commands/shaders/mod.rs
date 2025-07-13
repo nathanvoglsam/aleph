@@ -30,9 +30,9 @@
 mod build;
 mod genproj;
 
+use crate::commands::SubcommandSet;
 use crate::commands::shaders::build::BuildShaderProj;
 use crate::commands::shaders::genproj::GenShaderProj;
-use crate::commands::SubcommandSet;
 use crate::shader_system::{ShaderFile, ShaderModuleContext};
 
 pub fn make() -> SubcommandSet {
