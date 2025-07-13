@@ -29,8 +29,8 @@
 
 use std::path::{Path, PathBuf};
 
-use aleph_target_build::build::{target_architecture, target_build_config, target_platform};
 use aleph_target_build::Architecture;
+use aleph_target_build::build::{target_architecture, target_build_config, target_platform};
 
 ///
 /// This function will perform the necessary work to allow rust to export the `D3D12SDKVersion` and
@@ -128,12 +128,12 @@ fn pkg_location() -> PathBuf {
 macro_rules! export_standard_agility_sdk_symbols {
     () => {
         #[used]
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[allow(non_upper_case_globals)]
         pub static D3D12SDKVersion: u32 = 614;
 
         #[used]
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         #[allow(non_upper_case_globals)]
         pub static D3D12SDKPath: &[u8; 3] = b".\\\0";
     };
