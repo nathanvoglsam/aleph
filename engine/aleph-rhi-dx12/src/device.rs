@@ -1708,7 +1708,7 @@ impl Device {
         _binding_layout: &DescriptorBindingLayout,
         writes: &[SamplerDescriptorWrite],
     ) {
-        let set = set.as_mut();
+        let set = unsafe { set.as_mut() };
 
         // Find which index in the set's sampler array maps to the binding we're writing to.
         //
