@@ -53,8 +53,8 @@
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{parse_macro_input, parse_quote, ImplItem, ItemFn, ItemImpl};
+use quote::{ToTokens, quote};
+use syn::{ImplItem, ItemFn, ItemImpl, parse_macro_input, parse_quote};
 
 #[proc_macro_attribute]
 pub fn function(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -112,7 +112,7 @@ pub fn all_functions(_attr: TokenStream, item: TokenStream) -> TokenStream {
         //     ImplItem::Type(_) => { // some code... },
         //     _ => {}
         // }
-        let ImplItem::Fn(ref mut func) = block else {
+        let ImplItem::Fn(func) = block else {
             continue;
         };
 
