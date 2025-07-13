@@ -32,7 +32,7 @@
 use std::os::raw::{c_char, c_void};
 
 #[rustfmt::skip]
-extern "C" {
+unsafe extern "C" {
     /// This is an internal utility provided to allow the rust code to query whether it's linked to the actual PIX
     /// library or the dummy noop implementation. Useful for disabling the marker code when it won't do anything.
     ///
