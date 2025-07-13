@@ -32,7 +32,7 @@ pub extern crate ctor;
 pub extern crate uuid;
 
 use std::collections::HashMap;
-use std::mem::{needs_drop, ManuallyDrop};
+use std::mem::{ManuallyDrop, needs_drop};
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicPtr, Ordering};
@@ -73,19 +73,21 @@ pub unsafe trait IObject: Sized {
 /// function will assume that the given pointer points to an array of 'count' objects and drop
 /// all of them. It is the caller's responsibility to ensure this is correct.
 pub unsafe extern "C" fn object_destructor<T: Sized>(this: NonNull<()>, count: u64) {
-    let mut base = this.cast::<T>();
-    let mut count = count;
-    while count != 0 {
-        base.drop_in_place();
-        base = base.add(1);
-        count = count - 1;
+    unsafe {
+        let mut base = this.cast::<T>();
+        let mut count = count;
+        while count != 0 {
+            base.drop_in_place();
+            base = base.add(1);
+            count = count - 1;
+        }
     }
 }
 
 /// This is a 'const' wrapper function that will return a destructor function pointer if the given
 /// 'T' returns true for [`needs_drop`].
-pub const fn get_object_destructor_for<T: Sized>(
-) -> Option<unsafe extern "C" fn(NonNull<()>, count: u64)> {
+pub const fn get_object_destructor_for<T: Sized>()
+-> Option<unsafe extern "C" fn(NonNull<()>, count: u64)> {
     if needs_drop::<T>() {
         Some(object_destructor::<T>)
     } else {
@@ -426,9 +428,12 @@ pub const unsafe fn object_type_list_head() -> &'static AtomicPtr<ObjectTypeList
 /// linked list of all types.
 #[doc(hidden)]
 pub unsafe fn register_type(v: &'static ObjectTypeListNode) {
-    let ptr: *mut ObjectTypeListNode = v as *const ObjectTypeListNode as *mut ObjectTypeListNode;
-    let next = object_type_list_head().swap(ptr, Ordering::SeqCst);
-    v.next.store(next, Ordering::SeqCst);
+    unsafe {
+        let ptr: *mut ObjectTypeListNode =
+            v as *const ObjectTypeListNode as *mut ObjectTypeListNode;
+        let next = object_type_list_head().swap(ptr, Ordering::SeqCst);
+        v.next.store(next, Ordering::SeqCst);
+    }
 }
 
 // struct Test();
