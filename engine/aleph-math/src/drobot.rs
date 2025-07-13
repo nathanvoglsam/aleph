@@ -243,11 +243,7 @@ pub fn fast_acos4(in_x: f32) -> f32 {
 
     // acos function mirroring
     // check per platform if compiles to a selector - no branch neeeded
-    if in_x >= 0.0 {
-        s
-    } else {
-        PI - s
-    }
+    if in_x >= 0.0 { s } else { PI - s }
 }
 
 /// 4th order polynomial approximation
