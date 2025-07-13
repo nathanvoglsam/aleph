@@ -100,17 +100,19 @@ impl PoolBuilder {
     ///
     #[inline]
     pub unsafe fn build(self, allocator: &Arc<vma::Allocator>) -> VkResult<Arc<Pool>> {
-        let mut pool: Option<PoolH> = None;
-        let result = raw::vmaCreatePool(
-            allocator.as_raw(),
-            NonNull::from(&self.create_info),
-            NonNull::from(&mut pool),
-        );
+        unsafe {
+            let mut pool: Option<PoolH> = None;
+            let result = raw::vmaCreatePool(
+                allocator.as_raw(),
+                NonNull::from(&self.create_info),
+                NonNull::from(&mut pool),
+            );
 
-        result.result_with_success(Arc::new(Pool {
-            pool: pool.unwrap(),
-            allocator: allocator.clone(),
-        }))
+            result.result_with_success(Arc::new(Pool {
+                pool: pool.unwrap(),
+                allocator: allocator.clone(),
+            }))
+        }
     }
 }
 
@@ -132,8 +134,10 @@ impl Pool {
 
     #[inline]
     pub unsafe fn check_pool_corruption(&self) -> VkResult<()> {
-        let result = raw::vmaCheckPoolCorruption(self.allocator.as_raw(), self.pool);
-        result.result()
+        unsafe {
+            let result = raw::vmaCheckPoolCorruption(self.allocator.as_raw(), self.pool);
+            result.result()
+        }
     }
 }
 

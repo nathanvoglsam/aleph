@@ -224,25 +224,32 @@ impl Allocator {
     /// vmaGetPhysicalDeviceProperties
     #[inline]
     pub unsafe fn get_physical_device_properties(&self) -> &vk::PhysicalDeviceProperties {
-        let mut reference: Option<NonNull<vk::PhysicalDeviceProperties>> = None;
+        unsafe {
+            let mut reference: Option<NonNull<vk::PhysicalDeviceProperties>> = None;
 
-        raw::vmaGetPhysicalDeviceProperties(self.inner.allocator, NonNull::from(&mut reference));
+            raw::vmaGetPhysicalDeviceProperties(
+                self.inner.allocator,
+                NonNull::from(&mut reference),
+            );
 
-        reference
-            .expect("Given nullptr by vmaGetPhysicalDeviceProperties")
-            .as_ref()
+            reference
+                .expect("Given nullptr by vmaGetPhysicalDeviceProperties")
+                .as_ref()
+        }
     }
 
     /// vmaGetPhysicalDeviceProperties
     #[inline]
     pub unsafe fn get_memory_properties(&self) -> &vk::PhysicalDeviceMemoryProperties {
-        let mut reference: Option<NonNull<vk::PhysicalDeviceMemoryProperties>> = None;
+        unsafe {
+            let mut reference: Option<NonNull<vk::PhysicalDeviceMemoryProperties>> = None;
 
-        raw::vmaGetMemoryProperties(self.inner.allocator, NonNull::from(&mut reference));
+            raw::vmaGetMemoryProperties(self.inner.allocator, NonNull::from(&mut reference));
 
-        reference
-            .expect("Given nullptr by vmaGetMemoryProperties")
-            .as_ref()
+            reference
+                .expect("Given nullptr by vmaGetMemoryProperties")
+                .as_ref()
+        }
     }
 
     // /// Returns a rusty String object that is much easier to pass around than a CStr reference. It
@@ -292,15 +299,17 @@ impl Allocator {
         memory_type_bits: u32,
         allocation_create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<u32> {
-        let mut idx = 0u32;
-        let result = raw::vmaFindMemoryTypeIndex(
-            self.inner.allocator,
-            memory_type_bits,
-            NonNull::from(allocation_create_info),
-            NonNull::from(&mut idx),
-        );
+        unsafe {
+            let mut idx = 0u32;
+            let result = raw::vmaFindMemoryTypeIndex(
+                self.inner.allocator,
+                memory_type_bits,
+                NonNull::from(allocation_create_info),
+                NonNull::from(&mut idx),
+            );
 
-        result.result_with_success(idx)
+            result.result_with_success(idx)
+        }
     }
 
     /// vmaFindMemoryTypeIndexForBufferInfo
@@ -310,15 +319,17 @@ impl Allocator {
         buffer_create_info: &vk::BufferCreateInfo,
         allocation_create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<u32> {
-        let mut idx = 0u32;
-        let result = raw::vmaFindMemoryTypeIndexForBufferInfo(
-            self.inner.allocator,
-            NonNull::from(buffer_create_info),
-            NonNull::from(allocation_create_info),
-            NonNull::from(&mut idx),
-        );
+        unsafe {
+            let mut idx = 0u32;
+            let result = raw::vmaFindMemoryTypeIndexForBufferInfo(
+                self.inner.allocator,
+                NonNull::from(buffer_create_info),
+                NonNull::from(allocation_create_info),
+                NonNull::from(&mut idx),
+            );
 
-        result.result_with_success(idx)
+            result.result_with_success(idx)
+        }
     }
 
     /// vmaFindMemoryTypeIndexForImageInfo
@@ -328,15 +339,17 @@ impl Allocator {
         image_create_info: &vk::ImageCreateInfo,
         allocation_create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<u32> {
-        let mut idx = 0u32;
-        let result = raw::vmaFindMemoryTypeIndexForImageInfo(
-            self.inner.allocator,
-            NonNull::from(image_create_info),
-            NonNull::from(allocation_create_info),
-            NonNull::from(&mut idx),
-        );
+        unsafe {
+            let mut idx = 0u32;
+            let result = raw::vmaFindMemoryTypeIndexForImageInfo(
+                self.inner.allocator,
+                NonNull::from(image_create_info),
+                NonNull::from(allocation_create_info),
+                NonNull::from(&mut idx),
+            );
 
-        result.result_with_success(idx)
+            result.result_with_success(idx)
+        }
     }
 
     /// vmaAllocateMemory
@@ -346,24 +359,26 @@ impl Allocator {
         memory_requirements: &vk::MemoryRequirements,
         create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<(vma::Allocation, AllocationInfo)> {
-        let mut allocation: Option<AllocationH> = None;
-        let mut allocation_info = AllocationInfo::default();
-        let result = raw::vmaAllocateMemory(
-            self.inner.allocator,
-            NonNull::from(memory_requirements),
-            NonNull::from(create_info),
-            NonNull::from(&mut allocation),
-            Some(NonNull::from(&mut allocation_info)),
-        );
+        unsafe {
+            let mut allocation: Option<AllocationH> = None;
+            let mut allocation_info = AllocationInfo::default();
+            let result = raw::vmaAllocateMemory(
+                self.inner.allocator,
+                NonNull::from(memory_requirements),
+                NonNull::from(create_info),
+                NonNull::from(&mut allocation),
+                Some(NonNull::from(&mut allocation_info)),
+            );
 
-        result_with_success_then(result, || {
-            (
-                vma::Allocation {
-                    allocation: allocation.unwrap_unchecked(),
-                },
-                allocation_info,
-            )
-        })
+            result_with_success_then(result, || {
+                (
+                    vma::Allocation {
+                        allocation: allocation.unwrap_unchecked(),
+                    },
+                    allocation_info,
+                )
+            })
+        }
     }
 
     /// vmaAllocateMemoryPages
@@ -375,38 +390,41 @@ impl Allocator {
         allocations: &mut [Option<vma::Allocation>],
         allocation_infos: &mut [AllocationInfo],
     ) -> VkResult<()> {
-        if !allocations.is_empty() {
-            let get_infos = if !allocation_infos.is_empty() {
-                assert_eq!(allocations.len(), allocation_infos.len());
-                true
-            } else {
-                false
-            };
+        unsafe {
+            if !allocations.is_empty() {
+                let get_infos = if !allocation_infos.is_empty() {
+                    assert_eq!(allocations.len(), allocation_infos.len());
+                    true
+                } else {
+                    false
+                };
 
-            let ptr = NonNull::new(allocations.as_ptr().cast_mut()).unwrap_unchecked();
-            let ptr = ptr.cast::<Option<AllocationH>>();
-            let infos_ptr = NonNull::new(allocation_infos.as_ptr().cast_mut()).unwrap_unchecked();
-            let infos_ptr = infos_ptr.cast::<AllocationInfo>();
+                let ptr = NonNull::new(allocations.as_ptr().cast_mut()).unwrap_unchecked();
+                let ptr = ptr.cast::<Option<AllocationH>>();
+                let infos_ptr =
+                    NonNull::new(allocation_infos.as_ptr().cast_mut()).unwrap_unchecked();
+                let infos_ptr = infos_ptr.cast::<AllocationInfo>();
 
-            let result = raw::vmaAllocateMemoryPages(
-                self.inner.allocator,
-                Some(NonNull::from(memory_requirements)),
-                Some(NonNull::from(create_info)),
-                allocations.len() as _,
-                ptr,
-                if get_infos { None } else { Some(infos_ptr) },
-            );
+                let result = raw::vmaAllocateMemoryPages(
+                    self.inner.allocator,
+                    Some(NonNull::from(memory_requirements)),
+                    Some(NonNull::from(create_info)),
+                    allocations.len() as _,
+                    ptr,
+                    if get_infos { None } else { Some(infos_ptr) },
+                );
 
-            // Enforce that everything has been written and is non-null
-            if cfg!(debug_assertions) {
-                for v in allocations.iter() {
-                    debug_assert!(v.is_some())
+                // Enforce that everything has been written and is non-null
+                if cfg!(debug_assertions) {
+                    for v in allocations.iter() {
+                        debug_assert!(v.is_some())
+                    }
                 }
-            }
 
-            result.result()
-        } else {
-            Ok(())
+                result.result()
+            } else {
+                Ok(())
+            }
         }
     }
 
@@ -418,24 +436,26 @@ impl Allocator {
         create_info: &vma::AllocationCreateInfo,
         allocation_count: usize,
     ) -> VkResult<(Vec<vma::Allocation>, Vec<AllocationInfo>)> {
-        let mut allocations: Vec<_> = Vec::with_capacity(allocation_count);
-        allocations.resize(allocation_count, None);
-        let mut allocation_infos: Vec<_> = Vec::with_capacity(allocation_count);
-        allocation_infos.resize(allocation_count, AllocationInfo::default());
+        unsafe {
+            let mut allocations: Vec<_> = Vec::with_capacity(allocation_count);
+            allocations.resize(allocation_count, None);
+            let mut allocation_infos: Vec<_> = Vec::with_capacity(allocation_count);
+            allocation_infos.resize(allocation_count, AllocationInfo::default());
 
-        self.allocate_memory_pages(
-            memory_requirements,
-            create_info,
-            &mut allocations,
-            &mut allocation_infos,
-        )
-        .map(|_| {
-            let ptr = allocations.as_mut_ptr() as *mut vma::Allocation;
-            let length = allocations.len();
-            let capacity = allocations.capacity();
-            let allocations = Vec::from_raw_parts(ptr, length, capacity);
-            (allocations, allocation_infos)
-        })
+            self.allocate_memory_pages(
+                memory_requirements,
+                create_info,
+                &mut allocations,
+                &mut allocation_infos,
+            )
+            .map(|_| {
+                let ptr = allocations.as_mut_ptr() as *mut vma::Allocation;
+                let length = allocations.len();
+                let capacity = allocations.capacity();
+                let allocations = Vec::from_raw_parts(ptr, length, capacity);
+                (allocations, allocation_infos)
+            })
+        }
     }
 
     /// vmaAllocateMemoryForBuffer
@@ -445,25 +465,27 @@ impl Allocator {
         buffer: vk::Buffer,
         create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<(vma::Allocation, AllocationInfo)> {
-        let mut allocation: Option<AllocationH> = None;
-        let mut allocation_info = AllocationInfo::default();
+        unsafe {
+            let mut allocation: Option<AllocationH> = None;
+            let mut allocation_info = AllocationInfo::default();
 
-        let result = raw::vmaAllocateMemoryForBuffer(
-            self.inner.allocator,
-            buffer,
-            NonNull::from(create_info),
-            NonNull::from(&mut allocation),
-            Some(NonNull::from(&mut allocation_info)),
-        );
+            let result = raw::vmaAllocateMemoryForBuffer(
+                self.inner.allocator,
+                buffer,
+                NonNull::from(create_info),
+                NonNull::from(&mut allocation),
+                Some(NonNull::from(&mut allocation_info)),
+            );
 
-        result_with_success_then(result, || {
-            (
-                vma::Allocation {
-                    allocation: allocation.unwrap_unchecked(),
-                },
-                allocation_info,
-            )
-        })
+            result_with_success_then(result, || {
+                (
+                    vma::Allocation {
+                        allocation: allocation.unwrap_unchecked(),
+                    },
+                    allocation_info,
+                )
+            })
+        }
     }
 
     /// vmaAllocateMemoryforImage
@@ -473,56 +495,62 @@ impl Allocator {
         image: vk::Image,
         create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<(vma::Allocation, AllocationInfo)> {
-        let mut allocation: Option<AllocationH> = None;
-        let mut allocation_info = AllocationInfo::default();
+        unsafe {
+            let mut allocation: Option<AllocationH> = None;
+            let mut allocation_info = AllocationInfo::default();
 
-        let result = raw::vmaAllocateMemoryForImage(
-            self.inner.allocator,
-            image,
-            NonNull::from(create_info),
-            NonNull::from(&mut allocation),
-            Some(NonNull::from(&mut allocation_info)),
-        );
+            let result = raw::vmaAllocateMemoryForImage(
+                self.inner.allocator,
+                image,
+                NonNull::from(create_info),
+                NonNull::from(&mut allocation),
+                Some(NonNull::from(&mut allocation_info)),
+            );
 
-        result_with_success_then(result, || {
-            (
-                vma::Allocation {
-                    allocation: allocation.unwrap_unchecked(),
-                },
-                allocation_info,
-            )
-        })
+            result_with_success_then(result, || {
+                (
+                    vma::Allocation {
+                        allocation: allocation.unwrap_unchecked(),
+                    },
+                    allocation_info,
+                )
+            })
+        }
     }
 
     /// vmaFreeMemory
     #[inline]
     pub unsafe fn free_memory(&self, allocation: vma::Allocation) {
-        raw::vmaFreeMemory(self.inner.allocator, Some(allocation.allocation))
+        unsafe { raw::vmaFreeMemory(self.inner.allocator, Some(allocation.allocation)) }
     }
 
     /// vmaFreeMemoryPages
     #[inline]
     pub unsafe fn free_memory_pages(&self, allocations: &[vma::Allocation]) {
-        if !allocations.is_empty() {
-            // Safety: Must be non-null for len > 1
-            let ptr = NonNull::new(allocations.as_ptr().cast_mut()).unwrap_unchecked();
-            let ptr = ptr.cast::<AllocationH>();
-            raw::vmaFreeMemoryPages(self.inner.allocator, allocations.len() as _, Some(ptr))
+        unsafe {
+            if !allocations.is_empty() {
+                // Safety: Must be non-null for len > 1
+                let ptr = NonNull::new(allocations.as_ptr().cast_mut()).unwrap_unchecked();
+                let ptr = ptr.cast::<AllocationH>();
+                raw::vmaFreeMemoryPages(self.inner.allocator, allocations.len() as _, Some(ptr))
+            }
         }
     }
 
     /// vmaGetAllocationInfo
     #[inline]
     pub unsafe fn get_allocation_info(&self, allocation: vma::Allocation) -> AllocationInfo {
-        let mut info = AllocationInfo::default();
+        unsafe {
+            let mut info = AllocationInfo::default();
 
-        raw::vmaGetAllocationInfo(
-            self.inner.allocator,
-            allocation.allocation,
-            NonNull::from(&mut info),
-        );
+            raw::vmaGetAllocationInfo(
+                self.inner.allocator,
+                allocation.allocation,
+                NonNull::from(&mut info),
+            );
 
-        info
+            info
+        }
     }
 
     // TODO : vmaSetAllocationUserData (PROBABLY WONT EXPOSE THIS, NOT VERY RUSTY)
@@ -533,21 +561,23 @@ impl Allocator {
         &self,
         allocation: vma::Allocation,
     ) -> VkResult<Option<NonNull<c_void>>> {
-        let mut pointer: Option<NonNull<c_void>> = None;
+        unsafe {
+            let mut pointer: Option<NonNull<c_void>> = None;
 
-        let result = raw::vmaMapMemory(
-            self.inner.allocator,
-            allocation.allocation,
-            NonNull::from(&mut pointer),
-        );
+            let result = raw::vmaMapMemory(
+                self.inner.allocator,
+                allocation.allocation,
+                NonNull::from(&mut pointer),
+            );
 
-        result.result_with_success(pointer)
+            result.result_with_success(pointer)
+        }
     }
 
     /// vmaUnmapMemory
     #[inline]
     pub unsafe fn unmap_memory(&self, allocation: vma::Allocation) {
-        raw::vmaUnmapMemory(self.inner.allocator, allocation.allocation)
+        unsafe { raw::vmaUnmapMemory(self.inner.allocator, allocation.allocation) }
     }
 
     /// vmaFlushAllocation
@@ -558,7 +588,10 @@ impl Allocator {
         offset: vk::DeviceSize,
         size: vk::DeviceSize,
     ) -> VkResult<()> {
-        raw::vmaFlushAllocation(self.inner.allocator, allocation.allocation, offset, size).result()
+        unsafe {
+            raw::vmaFlushAllocation(self.inner.allocator, allocation.allocation, offset, size)
+                .result()
+        }
     }
     /// vmaInvalidateAllocation
     #[inline]
@@ -568,14 +601,16 @@ impl Allocator {
         offset: vk::DeviceSize,
         size: vk::DeviceSize,
     ) -> VkResult<()> {
-        raw::vmaInvalidateAllocation(self.inner.allocator, allocation.allocation, offset, size)
-            .result()
+        unsafe {
+            raw::vmaInvalidateAllocation(self.inner.allocator, allocation.allocation, offset, size)
+                .result()
+        }
     }
 
     /// vmaCheckCorruption
     #[inline]
     pub unsafe fn check_corruption(&self, memory_type_bits: u32) -> VkResult<()> {
-        raw::vmaCheckCorruption(self.inner.allocator, memory_type_bits).result()
+        unsafe { raw::vmaCheckCorruption(self.inner.allocator, memory_type_bits).result() }
     }
 
     // TODO : vmaDefragmentationBegin
@@ -589,7 +624,9 @@ impl Allocator {
         allocation: vma::Allocation,
         buffer: vk::Buffer,
     ) -> VkResult<()> {
-        raw::vmaBindBufferMemory(self.inner.allocator, allocation.allocation, buffer).result()
+        unsafe {
+            raw::vmaBindBufferMemory(self.inner.allocator, allocation.allocation, buffer).result()
+        }
     }
 
     /// vmaBindImageMemory
@@ -599,7 +636,9 @@ impl Allocator {
         allocation: vma::Allocation,
         image: vk::Image,
     ) -> VkResult<()> {
-        raw::vmaBindImageMemory(self.inner.allocator, allocation.allocation, image).result()
+        unsafe {
+            raw::vmaBindImageMemory(self.inner.allocator, allocation.allocation, image).result()
+        }
     }
 
     /// vmaCreateBuffer
@@ -609,34 +648,36 @@ impl Allocator {
         buffer_create_info: &vk::BufferCreateInfo,
         alloc_create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<(vk::Buffer, vma::Allocation, AllocationInfo)> {
-        let mut buffer = vk::Buffer::null();
-        let mut allocation: Option<AllocationH> = None;
-        let mut allocation_info = AllocationInfo::default();
+        unsafe {
+            let mut buffer = vk::Buffer::null();
+            let mut allocation: Option<AllocationH> = None;
+            let mut allocation_info = AllocationInfo::default();
 
-        let result = raw::vmaCreateBuffer(
-            self.inner.allocator,
-            NonNull::from(buffer_create_info),
-            NonNull::from(alloc_create_info),
-            NonNull::from(&mut buffer),
-            NonNull::from(&mut allocation),
-            Some(NonNull::from(&mut allocation_info)),
-        );
+            let result = raw::vmaCreateBuffer(
+                self.inner.allocator,
+                NonNull::from(buffer_create_info),
+                NonNull::from(alloc_create_info),
+                NonNull::from(&mut buffer),
+                NonNull::from(&mut allocation),
+                Some(NonNull::from(&mut allocation_info)),
+            );
 
-        result_with_success_then(result, || {
-            (
-                buffer,
-                vma::Allocation {
-                    allocation: allocation.unwrap_unchecked(),
-                },
-                allocation_info,
-            )
-        })
+            result_with_success_then(result, || {
+                (
+                    buffer,
+                    vma::Allocation {
+                        allocation: allocation.unwrap_unchecked(),
+                    },
+                    allocation_info,
+                )
+            })
+        }
     }
 
     /// vmaDestroyBuffer
     #[inline]
     pub unsafe fn destroy_buffer(&self, buffer: vk::Buffer, alloc: vma::Allocation) {
-        raw::vmaDestroyBuffer(self.inner.allocator, buffer, Some(alloc.allocation))
+        unsafe { raw::vmaDestroyBuffer(self.inner.allocator, buffer, Some(alloc.allocation)) }
     }
 
     /// vmaCreateImage
@@ -646,40 +687,42 @@ impl Allocator {
         image_create_info: &vk::ImageCreateInfo,
         alloc_create_info: &vma::AllocationCreateInfo,
     ) -> VkResult<(vk::Image, vma::Allocation, AllocationInfo)> {
-        let mut image = vk::Image::null();
-        let mut allocation: Option<AllocationH> = None;
-        let mut allocation_info = AllocationInfo::default();
+        unsafe {
+            let mut image = vk::Image::null();
+            let mut allocation: Option<AllocationH> = None;
+            let mut allocation_info = AllocationInfo::default();
 
-        let result = raw::vmaCreateImage(
-            self.inner.allocator,
-            NonNull::from(image_create_info),
-            NonNull::from(alloc_create_info),
-            NonNull::from(&mut image),
-            NonNull::from(&mut allocation),
-            Some(NonNull::from(&mut allocation_info)),
-        );
+            let result = raw::vmaCreateImage(
+                self.inner.allocator,
+                NonNull::from(image_create_info),
+                NonNull::from(alloc_create_info),
+                NonNull::from(&mut image),
+                NonNull::from(&mut allocation),
+                Some(NonNull::from(&mut allocation_info)),
+            );
 
-        result_with_success_then(result, || {
-            (
-                image,
-                vma::Allocation {
-                    allocation: allocation.unwrap_unchecked(),
-                },
-                allocation_info,
-            )
-        })
+            result_with_success_then(result, || {
+                (
+                    image,
+                    vma::Allocation {
+                        allocation: allocation.unwrap_unchecked(),
+                    },
+                    allocation_info,
+                )
+            })
+        }
     }
 
     /// vmaDestroyImage
     #[inline]
     pub unsafe fn destroy_image(&self, buffer: vk::Image, alloc: vma::Allocation) {
-        raw::vmaDestroyImage(self.inner.allocator, buffer, Some(alloc.allocation))
+        unsafe { raw::vmaDestroyImage(self.inner.allocator, buffer, Some(alloc.allocation)) }
     }
 
     /// vmaSetCurrentFrameIndex
     #[inline]
     pub unsafe fn set_current_frame_index(self, index: u32) {
-        raw::vmaSetCurrentFrameIndex(self.inner.allocator, index)
+        unsafe { raw::vmaSetCurrentFrameIndex(self.inner.allocator, index) }
     }
 }
 

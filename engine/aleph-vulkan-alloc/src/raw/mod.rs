@@ -501,7 +501,7 @@ pub struct VirtualAllocationInfo {
 }
 
 #[allow(non_snake_case)]
-extern "C" {
+unsafe extern "C" {
     pub fn vmaCreateAllocator(
         p_create_info: NonNull<AllocatorCreateInfo>,
         p_allocator: NonNull<Option<AllocatorH>>,

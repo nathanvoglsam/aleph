@@ -30,8 +30,8 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-use target::build::{target_architecture, target_platform};
 use target::Platform;
+use target::build::{target_architecture, target_platform};
 
 fn main() {
     if target_platform().is_android() {
