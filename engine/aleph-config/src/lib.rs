@@ -33,7 +33,7 @@ use std::env::{current_dir, current_exe};
 use std::io;
 use std::str::FromStr;
 
-use aleph_nstr::{nstr, NStr};
+use aleph_nstr::{NStr, nstr};
 use aleph_target::build::{target_architecture, target_build_type, target_platform};
 use camino::{Utf8Path, Utf8PathBuf};
 use qjs::ToRefValue;
