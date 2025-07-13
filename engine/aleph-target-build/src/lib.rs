@@ -70,7 +70,7 @@ pub mod build {
     use std::env;
 
     use crate::{
-        get_architecture_from, get_platform_from, Architecture, BuildConfig, BuildType, Platform,
+        Architecture, BuildConfig, BuildType, Platform, get_architecture_from, get_platform_from,
     };
 
     ///
@@ -156,9 +156,9 @@ pub mod build {
     }
 }
 
-pub use architecture::{get_architecture_from, Architecture};
+pub use architecture::{Architecture, get_architecture_from};
 pub use build_config::BuildConfig;
 pub use build_type::BuildType;
-pub use platform::{get_platform_from, Platform};
+pub use platform::{Platform, get_platform_from};
 pub use profile::Profile;
 pub use triple::recreate_triple;
