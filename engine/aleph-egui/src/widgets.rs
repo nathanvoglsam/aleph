@@ -82,13 +82,14 @@ pub fn frame_stats(ctx: &Context, frame_time_history: &FrameTimeHistory) {
             // Take the average framerate over the last 8 frames so we get a smoother value
             let mean_dt = frame_time_history.average_over_window(8);
             let mean_fr = 1.0 / mean_dt;
+            let mean_dt_ms = mean_dt * 1000.0;
 
             Grid::new("frame-time-grid")
                 .num_columns(2)
                 .min_col_width(75.0)
                 .show(ui, |ui| {
                     ui.label(format!("FPS {mean_fr:.3}"));
-                    ui.label(format!("{mean_dt:.4}ms"));
+                    ui.label(format!("{mean_dt_ms:.4}ms"));
                 });
             CollapsingHeader::new("Frame Time History")
                 .default_open(true)
@@ -96,7 +97,7 @@ pub fn frame_stats(ctx: &Context, frame_time_history: &FrameTimeHistory) {
                     let _ = Plot::new("Frame Time Plot")
                         .legend(Legend::default())
                         .include_y(0.0) // Anchor 0 on the y axis
-                        .include_y(0.04) // Anchor 40ms on the y axis
+                        .include_y(40.0) // Anchor 40ms on the y axis
                         .y_axis_label("Frame Time")
                         .show_axes([false, true])
                         .show_grid(true)
@@ -110,7 +111,7 @@ pub fn frame_stats(ctx: &Context, frame_time_history: &FrameTimeHistory) {
                             let bars: Vec<Bar> = frame_time_history
                                 .iter()
                                 .enumerate()
-                                .map(|(i, v)| Bar::new(i as _, *v))
+                                .map(|(i, v)| Bar::new(i as _, v * 1000.0))
                                 .collect();
                             let chart = BarChart::new("Frame Time", bars).name("Frame Time");
                             ui.bar_chart(chart);
