@@ -206,7 +206,7 @@ impl<S: System> System for RunsBeforeSystem<S> {
         input: &<Self::In as ScheduleArgs>::Args<'_>,
         resources: &TypedTable,
     ) -> Self::Out {
-        self.s.execute(input, resources)
+        unsafe { self.s.execute(input, resources) }
     }
 }
 
@@ -235,7 +235,7 @@ impl<S: System> System for RunsAfterSystem<S> {
         input: &<Self::In as ScheduleArgs>::Args<'_>,
         resources: &TypedTable,
     ) -> Self::Out {
-        self.s.execute(input, resources)
+        unsafe { self.s.execute(input, resources) }
     }
 }
 

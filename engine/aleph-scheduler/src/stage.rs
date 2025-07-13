@@ -30,8 +30,8 @@
 use std::any::{Any, TypeId};
 
 use aleph_label::Label;
-use aleph_object_system::uuid::Uuid;
 use aleph_object_system::IObject;
+use aleph_object_system::uuid::Uuid;
 use aleph_typed_table::TypedTable;
 
 use crate::ScheduleArgs;

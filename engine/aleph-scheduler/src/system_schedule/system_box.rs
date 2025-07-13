@@ -31,10 +31,10 @@ use std::collections::HashSet;
 
 use aleph_label::Label;
 
+use crate::ScheduleArgs;
 use crate::system::System;
 use crate::system_schedule::access_descriptor::SystemAccessDescriptor;
 use crate::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
-use crate::ScheduleArgs;
 
 ///
 /// Internal container for pairing a boxed system with some metadata used to schedule the system

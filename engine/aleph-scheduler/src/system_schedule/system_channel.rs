@@ -40,10 +40,10 @@ use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;
 
+use crate::ScheduleArgs;
 use crate::system::{IntoSystem, System};
 use crate::system_schedule::system_box::SystemBox;
 use crate::system_schedule::system_cell::{ExclusiveSystemCell, GenericSystemCell, SystemCell};
-use crate::ScheduleArgs;
 
 pub struct SystemChannel<A, T> {
     /// Stores all systems in the schedule

@@ -182,9 +182,11 @@ impl<'a, T: IObject + Send + Sync + 'static> SystemParamFetch<'a> for ResMutStat
 
     #[inline]
     unsafe fn get_param(_state: &'a mut Self, resources: &'a TypedTable) -> Self::Item {
-        let mut v = resources.get_raw::<T>().unwrap();
-        let v = v.as_mut();
-        ResMut { value: v }
+        unsafe {
+            let mut v = resources.get_raw::<T>().unwrap();
+            let v = v.as_mut();
+            ResMut { value: v }
+        }
     }
 }
 
@@ -227,7 +229,7 @@ impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> System
         _input: &<Self::In as ScheduleArgs>::Args<'_>,
         resources: &TypedTable,
     ) -> Self::Out {
-        self.f.run(self.state.as_mut().unwrap(), resources)
+        unsafe { self.f.run(self.state.as_mut().unwrap(), resources) }
     }
 }
 
@@ -274,18 +276,20 @@ macro_rules! impl_system_function {
         {
             #[inline]
             unsafe fn run(&mut self, state: &mut <($($param,)*) as $crate::SystemParam>::Fetch, resources: &$crate::TypedTable) {
-                // Yes, this is strange, but rustc fails to compile this impl
-                // without using this function.
-                #[allow(clippy::too_many_arguments)]
-                #[inline]
-                fn call_inner<$($param,)*>(
-                    mut f: impl FnMut($($param,)*),
-                    $($param: $param,)*
-                ) {
-                    f($($param,)*)
+                unsafe {
+                    // Yes, this is strange, but rustc fails to compile this impl
+                    // without using this function.
+                    #[allow(clippy::too_many_arguments)]
+                    #[inline]
+                    fn call_inner<$($param,)*>(
+                        mut f: impl FnMut($($param,)*),
+                        $($param: $param,)*
+                    ) {
+                        f($($param,)*)
+                    }
+                    let ($($param,)*) = <<($($param,)*) as $crate::SystemParam>::Fetch as $crate::SystemParamFetch>::get_param(state, resources);
+                    call_inner(self, $($param),*)
                 }
-                let ($($param,)*) = <<($($param,)*) as $crate::SystemParam>::Fetch as $crate::SystemParamFetch>::get_param(state, resources);
-                call_inner(self, $($param),*)
             }
         }
     };
@@ -321,8 +325,10 @@ macro_rules! impl_param_for_tuple {
 
             #[inline]
             unsafe fn get_param(state: &'a mut Self, resources: &'a $crate::TypedTable) -> Self::Item {
-                let ($($name,)*) = state;
-                ($($name::get_param($name, resources),)*)
+                unsafe {
+                    let ($($name,)*) = state;
+                    ($($name::get_param($name, resources),)*)
+                }
             }
         }
 

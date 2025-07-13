@@ -32,9 +32,9 @@ use std::cell::Cell;
 use aleph_typed_table::TypedTable;
 use crossbeam::atomic::AtomicCell;
 
+use crate::ScheduleArgs;
 use crate::system::System;
 use crate::system_schedule::access_descriptor::SystemAccessDescriptor;
-use crate::ScheduleArgs;
 
 /// Type alias for a boxed system trait object
 pub type BoxedSystem<A> = Box<dyn System<In = A, Out = ()> + Send + Sync>;
@@ -71,9 +71,11 @@ impl<A: ScheduleArgs> GenericSystemCell<A> for SystemCell<A> {
     }
 
     unsafe fn execute(&self, args: &A::Args<'_>, resources: &TypedTable) {
-        let mut system = self.take().unwrap();
-        system.execute(args, resources);
-        self.store(Some(system));
+        unsafe {
+            let mut system = self.take().unwrap();
+            system.execute(args, resources);
+            self.store(Some(system));
+        }
     }
 
     fn execute_safe(&self, args: &A::Args<'_>, resources: &mut TypedTable) {
@@ -91,9 +93,11 @@ impl<A: ScheduleArgs> GenericSystemCell<A> for ExclusiveSystemCell<A> {
     }
 
     unsafe fn execute(&self, args: &A::Args<'_>, resources: &TypedTable) {
-        let mut system = self.take().unwrap();
-        system.execute(args, resources);
-        self.set(Some(system));
+        unsafe {
+            let mut system = self.take().unwrap();
+            system.execute(args, resources);
+            self.set(Some(system));
+        }
     }
 
     fn execute_safe(&self, args: &A::Args<'_>, resources: &mut TypedTable) {
