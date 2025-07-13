@@ -33,8 +33,8 @@ pub mod component_source;
 
 use std::collections::HashMap;
 
-use aleph_object_system::uuid::Uuid;
 use aleph_object_system::IObject;
+use aleph_object_system::uuid::Uuid;
 
 ///
 /// This trait needs to be implemented by any type that wishes to be used as a component

@@ -56,9 +56,11 @@ impl EntityLayout {
     ///
     #[inline]
     pub unsafe fn from_inner_unchecked(components: &[Uuid]) -> &Self {
-        // SAFETY: EntityLayout is just a wrapper of [ComponentTypeId],
-        // therefore converting &[ComponentTypeId] to &EntityLayout is safe.
-        &*(components as *const [Uuid] as *const EntityLayout)
+        unsafe {
+            // SAFETY: EntityLayout is just a wrapper of [ComponentTypeId],
+            // therefore converting &[ComponentTypeId] to &EntityLayout is safe.
+            &*(components as *const [Uuid] as *const EntityLayout)
+        }
     }
 
     /// Creates an EntityLayout wrapper over the given slice by first checking that the slice meets

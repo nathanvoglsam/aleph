@@ -30,8 +30,8 @@
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
-use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
+use aleph_object_system::uuid::Uuid;
 use allocator_api2::boxed::Box as ABox;
 use virtual_buffer::{VirtualBuffer, VirtualVec};
 
@@ -328,27 +328,29 @@ impl Archetype {
         base: ArchetypeEntityIndex,
         source: &UnsafeComponentSource,
     ) {
-        // Copy the component data into the archetype buffers
-        for (i, comp) in self.entity_layout.iter().enumerate() {
-            // Safety: Caller's job to ensure components is valid to read
-            let components = source.components.as_ref();
+        unsafe {
+            // Copy the component data into the archetype buffers
+            for (i, comp) in self.entity_layout.iter().enumerate() {
+                // Safety: Caller's job to ensure components is valid to read
+                let components = source.components.as_ref();
 
-            // Safety: Caller's job to ensure that all IDs in 'layout' are also in the components
-            //         list.
-            let data = components.iter().find(|v| v.id == *comp).unwrap_unchecked();
+                // Safety: Caller's job to ensure that all IDs in 'layout' are also in the components
+                //         list.
+                let data = components.iter().find(|v| v.id == *comp).unwrap_unchecked();
 
-            // Get the size of the type we're copying from the buffers
-            let type_size = self.storages[i].desc.size;
+                // Get the size of the type we're copying from the buffers
+                let type_size = self.storages[i].desc.size;
 
-            // Calculate the base index for where to start copying into the buffer
-            let base = base.get_index();
-            let base = base * type_size;
+                // Calculate the base index for where to start copying into the buffer
+                let base = base.get_index();
+                let base = base * type_size;
 
-            // Get the target slice to copy into
-            let target = self.storages[i].data.add(base);
+                // Get the target slice to copy into
+                let target = self.storages[i].data.add(base);
 
-            // Perform the actual copy
-            target.copy_from_nonoverlapping(data.ptr, source.count as usize * type_size);
+                // Perform the actual copy
+                target.copy_from_nonoverlapping(data.ptr, source.count as usize * type_size);
+            }
         }
     }
 
@@ -368,11 +370,13 @@ impl Archetype {
         let dest_base = slot.get_index();
         let dest_base = dest_base * type_size;
 
-        // Create the slice to copy into, no dropping is needed as the data is uninitialized
-        let dest_buffer = self.storages[type_index].data.add(dest_base);
+        unsafe {
+            // Create the slice to copy into, no dropping is needed as the data is uninitialized
+            let dest_buffer = self.storages[type_index].data.add(dest_base);
 
-        // Perform the actual copy
-        dest_buffer.copy_from_nonoverlapping(data, type_size);
+            // Perform the actual copy
+            dest_buffer.copy_from_nonoverlapping(data, type_size);
+        }
     }
 
     #[inline]
@@ -387,9 +391,10 @@ impl Archetype {
 
         if let Some(drop_fn) = drop_fn {
             let slot = slot.get_index();
-            let component = self.storages[type_index].data.add(slot * type_size);
-
-            drop_fn(component.cast(), 1);
+            unsafe {
+                let component = self.storages[type_index].data.add(slot * type_size);
+                drop_fn(component.cast(), 1);
+            };
         }
     }
 
@@ -405,10 +410,12 @@ impl Archetype {
         let storage = &self.storages[storage_index];
 
         let type_size = storage.desc.size;
-        let data = storage.data.as_ptr().add(slot * type_size);
+        unsafe {
+            let data = storage.data.as_ptr().add(slot * type_size);
 
-        // Get a pointer to the position in the buffer the component can be found
-        Some(NonNull::new_unchecked(data as *mut u8))
+            // Get a pointer to the position in the buffer the component can be found
+            Some(NonNull::new_unchecked(data as *mut u8))
+        }
     }
 
     /// Remove the entity at the given index.
@@ -441,7 +448,9 @@ impl Archetype {
         };
 
         for i in 0..self.storages.len() {
-            self.swap_and_pop_for_storage::<DROP>(i, index);
+            unsafe {
+                self.swap_and_pop_for_storage::<DROP>(i, index);
+            };
         }
 
         self.len -= 1;
@@ -477,30 +486,30 @@ impl Archetype {
             let remove_offset = index * desc.size;
             let last_offset = last_index * desc.size;
 
-            let remove = storage.data.add(remove_offset);
-            let last = storage.data.add(last_offset);
+            unsafe {
+                let remove = storage.data.add(remove_offset);
+                let last = storage.data.add(last_offset);
 
-            if DROP {
-                if let Some(fn_drop) = desc.destructor {
-                    // SAFETY: This handles calling the drop function for a component through a raw
-                    //         pointer. The signature is type erased so the interface is unsafe.
-                    //
-                    //         This is just a type-erased call to `drop::<T>()` where T is the type of
-                    //         the component. The `Archetype` data structure's safe interface ensures
-                    //         the drop function is only called with valid data.
-                    //
-                    //         UB can be triggered if `fn_drop` is not implemented correctly, but this
-                    //         is impossible from safe code as the implementation for each component is
-                    //         auto generated from a generic implementation. The function can only be
-                    //         incorrect by providing an incorrect ComponentTypeDescription using an
-                    //         unsafe function.
-                    unsafe {
+                if DROP {
+                    if let Some(fn_drop) = desc.destructor {
+                        // SAFETY: This handles calling the drop function for a component through a raw
+                        //         pointer. The signature is type erased so the interface is unsafe.
+                        //
+                        //         This is just a type-erased call to `drop::<T>()` where T is the type of
+                        //         the component. The `Archetype` data structure's safe interface ensures
+                        //         the drop function is only called with valid data.
+                        //
+                        //         UB can be triggered if `fn_drop` is not implemented correctly, but this
+                        //         is impossible from safe code as the implementation for each component is
+                        //         auto generated from a generic implementation. The function can only be
+                        //         incorrect by providing an incorrect ComponentTypeDescription using an
+                        //         unsafe function.
                         fn_drop(remove.cast(), 1);
                     }
                 }
-            }
 
-            remove.copy_from_nonoverlapping(last, desc.size);
+                remove.copy_from_nonoverlapping(last, desc.size);
+            };
         }
     }
 
@@ -563,7 +572,7 @@ impl Archetype {
             // Create a slice of the data to copy, exiting the loop if the component is not present
             // in the source archetype
             let source_buffer = if let Some(source_index) = source.storage_indices.get(&source_id) {
-                source.storages[source_index].data.add(source_base)
+                unsafe { source.storages[source_index].data.add(source_base) }
             } else {
                 continue;
             };
@@ -572,11 +581,13 @@ impl Archetype {
             let dest_base = new_index.get_index();
             let dest_base = dest_base * type_size;
 
-            // Create a slice of the destination to copy into
-            let dest_buffer = self.storages[source_index].data.add(dest_base);
+            unsafe {
+                // Create a slice of the destination to copy into
+                let dest_buffer = self.storages[source_index].data.add(dest_base);
 
-            // Perform the actual copy
-            dest_buffer.copy_from_nonoverlapping(source_buffer, type_size);
+                // Perform the actual copy
+                dest_buffer.copy_from_nonoverlapping(source_buffer, type_size);
+            }
         }
 
         new_index

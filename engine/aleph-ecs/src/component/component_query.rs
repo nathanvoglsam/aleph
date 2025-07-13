@@ -61,7 +61,7 @@ pub unsafe trait Fetch<'a>: Sized {
     ///
     /// Takes a pointer because borrow could mutable or shared depending on the implementation.
     unsafe fn create(archetype: &Archetype) -> Self {
-        Self::create_at(archetype, ArchetypeEntityIndex::first())
+        unsafe { Self::create_at(archetype, ArchetypeEntityIndex::first()) }
     }
 
     /// Constructs an instance of [`Fetch`] from the given archetype.
@@ -107,21 +107,25 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
 
     #[inline]
     unsafe fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
-        let ptr = archetype
-            .get_component_ptr(entity, &T::ID)
-            .unwrap()
-            .cast::<T>();
-        Self(ptr)
+        unsafe {
+            let ptr = archetype
+                .get_component_ptr(entity, &T::ID)
+                .unwrap()
+                .cast::<T>();
+            Self(ptr)
+        }
     }
 
     #[inline]
     unsafe fn next(&mut self) {
-        self.0 = NonNull::new_unchecked(self.0.as_ptr().add(1));
+        unsafe {
+            self.0 = NonNull::new_unchecked(self.0.as_ptr().add(1));
+        }
     }
 
     #[inline]
     unsafe fn get(&self) -> Self::Item {
-        self.0.as_ref()
+        unsafe { self.0.as_ref() }
     }
 }
 
@@ -146,21 +150,25 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
 
     #[inline]
     unsafe fn create_at(archetype: &Archetype, entity: ArchetypeEntityIndex) -> Self {
-        let ptr = archetype
-            .get_component_ptr(entity, &T::ID)
-            .unwrap()
-            .cast::<T>();
-        Self(ptr)
+        unsafe {
+            let ptr = archetype
+                .get_component_ptr(entity, &T::ID)
+                .unwrap()
+                .cast::<T>();
+            Self(ptr)
+        }
     }
 
     #[inline(always)]
     unsafe fn next(&mut self) {
-        self.0 = NonNull::new_unchecked(self.0.as_ptr().add(1));
+        unsafe {
+            self.0 = NonNull::new_unchecked(self.0.as_ptr().add(1));
+        }
     }
 
     #[inline(always)]
     unsafe fn get(&self) -> Self::Item {
-        &mut *self.0.as_ptr()
+        unsafe { &mut *self.0.as_ptr() }
     }
 }
 
@@ -173,20 +181,25 @@ macro_rules! impl_query_for_tuple {
 
             #[inline]
             unsafe fn create_at(archetype: &$crate::Archetype, entity: $crate::ArchetypeEntityIndex) -> Self {
-                ($($name::create_at(archetype, entity),)*)
+                unsafe {
+                    ($($name::create_at(archetype, entity),)*)
+                }
             }
 
             #[inline]
             unsafe fn next(&mut self) {
-                let ($($name,)*) = self;
-                ($($name.next(),)*);
+                unsafe {
+                    let ($($name,)*) = self;
+                    ($($name.next(),)*);
+                }
             }
 
             #[inline]
             unsafe fn get(&self) -> Self::Item {
-
-                let ($($name,)*) = self;
-                ($($name.get(),)*)
+                unsafe {
+                    let ($($name,)*) = self;
+                    ($($name.get(),)*)
+                }
             }
         }
 

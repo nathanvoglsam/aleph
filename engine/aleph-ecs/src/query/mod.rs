@@ -138,7 +138,7 @@ impl<Q: ComponentQuery> UnsafeQuery<Q> {
                     if self.archetype_filter.filter_archetype(archetype) {
                         let (ids, ids_end) = archetype.entity_id_ptr_range();
                         let (ids, ids_end) = (ids.as_ptr(), ids_end.as_ptr());
-                        let fetch = Q::Fetch::create(archetype);
+                        let fetch = unsafe { Q::Fetch::create(archetype) };
 
                         self.state = QueryState::IteratingArchetype(*index, ids, ids_end, fetch);
                     } else {

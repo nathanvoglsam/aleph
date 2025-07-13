@@ -51,11 +51,13 @@ pub struct UnsafeComponentSource {
 
 impl UnsafeComponentSource {
     pub unsafe fn fill_layout(&self, target: &mut EntityLayoutBuf) {
-        for component in self.components.as_ref().iter() {
-            assert!(
-                !target.add_component_type(component.id),
-                "UnsafeComponentSource contains duplicate component channels!"
-            );
+        unsafe {
+            for component in self.components.as_ref().iter() {
+                assert!(
+                    !target.add_component_type(component.id),
+                    "UnsafeComponentSource contains duplicate component channels!"
+                );
+            }
         }
     }
 }

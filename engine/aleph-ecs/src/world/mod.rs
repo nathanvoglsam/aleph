@@ -33,8 +33,8 @@ use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
-use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
+use aleph_object_system::uuid::Uuid;
 use allocator_api2::alloc::Allocator;
 use allocator_api2::boxed::Box as ABox;
 use allocator_api2::vec;
@@ -265,7 +265,7 @@ impl World {
     /// the [`ComponentSource`] declares it to contain.
     pub unsafe fn extend_unsafe(&mut self, source: &UnsafeComponentSource) {
         let mut layout = EntityLayoutBuf::with_capacity(source.components.len());
-        source.fill_layout(&mut layout);
+        unsafe { source.fill_layout(&mut layout) };
 
         assert!(
             !layout.is_empty(),
@@ -278,7 +278,7 @@ impl World {
         let archetype_entity_base = archetype.allocate_entities(source.count);
 
         // Copy the component data into the archetype buffers
-        archetype.unsafe_copy_from_source(archetype_entity_base, source);
+        unsafe { archetype.unsafe_copy_from_source(archetype_entity_base, source) };
 
         // Allocate the entity IDs and write them into the output slice
         if let Some(out_ids) = source.ids {
@@ -295,7 +295,7 @@ impl World {
                 let id = self.entities.create(location);
                 archetype.update_entity_id(entity, id);
 
-                *out_ids.add(i as usize).as_mut() = MaybeUninit::new(id);
+                unsafe { *out_ids.add(i as usize).as_mut() = MaybeUninit::new(id) };
             }
         } else {
             for i in 0..source.count {
@@ -456,7 +456,7 @@ impl World {
     /// is valid for the provided ID. It is possible to provide the ID for a rust type but give an
     /// incorrect size and trigger UB.
     pub unsafe fn register_dynamic(&mut self, description: &ObjectDescription) -> bool {
-        self.component_registry.register_dynamic(description)
+        unsafe { self.component_registry.register_dynamic(description) }
     }
 
     /// This function provides the raw implementation of adding a component to an existing entity.
@@ -492,15 +492,17 @@ impl World {
             return false;
         };
 
-        // Move the entity into the destination archetype
-        let new_index = self.move_entity_to_archetype::<false>(
-            entity,
-            source_archetype_index,
-            destination_archetype_index,
-        );
+        unsafe {
+            // Move the entity into the destination archetype
+            let new_index = self.move_entity_to_archetype::<false>(
+                entity,
+                source_archetype_index,
+                destination_archetype_index,
+            );
 
-        self.archetypes[destination_archetype_index.get_index()]
-            .copy_component_data_into_slot(new_index, component, data);
+            self.archetypes[destination_archetype_index.get_index()]
+                .copy_component_data_into_slot(new_index, component, data);
+        }
 
         true
     }
@@ -535,18 +537,20 @@ impl World {
             return false;
         };
 
-        // Move the entity into the destination archetype
-        self.move_entity_to_archetype::<false>(
-            entity,
-            source_archetype_index,
-            destination_archetype_index,
-        );
+        unsafe {
+            // Move the entity into the destination archetype
+            self.move_entity_to_archetype::<false>(
+                entity,
+                source_archetype_index,
+                destination_archetype_index,
+            );
 
-        // Manually drop the component we're removing
-        self.archetypes[source_archetype_index.get_index()]
-            .drop_component_in_slot(location.entity, component);
+            // Manually drop the component we're removing
+            self.archetypes[source_archetype_index.get_index()]
+                .drop_component_in_slot(location.entity, component);
 
-        true
+            true
+        }
     }
 
     /// This function provides a raw, untyped interface for looking up an individual component for
@@ -701,25 +705,27 @@ impl World {
             }
         };
 
-        // Allocate space for the entity in the destination archetype and construct the new
-        // location while updating the entity slot
-        let entry = self.entities.lookup_entry_mut(target).unwrap();
-        let old_index = entry.data.location.unwrap().entity;
-        let new_index = dest.copy_from_archetype(old_index, source);
-        entry.data.location = Some(EntityLocation {
-            archetype: dest_index,
-            entity: new_index,
-        });
+        unsafe {
+            // Allocate space for the entity in the destination archetype and construct the new
+            // location while updating the entity slot
+            let entry = self.entities.lookup_entry_mut(target).unwrap();
+            let old_index = entry.data.location.unwrap().entity;
+            let new_index = dest.copy_from_archetype(old_index, source);
+            entry.data.location = Some(EntityLocation {
+                archetype: dest_index,
+                entity: new_index,
+            });
 
-        // Remove the entity from the previous archetype without dropping the components as they
-        // were moved
-        if let Some(needs_update) = source.remove_entity::<DROP>(old_index) {
-            let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
-            let entry = entry.data.location.as_mut().unwrap();
-            entry.entity = old_index;
+            // Remove the entity from the previous archetype without dropping the components as they
+            // were moved
+            if let Some(needs_update) = source.remove_entity::<DROP>(old_index) {
+                let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
+                let entry = entry.data.location.as_mut().unwrap();
+                entry.entity = old_index;
+            }
+
+            new_index
         }
-
-        new_index
     }
 }
 

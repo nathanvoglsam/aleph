@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use aleph_object_system::uuid::Uuid;
 use aleph_object_system::ObjectDescription;
+use aleph_object_system::uuid::Uuid;
 
 use crate::{Component, ComponentIdMap};
 
