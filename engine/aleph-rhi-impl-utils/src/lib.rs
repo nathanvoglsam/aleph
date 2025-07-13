@@ -34,11 +34,10 @@ pub extern crate aleph_any;
 pub extern crate aleph_rhi_api;
 
 use std::any::TypeId;
-use std::ffi::{c_char, CStr};
+use std::ffi::{CStr, c_char};
 
 pub mod bump_cell;
 pub mod conv;
-pub mod macros;
 pub mod manually_drop;
 pub mod object_counter;
 pub mod offset_allocator;
@@ -54,16 +53,18 @@ pub mod unwrap;
 /// store a special dangling address. We just need some additional checks to ensure we return a
 /// valid empty slice.
 pub unsafe fn slice_from_raw_with_null_ptr<'a, T>(ptr: *const T, len: usize) -> &'a [T] {
-    if !ptr.is_null() && len > 0 {
-        debug_assert_eq!(
-            ptr.align_offset(std::mem::align_of::<T>()),
-            0,
-            "The given pointer is not sufficiently aligned to store a T. Expected alignemnt {}",
-            std::mem::align_of::<T>()
-        );
-        std::slice::from_raw_parts(ptr, len)
-    } else {
-        &[]
+    unsafe {
+        if !ptr.is_null() && len > 0 {
+            debug_assert_eq!(
+                ptr.align_offset(std::mem::align_of::<T>()),
+                0,
+                "The given pointer is not sufficiently aligned to store a T. Expected alignemnt {}",
+                std::mem::align_of::<T>()
+            );
+            std::slice::from_raw_parts(ptr, len)
+        } else {
+            &[]
+        }
     }
 }
 
@@ -76,13 +77,15 @@ pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
     out: *mut (),
     expecting: TypeId,
 ) -> Option<()> {
-    if expecting == TypeId::of::<T>() {
-        let out = out as *mut T;
-        out.write(src.clone());
+    unsafe {
+        if expecting == TypeId::of::<T>() {
+            let out = out as *mut T;
+            out.write(src.clone());
 
-        Some(())
-    } else {
-        None
+            Some(())
+        } else {
+            None
+        }
     }
 }
 
@@ -92,5 +95,5 @@ pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
 /// null-terminated C string.
 #[inline(always)]
 pub unsafe fn str_from_ptr(v: *const c_char) -> *const str {
-    CStr::from_ptr(v).to_str().unwrap()
+    unsafe { CStr::from_ptr(v).to_str().unwrap() }
 }

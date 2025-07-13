@@ -579,7 +579,7 @@ fn find_lowest_set_bit_after(bit_mask: u32, start_bit_index: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::offset_allocator::{small_float, Allocation, OffsetAllocator};
+    use crate::offset_allocator::{Allocation, OffsetAllocator, small_float};
 
     #[test]
     fn numbers_small_float_uint_to_float() {
