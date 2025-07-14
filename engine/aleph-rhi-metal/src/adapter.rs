@@ -37,7 +37,7 @@ use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 
 use crate::context::Context;
-use crate::device::{CommandListPool, Device};
+use crate::device::Device;
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
@@ -84,6 +84,7 @@ impl IAdapter for Adapter {
             this: v.clone(),
             adapter: self.this.upgrade().unwrap(),
             context: self.context.clone(),
+            device: self.device.clone(),
             general_queue: None,
             compute_queue: None,
             transfer_queue: None,

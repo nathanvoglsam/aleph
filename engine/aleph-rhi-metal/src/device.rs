@@ -36,6 +36,9 @@ use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
 use crossbeam::queue::ArrayQueue;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 use parking_lot::Mutex;
 
 use crate::adapter::Adapter;
@@ -57,11 +60,16 @@ pub struct Device {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
     pub(crate) adapter: AnyArc<Adapter>,
+    pub(crate) device: Retained<ProtocolObject<dyn MTLDevice>>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
     pub(crate) object_counter: ObjectCounter,
 }
+
+// Safety: Needed because of 'MTLDevice'
+unsafe impl Send for Device {}
+unsafe impl Sync for Device {}
 
 declare_interfaces!(Device, [IDevice]);
 
