@@ -51,7 +51,7 @@ impl Platform {
             Platform::WindowsMSVC => "windows-msvc",
             Platform::Linux => "linux",
             Platform::Android => "android",
-            Platform::MacOS => "mac-os",
+            Platform::MacOS => "macos",
             Platform::IOS => "ios",
             Platform::Unknown => "unknown",
         }
