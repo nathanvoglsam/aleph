@@ -39,6 +39,7 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use crate::MetalConfig;
 use crate::adapter::Adapter;
+use crate::surface::Surface;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
@@ -112,7 +113,7 @@ impl IContext for Context {
 
             // We don't want this device if it doesn't support the needed features
             if !all {
-                *score = -1_000_000; 
+                *score = -1_000_000;
             }
         }
 
@@ -144,7 +145,11 @@ impl IContext for Context {
         &self,
         layer: NonNull<c_void>,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        todo!()
+        let surface = AnyArc::new_cyclic(move |v| Surface {
+            this: v.clone(),
+            context: self._this.upgrade().unwrap(),
+        });
+        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
     }
 
     fn get_backend_api(&self) -> BackendAPI {

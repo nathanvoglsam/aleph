@@ -31,11 +31,13 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 
 use crate::context::Context;
+use crate::device::{CommandListPool, Device};
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
@@ -78,6 +80,17 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
-        todo!()
+        let device = AnyArc::new_cyclic(move |v| Device {
+            this: v.clone(),
+            adapter: self.this.upgrade().unwrap(),
+            context: self.context.clone(),
+            general_queue: None,
+            compute_queue: None,
+            transfer_queue: None,
+            // command_list_pool: CommandListPool::new(),
+            object_counter: ObjectCounter::new(),
+        });
+
+        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
 }
