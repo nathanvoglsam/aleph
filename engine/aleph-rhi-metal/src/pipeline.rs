@@ -43,7 +43,7 @@ pub struct GraphicsPipeline {
     pub(crate) id: NonZeroU64,
 }
 
-unsafe_impl_iobject!(GraphicsPipeline, "01944fe3-393c-7893-aa9a-0b2905168fa4");
+unsafe_impl_iobject!(GraphicsPipeline, "01980753-5c4f-7ae3-be3b-9707082d77a7");
 
 impl GraphicsPipeline {
     pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
@@ -72,7 +72,7 @@ pub struct ComputePipeline {
     pub(crate) id: NonZeroU64,
 }
 
-unsafe_impl_iobject!(ComputePipeline, "01944fe3-5207-7dd2-8f84-5d37f5623f02");
+unsafe_impl_iobject!(ComputePipeline, "01980753-5c4f-7ae3-be3b-9719259cfbc3");
 
 impl ComputePipeline {
     pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {

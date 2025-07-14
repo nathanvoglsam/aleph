@@ -43,7 +43,7 @@ pub struct DescriptorSetLayout {
     pub(crate) id: NonZeroU64,
 }
 
-unsafe_impl_iobject!(DescriptorSetLayout, "01944fe5-3abc-7a62-8c14-19d4d31f92b6");
+unsafe_impl_iobject!(DescriptorSetLayout, "01980753-5c4f-7ae3-be3b-96de795e6124");
 
 impl DescriptorSetLayout {
     pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {

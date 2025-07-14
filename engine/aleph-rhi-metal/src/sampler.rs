@@ -42,7 +42,7 @@ pub struct Sampler {
     pub(crate) desc: OwnedSamplerDesc,
 }
 
-unsafe_impl_iobject!(Sampler, "01944fe0-d30e-7e41-a0b8-dab10f5b7e5a");
+unsafe_impl_iobject!(Sampler, "01980753-5c4f-7ae3-be3b-97225f3e91be");
 
 impl Sampler {
     pub(crate) fn get_owned(v: &SamplerHandle) -> std::sync::Arc<ArcedObject<Self>> {

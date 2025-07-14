@@ -45,7 +45,7 @@ pub struct Buffer {
     pub(crate) desc: OwnedBufferDesc,
 }
 
-unsafe_impl_iobject!(Buffer, "01944e48-b650-76a1-9637-5418f9becbeb");
+unsafe_impl_iobject!(Buffer, "01980753-5c4f-7ae3-be3b-96cf500b987c");
 
 impl Buffer {
     pub(crate) fn get(v: &BufferHandle) -> &Self {

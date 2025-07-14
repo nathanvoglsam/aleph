@@ -37,7 +37,7 @@ pub struct Fence {
     pub(crate) _device: AnyArc<Device>,
 }
 
-unsafe_impl_iobject!(Fence, "01944f89-17b4-7580-bb46-ccfce6f195cb");
+unsafe_impl_iobject!(Fence, "01980753-5c4f-7ae3-be3b-96ea6487c813");
 
 impl Fence {
     pub(crate) fn get(v: &FenceHandle) -> &Self {

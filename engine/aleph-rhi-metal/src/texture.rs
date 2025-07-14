@@ -48,7 +48,7 @@ pub struct Texture {
     pub(crate) desc: OwnedTextureDesc,
 }
 
-unsafe_impl_iobject!(Texture, "01944ef4-bac0-7310-aec2-60edef2587bb");
+unsafe_impl_iobject!(Texture, "01980753-5c4f-7ae3-be3b-974d0f86022a");
 
 impl Texture {
     pub(crate) fn get(v: &TextureHandle) -> &Self {

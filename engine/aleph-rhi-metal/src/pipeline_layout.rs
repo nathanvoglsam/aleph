@@ -40,7 +40,7 @@ pub struct PipelineLayout {
     pub(crate) id: NonZeroU64,
 }
 
-unsafe_impl_iobject!(PipelineLayout, "01944fe3-98db-7ba1-96d4-b40e2d69f172");
+unsafe_impl_iobject!(PipelineLayout, "01980753-5c4f-7ae3-be3b-96fae2e02878");
 
 impl PipelineLayout {
     pub(crate) fn get_owned(v: &PipelineLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {

@@ -37,7 +37,7 @@ pub struct Semaphore {
     pub(crate) _device: AnyArc<Device>,
 }
 
-unsafe_impl_iobject!(Semaphore, "01944f88-0885-7880-b667-23d534c03719");
+unsafe_impl_iobject!(Semaphore, "01980753-5c4f-7ae3-be3b-9730007ecfaf");
 
 impl Semaphore {
     pub(crate) fn get(v: &SemaphoreHandle) -> &Self {
