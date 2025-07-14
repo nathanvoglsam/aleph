@@ -39,6 +39,11 @@ declare namespace rhi {
     declare interface D3D12Options {}
 
     /**
+     * Special options specific to the Metal backend.
+     */
+    declare interface MetalOptions {}
+
+    /**
      * Special options specific to the Vulkan backend.
      */
     declare interface VulkanOptions {
@@ -57,6 +62,9 @@ interface Configs {
 
         /** Any options to configure the D3D12 backend, if it is loaded. **/
         d3d12?: rhi.D3D12Options;
+
+        /** Any options to configure the Metal backend, if it is loaded. **/
+        metal?: rhi.MetalOptions;
 
         /** Whether to enable RHI and platform validation layers if they are available. **/
         validation: boolean;

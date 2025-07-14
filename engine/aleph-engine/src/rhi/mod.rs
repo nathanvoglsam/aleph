@@ -33,7 +33,9 @@ use aleph_interfaces::any::{AnyArc, declare_interfaces};
 use aleph_interfaces::platform::IWindow;
 use aleph_interfaces::rhi::IRhiProvider;
 use aleph_rhi_api::*;
-use aleph_rhi_loader::{BackendConfigs, ContextOptions, D3D12Config, RhiLoader, VulkanConfig};
+use aleph_rhi_loader::{
+    BackendConfigs, ContextOptions, D3D12Config, MetalConfig, RhiLoader, VulkanConfig,
+};
 use interfaces::any::IAny;
 use serde::Deserialize;
 
@@ -77,6 +79,7 @@ impl Rhi {
                 config: BackendConfigs {
                     vulkan: config.vulkan.map(|v| v.into()),
                     d3d12: config.d3d12.map(|v| v.into()),
+                    metal: config.metal.map(|v| v.into()),
                 },
             })
             .unwrap();
@@ -154,6 +157,9 @@ struct Config {
 
     #[serde(default)]
     pub d3d12: Option<D3D12Config>,
+
+    #[serde(default)]
+    pub metal: Option<MetalConfig>,
 
     pub validation: bool,
     pub debug: bool,
