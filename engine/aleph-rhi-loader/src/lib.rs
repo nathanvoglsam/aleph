@@ -184,7 +184,7 @@ impl RhiLoader {
         };
 
         // While this shouldn't be possible and would be a bug we should fail nicely for clients
-        if self.vulkan.is_none() && self.d3d12.is_none() {
+        if self.vulkan.is_none() && self.d3d12.is_none() && self.metal.is_none() {
             log::debug!("'backends' isn't empty but no backend objects are loaded. Likely a bug");
             return Err(ContextCreateError::NoBackendsAvailable);
         }
