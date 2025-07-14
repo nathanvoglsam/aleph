@@ -36,60 +36,68 @@ use crate::VirtualBuffer;
 
 #[inline]
 pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuffer> {
-    let result: *mut libc::c_void = libc::mmap(
-        std::ptr::null_mut(),
-        pages * page_size(),
-        libc::PROT_NONE,
-        libc::MAP_SHARED | libc::MAP_ANON,
-        -1,
-        0,
-    );
+    unsafe {
+        let result: *mut libc::c_void = libc::mmap(
+            std::ptr::null_mut(),
+            pages * page_size(),
+            libc::PROT_NONE,
+            libc::MAP_SHARED | libc::MAP_ANON,
+            -1,
+            0,
+        );
 
-    if result == libc::MAP_FAILED {
-        Err(std::io::Error::last_os_error())
-    } else {
-        // It's invalid for zero to be returned by mmap. It will return either a valid address or
-        // MAP_FAILED (-1) so we can assume the address if it isn't MAP_FAILED
-        let data = NonNull::new(result).unwrap_unchecked();
-        Ok(VirtualBuffer {
-            data: data.cast(),
-            len: pages * page_size(),
-        })
+        if result == libc::MAP_FAILED {
+            Err(std::io::Error::last_os_error())
+        } else {
+            // It's invalid for zero to be returned by mmap. It will return either a valid address or
+            // MAP_FAILED (-1) so we can assume the address if it isn't MAP_FAILED
+            let data = NonNull::new(result).unwrap_unchecked();
+            Ok(VirtualBuffer {
+                data: data.cast(),
+                len: pages * page_size(),
+            })
+        }
     }
 }
 
 #[inline]
 pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    if libc::munmap(base as _, pages * page_size()) != 0 {
-        Err(std::io::Error::last_os_error())
-    } else {
-        Ok(())
+    unsafe {
+        if libc::munmap(base as _, pages * page_size()) != 0 {
+            Err(std::io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
     }
 }
 
 #[inline]
 pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    let result = libc::mprotect(
-        base as _,
-        pages * page_size(),
-        libc::PROT_READ | libc::PROT_WRITE,
-    );
+    unsafe {
+        let result = libc::mprotect(
+            base as _,
+            pages * page_size(),
+            libc::PROT_READ | libc::PROT_WRITE,
+        );
 
-    if result != 0 {
-        Err(std::io::Error::last_os_error())
-    } else {
-        Ok(())
+        if result != 0 {
+            Err(std::io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
     }
 }
 
 #[inline]
 pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    let result = libc::mprotect(base as _, pages * page_size(), libc::PROT_NONE);
+    unsafe {
+        let result = libc::mprotect(base as _, pages * page_size(), libc::PROT_NONE);
 
-    if result != 0 {
-        Err(std::io::Error::last_os_error())
-    } else {
-        Ok(())
+        if result != 0 {
+            Err(std::io::Error::last_os_error())
+        } else {
+            Ok(())
+        }
     }
 }
 
