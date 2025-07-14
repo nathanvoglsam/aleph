@@ -65,7 +65,7 @@ impl MetalLoader {
             Ok(_) => {
                 let context = AnyArc::new_cyclic(move |v| Context {
                     _this: v.clone(),
-                    config: config.clone(),
+                    _config: config.clone(),
                     validation,
                     debug,
                 });

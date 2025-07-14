@@ -41,7 +41,7 @@ pub struct DescriptorArena {
 declare_interfaces!(DescriptorArena, [IDescriptorArena]);
 
 impl IGetPlatformInterface for DescriptorArena {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         todo!()
     }
 }

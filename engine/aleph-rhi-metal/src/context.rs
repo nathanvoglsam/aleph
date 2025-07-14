@@ -40,7 +40,7 @@ use crate::MetalConfig;
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
-    pub config: MetalConfig,
+    pub _config: MetalConfig,
     pub validation: bool,
     pub debug: bool,
 }
