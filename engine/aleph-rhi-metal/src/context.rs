@@ -41,6 +41,8 @@ use crate::MetalConfig;
 pub struct Context {
     pub _this: AnyWeak<Self>,
     pub config: MetalConfig,
+    pub validation: bool,
+    pub debug: bool,
 }
 
 declare_interfaces!(Context, [IContext]);
@@ -71,10 +73,10 @@ impl IContext for Context {
 
     fn create_surface(
         &self,
-        display: &dyn HasDisplayHandle,
-        window: &dyn HasWindowHandle,
+        _display: &dyn HasDisplayHandle,
+        _window: &dyn HasWindowHandle,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
-        todo!()
+        unimplemented!("Use IContext::create_surface_for_metal_layer")
     }
 
     fn create_surface_for_metal_layer(
