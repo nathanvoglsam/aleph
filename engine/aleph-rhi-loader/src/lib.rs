@@ -110,6 +110,16 @@ impl Into<aleph_rhi_dx12::D3D12Config> for D3D12Config {
     }
 }
 
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default, Deserialize)]
+pub struct MetalConfig {}
+
+#[cfg(any(windows, target_os = "macos", target_os = "ios"))]
+impl Into<aleph_rhi_metal::MetalConfig> for MetalConfig {
+    fn into(self) -> aleph_rhi_metal::MetalConfig {
+        aleph_rhi_metal::MetalConfig {}
+    }
+}
+
 #[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
 pub struct BackendConfigs {
     /// The config to use for the Vulkan backend
@@ -117,6 +127,9 @@ pub struct BackendConfigs {
 
     /// The config to use for the D3D12 backend
     pub d3d12: Option<D3D12Config>,
+
+    /// The config to use for the Metal backend
+    pub metal: Option<MetalConfig>,
 }
 
 pub struct RhiLoader {
@@ -128,12 +141,9 @@ pub struct RhiLoader {
 
     /// The backend object for vulkan
     vulkan: Option<&'static dyn IRhiBackend>,
-}
 
-impl Default for RhiLoader {
-    fn default() -> Self {
-        Self::new()
-    }
+    /// The backend object for metal
+    metal: Option<&'static dyn IRhiBackend>,
 }
 
 impl RhiLoader {
@@ -198,15 +208,17 @@ impl RhiLoader {
             backends: vec![BackendAPI::D3D12, BackendAPI::Vulkan],
             d3d12: None,
             vulkan: None,
+            metal: None,
         }
     }
 
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     fn make_loader() -> Self {
         return Self {
-            backends: vec![BackendAPI::Vulkan],
+            backends: vec![BackendAPI::Vulkan, BackendAPI::Metal],
             d3d12: None,
             vulkan: None,
+            metal: None,
         };
     }
 
@@ -216,6 +228,7 @@ impl RhiLoader {
             backends: vec![BackendAPI::Vulkan],
             d3d12: None,
             vulkan: None,
+            metal: None,
         };
     }
 
@@ -247,11 +260,19 @@ impl RhiLoader {
                 self.vulkan = Some(&aleph_rhi_vulkan::RHI_BACKEND_OBJECT);
             }
         }
+
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
+        {
+            self.metal = Some(&aleph_rhi_metal::RHI_BACKEND_OBJECT);
+        }
     }
 
     /// Internal function that will prune any backends in the original `backends` set that are
     /// dynamically unavailable on the current system.
     fn prune_missing_backends(&mut self) {
+        // We have to guarantee backends is sorted.
+        self.backends.sort();
+
         if let Ok(index) = self.backends.binary_search(&BackendAPI::D3D12) {
             if let Some(backend) = self.d3d12 {
                 if !backend.is_available() {
@@ -277,13 +298,26 @@ impl RhiLoader {
                 let _ = self.backends.swap_remove(index);
             }
         }
+
+        if let Ok(index) = self.backends.binary_search(&BackendAPI::Metal) {
+            if let Some(backend) = self.metal {
+                if !backend.is_available() {
+                    log::warn!("Backend 'Metal' is not available on current system");
+                    let _ = self.backends.swap_remove(index);
+                }
+            } else {
+                // Remove the backend for the list if we don't even have an IRhiBackend object for
+                // it
+                let _ = self.backends.swap_remove(index);
+            }
+        }
     }
 
     fn select_backend(&self, backend: BackendAPI) -> &dyn IRhiBackend {
         match backend {
             BackendAPI::Vulkan => self.vulkan.unwrap(),
             BackendAPI::D3D12 => self.d3d12.unwrap(),
-            BackendAPI::Metal => todo!(),
+            BackendAPI::Metal => self.metal.unwrap(),
             BackendAPI::Null => unimplemented!(),
         }
     }
@@ -355,5 +389,21 @@ impl IRhiBackend for aleph_rhi_dx12::D3D12Loader {
         let config = options.config.d3d12.clone().unwrap_or_default();
         let config = config.into();
         aleph_rhi_dx12::D3D12Loader::make_context(self, options.validation, options.debug, &config)
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+impl IRhiBackend for aleph_rhi_metal::MetalLoader {
+    fn is_available(&self) -> bool {
+        aleph_rhi_metal::MetalLoader::is_available(self)
+    }
+
+    fn make_context(
+        &self,
+        options: &ContextOptions,
+    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
+        let config = options.config.metal.clone().unwrap_or_default();
+        let config = config.into();
+        aleph_rhi_metal::MetalLoader::make_context(self, options.validation, options.debug, &config)
     }
 }

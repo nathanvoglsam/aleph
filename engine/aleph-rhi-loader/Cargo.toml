@@ -41,11 +41,6 @@ edition.workspace = true
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[features]
-default = ["backend-d3d12", "backend-vulkan"]
-backend-vulkan = ["aleph-rhi-vulkan"]
-backend-d3d12 = ["aleph-rhi-dx12"]
-
 [dependencies]
 aleph-rhi-api = { workspace = true }
 aleph-rhi-validation = { workspace = true }
@@ -54,7 +49,10 @@ log = { workspace = true }
 serde = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
-aleph-rhi-dx12 = { workspace = true, optional = true }
+aleph-rhi-dx12 = { workspace = true }
 
 [target.'cfg(any(windows, target_os = "macos", target_os = "ios", target_os = "linux", target_os = "android"))'.dependencies]
-aleph-rhi-vulkan = { workspace = true, optional = true }
+aleph-rhi-vulkan = { workspace = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+aleph-rhi-metal = { workspace = true }
