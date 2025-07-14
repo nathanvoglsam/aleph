@@ -31,7 +31,7 @@ let config = Environment.getConfig();
 
 // Default to Vulkan
 /** @type {rhi.Backend} */
-let api = "vulkan";
+var api = "vulkan";
 
 // On Apple platforms we use Metal
 if (Platform.isMacos(config.platform) || Platform.isIos(config.platform)) {
