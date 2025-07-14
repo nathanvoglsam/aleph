@@ -31,6 +31,9 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 
 use crate::context::Context;
 
@@ -39,7 +42,12 @@ pub struct Adapter {
     pub(crate) context: AnyArc<Context>,
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
+    pub(crate) device: Retained<ProtocolObject<dyn MTLDevice>>,
 }
+
+// Safety: Needed because of 'MTLDevice'
+unsafe impl Send for Adapter {}
+unsafe impl Sync for Adapter {}
 
 declare_interfaces!(Adapter, [IAdapter]);
 
