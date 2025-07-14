@@ -29,9 +29,19 @@
 
 let config = Environment.getConfig();
 
-// On Windows we prefer D3D12 for better platform integration (DXGI)
+// Default to Vulkan
 /** @type {rhi.Backend} */
-let api = Platform.isWindows(config.platform) ? "d3d12" : "vulkan";
+let api = "vulkan";
+
+// On Apple platforms we use Metal
+if (Platform.isMacos(config.platform) || Platform.isIos(config.platform)) {
+    api = "metal";
+}
+
+// On Windows we prefer D3D12 for better platform integration (DXGI)
+if (Platform.isWindows(config.platform)) {
+    api = "d3d12";
+}
 
 Configs.rhi = {
     api: api,

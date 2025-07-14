@@ -31,7 +31,7 @@ declare namespace rhi {
     /**
      * All the supported RHI backends.
      */
-    declare type Backend = "d3d12" | "vulkan"; 
+    declare type Backend = "d3d12" | "vulkan" | "metal"; 
 
     /**
      * Special options specific to the D3D12 backend.

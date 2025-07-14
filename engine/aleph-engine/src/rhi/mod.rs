@@ -137,6 +137,9 @@ enum Backend {
 
     #[serde(alias = "vulkan", alias = "VULKAN")]
     Vulkan,
+
+    #[serde(alias = "metal", alias = "METAL")]
+    Metal,
 }
 
 impl Into<BackendAPI> for Backend {
@@ -144,6 +147,7 @@ impl Into<BackendAPI> for Backend {
         match self {
             Backend::D3D12 => BackendAPI::D3D12,
             Backend::Vulkan => BackendAPI::Vulkan,
+            Backend::Metal => BackendAPI::Metal,
         }
     }
 }
