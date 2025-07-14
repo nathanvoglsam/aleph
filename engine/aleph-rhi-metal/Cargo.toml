@@ -63,5 +63,9 @@ byteorder = { workspace = true }
 blink-alloc = { workspace = true }
 allocator-api2 = { workspace = true }
 
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+objc2 = { workspace = true }
+objc2-metal = { workspace = true }
+
 [build-dependencies]
 aleph-target-build = { workspace = true }

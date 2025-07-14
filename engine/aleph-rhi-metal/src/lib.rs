@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![cfg(any(target_os = "macos", target_os = "ios"))]
+
 mod adapter;
 mod buffer;
 mod command_list;
