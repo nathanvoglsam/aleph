@@ -31,12 +31,15 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use objc2::rc::Retained;
+use objc2_quartz_core::CAMetalLayer;
 
 use crate::context::Context;
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
+    pub(crate) objects: SurfaceObjects,
 }
 
 declare_interfaces!(Surface, [ISurface]);
@@ -75,6 +78,11 @@ impl Drop for Surface {
     }
 }
 
-// SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
-//         consume it. The consumer constrains thread sharing so this is safe.
-unsafe impl Send for Surface {}
+/// Wrapper struct to limit the scope of our 'unsafe impl Send+Sync'
+pub struct SurfaceObjects {
+    pub layer: Retained<CAMetalLayer>,
+}
+
+// SAFETY: Needed for CAMetalLayer
+unsafe impl Send for SurfaceObjects {}
+unsafe impl Sync for SurfaceObjects {}

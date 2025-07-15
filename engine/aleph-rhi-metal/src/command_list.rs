@@ -48,8 +48,6 @@ impl IGetPlatformInterface for CommandList {
     }
 }
 
-unsafe impl Send for CommandList {}
-
 impl ICommandList for CommandList {
     fn begin_general<'a>(
         &'a mut self,

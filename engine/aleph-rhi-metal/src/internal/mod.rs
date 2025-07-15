@@ -27,27 +27,4 @@
 // SOFTWARE.
 //
 
-#![cfg(any(target_os = "macos", target_os = "ios"))]
-
-mod adapter;
-mod buffer;
-mod command_list;
-mod context;
-mod descriptor_arena;
-mod descriptor_pool;
-mod descriptor_set_layout;
-mod device;
-mod encoder;
-mod fence;
-mod internal;
-mod pipeline;
-mod pipeline_layout;
-mod queue;
-mod rhi_backend;
-mod sampler;
-mod semaphore;
-mod surface;
-mod swap_chain;
-mod texture;
-
-pub use rhi_backend::{MetalConfig, MetalLoader, RHI_BACKEND_OBJECT};
+pub mod unwrap;

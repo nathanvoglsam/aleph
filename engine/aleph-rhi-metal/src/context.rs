@@ -34,12 +34,15 @@ use std::ptr::NonNull;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 
+use objc2::rc::Retained;
 use objc2_metal::*;
+use objc2_quartz_core::CAMetalLayer;
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 
 use crate::MetalConfig;
-use crate::adapter::Adapter;
-use crate::surface::Surface;
+use crate::adapter::{Adapter, AdapterObjects};
+use crate::internal::unwrap;
+use crate::surface::{Surface, SurfaceObjects};
 
 pub struct Context {
     pub _this: AnyWeak<Self>,
@@ -83,6 +86,8 @@ impl IContext for Context {
             return None;
         }
 
+        let surface = options.surface.map(unwrap::surface);
+
         let mut scores: Vec<_> = (0..devices.len()).map(|i| (i, 0isize)).collect();
         for (device, (_, score)) in devices.iter().zip(scores.iter_mut()) {
             let name = device.name().to_string();
@@ -100,6 +105,15 @@ impl IContext for Context {
                 AdapterPowerClass::HighPower => {
                     if !device.isLowPower() {
                         *score += 10_000
+                    }
+                }
+            }
+
+            if let Some(surface) = surface {
+                let preferred = unsafe { surface.objects.layer.preferredDevice() };
+                if let Some(preferred) = preferred {
+                    if preferred == device {
+                        *score += 5_000
                     }
                 }
             }
@@ -122,13 +136,27 @@ impl IContext for Context {
         let device_index = scores[0].0;
         let device = devices.objectAtIndex(device_index);
 
+        if let Some(surface) = options.surface {
+            let surface = unwrap::surface(surface);
+            unsafe {
+                surface.objects.layer.setDevice(Some(&device));
+            }
+
+            let preferred = unsafe { surface.objects.layer.preferredDevice() };
+            if let Some(preferred) = preferred {
+                if preferred != device {
+                    log::warn!("Selected Device is not Preferred by CAMetalLayer");
+                }
+            }
+        }
+
         let name = device.name().to_string();
         let adapter = AnyArc::new_cyclic(move |v| Adapter {
             this: v.clone(),
             context: self._this.upgrade().unwrap(),
             name,
             vendor: AdapterVendor::Apple, // TODO: this may not always be the case
-            device,
+            objects: AdapterObjects { device },
         });
         Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))
     }
@@ -145,9 +173,13 @@ impl IContext for Context {
         &self,
         layer: NonNull<c_void>,
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+        let layer = unsafe { Retained::retain(layer.cast::<CAMetalLayer>().as_ptr()) };
+        let layer = layer.unwrap();
+
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),
             context: self._this.upgrade().unwrap(),
+            objects: SurfaceObjects { layer },
         });
         Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
     }

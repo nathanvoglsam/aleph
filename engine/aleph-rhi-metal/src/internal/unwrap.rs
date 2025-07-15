@@ -27,27 +27,27 @@
 // SOFTWARE.
 //
 
-#![cfg(any(target_os = "macos", target_os = "ios"))]
+use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::conversion_function;
 
-mod adapter;
-mod buffer;
-mod command_list;
-mod context;
-mod descriptor_arena;
-mod descriptor_pool;
-mod descriptor_set_layout;
-mod device;
-mod encoder;
-mod fence;
-mod internal;
-mod pipeline;
-mod pipeline_layout;
-mod queue;
-mod rhi_backend;
-mod sampler;
-mod semaphore;
-mod surface;
-mod swap_chain;
-mod texture;
+use crate::command_list::CommandList;
+use crate::device::Device;
+use crate::surface::Surface;
+use crate::swap_chain::SwapChain;
 
-pub use rhi_backend::{MetalConfig, MetalLoader, RHI_BACKEND_OBJECT};
+conversion_function!(
+    ICommandList,
+    CommandList,
+    command_list,
+    command_list_d,
+    command_list_iter
+);
+conversion_function!(IDevice, Device, device, device_d, device_iter);
+conversion_function!(ISurface, Surface, surface, surface_d, surface_iter);
+conversion_function!(
+    ISwapChain,
+    SwapChain,
+    swap_chain,
+    swap_chain_d,
+    swap_chain_iter
+);

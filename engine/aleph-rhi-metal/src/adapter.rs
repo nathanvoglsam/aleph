@@ -44,12 +44,8 @@ pub struct Adapter {
     pub(crate) context: AnyArc<Context>,
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
-    pub(crate) device: Retained<ProtocolObject<dyn MTLDevice>>,
+    pub(crate) objects: AdapterObjects,
 }
-
-// Safety: Needed because of 'MTLDevice'
-unsafe impl Send for Adapter {}
-unsafe impl Sync for Adapter {}
 
 declare_interfaces!(Adapter, [IAdapter]);
 
@@ -84,7 +80,7 @@ impl IAdapter for Adapter {
             this: v.clone(),
             adapter: self.this.upgrade().unwrap(),
             context: self.context.clone(),
-            device: self.device.clone(),
+            device: self.objects.device.clone(),
             general_queue: None,
             compute_queue: None,
             transfer_queue: None,
@@ -95,3 +91,12 @@ impl IAdapter for Adapter {
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
 }
+
+/// Wrapper struct to limit the scope of our 'unsafe impl Send+Sync'
+pub struct AdapterObjects {
+    pub device: Retained<ProtocolObject<dyn MTLDevice>>,
+}
+
+// Safety: Needed because of 'MTLDevice'
+unsafe impl Send for AdapterObjects {}
+unsafe impl Sync for AdapterObjects {}
