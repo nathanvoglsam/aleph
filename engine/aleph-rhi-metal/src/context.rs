@@ -166,7 +166,7 @@ impl IContext for Context {
 
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),
-            context: self._this.upgrade().unwrap(),
+            _context: self._this.upgrade().unwrap(),
             objects: SurfaceObjects { layer },
         });
         Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))

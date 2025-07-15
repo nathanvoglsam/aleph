@@ -43,7 +43,7 @@ use crate::swap_chain::{SwapChain, SwapChainObjects, SwapChainState};
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
+    pub(crate) _context: AnyArc<Context>,
     pub(crate) objects: SurfaceObjects,
 }
 
