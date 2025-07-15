@@ -550,12 +550,6 @@ impl IDevice for Device {
     }
 }
 
-impl Drop for Device {
-    fn drop(&mut self) {
-        todo!()
-    }
-}
-
 thread_local! {
     pub static DEVICE_BUMP: BlinkCell = BlinkCell::new();
 }

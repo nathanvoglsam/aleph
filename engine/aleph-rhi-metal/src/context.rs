@@ -188,9 +188,3 @@ impl IContext for Context {
         BackendAPI::Metal
     }
 }
-
-impl Drop for Context {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

@@ -46,9 +46,3 @@ impl Fence {
             .expect("Unknown Fence implementation!")
     }
 }
-
-impl Drop for Fence {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

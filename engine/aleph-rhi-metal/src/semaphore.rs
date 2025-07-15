@@ -46,9 +46,3 @@ impl Semaphore {
             .expect("Unknown Semaphore implementation!")
     }
 }
-
-impl Drop for Semaphore {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

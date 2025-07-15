@@ -70,9 +70,3 @@ impl IDescriptorArena for DescriptorArena {
         todo!()
     }
 }
-
-impl Drop for DescriptorArena {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

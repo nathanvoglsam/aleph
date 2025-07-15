@@ -70,9 +70,3 @@ impl IDescriptorPool for DescriptorPool {
         todo!()
     }
 }
-
-impl Drop for DescriptorPool {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

@@ -62,9 +62,3 @@ impl Sampler {
         self.desc.get()
     }
 }
-
-impl Drop for Sampler {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

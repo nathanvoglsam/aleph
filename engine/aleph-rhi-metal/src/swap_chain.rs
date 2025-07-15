@@ -87,9 +87,3 @@ impl ISwapChain for SwapChain {
         todo!()
     }
 }
-
-impl Drop for SwapChain {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

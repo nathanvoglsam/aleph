@@ -72,12 +72,6 @@ impl ICommandList for CommandList {
     }
 }
 
-impl Drop for CommandList {
-    fn drop(&mut self) {
-        todo!()
-    }
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub(crate) enum ListState {
     Empty,

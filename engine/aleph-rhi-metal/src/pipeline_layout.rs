@@ -56,9 +56,3 @@ impl PipelineLayout {
             .expect("Unknown PipelineLayout implementation!")
     }
 }
-
-impl Drop for PipelineLayout {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

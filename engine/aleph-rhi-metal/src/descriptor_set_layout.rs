@@ -59,9 +59,3 @@ impl DescriptorSetLayout {
             .expect("Unknown DescriptorSetLayout implementation!")
     }
 }
-
-impl Drop for DescriptorSetLayout {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

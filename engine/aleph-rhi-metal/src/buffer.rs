@@ -84,12 +84,6 @@ impl Buffer {
     }
 }
 
-impl Drop for Buffer {
-    fn drop(&mut self) {
-        todo!()
-    }
-}
-
 #[derive(Default)]
 pub(crate) struct MapState {
     pub(crate) count: usize,

@@ -88,9 +88,3 @@ impl ComputePipeline {
             .expect("Unknown ComputePipeline implementation!")
     }
 }
-
-impl Drop for ComputePipeline {
-    fn drop(&mut self) {
-        todo!()
-    }
-}

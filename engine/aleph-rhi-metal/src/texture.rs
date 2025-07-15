@@ -34,6 +34,9 @@ use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 use parking_lot::Mutex;
 
 use crate::device::Device;
@@ -41,7 +44,7 @@ use crate::device::Device;
 pub struct Texture {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) is_owned: bool,
+    // pub(crate) objects: TextureObjects,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, ()>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, ()>>,
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, ()>>,
@@ -78,8 +81,11 @@ impl Texture {
     }
 }
 
-impl Drop for Texture {
-    fn drop(&mut self) {
-        todo!()
-    }
+/// Wrapper to scope our 'unsafe impl Send+Sync'
+pub struct TextureObjects {
+    pub texture: Retained<ProtocolObject<dyn MTLTexture>>,
 }
+
+// Safety: Needed because of 'MTLTexture'
+unsafe impl Send for TextureObjects {}
+unsafe impl Sync for TextureObjects {}

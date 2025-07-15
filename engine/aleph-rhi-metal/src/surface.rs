@@ -35,6 +35,8 @@ use objc2::rc::Retained;
 use objc2_quartz_core::CAMetalLayer;
 
 use crate::context::Context;
+use crate::internal::unwrap;
+use crate::swap_chain::SwapChain;
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
@@ -68,13 +70,14 @@ impl ISurface for Surface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        todo!()
-    }
-}
+        let device = unwrap::device(device);
 
-impl Drop for Surface {
-    fn drop(&mut self) {
-        todo!()
+        let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
+            this: v.clone(),
+            device: device.this.upgrade().unwrap(),
+            surface: self.this.upgrade().unwrap(),
+        });
+        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
     }
 }
 
