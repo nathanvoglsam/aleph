@@ -31,6 +31,9 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use objc2::rc::Retained;
+use objc2_quartz_core::CAMetalLayer;
+use parking_lot::Mutex;
 
 use crate::device::Device;
 use crate::surface::Surface;
@@ -39,6 +42,8 @@ pub struct SwapChain {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
     pub(crate) surface: AnyArc<Surface>,
+    pub(crate) objects: SwapChainObjects,
+    pub(crate) inner: Mutex<SwapChainState>,
 }
 
 declare_interfaces!(SwapChain, [ISwapChain]);
@@ -65,11 +70,11 @@ impl ISwapChain for SwapChain {
     }
 
     fn present_supported_on_queue(&self, queue: QueueType) -> bool {
-        todo!()
+        true // TODO: is this right?
     }
 
     fn get_config(&self) -> SwapChainConfiguration {
-        todo!()
+        self.inner.lock().config.clone()
     }
 
     fn rebuild(
@@ -86,4 +91,17 @@ impl ISwapChain for SwapChain {
     unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
         todo!()
     }
+}
+
+/// Wrapper struct to limit the scope of our 'unsafe impl Send+Sync'
+pub struct SwapChainObjects {
+    pub layer: Retained<CAMetalLayer>,
+}
+
+// SAFETY: Needed for CAMetalLayer
+unsafe impl Send for SwapChainObjects {}
+unsafe impl Sync for SwapChainObjects {}
+
+pub struct SwapChainState {
+    pub config: SwapChainConfiguration,
 }

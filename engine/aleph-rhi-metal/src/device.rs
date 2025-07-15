@@ -282,7 +282,6 @@ impl IDevice for Device {
             let out = Texture {
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_texture(),
-                is_owned: true,
                 views: Default::default(),
                 rtvs: Default::default(),
                 dsvs: Default::default(),

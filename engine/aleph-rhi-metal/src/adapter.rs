@@ -38,10 +38,12 @@ use objc2_metal::*;
 
 use crate::context::Context;
 use crate::device::Device;
+use crate::surface::Surface;
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
+    pub(crate) surface: Option<AnyArc<Surface>>,
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
     pub(crate) objects: AdapterObjects,
@@ -76,6 +78,19 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+        if let Some(surface) = self.surface.as_ref() {
+            unsafe {
+                surface.objects.layer.setDevice(Some(&self.objects.device));
+            }
+
+            let preferred = unsafe { surface.objects.layer.preferredDevice() };
+            if let Some(preferred) = preferred {
+                if preferred != self.objects.device {
+                    log::warn!("Selected Device is not Preferred by CAMetalLayer");
+                }
+            }
+        }
+
         let device = AnyArc::new_cyclic(move |v| Device {
             this: v.clone(),
             adapter: self.this.upgrade().unwrap(),

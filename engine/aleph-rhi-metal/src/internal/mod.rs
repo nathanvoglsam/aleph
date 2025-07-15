@@ -27,4 +27,5 @@
 // SOFTWARE.
 //
 
+pub mod conv;
 pub mod unwrap;

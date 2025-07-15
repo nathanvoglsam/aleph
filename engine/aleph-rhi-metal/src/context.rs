@@ -135,25 +135,13 @@ impl IContext for Context {
 
         let device_index = scores[0].0;
         let device = devices.objectAtIndex(device_index);
-
-        if let Some(surface) = options.surface {
-            let surface = unwrap::surface(surface);
-            unsafe {
-                surface.objects.layer.setDevice(Some(&device));
-            }
-
-            let preferred = unsafe { surface.objects.layer.preferredDevice() };
-            if let Some(preferred) = preferred {
-                if preferred != device {
-                    log::warn!("Selected Device is not Preferred by CAMetalLayer");
-                }
-            }
-        }
+        let surface = surface.map(|v| v.this.upgrade().unwrap());
 
         let name = device.name().to_string();
         let adapter = AnyArc::new_cyclic(move |v| Adapter {
             this: v.clone(),
             context: self._this.upgrade().unwrap(),
+            surface,
             name,
             vendor: AdapterVendor::Apple, // TODO: this may not always be the case
             objects: AdapterObjects { device },
