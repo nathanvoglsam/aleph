@@ -28,6 +28,7 @@
 //
 
 use std::any::TypeId;
+use std::sync::atomic::AtomicU64;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::ArcedObject;
@@ -48,7 +49,7 @@ use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
-use crate::fence::Fence;
+use crate::fence::{Fence, FenceObjects};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
@@ -360,8 +361,15 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError> {
+        let event = match self.device.newSharedEvent() {
+            Some(v) => v,
+            None => return Err(FenceCreateError::Platform),
+        };
+
         let fence = Fence {
             _device: self.this.upgrade().unwrap(),
+            objects: FenceObjects { event },
+            value: AtomicU64::new(2),
         };
         let fence = ArcedObject::new_arc_opaque(fence);
         unsafe { Ok(FenceHandle::new(fence)) }
@@ -394,7 +402,13 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn poll_fence(&self, fence: &FenceHandle) -> bool {
-        todo!()
+        let fence = Fence::get(fence);
+        unsafe {
+            // We use MTLSharedEvent::wait with a zero timer to poll the event status. This should
+            // return true if the signalled value is equal to the expected value or higher.
+            let value = fence.get_wait_value();
+            fence.objects.event.waitUntilSignaledValue_timeoutMS(value, 0)
+        }
     }
 
     // ========================================================================================== //
