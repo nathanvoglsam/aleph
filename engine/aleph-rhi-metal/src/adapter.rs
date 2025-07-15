@@ -38,6 +38,7 @@ use objc2_metal::*;
 
 use crate::context::Context;
 use crate::device::Device;
+use crate::queue::Queue;
 use crate::surface::Surface;
 
 pub struct Adapter {
@@ -91,19 +92,38 @@ impl IAdapter for Adapter {
             }
         }
 
-        let device = AnyArc::new_cyclic(move |v| Device {
-            this: v.clone(),
-            adapter: self.this.upgrade().unwrap(),
-            context: self.context.clone(),
-            device: self.objects.device.clone(),
-            general_queue: None,
-            compute_queue: None,
-            transfer_queue: None,
-            // command_list_pool: CommandListPool::new(),
-            object_counter: ObjectCounter::new(),
+        let device = AnyArc::new_cyclic(move |v| {
+            let mut device = Device {
+                this: v.clone(),
+                adapter: self.this.upgrade().unwrap(),
+                context: self.context.clone(),
+                device: self.objects.device.clone(),
+                general_queue: None,
+                compute_queue: None,
+                transfer_queue: None,
+                // command_list_pool: CommandListPool::new(),
+                object_counter: ObjectCounter::new(),
+            };
+
+            Self::build_queue_objects(&mut device);
+
+            device
         });
 
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
+    }
+}
+
+impl Adapter {
+    fn build_queue_objects(device: &mut Device) {
+        let queue = Queue::new(device, QueueType::General);
+        device.general_queue = Some(queue);
+
+        let queue = Queue::new(device, QueueType::Compute);
+        device.compute_queue = Some(queue);
+
+        let queue = Queue::new(device, QueueType::Transfer);
+        device.transfer_queue = Some(queue);
     }
 }
 
