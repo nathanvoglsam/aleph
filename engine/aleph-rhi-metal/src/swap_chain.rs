@@ -32,6 +32,7 @@ use std::any::TypeId;
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
+use objc2_core_foundation::CGSize;
 use objc2_quartz_core::CAMetalLayer;
 use parking_lot::Mutex;
 
@@ -81,7 +82,34 @@ impl ISwapChain for SwapChain {
         &self,
         new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
-        todo!()
+        let new_size = if let Some(new_size) = new_size {
+            CGSize {
+                width: new_size.width as f64,
+                height: new_size.height as f64,
+            }
+        } else {
+            self.natural_drawable_size()
+        };
+
+        let out_config = unsafe {
+            let mut state = self.inner.lock();
+
+            log::debug!(
+                "Setting CAMetalLayer 'drawableSize' to ({}, {})",
+                new_size.width,
+                new_size.height
+            );
+            self.objects.layer.setDrawableSize(new_size);
+
+            state.config.width = new_size.width as u32;
+            state.config.height = new_size.height as u32;
+
+            state.config.clone()
+        };
+
+        // TODO: how do we invalidate the texture objects?
+
+        Ok(out_config)
     }
 
     fn get_images(&self, images: &mut [Option<TextureHandle>]) {
@@ -90,6 +118,18 @@ impl ISwapChain for SwapChain {
 
     unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
         todo!()
+    }
+}
+
+impl SwapChain {
+    pub(crate) fn natural_drawable_size(&self) -> CGSize {
+        let scale = self.objects.layer.contentsScale();
+        let mut size = self.objects.layer.bounds().size;
+
+        size.width *= scale;
+        size.height *= scale;
+
+        size
     }
 }
 

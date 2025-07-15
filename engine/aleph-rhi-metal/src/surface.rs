@@ -94,7 +94,7 @@ impl ISurface for Surface {
                     height: config.height as f64,
                 });
             } else {
-                log::debug!("CAMetalLayer size is already ({}, {})", width, height,);
+                log::debug!("CAMetalLayer size is already ({}, {})", width, height);
             }
 
             let format = conv::pixel_mtl_to_format(self.objects.layer.pixelFormat());
@@ -111,6 +111,24 @@ impl ISurface for Surface {
                 log::debug!(
                     "CAMetalLayer format is already {}. Doing nothing",
                     config.format
+                );
+            }
+
+            let image_count = self.objects.layer.maximumDrawableCount();
+            if image_count != config.buffer_count as usize {
+                log::debug!(
+                    "CAMetalLayer maximumDrawableCount was '{}'. Setting to '{}'",
+                    image_count,
+                    config.buffer_count
+                );
+
+                self.objects
+                    .layer
+                    .setMaximumDrawableCount(config.buffer_count as usize);
+            } else {
+                log::debug!(
+                    "CAMetalLayer maximumDrawableCount is already '{}'",
+                    image_count
                 );
             }
         }
