@@ -117,13 +117,25 @@ impl IAdapter for Adapter {
 impl Adapter {
     fn build_queue_objects(device: &mut Device) {
         let queue = Queue::new(device, QueueType::General);
-        device.general_queue = Some(queue);
+        device.general_queue = queue;
 
         let queue = Queue::new(device, QueueType::Compute);
-        device.compute_queue = Some(queue);
+        device.compute_queue = queue;
 
         let queue = Queue::new(device, QueueType::Transfer);
-        device.transfer_queue = Some(queue);
+        device.transfer_queue = queue;
+
+        if device.general_queue.is_none() {
+            panic!("No general queue was created! Something is very wrong!");
+        }
+
+        if device.compute_queue.is_none() {
+            log::warn!("No compute queue was created!");
+        }
+
+        if device.transfer_queue.is_none() {
+            log::warn!("No transfer queue was created!");
+        }
     }
 }
 

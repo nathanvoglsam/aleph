@@ -31,13 +31,19 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
+use blink_alloc::Blink;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 
 use crate::device::Device;
+use crate::encoder::{ActiveEncoder, Encoder, EncoderObjects};
 
 pub struct CommandList {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) list_type: QueueType,
     pub(crate) state: ListState,
+    pub(crate) objects: CommandListObjects,
 }
 
 declare_interfaces!(CommandList, [ICommandList]);
@@ -52,7 +58,35 @@ impl ICommandList for CommandList {
     fn begin_general<'a>(
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
-        todo!()
+        if matches!(self.list_type, QueueType::General) {
+            match self.state {
+                ListState::Empty => {
+                    self.state = ListState::Open;
+
+                    let _context = self._device.context.clone();
+                    let _device = self._device.clone();
+                    let list = self.objects.list.clone();
+                    let encoder = Encoder::<'a> {
+                        _parent: self,
+                        _context,
+                        _device,
+                        objects: EncoderObjects { list },
+                        active: ActiveEncoder::None,
+                        bound_graphics_pipeline: None,
+                        bound_compute_pipeline: None,
+                        bound_index_buffer: None,
+                        arena: Blink::new(),
+                    };
+                    Ok(Box::new(encoder))
+                }
+                ListState::Open => Err(CommandListBeginError::InvalidCommandListState),
+                ListState::Closed => Err(CommandListBeginError::InvalidCommandListState),
+            }
+        } else {
+            Err(CommandListBeginError::InvalidEncoderType(
+                QueueType::General,
+            ))
+        }
     }
 
     fn begin_compute<'a>(
@@ -78,3 +112,10 @@ pub(crate) enum ListState {
     Open,
     Closed,
 }
+
+/// Wrapper to limit the scope of our 'unsafe impl Send'
+pub struct CommandListObjects {
+    pub list: Retained<ProtocolObject<dyn MTLCommandBuffer>>,
+}
+
+unsafe impl Send for CommandListObjects {}

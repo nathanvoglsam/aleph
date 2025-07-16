@@ -36,6 +36,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject};
 use aleph_rhi_api::*;
 use crossbeam::queue::ArrayQueue;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 use parking_lot::Mutex;
 
 use crate::command_list::CommandList;
@@ -45,6 +48,8 @@ pub struct Queue {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyWeak<Device>,
     pub(crate) queue_type: QueueType,
+
+    pub(crate) objects: QueueObjects,
 
     /// Lock used to serialize submissions to the command queue.
     pub(crate) submit_lock: Mutex<()>,
@@ -110,19 +115,25 @@ impl IGetPlatformInterface for Queue {
 
 impl Queue {
     #[inline]
-    pub(crate) fn new(device: &Device, queue_type: QueueType) -> AnyArc<Self> {
+    pub(crate) fn new(device: &Device, queue_type: QueueType) -> Option<AnyArc<Self>> {
+        // TODO: should this be configurable? metal 4 will make this go away anyway I think?
+        let queue = device.device.newCommandQueueWithMaxCommandBufferCount(64)?;
+
         let is_queue_debug_available = false;
-        AnyArc::new_cyclic(|v| Self {
+        let out = AnyArc::new_cyclic(|v| Self {
             _this: v.clone(),
             _device: device.this.clone(),
             queue_type,
+            objects: QueueObjects { queue },
             submit_lock: Mutex::new(()),
             is_queue_debug_available,
             debug_marker_depth: Default::default(),
             last_submitted_index: Default::default(),
             last_completed_index: Default::default(),
             in_flight: ArrayQueue::new(256),
-        })
+        });
+
+        Some(out)
     }
 
     pub(crate) fn next_submission_index(&self) -> u64 {
@@ -194,3 +205,12 @@ pub struct QueueSubmission {
     /// filtered out and recycled later
     pub lists: Vec<Box<CommandList>>,
 }
+
+/// Wrapper over the MTL objects to limit scope of our 'unsafe impl Send+Sync'
+pub struct QueueObjects {
+    pub queue: Retained<ProtocolObject<dyn MTLCommandQueue>>,
+}
+
+// Safety: Needed for 'MTLCommandQueue'
+unsafe impl Send for Queue {}
+unsafe impl Sync for Queue {}

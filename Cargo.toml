@@ -155,6 +155,7 @@ objc2 = "0.6"
 objc2-metal = "0.3"
 objc2-quartz-core = "0.3"
 objc2-core-foundation = "0.3"
+objc2-foundation = "0.3"
 
 windows-interface = "0.58.0"
 windows.version = "0.58.0"

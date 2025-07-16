@@ -34,6 +34,9 @@ use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 use parking_lot::Mutex;
 
 use crate::device::Device;
@@ -41,6 +44,7 @@ use crate::device::Device;
 pub struct Buffer {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
+    pub(crate) objects: BufferObjects,
     pub(crate) map_state: Mutex<MapState>,
     pub(crate) desc: OwnedBufferDesc,
 }
@@ -91,3 +95,7 @@ pub(crate) struct MapState {
 }
 
 unsafe impl Send for MapState {}
+
+pub struct BufferObjects {
+    pub buffer: Retained<ProtocolObject<dyn MTLBuffer>>,
+}

@@ -84,7 +84,7 @@ impl Fence {
         assert_ne!(signal_val, u64::MAX, "Semaphore internal value overflow!");
 
         //queue.Signal(&self.fence, signal_val)
-        
+
         Ok(())
     }
 }

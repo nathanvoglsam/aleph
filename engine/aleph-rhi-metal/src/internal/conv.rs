@@ -133,3 +133,37 @@ pub const fn pixel_mtl_to_format(format: MTLPixelFormat) -> Format {
         _ => unimplemented!(),
     }
 }
+
+pub const fn rect_to_mtl_scissor_rect(rect: &Rect) -> MTLScissorRect {
+    MTLScissorRect {
+        x: rect.x as usize,
+        y: rect.y as usize,
+        width: rect.w as usize,
+        height: rect.h as usize,
+    }
+}
+
+pub const fn viewport_to_mtl(viewport: &Viewport) -> MTLViewport {
+    MTLViewport {
+        originX: viewport.x as f64,
+        originY: viewport.y as f64,
+        width: viewport.width as f64,
+        height: viewport.height as f64,
+        znear: viewport.min_depth as f64,
+        zfar: viewport.max_depth as f64,
+    }
+}
+
+pub const fn index_type_to_mtl(index_type: IndexType) -> MTLIndexType {
+    match index_type {
+        IndexType::U16 => MTLIndexType::UInt16,
+        IndexType::U32 => MTLIndexType::UInt32,
+    }
+}
+
+pub const fn index_type_to_size(index_type: IndexType) -> usize {
+    match index_type {
+        IndexType::U16 => 2,
+        IndexType::U32 => 4,
+    }
+}

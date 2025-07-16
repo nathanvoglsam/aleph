@@ -44,7 +44,7 @@ use parking_lot::Mutex;
 
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
-use crate::command_list::{CommandList, ListState};
+use crate::command_list::{CommandList, CommandListObjects, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
@@ -263,14 +263,15 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        let out = Buffer {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_buffer(),
-            map_state: Mutex::new(Default::default()),
-            desc: OwnedBufferDesc::new(desc.clone()),
-        };
-        let out = ArcedObject::new_arc_opaque(out);
-        unsafe { Ok(BufferHandle::new(out)) }
+        todo!()
+        // let out = Buffer {
+        //     _device: self.this.upgrade().unwrap(),
+        //     id: self.object_counter.next_buffer(),
+        //     map_state: Mutex::new(Default::default()),
+        //     desc: OwnedBufferDesc::new(desc.clone()),
+        // };
+        // let out = ArcedObject::new_arc_opaque(out);
+        // unsafe { Ok(BufferHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -320,10 +321,21 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
+            let queue = match self.get_queue_internal(desc.queue_type) {
+                Some(v) => v,
+                None => return Err(CommandListCreateError::NoSuchQueue(desc.queue_type)),
+            };
+
+            let list = match queue.objects.queue.commandBuffer() {
+                Some(v) => v,
+                None => return Err(CommandListCreateError::Platform),
+            };
+
             let out: Box<dyn ICommandList> = Box::new(CommandList {
                 _device: self.this.upgrade().unwrap(),
                 list_type: desc.queue_type,
                 state: ListState::Empty,
+                objects: CommandListObjects { list },
             });
 
             Ok(out)
@@ -407,7 +419,10 @@ impl IDevice for Device {
             // We use MTLSharedEvent::wait with a zero timer to poll the event status. This should
             // return true if the signalled value is equal to the expected value or higher.
             let value = fence.get_wait_value();
-            fence.objects.event.waitUntilSignaledValue_timeoutMS(value, 0)
+            fence
+                .objects
+                .event
+                .waitUntilSignaledValue_timeoutMS(value, 0)
         }
     }
 
@@ -560,6 +575,16 @@ impl IDevice for Device {
 
     fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
         ComputePipeline::get(pipeline).id
+    }
+}
+
+impl Device {
+    pub fn get_queue_internal(&self, queue_type: QueueType) -> Option<&Queue> {
+        match queue_type {
+            QueueType::General => self.general_queue.as_deref(),
+            QueueType::Compute => self.compute_queue.as_deref(),
+            QueueType::Transfer => self.transfer_queue.as_deref(),
+        }
     }
 }
 
