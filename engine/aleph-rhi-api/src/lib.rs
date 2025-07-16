@@ -6356,6 +6356,9 @@ error_enum_from_unit_type!(CommandPoolCreateError);
 
 #[derive(Error, Debug)]
 pub enum CommandListCreateError {
+    #[error("The device does not have a queue of type '{0}' available.")]
+    NoSuchQueue(QueueType),
+
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
