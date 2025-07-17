@@ -45,6 +45,30 @@ rule compute_shader_spirv
     command = $cc $comp_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 #
+# MSL BUILD RULES
+#
+msl_target = -profile sm_6_0 -target metal -capability metallib_3_0 -capability METAL_3_0 
+rule fragment_shader_msl
+    depfile = $out.d
+    deps = gcc
+    command = $cc $frag_stage $msl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
+
+rule vertex_shader_msl
+    depfile = $out.d
+    deps = gcc
+    command = $cc $vert_stage $msl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
+
+rule geometry_shader_msl
+    depfile = $out.d
+    deps = gcc
+    command = $cc $geom_stage $msl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
+
+rule compute_shader_msl
+    depfile = $out.d
+    deps = gcc
+    command = $cc $comp_stage $msl_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
+
+#
 # DXIL BUILD RULES
 #
 dx_target = -target dxil -profile sm_6_0

@@ -225,6 +225,14 @@ fn build_shader_ninja_file_for_shader_module(
                 &shader_file,
                 ShaderTargetLanguage::Spirv,
             )?;
+
+            output_build_statement_for_shader(
+                &mut ninja_file,
+                module_ctx,
+                &compilation_params,
+                &shader_file,
+                ShaderTargetLanguage::Msl,
+            )?;
         }
         if f_type.is_dir() {
             let v = module_ctx.meta.output_dir.join(entry_path_tail);
@@ -265,6 +273,11 @@ fn output_build_statement_for_shader(
         }
         crate::shader_system::ShaderTargetLanguage::Spirv => {
             writeln!(ninja_file, "build {out_file}.spirv: {rule}_spirv {in_file}")?;
+            compilation_params.write_ninja_overrides(ninja_file)?;
+            writeln!(ninja_file)?;
+        }
+        crate::shader_system::ShaderTargetLanguage::Msl => {
+            writeln!(ninja_file, "build {out_file}.msl: {rule}_msl {in_file}")?;
             compilation_params.write_ninja_overrides(ninja_file)?;
             writeln!(ninja_file)?;
         }

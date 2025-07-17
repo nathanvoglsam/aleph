@@ -217,6 +217,7 @@ fn archive_shaders_for_package(
                                 shader_type: shader_file.shader_type.into(),
                                 spirv: Vec::new(),
                                 dxil: file_data,
+                                msl: Vec::new(),
                             },
                         );
                     }
@@ -233,6 +234,24 @@ fn archive_shaders_for_package(
                                 shader_type: shader_file.shader_type.into(),
                                 spirv: file_data,
                                 dxil: Vec::new(),
+                                msl: Vec::new(),
+                            },
+                        );
+                    }
+                }
+                crate::shader_system::ShaderFileFormat::Msl => {
+                    log::trace!("Collecting MSL for shader '{shader_name}'");
+                    let file_data = std::fs::read(&entry_path)?;
+                    if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
+                        db_entry.msl = file_data;
+                    } else {
+                        shader_db.shaders.insert(
+                            shader_name,
+                            aleph_shader_db::ShaderEntry {
+                                shader_type: shader_file.shader_type.into(),
+                                spirv: Vec::new(),
+                                dxil: Vec::new(),
+                                msl: file_data,
                             },
                         );
                     }

@@ -127,6 +127,7 @@ impl ShaderType {
 pub enum ShaderFileFormat {
     Hlsl,
     Slang,
+    Msl,
     Dxil,
     Spirv,
 }
@@ -144,6 +145,7 @@ impl ShaderFileFormat {
         match v {
             "dxil" => Some(ShaderFileFormat::Dxil),
             "spirv" => Some(ShaderFileFormat::Spirv),
+            "msl" => Some(ShaderFileFormat::Msl),
             _ => None,
         }
     }
@@ -158,6 +160,9 @@ pub enum ShaderTargetLanguage {
 
     /// The SPIR-V format for consumpation by Vulkan
     Spirv,
+
+    /// The MSL format for consumption by Metal
+    Msl,
 }
 
 #[derive(Default, Serialize, Deserialize)]
