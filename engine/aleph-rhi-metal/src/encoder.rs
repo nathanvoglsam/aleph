@@ -72,6 +72,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let concrete = GraphicsPipeline::get_owned(pipeline);
 
+        encoder.setRenderPipelineState(&concrete.objects.pipeline);
+
         self.bound_graphics_pipeline = Some(concrete);
     }
 
@@ -236,6 +238,8 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
         let concrete = ComputePipeline::get_owned(pipeline);
 
+        encoder.setComputePipelineState(&concrete.objects.pipeline);
+
         self.bound_compute_pipeline = Some(concrete);
 
         todo!()
@@ -357,18 +361,18 @@ impl ActiveEncoder {
             ActiveEncoder::Graphics(_) => {
                 log::error!("Must begin render encoder with 'begin_rendering'!");
                 panic!("Must begin render encoder with 'begin_rendering'!")
-            },
+            }
             ActiveEncoder::Compute(old) => {
                 old.endEncoding();
                 *self = ActiveEncoder::Graphics(encoder);
-            },
+            }
             ActiveEncoder::Copy(old) => {
                 old.endEncoding();
                 *self = ActiveEncoder::Graphics(encoder);
-            },
+            }
             ActiveEncoder::None => {
                 *self = ActiveEncoder::Graphics(encoder);
-            },
+            }
         }
     }
 

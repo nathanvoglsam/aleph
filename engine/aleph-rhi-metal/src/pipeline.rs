@@ -33,6 +33,9 @@ use std::sync::Arc;
 use aleph_any::AnyArc;
 use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 
 use crate::device::Device;
 use crate::pipeline_layout::PipelineLayout;
@@ -41,6 +44,7 @@ pub struct GraphicsPipeline {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) _pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
     pub(crate) id: NonZeroU64,
+    pub(crate) objects: GraphicsPipelineObjects,
 }
 
 unsafe_impl_iobject!(GraphicsPipeline, "01980753-5c4f-7ae3-be3b-9707082d77a7");
@@ -66,10 +70,20 @@ impl Drop for GraphicsPipeline {
     }
 }
 
+/// Wrapper type to limit the scope of our 'unsafe impl Send+Sync'
+pub struct GraphicsPipelineObjects {
+    pub pipeline: Retained<ProtocolObject<dyn MTLRenderPipelineState>>,
+}
+
+// Safety: Needed for 'MTLRenderPipelineState
+unsafe impl Send for GraphicsPipelineObjects {}
+unsafe impl Sync for GraphicsPipelineObjects {}
+
 pub struct ComputePipeline {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) _pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
     pub(crate) id: NonZeroU64,
+    pub(crate) objects: ComputePipelineObjects,
 }
 
 unsafe_impl_iobject!(ComputePipeline, "01980753-5c4f-7ae3-be3b-9719259cfbc3");
@@ -88,3 +102,12 @@ impl ComputePipeline {
             .expect("Unknown ComputePipeline implementation!")
     }
 }
+
+/// Wrapper type to limit the scope of our 'unsafe impl Send+Sync'
+pub struct ComputePipelineObjects {
+    pub pipeline: Retained<ProtocolObject<dyn MTLComputePipelineState>>,
+}
+
+// Safety: Needed for 'MTLRenderPipelineState
+unsafe impl Send for ComputePipelineObjects {}
+unsafe impl Sync for ComputePipelineObjects {}

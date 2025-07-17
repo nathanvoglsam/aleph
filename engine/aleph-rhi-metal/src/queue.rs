@@ -184,11 +184,11 @@ impl IQueue for Queue {
 }
 
 impl IQueueDebug for Queue {
-    fn set_marker(&self, color: Color, message: &aleph_nstr::NStr) {
+    fn set_marker(&self, _color: Color, _message: &aleph_nstr::NStr) {
         todo!()
     }
 
-    fn begin_event(&self, color: Color, message: &aleph_nstr::NStr) {
+    fn begin_event(&self, _color: Color, _message: &aleph_nstr::NStr) {
         todo!()
     }
 
