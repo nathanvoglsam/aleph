@@ -27,22 +27,22 @@ vk_target = -profile spirv_1_3 -target spirv
 rule fragment_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $frag_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $frag_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 rule vertex_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $vert_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $vert_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 rule geometry_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $geom_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $geom_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 rule compute_shader_spirv
     depfile = $out.d
     deps = gcc
-    command = $cc $comp_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $comp_stage $vk_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 #
 # DXIL BUILD RULES
@@ -51,19 +51,19 @@ dx_target = -target dxil -profile sm_6_0
 rule fragment_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $frag_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $frag_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 rule vertex_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $vert_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $vert_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 rule geometry_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $geom_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $geom_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
 
 rule compute_shader_dxil
     depfile = $out.d
     deps = gcc
-    command = $cc $comp_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -o $out $in -I $module_include $includes $definitions
+    command = $cc $comp_stage $dx_target $opt $debug $disabled_warnings $matrix_layout -depfile $out.d -reflection-json $out.refl.json -o $out $in -I $module_include $includes $definitions
