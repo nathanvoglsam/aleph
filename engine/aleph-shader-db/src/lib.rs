@@ -146,6 +146,7 @@ pub struct ShaderEntry {
     pub shader_type: ShaderType,
     pub spirv: Vec<u8>,
     pub dxil: Vec<u8>,
+    pub msl: Vec<u8>,
 }
 
 pub struct ShaderEntryRef<'a> {
