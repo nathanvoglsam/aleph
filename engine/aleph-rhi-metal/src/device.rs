@@ -421,9 +421,7 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_texture(),
             views: Default::default(),
-            objects: TextureObjects {
-                texture,
-            },
+            objects: TextureObjects { texture },
             rtvs: Default::default(),
             dsvs: Default::default(),
             desc: OwnedTextureDesc::new(desc.clone()),
@@ -492,33 +490,29 @@ impl IDevice for Device {
         &self,
         desc: &CommandListDesc,
     ) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        let queue = match self.get_queue_internal(desc.queue_type) {
+            Some(v) => v,
+            None => return Err(CommandListCreateError::NoSuchQueue(desc.queue_type)),
+        };
 
-            let queue = match self.get_queue_internal(desc.queue_type) {
-                Some(v) => v,
-                None => return Err(CommandListCreateError::NoSuchQueue(desc.queue_type)),
-            };
+        let list = match queue.objects.queue.commandBuffer() {
+            Some(v) => v,
+            None => return Err(CommandListCreateError::Platform),
+        };
 
-            let list = match queue.objects.queue.commandBuffer() {
-                Some(v) => v,
-                None => return Err(CommandListCreateError::Platform),
-            };
+        if let Some(name) = desc.name {
+            let mtl_name = NSString::from_str(name);
+            list.setLabel(Some(&mtl_name));
+        }
 
-            if let Some(name) = desc.name {
-                let mtl_name = NSString::from_str(name);
-                list.setLabel(Some(&mtl_name));
-            }
+        let out: Box<dyn ICommandList> = Box::new(CommandList {
+            _device: self.this.upgrade().unwrap(),
+            list_type: desc.queue_type,
+            state: ListState::Empty,
+            objects: CommandListObjects { list },
+        });
 
-            let out: Box<dyn ICommandList> = Box::new(CommandList {
-                _device: self.this.upgrade().unwrap(),
-                list_type: desc.queue_type,
-                state: ListState::Empty,
-                objects: CommandListObjects { list },
-            });
-
-            Ok(out)
-        })
+        Ok(out)
     }
 
     // ========================================================================================== //

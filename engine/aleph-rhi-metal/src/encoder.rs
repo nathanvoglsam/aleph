@@ -179,6 +179,84 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
         let mtl_desc = unsafe { MTLRenderPassDescriptor::new() };
 
+        let mtl_color_attachments = mtl_desc.colorAttachments();
+        for (i, color_attachment) in info.color_attachments.iter().enumerate() {
+            let mtl_attachment = unsafe { mtl_color_attachments.objectAtIndexedSubscript(i) };
+
+            // TODO: set the attachment from the rtv
+            mtl_attachment.setTexture(None);
+            mtl_attachment.setLevel(0);
+            mtl_attachment.setSlice(0);
+
+            match &color_attachment.load_op {
+                AttachmentLoadOp::Load => {
+                    mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                },
+                AttachmentLoadOp::Clear(clear_color) => {
+                    mtl_attachment.setLoadAction(MTLLoadAction::Clear);
+
+                    let [r, g, b, a] = clear_color.to_float();
+                    let clear_color = MTLClearColor {
+                        red: r as f64,
+                        green: g as f64,
+                        blue: b as f64,
+                        alpha: a as f64,
+                    };
+                    mtl_attachment.setClearColor(clear_color);
+                },
+                AttachmentLoadOp::DontCare => {
+                    mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                },
+                AttachmentLoadOp::None => {
+                    // TODO: this doesn't seem right
+                    mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                },
+            }
+
+            let store_op = match color_attachment.store_op {
+                AttachmentStoreOp::Store => MTLStoreAction::Store,
+                AttachmentStoreOp::DontCare => MTLStoreAction::DontCare,
+                AttachmentStoreOp::None => MTLStoreAction::Unknown,
+            };
+            mtl_attachment.setStoreAction(store_op);
+        }
+
+        if let Some(depth_attachment) = info.depth_stencil_attachment {
+            let mtl_attachment = unsafe { MTLRenderPassDepthAttachmentDescriptor::new() };
+
+            // TODO: set the attachment from the dsv
+            mtl_attachment.setTexture(None);
+            mtl_attachment.setLevel(0);
+            mtl_attachment.setSlice(0);
+
+            match &depth_attachment.depth_load_op {
+                AttachmentLoadOp::Load => {
+                    mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                },
+                AttachmentLoadOp::Clear(v) => {
+                    mtl_attachment.setLoadAction(MTLLoadAction::Clear);
+                    mtl_attachment.setClearDepth(v.depth as f64);
+                },
+                AttachmentLoadOp::DontCare => {
+                    mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                },
+                AttachmentLoadOp::None => {
+                    // TODO: this doesn't seem right
+                    mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                },
+            }
+
+            let store_op = match depth_attachment.depth_store_op {
+                AttachmentStoreOp::Store => MTLStoreAction::Store,
+                AttachmentStoreOp::DontCare => MTLStoreAction::DontCare,
+                AttachmentStoreOp::None => MTLStoreAction::Unknown,
+            };
+            mtl_attachment.setStoreAction(store_op);
+        }
+
+        mtl_desc.setRenderTargetWidth(info.extent.width as usize);
+        mtl_desc.setRenderTargetHeight(info.extent.height as usize);
+
         let encoder = self
             .objects
             .list
