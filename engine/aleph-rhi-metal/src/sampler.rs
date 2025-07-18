@@ -33,6 +33,9 @@ use aleph_any::AnyArc;
 use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::MTLSamplerState;
 
 use crate::device::Device;
 
@@ -40,6 +43,7 @@ pub struct Sampler {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: OwnedSamplerDesc,
+    pub(crate) objects: SamplerObjects,
 }
 
 unsafe_impl_iobject!(Sampler, "01980753-5c4f-7ae3-be3b-97225f3e91be");
@@ -62,3 +66,11 @@ impl Sampler {
         self.desc.get()
     }
 }
+
+/// Wrapper to scope our 'unsafe impl Send'
+pub struct SamplerObjects {
+    pub sampler: Retained<ProtocolObject<dyn MTLSamplerState>>,
+}
+
+unsafe impl Send for SamplerObjects {}
+unsafe impl Sync for SamplerObjects {}
