@@ -39,21 +39,26 @@ use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedT
 use crossbeam::queue::ArrayQueue;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use objc2_foundation::NSString;
 use objc2_metal::*;
 use parking_lot::Mutex;
 
 use crate::adapter::Adapter;
-use crate::buffer::Buffer;
+use crate::buffer::{Buffer, BufferObjects};
 use crate::command_list::{CommandList, CommandListObjects, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::{Fence, FenceObjects};
-use crate::pipeline::{ComputePipeline, GraphicsPipeline};
+use crate::internal::conv;
+use crate::pipeline::{
+    CachedGraphicsInfo, ComputePipeline, ComputePipelineObjects, GraphicsPipeline,
+    GraphicsPipelineObjects,
+};
 use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
-use crate::sampler::Sampler;
+use crate::sampler::{Sampler, SamplerObjects};
 use crate::semaphore::Semaphore;
 use crate::texture::Texture;
 
@@ -377,6 +382,12 @@ impl IDevice for Device {
             Some(v) => v,
             None => return Err(FenceCreateError::Platform),
         };
+
+        unsafe {
+            if signalled {
+                event.setSignaledValue(1);
+            }
+        }
 
         let fence = Fence {
             _device: self.this.upgrade().unwrap(),
