@@ -47,6 +47,7 @@ use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
+use crate::texture::Texture;
 
 pub struct Encoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
@@ -307,8 +308,23 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         dst: &BufferHandle,
         regions: &[BufferCopyRegion],
     ) {
+        let src = Buffer::get(src);
+        let dst = Buffer::get(dst);
+
         self.active.test_begin_blit(&self.objects.list);
         let encoder = self.active.get_blit();
+
+        for region in regions {
+            unsafe {
+                encoder.copyFromBuffer_sourceOffset_toBuffer_destinationOffset_size(
+                    &src.objects.buffer,
+                    region.src_offset as usize,
+                    &dst.objects.buffer,
+                    region.dst_offset as usize,
+                    region.size as usize,
+                );
+            }
+        }
     }
 
     unsafe fn copy_buffer_to_texture(
@@ -317,6 +333,9 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         dst: &TextureHandle,
         regions: &[BufferToTextureCopyRegion],
     ) {
+        let src = Buffer::get(src);
+        let dst = Texture::get(dst);
+
         self.active.test_begin_blit(&self.objects.list);
         let encoder = self.active.get_blit();
     }
@@ -327,8 +346,30 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         dst: &TextureHandle,
         regions: &[TextureToTextureCopyInfo],
     ) {
+        let src = Texture::get(src);
+        let dst = Texture::get(dst);
+
         self.active.test_begin_blit(&self.objects.list);
         let encoder = self.active.get_blit();
+
+        for region in regions {
+            unsafe {
+                let source_origin = conv::u_offset_to_mtl_origin(&region.src.offset);
+                let destination_origin = conv::u_offset_to_mtl_origin(&region.dst.offset);
+                let source_size = conv::extent_to_mtl_size(&region.extent);
+                encoder.copyFromTexture_sourceSlice_sourceLevel_sourceOrigin_sourceSize_toTexture_destinationSlice_destinationLevel_destinationOrigin(
+                    &src.objects.texture,
+                    region.src.array_layer as usize,
+                    region.src.mip_level as usize,
+                    source_origin,
+                    source_size,
+                    &dst.objects.texture,
+                    region.dst.array_layer as usize,
+                    region.dst.mip_level as usize,
+                    destination_origin,
+                );
+            }
+        }
     }
 
     unsafe fn set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {

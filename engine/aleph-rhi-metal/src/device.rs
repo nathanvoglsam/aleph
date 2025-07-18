@@ -59,7 +59,7 @@ use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
 use crate::sampler::{Sampler, SamplerObjects};
 use crate::semaphore::Semaphore;
-use crate::texture::Texture;
+use crate::texture::{Texture, TextureObjects};
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
@@ -411,20 +411,25 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        let mtl_desc = unsafe { MTLTextureDescriptor::new() };
+        let texture = match self.device.newTextureWithDescriptor(&mtl_desc) {
+            Some(v) => v,
+            None => return Err(TextureCreateError::Platform),
+        };
 
-            let out = Texture {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_texture(),
-                views: Default::default(),
-                rtvs: Default::default(),
-                dsvs: Default::default(),
-                desc: OwnedTextureDesc::new(desc.clone()),
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(TextureHandle::new(out)) }
-        })
+        let out = Texture {
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_texture(),
+            views: Default::default(),
+            objects: TextureObjects {
+                texture,
+            },
+            rtvs: Default::default(),
+            dsvs: Default::default(),
+            desc: OwnedTextureDesc::new(desc.clone()),
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(TextureHandle::new(out)) }
     }
 
     // ========================================================================================== //

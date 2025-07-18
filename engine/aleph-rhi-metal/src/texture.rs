@@ -44,7 +44,7 @@ use crate::device::Device;
 pub struct Texture {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
-    // pub(crate) objects: TextureObjects,
+    pub(crate) objects: TextureObjects,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, ()>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, ()>>,
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, ()>>,

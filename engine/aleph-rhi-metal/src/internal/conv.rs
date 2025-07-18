@@ -232,3 +232,19 @@ pub const fn border_color_to_mtl(v: SamplerBorderColor) -> MTLSamplerBorderColor
         SamplerBorderColor::WhiteOpaque => MTLSamplerBorderColor::OpaqueWhite,
     }
 }
+
+pub const fn u_offset_to_mtl_origin(v: &UOffset3D) -> MTLOrigin {
+    MTLOrigin {
+        x: v.x as usize,
+        y: v.y as usize,
+        z: v.z as usize,
+    }
+}
+
+pub const fn extent_to_mtl_size(v: &Extent3D) -> MTLSize {
+    MTLSize {
+        width: v.width as usize,
+        height: v.height as usize,
+        depth: v.depth as usize,
+    }
+}
