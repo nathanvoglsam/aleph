@@ -167,3 +167,68 @@ pub const fn index_type_to_size(index_type: IndexType) -> usize {
         IndexType::U32 => 4,
     }
 }
+
+pub const fn primitive_topology_to_mtl(v: PrimitiveTopology) -> MTLPrimitiveType {
+    match v {
+        PrimitiveTopology::PointList => MTLPrimitiveType::Point,
+        PrimitiveTopology::LineList => MTLPrimitiveType::Line,
+        PrimitiveTopology::LineStrip => MTLPrimitiveType::LineStrip,
+        PrimitiveTopology::TriangleList => MTLPrimitiveType::Triangle,
+        PrimitiveTopology::TriangleStrip => MTLPrimitiveType::TriangleStrip,
+    }
+}
+
+pub const fn primitive_topology_to_mtl_class(v: PrimitiveTopology) -> MTLPrimitiveTopologyClass {
+    match v {
+        PrimitiveTopology::PointList => MTLPrimitiveTopologyClass::Point,
+        PrimitiveTopology::LineList => MTLPrimitiveTopologyClass::Line,
+        PrimitiveTopology::LineStrip => MTLPrimitiveTopologyClass::Line,
+        PrimitiveTopology::TriangleList => MTLPrimitiveTopologyClass::Triangle,
+        PrimitiveTopology::TriangleStrip => MTLPrimitiveTopologyClass::Triangle,
+    }
+}
+
+pub const fn sampler_filter_to_mtl(v: SamplerFilter) -> MTLSamplerMinMagFilter {
+    match v {
+        SamplerFilter::Nearest => MTLSamplerMinMagFilter::Nearest,
+        SamplerFilter::Linear => MTLSamplerMinMagFilter::Linear,
+    }
+}
+
+pub const fn sampler_mip_filter_to_mtl(v: SamplerMipFilter) -> MTLSamplerMipFilter {
+    match v {
+        SamplerMipFilter::Nearest => MTLSamplerMipFilter::Nearest,
+        SamplerMipFilter::Linear => MTLSamplerMipFilter::Linear,
+    }
+}
+
+pub const fn address_mode_to_mtl(v: SamplerAddressMode) -> MTLSamplerAddressMode {
+    match v {
+        SamplerAddressMode::Wrap => MTLSamplerAddressMode::Repeat,
+        SamplerAddressMode::Mirror => MTLSamplerAddressMode::MirrorRepeat,
+        SamplerAddressMode::Clamp => MTLSamplerAddressMode::ClampToEdge,
+        SamplerAddressMode::Border => MTLSamplerAddressMode::ClampToBorderColor,
+        SamplerAddressMode::MirrorOnce => MTLSamplerAddressMode::MirrorClampToEdge,
+    }
+}
+
+pub const fn compare_op_to_mtl(v: CompareOp) -> MTLCompareFunction {
+    match v {
+        CompareOp::Never => MTLCompareFunction::Never,
+        CompareOp::Always => MTLCompareFunction::Always,
+        CompareOp::Equal => MTLCompareFunction::Equal,
+        CompareOp::NotEqual => MTLCompareFunction::NotEqual,
+        CompareOp::Less => MTLCompareFunction::Less,
+        CompareOp::LessEqual => MTLCompareFunction::LessEqual,
+        CompareOp::Greater => MTLCompareFunction::Greater,
+        CompareOp::GreaterOrEqual => MTLCompareFunction::GreaterEqual,
+    }
+}
+
+pub const fn border_color_to_mtl(v: SamplerBorderColor) -> MTLSamplerBorderColor {
+    match v {
+        SamplerBorderColor::BlackTransparent => MTLSamplerBorderColor::TransparentBlack,
+        SamplerBorderColor::BlackOpaque => MTLSamplerBorderColor::OpaqueBlack,
+        SamplerBorderColor::WhiteOpaque => MTLSamplerBorderColor::OpaqueWhite,
+    }
+}
