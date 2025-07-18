@@ -638,28 +638,28 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn map_buffer(&self, buffer: &BufferHandle) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
-        Buffer::get(buffer).map_buffer(self)
+        Buffer::get(buffer).map_buffer()
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn unmap_buffer(&self, buffer: &BufferHandle) -> Result<(), ResourceUnmapError> {
-        Buffer::get(buffer).unmap_buffer(self)
+        Buffer::get(buffer).unmap_buffer()
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn flush_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        Buffer::get(buffer).flush_buffer_range(self, offset, len)
+        Buffer::get(buffer).flush_buffer_range(offset, len)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     fn invalidate_buffer_range(&self, buffer: &BufferHandle, offset: u64, len: u64) {
-        Buffer::get(buffer).invalidate_buffer_range(self, offset, len)
+        Buffer::get(buffer).invalidate_buffer_range(offset, len)
     }
 
     // ========================================================================================== //

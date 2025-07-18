@@ -28,7 +28,6 @@
 //
 
 use std::num::NonZeroU64;
-use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
@@ -36,8 +35,8 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use objc2_foundation::NSRange;
 use objc2_metal::*;
-use parking_lot::Mutex;
 
 use crate::device::Device;
 
@@ -45,7 +44,6 @@ pub struct Buffer {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: BufferObjects,
-    pub(crate) map_state: Mutex<MapState>,
     pub(crate) desc: OwnedBufferDesc,
 }
 
@@ -68,33 +66,31 @@ impl Buffer {
         self.desc.get()
     }
 
-    pub(crate) fn map_buffer(
-        &self,
-        device: &Device,
-    ) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
-        todo!()
+    pub(crate) fn map_buffer(&self) -> Result<std::ptr::NonNull<u8>, ResourceMapError> {
+        let ptr = match self.desc().cpu_access {
+            CpuAccessMode::None => return Err(ResourceMapError::MappedNullPointer),
+            CpuAccessMode::Read | CpuAccessMode::Write => self.objects.buffer.contents(),
+        };
+        Ok(ptr.cast())
     }
 
-    pub(crate) fn unmap_buffer(&self, device: &Device) -> Result<(), ResourceUnmapError> {
-        todo!()
+    pub(crate) fn unmap_buffer(&self) -> Result<(), ResourceUnmapError> {
+        // Intentional no-op. All buffers are always mapped
+        Ok(())
     }
 
-    pub(crate) fn flush_buffer_range(&self, device: &Device, offset: u64, len: u64) {
-        todo!()
+    pub(crate) fn flush_buffer_range(&self, offset: u64, len: u64) {
+        // TODO: will we need this?
+        if false {
+            let range = NSRange::new(offset as usize, len as usize);
+            self.objects.buffer.didModifyRange(range);
+        }
     }
 
-    pub(crate) fn invalidate_buffer_range(&self, device: &Device, offset: u64, len: u64) {
+    pub(crate) fn invalidate_buffer_range(&self, offset: u64, len: u64) {
         todo!()
     }
 }
-
-#[derive(Default)]
-pub(crate) struct MapState {
-    pub(crate) count: usize,
-    pub(crate) ptr: Option<NonNull<u8>>,
-}
-
-unsafe impl Send for MapState {}
 
 pub struct BufferObjects {
     pub buffer: Retained<ProtocolObject<dyn MTLBuffer>>,
