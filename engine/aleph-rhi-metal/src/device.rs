@@ -302,17 +302,53 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_sampler(&self, desc: &SamplerDesc) -> Result<SamplerHandle, SamplerCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        let mtl_desc = MTLSamplerDescriptor::new();
 
-            let out = Sampler {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_sampler(),
-                desc: OwnedSamplerDesc::new(desc.clone()),
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(SamplerHandle::new(out)) }
-        })
+        mtl_desc.setMinFilter(conv::sampler_filter_to_mtl(desc.min_filter));
+        mtl_desc.setMagFilter(conv::sampler_filter_to_mtl(desc.mag_filter));
+        mtl_desc.setMipFilter(conv::sampler_mip_filter_to_mtl(desc.mip_filter));
+
+        mtl_desc.setRAddressMode(conv::address_mode_to_mtl(desc.address_mode_u));
+        mtl_desc.setSAddressMode(conv::address_mode_to_mtl(desc.address_mode_v));
+        mtl_desc.setTAddressMode(conv::address_mode_to_mtl(desc.address_mode_w));
+
+        mtl_desc.setLodMinClamp(desc.min_lod);
+        mtl_desc.setLodMaxClamp(desc.max_lod);
+
+        if desc.enable_anisotropy {
+            mtl_desc.setMaxAnisotropy(desc.max_anisotropy as usize);
+        }
+
+        if let Some(op) = desc.compare_op {
+            mtl_desc.setCompareFunction(conv::compare_op_to_mtl(op));
+        }
+
+        mtl_desc.setBorderColor(conv::border_color_to_mtl(desc.border_color));
+        // mtl_desc.setSupportArgumentBuffers(true);
+
+        if let Some(name) = desc.name
+            && self.context.debug
+        {
+            let mtl_name = NSString::from_str(name);
+            mtl_desc.setLabel(Some(&mtl_name));
+        }
+
+        let sampler = match self.device.newSamplerStateWithDescriptor(&mtl_desc) {
+            Some(v) => v,
+            None => {
+                log::error!("Failed to construct 'MTLSamplerState'.");
+                panic!("Failed to construct 'MTLSamplerState'.");
+            }
+        };
+
+        let out = Sampler {
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_sampler(),
+            desc: OwnedSamplerDesc::new(desc.clone()),
+            objects: SamplerObjects { sampler },
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(SamplerHandle::new(out)) }
     }
 
     // ========================================================================================== //
