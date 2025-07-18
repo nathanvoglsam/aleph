@@ -41,7 +41,6 @@ use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
 use objc2_metal::*;
-use parking_lot::Mutex;
 
 use crate::adapter::Adapter;
 use crate::buffer::{Buffer, BufferObjects};
@@ -335,6 +334,11 @@ impl IDevice for Device {
                 Some(v) => v,
                 None => return Err(CommandListCreateError::Platform),
             };
+
+            if let Some(name) = desc.name {
+                let mtl_name = NSString::from_str(name);
+                list.setLabel(Some(&mtl_name));
+            }
 
             let out: Box<dyn ICommandList> = Box::new(CommandList {
                 _device: self.this.upgrade().unwrap(),
