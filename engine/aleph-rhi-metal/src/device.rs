@@ -140,12 +140,81 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
+            let mtl_desc = MTLRenderPipelineDescriptor::new();
+
+            // shader_stages: &'a [ShaderStage<'a>],
+            // TODO
+
+            // pipeline_layout: &'a PipelineLayoutHandle,
             let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+            // TODO
+
+            // vertex_layout: &'a VertexInputStateDesc<'a>,
+            // TODO
+
+            let primitive_topology = desc.input_assembly_state.primitive_topology;
+            let primitive_type = conv::primitive_topology_to_mtl(primitive_topology);
+            unsafe {
+                let mtl_topology = conv::primitive_topology_to_mtl_class(primitive_topology);
+                mtl_desc.setInputPrimitiveTopology(mtl_topology);
+            }
+
+            // rasterizer_state: &'a RasterizerStateDesc,
+            // TODO
+
+            // depth_stencil_state: &'a DepthStencilStateDesc,
+            // TODO
+
+            // blend_state: &'a BlendStateDesc<'a>,
+            // TODO
+
+            // render_target_formats: &'a [Format],
+            let attachments = mtl_desc.colorAttachments();
+            // attachments.setObject_atIndexedSubscript(attachment, attachment_index);
+            // TODO
+
+            // depth_stencil_format: Option<Format>,
+            if let Some(fmt) = desc.depth_stencil_format {
+                let mtl_format = conv::format_to_pixel_mtl(fmt);
+                mtl_desc.setDepthAttachmentPixelFormat(mtl_format);
+
+                // TODO: what about
+                // mtl_desc.setStencilAttachmentPixelFormat(mtl_format);
+            }
+
+            if let Some(name) = desc.name
+                && self.context.debug
+            {
+                let mtl_name = NSString::from_str(name);
+                mtl_desc.setLabel(Some(&mtl_name));
+            }
+
+            if self.context.validation {
+                unsafe {
+                    mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
+                }
+            }
+
+            let pipeline = self
+                .device
+                .newRenderPipelineStateWithDescriptor_error(&mtl_desc);
+            let pipeline = match pipeline {
+                Ok(v) => v,
+                Err(_err) => {
+                    log::error!(
+                        "Failed to create render pipeline state! Reason: {}",
+                        "unknown"
+                    );
+                    return Err(PipelineCreateError::Platform);
+                }
+            };
 
             let out = GraphicsPipeline {
                 _device: self.this.upgrade().unwrap(),
                 _pipeline_layout: pipeline_layout,
                 id: self.object_counter.next_graphics_pipeline(),
+                objects: GraphicsPipelineObjects { pipeline },
+                info: CachedGraphicsInfo { primitive_type },
             };
             let out = ArcedObject::new_arc_opaque(out);
             unsafe { Ok(GraphicsPipelineHandle::new(out)) }
