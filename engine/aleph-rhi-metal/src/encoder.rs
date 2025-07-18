@@ -268,8 +268,13 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         sets: &[DescriptorSetHandle],
         dynamic_offsets: &[u32],
     ) {
-        self.active.test_begin_compute(&self.objects.list);
-        todo!()
+        match bind_point {
+            PipelineBindPoint::Compute => {
+                self.active.test_begin_compute(&self.objects.list);
+                todo!()
+            }
+            PipelineBindPoint::Graphics => todo!(),
+        }
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
