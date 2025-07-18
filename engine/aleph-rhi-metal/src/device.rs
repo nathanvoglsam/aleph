@@ -160,19 +160,56 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        let mtl_desc = MTLComputePipelineDescriptor::new();
 
-            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+        // shader_module: ShaderBinary<'a>,
+        // TODO
 
-            let out = ComputePipeline {
-                _device: self.this.upgrade().unwrap(),
-                _pipeline_layout: pipeline_layout,
-                id: self.object_counter.next_compute_pipeline(),
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(ComputePipelineHandle::new(out)) }
-        })
+        // pipeline_layout: &'a PipelineLayoutHandle,
+        let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+        // TODO
+
+        if let Some(name) = desc.name
+            && self.context.debug
+        {
+            let mtl_name = NSString::from_str(name);
+            mtl_desc.setLabel(Some(&mtl_name));
+        }
+
+        if self.context.validation {
+            unsafe {
+                mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
+            }
+        }
+
+        let pipeline = unsafe {
+            self.device
+                .newComputePipelineStateWithDescriptor_options_reflection_error(
+                    &mtl_desc,
+                    MTLPipelineOption::empty(),
+                    None,
+                )
+        };
+
+        let pipeline = match pipeline {
+            Ok(v) => v,
+            Err(_err) => {
+                log::error!(
+                    "Failed to create render pipeline state! Reason: {}",
+                    "unknown"
+                );
+                return Err(PipelineCreateError::Platform);
+            }
+        };
+
+        let out = ComputePipeline {
+            _device: self.this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout,
+            id: self.object_counter.next_compute_pipeline(),
+            objects: ComputePipelineObjects { pipeline },
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(ComputePipelineHandle::new(out)) }
     }
 
     // ========================================================================================== //
