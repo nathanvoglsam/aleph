@@ -75,6 +75,7 @@ impl ICommandList for CommandList {
                         bound_graphics_pipeline: None,
                         bound_compute_pipeline: None,
                         bound_index_buffer: None,
+                        bound_pipeline_state: Default::default(),
                         arena: Blink::new(),
                     };
                     Ok(Box::new(encoder))

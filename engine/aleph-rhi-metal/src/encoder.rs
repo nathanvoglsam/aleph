@@ -57,6 +57,7 @@ pub struct Encoder<'a> {
     pub(crate) bound_graphics_pipeline: Option<Arc<ArcedObject<GraphicsPipeline>>>,
     pub(crate) bound_compute_pipeline: Option<Arc<ArcedObject<ComputePipeline>>>,
     pub(crate) bound_index_buffer: Option<BoundIndexBuffer>,
+    pub(crate) bound_pipeline_state: BoundPipelineState,
     pub(crate) arena: Blink,
 }
 
@@ -73,6 +74,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let concrete = GraphicsPipeline::get_owned(pipeline);
 
         encoder.setRenderPipelineState(&concrete.objects.pipeline);
+        self.bound_pipeline_state.primitive_type = concrete.info.primitive_type;
 
         self.bound_graphics_pipeline = Some(concrete);
     }
@@ -204,7 +206,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     ) {
         let encoder = self.active.get_render();
 
-        let primitive_type = MTLPrimitiveType::Triangle; // TODO: this needs to be pulled from pipeline
+        let primitive_type = self.bound_pipeline_state.primitive_type;
         unsafe {
             encoder.drawPrimitives_vertexStart_vertexCount_instanceCount_baseInstance(
                 primitive_type,
@@ -226,7 +228,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     ) {
         let encoder = self.active.get_render();
 
-        let primitive_type = MTLPrimitiveType::Triangle; // TODO: this needs to be pulled from pipeline
+        let primitive_type = self.bound_pipeline_state.primitive_type;
         let index_buffer = self.bound_index_buffer.as_ref().unwrap();
         let offset = index_buffer.offset;
         let offset = offset + (first_index as u64 * index_buffer.index_size as u64);
@@ -345,6 +347,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
             ListState::Open => {
+                self.active.end();
                 self._parent.state = ListState::Closed;
                 Ok(())
             }
@@ -495,3 +498,15 @@ pub struct BoundIndexBuffer {
 }
 
 unsafe impl Send for BoundIndexBuffer {}
+
+pub struct BoundPipelineState {
+    primitive_type: MTLPrimitiveType,
+}
+
+impl Default for BoundPipelineState {
+    fn default() -> Self {
+        Self {
+            primitive_type: MTLPrimitiveType::Point,
+        }
+    }
+}
