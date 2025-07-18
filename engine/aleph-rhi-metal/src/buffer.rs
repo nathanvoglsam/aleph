@@ -35,7 +35,6 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedBufferDesc;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2_foundation::NSRange;
 use objc2_metal::*;
 
 use crate::device::Device;
@@ -79,16 +78,12 @@ impl Buffer {
         Ok(())
     }
 
-    pub(crate) fn flush_buffer_range(&self, offset: u64, len: u64) {
-        // TODO: will we need this?
-        if false {
-            let range = NSRange::new(offset as usize, len as usize);
-            self.objects.buffer.didModifyRange(range);
-        }
+    pub(crate) fn flush_buffer_range(&self, _offset: u64, _len: u64) {
+        // Intentional no-op
     }
 
-    pub(crate) fn invalidate_buffer_range(&self, offset: u64, len: u64) {
-        todo!()
+    pub(crate) fn invalidate_buffer_range(&self, _offset: u64, _len: u64) {
+        // Intentional no-op
     }
 }
 
