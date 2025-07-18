@@ -255,8 +255,6 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         encoder.setComputePipelineState(&concrete.objects.pipeline);
 
         self.bound_compute_pipeline = Some(concrete);
-
-        todo!()
     }
 
     unsafe fn bind_descriptor_sets(
@@ -332,15 +330,15 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     }
 
     unsafe fn set_marker(&mut self, _color: Color, _message: &aleph_nstr::NStr) {
-        //todo!()
+        // TODO: this
     }
 
     unsafe fn begin_event(&mut self, _color: Color, _message: &aleph_nstr::NStr) {
-        //todo!()
+        // TODO: this
     }
 
     unsafe fn end_event(&mut self) {
-        //todo!()
+        // TODO: this
     }
 
     unsafe fn close(&mut self) -> Result<(), CommandListCloseError> {

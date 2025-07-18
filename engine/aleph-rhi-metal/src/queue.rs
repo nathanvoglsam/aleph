@@ -163,7 +163,9 @@ impl IQueue for Queue {
     }
 
     fn queue_properties(&self) -> QueueProperties {
-        todo!()
+        QueueProperties {
+            min_image_transfer_granularity: Extent3D::default(),
+        }
     }
 
     fn garbage_collect(&self) {
@@ -185,15 +187,15 @@ impl IQueue for Queue {
 
 impl IQueueDebug for Queue {
     fn set_marker(&self, _color: Color, _message: &aleph_nstr::NStr) {
-        todo!()
+        // TODO: this
     }
 
     fn begin_event(&self, _color: Color, _message: &aleph_nstr::NStr) {
-        todo!()
+        // TODO: this
     }
 
     fn end_event(&self) {
-        todo!()
+        // TODO: this
     }
 }
 
