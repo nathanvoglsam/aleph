@@ -267,15 +267,38 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError> {
-        todo!()
-        // let out = Buffer {
-        //     _device: self.this.upgrade().unwrap(),
-        //     id: self.object_counter.next_buffer(),
-        //     map_state: Mutex::new(Default::default()),
-        //     desc: OwnedBufferDesc::new(desc.clone()),
-        // };
-        // let out = ArcedObject::new_arc_opaque(out);
-        // unsafe { Ok(BufferHandle::new(out)) }
+        let length = desc.size as usize;
+
+        let mut options = MTLResourceOptions::HazardTrackingModeTracked;
+        match desc.cpu_access {
+            CpuAccessMode::None => options |= MTLResourceOptions::StorageModePrivate,
+            CpuAccessMode::Read => options |= MTLResourceOptions::StorageModeShared,
+            CpuAccessMode::Write => {
+                options |= MTLResourceOptions::StorageModeShared
+                    | MTLResourceOptions::CPUCacheModeWriteCombined
+            }
+        }
+
+        let buffer = match self.device.newBufferWithLength_options(length, options) {
+            Some(v) => v,
+            None => return Err(BufferCreateError::Platform),
+        };
+
+        if let Some(name) = desc.name
+            && self.context.debug
+        {
+            let mtl_name = NSString::from_str(name);
+            buffer.setLabel(Some(&mtl_name));
+        }
+
+        let out = Buffer {
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_buffer(),
+            desc: OwnedBufferDesc::new(desc.clone()),
+            objects: BufferObjects { buffer },
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(BufferHandle::new(out)) }
     }
 
     // ========================================================================================== //
