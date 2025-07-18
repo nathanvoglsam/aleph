@@ -5370,6 +5370,21 @@ pub enum ColorClearValue {
     Int(u32),
 }
 
+impl ColorClearValue {
+    pub fn to_float(&self) -> [f32; 4] {
+        match self {
+            ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
+            ColorClearValue::Int(v) => {
+                let a = ((v >> (8 * 0)) & 0xFF) as f32 / 255.0;
+                let b = ((v >> (8 * 1)) & 0xFF) as f32 / 255.0;
+                let g = ((v >> (8 * 2)) & 0xFF) as f32 / 255.0;
+                let r = ((v >> (8 * 3)) & 0xFF) as f32 / 255.0;
+                [r, g, b, a]
+            },
+        }
+    }
+}
+
 impl From<u32> for ColorClearValue {
     #[inline(always)]
     fn from(v: u32) -> Self {
