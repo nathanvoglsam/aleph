@@ -174,11 +174,25 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-        todo!()
+        let mtl_desc = unsafe { MTLRenderPassDescriptor::new() };
+
+        let encoder = self
+            .objects
+            .list
+            .renderCommandEncoderWithDescriptor(&mtl_desc);
+        match encoder {
+            Some(v) => {
+                self.active.set_render(v);
+            }
+            None => {
+                log::error!("Failed to create 'MTLCommandRenderEncoder'!");
+                panic!("Failed to create 'MTLCommandRenderEncoder'!");
+            }
+        }
     }
 
     unsafe fn end_rendering(&mut self) {
-        todo!()
+        self.active.end_render();
     }
 
     unsafe fn draw(
@@ -359,8 +373,8 @@ impl ActiveEncoder {
     pub fn set_render(&mut self, encoder: Retained<ProtocolObject<dyn MTLRenderCommandEncoder>>) {
         match self {
             ActiveEncoder::Graphics(_) => {
-                log::error!("Must begin render encoder with 'begin_rendering'!");
-                panic!("Must begin render encoder with 'begin_rendering'!")
+                log::error!("Must end previous render encoder with 'end_rendering'!");
+                panic!("Must end previous render encoder with 'end_rendering'!")
             }
             ActiveEncoder::Compute(old) => {
                 old.endEncoding();
@@ -372,6 +386,16 @@ impl ActiveEncoder {
             }
             ActiveEncoder::None => {
                 *self = ActiveEncoder::Graphics(encoder);
+            }
+        }
+    }
+
+    pub fn end_render(&mut self) {
+        match self {
+            ActiveEncoder::Graphics(old) => todo!(),
+            _ => {
+                log::error!("No render encoder is active to 'endEncoding'!");
+                panic!("No render encoder is active to 'endEncoding'!");
             }
         }
     }
