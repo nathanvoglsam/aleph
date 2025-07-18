@@ -45,6 +45,7 @@ pub struct GraphicsPipeline {
     pub(crate) _pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: GraphicsPipelineObjects,
+    pub(crate) info: CachedGraphicsInfo,
 }
 
 unsafe_impl_iobject!(GraphicsPipeline, "01980753-5c4f-7ae3-be3b-9707082d77a7");
@@ -73,6 +74,12 @@ impl Drop for GraphicsPipeline {
 /// Wrapper type to limit the scope of our 'unsafe impl Send+Sync'
 pub struct GraphicsPipelineObjects {
     pub pipeline: Retained<ProtocolObject<dyn MTLRenderPipelineState>>,
+}
+
+/// Wrapper over all the pipeline data that is _not_ part of the MTLRenderPipelineState that the
+/// RHI expects to be a part of the pipeline.
+pub struct CachedGraphicsInfo {
+    pub primitive_type: MTLPrimitiveType,
 }
 
 // Safety: Needed for 'MTLRenderPipelineState
