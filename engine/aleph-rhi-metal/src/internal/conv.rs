@@ -248,3 +248,46 @@ pub const fn extent_to_mtl_size(v: &Extent3D) -> MTLSize {
         depth: v.depth as usize,
     }
 }
+
+pub const fn cull_mode_to_mtl(v: CullMode) -> MTLCullMode {
+    match v {
+        CullMode::None => MTLCullMode::None,
+        CullMode::Back => MTLCullMode::Back,
+        CullMode::Front => MTLCullMode::Front,
+    }
+}
+
+pub const fn front_face_order_to_mtl(v: FrontFaceOrder) -> MTLWinding {
+    match v {
+        FrontFaceOrder::CounterClockwise => MTLWinding::CounterClockwise,
+        FrontFaceOrder::Clockwise => MTLWinding::Clockwise,
+    }
+}
+
+pub const fn polygon_mode_to_mtl(v: PolygonMode) -> MTLTriangleFillMode {
+    match v {
+        PolygonMode::Fill => MTLTriangleFillMode::Fill,
+        PolygonMode::Line => MTLTriangleFillMode::Lines,
+    }
+}
+
+pub const fn stencil_op_to_mtl(v: StencilOp) -> MTLStencilOperation {
+    match v {
+        StencilOp::Keep => MTLStencilOperation::Keep,
+        StencilOp::Zero => MTLStencilOperation::Zero,
+        StencilOp::Replace => MTLStencilOperation::Replace,
+        StencilOp::IncrementClamp => MTLStencilOperation::IncrementClamp,
+        StencilOp::DecrementClamp => MTLStencilOperation::DecrementClamp,
+        StencilOp::Invert => MTLStencilOperation::Invert,
+        StencilOp::IncrementWrap => MTLStencilOperation::IncrementWrap,
+        StencilOp::DecrementWrap => MTLStencilOperation::DecrementWrap,
+    }
+}
+
+pub const fn attachment_store_op_to_mtl(v: AttachmentStoreOp) -> MTLStoreAction {
+    match v {
+        AttachmentStoreOp::Store => MTLStoreAction::Store,
+        AttachmentStoreOp::DontCare => MTLStoreAction::DontCare,
+        AttachmentStoreOp::None => unimplemented!(),
+    }
+}
