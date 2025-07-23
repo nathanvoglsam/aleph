@@ -63,7 +63,7 @@ pub struct Encoder<'a> {
 }
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
-    unsafe fn __query_platform_interface(&self, target: TypeId, out: *mut ()) -> Option<()> {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         todo!()
     }
 }
@@ -383,10 +383,13 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     ) {
         match bind_point {
             PipelineBindPoint::Compute => {
-                self.active.test_begin_compute(&self.objects.list);
+                let _encoder = self.active.get_compute();
                 todo!()
             }
-            PipelineBindPoint::Graphics => todo!(),
+            PipelineBindPoint::Graphics => {
+                let _encoder = self.active.get_render();
+                todo!()
+            }
         }
     }
 
@@ -534,7 +537,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         match self._parent.state {
             ListState::Empty => Err(CommandListCloseError::AlreadyClosed),
             ListState::Open => {
-                self.active.end();
+                self.active.end_all();
                 self._parent.state = ListState::Closed;
                 Ok(())
             }
@@ -580,12 +583,15 @@ impl ActiveEncoder {
 
     pub fn end_render(&mut self) {
         match self {
-            ActiveEncoder::Graphics(old) => todo!(),
+            ActiveEncoder::Graphics(old) => {
+                old.endEncoding();
+            }
             _ => {
                 log::error!("No render encoder is active to 'endEncoding'!");
                 panic!("No render encoder is active to 'endEncoding'!");
             }
         }
+        *self = ActiveEncoder::None;
     }
 
     pub fn get_render(&self) -> &ProtocolObject<dyn MTLRenderCommandEncoder> {
@@ -623,7 +629,7 @@ impl ActiveEncoder {
 
     pub fn get_compute<'a>(&'a self) -> &'a ProtocolObject<dyn MTLComputeCommandEncoder> {
         match self {
-            ActiveEncoder::Graphics(v) => panic!(),
+            ActiveEncoder::Graphics(_) => panic!(),
             ActiveEncoder::Compute(v) => v.as_ref(),
             ActiveEncoder::Copy(_) => panic!(),
             ActiveEncoder::None => panic!(),
@@ -658,7 +664,7 @@ impl ActiveEncoder {
         }
     }
 
-    pub fn end(&mut self) {
+    pub fn end_all(&mut self) {
         match self {
             ActiveEncoder::Graphics(old) => {
                 old.endEncoding();

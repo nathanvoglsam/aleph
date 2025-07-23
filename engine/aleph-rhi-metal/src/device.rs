@@ -149,14 +149,14 @@ impl IDevice for Device {
                     ShaderType::Vertex => {
                         // todo: get this from the shader bytes
                         mtl_desc.setVertexFunction(None);
-                    },
+                    }
                     ShaderType::Hull => unimplemented!(),
                     ShaderType::Domain => unimplemented!(),
                     ShaderType::Geometry => unimplemented!(),
                     ShaderType::Fragment => {
                         // todo: get this from the shader bytes
                         mtl_desc.setFragmentFunction(None);
-                    },
+                    }
                     ShaderType::Amplification => unimplemented!(),
                     ShaderType::Mesh => unimplemented!(),
                 }
@@ -230,12 +230,17 @@ impl IDevice for Device {
             };
 
             let attachments = mtl_desc.colorAttachments();
-            for (i, (format, blend)) in desc.render_target_formats.iter().zip(desc.blend_state.attachments).enumerate() {
+            for (i, (format, blend)) in desc
+                .render_target_formats
+                .iter()
+                .zip(desc.blend_state.attachments)
+                .enumerate()
+            {
                 let mtl_attachment = unsafe { MTLRenderPipelineColorAttachmentDescriptor::new() };
 
                 mtl_attachment.setPixelFormat(conv::format_to_pixel_mtl(*format));
                 mtl_attachment.setWriteMask(conv::write_mask_to_mtl(blend.color_write_mask));
-                
+
                 if blend.blend_enabled {
                     mtl_attachment.setBlendingEnabled(blend.blend_enabled);
 
@@ -258,7 +263,9 @@ impl IDevice for Device {
                     mtl_attachment.setAlphaBlendOperation(v);
                 }
 
-                unsafe { attachments.setObject_atIndexedSubscript(Some(&mtl_attachment), i); }
+                unsafe {
+                    attachments.setObject_atIndexedSubscript(Some(&mtl_attachment), i);
+                }
             }
 
             if let Some(fmt) = desc.depth_stencil_format {
