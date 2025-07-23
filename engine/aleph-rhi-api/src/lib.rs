@@ -5380,7 +5380,7 @@ impl ColorClearValue {
                 let g = ((v >> (8 * 2)) & 0xFF) as f32 / 255.0;
                 let r = ((v >> (8 * 3)) & 0xFF) as f32 / 255.0;
                 [r, g, b, a]
-            },
+            }
         }
     }
 }
