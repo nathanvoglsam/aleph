@@ -70,7 +70,7 @@ impl ISwapChain for SwapChain {
         self.this.weak_count()
     }
 
-    fn present_supported_on_queue(&self, queue: QueueType) -> bool {
+    fn present_supported_on_queue(&self, _queue: QueueType) -> bool {
         true // TODO: is this right?
     }
 

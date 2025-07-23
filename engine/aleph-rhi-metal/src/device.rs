@@ -36,6 +36,7 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
+use blink_alloc::Blink;
 use crossbeam::queue::ArrayQueue;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -159,11 +160,61 @@ impl IDevice for Device {
                 mtl_desc.setInputPrimitiveTopology(mtl_topology);
             }
 
-            // rasterizer_state: &'a RasterizerStateDesc,
-            // TODO
+            let cull_mode = conv::cull_mode_to_mtl(desc.rasterizer_state.cull_mode);
+            let front_face = conv::front_face_order_to_mtl(desc.rasterizer_state.front_face);
+            let polygon_mode = conv::polygon_mode_to_mtl(desc.rasterizer_state.polygon_mode);
+            let depth_bias = desc.rasterizer_state.depth_bias;
+            let depth_bias_clamp = desc.rasterizer_state.depth_bias_clamp;
+            let depth_bias_slope_factor = desc.rasterizer_state.depth_bias_slope_factor;
 
             // depth_stencil_state: &'a DepthStencilStateDesc,
-            // TODO
+            // TODO depth bounds
+            let mtl_depth_desc = unsafe { MTLDepthStencilDescriptor::new() };
+
+            // 'depth_test = false' just decays to 'always'
+            let compare_fn = match (
+                desc.depth_stencil_state.depth_test,
+                desc.depth_stencil_state.depth_compare_op,
+            ) {
+                (true, v) => conv::compare_op_to_mtl(v),
+                (false, _) => MTLCompareFunction::Always,
+            };
+            mtl_depth_desc.setDepthCompareFunction(compare_fn);
+            mtl_depth_desc.setDepthWriteEnabled(desc.depth_stencil_state.depth_write);
+
+            fn apply_stencil_op_state(to: &MTLStencilDescriptor, v: &StencilOpState) {
+                to.setStencilFailureOperation(conv::stencil_op_to_mtl(v.fail_op));
+                to.setDepthStencilPassOperation(conv::stencil_op_to_mtl(v.pass_op));
+                to.setDepthFailureOperation(conv::stencil_op_to_mtl(v.depth_fail_op));
+                to.setStencilCompareFunction(conv::compare_op_to_mtl(v.compare_op));
+            }
+            if desc.depth_stencil_state.stencil_test {
+                let front = unsafe { MTLStencilDescriptor::new() };
+                front.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
+                front.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
+                apply_stencil_op_state(&front, &desc.depth_stencil_state.stencil_front);
+                mtl_depth_desc.setFrontFaceStencil(Some(&front));
+
+                let back = unsafe { MTLStencilDescriptor::new() };
+                back.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
+                back.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
+                apply_stencil_op_state(&back, &desc.depth_stencil_state.stencil_back);
+                mtl_depth_desc.setBackFaceStencil(Some(&back));
+            }
+
+            let depth_stencil_state = self
+                .device
+                .newDepthStencilStateWithDescriptor(&mtl_depth_desc);
+            let depth_stencil_state = match depth_stencil_state {
+                Some(v) => v,
+                None => {
+                    log::error!(
+                        "Failed to create depth stencil state for pipeline! Reason: {}",
+                        "unknown"
+                    );
+                    return Err(PipelineCreateError::Platform);
+                }
+            };
 
             // blend_state: &'a BlendStateDesc<'a>,
             // TODO
@@ -173,13 +224,13 @@ impl IDevice for Device {
             // attachments.setObject_atIndexedSubscript(attachment, attachment_index);
             // TODO
 
-            // depth_stencil_format: Option<Format>,
             if let Some(fmt) = desc.depth_stencil_format {
                 let mtl_format = conv::format_to_pixel_mtl(fmt);
                 mtl_desc.setDepthAttachmentPixelFormat(mtl_format);
 
-                // TODO: what about
-                // mtl_desc.setStencilAttachmentPixelFormat(mtl_format);
+                if fmt.is_stencil() {
+                    mtl_desc.setStencilAttachmentPixelFormat(mtl_format);
+                }
             }
 
             if let Some(name) = desc.name
@@ -213,8 +264,19 @@ impl IDevice for Device {
                 _device: self.this.upgrade().unwrap(),
                 _pipeline_layout: pipeline_layout,
                 id: self.object_counter.next_graphics_pipeline(),
-                objects: GraphicsPipelineObjects { pipeline },
-                info: CachedGraphicsInfo { primitive_type },
+                objects: GraphicsPipelineObjects {
+                    pipeline,
+                    depth_stencil_state,
+                },
+                info: CachedGraphicsInfo {
+                    primitive_type,
+                    cull_mode,
+                    front_face,
+                    polygon_mode,
+                    depth_bias,
+                    depth_bias_clamp,
+                    depth_bias_slope_factor,
+                },
             };
             let out = ArcedObject::new_arc_opaque(out);
             unsafe { Ok(GraphicsPipelineHandle::new(out)) }
@@ -344,6 +406,7 @@ impl IDevice for Device {
 
             let pool: Box<dyn IDescriptorArena> = Box::new(DescriptorArena {
                 _device: self.this.upgrade().unwrap(),
+                arena: Blink::new(),
             });
 
             Ok(pool)

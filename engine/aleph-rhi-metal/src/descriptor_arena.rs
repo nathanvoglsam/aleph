@@ -31,11 +31,13 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
+use blink_alloc::Blink;
 
 use crate::device::Device;
 
 pub struct DescriptorArena {
     pub(crate) _device: AnyArc<Device>,
+    pub(crate) arena: Blink,
 }
 
 declare_interfaces!(DescriptorArena, [IDescriptorArena]);

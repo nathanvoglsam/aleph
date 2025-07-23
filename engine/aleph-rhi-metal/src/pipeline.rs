@@ -74,12 +74,20 @@ impl Drop for GraphicsPipeline {
 /// Wrapper type to limit the scope of our 'unsafe impl Send+Sync'
 pub struct GraphicsPipelineObjects {
     pub pipeline: Retained<ProtocolObject<dyn MTLRenderPipelineState>>,
+    pub depth_stencil_state: Retained<ProtocolObject<dyn MTLDepthStencilState>>,
 }
 
 /// Wrapper over all the pipeline data that is _not_ part of the MTLRenderPipelineState that the
 /// RHI expects to be a part of the pipeline.
 pub struct CachedGraphicsInfo {
     pub primitive_type: MTLPrimitiveType,
+
+    pub cull_mode: MTLCullMode,
+    pub front_face: MTLWinding,
+    pub polygon_mode: MTLTriangleFillMode,
+    pub depth_bias: i32, // If 0, depth bias is disabled
+    pub depth_bias_clamp: f32,
+    pub depth_bias_slope_factor: f32,
 }
 
 // Safety: Needed for 'MTLRenderPipelineState

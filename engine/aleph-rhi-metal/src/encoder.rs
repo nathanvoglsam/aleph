@@ -75,7 +75,19 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let concrete = GraphicsPipeline::get_owned(pipeline);
 
         encoder.setRenderPipelineState(&concrete.objects.pipeline);
+        encoder.setDepthStencilState(Some(&concrete.objects.depth_stencil_state));
         self.bound_pipeline_state.primitive_type = concrete.info.primitive_type;
+
+        encoder.setCullMode(concrete.info.cull_mode);
+        encoder.setFrontFacingWinding(concrete.info.front_face);
+        encoder.setTriangleFillMode(concrete.info.polygon_mode);
+        if concrete.info.depth_bias != 0 {
+            encoder.setDepthBias_slopeScale_clamp(
+                concrete.info.depth_bias as f32,
+                concrete.info.depth_bias_slope_factor,
+                concrete.info.depth_bias_clamp,
+            );
+        }
 
         self.bound_graphics_pipeline = Some(concrete);
     }
@@ -191,7 +203,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             match &color_attachment.load_op {
                 AttachmentLoadOp::Load => {
                     mtl_attachment.setLoadAction(MTLLoadAction::Load);
-                },
+                }
                 AttachmentLoadOp::Clear(clear_color) => {
                     mtl_attachment.setLoadAction(MTLLoadAction::Clear);
 
@@ -203,21 +215,17 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                         alpha: a as f64,
                     };
                     mtl_attachment.setClearColor(clear_color);
-                },
+                }
                 AttachmentLoadOp::DontCare => {
                     mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                },
+                }
                 AttachmentLoadOp::None => {
                     // TODO: this doesn't seem right
                     mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                },
+                }
             }
 
-            let store_op = match color_attachment.store_op {
-                AttachmentStoreOp::Store => MTLStoreAction::Store,
-                AttachmentStoreOp::DontCare => MTLStoreAction::DontCare,
-                AttachmentStoreOp::None => MTLStoreAction::Unknown,
-            };
+            let store_op = conv::attachment_store_op_to_mtl(color_attachment.store_op);
             mtl_attachment.setStoreAction(store_op);
         }
 
@@ -232,26 +240,53 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             match &depth_attachment.depth_load_op {
                 AttachmentLoadOp::Load => {
                     mtl_attachment.setLoadAction(MTLLoadAction::Load);
-                },
+                }
                 AttachmentLoadOp::Clear(v) => {
                     mtl_attachment.setLoadAction(MTLLoadAction::Clear);
                     mtl_attachment.setClearDepth(v.depth as f64);
-                },
+                }
                 AttachmentLoadOp::DontCare => {
                     mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                },
+                }
                 AttachmentLoadOp::None => {
                     // TODO: this doesn't seem right
                     mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
-                },
+                }
             }
 
-            let store_op = match depth_attachment.depth_store_op {
-                AttachmentStoreOp::Store => MTLStoreAction::Store,
-                AttachmentStoreOp::DontCare => MTLStoreAction::DontCare,
-                AttachmentStoreOp::None => MTLStoreAction::Unknown,
-            };
+            let store_op = conv::attachment_store_op_to_mtl(depth_attachment.depth_store_op);
             mtl_attachment.setStoreAction(store_op);
+            mtl_desc.setDepthAttachment(Some(&mtl_attachment));
+
+            // TODO: if we need a stencil buffer
+            if true {
+                let mtl_attachment = unsafe { MTLRenderPassStencilAttachmentDescriptor::new() };
+                // TODO: set the attachment from the dsv
+                mtl_attachment.setTexture(None);
+                mtl_attachment.setLevel(0);
+                mtl_attachment.setSlice(0);
+
+                match &depth_attachment.stencil_load_op {
+                    AttachmentLoadOp::Load => {
+                        mtl_attachment.setLoadAction(MTLLoadAction::Load);
+                    }
+                    AttachmentLoadOp::Clear(v) => {
+                        mtl_attachment.setLoadAction(MTLLoadAction::Clear);
+                        mtl_attachment.setClearStencil(v.stencil as u32);
+                    }
+                    AttachmentLoadOp::DontCare => {
+                        mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                    }
+                    AttachmentLoadOp::None => {
+                        // TODO: this doesn't seem right
+                        mtl_attachment.setLoadAction(MTLLoadAction::DontCare);
+                    }
+                }
+
+                let store_op = conv::attachment_store_op_to_mtl(depth_attachment.stencil_store_op);
+                mtl_attachment.setStoreAction(store_op);
+                mtl_desc.setStencilAttachment(Some(&mtl_attachment));
+            }
         }
 
         mtl_desc.setRenderTargetWidth(info.extent.width as usize);
@@ -421,6 +456,34 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
         self.active.test_begin_blit(&self.objects.list);
         let encoder = self.active.get_blit();
+
+        for region in regions {
+            unsafe {
+                let bytes_per_element = dst.desc().format.bytes_per_element() as usize;
+                let source_bytes_per_row = region.src.row_pitch as usize * bytes_per_element;
+                let source_bytes_per_image = match dst.desc.get().dimension {
+                    TextureDimension::Texture1D | TextureDimension::Texture2D => 0,
+                    TextureDimension::Texture3D => {
+                        // Only 3D textures should have this != 0.
+                        source_bytes_per_row * region.dst.extent.depth as usize
+                    }
+                };
+                let destination_origin = conv::u_offset_to_mtl_origin(&region.dst.origin);
+                let source_size = conv::extent_to_mtl_size(&region.dst.extent);
+                encoder.copyFromBuffer_sourceOffset_sourceBytesPerRow_sourceBytesPerImage_sourceSize_toTexture_destinationSlice_destinationLevel_destinationOrigin_options(
+                    &src.objects.buffer,
+                    region.src.offset as usize,
+                    source_bytes_per_row,
+                    source_bytes_per_image,
+                    source_size,
+                    &dst.objects.texture,
+                    region.dst.array_layer as usize,
+                    region.dst.mip_level as usize,
+                    destination_origin,
+                    MTLBlitOption::None
+                );
+            }
+        }
     }
 
     unsafe fn copy_texture_regions(
@@ -546,7 +609,9 @@ impl ActiveEncoder {
             ActiveEncoder::Compute(_) => {}
             ActiveEncoder::Copy(old) => {
                 old.endEncoding();
-                let encoder = list.computeCommandEncoder().unwrap();
+                let encoder = list
+                    .computeCommandEncoderWithDispatchType(MTLDispatchType::Concurrent)
+                    .unwrap();
                 *self = ActiveEncoder::Compute(encoder);
             }
             ActiveEncoder::None => {
