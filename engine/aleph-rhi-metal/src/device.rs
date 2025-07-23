@@ -143,12 +143,26 @@ impl IDevice for Device {
 
             let mtl_desc = MTLRenderPipelineDescriptor::new();
 
-            // shader_stages: &'a [ShaderStage<'a>],
-            // TODO
+            for stage in desc.shader_stages {
+                match stage.stage {
+                    ShaderType::Compute => panic!("Graphics pipelines can't use compute shaders!"),
+                    ShaderType::Vertex => {
+                        // todo: get this from the shader bytes
+                        mtl_desc.setVertexFunction(None);
+                    },
+                    ShaderType::Hull => unimplemented!(),
+                    ShaderType::Domain => unimplemented!(),
+                    ShaderType::Geometry => unimplemented!(),
+                    ShaderType::Fragment => {
+                        // todo: get this from the shader bytes
+                        mtl_desc.setFragmentFunction(None);
+                    },
+                    ShaderType::Amplification => unimplemented!(),
+                    ShaderType::Mesh => unimplemented!(),
+                }
+            }
 
-            // pipeline_layout: &'a PipelineLayoutHandle,
             let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
-            // TODO
 
             // vertex_layout: &'a VertexInputStateDesc<'a>,
             // TODO
@@ -167,7 +181,6 @@ impl IDevice for Device {
             let depth_bias_clamp = desc.rasterizer_state.depth_bias_clamp;
             let depth_bias_slope_factor = desc.rasterizer_state.depth_bias_slope_factor;
 
-            // depth_stencil_state: &'a DepthStencilStateDesc,
             // TODO depth bounds
             let mtl_depth_desc = unsafe { MTLDepthStencilDescriptor::new() };
 
@@ -216,13 +229,37 @@ impl IDevice for Device {
                 }
             };
 
-            // blend_state: &'a BlendStateDesc<'a>,
-            // TODO
-
-            // render_target_formats: &'a [Format],
             let attachments = mtl_desc.colorAttachments();
-            // attachments.setObject_atIndexedSubscript(attachment, attachment_index);
-            // TODO
+            for (i, (format, blend)) in desc.render_target_formats.iter().zip(desc.blend_state.attachments).enumerate() {
+                let mtl_attachment = unsafe { MTLRenderPipelineColorAttachmentDescriptor::new() };
+
+                mtl_attachment.setPixelFormat(conv::format_to_pixel_mtl(*format));
+                mtl_attachment.setWriteMask(conv::write_mask_to_mtl(blend.color_write_mask));
+                
+                if blend.blend_enabled {
+                    mtl_attachment.setBlendingEnabled(blend.blend_enabled);
+
+                    let v = conv::blend_factor_to_mtl(blend.src_factor);
+                    mtl_attachment.setSourceRGBBlendFactor(v);
+
+                    let v = conv::blend_factor_to_mtl(blend.dst_factor);
+                    mtl_attachment.setDestinationRGBBlendFactor(v);
+
+                    let v = conv::alpha_blend_factor_to_mtl(blend.alpha_src_factor);
+                    mtl_attachment.setSourceAlphaBlendFactor(v);
+
+                    let v = conv::alpha_blend_factor_to_mtl(blend.alpha_dst_factor);
+                    mtl_attachment.setDestinationAlphaBlendFactor(v);
+
+                    let v = conv::blend_op_to_mtl(blend.blend_op);
+                    mtl_attachment.setRgbBlendOperation(v);
+
+                    let v = conv::blend_op_to_mtl(blend.alpha_blend_op);
+                    mtl_attachment.setAlphaBlendOperation(v);
+                }
+
+                unsafe { attachments.setObject_atIndexedSubscript(Some(&mtl_attachment), i); }
+            }
 
             if let Some(fmt) = desc.depth_stencil_format {
                 let mtl_format = conv::format_to_pixel_mtl(fmt);

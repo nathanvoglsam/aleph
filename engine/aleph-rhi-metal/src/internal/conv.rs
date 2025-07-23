@@ -291,3 +291,71 @@ pub const fn attachment_store_op_to_mtl(v: AttachmentStoreOp) -> MTLStoreAction 
         AttachmentStoreOp::None => unimplemented!(),
     }
 }
+
+pub const fn write_mask_to_mtl(v: ColorComponentFlags) -> MTLColorWriteMask {
+    if v.bits() == ColorComponentFlags::all().bits() {
+        return MTLColorWriteMask::All;
+    }
+
+    let mut out = MTLColorWriteMask::empty();
+    if v.contains(ColorComponentFlags::R) {
+        out.0 |= MTLColorWriteMask::Red.0;
+    }
+    if v.contains(ColorComponentFlags::G) {
+        out.0 |= MTLColorWriteMask::Green.0;
+    }
+    if v.contains(ColorComponentFlags::B) {
+        out.0 |= MTLColorWriteMask::Blue.0;
+    }
+    if v.contains(ColorComponentFlags::A) {
+        out.0 |= MTLColorWriteMask::Alpha.0;
+    }
+
+    out
+}
+
+pub const fn blend_op_to_mtl(v: BlendOp) -> MTLBlendOperation {
+    match v {
+        BlendOp::Add => MTLBlendOperation::Add,
+        BlendOp::Subtract => MTLBlendOperation::Subtract,
+        BlendOp::ReverseSubtract => MTLBlendOperation::ReverseSubtract,
+        BlendOp::Min => MTLBlendOperation::Min,
+        BlendOp::Max => MTLBlendOperation::Max,
+    }
+}
+
+pub const fn blend_factor_to_mtl(v: BlendFactor) -> MTLBlendFactor {
+    match v {
+        BlendFactor::Zero => MTLBlendFactor::Zero,
+        BlendFactor::One => MTLBlendFactor::One,
+        BlendFactor::SrcColor => MTLBlendFactor::SourceColor,
+        BlendFactor::OneMinusSrcColor => MTLBlendFactor::OneMinusSourceColor,
+        BlendFactor::DstColor => MTLBlendFactor::DestinationColor,
+        BlendFactor::OneMinusDstColor => MTLBlendFactor::OneMinusDestinationColor,
+        BlendFactor::SrcAlpha => MTLBlendFactor::SourceAlpha,
+        BlendFactor::OneMinusSrcAlpha => MTLBlendFactor::OneMinusSourceAlpha,
+        BlendFactor::DstAlpha => MTLBlendFactor::DestinationAlpha,
+        BlendFactor::OneMinusDstAlpha => MTLBlendFactor::OneMinusDestinationAlpha,
+        BlendFactor::SrcAlphaSaturate => MTLBlendFactor::SourceAlphaSaturated,
+        BlendFactor::BlendFactor => MTLBlendFactor::BlendColor,
+        BlendFactor::OneMinusBlendFactor => MTLBlendFactor::OneMinusBlendColor,
+    }
+}
+
+pub const fn alpha_blend_factor_to_mtl(v: BlendFactor) -> MTLBlendFactor {
+    match v {
+        BlendFactor::Zero => MTLBlendFactor::Zero,
+        BlendFactor::One => MTLBlendFactor::One,
+        BlendFactor::SrcColor => MTLBlendFactor::SourceColor,
+        BlendFactor::OneMinusSrcColor => MTLBlendFactor::OneMinusSourceColor,
+        BlendFactor::DstColor => MTLBlendFactor::DestinationColor,
+        BlendFactor::OneMinusDstColor => MTLBlendFactor::OneMinusDestinationColor,
+        BlendFactor::SrcAlpha => MTLBlendFactor::SourceAlpha,
+        BlendFactor::OneMinusSrcAlpha => MTLBlendFactor::OneMinusSourceAlpha,
+        BlendFactor::DstAlpha => MTLBlendFactor::DestinationAlpha,
+        BlendFactor::OneMinusDstAlpha => MTLBlendFactor::OneMinusDestinationAlpha,
+        BlendFactor::SrcAlphaSaturate => MTLBlendFactor::SourceAlphaSaturated,
+        BlendFactor::BlendFactor => MTLBlendFactor::BlendAlpha,
+        BlendFactor::OneMinusBlendFactor => MTLBlendFactor::OneMinusBlendAlpha,
+    }
+}
