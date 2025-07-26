@@ -192,41 +192,18 @@ impl IDevice for ValidationDevice {
                 DescriptorBindingInfo {
                     r#type: binding.binding_type,
                     descriptor_count: binding.binding_count,
-                    is_static_sampler: binding.static_samplers.is_some(),
                 },
             );
-        }
-
-        // Unwrap the inner &SamplerHandle references to get references to the wrapped implementation
-        // expected by self.inner
-        let mut static_samplers = Vec::with_capacity(desc.items.len());
-        for v in desc.items.iter() {
-            let samplers = if let Some(v) = v.static_samplers {
-                let mut samplers = Vec::new();
-
-                for v in v {
-                    let inner_sampler = &ValidationSampler::get(v).inner;
-                    samplers.push(inner_sampler);
-                }
-
-                Some(samplers)
-            } else {
-                None
-            };
-
-            static_samplers.push(samplers);
         }
 
         // Construct a new list of bindings matching the outer description, but with the inner
         // references unwrapped
         let mut items = Vec::with_capacity(desc.items.len());
-        for (i, v) in desc.items.iter().enumerate() {
-            let static_samplers = static_samplers[i].as_deref();
+        for v in desc.items.iter() {
             let item = DescriptorSetLayoutBinding {
                 binding_num: v.binding_num,
                 binding_type: v.binding_type,
                 binding_count: v.binding_count,
-                static_samplers,
             };
             items.push(item);
         }
@@ -791,13 +768,6 @@ impl ValidationDevice {
                 write.binding
             )
         };
-
-        // Check if the caller is trying to write into a static sampler binding, which is
-        // categorically invalid.
-        assert!(
-            !info.is_static_sampler,
-            "Writing a descriptor into a static sampler binding is invalid."
-        );
 
         // Check if the user is requesting to write the correct descriptor type. That is, the
         // 'descriptor_type' in the write description must match the type declared in the descriptor

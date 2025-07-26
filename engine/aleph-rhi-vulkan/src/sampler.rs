@@ -30,7 +30,7 @@
 use std::num::NonZeroU64;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
 use ash::vk;
@@ -47,13 +47,6 @@ pub struct Sampler {
 unsafe_impl_iobject!(Sampler, "01944fe0-d30e-7e41-a0b8-dab10f5b7e5a");
 
 impl Sampler {
-    pub(crate) fn get_owned(v: &SamplerHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown Sampler implementation!")
-    }
-
     pub(crate) fn get(v: &SamplerHandle) -> &Self {
         v.get()
             .downcast_ref::<Self>()

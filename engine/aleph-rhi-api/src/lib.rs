@@ -3482,12 +3482,11 @@ pub enum DescriptorType {
 }
 
 impl DescriptorType {
-    pub const fn binding(self, num: u32) -> DescriptorSetLayoutBinding<'static> {
+    pub const fn binding(self, num: u32) -> DescriptorSetLayoutBinding {
         DescriptorSetLayoutBinding {
             binding_num: num,
             binding_type: self,
             binding_count: None,
-            static_samplers: None,
         }
     }
 }
@@ -3572,7 +3571,7 @@ impl From<ShaderType> for DescriptorShaderVisibility {
 }
 
 #[derive(Clone, Default)]
-pub struct DescriptorSetLayoutBinding<'a> {
+pub struct DescriptorSetLayoutBinding {
     /// The binding number of this entry and corresponds to a resource of the same binding number in
     /// the shader stages.
     pub binding_num: u32,
@@ -3583,21 +3582,15 @@ pub struct DescriptorSetLayoutBinding<'a> {
     /// Specifies the number of descriptors contained in the binding. Should be 1 to declare a
     /// single binding, or >1 to declare an array of descriptors.
     pub binding_count: Option<NonZeroU32>,
-
-    /// An optional list of `binding_count` samplers to specify static samplers for `Sampler`
-    /// descriptors. If `binding_type` is `Sampler` but `static_samplers` is `None` then the
-    /// samplers are dynamic.
-    pub static_samplers: Option<&'a [&'a SamplerHandle]>,
 }
 
-impl<'a> DescriptorSetLayoutBinding<'a> {
+impl DescriptorSetLayoutBinding {
     /// Constructs a new, defaulted [DescriptorSetLayoutBinding] with the given descriptor type.
     pub const fn with_type(descriptor_type: DescriptorType) -> Self {
         Self {
             binding_num: 0,
             binding_type: descriptor_type,
             binding_count: None,
-            static_samplers: None,
         }
     }
 
@@ -3614,13 +3607,6 @@ impl<'a> DescriptorSetLayoutBinding<'a> {
         self.binding_count = Some(binding_count);
         self
     }
-
-    /// Takes the given desc and returns a new desc with
-    /// [DescriptorSetLayoutBinding::static_samplers] set to the given value.
-    pub const fn with_static_samplers(mut self, static_samplers: &'a [&'a SamplerHandle]) -> Self {
-        self.static_samplers = Some(static_samplers);
-        self
-    }
 }
 
 #[derive(Clone, Default)]
@@ -3629,7 +3615,7 @@ pub struct DescriptorSetLayoutDesc<'a> {
     pub visibility: DescriptorShaderVisibility,
 
     /// A list of all bindings that are a part of this descriptor set layout
-    pub items: &'a [DescriptorSetLayoutBinding<'a>],
+    pub items: &'a [DescriptorSetLayoutBinding],
 
     /// The name of the object
     pub name: Option<&'a str>,
@@ -3848,6 +3834,12 @@ impl<'a> DescriptorWrites<'a> {
 pub struct SamplerDescriptorWrite<'a> {
     /// The sampler target.
     pub sampler: &'a SamplerHandle,
+}
+
+impl<'a> SamplerDescriptorWrite<'a> {
+    pub const fn new(sampler: &'a SamplerHandle) -> Self {
+        Self { sampler }
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]

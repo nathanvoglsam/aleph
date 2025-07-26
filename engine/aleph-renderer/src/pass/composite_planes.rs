@@ -156,14 +156,11 @@ pub fn pass(
                     .descriptor_arena()
                     .allocate_set(&state.layout.set_layout)
                     .unwrap();
-                resources
-                    .device()
-                    .update_descriptor_sets(&[DescriptorWriteDesc {
-                        set,
-                        binding: 0,
-                        array_element: 0,
-                        writes: DescriptorWrites::Texture(&[ImageDescriptorWrite::srv(src_view)]),
-                    }]);
+                let sampler = &state.layout.sampler;
+                resources.device().update_descriptor_sets(&[
+                    DescriptorWriteDesc::texture(set, 0, &ImageDescriptorWrite::srv(src_view)),
+                    DescriptorWriteDesc::sampler(set, 1, &SamplerDescriptorWrite::new(sampler)),
+                ]);
                 let level = 0.0f32;
                 encoder.set_push_constant_block(0, bytemuck::bytes_of(&level));
 
@@ -194,6 +191,7 @@ impl IStateCacheKey for CompositePlanesLayoutKey {
 
 pub struct CompositePlanesLayout {
     pub set_layout: DescriptorSetLayoutHandle,
+    pub sampler: SamplerHandle,
     pub pipeline_layout: PipelineLayoutHandle,
 }
 
@@ -204,27 +202,22 @@ impl CompositePlanesLayout {
 
     pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
-        let set_layout = Self::create_set_layout(device, &sampler);
+        let set_layout = Self::create_set_layout(device);
         let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
 
         Self {
             set_layout: set_layout,
+            sampler,
             pipeline_layout,
         }
     }
 
-    pub fn create_set_layout(
-        device: &dyn IDevice,
-        sampler: &SamplerHandle,
-    ) -> DescriptorSetLayoutHandle {
-        let sampler = [sampler];
+    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::Fragment,
             items: &[
                 DescriptorType::Texture.binding(0),
-                DescriptorType::Sampler
-                    .binding(1)
-                    .with_static_samplers(&sampler),
+                DescriptorType::Sampler.binding(1),
             ],
             name: obj_name_opt!("DescriptorSetLayout"),
         };

@@ -172,12 +172,16 @@ pub fn pass(
             let global_set = descriptor_arena
                 .allocate_set(&common_state.global_set_layout)
                 .unwrap();
-            device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer(
-                global_set,
-                0,
-                &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256)
-                    .with_offset(camera.device_offset as u64),
-            )]);
+            let sampler = &common_state.sampler;
+            device.update_descriptor_sets(&[
+                DescriptorWriteDesc::uniform_buffer(
+                    global_set,
+                    0,
+                    &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256)
+                        .with_offset(camera.device_offset as u64),
+                ),
+                DescriptorWriteDesc::sampler(global_set, 1, &SamplerDescriptorWrite::new(sampler)),
+            ]);
 
             let model_set = descriptor_arena
                 .allocate_set(&common_state.model_set_layout)
@@ -473,6 +477,7 @@ impl IStateCacheKey for MainOpaqueCommonKey {
 pub struct MainOpaqueCommonLayout {
     pub global_set_layout: DescriptorSetLayoutHandle,
     pub model_set_layout: DescriptorSetLayoutHandle,
+    pub sampler: SamplerHandle,
 }
 
 impl MainOpaqueCommonLayout {
@@ -484,16 +489,33 @@ impl MainOpaqueCommonLayout {
         let global_set_layout = Self::create_global_descriptor_set_layout(device);
         let model_set_layout = Self::create_model_descriptor_set_layout(device);
 
+        let desc = SamplerDesc {
+            min_filter: SamplerFilter::Linear,
+            mag_filter: SamplerFilter::Linear,
+            mip_filter: SamplerMipFilter::Linear,
+            address_mode_u: SamplerAddressMode::Wrap,
+            address_mode_v: SamplerAddressMode::Wrap,
+            address_mode_w: SamplerAddressMode::Wrap,
+            enable_anisotropy: true,
+            max_anisotropy: 16,
+            ..Default::default()
+        };
+        let sampler = device.create_sampler(&desc).unwrap();
+
         Self {
             global_set_layout,
             model_set_layout,
+            sampler,
         }
     }
 
     fn create_global_descriptor_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
-            items: &[DescriptorType::UniformBuffer.binding(0)],
+            items: &[
+                DescriptorType::UniformBuffer.binding(0),
+                DescriptorType::Sampler.binding(1),
+            ],
             name: obj_name_opt!("GlobalDescriptorSetLayout"),
         };
         device

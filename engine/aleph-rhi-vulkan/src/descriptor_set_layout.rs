@@ -28,7 +28,6 @@
 //
 
 use std::num::NonZeroU64;
-use std::sync::Arc;
 
 use aleph_any::AnyArc;
 use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
@@ -36,11 +35,9 @@ use aleph_rhi_api::*;
 use ash::vk;
 
 use crate::device::Device;
-use crate::sampler::Sampler;
 
 pub struct DescriptorSetLayout {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _samplers: Vec<Arc<ArcedObject<Sampler>>>,
     pub(crate) id: NonZeroU64,
     pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
     pub(crate) pool_sizes: Vec<vk::DescriptorPoolSize>,

@@ -115,13 +115,13 @@ fn edge_pass(
                 .descriptor_arena()
                 .allocate_set(&state.edge_set_layout)
                 .unwrap();
-            resources
-                .device()
-                .update_descriptor_sets(&[DescriptorWriteDesc::texture(
-                    set,
-                    0,
-                    &colour_input_view.srv_write(),
-                )]);
+            let linear_sampler = &state.linear_sampler;
+            let point_sampler = &state.point_sampler;
+            resources.device().update_descriptor_sets(&[
+                DescriptorWriteDesc::texture(set, 0, &colour_input_view.srv_write()),
+                DescriptorWriteDesc::sampler(set, 1, &SamplerDescriptorWrite::new(linear_sampler)),
+                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite::new(point_sampler)),
+            ]);
 
             let metrics = metrics(extent);
 
@@ -188,10 +188,14 @@ fn blend_weight_pass(
                 .descriptor_arena()
                 .allocate_set(&state.weight_set_layout)
                 .unwrap();
+            let linear_sampler = &state.linear_sampler;
+            let point_sampler = &state.point_sampler;
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &edge_tex_view.srv_write()),
                 DescriptorWriteDesc::texture(set, 1, &area_view.srv_write()),
                 DescriptorWriteDesc::texture(set, 2, &search_view.srv_write()),
+                DescriptorWriteDesc::sampler(set, 3, &SamplerDescriptorWrite::new(linear_sampler)),
+                DescriptorWriteDesc::sampler(set, 4, &SamplerDescriptorWrite::new(point_sampler)),
             ]);
 
             let metrics = metrics(extent);
@@ -268,9 +272,13 @@ fn aa_blend_resolve_pass(
                 .descriptor_arena()
                 .allocate_set(&state.blend_set_layout)
                 .unwrap();
+            let linear_sampler = &state.linear_sampler;
+            let point_sampler = &state.point_sampler;
             resources.device().update_descriptor_sets(&[
                 DescriptorWriteDesc::texture(set, 0, &blend.srv_write()),
                 DescriptorWriteDesc::texture(set, 1, &colour.srv_write()),
+                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite::new(linear_sampler)),
+                DescriptorWriteDesc::sampler(set, 3, &SamplerDescriptorWrite::new(point_sampler)),
             ]);
 
             let metrics = metrics(extent);
@@ -324,11 +332,11 @@ impl SmaaState {
         let linear_sampler = Self::create_linear_sampler(device);
         let point_sampler = Self::create_point_sampler(device);
 
-        let edge_set_layout = Self::create_edge_layout(device, &linear_sampler, &point_sampler);
+        let edge_set_layout = Self::create_edge_layout(device);
 
-        let weight_set_layout = Self::create_weight_layout(device, &linear_sampler, &point_sampler);
+        let weight_set_layout = Self::create_weight_layout(device);
 
-        let blend_set_layout = Self::create_blend_layout(device, &linear_sampler, &point_sampler);
+        let blend_set_layout = Self::create_blend_layout(device);
 
         let edge_layout = Self::create_pipeline_layout(
             device,
@@ -384,24 +392,13 @@ impl SmaaState {
         }
     }
 
-    pub fn create_edge_layout(
-        device: &dyn IDevice,
-        linear_sampler: &SamplerHandle,
-        point_sampler: &SamplerHandle,
-    ) -> DescriptorSetLayoutHandle {
-        let linear_sampler = [linear_sampler];
-        let point_sampler = [point_sampler];
-
+    pub fn create_edge_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::Fragment,
             items: &[
                 DescriptorType::Texture.binding(0),
-                DescriptorType::Sampler
-                    .binding(1)
-                    .with_static_samplers(&linear_sampler),
-                DescriptorType::Sampler
-                    .binding(2)
-                    .with_static_samplers(&point_sampler),
+                DescriptorType::Sampler.binding(1),
+                DescriptorType::Sampler.binding(2),
             ],
             name: obj_name_opt!("EdgeDescriptorSetLayout"),
         };
@@ -410,26 +407,15 @@ impl SmaaState {
             .unwrap()
     }
 
-    pub fn create_weight_layout(
-        device: &dyn IDevice,
-        linear_sampler: &SamplerHandle,
-        point_sampler: &SamplerHandle,
-    ) -> DescriptorSetLayoutHandle {
-        let linear_sampler = [linear_sampler];
-        let point_sampler = [point_sampler];
-
+    pub fn create_weight_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::Fragment,
             items: &[
                 DescriptorType::Texture.binding(0),
                 DescriptorType::Texture.binding(1),
                 DescriptorType::Texture.binding(2),
-                DescriptorType::Sampler
-                    .binding(3)
-                    .with_static_samplers(&linear_sampler),
-                DescriptorType::Sampler
-                    .binding(4)
-                    .with_static_samplers(&point_sampler),
+                DescriptorType::Sampler.binding(3),
+                DescriptorType::Sampler.binding(4),
             ],
             name: obj_name_opt!("WeightDescriptorSetLayout"),
         };
@@ -438,25 +424,14 @@ impl SmaaState {
             .unwrap()
     }
 
-    pub fn create_blend_layout(
-        device: &dyn IDevice,
-        linear_sampler: &SamplerHandle,
-        point_sampler: &SamplerHandle,
-    ) -> DescriptorSetLayoutHandle {
-        let linear_sampler = [linear_sampler];
-        let point_sampler = [point_sampler];
-
+    pub fn create_blend_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::Fragment,
             items: &[
                 DescriptorType::Texture.binding(0),
                 DescriptorType::Texture.binding(1),
-                DescriptorType::Sampler
-                    .binding(2)
-                    .with_static_samplers(&linear_sampler),
-                DescriptorType::Sampler
-                    .binding(3)
-                    .with_static_samplers(&point_sampler),
+                DescriptorType::Sampler.binding(2),
+                DescriptorType::Sampler.binding(3),
             ],
             name: obj_name_opt!("BlendDescriptorSetLayout"),
         };

@@ -84,7 +84,4 @@ pub struct DescriptorBindingInfo {
     /// The number of descriptors in the binding. [None] encodes a non-array binding with 1
     /// descriptor, while [Some(n)] encodes an array binding with 'n' descriptors.
     pub descriptor_count: Option<NonZeroU32>,
-
-    /// Whether this binding is a static sampler.
-    pub is_static_sampler: bool,
 }

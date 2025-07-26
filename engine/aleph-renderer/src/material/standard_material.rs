@@ -55,20 +55,6 @@ unsafe impl IMaterial for StandardMaterial {
     }
 
     fn create_descriptor_set_layout(&self, device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let desc = SamplerDesc {
-            min_filter: SamplerFilter::Linear,
-            mag_filter: SamplerFilter::Linear,
-            mip_filter: SamplerMipFilter::Linear,
-            address_mode_u: SamplerAddressMode::Wrap,
-            address_mode_v: SamplerAddressMode::Wrap,
-            address_mode_w: SamplerAddressMode::Wrap,
-            enable_anisotropy: true,
-            max_anisotropy: 16,
-            ..Default::default()
-        };
-        let sampler = device.create_sampler(&desc).unwrap();
-
-        let samplers = [&sampler];
         let desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
             items: &[
@@ -76,9 +62,6 @@ unsafe impl IMaterial for StandardMaterial {
                 DescriptorType::Texture.binding(1),
                 DescriptorType::Texture.binding(2),
                 DescriptorType::Texture.binding(3),
-                DescriptorType::Sampler
-                    .binding(4)
-                    .with_static_samplers(&samplers),
             ],
             name: obj_name_opt!("StandardMaterialSetLayout"),
         };

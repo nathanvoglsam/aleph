@@ -322,19 +322,6 @@ impl IDevice for Device {
 
             let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
 
-            let mut _samplers = Vec::new();
-            let mut static_samplers = BVec::new_in(bump.allocator());
-            for v in desc.items {
-                if let Some(samplers) = v.static_samplers {
-                    for sampler in samplers.iter().copied() {
-                        let sampler = Sampler::get_owned(sampler);
-                        static_samplers.push(sampler.sampler);
-                        _samplers.push(sampler);
-                    }
-                }
-            }
-
-            let mut sampler_i = 0;
             let mut sizes = [0; 11];
             let mut bindings = BVec::with_capacity_in(desc.items.len(), bump.allocator());
             for v in desc.items {
@@ -348,14 +335,6 @@ impl IDevice for Device {
                     .descriptor_type(descriptor_type)
                     .descriptor_count(descriptor_count)
                     .stage_flags(stage_flags);
-
-                let binding = if let Some(samplers) = v.static_samplers {
-                    let base = sampler_i;
-                    sampler_i += samplers.len();
-                    binding.immutable_samplers(&static_samplers[base..sampler_i])
-                } else {
-                    binding
-                };
 
                 bindings.push(binding);
             }
@@ -389,7 +368,6 @@ impl IDevice for Device {
 
             let out = DescriptorSetLayout {
                 _device: self.this.upgrade().unwrap(),
-                _samplers,
                 id: self.object_counter.next_set_layout(),
                 descriptor_set_layout,
                 pool_sizes,

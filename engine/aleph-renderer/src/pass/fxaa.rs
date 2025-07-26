@@ -125,9 +125,11 @@ pub fn pass(
                 .descriptor_arena()
                 .allocate_set(&state.layout.set_layout)
                 .unwrap();
+            let sampler = &state.layout.sampler;
             device.update_descriptor_sets(&[
                 DescriptorWriteDesc::uniform_buffer(set, 0, &buffer.uniform_buffer_write(256)),
                 DescriptorWriteDesc::texture(set, 1, &src_view.srv_write()),
+                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite::new(sampler)),
             ]);
 
             let info = FullscreenTriangleInfo {
@@ -159,6 +161,7 @@ impl IStateCacheKey for CompositePlanesLayoutKey {
 
 pub struct CompositePlanesLayout {
     pub set_layout: DescriptorSetLayoutHandle,
+    pub sampler: SamplerHandle,
     pub pipeline_layout: PipelineLayoutHandle,
 }
 
@@ -169,28 +172,23 @@ impl CompositePlanesLayout {
 
     pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
-        let set_layout = Self::create_set_layout(device, &sampler);
+        let set_layout = Self::create_set_layout(device);
         let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
 
         Self {
             set_layout: set_layout,
+            sampler,
             pipeline_layout,
         }
     }
 
-    pub fn create_set_layout(
-        device: &dyn IDevice,
-        sampler: &SamplerHandle,
-    ) -> DescriptorSetLayoutHandle {
-        let sampler = [sampler];
+    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::Fragment,
             items: &[
                 DescriptorType::UniformBuffer.binding(0),
                 DescriptorType::Texture.binding(1),
-                DescriptorType::Sampler
-                    .binding(2)
-                    .with_static_samplers(&sampler),
+                DescriptorType::Sampler.binding(2),
             ],
             name: obj_name_opt!("DescriptorSetLayout"),
         };

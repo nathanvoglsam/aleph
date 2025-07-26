@@ -33,12 +33,12 @@
 #include "sampling.hlsl"
 
 [[vk_binding(0, 0)]] ConstantBuffer<CameraLayout> g_camera : register(b0, space0);
+[[vk_binding(1, 0)]] SamplerState g_sampler : register(s1, space0);
 
 [[vk_binding(0, 1)]] ConstantBuffer<MaterialLayout> g_mat : register(b0, space1);
 [[vk_binding(1, 1)]] Texture2D<float4> g_base_colour : register(t1, space1);
 [[vk_binding(2, 1)]] Texture2D<float4> g_metal_roughness : register(t2, space1);
 [[vk_binding(3, 1)]] Texture2D<float3> g_normal_map : register(t3, space1);
-[[vk_binding(4, 1)]] SamplerState g_sampler : register(s4, space1);
 
 [[vk_binding(0, 2)]] ConstantBuffer<ModelLayout> g_model : register(b0, space2);
 
