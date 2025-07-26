@@ -359,3 +359,15 @@ pub const fn alpha_blend_factor_to_mtl(v: BlendFactor) -> MTLBlendFactor {
         BlendFactor::OneMinusBlendFactor => MTLBlendFactor::OneMinusBlendAlpha,
     }
 }
+
+pub const fn image_view_type_to_mtl(v: ImageViewType) -> MTLTextureType {
+    match v {
+        ImageViewType::Tex1D => MTLTextureType::Type1D,
+        ImageViewType::Tex2D => MTLTextureType::Type2D,
+        ImageViewType::Tex3D => MTLTextureType::Type3D,
+        ImageViewType::TexCube => MTLTextureType::TypeCube,
+        ImageViewType::TexArray1D => MTLTextureType::Type1DArray,
+        ImageViewType::TexArray2D => MTLTextureType::Type2DArray,
+        ImageViewType::TexCubeArray => MTLTextureType::TypeCubeArray,
+    }
+}

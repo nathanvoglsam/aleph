@@ -29,25 +29,31 @@
 
 use std::collections::HashMap;
 use std::num::NonZeroU64;
+use std::ptr::NonNull;
 
 use aleph_any::AnyArc;
 use aleph_object_system::unsafe_impl_iobject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
+use blink_alloc::Blink;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
+use objc2_foundation::NSRange;
 use objc2_metal::*;
 use parking_lot::Mutex;
 
 use crate::device::Device;
+use crate::internal::conv;
+use crate::internal::render_target_view::RenderTargetView;
 
 pub struct Texture {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: TextureObjects,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, ()>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, ()>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, ()>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, NonNull<RenderTargetView>>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, NonNull<RenderTargetView>>>,
+    pub(crate) image_views: Mutex<Blink>,
     pub(crate) desc: OwnedTextureDesc,
 }
 
@@ -68,18 +74,70 @@ impl Texture {
         self.desc.get()
     }
 
-    pub(crate) fn get_view(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+    pub(crate) fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
         todo!()
     }
 
-    pub(crate) fn get_rtv(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        todo!()
+    pub(crate) fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        self.get_rtv_or_dsv(&self.rtvs, desc)
     }
 
-    pub(crate) fn get_dsv(&self, device: &Device, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        todo!()
+    pub(crate) fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
+        self.get_rtv_or_dsv(&self.dsvs, desc)
+    }
+
+    /// The code-path for 'get_rtv' and 'get_dsv' is almost identical, except for the target hash
+    /// map.
+    pub(crate) fn get_rtv_or_dsv(
+        &self,
+        map: &Mutex<HashMap<ImageViewDesc, NonNull<RenderTargetView>>>,
+        desc: &ImageViewDesc,
+    ) -> Result<ImageView, ()> {
+        let mut views = map.lock();
+
+        let view = if let Some(view) = views.get(desc) {
+            *view
+        } else {
+            let pixel_format = conv::format_to_pixel_mtl(desc.format);
+            let texture_type = conv::image_view_type_to_mtl(desc.view_type);
+            let level_range = NSRange::new(
+                desc.sub_resources.base_mip_level as usize,
+                desc.sub_resources.num_mip_levels as usize,
+            );
+            let slice_range = NSRange::new(
+                desc.sub_resources.base_array_slice as usize,
+                desc.sub_resources.num_array_slices as usize,
+            );
+            let view = unsafe {
+                self.objects
+                    .texture
+                    .newTextureViewWithPixelFormat_textureType_levels_slices(
+                        pixel_format,
+                        texture_type,
+                        level_range,
+                        slice_range,
+                    )
+                    .expect("Failed to construct MTLTexture image view")
+            };
+            let view = {
+                // Allocate the view into the internal bump allocator
+                let alloc = self.image_views.lock();
+                NonNull::from(alloc.put(RenderTargetView {
+                    texture: view,
+                    level: 0,
+                    slice: 0,
+                }))
+            };
+
+            views.insert(desc.clone(), view);
+            view
+        };
+
+        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
     }
 }
+
+impl Texture {}
 
 /// Wrapper to scope our 'unsafe impl Send+Sync'
 pub struct TextureObjects {

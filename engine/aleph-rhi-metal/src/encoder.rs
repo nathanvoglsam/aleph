@@ -46,6 +46,7 @@ use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv;
+use crate::internal::render_target_view::RenderTargetView;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::Texture;
 
@@ -195,10 +196,12 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         for (i, color_attachment) in info.color_attachments.iter().enumerate() {
             let mtl_attachment = unsafe { mtl_color_attachments.objectAtIndexedSubscript(i) };
 
-            // TODO: set the attachment from the rtv
-            mtl_attachment.setTexture(None);
-            mtl_attachment.setLevel(0);
-            mtl_attachment.setSlice(0);
+            let view = color_attachment.image_view;
+            let view = unsafe { RenderTargetView::from_view(&view) };
+            let texture = view.texture.as_ref();
+            mtl_attachment.setTexture(Some(texture));
+            mtl_attachment.setLevel(view.level);
+            mtl_attachment.setSlice(view.slice);
 
             match &color_attachment.load_op {
                 AttachmentLoadOp::Load => {
@@ -232,10 +235,12 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         if let Some(depth_attachment) = info.depth_stencil_attachment {
             let mtl_attachment = unsafe { MTLRenderPassDepthAttachmentDescriptor::new() };
 
-            // TODO: set the attachment from the dsv
-            mtl_attachment.setTexture(None);
-            mtl_attachment.setLevel(0);
-            mtl_attachment.setSlice(0);
+            let view = depth_attachment.image_view;
+            let view = unsafe { RenderTargetView::from_view(&view) };
+            let texture = view.texture.as_ref();
+            mtl_attachment.setTexture(Some(texture));
+            mtl_attachment.setLevel(view.level);
+            mtl_attachment.setSlice(view.slice);
 
             match &depth_attachment.depth_load_op {
                 AttachmentLoadOp::Load => {
@@ -261,10 +266,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             // TODO: if we need a stencil buffer
             if true {
                 let mtl_attachment = unsafe { MTLRenderPassStencilAttachmentDescriptor::new() };
-                // TODO: set the attachment from the dsv
-                mtl_attachment.setTexture(None);
-                mtl_attachment.setLevel(0);
-                mtl_attachment.setSlice(0);
+
+                // We use the same attachment here intentionally
+                let view = depth_attachment.image_view;
+                let view = unsafe { RenderTargetView::from_view(&view) };
+                let texture = view.texture.as_ref();
+                mtl_attachment.setTexture(Some(texture));
+                mtl_attachment.setLevel(view.level);
+                mtl_attachment.setSlice(view.slice);
 
                 match &depth_attachment.stencil_load_op {
                     AttachmentLoadOp::Load => {

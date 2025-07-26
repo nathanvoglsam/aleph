@@ -37,11 +37,11 @@ use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
 use blink_alloc::Blink;
-use crossbeam::queue::ArrayQueue;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
 use objc2_metal::*;
+use parking_lot::Mutex;
 
 use crate::adapter::Adapter;
 use crate::buffer::{Buffer, BufferObjects};
@@ -65,7 +65,7 @@ use crate::texture::{Texture, TextureObjects};
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
-    pub(crate) adapter: AnyArc<Adapter>,
+    pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: Retained<ProtocolObject<dyn MTLDevice>>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
@@ -340,9 +340,7 @@ impl IDevice for Device {
         // shader_module: ShaderBinary<'a>,
         // TODO
 
-        // pipeline_layout: &'a PipelineLayoutHandle,
         let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
-        // TODO
 
         if let Some(name) = desc.name
             && self.context.debug
@@ -397,19 +395,8 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let mut samplers = Vec::new();
-            for v in desc.items {
-                if let Some(static_samplers) = v.static_samplers {
-                    for sampler in static_samplers.iter().copied() {
-                        let sampler = Sampler::get_owned(sampler);
-                        samplers.push(sampler);
-                    }
-                }
-            }
-
             let out = DescriptorSetLayout {
                 _device: self.this.upgrade().unwrap(),
-                _samplers: samplers,
                 id: self.object_counter.next_set_layout(),
             };
             let out = ArcedObject::new_arc_opaque(out);
@@ -531,6 +518,7 @@ impl IDevice for Device {
             objects: TextureObjects { texture },
             rtvs: Default::default(),
             dsvs: Default::default(),
+            image_views: Mutex::new(Blink::new()),
             desc: OwnedTextureDesc::new(desc.clone()),
         };
         let out = ArcedObject::new_arc_opaque(out);
@@ -563,7 +551,7 @@ impl IDevice for Device {
         }
 
         mtl_desc.setBorderColor(conv::border_color_to_mtl(desc.border_color));
-        // mtl_desc.setSupportArgumentBuffers(true);
+        mtl_desc.setSupportArgumentBuffers(true);
 
         if let Some(name) = desc.name
             && self.context.debug
@@ -790,7 +778,7 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_view(self, desc)
+        Texture::get(texture).get_view(desc)
     }
 
     // ========================================================================================== //
@@ -801,7 +789,7 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_rtv(self, desc)
+        Texture::get(texture).get_rtv(desc)
     }
 
     // ========================================================================================== //
@@ -812,7 +800,7 @@ impl IDevice for Device {
         texture: &TextureHandle,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
-        Texture::get(texture).get_dsv(self, desc)
+        Texture::get(texture).get_dsv(desc)
     }
 
     // ========================================================================================== //
@@ -876,61 +864,4 @@ impl Device {
 
 thread_local! {
     pub static DEVICE_BUMP: BlinkCell = BlinkCell::new();
-}
-
-pub struct FreeCommandList {
-    pub list_type: QueueType,
-}
-
-impl FreeCommandList {
-    pub unsafe fn collect(&self, device: &Device) {}
-}
-
-pub struct CommandListPool {
-    pub general: ArrayQueue<FreeCommandList>,
-    pub compute: ArrayQueue<FreeCommandList>,
-    pub transfer: ArrayQueue<FreeCommandList>,
-}
-
-impl CommandListPool {
-    pub fn new() -> Self {
-        // We should only really ever need <num_lists_per_frame> * <frames_in_flight>
-        Self {
-            general: ArrayQueue::new(64),
-            compute: ArrayQueue::new(32),
-            transfer: ArrayQueue::new(32),
-        }
-    }
-
-    pub fn get_for_queue_type(&self, queue_type: QueueType) -> Option<FreeCommandList> {
-        match queue_type {
-            QueueType::General => self.general.pop(),
-            QueueType::Compute => self.compute.pop(),
-            QueueType::Transfer => self.transfer.pop(),
-        }
-    }
-
-    pub fn get_pool_for_queue_type(&self, queue_type: QueueType) -> &ArrayQueue<FreeCommandList> {
-        match queue_type {
-            QueueType::General => &self.general,
-            QueueType::Compute => &self.compute,
-            QueueType::Transfer => &self.transfer,
-        }
-    }
-
-    pub unsafe fn collect(&self, device: &Device) {
-        unsafe {
-            while let Some(list) = self.general.pop() {
-                list.collect(device);
-            }
-
-            while let Some(list) = self.compute.pop() {
-                list.collect(device);
-            }
-
-            while let Some(list) = self.transfer.pop() {
-                list.collect(device);
-            }
-        }
-    }
 }

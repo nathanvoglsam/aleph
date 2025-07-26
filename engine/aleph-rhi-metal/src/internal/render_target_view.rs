@@ -27,32 +27,33 @@
 // SOFTWARE.
 //
 
-use std::num::NonZeroU64;
-
-use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
 
-use crate::device::Device;
+/// The struct layout we use for render target views. [ImageView] handles are actually pointers to
+/// this struct for RTV/DSV views.
+pub struct RenderTargetView {
+    /// Unretained reference to the metal texture. The views can't outlive the parent texture so
+    /// this is fine. If this was retained we'd generate more retain traffic than we otherwise need.
+    pub texture: Retained<ProtocolObject<dyn MTLTexture>>,
 
-pub struct DescriptorSetLayout {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) id: NonZeroU64,
+    /// Target mip level of the view
+    pub level: usize,
+
+    /// Target array slice of the view
+    pub slice: usize,
 }
 
-unsafe_impl_iobject!(DescriptorSetLayout, "01980753-5c4f-7ae3-be3b-96de795e6124");
+// Safety: none, up to the caller to use this correctly.
+unsafe impl Send for RenderTargetView {}
+unsafe impl Sync for RenderTargetView {}
 
-impl DescriptorSetLayout {
-    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
-    }
-
-    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
-        v.get()
-            .downcast_ref::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
+impl RenderTargetView {
+    pub unsafe fn from_view(view: &ImageView) -> &RenderTargetView {
+        let view = *view;
+        // Safety: none, lmao. it's up to the caller to use this correctly.
+        unsafe { std::mem::transmute::<ImageView, &RenderTargetView>(view) }
     }
 }

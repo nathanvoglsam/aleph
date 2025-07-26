@@ -95,7 +95,7 @@ impl IAdapter for Adapter {
         let device = AnyArc::new_cyclic(move |v| {
             let mut device = Device {
                 this: v.clone(),
-                adapter: self.this.upgrade().unwrap(),
+                _adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device: self.objects.device.clone(),
                 general_queue: None,
