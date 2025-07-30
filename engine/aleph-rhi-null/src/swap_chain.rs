@@ -71,11 +71,7 @@ impl ISwapChain for NullSwapChain {
         unimplemented!()
     }
 
-    fn get_images(&self, _images: &mut [Option<TextureHandle>]) {
-        unimplemented!()
-    }
-
-    unsafe fn acquire_next_image(&self, _desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
+    unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
         unimplemented!()
     }
 }

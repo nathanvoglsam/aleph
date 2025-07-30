@@ -27,46 +27,44 @@
 // SOFTWARE.
 //
 
-#[doc(hidden)]
-extern crate aleph_rhi_api;
+use std::any::TypeId;
 
-mod adapter;
-mod buffer;
-mod command_list;
-mod context;
-mod descriptor_arena;
-mod descriptor_pool;
-mod descriptor_set_layout;
-mod device;
-mod encoder;
-mod fence;
-mod internal;
-mod pipeline;
-mod pipeline_layout;
-mod queue;
-mod sampler;
-mod semaphore;
-mod surface;
-mod swap_chain;
-mod swap_image;
-mod texture;
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_rhi_api::*;
 
-pub use adapter::NullAdapter;
-pub use buffer::NullBuffer;
-pub use command_list::NullCommandList;
-pub use context::NullContext;
-pub use descriptor_arena::NullDescriptorArena;
-pub use descriptor_pool::NullDescriptorPool;
-pub use descriptor_set_layout::NullDescriptorSetLayout;
-pub use device::NullDevice;
-pub use encoder::NullEncoder;
-pub use fence::NullFence;
-pub use pipeline::{NullComputePipeline, NullGraphicsPipeline};
-pub use pipeline_layout::NullPipelineLayout;
-pub use queue::NullQueue;
-pub use sampler::NullSampler;
-pub use semaphore::NullSemaphore;
-pub use surface::NullSurface;
-pub use swap_chain::NullSwapChain;
-pub use swap_image::NullSwapImage;
-pub use texture::NullTexture;
+use crate::NullSwapChain;
+
+pub struct NullSwapImage {
+    pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _swap_chain: AnyArc<NullSwapChain>,
+}
+
+declare_interfaces!(NullSwapImage, [ISwapImage]);
+
+impl IGetPlatformInterface for NullSwapImage {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
+impl ISwapImage for NullSwapImage {
+    fn upgrade(&self) -> AnyArc<dyn ISwapImage> {
+        AnyArc::map::<dyn ISwapImage, _>(self._this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self._this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self._this.weak_count()
+    }
+
+    fn texture(&self) -> &TextureHandle {
+        unimplemented!()
+    }
+
+    fn texture_desc(&self) -> &TextureDesc {
+        unimplemented!()
+    }
+}

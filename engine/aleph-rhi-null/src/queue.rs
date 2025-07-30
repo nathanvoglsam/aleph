@@ -100,7 +100,7 @@ impl IQueue for NullQueue {
         Ok(())
     }
 
-    unsafe fn present(&self, _desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
+    unsafe fn present(&self, _swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         Ok(())
     }
 }
