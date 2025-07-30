@@ -5250,47 +5250,6 @@ impl<'a> Default for QueueSubmitDesc<'a> {
 }
 
 #[derive(Clone)]
-pub struct QueuePresentDesc<'a> {
-    /// The [ISwapChain] to queue a present operation for.
-    pub swap_chain: &'a dyn ISwapChain,
-
-    /// The index of the image to queue a present operation for.
-    pub image_index: u32,
-
-    /// A list of semaphores that will block the execution of the batch until all semaphores in the
-    /// list are signaled.
-    pub wait_semaphores: &'a [&'a SemaphoreHandle],
-}
-
-impl<'a> QueuePresentDesc<'a> {
-    /// Constructs a new [QueuePresentDesc] with the given swap_chain reference
-    pub const fn new(swap_chain: &'a dyn ISwapChain) -> Self {
-        Self {
-            swap_chain,
-            image_index: 0,
-            wait_semaphores: &[],
-        }
-    }
-
-    /// Takes the given desc and returns it with [QueuePresentDesc::image_index] set to the
-    /// given parameter
-    pub const fn with_image_index(mut self, image_index: u32) -> Self {
-        self.image_index = image_index;
-        self
-    }
-
-    /// Takes the given desc and returns it with [QueueSubmitDesc::wait_semaphores] set to the given
-    /// parameter
-    pub const fn with_wait_semaphores(
-        mut self,
-        wait_semaphores: &'a [&'a SemaphoreHandle],
-    ) -> Self {
-        self.wait_semaphores = wait_semaphores;
-        self
-    }
-}
-
-#[derive(Clone)]
 pub struct SemaphoreHandle {
     inner: ArcObject,
 }
