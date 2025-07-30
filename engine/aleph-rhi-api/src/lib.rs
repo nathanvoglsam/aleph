@@ -613,7 +613,7 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     /// in the required resource state for presentation by the time this operation will be executed
     /// on the GPU timeline.
     ///
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError>;
+    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError>;
 }
 
 /// Optional extension to [IQueue] that provides various debug utilities, like setting debug markers
@@ -716,23 +716,50 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
         new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError>;
 
-    /// Acquires handles to the swap chain textures and writes them into the given array.
-    ///
-    /// # Info
-    ///
-    /// If `images.len()` is > than the number of swap chain images the out-of-range array elements
-    /// will be left unchanged.
-    ///
-    /// If `images.len()` is < than the number of swap chain images then only the first
-    /// `images.len()` swap chain images will be returned.
-    fn get_images(&self, images: &mut [Option<TextureHandle>]);
-
     /// Acquire an image from the swap chain for use with rendering
     ///
     /// # Safety
     ///
     /// TODO: Safety docs
-    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError>;
+    unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError>;
+}
+
+/// Represents a handle to an acquired swap chain image.
+///
+/// A [`ISwapImage`] object is acquired from a swap chain using [`ISwapChain::acquire_next_image`].
+/// Once acquired the [`TextureHandle`] for the swap image can be queried, and the swap image can
+/// have GPU work associated with it at submission time. Once all work that accesses the swap image
+/// has been submitted the swap image's presentation can be queued with [`IQueue::present`].
+///
+/// There can only be a single [`ISwapImage`] object alive from a single [`ISwapChain`] at any point
+/// in time. When the [`ISwapImage`] is queued for presentation ownership of the object _must_ be
+/// given back to the API. That is, when calling [`IQueue::present`] you must ensure that given
+/// swap image handle is the only handle referring to that object (refcount = 1).
+///
+/// Ownership of the [`TextureHandle`] must also be returned at presentation time. There can be no
+/// handles retained that refer to the swap image.
+///
+/// # Why
+///
+/// The [`ISwapImage`] object represents the lifetime of an acquired swap chain image, modelled
+/// after its own lifetime. You 'acquire' the image from a swap chain, draw to it and associate
+/// GPU work with it, and finally return it to the swap chain for presentation. Internally the RHI
+/// will perform whatever synchronization is needed to make this possible.
+///
+/// Swap chain integration on different APIs is wildly different. Some sync implicitly, some
+/// explicitly. Some let you hold on to the texture handles, some require they are fully released.
+/// It's a mess. This abstraction simplifies the API surface and efficiently abstracts over the
+/// different APIs without trading much flexibility.
+pub trait ISwapImage: IAny + IGetPlatformInterface + Send + Sync {
+    any_arc_trait_utils_decl!(ISwapImage);
+
+    /// Get the texture handle associated with this [`ISwapImage`].
+    ///
+    /// All references to this texture must be dropped before calling [`IQueue::present`].
+    fn texture(&self) -> &TextureHandle;
+
+    /// Returns a [TextureDesc] that describes the texture this [`ISwapImage`] encapsulates.
+    fn texture_desc(&self) -> &TextureDesc;
 }
 
 //
@@ -1594,11 +1621,39 @@ pub struct SwapChainConfiguration {
     pub present_queue: QueueType,
 }
 
-#[derive(Clone)]
-pub struct AcquireDesc<'a> {
-    /// A semaphore that will be signalled once the acquire operation is completed. Only once the
-    /// acquire operation signals is the acquired image safe to use on the GPU timeline.
-    pub signal_semaphore: &'a SemaphoreHandle,
+/// Wrapper enum that flags the different success conditions for [`ISwapChain::acquire_next_image`].
+pub enum AcquiredImage {
+    /// The image was acquired fully with no issues.
+    Ok(AnyArc<dyn ISwapImage>),
+
+    /// This 'error' is a soft failure case for [ISwapChain::acquire_next_image]. In some cases it
+    /// is possible for the swapchain to be placed in a state where it does not fully match the
+    /// underlying surface being rendered too. For example, when the window is resized but the
+    /// surface isn't lost. This can happen on composited platforms where they stretch/squash the
+    /// swap images into the real surface.
+    ///
+    /// This is not a hard error, and it is perfectly valid to continue using and presenting to a
+    /// sub-optimal swapchain. It is, however, recommended that the swapchain be rebuilt to
+    /// correctly match the underlying surface again. This variant flags the sub-optimal case
+    /// for the caller to handle.
+    SubOptimal(AnyArc<dyn ISwapImage>),
+}
+
+impl AcquiredImage {
+    /// Discard the [`AcquiredImage`] container and get the image inside.
+    #[inline]
+    pub fn get(self) -> AnyArc<dyn ISwapImage> {
+        match self {
+            AcquiredImage::Ok(v) => v,
+            AcquiredImage::SubOptimal(v) => v,
+        }
+    }
+
+    /// Returns if the swap chain is in the 'sub optimal' state. See [`AcquiredImage::SubOptimal`]
+    /// for more info.
+    pub const fn is_sub_optimal(&self) -> bool {
+        matches!(self, AcquiredImage::SubOptimal(_))
+    }
 }
 
 //
@@ -5122,6 +5177,13 @@ pub struct QueueSubmitDesc<'a> {
 
     /// A fence that will be signaled once all command lists in the batch have completed executing.
     pub fence: Option<&'a FenceHandle>,
+
+    /// The acquired swap chain image to associate this queue submission with.
+    ///
+    /// This work submission will synchronize with the swap chain that the given image is acquired
+    /// from. The eventual present operation for the swap image will also synchronize against all
+    /// the command lists in this submission.
+    pub swap_image: Option<&'a dyn ISwapImage>,
 }
 
 impl<'a> QueueSubmitDesc<'a> {
@@ -5132,6 +5194,7 @@ impl<'a> QueueSubmitDesc<'a> {
             wait_semaphores: &[],
             signal_semaphores: &[],
             fence: None,
+            swap_image: None,
         }
     }
 
@@ -5168,6 +5231,13 @@ impl<'a> QueueSubmitDesc<'a> {
     /// Takes the given desc and returns it with [QueueSubmitDesc::fence] set to the given parameter
     pub const fn with_fence(mut self, fence: &'a FenceHandle) -> Self {
         self.fence = Some(fence);
+        self
+    }
+
+    /// Takes the given desc and returns it with [QueueSubmitDesc::swap_image] set to the given
+    /// parameter
+    pub const fn with_swap_image(mut self, swap_image: &'a dyn ISwapImage) -> Self {
+        self.swap_image = Some(swap_image);
         self
     }
 }
@@ -5265,6 +5335,29 @@ impl SemaphoreHandle {
     }
 }
 
+//
+//
+// _________________________________________________________________________________________________
+// Fence
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum FenceWaitResult {
+    /// The wait condition was met and the call has returned successfully.
+    Complete,
+
+    /// The timeout time was reached before the condition was met.
+    Timeout,
+}
+
+impl Display for FenceWaitResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FenceWaitResult::Complete => f.write_str("Complete"),
+            FenceWaitResult::Timeout => f.write_str("Timeout"),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct FenceHandle {
     inner: ArcObject,
@@ -5307,29 +5400,6 @@ impl FenceHandle {
     /// Get the inner [`ArcObject`]
     pub const fn get(&self) -> &ArcObject {
         &self.inner
-    }
-}
-
-//
-//
-// _________________________________________________________________________________________________
-// Fence
-
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum FenceWaitResult {
-    /// The wait condition was met and the call has returned successfully.
-    Complete,
-
-    /// The timeout time was reached before the condition was met.
-    Timeout,
-}
-
-impl Display for FenceWaitResult {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FenceWaitResult::Complete => f.write_str("Complete"),
-            FenceWaitResult::Timeout => f.write_str("Timeout"),
-        }
     }
 }
 
@@ -6087,19 +6157,6 @@ pub enum ImageAcquireError {
     /// must rebuild the swap-chain before images can be acquired again.
     #[error("The swap chain is out of date and needs to be rebuilt")]
     OutOfDate,
-
-    /// This 'error' is a soft failure case for [ISwapChain::acquire_next_image]. In some cases it
-    /// is possible for the swapchain to be placed in a state where it does not fully match the
-    /// underlying surface being rendered too. For example, when the window is resized but the
-    /// surface isn't lost. This can happen on composited platforms where they stretch/squash the
-    /// swap images into the real surface.
-    ///
-    /// This is not a hard error, and it is perfectly valid to continue using and presenting to a
-    /// sub-optimal swapchain. It is, however, recommended that the swapchain be rebuilt to
-    /// correctly match the underlying surface again. This error variant flags the sub-optimal case
-    /// for the caller to handle.
-    #[error("The swapchain is sub-optimal for the surface and should be rebuilt")]
-    SubOptimal(u32),
 
     ///
     /// This error is subtle and requires explanation.
