@@ -168,9 +168,7 @@ impl RendererBuilder {
         let state_cache = StateCache::new(shader_db.clone());
 
         let swap_manager = SwapManager {
-            device: device.clone(),
             surface: self.surface.expect("RenderSurface missing!"),
-            images: Vec::new(),
             desc: TextureDesc::default(),
             needs_rebuild: true,
         };
@@ -365,8 +363,6 @@ impl Renderer {
         unsafe {
             let CurrentFrameResources {
                 frame_index,
-                acquire_semaphore,
-                present_semaphore,
                 done_fence,
                 deletion_pool,
             } = self.frame_manager.get_next_frame();
@@ -398,7 +394,8 @@ impl Renderer {
             // rebuilt it and hand that out, this papers over rebuilds.
             //
             // If we rebuild we do need to rebuild the swap chain though!
-            let acquired_image = self.swap_manager.acquire_next_image(acquire_semaphore);
+            let acquired_image = self.swap_manager.acquire_next_image();
+            let acquired_tex = acquired_image.swap_image.texture();
 
             // If the swap chain was rebuilt (or this is the first frame and we haven't built the frame
             // graph yet) we need to (re)build the frame graph!
@@ -451,7 +448,7 @@ impl Renderer {
 
                 import_bundle.add_resource(
                     self.graph_manager.swap_image_id.clone().unwrap(),
-                    &acquired_image.image,
+                    acquired_tex,
                 );
 
                 board.publish::<GraphSwapImageInfo>(GraphSwapImageInfo {
@@ -480,14 +477,15 @@ impl Renderer {
             self.queue
                 .submit(&QueueSubmitDesc {
                     command_lists: &[Some(list).into()],
-                    wait_semaphores: &[acquire_semaphore],
-                    signal_semaphores: &[present_semaphore],
+                    wait_semaphores: &[],
+                    signal_semaphores: &[],
                     fence: Some(done_fence),
+                    swap_image: Some(acquired_image.swap_image.as_ref()),
                 })
                 .unwrap();
 
             self.swap_manager
-                .present(self.queue.as_ref(), &[present_semaphore], acquired_image);
+                .present(self.queue.as_ref(), acquired_image);
         }
     }
 }
@@ -546,15 +544,13 @@ struct RendererConfig {
 }
 
 struct SwapManager {
-    device: AnyArc<dyn IDevice>,
     surface: Box<dyn IRenderSurface + Send + Sync>,
-    images: Vec<aleph_rhi_api::TextureHandle>,
     desc: TextureDesc<'static>,
     needs_rebuild: bool,
 }
 
 impl SwapManager {
-    unsafe fn acquire_next_image(&mut self, signal_semaphore: &SemaphoreHandle) -> AcquiredImage {
+    unsafe fn acquire_next_image(&mut self) -> AcquiredImage {
         // Query if the surface wants to rebuild this frame and coerce the 'needs_rebuild' flag to
         // true if it wasn't already flagged.
         self.needs_rebuild = self.needs_rebuild || self.surface.needs_rebuild();
@@ -569,14 +565,10 @@ impl SwapManager {
                 rebuilt = true; // Flag if we had to rebuild before giving out the image.
             }
 
-            let acquired_index = unsafe {
-                self.surface
-                    .get_swap_chain()
-                    .acquire_next_image(&AcquireDesc { signal_semaphore })
-            };
-            let acquired_index = match acquired_index {
-                Ok(i) => i,
-                Err(ImageAcquireError::SubOptimal(i)) => {
+            let swap_image = unsafe { self.surface.get_swap_chain().acquire_next_image() };
+            let swap_image = match swap_image {
+                Ok(aleph_rhi_api::AcquiredImage::Ok(i)) => i,
+                Ok(aleph_rhi_api::AcquiredImage::SubOptimal(i)) => {
                     // We should queue a rebuild for the next frame, but we can still render with
                     // this attachment so rather than stalling immediately we render now with the
                     // suboptimal attachment
@@ -593,32 +585,21 @@ impl SwapManager {
                     self.needs_rebuild = true;
                     continue;
                 }
-                v => v.unwrap(),
+                v => v.unwrap().get(),
             };
-            let acquired_image = self.images[acquired_index as usize].clone();
+
+            self.desc = swap_image.texture_desc().clone().strip_name();
 
             return AcquiredImage {
-                image: acquired_image,
-                index: acquired_index as usize,
+                swap_image,
                 rebuilt,
             };
         }
         panic!("Unable to acquire swap chain image!");
     }
 
-    unsafe fn present(
-        &mut self,
-        queue: &dyn IQueue,
-        wait_semaphores: &[&SemaphoreHandle],
-        image: AcquiredImage,
-    ) {
-        let submit_result = unsafe {
-            queue.present(&QueuePresentDesc {
-                swap_chain: self.surface.get_swap_chain(),
-                image_index: image.index as u32,
-                wait_semaphores,
-            })
-        };
+    unsafe fn present(&mut self, queue: &dyn IQueue, image: AcquiredImage) {
+        let submit_result = unsafe { queue.present(image.swap_image) };
         match submit_result {
             Ok(_) => {}
             Err(QueuePresentError::OutOfDate) | Err(QueuePresentError::SubOptimal) => {
@@ -631,30 +612,16 @@ impl SwapManager {
     fn rebuild(&mut self) {
         let swap_chain = self.surface.get_swap_chain();
 
-        self.images.clear();
-
         let drawable_size = self.surface.get_render_extent();
-        let new_config = swap_chain.rebuild(Some(drawable_size)).unwrap();
+        let _new_config = swap_chain.rebuild(Some(drawable_size)).unwrap();
 
-        let mut images: Vec<_> = (0..new_config.buffer_count).map(|_| None).collect();
-        swap_chain.get_images(&mut images);
-
-        self.images = images.into_iter().map(|v| v.unwrap()).collect();
-        self.desc = self
-            .device
-            .get_texture_desc(&self.images[0])
-            .clone()
-            .strip_name();
         self.needs_rebuild = false;
     }
 }
 
 struct AcquiredImage {
-    /// Handle to the image we ended up acquiring
-    image: aleph_rhi_api::TextureHandle,
-
-    /// The image index of the image we acquired
-    index: usize,
+    /// Handle to the acquire swap image
+    swap_image: AnyArc<dyn aleph_rhi_api::ISwapImage>,
 
     /// Flags whether the swap chain was rebuilt in order to acquire this image
     rebuilt: bool,
@@ -671,8 +638,6 @@ impl FrameManager {
         let frame = &mut self.frames[self.current];
         CurrentFrameResources {
             frame_index: self.current,
-            acquire_semaphore: &frame.acquire_semaphore,
-            present_semaphore: &frame.present_semaphore,
             done_fence: &frame.done_fence,
             deletion_pool: &mut frame.deletion_pool,
         }
@@ -680,12 +645,6 @@ impl FrameManager {
 }
 
 struct FrameResources {
-    /// Used for syncing on the swap chain acquisition.
-    acquire_semaphore: SemaphoreHandle,
-
-    /// Used for syncing the present operation on the completion of the frame's final submission.
-    present_semaphore: SemaphoreHandle,
-
     /// Used for notifying the CPU when the GPU frame is complete.
     done_fence: FenceHandle,
 
@@ -697,8 +656,6 @@ struct FrameResources {
 impl FrameResources {
     fn new(device: &dyn IDevice) -> Self {
         Self {
-            acquire_semaphore: device.create_semaphore().unwrap(),
-            present_semaphore: device.create_semaphore().unwrap(),
             done_fence: device.create_fence(true).unwrap(),
             deletion_pool: DeletionPool::default(),
         }
@@ -707,8 +664,6 @@ impl FrameResources {
 
 struct CurrentFrameResources<'a> {
     frame_index: usize,
-    acquire_semaphore: &'a SemaphoreHandle,
-    present_semaphore: &'a SemaphoreHandle,
     done_fence: &'a FenceHandle,
     deletion_pool: &'a mut DeletionPool,
 }
