@@ -101,7 +101,7 @@ impl ISwapChain for ValidationSwapChain {
         let acquired = map_acquired_image(inner, |swap_image| {
             let texture = Arc::new_cyclic(|v| {
                 let inner = swap_image.texture().clone();
-                let desc = self._device.get_texture_desc(&inner).clone().strip_name();
+                let desc = self._device.inner.get_texture_desc(&inner).clone().strip_name();
                 ArcedObject::new(ValidationTexture {
                     _this: v.clone(),
                     _device: self._device.clone(),

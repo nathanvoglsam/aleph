@@ -193,11 +193,11 @@ impl IQueue for ValidationQueue {
 
         {
             let swap_texture = swap_image.texture.take().unwrap();
-            let mut swap_texture = swap_texture
+            let swap_texture = swap_texture
                 .into_inner()
                 .downcast::<ValidationTexture>()
                 .unwrap();
-            let _swap_texture = Arc::get_mut(&mut swap_texture).unwrap();
+            assert_eq!(Arc::strong_count(&swap_texture), 1);
         }
 
         let swap_chain = &swap_image._swap_chain;
