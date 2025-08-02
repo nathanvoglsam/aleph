@@ -43,8 +43,8 @@ use crate::device::Device;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::internal::set_name::set_name_nstr;
-use crate::semaphore::Semaphore;
 use crate::surface::Surface;
+use crate::swap_image::SwapImage;
 use crate::texture::Texture;
 
 pub struct SwapChain {
@@ -132,19 +132,8 @@ impl ISwapChain for SwapChain {
         Ok(inner.get_config(self.queue_support))
     }
 
-    fn get_images(&self, images: &mut [Option<TextureHandle>]) {
-        let lock = self.inner.lock();
-        let inner_images = &lock.images;
-
-        for (out, v) in images.iter_mut().zip(inner_images.iter()) {
-            let t = ArcObject::from_object(v.clone());
-            let t = unsafe { Some(TextureHandle::new(t)) };
-            *out = t;
-        }
-    }
-
-    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
-        let semaphore = Semaphore::get(desc.signal_semaphore);
+    unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
+        let ready_semaphore = unsafe { self.device.swap_semaphore_pool.get(&self.device.device) };
 
         let loader = self.device.swapchain.as_ref().unwrap();
 
@@ -153,14 +142,32 @@ impl ISwapChain for SwapChain {
             loader.acquire_next_image(
                 inner.swap_chain,
                 u64::MAX,
-                semaphore.semaphore,
+                ready_semaphore,
                 vk::Fence::null(),
             )
         };
 
         match result {
-            Ok((i, false)) => Ok(i),
-            Ok((i, true)) => Err(ImageAcquireError::SubOptimal(i)),
+            Ok((i, sub_optimal)) => {
+                let texture = inner.images[i as usize].clone();
+                let texture = ArcObject::from_object(texture);
+                let texture = unsafe { TextureHandle::new(texture) };
+
+                let swap_image = AnyArc::new_cyclic(move |v| SwapImage {
+                    this: v.clone(),
+                    swap_chain: self.this.upgrade().unwrap(),
+                    index: i,
+                    texture: Some(texture),
+                    ready_semaphore,
+                    work_semaphores: Mutex::new(Vec::new()),
+                });
+                let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
+                if sub_optimal {
+                    Ok(AcquiredImage::SubOptimal(swap_image))
+                } else {
+                    Ok(AcquiredImage::Ok(swap_image))
+                }
+            }
             Err(vk::Result::NOT_READY) => unimplemented!(),
             Err(vk::Result::TIMEOUT) => unimplemented!(),
             Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => Err(ImageAcquireError::OutOfDate),

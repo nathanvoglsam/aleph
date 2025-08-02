@@ -34,6 +34,7 @@ use crate::command_list::CommandList;
 use crate::device::Device;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
+use crate::swap_image::SwapImage;
 
 conversion_function!(
     ICommandList,
@@ -59,4 +60,12 @@ conversion_function!(
     swap_chain_owned,
     swap_chain_d,
     swap_chain_iter
+);
+conversion_function!(
+    ISwapImage,
+    SwapImage,
+    swap_image,
+    swap_image_owned,
+    swap_image_d,
+    swap_image_iter
 );

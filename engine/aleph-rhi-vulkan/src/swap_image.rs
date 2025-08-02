@@ -31,48 +31,46 @@ use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
+use ash::vk;
+use parking_lot::Mutex;
 
-use crate::ValidationSwapChain;
+use crate::swap_chain::SwapChain;
 
-pub struct ValidationSwapImage {
-    pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _swap_chain: AnyArc<ValidationSwapChain>,
-    pub(crate) inner: Option<AnyArc<dyn ISwapImage>>,
+pub struct SwapImage {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) swap_chain: AnyArc<SwapChain>,
+    pub(crate) index: u32,
     pub(crate) texture: Option<TextureHandle>,
+    pub(crate) ready_semaphore: vk::Semaphore,
+    pub(crate) work_semaphores: Mutex<Vec<vk::Semaphore>>,
 }
 
-declare_interfaces!(ValidationSwapImage, [ISwapImage]);
+declare_interfaces!(SwapImage, [ISwapImage]);
 
-impl IGetPlatformInterface for ValidationSwapImage {
+impl IGetPlatformInterface for SwapImage {
     unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
         None
     }
 }
 
-impl ISwapImage for ValidationSwapImage {
+impl ISwapImage for SwapImage {
     fn upgrade(&self) -> AnyArc<dyn ISwapImage> {
-        AnyArc::map::<dyn ISwapImage, _>(self._this.upgrade().unwrap(), |v| v)
+        AnyArc::map::<dyn ISwapImage, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
-        self._this.strong_count()
+        self.this.strong_count()
     }
 
     fn weak_count(&self) -> usize {
-        self._this.weak_count()
+        self.this.weak_count()
     }
 
     fn texture(&self) -> &TextureHandle {
-        self.texture.as_ref().unwrap();
-        if let Some(v) = &self.texture {
-            v
-        } else {
-            panic!()
-        }
+        self.texture.as_ref().unwrap()
     }
 
     fn texture_desc(&self) -> &TextureDesc {
-        let v = self.inner.as_ref().unwrap();
-        v.texture_desc()
+        self.swap_chain.device.get_texture_desc(self.texture())
     }
 }
