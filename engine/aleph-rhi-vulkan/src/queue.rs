@@ -408,8 +408,6 @@ impl IQueue for Queue {
         let device = self._device.upgrade().unwrap();
         let loader = device.swapchain.as_ref().unwrap();
 
-        let _lock = self.submit_lock.lock();
-
         let mut swap_image = {
             let v = swap_image;
             unwrap::swap_image_owned(v)
