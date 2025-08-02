@@ -29,7 +29,7 @@
 
 use std::any::TypeId;
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use ash::vk;
 use parking_lot::Mutex;
@@ -37,7 +37,6 @@ use parking_lot::Mutex;
 use crate::swap_chain::SwapChain;
 
 pub struct SwapImage {
-    pub(crate) this: AnyWeak<Self>,
     pub(crate) swap_chain: AnyArc<SwapChain>,
     pub(crate) index: u32,
     pub(crate) texture: Option<TextureHandle>,
@@ -54,18 +53,6 @@ impl IGetPlatformInterface for SwapImage {
 }
 
 impl ISwapImage for SwapImage {
-    fn upgrade(&self) -> AnyArc<dyn ISwapImage> {
-        AnyArc::map::<dyn ISwapImage, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
     fn texture(&self) -> &TextureHandle {
         self.texture.as_ref().unwrap()
     }

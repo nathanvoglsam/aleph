@@ -115,8 +115,7 @@ impl ISwapChain for ValidationSwapChain {
             let texture = ArcObject::from_object(texture);
             let texture = unsafe { TextureHandle::new(texture) };
 
-            let swap_image = AnyArc::new_cyclic(move |v| ValidationSwapImage {
-                _this: v.clone(),
+            let swap_image = AnyArc::new(ValidationSwapImage {
                 _swap_chain: self._this.upgrade().unwrap(),
                 inner: Some(swap_image),
                 texture: Some(texture),

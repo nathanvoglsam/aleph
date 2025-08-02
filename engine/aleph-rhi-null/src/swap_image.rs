@@ -29,13 +29,12 @@
 
 use std::any::TypeId;
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::NullSwapChain;
 
 pub struct NullSwapImage {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _swap_chain: AnyArc<NullSwapChain>,
 }
 
@@ -48,18 +47,6 @@ impl IGetPlatformInterface for NullSwapImage {
 }
 
 impl ISwapImage for NullSwapImage {
-    fn upgrade(&self) -> AnyArc<dyn ISwapImage> {
-        AnyArc::map::<dyn ISwapImage, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
     fn texture(&self) -> &TextureHandle {
         unimplemented!()
     }

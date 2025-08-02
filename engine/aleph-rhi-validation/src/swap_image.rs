@@ -29,13 +29,12 @@
 
 use std::any::TypeId;
 
-use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 
 use crate::ValidationSwapChain;
 
 pub struct ValidationSwapImage {
-    pub(crate) _this: AnyWeak<Self>,
     pub(crate) _swap_chain: AnyArc<ValidationSwapChain>,
     pub(crate) inner: Option<AnyArc<dyn ISwapImage>>,
     pub(crate) texture: Option<TextureHandle>,
@@ -50,18 +49,6 @@ impl IGetPlatformInterface for ValidationSwapImage {
 }
 
 impl ISwapImage for ValidationSwapImage {
-    fn upgrade(&self) -> AnyArc<dyn ISwapImage> {
-        AnyArc::map::<dyn ISwapImage, _>(self._this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self._this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self._this.weak_count()
-    }
-
     fn texture(&self) -> &TextureHandle {
         self.texture.as_ref().unwrap();
         if let Some(v) = &self.texture {

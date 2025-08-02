@@ -153,8 +153,7 @@ impl ISwapChain for SwapChain {
                 let texture = ArcObject::from_object(texture);
                 let texture = unsafe { TextureHandle::new(texture) };
 
-                let swap_image = AnyArc::new_cyclic(move |v| SwapImage {
-                    this: v.clone(),
+                let swap_image = AnyArc::new(SwapImage {
                     swap_chain: self.this.upgrade().unwrap(),
                     index: i,
                     texture: Some(texture),

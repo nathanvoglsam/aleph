@@ -751,8 +751,6 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
 /// It's a mess. This abstraction simplifies the API surface and efficiently abstracts over the
 /// different APIs without trading much flexibility.
 pub trait ISwapImage: IAny + IGetPlatformInterface + Send + Sync {
-    any_arc_trait_utils_decl!(ISwapImage);
-
     /// Get the texture handle associated with this [`ISwapImage`].
     ///
     /// All references to this texture must be dropped before calling [`IQueue::present`].
