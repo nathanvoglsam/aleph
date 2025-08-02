@@ -371,3 +371,29 @@ pub const fn image_view_type_to_mtl(v: ImageViewType) -> MTLTextureType {
         ImageViewType::TexCubeArray => MTLTextureType::TypeCubeArray,
     }
 }
+
+pub const fn resource_usage_to_texture_usage_mtl(v: ResourceUsageFlags) -> MTLTextureUsage {
+    let mut usage = MTLTextureUsage::empty();
+
+    if v.contains(ResourceUsageFlags::COPY_SOURCE) {
+        usage.0 |= MTLTextureUsage::ShaderRead.0;
+    }
+    if v.contains(ResourceUsageFlags::COPY_DEST) {
+        usage.0 |= MTLTextureUsage::ShaderWrite.0;
+    }
+    if v.contains(ResourceUsageFlags::SHADER_RESOURCE) {
+        usage.0 |= MTLTextureUsage::ShaderRead.0;
+    }
+    if v.contains(ResourceUsageFlags::SHADER_RESOURCE) {
+        usage.0 |= MTLTextureUsage::ShaderRead.0;
+    }
+    if v.contains(ResourceUsageFlags::UNORDERED_ACCESS) {
+        usage.0 |= MTLTextureUsage::ShaderWrite.0;
+        usage.0 |= MTLTextureUsage::ShaderAtomic.0;
+    }
+    if v.contains(ResourceUsageFlags::RENDER_TARGET) {
+        usage.0 |= MTLTextureUsage::RenderTarget.0;
+    }
+
+    usage
+}

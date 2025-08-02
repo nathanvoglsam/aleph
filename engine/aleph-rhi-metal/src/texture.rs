@@ -51,8 +51,8 @@ pub struct Texture {
     pub(crate) id: NonZeroU64,
     pub(crate) objects: TextureObjects,
     pub(crate) views: Mutex<HashMap<ImageViewDesc, ()>>,
-    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, NonNull<RenderTargetView>>>,
-    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, NonNull<RenderTargetView>>>,
+    pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, ImageView>>,
+    pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, ImageView>>,
     pub(crate) image_views: Mutex<Blink>,
     pub(crate) desc: OwnedTextureDesc,
 }
@@ -90,7 +90,7 @@ impl Texture {
     /// map.
     pub(crate) fn get_rtv_or_dsv(
         &self,
-        map: &Mutex<HashMap<ImageViewDesc, NonNull<RenderTargetView>>>,
+        map: &Mutex<HashMap<ImageViewDesc, ImageView>>,
         desc: &ImageViewDesc,
     ) -> Result<ImageView, ()> {
         let mut views = map.lock();
@@ -119,25 +119,20 @@ impl Texture {
                     )
                     .expect("Failed to construct MTLTexture image view")
             };
-            let view = {
+            let view = unsafe {
                 // Allocate the view into the internal bump allocator
                 let alloc = self.image_views.lock();
-                NonNull::from(alloc.put(RenderTargetView {
-                    texture: view,
-                    level: 0,
-                    slice: 0,
-                }))
+                let view = NonNull::from(alloc.put(RenderTargetView { texture: view }));
+                std::mem::transmute::<_, ImageView>(view)
             };
 
             views.insert(desc.clone(), view);
             view
         };
 
-        unsafe { Ok(std::mem::transmute::<_, ImageView>(view)) }
+        Ok(view)
     }
 }
-
-impl Texture {}
 
 /// Wrapper to scope our 'unsafe impl Send+Sync'
 pub struct TextureObjects {

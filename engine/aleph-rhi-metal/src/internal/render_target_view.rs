@@ -38,12 +38,6 @@ pub struct RenderTargetView {
     /// Unretained reference to the metal texture. The views can't outlive the parent texture so
     /// this is fine. If this was retained we'd generate more retain traffic than we otherwise need.
     pub texture: Retained<ProtocolObject<dyn MTLTexture>>,
-
-    /// Target mip level of the view
-    pub level: usize,
-
-    /// Target array slice of the view
-    pub slice: usize,
 }
 
 // Safety: none, up to the caller to use this correctly.

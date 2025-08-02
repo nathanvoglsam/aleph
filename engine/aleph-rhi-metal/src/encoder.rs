@@ -200,8 +200,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let view = unsafe { RenderTargetView::from_view(&view) };
             let texture = view.texture.as_ref();
             mtl_attachment.setTexture(Some(texture));
-            mtl_attachment.setLevel(view.level);
-            mtl_attachment.setSlice(view.slice);
+            mtl_attachment.setLevel(0);
+            mtl_attachment.setSlice(0);
 
             match &color_attachment.load_op {
                 AttachmentLoadOp::Load => {
@@ -239,8 +239,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let view = unsafe { RenderTargetView::from_view(&view) };
             let texture = view.texture.as_ref();
             mtl_attachment.setTexture(Some(texture));
-            mtl_attachment.setLevel(view.level);
-            mtl_attachment.setSlice(view.slice);
+            mtl_attachment.setLevel(0);
+            mtl_attachment.setSlice(0);
 
             match &depth_attachment.depth_load_op {
                 AttachmentLoadOp::Load => {
@@ -272,8 +272,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 let view = unsafe { RenderTargetView::from_view(&view) };
                 let texture = view.texture.as_ref();
                 mtl_attachment.setTexture(Some(texture));
-                mtl_attachment.setLevel(view.level);
-                mtl_attachment.setSlice(view.slice);
+                mtl_attachment.setLevel(0);
+                mtl_attachment.setSlice(0);
 
                 match &depth_attachment.stencil_load_op {
                     AttachmentLoadOp::Load => {
