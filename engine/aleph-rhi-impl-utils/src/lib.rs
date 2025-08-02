@@ -36,6 +36,9 @@ pub extern crate aleph_rhi_api;
 use std::any::TypeId;
 use std::ffi::{CStr, c_char};
 
+use aleph_any::AnyArc;
+use aleph_rhi_api::*;
+
 pub mod bump_cell;
 pub mod conv;
 pub mod manually_drop;
@@ -96,4 +99,16 @@ pub unsafe fn try_clone_value_into_slot<T: Clone + Sized + 'static>(
 #[inline(always)]
 pub unsafe fn str_from_ptr(v: *const c_char) -> *const str {
     unsafe { CStr::from_ptr(v).to_str().unwrap() }
+}
+
+/// Utility function for applying a mapping function to the swap image inside a [`AcquiredImage`]
+/// wrapper.
+pub fn map_acquired_image(
+    v: AcquiredImage,
+    f: impl FnOnce(AnyArc<dyn ISwapImage>) -> AnyArc<dyn ISwapImage>,
+) -> AcquiredImage {
+    match v {
+        AcquiredImage::Ok(old) => AcquiredImage::Ok(f(old)),
+        AcquiredImage::SubOptimal(old) => AcquiredImage::SubOptimal(f(old)),
+    }
 }
