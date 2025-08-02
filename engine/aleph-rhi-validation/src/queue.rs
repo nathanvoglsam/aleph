@@ -31,17 +31,18 @@ use std::any::TypeId;
 use std::mem::transmute;
 use std::ptr;
 use std::ptr::NonNull;
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use aleph_any::{AnyArc, AnyWeak, IAny, QueryInterface, TraitObject};
 use aleph_rhi_api::*;
 
 use crate::fence::FenceState;
-use crate::internal::get_as_unwrapped;
+use crate::internal::{get_as_unwrapped, unwrap};
 use crate::semaphore::SemaphoreState;
 use crate::{
     ValidationCommandList, ValidationDevice, ValidationFence, ValidationSemaphore,
-    ValidationSwapChain,
+    ValidationTexture,
 };
 
 pub struct ValidationQueue {
@@ -183,17 +184,27 @@ impl IQueue for ValidationQueue {
         })
     }
 
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
-        let swap_chain = desc
-            .swap_chain
-            .query_interface::<ValidationSwapChain>()
-            .expect("Unknown ISwapChain implementation");
+    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
+        let mut swap_image = {
+            let v = swap_image;
+            unwrap::swap_image_owned(v)
+        };
+        let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
 
+        {
+            let swap_texture = swap_image.texture.take().unwrap();
+            let mut swap_texture = swap_texture
+                .into_inner()
+                .downcast::<ValidationTexture>()
+                .unwrap();
+            let _swap_texture = Arc::get_mut(&mut swap_texture).unwrap();
+        }
+
+        let swap_chain = &swap_image._swap_chain;
         assert_eq!(
             self.queue_type, swap_chain.queue_support,
             "Tried to use a swap chain on an unsupported queue"
         );
-
         if swap_chain
             .acquired
             .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
@@ -202,19 +213,9 @@ impl IQueue for ValidationQueue {
             panic!("Attempted to present an image without having first acquired one");
         }
 
-        for v in desc.wait_semaphores {
-            let v = ValidationSemaphore::get(v);
+        let inner_swap_image = swap_image.inner.take().unwrap();
 
-            assert_eq!(
-                v.state.load(),
-                SemaphoreState::Waiting,
-                "Attempted to wait on a semaphore that has not been queued for signalling"
-            );
-        }
-
-        get_as_unwrapped::queue_present_desc(desc, |inner_desc| unsafe {
-            self.inner.present(inner_desc)
-        })
+        unsafe { self.inner.present(inner_swap_image) }
     }
 }
 

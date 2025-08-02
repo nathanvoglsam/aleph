@@ -27,51 +27,54 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::conversion_function;
 
-use crate::{
-    ValidationCommandList, ValidationDevice, ValidationSurface, ValidationSwapChain,
-    ValidationSwapImage,
-};
+use crate::ValidationSwapChain;
 
-conversion_function!(
-    ICommandList,
-    ValidationCommandList,
-    command_list,
-    command_list_owned,
-    command_list_d,
-    command_list_iter
-);
-conversion_function!(
-    IDevice,
-    ValidationDevice,
-    device,
-    device_owned,
-    device_d,
-    device_iter
-);
-conversion_function!(
-    ISurface,
-    ValidationSurface,
-    surface,
-    surface_owned,
-    surface_d,
-    surface_iter
-);
-conversion_function!(
-    ISwapChain,
-    ValidationSwapChain,
-    swap_chain,
-    swap_chain_owned,
-    swap_chain_d,
-    swap_chain_iter
-);
-conversion_function!(
-    ISwapImage,
-    ValidationSwapImage,
-    swap_image,
-    swap_image_owned,
-    swap_image_d,
-    swap_image_iter
-);
+pub struct ValidationSwapImage {
+    pub(crate) _this: AnyWeak<Self>,
+    pub(crate) _swap_chain: AnyArc<ValidationSwapChain>,
+    pub(crate) inner: Option<AnyArc<dyn ISwapImage>>,
+    pub(crate) texture: Option<TextureHandle>,
+}
+
+declare_interfaces!(ValidationSwapImage, [ISwapImage]);
+
+impl IGetPlatformInterface for ValidationSwapImage {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
+impl ISwapImage for ValidationSwapImage {
+    fn upgrade(&self) -> AnyArc<dyn ISwapImage> {
+        AnyArc::map::<dyn ISwapImage, _>(self._this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self._this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self._this.weak_count()
+    }
+
+    fn texture(&self) -> &TextureHandle {
+        if let Some(v) = &self.texture {
+            v
+        } else {
+            panic!()
+        }
+    }
+
+    fn texture_desc(&self) -> &TextureDesc {
+        if let Some(v) = &self.inner {
+            v.texture_desc()
+        } else {
+            panic!()
+        }
+    }
+}

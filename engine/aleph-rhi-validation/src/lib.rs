@@ -48,6 +48,7 @@ mod sampler;
 mod semaphore;
 mod surface;
 mod swap_chain;
+mod swap_image;
 mod texture;
 
 pub use adapter::ValidationAdapter;
@@ -67,4 +68,5 @@ pub use sampler::ValidationSampler;
 pub use semaphore::ValidationSemaphore;
 pub use surface::ValidationSurface;
 pub use swap_chain::ValidationSwapChain;
+pub use swap_image::ValidationSwapImage;
 pub use texture::ValidationTexture;

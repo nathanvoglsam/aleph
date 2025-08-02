@@ -33,9 +33,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
-use parking_lot::Mutex;
+use aleph_rhi_impl_utils::map_acquired_image;
 
-use crate::{ValidationDevice, ValidationSemaphore, ValidationSurface, ValidationTexture};
+use crate::{ValidationDevice, ValidationSurface, ValidationSwapImage, ValidationTexture};
 
 pub struct ValidationSwapChain {
     pub(crate) _this: AnyWeak<Self>,
@@ -43,7 +43,6 @@ pub struct ValidationSwapChain {
     pub(crate) _surface: AnyArc<ValidationSurface>,
     pub(crate) inner: AnyArc<dyn ISwapChain>,
     pub(crate) queue_support: QueueType,
-    pub(crate) textures: Mutex<Vec<Arc<ArcedObject<ValidationTexture>>>>,
     pub(crate) acquired: AtomicBool,
 }
 
@@ -76,31 +75,6 @@ impl ISwapChain for ValidationSwapChain {
         &self,
         new_size: Option<Extent2D>,
     ) -> Result<SwapChainConfiguration, SwapChainRebuildError> {
-        // We create an array with space for as many swap chain textures as we'd ever need. This
-        // avoids a heap alloc
-        let mut scratch = Self::make_scratch();
-
-        // Acquire the textures lock and grab the number of swap images. We need to know this number
-        // for refilling the list after we clear it...
-        let mut textures = self.textures.lock();
-        let num_textures = textures.len();
-
-        // Validate that we have exclusive ownership of the textures. This is an API requirement.
-        for x in textures.iter() {
-            // Need to drop all the views before asserting the ref count as there's weak references
-            // to the image inside it's own view set. These are fine to destroy as all views are
-            // made invalid to access for the images as soon as 'rebuild' is entered.
-            x.drop_views();
-            assert!(
-                Arc::weak_count(x) == 1 && Arc::strong_count(x) == 1,
-                "It is invalid to resize a swap chain while still holding references to its images"
-            );
-        }
-
-        // We have to clear the textures array to drop what should be the last remaining reference
-        // to the swap images owned by something outside of the root RHI implementation.
-        textures.clear();
-
         // We have to block and flush all GPU work before we rebuild to ensure that none of the
         // images can be in use on the GPU timeline.
         self._device.wait_idle();
@@ -111,28 +85,10 @@ impl ISwapChain for ValidationSwapChain {
         // All swap images are immediately un-acquired after a rebuild
         self.acquired.store(false, Ordering::SeqCst);
 
-        // We now need to re poll the images from the inner layer so we can hand out images
-        // correctly in subsequent calls to 'get_images'
-        let images = &mut scratch[0..num_textures];
-        self.inner.get_images(images);
-
-        // The returned images are from the inner implementation, wrap them in ValidationTexture.
-        Self::wrap_images(self._device.as_ref(), &mut textures, images);
-
         result
     }
 
-    fn get_images(&self, images: &mut [Option<TextureHandle>]) {
-        let textures = self.textures.lock();
-
-        for (out, v) in images.iter_mut().zip(textures.iter()) {
-            let t = ArcObject::from_object(v.clone());
-            let t = unsafe { Some(TextureHandle::new(t)) };
-            *out = t;
-        }
-    }
-
-    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
+    unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
         if self
             .acquired
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
@@ -141,11 +97,33 @@ impl ISwapChain for ValidationSwapChain {
             panic!("Attempted to acquire an image while one is already acquired");
         }
 
-        let new_desc = AcquireDesc {
-            signal_semaphore: &ValidationSemaphore::get(desc.signal_semaphore).inner,
-        };
+        let inner = unsafe { self.inner.acquire_next_image()? };
+        let acquired = map_acquired_image(inner, |swap_image| {
+            let texture = Arc::new_cyclic(|v| {
+                let inner = swap_image.texture().clone();
+                let desc = self._device.get_texture_desc(&inner).clone().strip_name();
+                ArcedObject::new(ValidationTexture {
+                    _this: v.clone(),
+                    _device: self._device.clone(),
+                    inner,
+                    desc,
+                    views: Default::default(),
+                    rtvs: Default::default(),
+                    dsvs: Default::default(),
+                })
+            });
+            let texture = ArcObject::from_object(texture);
+            let texture = unsafe { TextureHandle::new(texture) };
 
-        unsafe { self.inner.acquire_next_image(&new_desc) }
+            let swap_image = AnyArc::new_cyclic(move |v| ValidationSwapImage {
+                _this: v.clone(),
+                _swap_chain: self._this.upgrade().unwrap(),
+                inner: Some(swap_image),
+                texture: Some(texture),
+            });
+            AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v)
+        });
+        Ok(acquired)
     }
 }
 
@@ -156,38 +134,5 @@ impl Drop for ValidationSwapChain {
         // Release the surface as the swap chain no longer owns it
         assert!(*has_swap_chain);
         *has_swap_chain = false;
-    }
-}
-
-impl ValidationSwapChain {
-    pub(crate) fn wrap_images(
-        device: &ValidationDevice,
-        textures: &mut Vec<Arc<ArcedObject<ValidationTexture>>>,
-        images: &mut [Option<TextureHandle>],
-    ) {
-        // The returned images are from the inner implementation, wrap them in ValidationTexture.
-        for image in images {
-            let image = image.take().unwrap();
-            let desc = device.inner.get_texture_desc(&image).clone().strip_name();
-            let out = Arc::new_cyclic(|v| {
-                ArcedObject::new(ValidationTexture {
-                    _this: v.clone(),
-                    _device: device._this.upgrade().unwrap(),
-                    inner: image,
-                    desc,
-                    views: Default::default(),
-                    rtvs: Default::default(),
-                    dsvs: Default::default(),
-                })
-            });
-            textures.push(out);
-        }
-    }
-
-    pub(crate) fn make_scratch() -> [Option<TextureHandle>; 16] {
-        [
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None, None,
-        ]
     }
 }

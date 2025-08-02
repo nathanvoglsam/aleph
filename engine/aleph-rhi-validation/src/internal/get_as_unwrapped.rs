@@ -58,7 +58,7 @@ use crate::internal::descriptor_set::DescriptorSet;
 use crate::texture::ValidationImageView;
 use crate::{
     ValidationBuffer, ValidationCommandList, ValidationDescriptorSetLayout, ValidationFence,
-    ValidationSampler, ValidationSemaphore, ValidationSwapChain, ValidationTexture,
+    ValidationSampler, ValidationSemaphore, ValidationSwapImage, ValidationTexture,
 };
 
 pub fn buffer(buffer: &BufferHandle) -> &BufferHandle {
@@ -166,40 +166,22 @@ pub fn queue_submit_desc<Return>(
         .collect();
 
     let fence = desc.fence.map(|v| &ValidationFence::get(v).inner);
+    let swap_image = desc
+        .swap_image
+        .map(|v| {
+            let v = v
+                .query_interface::<ValidationSwapImage>()
+                .expect("Unknown ISwapImage implementation");
+            v.inner.as_deref()
+        })
+        .flatten();
 
     let new_desc = QueueSubmitDesc {
         command_lists: command_lists.as_slice(),
         wait_semaphores: wait_semaphores.as_slice(),
         signal_semaphores: signal_semaphores.as_slice(),
         fence,
-    };
-
-    f(&new_desc)
-}
-
-pub fn queue_present_desc<Return>(
-    desc: &QueuePresentDesc,
-    f: impl FnOnce(&QueuePresentDesc) -> Return,
-) -> Return {
-    let swap_chain = desc
-        .swap_chain
-        .query_interface::<ValidationSwapChain>()
-        .expect("Unknown ISwapChain Implementation")
-        .inner
-        .as_ref();
-
-    let wait_semaphores: Vec<_> = desc
-        .wait_semaphores
-        .iter()
-        .copied()
-        .map(ValidationSemaphore::get)
-        .map(|v| &v.inner)
-        .collect();
-
-    let new_desc = QueuePresentDesc {
-        swap_chain,
-        image_index: desc.image_index,
-        wait_semaphores: &wait_semaphores,
+        swap_image,
     };
 
     f(&new_desc)

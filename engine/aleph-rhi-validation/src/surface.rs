@@ -84,21 +84,12 @@ impl ISurface for ValidationSurface {
             result
         }?;
 
-        // Prefill the 'textures' array in the swap chain.
-        let inner_config = inner.get_config();
-        let mut scratch = ValidationSwapChain::make_scratch();
-        let images = &mut scratch[0..inner_config.buffer_count as usize];
-        inner.get_images(images);
-        let mut textures = Vec::with_capacity(inner_config.buffer_count as usize);
-        ValidationSwapChain::wrap_images(device, &mut textures, images);
-
         let swap_chain = AnyArc::new_cyclic(move |v| ValidationSwapChain {
             _this: v.clone(),
             _device: device._this.upgrade().unwrap(),
             _surface: self._this.upgrade().unwrap(),
             inner,
             queue_support: Default::default(),
-            textures: Mutex::new(textures),
             acquired: Default::default(),
         });
         Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
