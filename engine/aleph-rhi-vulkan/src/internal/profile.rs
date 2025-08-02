@@ -452,7 +452,7 @@ impl<'a> CreateProfile for vk::PhysicalDeviceVulkan11Features<'a> {
             variable_pointers: vk::TRUE,
             // protected_memory: vk::TRUE,
             // sampler_ycbcr_conversion: vk::TRUE,
-            // shader_draw_parameters: vk::TRUE,
+            shader_draw_parameters: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
@@ -536,7 +536,7 @@ impl<'a> CreateProfile for vk::PhysicalDeviceShaderDrawParametersFeatures<'a> {
 
     fn minimum() -> Self {
         Self {
-            // shader_draw_parameters: vk::TRUE,
+            shader_draw_parameters: vk::TRUE,
             ..CreateProfile::baseline()
         }
     }
