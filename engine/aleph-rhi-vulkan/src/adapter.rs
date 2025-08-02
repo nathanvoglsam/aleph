@@ -41,6 +41,7 @@ use vulkan_alloc::vma;
 use crate::context::Context;
 use crate::device::{CommandListPool, Device};
 use crate::internal::device_info::DeviceInfo;
+use crate::internal::semaphore_pool::SemaphorePool;
 use crate::queue::{Queue, QueueInfo};
 
 pub struct Adapter {
@@ -339,6 +340,7 @@ impl IAdapter for Adapter {
                 transfer_queue: None,
                 command_list_pool: CommandListPool::new(),
                 object_counter: ObjectCounter::new(),
+                swap_semaphore_pool: SemaphorePool::new(),
             };
 
             unsafe { found_families.build_queue_objects(&mut device) };

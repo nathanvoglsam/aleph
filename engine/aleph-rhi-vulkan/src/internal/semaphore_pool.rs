@@ -27,15 +27,43 @@
 // SOFTWARE.
 //
 
-pub mod allocation_callbacks;
-pub mod conv;
-pub mod device_info;
-pub mod features;
-pub mod loader;
-pub mod messenger;
-pub mod mvk;
-pub mod profile;
-pub mod queue_present_support;
-pub mod semaphore_pool;
-pub mod set_name;
-pub mod unwrap;
+use ash::vk;
+use parking_lot::Mutex;
+
+pub struct SemaphorePool {
+    semaphores: Mutex<Vec<vk::Semaphore>>,
+}
+
+impl SemaphorePool {
+    pub const fn new() -> Self {
+        Self {
+            semaphores: Mutex::new(Vec::new()),
+        }
+    }
+
+    pub unsafe fn get(&self, device: &ash::Device) -> vk::Semaphore {
+        let mut semaphores = self.semaphores.lock();
+        if let Some(semaphore) = semaphores.pop() {
+            semaphore
+        } else {
+            unsafe {
+                let info = vk::SemaphoreCreateInfo::default();
+                device.create_semaphore(&info, None).unwrap()
+            }
+        }
+    }
+
+    pub fn push(&self, semaphore: vk::Semaphore) {
+        let mut semaphores = self.semaphores.lock();
+        semaphores.push(semaphore);
+    }
+
+    pub unsafe fn destroy(&mut self, device: &ash::Device) {
+        let semaphores = Mutex::get_mut(&mut self.semaphores);
+        for semaphore in semaphores {
+            unsafe {
+                device.destroy_semaphore(*semaphore, None);
+            }
+        }
+    }
+}

@@ -54,6 +54,7 @@ use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::Fence;
 use crate::internal::allocation_callbacks::callbacks_from_rust_allocator;
 use crate::internal::conv::*;
+use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::set_name::set_name;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
@@ -79,6 +80,7 @@ pub struct Device {
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
     pub(crate) command_list_pool: CommandListPool,
     pub(crate) object_counter: ObjectCounter,
+    pub(crate) swap_semaphore_pool: SemaphorePool,
 }
 
 declare_interfaces!(Device, [IDevice]);
@@ -1435,6 +1437,8 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
+            self.swap_semaphore_pool.destroy(&self.device);
+
             if let Some(queue) = self.general_queue.take() {
                 self.device.queue_wait_idle(queue.handle).unwrap();
                 self.device.destroy_semaphore(queue.semaphore, None);
