@@ -39,15 +39,24 @@ conversion_function!(
     ICommandList,
     CommandList,
     command_list,
+    command_list_owned,
     command_list_d,
     command_list_iter
 );
-conversion_function!(IDevice, Device, device, device_d, device_iter);
-conversion_function!(ISurface, Surface, surface, surface_d, surface_iter);
+conversion_function!(IDevice, Device, device, device_owned, device_d, device_iter);
+conversion_function!(
+    ISurface,
+    Surface,
+    surface,
+    surface_owned,
+    surface_d,
+    surface_iter
+);
 conversion_function!(
     ISwapChain,
     SwapChain,
     swap_chain,
+    swap_chain_owned,
     swap_chain_d,
     swap_chain_iter
 );

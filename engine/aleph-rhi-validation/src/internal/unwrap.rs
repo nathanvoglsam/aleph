@@ -30,20 +30,31 @@
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conversion_function;
 
-use crate::{ValidationCommandList, ValidationDevice, ValidationSurface, ValidationSwapChain};
+use crate::{
+    ValidationCommandList, ValidationDevice, ValidationSurface, ValidationSwapChain,
+};
 
 conversion_function!(
     ICommandList,
     ValidationCommandList,
     command_list,
+    command_list_owned,
     command_list_d,
     command_list_iter
 );
-conversion_function!(IDevice, ValidationDevice, device, device_d, device_iter);
+conversion_function!(
+    IDevice,
+    ValidationDevice,
+    device,
+    device_owned,
+    device_d,
+    device_iter
+);
 conversion_function!(
     ISurface,
     ValidationSurface,
     surface,
+    surface_owned,
     surface_d,
     surface_iter
 );
@@ -51,6 +62,7 @@ conversion_function!(
     ISwapChain,
     ValidationSwapChain,
     swap_chain,
+    swap_chain_owned,
     swap_chain_d,
     swap_chain_iter
 );

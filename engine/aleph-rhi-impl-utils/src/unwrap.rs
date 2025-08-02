@@ -29,7 +29,7 @@
 
 #[macro_export]
 macro_rules! conversion_function {
-    ($from: path, $to: path, $name: ident, $name_d: ident, $name_iter: ident) => {
+    ($from: path, $to: path, $name: ident, $name_owned: ident, $name_d: ident, $name_iter: ident) => {
         #[allow(unused)]
         /// Converts the given dynamic object to a concrete type, panicking if it is not the
         /// expected concrete type.
@@ -40,6 +40,22 @@ macro_rules! conversion_function {
                 if ::core::any::Any::type_id(v) == ::core::any::TypeId::of::<$to>() {
                     let ptr = ::core::ptr::NonNull::new_unchecked(v as *const _ as *mut ());
                     ptr.cast::<$to>().as_ref()
+                } else {
+                    panic!(concat!("Unknown ", stringify!($from), " implementation"))
+                }
+            }
+        }
+
+        /// Converts the given dynamic object to a concrete type, panicking if it is not the
+        /// expected concrete type.
+        pub fn $name_owned(
+            v: $crate::aleph_any::AnyArc<dyn $from>,
+        ) -> $crate::aleph_any::AnyArc<$to> {
+            use $crate::aleph_any::*;
+            use $crate::aleph_rhi_api::*;
+            unsafe {
+                if let Some(v) = v.query_interface::<$to>() {
+                    v
                 } else {
                     panic!(concat!("Unknown ", stringify!($from), " implementation"))
                 }
