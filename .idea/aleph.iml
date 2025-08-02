@@ -58,6 +58,58 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-scheduler/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-typed-table/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/crates/aleph-hibitset/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-any/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-atomic-borrow/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-compile/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-config/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-device-allocators/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-dx12-agility-sdk/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-dx12-alloc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-ecs/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-egui/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-engine-build/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-engine/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-frame-graph/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-hibitset/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-identity-hasher/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-image/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-interfaces/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-ktx/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-label/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-malloc-info/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-math/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-nstr/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-object-system/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-pin-board/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-pix-raw/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-pix/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-profile-procmacros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-profile/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-quickjs-sys/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-quickjs/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-render/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-renderer/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-api/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-dx12/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-impl-utils/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-loader/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-metal/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-null/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-validation/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-rhi-vulkan/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-scheduler/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-shader-db/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-superluminal-sys/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-sys-info/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-target-build/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-target/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-typed-table/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-virtual-buffer/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-vk-format/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-vk2dfd/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-vulkan-alloc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-windows/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

@@ -2,16 +2,16 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/D3D12MemoryAllocator" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/DirectX-Headers" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/DirectX12AgilitySDK" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/QuickJSNG-builds" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/QuickJSNG-builds/quickjs" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/QuickJSNG-builds/quickjs/test262" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/SDL2-builds" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/SDL2-builds/submodules/SDL" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/Vulkan-Headers" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/VulkanMemoryAllocator" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/submodules/WinPixEventRuntime" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-dx12-agility-sdk/DirectX12AgilitySDK" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-dx12-alloc/D3D12MemoryAllocator" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-dx12-alloc/DirectX-Headers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-engine/SDL2-builds" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-engine/SDL2-builds/submodules/SDL" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-pix-raw/WinPixEventRuntime" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-quickjs-sys/QuickJSNG-builds" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-quickjs-sys/QuickJSNG-builds/quickjs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-quickjs-sys/QuickJSNG-builds/quickjs/test262" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-vulkan-alloc/Vulkan-Headers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/engine/aleph-vulkan-alloc/VulkanMemoryAllocator" vcs="Git" />
   </component>
 </project>
