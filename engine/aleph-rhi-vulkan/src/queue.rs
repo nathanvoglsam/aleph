@@ -31,6 +31,7 @@ use std::any::TypeId;
 use std::mem::transmute;
 use std::ptr;
 use std::ptr::NonNull;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
@@ -43,8 +44,10 @@ use parking_lot::Mutex;
 use crate::command_list::{CommandList, ListState};
 use crate::device::{Device, FreeCommandList};
 use crate::fence::Fence;
+use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::unwrap;
 use crate::semaphore::Semaphore;
+use crate::swap_image::SwapImage;
 
 pub struct Queue {
     pub(crate) _this: AnyWeak<Self>,
@@ -243,9 +246,10 @@ impl IQueue for Queue {
                     let device = self._device.upgrade().unwrap();
                     device.swap_semaphore_pool.push(v.swap_ready_semaphore);
                 }
-                if !v.swap_work_semaphore.is_null() {
-                    let device = self._device.upgrade().unwrap();
-                    device.swap_semaphore_pool.push(v.swap_work_semaphore);
+
+                if let Some(pool) = v.swap_work_semaphore_pool.as_deref() {
+                    assert!(!v.swap_work_semaphore.is_null());
+                    pool.push(v.swap_work_semaphore);
                 }
 
                 // Grab the pool for the specific queue type. Don't want to get different
@@ -294,80 +298,11 @@ impl IQueue for Queue {
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
         let device = self._device.upgrade().unwrap();
 
-        let mut submission = QueueSubmission {
-            swap_ready_semaphore: vk::Semaphore::null(),
-            swap_work_semaphore: vk::Semaphore::null(),
-            index: 0,
-            lists: Vec::with_capacity(desc.command_lists.len()),
-        };
+        let mut manager = SubmissionManager::new(desc);
+        let submission = manager.prepare_submission(self, desc)?;
 
-        // Translate the wait semaphore info
-        //
-        // +1 capacity to reserve space for the optional swap chain ready semaphore
-        let mut wait_semaphores = Vec::with_capacity(desc.wait_semaphores.len() + 1);
-        let mut wait_values = Vec::with_capacity(desc.wait_semaphores.len() + 1);
-        let mut wait_dst_stage_masks = Vec::with_capacity(desc.wait_semaphores.len() + 1);
-        for semaphore in desc.wait_semaphores {
-            let semaphore = Semaphore::get(semaphore);
-            wait_semaphores.push(semaphore.semaphore);
-            wait_values.push(0);
-            wait_dst_stage_masks.push(vk::PipelineStageFlags::ALL_COMMANDS);
-        }
-
-        // Translate the signal semaphore info.
-        //
-        // +2 capacity is to have space for the queue's internal timeline semaphore as well as the
-        // potential swap image associated semaphore.
-        let mut signal_semaphores = Vec::with_capacity(desc.signal_semaphores.len() + 2);
-        let mut signal_values = Vec::with_capacity(desc.signal_semaphores.len() + 2);
-        for semaphore in desc.signal_semaphores {
-            let semaphore = Semaphore::get(semaphore);
-            signal_semaphores.push(semaphore.semaphore);
-            signal_values.push(0);
-        }
-
-        // Grab a free semaphore from the central pool and set it up to be signalled when this
-        // command submission has completed. This semaphore will be added to the set associated with
-        // the given swap image, and will be waited on when the swap image is queued for
-        // presentation.
-        if let Some(swap_image) = desc.swap_image {
-            let swap_image = unwrap::swap_image(swap_image);
-
-            submission.swap_ready_semaphore = swap_image.ready_semaphore;
-            wait_semaphores.push(submission.swap_ready_semaphore);
-            wait_values.push(0);
-            wait_dst_stage_masks.push(vk::PipelineStageFlags::ALL_COMMANDS);
-
-            submission.swap_work_semaphore =
-                unsafe { device.swap_semaphore_pool.get(&device.device) };
-            signal_semaphores.push(submission.swap_work_semaphore);
-            signal_values.push(0);
-
-            let mut work_semaphores = swap_image.work_semaphores.lock();
-            work_semaphores.push(submission.swap_work_semaphore);
-        }
-
-        // We reserved space for one extra signal semaphore, which is our special timeline semaphore
-        // that we use for tracking which submissions are still in flight on the queue. We add that
-        // to the end of the signal list with the next computed submission index.
-        submission.index = self.next_submission_index();
-        signal_semaphores.push(self.semaphore);
-        signal_values.push(submission.index);
-
-        let mut command_buffers = Vec::with_capacity(desc.command_lists.len());
-        for list in desc.command_lists {
-            let list = list.take().unwrap();
-            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
-            command_buffers.push(list.buffer);
-            submission.lists.push(list);
-        }
-
-        // Make sure all the lists are in the correct state for submission
-        for list in submission.lists.iter() {
-            if list.state != ListState::Closed {
-                return Err(QueueSubmitError::InvalidCommandListState);
-            }
-        }
+        let mut timeline_info = manager.timeline_info();
+        let info = manager.submit_info(&mut timeline_info);
 
         // Signal the fence, if one is provided, to let CPU know the submitted commands are
         // now fully retired.
@@ -376,16 +311,6 @@ impl IQueue for Queue {
             .map(Fence::get)
             .map(|v| v.fence)
             .unwrap_or(vk::Fence::null());
-
-        let mut timeline_info = vk::TimelineSemaphoreSubmitInfo::default()
-            .wait_semaphore_values(&wait_values)
-            .signal_semaphore_values(&signal_values);
-        let info = vk::SubmitInfo::default()
-            .wait_semaphores(&wait_semaphores)
-            .wait_dst_stage_mask(&wait_dst_stage_masks)
-            .signal_semaphores(&signal_semaphores)
-            .command_buffers(&command_buffers)
-            .push_next(&mut timeline_info);
 
         unsafe {
             let _lock = self.submit_lock.lock();
@@ -556,10 +481,194 @@ pub struct QueueSubmission {
     /// This semaphore will be signalled when the queue submission is complete.
     pub swap_work_semaphore: vk::Semaphore,
 
+    /// Handle to the semaphore pool we have to place the 'work' semaphores into. These will be
+    /// waited by a present call which has some very inconvenient properties so they must be handled
+    /// separately than the ready semaphores.
+    pub swap_work_semaphore_pool: Option<Arc<SemaphorePool>>,
+
     /// The index of the queue submission. Used for tracking when the work has been retired
     pub index: u64,
 
     /// We separate the command lists in the submission into their own list so they can be easily
     /// filtered out and recycled later
     pub lists: Vec<Box<CommandList>>,
+}
+
+pub struct SubmissionManager<'a> {
+    pub wait_semaphores: Vec<vk::Semaphore>,
+    pub wait_values: Vec<u64>,
+    pub wait_dst_stage_masks: Vec<vk::PipelineStageFlags>,
+    pub signal_semaphores: Vec<vk::Semaphore>,
+    pub signal_values: Vec<u64>,
+    pub command_buffers: Vec<vk::CommandBuffer>,
+    pub swap_image: Option<&'a SwapImage>,
+}
+
+impl<'a> SubmissionManager<'a> {
+    /// Constructs a new [`SubmissionSemaphoreManager`] with space in the internal lists reserved
+    /// based on the given queue submission description
+    pub fn new(desc: &'a QueueSubmitDesc<'a>) -> Self {
+        // Reserve space for 1 semaphore for each caller provided 'wait_semaphore'. We add space for
+        // one extra semaphore if the caller is attaching a swap image so that we can wait for the
+        // image acquisition operation.
+        let caller_wait_num = desc.wait_semaphores.len();
+        let swap_wait_num = if desc.swap_image.is_some() { 1 } else { 0 };
+        let wait_num = caller_wait_num + swap_wait_num;
+
+        // Reserve space for 1 semaphore for each caller provided 'signal_semaphore'. We also add
+        // space for an extra internal timeline semaphore that is used by the queue to track what
+        // command lists have completed. A further entry is reserved if a swap image is attached to
+        // signal a semaphore that the present operation will wait on.
+        let caller_signal_num = desc.signal_semaphores.len();
+        let internal_signal_num = 1;
+        let swap_signal_num = if desc.swap_image.is_some() { 1 } else { 0 };
+        let signal_num = caller_signal_num + internal_signal_num + swap_signal_num;
+
+        let wait_semaphores = Vec::with_capacity(wait_num);
+        let wait_values = Vec::with_capacity(wait_num);
+        let wait_dst_stage_masks = Vec::with_capacity(wait_num);
+        let signal_semaphores = Vec::with_capacity(signal_num);
+        let signal_values = Vec::with_capacity(signal_num);
+        let command_buffers = Vec::with_capacity(desc.command_lists.len());
+        let swap_image = desc.swap_image.map(unwrap::swap_image);
+
+        Self {
+            wait_semaphores,
+            wait_values,
+            wait_dst_stage_masks,
+            signal_semaphores,
+            signal_values,
+            command_buffers,
+            swap_image,
+        }
+    }
+
+    pub fn prepare_submission(
+        &mut self,
+        queue: &Queue,
+        desc: &QueueSubmitDesc,
+    ) -> Result<QueueSubmission, QueueSubmitError> {
+        let mut submission = QueueSubmission {
+            swap_ready_semaphore: vk::Semaphore::null(),
+            swap_work_semaphore: vk::Semaphore::null(),
+            swap_work_semaphore_pool: None,
+            index: 0,
+            lists: Vec::with_capacity(desc.command_lists.len()),
+        };
+
+        self.handle_command_lists(desc, &mut submission)?;
+        self.handle_api_semaphores(desc);
+        self.handle_internal_semaphores(queue, &mut submission);
+        self.handle_swap_semaphores(&mut submission);
+
+        Ok(submission)
+    }
+
+    pub fn timeline_info(&self) -> vk::TimelineSemaphoreSubmitInfo {
+        vk::TimelineSemaphoreSubmitInfo::default()
+            .wait_semaphore_values(&self.wait_values)
+            .signal_semaphore_values(&self.signal_values)
+    }
+
+    pub fn submit_info<'b>(
+        &'b self,
+        timeline_info: &'b mut vk::TimelineSemaphoreSubmitInfo,
+    ) -> vk::SubmitInfo<'b> {
+        vk::SubmitInfo::default()
+            .wait_semaphores(&self.wait_semaphores)
+            .wait_dst_stage_mask(&self.wait_dst_stage_masks)
+            .signal_semaphores(&self.signal_semaphores)
+            .command_buffers(&self.command_buffers)
+            .push_next(timeline_info)
+    }
+
+    /// Handles adding all the command lists provided in the submission desc into both the
+    /// submission tracker object as well as the internal 'vk::CommandBuffer' list that gets passed
+    /// to the vk api call.
+    fn handle_command_lists(
+        &mut self,
+        desc: &QueueSubmitDesc,
+        submission: &mut QueueSubmission,
+    ) -> Result<(), QueueSubmitError> {
+        for list in desc.command_lists {
+            let list = list.take().unwrap();
+            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
+            self.command_buffers.push(list.buffer);
+            submission.lists.push(list);
+        }
+
+        // Make sure all the lists are in the correct state for submission
+        for list in submission.lists.iter() {
+            if list.state != ListState::Closed {
+                return Err(QueueSubmitError::InvalidCommandListState);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// This function will add all API level semaphores that are provided from the caller. These
+    /// are handled differently from the internal semaphores that are used for synchronizing inside
+    /// the API implementation.
+    fn handle_api_semaphores(&mut self, desc: &QueueSubmitDesc) {
+        for semaphore in desc.wait_semaphores {
+            let semaphore = Semaphore::get(semaphore);
+            self.wait_on_binary_semaphore(semaphore.semaphore);
+        }
+
+        for semaphore in desc.signal_semaphores {
+            let semaphore = Semaphore::get(semaphore);
+            self.signal_binary_semaphore(semaphore.semaphore);
+        }
+    }
+
+    /// This function will handle the queue's internal semaphores. This is, specifically, a timeline
+    /// semaphore that is used to track which submissions are complete on the CPU. This is always
+    /// inserted into every submission and is used by the 'garbage_collect' calls to know what GPU
+    /// work has completed.
+    fn handle_internal_semaphores(&mut self, queue: &Queue, submission: &mut QueueSubmission) {
+        submission.index = queue.next_submission_index();
+        self.signal_timeline_semaphore(queue.semaphore, submission.index);
+    }
+
+    /// This function handles any semaphores the swap chain system may need to insert. These are not
+    /// always inserted as not all submissions will be associated with a swap image.
+    fn handle_swap_semaphores(&mut self, submission: &mut QueueSubmission) {
+        if let Some(swap_image) = self.swap_image {
+            let device = &swap_image.swap_chain.device.device;
+
+            let mut wait_semaphores = swap_image.work_semaphores.lock();
+
+            // We take the ready semaphore from the swap image, leaving a null semaphore in its
+            // place. This way only the first submission on a queue will wait on the semaphore and
+            // we don't end up waiting multiple times, which is not correct.
+            submission.swap_ready_semaphore = swap_image.take_ready_semaphore();
+            if !submission.swap_ready_semaphore.is_null() {
+                self.wait_on_binary_semaphore(submission.swap_ready_semaphore);
+            }
+
+            submission.swap_work_semaphore = unsafe { swap_image.semaphore_pool.get(device) };
+            self.signal_binary_semaphore(submission.swap_work_semaphore);
+            wait_semaphores.push(submission.swap_work_semaphore);
+
+            submission.swap_work_semaphore_pool = Some(swap_image.semaphore_pool.clone());
+        }
+    }
+
+    fn wait_on_binary_semaphore(&mut self, semaphore: vk::Semaphore) {
+        self.wait_semaphores.push(semaphore);
+        self.wait_values.push(0);
+        self.wait_dst_stage_masks
+            .push(vk::PipelineStageFlags::ALL_COMMANDS);
+    }
+
+    fn signal_binary_semaphore(&mut self, semaphore: vk::Semaphore) {
+        self.signal_semaphores.push(semaphore);
+        self.signal_values.push(0);
+    }
+
+    fn signal_timeline_semaphore(&mut self, semaphore: vk::Semaphore, value: u64) {
+        self.signal_semaphores.push(semaphore);
+        self.signal_values.push(value);
+    }
 }

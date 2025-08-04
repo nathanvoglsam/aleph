@@ -28,20 +28,24 @@
 //
 
 use std::any::TypeId;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use ash::vk;
+use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
+use crate::internal::semaphore_pool::SemaphorePool;
 use crate::swap_chain::SwapChain;
 
 pub struct SwapImage {
     pub(crate) swap_chain: AnyArc<SwapChain>,
     pub(crate) index: u32,
     pub(crate) texture: Option<TextureHandle>,
-    pub(crate) ready_semaphore: vk::Semaphore,
+    pub(crate) ready_semaphore: AtomicU64,
     pub(crate) work_semaphores: Mutex<Vec<vk::Semaphore>>,
+    pub(crate) semaphore_pool: Arc<SemaphorePool>,
 }
 
 declare_interfaces!(SwapImage, [ISwapImage]);
@@ -59,5 +63,12 @@ impl ISwapImage for SwapImage {
 
     fn texture_desc(&self) -> &TextureDesc {
         self.swap_chain.device.get_texture_desc(self.texture())
+    }
+}
+
+impl SwapImage {
+    pub fn take_ready_semaphore(&self) -> vk::Semaphore {
+        let out = self.ready_semaphore.swap(0, Ordering::Acquire);
+        vk::Semaphore::from_raw(out)
     }
 }

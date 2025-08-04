@@ -29,19 +29,21 @@
 
 use std::any::TypeId;
 use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_nstr::{NStr, nstr};
 use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
-use ash::vk;
+use ash::vk::{self, Handle};
 use parking_lot::Mutex;
 
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::{present_mode_to_vk, texture_format_to_vk};
 use crate::internal::queue_present_support::QueuePresentSupportFlags;
+use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::set_name::set_name_nstr;
 use crate::surface::Surface;
 use crate::swap_image::SwapImage;
@@ -153,12 +155,15 @@ impl ISwapChain for SwapChain {
                 let texture = ArcObject::from_object(texture);
                 let texture = unsafe { TextureHandle::new(texture) };
 
+                let semaphore_pool = inner.semaphore_pools[i as usize].clone();
+
                 let swap_image = AnyArc::new(SwapImage {
                     swap_chain: self.this.upgrade().unwrap(),
                     index: i,
                     texture: Some(texture),
-                    ready_semaphore,
+                    ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
                     work_semaphores: Mutex::new(Vec::new()),
+                    semaphore_pool,
                 });
                 let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
                 if sub_optimal {
@@ -319,12 +324,22 @@ impl SwapChain {
             })
             .collect();
 
+        for mut pool in inner.semaphore_pools.drain(..) {
+            let pool = Arc::get_mut(&mut pool).unwrap();
+            unsafe { pool.destroy(&self.device.device) };
+        }
+
+        let semaphore_pools: Vec<_> = std::iter::repeat_n((), images.len())
+            .map(|_| Arc::new(SemaphorePool::new()))
+            .collect();
+
         inner.extent = extents;
         inner.format = config.format;
         inner.vk_format = format;
         inner.color_space = color_space;
         inner.vk_present_mode = present_mode;
         inner.images = images;
+        inner.semaphore_pools = semaphore_pools;
 
         Ok(())
     }
@@ -433,11 +448,17 @@ impl SwapChain {
 
 impl Drop for SwapChain {
     fn drop(&mut self) {
-        let inner = self.inner.lock();
+        let inner = self.inner.get_mut();
         let loader = self.device.swapchain.as_ref().unwrap();
         unsafe {
             if inner.swap_chain != vk::SwapchainKHR::null() {
                 loader.destroy_swapchain(inner.swap_chain, None);
+            }
+        }
+        unsafe {
+            for mut pool in inner.semaphore_pools.drain(..) {
+                let pool = Arc::get_mut(&mut pool).unwrap();
+                pool.destroy(&self.device.device);
             }
         }
     }
@@ -452,6 +473,7 @@ pub struct SwapChainState {
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
     pub images: Vec<Arc<ArcedObject<Texture>>>,
+    pub semaphore_pools: Vec<Arc<SemaphorePool>>,
 }
 
 impl SwapChainState {
