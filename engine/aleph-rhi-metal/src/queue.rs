@@ -156,7 +156,17 @@ impl IQueue for Queue {
     }
 
     fn wait_idle(&self) {
-        todo!()
+        // Lock access to the queue to ensure nobody submits while we're waiting for all outstanding
+        // work to complete
+        let _lock = self.submit_lock.lock();
+
+        while let Some(mut v) = self.in_flight.pop() {
+            for list in v.lists.drain(..) {
+                unsafe {
+                    list.objects.list.waitUntilCompleted();
+                }
+            }
+        }
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
