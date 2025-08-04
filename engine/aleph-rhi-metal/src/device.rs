@@ -145,193 +145,189 @@ impl IDevice for Device {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        let mtl_desc = MTLRenderPipelineDescriptor::new();
 
-            let mtl_desc = MTLRenderPipelineDescriptor::new();
-
-            for stage in desc.shader_stages {
-                match stage.stage {
-                    ShaderType::Compute => panic!("Graphics pipelines can't use compute shaders!"),
-                    ShaderType::Vertex => {
-                        // todo: get this from the shader bytes
-                        mtl_desc.setVertexFunction(None);
-                    }
-                    ShaderType::Hull => unimplemented!(),
-                    ShaderType::Domain => unimplemented!(),
-                    ShaderType::Geometry => unimplemented!(),
-                    ShaderType::Fragment => {
-                        // todo: get this from the shader bytes
-                        mtl_desc.setFragmentFunction(None);
-                    }
-                    ShaderType::Amplification => unimplemented!(),
-                    ShaderType::Mesh => unimplemented!(),
+        for stage in desc.shader_stages {
+            match stage.stage {
+                ShaderType::Compute => panic!("Graphics pipelines can't use compute shaders!"),
+                ShaderType::Vertex => {
+                    // todo: get this from the shader bytes
+                    mtl_desc.setVertexFunction(None);
                 }
+                ShaderType::Hull => unimplemented!(),
+                ShaderType::Domain => unimplemented!(),
+                ShaderType::Geometry => unimplemented!(),
+                ShaderType::Fragment => {
+                    // todo: get this from the shader bytes
+                    mtl_desc.setFragmentFunction(None);
+                }
+                ShaderType::Amplification => unimplemented!(),
+                ShaderType::Mesh => unimplemented!(),
+            }
+        }
+
+        let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+
+        // vertex_layout: &'a VertexInputStateDesc<'a>,
+        // TODO
+
+        let primitive_topology = desc.input_assembly_state.primitive_topology;
+        let primitive_type = conv::primitive_topology_to_mtl(primitive_topology);
+        unsafe {
+            let mtl_topology = conv::primitive_topology_to_mtl_class(primitive_topology);
+            mtl_desc.setInputPrimitiveTopology(mtl_topology);
+        }
+
+        let cull_mode = conv::cull_mode_to_mtl(desc.rasterizer_state.cull_mode);
+        let front_face = conv::front_face_order_to_mtl(desc.rasterizer_state.front_face);
+        let polygon_mode = conv::polygon_mode_to_mtl(desc.rasterizer_state.polygon_mode);
+        let depth_bias = desc.rasterizer_state.depth_bias;
+        let depth_bias_clamp = desc.rasterizer_state.depth_bias_clamp;
+        let depth_bias_slope_factor = desc.rasterizer_state.depth_bias_slope_factor;
+
+        // TODO depth bounds
+        let mtl_depth_desc = unsafe { MTLDepthStencilDescriptor::new() };
+
+        // 'depth_test = false' just decays to 'always'
+        let compare_fn = match (
+            desc.depth_stencil_state.depth_test,
+            desc.depth_stencil_state.depth_compare_op,
+        ) {
+            (true, v) => conv::compare_op_to_mtl(v),
+            (false, _) => MTLCompareFunction::Always,
+        };
+        mtl_depth_desc.setDepthCompareFunction(compare_fn);
+        mtl_depth_desc.setDepthWriteEnabled(desc.depth_stencil_state.depth_write);
+
+        fn apply_stencil_op_state(to: &MTLStencilDescriptor, v: &StencilOpState) {
+            to.setStencilFailureOperation(conv::stencil_op_to_mtl(v.fail_op));
+            to.setDepthStencilPassOperation(conv::stencil_op_to_mtl(v.pass_op));
+            to.setDepthFailureOperation(conv::stencil_op_to_mtl(v.depth_fail_op));
+            to.setStencilCompareFunction(conv::compare_op_to_mtl(v.compare_op));
+        }
+        if desc.depth_stencil_state.stencil_test {
+            let front = unsafe { MTLStencilDescriptor::new() };
+            front.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
+            front.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
+            apply_stencil_op_state(&front, &desc.depth_stencil_state.stencil_front);
+            mtl_depth_desc.setFrontFaceStencil(Some(&front));
+
+            let back = unsafe { MTLStencilDescriptor::new() };
+            back.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
+            back.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
+            apply_stencil_op_state(&back, &desc.depth_stencil_state.stencil_back);
+            mtl_depth_desc.setBackFaceStencil(Some(&back));
+        }
+
+        let depth_stencil_state = self
+            .device
+            .newDepthStencilStateWithDescriptor(&mtl_depth_desc);
+        let depth_stencil_state = match depth_stencil_state {
+            Some(v) => v,
+            None => {
+                log::error!(
+                    "Failed to create depth stencil state for pipeline! Reason: {}",
+                    "unknown"
+                );
+                return Err(PipelineCreateError::Platform);
+            }
+        };
+
+        let attachments = mtl_desc.colorAttachments();
+        for (i, (format, blend)) in desc
+            .render_target_formats
+            .iter()
+            .zip(desc.blend_state.attachments)
+            .enumerate()
+        {
+            let mtl_attachment = unsafe { MTLRenderPipelineColorAttachmentDescriptor::new() };
+
+            mtl_attachment.setPixelFormat(conv::format_to_pixel_mtl(*format));
+            mtl_attachment.setWriteMask(conv::write_mask_to_mtl(blend.color_write_mask));
+
+            if blend.blend_enabled {
+                mtl_attachment.setBlendingEnabled(blend.blend_enabled);
+
+                let v = conv::blend_factor_to_mtl(blend.src_factor);
+                mtl_attachment.setSourceRGBBlendFactor(v);
+
+                let v = conv::blend_factor_to_mtl(blend.dst_factor);
+                mtl_attachment.setDestinationRGBBlendFactor(v);
+
+                let v = conv::alpha_blend_factor_to_mtl(blend.alpha_src_factor);
+                mtl_attachment.setSourceAlphaBlendFactor(v);
+
+                let v = conv::alpha_blend_factor_to_mtl(blend.alpha_dst_factor);
+                mtl_attachment.setDestinationAlphaBlendFactor(v);
+
+                let v = conv::blend_op_to_mtl(blend.blend_op);
+                mtl_attachment.setRgbBlendOperation(v);
+
+                let v = conv::blend_op_to_mtl(blend.alpha_blend_op);
+                mtl_attachment.setAlphaBlendOperation(v);
             }
 
-            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
-
-            // vertex_layout: &'a VertexInputStateDesc<'a>,
-            // TODO
-
-            let primitive_topology = desc.input_assembly_state.primitive_topology;
-            let primitive_type = conv::primitive_topology_to_mtl(primitive_topology);
             unsafe {
-                let mtl_topology = conv::primitive_topology_to_mtl_class(primitive_topology);
-                mtl_desc.setInputPrimitiveTopology(mtl_topology);
+                attachments.setObject_atIndexedSubscript(Some(&mtl_attachment), i);
             }
+        }
 
-            let cull_mode = conv::cull_mode_to_mtl(desc.rasterizer_state.cull_mode);
-            let front_face = conv::front_face_order_to_mtl(desc.rasterizer_state.front_face);
-            let polygon_mode = conv::polygon_mode_to_mtl(desc.rasterizer_state.polygon_mode);
-            let depth_bias = desc.rasterizer_state.depth_bias;
-            let depth_bias_clamp = desc.rasterizer_state.depth_bias_clamp;
-            let depth_bias_slope_factor = desc.rasterizer_state.depth_bias_slope_factor;
+        if let Some(fmt) = desc.depth_stencil_format {
+            let mtl_format = conv::format_to_pixel_mtl(fmt);
+            mtl_desc.setDepthAttachmentPixelFormat(mtl_format);
 
-            // TODO depth bounds
-            let mtl_depth_desc = unsafe { MTLDepthStencilDescriptor::new() };
-
-            // 'depth_test = false' just decays to 'always'
-            let compare_fn = match (
-                desc.depth_stencil_state.depth_test,
-                desc.depth_stencil_state.depth_compare_op,
-            ) {
-                (true, v) => conv::compare_op_to_mtl(v),
-                (false, _) => MTLCompareFunction::Always,
-            };
-            mtl_depth_desc.setDepthCompareFunction(compare_fn);
-            mtl_depth_desc.setDepthWriteEnabled(desc.depth_stencil_state.depth_write);
-
-            fn apply_stencil_op_state(to: &MTLStencilDescriptor, v: &StencilOpState) {
-                to.setStencilFailureOperation(conv::stencil_op_to_mtl(v.fail_op));
-                to.setDepthStencilPassOperation(conv::stencil_op_to_mtl(v.pass_op));
-                to.setDepthFailureOperation(conv::stencil_op_to_mtl(v.depth_fail_op));
-                to.setStencilCompareFunction(conv::compare_op_to_mtl(v.compare_op));
+            if fmt.is_stencil() {
+                mtl_desc.setStencilAttachmentPixelFormat(mtl_format);
             }
-            if desc.depth_stencil_state.stencil_test {
-                let front = unsafe { MTLStencilDescriptor::new() };
-                front.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
-                front.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
-                apply_stencil_op_state(&front, &desc.depth_stencil_state.stencil_front);
-                mtl_depth_desc.setFrontFaceStencil(Some(&front));
+        }
 
-                let back = unsafe { MTLStencilDescriptor::new() };
-                back.setReadMask(desc.depth_stencil_state.stencil_read_mask as u32);
-                back.setWriteMask(desc.depth_stencil_state.stencil_write_mask as u32);
-                apply_stencil_op_state(&back, &desc.depth_stencil_state.stencil_back);
-                mtl_depth_desc.setBackFaceStencil(Some(&back));
+        if let Some(name) = desc.name
+            && self.context.debug
+        {
+            let mtl_name = NSString::from_str(name);
+            mtl_desc.setLabel(Some(&mtl_name));
+        }
+
+        if self.context.validation {
+            unsafe {
+                mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
             }
+        }
 
-            let depth_stencil_state = self
-                .device
-                .newDepthStencilStateWithDescriptor(&mtl_depth_desc);
-            let depth_stencil_state = match depth_stencil_state {
-                Some(v) => v,
-                None => {
-                    log::error!(
-                        "Failed to create depth stencil state for pipeline! Reason: {}",
-                        "unknown"
-                    );
-                    return Err(PipelineCreateError::Platform);
-                }
-            };
-
-            let attachments = mtl_desc.colorAttachments();
-            for (i, (format, blend)) in desc
-                .render_target_formats
-                .iter()
-                .zip(desc.blend_state.attachments)
-                .enumerate()
-            {
-                let mtl_attachment = unsafe { MTLRenderPipelineColorAttachmentDescriptor::new() };
-
-                mtl_attachment.setPixelFormat(conv::format_to_pixel_mtl(*format));
-                mtl_attachment.setWriteMask(conv::write_mask_to_mtl(blend.color_write_mask));
-
-                if blend.blend_enabled {
-                    mtl_attachment.setBlendingEnabled(blend.blend_enabled);
-
-                    let v = conv::blend_factor_to_mtl(blend.src_factor);
-                    mtl_attachment.setSourceRGBBlendFactor(v);
-
-                    let v = conv::blend_factor_to_mtl(blend.dst_factor);
-                    mtl_attachment.setDestinationRGBBlendFactor(v);
-
-                    let v = conv::alpha_blend_factor_to_mtl(blend.alpha_src_factor);
-                    mtl_attachment.setSourceAlphaBlendFactor(v);
-
-                    let v = conv::alpha_blend_factor_to_mtl(blend.alpha_dst_factor);
-                    mtl_attachment.setDestinationAlphaBlendFactor(v);
-
-                    let v = conv::blend_op_to_mtl(blend.blend_op);
-                    mtl_attachment.setRgbBlendOperation(v);
-
-                    let v = conv::blend_op_to_mtl(blend.alpha_blend_op);
-                    mtl_attachment.setAlphaBlendOperation(v);
-                }
-
-                unsafe {
-                    attachments.setObject_atIndexedSubscript(Some(&mtl_attachment), i);
-                }
+        let pipeline = self
+            .device
+            .newRenderPipelineStateWithDescriptor_error(&mtl_desc);
+        let pipeline = match pipeline {
+            Ok(v) => v,
+            Err(_err) => {
+                log::error!(
+                    "Failed to create render pipeline state! Reason: {}",
+                    "unknown"
+                );
+                return Err(PipelineCreateError::Platform);
             }
+        };
 
-            if let Some(fmt) = desc.depth_stencil_format {
-                let mtl_format = conv::format_to_pixel_mtl(fmt);
-                mtl_desc.setDepthAttachmentPixelFormat(mtl_format);
-
-                if fmt.is_stencil() {
-                    mtl_desc.setStencilAttachmentPixelFormat(mtl_format);
-                }
-            }
-
-            if let Some(name) = desc.name
-                && self.context.debug
-            {
-                let mtl_name = NSString::from_str(name);
-                mtl_desc.setLabel(Some(&mtl_name));
-            }
-
-            if self.context.validation {
-                unsafe {
-                    mtl_desc.setShaderValidation(MTLShaderValidation::Enabled);
-                }
-            }
-
-            let pipeline = self
-                .device
-                .newRenderPipelineStateWithDescriptor_error(&mtl_desc);
-            let pipeline = match pipeline {
-                Ok(v) => v,
-                Err(_err) => {
-                    log::error!(
-                        "Failed to create render pipeline state! Reason: {}",
-                        "unknown"
-                    );
-                    return Err(PipelineCreateError::Platform);
-                }
-            };
-
-            let out = GraphicsPipeline {
-                _device: self.this.upgrade().unwrap(),
-                _pipeline_layout: pipeline_layout,
-                id: self.object_counter.next_graphics_pipeline(),
-                objects: GraphicsPipelineObjects {
-                    pipeline,
-                    depth_stencil_state,
-                },
-                info: CachedGraphicsInfo {
-                    primitive_type,
-                    cull_mode,
-                    front_face,
-                    polygon_mode,
-                    depth_bias,
-                    depth_bias_clamp,
-                    depth_bias_slope_factor,
-                },
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(GraphicsPipelineHandle::new(out)) }
-        })
+        let out = GraphicsPipeline {
+            _device: self.this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout,
+            id: self.object_counter.next_graphics_pipeline(),
+            objects: GraphicsPipelineObjects {
+                pipeline,
+                depth_stencil_state,
+            },
+            info: CachedGraphicsInfo {
+                primitive_type,
+                cull_mode,
+                front_face,
+                polygon_mode,
+                depth_bias,
+                depth_bias_clamp,
+                depth_bias_slope_factor,
+            },
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(GraphicsPipelineHandle::new(out)) }
     }
 
     // ========================================================================================== //
