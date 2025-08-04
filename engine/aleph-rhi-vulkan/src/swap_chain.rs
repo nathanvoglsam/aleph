@@ -160,7 +160,7 @@ impl ISwapChain for SwapChain {
                 let swap_image = AnyArc::new(SwapImage {
                     swap_chain: self.this.upgrade().unwrap(),
                     index: i,
-                    texture: Some(texture),
+                    texture,
                     ready_semaphore: AtomicU64::new(ready_semaphore.as_raw()),
                     work_semaphores: Mutex::new(Vec::new()),
                     semaphore_pool,

@@ -42,7 +42,7 @@ use crate::swap_chain::SwapChain;
 pub struct SwapImage {
     pub(crate) swap_chain: AnyArc<SwapChain>,
     pub(crate) index: u32,
-    pub(crate) texture: Option<TextureHandle>,
+    pub(crate) texture: TextureHandle,
     pub(crate) ready_semaphore: AtomicU64,
     pub(crate) work_semaphores: Mutex<Vec<vk::Semaphore>>,
     pub(crate) semaphore_pool: Arc<SemaphorePool>,
@@ -58,11 +58,11 @@ impl IGetPlatformInterface for SwapImage {
 
 impl ISwapImage for SwapImage {
     fn texture(&self) -> &TextureHandle {
-        self.texture.as_ref().unwrap()
+        &self.texture
     }
 
     fn texture_desc(&self) -> &TextureDesc {
-        self.swap_chain.device.get_texture_desc(self.texture())
+        self.swap_chain.device.get_texture_desc(&self.texture)
     }
 }
 
