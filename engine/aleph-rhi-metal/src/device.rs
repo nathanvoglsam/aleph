@@ -675,8 +675,15 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn create_semaphore(&self) -> Result<SemaphoreHandle, SemaphoreCreateError> {
+        let event = match self.device.newSharedEvent() {
+            Some(v) => v,
+            None => return Err(SemaphoreCreateError::Platform),
+        };
+
         let semaphore = Semaphore {
             _device: self.this.upgrade().unwrap(),
+            objects: SemaphoreObjects { event },
+            value: AtomicU64::new(1),
         };
         let semaphore = ArcedObject::new_arc_opaque(semaphore);
         unsafe { Ok(SemaphoreHandle::new(semaphore)) }
