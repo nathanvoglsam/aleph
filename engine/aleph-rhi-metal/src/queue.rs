@@ -54,14 +54,6 @@ pub struct Queue {
     /// Lock used to serialize submissions to the command queue.
     pub(crate) submit_lock: Mutex<()>,
 
-    /// Flags whether the user is allowed to query the IQueueDebug interface. Support is only
-    /// enabled when a debug context is created.
-    pub(crate) is_queue_debug_available: bool,
-
-    /// Internal tracker used to mark the depth of the debug marker stack. Used to ensure that the
-    /// user doesn't call 'end_event' without an associated 'begin_event'.
-    pub(crate) debug_marker_depth: AtomicU64,
-
     /// The index of the most recent submission to the queue.
     ///
     /// Used to track which submissions are in-flight, used in conjunction with
@@ -85,9 +77,6 @@ impl IAny for Queue {
         unsafe {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
-            }
-            if target == TypeId::of::<dyn IQueueDebug>() && self.is_queue_debug_available {
-                return Some(transmute(self as &dyn IQueueDebug));
             }
             if target == TypeId::of::<dyn IAny>() {
                 return Some(transmute(self as &dyn IAny));
@@ -126,8 +115,6 @@ impl Queue {
             queue_type,
             objects: QueueObjects { queue },
             submit_lock: Mutex::new(()),
-            is_queue_debug_available,
-            debug_marker_depth: Default::default(),
             last_submitted_index: Default::default(),
             last_completed_index: Default::default(),
             in_flight: ArrayQueue::new(256),
