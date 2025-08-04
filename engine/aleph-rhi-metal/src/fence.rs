@@ -43,7 +43,7 @@ pub struct Fence {
     pub(crate) objects: FenceObjects,
 
     /// Monotonically increasing counter that tracks what value a should be signalled or waited
-    /// on when a semaphore is used.
+    /// on when a fence is used.
     ///
     /// This does mean eventually the counter will overflow, but overflowing the u64 counter here
     /// in practice would require a single renderer instance to run for millions of years. We do
@@ -60,32 +60,47 @@ impl Fence {
             .expect("Unknown Fence implementation!")
     }
 
+    /// Returns what value the fence is currently waiting to become signalled via the attached
+    /// MTLEvent object.
+    ///
+    /// This is used internally for [`IDevice::wait_fences`].
     pub fn get_wait_value(&self) -> u64 {
-        // We subtract one, saturating to 0. It is invalid to use a semaphore in
-        // 'wait_semaphores' before first being used as a 'signal_semaphore' in a previous
-        // submission so valid usage guarantees this won't underflow.
+        // We use a saturating sub to protect against an underflow leading to big time sadness. A
+        // default 'value' of 0 would lead to an underflow. If someone were to attempt to wait on
+        // a fence that hadn't been queued to be signalled then the wait value would be u64::MAX.
         //
-        // We saturate instead to simply avoid adding UB for no reason as this would trigger an
-        // integer underflow in this case (as well as a GPU deadlock).
+        // u64::MAX will never be signalled (on a human timeframe anyway), so you will just deadlock
+        // the thread waiting on this value.
         //
-        // The validation layers should catch this
+        // It isn't legal to wait on a fence in this way in aleph-rhi, but the cost of this is low
+        // so I think it's better to protect against a guaranteed deadlock here.
         self.value.load(Ordering::Relaxed).saturating_sub(1)
     }
 
-    pub unsafe fn signal_on_queue(&self) -> Result<(), ()> {
+    /// Increment the internal counter and return the value that should be signalled on a queue
+    /// in order to mark this fence complete.
+    ///
+    /// This is used internally for [`IQueue::submit`].
+    pub fn get_next_signal_value(&self) -> u64 {
         // Fetch add means we get the value we want to signal + increment to the next value fully
         // atomically. The subsequent 'wait' operation will use 'value - 1'.
         let signal_val = self.value.fetch_add(1, Ordering::Relaxed);
 
         // If we somehow managed to run a single renderer instance for 243 million years (assuming
-        // you signalled the same semaphore 2400 times per second) then this will overflow.
+        // you signalled the same fence 2400 times per second) then this will overflow.
         //
         // If you see this panic message, let me know how humanity is going.
         assert_ne!(signal_val, u64::MAX, "Semaphore internal value overflow!");
 
-        //queue.Signal(&self.fence, signal_val)
+        signal_val
+    }
 
-        Ok(())
+    /// Returns if the fence has been signalled
+    pub fn poll_signalled(&self) -> bool {
+        unsafe {
+            let value = self.get_wait_value();
+            self.objects.event.signaledValue() >= value
+        }
     }
 }
 

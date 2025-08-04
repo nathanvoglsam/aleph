@@ -98,6 +98,7 @@ impl IAdapter for Adapter {
                 _adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device: self.objects.device.clone(),
+                listener: MTLSharedEventListener::new(),
                 general_queue: None,
                 compute_queue: None,
                 transfer_queue: None,

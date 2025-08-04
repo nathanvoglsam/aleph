@@ -28,7 +28,10 @@
 //
 
 use std::any::TypeId;
+use std::ptr::NonNull;
+use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::time::Duration;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_object_system::ArcedObject;
@@ -36,12 +39,14 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
+use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
+use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_foundation::NSString;
 use objc2_metal::*;
-use parking_lot::Mutex;
+use parking_lot::{Condvar, Mutex};
 
 use crate::adapter::Adapter;
 use crate::buffer::{Buffer, BufferObjects};
@@ -59,7 +64,7 @@ use crate::pipeline::{
 use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
 use crate::sampler::{Sampler, SamplerObjects};
-use crate::semaphore::Semaphore;
+use crate::semaphore::{Semaphore, SemaphoreObjects};
 use crate::texture::{Texture, TextureObjects};
 
 pub struct Device {
@@ -67,6 +72,7 @@ pub struct Device {
     pub(crate) context: AnyArc<Context>,
     pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: Retained<ProtocolObject<dyn MTLDevice>>,
+    pub(crate) listener: Retained<MTLSharedEventListener>,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
@@ -698,7 +704,132 @@ impl IDevice for Device {
         wait_all: bool,
         timeout: u32,
     ) -> FenceWaitResult {
-        todo!()
+        match fences {
+            // The single fence case can just call a wait function directly.
+            [fence] => {
+                let fence = Fence::get(fence);
+                let result = unsafe {
+                    fence
+                        .objects
+                        .event
+                        .waitUntilSignaledValue_timeoutMS(fence.get_wait_value(), timeout as u64)
+                };
+                if result {
+                    FenceWaitResult::Complete
+                } else {
+                    FenceWaitResult::Timeout
+                }
+            }
+            // The multi-fence case requires some work of our own to group the wait into a
+            // single operation. There's no 'wait multiple' available so we need to use another
+            // sync primitive to get the behavior we want.
+            _ => DEVICE_BUMP.with(|bump| -> FenceWaitResult {
+                let bump = bump.scope();
+
+                let mut inner_fences = BVec::with_capacity_in(fences.len(), bump.allocator());
+                inner_fences.extend(fences.iter().map(|v| Fence::get(v)));
+
+                // We do a speculative poll of the fences to see if we can exit without having
+                // to run through any of the
+                if wait_all {
+                    // For the 'wait all' case we do a pre-check to see if all the fences are
+                    // already signalled. If they are we can early exit without allocating any
+                    // sync objects.
+                    'unsignalled_check: {
+                        for fence in &inner_fences {
+                            if !fence.poll_signalled() {
+                                // If we find an unsignalled fence then we bail from the outer
+                                // block. This prevents us from hitting the 'return' statement
+                                // below.
+                                break 'unsignalled_check;
+                            }
+                        }
+                        // If we escape the loop and don't find any unsignalled fences then
+                        // we can immediately return as the wait conditions are complete.
+                        return FenceWaitResult::Complete;
+                    }
+                } else {
+                    // For the 'wait any' case we do a pre-check to see if any of the fences
+                    // are already signalled. This avoids creating our sync objects for no
+                    // reason.
+                    for fence in &inner_fences {
+                        if fence.poll_signalled() {
+                            // If we find _any_ signalled fence in this case we can immediately
+                            // return as the wait operaiton is complete.
+                            return FenceWaitResult::Complete;
+                        }
+                    }
+                }
+
+                // If we reach this point we have, at minimum, polled that the wait condition
+                // has not yet been met. If the timeout is set to 0 then we can immediately
+                // exit and avoid all of the machinery below. The caller has, after all, asked
+                // to 'wait' for 0ms.
+                if timeout == 0 {
+                    return FenceWaitResult::Timeout;
+                }
+
+                // Construct our condvar that will be used to block the thread that called
+                // IDevice::wait_fences. We adjust the count to wait for based on the 'wait_all'
+                // flag. 'wait_all = true' requires all fences to signal and sets the count to
+                // 'fences.len()'. 'wait_all = false' only requires a single fence to signal so
+                // we set the count to 1.
+                let fence_num =
+                    isize::try_from(fences.len()).expect("Waiting on too many fences. How???????");
+                let wait_count = if wait_all { fence_num } else { 1 };
+                let pair = Arc::new((Mutex::new(wait_count), Condvar::new()));
+
+                // This is our notify closure. This will be sent off into the aether of Metal
+                // and/or Apple's dispatch queue. We update each event underlying our fences to
+                // call our notify function once it becomes signalled.
+                let notify_pair = pair.clone();
+                let notify_block = RcBlock::new(
+                    move |_event: NonNull<ProtocolObject<dyn MTLSharedEvent>>, _value: u64| {
+                        // This code relies on 'notifyListener' calling the closure even if the
+                        // fence is _already_ signalled when attached to the MTLSharedEvent. If it
+                        // doesn't then we may deadlock waiting on a signal that will never come.
+                        let (lock, cvar) = notify_pair.as_ref();
+                        let mut waiting = lock.lock();
+                        *waiting -= 1;
+                        cvar.notify_one();
+                    },
+                );
+
+                // Add a listener to every fence in the set that will notify and ultimately
+                // unblock our waiting thread once all the fences have been signalled.
+                for fence in inner_fences {
+                    unsafe {
+                        // TODO: we need to
+                        // 1) Test that this _drops_ the block once the notification has been called
+                        //    so that we don't leak the Arc
+                        // 2) Test that this calls the block even if the event is already
+                        //    signalled.
+                        let block = RcBlock::into_raw(notify_block.copy());
+                        fence.objects.event.notifyListener_atValue_block(
+                            &self.listener,
+                            fence.get_wait_value(),
+                            block,
+                        );
+                    }
+                }
+
+                // Finally, we wait for the fences to be signalled. This is where we will stall
+                // the thread waiting for the condition to complete.
+                let (lock, cvar) = pair.as_ref();
+                let mut waiting = lock.lock();
+                let result = cvar.wait_while_for(
+                    &mut waiting,
+                    |v| *v > 0,
+                    Duration::from_millis(timeout as u64),
+                );
+
+                if result.timed_out() {
+                    FenceWaitResult::Timeout
+                } else {
+                    FenceWaitResult::Complete
+                }
+            }),
+        }
     }
 
     // ========================================================================================== //
@@ -706,22 +837,15 @@ impl IDevice for Device {
 
     fn poll_fence(&self, fence: &FenceHandle) -> bool {
         let fence = Fence::get(fence);
-        unsafe {
-            // We use MTLSharedEvent::wait with a zero timer to poll the event status. This should
-            // return true if the signalled value is equal to the expected value or higher.
-            let value = fence.get_wait_value();
-            fence
-                .objects
-                .event
-                .waitUntilSignaledValue_timeoutMS(value, 0)
-        }
+        fence.poll_signalled()
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn reset_fences(&self, fences: &[&FenceHandle]) {
-        todo!()
+    fn reset_fences(&self, _fences: &[&FenceHandle]) {
+        // Fence reset is a no-op on metal as a fence is always ready to use. It uses a monotonic
+        // counter to keep the signals and waits correct.
     }
 
     // ========================================================================================== //
