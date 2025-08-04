@@ -395,16 +395,12 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
-
-            let out = DescriptorSetLayout {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_set_layout(),
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
-        })
+        let out = DescriptorSetLayout {
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_set_layout(),
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -414,18 +410,14 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        let layout = DescriptorSetLayout::get_owned(desc.layout);
 
-            let layout = DescriptorSetLayout::get_owned(desc.layout);
+        let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
+            _device: self.this.upgrade().unwrap(),
+            _layout: layout,
+        });
 
-            let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
-                _device: self.this.upgrade().unwrap(),
-                _layout: layout,
-            });
-
-            Ok(pool)
-        })
+        Ok(pool)
     }
 
     // ========================================================================================== //
@@ -435,16 +427,12 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
+        let pool: Box<dyn IDescriptorArena> = Box::new(DescriptorArena {
+            _device: self.this.upgrade().unwrap(),
+            arena: Blink::new(),
+        });
 
-            let pool: Box<dyn IDescriptorArena> = Box::new(DescriptorArena {
-                _device: self.this.upgrade().unwrap(),
-                arena: Blink::new(),
-            });
-
-            Ok(pool)
-        })
+        Ok(pool)
     }
 
     // ========================================================================================== //
@@ -454,16 +442,12 @@ impl IDevice for Device {
         &self,
         desc: &PipelineLayoutDesc,
     ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
-
-            let out = PipelineLayout {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_pipeline_layout(),
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(PipelineLayoutHandle::new(out)) }
-        })
+        let out = PipelineLayout {
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_pipeline_layout(),
+        };
+        let out = ArcedObject::new_arc_opaque(out);
+        unsafe { Ok(PipelineLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
