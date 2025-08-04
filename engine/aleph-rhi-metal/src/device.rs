@@ -126,7 +126,15 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn wait_idle(&self) {
-        todo!()
+        if let Some(queue) = &self.general_queue {
+            queue.wait_idle();
+        }
+        if let Some(queue) = &self.compute_queue {
+            queue.wait_idle();
+        }
+        if let Some(queue) = &self.transfer_queue {
+            queue.wait_idle();
+        }
     }
 
     // ========================================================================================== //
