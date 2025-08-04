@@ -54,16 +54,6 @@ pub struct Queue {
     /// Lock used to serialize submissions to the command queue.
     pub(crate) submit_lock: Mutex<()>,
 
-    /// The index of the most recent submission to the queue.
-    ///
-    /// Used to track which submissions are in-flight, used in conjunction with
-    /// [Queue::last_completed_index].
-    pub(crate) last_submitted_index: AtomicU64,
-
-    /// The index of the submission that is most recently confirmed to have completed. Used to track
-    /// which submissions are in-flight, used in conjunction with [Queue::last_submitted_index].
-    pub(crate) last_completed_index: AtomicU64,
-
     /// A ring-buffer that tracks all currently in flight queue submissions. This is used in
     /// conjunction with [IQueue::garbage_collect] to track when resources are no longer in use on
     /// the GPU timeline and are safe to destroy.
@@ -115,24 +105,10 @@ impl Queue {
             queue_type,
             objects: QueueObjects { queue },
             submit_lock: Mutex::new(()),
-            last_submitted_index: Default::default(),
-            last_completed_index: Default::default(),
             in_flight: ArrayQueue::new(256),
         });
 
         Some(out)
-    }
-
-    pub(crate) fn next_submission_index(&self) -> u64 {
-        // Get the state of last_submitted_index before and after we increment it
-        let old_index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-        let new_index = old_index + 1;
-
-        // This performs an overflow check, if old_index is u64::MAX then the addition will have
-        // caused an overflow and broken our monotonicity requirement.
-        assert_ne!(old_index, u64::MAX, "last_submitted_index integer overflow");
-
-        new_index
     }
 }
 
