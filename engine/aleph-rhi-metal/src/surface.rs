@@ -136,7 +136,8 @@ impl ISurface for Surface {
         let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
             this: v.clone(),
             device: device.this.upgrade().unwrap(),
-            surface: self.this.upgrade().unwrap(),
+            _surface: self.this.upgrade().unwrap(),
+            queue_type: config.present_queue,
             objects: SwapChainObjects {
                 layer: self.objects.layer.clone(),
             },

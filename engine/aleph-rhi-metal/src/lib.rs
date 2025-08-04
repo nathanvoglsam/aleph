@@ -48,6 +48,7 @@ mod sampler;
 mod semaphore;
 mod surface;
 mod swap_chain;
+mod swap_image;
 mod texture;
 
 pub use rhi_backend::{MetalConfig, MetalLoader, RHI_BACKEND_OBJECT};

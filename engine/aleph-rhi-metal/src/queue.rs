@@ -100,7 +100,6 @@ impl Queue {
         // TODO: should this be configurable? metal 4 will make this go away anyway I think?
         let queue = device.device.newCommandQueueWithMaxCommandBufferCount(64)?;
 
-        let is_queue_debug_available = false;
         let out = AnyArc::new_cyclic(|v| Self {
             _this: v.clone(),
             _device: device.this.clone(),
@@ -253,16 +252,13 @@ impl IQueue for Queue {
         swap_image
             .objects
             .list
-            .presentDrawable(&swap_image.objects.drawable);
+            .presentDrawable(swap_image.objects.drawable.as_ref());
 
         Ok(())
     }
 }
 
 pub struct QueueSubmission {
-    /// The index of the queue submission. Used for tracking when the work has been retired
-    pub index: u64,
-
     /// We separate the command lists in the submission into their own list so they can be easily
     /// filtered out and recycled later
     pub lists: Vec<Box<CommandList>>,

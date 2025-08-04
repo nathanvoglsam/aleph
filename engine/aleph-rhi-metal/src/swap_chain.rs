@@ -30,19 +30,26 @@
 use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
+use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
+use blink_alloc::Blink;
 use objc2::rc::Retained;
 use objc2_core_foundation::CGSize;
-use objc2_quartz_core::CAMetalLayer;
+use objc2_metal::MTLCommandQueue;
+use objc2_quartz_core::{CAMetalDrawable, CAMetalLayer};
 use parking_lot::Mutex;
 
 use crate::device::Device;
 use crate::surface::Surface;
+use crate::swap_image::{SwapImage, SwapImageObjects};
+use crate::texture::{Texture, TextureObjects};
 
 pub struct SwapChain {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
-    pub(crate) surface: AnyArc<Surface>,
+    pub(crate) _surface: AnyArc<Surface>,
+    pub(crate) queue_type: QueueType,
     pub(crate) objects: SwapChainObjects,
     pub(crate) inner: Mutex<SwapChainState>,
 }
@@ -70,8 +77,8 @@ impl ISwapChain for SwapChain {
         self.this.weak_count()
     }
 
-    fn present_supported_on_queue(&self, _queue: QueueType) -> bool {
-        true // TODO: is this right?
+    fn present_supported_on_queue(&self, queue: QueueType) -> bool {
+        queue == self.queue_type
     }
 
     fn get_config(&self) -> SwapChainConfiguration {
@@ -112,12 +119,49 @@ impl ISwapChain for SwapChain {
         Ok(out_config)
     }
 
-    fn get_images(&self, images: &mut [Option<TextureHandle>]) {
-        todo!()
-    }
+    unsafe fn acquire_next_image(&self) -> Result<AcquiredImage, ImageAcquireError> {
+        let inner = self.inner.lock();
 
-    unsafe fn acquire_next_image(&self, desc: &AcquireDesc) -> Result<u32, ImageAcquireError> {
-        todo!()
+        let drawable = unsafe { self.objects.layer.nextDrawable().unwrap() };
+
+        let texture = unsafe { drawable.texture() };
+        let texture = Texture {
+            _device: self.device.clone(),
+            id: self.device.object_counter.next_texture(),
+            views: Default::default(),
+            objects: TextureObjects { texture },
+            rtvs: Default::default(),
+            dsvs: Default::default(),
+            image_views: Mutex::new(Blink::new()),
+            desc: OwnedTextureDesc::new(TextureDesc {
+                width: inner.config.width,
+                height: inner.config.height,
+                depth: 1,
+                format: inner.config.format,
+                dimension: TextureDimension::Texture2D,
+                clear_value: None,
+                array_size: 1,
+                mip_levels: 1,
+                sample_count: 1,
+                sample_quality: 0,
+                usage: ResourceUsageFlags::RENDER_TARGET,
+                name: None,
+            }),
+        };
+        let texture = ArcedObject::new_arc_opaque(texture);
+        let texture = unsafe { TextureHandle::new(texture) };
+
+        let queue = self.device.get_queue_internal(self.queue_type).unwrap();
+        let list = queue.objects.queue.commandBuffer().unwrap();
+
+        let swap_image = AnyArc::new(SwapImage {
+            _swap_chain: self.this.upgrade().unwrap(),
+            objects: SwapImageObjects { list, drawable },
+            texture,
+        });
+        let swap_image = AnyArc::map::<dyn ISwapImage, _>(swap_image, |v| v);
+
+        Ok(AcquiredImage::Ok(swap_image))
     }
 }
 

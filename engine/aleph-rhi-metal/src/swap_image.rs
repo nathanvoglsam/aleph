@@ -27,45 +27,47 @@
 // SOFTWARE.
 //
 
+use std::any::TypeId;
+
+use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
-use aleph_rhi_impl_utils::conversion_function;
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2_metal::*;
+use objc2_quartz_core::CAMetalDrawable;
 
-use crate::command_list::CommandList;
-use crate::device::Device;
-use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
-use crate::swap_image::SwapImage;
 
-conversion_function!(
-    ICommandList,
-    CommandList,
-    command_list,
-    command_list_owned,
-    command_list_d,
-    command_list_iter
-);
-conversion_function!(IDevice, Device, device, device_owned, device_d, device_iter);
-conversion_function!(
-    ISurface,
-    Surface,
-    surface,
-    surface_owned,
-    surface_d,
-    surface_iter
-);
-conversion_function!(
-    ISwapChain,
-    SwapChain,
-    swap_chain,
-    swap_chain_owned,
-    swap_chain_d,
-    swap_chain_iter
-);
-conversion_function!(
-    ISwapImage,
-    SwapImage,
-    swap_image,
-    swap_image_owned,
-    swap_image_d,
-    swap_image_iter
-);
+pub struct SwapImage {
+    pub(crate) _swap_chain: AnyArc<SwapChain>,
+    pub(crate) objects: SwapImageObjects,
+    pub(crate) texture: TextureHandle,
+}
+
+declare_interfaces!(SwapImage, [ISwapImage]);
+
+impl IGetPlatformInterface for SwapImage {
+    unsafe fn __query_platform_interface(&self, _target: TypeId, _out: *mut ()) -> Option<()> {
+        None
+    }
+}
+
+impl ISwapImage for SwapImage {
+    fn texture(&self) -> &TextureHandle {
+        &self.texture
+    }
+
+    fn texture_desc(&self) -> &TextureDesc {
+        self._swap_chain.device.get_texture_desc(self.texture())
+    }
+}
+
+/// Wrapper to scope our 'unsafe impl Send+Sync'
+pub struct SwapImageObjects {
+    pub list: Retained<ProtocolObject<dyn MTLCommandBuffer>>,
+    pub drawable: Retained<ProtocolObject<dyn CAMetalDrawable>>,
+}
+
+// Safety: Needed because of 'MTLTexture'
+unsafe impl Send for SwapImage {}
+unsafe impl Sync for SwapImage {}
