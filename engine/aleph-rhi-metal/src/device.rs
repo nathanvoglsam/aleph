@@ -493,6 +493,28 @@ impl IDevice for Device {
 
     fn create_texture(&self, desc: &TextureDesc) -> Result<TextureHandle, TextureCreateError> {
         let mtl_desc = unsafe { MTLTextureDescriptor::new() };
+        unsafe {
+            let (array_len, texture_type) = match (desc.array_size, desc.dimension) {
+                (0, TextureDimension::Texture1D) => (1, MTLTextureType::Type1D),
+                (0, TextureDimension::Texture2D) => (1, MTLTextureType::Type2D),
+                (0, TextureDimension::Texture3D) => (1, MTLTextureType::Type3D),
+                (v, TextureDimension::Texture1D) => (v, MTLTextureType::Type1DArray),
+                (v, TextureDimension::Texture2D) => (v, MTLTextureType::Type2DArray),
+                (_, TextureDimension::Texture3D) => unimplemented!(),
+            };
+            mtl_desc.setTextureType(texture_type);
+            mtl_desc.setPixelFormat(conv::format_to_pixel_mtl(desc.format));
+            mtl_desc.setWidth(desc.width as usize);
+            mtl_desc.setHeight(desc.height as usize);
+            mtl_desc.setDepth(desc.depth as usize);
+            mtl_desc.setMipmapLevelCount(desc.mip_levels as usize);
+            mtl_desc.setArrayLength(array_len as usize);
+            mtl_desc.setUsage(conv::resource_usage_to_texture_usage_mtl(desc.usage));
+            mtl_desc.setStorageMode(MTLStorageMode::Private);
+            mtl_desc.setAllowGPUOptimizedContents(true);
+            mtl_desc.setSampleCount(desc.sample_count as usize);
+        }
+
         let texture = match self.device.newTextureWithDescriptor(&mtl_desc) {
             Some(v) => v,
             None => return Err(TextureCreateError::Platform),
@@ -528,6 +550,7 @@ impl IDevice for Device {
 
         mtl_desc.setLodMinClamp(desc.min_lod);
         mtl_desc.setLodMaxClamp(desc.max_lod);
+        // TODO: LOD BIAS?
 
         if desc.enable_anisotropy {
             mtl_desc.setMaxAnisotropy(desc.max_anisotropy as usize);
