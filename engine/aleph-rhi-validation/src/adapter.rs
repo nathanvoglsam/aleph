@@ -68,12 +68,10 @@ impl IAdapter for ValidationAdapter {
             inner.get_queue(queue_type).map(|q| {
                 // Query the inner queue for support for the debug interface. This controls whether
                 // ValidationQueue can also expose IQueueDebug.
-                let q_debug = q.query_interface::<dyn IQueueDebug>();
                 AnyArc::new_cyclic(move |v| ValidationQueue {
                     _this: v.clone(),
                     _device: device_weak,
                     inner: q,
-                    inner_debug: q_debug,
                     queue_type,
                 })
             })

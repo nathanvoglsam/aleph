@@ -50,9 +50,6 @@ impl IAny for NullQueue {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
             }
-            if target == TypeId::of::<dyn IQueueDebug>() {
-                return Some(transmute(self as &dyn IQueueDebug));
-            }
             if target == TypeId::of::<dyn IAny>() {
                 return Some(transmute(self as &dyn IAny));
             }
@@ -103,12 +100,4 @@ impl IQueue for NullQueue {
     unsafe fn present(&self, _swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
         Ok(())
     }
-}
-
-impl IQueueDebug for NullQueue {
-    fn set_marker(&self, _color: Color, _message: &aleph_nstr::NStr) {}
-
-    fn begin_event(&self, _color: Color, _message: &aleph_nstr::NStr) {}
-
-    fn end_event(&self) {}
 }

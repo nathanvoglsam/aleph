@@ -62,14 +62,6 @@ pub struct Queue {
     /// Lock used to serialize submissions to the command queue.
     pub(crate) submit_lock: Mutex<()>,
 
-    /// Flags whether the user is allowed to query the IQueueDebug interface. Support is only
-    /// enabled when a debug context is created.
-    pub(crate) is_queue_debug_available: bool,
-
-    /// Internal tracker used to mark the depth of the debug marker stack. Used to ensure that the
-    /// user doesn't call 'end_event' without an associated 'begin_event'.
-    pub(crate) debug_marker_depth: AtomicU64,
-
     /// A timeline semaphore that is used for tracking what submissions are in-flight on a GPU
     /// queue. This is used for [Queue::garbage_collect] to determine which submissions are complete
     /// without blocking on the GPU work.
@@ -98,9 +90,6 @@ impl IAny for Queue {
         unsafe {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
-            }
-            if target == TypeId::of::<dyn IQueueDebug>() && self.is_queue_debug_available {
-                return Some(transmute(self as &dyn IQueueDebug));
             }
             if target == TypeId::of::<dyn IAny>() {
                 return Some(transmute(self as &dyn IAny));
@@ -141,7 +130,6 @@ impl Queue {
             let info = vk::SemaphoreCreateInfo::default().push_next(&mut info);
             device.device.create_semaphore(&info, None).unwrap()
         };
-        let is_queue_debug_available = device.context.debug_loader.is_some();
         AnyArc::new_cyclic(|v| Self {
             _this: v.clone(),
             _device: device.this.clone(),
@@ -149,8 +137,6 @@ impl Queue {
             handle,
             info,
             submit_lock: Mutex::new(()),
-            is_queue_debug_available,
-            debug_marker_depth: Default::default(),
             semaphore,
             last_submitted_index: Default::default(),
             last_completed_index: Default::default(),
@@ -377,74 +363,6 @@ impl IQueue for Queue {
                 // Coerce everything we don't explicitly handle to an error.
                 log::error!("Platform Error: {:#?}", e);
                 Err(QueuePresentError::Platform)
-            }
-        }
-    }
-}
-
-impl IQueueDebug for Queue {
-    fn set_marker(&self, color: Color, message: &aleph_nstr::NStr) {
-        let device = self._device.upgrade().unwrap();
-        let _lock = self.submit_lock.lock();
-        unsafe {
-            if let Some(loader) = device.debug_loader.as_ref() {
-                let color: [f32; 4] = color.into();
-                let info = vk::DebugUtilsLabelEXT::default()
-                    .label_name(message.to_cstr())
-                    .color(color);
-
-                {
-                    let _lock = self.submit_lock.lock();
-                    loader.queue_insert_debug_utils_label(self.handle, &info)
-                }
-            }
-        }
-    }
-
-    fn begin_event(&self, color: Color, message: &aleph_nstr::NStr) {
-        let device = self._device.upgrade().unwrap();
-        let _lock = self.submit_lock.lock();
-        unsafe {
-            if let Some(loader) = device.debug_loader.as_ref() {
-                // Use a counter to track the event stack depth. Prevents mismatched
-                // end_event+begin_event pairs.
-                let previous_event_depth = self.debug_marker_depth.fetch_add(1, Ordering::Relaxed);
-                assert_ne!(
-                    previous_event_depth,
-                    u64::MAX,
-                    "Event Stack Depth overflow. How!!??!?"
-                );
-
-                let color: [f32; 4] = color.into();
-                let info = vk::DebugUtilsLabelEXT::default()
-                    .label_name(message.to_cstr())
-                    .color(color);
-
-                {
-                    let _lock = self.submit_lock.lock();
-                    loader.queue_begin_debug_utils_label(self.handle, &info);
-                }
-            }
-        }
-    }
-
-    fn end_event(&self) {
-        let device = self._device.upgrade().unwrap();
-        let _lock = self.submit_lock.lock();
-        unsafe {
-            if let Some(loader) = device.debug_loader.as_ref() {
-                // Use a counter to track the event stack depth. Prevents mismatched
-                // end_event+begin_event pairs.
-                let previous_event_depth = self.debug_marker_depth.fetch_sub(1, Ordering::Relaxed);
-                assert_ne!(
-                    previous_event_depth, 0,
-                    "Event Stack Depth underflow. end_event called without a matching begin_event"
-                );
-
-                {
-                    let _lock = self.submit_lock.lock();
-                    loader.queue_end_debug_utils_label(self.handle);
-                }
             }
         }
     }

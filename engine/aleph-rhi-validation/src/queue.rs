@@ -49,7 +49,6 @@ pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyWeak<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IQueue>,
-    pub(crate) inner_debug: Option<AnyArc<dyn IQueueDebug>>,
     pub(crate) queue_type: QueueType,
 }
 
@@ -60,9 +59,6 @@ impl IAny for ValidationQueue {
         unsafe {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
-            }
-            if target == TypeId::of::<dyn IQueueDebug>() && self.inner_debug.is_some() {
-                return Some(transmute(self as &dyn IQueueDebug));
             }
             if target == TypeId::of::<dyn IAny>() {
                 return Some(transmute(self as &dyn IAny));
@@ -216,23 +212,6 @@ impl IQueue for ValidationQueue {
         let inner_swap_image = swap_image.inner.take().unwrap();
 
         unsafe { self.inner.present(inner_swap_image) }
-    }
-}
-
-impl IQueueDebug for ValidationQueue {
-    fn set_marker(&self, color: Color, message: &aleph_nstr::NStr) {
-        let debug = self.inner_debug.as_deref().unwrap();
-        debug.set_marker(color, message)
-    }
-
-    fn begin_event(&self, color: Color, message: &aleph_nstr::NStr) {
-        let debug = self.inner_debug.as_deref().unwrap();
-        debug.begin_event(color, message)
-    }
-
-    fn end_event(&self) {
-        let debug = self.inner_debug.as_deref().unwrap();
-        debug.end_event()
     }
 }
 

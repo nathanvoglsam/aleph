@@ -616,38 +616,6 @@ pub trait IQueue: IAny + IGetPlatformInterface + Send + Sync {
     unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError>;
 }
 
-/// Optional extension to [IQueue] that provides various debug utilities, like setting debug markers
-/// and events that can be seen inside graphics debuggers.
-///
-/// This interface must be queried from a queue, and may not always be present. The features needed
-/// to implement this interface will only be present on developer machines, so this interface can't
-/// be guaranteed to be available. Especially not on client devices.
-pub trait IQueueDebug: IQueue {
-    ///
-    /// Emits an instantaneous 'marker' on this queue, with the given message and message color.
-    ///
-    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
-    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
-    /// always expose the `VK_EXT_debug_utils` extension).
-    fn set_marker(&self, color: Color, message: &NStr);
-
-    ///
-    /// Marks the beginning of a new event on this queue, with the given message and message color.
-    ///
-    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
-    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
-    /// always expose the `VK_EXT_debug_utils` extension).
-    fn begin_event(&self, color: Color, message: &NStr);
-
-    ///
-    /// Marks the end of an event on this queue.
-    ///
-    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
-    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
-    /// always expose the `VK_EXT_debug_utils` extension).
-    fn end_event(&self);
-}
-
 //
 //
 // _________________________________________________________________________________________________
