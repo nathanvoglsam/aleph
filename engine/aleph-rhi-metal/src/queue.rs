@@ -132,7 +132,27 @@ impl IQueue for Queue {
     }
 
     fn garbage_collect(&self) {
-        todo!()
+        // Lock access to the queue to ensure nobody submits while we're running the GC cycle.
+        let _lock = self.submit_lock.lock();
+
+        let num = self.in_flight.len();
+        for _ in 0..num {
+            let mut v = self.in_flight.pop().unwrap();
+
+            v.lists.retain(|v| match v.objects.list.status() {
+                MTLCommandBufferStatus::NotEnqueued => unreachable!(),
+                MTLCommandBufferStatus::Enqueued => unreachable!(),
+                MTLCommandBufferStatus::Committed => true,
+                MTLCommandBufferStatus::Scheduled => true,
+                MTLCommandBufferStatus::Completed => false,
+                MTLCommandBufferStatus::Error => panic!("CommandBuffer status = 'error'"),
+                _ => panic!("CommandBuffer status = 'unknown'"),
+            });
+
+            if !v.lists.is_empty() {
+                self.in_flight.push(v).ok().unwrap();
+            }
+        }
     }
 
     fn wait_idle(&self) {
