@@ -31,9 +31,8 @@ use std::any::TypeId;
 use std::mem::transmute;
 use std::ptr;
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicU64, Ordering};
 
-use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject};
+use aleph_any::{AnyArc, AnyWeak, IAny, TraitObject, box_downcast};
 use aleph_rhi_api::*;
 use crossbeam::queue::ArrayQueue;
 use objc2::rc::Retained;
@@ -41,8 +40,11 @@ use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 use parking_lot::Mutex;
 
-use crate::command_list::CommandList;
+use crate::command_list::{CommandList, ListState};
 use crate::device::Device;
+use crate::fence::Fence;
+use crate::semaphore::Semaphore;
+use crate::swap_image::SwapImage;
 
 pub struct Queue {
     pub(crate) _this: AnyWeak<Self>,
@@ -170,25 +172,90 @@ impl IQueue for Queue {
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
-        todo!()
+        let _lock = self.submit_lock.lock();
+
+        let lists: Vec<_> = desc
+            .command_lists
+            .iter()
+            .map(|v| {
+                let v = v.take().unwrap();
+                box_downcast::<_, CommandList>(v).ok().unwrap()
+            })
+            .collect();
+
+        let wait_list = if !desc.wait_semaphores.is_empty() {
+            let list = self.objects.queue.commandBuffer().unwrap();
+
+            for semaphore in desc.wait_semaphores {
+                let semaphore = Semaphore::get(semaphore);
+                list.encodeWaitForEvent_value(
+                    semaphore.objects.event.as_ref(),
+                    semaphore.get_wait_value(),
+                );
+            }
+
+            Some(list)
+        } else {
+            None
+        };
+
+        match lists.last() {
+            Some(last) => {
+                for semaphore in desc.signal_semaphores {
+                    let semaphore = Semaphore::get(semaphore);
+
+                    last.objects.list.encodeSignalEvent_value(
+                        semaphore.objects.event.as_ref(),
+                        semaphore.get_next_signal_value(),
+                    );
+                }
+                if let Some(fence) = desc.fence {
+                    let fence = Fence::get(fence);
+
+                    last.objects.list.encodeSignalEvent_value(
+                        fence.objects.event.as_ref(),
+                        fence.get_next_signal_value(),
+                    );
+                }
+            }
+            None => panic!("Can't call IQueue::submit with zero command buffers!"),
+        }
+
+        if let Some(wait_list) = wait_list {
+            wait_list.commit();
+        }
+
+        for list in desc.command_lists {
+            let list = list.take().unwrap();
+            let list = box_downcast::<_, CommandList>(list).ok().unwrap();
+
+            assert_eq!(list.list_type, self.queue_type);
+            assert_eq!(list.state, ListState::Closed);
+
+            list.objects.list.commit();
+        }
+
+        Ok(())
     }
 
-    unsafe fn present(&self, desc: &QueuePresentDesc) -> Result<(), QueuePresentError> {
-        todo!()
-    }
-}
+    unsafe fn present(&self, swap_image: AnyArc<dyn ISwapImage>) -> Result<(), QueuePresentError> {
+        let _lock = self.submit_lock.lock();
 
-impl IQueueDebug for Queue {
-    fn set_marker(&self, _color: Color, _message: &aleph_nstr::NStr) {
-        // TODO: this
-    }
+        let mut swap_image = {
+            let v = swap_image;
+            let v = v
+                .query_interface::<SwapImage>()
+                .expect("Unknown ISwapImage implementation");
+            v
+        };
+        let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
 
-    fn begin_event(&self, _color: Color, _message: &aleph_nstr::NStr) {
-        // TODO: this
-    }
+        swap_image
+            .objects
+            .list
+            .presentDrawable(&swap_image.objects.drawable);
 
-    fn end_event(&self) {
-        // TODO: this
+        Ok(())
     }
 }
 
