@@ -33,10 +33,10 @@ use std::mem::MaybeUninit;
 use aleph_any::{AnyArc, declare_interfaces};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
+use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Handle;
 
-use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
 
@@ -53,11 +53,34 @@ impl IGetPlatformInterface for DescriptorArena {
     }
 }
 
+impl DescriptorArena {
+    pub fn handle_allocate_result<T>(v: VkResult<T>) -> Result<T, DescriptorArenaAllocateError> {
+        match v {
+            Ok(v) => Ok(v),
+            Err(e) => match e {
+                vk::Result::ERROR_OUT_OF_POOL_MEMORY => {
+                    Err(DescriptorArenaAllocateError::OutOfPoolMemory)
+                }
+                vk::Result::ERROR_OUT_OF_DEVICE_MEMORY | vk::Result::ERROR_OUT_OF_HOST_MEMORY => {
+                    Err(DescriptorArenaAllocateError::OutOfMemory)
+                }
+                vk::Result::ERROR_FRAGMENTED_POOL => {
+                    Err(DescriptorArenaAllocateError::FragmentedPool)
+                }
+                _ => {
+                    log::error!("Platform Error: {:#?}", e);
+                    Err(DescriptorArenaAllocateError::Platform)
+                }
+            },
+        }
+    }
+}
+
 impl IDescriptorArena for DescriptorArena {
     fn allocate_set(
         &self,
         layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
         let layout = DescriptorSetLayout::get(layout);
         let set_layouts = [layout.descriptor_set_layout];
 
@@ -76,7 +99,7 @@ impl IDescriptorArena for DescriptorArena {
             );
             let result = result.assume_init_on_success(desc_set);
 
-            DescriptorPool::handle_allocate_result(result)?
+            Self::handle_allocate_result(result)?
         };
 
         unsafe { Ok(DescriptorSetHandle::from_raw_int(set.as_raw()).unwrap()) }
@@ -86,7 +109,7 @@ impl IDescriptorArena for DescriptorArena {
         &self,
         layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorArenaAllocateError> {
         let layout = DescriptorSetLayout::get(layout);
         let mut set_layouts = Vec::with_capacity(num_sets);
         for _ in 0..num_sets {
@@ -99,7 +122,7 @@ impl IDescriptorArena for DescriptorArena {
         let sets = unsafe {
             let result = self._device.device.allocate_descriptor_sets(&allocate_info);
 
-            DescriptorPool::handle_allocate_result(result)?
+            Self::handle_allocate_result(result)?
         };
 
         debug_assert_eq!(sets.len(), sets.capacity());

@@ -27,37 +27,23 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
+use aleph_any::{AnyArc, IAny};
 
-use aleph_any::{AnyArc, declare_interfaces};
-use aleph_rhi_api::*;
+use crate::*;
 
-use crate::NullDevice;
+/// Represents the graphics API's handle to the window or monitor surface. SwapChains are created
+/// from surfaces.
+///
+/// A surface is not tied to a specific [IDevice], it represents an API level handle to a rendering
+/// surface. As such [ISurface] is not created by an [IDevice], rather it is created by the
+/// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
+/// [ISurface].
+pub trait ISurface: IAny + IGetPlatformInterface + Send + Sync {
+    any_arc_trait_utils_decl!(ISurface);
 
-pub struct NullDescriptorArena {
-    pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) counter: Cell<u64>,
-}
-
-declare_interfaces!(NullDescriptorArena, [IDescriptorArena]);
-
-crate::impl_platform_interface_passthrough!(NullDescriptorArena);
-
-impl IDescriptorArena for NullDescriptorArena {
-    fn allocate_set(
+    fn create_swap_chain(
         &self,
-        _layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
-        let handle = self.counter.get();
-        self.counter.set(self.counter.get() + 1);
-        Ok(unsafe { DescriptorSetHandle::from_raw_int(handle).unwrap() })
-    }
-
-    unsafe fn free(&self, _sets: &[DescriptorSetHandle]) {
-        // Intentionally do nothing
-    }
-
-    unsafe fn reset(&self) {
-        self.counter.set(1);
-    }
+        device: &dyn IDevice,
+        config: &SwapChainConfiguration,
+    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError>;
 }

@@ -57,10 +57,10 @@ impl ValidationDescriptorArena {
     ///
     /// This function assumes it is being called immediately prior to trying to allocate a set. As
     /// such it returns an OOM error instead of a simple bool.
-    fn check_oom(&self) -> Result<(), DescriptorPoolAllocateError> {
+    fn check_oom(&self) -> Result<(), DescriptorArenaAllocateError> {
         let set_objects = self.set_objects.take();
         let out = if set_objects.len() == set_objects.capacity() {
-            Err(DescriptorPoolAllocateError::OutOfMemory)
+            Err(DescriptorArenaAllocateError::OutOfMemory)
         } else {
             Ok(())
         };
@@ -195,7 +195,7 @@ impl IDescriptorArena for ValidationDescriptorArena {
     fn allocate_set(
         &self,
         layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
         // First try and grab something from the free list
         let mut free_list = self.free_list.take();
         if let Some(handle) = free_list.pop() {

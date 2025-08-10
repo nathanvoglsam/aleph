@@ -52,7 +52,7 @@ impl IDescriptorArena for DescriptorArena {
     fn allocate_set(
         &self,
         layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
         todo!()
     }
 
@@ -60,7 +60,7 @@ impl IDescriptorArena for DescriptorArena {
         &self,
         layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorArenaAllocateError> {
         todo!()
     }
 

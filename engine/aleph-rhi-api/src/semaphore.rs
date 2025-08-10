@@ -27,37 +27,49 @@
 // SOFTWARE.
 //
 
-use std::cell::Cell;
+use aleph_object_system::ArcObject;
 
-use aleph_any::{AnyArc, declare_interfaces};
-use aleph_rhi_api::*;
-
-use crate::NullDevice;
-
-pub struct NullDescriptorArena {
-    pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) counter: Cell<u64>,
+#[derive(Clone)]
+pub struct SemaphoreHandle {
+    inner: ArcObject,
 }
 
-declare_interfaces!(NullDescriptorArena, [IDescriptorArena]);
-
-crate::impl_platform_interface_passthrough!(NullDescriptorArena);
-
-impl IDescriptorArena for NullDescriptorArena {
-    fn allocate_set(
-        &self,
-        _layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
-        let handle = self.counter.get();
-        self.counter.set(self.counter.get() + 1);
-        Ok(unsafe { DescriptorSetHandle::from_raw_int(handle).unwrap() })
+impl SemaphoreHandle {
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the given object refers to an object that
+    /// the inner RHI implementation considers a semaphore objec.
+    pub const unsafe fn new(inner: ArcObject) -> Self {
+        Self { inner }
     }
 
-    unsafe fn free(&self, _sets: &[DescriptorSetHandle]) {
-        // Intentionally do nothing
+    ///
+    /// Gets the number of strong ([`SemaphoreHandle`]) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    ///
+    #[inline]
+    #[must_use]
+    pub fn strong_count(&self) -> usize {
+        self.inner.strong_count()
     }
 
-    unsafe fn reset(&self) {
-        self.counter.set(1);
+    /// Unwrap the [`SemaphoreHandle`] and get the inner [`ArcObject`]
+    #[inline]
+    pub fn into_inner(self) -> ArcObject {
+        self.inner
+    }
+
+    /// Get the inner [`ArcObject`]
+    pub const fn get(&self) -> &ArcObject {
+        &self.inner
     }
 }
