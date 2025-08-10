@@ -38,7 +38,7 @@ use crossbeam::queue::ArrayQueue;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard};
 
 use crate::command_list::{CommandList, ListState};
 use crate::device::Device;
@@ -135,39 +135,14 @@ impl IQueue for Queue {
     fn garbage_collect(&self) {
         // Lock access to the queue to ensure nobody submits while we're running the GC cycle.
         let _lock = self.submit_lock.lock();
-
-        let num = self.in_flight.len();
-        for _ in 0..num {
-            let mut v = self.in_flight.pop().unwrap();
-
-            v.lists.retain(|v| match v.objects.list.status() {
-                MTLCommandBufferStatus::NotEnqueued => unreachable!(),
-                MTLCommandBufferStatus::Enqueued => unreachable!(),
-                MTLCommandBufferStatus::Committed => true,
-                MTLCommandBufferStatus::Scheduled => true,
-                MTLCommandBufferStatus::Completed => false,
-                MTLCommandBufferStatus::Error => panic!("CommandBuffer status = 'error'"),
-                _ => panic!("CommandBuffer status = 'unknown'"),
-            });
-
-            if !v.lists.is_empty() {
-                self.in_flight.push(v).ok().unwrap();
-            }
-        }
+        self.garbage_collect_internal();
     }
 
     fn wait_idle(&self) {
         // Lock access to the queue to ensure nobody submits while we're waiting for all outstanding
         // work to complete
         let _lock = self.submit_lock.lock();
-
-        while let Some(mut v) = self.in_flight.pop() {
-            for list in v.lists.drain(..) {
-                unsafe {
-                    list.objects.list.waitUntilCompleted();
-                }
-            }
-        }
+        self.wait_idle_internal();
     }
 
     unsafe fn submit(&self, desc: &QueueSubmitDesc) -> Result<(), QueueSubmitError> {
@@ -249,12 +224,48 @@ impl IQueue for Queue {
         };
         let swap_image = AnyArc::get_mut(&mut swap_image).unwrap();
 
-        swap_image
-            .objects
-            .list
-            .presentDrawable(swap_image.objects.drawable.as_ref());
+        let list = &swap_image.objects.list;
+        list.presentDrawable(swap_image.objects.drawable.as_ref());
+        list.commit();
 
         Ok(())
+    }
+}
+
+impl Queue {
+    pub fn wait_idle_internal(&self) {
+        while let Some(mut v) = self.in_flight.pop() {
+            for list in v.lists.drain(..) {
+                unsafe {
+                    list.objects.list.waitUntilCompleted();
+                }
+            }
+        }
+    }
+
+    pub fn garbage_collect_internal(&self) {
+        let num = self.in_flight.len();
+        for _ in 0..num {
+            let mut v = self.in_flight.pop().unwrap();
+
+            v.lists.retain(|v| match v.objects.list.status() {
+                MTLCommandBufferStatus::NotEnqueued => unreachable!(),
+                MTLCommandBufferStatus::Enqueued => unreachable!(),
+                MTLCommandBufferStatus::Committed => true,
+                MTLCommandBufferStatus::Scheduled => true,
+                MTLCommandBufferStatus::Completed => false,
+                MTLCommandBufferStatus::Error => panic!("CommandBuffer status = 'error'"),
+                _ => panic!("CommandBuffer status = 'unknown'"),
+            });
+
+            if !v.lists.is_empty() {
+                self.in_flight.push(v).ok().unwrap();
+            }
+        }
+    }
+
+    pub fn submit_lock(&self) -> MutexGuard<()> {
+        self.submit_lock.lock()
     }
 }
 
