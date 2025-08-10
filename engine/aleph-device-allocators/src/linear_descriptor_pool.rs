@@ -81,8 +81,8 @@ impl LinearDescriptorPool {
     pub fn allocate_set(
         &self,
         layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        use DescriptorPoolAllocateError::*;
+    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
+        use DescriptorArenaAllocateError::*;
 
         let active = self.active.take().unwrap();
         match active.allocate_set(layout) {
@@ -112,8 +112,8 @@ impl LinearDescriptorPool {
         &self,
         layout: &DescriptorSetLayoutHandle,
         num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
-        use DescriptorPoolAllocateError::*;
+    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorArenaAllocateError> {
+        use DescriptorArenaAllocateError::*;
 
         let active = self.active.take().unwrap();
         match active.allocate_sets(layout, num_sets) {
@@ -134,8 +134,8 @@ impl LinearDescriptorPool {
     fn grow(
         &self,
         active: Box<dyn IDescriptorArena>,
-    ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolAllocateError> {
-        use DescriptorPoolAllocateError::*;
+    ) -> Result<Box<dyn IDescriptorArena>, DescriptorArenaAllocateError> {
+        use DescriptorArenaAllocateError::*;
 
         // Immediately move the active arena into the exhausted set before trying to allocate a new
         // pool
