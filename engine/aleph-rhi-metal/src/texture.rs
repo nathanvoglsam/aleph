@@ -44,13 +44,13 @@ use parking_lot::Mutex;
 
 use crate::device::Device;
 use crate::internal::conv;
-use crate::internal::render_target_view::RenderTargetView;
+use crate::internal::image_view::ImageViewObject;
 
 pub struct Texture {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) objects: TextureObjects,
-    pub(crate) views: Mutex<HashMap<ImageViewDesc, ()>>,
+    pub(crate) views: Mutex<HashMap<ImageViewDesc, ImageView>>,
     pub(crate) rtvs: Mutex<HashMap<ImageViewDesc, ImageView>>,
     pub(crate) dsvs: Mutex<HashMap<ImageViewDesc, ImageView>>,
     pub(crate) image_views: Mutex<Blink>,
@@ -75,20 +75,20 @@ impl Texture {
     }
 
     pub(crate) fn get_view(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        todo!()
+        self.get_mtl_texture_view(&self.views, desc)
     }
 
     pub(crate) fn get_rtv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_rtv_or_dsv(&self.rtvs, desc)
+        self.get_mtl_texture_view(&self.rtvs, desc)
     }
 
     pub(crate) fn get_dsv(&self, desc: &ImageViewDesc) -> Result<ImageView, ()> {
-        self.get_rtv_or_dsv(&self.dsvs, desc)
+        self.get_mtl_texture_view(&self.dsvs, desc)
     }
 
     /// The code-path for 'get_rtv' and 'get_dsv' is almost identical, except for the target hash
     /// map.
-    pub(crate) fn get_rtv_or_dsv(
+    pub(crate) fn get_mtl_texture_view(
         &self,
         map: &Mutex<HashMap<ImageViewDesc, ImageView>>,
         desc: &ImageViewDesc,
@@ -122,7 +122,7 @@ impl Texture {
             let view = unsafe {
                 // Allocate the view into the internal bump allocator
                 let alloc = self.image_views.lock();
-                let view = NonNull::from(alloc.put(RenderTargetView { texture: view }));
+                let view = NonNull::from(alloc.put(ImageViewObject { texture: view }));
                 std::mem::transmute::<_, ImageView>(view)
             };
 

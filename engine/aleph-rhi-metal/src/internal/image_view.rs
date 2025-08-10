@@ -33,21 +33,20 @@ use objc2::runtime::ProtocolObject;
 use objc2_metal::*;
 
 /// The struct layout we use for render target views. [ImageView] handles are actually pointers to
-/// this struct for RTV/DSV views.
-pub struct RenderTargetView {
-    /// Unretained reference to the metal texture. The views can't outlive the parent texture so
-    /// this is fine. If this was retained we'd generate more retain traffic than we otherwise need.
+/// this struct for views.
+pub struct ImageViewObject {
+    /// Reference to the metal texture. This uses a MTLTexture 'view' object.
     pub texture: Retained<ProtocolObject<dyn MTLTexture>>,
 }
 
 // Safety: none, up to the caller to use this correctly.
-unsafe impl Send for RenderTargetView {}
-unsafe impl Sync for RenderTargetView {}
+unsafe impl Send for ImageViewObject {}
+unsafe impl Sync for ImageViewObject {}
 
-impl RenderTargetView {
-    pub unsafe fn from_view(view: &ImageView) -> &RenderTargetView {
+impl ImageViewObject {
+    pub unsafe fn from_view(view: &ImageView) -> &ImageViewObject {
         let view = *view;
         // Safety: none, lmao. it's up to the caller to use this correctly.
-        unsafe { std::mem::transmute::<ImageView, &RenderTargetView>(view) }
+        unsafe { std::mem::transmute::<ImageView, &ImageViewObject>(view) }
     }
 }

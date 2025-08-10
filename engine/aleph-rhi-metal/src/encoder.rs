@@ -46,7 +46,7 @@ use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv;
-use crate::internal::render_target_view::RenderTargetView;
+use crate::internal::image_view::ImageViewObject;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::Texture;
 
@@ -197,7 +197,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let mtl_attachment = unsafe { mtl_color_attachments.objectAtIndexedSubscript(i) };
 
             let view = color_attachment.image_view;
-            let view = unsafe { RenderTargetView::from_view(&view) };
+            let view = unsafe { ImageViewObject::from_view(&view) };
             let texture = view.texture.as_ref();
             mtl_attachment.setTexture(Some(texture));
             mtl_attachment.setLevel(0);
@@ -236,7 +236,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             let mtl_attachment = unsafe { MTLRenderPassDepthAttachmentDescriptor::new() };
 
             let view = depth_attachment.image_view;
-            let view = unsafe { RenderTargetView::from_view(&view) };
+            let view = unsafe { ImageViewObject::from_view(&view) };
             let texture = view.texture.as_ref();
             mtl_attachment.setTexture(Some(texture));
             mtl_attachment.setLevel(0);
@@ -269,7 +269,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
                 // We use the same attachment here intentionally
                 let view = depth_attachment.image_view;
-                let view = unsafe { RenderTargetView::from_view(&view) };
+                let view = unsafe { ImageViewObject::from_view(&view) };
                 let texture = view.texture.as_ref();
                 mtl_attachment.setTexture(Some(texture));
                 mtl_attachment.setLevel(0);

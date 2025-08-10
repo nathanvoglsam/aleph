@@ -28,5 +28,5 @@
 //
 
 pub mod conv;
-pub mod render_target_view;
+pub mod image_view;
 pub mod unwrap;
