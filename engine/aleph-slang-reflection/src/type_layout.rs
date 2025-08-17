@@ -175,6 +175,32 @@ impl<'a> TypeLayout<'a> {
     }
 }
 
+macro_rules! scalar_type_def {
+    ($n: ident, $t: path) => {
+        pub const $n: Self = Self::Scalar {
+            scalar_type: $t
+        };
+    };
+}
+
+impl TypeLayout<'static> {
+    scalar_type_def!(VOID, ScalarType::Void);
+    scalar_type_def!(BOOL, ScalarType::Bool);
+    scalar_type_def!(FLOAT16, ScalarType::Float16);
+    scalar_type_def!(FLOAT32, ScalarType::Float32);
+    scalar_type_def!(FLOAT64, ScalarType::Float64);
+    scalar_type_def!(UINT8, ScalarType::Uint8);
+    scalar_type_def!(INT8, ScalarType::Int8);
+    scalar_type_def!(UINT16, ScalarType::Uint16);
+    scalar_type_def!(INT16, ScalarType::Int16);
+    scalar_type_def!(UINT32, ScalarType::Uint32);
+    scalar_type_def!(INT32, ScalarType::Int32);
+    scalar_type_def!(UINT64, ScalarType::Uint64);
+    scalar_type_def!(INT64, ScalarType::Int64);
+    scalar_type_def!(INTPTR, ScalarType::Intptr);
+    scalar_type_def!(UINTPTR, ScalarType::Uintptr);
+}
+
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct VariableLayout<'a> {
