@@ -207,7 +207,7 @@ fn archive_shaders_for_package(
                 crate::shader_system::ShaderFileFormat::Slang => unreachable!(),
                 crate::shader_system::ShaderFileFormat::Dxil => {
                     log::trace!("Collecting DXIL for shader '{shader_name}'");
-                    let file_data = std::fs::read(&entry_path)?;
+                    let file_data = std::fs::read(shader_file.path)?;
                     if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
                         db_entry.dxil = file_data;
                     } else {
@@ -224,7 +224,7 @@ fn archive_shaders_for_package(
                 }
                 crate::shader_system::ShaderFileFormat::Spirv => {
                     log::trace!("Collecting SPIRV for shader '{shader_name}'");
-                    let file_data = std::fs::read(&entry_path)?;
+                    let file_data = std::fs::read(shader_file.path)?;
                     if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
                         db_entry.spirv = file_data;
                     } else {
@@ -241,7 +241,7 @@ fn archive_shaders_for_package(
                 }
                 crate::shader_system::ShaderFileFormat::Msl => {
                     log::trace!("Collecting MSL for shader '{shader_name}'");
-                    let file_data = std::fs::read(&entry_path)?;
+                    let file_data = std::fs::read(shader_file.path)?;
                     if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
                         db_entry.msl = file_data;
                     } else {

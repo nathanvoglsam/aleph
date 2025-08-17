@@ -223,6 +223,9 @@ pub struct ShaderFile<'a> {
     /// The path to the shader file
     pub path: &'a Utf8Path,
 
+    /// The path to the shader's reflection file
+    pub reflection_path: Utf8PathBuf,
+
     // /// The full file name of the shader file
     // pub file_name: &'a str,
     /// The extracted file extension of the shader file.
@@ -251,6 +254,12 @@ impl<'a> ShaderFile<'a> {
         ext_mapper: fn(&str) -> Option<ShaderFileFormat>,
     ) -> Option<Self> {
         let file_name = path.file_name()?;
+
+        let reflection_path = {
+            let mut refl_name = path.as_str().to_string();
+            refl_name.push_str(".refl.json");
+            Utf8PathBuf::from(refl_name)
+        };
 
         // Split out the last two dot segments of the file name. For something like
         // shader.frag.hlsl we should get a file_ext = hlsl and shader_type = frag with
@@ -283,6 +292,7 @@ impl<'a> ShaderFile<'a> {
 
                 Some(Self {
                     path,
+                    reflection_path,
                     // file_name,
                     file_ext,
                     shader_type,
@@ -307,6 +317,7 @@ impl<'a> ShaderFile<'a> {
 
                 Some(Self {
                     path,
+                    reflection_path,
                     // file_name,
                     file_ext,
                     shader_type,
