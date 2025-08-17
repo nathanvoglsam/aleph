@@ -304,12 +304,18 @@ pub enum VariableBinding {
 mod used_serde {
     use serde::{Deserialize, Serialize};
 
-    pub fn serialize<S>(v: &Option<bool>, s: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    pub fn serialize<S>(v: &Option<bool>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
         let v = v.map(|v| if v { 1 } else { 0 });
         v.serialize(s)
     }
 
-    pub fn deserialize<'de, D>(d: D) -> Result<Option<bool>, D::Error> where D: serde::Deserializer<'de> {
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<bool>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
         let v: Option<u64> = Deserialize::deserialize(d)?;
         let v = v.map(|v| if v != 0 { true } else { false });
         Ok(v)
