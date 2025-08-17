@@ -630,7 +630,9 @@ impl ActiveEncoder {
                 *self = ActiveEncoder::Compute(encoder);
             }
             ActiveEncoder::None => {
-                let encoder = list.computeCommandEncoder().unwrap();
+                let encoder = list
+                    .computeCommandEncoderWithDispatchType(MTLDispatchType::Concurrent)
+                    .unwrap();
                 *self = ActiveEncoder::Compute(encoder);
             }
         };
