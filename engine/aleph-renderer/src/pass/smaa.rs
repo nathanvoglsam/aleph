@@ -40,8 +40,8 @@ use crate::pass::utils::{
     draw_fullscreen_triangle,
 };
 use crate::{
-    DefaultResources, IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache,
-    TextureHandle, shaders,
+    DefaultResources, IShaderAccessor, IShaderAccessorExt, IStateCacheKey, RenderPlaneOutput,
+    StateCache, TextureHandle, shaders,
 };
 
 pub fn pass(
@@ -462,7 +462,7 @@ impl SmaaState {
     pub fn create_edge_detect_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db
@@ -486,7 +486,7 @@ impl SmaaState {
     pub fn create_weight_calculate_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db
@@ -510,7 +510,7 @@ impl SmaaState {
     pub fn create_blending_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db

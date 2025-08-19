@@ -36,7 +36,8 @@ use aleph_nstr::nstr;
 use aleph_pin_board::{BoardParamId, PinBoard};
 use aleph_renderer::pass::{GraphArgs, GraphSwapImageInfo};
 use aleph_renderer::{
-    IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache, TextureHandle,
+    IShaderAccessor, IShaderAccessorExt, IStateCacheKey, RenderPlaneOutput, StateCache,
+    TextureHandle,
 };
 use aleph_rhi_api::*;
 use egui::RenderData;
@@ -434,7 +435,7 @@ impl EguiState {
     pub fn create_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
         let rasterizer_state_new = RasterizerStateDesc {

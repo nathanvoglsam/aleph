@@ -27,16 +27,20 @@
 // SOFTWARE.
 //
 
-mod parameter_block;
-mod shader_database;
-mod shader_database_ext;
-mod shader_entry;
-mod shader_name;
-mod shader_type;
+use crate::{IShaderDatabase, IShaderEntry, ShaderName, ShaderStage};
 
-pub use parameter_block::*;
-pub use shader_database::*;
-pub use shader_database_ext::*;
-pub use shader_entry::*;
-pub use shader_name::*;
-pub use shader_type::*;
+pub trait IShaderDatabaseExt: IShaderDatabase {
+    fn get<T: ShaderStage>(&self, name: ShaderName<T>) -> Option<&Self::Entry>;
+}
+
+impl<T: IShaderDatabase + ?Sized> IShaderDatabaseExt for T {
+    fn get<S: ShaderStage>(&self, name: ShaderName<S>) -> Option<&Self::Entry> {
+        self.get_by_name(name.v).and_then(|v| {
+            if v.get_shader_type() == S::SHADER_TYPE {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+}

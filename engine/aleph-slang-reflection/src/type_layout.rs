@@ -177,9 +177,7 @@ impl<'a> TypeLayout<'a> {
 
 macro_rules! scalar_type_def {
     ($n: ident, $t: path) => {
-        pub const $n: Self = Self::Scalar {
-            scalar_type: $t
-        };
+        pub const $n: Self = Self::Scalar { scalar_type: $t };
     };
 }
 

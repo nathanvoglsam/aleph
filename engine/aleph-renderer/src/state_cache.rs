@@ -34,23 +34,23 @@ use std::hash::{DefaultHasher, Hasher};
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-use crate::ShaderDatabaseAccessor;
+use crate::IShaderAccessor;
 
 pub struct StateCache {
     table: CacheTable,
-    shader_db: ShaderDatabaseAccessor<'static>,
+    shader_db: Box<dyn IShaderAccessor + Send + Sync + 'static>,
 }
 
 impl StateCache {
-    pub fn new(shader_db: ShaderDatabaseAccessor<'static>) -> Self {
+    pub fn new(shader_db: Box<dyn IShaderAccessor + Send + Sync + 'static>) -> Self {
         Self {
             table: CacheTable::new(),
             shader_db,
         }
     }
 
-    pub fn shader_db(&self) -> &ShaderDatabaseAccessor<'static> {
-        &self.shader_db
+    pub fn shader_db(&self) -> &(dyn IShaderAccessor + Send + Sync + 'static) {
+        self.shader_db.as_ref()
     }
 
     pub fn insert<K: IStateCacheKey>(&mut self, k: &K, v: K::Storage) -> Arc<K::Storage> {

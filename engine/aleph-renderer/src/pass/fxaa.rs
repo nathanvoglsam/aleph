@@ -40,7 +40,9 @@ use crate::pass::utils::{
     FullscreenTriangleBindInfo, FullscreenTriangleInfo, create_fullscreen_triangle_pipeline,
     draw_fullscreen_triangle,
 };
-use crate::{IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache, shaders};
+use crate::{
+    IShaderAccessor, IShaderAccessorExt, IStateCacheKey, RenderPlaneOutput, StateCache, shaders,
+};
 
 struct Payload {
     src: ResourceRef,
@@ -261,7 +263,7 @@ impl FxaaState {
     pub fn create_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db.load_stage(shaders::fxaa::vert()).unwrap();

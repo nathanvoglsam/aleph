@@ -27,16 +27,30 @@
 // SOFTWARE.
 //
 
-mod parameter_block;
-mod shader_database;
-mod shader_database_ext;
-mod shader_entry;
-mod shader_name;
-mod shader_type;
+use std::marker::PhantomData;
 
-pub use parameter_block::*;
-pub use shader_database::*;
-pub use shader_database_ext::*;
-pub use shader_entry::*;
-pub use shader_name::*;
-pub use shader_type::*;
+use crate::ShaderStage;
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct ShaderName<'a, T> {
+    pub(crate) v: &'a str,
+    _phantom: PhantomData<T>,
+}
+
+impl<'a, T: ShaderStage> ShaderName<'a, T> {
+    /// # Safety
+    /// It is required that the shader referred to by the provided name _must_ be of the type
+    /// specified by the `T` type parameter. It is up to the caller to ensure this.
+    pub const unsafe fn new(v: &'a str) -> Self {
+        Self {
+            v,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T> From<ShaderName<'a, T>> for &'a str {
+    fn from(val: ShaderName<'a, T>) -> Self {
+        val.v
+    }
+}

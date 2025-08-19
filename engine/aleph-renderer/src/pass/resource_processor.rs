@@ -39,8 +39,8 @@ use parking_lot::Mutex;
 use crate::pass::GraphArgs;
 use crate::pass::composite_planes::CompositePlanesLayout;
 use crate::{
-    BufferObject, BufferUploadDesc, IStateCacheKey, ResourceCommand, ResourceCommandBuffer,
-    ShaderDatabaseAccessor, StateCache, TextureObject, TextureUploadDesc, shaders,
+    BufferObject, BufferUploadDesc, IShaderAccessor, IShaderAccessorExt, IStateCacheKey,
+    ResourceCommand, ResourceCommandBuffer, StateCache, TextureObject, TextureUploadDesc, shaders,
 };
 
 pub struct ResourceProcessorParam {
@@ -561,7 +561,7 @@ impl MipGeneratorState {
     pub fn create_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db

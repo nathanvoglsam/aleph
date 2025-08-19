@@ -43,10 +43,9 @@ use crate::deletion_pool::DeletionMode;
 use crate::pass::resource_processor::ResourceProcessorParam;
 use crate::pass::{self, GraphArgs, GraphArgsLayout, GraphSwapImageInfo};
 use crate::{
-    BufferHandle, BufferObject, BufferPool, DeletionPool, MaterialInstanceHandle,
+    BufferHandle, BufferObject, BufferPool, DeletionPool, IShaderAccessor, MaterialInstanceHandle,
     MaterialInstanceObject, MaterialInstancePool, ResourceCommand, ResourceCommandBuffer,
-    ShaderDatabaseAccessor, StateCache, TextureHandle, TextureObject, TexturePool,
-    built_in_textures,
+    StateCache, TextureHandle, TextureObject, TexturePool, built_in_textures,
 };
 
 pub trait IRenderSurface: Any + Send + Sync {
@@ -115,7 +114,7 @@ pub struct RendererBuilder {
     device: Option<AnyArc<dyn IDevice>>,
     surface: Option<Box<dyn IRenderSurface>>,
     frames_in_flight: usize,
-    shader_db: Option<ShaderDatabaseAccessor<'static>>,
+    shader_db: Option<Box<dyn IShaderAccessor + Send + Sync + 'static>>,
     render_planes: Vec<Box<dyn IRenderPlane>>,
 }
 
@@ -151,7 +150,10 @@ impl RendererBuilder {
         self
     }
 
-    pub fn shader_db(&mut self, shader_db: ShaderDatabaseAccessor<'static>) -> &mut Self {
+    pub fn shader_db(
+        &mut self,
+        shader_db: Box<dyn IShaderAccessor + Send + Sync + 'static>,
+    ) -> &mut Self {
         self.shader_db = Some(shader_db);
         self
     }
@@ -165,7 +167,7 @@ impl RendererBuilder {
         let device = self.device.expect("Device missing!");
         let queue = device.get_queue(QueueType::General).unwrap();
         let shader_db = self.shader_db.expect("Shader DB missing!");
-        let state_cache = StateCache::new(shader_db.clone());
+        let state_cache = StateCache::new(shader_db);
 
         let swap_manager = SwapManager {
             surface: self.surface.expect("RenderSurface missing!"),

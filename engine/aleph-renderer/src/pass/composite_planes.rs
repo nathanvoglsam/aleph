@@ -35,7 +35,9 @@ use aleph_pin_board::PinBoard;
 use aleph_rhi_api::*;
 
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::{IStateCacheKey, RenderPlaneOutput, ShaderDatabaseAccessor, StateCache, shaders};
+use crate::{
+    IShaderAccessor, IShaderAccessorExt, IStateCacheKey, RenderPlaneOutput, StateCache, shaders,
+};
 
 struct Payload {
     planes: Vec<ResourceRef>,
@@ -288,7 +290,7 @@ impl CompositePlanesState {
     pub fn create_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
         let vertex_shader = shader_db

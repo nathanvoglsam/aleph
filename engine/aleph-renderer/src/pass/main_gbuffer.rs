@@ -37,8 +37,8 @@ use aleph_rhi_api::*;
 use crate::pass::resource_processor::ResourceProcessorOutput;
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
 use crate::{
-    BufferHandle, CameraInfo, IStateCacheKey, Material, MaterialId, MaterialInstanceObject,
-    RenderSceneParam, RenderTransform, ShaderDatabaseAccessor, StateCache, StaticMesh,
+    BufferHandle, CameraInfo, IShaderAccessor, IShaderAccessorExt, IStateCacheKey, Material,
+    MaterialId, MaterialInstanceObject, RenderSceneParam, RenderTransform, StateCache, StaticMesh,
 };
 
 struct MainGBufferPassPayload {
@@ -150,16 +150,8 @@ pub fn pass(
             // let aspect_ratio = extent.width as f32 / extent.height as f32;
 
             let camera_layout = CameraLayout {
-                view_matrix: camera_info
-                    .get_view_matrix()
-                    .transposed()
-                    .as_array()
-                    .clone(),
-                proj_matrix: camera_info
-                    .get_proj_matrix()
-                    .transposed()
-                    .as_array()
-                    .clone(),
+                view_matrix: camera_info.get_view_matrix().as_array().clone(),
+                proj_matrix: camera_info.get_proj_matrix().as_array().clone(),
                 position: camera_info
                     .position
                     .into_homogeneous_point()
@@ -460,8 +452,8 @@ impl ModelLayout {
         let model_matrix = t * r * s;
         let normal_matrix = model_matrix.truncate().inversed().transposed();
         Self {
-            model_matrix: *model_matrix.transposed().as_array(),
-            normal_matrix: *normal_matrix.transposed().into_homogeneous().as_array(),
+            model_matrix: *model_matrix.as_array(),
+            normal_matrix: *normal_matrix.into_homogeneous().as_array(),
             _padding: [0; 126],
         }
     }
@@ -609,7 +601,7 @@ impl MainOpaqueMaterialLayout {
     fn create_pipeline_state(
         device: &dyn IDevice,
         key: &MainOpaqueMaterialKey,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
         pipeline_layout: &PipelineLayoutHandle,
         material: &Material,
     ) -> GraphicsPipelineHandle {

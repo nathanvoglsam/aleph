@@ -35,7 +35,7 @@ use aleph_rhi_api::*;
 
 use crate::pass::main_gbuffer::{CameraLayout, MainGBufferPassOutput};
 use crate::pass::{GraphArgs, GraphSwapImageInfo};
-use crate::{CameraInfo, IStateCacheKey, ShaderDatabaseAccessor, StateCache, shaders};
+use crate::{CameraInfo, IShaderAccessor, IShaderAccessorExt, IStateCacheKey, StateCache, shaders};
 
 struct LightingResolvePassPayload {
     depth: ResourceRef,
@@ -134,16 +134,8 @@ pub fn pass(
             // let gbuffer0_desc = gbuffer0.desc();
             // let aspect_ratio = gbuffer0_desc.width as f32 / gbuffer0_desc.height as f32;
             let camera_layout = CameraLayout {
-                view_matrix: camera_info
-                    .get_view_matrix()
-                    .transposed()
-                    .as_array()
-                    .clone(),
-                proj_matrix: camera_info
-                    .get_proj_matrix()
-                    .transposed()
-                    .as_array()
-                    .clone(),
+                view_matrix: camera_info.get_view_matrix().as_array().clone(),
+                proj_matrix: camera_info.get_proj_matrix().as_array().clone(),
                 position: camera_info
                     .position
                     .into_homogeneous_point()
@@ -248,7 +240,7 @@ impl LightResolveState {
     pub fn create_pipeline_state(
         device: &dyn IDevice,
         pipeline_layout: &PipelineLayoutHandle,
-        shader_db: &ShaderDatabaseAccessor,
+        shader_db: &dyn IShaderAccessor,
     ) -> ComputePipelineHandle {
         let shader_module = shader_db
             .load_data(shaders::deferred::deferred_lighting_cs())

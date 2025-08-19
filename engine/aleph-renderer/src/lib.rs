@@ -43,7 +43,7 @@ mod render_scene;
 mod render_scene_objects;
 mod renderer;
 mod resource_commands;
-mod shader_db_accessor;
+mod shader_accessor;
 mod shaders;
 mod state_cache;
 mod streaming_request;
@@ -73,7 +73,7 @@ pub use renderer::{
     RenderPlaneOutput, Renderer, RendererBuilder,
 };
 pub use resource_commands::{ResourceCommand, ResourceCommandBuffer};
-pub use shader_db_accessor::ShaderDatabaseAccessor;
+pub use shader_accessor::{IShaderAccessor, IShaderAccessorExt, ShaderAccessor};
 pub use state_cache::{IStateCacheKey, StateCache};
 pub use streaming_request::{
     BufferStreamingRequest, ConsumeStreamingRequest, MeshStreamingRequest, PollCompleteError,

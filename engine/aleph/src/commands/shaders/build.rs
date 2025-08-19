@@ -215,6 +215,7 @@ fn archive_shaders_for_package(
                             shader_name,
                             aleph_shader_db::ShaderEntry {
                                 shader_type: shader_file.shader_type.into(),
+                                paramter_blocks: Vec::new(),
                                 spirv: Vec::new(),
                                 dxil: file_data,
                                 msl: Vec::new(),
@@ -232,6 +233,7 @@ fn archive_shaders_for_package(
                             shader_name,
                             aleph_shader_db::ShaderEntry {
                                 shader_type: shader_file.shader_type.into(),
+                                paramter_blocks: Vec::new(),
                                 spirv: file_data,
                                 dxil: Vec::new(),
                                 msl: Vec::new(),
@@ -249,6 +251,7 @@ fn archive_shaders_for_package(
                             shader_name,
                             aleph_shader_db::ShaderEntry {
                                 shader_type: shader_file.shader_type.into(),
+                                paramter_blocks: Vec::new(),
                                 spirv: Vec::new(),
                                 dxil: Vec::new(),
                                 msl: file_data,

@@ -36,7 +36,7 @@ use aleph_renderer::pass::GraphArgs;
 use aleph_renderer::{
     CameraInfo, DefaultRenderPlane, DefaultResources, DrawOptions, IRenderPlane, IRenderSurface,
     PerspectiveInfo, RenderPlaneOutput, RenderScene, RenderSceneParam, RenderTransform, Renderer,
-    RendererBuilder, ShaderDatabaseAccessor, StateCache,
+    RendererBuilder, ShaderAccessor, StateCache,
 };
 use aleph_rhi_api::*;
 use aleph_shader_db::ArchivedShaderDatabase;
@@ -127,12 +127,12 @@ impl IPlugin for PluginRender {
             .leak(); // Leak so we get a static lifetime
         let shader_db = unsafe { rkyv::access_unchecked::<ArchivedShaderDatabase>(shader_db_bin) };
         shader_db.validate_header();
-        let shader_db = ShaderDatabaseAccessor::new(device.as_ref(), shader_db);
+        let shader_db = ShaderAccessor::new(device.as_ref(), shader_db);
 
         let mut renderer = RendererBuilder::new();
         renderer.device(device.clone());
         renderer.surface(surface);
-        renderer.shader_db(shader_db);
+        renderer.shader_db(Box::new(shader_db));
         renderer.render_plane(DefaultRenderPlane::default());
         if render_data.is_some() {
             renderer.render_plane(EguiRenderPlane::new(window.clone()));
