@@ -347,6 +347,12 @@ impl ShaderCompilationParams {
             write!(&mut disabled_warnings, "-Wno-{disabled_warning} ")?;
         }
 
+        {
+            // Ignore warning about main_0 rename on MSL target
+            use std::fmt::Write;
+            write!(&mut disabled_warnings, "-Wno-40100")?;
+        }
+
         let mut defines = String::new();
         for (name, value) in &def.defines {
             use std::fmt::Write;
@@ -403,10 +409,12 @@ impl ShaderCompilationParams {
         if !self.defines.is_empty() {
             writeln!(v, "    definitions = {}", self.defines)?;
         }
-        if !self.disabled_warnings.is_empty() {
-            writeln!(v, "    disabled_warnings = {}", self.disabled_warnings)?;
-        }
         writeln!(v, "    module_include = {}", self.module_include)?;
+        writeln!(
+            v,
+            "    options = -O3 -matrix-layout-column-major {}",
+            self.disabled_warnings
+        )?;
         Ok(())
     }
 }
