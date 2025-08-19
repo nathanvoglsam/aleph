@@ -32,7 +32,7 @@ use std::ops::Deref;
 
 use crate::*;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct VariableBindingInfo<'a> {
     #[serde(default)]
@@ -56,7 +56,7 @@ impl<'a> VariableBindingInfo<'a> {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct VariableBindings {
     #[serde(default)]
@@ -96,7 +96,7 @@ impl Deref for VariableBindings {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "kind")]
 pub enum VariableBinding {
@@ -322,7 +322,7 @@ mod used_serde {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Semantic<'a> {
     #[serde(borrow)]

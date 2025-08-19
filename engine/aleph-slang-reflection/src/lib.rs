@@ -46,7 +46,7 @@ pub use variable_binding::{VariableBinding, VariableBindingInfo, VariableBinding
 
 use crate::type_parameter::TypeParameter;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Root<'a> {
     #[serde(borrow)]

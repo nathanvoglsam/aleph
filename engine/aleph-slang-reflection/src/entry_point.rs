@@ -31,7 +31,7 @@ use std::borrow::Cow;
 
 use crate::*;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryPoint<'a> {
     #[serde(borrow)]
@@ -69,7 +69,7 @@ impl<'a> EntryPoint<'a> {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryPointParam<'a> {
     #[serde(borrow)]

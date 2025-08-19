@@ -31,7 +31,7 @@ use std::borrow::Cow;
 
 use crate::*;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeParameter<'a> {
     #[serde(borrow)]

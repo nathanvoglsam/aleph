@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum ScalarType {
     Void,
@@ -47,7 +47,7 @@ pub enum ScalarType {
     Uintptr,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum ShaderStage {
     None,
@@ -68,7 +68,7 @@ impl Default for ShaderStage {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum ResourceAccess {
     Read,

@@ -31,7 +31,7 @@ use std::borrow::Cow;
 
 use crate::*;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "kind")]
 pub enum Type<'a> {
@@ -196,7 +196,7 @@ impl Type<'static> {
     scalar_type_def!(UINTPTR, ScalarType::Uintptr);
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Variable<'a> {
     #[serde(borrow)]

@@ -29,7 +29,7 @@
 
 use crate::*;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "baseShape")]
 pub enum ResourceTypeBase<'a> {
