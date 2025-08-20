@@ -71,5 +71,9 @@ impl<'a> Root<'a> {
         for entry_point in self.entry_points.iter_mut() {
             entry_point.normalize();
         }
+
+        for type_param in self.type_params.iter_mut() {
+            type_param.normalize();
+        }
     }
 }

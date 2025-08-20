@@ -41,3 +41,11 @@ pub struct TypeParameter<'a> {
     #[serde(default)]
     pub constraints: Vec<Type<'a>>,
 }
+
+impl<'a> TypeParameter<'a> {
+    pub fn normalize(&mut self) {
+        for constraint in self.constraints.iter_mut() {
+            constraint.normalize();
+        }
+    }
+}

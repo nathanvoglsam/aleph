@@ -63,6 +63,12 @@ pub struct EntryPoint<'a> {
 
 impl<'a> EntryPoint<'a> {
     pub fn normalize(&mut self) {
+        for parameter in self.parameters.iter_mut() {
+            parameter.normalize();
+        }
+        if let Some(result) = &mut self.result {
+            result.normalize();
+        }
         for binding in self.bindings.iter_mut() {
             binding.normalize();
         }

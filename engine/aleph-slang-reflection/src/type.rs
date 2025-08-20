@@ -178,6 +178,28 @@ macro_rules! scalar_type_def {
     };
 }
 
+impl<'a> Type<'a> {
+    pub fn normalize(&mut self) {
+        match self {
+            Type::Resource { info, .. } => info.normalize(),
+            Type::ConstantBuffer { element_type, .. } => element_type.normalize(),
+            Type::ParameterBlock { element_type, .. } => element_type.normalize(),
+            Type::TextureBuffer { element_type, .. } => element_type.normalize(),
+            Type::ShaderStorageBuffer { element_type, .. } => element_type.normalize(),
+            Type::Vector { element_type, .. } => element_type.normalize(),
+            Type::Matrix { element_type, .. } => element_type.normalize(),
+            Type::Array { element_type, .. } => element_type.normalize(),
+            Type::Pointer { target_type, .. } => target_type.normalize(),
+            Type::Struct { fields, .. } => {
+                for field in fields {
+                    field.normalize();
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 impl Type<'static> {
     scalar_type_def!(VOID, ScalarType::Void);
     scalar_type_def!(BOOL, ScalarType::Bool);
@@ -211,4 +233,10 @@ pub struct Variable<'a> {
 
     #[serde(borrow)]
     pub r#type: Type<'a>,
+}
+
+impl<'a> Variable<'a> {
+    pub fn normalize(&mut self) {
+        self.r#type.normalize();
+    }
 }

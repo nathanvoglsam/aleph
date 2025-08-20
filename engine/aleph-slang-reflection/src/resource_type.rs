@@ -150,3 +150,12 @@ pub enum ResourceTypeBase<'a> {
         access: ResourceAccess,
     },
 }
+
+impl<'a> ResourceTypeBase<'a> {
+    pub fn normalize(&mut self) {
+        match self {
+            ResourceTypeBase::StructuredBuffer { result_type, .. } => result_type.normalize(),
+            _ => {}
+        }
+    }
+}

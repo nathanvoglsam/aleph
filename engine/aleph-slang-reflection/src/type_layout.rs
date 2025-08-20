@@ -152,23 +152,47 @@ pub enum TypeLayout<'a> {
 impl<'a> TypeLayout<'a> {
     pub fn normalize(&mut self) {
         match self {
+            TypeLayout::Vector { element_type, .. } => {
+                element_type.normalize();
+            }
+            TypeLayout::Matrix { element_type, .. } => {
+                element_type.normalize();
+            }
+            TypeLayout::Array { element_type, .. } => {
+                element_type.normalize();
+            }
+            TypeLayout::Struct { fields, .. } => {
+                for field in fields {
+                    field.normalize();
+                }
+            }
             TypeLayout::ConstantBuffer {
+                element_type,
                 container_var_layout,
                 element_var_layout,
                 ..
             }
             | TypeLayout::ParameterBlock {
+                element_type,
                 container_var_layout,
                 element_var_layout,
                 ..
             }
             | TypeLayout::TextureBuffer {
+                element_type,
                 container_var_layout,
                 element_var_layout,
                 ..
             } => {
+                element_type.normalize();
                 container_var_layout.normalize();
                 element_var_layout.normalize();
+            }
+            TypeLayout::ShaderStorageBuffer { element_type } => {
+                element_type.normalize();
+            }
+            TypeLayout::Resource { info, .. } => {
+                info.normalize();
             }
             _ => {}
         }

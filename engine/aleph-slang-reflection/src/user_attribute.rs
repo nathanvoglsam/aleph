@@ -29,7 +29,7 @@
 
 use std::borrow::Cow;
 
-#[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct UserAttribute<'a> {
     #[serde(borrow)]
