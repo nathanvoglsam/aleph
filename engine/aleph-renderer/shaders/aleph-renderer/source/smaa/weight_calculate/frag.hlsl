@@ -27,35 +27,41 @@
 // SOFTWARE.
 //
 
+#include "rhi.hlsl"
+
 #include "smaa/metrics.hlsl"
 #include "payload.hlsl"
 
-[[vk::binding(0, 0)]]
-Texture2D edgesTex : register(t0);
+struct Params {
+    Texture2D edgesTex;
+    Texture2D areaTex;
+    Texture2D searchTex;
+    SamplerState linearSampler;
+    SamplerState pointSampler;
+};
+ParameterBlock<Params> g_params;
 
-[[vk::binding(1, 0)]]
-Texture2D areaTex : register(t1);
-
-[[vk::binding(2, 0)]]
-Texture2D searchTex : register(t2);
-
-[[vk::binding(3, 0)]]
-SamplerState LinearSampler : register(s3);
-
-[[vk::binding(4, 0)]]
-SamplerState PointSampler : register(s4);
-
-[[vk::push_constant]]
-ConstantBuffer<SmaaMetrics> g_constants : register(b0, space1024);
+PUSH_CONSTANT(SmaaMetrics, g_constants);
 
 #define SMAA_RT_METRICS g_constants.metrics
 #define SMAA_INCLUDE_VS 0
+#define LinearSampler g_params.linearSampler
+#define PointSampler g_params.pointSampler
 
 #include "smaa/SMAA.hlsl"
 
+[shader("fragment")]
 float4 main(PixelInput input) : SV_Target0
 {
     // Unused, needed for temporal SMAA which we aren't using
     float4 subsampleIndices = float4(0, 0, 0, 0);
-    return SMAABlendingWeightCalculationPS(input.uv, input.pixcoord, input.offset, edgesTex, areaTex, searchTex, subsampleIndices);
+    return SMAABlendingWeightCalculationPS(
+        input.uv,
+        input.pixcoord,
+        input.offset,
+        g_params.edgesTex,
+        g_params.areaTex,
+        g_params.searchTex,
+        subsampleIndices
+    );
 }

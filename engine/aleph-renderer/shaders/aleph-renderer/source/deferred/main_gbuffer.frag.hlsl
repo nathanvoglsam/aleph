@@ -27,20 +27,11 @@
 // SOFTWARE.
 //
 
-#include "main_gbuffer.inc.hlsl"
 #include "pbr.hlsl"
 #include "normal_map.hlsl"
 #include "sampling.hlsl"
 
-[[vk_binding(0, 0)]] ConstantBuffer<CameraLayout> g_camera : register(b0, space0);
-[[vk_binding(1, 0)]] SamplerState g_sampler : register(s1, space0);
-
-[[vk_binding(0, 1)]] ConstantBuffer<MaterialLayout> g_mat : register(b0, space1);
-[[vk_binding(1, 1)]] Texture2D<float4> g_base_colour : register(t1, space1);
-[[vk_binding(2, 1)]] Texture2D<float4> g_metal_roughness : register(t2, space1);
-[[vk_binding(3, 1)]] Texture2D<float3> g_normal_map : register(t3, space1);
-
-[[vk_binding(0, 2)]] ConstantBuffer<ModelLayout> g_model : register(b0, space2);
+#include "main_gbuffer.inc.hlsl"
 
 // Material parameters
 static float reflectance = 0.5;
@@ -51,11 +42,12 @@ struct PixelOutput {
     float2 gbuffer_2: SV_Target2;
 };
 
+[shader("fragment")]
 PixelOutput main(in StaticMeshPixelInput input) {
     float3 n;
 	float3 t;
 	float3 b;
-	const float3 normal_sample = g_normal_map.Sample(g_sampler, input.uv);
+	const float3 normal_sample = g_material.normal_map.Sample(g_view.sampler, input.uv);
 	const float3 map_normal = normalize((normal_sample * 2.0) - 1.0);
 	TBNNormalMapSample(
         map_normal,
@@ -67,13 +59,13 @@ PixelOutput main(in StaticMeshPixelInput input) {
     );
 
     let vtx_colour = input.colour;
-    let base_colour = g_mat.colour.xyz;
-    let base_colour_tex = g_base_colour.Sample(g_sampler, input.uv).xyz;
+    let base_colour = g_material.data.colour.xyz;
+    let base_colour_tex = g_material.base_colour.Sample(g_view.sampler, input.uv).xyz;
 
-    let metal_roughness = g_metal_roughness.Sample(g_sampler, input.uv);
+    let metal_roughness = g_material.metal_roughness.Sample(g_view.sampler, input.uv);
 
-    let metallic = g_mat.metal_roughness_padding.x * metal_roughness.z;
-    let roughness = RemapRoughness(g_mat.metal_roughness_padding.y) * RemapRoughness(metal_roughness.y);
+    let metallic = g_material.data.metal_roughness_padding.x * metal_roughness.z;
+    let roughness = RemapRoughness(g_material.data.metal_roughness_padding.y) * RemapRoughness(metal_roughness.y);
 
     let mapped_normal = OctahedralEncode(n);
 

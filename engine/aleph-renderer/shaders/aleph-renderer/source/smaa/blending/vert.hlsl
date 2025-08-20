@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
+#include "rhi.hlsl"
+
 #include "smaa/metrics.hlsl"
 #include "payload.hlsl"
 
-[[vk::push_constant]]
-ConstantBuffer<SmaaMetrics> g_constants : register(b0, space1024);
+PUSH_CONSTANT(SmaaMetrics, g_constants);
 
 #define SMAA_RT_METRICS g_constants.metrics
 #define SMAA_INCLUDE_PS 0
 
 #include "smaa/SMAA.hlsl"
 
+[shader("vertex")]
 PixelInput main(uint id : SV_VertexID) {
 	// Fullscreen triangle generation
 	PixelInput output;

@@ -31,21 +31,23 @@
 #include "srgb.hlsl"
 #include "tonemap.hlsl"
 
-[[vk::binding(0, 0)]]
-Texture2D<float4> g_input : register(t0, space0);
+struct Params {
+    Texture2D<float4> input;
+    RWTexture2D<float4> output;
+};
 
-[[vk::binding(1, 0)]]
-RWTexture2D<float4> g_output : register(u1, space0);
-
+[shader("compute")]
 [numthreads(8, 8, 1)]
-void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
-{
+void main(
+    uint3 dispatch_thread_id: SV_DispatchThreadID,
+    ParameterBlock<Params> params
+) {
     uint width;
     uint height;
-    g_input.GetDimensions(width, height);
+    params.input.GetDimensions(width, height);
 
     if (dispatch_thread_id.x < width && dispatch_thread_id.y < height) {
-        float3 colour = g_input.Load(int3(dispatch_thread_id.x, dispatch_thread_id.y, 0)).rgb;
+        float3 colour = params.input.Load(int3(dispatch_thread_id.x, dispatch_thread_id.y, 0)).rgb;
 
         // // Get our linear space ACES colour
         // float3 acesColour = ACESFitted(colour);
@@ -57,7 +59,7 @@ void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
         // Finally do the SRGB conversion before output
         float3 srgbColour = LinearToSRGB(colour);
 
-        g_output[dispatch_thread_id.xy] = float4(srgbColour, luma);
+        params.output[dispatch_thread_id.xy] = float4(srgbColour, luma);
     }
 }
 

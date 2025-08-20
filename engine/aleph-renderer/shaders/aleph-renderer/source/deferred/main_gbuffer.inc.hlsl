@@ -66,3 +66,23 @@ struct ModelLayout {
     float4x4 model_matrix;
     float4x4 normal_matrix;
 };
+
+struct ViewParams {
+    ConstantBuffer<CameraLayout> camera;
+    SamplerState sampler;
+};
+
+struct MaterialParams {
+    ConstantBuffer<MaterialLayout> data;
+    Texture2D<float4> base_colour;
+    Texture2D<float4> metal_roughness;
+    Texture2D<float3> normal_map;
+};
+
+struct ModelParams {
+    ConstantBuffer<ModelLayout> data;
+};
+
+ParameterBlock<ViewParams> g_view;
+ParameterBlock<MaterialParams> g_material;
+ParameterBlock<ModelParams> g_model;

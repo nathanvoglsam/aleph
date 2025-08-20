@@ -31,25 +31,20 @@
 #include "projection.hlsl"
 #include "sampling.hlsl"
 
-[[vk::binding(0, 0)]]
-Texture2D<float> g_depth : register(t0, space0);
-[[vk::binding(1, 0)]]
-Texture2D<float4> g_gbuffer0 : register(t1, space0);
-[[vk::binding(2, 0)]]
-Texture2D<float2> g_gbuffer1 : register(t2, space0);
-[[vk::binding(3, 0)]]
-Texture2D<float4> g_gbuffer2 : register(t3, space0);
-[[vk::binding(4, 0)]]
-RWTexture2D<float4> g_output : register(u4, space0);
-
 struct CameraLayout {
     float4x4 view_matrix;
     float4x4 proj_matrix;
     float4 position;
 };
 
-[[vk::binding(5, 0)]]
-ConstantBuffer<CameraLayout> g_camera : register(b5, space0);
+struct LightingParams {
+    Texture2D<float> depth;
+    Texture2D<float4> gbuffer0;
+    Texture2D<float2> gbuffer1;
+    Texture2D<float4> gbuffer2;
+    RWTexture2D<float4> output;
+    ConstantBuffer<CameraLayout> camera;
+};
 
 // Light parameters
 static float lumens = 200;
@@ -107,50 +102,51 @@ func DirectionLight(
     return brdf * NoL;
 }
 
+[shader("compute")]
 [numthreads(8, 8, 1)]
-void main(uint3 dispatch_thread_id: SV_DispatchThreadID)
+void main(uint3 dispatch_thread_id: SV_DispatchThreadID, ParameterBlock<LightingParams> params)
 {
     uint width;
     uint height;
-    g_depth.GetDimensions(width, height);
+    params.depth.GetDimensions(width, height);
 
     let texCoord = int3(dispatch_thread_id.x, dispatch_thread_id.y, 0);
 
-    let view_rotation_matrix = float3x3(g_camera.view_matrix);
+    let view_rotation_matrix = float3x3(params.camera.view_matrix);
 
     if (texCoord.x < width && texCoord.y < height) {
         let viewportX = ((float(texCoord.x) / float(width)) - 0.5) * 2;
         let viewportY = ((float(texCoord.y) / float(height)) - 0.5) * 2;
-        let viewportZ = g_depth.Load(texCoord);
+        let viewportZ = params.depth.Load(texCoord);
         let viewportPoint = float3(viewportX, -viewportY, viewportZ);
-        let viewspacePoint = UnprojectPointWithMatrix(g_camera.proj_matrix, viewportPoint);
+        let viewspacePoint = UnprojectPointWithMatrix(params.camera.proj_matrix, viewportPoint);
 
         // If we still have the clear value of the depth buffer then don't do any lighting as this
         // isn't an object
         if (viewportZ == 0) {
-            g_output[dispatch_thread_id.xy] = float4(0, 0, 0, 1);
+            params.output[dispatch_thread_id.xy] = float4(0, 0, 0, 1);
             return;
         }
 
-        let base_colour = g_gbuffer0.Load(texCoord).rgb;
-        let ws_oct_normal = g_gbuffer1.Load(texCoord).xy;
+        let base_colour = params.gbuffer0.Load(texCoord).rgb;
+        let ws_oct_normal = params.gbuffer1.Load(texCoord).xy;
         let ws_normal = OctahedralDecode(ws_oct_normal);
-        let gbuffer_2 = g_gbuffer2.Load(texCoord);
+        let gbuffer_2 = params.gbuffer2.Load(texCoord);
         let metallic = gbuffer_2.r;
         let roughness = RemapRoughness(gbuffer_2.g);
 
         // Transform the normal into viewspace, where we do all our lighting
-        let vs_normal = mul(ws_normal, view_rotation_matrix);
+        let vs_normal = mul(view_rotation_matrix, ws_normal);
 
         float3 light = float3(0, 0, 0);
 
-        let point_pos = mul(float4(float3(1.5, 0.2, 0), 1), g_camera.view_matrix);
+        let point_pos = mul(params.camera.view_matrix, float4(float3(1.5, 0.2, 0), 1), );
         light += PointLight(point_pos.xyz, viewspacePoint, base_colour, vs_normal, metallic, roughness);
 
-        let dir_vector = mul(normalize(float3(1, 1, 1)), view_rotation_matrix);
+        let dir_vector = mul(view_rotation_matrix, normalize(float3(1, 1, 1)), );
         light += DirectionLight(dir_vector, viewspacePoint, base_colour, vs_normal, metallic, roughness) * 2.0;
         light += DirectionLight(-dir_vector, viewspacePoint, base_colour, vs_normal, metallic, roughness) * float3(0.25, 0.1, 0.1);
 
-        g_output[dispatch_thread_id.xy] = float4(light, 1);
+        params.output[dispatch_thread_id.xy] = float4(light, 1);
     }
 }

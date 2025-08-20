@@ -27,22 +27,23 @@
 // SOFTWARE.
 //
 
+#include "rhi.hlsl"
+
 #include "payload.hlsl"
 
-struct Params {
+struct PushConstants {
     float mip_level;
 };
 
-[[vk::push_constant]]
-ConstantBuffer<Params> g_params : register(b0, space1024);
+struct Params {
+    Texture2D<float4> Src;
+    SamplerState Sampler;
+};
+ParameterBlock<Params> g_params;
 
-[[vk::binding(0, 0)]]
-Texture2D<float4> Src : register(t0);
+PUSH_CONSTANT(PushConstants, g_constants);
 
-[[vk::binding(1, 0)]]
-SamplerState Sampler : register(s1);
-
-float4 main(PixelInput input) : SV_Target0
-{
-    return Src.SampleLevel(Sampler, input.uv, g_params.mip_level);
+[shader("fragment")]
+float4 main(PixelInput input) : SV_Target0 {
+    return g_params.Src.SampleLevel(g_params.Sampler, input.uv, g_constants.mip_level);
 }

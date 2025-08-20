@@ -29,22 +29,17 @@
 
 #include "main_gbuffer.inc.hlsl"
 
-[[vk_binding(0, 0)]] ConstantBuffer<CameraLayout> g_camera : register(b0, space0);
-
-[[vk_binding(0, 2)]] ConstantBuffer<ModelLayout> g_model : register(b0, space2);
-
-struct VSResult<T> {
-    float4 sv_position : SV_Position;
-    T payload;
-};
-
-func main(in StaticMeshVertexInput input, out float4 sv_position : SV_Position) -> StaticMeshPixelInput {
+[shader("vertex")]
+func main(
+    in StaticMeshVertexInput input,
+    out float4 sv_position : SV_Position
+) -> StaticMeshPixelInput {
     let in_pos = float4(input.position, 1.0);
-    let normal_matrix = (float3x3)g_model.normal_matrix;
+    let normal_matrix = (float3x3)g_model.data.normal_matrix;
 
-    var position = mul(in_pos, g_model.model_matrix);
-    let normal = normalize(mul(input.normal, normal_matrix));
-    let tangent = normalize(mul(input.tangent.xyz, normal_matrix));
+    var position = mul(g_model.data.model_matrix, in_pos);
+    let normal = normalize(mul(normal_matrix, input.normal));
+    let tangent = normalize(mul(normal_matrix, input.tangent.xyz));
 
     StaticMeshPixelInput output;
     output.position = position.xyz;
@@ -53,8 +48,8 @@ func main(in StaticMeshVertexInput input, out float4 sv_position : SV_Position) 
     output.uv = input.uv;
     output.colour = input.colour;
 
-    position = mul(position, g_camera.view_matrix);
-    position = mul(position, g_camera.proj_matrix);
+    position = mul(g_view.camera.view_matrix, position);
+    position = mul(g_view.camera.proj_matrix, position);
     sv_position = position;
 
     return output;

@@ -27,28 +27,29 @@
 // SOFTWARE.
 //
 
+#include "rhi.hlsl"
+
 #include "smaa/metrics.hlsl"
 #include "payload.hlsl"
 
-[[vk::binding(0, 0)]]
-Texture2D colorTexGamma : register(t0);
+struct Params {
+    Texture2D colorTexGamma;
+    SamplerState linearSampler;
+    SamplerState pointSampler;
+};
+ParameterBlock<Params> g_params;
 
-[[vk::binding(1, 0)]]
-SamplerState LinearSampler : register(s1);
-
-[[vk::binding(2, 0)]]
-SamplerState PointSampler : register(s2);
-
-[[vk::push_constant]]
-ConstantBuffer<SmaaMetrics> g_constants : register(b0, space1024);
+PUSH_CONSTANT(SmaaMetrics, g_constants);
 
 #define SMAA_RT_METRICS g_constants.metrics
 #define SMAA_INCLUDE_VS 0
+#define LinearSampler g_params.linearSampler
+#define PointSampler g_params.pointSampler
 
 #include "smaa/SMAA.hlsl"
 
-float4 main(PixelInput input) : SV_Target0
-{
-    let result = SMAAColorEdgeDetectionPS(input.uv, input.offset, colorTexGamma);
+[shader("fragment")]
+float4 main(in PixelInput input) : SV_Target0 {
+    let result = SMAAColorEdgeDetectionPS(input.uv, input.offset, g_params.colorTexGamma);
     return float4(result.x, result.y, 0, 0);
 }

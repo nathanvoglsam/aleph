@@ -29,6 +29,7 @@
 
 #include "payload.hlsl"
 
+[shader("vertex")]
 PixelInput main(uint id : SV_VertexID)
 {
 	PixelInput output;

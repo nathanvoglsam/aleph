@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#include "rhi.hlsl"
+
 #include "smaa/metrics.hlsl"
 #include "payload.hlsl"
 
@@ -63,27 +65,25 @@
 // plain UNORM views for both the colour read and render target. It follows then that input colour
 // is still in SRGB space, and the output is stored as SRGB.
 
-[[vk::binding(0, 0)]]
-Texture2D blendTex : register(t0);
+struct Params {
+    Texture2D blendTex;
+    Texture2D colorTex;
+    SamplerState linearSampler;
+    SamplerState pointSampler;
+    
+};
+ParameterBlock<Params> g_params;
 
-[[vk::binding(1, 0)]]
-Texture2D colorTex : register(t1);
-
-[[vk::binding(2, 0)]]
-SamplerState LinearSampler : register(s2);
-
-[[vk::binding(3, 0)]]
-SamplerState PointSampler : register(s3);
-
-[[vk::push_constant]]
-ConstantBuffer<SmaaMetrics> g_constants : register(b0, space1024);
+PUSH_CONSTANT(SmaaMetrics, g_constants);
 
 #define SMAA_RT_METRICS g_constants.metrics
 #define SMAA_INCLUDE_VS 0
+#define LinearSampler g_params.linearSampler
+#define PointSampler g_params.pointSampler
 
 #include "smaa/SMAA.hlsl"
 
-float4 main(PixelInput input) : SV_Target0
-{
-    return SMAANeighborhoodBlendingPS(input.uv, input.offset, colorTex, blendTex);
+[shader("fragment")]
+float4 main(PixelInput input) : SV_Target0 {
+    return SMAANeighborhoodBlendingPS(input.uv, input.offset, g_params.colorTex, g_params.blendTex);
 }

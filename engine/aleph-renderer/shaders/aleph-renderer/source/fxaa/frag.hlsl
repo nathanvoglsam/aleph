@@ -32,7 +32,7 @@
 
 #include "payload.hlsl"
 
-struct Params {
+struct FxaaParams {
     float2 fxaaQualityRcpFrame;
     float __pad1;
     float __pad2;
@@ -50,20 +50,20 @@ struct Params {
     float4 fxaaConsole360ConstDir;
 };
 
-[[vk::binding(0, 0)]]
-ConstantBuffer<Params> g_params : register(b0);
+struct Params {
+    ConstantBuffer<FxaaParams> fxaaParams;
+    Texture2D<float4> Src;
+    SamplerState Sampler;
 
-[[vk::binding(1, 0)]]
-Texture2D<float4> Src : register(t1);
+};
+ParameterBlock<Params> g_params;
 
-[[vk::binding(2, 0)]]
-SamplerState Sampler : register(s2);
-
+[shader("fragment")]
 float4 main(PixelInput input) : SV_Target0
 {
     FxaaTex tex;
-    tex.tex = Src;
-    tex.smpl = Sampler;
+    tex.tex = g_params.Src;
+    tex.smpl = g_params.Sampler;
 
     return FxaaPixelShader(
         input.uv,
@@ -71,16 +71,16 @@ float4 main(PixelInput input) : SV_Target0
         tex,
         tex,
         tex,
-        g_params.fxaaQualityRcpFrame,
-        g_params.fxaaConsoleRcpFrameOpt,
-        g_params.fxaaConsoleRcpFrameOpt2,
-        g_params.fxaaConsole360RcpFrameOpt2,
-        g_params.fxaaQualitySubpix,
-        g_params.fxaaQualityEdgeThreshold,
-        g_params.fxaaQualityEdgeThresholdMin,
-        g_params.fxaaConsoleEdgeSharpness,
-        g_params.fxaaConsoleEdgeThreshold,
-        g_params.fxaaConsoleEdgeThresholdMin,
-        g_params.fxaaConsole360ConstDir,
+        g_params.fxaaParams.fxaaQualityRcpFrame,
+        g_params.fxaaParams.fxaaConsoleRcpFrameOpt,
+        g_params.fxaaParams.fxaaConsoleRcpFrameOpt2,
+        g_params.fxaaParams.fxaaConsole360RcpFrameOpt2,
+        g_params.fxaaParams.fxaaQualitySubpix,
+        g_params.fxaaParams.fxaaQualityEdgeThreshold,
+        g_params.fxaaParams.fxaaQualityEdgeThresholdMin,
+        g_params.fxaaParams.fxaaConsoleEdgeSharpness,
+        g_params.fxaaParams.fxaaConsoleEdgeThreshold,
+        g_params.fxaaParams.fxaaConsoleEdgeThresholdMin,
+        g_params.fxaaParams.fxaaConsole360ConstDir,
     );
 }
