@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod reflection;
 mod subproject;
 
 use std::borrow::Cow;

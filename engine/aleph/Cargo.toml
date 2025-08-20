@@ -71,3 +71,4 @@ aleph-math = { workspace = true }
 aleph-target = { workspace = true }
 aleph-shader-db = { workspace = true }
 aleph-ktx = { workspace = true }
+aleph-slang-reflection = { workspace = true }

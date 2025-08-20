@@ -202,59 +202,90 @@ fn archive_shaders_for_package(
 
             let shader_name = super::shader_name_for_bin_file_in_module(module_ctx, &shader_file)?;
 
+            let refl_data = std::fs::read_to_string(&shader_file.reflection_path)?;
+            let mut refl = serde_json::from_str::<aleph_slang_reflection::Root>(&refl_data)?;
+            refl.normalize();
+            let (parameter_blocks, push_constants) =
+                crate::shader_system::reflection::build_shader_db_reflection(&refl).unwrap();
+
             match shader_file.file_ext {
                 crate::shader_system::ShaderFileFormat::Hlsl => unreachable!(),
                 crate::shader_system::ShaderFileFormat::Slang => unreachable!(),
                 crate::shader_system::ShaderFileFormat::Dxil => {
                     log::trace!("Collecting DXIL for shader '{shader_name}'");
                     let file_data = std::fs::read(shader_file.path)?;
+                    let entry = aleph_shader_db::ShaderPlatformEntry {
+                        parameter_blocks,
+                        push_constants,
+                        bytes: file_data,
+                    };
+
                     if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                        db_entry.dxil = file_data;
+                        db_entry.dxil = Some(entry);
                     } else {
                         shader_db.shaders.insert(
                             shader_name,
                             aleph_shader_db::ShaderEntry {
                                 shader_type: shader_file.shader_type.into(),
-                                paramter_blocks: Vec::new(),
-                                spirv: Vec::new(),
-                                dxil: file_data,
-                                msl: Vec::new(),
+                                spirv: None,
+                                dxil: Some(entry),
+                                msl: None,
                             },
                         );
                     }
+
+                    let refl_data = std::fs::read_to_string(&shader_file.reflection_path)?;
+                    let mut refl =
+                        serde_json::from_str::<aleph_slang_reflection::Root>(&refl_data)?;
+                    refl.normalize();
                 }
                 crate::shader_system::ShaderFileFormat::Spirv => {
                     log::trace!("Collecting SPIRV for shader '{shader_name}'");
                     let file_data = std::fs::read(shader_file.path)?;
+                    let entry = aleph_shader_db::ShaderPlatformEntry {
+                        parameter_blocks,
+                        push_constants,
+                        bytes: file_data,
+                    };
+
                     if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                        db_entry.spirv = file_data;
+                        db_entry.spirv = Some(entry);
                     } else {
                         shader_db.shaders.insert(
                             shader_name,
                             aleph_shader_db::ShaderEntry {
                                 shader_type: shader_file.shader_type.into(),
-                                paramter_blocks: Vec::new(),
-                                spirv: file_data,
-                                dxil: Vec::new(),
-                                msl: Vec::new(),
+                                spirv: Some(entry),
+                                dxil: None,
+                                msl: None,
                             },
                         );
                     }
+
+                    let refl_data = std::fs::read_to_string(&shader_file.reflection_path)?;
+                    let mut refl =
+                        serde_json::from_str::<aleph_slang_reflection::Root>(&refl_data)?;
+                    refl.normalize();
                 }
                 crate::shader_system::ShaderFileFormat::Msl => {
                     log::trace!("Collecting MSL for shader '{shader_name}'");
                     let file_data = std::fs::read(shader_file.path)?;
+                    let entry = aleph_shader_db::ShaderPlatformEntry {
+                        parameter_blocks,
+                        push_constants,
+                        bytes: file_data,
+                    };
+
                     if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                        db_entry.msl = file_data;
+                        db_entry.msl = Some(entry);
                     } else {
                         shader_db.shaders.insert(
                             shader_name,
                             aleph_shader_db::ShaderEntry {
                                 shader_type: shader_file.shader_type.into(),
-                                paramter_blocks: Vec::new(),
-                                spirv: Vec::new(),
-                                dxil: Vec::new(),
-                                msl: file_data,
+                                spirv: None,
+                                dxil: None,
+                                msl: Some(entry),
                             },
                         );
                     }
