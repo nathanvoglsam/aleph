@@ -29,12 +29,13 @@
 
 #include "egui.inc.hlsl"
 
-[[vk::binding(0, 0)]]
-Texture2D Tex : register(t0);
+struct Params {
+    Texture2D Tex;
+    SamplerState Sampler;
+};
+ParameterBlock<Params> g_params;
 
-[[vk::binding(1, 0)]]
-SamplerState Sampler : register(s1);
-
+[shader("fragment")]
 float4 main(in EguiPixelInput input) : SV_Target0 {
-    return input.Color * Tex.Sample(Sampler, input.UV).r;
+    return input.Color * g_params.Tex.Sample(g_params.Sampler, input.UV).r;
 }
