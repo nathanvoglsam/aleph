@@ -75,7 +75,10 @@ pub enum ParameterType {
     RWTexture2DMS,
     Texture2DMSArray,
     RWTexture2DMSArray,
+    TextureCube,
+    TextureCubeArray,
     SamplerState,
+    AccelerationStructure,
 }
 
 impl Into<ParameterType> for ArchivedParameterType {
@@ -104,7 +107,10 @@ impl Into<ParameterType> for ArchivedParameterType {
             Self::RWTexture2DMS => ParameterType::RWTexture2DMS,
             Self::Texture2DMSArray => ParameterType::Texture2DMSArray,
             Self::RWTexture2DMSArray => ParameterType::RWTexture2DMSArray,
+            Self::TextureCube => ParameterType::TextureCube,
+            Self::TextureCubeArray => ParameterType::TextureCubeArray,
             Self::SamplerState => ParameterType::SamplerState,
+            Self::AccelerationStructure => ParameterType::AccelerationStructure,
         }
     }
 }
