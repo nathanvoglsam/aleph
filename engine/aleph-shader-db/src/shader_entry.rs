@@ -30,69 +30,105 @@
 use crate::{ArchivedParameterBlockDesc, IParameterBlockDesc, ParameterBlockDesc, ShaderType};
 
 pub trait IShaderEntry {
-    type ParamBlockDesc: IParameterBlockDesc;
+    type PlatformEntry: IShaderPlatformEntry;
     fn get_shader_type(&self) -> ShaderType;
+    fn get_spirv(&self) -> &Self::PlatformEntry;
+    fn get_dxil(&self) -> &Self::PlatformEntry;
+    fn get_msl(&self) -> &Self::PlatformEntry;
+}
+
+pub trait IShaderPlatformEntry {
+    type ParamBlockDesc: IParameterBlockDesc;
     fn get_parameter_blocks(&self) -> &[Self::ParamBlockDesc];
-    fn get_spirv(&self) -> &[u8];
-    fn get_dxil(&self) -> &[u8];
-    fn get_msl(&self) -> &[u8];
+    fn get_push_constant_block(&self) -> Option<u64>;
+    fn get_bytes(&self) -> &[u8];
 }
 
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
 pub struct ShaderEntry {
     pub shader_type: ShaderType,
-    pub paramter_blocks: Vec<ParameterBlockDesc>,
-    pub spirv: Vec<u8>,
-    pub dxil: Vec<u8>,
-    pub msl: Vec<u8>,
+    pub spirv: Option<ShaderPlatformEntry>,
+    pub dxil: Option<ShaderPlatformEntry>,
+    pub msl: Option<ShaderPlatformEntry>,
 }
 
 impl IShaderEntry for ShaderEntry {
-    type ParamBlockDesc = ParameterBlockDesc;
+    type PlatformEntry = ShaderPlatformEntry;
 
     #[inline]
     fn get_shader_type(&self) -> ShaderType {
         self.shader_type
     }
 
-    fn get_parameter_blocks(&self) -> &[Self::ParamBlockDesc] {
-        self.paramter_blocks.as_slice()
+    fn get_spirv(&self) -> &Self::PlatformEntry {
+        self.spirv.as_ref().unwrap()
     }
 
-    fn get_spirv(&self) -> &[u8] {
-        self.spirv.as_slice()
+    fn get_dxil(&self) -> &Self::PlatformEntry {
+        self.dxil.as_ref().unwrap()
     }
 
-    fn get_dxil(&self) -> &[u8] {
-        self.dxil.as_slice()
-    }
-
-    fn get_msl(&self) -> &[u8] {
-        self.msl.as_slice()
+    fn get_msl(&self) -> &Self::PlatformEntry {
+        self.msl.as_ref().unwrap()
     }
 }
 
 impl IShaderEntry for ArchivedShaderEntry {
-    type ParamBlockDesc = ArchivedParameterBlockDesc;
+    type PlatformEntry = ArchivedShaderPlatformEntry;
 
     #[inline]
     fn get_shader_type(&self) -> ShaderType {
         self.shader_type.into()
     }
 
+    fn get_spirv(&self) -> &Self::PlatformEntry {
+        self.spirv.as_ref().unwrap()
+    }
+
+    fn get_dxil(&self) -> &Self::PlatformEntry {
+        self.dxil.as_ref().unwrap()
+    }
+
+    fn get_msl(&self) -> &Self::PlatformEntry {
+        self.msl.as_ref().unwrap()
+    }
+}
+
+#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+pub struct ShaderPlatformEntry {
+    pub parameter_blocks: Vec<ParameterBlockDesc>,
+    pub push_constants: Option<u64>,
+    pub bytes: Vec<u8>,
+}
+
+impl IShaderPlatformEntry for ShaderPlatformEntry {
+    type ParamBlockDesc = ParameterBlockDesc;
+
     fn get_parameter_blocks(&self) -> &[Self::ParamBlockDesc] {
-        self.paramter_blocks.as_slice()
+        self.parameter_blocks.as_slice()
     }
 
-    fn get_spirv(&self) -> &[u8] {
-        self.spirv.as_slice()
+    fn get_push_constant_block(&self) -> Option<u64> {
+        self.push_constants
     }
 
-    fn get_dxil(&self) -> &[u8] {
-        self.dxil.as_slice()
+    fn get_bytes(&self) -> &[u8] {
+        self.bytes.as_slice()
+    }
+}
+
+impl IShaderPlatformEntry for ArchivedShaderPlatformEntry {
+    type ParamBlockDesc = ArchivedParameterBlockDesc;
+
+    fn get_parameter_blocks(&self) -> &[Self::ParamBlockDesc] {
+        self.parameter_blocks.as_slice()
     }
 
-    fn get_msl(&self) -> &[u8] {
-        self.msl.as_slice()
+    fn get_push_constant_block(&self) -> Option<u64> {
+        self.push_constants.as_ref().map(|v| v.to_native())
+    }
+
+    fn get_bytes(&self) -> &[u8] {
+        self.bytes.as_slice()
     }
 }
