@@ -68,7 +68,7 @@ fn vulkan_loader<'a, T: IShaderDatabase>(
     let v = db.get_by_name(name)?;
     Some(aleph_rhi_api::ShaderStage {
         stage: map_shader_type(v.get_shader_type()),
-        data: ShaderBinary::Spirv(v.get_spirv()),
+        data: ShaderBinary::Spirv(v.get_spirv().get_bytes()),
     })
 }
 
@@ -79,7 +79,7 @@ fn d3d12_loader<'a, T: IShaderDatabase>(
     let v = db.get_by_name(name)?;
     Some(aleph_rhi_api::ShaderStage {
         stage: map_shader_type(v.get_shader_type()),
-        data: ShaderBinary::Dxil(v.get_dxil()),
+        data: ShaderBinary::Dxil(v.get_dxil().get_bytes()),
     })
 }
 
@@ -90,6 +90,6 @@ fn metal_loader<'a, T: IShaderDatabase>(
     let v = db.get_by_name(name)?;
     Some(aleph_rhi_api::ShaderStage {
         stage: map_shader_type(v.get_shader_type()),
-        data: ShaderBinary::Spirv(v.get_spirv()), // TODO: fix binary type
+        data: ShaderBinary::Spirv(v.get_spirv().get_bytes()), // TODO: fix binary type
     })
 }
