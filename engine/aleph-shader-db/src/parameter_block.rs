@@ -29,7 +29,7 @@
 
 pub trait IParameterDesc {
     fn get_type(&self) -> ParameterType;
-    fn get_array_size(&self) -> u32;
+    fn get_array_size(&self) -> u64;
 }
 
 pub trait IParameterBlockDesc {
@@ -123,7 +123,7 @@ pub struct ParameterDesc {
     /// If this is a descriptor array, this is the size of the descriptor array.
     ///
     /// If 'array_size = 0' then this encodes a singular non-array parameter.
-    pub array_size: u32,
+    pub array_size: u64,
 }
 
 impl IParameterDesc for ParameterDesc {
@@ -131,7 +131,7 @@ impl IParameterDesc for ParameterDesc {
         self.ty
     }
 
-    fn get_array_size(&self) -> u32 {
+    fn get_array_size(&self) -> u64 {
         self.array_size
     }
 }
@@ -141,7 +141,7 @@ impl IParameterDesc for ArchivedParameterDesc {
         self.ty.into()
     }
 
-    fn get_array_size(&self) -> u32 {
+    fn get_array_size(&self) -> u64 {
         self.array_size.to_native()
     }
 }
