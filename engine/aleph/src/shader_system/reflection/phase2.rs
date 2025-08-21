@@ -27,16 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::shader_system::reflection::Node;
+use crate::shader_system::reflection::{Diagnostic, Node};
 
-pub fn find_push_constant_block(nodes: &mut Vec<Node>) -> Option<u64> {
+pub fn find_push_constant_block(
+    diagnostics: &mut Vec<Diagnostic>,
+    nodes: &mut Vec<Node>,
+) -> Option<u64> {
     // First confirm there are no nested push constant blocks inside the parameter blocks. This
     // should not be possible, but we want to be certain
     for node in nodes.iter() {
         match node {
             v @ Node::ParameterBlock { .. } => {
                 if contains_push_constant_block(v) {
-                    todo!()
+                    unreachable!("push constant in param block: phase1 should catch this!");
                 }
             }
             Node::Parameter { .. } => {}
@@ -61,7 +64,7 @@ pub fn find_push_constant_block(nodes: &mut Vec<Node>) -> Option<u64> {
 
     // If there's more than a single push constant block then we must emit an error.
     if push_constant_blocks.len() > 1 {
-        todo!()
+        diagnostics.push(Diagnostic::TooManyPushConstantBlocks);
     }
 
     push_constant_blocks.first().copied()

@@ -37,9 +37,33 @@ mod phase3;
 pub fn build_shader_db_reflection<'a>(
     root: &'a Root,
 ) -> Option<(Vec<ParameterBlockDesc>, Option<u64>)> {
-    let (diagnostics, mut nodes) = phase1::walk_parameter_tree(root);
+    let mut diagnostics = Vec::new();
+    let mut nodes = phase1::walk_parameter_tree(&mut diagnostics, root);
 
-    for diag in diagnostics.iter() {
+    if !diagnostics.is_empty() {
+        dump_diagnostics(&diagnostics);
+        return None;
+    }
+
+    let push_constant_block = phase2::find_push_constant_block(&mut diagnostics, &mut nodes);
+
+    if !diagnostics.is_empty() {
+        dump_diagnostics(&diagnostics);
+        return None;
+    }
+
+    let descs = phase3::flatten_parameter_tree(&nodes);
+
+    if !diagnostics.is_empty() {
+        dump_diagnostics(&diagnostics);
+        return None;
+    }
+
+    Some((descs, push_constant_block))
+}
+
+fn dump_diagnostics(diagnostics: &[Diagnostic]) {
+    for diag in diagnostics {
         match diag {
             Diagnostic::BadField {
                 full_path,
@@ -63,15 +87,11 @@ pub fn build_shader_db_reflection<'a>(
             } => log::error!(
                 "Field '{full_path}' in type '{struct_name}' of is of unsupported resoruce type '{field_type}'."
             ),
+            Diagnostic::TooManyPushConstantBlocks => {
+                log::error!("Shader has more than 1 push constant block.")
+            }
         }
     }
-    if !diagnostics.is_empty() {
-        return None;
-    }
-
-    let push_constant_block = phase2::find_push_constant_block(&mut nodes);
-    let descs = phase3::flatten_parameter_tree(&nodes);
-    Some((descs, push_constant_block))
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -146,6 +166,7 @@ pub enum Diagnostic<'a> {
         struct_name: &'a str,
         field_type: &'static str,
     },
+    TooManyPushConstantBlocks,
 }
 
 #[derive(Debug)]
@@ -155,7 +176,7 @@ pub enum Node {
     },
     Parameter {
         parameter_type: aleph_shader_db::ParameterType,
-        array_size: u32,
+        array_size: u64,
     },
     PushConstantBlock {
         bytes: u64,

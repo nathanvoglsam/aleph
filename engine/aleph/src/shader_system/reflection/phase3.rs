@@ -39,7 +39,9 @@ pub fn flatten_parameter_tree(nodes: &[Node]) -> Vec<aleph_shader_db::ParameterB
     for node in nodes {
         match node {
             v @ Node::ParameterBlock { .. } => queue.push_back(v),
-            Node::Parameter { .. } => unreachable!(),
+            Node::Parameter { .. } => {
+                unreachable!("top level parameter: stage1 should've caught this!")
+            }
             Node::PushConstantBlock { .. } => {}
         }
     }

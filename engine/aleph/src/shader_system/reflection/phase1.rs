@@ -35,14 +35,13 @@ use aleph_slang_reflection::{
 
 use crate::shader_system::reflection::{CurrentContainer, Diagnostic, Node, TypeClass};
 
-pub fn walk_parameter_tree<'a>(root: &'a Root) -> (Vec<Diagnostic<'a>>, Vec<Node>) {
-    let mut diagnostics = Vec::new();
+pub fn walk_parameter_tree<'a>(diagnostics: &mut Vec<Diagnostic<'a>>, root: &'a Root) -> Vec<Node> {
     let mut name_stack = Vec::new();
     let mut nodes = Vec::new();
 
     name_stack.push("__$global");
     walk_global_root(
-        &mut diagnostics,
+        diagnostics,
         &mut name_stack,
         &mut nodes,
         "__ImplicitGlobal",
@@ -53,7 +52,7 @@ pub fn walk_parameter_tree<'a>(root: &'a Root) -> (Vec<Diagnostic<'a>>, Vec<Node
     for entry_point in root.entry_points.iter() {
         name_stack.push("__$entry");
         walk_global_root(
-            &mut diagnostics,
+            diagnostics,
             &mut name_stack,
             &mut nodes,
             "__ImplicitEntry",
@@ -62,7 +61,7 @@ pub fn walk_parameter_tree<'a>(root: &'a Root) -> (Vec<Diagnostic<'a>>, Vec<Node
         name_stack.pop();
     }
 
-    (diagnostics, nodes)
+    nodes
 }
 
 fn walk_global_root<'a>(
@@ -194,7 +193,20 @@ fn walk_parameter_block_field<'a>(
                 array_size: 0,
             });
         }
-        TypeLayout::Array { .. } => todo!(),
+        TypeLayout::Array {
+            element_count,
+            element_type,
+            ..
+        } => {
+            walk_parameter_block_array_field(
+                diagnostics,
+                name_stack,
+                nodes,
+                container_type_name,
+                *element_count,
+                element_type,
+            );
+        }
         TypeLayout::Struct { name, fields, .. } => {
             walk_parameter_block_struct(diagnostics, name_stack, nodes, name, fields)
         }
@@ -273,6 +285,108 @@ fn walk_parameter_block_field<'a>(
     }
 }
 
+fn walk_parameter_block_array_field<'a>(
+    diagnostics: &mut Vec<Diagnostic<'a>>,
+    name_stack: &mut Vec<&'a str>,
+    nodes: &mut Vec<Node>,
+    container_type_name: &'a str,
+    element_count: u64,
+    element_type: &'a TypeLayout<'a>,
+) {
+    match element_type {
+        TypeLayout::SamplerState {} => {
+            let array_size = if element_count == 0 {
+                u64::MAX
+            } else {
+                element_count
+            };
+            nodes.push(Node::Parameter {
+                parameter_type: aleph_shader_db::ParameterType::SamplerState,
+                array_size,
+            });
+        }
+        TypeLayout::Array {
+            element_count: inner_element_count,
+            element_type,
+            ..
+        } => {
+            let element_count = *inner_element_count * element_count;
+            walk_parameter_block_array_field(
+                diagnostics,
+                name_stack,
+                nodes,
+                container_type_name,
+                element_count,
+                element_type,
+            );
+        }
+        TypeLayout::Struct { name, fields, .. } => {
+            for _ in 0..element_count {
+                walk_parameter_block_struct(diagnostics, name_stack, nodes, name, fields);
+            }
+        }
+        TypeLayout::ConstantBuffer { .. } => {
+            let diag = Diagnostic::UnsupportedField {
+                full_path: full_path_from_name_stack(name_stack),
+                struct_name: container_type_name,
+                field_type: "ConstantBuffer Array",
+            };
+            diagnostics.push(diag);
+        }
+        TypeLayout::ParameterBlock { .. } => {
+            let diag = Diagnostic::UnsupportedField {
+                full_path: full_path_from_name_stack(name_stack),
+                struct_name: container_type_name,
+                field_type: "ParameterBlockArray",
+            };
+            diagnostics.push(diag);
+        }
+        TypeLayout::TextureBuffer { .. } => {
+            let diag = Diagnostic::UnsupportedField {
+                full_path: full_path_from_name_stack(name_stack),
+                struct_name: container_type_name,
+                field_type: "TextureBuffer",
+            };
+            diagnostics.push(diag);
+        }
+        TypeLayout::ShaderStorageBuffer { .. } => {
+            let diag = Diagnostic::UnsupportedField {
+                full_path: full_path_from_name_stack(name_stack),
+                struct_name: container_type_name,
+                field_type: "ShaderStorageBuffer",
+            };
+            diagnostics.push(diag);
+        }
+        TypeLayout::Resource { info, .. } => {
+            let parameter_type = parameter_type_from_resource_info(
+                diagnostics,
+                name_stack,
+                container_type_name,
+                info,
+            );
+            let array_size = if element_count == 0 {
+                u64::MAX
+            } else {
+                element_count
+            };
+            nodes.push(Node::Parameter {
+                parameter_type,
+                array_size,
+            });
+        }
+        _ => {
+            let class = TypeClass::for_type_layout(element_type);
+            let diag = Diagnostic::BadField {
+                full_path: full_path_from_name_stack(name_stack),
+                struct_name: container_type_name,
+                class,
+                container: CurrentContainer::ParameterBlock,
+            };
+            diagnostics.push(diag);
+        }
+    }
+}
+
 fn walk_parameter_block_struct<'a>(
     diagnostics: &mut Vec<Diagnostic<'a>>,
     name_stack: &mut Vec<&'a str>,
@@ -293,26 +407,12 @@ fn walk_constant_buffer<'a>(
     container_type_name: &'a str,
     element: &'a VariableLayout<'a>,
 ) {
-    match &element.r#type {
-        TypeLayout::Scalar { .. } => {}
-        TypeLayout::Vector { .. } => {}
-        TypeLayout::Matrix { .. } => {}
-        TypeLayout::Pointer { .. } => {}
-        TypeLayout::Array { .. } => todo!(),
-        TypeLayout::Struct { name, fields, .. } => {
-            walk_constant_buffer_struct(diagnostics, name_stack, name, fields);
-        }
-        _ => {
-            let class = TypeClass::for_type_layout(&element.r#type);
-            let diag = Diagnostic::BadField {
-                full_path: full_path_from_name_stack(name_stack),
-                struct_name: container_type_name,
-                class,
-                container: CurrentContainer::ConstantBuffer,
-            };
-            diagnostics.push(diag);
-        }
-    }
+    walk_constant_buffer_field_type(
+        diagnostics,
+        name_stack,
+        container_type_name,
+        &element.r#type,
+    );
 }
 
 fn walk_constant_buffer_struct<'a>(
@@ -333,17 +433,34 @@ fn walk_constant_buffer_field<'a>(
     field: &'a VariableLayout<'a>,
 ) {
     name_stack.push(field.name.as_deref().unwrap_or("<unnamed>"));
-    match &field.r#type {
+    walk_constant_buffer_field_type(diagnostics, name_stack, container_type_name, &field.r#type);
+    name_stack.pop();
+}
+
+fn walk_constant_buffer_field_type<'a>(
+    diagnostics: &mut Vec<Diagnostic<'a>>,
+    name_stack: &mut Vec<&'a str>,
+    container_type_name: &'a str,
+    field_type: &'a TypeLayout<'a>,
+) {
+    match field_type {
         TypeLayout::Scalar { .. } => {}
         TypeLayout::Vector { .. } => {}
         TypeLayout::Matrix { .. } => {}
         TypeLayout::Pointer { .. } => {}
-        TypeLayout::Array { .. } => todo!(),
+        TypeLayout::Array { element_type, .. } => {
+            walk_constant_buffer_field_type(
+                diagnostics,
+                name_stack,
+                container_type_name,
+                element_type,
+            );
+        }
         TypeLayout::Struct { name, fields, .. } => {
             walk_constant_buffer_struct(diagnostics, name_stack, name, fields);
         }
         _ => {
-            let class = TypeClass::for_type_layout(&field.r#type);
+            let class = TypeClass::for_type_layout(field_type);
             let diag = Diagnostic::BadField {
                 full_path: full_path_from_name_stack(name_stack),
                 struct_name: container_type_name,
@@ -353,7 +470,6 @@ fn walk_constant_buffer_field<'a>(
             diagnostics.push(diag);
         }
     }
-    name_stack.pop();
 }
 
 fn full_path_from_name_stack(name_stack: &[&str]) -> String {
