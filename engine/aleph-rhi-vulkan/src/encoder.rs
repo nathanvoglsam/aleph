@@ -42,9 +42,9 @@ use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
-use crate::internal::conv::*;
+use crate::internal::write_descriptors::translate_descriptor_writes;
+use crate::internal::{conv::*, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
-use crate::pipeline_layout::PipelineLayout;
 use crate::texture::Texture;
 
 pub struct Encoder<'a> {
@@ -178,20 +178,20 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.arena.reset();
     }
 
-    unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
-        let pipeline_layout = self
+    unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
+        let binding_signature = self
             .bound_graphics_pipeline
             .as_ref()
             .expect("Can't set push constants without a pipeline bound")
-            ._pipeline_layout
+            ._binding_signature
             .as_ref();
 
-        let info = &pipeline_layout.push_constant_blocks[block_index];
+        let info = binding_signature.push_constant_block.as_ref().unwrap();
 
         unsafe {
             self._device.device.cmd_push_constants(
                 self._buffer,
-                pipeline_layout.pipeline_layout,
+                binding_signature.pipeline_layout,
                 info.stage_flags,
                 info.offset,
                 data,
@@ -271,15 +271,14 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         self.bound_compute_pipeline = Some(concrete);
     }
 
-    unsafe fn bind_descriptor_sets(
+    unsafe fn bind_parameter_blocks(
         &mut self,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
         first_set: u32,
-        sets: &[DescriptorSetHandle],
-        dynamic_offsets: &[u32],
+        sets: &[ParameterBlockHandle],
     ) {
-        let pipeline_layout = PipelineLayout::get(pipeline_layout);
+        let binding_signature = unwrap::binding_signature(binding_signature);
         let bind_point = pipeline_bind_point_to_vk(bind_point);
 
         unsafe {
@@ -288,12 +287,49 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             self._device.device.cmd_bind_descriptor_sets(
                 self._buffer,
                 bind_point,
-                pipeline_layout.pipeline_layout,
+                binding_signature.pipeline_layout,
                 first_set,
                 new_sets,
-                dynamic_offsets,
+                &[],
             );
         }
+    }
+
+    unsafe fn push_parameters(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        bind_point: PipelineBindPoint,
+        block: u32,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
+        {
+            let binding_signature = unwrap::binding_signature(binding_signature);
+            let bind_point = pipeline_bind_point_to_vk(bind_point);
+            let block_layout = &binding_signature.parameter_block_layouts[block as usize];
+
+            let layout_desc = block_layout.desc.get();
+
+            let descriptor_writes = translate_descriptor_writes(
+                layout_desc,
+                base,
+                writes,
+                vk::DescriptorSet::null(),
+                self.arena.allocator(),
+            );
+
+            unsafe {
+                self._device.push_descriptor.cmd_push_descriptor_set(
+                    self._buffer,
+                    bind_point,
+                    binding_signature.pipeline_layout,
+                    block,
+                    &descriptor_writes,
+                )
+            };
+        }
+
+        self.arena.reset();
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {

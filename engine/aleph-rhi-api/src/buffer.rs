@@ -71,22 +71,6 @@ impl BufferHandle {
     }
 }
 
-impl BufferHandle {
-    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer`]
-    pub const fn uniform_buffer_write(&self, len: u32) -> BufferDescriptorWrite {
-        BufferDescriptorWrite::uniform_buffer(self, len)
-    }
-
-    /// Short-hand wrapper for [`BufferDescriptorWrite::uniform_buffer_offset`]
-    pub const fn uniform_buffer_offset_write(
-        &self,
-        offset: u64,
-        len: u32,
-    ) -> BufferDescriptorWrite {
-        BufferDescriptorWrite::uniform_buffer_offset(self, offset, len)
-    }
-}
-
 /// Description object used for creating a new buffer.
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct BufferDesc<'a> {

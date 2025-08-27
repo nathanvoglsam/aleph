@@ -54,18 +54,6 @@ impl ImageView {
     pub fn get_uav_for(device: &dyn IDevice, texture: &TextureHandle) -> Result<Self, ()> {
         device.get_texture_view(texture, &ImageViewDesc::uav_for_texture(device, texture))
     }
-
-    pub const fn descriptor_write(self, image_layout: ImageLayout) -> ImageDescriptorWrite {
-        ImageDescriptorWrite::new(self, image_layout)
-    }
-
-    pub const fn srv_write(self) -> ImageDescriptorWrite {
-        ImageDescriptorWrite::srv(self)
-    }
-
-    pub const fn uav_write(self) -> ImageDescriptorWrite {
-        ImageDescriptorWrite::uav(self)
-    }
 }
 
 unsafe impl Send for ImageView {}

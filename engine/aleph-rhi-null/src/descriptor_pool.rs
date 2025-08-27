@@ -27,17 +27,15 @@
 // SOFTWARE.
 //
 
-use std::sync::Arc;
-
 use aleph_any::{AnyArc, declare_interfaces};
-use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
-use crate::{NullDescriptorSetLayout, NullDevice};
+use crate::NullDevice;
+use crate::parameter_block_layout::NullParameterBlockLayout;
 
 pub struct NullDescriptorPool {
     pub(crate) _device: AnyArc<NullDevice>,
-    pub(crate) _layout: Arc<ArcedObject<NullDescriptorSetLayout>>,
+    pub(crate) _layout: AnyArc<NullParameterBlockLayout>,
     pub(crate) counter: u64,
 }
 
@@ -46,13 +44,13 @@ declare_interfaces!(NullDescriptorPool, [IDescriptorPool]);
 crate::impl_platform_interface_passthrough!(NullDescriptorPool);
 
 impl IDescriptorPool for NullDescriptorPool {
-    fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError> {
         let handle = self.counter;
         self.counter += 1;
-        Ok(unsafe { DescriptorSetHandle::from_raw_int(handle).unwrap() })
+        Ok(unsafe { ParameterBlockHandle::from_raw_int(handle).unwrap() })
     }
 
-    unsafe fn free(&mut self, _sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&mut self, _blocks: &[ParameterBlockHandle]) {
         self.counter = 1;
     }
 

@@ -30,18 +30,18 @@
 pub extern crate aleph_vulkan_alloc as vulkan_alloc;
 
 mod adapter;
+mod binding_signature;
 mod buffer;
 mod command_list;
 mod context;
 mod descriptor_arena;
 mod descriptor_pool;
-mod descriptor_set_layout;
 mod device;
 mod encoder;
 mod fence;
 mod internal;
+mod parameter_block_layout;
 mod pipeline;
-mod pipeline_layout;
 mod queue;
 mod rhi_backend;
 mod sampler;

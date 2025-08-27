@@ -57,7 +57,7 @@ pub trait IGeneralEncoder: IComputeEncoder {
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]);
 
-    unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]);
+    unsafe fn set_push_constant_block(&mut self, data: &[u8]);
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo);
 
@@ -91,13 +91,21 @@ pub trait IGeneralEncoder: IComputeEncoder {
 pub trait IComputeEncoder: ITransferEncoder {
     unsafe fn bind_compute_pipeline(&mut self, pipeline: &ComputePipelineHandle);
 
-    unsafe fn bind_descriptor_sets(
+    unsafe fn bind_parameter_blocks(
         &mut self,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
-        first_set: u32,
-        sets: &[DescriptorSetHandle],
-        dynamic_offsets: &[u32],
+        first_block: u32,
+        blocks: &[ParameterBlockHandle],
+    );
+
+    unsafe fn push_parameters(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        bind_point: PipelineBindPoint,
+        block: u32,
+        base: u32,
+        writes: &[ParameterWrite],
     );
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);

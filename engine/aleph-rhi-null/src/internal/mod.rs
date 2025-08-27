@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+pub mod unwrap;
+
 #[macro_export]
 macro_rules! impl_platform_interface_passthrough {
     ($typ: ident) => {

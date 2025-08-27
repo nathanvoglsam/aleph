@@ -44,16 +44,16 @@ declare_interfaces!(NullDescriptorArena, [IDescriptorArena]);
 crate::impl_platform_interface_passthrough!(NullDescriptorArena);
 
 impl IDescriptorArena for NullDescriptorArena {
-    fn allocate_set(
+    fn allocate_block(
         &self,
-        _layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
+        _layout: &dyn IParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
         let handle = self.counter.get();
         self.counter.set(self.counter.get() + 1);
-        Ok(unsafe { DescriptorSetHandle::from_raw_int(handle).unwrap() })
+        Ok(unsafe { ParameterBlockHandle::from_raw_int(handle).unwrap() })
     }
 
-    unsafe fn free(&self, _sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&self, _blocks: &[ParameterBlockHandle]) {
         // Intentionally do nothing
     }
 

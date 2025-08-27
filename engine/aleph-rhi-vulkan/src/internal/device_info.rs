@@ -102,6 +102,7 @@ impl DeviceInfo {
         }
         Self {
             extensions: vec![
+                make_ext_prop("VK_KHR_push_descriptor\0"),
                 make_ext_prop("VK_KHR_timeline_semaphore\0"),
                 make_ext_prop("VK_EXT_descriptor_indexing\0"),
                 make_ext_prop("VK_KHR_buffer_device_address\0"),

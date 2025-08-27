@@ -35,7 +35,9 @@ use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
+use aleph_rhi_impl_utils::owned_desc::{
+    OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
+};
 use allocator_api2::vec::Vec as BVec;
 use ash::vk;
 use blink_alloc::{Blink, BlinkAlloc};
@@ -45,19 +47,20 @@ use parking_lot::Mutex;
 use vulkan_alloc::vma;
 
 use crate::adapter::Adapter;
+use crate::binding_signature::BindingSignature;
 use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
-use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::Fence;
 use crate::internal::allocation_callbacks::callbacks_from_rust_allocator;
-use crate::internal::conv::*;
 use crate::internal::semaphore_pool::SemaphorePool;
 use crate::internal::set_name::set_name;
+use crate::internal::write_descriptors::translate_descriptor_writes;
+use crate::internal::{conv::*, unwrap};
+use crate::parameter_block_layout::ParameterBlockLayout;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
-use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
@@ -68,6 +71,7 @@ pub struct Device {
     pub(crate) context: AnyArc<Context>,
     pub(crate) adapter: AnyArc<Adapter>,
     pub(crate) device: ManuallyDrop<ash::Device>,
+    pub(crate) push_descriptor: ash::khr::push_descriptor::Device,
     pub(crate) timeline_semaphore: ash::khr::timeline_semaphore::Device,
     pub(crate) _create_renderpass_2: ash::khr::create_renderpass2::Device,
     pub(crate) dynamic_rendering: ash::khr::dynamic_rendering::Device,
@@ -146,6 +150,134 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    fn create_parameter_block_layout(
+        &self,
+        desc: &ParameterBlockDesc,
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError> {
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
+
+            let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
+
+            let mut sizes = [0; 11];
+
+            let mut bindings = BVec::with_capacity_in(desc.params.len(), bump.allocator());
+            for (i, v) in desc.params.iter().enumerate() {
+                let binding = parameter_desc_to_vk(v)
+                    .binding(i as u32)
+                    .stage_flags(stage_flags);
+
+                sizes[binding.descriptor_type.as_raw() as usize] += binding.descriptor_count;
+
+                bindings.push(binding);
+            }
+
+            let mut pool_sizes = Vec::with_capacity(sizes.len());
+            for (i, v) in sizes.iter().copied().enumerate() {
+                // Accumulate any non-zero pool size into the list
+                if v > 0 {
+                    pool_sizes.push(
+                        vk::DescriptorPoolSize::default()
+                            .ty(vk::DescriptorType::from_raw(i as i32))
+                            .descriptor_count(v),
+                    );
+                }
+            }
+
+            // Set push descriptor flag if requested by the caller.
+            let mut create_info = vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
+            if desc.flags.contains(ParameterBlockFlags::PUSH_DESCRIPTOR) {
+                create_info =
+                    create_info.flags(vk::DescriptorSetLayoutCreateFlags::PUSH_DESCRIPTOR_KHR);
+            }
+
+            let descriptor_set_layout = unsafe {
+                self.device
+                    .create_descriptor_set_layout(&create_info, None)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+            };
+
+            set_name(
+                self.debug_loader.as_ref(),
+                &bump,
+                descriptor_set_layout,
+                desc.name,
+            );
+
+            let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
+                this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_parameter_block_layout(),
+                descriptor_set_layout,
+                pool_sizes,
+                desc: OwnedParameterBlockDesc::new(desc),
+            });
+            Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+        })
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_binding_signature(
+        &self,
+        desc: &BindingSignatureDesc,
+    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
+
+            let mut block_layouts = Vec::with_capacity(desc.parameter_block_layouts.len());
+            let mut set_layouts =
+                BVec::with_capacity_in(desc.parameter_block_layouts.len(), bump.allocator());
+            for v in desc.parameter_block_layouts {
+                let v = unwrap::parameter_block_layout_d(v);
+                block_layouts.push(v.this.upgrade().unwrap());
+                set_layouts.push(v.descriptor_set_layout);
+            }
+
+            let push_constant_block = desc.push_constant_block.as_ref().map(|v| {
+                vk::PushConstantRange::default()
+                    .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
+                    .offset(0)
+                    .size(v.size.get() as u32)
+            });
+            let push_constant_ranges = push_constant_block
+                .as_ref()
+                .map(|v| std::slice::from_ref(v))
+                .unwrap_or(&[]);
+
+            let create_info = vk::PipelineLayoutCreateInfo::default()
+                .set_layouts(&set_layouts)
+                .push_constant_ranges(&push_constant_ranges);
+
+            let pipeline_layout = unsafe {
+                self.device
+                    .create_pipeline_layout(&create_info, None)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+            };
+
+            set_name(
+                self.debug_loader.as_ref(),
+                &bump,
+                pipeline_layout,
+                desc.name,
+            );
+
+            let out = AnyArc::new_cyclic(move |v| BindingSignature {
+                this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_binding_signature(),
+                pipeline_layout,
+                parameter_block_layouts: block_layouts,
+                push_constant_block,
+            });
+            Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
+        })
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     #[aleph_profile::function]
     fn create_graphics_pipeline(
         &self,
@@ -154,10 +286,10 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+            let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
             let mut builder =
-                vk::GraphicsPipelineCreateInfo::default().layout(pipeline_layout.pipeline_layout);
+                vk::GraphicsPipelineCreateInfo::default().layout(binding_signature.pipeline_layout);
 
             let dynamic_states = [vk::DynamicState::VIEWPORT, vk::DynamicState::SCISSOR];
             let dynamic_state =
@@ -245,7 +377,7 @@ impl IDevice for Device {
 
             let out = GraphicsPipeline {
                 _device: self.this.upgrade().unwrap(),
-                _pipeline_layout: pipeline_layout,
+                _binding_signature: binding_signature.this.upgrade().unwrap(),
                 id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
             };
@@ -266,7 +398,7 @@ impl IDevice for Device {
             let bump = bump_cell.scope();
 
             let shader_data = Self::unwrap_shader_bytecode(&bump, 0, &desc.shader_module)?;
-            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+            let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
             // Create a temporary shader module using
             let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
@@ -278,7 +410,7 @@ impl IDevice for Device {
             };
 
             let builder = vk::ComputePipelineCreateInfo::default()
-                .layout(pipeline_layout.pipeline_layout)
+                .layout(binding_signature.pipeline_layout)
                 .stage(
                     vk::PipelineShaderStageCreateInfo::default()
                         .stage(vk::ShaderStageFlags::COMPUTE)
@@ -303,79 +435,12 @@ impl IDevice for Device {
 
             let out = ComputePipeline {
                 _device: self.this.upgrade().unwrap(),
-                _pipeline_layout: pipeline_layout,
+                _binding_signature: binding_signature.this.upgrade().unwrap(),
                 id: self.object_counter.next_compute_pipeline(),
                 pipeline,
             };
             let out = ArcedObject::new_arc_opaque(out);
             unsafe { Ok(ComputePipelineHandle::new(out)) }
-        })
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_descriptor_set_layout(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
-
-            let stage_flags = descriptor_shader_visibility_to_vk(desc.visibility);
-
-            let mut sizes = [0; 11];
-            let mut bindings = BVec::with_capacity_in(desc.items.len(), bump.allocator());
-            for v in desc.items {
-                let descriptor_type = descriptor_type_to_vk(v.binding_type);
-                let descriptor_count = v.binding_count.map(|v| v.get()).unwrap_or(1);
-
-                sizes[descriptor_type.as_raw() as usize] += descriptor_count;
-
-                let binding = vk::DescriptorSetLayoutBinding::default()
-                    .binding(v.binding_num)
-                    .descriptor_type(descriptor_type)
-                    .descriptor_count(descriptor_count)
-                    .stage_flags(stage_flags);
-
-                bindings.push(binding);
-            }
-
-            let mut pool_sizes = Vec::with_capacity(sizes.len());
-            for (i, v) in sizes.iter().copied().enumerate() {
-                // Accumulate any non-zero pool size into the list
-                if v > 0 {
-                    pool_sizes.push(
-                        vk::DescriptorPoolSize::default()
-                            .ty(vk::DescriptorType::from_raw(i as i32))
-                            .descriptor_count(v),
-                    );
-                }
-            }
-
-            let create_info = vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
-
-            let descriptor_set_layout = unsafe {
-                self.device
-                    .create_descriptor_set_layout(&create_info, None)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-            };
-
-            set_name(
-                self.debug_loader.as_ref(),
-                &bump,
-                descriptor_set_layout,
-                desc.name,
-            );
-
-            let out = DescriptorSetLayout {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_set_layout(),
-                descriptor_set_layout,
-                pool_sizes,
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
         })
     }
 
@@ -389,18 +454,18 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let layout = DescriptorSetLayout::get_owned(desc.layout);
+            let layout = unwrap::parameter_block_layout(desc.layout);
 
             let iter = layout.pool_sizes.iter().copied();
             let mut pool_sizes = BVec::new_in(bump.allocator());
             pool_sizes.extend(iter);
             for size in &mut pool_sizes {
-                size.descriptor_count *= desc.num_sets;
+                size.descriptor_count *= desc.num_blocks;
             }
 
             let create_info = vk::DescriptorPoolCreateInfo::default()
                 .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET)
-                .max_sets(desc.num_sets)
+                .max_sets(desc.num_blocks)
                 .pool_sizes(&pool_sizes);
 
             let descriptor_pool = unsafe {
@@ -418,7 +483,7 @@ impl IDevice for Device {
 
             let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
                 _device: self.this.upgrade().unwrap(),
-                _layout: layout,
+                _layout: layout.this.upgrade().unwrap(),
                 descriptor_pool,
             });
 
@@ -461,7 +526,7 @@ impl IDevice for Device {
             // Multiply the pool sizes by our multiplier. We encode the default sizes as the number
             // of descriptors expected per '2' sets so we can do some nice integer math instead of
             // icky float maths with fractional ratios
-            let multiplier = desc.num_sets.div_ceil(2).max(2);
+            let multiplier = desc.num_blocks.div_ceil(2).max(2);
             for v in &mut pool_sizes {
                 v.descriptor_count *= multiplier;
             }
@@ -473,7 +538,7 @@ impl IDevice for Device {
 
             let create_info = vk::DescriptorPoolCreateInfo::default()
                 .flags(flags)
-                .max_sets(desc.num_sets)
+                .max_sets(desc.num_blocks)
                 .pool_sizes(&pool_sizes);
 
             let descriptor_pool = unsafe {
@@ -495,62 +560,6 @@ impl IDevice for Device {
             });
 
             Ok(pool)
-        })
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_pipeline_layout(
-        &self,
-        desc: &PipelineLayoutDesc,
-    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
-
-            let mut set_layouts = BVec::with_capacity_in(desc.set_layouts.len(), bump.allocator());
-            for v in desc.set_layouts {
-                let v = DescriptorSetLayout::get(v);
-                set_layouts.push(v.descriptor_set_layout);
-            }
-
-            let mut offset = 0;
-            let mut ranges = Vec::with_capacity(desc.push_constant_blocks.len());
-            for v in desc.push_constant_blocks {
-                let range = vk::PushConstantRange::default()
-                    .stage_flags(descriptor_shader_visibility_to_vk(v.visibility))
-                    .offset(offset)
-                    .size(v.size as u32);
-                ranges.push(range);
-
-                offset += v.size as u32;
-            }
-
-            let create_info = vk::PipelineLayoutCreateInfo::default()
-                .set_layouts(&set_layouts)
-                .push_constant_ranges(&ranges);
-
-            let pipeline_layout = unsafe {
-                self.device
-                    .create_pipeline_layout(&create_info, None)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-            };
-
-            set_name(
-                self.debug_loader.as_ref(),
-                &bump,
-                pipeline_layout,
-                desc.name,
-            );
-
-            let out = PipelineLayout {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_pipeline_layout(),
-                pipeline_layout,
-                push_constant_blocks: ranges,
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(PipelineLayoutHandle::new(out)) }
         })
     }
 
@@ -904,72 +913,26 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
+    unsafe fn update_parameter_block(
+        &self,
+        layout: &dyn IParameterBlockLayout,
+        block: ParameterBlockHandle,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let mut descriptor_writes = BVec::with_capacity_in(writes.len(), bump.allocator());
-            for write in writes {
-                let d_type = write.writes.descriptor_type();
-                let d_type = descriptor_type_to_vk(d_type);
-                let new_write = vk::WriteDescriptorSet::default()
-                    .dst_set(unsafe { std::mem::transmute(write.set) })
-                    .dst_binding(write.binding)
-                    .dst_array_element(write.array_element)
-                    .descriptor_type(d_type);
-                let new_write = match write.writes {
-                    DescriptorWrites::Sampler(v) => {
-                        let translator = v.iter().map(|v| {
-                            vk::DescriptorImageInfo::default()
-                                .sampler(Sampler::get(v.sampler).sampler)
-                        });
-                        let mut image_infos = BVec::new_in(bump.allocator());
-                        image_infos.extend(translator);
-                        let image_infos = BVec::leak(image_infos);
-                        new_write.image_info(image_infos)
-                    }
-                    DescriptorWrites::TexelBufferRW(v) | DescriptorWrites::TexelBuffer(v) => {
-                        let translator = v.iter().map(|_v| vk::BufferView::null());
-                        let mut texel_buffer_infos = BVec::new_in(bump.allocator());
-                        texel_buffer_infos.extend(translator);
-                        let texel_buffer_infos = BVec::leak(texel_buffer_infos);
-                        new_write.texel_buffer_view(texel_buffer_infos)
-                    }
-                    DescriptorWrites::InputAttachment(v)
-                    | DescriptorWrites::TextureRW(v)
-                    | DescriptorWrites::Texture(v) => {
-                        let translator = v.iter().map(|v| {
-                            vk::DescriptorImageInfo::default()
-                                .image_view(unsafe { std::mem::transmute(v.image_view) })
-                                .image_layout(image_layout_to_vk(v.image_layout))
-                        });
-                        let mut image_infos = BVec::new_in(bump.allocator());
-                        image_infos.extend(translator);
-                        let image_infos = BVec::leak(image_infos);
-                        new_write.image_info(image_infos)
-                    }
-                    DescriptorWrites::ByteAddressBuffer(v)
-                    | DescriptorWrites::ByteAddressBufferRW(v)
-                    | DescriptorWrites::StructuredBufferRW(v)
-                    | DescriptorWrites::StructuredBuffer(v)
-                    | DescriptorWrites::UniformBuffer(v)
-                    | DescriptorWrites::UniformBufferDynamic(v) => {
-                        let translator = v.iter().map(|v| {
-                            let buffer = v.buffer.get().downcast_ref::<Buffer>().unwrap();
-                            let len = buffer.clamp_max_size_for_view(v.len);
-                            vk::DescriptorBufferInfo::default()
-                                .buffer(buffer.buffer)
-                                .offset(v.offset)
-                                .range(len)
-                        });
-                        let mut buffer_infos = BVec::new_in(bump.allocator());
-                        buffer_infos.extend(translator);
-                        let buffer_infos = BVec::leak(buffer_infos);
-                        new_write.buffer_info(buffer_infos)
-                    }
-                };
-                descriptor_writes.push(new_write);
-            }
+            let layout = unwrap::parameter_block_layout(layout);
+            let layout_desc = layout.desc.get();
+
+            let descriptor_writes = translate_descriptor_writes(
+                layout_desc,
+                base,
+                writes,
+                unsafe { std::mem::transmute(block) },
+                bump.allocator(),
+            );
 
             unsafe { self.device.update_descriptor_sets(&descriptor_writes, &[]) };
         })
@@ -1192,26 +1155,6 @@ impl IDevice for Device {
 
     fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
         Sampler::get(sampler).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_descriptor_set_layout_id(
-        &self,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        DescriptorSetLayout::get(set_layout).id
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_pipeline_layout_id(
-        &self,
-        pipeline_layout: &PipelineLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        PipelineLayout::get(pipeline_layout).id
     }
 
     // ========================================================================================== //

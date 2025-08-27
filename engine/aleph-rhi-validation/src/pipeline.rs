@@ -27,17 +27,15 @@
 // SOFTWARE.
 //
 
-use std::sync::Arc;
-
 use aleph_any::AnyArc;
 use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 
-use crate::{ValidationDevice, ValidationPipelineLayout};
+use crate::{ValidationBindingSignature, ValidationDevice};
 
 pub struct ValidationGraphicsPipeline {
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _pipeline_layout: Arc<ArcedObject<ValidationPipelineLayout>>,
+    pub(crate) _binding_signature: AnyArc<ValidationBindingSignature>,
     pub(crate) inner: GraphicsPipelineHandle,
 }
 
@@ -63,7 +61,7 @@ impl ValidationGraphicsPipeline {
 
 pub struct ValidationComputePipeline {
     pub(crate) _device: AnyArc<ValidationDevice>,
-    pub(crate) _pipeline_layout: Arc<ArcedObject<ValidationPipelineLayout>>,
+    pub(crate) _binding_signature: AnyArc<ValidationBindingSignature>,
     pub(crate) inner: ComputePipelineHandle,
 }
 

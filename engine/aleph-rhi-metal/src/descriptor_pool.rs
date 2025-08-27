@@ -28,18 +28,16 @@
 //
 
 use std::any::TypeId;
-use std::sync::Arc;
 
 use aleph_any::{AnyArc, declare_interfaces};
-use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
+use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorPool {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _layout: Arc<ArcedObject<DescriptorSetLayout>>,
+    pub(crate) _layout: AnyArc<ParameterBlockLayout>,
 }
 
 declare_interfaces!(DescriptorPool, [IDescriptorPool]);
@@ -51,18 +49,18 @@ impl IGetPlatformInterface for DescriptorPool {
 }
 
 impl IDescriptorPool for DescriptorPool {
-    fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError> {
         todo!()
     }
 
-    fn allocate_sets(
+    fn allocate_blocks(
         &mut self,
-        num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorPoolAllocateError> {
         todo!()
     }
 
-    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&mut self, sets: &[ParameterBlockHandle]) {
         todo!()
     }
 

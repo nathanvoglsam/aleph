@@ -37,8 +37,8 @@ use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::Handle;
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
+use crate::internal::unwrap;
 
 pub struct DescriptorArena {
     pub(crate) _device: AnyArc<Device>,
@@ -77,11 +77,11 @@ impl DescriptorArena {
 }
 
 impl IDescriptorArena for DescriptorArena {
-    fn allocate_set(
+    fn allocate_block(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
-        let layout = DescriptorSetLayout::get(layout);
+        layout: &dyn IParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+        let layout = unwrap::parameter_block_layout(layout);
         let set_layouts = [layout.descriptor_set_layout];
 
         let allocate_info = vk::DescriptorSetAllocateInfo::default()
@@ -102,17 +102,17 @@ impl IDescriptorArena for DescriptorArena {
             Self::handle_allocate_result(result)?
         };
 
-        unsafe { Ok(DescriptorSetHandle::from_raw_int(set.as_raw()).unwrap()) }
+        unsafe { Ok(ParameterBlockHandle::from_raw_int(set.as_raw()).unwrap()) }
     }
 
-    fn allocate_sets(
+    fn allocate_blocks(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-        num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorArenaAllocateError> {
-        let layout = DescriptorSetLayout::get(layout);
-        let mut set_layouts = Vec::with_capacity(num_sets);
-        for _ in 0..num_sets {
+        layout: &dyn IParameterBlockLayout,
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+        let layout = unwrap::parameter_block_layout(layout);
+        let mut set_layouts = Vec::with_capacity(num_blocks);
+        for _ in 0..num_blocks {
             set_layouts.push(layout.descriptor_set_layout);
         }
 
@@ -126,14 +126,16 @@ impl IDescriptorArena for DescriptorArena {
         };
 
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets);
+        debug_assert_eq!(sets.len(), num_blocks);
         unsafe { Ok(core::mem::transmute(sets.into_boxed_slice())) }
     }
 
-    unsafe fn free(&self, sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
         unsafe {
-            let descriptor_sets =
-                core::slice::from_raw_parts(sets.as_ptr() as *const vk::DescriptorSet, sets.len());
+            let descriptor_sets = core::slice::from_raw_parts(
+                blocks.as_ptr() as *const vk::DescriptorSet,
+                blocks.len(),
+            );
             self._device
                 .device
                 .free_descriptor_sets(self.descriptor_pool, descriptor_sets)

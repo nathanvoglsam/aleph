@@ -691,24 +691,6 @@ pub const fn descriptor_shader_visibility_to_vk(
     }
 }
 
-pub const fn descriptor_type_to_vk(v: DescriptorType) -> vk::DescriptorType {
-    match v {
-        DescriptorType::Sampler => vk::DescriptorType::SAMPLER,
-        DescriptorType::TexelBuffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
-        DescriptorType::TexelBufferRW => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
-        DescriptorType::Texture => vk::DescriptorType::SAMPLED_IMAGE,
-        DescriptorType::TextureRW => vk::DescriptorType::STORAGE_IMAGE,
-        DescriptorType::UniformBuffer => vk::DescriptorType::UNIFORM_BUFFER,
-        DescriptorType::UniformBufferDynamic => vk::DescriptorType::UNIFORM_BUFFER_DYNAMIC,
-        DescriptorType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
-        DescriptorType::StructuredBufferRW => vk::DescriptorType::STORAGE_BUFFER,
-        DescriptorType::ByteAddressBuffer => vk::DescriptorType::STORAGE_BUFFER,
-        DescriptorType::ByteAddressBufferRW => vk::DescriptorType::STORAGE_BUFFER,
-        DescriptorType::AccelerationStructure => vk::DescriptorType::ACCELERATION_STRUCTURE_KHR,
-        DescriptorType::InputAttachment => vk::DescriptorType::INPUT_ATTACHMENT,
-    }
-}
-
 pub const fn sampler_filter_to_vk(v: SamplerFilter) -> vk::Filter {
     match v {
         SamplerFilter::Nearest => vk::Filter::NEAREST,
@@ -773,5 +755,48 @@ pub const fn subresource_range_to_vk(v: &TextureSubResourceSet) -> vk::ImageSubr
         level_count: v.num_mip_levels,
         base_array_layer: v.base_array_slice,
         layer_count: v.num_array_slices,
+    }
+}
+
+pub const fn parameter_type_to_vk(v: &ParameterType) -> vk::DescriptorType {
+    match v {
+        ParameterType::ConstantBuffer => vk::DescriptorType::UNIFORM_BUFFER,
+        ParameterType::StructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        ParameterType::RWStructuredBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        ParameterType::ByteAddressBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        ParameterType::RWByteAddressBuffer => vk::DescriptorType::STORAGE_BUFFER,
+        ParameterType::Buffer => vk::DescriptorType::UNIFORM_TEXEL_BUFFER,
+        ParameterType::RWBuffer => vk::DescriptorType::STORAGE_TEXEL_BUFFER,
+        ParameterType::Texture1D => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture1D => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::Texture2D => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture2D => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::Texture3D => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture3D => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::Texture1DArray => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture1DArray => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::Texture2DArray => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture2DArray => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::Texture3DArray => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture3DArray => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::Texture2DMS => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture2DMS => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::Texture2DMSArray => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::RWTexture2DMSArray => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::TextureCube => vk::DescriptorType::SAMPLED_IMAGE,
+        ParameterType::TextureCubeArray => vk::DescriptorType::STORAGE_IMAGE,
+        ParameterType::SamplerState => vk::DescriptorType::SAMPLER,
+        ParameterType::AccelerationStructure => vk::DescriptorType::ACCELERATION_STRUCTURE_KHR,
+    }
+}
+
+pub const fn parameter_desc_to_vk(v: &ParameterDesc) -> vk::DescriptorSetLayoutBinding<'_> {
+    vk::DescriptorSetLayoutBinding {
+        binding: 0,
+        descriptor_type: parameter_type_to_vk(&v.ty),
+        descriptor_count: v.array_size.count() as u32,
+        stage_flags: vk::ShaderStageFlags::empty(),
+        p_immutable_samplers: std::ptr::null(),
+        _marker: std::marker::PhantomData,
     }
 }

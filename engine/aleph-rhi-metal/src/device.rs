@@ -38,7 +38,9 @@ use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
-use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
+use aleph_rhi_impl_utils::owned_desc::{
+    OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
+};
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
 use block2::RcBlock;
@@ -49,19 +51,19 @@ use objc2_metal::*;
 use parking_lot::{Condvar, Mutex};
 
 use crate::adapter::Adapter;
+use crate::binding_signature::BindingSignature;
 use crate::buffer::{Buffer, BufferObjects};
 use crate::command_list::{CommandList, CommandListObjects, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::DescriptorArena;
 use crate::descriptor_pool::DescriptorPool;
-use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::fence::{Fence, FenceObjects};
-use crate::internal::conv;
+use crate::internal::{conv, unwrap};
+use crate::parameter_block_layout::ParameterBlockLayout;
 use crate::pipeline::{
     CachedGraphicsInfo, ComputePipeline, ComputePipelineObjects, GraphicsPipeline,
     GraphicsPipelineObjects,
 };
-use crate::pipeline_layout::PipelineLayout;
 use crate::queue::Queue;
 use crate::sampler::{Sampler, SamplerObjects};
 use crate::semaphore::{Semaphore, SemaphoreObjects};
@@ -152,6 +154,37 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    fn create_parameter_block_layout(
+        &self,
+        desc: &ParameterBlockDesc,
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError> {
+        let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
+            this: v.clone(),
+            device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_parameter_block_layout(),
+            desc: OwnedParameterBlockDesc::new(desc),
+        });
+        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_binding_signature(
+        &self,
+        desc: &BindingSignatureDesc,
+    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        let out = AnyArc::new_cyclic(move |v| BindingSignature {
+            this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_binding_signature(),
+        });
+        Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     #[aleph_profile::function]
     fn create_graphics_pipeline(
         &self,
@@ -178,7 +211,7 @@ impl IDevice for Device {
             }
         }
 
-        let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+        let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
         // vertex_layout: &'a VertexInputStateDesc<'a>,
         // TODO
@@ -322,7 +355,7 @@ impl IDevice for Device {
 
         let out = GraphicsPipeline {
             _device: self.this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout,
+            _binding_signature: binding_signature.this.upgrade().unwrap(),
             id: self.object_counter.next_graphics_pipeline(),
             objects: GraphicsPipelineObjects {
                 pipeline,
@@ -355,7 +388,7 @@ impl IDevice for Device {
         // shader_module: ShaderBinary<'a>,
         // TODO
 
-        let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+        let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
         if let Some(name) = desc.name
             && self.context.debug
@@ -392,7 +425,7 @@ impl IDevice for Device {
 
         let out = ComputePipeline {
             _device: self.this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout,
+            _binding_signature: binding_signature.this.upgrade().unwrap(),
             id: self.object_counter.next_compute_pipeline(),
             objects: ComputePipelineObjects { pipeline },
         };
@@ -403,30 +436,15 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn create_descriptor_set_layout(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
-        let out = DescriptorSetLayout {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_set_layout(),
-        };
-        let out = ArcedObject::new_arc_opaque(out);
-        unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     fn create_descriptor_pool(
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let layout = DescriptorSetLayout::get_owned(desc.layout);
+        let layout = unwrap::parameter_block_layout(desc.layout);
 
         let pool: Box<dyn IDescriptorPool> = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
-            _layout: layout,
+            _layout: layout.this.upgrade().unwrap(),
         });
 
         Ok(pool)
@@ -445,21 +463,6 @@ impl IDevice for Device {
         });
 
         Ok(pool)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_pipeline_layout(
-        &self,
-        desc: &PipelineLayoutDesc,
-    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
-        let out = PipelineLayout {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_pipeline_layout(),
-        };
-        let out = ArcedObject::new_arc_opaque(out);
-        unsafe { Ok(PipelineLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -655,7 +658,13 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
+    unsafe fn update_parameter_block(
+        &self,
+        layout: &dyn IParameterBlockLayout,
+        block: ParameterBlockHandle,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
         todo!()
     }
 
@@ -962,26 +971,6 @@ impl IDevice for Device {
 
     fn get_sampler_desc<'b>(&self, sampler: &'b SamplerHandle) -> &'b SamplerDesc<'b> {
         Sampler::get(sampler).desc()
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_descriptor_set_layout_id(
-        &self,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        DescriptorSetLayout::get(set_layout).id
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_pipeline_layout_id(
-        &self,
-        pipeline_layout: &PipelineLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        PipelineLayout::get(pipeline_layout).id
     }
 
     // ========================================================================================== //

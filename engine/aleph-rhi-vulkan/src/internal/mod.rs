@@ -39,3 +39,4 @@ pub mod queue_present_support;
 pub mod semaphore_pool;
 pub mod set_name;
 pub mod unwrap;
+pub mod write_descriptors;

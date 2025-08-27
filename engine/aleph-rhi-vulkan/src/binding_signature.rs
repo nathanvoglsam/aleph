@@ -29,33 +29,48 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
-use aleph_rhi_api::*;
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_rhi_api::IBindingSignature;
+use ash::vk;
 
-use crate::NullDevice;
+use crate::device::Device;
+use crate::parameter_block_layout::ParameterBlockLayout;
 
-pub struct NullDescriptorSetLayout {
-    pub(crate) _device: AnyArc<NullDevice>,
+pub struct BindingSignature {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
+    pub(crate) pipeline_layout: vk::PipelineLayout,
+    pub(crate) parameter_block_layouts: Vec<AnyArc<ParameterBlockLayout>>,
+    pub(crate) push_constant_block: Option<vk::PushConstantRange>,
 }
 
-unsafe_impl_iobject!(
-    NullDescriptorSetLayout,
-    "01944fbe-044c-7c31-962e-3903d5692199"
-);
+declare_interfaces!(BindingSignature, [IBindingSignature]);
 
-impl NullDescriptorSetLayout {
-    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
+impl IBindingSignature for BindingSignature {
+    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
+        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
-    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
-        v.get()
-            .downcast_ref::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
+    }
+}
+
+impl Drop for BindingSignature {
+    fn drop(&mut self) {
+        unsafe {
+            self._device
+                .device
+                .destroy_pipeline_layout(self.pipeline_layout, None);
+        }
     }
 }

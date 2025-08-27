@@ -53,7 +53,7 @@ impl LinearDescriptorPool {
     pub fn new(device: &dyn IDevice, num_sets: u32) -> Result<Self, DescriptorPoolCreateError> {
         let active = device.create_descriptor_arena(&DescriptorArenaDesc {
             arena_type: DescriptorArenaType::Linear,
-            num_sets,
+            num_blocks: num_sets,
             name: Some("LinearDescriptorPoolArena"),
         })?;
         Ok(Self {
@@ -78,21 +78,21 @@ impl LinearDescriptorPool {
     /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
     /// stale descriptors.
     #[must_use = "Do not ignore allocation failure"]
-    pub fn allocate_set(
+    pub fn allocate_block(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
+        layout: &dyn IParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
         use DescriptorArenaAllocateError::*;
 
         let active = self.active.take().unwrap();
-        match active.allocate_set(layout) {
+        match active.allocate_block(layout) {
             Ok(v) => {
                 assert!(self.active.replace(Some(active)).is_none());
                 Ok(v)
             }
             Err(FragmentedPool) | Err(OutOfMemory) | Err(OutOfPoolMemory) => {
                 let active = self.grow(active)?;
-                let result = active.allocate_set(layout);
+                let result = active.allocate_block(layout);
                 assert!(self.active.replace(Some(active)).is_none());
                 result
             }
@@ -108,22 +108,22 @@ impl LinearDescriptorPool {
     ///
     /// See [IDescriptorArena::allocate_set] for some pitfalls and warnings to check for.
     #[must_use = "Do not ignore allocation failure"]
-    pub fn allocate_sets(
+    pub fn allocate_blocks(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-        num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorArenaAllocateError> {
+        layout: &dyn IParameterBlockLayout,
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
         use DescriptorArenaAllocateError::*;
 
         let active = self.active.take().unwrap();
-        match active.allocate_sets(layout, num_sets) {
+        match active.allocate_blocks(layout, num_blocks) {
             Ok(v) => {
                 assert!(self.active.replace(Some(active)).is_none());
                 Ok(v)
             }
             Err(FragmentedPool) | Err(OutOfMemory) | Err(OutOfPoolMemory) => {
                 let active = self.grow(active)?;
-                let result = active.allocate_sets(layout, num_sets);
+                let result = active.allocate_blocks(layout, num_blocks);
                 assert!(self.active.replace(Some(active)).is_none());
                 result
             }
@@ -146,7 +146,7 @@ impl LinearDescriptorPool {
         let last_num_sets = self.last_num_sets.get();
         let new_arena = self.device.create_descriptor_arena(&DescriptorArenaDesc {
             arena_type: DescriptorArenaType::Linear,
-            num_sets: last_num_sets * 2,
+            num_blocks: last_num_sets * 2,
             name: Some("LinearDescriptorPoolArena"),
         });
         self.last_num_sets.set(last_num_sets * 2);

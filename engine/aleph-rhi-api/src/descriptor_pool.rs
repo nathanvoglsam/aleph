@@ -33,59 +33,59 @@ use thiserror::Error;
 use crate::*;
 
 pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
-    /// Allocates a new individual descriptor set from the pool.
+    /// Allocates a new individual parameter block from the pool.
     ///
     /// May fail if the pool's backing memory has been exhausted.
     ///
     /// # Warning
     ///
-    /// The descriptor sets returned by a pool will by default contain invalid descriptors. That is,
-    /// assume they contain uninitialized memory. It is required to update the set with fresh
+    /// The parameter blocks returned by a pool will by default contain invalid descriptors. That
+    /// is, assume they contain uninitialized memory. It is required to update the set with fresh
     /// descriptors before use.
     ///
     /// Vulkan requires this behavior for valid API usage. Other implementations may re-use
-    /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
+    /// previously freed parameter blocks without zeroing out their contents meaning you may reuse
     /// stale descriptors.
-    fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError>;
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError>;
 
-    /// Allocates `num_sets` descriptors from the pool. Some implementations may be able to
+    /// Allocates `num_blocks` descriptors from the pool. Some implementations may be able to
     /// implement this more efficiently than naively calling [IDescriptorPool::allocate_set] in a
     /// loop.
     ///
     /// # Warning
     ///
     /// See [IDescriptorPool::allocate_set] for some pitfalls and warnings to check for.
-    fn allocate_sets(
+    fn allocate_blocks(
         &mut self,
-        num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
-        let mut sets = Vec::with_capacity(num_sets);
-        for _ in 0..num_sets {
-            sets.push(self.allocate_set()?);
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorPoolAllocateError> {
+        let mut sets = Vec::with_capacity(num_blocks);
+        for _ in 0..num_blocks {
+            sets.push(self.allocate_block()?);
         }
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets);
+        debug_assert_eq!(sets.len(), num_blocks);
         Ok(sets.into_boxed_slice())
     }
 
-    /// Will free the given descriptor sets, allowing them and their memory to be reused.
+    /// Will free the given parameter blocks, allowing them and their memory to be reused.
     ///
     /// # Safety
     ///
-    /// [DescriptorSetHandle] is semantically a pointer. This function will take ownership of the
-    /// set, so it is unsafe to call this function and then use the [DescriptorSetHandle] again.
+    /// [ParameterBlockHandle] is semantically a pointer. This function will take ownership of the
+    /// set, so it is unsafe to call this function and then use the [ParameterBlockHandle] again.
     /// That would be an immediate use after free.
     ///
     /// This also means double-freeing is unsafe.
-    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]);
+    unsafe fn free(&mut self, blocks: &[ParameterBlockHandle]);
 
-    /// Will free all the descriptor sets allocated from the pool, resetting it to an empty state
+    /// Will free all the parameter blocks allocated from the pool, resetting it to an empty state
     /// where it can allocate sets again. Even after an OOM error.
     ///
     /// # Safety
     ///
     /// The safety requirements are similar to [IDescriptorPool::free]. This will implicitly take
-    /// ownership of all [DescriptorSetHandle]s allocated from the pool and free them. It is the
+    /// ownership of all [ParameterBlockHandle]s allocated from the pool and free them. It is the
     /// responsibility of the caller to ensure that all handles are never re-used after they are
     /// freed.
     ///
@@ -96,13 +96,13 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
 
 #[derive(Clone)]
 pub struct DescriptorPoolDesc<'a> {
-    /// The descriptor set layout that the descriptor pool will allocate descriptor sets for. A pool
-    /// can only allocate descriptor sets with a single layout.
-    pub layout: &'a DescriptorSetLayoutHandle,
+    /// The parameter block layout that the descriptor pool will allocate parameter blocks for. A
+    /// pool can only allocate parameter blocks with a single layout.
+    pub layout: &'a dyn IParameterBlockLayout,
 
     /// The number of sets the pool should have capacity for. A pool is only guaranteed to have
-    /// enough space for `num_sets` descriptor sets.
-    pub num_sets: u32,
+    /// enough space for `num_blocks` parameter blocks.
+    pub num_blocks: u32,
 
     /// The name of the object
     pub name: Option<&'a str>,

@@ -57,6 +57,16 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     /// available queues individually.
     fn wait_idle(&self);
 
+    fn create_parameter_block_layout(
+        &self,
+        desc: &ParameterBlockDesc,
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError>;
+
+    fn create_binding_signature(
+        &self,
+        desc: &BindingSignatureDesc,
+    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError>;
+
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
@@ -67,11 +77,6 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError>;
 
-    fn create_descriptor_set_layout(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError>;
-
     fn create_descriptor_pool(
         &self,
         desc: &DescriptorPoolDesc,
@@ -81,11 +86,6 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
         &self,
         desc: &DescriptorArenaDesc,
     ) -> Result<Box<dyn IDescriptorArena>, DescriptorPoolCreateError>;
-
-    fn create_pipeline_layout(
-        &self,
-        desc: &PipelineLayoutDesc,
-    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError>;
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<BufferHandle, BufferCreateError>;
 
@@ -100,28 +100,82 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
 
     fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>>;
 
-    /// Perform the given list of descriptor updates.
+    /// Perform the given list of parameter block updates.
+    ///
+    /// This function takes a flattened list of write parameters in 'writes'. Each write is a
+    /// [`ParameterWrite`] struct that must be filled out with the appropriate information. The
+    /// variant of each write must be correct w.r.t. the given parameter block layout. The given
+    /// parameter block layout must be exactly the same layout (not the same object) as the
+    /// parameter block was allocated from a pool with.
+    ///
+    /// The binding hierarchy is flattened for the purposes of writes. Specifically parameter arrays
+    /// are flattened, and 'base' indexes into this flattened parameter space.
+    ///
+    /// We will illustrate using this example layout: [Texture2D, [Texture2D; 5], ConstantBuffer, Sampler]
+    /// - There are 8 total parameters in this parameter block.
+    /// - 'base' can not be 8 or larger.
+    /// - 'base = 0' refers to layout[0].
+    /// - 'base = 1' refers to layout[1][0].
+    /// - 'base = 2' refers to layout[1][1].
+    /// - 'base = 6' refers to layout[2].
+    /// - 'base = 7' refers to layout[3].
+    ///
+    /// Notice how the array binding has been flattened.
+    ///
+    /// # Why?
+    ///
+    /// By flattening the parameter space we significantly reduce the amount of struct noise we need
+    /// to encode the parameter updates. If we made this explicit we'd required multiple nested
+    /// arrays of fields. Authoring code this way is very painful and error prone.
+    ///
+    /// The nested field approach also makes it difficult for data driven rendering to generate
+    /// parameter block updates as allocating the nested arrays reqiures arenas (complexity) or a
+    /// duplicate 'owned' version of [`ParameterWrite`].
+    ///
+    /// The two most common ways we predict 'update_parameter_block' to be called are:
+    /// - Infrequent updates to persistent parameter blocks, such as for materials. These will not
+    ///   be super frequent, so the additional cost is small and the simpler interface may lead
+    ///   to more efficient code elsewhere.
+    /// - Once-per-frame updates to ephemeral parameters blocks for per-pass parameters. This will
+    ///   be a very hot code-path. The vast majority of these calls will update the entire block in
+    ///   a single call. We can special case these to reduce the overhead.
     ///
     /// # Safety
     ///
-    /// Accesses to the descriptor sets referenced via [DescriptorSetHandle] are not synchronized.
-    /// A descriptor write requires mutable (exclusive) access to the individual set. It is unsafe
-    /// to call this function on the same [DescriptorSetHandle] from multiple threads without
-    /// external synchronization.
+    /// Accesses to the parameter blocks referenced via [`ParameterBlockHandle`] are not
+    /// synchronized. A descriptor write requires mutable (exclusive) access to the individual
+    /// block. It is unsafe to call this function on the same [`ParameterBlockHandle`] from multiple
+    /// threads without external synchronization.
     ///
-    /// It is unsafe to try and write to a [DescriptorSetHandle] after it has been freed.
+    /// It is unsafe to try and write to a [`ParameterBlockHandle`] after it has been freed.
+    ///
+    /// It is the caller's responsibility to ensure that each [`ParameterWrite`] variant provided
+    /// in 'writes' is the correct variant for every parameter slot it is associated to. Failing to
+    /// do so will cause undefined behavior. For example: A caller must ensure for a parameter block
+    /// layout with the layout '[Texture2D, ConstantBuffer, Sampler]' that the 'writes' array
+    /// contains the following variants '[Texture, Buffer, Sampler]'.
+    ///
+    /// It is the caller's responsibility to ensure all texture views provided in the 'writes'
+    /// array are valid for the usage the parameter block layout expects.
+    ///
+    /// It is the caller's responsibility to ensure all buffers provided in the 'writes' array are
+    /// valid for the usages the parameter block layout expects.
+    ///
+    /// It is the caller's responsibility to ensure the given [`IParameterBlockLayout`] is the same
+    /// layout (not necessarily the same object, but the layouts must exactly match) that the
+    /// parameter block was allocated from a pool with.
     ///
     /// # Warning
     ///
-    /// Some implementations may re-use handles, where allocating a new set may return a previously
-    /// freed set using the same handle. The implication is that use-after free will not cause
-    /// immediate UB or validation errors on the platform API in some cases due to implementation
-    /// detail. Instead you will observe 'spooky action at a distance' where two systems think they
-    /// own the set, when instead they're sharing one, and they clobber each other's descriptors or
-    /// have synchronization issues if they're being shared across threads.
+    /// Some implementations may re-use handles, where allocating a new block may return a
+    /// previously freed block using the same handle. The implication is that use-after free will
+    /// not cause immediate UB or validation errors on the platform API in some cases due to
+    /// implementation detail. Instead you will observe 'spooky action at a distance' where two
+    /// systems think they own the block, when instead they're sharing one, and they clobber each
+    /// other's descriptors or have synchronization issues if they're being shared across threads.
     ///
-    /// The take-away here is to be very careful with descriptor sets, buggy usage will be very hard
-    /// to debug. Test with as many implementations as you can, especially Vulkan. Most of our
+    /// The take-away here is to be very careful with parameter blocks, buggy usage will be very
+    /// hard to debug. Test with as many implementations as you can, especially Vulkan. Most of our
     /// descriptor API is based on Vulkan as it's the 'lowest common denominator', and can be
     /// implemented as thin wrappers to Vulkan. This is useful, being a thin wrapper to Vulkan means
     /// Vulkan's validation layers will also validate our own API if we mirror their semantics as
@@ -129,7 +183,13 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     ///
     /// D3D12 will be very permissive to errors as D3D12's descriptor model is much less
     /// restrictive.
-    unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]);
+    unsafe fn update_parameter_block(
+        &self,
+        layout: &dyn IParameterBlockLayout,
+        block: ParameterBlockHandle,
+        base: u32,
+        writes: &[ParameterWrite],
+    );
 
     /// Constructs a new fence in the requested state.
     fn create_fence(&self, signalled: bool) -> Result<FenceHandle, FenceCreateError>;
@@ -250,14 +310,6 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     // ================
     // PIPELINE
     // ================
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other descriptor set
-    /// layout allocated from the same [`IDevice`] instance.
-    fn get_descriptor_set_layout_id(&self, set_layout: &DescriptorSetLayoutHandle) -> NonZeroU64;
-
-    /// Returns a globally unique ID that is guaranteed to not be shared by any other pipeline
-    /// layout allocated from the same [`IDevice`] instance.
-    fn get_pipeline_layout_id(&self, pipeline_layout: &PipelineLayoutHandle) -> NonZeroU64;
 
     /// Returns a globally unique ID that is guaranteed to not be shared by any other pipeline
     /// allocated from the same [`IDevice`] instance.
@@ -380,6 +432,16 @@ pub enum PipelineLayoutCreateError {
     Platform,
 }
 error_enum_from_unit_type!(PipelineLayoutCreateError);
+
+#[derive(Error, Debug)]
+pub enum BindingSignatureCreateError {
+    #[error("A push constant block has an invalid size")]
+    InvalidPushConstantBlockSize,
+
+    #[error("An internal backend error has occurred. Details were logged.")]
+    Platform,
+}
+error_enum_from_unit_type!(BindingSignatureCreateError);
 
 #[derive(Error, Debug)]
 pub enum PipelineCreateError {

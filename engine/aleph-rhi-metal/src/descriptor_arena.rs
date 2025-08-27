@@ -49,22 +49,22 @@ impl IGetPlatformInterface for DescriptorArena {
 }
 
 impl IDescriptorArena for DescriptorArena {
-    fn allocate_set(
+    fn allocate_block(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
+        layout: &dyn IParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
         todo!()
     }
 
-    fn allocate_sets(
+    fn allocate_blocks(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-        num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorArenaAllocateError> {
+        layout: &dyn IParameterBlockLayout,
+        num_blocks: usize,
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
         todo!()
     }
 
-    unsafe fn free(&self, sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
         todo!()
     }
 

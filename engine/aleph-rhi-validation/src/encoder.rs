@@ -34,11 +34,10 @@ use std::sync::Arc;
 use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
-use crate::internal::get_as_unwrapped;
+use crate::internal::{get_as_unwrapped, unwrap};
 use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{
-    ValidationBuffer, ValidationComputePipeline, ValidationGraphicsPipeline,
-    ValidationPipelineLayout, ValidationTexture,
+    ValidationBuffer, ValidationComputePipeline, ValidationGraphicsPipeline, ValidationTexture,
 };
 
 pub struct ValidationEncoder<T: ?Sized> {
@@ -120,7 +119,7 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
         unsafe { self.inner.set_scissor_rects(rects) }
     }
 
-    unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
+    unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
         assert!(
             matches!(self.list_type, QueueType::General),
             "Called a general command on a non-general capable command list"
@@ -132,11 +131,15 @@ impl<'a, T: IGeneralEncoder + ?Sized + 'a> IGeneralEncoder for ValidationEncoder
 
         // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
         // the constant block index
-        let block = &pipeline._pipeline_layout.push_constant_blocks[block_index];
+        let block = &pipeline
+            ._binding_signature
+            .push_constant_block
+            .as_ref()
+            .unwrap();
 
         Self::validate_push_constant_data_buffer(data, block);
 
-        unsafe { self.inner.set_push_constant_block(block_index, data) }
+        unsafe { self.inner.set_push_constant_block(data) }
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
@@ -251,34 +254,46 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         self.bound_compute_pipeline = Some(pipeline);
     }
 
-    unsafe fn bind_descriptor_sets(
+    unsafe fn bind_parameter_blocks(
         &mut self,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
         first_set: u32,
-        sets: &[DescriptorSetHandle],
-        dynamic_offsets: &[u32],
+        sets: &[ParameterBlockHandle],
     ) {
         assert!(
             matches!(self.list_type, QueueType::General | QueueType::Compute),
             "Called a compute command on a non-compute command list"
         );
 
-        let pipeline_layout = &ValidationPipelineLayout::get(pipeline_layout).inner;
+        let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
 
         unsafe {
             let sets: Vec<_> = sets
                 .iter()
-                .map(|&v| get_as_unwrapped::descriptor_set_handle(v, None))
+                .map(|&v| get_as_unwrapped::parameter_block_handle(v, None))
                 .collect();
 
-            self.inner.bind_descriptor_sets(
-                pipeline_layout,
-                bind_point,
-                first_set,
-                &sets,
-                dynamic_offsets,
-            )
+            self.inner
+                .bind_parameter_blocks(binding_signature, bind_point, first_set, &sets)
+        }
+    }
+
+    unsafe fn push_parameters(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        bind_point: PipelineBindPoint,
+        block: u32,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
+        let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
+
+        let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
+
+        unsafe {
+            self.inner
+                .push_parameters(binding_signature, bind_point, block, base, &new_writes);
         }
     }
 
@@ -488,7 +503,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
         );
 
         assert!(
-            data.len() <= block.size as usize,
+            data.len() <= block.size.get() as usize,
             "Push Constant data larger than the specified block"
         );
     }

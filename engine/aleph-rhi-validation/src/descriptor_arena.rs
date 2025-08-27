@@ -29,21 +29,20 @@
 
 use std::cell::Cell;
 use std::ptr::NonNull;
-use std::sync::Arc;
 
 use aleph_any::{AnyArc, declare_interfaces};
-use aleph_object_system::ArcedObject;
 use aleph_rhi_api::*;
 
-use crate::internal::descriptor_set::DescriptorSet;
-use crate::{ValidationDescriptorSetLayout, ValidationDevice};
+use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::unwrap;
+use crate::{ValidationDevice, ValidationParameterBlockLayout};
 
 pub struct ValidationDescriptorArena {
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: Box<dyn IDescriptorArena>,
     pub(crate) pool_id: u64,
-    pub(crate) set_objects: Cell<Vec<DescriptorSet>>,
-    pub(crate) free_list: Cell<Vec<DescriptorSetHandle>>,
+    pub(crate) set_objects: Cell<Vec<ParameterBlock>>,
+    pub(crate) free_list: Cell<Vec<ParameterBlockHandle>>,
 }
 
 declare_interfaces!(ValidationDescriptorArena, [IDescriptorArena]);
@@ -70,7 +69,7 @@ impl ValidationDescriptorArena {
 
     /// Constructs a [DescriptorSet] object for the descriptor set with index 'set_index'.
     ///
-    /// Specifically this creates the object that a [DescriptorSetHandle] is actually a pointer to.
+    /// Specifically this creates the object that a [ParameterBlockHandle] is actually a pointer to.
     /// This will contain fully computed CPU and GPU handles to the resource and sampler
     /// `ID3D12DescriptorHeap` heaps. This should be called to initialize a [DescriptorSet] in the
     /// 'set_objects' pool.
@@ -82,25 +81,25 @@ impl ValidationDescriptorArena {
     /// instead of from the free list.
     fn create_set_object_for_set_index(
         &self,
-        inner: DescriptorSetHandle,
-        layout: Arc<ArcedObject<ValidationDescriptorSetLayout>>,
-    ) -> DescriptorSet {
-        DescriptorSet {
-            _magic_header: DescriptorSet::MAGIC_HEADER_VAL,
+        inner: ParameterBlockHandle,
+        layout: AnyArc<ValidationParameterBlockLayout>,
+    ) -> ParameterBlock {
+        ParameterBlock {
+            _magic_header: ParameterBlock::MAGIC_HEADER_VAL,
             _pool_id: self.pool_id,
             _layout: layout,
             inner,
         }
     }
 
-    /// Constructs a [DescriptorSetHandle] for the set with index 'set_index'
+    /// Constructs a [ParameterBlockHandle] for the set with index 'set_index'
     ///
-    /// From an implementation stand point [DescriptorSetHandle] is just an opaque pointer. For
+    /// From an implementation stand point [ParameterBlockHandle] is just an opaque pointer. For
     /// this implementation it contains a pointer to a [DescriptorSet] instance. Specifically it
     /// contains a pointer to a set inside the `self.set_objects` array.
     ///
     /// This function is thus just a utility for getting the pointer to the [DescriptorSet] object
-    /// with the requested index and converting that pointer into a [DescriptorSetHandle] so we can
+    /// with the requested index and converting that pointer into a [ParameterBlockHandle] so we can
     /// hand it out to callers on the other side of the API boundary.
     ///
     /// # Safety
@@ -109,8 +108,8 @@ impl ValidationDescriptorArena {
     /// `self.set_objects` array.
     ///
     /// It is also the caller's responsibility to ensure sound access through the pointer that
-    /// the [DescriptorSetHandle] actually is.
-    unsafe fn convert_set_index_to_handle(&self, set_index: usize) -> DescriptorSetHandle {
+    /// the [ParameterBlockHandle] actually is.
+    unsafe fn convert_set_index_to_handle(&self, set_index: usize) -> ParameterBlockHandle {
         // Get a pointer to the set_index'th element in the array and wrap it into a handle.
         //
         // We have to be careful to not construct a reference here to keep the code sound. From the
@@ -129,7 +128,7 @@ impl ValidationDescriptorArena {
         // memory. Thus any API that reads or writes from descriptors or descriptor sets is unsafe.
         let set_objects = self.set_objects.take();
         let handle = set_objects.as_ptr().wrapping_add(set_index);
-        let handle = handle as *mut DescriptorSet;
+        let handle = handle as *mut ParameterBlock;
         self.set_objects.set(set_objects);
 
         // Safety: It's the caller's responsibility to ensure 'set_index' is in bounds. The pointer
@@ -139,15 +138,15 @@ impl ValidationDescriptorArena {
 
             // Safety: no actual unsafe code here, just a warning to make sure people don't use this
             //         unless they absolutely need to.
-            DescriptorSetHandle::from_raw(handle)
+            ParameterBlockHandle::from_raw(handle)
         }
     }
 
-    fn validate_set_handle(&self, set: DescriptorSetHandle) {
-        // Validate that a DescriptorSetHandle contains a correctly aligned pointer. This may help
+    fn validate_block_handle(&self, set: ParameterBlockHandle) {
+        // Validate that a ParameterBlockHandle contains a correctly aligned pointer. This may help
         // catch when someone is passing in bad handles
-        let align = core::mem::align_of::<DescriptorSet>();
-        let set = unsafe { core::mem::transmute::<_, NonNull<DescriptorSet>>(set) };
+        let align = core::mem::align_of::<ParameterBlock>();
+        let set = unsafe { core::mem::transmute::<_, NonNull<ParameterBlock>>(set) };
 
         // This should also never happen in practice, but can help flag when people are doing
         // naughty bit casts and passing bad pointers in.
@@ -157,7 +156,7 @@ impl ValidationDescriptorArena {
         assert_eq!(
             (set.as_ptr() as usize) & (align - 1),
             0,
-            "DescriptorSetHandle contains badly-aligned pointer"
+            "ParameterBlockHandle contains badly-aligned pointer"
         );
 
         let set_objects = self.set_objects.take();
@@ -180,11 +179,11 @@ impl ValidationDescriptorArena {
 
         // Checks if the given descriptor set was allocated by this pool by checking if the pointer
         // comes from inside the set_objects array bounds.
-        let set_ptr = set.as_ptr() as *const DescriptorSet;
+        let set_ptr = set.as_ptr() as *const ParameterBlock;
         let set_oob = set_ptr < sets_base || set_ptr > sets_end;
         assert!(
             !set_oob,
-            "The DescriptorSetHandle points outside of the pool, this handle is from another pool"
+            "The ParameterBlockHandle points outside of the pool, this handle is from another pool"
         );
 
         self.set_objects.set(set_objects);
@@ -192,10 +191,10 @@ impl ValidationDescriptorArena {
 }
 
 impl IDescriptorArena for ValidationDescriptorArena {
-    fn allocate_set(
+    fn allocate_block(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorArenaAllocateError> {
+        layout: &dyn IParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
         // First try and grab something from the free list
         let mut free_list = self.free_list.take();
         if let Some(handle) = free_list.pop() {
@@ -207,14 +206,14 @@ impl IDescriptorArena for ValidationDescriptorArena {
         // We don't need to check OOM unless we're trying to allocate a new set object
         self.check_oom()?;
 
-        let layout = ValidationDescriptorSetLayout::get_owned(layout);
+        let layout = unwrap::parameter_block_layout(layout);
 
-        let inner = self.inner.allocate_set(&layout.inner)?;
+        let inner = self.inner.allocate_block(layout.inner.as_ref())?;
 
         // Take the next free set, we create fresh set objects linearly
         let mut set_objects = self.set_objects.take();
         let set_index = set_objects.len();
-        let set = self.create_set_object_for_set_index(inner, layout);
+        let set = self.create_set_object_for_set_index(inner, layout.this.upgrade().unwrap());
         set_objects.push(set);
 
         // Safety: set_index is guaranteed to be < set_objects.len() because it is created from
@@ -231,23 +230,23 @@ impl IDescriptorArena for ValidationDescriptorArena {
         Ok(handle)
     }
 
-    unsafe fn free(&self, sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&self, blocks: &[ParameterBlockHandle]) {
         unsafe {
-            for &set in sets {
-                self.validate_set_handle(set);
+            for &block in blocks {
+                self.validate_block_handle(block);
 
-                // Does further validation based on reading the set object itself
-                DescriptorSet::validate(set, Some(self.pool_id));
+                // Does further validation based on reading the block object itself
+                ParameterBlock::validate(block, Some(self.pool_id));
 
-                let inner: NonNull<()> = set.into();
-                let inner: NonNull<DescriptorSet> = inner.cast();
+                let inner: NonNull<()> = block.into();
+                let inner: NonNull<ParameterBlock> = inner.cast();
                 let inner = inner.as_ref();
 
-                // Validation is done, free the set.
+                // Validation is done, free the block.
                 self.inner.free(&[inner.inner]);
 
                 let mut free_list = self.free_list.take();
-                free_list.push(set);
+                free_list.push(block);
                 self.free_list.set(free_list);
             }
         }

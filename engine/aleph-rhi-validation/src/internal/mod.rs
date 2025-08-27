@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-pub mod descriptor_set;
 pub mod get_as_unwrapped;
+pub mod parameter_block;
 pub mod unwrap;
 
 #[macro_export]

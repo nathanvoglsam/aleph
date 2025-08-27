@@ -185,7 +185,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
+    unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
         let encoder = self.active.get_render();
     }
 
@@ -382,13 +382,12 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         self.bound_compute_pipeline = Some(concrete);
     }
 
-    unsafe fn bind_descriptor_sets(
+    unsafe fn bind_parameter_blocks(
         &mut self,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
         first_set: u32,
-        sets: &[DescriptorSetHandle],
-        dynamic_offsets: &[u32],
+        sets: &[ParameterBlockHandle],
     ) {
         match bind_point {
             PipelineBindPoint::Compute => {
@@ -400,6 +399,17 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                 todo!()
             }
         }
+    }
+
+    unsafe fn push_parameters(
+        &mut self,
+        binding_signature: &dyn IBindingSignature,
+        bind_point: PipelineBindPoint,
+        block: u32,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
+        todo!()
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {

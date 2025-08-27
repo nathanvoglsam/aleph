@@ -54,11 +54,12 @@ use std::ptr::NonNull;
 use aleph_any::{QueryInterface, box_downcast};
 use aleph_rhi_api::*;
 
-use crate::internal::descriptor_set::DescriptorSet;
+use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::unwrap;
 use crate::texture::ValidationImageView;
 use crate::{
-    ValidationBuffer, ValidationCommandList, ValidationDescriptorSetLayout, ValidationFence,
-    ValidationSampler, ValidationSemaphore, ValidationSwapImage, ValidationTexture,
+    ValidationBuffer, ValidationCommandList, ValidationFence, ValidationSampler,
+    ValidationSemaphore, ValidationSwapImage, ValidationTexture,
 };
 
 pub fn buffer(buffer: &BufferHandle) -> &BufferHandle {
@@ -77,61 +78,59 @@ pub fn texture(texture: &TextureHandle) -> &TextureHandle {
         .inner
 }
 
-pub unsafe fn descriptor_set_handle(
-    handle: DescriptorSetHandle,
+pub unsafe fn parameter_block_handle(
+    handle: ParameterBlockHandle,
     expected_pool_id: Option<u64>,
-) -> DescriptorSetHandle {
+) -> ParameterBlockHandle {
     unsafe {
-        // Unwrap and validate to get the inner DescriptorSetHandle
-        DescriptorSet::validate(handle, expected_pool_id);
+        // Unwrap and validate to get the inner ParameterBlockHandle
+        ParameterBlock::validate(handle, expected_pool_id);
         let inner: NonNull<()> = handle.into();
-        let inner: NonNull<DescriptorSet> = inner.cast();
+        let inner: NonNull<ParameterBlock> = inner.cast();
         inner.as_ref().inner
     }
 }
 
-pub fn pipeline_layout_desc<Return>(
-    desc: &PipelineLayoutDesc,
-    f: impl FnOnce(&PipelineLayoutDesc) -> Return,
-) -> Return {
-    let mut set_layouts: Vec<&DescriptorSetLayoutHandle> = Vec::new();
-    for v in desc.set_layouts {
-        let v = ValidationDescriptorSetLayout::get(v);
-        set_layouts.push(&v.inner);
+pub unsafe fn parameter_writes<'a>(writes: &[ParameterWrite<'a>]) -> Vec<ParameterWrite<'a>> {
+    let mut new_writes = Vec::with_capacity(writes.len());
+
+    for write in writes {
+        let new_write = match write {
+            ParameterWrite::Sampler(v) => {
+                let inner = &ValidationSampler::get(v.sampler).inner;
+                SamplerWrite::new(inner).into()
+            }
+            ParameterWrite::Texture(v) => {
+                let inner =
+                    unsafe { std::mem::transmute::<_, *const ValidationImageView>(v.image_view) };
+                let inner = unsafe { (*inner).image_view };
+                TextureWrite::new(inner, v.image_layout).into()
+            }
+            ParameterWrite::Buffer(v) => {
+                let inner = &ValidationBuffer::get(&v.buffer).inner;
+                BufferWrite {
+                    buffer: inner,
+                    offset: v.offset,
+                    len: v.len,
+                    structure_byte_stride: v.structure_byte_stride,
+                }
+                .into()
+            }
+            ParameterWrite::TextureBuffer(v) => {
+                let inner = &ValidationBuffer::get(&v.buffer).inner;
+                TextureBufferWrite {
+                    buffer: inner,
+                    format: v.format,
+                    offset: v.offset,
+                    len: v.len,
+                }
+                .into()
+            }
+        };
+        new_writes.push(new_write);
     }
 
-    let new_desc = PipelineLayoutDesc {
-        set_layouts: &set_layouts,
-        push_constant_blocks: desc.push_constant_blocks,
-        name: desc.name,
-    };
-
-    f(&new_desc)
-}
-
-pub fn descriptor_set_updates<Return>(
-    writes: &[DescriptorWriteDesc],
-    f: impl FnOnce(&[DescriptorWriteDesc]) -> Return,
-) -> Return {
-    let mut new_descriptor_writes = Vec::new();
-    for v in writes {
-        let new_writes = descriptor_writes(&v.writes);
-        new_descriptor_writes.push(new_writes);
-    }
-
-    let mut new_writes = Vec::new();
-    for (i, v) in writes.iter().enumerate() {
-        let set = unsafe { descriptor_set_handle(v.set, None) };
-
-        new_writes.push(DescriptorWriteDesc {
-            set,
-            binding: v.binding,
-            array_element: v.array_element,
-            writes: new_descriptor_writes[i].as_ref(),
-        });
-    }
-
-    f(&new_writes)
+    new_writes
 }
 
 pub fn queue_submit_desc<Return>(
@@ -185,135 +184,6 @@ pub fn queue_submit_desc<Return>(
     };
 
     f(&new_desc)
-}
-
-pub fn descriptor_writes<'a>(writes: &'a DescriptorWrites<'a>) -> OwnedDescriptorWrites<'a> {
-    match writes {
-        DescriptorWrites::Sampler(v) => {
-            let writes: Vec<_> = v.iter().map(sampler_descriptor_write).collect();
-            OwnedDescriptorWrites::Sampler(writes)
-        }
-        DescriptorWrites::TexelBuffer(v) => {
-            let writes: Vec<_> = v.iter().map(texel_buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::TexelBuffer(writes)
-        }
-        DescriptorWrites::TexelBufferRW(v) => {
-            let writes: Vec<_> = v.iter().map(texel_buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::TexelBufferRW(writes)
-        }
-        DescriptorWrites::Texture(v) => {
-            let writes: Vec<_> = v.iter().map(image_descriptor_write).collect();
-            OwnedDescriptorWrites::Texture(writes)
-        }
-        DescriptorWrites::TextureRW(v) => {
-            let writes: Vec<_> = v.iter().map(image_descriptor_write).collect();
-            OwnedDescriptorWrites::TextureRW(writes)
-        }
-        DescriptorWrites::UniformBuffer(v) => {
-            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::UniformBuffer(writes)
-        }
-        DescriptorWrites::UniformBufferDynamic(v) => {
-            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::UniformBufferDynamic(writes)
-        }
-        DescriptorWrites::StructuredBuffer(v) => {
-            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::StructuredBuffer(writes)
-        }
-        DescriptorWrites::StructuredBufferRW(v) => {
-            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::StructuredBufferRW(writes)
-        }
-        DescriptorWrites::ByteAddressBuffer(v) => {
-            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::ByteAddressBuffer(writes)
-        }
-        DescriptorWrites::ByteAddressBufferRW(v) => {
-            let writes: Vec<_> = v.iter().map(buffer_descriptor_write).collect();
-            OwnedDescriptorWrites::ByteAddressBufferRW(writes)
-        }
-        DescriptorWrites::InputAttachment(v) => {
-            let writes: Vec<_> = v.iter().map(image_descriptor_write).collect();
-            OwnedDescriptorWrites::InputAttachment(writes)
-        }
-    }
-}
-
-pub fn sampler_descriptor_write<'a>(
-    write: &'a SamplerDescriptorWrite<'a>,
-) -> SamplerDescriptorWrite<'a> {
-    let sampler = &ValidationSampler::get(write.sampler).inner;
-    SamplerDescriptorWrite { sampler }
-}
-
-pub fn image_descriptor_write(write: &ImageDescriptorWrite) -> ImageDescriptorWrite {
-    let image_view = unsafe {
-        let image_view = std::mem::transmute::<_, *const ValidationImageView>(write.image_view);
-        (*image_view).image_view
-    };
-    ImageDescriptorWrite {
-        image_view,
-        image_layout: write.image_layout,
-    }
-}
-
-pub fn buffer_descriptor_write<'a>(
-    write: &'a BufferDescriptorWrite<'a>,
-) -> BufferDescriptorWrite<'a> {
-    let buffer = buffer(write.buffer);
-    BufferDescriptorWrite {
-        buffer,
-        offset: write.offset,
-        len: write.len,
-        structure_byte_stride: write.structure_byte_stride,
-    }
-}
-
-pub fn texel_buffer_descriptor_write<'a>(
-    write: &'a TexelBufferDescriptorWrite<'a>,
-) -> TexelBufferDescriptorWrite<'a> {
-    let buffer = buffer(write.buffer);
-    TexelBufferDescriptorWrite {
-        buffer,
-        format: write.format,
-        offset: write.offset,
-        len: write.len,
-    }
-}
-
-pub enum OwnedDescriptorWrites<'a> {
-    Sampler(Vec<SamplerDescriptorWrite<'a>>),
-    TexelBuffer(Vec<TexelBufferDescriptorWrite<'a>>),
-    TexelBufferRW(Vec<TexelBufferDescriptorWrite<'a>>),
-    Texture(Vec<ImageDescriptorWrite>),
-    TextureRW(Vec<ImageDescriptorWrite>),
-    UniformBuffer(Vec<BufferDescriptorWrite<'a>>),
-    UniformBufferDynamic(Vec<BufferDescriptorWrite<'a>>),
-    StructuredBuffer(Vec<BufferDescriptorWrite<'a>>),
-    StructuredBufferRW(Vec<BufferDescriptorWrite<'a>>),
-    ByteAddressBuffer(Vec<BufferDescriptorWrite<'a>>),
-    ByteAddressBufferRW(Vec<BufferDescriptorWrite<'a>>),
-    InputAttachment(Vec<ImageDescriptorWrite>),
-}
-
-impl<'a> OwnedDescriptorWrites<'a> {
-    pub fn as_ref(&self) -> DescriptorWrites {
-        match self {
-            Self::Sampler(v) => DescriptorWrites::Sampler(v.as_slice()),
-            Self::TexelBuffer(v) => DescriptorWrites::TexelBuffer(v.as_slice()),
-            Self::TexelBufferRW(v) => DescriptorWrites::TexelBufferRW(v.as_slice()),
-            Self::Texture(v) => DescriptorWrites::Texture(v.as_slice()),
-            Self::TextureRW(v) => DescriptorWrites::TextureRW(v.as_slice()),
-            Self::UniformBuffer(v) => DescriptorWrites::UniformBuffer(v.as_slice()),
-            Self::UniformBufferDynamic(v) => DescriptorWrites::UniformBufferDynamic(v.as_slice()),
-            Self::StructuredBuffer(v) => DescriptorWrites::StructuredBuffer(v.as_slice()),
-            Self::StructuredBufferRW(v) => DescriptorWrites::StructuredBufferRW(v.as_slice()),
-            Self::ByteAddressBuffer(v) => DescriptorWrites::ByteAddressBuffer(v.as_slice()),
-            Self::ByteAddressBufferRW(v) => DescriptorWrites::ByteAddressBufferRW(v.as_slice()),
-            Self::InputAttachment(v) => DescriptorWrites::InputAttachment(v.as_slice()),
-        }
-    }
 }
 
 pub fn input_assembly_buffer_binding<'a>(
@@ -390,10 +260,10 @@ pub fn texture_barrier<'a>(barrier: &'a TextureBarrier<'a>) -> TextureBarrier<'a
 }
 
 pub fn descriptor_pool_desc<'a>(desc: &'a DescriptorPoolDesc<'a>) -> DescriptorPoolDesc<'a> {
-    let layout = ValidationDescriptorSetLayout::get(desc.layout);
+    let layout = unwrap::parameter_block_layout(desc.layout);
     DescriptorPoolDesc {
-        layout: &layout.inner,
-        num_sets: desc.num_sets,
+        layout: layout.inner.as_ref(),
+        num_blocks: desc.num_blocks,
         name: desc.name,
     }
 }

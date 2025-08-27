@@ -29,30 +29,41 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 
-use crate::NullDevice;
+use crate::device::NullDevice;
 
-pub struct NullPipelineLayout {
+pub struct NullParameterBlockLayout {
+    pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
 }
 
-unsafe_impl_iobject!(NullPipelineLayout, "01944fbe-9723-7770-8756-99889b0542d9");
+declare_interfaces!(NullParameterBlockLayout, [IParameterBlockLayout]);
 
-impl NullPipelineLayout {
-    pub(crate) fn get_owned(v: &PipelineLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown PipelineLayout implementation!")
+impl IParameterBlockLayout for NullParameterBlockLayout {
+    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
+        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
-    pub(crate) fn get(v: &PipelineLayoutHandle) -> &Self {
-        v.get()
-            .downcast_ref::<Self>()
-            .expect("Unknown PipelineLayout implementation!")
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn desc(&self) -> &ParameterBlockDesc<'_> {
+        unimplemented!()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
+    }
+
+    fn is_compatible(&self, _other: &dyn IParameterBlockLayout) -> bool {
+        unimplemented!()
     }
 }

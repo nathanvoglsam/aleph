@@ -556,9 +556,9 @@ pub struct GraphicsPipelineDesc<'a> {
     /// each module is specified on the [ShaderStage] object.
     pub shader_stages: &'a [ShaderStage<'a>],
 
-    /// The description of binding locations used by both the pipeline and descriptor sets used with
-    /// the pipeline
-    pub pipeline_layout: &'a PipelineLayoutHandle,
+    /// The description of binding locations used by both the pipeline and parameter blocks used
+    /// with the pipeline
+    pub binding_signature: &'a dyn IBindingSignature,
 
     /// Structure that describes the vertex input piece of the graphics pipeline
     pub vertex_layout: &'a VertexInputStateDesc<'a>,
@@ -590,9 +590,9 @@ pub struct ComputePipelineDesc<'a> {
     /// The compute shader module that will be used by the compute pipeline being created.
     pub shader_module: ShaderBinary<'a>,
 
-    /// The description of binding locations used by both the pipeline and descriptor sets used with
-    /// the pipeline
-    pub pipeline_layout: &'a PipelineLayoutHandle,
+    /// The description of binding locations used by both the pipeline and parameter blocks used
+    /// with the pipeline
+    pub binding_signature: &'a dyn IBindingSignature,
 
     /// The name of the object
     pub name: Option<&'a str>,

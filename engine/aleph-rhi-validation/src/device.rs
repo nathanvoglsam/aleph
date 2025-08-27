@@ -28,9 +28,7 @@
 //
 
 use std::cell::Cell;
-use std::collections::{HashMap, HashSet};
-use std::num::NonZeroU32;
-use std::ops::Deref;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -39,17 +37,15 @@ use aleph_object_system::{ArcObject, ArcedObject};
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
 
-use crate::descriptor_set_layout::DescriptorBindingInfo;
 use crate::fence::FenceState;
-use crate::internal::descriptor_set::DescriptorSet;
-use crate::internal::get_as_unwrapped;
+use crate::internal::parameter_block::ParameterBlock;
+use crate::internal::{get_as_unwrapped, unwrap};
 use crate::semaphore::SemaphoreState;
-use crate::texture::{ValidationImageView, ValidationViewType};
 use crate::{
-    ValidationAdapter, ValidationBuffer, ValidationCommandList, ValidationComputePipeline,
-    ValidationContext, ValidationDescriptorArena, ValidationDescriptorPool,
-    ValidationDescriptorSetLayout, ValidationFence, ValidationGraphicsPipeline,
-    ValidationPipelineLayout, ValidationQueue, ValidationSampler, ValidationSemaphore,
+    ValidationAdapter, ValidationBindingSignature, ValidationBuffer, ValidationCommandList,
+    ValidationComputePipeline, ValidationContext, ValidationDescriptorArena,
+    ValidationDescriptorPool, ValidationFence, ValidationGraphicsPipeline,
+    ValidationParameterBlockLayout, ValidationQueue, ValidationSampler, ValidationSemaphore,
     ValidationTexture,
 };
 
@@ -107,6 +103,58 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    fn create_parameter_block_layout(
+        &self,
+        desc: &ParameterBlockDesc,
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError> {
+        let inner = self.inner.create_parameter_block_layout(&desc)?;
+
+        let out = AnyArc::new_cyclic(move |v| ValidationParameterBlockLayout {
+            this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+        });
+        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(out, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_binding_signature(
+        &self,
+        desc: &BindingSignatureDesc,
+    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        if let Some(block) = &desc.push_constant_block {
+            if (block.size.get() as u32 % 4) != 0 {
+                return Err(BindingSignatureCreateError::InvalidPushConstantBlockSize);
+            }
+        }
+
+        let parameter_block_layouts = Vec::from_iter(
+            desc.parameter_block_layouts
+                .iter()
+                .map(|v| unwrap::parameter_block_layout_d(v).inner.as_ref()),
+        );
+        let push_constant_block = desc.push_constant_block.clone();
+        let new_desc = BindingSignatureDesc {
+            parameter_block_layouts: &parameter_block_layouts,
+            push_constant_block: push_constant_block.clone(),
+            name: desc.name.clone(),
+        };
+        let inner = self.inner.create_binding_signature(&new_desc)?;
+
+        let out = AnyArc::new_cyclic(move |v| ValidationBindingSignature {
+            this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+            push_constant_block,
+        });
+        Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn create_graphics_pipeline(
         &self,
         desc: &GraphicsPipelineDesc,
@@ -125,11 +173,11 @@ impl IDevice for ValidationDevice {
             );
         });
 
-        let pipeline_layout = ValidationPipelineLayout::get_owned(desc.pipeline_layout);
+        let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
         let new_desc = GraphicsPipelineDesc {
             shader_stages: desc.shader_stages,
-            pipeline_layout: &pipeline_layout.inner,
+            binding_signature: binding_signature.inner.as_ref(),
             vertex_layout: desc.vertex_layout,
             input_assembly_state: desc.input_assembly_state,
             rasterizer_state: desc.rasterizer_state,
@@ -143,7 +191,7 @@ impl IDevice for ValidationDevice {
         let inner = self.inner.create_graphics_pipeline(&new_desc)?;
         let out = ValidationGraphicsPipeline {
             _device: self._this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout,
+            _binding_signature: binding_signature.this.upgrade().unwrap(),
             inner,
         };
         let out = ArcedObject::new_arc_opaque(out);
@@ -157,72 +205,22 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        let pipeline_layout = ValidationPipelineLayout::get_owned(desc.pipeline_layout);
+        let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
         let new_desc = ComputePipelineDesc {
             shader_module: desc.shader_module,
-            pipeline_layout: &pipeline_layout.inner,
+            binding_signature: binding_signature.inner.as_ref(),
             name: desc.name,
         };
 
         let inner = self.inner.create_compute_pipeline(&new_desc)?;
         let out = ValidationComputePipeline {
             _device: self._this.upgrade().unwrap(),
-            _pipeline_layout: pipeline_layout,
+            _binding_signature: binding_signature.this.upgrade().unwrap(),
             inner,
         };
         let out = ArcedObject::new_arc_opaque(out);
         unsafe { Ok(ComputePipelineHandle::new(out)) }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_descriptor_set_layout(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
-        Self::validate_descriptor_set_layout(desc);
-
-        // Extract binding metadata we need for validation
-        let mut binding_info = HashMap::new();
-        for binding in desc.items {
-            binding_info.insert(
-                binding.binding_num,
-                DescriptorBindingInfo {
-                    r#type: binding.binding_type,
-                    descriptor_count: binding.binding_count,
-                },
-            );
-        }
-
-        // Construct a new list of bindings matching the outer description, but with the inner
-        // references unwrapped
-        let mut items = Vec::with_capacity(desc.items.len());
-        for v in desc.items.iter() {
-            let item = DescriptorSetLayoutBinding {
-                binding_num: v.binding_num,
-                binding_type: v.binding_type,
-                binding_count: v.binding_count,
-            };
-            items.push(item);
-        }
-
-        // Finally, make our unwrapped description to give to the inner implementation
-        let new_desc = DescriptorSetLayoutDesc {
-            visibility: desc.visibility,
-            items: items.as_slice(),
-            name: desc.name,
-        };
-
-        let inner = self.inner.create_descriptor_set_layout(&new_desc)?;
-        let out = ValidationDescriptorSetLayout {
-            _device: self._this.upgrade().unwrap(),
-            inner,
-            binding_info,
-        };
-        let out = ArcedObject::new_arc_opaque(out);
-        unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -235,14 +233,14 @@ impl IDevice for ValidationDevice {
         let inner_desc = get_as_unwrapped::descriptor_pool_desc(desc);
         let inner = self.inner.create_descriptor_pool(&inner_desc)?;
 
-        let layout = ValidationDescriptorSetLayout::get_owned(desc.layout);
+        let layout = unwrap::parameter_block_layout(desc.layout);
 
         let pool = Box::new(ValidationDescriptorPool {
             _device: self._this.upgrade().unwrap(),
-            _layout: layout,
+            _layout: layout.this.upgrade().unwrap(),
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            set_objects: Vec::with_capacity(desc.num_sets as usize),
+            set_objects: Vec::with_capacity(desc.num_blocks as usize),
             free_list: Vec::with_capacity(128),
         });
 
@@ -262,42 +260,11 @@ impl IDevice for ValidationDevice {
             _device: self._this.upgrade().unwrap(),
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            set_objects: Cell::new(Vec::with_capacity(desc.num_sets as usize)),
+            set_objects: Cell::new(Vec::with_capacity(desc.num_blocks as usize)),
             free_list: Cell::new(Vec::with_capacity(128)),
         });
 
         Ok(pool)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_pipeline_layout(
-        &self,
-        desc: &PipelineLayoutDesc,
-    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
-        // TODO: implement validation for create_pipeline_layout
-
-        // Unwrap the objects in 'set_layouts' into a new list so the layer below gets the correct
-        // object implementations
-        let inner =
-            get_as_unwrapped::pipeline_layout_desc(desc, |v| self.inner.create_pipeline_layout(v))?;
-
-        let mut push_constant_blocks = Vec::new();
-        for block in desc.push_constant_blocks {
-            if (block.size % 4) != 0 {
-                return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
-            }
-            push_constant_blocks.push(block.clone());
-        }
-
-        let out = ValidationPipelineLayout {
-            _device: self._this.upgrade().unwrap(),
-            inner,
-            push_constant_blocks,
-        };
-        let out = ArcedObject::new_arc_opaque(out);
-        unsafe { Ok(PipelineLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -400,15 +367,21 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
-        unsafe {
-            writes
-                .iter()
-                .for_each(|v| Self::validate_descriptor_write(v));
+    unsafe fn update_parameter_block(
+        &self,
+        layout: &dyn IParameterBlockLayout,
+        block: ParameterBlockHandle,
+        base: u32,
+        writes: &[ParameterWrite],
+    ) {
+        let layout = unwrap::parameter_block_layout(layout).inner.as_ref();
+        let block = unsafe { ParameterBlock::ref_from_handle(&block).inner };
 
-            get_as_unwrapped::descriptor_set_updates(writes, |writes| {
-                self.inner.update_descriptor_sets(writes)
-            })
+        let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
+
+        unsafe {
+            self.inner
+                .update_parameter_block(layout, block, base, &new_writes);
         }
     }
 
@@ -671,27 +644,6 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_descriptor_set_layout_id(
-        &self,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        ValidationDescriptorSetLayout::get(set_layout).get_id(self)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_pipeline_layout_id(
-        &self,
-        pipeline_layout: &PipelineLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        let v = ValidationPipelineLayout::get(pipeline_layout);
-        self.inner.get_pipeline_layout_id(&v.inner)
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
         let v = ValidationGraphicsPipeline::get(pipeline);
         self.inner.get_graphics_pipeline_id(&v.inner)
@@ -703,242 +655,5 @@ impl IDevice for ValidationDevice {
     fn get_compute_pipeline_id(&self, pipeline: &ComputePipelineHandle) -> std::num::NonZeroU64 {
         let v = ValidationComputePipeline::get(pipeline);
         self.inner.get_compute_pipeline_id(&v.inner)
-    }
-}
-
-impl ValidationDevice {
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    pub fn validate_descriptor_set_layout(desc: &DescriptorSetLayoutDesc) {
-        for binding in desc.items.iter() {
-            if binding.binding_count.is_some() {
-                unimplemented!("Currently descriptor arrays are unimplemented");
-            }
-        }
-
-        fn calculate_binding_range(v: &DescriptorSetLayoutBinding) -> (u32, u32) {
-            let start = v.binding_num;
-            let num = v.binding_count.map(NonZeroU32::get).unwrap_or(1);
-            let end = start + num;
-            (start, end)
-        }
-
-        desc.items.iter().enumerate().for_each(|(outer_i, outer)| {
-            let (outer_start, outer_end) = calculate_binding_range(outer);
-
-            desc.items.iter().enumerate().for_each(|(inner_i, inner)| {
-                // Skip over outer_i so we don't check if the outer range intersects with itself
-                if outer_i == inner_i {
-                    return;
-                }
-
-                let (inner_start, inner_end) = calculate_binding_range(inner);
-
-                let starts_inside_outer = inner_start >= outer_start && inner_start <= outer_end;
-                let ends_inside_outer = inner_end >= outer_start && inner_end <= outer_end;
-
-                assert!(
-                    !starts_inside_outer || !ends_inside_outer,
-                    "It is invalid for two descriptor binding ranges to intersect"
-                );
-            })
-        });
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    /// # Safety
-    ///
-    /// This function does not check if the pointer inside [DescriptorWriteDesc].set is valid, as
-    /// it is unknowable in isolation. It is the caller's responsibility to ensure the descriptor
-    /// set being written to is still live and valid, and the caller's responsibility to synchronize
-    /// access.
-    pub unsafe fn validate_descriptor_write(write: &DescriptorWriteDesc) {
-        let set = unsafe { DescriptorSet::ref_from_handle(&write.set) };
-        let layout = set._layout.deref();
-
-        // Checks if the binding is actually present in the descriptor set.
-        let info = if let Some(info) = layout.get_binding_info(write.binding) {
-            info
-        } else {
-            panic!(
-                "Trying to write to a descriptor binding '{}' not present in the set",
-                write.binding
-            )
-        };
-
-        // Check if the user is requesting to write the correct descriptor type. That is, the
-        // 'descriptor_type' in the write description must match the type declared in the descriptor
-        // set layout.
-        let expected_binding_type = info.r#type;
-        let actual_binding_type = write.writes.descriptor_type();
-        assert_eq!(
-            expected_binding_type, actual_binding_type,
-            "It is invalid to write the incorrect descriptor type into a binding."
-        );
-
-        // Check if the user is trying to write more than 1 descriptor into a non-array binding.
-        let is_array_binding = info.descriptor_count.is_some();
-        let num_writes = write.writes.len();
-        assert!(
-            !is_array_binding && num_writes <= 1,
-            "It is invalid to write more than 1 descriptor into a non-array binding."
-        );
-
-        // Check if the user is trying to write outside of an array binding's range.
-        let write_start = write.array_element as usize;
-        let write_end = write_start + write.writes.len();
-        let binding_start = 0;
-        let binding_end = info.descriptor_count.map(NonZeroU32::get).unwrap_or(1) as usize;
-        assert!(
-            write_start >= binding_start && write_start < binding_end,
-            "It is invalid to write outside of an array binding's bounds."
-        );
-        assert!(
-            write_end > binding_start && write_end <= binding_end,
-            "It is invalid to write outside of an array binding's bounds."
-        );
-
-        // Check that the declared descriptor type matches the DescriptorWrites variant provided.
-        match &write.writes {
-            DescriptorWrites::Texture(writes) => {
-                for v in writes.iter() {
-                    let image_view = unsafe {
-                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
-                    };
-
-                    Self::validate_image_view_type(image_view);
-
-                    let texture = image_view
-                        ._image
-                        .upgrade()
-                        .expect("Trying to write view for destroyed image");
-
-                    Self::validate_texture_usage(&texture, ResourceUsageFlags::SHADER_RESOURCE);
-                }
-            }
-            DescriptorWrites::TextureRW(writes) => {
-                for v in writes.iter() {
-                    let image_view = unsafe {
-                        &*std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
-                    };
-
-                    Self::validate_image_view_type(image_view);
-
-                    let texture = image_view
-                        ._image
-                        .upgrade()
-                        .expect("Trying to write view for destroyed image");
-
-                    Self::validate_texture_usage(&texture, ResourceUsageFlags::UNORDERED_ACCESS);
-                }
-            }
-            DescriptorWrites::UniformBuffer(writes)
-            | DescriptorWrites::UniformBufferDynamic(writes) => {
-                for write in writes.iter() {
-                    let buffer = write
-                        .buffer
-                        .get()
-                        .downcast_ref::<ValidationBuffer>()
-                        .unwrap();
-                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::CONSTANT_BUFFER);
-                    Self::validate_buffer_write_range(buffer, write);
-                    Self::validate_uniform_buffer_offset_alignment(write);
-                }
-            }
-            DescriptorWrites::StructuredBuffer(writes) => {
-                for write in writes.iter() {
-                    let buffer = write
-                        .buffer
-                        .get()
-                        .downcast_ref::<ValidationBuffer>()
-                        .unwrap();
-                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::SHADER_RESOURCE);
-                    Self::validate_buffer_write_range(buffer, write);
-                }
-            }
-            DescriptorWrites::StructuredBufferRW(writes) => {
-                for write in writes.iter() {
-                    let buffer = write
-                        .buffer
-                        .get()
-                        .downcast_ref::<ValidationBuffer>()
-                        .unwrap();
-                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::UNORDERED_ACCESS);
-                    Self::validate_buffer_write_range(buffer, write);
-                }
-            }
-            DescriptorWrites::ByteAddressBuffer(writes) => {
-                for write in writes.iter() {
-                    let buffer = write
-                        .buffer
-                        .get()
-                        .downcast_ref::<ValidationBuffer>()
-                        .unwrap();
-                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::SHADER_RESOURCE);
-                    Self::validate_buffer_write_range(buffer, write);
-                }
-            }
-            DescriptorWrites::ByteAddressBufferRW(writes) => {
-                for write in writes.iter() {
-                    let buffer = write
-                        .buffer
-                        .get()
-                        .downcast_ref::<ValidationBuffer>()
-                        .unwrap();
-                    Self::validate_buffer_usage(buffer, ResourceUsageFlags::UNORDERED_ACCESS);
-                    Self::validate_buffer_write_range(buffer, write);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    fn validate_image_view_type(image_view: &ValidationImageView) {
-        assert!(
-            matches!(image_view.view_type, ValidationViewType::ResourceView),
-            "Writing a resource view with an '{:?}' image view is invalid",
-            image_view.view_type
-        );
-    }
-
-    fn validate_texture_usage(texture: &ValidationTexture, required: ResourceUsageFlags) {
-        let texture_usage = texture.desc.usage;
-        assert!(
-            texture_usage.contains(required),
-            "Texture missing required usage '{:?}' for view",
-            required
-        );
-    }
-
-    fn validate_buffer_usage(buffer: &ValidationBuffer, required: ResourceUsageFlags) {
-        let buffer_usage = buffer.usage;
-        assert!(
-            buffer_usage.contains(required),
-            "Buffer missing required usage '{:?}' for view",
-            required
-        );
-    }
-
-    fn validate_buffer_write_range(buffer: &ValidationBuffer, write: &BufferDescriptorWrite) {
-        let buffer_size = buffer.size;
-        let view_end = write.offset + write.len as u64;
-        assert!(
-            view_end <= buffer_size,
-            "Buffer view 'offset: {} len: {}' out of buffer bounds. Size '{}'.",
-            write.offset,
-            write.len,
-            buffer_size
-        );
-    }
-
-    fn validate_uniform_buffer_offset_alignment(write: &BufferDescriptorWrite) {
-        assert!(
-            write.offset % 256 == 0,
-            "UniformBuffer offset '{}' does not maintain 256 byte alignment",
-            write.offset
-        );
     }
 }

@@ -34,6 +34,7 @@ use crate::internal::profile::CreateProfile;
 pub trait CheckMeetsProfile {
     fn meets_profile(&self, v: &Self) -> Option<()>;
 
+    #[allow(dead_code)]
     fn merge(&mut self, v: &Self);
 }
 

@@ -28,19 +28,18 @@
 //
 
 use std::num::NonZeroU64;
-use std::sync::Arc;
 
 use aleph_any::AnyArc;
 use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use ash::vk;
 
+use crate::binding_signature::BindingSignature;
 use crate::device::Device;
-use crate::pipeline_layout::PipelineLayout;
 
 pub struct GraphicsPipeline {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
+    pub(crate) _binding_signature: AnyArc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: vk::Pipeline,
 }
@@ -72,7 +71,7 @@ impl Drop for GraphicsPipeline {
 
 pub struct ComputePipeline {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
+    pub(crate) _binding_signature: AnyArc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: vk::Pipeline,
 }

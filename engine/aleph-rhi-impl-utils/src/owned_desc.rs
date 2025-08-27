@@ -206,3 +206,81 @@ impl Drop for OwnedSamplerDesc {
         }
     }
 }
+
+#[repr(transparent)]
+#[derive(Debug)]
+pub struct OwnedParameterBlockDesc {
+    desc: ParameterBlockDesc<'static>,
+}
+
+impl OwnedParameterBlockDesc {
+    /// Constructs a new [`OwnedParameterBlockDesc`] wrapper that upgrades the 'name' entry to be
+    /// heap allocated while still masquerading as a 'str'.
+    ///
+    /// Useful for storing in place inside object implementations for handing out to API callers in
+    /// desc getter functions.
+    pub fn new<'a>(desc: &ParameterBlockDesc<'a>) -> Self {
+        let params = {
+            let mut params = Vec::with_capacity(desc.params.len());
+            params.extend_from_slice(desc.params);
+            params.shrink_to_fit();
+            let params = params.into_boxed_slice();
+            Box::leak(params)
+        };
+
+        // Allocate the name on the heap and update the desc with the new allocated name ptr
+        let name: Option<&str> = match desc.name {
+            Some(name) => {
+                let v: Box<str> = Box::from(name);
+                let v = Box::leak(v);
+                Some(v)
+            }
+            None => None,
+        };
+
+        let desc = ParameterBlockDesc {
+            params,
+            visibility: desc.visibility,
+            flags: desc.flags,
+            name,
+        };
+
+        Self { desc }
+    }
+
+    /// Gets the inner desc
+    pub const fn get(&self) -> &ParameterBlockDesc<'_> {
+        &self.desc
+    }
+}
+
+impl Clone for OwnedParameterBlockDesc {
+    #[inline]
+    fn clone(&self) -> Self {
+        OwnedParameterBlockDesc::new(self.get())
+    }
+}
+
+impl Drop for OwnedParameterBlockDesc {
+    fn drop(&mut self) {
+        // Safety: we control the construction of this type, and we guarantee that the name
+        //         is really a Box<[]> so we reconstitute the box and drop it here.
+        unsafe {
+            let v = self.desc.params as *const [ParameterDesc] as *mut [ParameterDesc];
+            let v: Box<_> = Box::from_raw(v);
+            drop(v);
+        }
+        match self.desc.name {
+            Some(v) => {
+                // Safety: we control the construction of this type, and we guarantee that the name
+                //         is really a Box<str> so we reconstitute the box and drop it here.
+                unsafe {
+                    let v = v as *const str as *mut str;
+                    let v: Box<str> = Box::from_raw(v);
+                    drop(v);
+                }
+            }
+            None => {}
+        }
+    }
+}

@@ -28,15 +28,14 @@
 //
 
 use std::ptr::NonNull;
-use std::sync::Arc;
 
-use aleph_object_system::ArcedObject;
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
-use crate::ValidationDescriptorSetLayout;
+use crate::ValidationParameterBlockLayout;
 
 #[repr(C)]
-pub struct DescriptorSet {
+pub struct ParameterBlock {
     /// A magic header value used to help identify if something *other* than a DescriptorSet is
     /// present at some pointer target.
     pub _magic_header: u64,
@@ -48,31 +47,31 @@ pub struct DescriptorSet {
     pub _pool_id: u64,
 
     /// The descriptor set layout of this set
-    pub _layout: Arc<ArcedObject<ValidationDescriptorSetLayout>>,
+    pub _layout: AnyArc<ValidationParameterBlockLayout>,
 
     /// The inner handle
-    pub inner: DescriptorSetHandle,
+    pub inner: ParameterBlockHandle,
 }
 
-impl DescriptorSet {
+impl ParameterBlock {
     /// The expected value of `DescriptorSet._magic_header`
     pub const MAGIC_HEADER_VAL: u64 = 0x56214203605621;
 
     #[inline(always)]
-    pub unsafe fn validate(handle: DescriptorSetHandle, expected_pool_id: Option<u64>) {
+    pub unsafe fn validate(handle: ParameterBlockHandle, expected_pool_id: Option<u64>) {
         unsafe {
             let inner: NonNull<()> = handle.into();
             let inner: NonNull<Self> = inner.cast();
             let inner = inner.as_ref();
 
-            // To validate that the DescriptorSetHandle points to an object of type DescriptorSet we
+            // To validate that the ParameterBlockHandle points to an object of type DescriptorSet we
             // use a magic header field that will *always* be initialized to the same value.
             // Checking for the correct value can reject the assumption that the pointer is valid.
             //
             // It can't prove it though.
             assert_eq!(
                 inner._magic_header,
-                DescriptorSet::MAGIC_HEADER_VAL,
+                ParameterBlock::MAGIC_HEADER_VAL,
                 "DescriptorSet header doesn't match expected value. Garbage pointer detected."
             );
 
@@ -88,8 +87,8 @@ impl DescriptorSet {
         }
     }
 
-    /// Grabs the pointer inside a [DescriptorSetHandle] as a non-null [DescriptorSet] ptr
-    pub fn ptr_from_handle(handle: DescriptorSetHandle) -> NonNull<DescriptorSet> {
+    /// Grabs the pointer inside a [ParameterBlockHandle] as a non-null [ParameterBlock] ptr
+    pub fn ptr_from_handle(handle: ParameterBlockHandle) -> NonNull<ParameterBlock> {
         let inner: NonNull<()> = handle.into();
         inner.cast()
     }
@@ -100,7 +99,7 @@ impl DescriptorSet {
     /// # Safety
     ///
     /// This function has all the same soundness requirements as creating a reference from a raw
-    /// pointer. At the very least a [DescriptorSetHandle] is guaranteed to be non-null, but many
+    /// pointer. At the very least a [ParameterBlockHandle] is guaranteed to be non-null, but many
     /// things are not known at this call-site without the caller tracking these things themselves.
     ///
     /// - It is the caller's responsibility to ensure that no mutable reference can exist at the
@@ -123,7 +122,7 @@ impl DescriptorSet {
     ///       created from. If the two devices use different implementations then the handles
     ///       *will* be interpreted as the incorrect type.
     ///
-    pub unsafe fn ref_from_handle(handle: &DescriptorSetHandle) -> &DescriptorSet {
+    pub unsafe fn ref_from_handle(handle: &ParameterBlockHandle) -> &ParameterBlock {
         unsafe {
             let ptr = Self::ptr_from_handle(*handle);
 

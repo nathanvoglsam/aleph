@@ -65,7 +65,7 @@ pub trait ISwapChain: IAny + IGetPlatformInterface + Send + Sync {
     /// the user has dropped all references, panicking if the user has failed to meet this
     /// requirement.
     ///
-    /// Once a thread has entered [ISwapChain::rebuild] any remaining views in descriptor sets are
+    /// Once a thread has entered [ISwapChain::rebuild] any remaining views in parameter blocks are
     /// considered dangling and are no longer valid to use. None of the swap images can be in-use on
     /// a queue when this function is called. No further work can be queued referencing the old swap
     /// textures the instant any thread enters [ISwapChain::rebuild].

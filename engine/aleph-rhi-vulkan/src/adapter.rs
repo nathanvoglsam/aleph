@@ -276,6 +276,8 @@ impl IAdapter for Adapter {
                 .map_err(|e| log::error!("Platform Error: {:#?}", e))?
         };
 
+        let push_descriptor =
+            ash::khr::push_descriptor::Device::new(&self.context.instance, &device);
         let timeline_semaphore =
             ash::khr::timeline_semaphore::Device::new(&self.context.instance, &device);
         let create_renderpass_2 =
@@ -328,6 +330,7 @@ impl IAdapter for Adapter {
                 adapter: self.this.upgrade().unwrap(),
                 context: self.context.clone(),
                 device: ManuallyDrop::new(device),
+                push_descriptor,
                 timeline_semaphore,
                 _create_renderpass_2: create_renderpass_2,
                 dynamic_rendering,

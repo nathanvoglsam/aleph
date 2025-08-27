@@ -29,43 +29,45 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
-use ash::vk;
+use aleph_rhi_impl_utils::owned_desc::OwnedParameterBlockDesc;
 
 use crate::device::Device;
+use crate::internal::unwrap;
 
-pub struct DescriptorSetLayout {
-    pub(crate) _device: AnyArc<Device>,
+pub struct ParameterBlockLayout {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
-    pub(crate) descriptor_set_layout: vk::DescriptorSetLayout,
-    pub(crate) pool_sizes: Vec<vk::DescriptorPoolSize>,
+    pub(crate) desc: OwnedParameterBlockDesc,
 }
 
-unsafe_impl_iobject!(DescriptorSetLayout, "01944fe5-3abc-7a62-8c14-19d4d31f92b6");
+declare_interfaces!(ParameterBlockLayout, [IParameterBlockLayout]);
 
-impl DescriptorSetLayout {
-    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
+impl IParameterBlockLayout for ParameterBlockLayout {
+    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
+        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
-    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
-        v.get()
-            .downcast_ref::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
     }
-}
 
-impl Drop for DescriptorSetLayout {
-    fn drop(&mut self) {
-        unsafe {
-            self._device
-                .device
-                .destroy_descriptor_set_layout(self.descriptor_set_layout, None);
-        }
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn desc(&self) -> &ParameterBlockDesc<'_> {
+        self.desc.get()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
+    }
+
+    fn is_compatible(&self, other: &dyn IParameterBlockLayout) -> bool {
+        let other = unwrap::parameter_block_layout(other);
+        self.desc.get().is_compatible(other.desc.get())
     }
 }

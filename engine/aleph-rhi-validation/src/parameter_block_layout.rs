@@ -29,30 +29,43 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
+use crate::internal::unwrap;
 
-pub struct PipelineLayout {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) id: NonZeroU64,
+pub struct ValidationParameterBlockLayout {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) inner: AnyArc<dyn IParameterBlockLayout>,
 }
 
-unsafe_impl_iobject!(PipelineLayout, "01980753-5c4f-7ae3-be3b-96fae2e02878");
+declare_interfaces!(ValidationParameterBlockLayout, [IParameterBlockLayout]);
 
-impl PipelineLayout {
-    pub(crate) fn get_owned(v: &PipelineLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown PipelineLayout implementation!")
+impl IParameterBlockLayout for ValidationParameterBlockLayout {
+    fn upgrade(&self) -> AnyArc<dyn IParameterBlockLayout> {
+        AnyArc::map::<dyn IParameterBlockLayout, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
-    pub(crate) fn get(v: &PipelineLayoutHandle) -> &Self {
-        v.get()
-            .downcast_ref::<Self>()
-            .expect("Unknown PipelineLayout implementation!")
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn desc(&self) -> &ParameterBlockDesc<'_> {
+        self.inner.desc()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.inner.get_id()
+    }
+
+    fn is_compatible(&self, other: &dyn IParameterBlockLayout) -> bool {
+        let other = unwrap::parameter_block_layout(other);
+        self.inner.is_compatible(other)
     }
 }

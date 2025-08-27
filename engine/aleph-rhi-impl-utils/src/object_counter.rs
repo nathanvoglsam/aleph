@@ -36,8 +36,8 @@ pub struct ObjectCounter {
     buffer: AtomicU64,
     texture: AtomicU64,
     sampler: AtomicU64,
-    set_layout: AtomicU64,
-    pipeline_layout: AtomicU64,
+    parameter_block_layout: AtomicU64,
+    binding_signature: AtomicU64,
     graphics_pipeline: AtomicU64,
     compute_pipeline: AtomicU64,
 }
@@ -48,8 +48,8 @@ impl ObjectCounter {
             buffer: AtomicU64::new(1),
             texture: AtomicU64::new(1),
             sampler: AtomicU64::new(1),
-            set_layout: AtomicU64::new(1),
-            pipeline_layout: AtomicU64::new(1),
+            parameter_block_layout: AtomicU64::new(1),
+            binding_signature: AtomicU64::new(1),
             graphics_pipeline: AtomicU64::new(1),
             compute_pipeline: AtomicU64::new(1),
         }
@@ -67,12 +67,12 @@ impl ObjectCounter {
         Self::next_object(&self.sampler)
     }
 
-    pub fn next_set_layout(&self) -> NonZeroU64 {
-        Self::next_object(&self.set_layout)
+    pub fn next_parameter_block_layout(&self) -> NonZeroU64 {
+        Self::next_object(&self.parameter_block_layout)
     }
 
-    pub fn next_pipeline_layout(&self) -> NonZeroU64 {
-        Self::next_object(&self.pipeline_layout)
+    pub fn next_binding_signature(&self) -> NonZeroU64 {
+        Self::next_object(&self.binding_signature)
     }
 
     pub fn next_graphics_pipeline(&self) -> NonZeroU64 {

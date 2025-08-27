@@ -31,13 +31,13 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conversion_function;
 
 use crate::{
-    ValidationBindingSignature, ValidationCommandList, ValidationDevice,
-    ValidationParameterBlockLayout, ValidationSurface, ValidationSwapChain, ValidationSwapImage,
+    NullBindingSignature, NullCommandList, NullDevice, NullParameterBlockLayout, NullSurface,
+    NullSwapChain, NullSwapImage,
 };
 
 conversion_function!(
     ICommandList,
-    ValidationCommandList,
+    NullCommandList,
     command_list,
     command_list_owned,
     command_list_d,
@@ -45,7 +45,7 @@ conversion_function!(
 );
 conversion_function!(
     IDevice,
-    ValidationDevice,
+    NullDevice,
     device,
     device_owned,
     device_d,
@@ -53,7 +53,7 @@ conversion_function!(
 );
 conversion_function!(
     ISurface,
-    ValidationSurface,
+    NullSurface,
     surface,
     surface_owned,
     surface_d,
@@ -61,7 +61,7 @@ conversion_function!(
 );
 conversion_function!(
     ISwapChain,
-    ValidationSwapChain,
+    NullSwapChain,
     swap_chain,
     swap_chain_owned,
     swap_chain_d,
@@ -69,7 +69,7 @@ conversion_function!(
 );
 conversion_function!(
     ISwapImage,
-    ValidationSwapImage,
+    NullSwapImage,
     swap_image,
     swap_image_owned,
     swap_image_d,
@@ -77,7 +77,7 @@ conversion_function!(
 );
 conversion_function!(
     IParameterBlockLayout,
-    ValidationParameterBlockLayout,
+    NullParameterBlockLayout,
     parameter_block_layout,
     parameter_block_layout_owned,
     parameter_block_layout_d,
@@ -85,7 +85,7 @@ conversion_function!(
 );
 conversion_function!(
     IBindingSignature,
-    ValidationBindingSignature,
+    NullBindingSignature,
     binding_signature,
     binding_signature_owned,
     binding_signature_d,

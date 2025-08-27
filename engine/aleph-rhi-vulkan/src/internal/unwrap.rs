@@ -30,8 +30,10 @@
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::conversion_function;
 
+use crate::binding_signature::BindingSignature;
 use crate::command_list::CommandList;
 use crate::device::Device;
+use crate::parameter_block_layout::ParameterBlockLayout;
 use crate::surface::Surface;
 use crate::swap_chain::SwapChain;
 use crate::swap_image::SwapImage;
@@ -68,4 +70,20 @@ conversion_function!(
     swap_image_owned,
     swap_image_d,
     swap_image_iter
+);
+conversion_function!(
+    IParameterBlockLayout,
+    ParameterBlockLayout,
+    parameter_block_layout,
+    parameter_block_layout_owned,
+    parameter_block_layout_d,
+    parameter_block_layout_iter
+);
+conversion_function!(
+    IBindingSignature,
+    BindingSignature,
+    binding_signature,
+    binding_signature_owned,
+    binding_signature_d,
+    binding_signature_iter
 );

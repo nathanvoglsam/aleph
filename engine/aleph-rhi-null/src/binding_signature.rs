@@ -29,30 +29,33 @@
 
 use std::num::NonZeroU64;
 
-use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
-use aleph_rhi_api::*;
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
+use aleph_rhi_api::IBindingSignature;
 
-use crate::device::Device;
+use crate::NullDevice;
 
-pub struct DescriptorSetLayout {
-    pub(crate) _device: AnyArc<Device>,
+pub struct NullBindingSignature {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<NullDevice>,
     pub(crate) id: NonZeroU64,
 }
 
-unsafe_impl_iobject!(DescriptorSetLayout, "01980753-5c4f-7ae3-be3b-96de795e6124");
+declare_interfaces!(NullBindingSignature, [IBindingSignature]);
 
-impl DescriptorSetLayout {
-    pub(crate) fn get_owned(v: &DescriptorSetLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
+impl IBindingSignature for NullBindingSignature {
+    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
+        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
-    pub(crate) fn get(v: &DescriptorSetLayoutHandle) -> &Self {
-        v.get()
-            .downcast_ref::<Self>()
-            .expect("Unknown DescriptorSetLayout implementation!")
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn get_id(&self) -> NonZeroU64 {
+        self.id
     }
 }

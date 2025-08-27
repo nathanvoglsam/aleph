@@ -27,45 +27,34 @@
 // SOFTWARE.
 //
 
-use std::num::NonZeroU64;
-
-use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
-use ash::vk;
 
-use crate::device::Device;
+use crate::ValidationDevice;
 
-pub struct PipelineLayout {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) id: NonZeroU64,
-    pub(crate) pipeline_layout: vk::PipelineLayout,
-    pub(crate) push_constant_blocks: Vec<vk::PushConstantRange>,
+pub struct ValidationBindingSignature {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) inner: AnyArc<dyn IBindingSignature>,
+    pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 
-unsafe_impl_iobject!(PipelineLayout, "01944fe3-98db-7ba1-96d4-b40e2d69f172");
+declare_interfaces!(ValidationBindingSignature, [IBindingSignature]);
 
-impl PipelineLayout {
-    pub(crate) fn get_owned(v: &PipelineLayoutHandle) -> std::sync::Arc<ArcedObject<Self>> {
-        v.clone()
-            .into_inner()
-            .downcast::<Self>()
-            .expect("Unknown PipelineLayout implementation!")
+impl IBindingSignature for ValidationBindingSignature {
+    fn upgrade(&self) -> AnyArc<dyn IBindingSignature> {
+        AnyArc::map::<dyn IBindingSignature, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
-    pub(crate) fn get(v: &PipelineLayoutHandle) -> &Self {
-        v.get()
-            .downcast_ref::<Self>()
-            .expect("Unknown PipelineLayout implementation!")
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
     }
-}
 
-impl Drop for PipelineLayout {
-    fn drop(&mut self) {
-        unsafe {
-            self._device
-                .device
-                .destroy_pipeline_layout(self.pipeline_layout, None);
-        }
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn get_id(&self) -> std::num::NonZeroU64 {
+        self.inner.get_id()
     }
 }
