@@ -38,11 +38,10 @@ pub struct FullscreenTriangleInfo<'a> {
 }
 
 pub struct FullscreenTriangleBindInfo<'a> {
-    pub layout: &'a PipelineLayoutHandle,
-    pub sets: &'a [DescriptorSetHandle],
-    pub first_set: u32,
-    pub dynamic_offsets: &'a [u32],
-    pub constant_blocks: &'a [(usize, &'a [u8])],
+    pub binding_signature: &'a dyn IBindingSignature,
+    pub blocks: &'a [ParameterBlockHandle],
+    pub first_blocks: u32,
+    pub constant_block: Option<&'a [u8]>,
 }
 
 pub unsafe fn draw_fullscreen_triangle(
@@ -78,16 +77,15 @@ pub unsafe fn draw_fullscreen_triangle(
             h: info.extent.height,
         }]);
 
-        encoder.bind_descriptor_sets(
-            info.bindings.layout,
+        encoder.bind_parameter_blocks(
+            info.bindings.binding_signature,
             PipelineBindPoint::Graphics,
-            info.bindings.first_set,
-            info.bindings.sets,
-            info.bindings.dynamic_offsets,
+            info.bindings.first_blocks,
+            info.bindings.blocks,
         );
 
-        for &(block_index, data) in info.bindings.constant_blocks {
-            encoder.set_push_constant_block(block_index, data);
+        if let Some(data) = info.bindings.constant_block {
+            encoder.set_push_constant_block(data);
         }
 
         encoder.draw(3, 1, 0, 0);
@@ -98,7 +96,7 @@ pub unsafe fn draw_fullscreen_triangle(
 
 pub fn create_fullscreen_triangle_pipeline(
     device: &dyn IDevice,
-    pipeline_layout: &PipelineLayoutHandle,
+    binding_signature: &dyn IBindingSignature,
     format: Format,
     vertex_shader: ShaderStage,
     fragment_shader: ShaderStage,
@@ -134,7 +132,7 @@ pub fn create_fullscreen_triangle_pipeline(
 
     let graphics_pipeline_desc_new = GraphicsPipelineDesc {
         shader_stages: &[vertex_shader, fragment_shader],
-        pipeline_layout,
+        binding_signature,
         vertex_layout: &vertex_layout,
         input_assembly_state: &input_assembly_state,
         rasterizer_state: &rasterizer_state,

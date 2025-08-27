@@ -60,7 +60,7 @@ pub struct DescriptorArenaLinear {
     pub(crate) descriptor_bump_index: Cell<u32>,
 
     /// The number of descriptor set objects currently allocated from the arena.
-    pub(crate) num_sets: Cell<u32>,
+    pub(crate) num_blocks: Cell<u32>,
 
     /// The maximum number of descriptor sets that can be allocated from the pool
     pub(crate) set_capacity: u32,
@@ -101,16 +101,16 @@ impl IDescriptorArena for DescriptorArenaLinear {
     fn allocate_sets(
         &self,
         layout: &DescriptorSetLayoutHandle,
-        num_sets: usize,
+        num_blocks: usize,
     ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         let layout = DescriptorSetLayout::get(layout);
-        let mut sets = Vec::with_capacity(num_sets);
-        for _ in 0..num_sets {
+        let mut sets = Vec::with_capacity(num_blocks);
+        for _ in 0..num_blocks {
             sets.push(self.allocate_set_internal(layout)?);
         }
 
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets);
+        debug_assert_eq!(sets.len(), num_blocks);
         Ok(sets.into_boxed_slice())
     }
 
@@ -121,7 +121,7 @@ impl IDescriptorArena for DescriptorArenaLinear {
     unsafe fn reset(&self) {
         unsafe {
             self.descriptor_bump_index.set(0);
-            self.num_sets.set(0);
+            self.num_blocks.set(0);
             self.set_pool.reset_unchecked();
         }
     }
@@ -135,7 +135,7 @@ impl DescriptorArenaLinear {
         &self,
         layout: &DescriptorSetLayout,
     ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        if self.num_sets.get() == self.set_capacity {
+        if self.num_blocks.get() == self.set_capacity {
             return Err(DescriptorPoolAllocateError::OutOfMemory);
         }
 
@@ -333,17 +333,17 @@ impl IDescriptorArena for DescriptorArenaHeap {
     fn allocate_sets(
         &self,
         layout: &DescriptorSetLayoutHandle,
-        num_sets: usize,
+        num_blocks: usize,
     ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
         let set_layout = DescriptorSetLayout::get(layout);
 
-        let mut sets = vec![MaybeUninit::uninit(); num_sets];
+        let mut sets = vec![MaybeUninit::uninit(); num_blocks];
         self.set_pool
             .allocate_sets(&mut sets)
             .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
 
         debug_assert_eq!(sets.len(), sets.capacity());
-        debug_assert_eq!(sets.len(), num_sets);
+        debug_assert_eq!(sets.len(), num_blocks);
         let sets = sets.into_boxed_slice();
         let sets: Box<[DescriptorSetHandle]> = unsafe { transmute(sets) };
 

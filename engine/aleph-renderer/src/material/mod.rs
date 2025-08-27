@@ -29,6 +29,7 @@
 
 mod standard_material;
 
+use aleph_any::AnyArc;
 pub use standard_material::{StandardMaterial, StandardMaterialLayout};
 
 use std::num::NonZero;
@@ -109,19 +110,23 @@ pub unsafe trait IMaterial: Send + Sync + 'static {
 
     fn vert_name(&self) -> ShaderName<'static, Vertex>;
 
-    fn create_descriptor_set_layout(&self, device: &dyn IDevice) -> DescriptorSetLayoutHandle;
+    fn create_parameter_block_layout(
+        &self,
+        device: &dyn IDevice,
+    ) -> AnyArc<dyn IParameterBlockLayout>;
 
     fn check_binding_type(&self, binding: u32, binding_type: MaterialBindingType) -> bool;
 
     fn instantiate_bindings(&self) -> Vec<MaterialBinding>;
 
-    unsafe fn update_descriptor_set(
+    unsafe fn update_parameter_block(
         &self,
+        block_layout: &dyn IParameterBlockLayout,
         buffer_pool: &BufferPool,
         texture_pool: &TexturePool,
         device: &dyn IDevice,
         instance: &MaterialInstanceObject,
-        dst: DescriptorSetHandle,
+        dst: ParameterBlockHandle,
     );
 }
 

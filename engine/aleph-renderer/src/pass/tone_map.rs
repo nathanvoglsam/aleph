@@ -47,20 +47,21 @@ pub fn pass(
     pin_board: &PinBoard,
     state_cache: &mut StateCache,
 ) -> RenderPlaneOutput {
-    let set_layout = device
-        .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::Compute,
-            items: &[
-                DescriptorType::Texture.binding(0),
-                DescriptorType::TextureRW.binding(1),
+    let block_layout = device
+        .create_parameter_block_layout(&ParameterBlockDesc {
+            params: &[
+                ParameterType::Texture2D.param(),
+                ParameterType::RWTexture2D.param(),
             ],
+            visibility: DescriptorShaderVisibility::Compute,
+            flags: Default::default(),
             name: obj_name_opt!("TonemapDescriptorSetLayout"),
         })
         .unwrap();
-    let pipeline_layout = device
-        .create_pipeline_layout(
-            &PipelineLayoutDesc::new()
-                .with_set_layouts(&[&set_layout])
+    let binding_signature = device
+        .create_binding_signature(
+            &BindingSignatureDesc::new()
+                .with_parameter_block_layouts(&[block_layout.as_ref()])
                 .with_name(obj_name!("TonemapLightingPipelineLayout")),
         )
         .unwrap();
@@ -73,7 +74,7 @@ pub fn pass(
     let pipeline = device
         .create_compute_pipeline(&ComputePipelineDesc {
             shader_module,
-            pipeline_layout: &pipeline_layout,
+            binding_signature: binding_signature.as_ref(),
             name: obj_name_opt!("TonemapPipeline"),
         })
         .unwrap();
@@ -116,19 +117,19 @@ pub fn pass(
                 ImageViewDesc::uav_for_texture(device, output).with_format(Format::Bgra8Unorm); // Can't take UAV of SRGB formats
             let output_uav = device.get_texture_view(output, &desc).unwrap();
 
-            let set = arena.allocate_set(&set_layout).unwrap();
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc::texture(set, 0, &input_srv.srv_write()),
-                DescriptorWriteDesc::texture_rw(set, 1, &output_uav.uav_write()),
-            ]);
+            let block = arena.allocate_block(block_layout.as_ref()).unwrap();
+            let params = [
+                TextureWrite::srv(input_srv).into(),
+                TextureWrite::uav(output_uav).into(),
+            ];
+            device.update_parameter_block(block_layout.as_ref(), block, 0, &params);
 
             encoder.bind_compute_pipeline(&pipeline);
-            encoder.bind_descriptor_sets(
-                &pipeline_layout,
+            encoder.bind_parameter_blocks(
+                binding_signature.as_ref(),
                 PipelineBindPoint::Compute,
                 0,
-                &[set],
-                &[],
+                &[block],
             );
 
             let input_desc = device.get_texture_desc(input);

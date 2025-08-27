@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_math::{Mat4, Vec3};
@@ -161,28 +162,16 @@ pub fn pass(
             };
             let camera = u_alloc.allocate_object(camera_layout).unwrap();
 
-            let global_set = descriptor_arena
-                .allocate_set(&common_state.global_set_layout)
+            let global_block_layout = common_state.global_block_layout.as_ref();
+            let global_block = descriptor_arena
+                .allocate_block(global_block_layout)
                 .unwrap();
             let sampler = &common_state.sampler;
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc::uniform_buffer(
-                    global_set,
-                    0,
-                    &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256)
-                        .with_offset(camera.device_offset as u64),
-                ),
-                DescriptorWriteDesc::sampler(global_set, 1, &SamplerDescriptorWrite::new(sampler)),
-            ]);
-
-            let model_set = descriptor_arena
-                .allocate_set(&common_state.model_set_layout)
-                .unwrap();
-            device.update_descriptor_sets(&[DescriptorWriteDesc::uniform_buffer_dynamic(
-                model_set,
-                0,
-                &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256),
-            )]);
+            let params = [
+                BufferWrite::cbv_offset(uniform_buffer, camera.device_offset as u64, 256).into(),
+                SamplerWrite::new(sampler).into(),
+            ];
+            device.update_parameter_block(global_block_layout, global_block, 0, &params);
 
             let gbuffer0_rtv = ImageView::get_rtv_for(device, gbuffer0).unwrap();
             let gbuffer1_rtv = ImageView::get_rtv_for(device, gbuffer1).unwrap();
@@ -263,33 +252,33 @@ pub fn pass(
 
             encoder.bind_graphics_pipeline(&current_material_state.pipeline);
 
-            encoder.bind_descriptor_sets(
-                &current_material_state.pipeline_layout,
+            encoder.bind_parameter_blocks(
+                current_material_state.binding_signature.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
-                &[global_set],
-                &[],
+                &[global_block],
             );
 
-            let material_set = descriptor_arena
-                .allocate_set(&current_material_state.material_set_layout)
+            let material_block_layout = current_material_state.material_block_layout.as_ref();
+            let material_block = descriptor_arena
+                .allocate_block(material_block_layout)
                 .unwrap();
             current_material_instance
                 .material
                 .material
-                .update_descriptor_set(
+                .update_parameter_block(
+                    material_block_layout,
                     args.buffer_pool,
                     args.texture_pool,
                     device,
                     current_material_instance,
-                    material_set,
+                    material_block,
                 );
-            encoder.bind_descriptor_sets(
-                &current_material_state.pipeline_layout,
+            encoder.bind_parameter_blocks(
+                current_material_state.binding_signature.as_ref(),
                 PipelineBindPoint::Graphics,
                 1,
-                &[material_set],
-                &[],
+                &[material_block],
             );
 
             encoder.set_viewports(&[Viewport {
@@ -358,25 +347,27 @@ pub fn pass(
                         }]);
                     }
 
-                    let material_set = descriptor_arena
-                        .allocate_set(&current_material_state.material_set_layout)
+                    let material_block_layout =
+                        current_material_state.material_block_layout.as_ref();
+                    let material_block = descriptor_arena
+                        .allocate_block(material_block_layout)
                         .unwrap();
                     current_material_instance
                         .material
                         .material
-                        .update_descriptor_set(
+                        .update_parameter_block(
+                            material_block_layout,
                             args.buffer_pool,
                             args.texture_pool,
                             device,
                             current_material_instance,
-                            material_set,
+                            material_block,
                         );
-                    encoder.bind_descriptor_sets(
-                        &current_material_state.pipeline_layout,
+                    encoder.bind_parameter_blocks(
+                        current_material_state.binding_signature.as_ref(),
                         PipelineBindPoint::Graphics,
                         1,
-                        &[material_set],
-                        &[],
+                        &[material_block],
                     );
                 }
 
@@ -393,12 +384,15 @@ pub fn pass(
                 let m = u_alloc
                     .allocate_object(ModelLayout::from_transform(t))
                     .unwrap();
-                encoder.bind_descriptor_sets(
-                    &current_material_state.pipeline_layout,
+
+                let params =
+                    [BufferWrite::cbv_offset(uniform_buffer, m.device_offset as u64, 256).into()];
+                encoder.push_parameters(
+                    current_material_state.binding_signature.as_ref(),
                     PipelineBindPoint::Graphics,
                     2,
-                    &[model_set],
-                    &[m.device_offset as u32],
+                    0,
+                    &params,
                 );
 
                 let idx_count = device.get_buffer_desc(idx).size / 4;
@@ -467,8 +461,8 @@ impl IStateCacheKey for MainOpaqueCommonKey {
 }
 
 pub struct MainOpaqueCommonLayout {
-    pub global_set_layout: DescriptorSetLayoutHandle,
-    pub model_set_layout: DescriptorSetLayoutHandle,
+    pub global_block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub model_block_layout: AnyArc<dyn IParameterBlockLayout>,
     pub sampler: SamplerHandle,
 }
 
@@ -478,8 +472,8 @@ impl MainOpaqueCommonLayout {
     }
 
     pub fn new(device: &dyn IDevice) -> Self {
-        let global_set_layout = Self::create_global_descriptor_set_layout(device);
-        let model_set_layout = Self::create_model_descriptor_set_layout(device);
+        let global_block_layout = Self::create_global_block_layout(device);
+        let model_block_layout = Self::create_model_block_layout(device);
 
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Linear,
@@ -495,35 +489,33 @@ impl MainOpaqueCommonLayout {
         let sampler = device.create_sampler(&desc).unwrap();
 
         Self {
-            global_set_layout,
-            model_set_layout,
+            global_block_layout,
+            model_block_layout,
             sampler,
         }
     }
 
-    fn create_global_descriptor_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::All,
-            items: &[
-                DescriptorType::UniformBuffer.binding(0),
-                DescriptorType::Sampler.binding(1),
+    fn create_global_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::ConstantBuffer.param(),
+                ParameterType::SamplerState.param(),
             ],
+            visibility: DescriptorShaderVisibility::All,
+            flags: Default::default(),
             name: obj_name_opt!("GlobalDescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    fn create_model_descriptor_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+    fn create_model_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[ParameterType::ConstantBuffer.param()],
             visibility: DescriptorShaderVisibility::All,
-            items: &[DescriptorType::UniformBufferDynamic.binding(0)],
+            flags: ParameterBlockFlags::PUSH_DESCRIPTOR,
             name: obj_name_opt!("ModelDescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 }
 
@@ -535,10 +527,10 @@ impl IStateCacheKey for MainOpaqueMaterialKey {
 }
 
 pub struct MainOpaqueMaterialLayout {
-    pub global_set_layout: DescriptorSetLayoutHandle,
-    pub material_set_layout: DescriptorSetLayoutHandle,
-    pub model_set_layout: DescriptorSetLayoutHandle,
-    pub pipeline_layout: PipelineLayoutHandle,
+    pub global_block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub material_block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub model_block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub binding_signature: AnyArc<dyn IBindingSignature>,
     pub pipeline: GraphicsPipelineHandle,
 }
 
@@ -554,55 +546,58 @@ impl MainOpaqueMaterialLayout {
         common: &MainOpaqueCommonLayout,
         material: &Material,
     ) -> Self {
-        let global_set_layout = common.global_set_layout.clone();
-        let material_set_layout = Self::create_material_descriptor_set_layout(device, material);
-        let model_set_layout = common.model_set_layout.clone();
-        let pipeline_layout = Self::create_pipeline_layout(
+        let global_block_layout = common.global_block_layout.clone();
+        let material_block_layout = Self::create_material_block_layout(device, material);
+        let model_block_layout = common.model_block_layout.clone();
+        let binding_signature = Self::create_binding_signature(
             device,
-            &global_set_layout,
-            &material_set_layout,
-            &model_set_layout,
+            global_block_layout.as_ref(),
+            material_block_layout.as_ref(),
+            model_block_layout.as_ref(),
         );
-        let pipeline =
-            Self::create_pipeline_state(device, key, cache.shader_db(), &pipeline_layout, material);
+        let pipeline = Self::create_pipeline_state(
+            device,
+            key,
+            cache.shader_db(),
+            binding_signature.as_ref(),
+            material,
+        );
 
         Self {
-            global_set_layout,
-            material_set_layout,
-            model_set_layout,
-            pipeline_layout,
+            global_block_layout,
+            material_block_layout,
+            model_block_layout,
+            binding_signature,
             pipeline,
         }
     }
 
-    fn create_material_descriptor_set_layout(
+    fn create_material_block_layout(
         device: &dyn IDevice,
         material: &Material,
-    ) -> DescriptorSetLayoutHandle {
-        material.material.create_descriptor_set_layout(device)
+    ) -> AnyArc<dyn IParameterBlockLayout> {
+        material.material.create_parameter_block_layout(device)
     }
 
-    fn create_pipeline_layout(
+    fn create_binding_signature(
         device: &dyn IDevice,
-        global: &DescriptorSetLayoutHandle,
-        material: &DescriptorSetLayoutHandle,
-        model: &DescriptorSetLayoutHandle,
-    ) -> PipelineLayoutHandle {
-        let pipeline_layout_desc = PipelineLayoutDesc {
-            set_layouts: &[global, material, model],
-            push_constant_blocks: &[],
+        global: &dyn IParameterBlockLayout,
+        material: &dyn IParameterBlockLayout,
+        model: &dyn IParameterBlockLayout,
+    ) -> AnyArc<dyn IBindingSignature> {
+        let desc = BindingSignatureDesc {
+            parameter_block_layouts: &[global, material, model],
+            push_constant_block: None,
             name: obj_name_opt!("RootSignature"),
         };
-        device
-            .create_pipeline_layout(&pipeline_layout_desc)
-            .unwrap()
+        device.create_binding_signature(&desc).unwrap()
     }
 
     fn create_pipeline_state(
         device: &dyn IDevice,
         key: &MainOpaqueMaterialKey,
         shader_db: &dyn IShaderAccessor,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         material: &Material,
     ) -> GraphicsPipelineHandle {
         let rasterizer_state = RasterizerStateDesc {
@@ -694,7 +689,7 @@ impl MainOpaqueMaterialLayout {
 
         let graphics_pipeline_desc_new = GraphicsPipelineDesc {
             shader_stages: &[vertex_shader, fragment_shader],
-            pipeline_layout,
+            binding_signature,
             vertex_layout: &vertex_layout,
             input_assembly_state: &input_assembly_state,
             rasterizer_state: &rasterizer_state,

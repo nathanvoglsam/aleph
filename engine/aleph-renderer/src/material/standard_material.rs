@@ -29,6 +29,7 @@
 
 use std::sync::Arc;
 
+use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 use aleph_shader_db::{Fragment, ShaderName, Vertex};
 
@@ -54,18 +55,22 @@ unsafe impl IMaterial for StandardMaterial {
         shaders::deferred::main_gbuffer_vert()
     }
 
-    fn create_descriptor_set_layout(&self, device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::All,
-            items: &[
-                DescriptorType::UniformBuffer.binding(0),
-                DescriptorType::Texture.binding(1),
-                DescriptorType::Texture.binding(2),
-                DescriptorType::Texture.binding(3),
+    fn create_parameter_block_layout(
+        &self,
+        device: &dyn IDevice,
+    ) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::ConstantBuffer.param(),
+                ParameterType::Texture2D.param(),
+                ParameterType::Texture2D.param(),
+                ParameterType::Texture2D.param(),
             ],
+            visibility: DescriptorShaderVisibility::All,
+            flags: Default::default(),
             name: obj_name_opt!("StandardMaterialSetLayout"),
         };
-        device.create_descriptor_set_layout(&desc).unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
     fn check_binding_type(&self, binding: u32, binding_type: MaterialBindingType) -> bool {
@@ -87,13 +92,14 @@ unsafe impl IMaterial for StandardMaterial {
         out
     }
 
-    unsafe fn update_descriptor_set(
+    unsafe fn update_parameter_block(
         &self,
+        block_layout: &dyn IParameterBlockLayout,
         buffer_pool: &BufferPool,
         texture_pool: &TexturePool,
         device: &dyn IDevice,
         instance: &MaterialInstanceObject,
-        dst: DescriptorSetHandle,
+        dst: ParameterBlockHandle,
     ) {
         let constants = instance.bindings[0].unwrap_buffer().unwrap();
         let constants = buffer_pool.get_ref(constants).unwrap();
@@ -112,16 +118,13 @@ unsafe impl IMaterial for StandardMaterial {
         let image_view_nrm = image_view_nrm.get_default_view().unwrap();
 
         unsafe {
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc::uniform_buffer(
-                    dst,
-                    0,
-                    &BufferDescriptorWrite::uniform_buffer(constants, 256),
-                ),
-                DescriptorWriteDesc::texture(dst, 1, &ImageDescriptorWrite::srv(image_view_c)),
-                DescriptorWriteDesc::texture(dst, 2, &ImageDescriptorWrite::srv(image_view_mr)),
-                DescriptorWriteDesc::texture(dst, 3, &ImageDescriptorWrite::srv(image_view_nrm)),
-            ]);
+            let params = [
+                BufferWrite::cbv(constants, 256).into(),
+                TextureWrite::srv(image_view_c).into(),
+                TextureWrite::srv(image_view_mr).into(),
+                TextureWrite::srv(image_view_nrm).into(),
+            ];
+            device.update_parameter_block(block_layout, dst, 0, &params);
         }
     }
 }

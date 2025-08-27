@@ -41,6 +41,7 @@ use aleph_renderer::{
 };
 use aleph_rhi_api::*;
 use egui::RenderData;
+use interfaces::any::AnyArc;
 
 use crate::shaders;
 
@@ -128,13 +129,15 @@ pub fn pass(
             let font_view = args.texture_pool.get_ref(*font_handle).unwrap();
             let font_view = font_view.get_default_view().unwrap();
 
-            let set = descriptor_arena
-                .allocate_set(&state.layout.set_layout)
-                .unwrap();
-            resources.device().update_descriptor_sets(&[
-                DescriptorWriteDesc::texture(set, 0, &font_view.srv_write()),
-                DescriptorWriteDesc::sampler(set, 1, &SamplerDescriptorWrite { sampler }),
-            ]);
+            let block_layout = state.layout.block_layout.as_ref();
+            let block = descriptor_arena.allocate_block(block_layout).unwrap();
+            let params = [
+                TextureWrite::srv(font_view).into(),
+                SamplerWrite::new(sampler).into(),
+            ];
+            resources
+                .device()
+                .update_parameter_block(block_layout, block, 0, &params);
 
             // Map and calculate our begin/end pointers for the mapped vertex and index buffer
             // regions
@@ -176,12 +179,11 @@ pub fn pass(
             });
 
             encoder.bind_graphics_pipeline(&state.pipeline);
-            encoder.bind_descriptor_sets(
-                &state.layout.pipeline_layout,
+            encoder.bind_parameter_blocks(
+                state.layout.binding_signature.as_ref(),
                 PipelineBindPoint::Graphics,
                 0,
-                &[set],
-                &[],
+                &[block],
             );
 
             //
@@ -192,7 +194,7 @@ pub fn pass(
             let width_points = width_pixels / pixels_per_point;
             let height_points = height_pixels / pixels_per_point;
             let size = Vec2::new(width_points, height_points);
-            encoder.set_push_constant_block(0, size.as_byte_slice());
+            encoder.set_push_constant_block(size.as_byte_slice());
 
             //
             // Bind the vertex and index buffers to render with
@@ -338,8 +340,8 @@ impl IStateCacheKey for EguiLayoutKey {
 
 pub struct EguiLayout {
     pub sampler: SamplerHandle,
-    pub set_layout: DescriptorSetLayoutHandle,
-    pub pipeline_layout: PipelineLayoutHandle,
+    pub block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub binding_signature: AnyArc<dyn IBindingSignature>,
 }
 
 impl EguiLayout {
@@ -349,46 +351,39 @@ impl EguiLayout {
 
     pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
-        let set_layout = Self::create_set_layout(device);
-        let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
+        let block_layout = Self::create_block_layout(device);
+        let binding_signature = Self::create_binding_signature(device, block_layout.as_ref());
 
         Self {
             sampler,
-            set_layout,
-            pipeline_layout,
+            block_layout,
+            binding_signature,
         }
     }
 
-    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::All,
-            items: &[
-                DescriptorType::Texture.binding(0),
-                DescriptorType::Sampler.binding(1),
+    pub fn create_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::Texture2D.param(),
+                ParameterType::SamplerState.param(),
             ],
+            visibility: DescriptorShaderVisibility::All,
+            flags: Default::default(),
             name: obj_name_opt!("DescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_pipeline_layout(
+    pub fn create_binding_signature(
         device: &dyn IDevice,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> PipelineLayoutHandle {
-        let pipeline_layout_desc = PipelineLayoutDesc {
-            set_layouts: &[set_layout],
-            push_constant_blocks: &[PushConstantBlock {
-                binding: 0,
-                visibility: DescriptorShaderVisibility::All,
-                size: 16,
-            }],
+        block_layout: &dyn IParameterBlockLayout,
+    ) -> AnyArc<dyn IBindingSignature> {
+        let desc = BindingSignatureDesc {
+            parameter_block_layouts: &[block_layout],
+            push_constant_block: PushConstantBlock::new(16),
             name: obj_name_opt!("PipelineLayout"),
         };
-        device
-            .create_pipeline_layout(&pipeline_layout_desc)
-            .unwrap()
+        device.create_binding_signature(&desc).unwrap()
     }
 
     pub fn create_sampler(device: &dyn IDevice) -> SamplerHandle {
@@ -426,15 +421,19 @@ impl EguiState {
         let key = EguiLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| EguiLayout::new(device));
 
-        let pipeline =
-            Self::create_pipeline_state(device, &layout.pipeline_layout, cache.shader_db(), format);
+        let pipeline = Self::create_pipeline_state(
+            device,
+            layout.binding_signature.as_ref(),
+            cache.shader_db(),
+            format,
+        );
 
         Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
@@ -502,7 +501,7 @@ impl EguiState {
 
         let graphics_pipeline_desc_new = GraphicsPipelineDesc {
             shader_stages: &[vertex_shader, fragment_shader],
-            pipeline_layout,
+            binding_signature,
             vertex_layout: &vertex_layout_new,
             input_assembly_state: &input_assembly_state_new,
             rasterizer_state: &rasterizer_state_new,

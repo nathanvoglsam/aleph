@@ -461,24 +461,24 @@ impl MipGenerator {
                     writable: false,
                 };
                 let src_view = device.get_texture_view(texture, &desc).unwrap();
-                let set = arena.allocate_set(&state.layout.set_layout).unwrap();
-                device.update_descriptor_sets(&[DescriptorWriteDesc {
-                    set,
-                    binding: 0,
-                    array_element: 0,
-                    writes: DescriptorWrites::Texture(&[ImageDescriptorWrite::srv(src_view)]),
-                }]);
+                let block_layout = state.layout.block_layout.as_ref();
+                let block = arena.allocate_block(block_layout).unwrap();
+                device.update_parameter_block(
+                    block_layout,
+                    block,
+                    0,
+                    &[TextureWrite::srv(src_view).into()],
+                );
 
-                encoder.bind_descriptor_sets(
-                    &state.layout.pipeline_layout,
+                encoder.bind_parameter_blocks(
+                    state.layout.binding_signature.as_ref(),
                     PipelineBindPoint::Graphics,
                     0,
-                    &[set],
-                    &[],
+                    &[block],
                 );
 
                 let src_level = (level - 1) as f32;
-                encoder.set_push_constant_block(0, bytemuck::bytes_of(&src_level));
+                encoder.set_push_constant_block(bytemuck::bytes_of(&src_level));
 
                 encoder.draw(3, 1, 0, 0);
 
@@ -552,15 +552,19 @@ impl MipGeneratorState {
         let key = CompositePlanesLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| CompositePlanesLayout::new(device));
 
-        let pipeline =
-            Self::create_pipeline_state(device, &layout.pipeline_layout, cache.shader_db(), format);
+        let pipeline = Self::create_pipeline_state(
+            device,
+            layout.binding_signature.as_ref(),
+            cache.shader_db(),
+            format,
+        );
 
         Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
@@ -601,7 +605,7 @@ impl MipGeneratorState {
 
         let graphics_pipeline_desc_new = GraphicsPipelineDesc {
             shader_stages: &[vertex_shader, fragment_shader],
-            pipeline_layout,
+            binding_signature,
             vertex_layout: &vertex_layout,
             input_assembly_state: &input_assembly_state,
             rasterizer_state: &rasterizer_state,

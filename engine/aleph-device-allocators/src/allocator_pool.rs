@@ -144,19 +144,19 @@ impl<T: IAllocatorFactory> Drop for AllocatorPoolItem<T> {
 /// An [`IAllocatorFactory`] implementation that builds [`LinearDescriptorPool`] objects.
 pub struct LinearDescriptorPoolFactory {
     device: AnyArc<dyn IDevice>,
-    default_set_num: u32,
+    default_block_num: u32,
 }
 
 impl LinearDescriptorPoolFactory {
     /// Constructs a new [`LinearDescriptorPoolFactory`] over the given 'device' and
-    /// 'default_set_num'.
+    /// 'default_block_num'.
     ///
-    /// 'default_set_num' is the initial size of a [`LinearDescriptorPool`] object when it is
+    /// 'default_block_num' is the initial size of a [`LinearDescriptorPool`] object when it is
     /// created by a factory. Be sure to tweak this to your workload if relevant.
-    pub const fn new(device: AnyArc<dyn IDevice>, default_set_num: u32) -> Self {
+    pub const fn new(device: AnyArc<dyn IDevice>, default_block_num: u32) -> Self {
         Self {
             device,
-            default_set_num,
+            default_block_num,
         }
     }
 }
@@ -165,6 +165,6 @@ impl IAllocatorFactory for LinearDescriptorPoolFactory {
     type Out = LinearDescriptorPool;
 
     fn build(&self) -> Self::Out {
-        LinearDescriptorPool::new(self.device.as_ref(), self.default_set_num).unwrap()
+        LinearDescriptorPool::new(self.device.as_ref(), self.default_block_num).unwrap()
     }
 }

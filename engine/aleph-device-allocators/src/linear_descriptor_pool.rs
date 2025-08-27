@@ -41,8 +41,8 @@ pub struct LinearDescriptorPool {
     /// The active descriptor arena
     active: Cell<Option<Box<dyn IDescriptorArena>>>,
 
-    /// The num_sets value used to allocate the current active arena.
-    last_num_sets: Cell<u32>,
+    /// The num_blocks value used to allocate the current active arena.
+    last_num_blocks: Cell<u32>,
 
     /// The list of descriptor arenas that have been exhausted. We have to keep them around so that
     /// the arena stays live
@@ -50,16 +50,16 @@ pub struct LinearDescriptorPool {
 }
 
 impl LinearDescriptorPool {
-    pub fn new(device: &dyn IDevice, num_sets: u32) -> Result<Self, DescriptorPoolCreateError> {
+    pub fn new(device: &dyn IDevice, num_blocks: u32) -> Result<Self, DescriptorPoolCreateError> {
         let active = device.create_descriptor_arena(&DescriptorArenaDesc {
             arena_type: DescriptorArenaType::Linear,
-            num_blocks: num_sets,
+            num_blocks: num_blocks,
             name: Some("LinearDescriptorPoolArena"),
         })?;
         Ok(Self {
             device: device.upgrade(),
             active: Cell::new(Some(active)),
-            last_num_sets: Cell::new(num_sets),
+            last_num_blocks: Cell::new(num_blocks),
             exhausted: Cell::new(Vec::new()),
         })
     }
@@ -100,13 +100,13 @@ impl LinearDescriptorPool {
         }
     }
 
-    /// Allocates `num_sets` descriptors from the pool. Some implementations may be able to
-    /// implement this more efficiently than naively calling [IDescriptorArena::allocate_set] in a
+    /// Allocates `num_blocks` descriptors from the pool. Some implementations may be able to
+    /// implement this more efficiently than naively calling [IDescriptorArena::allocate_block] in a
     /// loop.
     ///
     /// # Warning
     ///
-    /// See [IDescriptorArena::allocate_set] for some pitfalls and warnings to check for.
+    /// See [IDescriptorArena::allocate_block] for some pitfalls and warnings to check for.
     #[must_use = "Do not ignore allocation failure"]
     pub fn allocate_blocks(
         &self,
@@ -143,13 +143,13 @@ impl LinearDescriptorPool {
         exhausted.push(active);
         self.exhausted.set(exhausted);
 
-        let last_num_sets = self.last_num_sets.get();
+        let last_num_blocks = self.last_num_blocks.get();
         let new_arena = self.device.create_descriptor_arena(&DescriptorArenaDesc {
             arena_type: DescriptorArenaType::Linear,
-            num_blocks: last_num_sets * 2,
+            num_blocks: last_num_blocks * 2,
             name: Some("LinearDescriptorPoolArena"),
         });
-        self.last_num_sets.set(last_num_sets * 2);
+        self.last_num_blocks.set(last_num_blocks * 2);
 
         match new_arena {
             Ok(v) => Ok(v),

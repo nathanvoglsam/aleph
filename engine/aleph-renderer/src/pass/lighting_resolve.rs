@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
@@ -146,27 +147,24 @@ pub fn pass(
             u_alloc.allocate_object(camera_layout).unwrap();
             device.unmap_buffer(uniform_buffer).unwrap();
 
-            let set = arena.allocate_set(&state.set_layout).unwrap();
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc::texture(set, 0, &depth_srv.srv_write()),
-                DescriptorWriteDesc::texture(set, 1, &gbuffer0_srv.srv_write()),
-                DescriptorWriteDesc::texture(set, 2, &gbuffer1_srv.srv_write()),
-                DescriptorWriteDesc::texture(set, 3, &gbuffer2_srv.srv_write()),
-                DescriptorWriteDesc::texture_rw(set, 4, &lighting_uav.uav_write()),
-                DescriptorWriteDesc::uniform_buffer(
-                    set,
-                    5,
-                    &BufferDescriptorWrite::uniform_buffer(uniform_buffer, 256),
-                ),
-            ]);
+            let block_layout = state.block_layout.as_ref();
+            let block = arena.allocate_block(block_layout).unwrap();
+            let params = [
+                TextureWrite::srv(depth_srv).into(),
+                TextureWrite::srv(gbuffer0_srv).into(),
+                TextureWrite::srv(gbuffer1_srv).into(),
+                TextureWrite::srv(gbuffer2_srv).into(),
+                TextureWrite::uav(lighting_uav).into(),
+                BufferWrite::cbv(uniform_buffer, 256).into(),
+            ];
+            device.update_parameter_block(block_layout, block, 0, &params);
 
             encoder.bind_compute_pipeline(&state.pipeline);
-            encoder.bind_descriptor_sets(
-                &state.pipeline_layout,
+            encoder.bind_parameter_blocks(
+                state.binding_signature.as_ref(),
                 PipelineBindPoint::Compute,
                 0,
-                &[set],
-                &[],
+                &[block],
             );
 
             let gbuffer0_desc = device.get_texture_desc(gbuffer0);
@@ -185,8 +183,8 @@ impl IStateCacheKey for LightResolveStateKey {
 }
 
 pub struct LightResolveState {
-    pub set_layout: DescriptorSetLayoutHandle,
-    pub pipeline_layout: PipelineLayoutHandle,
+    pub block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub binding_signature: AnyArc<dyn IBindingSignature>,
     pub pipeline: ComputePipelineHandle,
 }
 
@@ -196,42 +194,44 @@ impl LightResolveState {
     }
 
     pub fn new(cache: &mut StateCache, device: &dyn IDevice) -> Self {
-        let set_layout = Self::create_set_layout(device);
-        let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
-        let pipeline = Self::create_pipeline_state(device, &pipeline_layout, cache.shader_db());
+        let block_layout = Self::create_block_layout(device);
+        let binding_signature = Self::create_binding_signature(device, block_layout.as_ref());
+        let pipeline =
+            Self::create_pipeline_state(device, binding_signature.as_ref(), cache.shader_db());
 
         Self {
-            set_layout,
-            pipeline_layout,
+            block_layout,
+            binding_signature,
             pipeline,
         }
     }
 
-    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
+    pub fn create_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
         device
-            .create_descriptor_set_layout(&DescriptorSetLayoutDesc {
-                visibility: DescriptorShaderVisibility::Compute,
-                items: &[
-                    DescriptorType::Texture.binding(0),
-                    DescriptorType::Texture.binding(1),
-                    DescriptorType::Texture.binding(2),
-                    DescriptorType::Texture.binding(3),
-                    DescriptorType::TextureRW.binding(4),
-                    DescriptorType::UniformBuffer.binding(5),
+            .create_parameter_block_layout(&ParameterBlockDesc {
+                params: &[
+                    ParameterType::Texture2D.param(),
+                    ParameterType::Texture2D.param(),
+                    ParameterType::Texture2D.param(),
+                    ParameterType::Texture2D.param(),
+                    ParameterType::RWTexture2D.param(),
+                    ParameterType::ConstantBuffer.param(),
                 ],
+                visibility: DescriptorShaderVisibility::Compute,
+                flags: Default::default(),
                 name: obj_name_opt!("DescriptorSetLayout"),
             })
             .unwrap()
     }
 
-    pub fn create_pipeline_layout(
+    pub fn create_binding_signature(
         device: &dyn IDevice,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> PipelineLayoutHandle {
+        block_layout: &dyn IParameterBlockLayout,
+    ) -> AnyArc<dyn IBindingSignature> {
         device
-            .create_pipeline_layout(
-                &PipelineLayoutDesc::new()
-                    .with_set_layouts(&[set_layout])
+            .create_binding_signature(
+                &BindingSignatureDesc::new()
+                    .with_parameter_block_layouts(&[block_layout])
                     .with_name(obj_name!("PipelineLayout")),
             )
             .unwrap()
@@ -239,7 +239,7 @@ impl LightResolveState {
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
     ) -> ComputePipelineHandle {
         let shader_module = shader_db
@@ -248,7 +248,7 @@ impl LightResolveState {
         device
             .create_compute_pipeline(&ComputePipelineDesc {
                 shader_module,
-                pipeline_layout: pipeline_layout,
+                binding_signature,
                 name: obj_name_opt!("ComputePipeline"),
             })
             .unwrap()

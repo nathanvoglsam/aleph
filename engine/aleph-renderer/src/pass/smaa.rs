@@ -29,6 +29,7 @@
 
 use std::sync::Arc;
 
+use aleph_any::AnyArc;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
@@ -111,17 +112,21 @@ fn edge_pass(
             let colour_input = resources.get_texture(colour_input).unwrap();
             let colour_input_view = ImageView::get_srv_for(device, colour_input).unwrap();
 
-            let set = resources
+            let block_layout = state.edge_block_layout.as_ref();
+            let block = resources
                 .descriptor_arena()
-                .allocate_set(&state.edge_set_layout)
+                .allocate_block(block_layout)
                 .unwrap();
             let linear_sampler = &state.linear_sampler;
             let point_sampler = &state.point_sampler;
-            resources.device().update_descriptor_sets(&[
-                DescriptorWriteDesc::texture(set, 0, &colour_input_view.srv_write()),
-                DescriptorWriteDesc::sampler(set, 1, &SamplerDescriptorWrite::new(linear_sampler)),
-                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite::new(point_sampler)),
-            ]);
+            let params = [
+                TextureWrite::srv(colour_input_view).into(),
+                SamplerWrite::new(linear_sampler).into(),
+                SamplerWrite::new(point_sampler).into(),
+            ];
+            resources
+                .device()
+                .update_parameter_block(block_layout, block, 0, &params);
 
             let metrics = metrics(extent);
 
@@ -131,11 +136,10 @@ fn edge_pass(
                 extent,
                 load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: &state.edge_layout,
-                    sets: &[set],
-                    first_set: 0,
-                    dynamic_offsets: &[],
-                    constant_blocks: &[(0, &metrics)],
+                    binding_signature: state.edge_signature.as_ref(),
+                    blocks: &[block],
+                    first_blocks: 0,
+                    constant_block: Some(&metrics),
                 },
             };
             draw_fullscreen_triangle(encoder, &info);
@@ -184,19 +188,23 @@ fn blend_weight_pass(
             let search_view = args.texture_pool.get_ref(search_tex).unwrap();
             let search_view = search_view.get_default_view().unwrap();
 
-            let set = resources
+            let block_layout = state.weight_block_layout.as_ref();
+            let block = resources
                 .descriptor_arena()
-                .allocate_set(&state.weight_set_layout)
+                .allocate_block(block_layout)
                 .unwrap();
             let linear_sampler = &state.linear_sampler;
             let point_sampler = &state.point_sampler;
-            resources.device().update_descriptor_sets(&[
-                DescriptorWriteDesc::texture(set, 0, &edge_tex_view.srv_write()),
-                DescriptorWriteDesc::texture(set, 1, &area_view.srv_write()),
-                DescriptorWriteDesc::texture(set, 2, &search_view.srv_write()),
-                DescriptorWriteDesc::sampler(set, 3, &SamplerDescriptorWrite::new(linear_sampler)),
-                DescriptorWriteDesc::sampler(set, 4, &SamplerDescriptorWrite::new(point_sampler)),
-            ]);
+            let params = [
+                TextureWrite::srv(edge_tex_view).into(),
+                TextureWrite::srv(area_view).into(),
+                TextureWrite::srv(search_view).into(),
+                SamplerWrite::new(linear_sampler).into(),
+                SamplerWrite::new(point_sampler).into(),
+            ];
+            resources
+                .device()
+                .update_parameter_block(block_layout, block, 0, &params);
 
             let metrics = metrics(extent);
 
@@ -206,11 +214,10 @@ fn blend_weight_pass(
                 extent,
                 load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: &state.weight_layout,
-                    sets: &[set],
-                    first_set: 0,
-                    dynamic_offsets: &[],
-                    constant_blocks: &[(0, &metrics)],
+                    binding_signature: state.weight_signature.as_ref(),
+                    blocks: &[block],
+                    first_blocks: 0,
+                    constant_block: Some(&metrics),
                 },
             };
             draw_fullscreen_triangle(encoder, &info);
@@ -268,18 +275,22 @@ fn aa_blend_resolve_pass(
             let blend_texture = resources.get_texture(blend_texture).unwrap();
             let blend = ImageView::get_srv_for(device, blend_texture).unwrap();
 
-            let set = resources
+            let block_layout = state.blend_block_layout.as_ref();
+            let block = resources
                 .descriptor_arena()
-                .allocate_set(&state.blend_set_layout)
+                .allocate_block(block_layout)
                 .unwrap();
             let linear_sampler = &state.linear_sampler;
             let point_sampler = &state.point_sampler;
-            resources.device().update_descriptor_sets(&[
-                DescriptorWriteDesc::texture(set, 0, &blend.srv_write()),
-                DescriptorWriteDesc::texture(set, 1, &colour.srv_write()),
-                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite::new(linear_sampler)),
-                DescriptorWriteDesc::sampler(set, 3, &SamplerDescriptorWrite::new(point_sampler)),
-            ]);
+            let params = [
+                TextureWrite::srv(blend).into(),
+                TextureWrite::srv(colour).into(),
+                SamplerWrite::new(linear_sampler).into(),
+                SamplerWrite::new(point_sampler).into(),
+            ];
+            resources
+                .device()
+                .update_parameter_block(block_layout, block, 0, &params);
 
             let metrics = metrics(extent);
 
@@ -289,11 +300,10 @@ fn aa_blend_resolve_pass(
                 extent,
                 load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: &state.blend_layout,
-                    sets: &[set],
-                    first_set: 0,
-                    dynamic_offsets: &[],
-                    constant_blocks: &[(0, &metrics)],
+                    binding_signature: state.blend_signature.as_ref(),
+                    blocks: &[block],
+                    first_blocks: 0,
+                    constant_block: Some(&metrics),
                 },
             };
             draw_fullscreen_triangle(encoder, &info);
@@ -312,12 +322,12 @@ impl IStateCacheKey for SmaaStateKey {
 pub struct SmaaState {
     pub linear_sampler: SamplerHandle,
     pub point_sampler: SamplerHandle,
-    pub edge_set_layout: DescriptorSetLayoutHandle,
-    pub weight_set_layout: DescriptorSetLayoutHandle,
-    pub blend_set_layout: DescriptorSetLayoutHandle,
-    pub edge_layout: PipelineLayoutHandle,
-    pub weight_layout: PipelineLayoutHandle,
-    pub blend_layout: PipelineLayoutHandle,
+    pub edge_block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub weight_block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub blend_block_layout: AnyArc<dyn IParameterBlockLayout>,
+    pub edge_signature: AnyArc<dyn IBindingSignature>,
+    pub weight_signature: AnyArc<dyn IBindingSignature>,
+    pub blend_signature: AnyArc<dyn IBindingSignature>,
     pub edge_pipeline: GraphicsPipelineHandle,
     pub weight_pipeline: GraphicsPipelineHandle,
     pub blend_pipeline: GraphicsPipelineHandle,
@@ -332,47 +342,47 @@ impl SmaaState {
         let linear_sampler = Self::create_linear_sampler(device);
         let point_sampler = Self::create_point_sampler(device);
 
-        let edge_set_layout = Self::create_edge_layout(device);
+        let edge_block_layout = Self::create_edge_layout(device);
 
-        let weight_set_layout = Self::create_weight_layout(device);
+        let weight_block_layout = Self::create_weight_layout(device);
 
-        let blend_set_layout = Self::create_blend_layout(device);
+        let blend_block_layout = Self::create_blend_layout(device);
 
-        let edge_layout = Self::create_pipeline_layout(
+        let edge_signature = Self::create_binding_signature(
             device,
-            &edge_set_layout,
+            edge_block_layout.as_ref(),
             obj_name_opt!("EdgePipelineLayout"),
         );
 
-        let weight_layout = Self::create_pipeline_layout(
+        let weight_signature = Self::create_binding_signature(
             device,
-            &weight_set_layout,
+            weight_block_layout.as_ref(),
             obj_name_opt!("WeightPipelineLayout"),
         );
 
-        let blend_layout = Self::create_pipeline_layout(
+        let blend_signature = Self::create_binding_signature(
             device,
-            &blend_set_layout,
+            blend_block_layout.as_ref(),
             obj_name_opt!("BlendPipelineLayout"),
         );
 
         let edge_pipeline = Self::create_edge_detect_pipeline_state(
             device,
-            &edge_layout,
+            edge_signature.as_ref(),
             cache.shader_db(),
             Format::Bgra8Unorm,
         );
 
         let weight_pipeline = Self::create_weight_calculate_pipeline_state(
             device,
-            &weight_layout,
+            weight_signature.as_ref(),
             cache.shader_db(),
             Format::Bgra8Unorm,
         );
 
         let blend_pipeline = Self::create_blending_pipeline_state(
             device,
-            &blend_layout,
+            blend_signature.as_ref(),
             cache.shader_db(),
             format.to_non_srgb(), // Intentional for how this pass is implemented
         );
@@ -380,88 +390,79 @@ impl SmaaState {
         Self {
             linear_sampler,
             point_sampler,
-            edge_set_layout,
-            weight_set_layout,
-            blend_set_layout,
-            edge_layout,
-            weight_layout,
-            blend_layout,
+            edge_block_layout,
+            weight_block_layout,
+            blend_block_layout,
+            edge_signature,
+            weight_signature,
+            blend_signature,
             edge_pipeline,
             weight_pipeline,
             blend_pipeline,
         }
     }
 
-    pub fn create_edge_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::Fragment,
-            items: &[
-                DescriptorType::Texture.binding(0),
-                DescriptorType::Sampler.binding(1),
-                DescriptorType::Sampler.binding(2),
+    pub fn create_edge_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::Texture2D.param(),
+                ParameterType::SamplerState.param(),
+                ParameterType::SamplerState.param(),
             ],
+            visibility: DescriptorShaderVisibility::Fragment,
+            flags: Default::default(),
             name: obj_name_opt!("EdgeDescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_weight_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::Fragment,
-            items: &[
-                DescriptorType::Texture.binding(0),
-                DescriptorType::Texture.binding(1),
-                DescriptorType::Texture.binding(2),
-                DescriptorType::Sampler.binding(3),
-                DescriptorType::Sampler.binding(4),
+    pub fn create_weight_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::Texture2D.param(),
+                ParameterType::Texture2D.param(),
+                ParameterType::Texture2D.param(),
+                ParameterType::SamplerState.param(),
+                ParameterType::SamplerState.param(),
             ],
+            visibility: DescriptorShaderVisibility::Fragment,
+            flags: Default::default(),
             name: obj_name_opt!("WeightDescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_blend_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::Fragment,
-            items: &[
-                DescriptorType::Texture.binding(0),
-                DescriptorType::Texture.binding(1),
-                DescriptorType::Sampler.binding(2),
-                DescriptorType::Sampler.binding(3),
+    pub fn create_blend_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::Texture2D.param(),
+                ParameterType::Texture2D.param(),
+                ParameterType::SamplerState.param(),
+                ParameterType::SamplerState.param(),
             ],
+            visibility: DescriptorShaderVisibility::Fragment,
+            flags: Default::default(),
             name: obj_name_opt!("BlendDescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_pipeline_layout(
+    pub fn create_binding_signature(
         device: &dyn IDevice,
-        set_layout: &DescriptorSetLayoutHandle,
+        block_layout: &dyn IParameterBlockLayout,
         name: Option<&str>,
-    ) -> PipelineLayoutHandle {
-        let pipeline_layout_desc = PipelineLayoutDesc {
-            set_layouts: &[set_layout],
-            push_constant_blocks: &[PushConstantBlock {
-                binding: 0,
-                visibility: DescriptorShaderVisibility::All,
-                size: 16,
-            }],
+    ) -> AnyArc<dyn IBindingSignature> {
+        let desc = BindingSignatureDesc {
+            parameter_block_layouts: &[block_layout],
+            push_constant_block: PushConstantBlock::new(16),
             name,
         };
-        device
-            .create_pipeline_layout(&pipeline_layout_desc)
-            .unwrap()
+        device.create_binding_signature(&desc).unwrap()
     }
 
     pub fn create_edge_detect_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
@@ -474,7 +475,7 @@ impl SmaaState {
 
         create_fullscreen_triangle_pipeline(
             device,
-            pipeline_layout,
+            binding_signature,
             format,
             vertex_shader,
             fragment_shader,
@@ -485,7 +486,7 @@ impl SmaaState {
 
     pub fn create_weight_calculate_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
@@ -498,7 +499,7 @@ impl SmaaState {
 
         create_fullscreen_triangle_pipeline(
             device,
-            pipeline_layout,
+            binding_signature,
             format,
             vertex_shader,
             fragment_shader,
@@ -509,7 +510,7 @@ impl SmaaState {
 
     pub fn create_blending_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
@@ -522,7 +523,7 @@ impl SmaaState {
 
         create_fullscreen_triangle_pipeline(
             device,
-            pipeline_layout,
+            binding_signature,
             format,
             vertex_shader,
             fragment_shader,

@@ -29,6 +29,7 @@
 
 use std::sync::Arc;
 
+use aleph_any::AnyArc;
 use aleph_device_allocators::{IUploadAllocator, UploadBumpAllocator};
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
@@ -123,16 +124,18 @@ pub fn pass(
                 .unwrap();
             device.unmap_buffer(buffer).unwrap();
 
-            let set = resources
+            let block_layout = state.layout.block_layout.as_ref();
+            let block = resources
                 .descriptor_arena()
-                .allocate_set(&state.layout.set_layout)
+                .allocate_block(block_layout)
                 .unwrap();
             let sampler = &state.layout.sampler;
-            device.update_descriptor_sets(&[
-                DescriptorWriteDesc::uniform_buffer(set, 0, &buffer.uniform_buffer_write(256)),
-                DescriptorWriteDesc::texture(set, 1, &src_view.srv_write()),
-                DescriptorWriteDesc::sampler(set, 2, &SamplerDescriptorWrite::new(sampler)),
-            ]);
+            let params = [
+                BufferWrite::cbv(buffer, 256).into(),
+                TextureWrite::srv(src_view).into(),
+                SamplerWrite::new(sampler).into(),
+            ];
+            device.update_parameter_block(block_layout, block, 0, &params);
 
             let info = FullscreenTriangleInfo {
                 dst_view,
@@ -140,11 +143,10 @@ pub fn pass(
                 extent: src_extent,
                 load_op: AttachmentLoadOp::DontCare,
                 bindings: &FullscreenTriangleBindInfo {
-                    layout: &state.layout.pipeline_layout,
-                    sets: &[set],
-                    first_set: 0,
-                    dynamic_offsets: &[],
-                    constant_blocks: &[],
+                    binding_signature: state.layout.binding_signature.as_ref(),
+                    blocks: &[block],
+                    first_blocks: 0,
+                    constant_block: None,
                 },
             };
             draw_fullscreen_triangle(encoder, &info);
@@ -162,9 +164,9 @@ impl IStateCacheKey for CompositePlanesLayoutKey {
 }
 
 pub struct CompositePlanesLayout {
-    pub set_layout: DescriptorSetLayoutHandle,
+    pub block_layout: AnyArc<dyn IParameterBlockLayout>,
     pub sampler: SamplerHandle,
-    pub pipeline_layout: PipelineLayoutHandle,
+    pub binding_signature: AnyArc<dyn IBindingSignature>,
 }
 
 impl CompositePlanesLayout {
@@ -174,47 +176,40 @@ impl CompositePlanesLayout {
 
     pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
-        let set_layout = Self::create_set_layout(device);
-        let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
+        let block_layout = Self::create_block_layout(device);
+        let binding_signature = Self::create_binding_signature(device, block_layout.as_ref());
 
         Self {
-            set_layout: set_layout,
+            block_layout,
             sampler,
-            pipeline_layout,
+            binding_signature,
         }
     }
 
-    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::Fragment,
-            items: &[
-                DescriptorType::UniformBuffer.binding(0),
-                DescriptorType::Texture.binding(1),
-                DescriptorType::Sampler.binding(2),
+    pub fn create_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::ConstantBuffer.param(),
+                ParameterType::Texture2D.param(),
+                ParameterType::SamplerState.param(),
             ],
+            visibility: DescriptorShaderVisibility::Fragment,
+            flags: Default::default(),
             name: obj_name_opt!("DescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_pipeline_layout(
+    pub fn create_binding_signature(
         device: &dyn IDevice,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> PipelineLayoutHandle {
-        let pipeline_layout_desc = PipelineLayoutDesc {
-            set_layouts: &[set_layout],
-            push_constant_blocks: &[PushConstantBlock {
-                binding: 0,
-                visibility: DescriptorShaderVisibility::All,
-                size: 4,
-            }],
+        set_layout: &dyn IParameterBlockLayout,
+    ) -> AnyArc<dyn IBindingSignature> {
+        let desc = BindingSignatureDesc {
+            parameter_block_layouts: &[set_layout],
+            push_constant_block: PushConstantBlock::new(4),
             name: obj_name_opt!("PipelineLayout"),
         };
-        device
-            .create_pipeline_layout(&pipeline_layout_desc)
-            .unwrap()
+        device.create_binding_signature(&desc).unwrap()
     }
 
     pub fn create_sampler(device: &dyn IDevice) -> SamplerHandle {
@@ -254,15 +249,19 @@ impl FxaaState {
         let key = CompositePlanesLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| CompositePlanesLayout::new(device));
 
-        let pipeline =
-            Self::create_pipeline_state(device, &layout.pipeline_layout, cache.shader_db(), format);
+        let pipeline = Self::create_pipeline_state(
+            device,
+            layout.binding_signature.as_ref(),
+            cache.shader_db(),
+            format,
+        );
 
         Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
@@ -271,7 +270,7 @@ impl FxaaState {
 
         create_fullscreen_triangle_pipeline(
             device,
-            pipeline_layout,
+            binding_signature,
             format,
             vertex_shader,
             fragment_shader,

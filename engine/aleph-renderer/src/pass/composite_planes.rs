@@ -29,6 +29,7 @@
 
 use std::sync::Arc;
 
+use aleph_any::AnyArc;
 use aleph_frame_graph::*;
 use aleph_nstr::nstr;
 use aleph_pin_board::PinBoard;
@@ -154,24 +155,28 @@ pub fn pass(
                         },
                     )
                     .unwrap();
-                let set = resources
-                    .descriptor_arena()
-                    .allocate_set(&state.layout.set_layout)
-                    .unwrap();
-                let sampler = &state.layout.sampler;
-                resources.device().update_descriptor_sets(&[
-                    DescriptorWriteDesc::texture(set, 0, &ImageDescriptorWrite::srv(src_view)),
-                    DescriptorWriteDesc::sampler(set, 1, &SamplerDescriptorWrite::new(sampler)),
-                ]);
-                let level = 0.0f32;
-                encoder.set_push_constant_block(0, bytemuck::bytes_of(&level));
 
-                encoder.bind_descriptor_sets(
-                    &state.layout.pipeline_layout,
+                let block_layout = state.layout.block_layout.as_ref();
+                let block = resources
+                    .descriptor_arena()
+                    .allocate_block(block_layout)
+                    .unwrap();
+                let params = [
+                    TextureWrite::srv(src_view).into(),
+                    SamplerWrite::new(&state.layout.sampler).into(),
+                ];
+                resources
+                    .device()
+                    .update_parameter_block(block_layout, block, 0, &params);
+
+                let level = 0.0f32;
+                encoder.set_push_constant_block(bytemuck::bytes_of(&level));
+
+                encoder.bind_parameter_blocks(
+                    state.layout.binding_signature.as_ref(),
                     PipelineBindPoint::Graphics,
                     0,
-                    &[set],
-                    &[],
+                    &[block],
                 );
 
                 encoder.draw(3, 1, 0, 0);
@@ -192,9 +197,9 @@ impl IStateCacheKey for CompositePlanesLayoutKey {
 }
 
 pub struct CompositePlanesLayout {
-    pub set_layout: DescriptorSetLayoutHandle,
+    pub block_layout: AnyArc<dyn IParameterBlockLayout>,
     pub sampler: SamplerHandle,
-    pub pipeline_layout: PipelineLayoutHandle,
+    pub binding_signature: AnyArc<dyn IBindingSignature>,
 }
 
 impl CompositePlanesLayout {
@@ -204,46 +209,39 @@ impl CompositePlanesLayout {
 
     pub fn new(device: &dyn IDevice) -> Self {
         let sampler = Self::create_sampler(device);
-        let set_layout = Self::create_set_layout(device);
-        let pipeline_layout = Self::create_pipeline_layout(device, &set_layout);
+        let block_layout = Self::create_block_layout(device);
+        let binding_signature = Self::create_binding_signature(device, block_layout.as_ref());
 
         Self {
-            set_layout: set_layout,
+            block_layout,
             sampler,
-            pipeline_layout,
+            binding_signature,
         }
     }
 
-    pub fn create_set_layout(device: &dyn IDevice) -> DescriptorSetLayoutHandle {
-        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
-            visibility: DescriptorShaderVisibility::Fragment,
-            items: &[
-                DescriptorType::Texture.binding(0),
-                DescriptorType::Sampler.binding(1),
+    pub fn create_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
+        let desc = ParameterBlockDesc {
+            params: &[
+                ParameterType::Texture2D.param(),
+                ParameterType::SamplerState.param(),
             ],
+            visibility: DescriptorShaderVisibility::Fragment,
+            flags: ParameterBlockFlags::default(),
             name: obj_name_opt!("DescriptorSetLayout"),
         };
-        device
-            .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap()
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
-    pub fn create_pipeline_layout(
+    pub fn create_binding_signature(
         device: &dyn IDevice,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> PipelineLayoutHandle {
-        let pipeline_layout_desc = PipelineLayoutDesc {
-            set_layouts: &[set_layout],
-            push_constant_blocks: &[PushConstantBlock {
-                binding: 0,
-                visibility: DescriptorShaderVisibility::All,
-                size: 4,
-            }],
+        set_layout: &dyn IParameterBlockLayout,
+    ) -> AnyArc<dyn IBindingSignature> {
+        let desc = BindingSignatureDesc {
+            parameter_block_layouts: &[set_layout],
+            push_constant_block: PushConstantBlock::new(4),
             name: obj_name_opt!("PipelineLayout"),
         };
-        device
-            .create_pipeline_layout(&pipeline_layout_desc)
-            .unwrap()
+        device.create_binding_signature(&desc).unwrap()
     }
 
     pub fn create_sampler(device: &dyn IDevice) -> SamplerHandle {
@@ -281,15 +279,19 @@ impl CompositePlanesState {
         let key = CompositePlanesLayout::key();
         let layout = cache.get_or_insert_with(&key, |_, _| CompositePlanesLayout::new(device));
 
-        let pipeline =
-            Self::create_pipeline_state(device, &layout.pipeline_layout, cache.shader_db(), format);
+        let pipeline = Self::create_pipeline_state(
+            device,
+            layout.binding_signature.as_ref(),
+            cache.shader_db(),
+            format,
+        );
 
         Self { layout, pipeline }
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDevice,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         shader_db: &dyn IShaderAccessor,
         format: Format,
     ) -> GraphicsPipelineHandle {
@@ -335,7 +337,7 @@ impl CompositePlanesState {
 
         let graphics_pipeline_desc_new = GraphicsPipelineDesc {
             shader_stages: &[vertex_shader, fragment_shader],
-            pipeline_layout,
+            binding_signature,
             vertex_layout: &vertex_layout,
             input_assembly_state: &input_assembly_state,
             rasterizer_state: &rasterizer_state,
