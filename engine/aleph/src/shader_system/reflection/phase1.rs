@@ -106,17 +106,7 @@ fn walk_global_root_field<'a>(
         } => {
             if field.user_attribs.contains(&PUSH_CONSTANT_ATTR) {
                 // Get the size from the reflection data.
-                let bytes = element_var_layout
-                    .binding_info
-                    .bindings
-                    .iter()
-                    .find_map(|v| match v {
-                        aleph_slang_reflection::VariableBinding::Uniform { size, .. } => {
-                            Some(*size)
-                        }
-                        _ => None,
-                    })
-                    .unwrap();
+                let bytes = find_uniform_size_on_variable_layout(&element_var_layout).unwrap();
                 nodes.push(Node::PushConstantBlock { bytes });
             } else {
                 let diag = Diagnostic::BadField {
@@ -214,6 +204,8 @@ fn walk_parameter_block_field<'a>(
             element_var_layout, ..
         } => {
             if !element.user_attribs.contains(&PUSH_CONSTANT_ATTR) {
+                let _buffer_size =
+                    find_uniform_size_on_variable_layout(&element_var_layout).unwrap();
                 nodes.push(Node::Parameter {
                     parameter_type: aleph_shader_db::ParameterType::ConstantBuffer,
                     array_size: 0,
@@ -881,6 +873,16 @@ fn parameter_type_to_array(v: aleph_shader_db::ParameterType) -> aleph_shader_db
         }
         v @ _ => v,
     }
+}
+
+fn find_uniform_size_on_variable_layout(v: &VariableLayout) -> Option<u64> {
+    for binding in v.binding_info.bindings.iter() {
+        match binding {
+            aleph_slang_reflection::VariableBinding::Uniform { size, .. } => return Some(*size),
+            _ => {}
+        }
+    }
+    None
 }
 
 const PUSH_CONSTANT_ATTR: UserAttribute = UserAttribute {
