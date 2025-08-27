@@ -40,7 +40,7 @@ use once_cell::sync::OnceCell;
 use crate::project_schema::ProjectSchema;
 use crate::utils::{BuildPlatform, Target, find_project_file};
 
-// /// A tuple of [Version] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
+// /// A tuple of [`Version`] and an unwrapped [cargo_metadata::PackageId]. Unrapping the type to a str
 // /// instead of a String allows avoiding extra .clone calls when building the table.
 // pub type VersionedPackageId<'a> = (Version, &'a str);
 //
@@ -376,7 +376,7 @@ impl<'a> AlephProject<'a> {
     ///
     /// # Warning
     ///
-    /// Will _not_ re-query after the first call. Create a new [AlephProject] to re-query.
+    /// Will _not_ re-query after the first call. Create a new [`AlephProject`] to re-query.
     pub fn get_cargo_metadata(&self) -> anyhow::Result<&cargo_metadata::Metadata> {
         self.cargo_metadata.get_or_try_init(|| {
             let mut cmd = cargo_metadata::MetadataCommand::new();
@@ -393,8 +393,8 @@ impl<'a> AlephProject<'a> {
     ///
     /// # Warning
     ///
-    /// Will _not_ re-query after the first call. Create a new [AlephProject] to re-query.
-    pub fn get_project_schema(&self) -> anyhow::Result<&ProjectSchema> {
+    /// Will _not_ re-query after the first call. Create a new [`AlephProject`] to re-query.
+    pub fn get_project_schema(&self) -> anyhow::Result<&ProjectSchema<'_>> {
         self.project_schema.get_or_try_init(|| {
             let toml = std::fs::read_to_string(self.project_file())?;
             let project_schema: ProjectSchema = toml::from_str(&toml)?;
@@ -421,7 +421,7 @@ impl<'a> AlephProject<'a> {
     //         let cargo_metadata = self.get_cargo_metadata()?;
     //
     //         // Temporary arena that makes it cheap to build the list of crates as a linked list
-    //         // before we ossify it to flat arrays allocated out of the [AlephProject]'s arena.
+    //         // before we ossify it to flat arrays allocated out of the [`AlephProject`]'s arena.
     //         //
     //         // Size hint to avoid allocating new pages in the loop. We should have exactly
     //         // num_packages links.
@@ -488,7 +488,7 @@ impl<'a> AlephProject<'a> {
 
     /// Computes and returns a hash table that maps a [cargo_metadata::PackageId] to the index in
     /// the [cargo_metadata::Metadata::packages] array the package is from.
-    pub fn get_crate_id_map(&self) -> anyhow::Result<&CrateIdMap> {
+    pub fn get_crate_id_map(&self) -> anyhow::Result<&CrateIdMap<'_>> {
         self.crate_id_map.get_or_try_init(|| {
             let cargo_metadata = self.get_cargo_metadata()?;
 

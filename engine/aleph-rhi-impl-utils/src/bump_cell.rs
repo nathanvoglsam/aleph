@@ -47,7 +47,7 @@ impl BumpCell {
     }
 
     #[inline]
-    pub fn scope(&self) -> BumpScope {
+    pub fn scope(&self) -> BumpScope<'_> {
         let bump = self
             .0
             .take()
@@ -116,7 +116,7 @@ impl BlinkCell {
     }
 
     #[inline]
-    pub fn scope(&self) -> BlinkScope {
+    pub fn scope(&self) -> BlinkScope<'_> {
         let bump = self
             .0
             .take()

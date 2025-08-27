@@ -540,14 +540,14 @@ impl IWindow for Window {
 }
 
 impl HasDisplayHandle for Window {
-    fn display_handle(&self) -> Result<DisplayHandle, HandleError> {
+    fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
         let handle = self.state.read().display_handle;
         unsafe { Ok(DisplayHandle::borrow_raw(handle)) }
     }
 }
 
 impl HasWindowHandle for Window {
-    fn window_handle(&self) -> Result<WindowHandle, HandleError> {
+    fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
         let handle = self.state.read().window_handle;
         unsafe { Ok(WindowHandle::borrow_raw(handle)) }
     }

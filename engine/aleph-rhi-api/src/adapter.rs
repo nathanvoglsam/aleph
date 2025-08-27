@@ -37,7 +37,7 @@ pub trait IAdapter: IAny + IGetPlatformInterface + Send + Sync {
     any_arc_trait_utils_decl!(IAdapter);
 
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
-    fn description(&self) -> AdapterDescription;
+    fn description(&self) -> AdapterDescription<'_>;
 
     /// Requests an IDevice
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError>;

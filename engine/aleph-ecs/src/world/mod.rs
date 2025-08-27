@@ -378,7 +378,7 @@ impl World {
     pub fn query_one<Q: ReadOnlyComponentQuery>(
         &self,
         entity: EntityId,
-    ) -> Option<ComponentQueryItem<Q::QueryType>> {
+    ) -> Option<ComponentQueryItem<'_, Q::QueryType>> {
         use crate::component::component_query::Fetch;
 
         if let Some(location) = self.entities.lookup(entity) {
@@ -400,7 +400,7 @@ impl World {
     pub fn query_one_mut<Q: ComponentQuery>(
         &mut self,
         entity: EntityId,
-    ) -> Option<ComponentQueryItem<Q>> {
+    ) -> Option<ComponentQueryItem<'_, Q>> {
         use crate::component::component_query::Fetch;
 
         if let Some(location) = self.entities.lookup(entity) {
@@ -419,7 +419,7 @@ impl World {
     }
 
     /// Constructs a safe query that can only access components immutably
-    pub fn query<Q: ReadOnlyComponentQuery>(&self) -> QueryRef<Q::QueryType> {
+    pub fn query<Q: ReadOnlyComponentQuery>(&self) -> QueryRef<'_, Q::QueryType> {
         QueryRef {
             inner: Self::query_unchecked::<Q::QueryType>(NonNull::from(self)),
             phantom: PhantomData::default(),
@@ -428,7 +428,7 @@ impl World {
 
     /// Constructs a safe query that can access components mutably but requires an exclusive borrow
     /// of the world
-    pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<Q> {
+    pub fn query_mut<Q: ComponentQuery>(&mut self) -> QueryMut<'_, Q> {
         QueryMut {
             inner: Self::query_unchecked::<Q>(NonNull::from(self)),
             phantom: PhantomData::default(),

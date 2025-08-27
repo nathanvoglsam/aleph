@@ -85,7 +85,7 @@ impl Buffer {
         self.id
     }
 
-    pub(crate) const fn desc(&self) -> &BufferDesc {
+    pub(crate) const fn desc(&self) -> &BufferDesc<'_> {
         self.desc.get()
     }
 

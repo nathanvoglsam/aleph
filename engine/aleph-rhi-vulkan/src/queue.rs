@@ -86,7 +86,7 @@ pub struct Queue {
 // Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
 impl IAny for Queue {
     #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject> {
+    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
         unsafe {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
@@ -482,7 +482,7 @@ impl<'a> SubmissionManager<'a> {
         Ok(submission)
     }
 
-    pub fn timeline_info(&self) -> vk::TimelineSemaphoreSubmitInfo {
+    pub fn timeline_info(&self) -> vk::TimelineSemaphoreSubmitInfo<'_> {
         vk::TimelineSemaphoreSubmitInfo::default()
             .wait_semaphore_values(&self.wait_values)
             .signal_semaphore_values(&self.signal_values)

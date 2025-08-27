@@ -71,7 +71,7 @@ impl IAdapter for Adapter {
         self.this.weak_count()
     }
 
-    fn description(&self) -> AdapterDescription {
+    fn description(&self) -> AdapterDescription<'_> {
         AdapterDescription {
             name: &self.name,
             vendor: self.vendor,

@@ -110,7 +110,7 @@ macro_rules! declare_interfaces (
     ( $typ: ident, [ $( $iface: ident ),* ]) => {
         impl $crate::IAny for $typ {
             #[allow(bare_trait_objects)]
-            fn __query_interface(&self, target: ::core::any::TypeId) -> Option<$crate::TraitObject> {
+            fn __query_interface(&self, target: ::core::any::TypeId) -> Option<$crate::TraitObject<'_>> {
                 unsafe {
                     if target == ::core::any::TypeId::of::<$typ>() {
                         return Some($crate::TraitObject {

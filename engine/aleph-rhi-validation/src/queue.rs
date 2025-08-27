@@ -55,7 +55,7 @@ pub struct ValidationQueue {
 // Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
 impl IAny for ValidationQueue {
     #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject> {
+    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
         unsafe {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));

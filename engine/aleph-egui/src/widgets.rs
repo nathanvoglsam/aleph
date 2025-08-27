@@ -52,7 +52,7 @@ impl FrameTimeHistory {
         self.data.back().copied().unwrap()
     }
 
-    pub fn iter(&self) -> vec_deque::Iter<f64> {
+    pub fn iter(&self) -> vec_deque::Iter<'_, f64> {
         self.data.iter()
     }
 

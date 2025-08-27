@@ -51,7 +51,7 @@ impl ISwapImage for NullSwapImage {
         unimplemented!()
     }
 
-    fn texture_desc(&self) -> &TextureDesc {
+    fn texture_desc(&self) -> &TextureDesc<'_> {
         unimplemented!()
     }
 }

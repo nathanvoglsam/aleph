@@ -635,7 +635,7 @@ struct FrameManager {
 }
 
 impl FrameManager {
-    fn get_next_frame(&mut self) -> CurrentFrameResources {
+    fn get_next_frame(&mut self) -> CurrentFrameResources<'_> {
         self.current = (self.current + 1) % self.frames.len();
         let frame = &mut self.frames[self.current];
         CurrentFrameResources {

@@ -76,7 +76,7 @@ impl HiBitSet {
     }
 
     #[inline]
-    pub fn iter(&self) -> HiBitSetIter {
+    pub fn iter(&self) -> HiBitSetIter<'_> {
         if self.level_3 == 0 {
             HiBitSetIter {
                 set: self,

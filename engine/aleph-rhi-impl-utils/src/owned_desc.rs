@@ -59,7 +59,7 @@ impl OwnedBufferDesc {
     }
 
     /// Gets the inner desc
-    pub const fn get(&self) -> &BufferDesc {
+    pub const fn get(&self) -> &BufferDesc<'_> {
         &self.desc
     }
 }
@@ -119,7 +119,7 @@ impl OwnedTextureDesc {
     }
 
     /// Gets the inner desc
-    pub const fn get(&self) -> &TextureDesc {
+    pub const fn get(&self) -> &TextureDesc<'_> {
         &self.desc
     }
 }
@@ -178,7 +178,7 @@ impl OwnedSamplerDesc {
     }
 
     /// Gets the inner desc
-    pub const fn get(&self) -> &SamplerDesc {
+    pub const fn get(&self) -> &SamplerDesc<'_> {
         &self.desc
     }
 }

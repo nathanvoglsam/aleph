@@ -110,7 +110,7 @@ impl RenderScene {
         }
     }
 
-    pub fn get_storage_ref<T>(&self) -> Option<StorageRef<T>>
+    pub fn get_storage_ref<T>(&self) -> Option<StorageRef<'_, T>>
     where
         T: ISceneObject,
     {
@@ -129,7 +129,7 @@ impl RenderScene {
         }
     }
 
-    pub fn get_storage_mut<T>(&self) -> Option<StorageMut<T>>
+    pub fn get_storage_mut<T>(&self) -> Option<StorageMut<'_, T>>
     where
         T: ISceneObject,
     {

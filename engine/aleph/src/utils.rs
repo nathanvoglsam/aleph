@@ -63,7 +63,7 @@ pub enum BuildPlatform {
 }
 
 impl BuildPlatform {
-    /// Creates a [BuildPlatform] variant from the given string. Internally performs a 'to_lower'
+    /// Creates a [`BuildPlatform`] variant from the given string. Internally performs a 'to_lower'
     /// on the input string.
     pub fn from_arg(name: &str) -> Option<BuildPlatform> {
         let name = name.to_lowercase();
@@ -79,7 +79,7 @@ impl BuildPlatform {
         }
     }
 
-    /// Returns the current platform the aleph tool is running on as a [BuildPlatform] variant.
+    /// Returns the current platform the aleph tool is running on as a [`BuildPlatform`] variant.
     pub fn native() -> BuildPlatform {
         target_platform().into()
     }
@@ -266,7 +266,7 @@ pub mod ninja {
     use crate::utils::dunce_utf8;
 
     /// Prepares the given path ready to be used in a ninja build statement
-    pub fn prepare_path_for_build_statement(path: &Utf8Path) -> Cow<str> {
+    pub fn prepare_path_for_build_statement(path: &Utf8Path) -> Cow<'_, str> {
         if cfg!(windows) {
             // UNC = sadness for ninja
             let path = dunce_utf8::simplified(path).as_str();

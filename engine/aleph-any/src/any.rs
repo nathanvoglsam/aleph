@@ -68,7 +68,7 @@ pub trait IAny: Any + 'static {
     /// This is *very* unsafe to implement manually, so don't. Unless there's a *very* good reason,
     /// just use `declare_interfaces!`.
     ///
-    fn __query_interface(&self, _target: TypeId) -> Option<TraitObject> {
+    fn __query_interface(&self, _target: TypeId) -> Option<TraitObject<'_>> {
         None
     }
 }

@@ -434,27 +434,27 @@ impl PlatformSDL2 {
 }
 
 impl PlatformSDL2 {
-    fn window_state(provider: &Objects) -> Option<RwLockWriteGuard<WindowState>> {
+    fn window_state(provider: &Objects) -> Option<RwLockWriteGuard<'_, WindowState>> {
         provider.window.as_ref().map(|v| v.state.write())
     }
 
-    fn window_events(provider: &Objects) -> Option<RwLockWriteGuard<Vec<WindowEvent>>> {
+    fn window_events(provider: &Objects) -> Option<RwLockWriteGuard<'_, Vec<WindowEvent>>> {
         provider.window.as_ref().map(|v| v.events.write())
     }
 
-    fn keyboard_state(provider: &Objects) -> Option<RwLockWriteGuard<KeyboardState>> {
+    fn keyboard_state(provider: &Objects) -> Option<RwLockWriteGuard<'_, KeyboardState>> {
         provider.keyboard.as_ref().map(|v| v.state.write())
     }
 
-    fn keyboard_events(provider: &Objects) -> Option<RwLockWriteGuard<Vec<KeyboardEvent>>> {
+    fn keyboard_events(provider: &Objects) -> Option<RwLockWriteGuard<'_, Vec<KeyboardEvent>>> {
         provider.keyboard.as_ref().map(|v| v.events.write())
     }
 
-    fn mouse_events(provider: &Objects) -> Option<RwLockWriteGuard<Vec<MouseEvent>>> {
+    fn mouse_events(provider: &Objects) -> Option<RwLockWriteGuard<'_, Vec<MouseEvent>>> {
         provider.mouse.as_ref().map(|v| v.events.write())
     }
 
-    fn all_events(provider: &Objects) -> Option<RwLockWriteGuard<Vec<Event>>> {
+    fn all_events(provider: &Objects) -> Option<RwLockWriteGuard<'_, Vec<Event>>> {
         provider.events.as_ref().map(|v| v.deref().0.write())
     }
 

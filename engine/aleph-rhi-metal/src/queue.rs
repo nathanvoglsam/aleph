@@ -65,7 +65,7 @@ pub struct Queue {
 // Unwrapped declare_interfaces as we need to inject a custom condition for returning IQueueDebug
 impl IAny for Queue {
     #[allow(bare_trait_objects)]
-    fn __query_interface(&self, target: TypeId) -> Option<TraitObject> {
+    fn __query_interface(&self, target: TypeId) -> Option<TraitObject<'_>> {
         unsafe {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
@@ -264,7 +264,7 @@ impl Queue {
         }
     }
 
-    pub fn submit_lock(&self) -> MutexGuard<()> {
+    pub fn submit_lock(&self) -> MutexGuard<'_, ()> {
         self.submit_lock.lock()
     }
 }

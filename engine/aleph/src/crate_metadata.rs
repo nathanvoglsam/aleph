@@ -82,7 +82,7 @@ impl<'a> AlephCrateMetadata<'a> {
 /// A list of packages paired with their 'package.metadata.aleph' data deserialized.
 #[derive(Default)]
 pub struct ProjectCrateMetadata<'a> {
-    /// A list of packages paired with the parsed [AlephCrateMetadata] from the packages metadata.
+    /// A list of packages paired with the parsed [`AlephCrateMetadata`] from the packages metadata.
     pub metadata: Vec<(&'a Package, AlephCrateMetadata<'a>)>,
 }
 

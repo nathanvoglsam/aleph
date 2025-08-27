@@ -65,7 +65,7 @@ impl IGetPlatformInterface for Adapter {
 
 impl Adapter {
     #[inline]
-    fn get_queue_families(queue_families: &[vk::QueueFamilyProperties]) -> FoundQueueFamilies {
+    fn get_queue_families(queue_families: &[vk::QueueFamilyProperties]) -> FoundQueueFamilies<'_> {
         let mut general = None;
         let mut compute = None;
         let mut transfer = None;
@@ -156,7 +156,7 @@ impl IAdapter for Adapter {
         self.this.weak_count()
     }
 
-    fn description(&self) -> AdapterDescription {
+    fn description(&self) -> AdapterDescription<'_> {
         AdapterDescription {
             name: &self.name,
             vendor: self.vendor,
@@ -363,7 +363,7 @@ struct FoundQueueFamilies<'a> {
 }
 
 impl<'a> FoundQueueFamilies<'a> {
-    fn build_create_info_list(&self) -> Vec<vk::DeviceQueueCreateInfo> {
+    fn build_create_info_list(&self) -> Vec<vk::DeviceQueueCreateInfo<'_>> {
         // List to flatten the set of queue create infos into so we can pass it into vkCreateDevice
         let mut queue_create_infos: Vec<vk::DeviceQueueCreateInfo> = Vec::with_capacity(4);
 

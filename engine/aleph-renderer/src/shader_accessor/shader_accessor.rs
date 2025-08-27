@@ -33,7 +33,7 @@ use aleph_shader_db::*;
 use crate::shader_accessor::map_shader_type;
 
 pub trait IShaderAccessor {
-    fn get_stage_by_name(&self, name: &str) -> Option<aleph_rhi_api::ShaderStage>;
+    fn get_stage_by_name(&self, name: &str) -> Option<aleph_rhi_api::ShaderStage<'_>>;
 }
 
 #[derive(Clone)]
@@ -56,7 +56,7 @@ impl<'a, T: IShaderDatabase> ShaderAccessor<'a, T> {
 }
 
 impl<'a, T: IShaderDatabase> IShaderAccessor for ShaderAccessor<'a, T> {
-    fn get_stage_by_name(&self, name: &str) -> Option<aleph_rhi_api::ShaderStage> {
+    fn get_stage_by_name(&self, name: &str) -> Option<aleph_rhi_api::ShaderStage<'_>> {
         (self.loader)(self.db, name)
     }
 }

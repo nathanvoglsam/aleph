@@ -61,7 +61,7 @@ impl ISwapImage for SwapImage {
         &self.texture
     }
 
-    fn texture_desc(&self) -> &TextureDesc {
+    fn texture_desc(&self) -> &TextureDesc<'_> {
         self.swap_chain.device.get_texture_desc(&self.texture)
     }
 }

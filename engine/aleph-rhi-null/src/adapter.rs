@@ -55,7 +55,7 @@ impl IAdapter for NullAdapter {
         self._this.weak_count()
     }
 
-    fn description(&self) -> AdapterDescription {
+    fn description(&self) -> AdapterDescription<'_> {
         AdapterDescription {
             name: "NullAdapter",
             vendor: AdapterVendor::Unknown,

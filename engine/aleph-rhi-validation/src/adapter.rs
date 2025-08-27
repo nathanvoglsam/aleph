@@ -55,7 +55,7 @@ impl IAdapter for ValidationAdapter {
         self._this.weak_count()
     }
 
-    fn description(&self) -> AdapterDescription {
+    fn description(&self) -> AdapterDescription<'_> {
         self.inner.description()
     }
 

@@ -153,7 +153,7 @@ impl ShaderFileFormat {
 }
 
 /// Enumeration of all shader bytecode targets. This does not include variants for _source_ files
-/// like hlsl or slang. See [ShaderFileFormat] for source formats.
+/// like hlsl or slang. See [`ShaderFileFormat`] for source formats.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ShaderTargetLanguage {
     /// The DXIL format for consumption by D3D12

@@ -122,7 +122,7 @@ impl ResourceVersion {
         self.debug_written
     }
 
-    pub fn reads_iter(&self) -> VersionReaderLinkIter {
+    pub fn reads_iter(&self) -> VersionReaderLinkIter<'_> {
         VersionReaderLinkIter {
             current: self.reads.map(|v| unsafe { v.as_ref() }),
         }

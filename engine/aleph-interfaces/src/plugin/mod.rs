@@ -152,7 +152,7 @@ pub trait IRegistryAccessor {
     fn config(&self, name: &str) -> Option<&serde_json::Value>;
 
     /// Access to a core set of resources provided by the engine, wrapped in a [`CoreRefs`].
-    fn core(&mut self) -> CoreRefs;
+    fn core(&mut self) -> CoreRefs<'_>;
 }
 
 impl<'a> dyn IRegistryAccessor + 'a {

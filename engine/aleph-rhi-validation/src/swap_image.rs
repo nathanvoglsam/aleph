@@ -58,7 +58,7 @@ impl ISwapImage for ValidationSwapImage {
         }
     }
 
-    fn texture_desc(&self) -> &TextureDesc {
+    fn texture_desc(&self) -> &TextureDesc<'_> {
         let v = self.inner.as_ref().unwrap();
         v.texture_desc()
     }

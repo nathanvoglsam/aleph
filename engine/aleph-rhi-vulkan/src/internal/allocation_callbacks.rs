@@ -39,7 +39,7 @@ use blink_alloc::BlinkAlloc;
 
 /// Takes an [Allocator] and returns a [vk::AllocationCallbacks] wrapper that adapts the rust
 /// allocator into the
-pub const fn callbacks_from_rust_allocator(v: &BlinkAlloc) -> vk::AllocationCallbacks {
+pub const fn callbacks_from_rust_allocator(v: &BlinkAlloc) -> vk::AllocationCallbacks<'_> {
     // let user_data = v.by_ref();
     let user_data = v as *const BlinkAlloc as *mut BlinkAlloc;
     vk::AllocationCallbacks {

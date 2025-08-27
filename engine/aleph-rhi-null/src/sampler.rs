@@ -51,7 +51,7 @@ impl NullSampler {
             .expect("Unknown Sampler implementation!")
     }
 
-    pub(crate) const fn desc(&self) -> &SamplerDesc {
+    pub(crate) const fn desc(&self) -> &SamplerDesc<'_> {
         self.desc.get()
     }
 }

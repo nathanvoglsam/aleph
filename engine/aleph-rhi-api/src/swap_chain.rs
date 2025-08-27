@@ -136,7 +136,7 @@ pub trait ISwapImage: IAny + IGetPlatformInterface + Send + Sync {
     fn texture(&self) -> &TextureHandle;
 
     /// Returns a [TextureDesc] that describes the texture this [`ISwapImage`] encapsulates.
-    fn texture_desc(&self) -> &TextureDesc;
+    fn texture_desc(&self) -> &TextureDesc<'_>;
 }
 
 /// Wrapper enum that flags the different success conditions for [`ISwapChain::acquire_next_image`].

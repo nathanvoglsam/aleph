@@ -70,7 +70,7 @@ impl Texture {
         self.id
     }
 
-    pub(crate) const fn desc(&self) -> &TextureDesc {
+    pub(crate) const fn desc(&self) -> &TextureDesc<'_> {
         self.desc.get()
     }
 

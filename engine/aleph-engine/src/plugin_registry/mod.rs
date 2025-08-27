@@ -339,7 +339,7 @@ impl IRegistryAccessor for RegistryAccessor {
         self.configs.get(name)
     }
 
-    fn core(&mut self) -> CoreRefs {
+    fn core(&mut self) -> CoreRefs<'_> {
         CoreRefs {
             resources: self.resources.as_mut(),
             schedule: self.schedule.as_mut(),

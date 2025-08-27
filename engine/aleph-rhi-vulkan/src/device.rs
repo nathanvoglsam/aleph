@@ -1393,7 +1393,7 @@ impl Device {
 
     fn translate_color_blend_state(
         attachments: &[vk::PipelineColorBlendAttachmentState],
-    ) -> vk::PipelineColorBlendStateCreateInfo {
+    ) -> vk::PipelineColorBlendStateCreateInfo<'_> {
         vk::PipelineColorBlendStateCreateInfo::default()
             .logic_op_enable(false)
             .logic_op(vk::LogicOp::CLEAR)
