@@ -110,6 +110,7 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-vulkan-alloc/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-windows/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-slang-reflection/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

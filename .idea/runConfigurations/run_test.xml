@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="debug-run-test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" folderName="Debug">
+  <configuration default="false" name="run-test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" folderName="Run">
     <option name="buildProfileId" value="dev" />
     <option name="command" value="run --bin aleph-test -- -c rhi.api vulkan -c rhi.validation true -c rhi.debug true" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$" />
