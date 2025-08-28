@@ -58,13 +58,9 @@ aleph-rhi-loader = { workspace = true }
 aleph-rhi-api = { workspace = true }
 
 log = { workspace = true }
-once_cell = { workspace = true }
 utf16_lit = { workspace = true }
-raw-cpuid = { workspace = true }
-num_cpus = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-crossbeam = { workspace = true }
 rayon = { workspace = true }
 sdl2 = { workspace = true }
 sdl2-sys = { workspace = true }

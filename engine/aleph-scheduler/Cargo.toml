@@ -43,13 +43,9 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-object-system = { workspace = true }
-aleph-identity-hasher = { workspace = true }
-aleph-virtual-buffer = { workspace = true }
 aleph-label = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-typed-table = { workspace = true }
 
-bumpalo = { workspace = true }
 crossbeam = { workspace = true }
 rayon = { workspace = true }
-allocator-api2 = { workspace = true }

@@ -40,7 +40,6 @@ edition.workspace = true
 
 [dependencies]
 aleph-interfaces = { workspace = true }
-log = { workspace = true }
 egui = { workspace = true }
 egui_plot = { workspace = true }
 

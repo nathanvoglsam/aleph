@@ -51,7 +51,5 @@ aleph-rhi-api = { workspace = true }
 aleph-object-system = { workspace = true }
 aleph-renderer = { workspace = true }
 raw-window-handle = { workspace = true }
-thiserror = { workspace = true }
-bitflags = { workspace = true }
 serde_json = { workspace = true }
 smallbox = { workspace = true }

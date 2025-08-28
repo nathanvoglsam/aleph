@@ -297,7 +297,7 @@ macro_rules! unsafe_impl_iobject {
             }
 
             const fn __internal_register_node_scope() -> bool {
-                #[$crate::ctor::ctor]
+                #[$crate::ctor::ctor(crate_path = $crate::ctor)]
                 fn internal_register_t() {
                     unsafe {
                         $crate::register_type(<$t>::__internal_node());

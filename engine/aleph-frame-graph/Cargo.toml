@@ -48,8 +48,6 @@ aleph-rhi-api = { workspace = true }
 aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
 log = { workspace = true }
-bitflags = { workspace = true }
-parking_lot = { workspace = true }
 blink-alloc = { workspace = true }
 allocator-api2 = { workspace = true }
 thiserror = { workspace = true }

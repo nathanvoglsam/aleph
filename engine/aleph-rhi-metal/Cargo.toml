@@ -52,14 +52,9 @@ aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
 
 log = { workspace = true }
-bitflags = { workspace = true }
 crossbeam = { workspace = true }
-once_cell = { workspace = true }
 parking_lot = { workspace = true }
 raw-window-handle = { workspace = true }
-libloading = { workspace = true }
-console = { workspace = true }
-byteorder = { workspace = true }
 blink-alloc = { workspace = true }
 allocator-api2 = { workspace = true }
 block2 = { workspace = true }

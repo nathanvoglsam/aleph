@@ -107,14 +107,13 @@ blink-alloc = { version = "0.3" }
 block2 = { version = "0.6" }
 bytemuck = { version = "1", features = ["derive"] }
 byteorder = "1"
-cargo_metadata = "0.21"
+cargo_metadata = "0.22"
 camino = "1"
 cc = "1"
 clap = "4"
-cmake = "0.1"
 console = "0.16"
 crossbeam = "0.8"
-ctor = "0.2"
+ctor = "0.5"
 ctrlc = "3"
 dunce = "1"
 egui = { version = "0.32", features = ["bytemuck"] }
@@ -130,6 +129,8 @@ log = { version = "0.4", features = ["release_max_level_debug"] }
 num_cpus = "1"
 once_cell = "1"
 parking_lot = "0.12"
+phf = { version = "0.13", features = ["macros"] }
+quote = { version = "1.0", default-features = false }
 raw-cpuid = "11"
 raw-window-handle = "0.6"
 rayon = "1"
@@ -139,18 +140,17 @@ sdl2-sys = { version = "^0.38" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 smallbox = "0.8"
-sysinfo = "0.36"
+syn = { version = "2.0", features = ["full"] }
+sysinfo = "0.37"
 tera = "1"
 thiserror = "2"
 toml = "0.9"
 tracy-client = "0.18"
 ultraviolet = { version = "0.10", features = ["f64", "int"] }
-wide = { version = "0.7" }
 utf16_lit = "2"
 uuid = { version = "1", features = ["v7"] }
 zip = "4"
 num-integer = "0.1"
-num-traits = "0.2"
 arrayvec = "0.7"
 memmap2 = "0.9"
 objc2 = "0.6"
@@ -195,13 +195,13 @@ aleph-ecs = { path = "./engine/aleph-ecs", version = "0.1" }
 aleph-engine = { path = "./engine/aleph-engine", version = "0.1" }
 aleph-engine-build = { path = "./engine/aleph-engine-build", version = "0.1" }
 aleph-frame-graph = { path = "./engine/aleph-frame-graph", version = "0.1" }
-aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
+## aleph-hibitset = { path = "./engine/aleph-hibitset", version = "0.1" }
 aleph-identity-hasher = { path = "./engine/aleph-identity-hasher", version = "1" }
 aleph-image = { path = "./engine/aleph-image", version = "0.1" }
 aleph-interfaces = { path = "./engine/aleph-interfaces", version = "0.1" }
 aleph-ktx = { path = "./engine/aleph-ktx", version = "0.1" }
 aleph-label = { path = "./engine/aleph-label", version = "1" }
-aleph-malloc-info = { path = "./engine/aleph-malloc-info", version = "0.1" }
+## aleph-malloc-info = { path = "./engine/aleph-malloc-info", version = "0.1" }
 aleph-math = { path = "./engine/aleph-math", version = "0.1" }
 aleph-nstr = { path = "./engine/aleph-nstr", version = "0.1" }
 aleph-object-system = { path = "./engine/aleph-object-system", version = "0.1" }

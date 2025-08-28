@@ -56,7 +56,6 @@ aleph-math = { workspace = true }
 aleph-pin-board = { workspace = true }
 aleph-rhi-api = { workspace = true }
 aleph-shader-db = { workspace = true }
-aleph-profile = { workspace = true }
 aleph-nstr = { workspace = true }
 aleph-renderer = { workspace = true }
 
@@ -64,4 +63,3 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 rkyv = { workspace = true }
-wide = { workspace = true }

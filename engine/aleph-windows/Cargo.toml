@@ -43,12 +43,13 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 once_cell = { workspace = true }
-bitflags = { workspace = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
 windows-interface = { workspace = true }
 
-[target.'cfg(all(not(target_vendor = "uwp"), target_os = "windows"))'.dependencies.windows]
-workspace = true
+[target.'cfg(all(not(target_vendor = "uwp"), target_os = "windows"))'.dependencies]
+windows = { workspace = true }
 
-[target.'cfg(all(target_vendor = "uwp", target_os = "windows"))'.dependencies.windows]
-workspace = true
-features = ["System"]
+[target.'cfg(all(target_vendor = "uwp", target_os = "windows"))'.dependencies]
+windows = { workspace = true, features = ["System"] }
+
