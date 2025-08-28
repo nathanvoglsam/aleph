@@ -369,7 +369,7 @@ impl EguiLayout {
             ],
             visibility: DescriptorShaderVisibility::All,
             flags: Default::default(),
-            name: obj_name_opt!("DescriptorSetLayout"),
+            name: obj_name_opt!("ParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }
@@ -381,7 +381,7 @@ impl EguiLayout {
         let desc = BindingSignatureDesc {
             parameter_block_layouts: &[block_layout],
             push_constant_block: PushConstantBlock::new(16),
-            name: obj_name_opt!("PipelineLayout"),
+            name: obj_name_opt!("BindingSignature"),
         };
         device.create_binding_signature(&desc).unwrap()
     }

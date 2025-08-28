@@ -351,19 +351,19 @@ impl SmaaState {
         let edge_signature = Self::create_binding_signature(
             device,
             edge_block_layout.as_ref(),
-            obj_name_opt!("EdgePipelineLayout"),
+            obj_name_opt!("EdgeBindingSignature"),
         );
 
         let weight_signature = Self::create_binding_signature(
             device,
             weight_block_layout.as_ref(),
-            obj_name_opt!("WeightPipelineLayout"),
+            obj_name_opt!("WeightBindingSignature"),
         );
 
         let blend_signature = Self::create_binding_signature(
             device,
             blend_block_layout.as_ref(),
-            obj_name_opt!("BlendPipelineLayout"),
+            obj_name_opt!("BlendBindingSignature"),
         );
 
         let edge_pipeline = Self::create_edge_detect_pipeline_state(
@@ -411,7 +411,7 @@ impl SmaaState {
             ],
             visibility: DescriptorShaderVisibility::Fragment,
             flags: Default::default(),
-            name: obj_name_opt!("EdgeDescriptorSetLayout"),
+            name: obj_name_opt!("EdgeParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }
@@ -427,7 +427,7 @@ impl SmaaState {
             ],
             visibility: DescriptorShaderVisibility::Fragment,
             flags: Default::default(),
-            name: obj_name_opt!("WeightDescriptorSetLayout"),
+            name: obj_name_opt!("WeightParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }
@@ -442,7 +442,7 @@ impl SmaaState {
             ],
             visibility: DescriptorShaderVisibility::Fragment,
             flags: Default::default(),
-            name: obj_name_opt!("BlendDescriptorSetLayout"),
+            name: obj_name_opt!("BlendParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }

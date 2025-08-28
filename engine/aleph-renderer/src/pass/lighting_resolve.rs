@@ -219,7 +219,7 @@ impl LightResolveState {
                 ],
                 visibility: DescriptorShaderVisibility::Compute,
                 flags: Default::default(),
-                name: obj_name_opt!("DescriptorSetLayout"),
+                name: obj_name_opt!("ParameterBlockLayout"),
             })
             .unwrap()
     }
@@ -232,7 +232,7 @@ impl LightResolveState {
             .create_binding_signature(
                 &BindingSignatureDesc::new()
                     .with_parameter_block_layouts(&[block_layout])
-                    .with_name(obj_name!("PipelineLayout")),
+                    .with_name(obj_name!("BindingSignature")),
             )
             .unwrap()
     }

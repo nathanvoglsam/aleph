@@ -227,19 +227,19 @@ impl CompositePlanesLayout {
             ],
             visibility: DescriptorShaderVisibility::Fragment,
             flags: ParameterBlockFlags::default(),
-            name: obj_name_opt!("DescriptorSetLayout"),
+            name: obj_name_opt!("ParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }
 
     pub fn create_binding_signature(
         device: &dyn IDevice,
-        set_layout: &dyn IParameterBlockLayout,
+        block_layout: &dyn IParameterBlockLayout,
     ) -> AnyArc<dyn IBindingSignature> {
         let desc = BindingSignatureDesc {
-            parameter_block_layouts: &[set_layout],
+            parameter_block_layouts: &[block_layout],
             push_constant_block: PushConstantBlock::new(4),
-            name: obj_name_opt!("PipelineLayout"),
+            name: obj_name_opt!("BindingSignature"),
         };
         device.create_binding_signature(&desc).unwrap()
     }

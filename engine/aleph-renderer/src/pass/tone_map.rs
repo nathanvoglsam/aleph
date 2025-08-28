@@ -55,14 +55,14 @@ pub fn pass(
             ],
             visibility: DescriptorShaderVisibility::Compute,
             flags: Default::default(),
-            name: obj_name_opt!("TonemapDescriptorSetLayout"),
+            name: obj_name_opt!("TonemapParameterBlockLayout"),
         })
         .unwrap();
     let binding_signature = device
         .create_binding_signature(
             &BindingSignatureDesc::new()
                 .with_parameter_block_layouts(&[block_layout.as_ref()])
-                .with_name(obj_name!("TonemapLightingPipelineLayout")),
+                .with_name(obj_name!("TonemapLightingBindingSignature")),
         )
         .unwrap();
 

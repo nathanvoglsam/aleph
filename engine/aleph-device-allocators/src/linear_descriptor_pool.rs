@@ -32,8 +32,8 @@ use std::cell::Cell;
 use aleph_any::AnyArc;
 use aleph_rhi_api::*;
 
-/// A descriptor set allocator that grabs arenas as pages and bump allocates descriptor sets from
-/// those pages. Intended for cheaply allocating one-time-use descriptor sets.
+/// A parameter block allocator that grabs arenas as pages and bump allocates parameter blocks from
+/// those pages. Intended for cheaply allocating one-time-use parameter blocks.
 pub struct LinearDescriptorPool {
     /// The device we're working with
     device: AnyArc<dyn IDevice>,
@@ -64,18 +64,18 @@ impl LinearDescriptorPool {
         })
     }
 
-    /// Allocates a new individual descriptor set from the pool.
+    /// Allocates a new individual parameter block from the pool.
     ///
     /// May fail if the pool's backing memory has been exhausted.
     ///
     /// # Warning
     ///
-    /// The descriptor sets returned by a pool will by default contain invalid descriptors. That is,
+    /// The parameter blocks returned by a pool will by default contain invalid descriptors. That is,
     /// assume they contain uninitialized memory. It is required to update the set with fresh
     /// descriptors before use.
     ///
     /// Vulkan requires this behavior for valid API usage. Other implementations may re-use
-    /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
+    /// previously freed parameter blocks without zeroing out their contents meaning you may reuse
     /// stale descriptors.
     #[must_use = "Do not ignore allocation failure"]
     pub fn allocate_block(

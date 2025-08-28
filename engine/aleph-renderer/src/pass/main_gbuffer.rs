@@ -503,7 +503,7 @@ impl MainOpaqueCommonLayout {
             ],
             visibility: DescriptorShaderVisibility::All,
             flags: Default::default(),
-            name: obj_name_opt!("GlobalDescriptorSetLayout"),
+            name: obj_name_opt!("GlobalParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }
@@ -513,7 +513,7 @@ impl MainOpaqueCommonLayout {
             params: &[ParameterType::ConstantBuffer.param()],
             visibility: DescriptorShaderVisibility::All,
             flags: ParameterBlockFlags::PUSH_DESCRIPTOR,
-            name: obj_name_opt!("ModelDescriptorSetLayout"),
+            name: obj_name_opt!("ModelParameterBlockLayout"),
         };
         device.create_parameter_block_layout(&desc).unwrap()
     }
