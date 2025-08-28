@@ -33,63 +33,23 @@ use aleph_shader_db::*;
 use crate::shader_accessor::map_shader_type;
 
 pub trait IShaderAccessor {
-    fn get_stage_by_name(&self, name: &str) -> Option<aleph_rhi_api::ShaderStage<'_>>;
+    fn get_stage_by_name(&self, name: &str) -> Option<&dyn IShaderCodeSource>;
 }
 
 #[derive(Clone)]
 pub struct ShaderAccessor<'a, T: IShaderDatabase> {
-    loader: fn(&'a T, &str) -> Option<aleph_rhi_api::ShaderStage<'a>>,
     db: &'a T,
 }
 
 impl<'a, T: IShaderDatabase> ShaderAccessor<'a, T> {
-    pub fn new(device: &dyn IDevice, db: &'a T) -> Self {
-        let backend = device.get_backend_api();
-        let loader = match backend {
-            BackendAPI::Vulkan => vulkan_loader,
-            BackendAPI::D3D12 => d3d12_loader,
-            BackendAPI::Metal => metal_loader,
-            BackendAPI::Null => vulkan_loader, // Just give it spirv because it doesn't matter
-        };
-        Self { loader, db }
+    pub fn new(db: &'a T) -> Self {
+        Self { db }
     }
 }
 
 impl<'a, T: IShaderDatabase> IShaderAccessor for ShaderAccessor<'a, T> {
-    fn get_stage_by_name(&self, name: &str) -> Option<aleph_rhi_api::ShaderStage<'_>> {
-        (self.loader)(self.db, name)
+    fn get_stage_by_name(&self, name: &str) -> Option<&dyn IShaderCodeSource> {
+        let out = self.db.get_by_name(name)?;
+        Some(out)
     }
-}
-
-fn vulkan_loader<'a, T: IShaderDatabase>(
-    db: &'a T,
-    name: &str,
-) -> Option<aleph_rhi_api::ShaderStage<'a>> {
-    let v = db.get_by_name(name)?;
-    Some(aleph_rhi_api::ShaderStage {
-        stage: map_shader_type(v.get_shader_type()),
-        data: ShaderBinary::Spirv(v.get_spirv().get_bytes()),
-    })
-}
-
-fn d3d12_loader<'a, T: IShaderDatabase>(
-    db: &'a T,
-    name: &str,
-) -> Option<aleph_rhi_api::ShaderStage<'a>> {
-    let v = db.get_by_name(name)?;
-    Some(aleph_rhi_api::ShaderStage {
-        stage: map_shader_type(v.get_shader_type()),
-        data: ShaderBinary::Dxil(v.get_dxil().get_bytes()),
-    })
-}
-
-fn metal_loader<'a, T: IShaderDatabase>(
-    db: &'a T,
-    name: &str,
-) -> Option<aleph_rhi_api::ShaderStage<'a>> {
-    let v = db.get_by_name(name)?;
-    Some(aleph_rhi_api::ShaderStage {
-        stage: map_shader_type(v.get_shader_type()),
-        data: ShaderBinary::Spirv(v.get_spirv().get_bytes()), // TODO: fix binary type
-    })
 }

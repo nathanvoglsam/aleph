@@ -52,23 +52,52 @@ pub enum ShaderType {
     Mesh,
 }
 
-impl Into<ShaderType> for ArchivedShaderType {
-    fn into(self) -> ShaderType {
-        match self {
-            ArchivedShaderType::Compute => ShaderType::Compute,
-            ArchivedShaderType::Vertex => ShaderType::Vertex,
-            ArchivedShaderType::Hull => ShaderType::Hull,
-            ArchivedShaderType::Domain => ShaderType::Domain,
-            ArchivedShaderType::Geometry => ShaderType::Geometry,
-            ArchivedShaderType::Fragment => ShaderType::Fragment,
-            ArchivedShaderType::Amplification => ShaderType::Amplification,
-            ArchivedShaderType::Mesh => ShaderType::Mesh,
+impl Default for ShaderType {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::Compute
+    }
+}
+
+macro_rules! convert_shader_type_match {
+    ($sself: ident, $dst_t: path) => {{
+        type T = $dst_t;
+        match $sself {
+            Self::Compute => T::Compute,
+            Self::Vertex => T::Vertex,
+            Self::Hull => T::Hull,
+            Self::Domain => T::Domain,
+            Self::Geometry => T::Geometry,
+            Self::Fragment => T::Fragment,
+            Self::Amplification => T::Amplification,
+            Self::Mesh => T::Mesh,
         }
+    }};
+}
+
+impl Into<ShaderType> for ArchivedShaderType {
+    #[inline]
+    fn into(self) -> ShaderType {
+        convert_shader_type_match!(self, ShaderType)
+    }
+}
+
+impl Into<aleph_rhi_api::ShaderType> for ShaderType {
+    #[inline]
+    fn into(self) -> aleph_rhi_api::ShaderType {
+        convert_shader_type_match!(self, aleph_rhi_api::ShaderType)
+    }
+}
+
+impl Into<aleph_rhi_api::ShaderType> for ArchivedShaderType {
+    #[inline]
+    fn into(self) -> aleph_rhi_api::ShaderType {
+        convert_shader_type_match!(self, aleph_rhi_api::ShaderType)
     }
 }
 
 pub trait ShaderStage: Copy + Clone {
-    const SHADER_TYPE: ShaderType;
+    const API_SHADER_TYPE: aleph_rhi_api::ShaderType;
 }
 
 macro_rules! shader_stage_variant {
@@ -77,7 +106,7 @@ macro_rules! shader_stage_variant {
         pub struct $v_name {}
 
         impl ShaderStage for $v_name {
-            const SHADER_TYPE: ShaderType = ShaderType::$v_name;
+            const API_SHADER_TYPE: aleph_rhi_api::ShaderType = aleph_rhi_api::ShaderType::$v_name;
         }
     };
 }

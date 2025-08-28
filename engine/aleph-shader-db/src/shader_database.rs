@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
+use crate::{ArchivedShaderEntry, ShaderEntry};
+use aleph_rhi_api::IShaderCodeSource;
 use std::collections::HashMap;
 
-use crate::{ArchivedShaderEntry, IShaderEntry, ShaderEntry};
-
 pub trait IShaderDatabase {
-    type Entry: IShaderEntry;
+    type Entry: IShaderCodeSource;
     fn get_by_name(&self, name: &str) -> Option<&Self::Entry>;
 }
 

@@ -164,13 +164,14 @@ impl IDevice for ValidationDevice {
     ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
         let mut stage_set = HashSet::with_capacity(8);
         desc.shader_stages.iter().for_each(|v| {
-            let duplicate_stage = !stage_set.insert(v.stage as u32);
+            let stage = v.shader_type();
+            let duplicate_stage = !stage_set.insert(stage as u32);
             assert!(
                 !duplicate_stage,
                 "Provided multiple shader modules of the same type for a graphics pipeline"
             );
             assert_ne!(
-                v.stage,
+                stage,
                 ShaderType::Compute,
                 "Passed a compute shader module to a graphics pipeline"
             );

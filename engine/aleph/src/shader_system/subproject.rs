@@ -28,8 +28,8 @@
 //
 
 use allocator_api2::alloc::Global;
-use blink_alloc::{Blink, BlinkAlloc};
 use allocator_api2::vec::Vec as BVec;
+use blink_alloc::{Blink, BlinkAlloc};
 use camino::Utf8Path;
 use cargo_metadata::Package;
 
@@ -102,10 +102,7 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
         metadata: &AlephCrateMetadata,
     ) -> anyhow::Result<BVec<&'a str, &'a BlinkAlloc<Global>>> {
         let out = if let Some(shaders) = &metadata.shaders {
-            let iter = shaders
-                .modules
-                .iter()
-                .map(|v| &*arena.copy_str(v.as_ref()));
+            let iter = shaders.modules.iter().map(|v| &*arena.copy_str(v.as_ref()));
             let mut out = BVec::with_capacity_in(shaders.modules.len(), arena.allocator());
             out.extend(iter);
             out

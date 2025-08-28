@@ -544,17 +544,11 @@ pub struct BlendStateDesc<'a> {
     pub attachments: &'a [AttachmentBlendState],
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct ShaderStage<'a> {
-    pub data: ShaderBinary<'a>,
-    pub stage: ShaderType,
-}
-
 #[derive(Clone)]
 pub struct GraphicsPipelineDesc<'a> {
     /// The list of shader modules that the pipeline configuration will use. The shader stage for
-    /// each module is specified on the [ShaderStage] object.
-    pub shader_stages: &'a [ShaderStage<'a>],
+    /// each module is pulled from the [`IShaderCodeSource`] object.
+    pub shader_stages: &'a [&'a dyn IShaderCodeSource],
 
     /// The description of binding locations used by both the pipeline and parameter blocks used
     /// with the pipeline
@@ -588,7 +582,7 @@ pub struct GraphicsPipelineDesc<'a> {
 #[derive(Clone)]
 pub struct ComputePipelineDesc<'a> {
     /// The compute shader module that will be used by the compute pipeline being created.
-    pub shader_module: ShaderBinary<'a>,
+    pub shader_module: &'a dyn IShaderCodeSource,
 
     /// The description of binding locations used by both the pipeline and parameter blocks used
     /// with the pipeline

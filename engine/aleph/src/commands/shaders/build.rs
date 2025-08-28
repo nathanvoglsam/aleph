@@ -27,19 +27,20 @@
 // SOFTWARE.
 //
 
-use aleph_target::Profile;
-use aleph_target::build::target_platform;
-use anyhow::anyhow;
-use blink_alloc::Blink;
-use camino::{Utf8Path, Utf8PathBuf};
-use clap::ArgMatches;
-
 use crate::commands::{ISubcommand, config_arg, platform_arg};
 use crate::project::AlephProject;
 use crate::shader_system::{
     ShaderCrateContext, ShaderFile, ShaderProjectContext, ShaderSubproject,
 };
 use crate::utils::{BuildPlatform, dunce_utf8};
+use aleph_shader_db::{ParameterBlockDesc, ShaderDatabase, ShaderEntry};
+use aleph_target::Profile;
+use aleph_target::build::target_platform;
+use anyhow::anyhow;
+use blink_alloc::Blink;
+use camino::{Utf8Path, Utf8PathBuf};
+use clap::ArgMatches;
+use std::collections::hash_map::Entry;
 
 pub struct BuildShaderProj {}
 
@@ -202,97 +203,70 @@ fn archive_shaders_for_package(
 
             let shader_name = super::shader_name_for_bin_file_in_module(module_ctx, &shader_file)?;
 
+            log::trace!(
+                "Collecting Reflection for '{}' shader: '{}'",
+                shader_file.file_ext,
+                shader_name,
+            );
             let refl_data = std::fs::read_to_string(&shader_file.reflection_path)?;
             let mut refl = serde_json::from_str::<aleph_slang_reflection::Root>(&refl_data)?;
             refl.normalize();
             let (parameter_blocks, push_constants) =
                 crate::shader_system::reflection::build_shader_db_reflection(&refl).unwrap();
 
+            log::trace!(
+                "Collecting Data for '{}' shader:  '{}'",
+                shader_file.file_ext,
+                shader_name,
+            );
+            let file_data = std::fs::read(shader_file.path)?;
+            let entry = insert_or_init_entry(
+                shader_db,
+                &shader_file,
+                shader_name,
+                parameter_blocks,
+                push_constants,
+            );
+
             match shader_file.file_ext {
                 crate::shader_system::ShaderFileFormat::Hlsl => unreachable!(),
                 crate::shader_system::ShaderFileFormat::Slang => unreachable!(),
-                crate::shader_system::ShaderFileFormat::Dxil => {
-                    log::trace!("Collecting DXIL for shader '{shader_name}'");
-                    let file_data = std::fs::read(shader_file.path)?;
-                    let entry = aleph_shader_db::ShaderPlatformEntry {
-                        parameter_blocks,
-                        push_constants,
-                        bytes: file_data,
-                    };
-
-                    if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                        db_entry.dxil = Some(entry);
-                    } else {
-                        shader_db.shaders.insert(
-                            shader_name,
-                            aleph_shader_db::ShaderEntry {
-                                shader_type: shader_file.shader_type.into(),
-                                spirv: None,
-                                dxil: Some(entry),
-                                msl: None,
-                            },
-                        );
-                    }
-
-                    let refl_data = std::fs::read_to_string(&shader_file.reflection_path)?;
-                    let mut refl =
-                        serde_json::from_str::<aleph_slang_reflection::Root>(&refl_data)?;
-                    refl.normalize();
-                }
-                crate::shader_system::ShaderFileFormat::Spirv => {
-                    log::trace!("Collecting SPIRV for shader '{shader_name}'");
-                    let file_data = std::fs::read(shader_file.path)?;
-                    let entry = aleph_shader_db::ShaderPlatformEntry {
-                        parameter_blocks,
-                        push_constants,
-                        bytes: file_data,
-                    };
-
-                    if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                        db_entry.spirv = Some(entry);
-                    } else {
-                        shader_db.shaders.insert(
-                            shader_name,
-                            aleph_shader_db::ShaderEntry {
-                                shader_type: shader_file.shader_type.into(),
-                                spirv: Some(entry),
-                                dxil: None,
-                                msl: None,
-                            },
-                        );
-                    }
-
-                    let refl_data = std::fs::read_to_string(&shader_file.reflection_path)?;
-                    let mut refl =
-                        serde_json::from_str::<aleph_slang_reflection::Root>(&refl_data)?;
-                    refl.normalize();
-                }
-                crate::shader_system::ShaderFileFormat::Msl => {
-                    log::trace!("Collecting MSL for shader '{shader_name}'");
-                    let file_data = std::fs::read(shader_file.path)?;
-                    let entry = aleph_shader_db::ShaderPlatformEntry {
-                        parameter_blocks,
-                        push_constants,
-                        bytes: file_data,
-                    };
-
-                    if let Some(db_entry) = shader_db.shaders.get_mut(&shader_name) {
-                        db_entry.msl = Some(entry);
-                    } else {
-                        shader_db.shaders.insert(
-                            shader_name,
-                            aleph_shader_db::ShaderEntry {
-                                shader_type: shader_file.shader_type.into(),
-                                spirv: None,
-                                dxil: None,
-                                msl: Some(entry),
-                            },
-                        );
-                    }
-                }
+                crate::shader_system::ShaderFileFormat::Dxil => entry.dxil = Some(file_data),
+                crate::shader_system::ShaderFileFormat::Spirv => entry.spirv = Some(file_data),
+                crate::shader_system::ShaderFileFormat::Msl => entry.msl = Some(file_data),
             }
         }
     }
 
     Ok(())
+}
+
+fn insert_or_init_entry<'a>(
+    shader_db: &'a mut ShaderDatabase,
+    shader_file: &ShaderFile,
+    shader_name: String,
+    parameter_blocks: Vec<ParameterBlockDesc>,
+    push_constants: Option<u64>,
+) -> &'a mut ShaderEntry {
+    let entry = match shader_db.shaders.entry(shader_name) {
+        Entry::Occupied(entry) => {
+            let entry = entry.into_mut();
+            assert_eq!(
+                &entry.push_constants, &push_constants,
+                "Push constants mismatch"
+            );
+            assert_eq!(
+                &entry.parameter_blocks, &parameter_blocks,
+                "Parameter blocks mismatch"
+            );
+            entry
+        }
+        Entry::Vacant(entry) => entry.insert(ShaderEntry {
+            shader_type: shader_file.shader_type.into(),
+            parameter_blocks,
+            push_constants,
+            ..Default::default()
+        }),
+    };
+    entry
 }

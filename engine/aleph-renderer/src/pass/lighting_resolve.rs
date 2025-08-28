@@ -194,10 +194,15 @@ impl LightResolveState {
     }
 
     pub fn new(cache: &mut StateCache, device: &dyn IDevice) -> Self {
-        let block_layout = Self::create_block_layout(device);
+        let shader_module = cache
+            .shader_db()
+            .load_stage(shaders::deferred::deferred_lighting_cs())
+            .unwrap();
+
+        let block_layout = Self::create_block_layout(device, shader_module);
         let binding_signature = Self::create_binding_signature(device, block_layout.as_ref());
         let pipeline =
-            Self::create_pipeline_state(device, binding_signature.as_ref(), cache.shader_db());
+            Self::create_pipeline_state(device, binding_signature.as_ref(), shader_module);
 
         Self {
             block_layout,
@@ -206,22 +211,21 @@ impl LightResolveState {
         }
     }
 
-    pub fn create_block_layout(device: &dyn IDevice) -> AnyArc<dyn IParameterBlockLayout> {
-        device
-            .create_parameter_block_layout(&ParameterBlockDesc {
-                params: &[
-                    ParameterType::Texture2D.param(),
-                    ParameterType::Texture2D.param(),
-                    ParameterType::Texture2D.param(),
-                    ParameterType::Texture2D.param(),
-                    ParameterType::RWTexture2D.param(),
-                    ParameterType::ConstantBuffer.param(),
-                ],
-                visibility: DescriptorShaderVisibility::Compute,
-                flags: Default::default(),
-                name: obj_name_opt!("ParameterBlockLayout"),
-            })
-            .unwrap()
+    pub fn create_block_layout(
+        device: &dyn IDevice,
+        shader: &dyn IShaderCodeSource,
+    ) -> AnyArc<dyn IParameterBlockLayout> {
+        let mut params = Vec::new();
+        params.resize_with(shader.get_parameter_count_for_block(0), Default::default);
+        shader.get_parameters_for_block(0, &mut params);
+
+        let desc = ParameterBlockDesc {
+            params: &params,
+            visibility: shader.shader_type().into(),
+            flags: Default::default(),
+            name: obj_name_opt!("ParameterBlockLayout"),
+        };
+        device.create_parameter_block_layout(&desc).unwrap()
     }
 
     pub fn create_binding_signature(
@@ -240,11 +244,8 @@ impl LightResolveState {
     pub fn create_pipeline_state(
         device: &dyn IDevice,
         binding_signature: &dyn IBindingSignature,
-        shader_db: &dyn IShaderAccessor,
+        shader_module: &dyn IShaderCodeSource,
     ) -> ComputePipelineHandle {
-        let shader_module = shader_db
-            .load_data(shaders::deferred::deferred_lighting_cs())
-            .unwrap();
         device
             .create_compute_pipeline(&ComputePipelineDesc {
                 shader_module,

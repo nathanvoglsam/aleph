@@ -47,29 +47,30 @@ pub fn pass(
     pin_board: &PinBoard,
     state_cache: &mut StateCache,
 ) -> RenderPlaneOutput {
-    let block_layout = device
-        .create_parameter_block_layout(&ParameterBlockDesc {
-            params: &[
-                ParameterType::Texture2D.param(),
-                ParameterType::RWTexture2D.param(),
-            ],
-            visibility: DescriptorShaderVisibility::Compute,
-            flags: Default::default(),
-            name: obj_name_opt!("TonemapParameterBlockLayout"),
-        })
-        .unwrap();
-    let binding_signature = device
-        .create_binding_signature(
-            &BindingSignatureDesc::new()
-                .with_parameter_block_layouts(&[block_layout.as_ref()])
-                .with_name(obj_name!("TonemapLightingBindingSignature")),
-        )
-        .unwrap();
-
     let shader_module = state_cache
         .shader_db()
-        .load_data(shaders::postprocess::tonemapping_cs())
+        .load_stage(shaders::postprocess::tonemapping_cs())
         .unwrap();
+
+    let mut params = Vec::new();
+    params.resize_with(
+        shader_module.get_parameter_count_for_block(0),
+        Default::default,
+    );
+    shader_module.get_parameters_for_block(0, &mut params);
+    let desc = ParameterBlockDesc {
+        params: &params,
+        visibility: shader_module.shader_type().into(),
+        flags: Default::default(),
+        name: obj_name_opt!("TonemapParameterBlockLayout"),
+    };
+    let block_layout = device.create_parameter_block_layout(&desc).unwrap();
+
+    let parameter_block_layouts = [block_layout.as_ref()];
+    let desc = BindingSignatureDesc::new()
+        .with_parameter_block_layouts(&parameter_block_layouts)
+        .with_name(obj_name!("TonemapLightingBindingSignature"));
+    let binding_signature = device.create_binding_signature(&desc).unwrap();
 
     let pipeline = device
         .create_compute_pipeline(&ComputePipelineDesc {

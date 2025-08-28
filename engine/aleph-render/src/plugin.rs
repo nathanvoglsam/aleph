@@ -127,7 +127,7 @@ impl IPlugin for PluginRender {
             .leak(); // Leak so we get a static lifetime
         let shader_db = unsafe { rkyv::access_unchecked::<ArchivedShaderDatabase>(shader_db_bin) };
         shader_db.validate_header();
-        let shader_db = ShaderAccessor::new(device.as_ref(), shader_db);
+        let shader_db = ShaderAccessor::new(shader_db);
 
         let mut renderer = RendererBuilder::new();
         renderer.device(device.clone());

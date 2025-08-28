@@ -328,15 +328,16 @@ impl IDevice for Device {
             let alloc_adapter = callbacks_from_rust_allocator(bump.allocator());
             let mut shader_modules =
                 BVec::with_capacity_in(desc.shader_stages.len(), bump.allocator());
-            for (i, v) in desc.shader_stages.iter().enumerate() {
+            for (i, v) in desc.shader_stages.iter().copied().enumerate() {
+                let stage = v.shader_type();
                 let module = unsafe {
-                    let shader_data = Self::unwrap_shader_bytecode(&bump, i, &v.data)?;
+                    let shader_data = Self::unwrap_shader_bytecode(&bump, i, v)?;
                     let create_info = vk::ShaderModuleCreateInfo::default().code(shader_data);
                     self.device
                         .create_shader_module(&create_info, Some(&alloc_adapter))
                         .map_err(|v| log::error!("Platform Error: {:#?}", v))?
                 };
-                shader_modules.push((v.stage, module));
+                shader_modules.push((stage, module));
             }
 
             let mut stages = BVec::with_capacity_in(shader_modules.len(), bump.allocator());
@@ -397,7 +398,7 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            let shader_data = Self::unwrap_shader_bytecode(&bump, 0, &desc.shader_module)?;
+            let shader_data = Self::unwrap_shader_bytecode(&bump, 0, desc.shader_module)?;
             let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
             // Create a temporary shader module using
@@ -1184,25 +1185,23 @@ impl Device {
     fn unwrap_shader_bytecode<'a>(
         bump: &'a Blink,
         index: usize,
-        shader: &ShaderBinary,
+        shader: &dyn IShaderCodeSource,
     ) -> Result<&'a [u32], PipelineCreateError> {
-        if let ShaderBinary::Spirv(data) = shader {
-            // Vulkan shaders must always have a buffer length that is a multiple of 4. SPIR-V's binary
-            // representation is a sequence of u32 values.
-            if data.len() % 4 != 0 || data.is_empty() {
-                return Err(PipelineCreateError::InvalidInputSize(index, data.len()));
-            }
+        let data = shader.get_spirv();
 
-            // We need to copy the data into a u32 buffer to satisfy alignment requirements
-            let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
-            let mut data = BVec::new_in(bump.allocator());
-            data.extend(data_iter);
-            let data = BVec::leak(data);
-
-            Ok(&*data)
-        } else {
-            Err(PipelineCreateError::UnsupportedShaderFormat(index))
+        // Vulkan shaders must always have a buffer length that is a multiple of 4. SPIR-V's binary
+        // representation is a sequence of u32 values.
+        if data.len() % 4 != 0 || data.is_empty() {
+            return Err(PipelineCreateError::InvalidInputSize(index, data.len()));
         }
+
+        // We need to copy the data into a u32 buffer to satisfy alignment requirements
+        let data_iter = data.chunks_exact(4).map(NativeEndian::read_u32);
+        let mut data = BVec::new_in(bump.allocator());
+        data.extend(data_iter);
+        let data = BVec::leak(data);
+
+        Ok(&*data)
     }
 
     fn translate_vertex_bindings<'a>(

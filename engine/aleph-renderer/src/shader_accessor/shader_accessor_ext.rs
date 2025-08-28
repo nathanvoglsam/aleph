@@ -31,44 +31,22 @@ use aleph_rhi_api::*;
 use aleph_shader_db::*;
 
 use crate::IShaderAccessor;
-use crate::shader_accessor::map_shader_type;
 
 pub trait IShaderAccessorExt: IShaderAccessor {
-    fn load_stage<'a, S: aleph_shader_db::ShaderStage>(
+    fn load_stage<'a, S: ShaderStage>(
         &'a self,
         name: ShaderName<'_, S>,
-    ) -> Option<aleph_rhi_api::ShaderStage<'a>>;
-
-    fn load_data<'a, S: aleph_shader_db::ShaderStage>(
-        &'a self,
-        name: ShaderName<'_, S>,
-    ) -> Option<ShaderBinary<'a>>;
+    ) -> Option<&'a dyn IShaderCodeSource>;
 }
 
 impl<T: IShaderAccessor + ?Sized> IShaderAccessorExt for T {
-    fn load_stage<'a, S: aleph_shader_db::ShaderStage>(
+    fn load_stage<'a, S: ShaderStage>(
         &'a self,
         name: ShaderName<'_, S>,
-    ) -> Option<aleph_rhi_api::ShaderStage<'a>> {
+    ) -> Option<&'a dyn IShaderCodeSource> {
         let loaded = self.get_stage_by_name(name.into())?;
-        if map_shader_type(S::SHADER_TYPE) == loaded.stage {
-            let out = aleph_rhi_api::ShaderStage {
-                stage: map_shader_type(S::SHADER_TYPE),
-                data: loaded.data,
-            };
-            Some(out)
-        } else {
-            None
-        }
-    }
-
-    fn load_data<'a, S: aleph_shader_db::ShaderStage>(
-        &'a self,
-        name: ShaderName<'_, S>,
-    ) -> Option<ShaderBinary<'a>> {
-        let loaded = self.get_stage_by_name(name.into())?;
-        if map_shader_type(S::SHADER_TYPE) == loaded.stage {
-            Some(loaded.data)
+        if S::API_SHADER_TYPE == loaded.shader_type() {
+            Some(loaded)
         } else {
             None
         }

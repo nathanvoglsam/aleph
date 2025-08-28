@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::{IShaderDatabase, IShaderEntry, ShaderName, ShaderStage};
+use crate::{IShaderDatabase, ShaderName, ShaderStage};
+use aleph_rhi_api::IShaderCodeSource;
 
 pub trait IShaderDatabaseExt: IShaderDatabase {
     fn get<T: ShaderStage>(&self, name: ShaderName<T>) -> Option<&Self::Entry>;
@@ -36,7 +37,7 @@ pub trait IShaderDatabaseExt: IShaderDatabase {
 impl<T: IShaderDatabase + ?Sized> IShaderDatabaseExt for T {
     fn get<S: ShaderStage>(&self, name: ShaderName<S>) -> Option<&Self::Entry> {
         self.get_by_name(name.v).and_then(|v| {
-            if v.get_shader_type() == S::SHADER_TYPE {
+            if v.shader_type() == S::API_SHADER_TYPE {
                 Some(v)
             } else {
                 None

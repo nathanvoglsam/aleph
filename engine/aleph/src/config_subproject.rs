@@ -28,8 +28,8 @@
 //
 
 use allocator_api2::alloc::Global;
-use blink_alloc::{Blink, BlinkAlloc};
 use allocator_api2::vec::Vec as BVec;
+use blink_alloc::{Blink, BlinkAlloc};
 use camino::Utf8Path;
 use cargo_metadata::Package;
 

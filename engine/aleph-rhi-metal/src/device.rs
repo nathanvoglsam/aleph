@@ -193,7 +193,7 @@ impl IDevice for Device {
         let mtl_desc = MTLRenderPipelineDescriptor::new();
 
         for stage in desc.shader_stages {
-            match stage.stage {
+            match stage.shader_type() {
                 ShaderType::Compute => panic!("Graphics pipelines can't use compute shaders!"),
                 ShaderType::Vertex => {
                     // todo: get this from the shader bytes

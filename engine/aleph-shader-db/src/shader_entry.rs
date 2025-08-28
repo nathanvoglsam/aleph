@@ -27,108 +27,117 @@
 // SOFTWARE.
 //
 
-use crate::{ArchivedParameterBlockDesc, IParameterBlockDesc, ParameterBlockDesc, ShaderType};
+use crate::{ParameterBlockDesc, ShaderType};
+use aleph_rhi_api::{IShaderCodeSource, ParameterArraySize, ParameterDesc, PushConstantBlock};
 
-pub trait IShaderEntry {
-    type PlatformEntry: IShaderPlatformEntry;
-    fn get_shader_type(&self) -> ShaderType;
-    fn get_spirv(&self) -> &Self::PlatformEntry;
-    fn get_dxil(&self) -> &Self::PlatformEntry;
-    fn get_msl(&self) -> &Self::PlatformEntry;
-}
-
-pub trait IShaderPlatformEntry {
-    type ParamBlockDesc: IParameterBlockDesc;
-    fn get_parameter_blocks(&self) -> &[Self::ParamBlockDesc];
-    fn get_push_constant_block(&self) -> Option<u64>;
-    fn get_bytes(&self) -> &[u8];
-}
-
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
+#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Default)]
 pub struct ShaderEntry {
     pub shader_type: ShaderType,
-    pub spirv: Option<ShaderPlatformEntry>,
-    pub dxil: Option<ShaderPlatformEntry>,
-    pub msl: Option<ShaderPlatformEntry>,
+    pub parameter_blocks: Vec<ParameterBlockDesc>,
+    pub push_constants: Option<u64>,
+    pub spirv: Option<Vec<u8>>,
+    pub dxil: Option<Vec<u8>>,
+    pub msl: Option<Vec<u8>>,
 }
 
-impl IShaderEntry for ShaderEntry {
-    type PlatformEntry = ShaderPlatformEntry;
-
-    #[inline]
-    fn get_shader_type(&self) -> ShaderType {
-        self.shader_type
-    }
-
-    fn get_spirv(&self) -> &Self::PlatformEntry {
-        self.spirv.as_ref().unwrap()
-    }
-
-    fn get_dxil(&self) -> &Self::PlatformEntry {
-        self.dxil.as_ref().unwrap()
-    }
-
-    fn get_msl(&self) -> &Self::PlatformEntry {
-        self.msl.as_ref().unwrap()
-    }
-}
-
-impl IShaderEntry for ArchivedShaderEntry {
-    type PlatformEntry = ArchivedShaderPlatformEntry;
-
-    #[inline]
-    fn get_shader_type(&self) -> ShaderType {
+unsafe impl IShaderCodeSource for ShaderEntry {
+    fn shader_type(&self) -> aleph_rhi_api::ShaderType {
         self.shader_type.into()
     }
 
-    fn get_spirv(&self) -> &Self::PlatformEntry {
-        self.spirv.as_ref().unwrap()
+    fn shader_name(&self) -> &str {
+        todo!()
     }
 
-    fn get_dxil(&self) -> &Self::PlatformEntry {
-        self.dxil.as_ref().unwrap()
+    fn get_spirv(&self) -> &[u8] {
+        self.spirv.as_ref().unwrap().as_slice()
     }
 
-    fn get_msl(&self) -> &Self::PlatformEntry {
-        self.msl.as_ref().unwrap()
-    }
-}
-
-#[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
-pub struct ShaderPlatformEntry {
-    pub parameter_blocks: Vec<ParameterBlockDesc>,
-    pub push_constants: Option<u64>,
-    pub bytes: Vec<u8>,
-}
-
-impl IShaderPlatformEntry for ShaderPlatformEntry {
-    type ParamBlockDesc = ParameterBlockDesc;
-
-    fn get_parameter_blocks(&self) -> &[Self::ParamBlockDesc] {
-        self.parameter_blocks.as_slice()
+    fn get_dxil(&self) -> &[u8] {
+        self.dxil.as_ref().unwrap().as_slice()
     }
 
-    fn get_push_constant_block(&self) -> Option<u64> {
+    fn get_msl(&self) -> &[u8] {
+        self.msl.as_ref().unwrap().as_slice()
+    }
+
+    fn get_parameter_block_count(&self) -> usize {
+        self.parameter_blocks.len()
+    }
+
+    fn get_parameter_count_for_block(&self, block: usize) -> usize {
+        self.parameter_blocks[block].parameters.len()
+    }
+
+    fn get_parameters_for_block(&self, block: usize, dst: &mut [ParameterDesc]) {
+        let src = self.parameter_blocks[block].parameters.iter();
+        for (i, s) in src.enumerate() {
+            dst[i] = ParameterDesc {
+                ty: s.ty.into(),
+                array_size: ParameterArraySize::new(s.array_size),
+                structured_buffer_stride: 0,
+            };
+        }
+    }
+
+    fn get_push_constant_block(&self) -> Option<PushConstantBlock> {
         self.push_constants
-    }
-
-    fn get_bytes(&self) -> &[u8] {
-        self.bytes.as_slice()
+            .as_ref()
+            .map(|v| {
+                let v: u8 = (*v).try_into().ok()?;
+                PushConstantBlock::new(v)
+            })
+            .flatten()
     }
 }
 
-impl IShaderPlatformEntry for ArchivedShaderPlatformEntry {
-    type ParamBlockDesc = ArchivedParameterBlockDesc;
-
-    fn get_parameter_blocks(&self) -> &[Self::ParamBlockDesc] {
-        self.parameter_blocks.as_slice()
+unsafe impl IShaderCodeSource for ArchivedShaderEntry {
+    fn shader_type(&self) -> aleph_rhi_api::ShaderType {
+        self.shader_type.into()
     }
 
-    fn get_push_constant_block(&self) -> Option<u64> {
-        self.push_constants.as_ref().map(|v| v.to_native())
+    fn shader_name(&self) -> &str {
+        todo!()
     }
 
-    fn get_bytes(&self) -> &[u8] {
-        self.bytes.as_slice()
+    fn get_spirv(&self) -> &[u8] {
+        self.spirv.as_ref().unwrap().as_slice()
+    }
+
+    fn get_dxil(&self) -> &[u8] {
+        self.dxil.as_ref().unwrap().as_slice()
+    }
+
+    fn get_msl(&self) -> &[u8] {
+        self.msl.as_ref().unwrap().as_slice()
+    }
+
+    fn get_parameter_block_count(&self) -> usize {
+        self.parameter_blocks.len()
+    }
+
+    fn get_parameter_count_for_block(&self, block: usize) -> usize {
+        self.parameter_blocks[block].parameters.len()
+    }
+
+    fn get_parameters_for_block(&self, block: usize, dst: &mut [ParameterDesc]) {
+        let src = self.parameter_blocks[block].parameters.iter();
+        for (i, s) in src.enumerate() {
+            dst[i] = ParameterDesc {
+                ty: s.ty.into(),
+                array_size: ParameterArraySize::new(s.array_size.to_native()),
+                structured_buffer_stride: 0,
+            };
+        }
+    }
+
+    fn get_push_constant_block(&self) -> Option<PushConstantBlock> {
+        self.push_constants
+            .as_ref()
+            .map(|v| {
+                let v: u8 = v.to_native().try_into().ok()?;
+                PushConstantBlock::new(v)
+            })
+            .flatten()
     }
 }

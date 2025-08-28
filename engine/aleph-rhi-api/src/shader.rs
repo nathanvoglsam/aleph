@@ -29,16 +29,6 @@
 
 use crate::*;
 
-/// An enumeration of the supported set of shader input types.
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum ShaderBinary<'a> {
-    /// This variant encloses a SPIR-V binary. Only supported by the `Vulkan` backend.
-    Spirv(&'a [u8]),
-
-    /// This variant encloses a DXIL binary. Only supported by the `D3D12` backend.
-    Dxil(&'a [u8]),
-}
-
 /// An enumeration of all individual shader types
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum ShaderType {
@@ -121,21 +111,14 @@ pub unsafe trait IShaderCodeSource {
     fn shader_name(&self) -> &str;
 
     /// Returns a reference to shader code appropriate for consumption by `Vulkan`.
-    fn get_vulkan(&self) -> &dyn IShaderPlatformData;
+    fn get_spirv(&self) -> &[u8];
 
     /// Returns a reference to shader code appropriate for consumption by `D3D12`.
-    fn get_d3d12(&self) -> &dyn IShaderPlatformData;
+    fn get_dxil(&self) -> &[u8];
 
     /// Returns a reference to shader code appropriate for consumption by `Metal`.
-    fn get_metal(&self) -> &dyn IShaderPlatformData;
-}
+    fn get_msl(&self) -> &[u8];
 
-/// Accessor interface for an individual target platform's shader data.
-///
-/// # Safety
-///
-/// See [`IShaderCodeSource`] documentation.
-pub unsafe trait IShaderPlatformData {
     /// Returns the number of parameter blocks the associated shader uses.
     fn get_parameter_block_count(&self) -> usize;
 
@@ -155,7 +138,4 @@ pub unsafe trait IShaderPlatformData {
     /// Returns the reflected push constant block description. If the shader does not use a push
     /// constant block then this will return `None`.
     fn get_push_constant_block(&self) -> Option<PushConstantBlock>;
-
-    /// Returns a reference to the shader code appropriate for consumption by the target API.
-    fn get_code(&self) -> &[u8];
 }

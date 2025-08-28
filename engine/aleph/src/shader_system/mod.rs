@@ -30,12 +30,12 @@
 pub mod reflection;
 mod subproject;
 
-use std::borrow::Cow;
-use std::collections::HashMap;
-
 use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::fmt::Formatter;
 pub use subproject::{
     ShaderCrateContext, ShaderModuleContext, ShaderProjectContext, ShaderSubproject,
 };
@@ -152,6 +152,19 @@ impl ShaderFileFormat {
     }
 }
 
+impl std::fmt::Display for ShaderFileFormat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let v = match self {
+            Self::Hlsl => "HLSL",
+            Self::Slang => "Slang",
+            Self::Msl => "MSL",
+            Self::Dxil => "DXIL",
+            Self::Spirv => "SPIR-V",
+        };
+        f.write_str(v)
+    }
+}
+
 /// Enumeration of all shader bytecode targets. This does not include variants for _source_ files
 /// like hlsl or slang. See [`ShaderFileFormat`] for source formats.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -164,6 +177,17 @@ pub enum ShaderTargetLanguage {
 
     /// The MSL format for consumption by Metal
     Msl,
+}
+
+impl std::fmt::Display for ShaderTargetLanguage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let v = match self {
+            Self::Msl => "MSL",
+            Self::Dxil => "DXIL",
+            Self::Spirv => "SPIR-V",
+        };
+        f.write_str(v)
+    }
 }
 
 #[derive(Default, Serialize, Deserialize)]

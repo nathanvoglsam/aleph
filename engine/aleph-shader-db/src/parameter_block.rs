@@ -27,16 +27,6 @@
 // SOFTWARE.
 //
 
-pub trait IParameterDesc {
-    fn get_type(&self) -> ParameterType;
-    fn get_array_size(&self) -> u64;
-}
-
-pub trait IParameterBlockDesc {
-    type ParamDesc: IParameterDesc;
-    fn get_parameters(&self) -> &[Self::ParamDesc];
-}
-
 #[derive(
     rkyv::Archive,
     rkyv::Serialize,
@@ -81,37 +71,59 @@ pub enum ParameterType {
     AccelerationStructure,
 }
 
-impl Into<ParameterType> for ArchivedParameterType {
-    fn into(self) -> ParameterType {
-        match self {
-            Self::ConstantBuffer => ParameterType::ConstantBuffer,
-            Self::StructuredBuffer => ParameterType::StructuredBuffer,
-            Self::RWStructuredBuffer => ParameterType::RWStructuredBuffer,
-            Self::ByteAddressBuffer => ParameterType::ByteAddressBuffer,
-            Self::RWByteAddressBuffer => ParameterType::RWByteAddressBuffer,
-            Self::Buffer => ParameterType::Buffer,
-            Self::RWBuffer => ParameterType::RWBuffer,
-            Self::Texture1D => ParameterType::Texture1D,
-            Self::RWTexture1D => ParameterType::RWTexture1D,
-            Self::Texture2D => ParameterType::Texture2D,
-            Self::RWTexture2D => ParameterType::RWTexture2D,
-            Self::Texture3D => ParameterType::Texture3D,
-            Self::RWTexture3D => ParameterType::RWTexture3D,
-            Self::Texture1DArray => ParameterType::Texture1DArray,
-            Self::RWTexture1DArray => ParameterType::RWTexture1DArray,
-            Self::Texture2DArray => ParameterType::Texture2DArray,
-            Self::RWTexture2DArray => ParameterType::RWTexture2DArray,
-            Self::Texture3DArray => ParameterType::Texture3DArray,
-            Self::RWTexture3DArray => ParameterType::RWTexture3DArray,
-            Self::Texture2DMS => ParameterType::Texture2DMS,
-            Self::RWTexture2DMS => ParameterType::RWTexture2DMS,
-            Self::Texture2DMSArray => ParameterType::Texture2DMSArray,
-            Self::RWTexture2DMSArray => ParameterType::RWTexture2DMSArray,
-            Self::TextureCube => ParameterType::TextureCube,
-            Self::TextureCubeArray => ParameterType::TextureCubeArray,
-            Self::SamplerState => ParameterType::SamplerState,
-            Self::AccelerationStructure => ParameterType::AccelerationStructure,
+macro_rules! convert_parameter_type_match {
+    ($sself: ident, $dst_t: path) => {{
+        type T = $dst_t;
+        match $sself {
+            Self::ConstantBuffer => T::ConstantBuffer,
+            Self::StructuredBuffer => T::StructuredBuffer,
+            Self::RWStructuredBuffer => T::RWStructuredBuffer,
+            Self::ByteAddressBuffer => T::ByteAddressBuffer,
+            Self::RWByteAddressBuffer => T::RWByteAddressBuffer,
+            Self::Buffer => T::Buffer,
+            Self::RWBuffer => T::RWBuffer,
+            Self::Texture1D => T::Texture1D,
+            Self::RWTexture1D => T::RWTexture1D,
+            Self::Texture2D => T::Texture2D,
+            Self::RWTexture2D => T::RWTexture2D,
+            Self::Texture3D => T::Texture3D,
+            Self::RWTexture3D => T::RWTexture3D,
+            Self::Texture1DArray => T::Texture1DArray,
+            Self::RWTexture1DArray => T::RWTexture1DArray,
+            Self::Texture2DArray => T::Texture2DArray,
+            Self::RWTexture2DArray => T::RWTexture2DArray,
+            Self::Texture3DArray => T::Texture3DArray,
+            Self::RWTexture3DArray => T::RWTexture3DArray,
+            Self::Texture2DMS => T::Texture2DMS,
+            Self::RWTexture2DMS => T::RWTexture2DMS,
+            Self::Texture2DMSArray => T::Texture2DMSArray,
+            Self::RWTexture2DMSArray => T::RWTexture2DMSArray,
+            Self::TextureCube => T::TextureCube,
+            Self::TextureCubeArray => T::TextureCubeArray,
+            Self::SamplerState => T::SamplerState,
+            Self::AccelerationStructure => T::AccelerationStructure,
         }
+    }};
+}
+
+impl Into<ParameterType> for ArchivedParameterType {
+    #[inline]
+    fn into(self) -> ParameterType {
+        convert_parameter_type_match!(self, ParameterType)
+    }
+}
+
+impl Into<aleph_rhi_api::ParameterType> for ParameterType {
+    #[inline]
+    fn into(self) -> aleph_rhi_api::ParameterType {
+        convert_parameter_type_match!(self, aleph_rhi_api::ParameterType)
+    }
+}
+
+impl Into<aleph_rhi_api::ParameterType> for ArchivedParameterType {
+    #[inline]
+    fn into(self) -> aleph_rhi_api::ParameterType {
+        convert_parameter_type_match!(self, aleph_rhi_api::ParameterType)
     }
 }
 
@@ -126,44 +138,8 @@ pub struct ParameterDesc {
     pub array_size: u64,
 }
 
-impl IParameterDesc for ParameterDesc {
-    fn get_type(&self) -> ParameterType {
-        self.ty
-    }
-
-    fn get_array_size(&self) -> u64 {
-        self.array_size
-    }
-}
-
-impl IParameterDesc for ArchivedParameterDesc {
-    fn get_type(&self) -> ParameterType {
-        self.ty.into()
-    }
-
-    fn get_array_size(&self) -> u64 {
-        self.array_size.to_native()
-    }
-}
-
 #[derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct ParameterBlockDesc {
     /// Ordered list of parameters that make up the parameter block.
     pub parameters: Vec<ParameterDesc>,
-}
-
-impl IParameterBlockDesc for ParameterBlockDesc {
-    type ParamDesc = ParameterDesc;
-
-    fn get_parameters(&self) -> &[Self::ParamDesc] {
-        self.parameters.as_slice()
-    }
-}
-
-impl IParameterBlockDesc for ArchivedParameterBlockDesc {
-    type ParamDesc = ArchivedParameterDesc;
-
-    fn get_parameters(&self) -> &[Self::ParamDesc] {
-        self.parameters.as_slice()
-    }
 }

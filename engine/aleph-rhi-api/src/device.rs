@@ -449,14 +449,6 @@ pub enum PipelineCreateError {
     #[error("The shader [{0}] binary size '{1}' is invalid")]
     InvalidInputSize(usize, usize),
 
-    /// This error occurs when a shader binary is provided in a format not supported by the active
-    /// backend.
-    ///
-    /// The `Vulkan` backend can only accept SPIR-V shaders, while the `D3D12` backend can only
-    /// accept DXIL shaders.
-    #[error("The shader [{0}] binary is of unsupported format")]
-    UnsupportedShaderFormat(usize),
-
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }

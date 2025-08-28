@@ -98,8 +98,8 @@ pub fn create_fullscreen_triangle_pipeline(
     device: &dyn IDevice,
     binding_signature: &dyn IBindingSignature,
     format: Format,
-    vertex_shader: ShaderStage,
-    fragment_shader: ShaderStage,
+    vertex_shader: &dyn IShaderCodeSource,
+    fragment_shader: &dyn IShaderCodeSource,
     name: Option<&str>,
 ) -> Result<GraphicsPipelineHandle, PipelineCreateError> {
     let vertex_layout = VertexInputStateDesc::default();
