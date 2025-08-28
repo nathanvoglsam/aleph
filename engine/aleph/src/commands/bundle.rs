@@ -32,7 +32,7 @@ use std::process::Command;
 use aleph_target::Profile;
 use aleph_target::build::target_platform;
 use anyhow::anyhow;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 
@@ -238,7 +238,7 @@ impl Bundle {
 
         if output_dir.exists() {
             // Build the base level project context for our shader build system
-            let arena = Bump::new();
+            let arena = Blink::new();
             let project_ctx = ShaderSubproject::load(&arena, project)?;
 
             let src_file = project_ctx.meta.output_root.join("shaders.shaderdb");
@@ -326,7 +326,7 @@ impl Bundle {
 
         if uwp_project_root.exists() {
             // Build the base level project context for our shader build system
-            let arena = Bump::new();
+            let arena = Blink::new();
             let project_ctx = ShaderSubproject::load(&arena, project)?;
 
             let src_file = project_ctx.meta.output_root.join("shaders.shaderdb");

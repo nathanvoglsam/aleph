@@ -30,7 +30,7 @@
 use std::collections::HashSet;
 
 use anyhow::anyhow;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use clap::ArgMatches;
 use tera::{Context, Tera};
 
@@ -53,7 +53,7 @@ impl ISubcommand for GenConfigs {
     }
 
     fn exec(&mut self, project: &AlephProject, mut _matches: ArgMatches) -> anyhow::Result<()> {
-        let arena = Bump::new();
+        let arena = Blink::new();
 
         let project_ctx = ConfigSubproject::load(&arena, project)?;
 

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use serde::{Deserialize, Serialize};
 
 use crate::project::AlephProject;
@@ -85,7 +85,7 @@ pub struct StandardSettings {
 
 impl StandardSettings {
     pub fn from_project(project: &AlephProject) -> anyhow::Result<Self> {
-        let arena = Bump::new();
+        let arena = Blink::new();
         let shaders_ctx = ShaderSubproject::load(&arena, project)?;
 
         let slangd_exe = project.slang_path().parent().unwrap().join("slangd");

@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use bumpalo::Bump;
-use bumpalo::collections::Vec as BVec;
+use allocator_api2::alloc::Global;
+use blink_alloc::{Blink, BlinkAlloc};
+use allocator_api2::vec::Vec as BVec;
 use camino::Utf8Path;
 use cargo_metadata::Package;
 
@@ -48,7 +49,7 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
 
     type ModuleMeta = ();
 
-    fn load_project(arena: &'a Bump, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta> {
+    fn load_project(arena: &'a Blink, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta> {
         let configs_root = arena.alloc_utf8_path(ctx.configs_build_path());
 
         Ok(ConfigProjectMeta { configs_root })
@@ -60,19 +61,20 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
     }
 
     fn load_crate(
-        arena: &'a Bump,
+        arena: &'a Blink,
         _ctx: &AlephProject,
         project_ctx: &SubprojectProjectContext<'a, Self>,
         package: &Package,
         metadata: &AlephCrateMetadata,
     ) -> anyhow::Result<Self::CrateMeta> {
-        let config_names =
-            arena.alloc_slice_fill_iter(metadata.configs.iter().map(|v| &*arena.alloc_str(v)));
+        let mut config_names = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        config_names.extend(metadata.configs.iter().map(|v| &*arena.copy_str(v)));
+        let config_names = BVec::leak(config_names);
 
         let config_dir = package.manifest_path.parent().unwrap().join("config");
         let config_dir = arena.alloc_utf8_path(simplified(&config_dir));
 
-        let configs = arena.alloc_slice_fill_iter(metadata.configs.iter().map(|v| {
+        let iter = metadata.configs.iter().map(|v| {
             let dst = project_ctx.meta.configs_root.join(v).with_extension("js");
             let dst = arena.alloc_utf8_path(simplified(&dst));
 
@@ -80,7 +82,10 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
             let src = arena.alloc_utf8_path(simplified(&src));
 
             ConfigPair { src, dst }
-        }));
+        });
+        let mut configs = BVec::with_capacity_in(metadata.configs.len(), arena.allocator());
+        configs.extend(iter);
+        let configs = BVec::leak(configs);
 
         Ok(ConfigCrateMeta {
             config_dir,
@@ -91,15 +96,15 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
     }
 
     fn get_module_names(
-        arena: &'a Bump,
+        arena: &'a Blink,
         _package: &Package,
         _metadata: &AlephCrateMetadata,
-    ) -> anyhow::Result<BVec<'a, &'a str>> {
-        Ok(BVec::new_in(arena))
+    ) -> anyhow::Result<BVec<&'a str, &'a BlinkAlloc<Global>>> {
+        Ok(BVec::new_in(arena.allocator()))
     }
 
     fn load_module(
-        _arena: &'a Bump,
+        _arena: &'a Blink,
         _ctx: &AlephProject,
         _project_ctx: &SubprojectProjectContext<'a, Self>,
         _crate_ctx: &SubprojectCrateContext<'a, Self>,
@@ -113,7 +118,7 @@ impl<'a> ISubproject<'a> for ConfigSubproject {
 
 impl ConfigSubproject {
     pub fn load<'a>(
-        arena: &'a Bump,
+        arena: &'a Blink,
         ctx: &AlephProject,
     ) -> anyhow::Result<ConfigProjectContext<'a>> {
         let metadata = ProjectCrateMetadata::load(ctx)?;

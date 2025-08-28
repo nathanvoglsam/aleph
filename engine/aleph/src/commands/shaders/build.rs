@@ -30,7 +30,7 @@
 use aleph_target::Profile;
 use aleph_target::build::target_platform;
 use anyhow::anyhow;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgMatches;
 
@@ -70,7 +70,7 @@ impl ISubcommand for BuildShaderProj {
             .ok_or(anyhow!("Unknown profile \"{}\"", &profile_arg))?;
 
         // Build the base level project context for our shader build system
-        let arena = Bump::new();
+        let arena = Blink::new();
         let project_ctx = ShaderSubproject::load(&arena, project)?;
 
         ShaderSubproject::ensure_build_directories(&project_ctx)?;

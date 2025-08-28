@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use bumpalo::Bump;
-use bumpalo::collections::Vec as BVec;
+use allocator_api2::alloc::Global;
+use blink_alloc::{Blink, BlinkAlloc};
+use allocator_api2::vec::Vec as BVec;
 use camino::Utf8Path;
 use cargo_metadata::Package;
 
@@ -49,7 +50,7 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
 
     type ModuleMeta = ShaderModuleMeta<'a>;
 
-    fn load_project(arena: &'a Bump, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta> {
+    fn load_project(arena: &'a Blink, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta> {
         let output_root = arena.alloc_utf8_path(ctx.shader_build_path());
 
         let root_ninja_file = arena.alloc_utf8_path(&output_root.join("build.ninja"));
@@ -73,14 +74,14 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
     }
 
     fn load_crate(
-        arena: &'a Bump,
+        arena: &'a Blink,
         _ctx: &AlephProject,
         project_ctx: &SubprojectProjectContext<'a, Self>,
         package: &Package,
         _metadata: &AlephCrateMetadata,
     ) -> anyhow::Result<Self::CrateMeta> {
         let output_name = format!("{}-{}", &package.name, &package.version);
-        let output_name = arena.alloc_str(&output_name);
+        let output_name = arena.copy_str(&output_name);
 
         let output_dir = project_ctx.meta.output_root.join(&output_name);
         let output_dir = arena.alloc_utf8_path(&output_dir);
@@ -96,24 +97,26 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
     }
 
     fn get_module_names(
-        arena: &'a Bump,
+        arena: &'a Blink,
         _package: &Package,
         metadata: &AlephCrateMetadata,
-    ) -> anyhow::Result<BVec<'a, &'a str>> {
+    ) -> anyhow::Result<BVec<&'a str, &'a BlinkAlloc<Global>>> {
         let out = if let Some(shaders) = &metadata.shaders {
             let iter = shaders
                 .modules
                 .iter()
-                .map(|v| &*arena.alloc_str(v.as_ref()));
-            BVec::from_iter_in(iter, arena)
+                .map(|v| &*arena.copy_str(v.as_ref()));
+            let mut out = BVec::with_capacity_in(shaders.modules.len(), arena.allocator());
+            out.extend(iter);
+            out
         } else {
-            BVec::new_in(arena)
+            BVec::new_in(arena.allocator())
         };
         Ok(out)
     }
 
     fn load_module(
-        arena: &'a Bump,
+        arena: &'a Blink,
         _ctx: &AlephProject,
         _project_ctx: &SubprojectProjectContext<'a, Self>,
         crate_ctx: &SubprojectCrateContext<'a, Self>,
@@ -150,7 +153,7 @@ impl<'a> ISubproject<'a> for ShaderSubproject {
 
 impl ShaderSubproject {
     pub fn load<'a>(
-        arena: &'a Bump,
+        arena: &'a Blink,
         ctx: &AlephProject,
     ) -> anyhow::Result<ShaderProjectContext<'a>> {
         let metadata = ProjectCrateMetadata::load(ctx)?;

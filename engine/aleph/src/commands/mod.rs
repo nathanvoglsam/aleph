@@ -37,6 +37,7 @@ pub mod imgproc;
 pub mod shaders;
 mod uuid;
 
+use blink_alloc::Blink;
 pub use build::Build;
 pub use bundle::Bundle;
 use clap::{Arg, ArgMatches, Command};
@@ -112,7 +113,7 @@ impl SubcommandSet {
                         .init();
                 }
 
-                let arena = bumpalo::Bump::new();
+                let arena = Blink::new();
 
                 // Finds the 'aleph-project.toml' and deduces all the project directories against the
                 // active project.

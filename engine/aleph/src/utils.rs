@@ -33,7 +33,7 @@ use std::io::{Read, Seek};
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Platform};
 use anyhow::anyhow;
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
 use zip::ZipArchive;
 
@@ -299,12 +299,12 @@ pub mod dunce_utf8 {
 }
 
 pub trait BumpExt {
-    fn alloc_utf8_path<'a>(&'a self, v: &Utf8Path) -> &'a Utf8Path;
+    fn alloc_utf8_path(&self, v: &Utf8Path) -> &Utf8Path;
 }
 
-impl BumpExt for Bump {
-    fn alloc_utf8_path<'a>(&'a self, v: &Utf8Path) -> &'a Utf8Path {
-        let v = self.alloc_str(v.as_str());
+impl BumpExt for Blink {
+    fn alloc_utf8_path(&self, v: &Utf8Path) -> &Utf8Path {
+        let v = self.copy_str(v.as_str());
         Utf8Path::new(v)
     }
 }

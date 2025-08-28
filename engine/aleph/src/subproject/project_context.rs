@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use bumpalo::Bump;
+use blink_alloc::Blink;
 
 use crate::crate_metadata::ProjectCrateMetadata;
 use crate::project::AlephProject;
@@ -44,7 +44,7 @@ pub struct SubprojectProjectContext<'a, T: ISubproject<'a>> {
 
 impl<'a, T: ISubproject<'a>> SubprojectProjectContext<'a, T> {
     pub fn load(
-        arena: &'a Bump,
+        arena: &'a Blink,
         ctx: &AlephProject,
         metadata: &ProjectCrateMetadata,
     ) -> anyhow::Result<Self> {

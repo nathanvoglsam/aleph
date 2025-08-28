@@ -32,7 +32,7 @@ use std::collections::HashMap;
 use aleph_target::build::{target_architecture, target_platform};
 use aleph_target::{Architecture, Profile};
 use anyhow::{Context, anyhow};
-use bumpalo::Bump;
+use blink_alloc::Blink;
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::{Package, TargetKind};
 use once_cell::sync::OnceCell;
@@ -54,7 +54,7 @@ pub type CrateIdMap<'a> = HashMap<&'a str, usize>;
 #[derive(Clone)]
 pub struct AlephProject<'a> {
     /// A bump allocated arena for the project to use for w/e purpose is needed
-    arena: &'a Bump,
+    arena: &'a Blink,
 
     /// The path to the 'aleph-project.toml' file for this project
     project_file: Utf8PathBuf,
@@ -125,7 +125,7 @@ pub struct AlephProject<'a> {
 }
 
 impl<'a> AlephProject<'a> {
-    pub fn new(arena: &'a Bump) -> anyhow::Result<Self> {
+    pub fn new(arena: &'a Blink) -> anyhow::Result<Self> {
         let current_dir = std::env::current_dir()?;
         let current_dir = Utf8PathBuf::try_from(current_dir)?;
         let project_file = find_project_file(current_dir)
@@ -495,7 +495,7 @@ impl<'a> AlephProject<'a> {
             let mut crate_id_table = HashMap::with_capacity(cargo_metadata.packages.len());
             for (i, package) in cargo_metadata.packages.iter().enumerate() {
                 if !crate_id_table.contains_key(package.id.repr.as_str()) {
-                    let key = &*self.arena.alloc_str(&package.id.repr);
+                    let key = &*self.arena.copy_str(&package.id.repr);
                     crate_id_table.insert(key, i);
                 }
             }

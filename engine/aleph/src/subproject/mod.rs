@@ -32,9 +32,9 @@ mod module_context;
 mod project_context;
 
 use std::fmt::Debug;
-
-use bumpalo::Bump;
-use bumpalo::collections::Vec as BVec;
+use allocator_api2::alloc::Global;
+use blink_alloc::{Blink, BlinkAlloc};
+use allocator_api2::vec::Vec as BVec;
 use cargo_metadata::Package;
 pub use crate_context::SubprojectCrateContext;
 pub use module_context::SubprojectModuleContext;
@@ -48,12 +48,12 @@ pub trait ISubproject<'a>: Sized {
     type CrateMeta: 'a + Sized + Debug;
     type ModuleMeta: 'a + Sized + Debug;
 
-    fn load_project(arena: &'a Bump, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta>;
+    fn load_project(arena: &'a Blink, ctx: &AlephProject) -> anyhow::Result<Self::ProjectMeta>;
 
     fn retain_crate(package: &Package, metadata: &AlephCrateMetadata) -> bool;
 
     fn load_crate(
-        arena: &'a Bump,
+        arena: &'a Blink,
         ctx: &AlephProject,
         project_ctx: &SubprojectProjectContext<'a, Self>,
         package: &Package,
@@ -61,13 +61,13 @@ pub trait ISubproject<'a>: Sized {
     ) -> anyhow::Result<Self::CrateMeta>;
 
     fn get_module_names(
-        arena: &'a Bump,
+        arena: &'a Blink,
         package: &Package,
         metadata: &AlephCrateMetadata,
-    ) -> anyhow::Result<BVec<'a, &'a str>>;
+    ) -> anyhow::Result<BVec<&'a str, &'a BlinkAlloc<Global>>>;
 
     fn load_module(
-        arena: &'a Bump,
+        arena: &'a Blink,
         ctx: &AlephProject,
         project_ctx: &SubprojectProjectContext<'a, Self>,
         crate_ctx: &SubprojectCrateContext<'a, Self>,
