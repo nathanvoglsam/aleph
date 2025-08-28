@@ -150,3 +150,13 @@ pub struct ValidationImageView {
     pub image_view: ImageView,
     pub desc: ImageViewDesc,
 }
+
+impl ValidationImageView {
+    pub unsafe fn get(v: &ImageView) -> &ValidationImageView {
+        unsafe {
+            std::mem::transmute::<_, *const ValidationImageView>(*v)
+                .as_ref()
+                .unwrap()
+        }
+    }
+}

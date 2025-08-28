@@ -275,20 +275,20 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
-        first_set: u32,
-        sets: &[ParameterBlockHandle],
+        first_block: u32,
+        blocks: &[ParameterBlockHandle],
     ) {
         let binding_signature = unwrap::binding_signature(binding_signature);
         let bind_point = pipeline_bind_point_to_vk(bind_point);
 
         unsafe {
-            let new_sets: &[vk::DescriptorSet] = std::mem::transmute(sets);
+            let new_sets: &[vk::DescriptorSet] = std::mem::transmute(blocks);
 
             self._device.device.cmd_bind_descriptor_sets(
                 self._buffer,
                 bind_point,
                 binding_signature.pipeline_layout,
-                first_set,
+                first_block,
                 new_sets,
                 &[],
             );

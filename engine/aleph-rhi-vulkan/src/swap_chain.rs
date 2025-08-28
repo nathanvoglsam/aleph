@@ -305,7 +305,7 @@ impl SwapChain {
                     sample_count: 1,
                     sample_quality: 0,
                     usage: F::COPY_DEST | F::RENDER_TARGET,
-                    name: None,
+                    name: Some("Vulkan Internal SwapChain Image"),
                 };
                 let out = Texture {
                     _device: self.device.clone(),

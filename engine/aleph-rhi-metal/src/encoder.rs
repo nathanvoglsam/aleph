@@ -45,8 +45,8 @@ use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::device::Device;
-use crate::internal::conv;
 use crate::internal::image_view::ImageViewObject;
+use crate::internal::{conv, unwrap};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::texture::Texture;
 
@@ -386,9 +386,10 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
-        first_set: u32,
-        sets: &[ParameterBlockHandle],
+        first_block: u32,
+        blocks: &[ParameterBlockHandle],
     ) {
+        let binding_signature = unwrap::binding_signature(binding_signature);
         match bind_point {
             PipelineBindPoint::Compute => {
                 let _encoder = self.active.get_compute();
@@ -409,6 +410,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         base: u32,
         writes: &[ParameterWrite],
     ) {
+        let binding_signature = unwrap::binding_signature(binding_signature);
         todo!()
     }
 

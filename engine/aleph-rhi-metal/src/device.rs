@@ -157,10 +157,10 @@ impl IDevice for Device {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError> {
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         let out = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
             this: v.clone(),
-            device: self.this.upgrade().unwrap(),
+            _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_parameter_block_layout(),
             desc: OwnedParameterBlockDesc::new(desc),
         });
@@ -665,6 +665,7 @@ impl IDevice for Device {
         base: u32,
         writes: &[ParameterWrite],
     ) {
+        let layout = unwrap::parameter_block_layout(layout);
         todo!()
     }
 

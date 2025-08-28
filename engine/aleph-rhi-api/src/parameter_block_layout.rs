@@ -362,6 +362,11 @@ impl Default for ParameterType {
 }
 
 impl ParameterType {
+    /// Returns 'true' if self is of [`ParameterType::SamplerState`] parameter type.
+    pub const fn is_sampler(&self) -> bool {
+        matches!(self, Self::SamplerState)
+    }
+
     /// Returns 'true' if self is one of the 'texture' parameter types. This does _not_ include
     /// [`ParameterType::Buffer`] or [`ParameterType::RWBuffer`].
     pub const fn is_texture(&self) -> bool {
@@ -381,7 +386,9 @@ impl ParameterType {
             | ParameterType::Texture2DMS
             | ParameterType::RWTexture2DMS
             | ParameterType::Texture2DMSArray
-            | ParameterType::RWTexture2DMSArray => true,
+            | ParameterType::RWTexture2DMSArray
+            | ParameterType::TextureCube
+            | ParameterType::TextureCubeArray => true,
             _ => false,
         }
     }
@@ -399,9 +406,9 @@ impl ParameterType {
         }
     }
 
-    /// Returns 'true' if self is one of the typed buffer/texel buffer parameter types. This
+    /// Returns 'true' if self is one of the texture buffer/texel buffer parameter types. This
     /// includes [`ParameterType::Buffer`] or [`ParameterType::RWBuffer`].
-    pub const fn is_typed_buffer(&self) -> bool {
+    pub const fn is_texture_buffer(&self) -> bool {
         match self {
             ParameterType::Buffer => true,
             ParameterType::RWBuffer => true,
@@ -427,7 +434,9 @@ impl ParameterType {
             | ParameterType::Texture2DArray
             | ParameterType::Texture3DArray
             | ParameterType::Texture2DMS
-            | ParameterType::Texture2DMSArray => true,
+            | ParameterType::Texture2DMSArray
+            | ParameterType::TextureCube
+            | ParameterType::TextureCubeArray => true,
             _ => false,
         }
     }
@@ -460,7 +469,8 @@ impl ParameterType {
             | ParameterType::Texture3DArray
             | ParameterType::RWTexture3DArray
             | ParameterType::Texture2DMSArray
-            | ParameterType::RWTexture2DMSArray => true,
+            | ParameterType::RWTexture2DMSArray
+            | ParameterType::TextureCubeArray => true,
             _ => false,
         }
     }
@@ -478,6 +488,12 @@ impl ParameterType {
 
     /// Returns a [`TextureDimension`] that matches the dimension of 'self'. Will return [`None`] if
     /// self is not a texture parameter.
+    ///
+    /// # Note
+    ///
+    /// For [`ParameterType::TextureCube`] and [`ParameterType::TextureCubeArray`] this will return
+    /// [`TextureDimension::Texture2D`]. This doesn't seem like the obvious choice, but is the most
+    /// logical. A texture cube is simply a special kind of view over a 2D texture array.
     pub const fn texture_dimension(&self) -> Option<TextureDimension> {
         let out = match self {
             ParameterType::Texture1D => TextureDimension::Texture1D,
@@ -496,29 +512,64 @@ impl ParameterType {
             ParameterType::RWTexture2DMS => TextureDimension::Texture2D,
             ParameterType::Texture2DMSArray => TextureDimension::Texture2D,
             ParameterType::RWTexture2DMSArray => TextureDimension::Texture2D,
+            ParameterType::TextureCube => TextureDimension::Texture2D,
+            ParameterType::TextureCubeArray => TextureDimension::Texture2D,
             _ => return None,
         };
         Some(out)
     }
 
-    /// Short-hand for constructing a [`ParameterDesc`] with 'ty = self'.
+    /// Shorthand for constructing a [`ParameterDesc`] with 'ty = self'.
     pub const fn param(self) -> ParameterDesc {
         ParameterDesc {
             ty: self,
-            flags: ParameterFlags::empty(),
             array_size: ParameterArraySize::NONE,
             structured_buffer_stride: 0,
         }
     }
 
-    /// Short-hand for constructing a [`ParameterDesc`] with 'ty = self' with the given array size.
+    /// Shorthand for constructing a [`ParameterDesc`] with 'ty = self' with the given array size.
     pub const fn param_array(self, count: u64) -> ParameterDesc {
         ParameterDesc {
             ty: self,
-            flags: ParameterFlags::empty(),
             array_size: ParameterArraySize::new(count),
             structured_buffer_stride: 0,
         }
+    }
+}
+
+impl std::fmt::Display for ParameterType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            Self::ConstantBuffer => "ConstantBuffer",
+            Self::StructuredBuffer => "StructuredBuffer",
+            Self::RWStructuredBuffer => "RWStructuredBuffer",
+            Self::ByteAddressBuffer => "ByteAddressBuffer",
+            Self::RWByteAddressBuffer => "RWByteAddressBuffer",
+            Self::Buffer => "Buffer",
+            Self::RWBuffer => "RWBuffer",
+            Self::Texture1D => "Texture1D",
+            Self::RWTexture1D => "RWTexture1D",
+            Self::Texture2D => "Texture2D",
+            Self::RWTexture2D => "RWTexture2D",
+            Self::Texture3D => "Texture3D",
+            Self::RWTexture3D => "RWTexture3D",
+            Self::Texture1DArray => "Texture1DArray",
+            Self::RWTexture1DArray => "RWTexture1DArray",
+            Self::Texture2DArray => "Texture2DArray",
+            Self::RWTexture2DArray => "RWTexture2DArray",
+            Self::Texture3DArray => "Texture3DArray",
+            Self::RWTexture3DArray => "RWTexture3DArray",
+            Self::Texture2DMS => "Texture2DMS",
+            Self::RWTexture2DMS => "RWTexture2DMS",
+            Self::Texture2DMSArray => "Texture2DMSArray",
+            Self::RWTexture2DMSArray => "RWTexture2DMSArray",
+            Self::TextureCube => "TextureCube",
+            Self::TextureCubeArray => "TextureCubeArray",
+            Self::SamplerState => "SamplerState",
+            Self::AccelerationStructure => "AccelerationStructure",
+        };
+        f.write_str(name)
     }
 }
 
@@ -532,9 +583,6 @@ impl ParameterType {
 pub struct ParameterDesc {
     /// The type of the parameter
     pub ty: ParameterType,
-
-    /// Extra configuration flags for the parameter
-    pub flags: ParameterFlags,
 
     /// If this is a descriptor array, this is the size of the descriptor array. The
     /// [`ParameterArraySize`] type encodes two niche values for the different type of parameters.
@@ -551,13 +599,11 @@ impl ParameterDesc {
     /// Constructs a new [`ParameterDesc`] with the given type and array size.
     pub const fn new(
         ty: ParameterType,
-        flags: ParameterFlags,
         array_size: ParameterArraySize,
         structured_buffer_stride: u32,
     ) -> Self {
         Self {
             ty,
-            flags,
             array_size,
             structured_buffer_stride,
         }
@@ -606,43 +652,6 @@ impl ParameterDesc {
             // reason 'flags' is ignore differs.
             _ => self.ty as u32 == other.ty as u32 && self.array_size.is_equal(&other.array_size),
         }
-    }
-}
-
-bitflags::bitflags! {
-    /// Set of configurable flags that can be applied to a parameter in a parameter block.
-    ///
-    /// # Dynamic Constant Buffer
-    ///
-    /// This is a special flag that applies to constant buffer parameters. A dynamic constant buffer
-    /// is a special form of constant buffer that allows cheaply rebinding the constant buffer at
-    /// different offsets within the same target buffer. This is expected to be cheaper than
-    /// creating a whole new descriptor set and re-binding. Instead of rebinding with a new set,
-    /// the same set can be re-bound with a new 'dynamic offset'.
-    ///
-    /// Some hardware benefits more than others. The caveat to dynamic constant buffers is that they
-    /// have more strict hardware limits, typically limited to a small number within the parameter
-    /// block or pipeline layout. However they are fantastic for jobs like per-model constants that
-    /// would otherwise require a more expensive full rebind for every draw call.
-    ///
-    /// This flag is only known to the shader host application. Shaders are not authored with any
-    /// knowledge of this flag, and any constant buffer parameter is considered interface compatible
-    /// regardless of whether this flag is set. The flag only controls _how_ the resource is bound.
-    ///
-    /// TODO: investigate if this is worth the effort on modern hardware. a storage buffer can do
-    ///       this job without the special semantics, but some older hardware (pascal) is still
-    ///       faster with constant buffers.
-    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
-    pub struct ParameterFlags: u8 {
-        /// Flags a [`ParameterType::ConstantBuffer`] parameter as a 'dynamic constant buffer'.
-        const DYNAMIC_CONSTANT_BUFFER = 0b0001;
-    }
-}
-
-impl Default for ParameterFlags {
-    #[inline(always)]
-    fn default() -> Self {
-        ParameterFlags::empty()
     }
 }
 

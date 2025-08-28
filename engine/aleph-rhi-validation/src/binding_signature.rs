@@ -30,12 +30,13 @@
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_rhi_api::*;
 
-use crate::ValidationDevice;
+use crate::{ValidationDevice, ValidationParameterBlockLayout};
 
 pub struct ValidationBindingSignature {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IBindingSignature>,
+    pub(crate) parameter_block_layouts: Vec<AnyArc<ValidationParameterBlockLayout>>,
     pub(crate) push_constant_block: Option<PushConstantBlock>,
 }
 

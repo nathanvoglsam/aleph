@@ -31,22 +31,6 @@
 //! This module holds a collection of internal utilities used for unwrapping interface structs that
 //! contain references to interface objects.
 //!
-//! For example, [PipelineLayoutDesc] contains a list of references to [IDescriptorSetLayout]
-//! objects. An API user will have filled that array with [ValidationDescriptorSetLayout]
-//! references, as that's what the validation layer gives out to the user, but the wrapped
-//! implementation is expecting to get its own concrete implementation.
-//!
-//! At best this will cause the base implementation to panic, or it could cause UB and other
-//! nastiness.
-//!
-//! The validation layer is *not* zero overhead (by definition). To solve this problem we make a
-//! copy of any structs like [PipelineLayoutDesc] and unwrap all trait-object references inside
-//! until we have the same struct a user would've made without the validation layer in the way. The
-//! resulting struct is then given to the base API instead.
-//!
-//! This requires a big mess of partial clones, and a lot of heap allocations as we've got to
-//! allocate new arrays for structs that take arrays of references.
-//!
 
 use std::cell::Cell;
 use std::ptr::NonNull;
@@ -101,9 +85,8 @@ pub unsafe fn parameter_writes<'a>(writes: &[ParameterWrite<'a>]) -> Vec<Paramet
                 SamplerWrite::new(inner).into()
             }
             ParameterWrite::Texture(v) => {
-                let inner =
-                    unsafe { std::mem::transmute::<_, *const ValidationImageView>(v.image_view) };
-                let inner = unsafe { (*inner).image_view };
+                let inner = unsafe { ValidationImageView::get(&v.image_view) };
+                let inner = inner.image_view;
                 TextureWrite::new(inner, v.image_layout).into()
             }
             ParameterWrite::Buffer(v) => {
@@ -200,7 +183,7 @@ pub fn rendering_color_attachment_info(
     info: &RenderingColorAttachmentInfo,
 ) -> RenderingColorAttachmentInfo {
     let image_view = unsafe {
-        let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
+        let image_view = ValidationImageView::get(&info.image_view);
         (*image_view).image_view
     };
     RenderingColorAttachmentInfo {
@@ -215,7 +198,7 @@ pub fn rendering_depth_stencil_attachment_info(
     info: &RenderingDepthStencilAttachmentInfo,
 ) -> RenderingDepthStencilAttachmentInfo {
     let image_view = unsafe {
-        let image_view = std::mem::transmute::<_, *const ValidationImageView>(info.image_view);
+        let image_view = ValidationImageView::get(&info.image_view);
         (*image_view).image_view
     };
     RenderingDepthStencilAttachmentInfo {

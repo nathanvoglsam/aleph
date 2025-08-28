@@ -34,6 +34,7 @@ use aleph_rhi_api::*;
 use blink_alloc::Blink;
 
 use crate::device::Device;
+use crate::internal::unwrap;
 
 pub struct DescriptorArena {
     pub(crate) _device: AnyArc<Device>,
@@ -53,6 +54,7 @@ impl IDescriptorArena for DescriptorArena {
         &self,
         layout: &dyn IParameterBlockLayout,
     ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+        let layout = unwrap::parameter_block_layout(layout);
         todo!()
     }
 
@@ -61,6 +63,7 @@ impl IDescriptorArena for DescriptorArena {
         layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
     ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+        let layout = unwrap::parameter_block_layout(layout);
         todo!()
     }
 

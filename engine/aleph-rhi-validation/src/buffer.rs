@@ -37,6 +37,7 @@ pub struct ValidationBuffer {
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) size: u64,
     pub(crate) usage: ResourceUsageFlags,
+    pub(crate) name: Option<String>,
     pub(crate) inner: BufferHandle,
 }
 

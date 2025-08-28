@@ -258,8 +258,8 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         &mut self,
         binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
-        first_set: u32,
-        sets: &[ParameterBlockHandle],
+        first_block: u32,
+        blocks: &[ParameterBlockHandle],
     ) {
         assert!(
             matches!(self.list_type, QueueType::General | QueueType::Compute),
@@ -269,13 +269,13 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
 
         unsafe {
-            let sets: Vec<_> = sets
+            let blocks: Vec<_> = blocks
                 .iter()
                 .map(|&v| get_as_unwrapped::parameter_block_handle(v, None))
                 .collect();
 
             self.inner
-                .bind_parameter_blocks(binding_signature, bind_point, first_set, &sets)
+                .bind_parameter_blocks(binding_signature, bind_point, first_block, &blocks)
         }
     }
 
@@ -287,13 +287,29 @@ impl<'a, T: IComputeEncoder + ?Sized + 'a> IComputeEncoder for ValidationEncoder
         base: u32,
         writes: &[ParameterWrite],
     ) {
-        let binding_signature = unwrap::binding_signature(binding_signature).inner.as_ref();
+        let binding_signature = unwrap::binding_signature(binding_signature);
+        let block_layout = &binding_signature.parameter_block_layouts[block as usize];
 
+        assert!(
+            block_layout
+                .desc()
+                .flags
+                .contains(ParameterBlockFlags::PUSH_DESCRIPTOR),
+            "Can't call 'IComptueEncoder::push_parameters' on parameter block layout without 'PUSH_DESCRIPTOR' flag set"
+        );
+        block_layout.validate_updates(base, writes);
+
+        let binding_signature_inner = binding_signature.inner.as_ref();
         let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
 
         unsafe {
-            self.inner
-                .push_parameters(binding_signature, bind_point, block, base, &new_writes);
+            self.inner.push_parameters(
+                binding_signature_inner,
+                bind_point,
+                block,
+                base,
+                &new_writes,
+            );
         }
     }
 
@@ -554,11 +570,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
         );
 
         info.color_attachments.iter().for_each(|v| {
-            let image_view = unsafe {
-                std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
-                    .as_ref()
-                    .unwrap()
-            };
+            let image_view = unsafe { ValidationImageView::get(&v.image_view) };
             let image = image_view._image.upgrade().unwrap();
 
             assert_eq!(
@@ -584,11 +596,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
 
         // Produce an iterator over all the (width,height) pairs for each color attachment
         let attachment_sizes = info.color_attachments.iter().map(|v| {
-            let image_view = unsafe {
-                std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
-                    .as_ref()
-                    .unwrap()
-            };
+            let image_view = unsafe { ValidationImageView::get(&v.image_view) };
             let image = image_view._image.upgrade().unwrap();
 
             (image.desc.width, image.desc.height)
@@ -603,11 +611,7 @@ impl<T: ?Sized> ValidationEncoder<T> {
             });
 
         if let Some(v) = info.depth_stencil_attachment {
-            let image_view = unsafe {
-                std::mem::transmute::<_, *const ValidationImageView>(v.image_view)
-                    .as_ref()
-                    .unwrap()
-            };
+            let image_view = unsafe { ValidationImageView::get(&v.image_view) };
             let image = image_view._image.upgrade().unwrap();
 
             assert_eq!(

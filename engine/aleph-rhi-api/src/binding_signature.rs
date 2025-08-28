@@ -119,14 +119,14 @@ pub struct PushConstantBlock {
 
 impl PushConstantBlock {
     /// Constructs a new `Option<PushConstantBlock>` from the given size. 0 is coerced to `None`,
-    /// which can be used in a [`PipelineLayoutDesc`] to encode that no push constant block is
+    /// which can be used in a [`BindingSignatureDesc`] to encode that no push constant block is
     /// used.
     pub const fn new(size: u8) -> Option<PushConstantBlock> {
         Self::new_with_visibility(size, DescriptorShaderVisibility::All)
     }
 
     /// Constructs a new `Option<PushConstantBlock>` from the given size. 0 is coerced to `None`,
-    /// which can be used in a [`PipelineLayoutDesc2`] to encode that no push constant block is
+    /// which can be used in a [`BindingSignatureDesc`] to encode that no push constant block is
     /// used. Also sets 'visibility' to the given value.
     pub const fn new_with_visibility(
         size: u8,

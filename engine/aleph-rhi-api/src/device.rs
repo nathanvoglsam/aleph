@@ -60,7 +60,7 @@ pub trait IDevice: IAny + IGetPlatformInterface + Send + Sync {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError>;
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError>;
 
     fn create_binding_signature(
         &self,
@@ -407,11 +407,11 @@ pub enum SamplerCreateError {
 error_enum_from_unit_type!(SamplerCreateError);
 
 #[derive(Error, Debug)]
-pub enum DescriptorSetLayoutCreateError {
+pub enum ParameterBlockLayoutCreateError {
     #[error("An internal backend error has occurred. Details were logged.")]
     Platform,
 }
-error_enum_from_unit_type!(DescriptorSetLayoutCreateError);
+error_enum_from_unit_type!(ParameterBlockLayoutCreateError);
 
 #[derive(Error, Debug)]
 pub enum DescriptorPoolCreateError {
@@ -422,16 +422,6 @@ pub enum DescriptorPoolCreateError {
     Platform,
 }
 error_enum_from_unit_type!(DescriptorPoolCreateError);
-
-#[derive(Error, Debug)]
-pub enum PipelineLayoutCreateError {
-    #[error("A push constant block has an invalid size")]
-    InvalidPushConstantBlockSize,
-
-    #[error("An internal backend error has occurred. Details were logged.")]
-    Platform,
-}
-error_enum_from_unit_type!(PipelineLayoutCreateError);
 
 #[derive(Error, Debug)]
 pub enum BindingSignatureCreateError {

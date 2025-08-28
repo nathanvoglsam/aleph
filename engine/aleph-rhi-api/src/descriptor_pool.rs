@@ -49,12 +49,12 @@ pub trait IDescriptorPool: IAny + IGetPlatformInterface + Send {
     fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError>;
 
     /// Allocates `num_blocks` descriptors from the pool. Some implementations may be able to
-    /// implement this more efficiently than naively calling [IDescriptorPool::allocate_set] in a
+    /// implement this more efficiently than naively calling [IDescriptorPool::allocate_block] in a
     /// loop.
     ///
     /// # Warning
     ///
-    /// See [IDescriptorPool::allocate_set] for some pitfalls and warnings to check for.
+    /// See [IDescriptorPool::allocate_block] for some pitfalls and warnings to check for.
     fn allocate_blocks(
         &mut self,
         num_blocks: usize,

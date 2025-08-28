@@ -153,7 +153,7 @@ impl IDevice for Device {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError> {
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 

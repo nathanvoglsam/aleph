@@ -93,8 +93,8 @@ impl IComputeEncoder for NullEncoder {
         &mut self,
         _binding_signature: &dyn IBindingSignature,
         _bind_point: PipelineBindPoint,
-        _first_set: u32,
-        _sets: &[ParameterBlockHandle],
+        _first_block: u32,
+        _blocks: &[ParameterBlockHandle],
     ) {
     }
 

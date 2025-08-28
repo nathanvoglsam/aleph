@@ -38,7 +38,7 @@ use crate::internal::unwrap;
 
 pub struct ParameterBlockLayout {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) id: NonZeroU64,
     pub(crate) desc: OwnedParameterBlockDesc,
 }

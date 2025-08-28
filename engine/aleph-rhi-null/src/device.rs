@@ -94,7 +94,7 @@ impl IDevice for NullDevice {
     fn create_parameter_block_layout(
         &self,
         _desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError> {
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         let out = AnyArc::new_cyclic(move |v| NullParameterBlockLayout {
             this: v.clone(),
             _device: self._this.upgrade().unwrap(),

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-// TODO: generational index + extra indirection for validating use-after-free for descriptor sets
+// TODO: generational index + extra indirection for validating use-after-free for parameter blocks
 
 use std::ptr::NonNull;
 
@@ -42,7 +42,7 @@ pub struct ValidationDescriptorPool {
     pub(crate) _layout: AnyArc<ValidationParameterBlockLayout>,
     pub(crate) inner: Box<dyn IDescriptorPool>,
     pub(crate) pool_id: u64,
-    pub(crate) set_objects: Vec<ParameterBlock>,
+    pub(crate) block_objects: Vec<ParameterBlock>,
     pub(crate) free_list: Vec<ParameterBlockHandle>,
 }
 
@@ -58,26 +58,29 @@ impl ValidationDescriptorPool {
     /// This function assumes it is being called immediately prior to trying to allocate a set. As
     /// such it returns an OOM error instead of a simple bool.
     fn check_oom(&mut self) -> Result<(), DescriptorPoolAllocateError> {
-        if self.set_objects.len() == self.set_objects.capacity() {
+        if self.block_objects.len() == self.block_objects.capacity() {
             Err(DescriptorPoolAllocateError::OutOfMemory)
         } else {
             Ok(())
         }
     }
 
-    /// Constructs a [DescriptorSet] object for the descriptor set with index 'set_index'.
+    /// Constructs a [`ParameterBlock`] object for the parameter block with index 'block_index'.
     ///
-    /// Specifically this creates the object that a [ParameterBlockHandle] is actually a pointer to.
+    /// Specifically this creates the object that a [`ParameterBlockHandle`] is actually a pointer to.
     /// This will contain fully computed CPU and GPU handles to the resource and sampler
-    /// `ID3D12DescriptorHeap` heaps. This should be called to initialize a [DescriptorSet] in the
-    /// 'set_objects' pool.
+    /// `ID3D12DescriptorHeap` heaps. This should be called to initialize a [`ParameterBlock`] in the
+    /// 'block_objects' pool.
     ///
-    /// Once constructed the [DescriptorSet] should be immutable, as it will always refer to the
+    /// Once constructed the [`ParameterBlock`] should be immutable, as it will always refer to the
     /// descriptor memory for the set index it was constructed with.
     ///
-    /// This function is expected to be used when allocating a new set out of `self.set_pool`
+    /// This function is expected to be used when allocating a new set out of `self.block_pool`
     /// instead of from the free list.
-    fn create_set_object_for_set_index(&mut self, inner: ParameterBlockHandle) -> ParameterBlock {
+    fn create_block_object_for_block_index(
+        &mut self,
+        inner: ParameterBlockHandle,
+    ) -> ParameterBlock {
         ParameterBlock {
             _magic_header: ParameterBlock::MAGIC_HEADER_VAL,
             _pool_id: self.pool_id,
@@ -86,44 +89,44 @@ impl ValidationDescriptorPool {
         }
     }
 
-    /// Constructs a [ParameterBlockHandle] for the set with index 'set_index'
+    /// Constructs a [`ParameterBlockHandle`] for the set with index 'block_index'
     ///
-    /// From an implementation stand point [ParameterBlockHandle] is just an opaque pointer. For
-    /// this implementation it contains a pointer to a [DescriptorSet] instance. Specifically it
-    /// contains a pointer to a set inside the `self.set_objects` array.
+    /// From an implementation stand point [`ParameterBlockHandle`] is just an opaque pointer. For
+    /// this implementation it contains a pointer to a [`ParameterBlock`] instance. Specifically it
+    /// contains a pointer to a set inside the `self.block_objects` array.
     ///
-    /// This function is thus just a utility for getting the pointer to the [DescriptorSet] object
-    /// with the requested index and converting that pointer into a [ParameterBlockHandle] so we can
+    /// This function is thus just a utility for getting the pointer to the [`ParameterBlock`] object
+    /// with the requested index and converting that pointer into a [`ParameterBlockHandle`] so we can
     /// hand it out to callers on the other side of the API boundary.
     ///
     /// # Safety
     ///
-    /// It is the caller's responsibility to check if 'set_index' is within the bounds of the
-    /// `self.set_objects` array.
+    /// It is the caller's responsibility to check if 'block_index' is within the bounds of the
+    /// `self.block_objects` array.
     ///
     /// It is also the caller's responsibility to ensure sound access through the pointer that
     /// the [ParameterBlockHandle] actually is.
-    unsafe fn convert_set_index_to_handle(&self, set_index: usize) -> ParameterBlockHandle {
-        // Get a pointer to the set_index'th element in the array and wrap it into a handle.
+    unsafe fn convert_block_index_to_handle(&self, block_index: usize) -> ParameterBlockHandle {
+        // Get a pointer to the block_index'th element in the array and wrap it into a handle.
         //
         // We have to be careful to not construct a reference here to keep the code sound. From the
         // borrow checker's perspective creating the reference here (even though we don't
         // dereference it) would be unsound if we didn't synchronize with any api that would create
         // a reference from a handle.
         //
-        // In practice this would mean any API that uses descriptor sets would be unsound if used
+        // In practice this would mean any API that uses parameter blocks would be unsound if used
         // in parallel with this code by rust's soundness rules, which would be insane.
         //
         // By carefully using only pointers here it means we never create a reference to any of the
-        // elements of the 'set_objects' array *except* inside other APIs by converting the handle
+        // elements of the 'block_objects' array *except* inside other APIs by converting the handle
         // back to a pointer and converting to a reference.
         //
         // This won't solve use-after-free, or un-synchronized access to the underlying descriptor
-        // memory. Thus any API that reads or writes from descriptors or descriptor sets is unsafe.
-        let handle = self.set_objects.as_ptr().wrapping_add(set_index);
+        // memory. Thus any API that reads or writes from descriptors or parameter blocks is unsafe.
+        let handle = self.block_objects.as_ptr().wrapping_add(block_index);
         let handle = handle as *mut ParameterBlock;
 
-        // Safety: It's the caller's responsibility to ensure 'set_index' is in bounds. The pointer
+        // Safety: It's the caller's responsibility to ensure 'block_index' is in bounds. The pointer
         // is guaranteed to be valid if the index is in bounds.
         unsafe {
             let handle = NonNull::new_unchecked(handle).cast::<()>();
@@ -138,7 +141,7 @@ impl ValidationDescriptorPool {
         // Validate that a ParameterBlockHandle contains a correctly aligned pointer. This may help
         // catch when someone is passing in bad handles
         let align = core::mem::align_of::<ParameterBlock>();
-        let set = unsafe { core::mem::transmute::<_, NonNull<ParameterBlock>>(set) };
+        let block = unsafe { core::mem::transmute::<_, NonNull<ParameterBlock>>(set) };
 
         // This should also never happen in practice, but can help flag when people are doing
         // naughty bit casts and passing bad pointers in.
@@ -146,7 +149,7 @@ impl ValidationDescriptorPool {
             panic!("is_aligned_to: align is not a power-of-two");
         }
         assert_eq!(
-            (set.as_ptr() as usize) & (align - 1),
+            (block.as_ptr() as usize) & (align - 1),
             0,
             "ParameterBlockHandle contains badly-aligned pointer"
         );
@@ -154,28 +157,28 @@ impl ValidationDescriptorPool {
         // If the pool is empty it's impossible for any handles to be from this particular pool.
         // This should never happen as we never allow empty descriptor pools.
         assert!(
-            self.set_objects.is_empty(),
-            "The DescriptorSet pool is empty, no handle can be valid"
+            self.block_objects.is_empty(),
+            "The ParameterBlock pool is empty, no handle can be valid"
         );
 
-        let sets_base = self.set_objects.as_ptr();
-        let sets_end = self
-            .set_objects
+        let blocks_base = self.block_objects.as_ptr();
+        let blocks_end = self
+            .block_objects
             .as_ptr()
-            .wrapping_add(self.set_objects.len());
+            .wrapping_add(self.block_objects.len());
 
         // This should never happen, but we check for completeness sake.
         assert!(
-            sets_base < sets_end,
-            "The DescriptorSet pool has overflowed the address space"
+            blocks_base < blocks_end,
+            "The ParameterBlock pool has overflowed the address space"
         );
 
-        // Checks if the given descriptor set was allocated by this pool by checking if the pointer
-        // comes from inside the set_objects array bounds.
-        let set_ptr = set.as_ptr() as *const ParameterBlock;
-        let set_oob = set_ptr < sets_base || set_ptr > sets_end;
+        // Checks if the given parameter block was allocated by this pool by checking if the pointer
+        // comes from inside the block_objects array bounds.
+        let block_ptr = block.as_ptr() as *const ParameterBlock;
+        let block_oob = block_ptr < blocks_base || block_ptr > blocks_end;
         assert!(
-            !set_oob,
+            !block_oob,
             "The ParameterBlockHandle points outside of the pool, this handle is from another pool"
         );
     }
@@ -194,18 +197,18 @@ impl IDescriptorPool for ValidationDescriptorPool {
         let inner = self.inner.allocate_block()?;
 
         // Take the next free set, we create fresh set objects linearly
-        let set_index = self.set_objects.len();
-        let set = self.create_set_object_for_set_index(inner);
-        self.set_objects.push(set);
+        let block_index = self.block_objects.len();
+        let set = self.create_block_object_for_block_index(inner);
+        self.block_objects.push(set);
 
-        // Safety: set_index is guaranteed to be < set_objects.len() because it is created from
-        // set_objects.len() immediately prior to pushing a new element in set_objects.
+        // Safety: block_index is guaranteed to be < block_objects.len() because it is created from
+        // block_objects.len() immediately prior to pushing a new element in block_objects.
         let handle = unsafe {
             assert!(
-                set_index < self.set_objects.len(),
-                "'set_index' is out of bounds"
+                block_index < self.block_objects.len(),
+                "'block_index' is out of bounds"
             );
-            self.convert_set_index_to_handle(set_index)
+            self.convert_block_index_to_handle(block_index)
         };
 
         Ok(handle)
@@ -234,7 +237,7 @@ impl IDescriptorPool for ValidationDescriptorPool {
     unsafe fn reset(&mut self) {
         unsafe {
             self.inner.reset();
-            self.set_objects.clear();
+            self.block_objects.clear();
             self.free_list.clear();
         }
     }

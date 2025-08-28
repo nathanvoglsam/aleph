@@ -106,7 +106,7 @@ impl IDevice for ValidationDevice {
     fn create_parameter_block_layout(
         &self,
         desc: &ParameterBlockDesc,
-    ) -> Result<AnyArc<dyn IParameterBlockLayout>, DescriptorSetLayoutCreateError> {
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
         let inner = self.inner.create_parameter_block_layout(&desc)?;
 
         let out = AnyArc::new_cyclic(move |v| ValidationParameterBlockLayout {
@@ -133,11 +133,13 @@ impl IDevice for ValidationDevice {
         let parameter_block_layouts = Vec::from_iter(
             desc.parameter_block_layouts
                 .iter()
-                .map(|v| unwrap::parameter_block_layout_d(v).inner.as_ref()),
+                .map(|v| unwrap::parameter_block_layout_d(v).this.upgrade().unwrap()),
         );
+        let parameter_block_layouts_inner =
+            Vec::from_iter(parameter_block_layouts.iter().map(|v| v.inner.as_ref()));
         let push_constant_block = desc.push_constant_block.clone();
         let new_desc = BindingSignatureDesc {
-            parameter_block_layouts: &parameter_block_layouts,
+            parameter_block_layouts: &parameter_block_layouts_inner,
             push_constant_block: push_constant_block.clone(),
             name: desc.name.clone(),
         };
@@ -147,6 +149,7 @@ impl IDevice for ValidationDevice {
             this: v.clone(),
             _device: self._this.upgrade().unwrap(),
             inner,
+            parameter_block_layouts,
             push_constant_block,
         });
         Ok(AnyArc::map::<dyn IBindingSignature, _>(out, |v| v))
@@ -230,17 +233,24 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
+        let layout = unwrap::parameter_block_layout(desc.layout);
+        assert!(
+            !layout
+                .desc()
+                .flags
+                .contains(ParameterBlockFlags::PUSH_DESCRIPTOR),
+            "Creating a IDescriptorPool from a IParameterBlockLayout with the 'PUSH_DESCRIPTOR' flag is not allowed"
+        );
+
         let inner_desc = get_as_unwrapped::descriptor_pool_desc(desc);
         let inner = self.inner.create_descriptor_pool(&inner_desc)?;
-
-        let layout = unwrap::parameter_block_layout(desc.layout);
 
         let pool = Box::new(ValidationDescriptorPool {
             _device: self._this.upgrade().unwrap(),
             _layout: layout.this.upgrade().unwrap(),
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            set_objects: Vec::with_capacity(desc.num_blocks as usize),
+            block_objects: Vec::with_capacity(desc.num_blocks as usize),
             free_list: Vec::with_capacity(128),
         });
 
@@ -260,7 +270,7 @@ impl IDevice for ValidationDevice {
             _device: self._this.upgrade().unwrap(),
             inner,
             pool_id: self.pool_counter.fetch_add(1, Ordering::Relaxed),
-            set_objects: Cell::new(Vec::with_capacity(desc.num_blocks as usize)),
+            block_objects: Cell::new(Vec::with_capacity(desc.num_blocks as usize)),
             free_list: Cell::new(Vec::with_capacity(128)),
         });
 
@@ -280,6 +290,7 @@ impl IDevice for ValidationDevice {
             _device: self._this.upgrade().unwrap(),
             size: desc.size,
             usage: desc.usage,
+            name: desc.name.map(String::from),
             inner,
         };
         let out = ArcedObject::new_arc_opaque(out);
@@ -374,14 +385,25 @@ impl IDevice for ValidationDevice {
         base: u32,
         writes: &[ParameterWrite],
     ) {
-        let layout = unwrap::parameter_block_layout(layout).inner.as_ref();
+        let layout = unwrap::parameter_block_layout(layout);
+
+        assert!(
+            !layout
+                .desc()
+                .flags
+                .contains(ParameterBlockFlags::PUSH_DESCRIPTOR),
+            "Can't call 'IDevice::update_parameter_block' on parameter block layout with 'PUSH_DESCRIPTOR' flag set"
+        );
+        layout.validate_updates(base, writes);
+
+        let layout_inner = layout.inner.as_ref();
         let block = unsafe { ParameterBlock::ref_from_handle(&block).inner };
 
         let new_writes = unsafe { get_as_unwrapped::parameter_writes(writes) };
 
         unsafe {
             self.inner
-                .update_parameter_block(layout, block, base, &new_writes);
+                .update_parameter_block(layout_inner, block, base, &new_writes);
         }
     }
 

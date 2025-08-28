@@ -60,7 +60,7 @@ impl IDescriptorPool for DescriptorPool {
         todo!()
     }
 
-    unsafe fn free(&mut self, sets: &[ParameterBlockHandle]) {
+    unsafe fn free(&mut self, blocks: &[ParameterBlockHandle]) {
         todo!()
     }
 
