@@ -30,7 +30,7 @@
 use std::num::NonZeroU64;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -50,7 +50,7 @@ pub struct GraphicsPipeline {
 unsafe_impl_iobject!(GraphicsPipeline, "01980753-5c4f-7ae3-be3b-9707082d77a7");
 
 impl GraphicsPipeline {
-    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()
@@ -89,7 +89,7 @@ pub struct CachedGraphicsInfo {
     pub depth_bias_slope_factor: f32,
 }
 
-// Safety: Needed for 'MTLRenderPipelineState
+// Safety: Needed for 'MTLRenderPipelineState'
 unsafe impl Send for GraphicsPipelineObjects {}
 unsafe impl Sync for GraphicsPipelineObjects {}
 
@@ -103,7 +103,7 @@ pub struct ComputePipeline {
 unsafe_impl_iobject!(ComputePipeline, "01980753-5c4f-7ae3-be3b-9719259cfbc3");
 
 impl ComputePipeline {
-    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()

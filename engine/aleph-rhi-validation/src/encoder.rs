@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 
 use crate::internal::{get_as_unwrapped, unwrap};
@@ -41,8 +41,8 @@ use crate::{
 };
 
 pub struct ValidationEncoder<T: ?Sized> {
-    pub(crate) bound_graphics_pipeline: Option<Arc<ArcedObject<ValidationGraphicsPipeline>>>,
-    pub(crate) bound_compute_pipeline: Option<Arc<ArcedObject<ValidationComputePipeline>>>,
+    pub(crate) bound_graphics_pipeline: Option<Arc<Object<ValidationGraphicsPipeline>>>,
+    pub(crate) bound_compute_pipeline: Option<Arc<Object<ValidationComputePipeline>>>,
     pub(crate) inner: Box<T>,
     pub(crate) list_type: QueueType,
     pub(crate) render_pass_open: bool,

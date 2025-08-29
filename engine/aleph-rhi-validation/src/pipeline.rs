@@ -28,7 +28,7 @@
 //
 
 use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 
 use crate::{ValidationBindingSignature, ValidationDevice};
@@ -45,7 +45,7 @@ unsafe_impl_iobject!(
 );
 
 impl ValidationGraphicsPipeline {
-    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()
@@ -71,7 +71,7 @@ unsafe_impl_iobject!(
 );
 
 impl ValidationComputePipeline {
-    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()

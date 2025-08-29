@@ -32,7 +32,7 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_any::AnyArc;
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use allocator_api2::vec::Vec as BVec;
 use blink_alloc::Blink;
@@ -56,8 +56,8 @@ pub struct Encoder<'a> {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) objects: EncoderObjects,
     pub(crate) active: ActiveEncoder,
-    pub(crate) bound_graphics_pipeline: Option<Arc<ArcedObject<GraphicsPipeline>>>,
-    pub(crate) bound_compute_pipeline: Option<Arc<ArcedObject<ComputePipeline>>>,
+    pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
+    pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
     pub(crate) bound_index_buffer: Option<BoundIndexBuffer>,
     pub(crate) bound_pipeline_state: BoundPipelineState,
     pub(crate) arena: Blink,

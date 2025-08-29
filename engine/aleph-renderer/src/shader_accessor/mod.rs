@@ -32,16 +32,3 @@ mod shader_accessor_ext;
 
 pub use shader_accessor::{IShaderAccessor, ShaderAccessor};
 pub use shader_accessor_ext::IShaderAccessorExt;
-
-const fn map_shader_type(from: aleph_shader_db::ShaderType) -> aleph_rhi_api::ShaderType {
-    match from {
-        aleph_shader_db::ShaderType::Compute => aleph_rhi_api::ShaderType::Compute,
-        aleph_shader_db::ShaderType::Vertex => aleph_rhi_api::ShaderType::Vertex,
-        aleph_shader_db::ShaderType::Hull => aleph_rhi_api::ShaderType::Hull,
-        aleph_shader_db::ShaderType::Domain => aleph_rhi_api::ShaderType::Domain,
-        aleph_shader_db::ShaderType::Geometry => aleph_rhi_api::ShaderType::Geometry,
-        aleph_shader_db::ShaderType::Fragment => aleph_rhi_api::ShaderType::Fragment,
-        aleph_shader_db::ShaderType::Amplification => aleph_rhi_api::ShaderType::Amplification,
-        aleph_shader_db::ShaderType::Mesh => aleph_rhi_api::ShaderType::Mesh,
-    }
-}

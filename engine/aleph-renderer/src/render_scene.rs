@@ -278,7 +278,7 @@ impl Storage {
         Self::new_for(ObjectDescription::get::<T>())
     }
 
-    fn new_for(desc: ObjectDescription) -> Self {
+    fn new_for(desc: &ObjectDescription) -> Self {
         Self {
             transforms: Vec::new(),
             bytes: RawBytes::new(desc.align),
@@ -293,7 +293,7 @@ impl Storage {
         Self::with_capacity_for(ObjectDescription::get::<T>(), capacity)
     }
 
-    fn with_capacity_for(desc: ObjectDescription, capacity: usize) -> Self {
+    fn with_capacity_for(desc: &ObjectDescription, capacity: usize) -> Self {
         Self {
             transforms: Vec::with_capacity(capacity * desc.size),
             bytes: RawBytes::with_capacity(desc.align, capacity * desc.size),

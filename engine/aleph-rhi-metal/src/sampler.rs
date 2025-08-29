@@ -30,7 +30,7 @@
 use std::num::NonZeroU64;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedSamplerDesc;
 use objc2::rc::Retained;
@@ -49,7 +49,7 @@ pub struct Sampler {
 unsafe_impl_iobject!(Sampler, "01980753-5c4f-7ae3-be3b-97225f3e91be");
 
 impl Sampler {
-    pub(crate) fn get_owned(v: &SamplerHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &SamplerHandle) -> std::sync::Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()

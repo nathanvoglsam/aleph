@@ -33,7 +33,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::{ArcObject, ArcedObject};
+use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use crossbeam::atomic::AtomicCell;
 
@@ -198,7 +198,7 @@ impl IDevice for ValidationDevice {
             _binding_signature: binding_signature.this.upgrade().unwrap(),
             inner,
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(GraphicsPipelineHandle::new(out)) }
     }
 
@@ -223,7 +223,7 @@ impl IDevice for ValidationDevice {
             _binding_signature: binding_signature.this.upgrade().unwrap(),
             inner,
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(ComputePipelineHandle::new(out)) }
     }
 
@@ -294,7 +294,7 @@ impl IDevice for ValidationDevice {
             name: desc.name.map(String::from),
             inner,
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(BufferHandle::new(out)) }
     }
 
@@ -313,7 +313,7 @@ impl IDevice for ValidationDevice {
         assert_ne!(desc.array_size, 0, "desc.array_size must be > 0");
         let inner = self.inner.create_texture(desc)?;
         let out = Arc::new_cyclic(|v| {
-            ArcedObject::new(ValidationTexture {
+            Object::new(ValidationTexture {
                 _this: v.clone(),
                 _device: self._this.upgrade().unwrap(),
                 inner,
@@ -336,7 +336,7 @@ impl IDevice for ValidationDevice {
             _device: self._this.upgrade().unwrap(),
             inner,
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(SamplerHandle::new(out)) }
     }
 
@@ -423,7 +423,7 @@ impl IDevice for ValidationDevice {
             inner,
             state: AtomicCell::new(initial_state),
         };
-        let fence = ArcedObject::new_arc_opaque(fence);
+        let fence = Object::new_arc_opaque(fence);
         unsafe { Ok(FenceHandle::new(fence)) }
     }
 
@@ -437,7 +437,7 @@ impl IDevice for ValidationDevice {
             inner,
             state: AtomicCell::new(SemaphoreState::Reset),
         };
-        let semaphore = ArcedObject::new_arc_opaque(semaphore);
+        let semaphore = Object::new_arc_opaque(semaphore);
         unsafe { Ok(SemaphoreHandle::new(semaphore)) }
     }
 

@@ -30,8 +30,6 @@
 use aleph_rhi_api::*;
 use aleph_shader_db::*;
 
-use crate::shader_accessor::map_shader_type;
-
 pub trait IShaderAccessor {
     fn get_stage_by_name(&self, name: &str) -> Option<&dyn IShaderCodeSource>;
 }

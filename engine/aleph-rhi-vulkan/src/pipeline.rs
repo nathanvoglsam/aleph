@@ -30,7 +30,7 @@
 use std::num::NonZeroU64;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use ash::vk;
 
@@ -47,7 +47,7 @@ pub struct GraphicsPipeline {
 unsafe_impl_iobject!(GraphicsPipeline, "01944fe3-393c-7893-aa9a-0b2905168fa4");
 
 impl GraphicsPipeline {
-    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()
@@ -79,7 +79,7 @@ pub struct ComputePipeline {
 unsafe_impl_iobject!(ComputePipeline, "01944fe3-5207-7dd2-8f84-5d37f5623f02");
 
 impl ComputePipeline {
-    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()

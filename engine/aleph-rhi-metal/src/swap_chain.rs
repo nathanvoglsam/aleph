@@ -30,7 +30,7 @@
 use std::any::TypeId;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use blink_alloc::Blink;
@@ -148,7 +148,7 @@ impl ISwapChain for SwapChain {
                 name: None,
             }),
         };
-        let texture = ArcedObject::new_arc_opaque(texture);
+        let texture = Object::new_arc_opaque(texture);
         let texture = unsafe { TextureHandle::new(texture) };
 
         let queue = self.device.get_queue_internal(self.queue_type).unwrap();

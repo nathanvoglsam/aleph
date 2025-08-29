@@ -31,14 +31,14 @@ use std::collections::HashMap;
 use std::sync::Weak;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use parking_lot::Mutex;
 
 use crate::ValidationDevice;
 
 pub struct ValidationTexture {
-    pub(crate) _this: Weak<ArcedObject<ValidationTexture>>,
+    pub(crate) _this: Weak<Object<ValidationTexture>>,
     pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: TextureHandle,
     pub(crate) desc: TextureDesc<'static>,
@@ -145,7 +145,7 @@ pub enum ValidationViewType {
 }
 
 pub struct ValidationImageView {
-    pub _image: Weak<ArcedObject<ValidationTexture>>,
+    pub _image: Weak<Object<ValidationTexture>>,
     pub view_type: ValidationViewType,
     pub image_view: ImageView,
     pub desc: ImageViewDesc,

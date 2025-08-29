@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::mem::{ManuallyDrop, MaybeUninit};
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BlinkCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
@@ -382,7 +382,7 @@ impl IDevice for Device {
                 id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
             };
-            let out = ArcedObject::new_arc_opaque(out);
+            let out = Object::new_arc_opaque(out);
             unsafe { Ok(GraphicsPipelineHandle::new(out)) }
         })
     }
@@ -440,7 +440,7 @@ impl IDevice for Device {
                 id: self.object_counter.next_compute_pipeline(),
                 pipeline,
             };
-            let out = ArcedObject::new_arc_opaque(out);
+            let out = Object::new_arc_opaque(out);
             unsafe { Ok(ComputePipelineHandle::new(out)) }
         })
     }
@@ -639,7 +639,7 @@ impl IDevice for Device {
             map_state: Mutex::new(Default::default()),
             desc: OwnedBufferDesc::new(desc.clone()),
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(BufferHandle::new(out)) }
     }
 
@@ -753,7 +753,7 @@ impl IDevice for Device {
                 dsvs: Default::default(),
                 desc: OwnedTextureDesc::new(desc.clone()),
             };
-            let out = ArcedObject::new_arc_opaque(out);
+            let out = Object::new_arc_opaque(out);
             unsafe { Ok(TextureHandle::new(out)) }
         })
     }
@@ -800,7 +800,7 @@ impl IDevice for Device {
                 sampler,
                 desc: OwnedSamplerDesc::new(desc.clone()),
             };
-            let out = ArcedObject::new_arc_opaque(out);
+            let out = Object::new_arc_opaque(out);
             unsafe { Ok(SamplerHandle::new(out)) }
         })
     }
@@ -957,7 +957,7 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             fence,
         };
-        let fence = ArcedObject::new_arc_opaque(fence);
+        let fence = Object::new_arc_opaque(fence);
         unsafe { Ok(FenceHandle::new(fence)) }
     }
 
@@ -976,7 +976,7 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             semaphore,
         };
-        let semaphore = ArcedObject::new_arc_opaque(semaphore);
+        let semaphore = Object::new_arc_opaque(semaphore);
         unsafe { Ok(SemaphoreHandle::new(semaphore)) }
     }
 

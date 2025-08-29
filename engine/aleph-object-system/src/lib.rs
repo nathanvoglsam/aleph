@@ -95,12 +95,12 @@ pub const fn get_object_destructor_for<T: Sized>()
     }
 }
 
-/// Short-hand for getting the ID of an object of type `T`
+/// Shorthand for getting the ID of an object of type `T`
 pub const fn object_id<T: IObject>() -> uuid::Uuid {
     T::ID
 }
 
-/// Short-hand for getting the name of an object of type `T`
+/// Shorthand for getting the name of an object of type `T`
 pub const fn object_name<T: IObject>() -> &'static NStr {
     T::NAME
 }
@@ -110,42 +110,53 @@ pub const fn object_name<T: IObject>() -> &'static NStr {
 #[repr(C)]
 #[derive(Clone)]
 pub struct ObjectDescription {
+    /// Type UUID that uniquely, globally identifies the underlying type of the object
     pub id: uuid::Uuid,
+
+    /// Size, in bytes, of the underlying object type
     pub size: usize,
+
+    /// Alignment, in bytes, of the underlying object type
     pub align: usize,
+
+    /// Human-readable name of the underlying type. Not guaranteed to be unique.
     pub name: &'static NStr,
+
+    /// Opaque fn-ptr to a drop wrapper that will drop a packed array of 'count' objects. This can
+    /// be set to 'None' if the underlying type returns false for [`needs_drop`].
     pub destructor: Option<unsafe extern "C" fn(NonNull<()>, count: u64)>,
+
+    /// Opaque fn-ptr to a drop wrapper that will drop a packed array of 'count'
+    /// `Arc<Object<T>>` objects. That is: the type is `[Arc<Object<T>>]`. This function
+    /// is always populated as even if the underlying type returns false for [`needs_drop`], we
+    /// still need to call the [`Arc`] drop function.
     pub destructor_arc: unsafe extern "C" fn(NonNull<()>, count: u64),
+    // /// Opaque fn-ptr to a drop wrapper that will drop a packed array of 'count'
+    // /// `Box<Object<T>>` objects. That is: the type is `[Box<Object<T>>]`. This function
+    // /// is always populated as even if the underlying type returns false for [`needs_drop`], we
+    // /// still need to call the [`Box`] drop function.
     // pub destructor_box: unsafe extern "C" fn(NonNull<()>, count: u64),
 }
 
 impl ObjectDescription {
     /// Constructs a [`ObjectDescription`] for a given type `T`
-    pub const fn get<T: IObject>() -> Self {
-        Self {
-            id: T::ID,
-            size: T::SIZE,
-            align: T::ALIGN,
-            name: T::NAME,
-            destructor: get_object_destructor_for::<T>(),
-            destructor_arc: object_destructor::<Arc<ArcedObject<T>>>,
-            // destructor_box: object_destructor::<Box<T>>,
-        }
+    pub const fn get<T: IObject>() -> &'static Self {
+        T::DESC
     }
 }
 
 #[repr(transparent)]
 #[derive(Clone)]
 pub struct ArcObject {
-    inner: ManuallyDrop<Arc<OpaqueArcedObject>>,
+    inner: ManuallyDrop<Arc<ObjectHeader>>,
 }
 
 impl ArcObject {
     #[inline]
-    pub fn from_object<T: IObject>(v: Arc<ArcedObject<T>>) -> Self {
+    pub fn from_object<T: IObject>(v: Arc<Object<T>>) -> Self {
         unsafe {
             let ptr = Arc::into_raw(v);
-            let ptr = ptr as *const OpaqueArcedObject;
+            let ptr = ptr as *const ObjectHeader;
             ArcObject {
                 inner: ManuallyDrop::new(Arc::from_raw(ptr)),
             }
@@ -163,7 +174,7 @@ impl ArcObject {
     ///
     /// # Info
     ///
-    /// This is just a wrapper around [`std::sync::Arc::strong_count`]
+    /// This is just a wrapper around [`Arc::strong_count`]
     ///
     #[inline]
     #[must_use]
@@ -172,11 +183,11 @@ impl ArcObject {
     }
 
     #[inline]
-    pub fn downcast<U: IObject>(&self) -> Option<Arc<ArcedObject<U>>> {
+    pub fn downcast<U: IObject>(&self) -> Option<Arc<Object<U>>> {
         unsafe {
-            if U::ID == self.inner.vtable.id {
+            if U::ID == self.inner.desc.id {
                 let ptr = Arc::into_raw(self.inner.deref().clone());
-                let ptr = ptr as *const ArcedObject<U>;
+                let ptr = ptr as *const Object<U>;
                 let arc = Arc::from_raw(ptr);
                 Some(arc)
             } else {
@@ -188,9 +199,9 @@ impl ArcObject {
     #[inline]
     pub fn downcast_ref<U: IObject>(&self) -> Option<&U> {
         unsafe {
-            if U::ID == self.inner.vtable.id {
-                let ptr: NonNull<OpaqueArcedObject> = NonNull::from(self.inner.as_ref());
-                Some(&ptr.cast::<ArcedObject<U>>().as_ref().object)
+            if U::ID == self.inner.desc.id {
+                let ptr: NonNull<ObjectHeader> = NonNull::from(self.inner.as_ref());
+                Some(&ptr.cast::<Object<U>>().as_ref().object)
             } else {
                 None
             }
@@ -203,34 +214,62 @@ impl Drop for ArcObject {
         unsafe {
             let ptr = NonNull::from(&self.inner);
             let ptr = ptr.cast::<()>();
-            let f = self.inner.vtable.destructor_arc;
+            let f = self.inner.desc.destructor_arc;
             (f)(ptr, 1)
         }
     }
 }
 
+/// FFI portable header struct that must be placed as the first field to use our opaque IObject
+/// containers.
 #[repr(C)]
-pub struct ArcedObject<T: IObject> {
-    vtable: &'static ObjectDescription,
+#[derive(Clone)]
+pub struct ObjectHeader {
+    /// Reference to the object type's description table.
+    pub desc: &'static ObjectDescription,
+
+    /// Optional pointer to the trait object vtable for the primary trait the object has declared.
+    ///
+    /// This is used to enable thin trait objects.
+    pub primary_trait: Option<NonNull<()>>,
+}
+
+unsafe impl Send for ObjectHeader {}
+unsafe impl Sync for ObjectHeader {}
+
+/// Container used for bundling an object with a header that can be used to interact with the type
+/// behind type-erased interfaces.
+///
+/// This container is `repr(C)` (and so is the header itself) in order to guarantee the layout. We
+/// must place the header before the object in memory so that a pointer to `Object<T>` is also a
+/// valid pointer to `ObjectHeader`, such that you can freely view one as the other. This is what
+/// enables our type-erasure. We can always use the information in the header to determine which
+/// `Object<T>` a bare `ObjectHeader` can be interpreted as.
+#[repr(C)]
+pub struct Object<T: IObject> {
+    header: ObjectHeader,
     object: T,
 }
 
-impl<T: IObject> ArcedObject<T> {
-    /// Constructs a new [`ArcedObject`] wrapping the given object.
+impl<T: IObject> Object<T> {
+    /// Constructs a new [`Object`] wrapping the given object.
     pub const fn new(object: T) -> Self {
         Self {
-            vtable: T::DESC,
+            header: ObjectHeader {
+                desc: T::DESC,
+                primary_trait: None,
+            },
             object,
         }
     }
 
-    /// Constructs a new `Arc<ArcedObject<T>>` wrapping the given object.
+    /// Constructs a new `Arc<Object<T>>` wrapping the given object.
     #[inline]
-    pub fn new_arc(object: T) -> Arc<ArcedObject<T>> {
+    pub fn new_arc(object: T) -> Arc<Object<T>> {
         Arc::new(Self::new(object))
     }
 
-    /// Constructs a new `Arc<ArcedObject<T>>` wrapping the given object that is then converted into
+    /// Constructs a new `Arc<Object<T>>` wrapping the given object that is then converted into
     /// an opaque [`ArcObject`].
     #[inline]
     pub fn new_arc_opaque(object: T) -> ArcObject {
@@ -239,7 +278,7 @@ impl<T: IObject> ArcedObject<T> {
     }
 }
 
-impl<T: IObject> Deref for ArcedObject<T> {
+impl<T: IObject> Deref for Object<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -247,17 +286,10 @@ impl<T: IObject> Deref for ArcedObject<T> {
     }
 }
 
-impl<T: IObject> DerefMut for ArcedObject<T> {
+impl<T: IObject> DerefMut for Object<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.object
     }
-}
-
-/// Internal object. Represents the layout we use for [`ArcObject`]'s arc which is cast to only be
-/// aware of the inner
-#[repr(C)]
-struct OpaqueArcedObject {
-    vtable: &'static ObjectDescription,
 }
 
 /// This macro can be used to implement [`IObject`] on an object as a shorthand compared to manually
@@ -280,9 +312,7 @@ macro_rules! unsafe_impl_iobject {
                     align: ::std::mem::align_of::<$t>(),
                     name: $crate::nstr::nstr!(concat!(module_path!(), "::", stringify!($t))),
                     destructor: $crate::get_object_destructor_for::<$t>(),
-                    destructor_arc: $crate::object_destructor::<
-                        ::std::sync::Arc<$crate::ArcedObject<$t>>,
-                    >,
+                    destructor_arc: $crate::object_destructor::<::std::sync::Arc<$crate::Object<$t>>>,
                     // destructor_box: $crate::object_destructor::<::std::boxed::Box<$t>>,
                 };
                 &VTABLE
@@ -296,6 +326,7 @@ macro_rules! unsafe_impl_iobject {
                 &VTABLE
             }
 
+            #[doc(hidden)]
             const fn __internal_register_node_scope() -> bool {
                 #[$crate::ctor::ctor(crate_path = $crate::ctor)]
                 fn internal_register_t() {
@@ -386,7 +417,7 @@ pub fn assert_no_duplicate_ids_registered() {
     }
 }
 
-/// Super duper ultra unsafe do not access but needs to be public so macros can touch it.
+/// Super-duper ultra unsafe do not access but needs to be public so macros can touch it.
 ///
 /// Internal layout of the nodes that form the linked list of types.
 ///
@@ -409,7 +440,7 @@ impl ObjectTypeListNode {
     }
 }
 
-/// Super duper ultra unsafe do not access but needs to be public so macros can touch it.
+/// Super-duper ultra unsafe do not access but needs to be public so macros can touch it.
 ///
 /// Forms the head of the linked list of all declared IObject types. Will be setup before main.
 ///
@@ -422,7 +453,7 @@ pub const unsafe fn object_type_list_head() -> &'static AtomicPtr<ObjectTypeList
     &OBJECT_TYPE_LIST_HEAD
 }
 
-/// Super duper ultra unsafe do not access but needs to be public so macros can touch it.
+/// Super-duper ultra unsafe do not access but needs to be public so macros can touch it.
 ///
 /// Utility function used by the unsafe_impl_iobject macro for registering the type into the global
 /// linked list of all types.

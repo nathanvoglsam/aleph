@@ -120,7 +120,7 @@ impl TypedTableBox {
                 let ptr: NonNull<()> = ptr.cast();
                 Self {
                     ptr,
-                    desc: ObjectDescription::get::<T>(),
+                    desc: ObjectDescription::get::<T>().clone(),
                 }
             },
             Err(_) => handle_alloc_error(layout),

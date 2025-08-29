@@ -31,7 +31,7 @@ use std::any::TypeId;
 use std::sync::Arc;
 
 use aleph_any::AnyArc;
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use allocator_api2::vec::Vec as BVec;
@@ -52,8 +52,8 @@ pub struct Encoder<'a> {
     pub(crate) _buffer: vk::CommandBuffer,
     pub(crate) _context: AnyArc<Context>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) bound_graphics_pipeline: Option<Arc<ArcedObject<GraphicsPipeline>>>,
-    pub(crate) bound_compute_pipeline: Option<Arc<ArcedObject<ComputePipeline>>>,
+    pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
+    pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
     pub(crate) arena: Blink,
     pub(crate) enabled_shader_features: SyncShaderFeatures,
 }

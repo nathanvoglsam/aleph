@@ -33,7 +33,7 @@ use std::sync::atomic::AtomicU64;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
 use aleph_nstr::{NStr, nstr};
-use aleph_object_system::{ArcObject, ArcedObject};
+use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use ash::vk::{self, Handle};
@@ -320,7 +320,7 @@ impl SwapChain {
                     dsvs: Default::default(),
                     desc: OwnedTextureDesc::new(desc),
                 };
-                ArcedObject::new_arc(out)
+                Object::new_arc(out)
             })
             .collect();
 
@@ -472,7 +472,7 @@ pub struct SwapChainState {
     pub present_mode: PresentationMode,
     pub vk_present_mode: vk::PresentModeKHR,
     pub extent: vk::Extent2D,
-    pub images: Vec<Arc<ArcedObject<Texture>>>,
+    pub images: Vec<Arc<Object<Texture>>>,
     pub semaphore_pools: Vec<Arc<SemaphorePool>>,
 }
 

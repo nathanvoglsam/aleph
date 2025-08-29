@@ -31,7 +31,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::{ArcObject, ArcedObject};
+use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::map_acquired_image;
 
@@ -103,7 +103,7 @@ impl ISwapChain for ValidationSwapChain {
                 let inner = swap_image.texture().clone();
                 let desc = self._device.inner.get_texture_desc(&inner);
                 let desc = desc.clone().strip_name();
-                ArcedObject::new(ValidationTexture {
+                Object::new(ValidationTexture {
                     _this: v.clone(),
                     _device: self._device.clone(),
                     inner,
