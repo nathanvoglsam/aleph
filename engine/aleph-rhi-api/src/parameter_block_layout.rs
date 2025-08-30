@@ -173,6 +173,7 @@ impl<'a> ParameterBlockDesc<'a> {
     ///   less.
     /// - All parameter indices that are common to both parameter blocks must be themselves
     ///   compatible following the rules of [`ParameterDesc::is_compatible`].
+    /// - Any flags that impact compatibility are exactly the same in both sets.
     pub fn is_compatible(&self, other: &ParameterBlockDesc) -> bool {
         // If 'self' is smaller than 'other' it can't be used in its place because 'other' is
         // expecting more params than 'self' provides. This could lead to reading uninitialized
@@ -191,10 +192,17 @@ impl<'a> ParameterBlockDesc<'a> {
         let other_params = &other.params[0..shortest_len];
 
         // The two layouts are considered compatible if all relevant bindings are compatible.
-        self_params
+        if !self_params
             .iter()
             .zip(other_params.iter())
             .all(|(a, b)| a.is_compatible(b))
+        {
+            return false;
+        }
+
+        // Flags must exactly match. In the future we may need to change this if more flags are
+        // added.
+        self.flags == other.flags
     }
 }
 
