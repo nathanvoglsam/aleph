@@ -36,12 +36,14 @@ use std::ptr::NonNull;
 use std::sync::atomic::AtomicU64;
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::bump_cell::BumpCell;
 use aleph_rhi_impl_utils::object_counter::ObjectCounter;
 use aleph_rhi_impl_utils::offset_allocator::OffsetAllocator;
-use aleph_rhi_impl_utils::owned_desc::{OwnedBufferDesc, OwnedSamplerDesc, OwnedTextureDesc};
+use aleph_rhi_impl_utils::owned_desc::{
+    OwnedBufferDesc, OwnedParameterBlockDesc, OwnedSamplerDesc, OwnedTextureDesc,
+};
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use blink_alloc::BlinkAlloc;
 use bumpalo::Bump;
@@ -57,21 +59,19 @@ use windows::core::PCSTR;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 use crate::adapter::Adapter;
+use crate::binding_signature::{BindingSignature, CompiledBindingSignature};
 use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::context::Context;
 use crate::descriptor_arena::{DescriptorArenaHeap, DescriptorArenaLinear};
 use crate::descriptor_pool::DescriptorPool;
-use crate::descriptor_set_layout::{
-    DescriptorBindingInfo, DescriptorBindingLayout, DescriptorSetLayout,
-};
 use crate::fence::Fence;
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12_static, compare_op_to_dx12,
-    cull_mode_to_dx12, descriptor_type_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12,
-    primitive_topology_to_dx12, queue_type_to_dx12, sampler_address_mode_to_dx12,
-    sampler_filters_to_dx12, shader_visibility_to_dx12, stencil_op_to_dx12,
-    texture_create_clear_value_to_dx12, texture_create_desc_to_dx12, texture_format_to_dxgi,
+    cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
+    queue_type_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
+    shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
+    texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
@@ -81,12 +81,12 @@ use crate::internal::descriptor_set_pool::DescriptorSetPool;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
-use crate::internal::handle_wait_result;
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
+use crate::internal::{handle_wait_result, unwrap};
+use crate::parameter_block_layout::{CompiledParameterBlockLayout, ParameterBlockLayout};
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
-use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::semaphore::Semaphore;
@@ -174,6 +174,75 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    fn create_parameter_block_layout(
+        &self,
+        desc: &ParameterBlockDesc,
+    ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+        let compiled = CompiledParameterBlockLayout::new(desc);
+
+        let layout = AnyArc::new_cyclic(move |v| ParameterBlockLayout {
+            this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            id: self.object_counter.next_parameter_block_layout(),
+            desc: OwnedParameterBlockDesc::new(desc),
+            compiled,
+        });
+
+        Ok(AnyArc::map::<dyn IParameterBlockLayout, _>(layout, |v| v))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    fn create_binding_signature(
+        &self,
+        desc: &BindingSignatureDesc,
+    ) -> Result<AnyArc<dyn IBindingSignature>, BindingSignatureCreateError> {
+        DEVICE_BUMP.with(|bump_cell| {
+            let bump = bump_cell.scope();
+
+            let mut parameter_block_layouts =
+                Vec::with_capacity(desc.parameter_block_layouts.len());
+            for layout in desc.parameter_block_layouts {
+                let layout = unwrap::parameter_block_layout_d(layout);
+                parameter_block_layouts.push(layout.this.upgrade().unwrap());
+            }
+
+            let compiled = CompiledBindingSignature::new(&parameter_block_layouts, desc)?;
+
+            let root_signature = unsafe {
+                let desc = BindingSignature::translate_root_signature_desc(
+                    &parameter_block_layouts,
+                    &compiled,
+                    bump.deref(),
+                );
+                let blob = RootSignatureBlob::new(&desc)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
+                self.device
+                    .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
+                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
+            };
+
+            if let Some(name) = desc.name {
+                set_name(&root_signature, name).unwrap();
+            }
+
+            let signature = AnyArc::new_cyclic(move |v| BindingSignature {
+                this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
+                id: self.object_counter.next_binding_signature(),
+                parameter_block_layouts,
+                root_signature,
+                compiled,
+            });
+
+            Ok(AnyArc::map::<dyn IBindingSignature, _>(signature, |v| v))
+        })
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     #[aleph_profile::function]
     fn create_graphics_pipeline(
         &self,
@@ -182,15 +251,15 @@ impl IDevice for Device {
         DEVICE_BUMP.with(|bump_cell| {
             let bump = bump_cell.scope();
 
-            // Unwrap the pipeline layout trait object into the concrete implementation
-            let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+            // Unwrap the binding signature trait object into the concrete implementation
+            let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
             let builder = GraphicsPipelineStateStreamBuilder::new();
 
             // Add all shaders in the list to their corresponding slot
             let builder = Self::translate_shader_stage_list(desc.shader_stages, builder)?;
 
-            let builder = builder.root_signature(pipeline_layout.root_signature.clone());
+            let builder = builder.root_signature(binding_signature.root_signature.clone());
 
             let (input_binding_strides, input_layout) =
                 Self::translate_vertex_input_state_desc(&bump, desc.vertex_layout);
@@ -246,12 +315,12 @@ impl IDevice for Device {
                 _device: self.this.upgrade().unwrap(),
                 id: self.object_counter.next_graphics_pipeline(),
                 pipeline,
-                pipeline_layout,
+                binding_signature: binding_signature.this.upgrade().unwrap(),
                 primitive_topology,
                 input_binding_strides,
                 depth_bounds,
             };
-            let out = ArcedObject::new_arc_opaque(out);
+            let out = Object::new_arc_opaque(out);
             unsafe { Ok(GraphicsPipelineHandle::new(out)) }
         })
     }
@@ -264,16 +333,13 @@ impl IDevice for Device {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<ComputePipelineHandle, PipelineCreateError> {
-        // Unwrap the pipeline layout trait object into the concrete implementation
-        let pipeline_layout = PipelineLayout::get_owned(desc.pipeline_layout);
+        // Unwrap the binding signature trait object into the concrete implementation
+        let binding_signature = unwrap::binding_signature(desc.binding_signature);
 
-        let shader = match desc.shader_module {
-            ShaderBinary::Dxil(v) => v,
-            _ => return Err(PipelineCreateError::UnsupportedShaderFormat(0)),
-        };
+        let shader = desc.shader_module.get_dxil();
 
         let pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: unsafe { transmute_copy(&pipeline_layout.root_signature) },
+            pRootSignature: unsafe { transmute_copy(&binding_signature.root_signature) },
             CS: D3D12_SHADER_BYTECODE {
                 pShaderBytecode: shader.as_ptr() as *const _,
                 BytecodeLength: shader.len(),
@@ -300,47 +366,10 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             id: self.object_counter.next_compute_pipeline(),
             pipeline,
-            pipeline_layout,
+            binding_signature: binding_signature.this.upgrade().unwrap(),
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(ComputePipelineHandle::new(out)) }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_descriptor_set_layout(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-    ) -> Result<DescriptorSetLayoutHandle, DescriptorSetLayoutCreateError> {
-        // TODO: Currently we always create a descriptor table. In the future we could use some
-        //       optimization heuristics to detect when a root descriptor is better.
-        let visibility = shader_visibility_to_dx12(desc.visibility);
-
-        // First we produce a descriptor table for the non-sampler descriptors. Samplers have to go
-        // in their own descriptor heap and so we can't emit a single descriptor table for the
-        // layout.
-        //
-        // Any non-immutable samplers require a second descriptor table.
-        let mut binding_info = HashMap::with_capacity(desc.items.len());
-        let dynamic_constant_buffers = self.build_dynamic_buffer_views(desc, &mut binding_info);
-        let resource_table = self.build_resource_table_layout(desc, &mut binding_info);
-        let (sampler_tables, static_samplers) = self.build_sampler_tables(desc, &mut binding_info);
-        let resource_num = Self::calculate_descriptor_num(&resource_table);
-
-        let out = DescriptorSetLayout {
-            _device: self.this.upgrade().unwrap(),
-            id: self.object_counter.next_set_layout(),
-            binding_info,
-            visibility,
-            dynamic_constant_buffers,
-            resource_table,
-            resource_num,
-            sampler_tables,
-            static_samplers,
-        };
-        let out = ArcedObject::new_arc_opaque(out);
-        unsafe { Ok(DescriptorSetLayoutHandle::new(out)) }
     }
 
     // ========================================================================================== //
@@ -350,7 +379,7 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorPoolDesc,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        let layout = DescriptorSetLayout::get_owned(desc.layout);
+        let layout = unwrap::parameter_block_layout(desc.layout);
 
         let resource_arena = DescriptorChunk::new(
             self.descriptor_heaps.gpu_view_heap(),
@@ -363,7 +392,7 @@ impl IDevice for Device {
 
         let pool = Box::new(DescriptorPool {
             _device: self.this.upgrade().unwrap(),
-            _layout: layout,
+            _layout: layout.this.upgrade().unwrap(),
             resource_arena,
             set_pool: DescriptorSetPool::new(desc.num_sets),
             set_array_pool: BlinkAlloc::with_chunk_size(array_pool_size),
@@ -426,154 +455,6 @@ impl IDevice for Device {
                 Ok(pool)
             }
         }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn create_pipeline_layout(
-        &self,
-        desc: &PipelineLayoutDesc,
-    ) -> Result<PipelineLayoutHandle, PipelineLayoutCreateError> {
-        DEVICE_BUMP.with(|bump_cell| {
-            let bump = bump_cell.scope();
-
-            // Bundle up all the table layouts after we patch them for use in this layout as we need to
-            // extend the lifetime for the call to create the root signature
-            let mut resource_tables = BVec::with_capacity_in(desc.set_layouts.len(), &bump);
-            let mut static_samplers = BVec::new_in(&bump);
-            let mut parameters = BVec::with_capacity_in(
-                desc.set_layouts.len() + desc.push_constant_blocks.len(),
-                &bump,
-            );
-            let mut set_root_param_indices = Vec::with_capacity(desc.set_layouts.len());
-
-            let mut root_param_index = 0;
-            for (i, layout) in desc.set_layouts.iter().enumerate() {
-                let layout = DescriptorSetLayout::get(layout);
-
-                // First thing is we store the base root parameter index into our set->param_index
-                // lookup table.
-                set_root_param_indices.push(root_param_index);
-
-                for dynamic_cb in layout.dynamic_constant_buffers.iter() {
-                    let mut dynamic_cb = *dynamic_cb;
-                    dynamic_cb.RegisterSpace = i as u32;
-                    let dynamic_cb =
-                        root_param_for_cbv_root_descriptor(dynamic_cb, layout.visibility);
-
-                    parameters.push(dynamic_cb);
-                    root_param_index += 1;
-                }
-
-                // Create a parameter for the resource table only if this set has resources in its
-                // layout.
-                if !layout.resource_table.is_empty() {
-                    // Take a copy of the pre-calculated layout and patch the register space to match the
-                    // set index that it is being used for
-                    let table =
-                        create_descriptor_range_list(&bump, &layout.resource_table, i as u32);
-
-                    // Create the root parameter referencing the list in 'table', the lifetime of 'table'
-                    // will be extended so the reference remains valid
-                    let param = root_param_for_range_list(&table, layout.visibility);
-                    parameters.push(param);
-                    root_param_index += 1; // Advance the counter as we added a root param
-
-                    // Extend the lifetime of 'table' so it remains alive for the CreateRootSignature
-                    // call.
-                    resource_tables.push(table);
-                }
-
-                // Create a table for each sampler binding in the set, only if there are samplers in the
-                // set.
-                if !layout.sampler_tables.is_empty() {
-                    let table =
-                        create_descriptor_range_list(&bump, &layout.sampler_tables, i as u32);
-
-                    // We create a single table for _each_ individual sampler.
-                    for range in table.iter() {
-                        let range = std::slice::from_ref(range);
-                        // Create the root parameter referencing the list in 'table', the lifetime of 'table'
-                        // will be extended so the reference remains valid
-                        let param = root_param_for_range_list(range, layout.visibility);
-                        parameters.push(param);
-                        root_param_index += 1; // Advance the counter as we added a root param
-                    }
-
-                    resource_tables.push(table);
-                }
-
-                // Extend our list of static samplers based on the provided list for this binding
-                static_samplers.extend(layout.static_samplers.iter().map(|v| {
-                    let mut out = *v;
-                    out.RegisterSpace = i as u32;
-                    out
-                }));
-            }
-
-            // TODO: Putting root constants after all descriptors may have performance implications.
-            //       D3D12 requires priority to lower root parameter indices so, (on AMD) having push
-            //       constants after descriptors means the constants are more likely to spill into
-            //       memory instead of being in the registers.
-            let mut push_constant_blocks = Vec::with_capacity(desc.push_constant_blocks.len());
-            for block in desc.push_constant_blocks {
-                if (block.size % 4) != 0 {
-                    return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
-                }
-                let num32_bit_values = (block.size / 4) as u32;
-                let range = D3D12_ROOT_PARAMETER1 {
-                    ParameterType: D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
-                    Anonymous: D3D12_ROOT_PARAMETER1_0 {
-                        Constants: D3D12_ROOT_CONSTANTS {
-                            ShaderRegister: block.binding,
-                            RegisterSpace: 1024, // A reserved space for root/push constants
-                            Num32BitValues: num32_bit_values,
-                        },
-                    },
-                    ShaderVisibility: shader_visibility_to_dx12(block.visibility),
-                };
-                push_constant_blocks.push(PushConstantBlockInfo {
-                    _size: num32_bit_values * 4,
-                    root_parameter_index: parameters.len() as u32,
-                });
-                parameters.push(range);
-            }
-
-            let root_signature = unsafe {
-                let desc = D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-                    Version: D3D_ROOT_SIGNATURE_VERSION_1_1,
-                    Anonymous: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
-                        Desc_1_1: D3D12_ROOT_SIGNATURE_DESC1 {
-                            NumParameters: parameters.len() as _,
-                            pParameters: parameters.as_ptr(),
-                            NumStaticSamplers: static_samplers.len() as _,
-                            pStaticSamplers: static_samplers.as_ptr(),
-                            Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
-                        },
-                    },
-                };
-                let blob = RootSignatureBlob::new(&desc)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
-                self.device
-                    .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
-                    .map_err(|v| log::error!("Platform Error: {:#?}", v))?
-            };
-
-            if let Some(name) = desc.name {
-                set_name(&root_signature, name).unwrap();
-            }
-
-            let out = PipelineLayout {
-                _device: self.this.upgrade().unwrap(),
-                id: self.object_counter.next_pipeline_layout(),
-                root_signature,
-                push_constant_blocks,
-                set_root_param_indices,
-            };
-            let out = ArcedObject::new_arc_opaque(out);
-            unsafe { Ok(PipelineLayoutHandle::new(out)) }
-        })
     }
 
     // ========================================================================================== //
@@ -644,7 +525,7 @@ impl IDevice for Device {
             map_state: Mutex::new(Default::default()),
             desc: OwnedBufferDesc::new(desc.clone()),
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(BufferHandle::new(out)) }
     }
 
@@ -690,7 +571,7 @@ impl IDevice for Device {
             dsvs: Default::default(),
             image_views: Mutex::new(Bump::with_capacity(size_of::<ImageViewObject>() * 8)),
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(TextureHandle::new(out)) }
     }
 
@@ -738,7 +619,7 @@ impl IDevice for Device {
             gpu_handle,
             static_desc,
         };
-        let out = ArcedObject::new_arc_opaque(out);
+        let out = Object::new_arc_opaque(out);
         unsafe { Ok(SamplerHandle::new(out)) }
     }
 
@@ -848,12 +729,14 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
-        unsafe {
-            for set_write in writes {
-                self.update_descriptor_set(set_write);
-            }
-        }
+    unsafe fn update_parameter_block(
+        &self,
+        _layout: &dyn IParameterBlockLayout,
+        _block: ParameterBlockHandle,
+        _base: u32,
+        _writes: &[ParameterWrite],
+    ) {
+        todo!()
     }
 
     // ========================================================================================== //
@@ -872,7 +755,7 @@ impl IDevice for Device {
             fence,
             value: AtomicU64::new(2),
         };
-        let fence = ArcedObject::new_arc_opaque(fence);
+        let fence = Object::new_arc_opaque(fence);
         unsafe { Ok(FenceHandle::new(fence)) }
     }
 
@@ -890,7 +773,7 @@ impl IDevice for Device {
             fence,
             value: AtomicU64::new(0),
         };
-        let semaphore = ArcedObject::new_arc_opaque(semaphore);
+        let semaphore = Object::new_arc_opaque(semaphore);
         unsafe { Ok(SemaphoreHandle::new(semaphore)) }
     }
 
@@ -1114,26 +997,6 @@ impl IDevice for Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
-    fn get_descriptor_set_layout_id(
-        &self,
-        set_layout: &DescriptorSetLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        DescriptorSetLayout::get(set_layout).id
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn get_pipeline_layout_id(
-        &self,
-        pipeline_layout: &PipelineLayoutHandle,
-    ) -> std::num::NonZeroU64 {
-        PipelineLayout::get(pipeline_layout).id
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
     fn get_graphics_pipeline_id(&self, pipeline: &GraphicsPipelineHandle) -> std::num::NonZeroU64 {
         GraphicsPipeline::get(pipeline).id
     }
@@ -1147,28 +1010,26 @@ impl IDevice for Device {
 }
 
 impl Device {
-    /// Internal function for translating the list of [ShaderStage] stages into the pipeline
+    /// Internal function for translating the list of [`IShaderCodeSource`] stages into the pipeline
     /// description
     fn translate_shader_stage_list<'a>(
-        shader_stages: &'a [ShaderStage<'a>],
+        shader_stages: &'a [&'a dyn IShaderCodeSource],
         mut builder: GraphicsPipelineStateStreamBuilder<'a>,
     ) -> Result<GraphicsPipelineStateStreamBuilder<'a>, PipelineCreateError> {
-        for (i, shader_stage) in shader_stages.iter().enumerate() {
-            builder = match shader_stage.data {
-                ShaderBinary::Dxil(shader) => match shader_stage.stage {
-                    ShaderType::Vertex => builder.vertex_shader(shader),
-                    ShaderType::Hull => builder.hull_shader(shader),
-                    ShaderType::Domain => builder.domain_shader(shader),
-                    ShaderType::Geometry => builder.geometry_shader(shader),
-                    ShaderType::Fragment => builder.pixel_shader(shader),
-                    ShaderType::Compute => {
-                        panic!("Can't bind a compute shader to a graphics pipeline")
-                    }
-                    ShaderType::Amplification | ShaderType::Mesh => {
-                        todo!("Missing implementation for amplification and mesh shaders")
-                    }
-                },
-                _ => return Err(PipelineCreateError::UnsupportedShaderFormat(i)),
+        for shader_stage in shader_stages.iter() {
+            let code = shader_stage.get_dxil();
+            builder = match shader_stage.shader_type() {
+                ShaderType::Vertex => builder.vertex_shader(code),
+                ShaderType::Hull => builder.hull_shader(code),
+                ShaderType::Domain => builder.domain_shader(code),
+                ShaderType::Geometry => builder.geometry_shader(code),
+                ShaderType::Fragment => builder.pixel_shader(code),
+                ShaderType::Compute => {
+                    panic!("Can't bind a compute shader to a graphics pipeline")
+                }
+                ShaderType::Amplification | ShaderType::Mesh => {
+                    todo!("Missing implementation for amplification and mesh shaders")
+                }
             }
         }
         Ok(builder)
@@ -1433,202 +1294,6 @@ impl Device {
             IndependentBlendEnable: independent_blend_enable,
             RenderTarget: render_targets,
         }
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn build_dynamic_buffer_views(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-        binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
-    ) -> Vec<D3D12_ROOT_DESCRIPTOR1> {
-        let mut table = Vec::with_capacity(desc.items.len());
-        for item in desc
-            .items
-            .iter()
-            .filter(|v| v.binding_type == DescriptorType::UniformBufferDynamic)
-        {
-            if item.binding_count.is_some() {
-                // Descriptor arrays are currently unimplemented pending a solution for mapping
-                // how they surface in SPIR-V vs D3D12.
-                //
-                // - Vulkan uses a single binding for the whole array.
-                // - D3D12 uses a register per element.
-                //
-                // We currently map binding_num directly to register number. Arrays break this
-                // mapping, Vulkan will work but D3D12 will not. We either have to force asinine
-                // D3D12 behavior on Vulkan or
-                //
-                unimplemented!("Currently descriptor arrays are unimplemented");
-            }
-
-            let num_descriptors = match item.binding_count {
-                None => 1,
-                Some(v) => v.get(),
-            };
-
-            let base_shader_register = item.binding_num;
-
-            let info = DescriptorBindingInfo {
-                _type: item.binding_type,
-                _is_static_sampler: false,
-                layout: DescriptorBindingLayout {
-                    base: base_shader_register,
-                    _num_descriptors: num_descriptors,
-                },
-            };
-            binding_info.insert(item.binding_num, info);
-
-            let item = D3D12_ROOT_DESCRIPTOR1 {
-                ShaderRegister: base_shader_register,
-                RegisterSpace: 0,
-                Flags: D3D12_ROOT_DESCRIPTOR_FLAG_NONE,
-            };
-            table.push(item);
-        }
-        table
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn build_resource_table_layout(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-        binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
-    ) -> Vec<D3D12_DESCRIPTOR_RANGE1> {
-        fn not_sampler_or_dynamic_ubo(v: DescriptorType) -> bool {
-            !matches!(
-                v,
-                DescriptorType::Sampler | DescriptorType::UniformBufferDynamic
-            )
-        }
-
-        let mut offset = 0;
-        let mut table = Vec::with_capacity(desc.items.len());
-        for item in desc
-            .items
-            .iter()
-            .filter(|v| not_sampler_or_dynamic_ubo(v.binding_type))
-        {
-            if item.binding_count.is_some() {
-                // Descriptor arrays are currently unimplemented pending a solution for mapping
-                // how they surface in SPIR-V vs D3D12.
-                //
-                // - Vulkan uses a single binding for the whole array.
-                // - D3D12 uses a register per element.
-                //
-                // We currently map binding_num directly to register number. Arrays break this
-                // mapping, Vulkan will work but D3D12 will not. We either have to force asinine
-                // D3D12 behavior on Vulkan or
-                //
-                unimplemented!("Currently descriptor arrays are unimplemented");
-            }
-
-            let range_type = descriptor_type_to_dx12(item.binding_type);
-
-            let num_descriptors = match item.binding_count {
-                None => 1,
-                Some(v) => v.get(),
-            };
-
-            let base_shader_register = item.binding_num;
-
-            let info = DescriptorBindingInfo {
-                _type: item.binding_type,
-                _is_static_sampler: item.static_samplers.is_some(),
-                layout: DescriptorBindingLayout {
-                    base: offset,
-                    _num_descriptors: num_descriptors,
-                },
-            };
-            binding_info.insert(item.binding_num, info);
-
-            let item = D3D12_DESCRIPTOR_RANGE1 {
-                RangeType: range_type,
-                NumDescriptors: num_descriptors,
-                BaseShaderRegister: base_shader_register,
-                RegisterSpace: 0,
-                Flags: D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
-                OffsetInDescriptorsFromTableStart: offset,
-            };
-            table.push(item);
-            offset += num_descriptors;
-        }
-        table
-    }
-
-    // ========================================================================================== //
-    // ========================================================================================== //
-
-    fn build_sampler_tables(
-        &self,
-        desc: &DescriptorSetLayoutDesc,
-        binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
-    ) -> (Vec<D3D12_DESCRIPTOR_RANGE1>, Vec<D3D12_STATIC_SAMPLER_DESC>) {
-        let mut sampler_tables = Vec::new();
-        let mut static_samplers = Vec::new();
-        for item in desc
-            .items
-            .iter()
-            .filter(|v| v.binding_type == DescriptorType::Sampler)
-        {
-            if item.binding_count.is_some() {
-                // we don't support sampler array bindings due to strict limits imposed on D3D12.
-                // - (Tier 1) max 16 samplers in a single root signature
-                // - (Tier 2+) max 2048 samplers in a single root signature
-                // - max 2048 samplers in a single device-visible descriptor heap
-                //
-                // Only 2048 samplers can ever be addressed at once, making bindless difficult as
-                // the limit is very small, and non-bindless capable hardware can only have 16
-                // samplers in a root signature meaning static sized arrays will typically be so
-                // small it makes using an array redundant.
-                unimplemented!("Sampler Arrays are currently un-implemented");
-            }
-
-            // Dynamic samplers require a descriptor table as they're dynamic. There is a separate
-            // part of a root signature that handles static samplers.
-            //
-            // We switch how we output the binding based on the presence of static samplers
-            if let Some(samplers) = item.static_samplers {
-                for sampler in samplers {
-                    let sampler = Sampler::get(sampler);
-                    let mut desc = sampler.static_desc;
-                    desc.ShaderRegister = item.binding_num;
-
-                    static_samplers.push(desc);
-                }
-            } else {
-                // Handle dynamic samplers by inserting them into a descriptor table.
-                let num_descriptors = match item.binding_count {
-                    None => 1,
-                    Some(v) => v.get(),
-                };
-                let base_shader_register = item.binding_num;
-
-                let info = DescriptorBindingInfo {
-                    _type: item.binding_type,
-                    _is_static_sampler: item.static_samplers.is_some(),
-                    layout: DescriptorBindingLayout {
-                        base: base_shader_register,
-                        _num_descriptors: num_descriptors,
-                    },
-                };
-                binding_info.insert(item.binding_num, info);
-
-                let item = D3D12_DESCRIPTOR_RANGE1 {
-                    RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-                    NumDescriptors: num_descriptors,
-                    BaseShaderRegister: base_shader_register,
-                    RegisterSpace: 0,
-                    Flags: D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
-                    OffsetInDescriptorsFromTableStart: 0,
-                };
-                sampler_tables.push(item);
-            }
-        }
-        (sampler_tables, static_samplers)
     }
 
     // ========================================================================================== //
@@ -2177,45 +1842,6 @@ impl Drop for Device {
                 let _sink = device_unregister_message_callback(&self.device, cookie);
             }
         }
-    }
-}
-
-fn create_descriptor_range_list<'a>(
-    bump: &'a Bump,
-    v: &[D3D12_DESCRIPTOR_RANGE1],
-    i: u32,
-) -> BVec<'a, D3D12_DESCRIPTOR_RANGE1> {
-    let mut table = BVec::from_iter_in(v.iter().copied(), bump);
-    for binding in table.iter_mut() {
-        binding.RegisterSpace = i;
-    }
-    table
-}
-
-fn root_param_for_range_list(
-    v: &[D3D12_DESCRIPTOR_RANGE1],
-    visibility: D3D12_SHADER_VISIBILITY,
-) -> D3D12_ROOT_PARAMETER1 {
-    D3D12_ROOT_PARAMETER1 {
-        ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-        Anonymous: D3D12_ROOT_PARAMETER1_0 {
-            DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE1 {
-                NumDescriptorRanges: v.len() as _,
-                pDescriptorRanges: v.as_ptr(),
-            },
-        },
-        ShaderVisibility: visibility,
-    }
-}
-
-fn root_param_for_cbv_root_descriptor(
-    v: D3D12_ROOT_DESCRIPTOR1,
-    visibility: D3D12_SHADER_VISIBILITY,
-) -> D3D12_ROOT_PARAMETER1 {
-    D3D12_ROOT_PARAMETER1 {
-        ParameterType: D3D12_ROOT_PARAMETER_TYPE_CBV,
-        Anonymous: D3D12_ROOT_PARAMETER1_0 { Descriptor: v },
-        ShaderVisibility: visibility,
     }
 }
 

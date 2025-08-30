@@ -94,9 +94,6 @@ impl IAny for Queue {
             if target == TypeId::of::<dyn IQueue>() {
                 return Some(transmute(self as &dyn IQueue));
             }
-            if target == TypeId::of::<dyn IQueueDebug>() && self.is_queue_debug_available {
-                return Some(transmute(self as &dyn IQueueDebug));
-            }
             if target == TypeId::of::<dyn IAny>() {
                 return Some(transmute(self as &dyn IAny));
             }
@@ -455,44 +452,6 @@ impl IQueue for Queue {
                 .map_err(|v| log::error!("Platform Error: {:#?}", v))?;
 
             Ok(())
-        }
-    }
-}
-
-impl IQueueDebug for Queue {
-    fn set_marker(&self, color: Color, message: &aleph_nstr::NStr) {
-        let _lock = self.submit_lock.lock();
-        unsafe {
-            set_marker_cstr_on_queue(&self.handle, color.0.into(), message.to_cstr());
-        }
-    }
-
-    fn begin_event(&self, color: Color, message: &aleph_nstr::NStr) {
-        let _lock = self.submit_lock.lock();
-        unsafe {
-            // Use a counter to track the event stack depth. Prevents mismatched
-            // end_event+begin_event pairs.
-            let previous_event_depth = self.debug_marker_depth.fetch_add(1, Ordering::Relaxed);
-            assert_ne!(
-                previous_event_depth,
-                u64::MAX,
-                "Event Stack Depth overflow. How!!??!?"
-            );
-            begin_event_cstr_on_queue(&self.handle, color.0.into(), message.to_cstr());
-        }
-    }
-
-    fn end_event(&self) {
-        let _lock = self.submit_lock.lock();
-        unsafe {
-            // Use a counter to track the event stack depth. Prevents mismatched
-            // end_event+begin_event pairs.
-            let previous_event_depth = self.debug_marker_depth.fetch_sub(1, Ordering::Relaxed);
-            assert_ne!(
-                previous_event_depth, 0,
-                "Event Stack Depth underflow. end_event called without a matching begin_event"
-            );
-            end_event_on_queue(&self.handle);
         }
     }
 }

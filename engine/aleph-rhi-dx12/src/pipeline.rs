@@ -31,17 +31,17 @@ use std::num::NonZeroU64;
 use std::sync::Arc;
 
 use aleph_any::AnyArc;
-use aleph_object_system::{ArcedObject, unsafe_impl_iobject};
+use aleph_object_system::{Object, unsafe_impl_iobject};
 use aleph_rhi_api::*;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 
+use crate::binding_signature::BindingSignature;
 use crate::device::Device;
-use crate::pipeline_layout::PipelineLayout;
 
 pub struct GraphicsPipeline {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
+    pub(crate) binding_signature: AnyArc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: ID3D12PipelineState,
 
@@ -62,7 +62,7 @@ pub struct GraphicsPipeline {
 unsafe_impl_iobject!(GraphicsPipeline, "01944ff0-663f-73c2-a87d-51383da799b5");
 
 impl GraphicsPipeline {
-    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &GraphicsPipelineHandle) -> Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()
@@ -78,7 +78,7 @@ impl GraphicsPipeline {
 
 pub struct ComputePipeline {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) pipeline_layout: Arc<ArcedObject<PipelineLayout>>,
+    pub(crate) binding_signature: AnyArc<BindingSignature>,
     pub(crate) id: NonZeroU64,
     pub(crate) pipeline: ID3D12PipelineState,
 }
@@ -86,7 +86,7 @@ pub struct ComputePipeline {
 unsafe_impl_iobject!(ComputePipeline, "01944ff0-973f-7500-8e47-d87a06293301");
 
 impl ComputePipeline {
-    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> std::sync::Arc<ArcedObject<Self>> {
+    pub(crate) fn get_owned(v: &ComputePipelineHandle) -> Arc<Object<Self>> {
         v.clone()
             .into_inner()
             .downcast::<Self>()

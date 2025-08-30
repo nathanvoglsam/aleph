@@ -40,11 +40,12 @@ use allocator_api2::alloc::{Allocator, Global};
 use blink_alloc::BlinkAlloc;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::descriptor_set_pool::DescriptorSetPool;
+use crate::internal::unwrap;
+use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorArenaLinear {
     pub(crate) _device: AnyArc<Device>,
@@ -77,7 +78,7 @@ impl IGetPlatformInterface for DescriptorArenaLinear {
 impl DescriptorArenaLinear {
     fn get_optional_handles_for_index(
         &self,
-        layout: &DescriptorSetLayout,
+        layout: &ParameterBlockLayout,
         index: u32,
     ) -> (Option<CPUDescriptorHandle>, Option<GPUDescriptorHandle>) {
         if layout.resource_num != 0 {
@@ -90,20 +91,20 @@ impl DescriptorArenaLinear {
 }
 
 impl IDescriptorArena for DescriptorArenaLinear {
-    fn allocate_set(
+    fn allocate_block(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        let layout = DescriptorSetLayout::get(layout);
+        layout: &dyn IParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+        let layout = unwrap::parameter_block_layout(layout);
         self.allocate_set_internal(layout)
     }
 
-    fn allocate_sets(
+    fn allocate_blocks(
         &self,
-        layout: &DescriptorSetLayoutHandle,
+        layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
-        let layout = DescriptorSetLayout::get(layout);
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+        let layout = unwrap::parameter_block_layout(layout);
         let mut sets = Vec::with_capacity(num_blocks);
         for _ in 0..num_blocks {
             sets.push(self.allocate_set_internal(layout)?);
@@ -114,7 +115,7 @@ impl IDescriptorArena for DescriptorArenaLinear {
         Ok(sets.into_boxed_slice())
     }
 
-    unsafe fn free(&self, _sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&self, _blocks: &[ParameterBlockHandle]) {
         unimplemented!()
     }
 
@@ -133,16 +134,16 @@ impl DescriptorArenaLinear {
     /// [IDescriptorArena::allocate_sets].
     fn allocate_set_internal(
         &self,
-        layout: &DescriptorSetLayout,
-    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+        layout: &ParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
         if self.num_blocks.get() == self.set_capacity {
-            return Err(DescriptorPoolAllocateError::OutOfMemory);
+            return Err(DescriptorArenaAllocateError::OutOfMemory);
         }
 
         if self.descriptor_bump_index.get() + layout.resource_num
             > self.resource_arena.num_descriptors
         {
-            return Err(DescriptorPoolAllocateError::OutOfPoolMemory);
+            return Err(DescriptorArenaAllocateError::OutOfPoolMemory);
         }
 
         // Bump allocate the required number of descriptors from the set
@@ -164,17 +165,17 @@ impl DescriptorArenaLinear {
             )
         };
 
-        handle.ok_or(DescriptorPoolAllocateError::OutOfMemory)
+        handle.ok_or(DescriptorArenaAllocateError::OutOfMemory)
     }
 
     pub fn heap_allocate(
         allocator: &impl Allocator,
-        layout: &DescriptorSetLayout,
+        layout: &ParameterBlockLayout,
         num_dynamic_cbs: usize,
         num_samplers: usize,
         resource_handle_cpu: Option<CPUDescriptorHandle>,
         resource_handle_gpu: Option<GPUDescriptorHandle>,
-    ) -> Option<DescriptorSetHandle> {
+    ) -> Option<ParameterBlockHandle> {
         // Make sure we can just allocate some u64 off the end of the set with no alignment issues
         assert_eq!(
             std::mem::align_of::<DescriptorSet>(),
@@ -205,7 +206,7 @@ impl DescriptorArenaLinear {
             });
         }
 
-        unsafe { Some(DescriptorSetHandle::from_raw(set.cast())) }
+        unsafe { Some(ParameterBlockHandle::from_raw(set.cast())) }
     }
 
     pub const fn descriptor_set_allocation_layout(
@@ -283,7 +284,7 @@ pub struct DescriptorArenaHeap {
 
     /// A list of all the handles that are currently live. Used so we can fully clean up after the
     /// arena when it's being dropped.
-    pub(crate) live_handles: Cell<Vec<DescriptorSetHandle>>,
+    pub(crate) live_handles: Cell<Vec<ParameterBlockHandle>>,
 }
 
 declare_interfaces!(DescriptorArenaHeap, [IDescriptorArena]);
@@ -295,16 +296,16 @@ impl IGetPlatformInterface for DescriptorArenaHeap {
 }
 
 impl IDescriptorArena for DescriptorArenaHeap {
-    fn allocate_set(
+    fn allocate_block(
         &self,
-        layout: &DescriptorSetLayoutHandle,
-    ) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
-        let set_layout = DescriptorSetLayout::get(layout);
+        layout: &dyn IParameterBlockLayout,
+    ) -> Result<ParameterBlockHandle, DescriptorArenaAllocateError> {
+        let block_layout = unwrap::parameter_block_layout(layout);
 
         let mut set = MaybeUninit::uninit();
         self.set_pool
             .allocate_sets(std::slice::from_mut(&mut set))
-            .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
+            .ok_or(DescriptorArenaAllocateError::OutOfPoolMemory)?;
 
         // Safety: allocate_sets is requried to intialize this so this is safe
         let set = unsafe { set.assume_init() };
@@ -312,7 +313,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
         unsafe {
             let mut resource_pool = self.resource_pool.take().unwrap();
             let mut live_handles = self.live_handles.take();
-            let out = match self.allocate_set(&mut resource_pool, set_layout, set) {
+            let out = match self.inner_allocate_block(&mut resource_pool, block_layout, set) {
                 Some(_) => {
                     live_handles.push(set);
                     Ok(set)
@@ -320,7 +321,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
                 None => {
                     // Return the set back to the pool
                     self.set_pool.free_sets(&[set]);
-                    Err(DescriptorPoolAllocateError::OutOfMemory)
+                    Err(DescriptorArenaAllocateError::OutOfMemory)
                 }
             };
             self.resource_pool.set(Some(resource_pool));
@@ -330,22 +331,22 @@ impl IDescriptorArena for DescriptorArenaHeap {
         }
     }
 
-    fn allocate_sets(
+    fn allocate_blocks(
         &self,
-        layout: &DescriptorSetLayoutHandle,
+        layout: &dyn IParameterBlockLayout,
         num_blocks: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
-        let set_layout = DescriptorSetLayout::get(layout);
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorArenaAllocateError> {
+        let block_layout = unwrap::parameter_block_layout(layout);
 
         let mut sets = vec![MaybeUninit::uninit(); num_blocks];
         self.set_pool
             .allocate_sets(&mut sets)
-            .ok_or(DescriptorPoolAllocateError::OutOfPoolMemory)?;
+            .ok_or(DescriptorArenaAllocateError::OutOfPoolMemory)?;
 
         debug_assert_eq!(sets.len(), sets.capacity());
         debug_assert_eq!(sets.len(), num_blocks);
         let sets = sets.into_boxed_slice();
-        let sets: Box<[DescriptorSetHandle]> = unsafe { transmute(sets) };
+        let sets: Box<[ParameterBlockHandle]> = unsafe { transmute(sets) };
 
         unsafe {
             let mut resource_pool = self.resource_pool.take().unwrap();
@@ -353,7 +354,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
 
             let mut num_allocated = 0usize;
             for &handle in sets.iter() {
-                match self.allocate_set(&mut resource_pool, set_layout, handle) {
+                match self.inner_allocate_block(&mut resource_pool, block_layout, handle) {
                     Some(_) => {
                         live_handles.push(handle);
                         num_allocated += 1;
@@ -380,7 +381,7 @@ impl IDescriptorArena for DescriptorArenaHeap {
         Ok(sets)
     }
 
-    unsafe fn free(&self, sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&self, sets: &[ParameterBlockHandle]) {
         let mut live_handles = self.live_handles.take();
         let mut resource_pool = self.resource_pool.take().unwrap();
 
@@ -413,11 +414,11 @@ impl IDescriptorArena for DescriptorArenaHeap {
 }
 
 impl DescriptorArenaHeap {
-    unsafe fn allocate_set(
+    unsafe fn inner_allocate_block(
         &self,
         resource_pool: &mut OffsetAllocator,
-        set_layout: &DescriptorSetLayout,
-        handle: DescriptorSetHandle,
+        set_layout: &ParameterBlockLayout,
+        handle: ParameterBlockHandle,
     ) -> Option<()> {
         let global_alloc = Global;
 
@@ -475,7 +476,7 @@ impl DescriptorArenaHeap {
         Some(())
     }
 
-    unsafe fn deallocate_set(resource_pool: &mut OffsetAllocator, handle: DescriptorSetHandle) {
+    unsafe fn deallocate_set(resource_pool: &mut OffsetAllocator, handle: ParameterBlockHandle) {
         unsafe {
             let global_alloc = Global;
 

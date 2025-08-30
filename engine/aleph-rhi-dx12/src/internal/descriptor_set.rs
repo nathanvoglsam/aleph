@@ -33,18 +33,16 @@ use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::offset_allocator;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
+use crate::parameter_block_layout::ParameterBlockLayout;
 
 /// This internal struct is a critical piece of the implementation of the descriptor sets API. The
-/// RHI API specifies [DescriptorSetHandle] as an opaque handle to a 'descriptor set object'. This
+/// RHI API specifies [`ParameterBlockHandle`] as an opaque handle to a 'descriptor set object'. This
 /// *is* that object, for the D3D12 implementation.
 ///
 /// This tracks the necessary state to write descriptors and bind the set to a slot in the pipeline.
 pub struct DescriptorSet {
     /// The descriptor set layout of this set
-    pub _layout: NonNull<DescriptorSetLayout>,
-
-    pub dynamic_constant_buffers: NonNull<[u64]>,
+    pub _layout: NonNull<ParameterBlockLayout>,
 
     /// The allocation for the resource handles. Could be 'empty/null' if there's no allocation
     /// and the handles are either None or backed via a pool.
@@ -74,14 +72,14 @@ impl DescriptorSet {
         }
     }
 
-    /// Grabs the pointer inside a [DescriptorSetHandle] as a non-null [DescriptorSet] ptr
+    /// Grabs the pointer inside a [`ParameterBlockHandle`] as a non-null [DescriptorSet] ptr
     ///
     /// # Safety
     ///
     /// Lets be real. You're going to be making a reference out of this pointer...
     ///
     /// This has all the soundness requirements for creating a reference from a raw pointer. At the
-    /// very least a [DescriptorSetHandle] is guaranteed to be non-null, but many things are not
+    /// very least a [`ParameterBlockHandle`] is guaranteed to be non-null, but many things are not
     /// known at this call-site without the caller tracking these things themselves.
     ///
     /// - It is the caller's responsibility to ensure that no mutable reference can exist at the
@@ -104,7 +102,7 @@ impl DescriptorSet {
     ///       created from. If the two devices use different implementations then the handles
     ///       *will* be interpreted as the incorrect type.
     ///
-    pub fn ptr_from_handle(handle: DescriptorSetHandle) -> NonNull<DescriptorSet> {
+    pub fn ptr_from_handle(handle: ParameterBlockHandle) -> NonNull<DescriptorSet> {
         let inner: NonNull<()> = handle.into();
         inner.cast()
     }

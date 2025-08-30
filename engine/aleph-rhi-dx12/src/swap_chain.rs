@@ -33,7 +33,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use aleph_any::{AnyArc, AnyWeak, declare_interfaces};
-use aleph_object_system::{ArcObject, ArcedObject};
+use aleph_object_system::{ArcObject, Object};
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::owned_desc::OwnedTextureDesc;
 use aleph_rhi_impl_utils::{manually_drop, try_clone_value_into_slot};
@@ -70,7 +70,7 @@ impl IGetPlatformInterface for SwapChain {
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub textures: Vec<Arc<ArcedObject<Texture>>>,
+    pub textures: Vec<Arc<Object<Texture>>>,
     pub dxgi_format: DXGI_FORMAT,
     pub dxgi_flags: DXGI_SWAP_CHAIN_FLAG,
 }
@@ -113,7 +113,7 @@ impl SwapChain {
                 dsvs: Default::default(),
                 image_views: Mutex::new(Bump::with_capacity(size_of::<ImageViewObject>() * 8)),
             };
-            let texture = ArcedObject::new_arc(texture);
+            let texture = Object::new_arc(texture);
             state.textures.push(texture);
         }
 

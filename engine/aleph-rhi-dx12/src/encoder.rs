@@ -33,7 +33,7 @@ use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use aleph_rhi_impl_utils::try_clone_value_into_slot;
 use bumpalo::Bump;
@@ -43,6 +43,7 @@ use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 
+use crate::binding_signature::BindingSignature;
 use crate::buffer::Buffer;
 use crate::command_list::{CommandList, ListState};
 use crate::internal::conv::{
@@ -51,20 +52,20 @@ use crate::internal::conv::{
     translate_rendering_depth_stencil_attachment,
 };
 use crate::internal::descriptor_set::DescriptorSet;
+use crate::internal::unwrap;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
-use crate::pipeline_layout::PipelineLayout;
 use crate::texture::{ImageViewObject, Texture};
 
 pub struct Encoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
     pub(crate) _list: ID3D12GraphicsCommandList7,
     pub(crate) _queue_type: QueueType,
-    pub(crate) bound_graphics_pipeline: Option<Arc<ArcedObject<GraphicsPipeline>>>,
-    pub(crate) bound_compute_pipeline: Option<Arc<ArcedObject<ComputePipeline>>>,
+    pub(crate) bound_graphics_pipeline: Option<Arc<Object<GraphicsPipeline>>>,
+    pub(crate) bound_compute_pipeline: Option<Arc<Object<ComputePipeline>>>,
     pub(crate) input_binding_strides: [u32; 16],
     pub(crate) arena: Bump,
-    pub(crate) bound_graphics_sets: Box<[Option<DescriptorSetHandle>]>,
-    pub(crate) bound_compute_sets: Box<[Option<DescriptorSetHandle>]>,
+    pub(crate) bound_graphics_sets: Box<[Option<ParameterBlockHandle>]>,
+    pub(crate) bound_compute_sets: Box<[Option<ParameterBlockHandle>]>,
 }
 
 impl<'a> IGetPlatformInterface for Encoder<'a> {
@@ -83,7 +84,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
             // A pipeline is inseparable from its' root signature so we need to bind it here too
             self._list
-                .SetGraphicsRootSignature(&concrete.pipeline_layout.root_signature);
+                .SetGraphicsRootSignature(&concrete.binding_signature.root_signature);
 
             // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
             // defers the full specification to this call below. Vulkan can't implement D3D12's
@@ -196,14 +197,19 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
+    unsafe fn set_push_constant_block(&mut self, data: &[u8]) {
         // This command can't work without a bound pipeline, we need the pipeline layout so we can
         // know where in the root signature to write the data
         let pipeline = self.bound_graphics_pipeline.as_deref().unwrap();
 
         // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
         // the constant block index
-        let block = &pipeline.pipeline_layout.push_constant_blocks[block_index];
+        let block = pipeline
+            .binding_signature
+            .compiled
+            .push_constant_block
+            .as_ref()
+            .unwrap();
 
         let num32_bit_values_to_set = (data.len() / 4) as u32;
         let p_src_data = data.as_ptr();
@@ -306,9 +312,9 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             // Binds the pipeline
             self._list.SetPipelineState(&concrete.pipeline);
 
-            // A pipeline is inseparable from its' root signature so we need to bind it here too
+            // A pipeline is inseparable from its root signature so we need to bind it here too
             self._list
-                .SetComputeRootSignature(&concrete.pipeline_layout.root_signature);
+                .SetComputeRootSignature(&concrete.binding_signature.root_signature);
 
             // We need the currently bound pipeline while recording commands to access things like
             // the pipeline layout for handling binding descriptors.
@@ -317,15 +323,14 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         }
     }
 
-    unsafe fn bind_descriptor_sets(
+    unsafe fn bind_parameter_blocks(
         &mut self,
-        pipeline_layout: &PipelineLayoutHandle,
+        binding_signature: &dyn IBindingSignature,
         bind_point: PipelineBindPoint,
-        first_set: u32,
-        sets: &[DescriptorSetHandle],
-        dynamic_offsets: &[u32],
+        first_block: u32,
+        blocks: &[ParameterBlockHandle],
     ) {
-        let pipeline_layout = PipelineLayout::get(pipeline_layout);
+        let binding_signature = unwrap::binding_signature(binding_signature);
 
         let bind_fn = match bind_point {
             PipelineBindPoint::Compute => set_compute_descriptor_table,
@@ -338,17 +343,17 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         };
 
         let mut dynamic_offsets = dynamic_offsets;
-        for (set_index, set) in sets.iter().enumerate() {
+        for (set_index, set) in blocks.iter().enumerate() {
             // Safety: No checks, all up to the caller to ensure this is safe
             let v: NonNull<()> = (*set).into();
             let v: NonNull<DescriptorSet> = v.cast();
             let v = unsafe { v.as_ref() };
 
             // Computes the index of the set within the pipeline layout.
-            let set_global_index = first_set as usize + set_index;
+            let set_global_index = first_block as usize + set_index;
 
             // Fetch the base root parameter index for this set from the pipeline layout
-            let param_index = pipeline_layout.set_root_param_indices[set_global_index];
+            let param_index = binding_signature.set_root_param_indices[set_global_index];
 
             // We always place dynamic constant buffers before the tables in the root signature so
             // they get treated as 'higher priority'
@@ -396,6 +401,17 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                 }
             }
         }
+    }
+
+    unsafe fn push_parameters(
+        &mut self,
+        _binding_signature: &dyn IBindingSignature,
+        _bind_point: PipelineBindPoint,
+        _block: u32,
+        _base: u32,
+        _writes: &[ParameterWrite],
+    ) {
+        todo!()
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {

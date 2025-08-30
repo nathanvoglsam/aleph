@@ -35,21 +35,21 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 use aleph_any::{AnyArc, declare_interfaces};
-use aleph_object_system::ArcedObject;
+use aleph_object_system::Object;
 use aleph_rhi_api::*;
 use allocator_api2::alloc::Allocator;
 use blink_alloc::BlinkAlloc;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::device::Device;
 use crate::internal::descriptor_chunk::DescriptorChunk;
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::descriptor_set_pool::DescriptorSetPool;
+use crate::parameter_block_layout::ParameterBlockLayout;
 
 pub struct DescriptorPool {
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) _layout: Arc<ArcedObject<DescriptorSetLayout>>,
+    pub(crate) _layout: AnyArc<ParameterBlockLayout>,
 
     /// The base address of the arena this pool allocates resource descriptors from
     pub(crate) resource_arena: Option<DescriptorChunk>,
@@ -89,7 +89,7 @@ impl DescriptorPool {
 }
 
 impl IDescriptorPool for DescriptorPool {
-    fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
+    fn allocate_block(&mut self) -> Result<ParameterBlockHandle, DescriptorPoolAllocateError> {
         let mut set = MaybeUninit::uninit();
         let num_from_free_list = self
             .set_pool
@@ -113,7 +113,7 @@ impl IDescriptorPool for DescriptorPool {
             // Set pool is required to have an initialized object
             let set_ptr = DescriptorSet::ptr_from_handle(set).as_mut();
 
-            set_ptr._layout = NonNull::from(ArcedObject::deref(&self._layout));
+            set_ptr._layout = NonNull::from(Object::deref(&self._layout));
 
             let n = self._layout.dynamic_constant_buffers.len();
             if n != 0 {
@@ -151,10 +151,10 @@ impl IDescriptorPool for DescriptorPool {
         Ok(set)
     }
 
-    fn allocate_sets(
+    fn allocate_blocks(
         &mut self,
         num_sets: usize,
-    ) -> Result<Box<[DescriptorSetHandle]>, DescriptorPoolAllocateError> {
+    ) -> Result<Box<[ParameterBlockHandle]>, DescriptorPoolAllocateError> {
         let mut sets = vec![MaybeUninit::uninit(); num_sets];
         let num_from_free_list = self
             .set_pool
@@ -196,7 +196,7 @@ impl IDescriptorPool for DescriptorPool {
             for (i, v) in uninitialized_sets.iter_mut().enumerate() {
                 let v = v.assume_init();
                 let v = DescriptorSet::ptr_from_handle(v).as_mut();
-                v._layout = NonNull::from(ArcedObject::deref(&self._layout));
+                v._layout = NonNull::from(Object::deref(&self._layout));
 
                 if num_dynamic_cbs != 0 {
                     let start = i * num_dynamic_cbs;
@@ -219,7 +219,7 @@ impl IDescriptorPool for DescriptorPool {
         unsafe { Ok(std::mem::transmute(sets.into_boxed_slice())) }
     }
 
-    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]) {
+    unsafe fn free(&mut self, sets: &[ParameterBlockHandle]) {
         self.set_pool.free_sets(sets);
     }
 

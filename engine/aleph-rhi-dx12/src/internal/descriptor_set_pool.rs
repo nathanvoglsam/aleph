@@ -48,7 +48,7 @@ pub struct DescriptorSetPool {
     pub num_sets: Cell<u32>,
 
     /// Free list of descriptors
-    pub free_list: Cell<Vec<DescriptorSetHandle>>,
+    pub free_list: Cell<Vec<ParameterBlockHandle>>,
 }
 
 impl DescriptorSetPool {
@@ -68,7 +68,7 @@ impl DescriptorSetPool {
     ///
     /// Returns the number of sets that were taken from the free list. This is useful to know in
     /// the event the outer descriptor set allocator can reuse the arrays inside the set.
-    pub fn allocate_sets(&self, sets: &mut [MaybeUninit<DescriptorSetHandle>]) -> Option<usize> {
+    pub fn allocate_sets(&self, sets: &mut [MaybeUninit<ParameterBlockHandle>]) -> Option<usize> {
         // First try and take from the set object free list
         let mut free_list = self.free_list.take();
 
@@ -136,7 +136,6 @@ impl DescriptorSetPool {
                 // Initialize the set object
                 set.write(DescriptorSet {
                     _layout: NonNull::dangling(),
-                    dynamic_constant_buffers: NonNull::from(&[]),
                     resource_allocation: Default::default(),
                     resource_handle_cpu: None,
                     resource_handle_gpu: None,
@@ -144,7 +143,7 @@ impl DescriptorSetPool {
                 });
 
                 let handle = NonNull::from(set);
-                let handle = unsafe { DescriptorSetHandle::from_raw(handle.cast()) };
+                let handle = unsafe { ParameterBlockHandle::from_raw(handle.cast()) };
                 dst.write(handle);
             });
 
@@ -154,7 +153,7 @@ impl DescriptorSetPool {
     }
 
     /// Free the requested number of sets
-    pub fn free_sets(&self, v: &[DescriptorSetHandle]) {
+    pub fn free_sets(&self, v: &[ParameterBlockHandle]) {
         let mut free_list = self.free_list.take();
 
         self.num_sets.set(self.num_sets.get() - v.len() as u32);
