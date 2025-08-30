@@ -107,6 +107,45 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &ParameterBlockDesc,
     ) -> Result<AnyArc<dyn IParameterBlockLayout>, ParameterBlockLayoutCreateError> {
+        if desc.flags.contains(ParameterBlockFlags::PUSH_DESCRIPTOR) {
+            for param in desc.params {
+                match param.ty {
+                    ParameterType::Buffer
+                    | ParameterType::RWBuffer
+                    | ParameterType::Texture1D
+                    | ParameterType::RWTexture1D
+                    | ParameterType::Texture2D
+                    | ParameterType::RWTexture2D
+                    | ParameterType::Texture3D
+                    | ParameterType::RWTexture3D
+                    | ParameterType::Texture1DArray
+                    | ParameterType::RWTexture1DArray
+                    | ParameterType::Texture2DArray
+                    | ParameterType::RWTexture2DArray
+                    | ParameterType::Texture3DArray
+                    | ParameterType::RWTexture3DArray
+                    | ParameterType::Texture2DMS
+                    | ParameterType::RWTexture2DMS
+                    | ParameterType::Texture2DMSArray
+                    | ParameterType::RWTexture2DMSArray
+                    | ParameterType::TextureCube
+                    | ParameterType::TextureCubeArray
+                    | ParameterType::SamplerState => {
+                        panic!(
+                            "Paremeter type '{}' is illegal in 'ParameterBlockDesc' when 'PUSH_DESCRIPTOR' flag is enabled",
+                            param.ty
+                        );
+                    }
+                    _ => {}
+                }
+                if param.array_size.is_array() {
+                    panic!(
+                        "Parameter arrays are illegal in 'ParameterBlockDesc' when 'PUSH_DESCRIPTOR' flag is enabled"
+                    );
+                }
+            }
+        }
+
         let inner = self.inner.create_parameter_block_layout(&desc)?;
 
         let out = AnyArc::new_cyclic(move |v| ValidationParameterBlockLayout {
