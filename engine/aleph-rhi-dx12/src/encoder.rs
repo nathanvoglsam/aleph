@@ -337,12 +337,6 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             PipelineBindPoint::Graphics => set_graphics_descriptor_table,
         };
 
-        let dynamic_bind_fn = match bind_point {
-            PipelineBindPoint::Compute => set_compute_root_constant_buffer_view,
-            PipelineBindPoint::Graphics => set_graphics_root_constant_buffer_view,
-        };
-
-        let mut dynamic_offsets = dynamic_offsets;
         for (set_index, set) in blocks.iter().enumerate() {
             // Safety: No checks, all up to the caller to ensure this is safe
             let v: NonNull<()> = (*set).into();
@@ -353,26 +347,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
             let set_global_index = first_block as usize + set_index;
 
             // Fetch the base root parameter index for this set from the pipeline layout
-            let param_index = binding_signature.set_root_param_indices[set_global_index];
-
-            // We always place dynamic constant buffers before the tables in the root signature so
-            // they get treated as 'higher priority'
-            let dynamic_constant_buffers = unsafe { v.dynamic_constant_buffers.as_ref() };
-
-            // Create a sub-slice of the dynamic offsets list that contains the offsets that
-            // apply for the current descriptor set
-            let set_dynamic_offsets = &dynamic_offsets[0..dynamic_constant_buffers.len()];
-
-            // Iterate over the dynamic constant buffers and matching offsets and update the
-            // root buffer views with the new dynamic buffer offset
-            for (&dynamic_cb, &offset) in dynamic_constant_buffers.iter().zip(set_dynamic_offsets) {
-                let offset = offset as u64;
-                let dynamic_cb = dynamic_cb + offset;
-                unsafe { dynamic_bind_fn(self, param_index, dynamic_cb) };
-            }
-
-            // Consume the offsets we just updated ready for the next set
-            dynamic_offsets = set_dynamic_offsets;
+            let param_index = binding_signature.compiled.block_offsets[set_global_index].root_parameter_index;
 
             let bound_sets = match bind_point {
                 PipelineBindPoint::Compute => &mut self.bound_compute_sets,
@@ -384,7 +359,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
                 // First bind the resource descriptors, which will always take a single descriptor table
                 // slot
-                let mut param_index = param_index + dynamic_constant_buffers.len() as u32;
+                let mut param_index = param_index;
                 if let Some(handle) = v.resource_handle_gpu {
                     unsafe { bind_fn(self, param_index, handle.into()) };
 
